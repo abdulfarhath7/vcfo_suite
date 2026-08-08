@@ -1,0 +1,69 @@
+# Local infrastructure for VCFO Suite.
+# This gives you dev/prod parity: the SAME Postgres and the SAME S3 API you'll
+# use on AWS (RDS + S3), but running entirely on your machine. Nothing here
+# talks to the internet.
+#
+#   npm run infra:up      # start Postgres + MinIO
+#   npm run infra:down    # stop them
+#
+# On AWS later you delete nothing in your app code — you just point the env vars
+# at RDS and S3 instead of these local containers.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: vcfo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vcfo
+      POSTGRES_PASSWORD: vcfo_local_dev
+      POSTGRES_DB: vcfo
+    ports:
+      - "5432:5432"
+    volumes:
+      - vcfo-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vcfo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # MinIO = S3-compatible object storage that runs locally.
+  # Your app's S3 code (src/storage/s3.ts) talks to this exactly as it will
+  # talk to real S3 on AWS. The only difference is the endpoint URL in .env.
+  minio:
+    image: minio/minio:latest
+    container_name: vcfo-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: vcfo_minio
+      MINIO_ROOT_PASSWORD: vcfo_minio_local_dev
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # web console at http://localhost:9001
+    volumes:
+      - vcfo-minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # One-shot: create the app bucket in MinIO on startup.
+  minio-setup:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until (mc alias set local http://minio:9000 vcfo_minio vcfo_minio_local_dev) do echo waiting for minio; sleep 2; done;
+      mc mb --ignore-existing local/vcfo-documents;
+      mc anonymous set none local/vcfo-documents;
+      echo 'bucket vcfo-documents ready';
+      exit 0;
+      "
+
+volumes:
+  vcfo-pgdata:
+  vcfo-minio:
