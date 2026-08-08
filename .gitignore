@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+dist/
+.env
+.env.local
+.env*.local
+*.log
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+src/db/migrations/meta/_journal.json.bak
+.turbo/

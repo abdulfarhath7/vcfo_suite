@@ -1,0 +1,230 @@
+import type { Config } from "tailwindcss";
+
+export default {
+  darkMode: ["class"],
+  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  prefix: "",
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: { "2xl": "1400px" },
+    },
+    extend: {
+      fontFamily: {
+        sans: ['var(--font-sans)', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        /* Display face (Space Grotesk) — hooked as serif for existing utility classes */
+        serif: ['var(--font-serif)', 'var(--font-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      colors: {
+        border: "oklch(var(--border) / <alpha-value>)",
+        input: "oklch(var(--input) / <alpha-value>)",
+        ring: "oklch(var(--ring) / <alpha-value>)",
+        background: "oklch(var(--background) / <alpha-value>)",
+        foreground: "oklch(var(--foreground) / <alpha-value>)",
+        surface: "oklch(var(--surface) / <alpha-value>)",
+
+        /* Noir surfaces */
+        ink: {
+          DEFAULT: "oklch(var(--ink) / <alpha-value>)",
+          soft: "oklch(var(--muted-paper) / <alpha-value>)",
+        },
+        panel: "oklch(var(--panel) / <alpha-value>)",
+        raised: "oklch(var(--raised) / <alpha-value>)",
+
+        /* Paper text */
+        paper: {
+          DEFAULT: "oklch(var(--paper) / <alpha-value>)",
+          muted: "oklch(var(--muted-paper) / <alpha-value>)",
+          subtle: "oklch(var(--subtle-paper) / <alpha-value>)",
+        },
+
+        /* Gold aliases → orange (deprecated names, orange values) */
+        gold: {
+          DEFAULT: "oklch(var(--gold) / <alpha-value>)",
+          hi: "oklch(var(--gold-hi) / <alpha-value>)",
+          deep: "oklch(var(--gold-deep) / <alpha-value>)",
+        },
+        orange: {
+          50: "oklch(var(--orange-50) / <alpha-value>)",
+          100: "oklch(var(--orange-100) / <alpha-value>)",
+          200: "oklch(var(--orange-200) / <alpha-value>)",
+          300: "oklch(var(--orange-300) / <alpha-value>)",
+          400: "oklch(var(--orange-400) / <alpha-value>)",
+          500: "oklch(var(--orange-500) / <alpha-value>)",
+          600: "oklch(var(--orange-600) / <alpha-value>)",
+          700: "oklch(var(--orange-700) / <alpha-value>)",
+          800: "oklch(var(--orange-800) / <alpha-value>)",
+          900: "oklch(var(--orange-900) / <alpha-value>)",
+          brand: "oklch(var(--orange-brand) / <alpha-value>)",
+          muted: "oklch(var(--orange-muted) / <alpha-value>)",
+        },
+        /* Marketing indigo-* → teal brand tokens */
+        indigo: {
+          50: "oklch(var(--indigo-50) / <alpha-value>)",
+          100: "oklch(var(--indigo-100) / <alpha-value>)",
+          200: "oklch(var(--indigo-200) / <alpha-value>)",
+          300: "oklch(var(--indigo-300) / <alpha-value>)",
+          400: "oklch(var(--indigo-400) / <alpha-value>)",
+          500: "oklch(var(--indigo-500) / <alpha-value>)",
+          600: "oklch(var(--indigo-600) / <alpha-value>)",
+          700: "oklch(var(--indigo-700) / <alpha-value>)",
+          800: "oklch(var(--indigo-800) / <alpha-value>)",
+          900: "oklch(var(--indigo-900) / <alpha-value>)",
+        },
+        hairline: "oklch(var(--border) / <alpha-value>)",
+
+        brand: {
+          DEFAULT: "oklch(var(--brand) / <alpha-value>)",
+          deep: "oklch(var(--brand-deep) / <alpha-value>)",
+        },
+        primary: {
+          DEFAULT: "oklch(var(--primary) / <alpha-value>)",
+          foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
+          light: "oklch(var(--primary-light) / <alpha-value>)",
+          dark: "oklch(var(--primary-dark) / <alpha-value>)",
+        },
+        secondary: {
+          DEFAULT: "oklch(var(--secondary) / <alpha-value>)",
+          foreground: "oklch(var(--secondary-foreground) / <alpha-value>)",
+        },
+        destructive: {
+          DEFAULT: "oklch(var(--destructive) / <alpha-value>)",
+          foreground: "oklch(var(--destructive-foreground) / <alpha-value>)",
+        },
+        muted: {
+          DEFAULT: "oklch(var(--muted) / <alpha-value>)",
+          foreground: "oklch(var(--muted-foreground) / <alpha-value>)",
+        },
+        accent: {
+          DEFAULT: "oklch(var(--accent) / <alpha-value>)",
+          foreground: "oklch(var(--accent-foreground) / <alpha-value>)",
+        },
+        popover: {
+          DEFAULT: "oklch(var(--popover) / <alpha-value>)",
+          foreground: "oklch(var(--popover-foreground) / <alpha-value>)",
+        },
+        card: {
+          DEFAULT: "oklch(var(--card) / <alpha-value>)",
+          foreground: "oklch(var(--card-foreground) / <alpha-value>)",
+        },
+        success: {
+          DEFAULT: "oklch(var(--success) / <alpha-value>)",
+          foreground: "oklch(var(--success-foreground) / <alpha-value>)",
+          light: "oklch(var(--success-light) / <alpha-value>)",
+          text: "oklch(var(--success-text) / <alpha-value>)",
+        },
+        warning: {
+          DEFAULT: "oklch(var(--warning) / <alpha-value>)",
+          foreground: "oklch(var(--warning-foreground) / <alpha-value>)",
+          light: "oklch(var(--warning-light) / <alpha-value>)",
+          text: "oklch(var(--warning-text) / <alpha-value>)",
+        },
+        danger: {
+          DEFAULT: "oklch(var(--danger) / <alpha-value>)",
+          light: "oklch(var(--danger-light) / <alpha-value>)",
+          text: "oklch(var(--danger-text) / <alpha-value>)",
+        },
+        info: {
+          DEFAULT: "oklch(var(--info) / <alpha-value>)",
+          foreground: "oklch(var(--info-foreground) / <alpha-value>)",
+          light: "oklch(var(--info-light) / <alpha-value>)",
+          text: "oklch(var(--info-text) / <alpha-value>)",
+        },
+        error: {
+          DEFAULT: "oklch(var(--error) / <alpha-value>)",
+          foreground: "oklch(var(--error-foreground) / <alpha-value>)",
+          light: "oklch(var(--error-light) / <alpha-value>)",
+          text: "oklch(var(--error-text) / <alpha-value>)",
+        },
+        sidebar: {
+          DEFAULT: "oklch(var(--sidebar-bg) / <alpha-value>)",
+          active: "oklch(var(--sidebar-active) / <alpha-value>)",
+          foreground: "oklch(var(--sidebar-foreground) / <alpha-value>)",
+          "foreground-active": "oklch(var(--sidebar-foreground-active) / <alpha-value>)",
+        },
+        "table-header": "oklch(var(--table-header) / <alpha-value>)",
+        "text-secondary": "oklch(var(--text-secondary) / <alpha-value>)",
+        "text-tertiary": "oklch(var(--text-tertiary) / <alpha-value>)",
+        "accent-emerald": "oklch(var(--accent-emerald) / <alpha-value>)",
+        "accent-emerald-soft": "oklch(var(--accent-emerald-soft) / <alpha-value>)",
+        "accent-sky": "oklch(var(--accent-sky) / <alpha-value>)",
+        "accent-sky-soft": "oklch(var(--accent-sky-soft) / <alpha-value>)",
+        "accent-amber": "oklch(var(--accent-amber) / <alpha-value>)",
+        "accent-amber-soft": "oklch(var(--accent-amber-soft) / <alpha-value>)",
+        "accent-violet": "oklch(var(--accent-violet) / <alpha-value>)",
+        "accent-violet-soft": "oklch(var(--accent-violet-soft) / <alpha-value>)",
+        "accent-rose": "oklch(var(--accent-rose) / <alpha-value>)",
+        "accent-rose-soft": "oklch(var(--accent-rose-soft) / <alpha-value>)",
+        "accent-orange": "oklch(var(--accent-orange) / <alpha-value>)",
+        "accent-orange-soft": "oklch(var(--accent-orange-soft) / <alpha-value>)",
+        "accent-teal": "oklch(var(--accent-teal) / <alpha-value>)",
+        "accent-teal-soft": "oklch(var(--accent-teal-soft) / <alpha-value>)",
+        "accent-pink": "oklch(var(--accent-pink) / <alpha-value>)",
+        "accent-pink-soft": "oklch(var(--accent-pink-soft) / <alpha-value>)",
+        "accent-cyan": "oklch(var(--accent-cyan) / <alpha-value>)",
+        "accent-cyan-soft": "oklch(var(--accent-cyan-soft) / <alpha-value>)",
+        "accent-lime": "oklch(var(--accent-lime) / <alpha-value>)",
+        "accent-lime-soft": "oklch(var(--accent-lime-soft) / <alpha-value>)",
+        role: {
+          DEFAULT: "oklch(var(--role-accent) / <alpha-value>)",
+          soft: "oklch(var(--role-accent-soft) / <alpha-value>)",
+          foreground: "oklch(var(--role-accent-foreground) / <alpha-value>)",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+        pill: "20px",
+        card: "10px",
+      },
+      fontSize: {
+        badge: "11px",
+        caption: "11px",
+        "body-sm": "12px",
+        body: "14px",
+        "section-head": "14px",
+        "page-title": "22px",
+        metric: "26px",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0", opacity: "0" },
+          to: { height: "var(--radix-accordion-content-height)", opacity: "1" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)", opacity: "1" },
+          to: { height: "0", opacity: "0" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "scale-in": {
+          "0%": { opacity: "0", transform: "scale(0.97)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        "orange-pulse": {
+          "0%, 100%": { boxShadow: "0 0 0 0 oklch(var(--orange-600) / 0.6)" },
+          "50%": { boxShadow: "0 0 0 6px oklch(var(--orange-600) / 0)" },
+        },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.22s ease-out",
+        "accordion-up": "accordion-up 0.22s ease-out",
+        "fade-in": "fade-in 0.32s ease-out",
+        "scale-in": "scale-in 0.22s ease-out",
+        "orange-pulse": "orange-pulse 2.4s ease-out infinite",
+        "gold-pulse": "orange-pulse 2.4s ease-out infinite",
+        "shimmer": "shimmer 2.8s linear infinite",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config;
