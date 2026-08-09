@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none" role="img" aria-label="VCFO Suite">
+  <defs>
+    <linearGradient id="sbc-apple-grad" x1="22" y1="12" x2="158" y2="168" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C5CFC"/>
+      <stop offset="1" stop-color="#5B21B6"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="45" fill="url(#sbc-apple-grad)"/>
+  <path d="M56 50v80" stroke="#fff" stroke-width="14" stroke-linecap="round" opacity="0.3"/>
+  <circle cx="56" cy="53" r="14.5" fill="#fff"/>
+  <circle cx="56" cy="90" r="14.5" fill="#fff" fill-opacity="0.8"/>
+  <circle cx="56" cy="127" r="14.5" fill="#fff" fill-opacity="0.4"/>
+  <path d="M84 53h51" stroke="#fff" stroke-width="14" stroke-linecap="round"/>
+  <path d="M84 90h37" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-opacity="0.8"/>
+  <path d="M84 127h22" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-opacity="0.4"/>
+</svg>

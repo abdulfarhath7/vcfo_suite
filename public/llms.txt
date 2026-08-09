@@ -1,0 +1,14 @@
+# ComplianceOS
+
+> vCFO automation for Indian company incorporation and ongoing statutory compliance.
+
+ComplianceOS helps virtual CFO firms and their clients track pre-incorporation, post-incorporation, FEMA, and statutory compliance items end-to-end.
+
+## Pages
+
+- [Dashboard](/): KPIs and upcoming deadlines across all clients.
+- [Onboarding](/onboarding): 5-step wizard to create a new client and generate their compliance checklist.
+- [Incorporation Tracker](/incorporation): Pre-inc stepper, post-inc cards, and FEMA FCGPR log.
+- [Documents](/documents): Central hub for all required documents.
+- [Statutory Compliance](/compliance): GST, PT, IEC, LUT, LEI, S&E and more.
+- [Timeline](/timeline): Master timeline of every deadline.
