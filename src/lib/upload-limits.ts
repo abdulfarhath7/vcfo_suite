@@ -1,0 +1,211 @@
+/**
+ * Shared upload size limits aligned with Supabase Storage.
+ *
+ * Default: 50 MiB (52_428_800 bytes) — Supabase global cap unless the project
+ * raises bucket `file_size_limit` in Dashboard (paid plans up to 5GB).
+ *
+ * Override via `NEXT_PUBLIC_MAX_UPLOAD_MB` (1–5120).
+ * After changing env or bucket limits, run storage migration and `npm run dev:clean`.
+ */
+
+const DEFAULT_MAX_UPLOAD_MB = 50;
+const MAX_CONFIG_MB = 5120;
+
+function parseMaxUploadMb(): number {
+  const raw = process.env.NEXT_PUBLIC_MAX_UPLOAD_MB;
+  if (!raw?.trim()) return DEFAULT_MAX_UPLOAD_MB;
+  const n = Number.parseInt(raw.trim(), 10);
+  if (!Number.isFinite(n) || n < 1 || n > MAX_CONFIG_MB) return DEFAULT_MAX_UPLOAD_MB;
+  return n;
+}
+
+/** Configured max upload size in megabytes (decimal MB label for users). */
+const SUPABASE_MAX_UPLOAD_MB = parseMaxUploadMb();
+
+/** Max upload size in bytes (MB × 1024²). */
+export const SUPABASE_MAX_UPLOAD_BYTES = SUPABASE_MAX_UPLOAD_MB * 1024 * 1024;
+
+/** Human label for UI copy, e.g. "50 MB". */
+export function maxUploadSizeLabel(): string {
+  return `${SUPABASE_MAX_UPLOAD_MB} MB`;
+}
+
+/** Validation error when a file exceeds the limit. */
+export function maxUploadSizeError(): string {
+  return `File must be ${maxUploadSizeLabel()} or smaller.`;
+}
+
+/** @deprecated Use SUPABASE_MAX_UPLOAD_BYTES */
+export const SIGNED_BOARD_RESOLUTION_MAX_BYTES = SUPABASE_MAX_UPLOAD_BYTES;
+
+export function formatUploadFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// ---------------------------------------------------------------------------
+// MIME allowlists — keep in sync with supabase/migrations/*storage*.sql buckets
+// ---------------------------------------------------------------------------
+
+/** Canonical MIME for each supported file extension. */
+export const EXTENSION_TO_MIME = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  txt: 'text/plain',
+} as const;
+
+export type UploadExtension = keyof typeof EXTENSION_TO_MIME;
+
+/** All document/image MIME types used by VCFO Suite storage buckets. */
+export const ALL_DOCUMENT_MIME_TYPES = [
+  EXTENSION_TO_MIME.pdf,
+  EXTENSION_TO_MIME.doc,
+  EXTENSION_TO_MIME.docx,
+  EXTENSION_TO_MIME.xlsx,
+  EXTENSION_TO_MIME.pptx,
+  EXTENSION_TO_MIME.jpeg,
+  EXTENSION_TO_MIME.png,
+  EXTENSION_TO_MIME.webp,
+  EXTENSION_TO_MIME.txt,
+] as const;
+
+export type DocumentMimeType = (typeof ALL_DOCUMENT_MIME_TYPES)[number];
+
+/** MIME types allowed in the knowledge-bank bucket. */
+export const KNOWLEDGE_BANK_MIME_TYPES = new Set<string>(ALL_DOCUMENT_MIME_TYPES);
+
+/** Extensions allowed in the knowledge-bank bucket. */
+export const KNOWLEDGE_BANK_EXTENSIONS = new Set<string>(Object.keys(EXTENSION_TO_MIME));
+
+/** MIME types allowed in milestone-documents and signed board resolution uploads. */
+export const MILESTONE_DOCUMENT_MIME_TYPES = new Set<string>([
+  EXTENSION_TO_MIME.pdf,
+  EXTENSION_TO_MIME.doc,
+  EXTENSION_TO_MIME.docx,
+  EXTENSION_TO_MIME.jpeg,
+  EXTENSION_TO_MIME.png,
+  EXTENSION_TO_MIME.webp,
+]);
+
+/** Extensions allowed in milestone-documents uploads. */
+export const MILESTONE_DOCUMENT_EXTENSIONS = new Set<string>([
+  'pdf',
+  'doc',
+  'docx',
+  'jpg',
+  'jpeg',
+  'png',
+  'webp',
+]);
+
+/** MIME types allowed for signed board resolution client uploads. */
+export const SIGNED_BOARD_RESOLUTION_MIME_TYPES = new Set<string>([
+  EXTENSION_TO_MIME.pdf,
+  EXTENSION_TO_MIME.docx,
+]);
+
+/** Extensions allowed for signed board resolution client uploads. */
+export const SIGNED_BOARD_RESOLUTION_EXTENSIONS = new Set<string>(['pdf', 'docx']);
+
+/** Supabase Storage bucket `allowed_mime_types` for knowledge-bank. */
+export const KNOWLEDGE_BANK_BUCKET_MIME_TYPES = [...KNOWLEDGE_BANK_MIME_TYPES];
+
+/** Supabase Storage bucket `allowed_mime_types` for milestone-documents. */
+export const MILESTONE_BUCKET_MIME_TYPES = [...MILESTONE_DOCUMENT_MIME_TYPES];
+
+/** Supabase Storage bucket `allowed_mime_types` for engagement-documents. */
+export const ENGAGEMENT_DOCUMENTS_BUCKET_MIME_TYPES = [
+  EXTENSION_TO_MIME.docx,
+  EXTENSION_TO_MIME.pdf,
+  EXTENSION_TO_MIME.doc,
+];
+
+/** Browser/OS sometimes report generic octet-stream for Office files on Windows. */
+const UNKNOWN_UPLOAD_MIME_TYPES = new Set(['', 'application/octet-stream', 'binary/octet-stream']);
+
+const MIME_TO_EXTENSION = new Map<string, UploadExtension>(
+  (Object.entries(EXTENSION_TO_MIME) as [UploadExtension, string][]).map(([ext, mime]) => [mime, ext]),
+);
+
+/** Lowercase extension from a filename (without dot), or null when absent. */
+function fileExtensionFromName(fileName: string): string | null {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  return ext && ext !== fileName.toLowerCase() ? ext : null;
+}
+
+/** Resolve a canonical extension from a File (name first, then MIME). */
+export function resolveUploadExtension(
+  file: Pick<File, 'name' | 'type'>,
+  allowedExtensions: ReadonlySet<string>,
+): string | null {
+  const nameExt = fileExtensionFromName(file.name);
+  if (nameExt && allowedExtensions.has(nameExt)) return nameExt;
+
+  if (file.type && !UNKNOWN_UPLOAD_MIME_TYPES.has(file.type)) {
+    const fromMime = MIME_TO_EXTENSION.get(file.type);
+    if (fromMime && allowedExtensions.has(fromMime)) return fromMime;
+    if (file.type === EXTENSION_TO_MIME.jpeg && allowedExtensions.has('jpg')) return 'jpg';
+  }
+
+  return null;
+}
+
+/** Resolve the Content-Type to send to Supabase Storage (never generic octet-stream when ext is known). */
+export function resolveUploadContentType(
+  file: Pick<File, 'name' | 'type'>,
+  allowedExtensions: ReadonlySet<string>,
+): string {
+  const ext = resolveUploadExtension(file, allowedExtensions);
+  if (ext && ext in EXTENSION_TO_MIME) {
+    return EXTENSION_TO_MIME[ext as UploadExtension];
+  }
+  if (file.type && !UNKNOWN_UPLOAD_MIME_TYPES.has(file.type)) return file.type;
+  return 'application/octet-stream';
+}
+
+/** True when Supabase Storage reports the target bucket does not exist. */
+function isStorageBucketMissingError(errorMessage: string): boolean {
+  const normalized = errorMessage.toLowerCase();
+  return normalized.includes('bucket not found') || normalized.includes('bucket does not exist');
+}
+
+/** Turn a Supabase Storage upload error into a debug-friendly message (bucket + content-type). */
+export function storageUploadErrorMessage(
+  bucket: string,
+  contentType: string,
+  errorMessage: string,
+): string {
+  console.error('[storage] upload failed', { bucket, contentType, error: errorMessage });
+  let hint = '';
+  if (isStorageBucketMissingError(errorMessage)) {
+    hint = ` Apply the knowledge_bank Supabase migration (creates the "${bucket}" bucket) or create the bucket in the Supabase dashboard.`;
+  } else if (errorMessage.includes('mime type') && errorMessage.includes('not supported')) {
+    hint = ' Ensure the storage_document_mime_types migration is applied in Supabase.';
+  }
+  return `${errorMessage} [bucket=${bucket}, contentType=${contentType}]${hint}`;
+}
+
+/** Validate file size + extension/MIME against an allowlist. Returns error message or null. */
+export function validateUploadFileType(
+  file: Pick<File, 'name' | 'type'>,
+  allowedExtensions: ReadonlySet<string>,
+  allowedMimeTypes: ReadonlySet<string>,
+  unsupportedMessage: string,
+): string | null {
+  const ext = resolveUploadExtension(file, allowedExtensions);
+  if (!ext) return unsupportedMessage;
+
+  if (file.type && !UNKNOWN_UPLOAD_MIME_TYPES.has(file.type) && !allowedMimeTypes.has(file.type)) {
+    return unsupportedMessage;
+  }
+
+  return null;
+}
