@@ -9,6 +9,10 @@ import {
   removeEngagementLead,
   replaceEngagementLead,
 } from '@/db/repositories/engagement-leads';
+import { getEngagementById, toAppEngagement } from '@/db/repositories/engagements';
+import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { notifyTeamAssignment } from '@/lib/email/notify-team-assignment';
+import { emptyEmailDispatch } from '@/lib/email/email-dispatch';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -60,19 +64,69 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
   }
 
+  const actor = {
+    userId: guard.ctx.userId,
+    name: guard.ctx.name,
+    email: guard.ctx.email,
+  };
+
   try {
     if ('fromInternId' in json || 'toInternId' in json) {
       const body = replaceSchema.safeParse(json);
       if (!body.success) {
         return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
       }
+      const before = await listEngagementLeads(guard.ctx, id);
+      const removed = before.find((l) => l.internId === body.data.fromInternId);
       const leads = await replaceEngagementLead(
         guard.ctx,
         id,
         body.data.fromInternId,
         body.data.toInternId,
       );
-      return NextResponse.json({ leads });
+      const added = leads.find((l) => l.internId === body.data.toInternId);
+      const row = await getEngagementById(guard.ctx, engagementDbId(id));
+      const eng = row ? toAppEngagement(row) : null;
+      const email = emptyEmailDispatch();
+      if (eng && removed?.profileId && removed.email) {
+        const part = await notifyTeamAssignment({
+          engagementAppId: eng.id,
+          engagementSlug: eng.slug,
+          companyName: eng.companyName,
+          role: 'project lead',
+          party: {
+            userId: removed.profileId,
+            email: removed.email,
+            name: removed.name,
+          },
+          action: 'removed',
+          actor,
+        });
+        email.attempted += part.attempted;
+        email.sent.push(...part.sent);
+        email.skipped.push(...part.skipped);
+        email.failed.push(...part.failed);
+      }
+      if (eng && added?.profileId && added.email) {
+        const part = await notifyTeamAssignment({
+          engagementAppId: eng.id,
+          engagementSlug: eng.slug,
+          companyName: eng.companyName,
+          role: 'project lead',
+          party: {
+            userId: added.profileId,
+            email: added.email,
+            name: added.name,
+          },
+          action: 'assigned',
+          actor,
+        });
+        email.attempted += part.attempted;
+        email.sent.push(...part.sent);
+        email.skipped.push(...part.skipped);
+        email.failed.push(...part.failed);
+      }
+      return NextResponse.json({ leads, email });
     }
 
     const body = addSchema.safeParse(json);
@@ -80,7 +134,26 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
     }
     const leads = await addEngagementLead(guard.ctx, id, body.data.internId);
-    return NextResponse.json({ leads });
+    const added = leads.find((l) => l.internId === body.data.internId) ?? leads.at(-1);
+    const row = await getEngagementById(guard.ctx, engagementDbId(id));
+    const eng = row ? toAppEngagement(row) : null;
+    let email = emptyEmailDispatch();
+    if (eng && added?.profileId && added.email) {
+      email = await notifyTeamAssignment({
+        engagementAppId: eng.id,
+        engagementSlug: eng.slug,
+        companyName: eng.companyName,
+        role: 'project lead',
+        party: {
+          userId: added.profileId,
+          email: added.email,
+          name: added.name,
+        },
+        action: 'assigned',
+        actor,
+      });
+    }
+    return NextResponse.json({ leads, email });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'update_failed';
     const status =
@@ -107,8 +180,32 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   try {
+    const before = await listEngagementLeads(guard.ctx, id);
+    const removed = before.find((l) => l.internId === body.data.internId);
     const leads = await removeEngagementLead(guard.ctx, id, body.data.internId);
-    return NextResponse.json({ leads });
+    const row = await getEngagementById(guard.ctx, engagementDbId(id));
+    const eng = row ? toAppEngagement(row) : null;
+    let email = emptyEmailDispatch();
+    if (eng && removed?.profileId && removed.email) {
+      email = await notifyTeamAssignment({
+        engagementAppId: eng.id,
+        engagementSlug: eng.slug,
+        companyName: eng.companyName,
+        role: 'project lead',
+        party: {
+          userId: removed.profileId,
+          email: removed.email,
+          name: removed.name,
+        },
+        action: 'removed',
+        actor: {
+          userId: guard.ctx.userId,
+          name: guard.ctx.name,
+          email: guard.ctx.email,
+        },
+      });
+    }
+    return NextResponse.json({ leads, email });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'delete_failed';
     const status =
