@@ -100,6 +100,9 @@ export const engagements = pgTable(
     parentEntityName: text('parent_entity_name'),
     parentEntityAddress: text('parent_entity_address'),
     parentEntityRegistrationNumber: text('parent_entity_registration_number'),
+    /** India subsidiary / GCC entity — required when starting at Registration or Compliance. */
+    subsidiaryLegalName: text('subsidiary_legal_name'),
+    subsidiaryRegisteredAddress: text('subsidiary_registered_address'),
     clientId: text('client_id').notNull(),
     clientUserId: uuid('client_user_id').references(() => profiles.id, {
       onDelete: 'set null',
@@ -181,6 +184,33 @@ export const engagementLeads = pgTable(
     engIdx: index('engagement_leads_engagement_idx').on(t.engagementId),
     internIdx: index('engagement_leads_intern_idx').on(t.internId),
     uniqueLead: uniqueIndex('engagement_leads_unique').on(t.engagementId, t.internId),
+  }),
+);
+
+/**
+ * Project managers on an engagement — many per project.
+ * `engagements.manager_id` remains the primary pointer; membership here
+ * grants co-manager access for additional PMs.
+ */
+export const engagementManagers = pgTable(
+  'engagement_managers',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => engagements.id, { onDelete: 'cascade' }),
+    managerId: uuid('manager_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    invitedBy: uuid('invited_by').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    engIdx: index('engagement_managers_engagement_idx').on(t.engagementId),
+    managerIdx: index('engagement_managers_manager_idx').on(t.managerId),
+    uniqueManager: uniqueIndex('engagement_managers_unique').on(t.engagementId, t.managerId),
   }),
 );
 
