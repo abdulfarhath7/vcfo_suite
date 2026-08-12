@@ -345,13 +345,32 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
         `${name} is ready. ${email} can sign in to the client portal.`,
       );
       toastEmailDispatch(
-        result.emailSent
-          ? { attempted: 1, sent: [email], skipped: [], failed: [] }
-          : result.emailSkipped
-            ? { attempted: 1, sent: [], skipped: [email], failed: [] }
-            : result.emailError
-              ? { attempted: 1, sent: [], skipped: [], failed: [email] }
-              : undefined,
+        result.email ??
+          (result.emailSent
+            ? {
+                attempted: 1,
+                sent: [email],
+                skipped: [],
+                failed: [],
+                subjects: [`Welcome to VCFO Suite — ${name}`],
+              }
+            : result.emailSkipped
+              ? {
+                  attempted: 1,
+                  sent: [],
+                  skipped: [email],
+                  failed: [],
+                  subjects: [`Welcome to VCFO Suite — ${name}`],
+                }
+              : result.emailError
+                ? {
+                    attempted: 1,
+                    sent: [],
+                    skipped: [],
+                    failed: [email],
+                    subjects: [`Welcome to VCFO Suite — ${name}`],
+                  }
+                : undefined),
         { companyName: name, engagementId: engagement.id, href: '#' },
       );
       dispatch({
