@@ -1,14 +1,17 @@
 'use client';
 
-import { User, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { GoldDivider } from '@/components/noir/GoldDivider';
-import { CreateFormSection, FieldError } from '@/components/admin/create-project-form-shared';
+import { FieldError } from '@/components/admin/create-project-form-shared';
 import { cn } from '@/lib/utils';
 
-export function CreateProjectFormClientSection(props: Record<string, unknown>) {
+const fieldLabelClass =
+  'flex items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground';
+const fieldControlClass = 'mt-2 h-11 px-3.5 text-[14px]';
+
+/** Client portal fields — used inside the create-project accordion. */
+export function CreateProjectClientFields(props: Record<string, unknown>) {
   const {
     clientContact,
     setClientContact,
@@ -20,119 +23,98 @@ export function CreateProjectFormClientSection(props: Record<string, unknown>) {
     setShowPassword,
     fieldError,
     pwStrength,
-    onCancel,
-    submit,
-    submitting,
-  } = props as Record<string, unknown>;
+  } = props as {
+    clientContact: string;
+    setClientContact: (v: string) => void;
+    clientEmail: string;
+    setClientEmail: (v: string) => void;
+    clientPassword: string;
+    setClientPassword: (v: string) => void;
+    showPassword: boolean;
+    setShowPassword: (v: boolean) => void;
+    fieldError: (k: string) => string | undefined;
+    pwStrength: 'weak' | 'fair' | 'strong' | null;
+  };
 
   return (
-    <>
-      <GoldDivider />
-      <CreateFormSection
-        eyebrow="Client portal access"
-        hint="Enter the client email — we create their login automatically with the initial password below (prefilled SBC@2026)."
-      >
-        <div>
-          <Label htmlFor="create-client-contact" className="text-[12px] flex items-center gap-1.5 text-text-secondary">
-            <User className="w-3.5 h-3.5" aria-hidden />
-            Client contact name <span className="text-text-tertiary font-normal">(optional)</span>
-          </Label>
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <p className="text-[12.5px] leading-snug text-muted-foreground">
+          We create their login with the initial password below (prefilled SBC@2026).
+        </p>
+      </div>
+      <div className="sm:col-span-2">
+        <Label htmlFor="create-client-contact" className={fieldLabelClass}>
+          <User className="h-3.5 w-3.5" aria-hidden />
+          Client contact name <span className="font-normal">(optional)</span>
+        </Label>
+        <Input
+          id="create-client-contact"
+          value={clientContact}
+          onChange={(e) => setClientContact(e.target.value)}
+          placeholder="e.g. Priya Nair, Director"
+          className={fieldControlClass}
+          maxLength={120}
+        />
+      </div>
+      <div>
+        <Label htmlFor="create-client-email" className={fieldLabelClass}>
+          <Mail className="h-3.5 w-3.5" aria-hidden />
+          Client sign-in email <span className="font-normal text-danger">*</span>
+        </Label>
+        <Input
+          id="create-client-email"
+          type="email"
+          value={clientEmail}
+          onChange={(e) => setClientEmail(e.target.value)}
+          placeholder="founder@abc.in"
+          className={cn(
+            fieldControlClass,
+            fieldError('clientEmail') && 'border-danger focus-visible:ring-danger/30',
+          )}
+          maxLength={160}
+          autoComplete="email"
+          required
+        />
+        <FieldError id="create-client-email-error" message={fieldError('clientEmail')} />
+      </div>
+      <div>
+        <Label htmlFor="create-client-password" className={fieldLabelClass}>
+          <Lock className="h-3.5 w-3.5" aria-hidden />
+          Initial portal password <span className="font-normal text-danger">*</span>
+        </Label>
+        <div className="relative mt-2">
           <Input
-            id="create-client-contact"
-            value={clientContact as string}
-            onChange={(e) => (setClientContact as (v: string) => void)(e.target.value)}
-            placeholder="e.g. Priya Nair, Director"
-            className="mt-1.5 h-9 text-[13px]"
-            maxLength={120}
-          />
-        </div>
-        <div>
-          <Label htmlFor="create-client-email" className="text-[12px] flex items-center gap-1.5 text-text-secondary">
-            <Mail className="w-3.5 h-3.5" aria-hidden />
-            Client sign-in email <span className="text-danger font-normal">*</span>
-          </Label>
-          <Input
-            id="create-client-email"
-            type="email"
-            value={clientEmail as string}
-            onChange={(e) => (setClientEmail as (v: string) => void)(e.target.value)}
-            placeholder="founder@abc.in"
-            className={cn(
-              'mt-1.5 h-9 text-[13px]',
-              (fieldError as (k: string) => string | undefined)('clientEmail') && 'border-danger focus-visible:ring-danger/30',
-            )}
-            maxLength={160}
-            autoComplete="email"
+            id="create-client-password"
+            type={showPassword ? 'text' : 'password'}
+            value={clientPassword}
+            onChange={(e) => setClientPassword(e.target.value)}
+            className="h-11 px-3.5 pr-11 text-[14px]"
+            minLength={8}
+            autoComplete="new-password"
             required
           />
-          <FieldError
-            id="create-client-email-error"
-            message={(fieldError as (k: string) => string | undefined)('clientEmail')}
-          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-orange-700"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
-        <div>
-          <Label htmlFor="create-client-password" className="text-[12px] flex items-center gap-1.5 text-text-secondary">
-            <Lock className="w-3.5 h-3.5" aria-hidden />
-            Initial portal password <span className="text-danger font-normal">*</span>
-          </Label>
-          <div className="relative mt-1.5">
-            <Input
-              id="create-client-password"
-              type={showPassword ? 'text' : 'password'}
-              value={clientPassword as string}
-              onChange={(e) => (setClientPassword as (v: string) => void)(e.target.value)}
-              className="h-9 text-[13px] pr-10"
-              minLength={8}
-              autoComplete="new-password"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => (setShowPassword as (v: boolean) => void)(!(showPassword as boolean))}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-text-tertiary hover:text-orange-600"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          <FieldError
-            id="create-client-password-error"
-            message={(fieldError as (k: string) => string | undefined)('clientPassword')}
-          />
-          {pwStrength ? (
-            <p className="mt-1 text-[11px] text-text-tertiary">
-              Strength:{' '}
-              <span className="font-medium capitalize text-foreground">{pwStrength as string}</span>
-            </p>
-          ) : null}
-          <p className="mt-1 text-[11px] text-text-tertiary">
-            Creating the project also creates this client account.
+        <FieldError id="create-client-password-error" message={fieldError('clientPassword')} />
+        {pwStrength ? (
+          <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+            Strength: <span className="font-medium capitalize text-foreground">{pwStrength}</span>
           </p>
-        </div>
-      </CreateFormSection>
-      <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-border">
-        {onCancel ? (
-          <Button type="button" variant="outline" size="sm" onClick={onCancel as () => void} disabled={submitting as boolean}>
-            Discard
-          </Button>
         ) : null}
-        <Button
-          type="button"
-          size="sm"
-          onClick={submit as () => void}
-          disabled={submitting as boolean}
-          className="gold-sheen"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" aria-hidden />
-              Creating GCC project…
-            </>
-          ) : (
-            'Create project & portal access'
-          )}
-        </Button>
       </div>
-    </>
+    </div>
   );
+}
+
+/** @deprecated Prefer CreateProjectClientFields — kept for import compatibility. */
+export function CreateProjectFormClientSection(props: Record<string, unknown>) {
+  return <CreateProjectClientFields {...props} />;
 }
