@@ -35,11 +35,20 @@ import {
   EyeOff,
   FolderPlus,
   Loader2,
+  Mail,
+  MoreHorizontal,
   Plus,
   Trash2,
   Users,
   UserSquare2,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { adminProjectPath } from '@/lib/project-step-path';
 import { deriveStuckReason } from '@/lib/project-stuck';
@@ -113,6 +122,9 @@ export default function FirmPeople() {
   const [createOpen, setCreateOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [emailTarget, setEmailTarget] = useState<StaffRow | null>(null);
+  const [emailDraft, setEmailDraft] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
   const [assignTarget, setAssignTarget] = useState<StaffRow | null>(null);
   const [assignProjectId, setAssignProjectId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
@@ -244,6 +256,42 @@ export default function FirmPeople() {
       toastError(errorMessage(err));
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  function openChangeEmail(person: StaffRow) {
+    setEmailTarget(person);
+    setEmailDraft(person.email);
+  }
+
+  function closeChangeEmail() {
+    setEmailTarget(null);
+    setEmailDraft('');
+  }
+
+  async function onChangeEmail() {
+    if (!emailTarget) return;
+    const next = emailDraft.trim().toLowerCase();
+    if (!next || !next.includes('@')) {
+      toastError('Enter a valid email.');
+      return;
+    }
+    setEmailSaving(true);
+    try {
+      await fetchJson(`/api/admin/people/${emailTarget.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ email: next }),
+      });
+      toastSuccess('Email updated', next);
+      closeChangeEmail();
+      await queryClient.invalidateQueries({ queryKey: ['admin-people'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-managers'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-interns'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
+    } catch (err) {
+      toastError(errorMessage(err));
+    } finally {
+      setEmailSaving(false);
     }
   }
 
@@ -380,17 +428,18 @@ export default function FirmPeople() {
   function PersonRow({
     person,
     meta,
-    canDelete,
+    canManage,
     canAssign,
     onOpen,
   }: {
     person: StaffRow;
     meta?: string;
-    canDelete: boolean;
+    canManage: boolean;
     canAssign?: boolean;
     onOpen?: () => void;
   }) {
     const attachedProjects = canAssign ? projectsForPerson(person) : [];
+    const showMenu = canManage && person.id !== user?.id;
     return (
       <div className="px-4 py-3">
         <div className="flex items-start justify-between gap-3">
@@ -424,22 +473,42 @@ export default function FirmPeople() {
                 Assign project
               </Button>
             ) : null}
-            {canDelete && person.id !== user?.id ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 shrink-0 gap-1 text-danger hover:bg-danger-light hover:text-danger"
-                disabled={deletingId === person.id}
-                onClick={() => void onDelete(person)}
-              >
-                {deletingId === person.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
-                Delete
-              </Button>
+            {showMenu ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 px-0"
+                    aria-label={`Actions for ${person.name}`}
+                    disabled={deletingId === person.id}
+                  >
+                    {deletingId === person.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <MoreHorizontal className="h-4 w-4" />
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onSelect={() => openChangeEmail(person)}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    Change email
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="gap-2 text-danger focus:text-danger"
+                    onSelect={() => void onDelete(person)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete person
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : null}
           </div>
         </div>
@@ -560,6 +629,57 @@ export default function FirmPeople() {
     </Dialog>
   );
 
+  const emailDialog = (
+    <Dialog
+      open={emailTarget !== null}
+      onOpenChange={(open) => {
+        if (!open) closeChangeEmail();
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Change email</DialogTitle>
+        </DialogHeader>
+        {emailTarget ? (
+          <>
+            <p className="text-[12px] text-muted-foreground">
+              Update the sign-in email for{' '}
+              <span className="font-medium text-foreground">{emailTarget.name}</span>. They will use
+              this address next time they log in.
+            </p>
+            <div>
+              <Label htmlFor="people-change-email" className="text-[12px] text-muted-foreground">
+                New email
+              </Label>
+              <Input
+                id="people-change-email"
+                type="email"
+                value={emailDraft}
+                onChange={(e) => setEmailDraft(e.target.value)}
+                className="mt-1.5 h-10 font-mono text-[13px]"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeChangeEmail} disabled={emailSaving}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={emailSaving}
+                className="gap-2"
+                onClick={() => void onChangeEmail()}
+              >
+                {emailSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                Save email
+              </Button>
+            </DialogFooter>
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+
   if (selectedManagerId && isAdmin) {
     const mgrName = selectedManager?.name ?? 'Project manager';
     const mgrEmail =
@@ -584,24 +704,56 @@ export default function FirmPeople() {
           title={mgrName}
           subtitle={mgrEmail || 'Manager-wise view: leads, clients, and project work'}
           actions={
-            selectedManager ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5 text-danger"
-                disabled={deletingId === selectedManager.id}
-                onClick={() =>
-                  void onDelete({
-                    id: selectedManager.id,
-                    name: mgrName,
-                    email: mgrEmail,
-                    role: 'manager',
-                  })
-                }
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete account
-              </Button>
+            selectedManager && selectedManager.id !== user?.id ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    disabled={deletingId === selectedManager.id}
+                    aria-label="Manager actions"
+                  >
+                    {deletingId === selectedManager.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <MoreHorizontal className="h-3.5 w-3.5" />
+                    )}
+                    Actions
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onSelect={() =>
+                      openChangeEmail({
+                        id: selectedManager.id,
+                        name: mgrName,
+                        email: mgrEmail,
+                        role: 'manager',
+                      })
+                    }
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    Change email
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="gap-2 text-danger focus:text-danger"
+                    onSelect={() =>
+                      void onDelete({
+                        id: selectedManager.id,
+                        name: mgrName,
+                        email: mgrEmail,
+                        role: 'manager',
+                      })
+                    }
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete person
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : null
           }
         />
@@ -639,7 +791,7 @@ export default function FirmPeople() {
                 <PersonRow
                   key={l.id}
                   person={l}
-                  canDelete
+                  canManage
                 />
               ))
             )}
@@ -686,6 +838,7 @@ export default function FirmPeople() {
           </Surface>
         </div>
         {assignDialog}
+        {emailDialog}
       </PageTransition>
     );
   }
@@ -735,7 +888,7 @@ export default function FirmPeople() {
                 <PersonRow
                   key={m.id}
                   person={m}
-                  canDelete={isAdmin && m.id !== user?.id && m.role !== 'super_admin'}
+                  canManage={isAdmin && m.id !== user?.id && m.role !== 'super_admin'}
                 />
               ))
             )}
@@ -765,7 +918,7 @@ export default function FirmPeople() {
                     key={m.id}
                     person={m}
                     meta={`${book.length} project${book.length === 1 ? '' : 's'} · ${book.filter((b) => b.stuck).length} at risk`}
-                    canDelete={isAdmin}
+                    canManage={isAdmin}
                     canAssign={isAdmin}
                     onOpen={() => openManager(m.id)}
                   />
@@ -798,7 +951,7 @@ export default function FirmPeople() {
                     ? `Reports to ${managerName(m.reportsToManagerId)}`
                     : undefined
                 }
-                canDelete={isAdmin || isManager}
+                canManage={isAdmin || isManager}
                 canAssign={isAdmin || isManager}
               />
             ))
@@ -821,7 +974,7 @@ export default function FirmPeople() {
               <PersonRow
                 key={m.id}
                 person={m}
-                canDelete={isAdmin}
+                canManage={isAdmin}
               />
             ))
           )}
@@ -960,6 +1113,7 @@ export default function FirmPeople() {
       </Dialog>
 
       {assignDialog}
+      {emailDialog}
     </PageTransition>
   );
 }
