@@ -356,6 +356,12 @@ export interface CreateProjectResult {
   emailSent?: boolean;
   emailSkipped?: boolean;
   emailError?: string;
+  email?: {
+    attempted: number;
+    sent: string[];
+    skipped: string[];
+    failed: string[];
+  };
 }
 
 /**
