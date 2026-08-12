@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { engagementManagers } from '@/db/schema';
 
@@ -28,4 +28,27 @@ export async function ensureEngagementManager(input: {
     .onConflictDoNothing({
       target: [engagementManagers.engagementId, engagementManagers.managerId],
     });
+}
+
+/** Profile UUIDs of all managers on an engagement. */
+export async function listManagerIdsForEngagement(engagementDbId: string): Promise<string[]> {
+  const rows = await db
+    .select({ managerId: engagementManagers.managerId })
+    .from(engagementManagers)
+    .where(eq(engagementManagers.engagementId, engagementDbId));
+  return rows.map((r) => r.managerId);
+}
+
+export async function removeEngagementManager(input: {
+  engagementDbId: string;
+  managerId: string;
+}): Promise<void> {
+  await db
+    .delete(engagementManagers)
+    .where(
+      and(
+        eq(engagementManagers.engagementId, input.engagementDbId),
+        eq(engagementManagers.managerId, input.managerId),
+      ),
+    );
 }

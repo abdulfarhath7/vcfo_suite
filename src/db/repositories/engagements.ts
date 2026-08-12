@@ -195,6 +195,15 @@ export async function updateEngagement(
       invitedBy: ctx.userId,
     });
   }
+  if (patch.managerId !== undefined) {
+    if (patch.managerId) {
+      await ensureEngagementManager({
+        engagementDbId: id,
+        managerId: patch.managerId,
+        invitedBy: ctx.userId,
+      });
+    }
+  }
   return row;
 }
 
