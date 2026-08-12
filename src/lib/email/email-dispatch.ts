@@ -11,10 +11,12 @@ export type EmailDispatchResult = {
   skipped: string[];
   /** Addresses that failed to send. */
   failed: string[];
+  /** Subjects of outbound messages (for Sent tab / toasts). */
+  subjects?: string[];
 };
 
 export function emptyEmailDispatch(): EmailDispatchResult {
-  return { attempted: 0, sent: [], skipped: [], failed: [] };
+  return { attempted: 0, sent: [], skipped: [], failed: [], subjects: [] };
 }
 
 export function formatEmailRecipients(emails: string[]): string {
@@ -36,9 +38,21 @@ export function mergeEmailDispatch(
     out.sent.push(...part.sent);
     out.skipped.push(...part.skipped);
     out.failed.push(...part.failed);
+    out.subjects!.push(...(part.subjects ?? []));
   }
   out.sent = [...new Set(out.sent)];
   out.skipped = [...new Set(out.skipped)];
   out.failed = [...new Set(out.failed)];
+  out.subjects = [...new Set((out.subjects ?? []).map((s) => s.trim()).filter(Boolean))];
   return out;
+}
+
+export function pushEmailSubject(
+  email: EmailDispatchResult,
+  subject: string | null | undefined,
+): void {
+  const s = subject?.trim();
+  if (!s) return;
+  if (!email.subjects) email.subjects = [];
+  if (!email.subjects.includes(s)) email.subjects.push(s);
 }
