@@ -29,7 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
+import { toastError, toastSuccess, toastEmailDispatch, errorMessage } from '@/lib/toast-errors';
+import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
 import {
   Loader2,
   MoreHorizontal,
@@ -78,7 +79,7 @@ export function ProjectActionsMenu({
   engagement: Engagement;
   className?: string;
 }) {
-  const { user, updateEngagement } = useApp();
+  const { user } = useApp();
   const queryClient = useQueryClient();
   const isAdmin = isFirmWideAdmin(user?.role);
   const isManager = user?.role === 'manager';
@@ -139,41 +140,66 @@ export function ProjectActionsMenu({
     if (!dialog) return;
     setSaving(true);
     try {
+      let email: EmailDispatchResult | undefined;
       if (dialog === 'add-manager' || dialog === 'change-manager') {
         if (!managerId) return;
-        await updateEngagement(engagement.id, { managerId });
+        const data = await fetchJson<{ email?: EmailDispatchResult }>(
+          `/api/engagements/${engagement.id}`,
+          { method: 'PATCH', body: JSON.stringify({ managerId }) },
+        );
+        email = data.email;
+        await refreshEngagements();
         toastSuccess(
           dialog === 'add-manager' ? 'Manager assigned' : 'Manager updated',
           engagement.companyName,
         );
       } else if (dialog === 'delete-manager') {
-        await updateEngagement(engagement.id, { managerId: null });
+        const data = await fetchJson<{ email?: EmailDispatchResult }>(
+          `/api/engagements/${engagement.id}`,
+          { method: 'PATCH', body: JSON.stringify({ managerId: null }) },
+        );
+        email = data.email;
+        await refreshEngagements();
         toastSuccess('Manager removed', engagement.companyName);
       } else if (dialog === 'add-lead') {
         if (!internId) return;
-        await fetchJson(`/api/engagements/${engagement.id}/leads`, {
-          method: 'POST',
-          body: JSON.stringify({ internId }),
-        });
+        const data = await fetchJson<{ email?: EmailDispatchResult }>(
+          `/api/engagements/${engagement.id}/leads`,
+          { method: 'POST', body: JSON.stringify({ internId }) },
+        );
+        email = data.email;
         toastSuccess('Lead added', engagement.companyName);
         await refreshEngagements();
       } else if (dialog === 'change-lead') {
         if (!fromInternId || !internId) return;
-        await fetchJson(`/api/engagements/${engagement.id}/leads`, {
-          method: 'POST',
-          body: JSON.stringify({ fromInternId, toInternId: internId }),
-        });
+        const data = await fetchJson<{ email?: EmailDispatchResult }>(
+          `/api/engagements/${engagement.id}/leads`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ fromInternId, toInternId: internId }),
+          },
+        );
+        email = data.email;
         toastSuccess('Lead updated', engagement.companyName);
         await refreshEngagements();
       } else if (dialog === 'delete-lead') {
         if (!fromInternId) return;
-        await fetchJson(`/api/engagements/${engagement.id}/leads`, {
-          method: 'DELETE',
-          body: JSON.stringify({ internId: fromInternId }),
-        });
+        const data = await fetchJson<{ email?: EmailDispatchResult }>(
+          `/api/engagements/${engagement.id}/leads`,
+          {
+            method: 'DELETE',
+            body: JSON.stringify({ internId: fromInternId }),
+          },
+        );
+        email = data.email;
         toastSuccess('Lead removed', engagement.companyName);
         await refreshEngagements();
       }
+      toastEmailDispatch(email, {
+        companyName: engagement.companyName,
+        engagementId: engagement.id,
+        href: '#',
+      });
       setDialog(null);
     } catch (err) {
       toastError("Couldn't update project", errorMessage(err, 'Try again in a moment.'));
