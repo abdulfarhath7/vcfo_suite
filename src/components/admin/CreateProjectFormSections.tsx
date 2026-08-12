@@ -261,7 +261,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
   };
 
   return (
-    <div className="relative w-full lg:pr-[13.5rem] xl:pr-[14.25rem]">
+    <div className="relative w-full lg:pr-[14rem] xl:pr-[14.75rem]">
       {/* Mobile / tablet: compact top stepper */}
       <div className="mb-8 lg:hidden">
         <CreateProjectFormFlow {...flowProps} variant="compact" />
@@ -857,8 +857,8 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
         </div>
       </fieldset>
 
-      {/* Slim fixed progress spine — quiet chrome so the form stays primary */}
-      <div className="pointer-events-none fixed bottom-5 right-3 top-[4.75rem] z-20 hidden w-[12.75rem] lg:block xl:right-5 xl:w-[13.5rem]">
+      {/* Progress rail — card chrome so it stays readable beside the form */}
+      <div className="pointer-events-none fixed bottom-5 right-3 top-[4.75rem] z-20 hidden w-[13.25rem] lg:block xl:right-5 xl:w-[14rem]">
         <div className="pointer-events-auto h-full">
           <CreateProjectFormFlow {...flowProps} variant="rail" className="h-full" />
         </div>

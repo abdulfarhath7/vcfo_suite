@@ -125,27 +125,39 @@ export function CreateProjectFormFlow({
     <aside
       aria-label="Details to complete"
       className={cn(
-        'flex h-full min-h-0 flex-col border-l border-border/60 bg-transparent pl-4 pr-1',
+        'flex h-full min-h-0 flex-col rounded-2xl border border-border/70',
+        'bg-gradient-to-b from-background via-background to-orange-50/35',
+        'px-3.5 py-4 shadow-[0_10px_40px_-24px_rgba(15,23,42,0.35)]',
         className,
       )}
     >
-      <div className="mb-6 shrink-0">
-        <p className="text-[10px] mono uppercase tracking-[0.2em] text-muted-foreground">
+      <div className="mb-5 shrink-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-800/80">
           Progress
         </p>
-        <p className="mt-2 text-[13px] font-medium tabular-nums text-foreground">
-          {readyCount}
-          <span className="font-normal text-muted-foreground"> / {FORM_STEPS.length}</span>
+        <p className="mt-2 text-[15px] font-semibold tabular-nums tracking-tight text-foreground">
+          <motion.span
+            key={readyCount}
+            initial={{ opacity: 0.35, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="inline-block"
+          >
+            {readyCount}
+          </motion.span>
+          <span className="font-medium text-muted-foreground"> / {FORM_STEPS.length}</span>
         </p>
-        <div className="mt-3 h-px overflow-hidden bg-border/80">
-          <div
-            className="h-full bg-foreground/70 transition-[width] duration-500 ease-out"
-            style={{ width: `${(readyCount / FORM_STEPS.length) * 100}%` }}
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-orange-100/90 ring-1 ring-orange-200/60">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-orange-500 to-orange-600"
+            initial={false}
+            animate={{ width: `${(readyCount / FORM_STEPS.length) * 100}%` }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
           />
         </div>
       </div>
 
-      <ol className="flex min-h-0 flex-1 flex-col">
+      <ol className="flex min-h-0 flex-1 flex-col gap-1">
         {FORM_STEPS.map((step, i) => {
           const done = sectionComplete[step.id];
           const active = openSections.includes(step.id);
@@ -153,74 +165,112 @@ export function CreateProjectFormFlow({
           const Icon = step.icon;
           return (
             <li key={step.id} className="relative flex min-h-0 flex-1 gap-3">
-              <div className="flex w-7 shrink-0 flex-col items-center">
-                <button
+              <div className="flex w-8 shrink-0 flex-col items-center">
+                <motion.button
                   type="button"
+                  key={`${step.id}-${done ? 'done' : active ? 'active' : 'idle'}`}
                   onClick={() => onSelect(step.id)}
                   aria-current={active ? 'step' : undefined}
+                  initial={active && !done ? { scale: 0.92 } : { scale: 1 }}
+                  animate={{ scale: 1 }}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.94 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 26 }}
                   className={cn(
-                    'relative z-[1] flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-semibold transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    done && 'border-emerald-600/40 bg-emerald-600 text-white',
-                    !done && active && 'border-orange-600 bg-orange-600 text-white',
+                    'relative z-[1] flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-bold shadow-sm',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/50',
+                    done && 'border-emerald-500 bg-emerald-600 text-white shadow-emerald-600/25',
+                    !done &&
+                      active &&
+                      'border-orange-500 bg-orange-600 text-white shadow-orange-600/30 ring-4 ring-orange-200/70',
                     !done &&
                       !active &&
-                      'border-border bg-background text-muted-foreground hover:border-foreground/40',
+                      'border-border/90 bg-background text-foreground/70 hover:border-orange-300 hover:text-foreground',
                   )}
                 >
                   {done ? <Check className="h-3.5 w-3.5" strokeWidth={2.75} /> : i + 1}
-                </button>
+                </motion.button>
                 {!isLast ? (
-                  <div
-                    aria-hidden
-                    className={cn(
-                      'mt-1 w-px flex-1',
-                      done ? 'bg-emerald-500/50' : 'bg-border',
-                    )}
-                  />
+                  <div aria-hidden className="relative mt-1 w-[2px] flex-1 overflow-hidden rounded-full bg-border/80">
+                    <motion.div
+                      className="absolute inset-x-0 top-0 w-full origin-top rounded-full bg-emerald-500"
+                      initial={false}
+                      animate={{ scaleY: done ? 1 : 0 }}
+                      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                      style={{ height: '100%' }}
+                    />
+                  </div>
                 ) : null}
               </div>
 
-              <button
+              <motion.button
                 type="button"
                 onClick={() => onSelect(step.id)}
+                layout
+                initial={false}
+                animate={{
+                  backgroundColor: active
+                    ? 'rgba(255, 247, 237, 0.95)'
+                    : done
+                      ? 'rgba(236, 253, 245, 0.55)'
+                      : 'rgba(255,255,255,0)',
+                  borderColor: active
+                    ? 'rgba(251, 146, 60, 0.45)'
+                    : done
+                      ? 'rgba(52, 211, 153, 0.35)'
+                      : 'rgba(0,0,0,0)',
+                }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
-                  'mb-5 flex min-w-0 flex-1 flex-col items-start justify-start pt-0.5 text-left transition-colors',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md',
+                  'mb-2 flex min-w-0 flex-1 flex-col items-start justify-start rounded-xl border px-2.5 py-2 text-left',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/40',
                   isLast && 'mb-0',
                 )}
               >
                 <span className="flex items-center gap-1.5">
                   <Icon
                     className={cn(
-                      'h-3.5 w-3.5 shrink-0',
-                      active ? 'text-orange-700' : 'text-muted-foreground',
+                      'h-3.5 w-3.5 shrink-0 transition-colors duration-200',
+                      active && 'text-orange-700',
+                      done && !active && 'text-emerald-700',
+                      !done && !active && 'text-foreground/55',
                     )}
                     aria-hidden
                   />
                   <span
                     className={cn(
-                      'text-[13px] font-medium tracking-tight',
-                      active && 'text-orange-900',
-                      done && !active && 'text-foreground',
-                      !done && !active && 'text-muted-foreground',
+                      'text-[13px] font-semibold tracking-tight transition-colors duration-200',
+                      active && 'text-orange-950',
+                      done && !active && 'text-emerald-950',
+                      !done && !active && 'text-foreground/80',
                     )}
                   >
                     {step.label}
                   </span>
                 </span>
-                <span
+                <motion.span
+                  key={`${step.id}-${done ? 'ready' : active ? 'active' : 'next'}`}
+                  initial={{ opacity: 0, y: 3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22 }}
                   className={cn(
-                    'mt-1 text-[11px] leading-snug',
-                    done ? 'text-emerald-700' : active ? 'text-orange-800/80' : 'text-muted-foreground/80',
+                    'mt-1 text-[11px] font-medium leading-snug',
+                    done && 'text-emerald-700',
+                    active && !done && 'text-orange-800',
+                    !done && !active && 'text-foreground/55',
                   )}
                 >
                   {done ? 'Ready' : active ? 'In progress' : 'Up next'}
-                </span>
-                <span className="mt-1.5 text-[10.5px] leading-snug text-muted-foreground/75">
+                </motion.span>
+                <span
+                  className={cn(
+                    'mt-1 text-[10.5px] leading-snug transition-colors duration-200',
+                    active ? 'text-orange-900/70' : 'text-foreground/50',
+                  )}
+                >
                   {step.hint}
                 </span>
-              </button>
+              </motion.button>
             </li>
           );
         })}
