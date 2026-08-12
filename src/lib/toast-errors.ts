@@ -284,11 +284,21 @@ function emailNotificationDraft(
 } | null {
   if (email.attempted === 0) return null;
 
+  const subjects = [...new Set((email.subjects ?? []).map((s) => s.trim()).filter(Boolean))];
+  const subjectLine =
+    subjects.length === 0
+      ? null
+      : subjects.length === 1
+        ? subjects[0]
+        : `${subjects[0]} (+${subjects.length - 1} more)`;
+
   if (email.sent.length > 0) {
     return {
       kind: 'email.sent',
-      title: 'Email sent',
-      body: formatEmailRecipients(email.sent),
+      title: subjectLine ?? 'Email sent',
+      body: subjectLine
+        ? `To ${formatEmailRecipients(email.sent)}`
+        : formatEmailRecipients(email.sent),
       engagementId: meta?.engagementId ?? '',
       companyName: meta?.companyName ?? '',
       itemId: meta?.itemId,
@@ -298,8 +308,10 @@ function emailNotificationDraft(
   if (email.skipped.length > 0) {
     return {
       kind: 'email.skipped',
-      title: 'Email not configured',
-      body: `Would send to ${formatEmailRecipients(email.skipped)}. Set EMAIL_PROVIDER and From (EMAIL_FROM / RESEND_FROM_EMAIL) — plus RESEND_API_KEY for Resend, or SES identity for SES.`,
+      title: subjectLine ?? 'Email not configured',
+      body: subjectLine
+        ? `Not sent to ${formatEmailRecipients(email.skipped)} — email provider not configured.`
+        : `Would send to ${formatEmailRecipients(email.skipped)}. Set EMAIL_PROVIDER and From (EMAIL_FROM / RESEND_FROM_EMAIL) — plus RESEND_API_KEY for Resend, or SES identity for SES.`,
       engagementId: meta?.engagementId ?? '',
       companyName: meta?.companyName ?? '',
       itemId: meta?.itemId,
@@ -309,8 +321,10 @@ function emailNotificationDraft(
   if (email.failed.length > 0) {
     return {
       kind: 'email.failed',
-      title: "Email didn't send",
-      body: `Could not deliver to ${formatEmailRecipients(email.failed)}.`,
+      title: subjectLine ?? "Email didn't send",
+      body: subjectLine
+        ? `Failed for ${formatEmailRecipients(email.failed)}`
+        : `Could not deliver to ${formatEmailRecipients(email.failed)}.`,
       engagementId: meta?.engagementId ?? '',
       companyName: meta?.companyName ?? '',
       itemId: meta?.itemId,
