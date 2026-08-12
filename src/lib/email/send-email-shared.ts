@@ -33,6 +33,8 @@ export interface SendEmailResult {
   redirectedTo?: string;
   intendedTo?: string[];
   provider?: EmailProvider;
+  /** Provider message id (e.g. Resend) when the API accepted the send. */
+  providerMessageId?: string;
 }
 
 /** @deprecated Prefer SendEmailResult */

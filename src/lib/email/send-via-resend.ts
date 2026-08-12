@@ -74,7 +74,21 @@ export async function sendViaResend(input: SendEmailInput): Promise<SendEmailRes
       };
     }
 
-    return { ok: true, redirectedTo, intendedTo, provider: 'resend' };
+    let providerMessageId: string | undefined;
+    try {
+      const payload = (await res.json()) as { id?: string };
+      providerMessageId = payload.id?.trim() || undefined;
+    } catch {
+      /* Resend sometimes returns empty body; treat 2xx as success anyway */
+    }
+
+    return {
+      ok: true,
+      redirectedTo,
+      intendedTo,
+      provider: 'resend',
+      providerMessageId,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'resend_request_failed';
     console.error(`[resend] ${purpose} request failed`, message);
