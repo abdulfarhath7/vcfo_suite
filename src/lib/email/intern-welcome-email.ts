@@ -1,6 +1,6 @@
 import 'server-only';
 import { loginUrl, resetPasswordUrl } from '@/lib/site-url';
-import { formatReplyTo, sendResendEmail, type SendResendResult } from './send-resend';
+import { formatReplyTo, formatFromWithSender, sendResendEmail, type SendResendResult } from './send-resend';
 
 export type SendEmailResult = SendResendResult;
 
@@ -110,6 +110,7 @@ export async function sendInternWelcomeEmail(
   return sendResendEmail({
     purpose: 'intern-welcome',
     to: params.internEmail,
+    from: formatFromWithSender({ name: params.managerName }),
     replyTo: formatReplyTo({
       name: params.managerName,
       email: params.managerEmail,

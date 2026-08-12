@@ -10,6 +10,7 @@ import {
 } from '@/lib/email/email-dispatch';
 import { buildProgressEmail, type ProgressEmailKind } from '@/lib/email/progress-emails';
 import {
+  formatFromWithSender,
   formatReplyTo,
   sendResendEmail,
   type SendResendResult,
@@ -136,6 +137,21 @@ function replyToForClient(
   const actor = findPartyByUserId(recipients, actorUserId);
   if (actor && !isClientParty(recipients, actor)) return formatReplyTo(actor);
   return formatReplyTo(recipients.lead ?? recipients.leads[0] ?? recipients.manager ?? null);
+}
+
+/** From display name — who triggered this mail (falls back to lead / manager). */
+function fromForActor(
+  recipients: EngagementRecipients,
+  actorUserId?: string,
+): string | undefined {
+  const actor = findPartyByUserId(recipients, actorUserId);
+  const party =
+    actor ??
+    recipients.lead ??
+    recipients.leads[0] ??
+    recipients.manager ??
+    null;
+  return formatFromWithSender(party);
 }
 
 function recordSend(out: EmailDispatchResult, to: string, result: SendResendResult) {
@@ -324,6 +340,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
             sendResendEmail({
               to,
               cc,
+              from: fromForActor(recipients, input.actorUserId),
               replyTo,
               subject: copy.subject,
               html: copy.html,
@@ -383,6 +400,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
               sendResendEmail({
                 to,
                 cc: [],
+                from: fromForActor(recipients, input.actorUserId),
                 replyTo,
                 subject: copy.subject,
                 html: copy.html,
@@ -429,6 +447,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
               to: party.email,
               // Progress CC only — staff are Reply-To, not CC (avoids Resend test 403s).
               cc: excludeEmails(recipients.progressCc, party.email, ...parties.map((p) => p.email)),
+              from: fromForActor(recipients, input.actorUserId),
               replyTo,
               subject,
               html,

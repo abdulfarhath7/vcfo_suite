@@ -6,6 +6,7 @@ export {
   sendEmail,
   sendResendEmail,
   formatReplyTo,
+  formatFromWithSender,
   defaultReplyToFromEnv,
   resolveEmailDevRedirect,
   resolveResendDevRedirect,

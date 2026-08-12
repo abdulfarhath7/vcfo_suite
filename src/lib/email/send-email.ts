@@ -18,6 +18,7 @@ export type {
 
 export {
   formatReplyTo,
+  formatFromWithSender,
   defaultReplyToFromEnv,
   resolveEmailDevRedirect,
   resolveResendDevRedirect,

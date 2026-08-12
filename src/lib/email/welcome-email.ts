@@ -1,6 +1,6 @@
 import { dueItemsForStage, formatEngagementDueContext, type DueLine } from './due-summary';
 import { getProgressCcRecipients } from './merge-cc';
-import { formatReplyTo, sendResendEmail, type SendResendResult } from './send-resend';
+import { formatReplyTo, formatFromWithSender, sendResendEmail, type SendResendResult } from './send-resend';
 import { loginUrl } from '@/lib/site-url';
 
 export interface WelcomeEmailParams {
@@ -188,6 +188,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<Send
     purpose: 'welcome',
     to: params.clientEmail,
     cc: cc.length > 0 ? cc : undefined,
+    from: formatFromWithSender({ name: params.managerName }),
     replyTo: formatReplyTo({
       name: params.managerName,
       email: params.managerEmail,

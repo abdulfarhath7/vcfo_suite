@@ -102,6 +102,35 @@ export function formatReplyTo(
   return email;
 }
 
+/**
+ * From header that shows who sent the mail, while staying on the verified domain.
+ *
+ * Resend (and SES) require the address to be on a verified domain — you cannot
+ * put a personal Gmail in From. Instead we use the firm mailbox and put the
+ * human in the display name:
+ *   `Priya Sharma via VCFO Suite <noreply@sbctrack.in>`
+ *
+ * Pair with Reply-To = the real person so replies reach them.
+ */
+export function formatFromWithSender(
+  sender: { name?: string | null } | string | null | undefined,
+  baseFrom?: string,
+): string | undefined {
+  const base = resolveFromEmail(baseFrom);
+  if (!base) return undefined;
+
+  const address = extractEmailAddress(base);
+  const brandMatch = base.match(/^"?([^"<]+)"?\s*</);
+  const brand = brandMatch?.[1]?.trim() || 'VCFO Suite';
+
+  const senderName =
+    typeof sender === 'string' ? sender.trim() : sender?.name?.trim() || '';
+  if (!senderName || /[<>]/.test(senderName)) return base;
+  if (senderName.toLowerCase() === brand.toLowerCase()) return base;
+
+  return `${senderName} via ${brand} <${address}>`;
+}
+
 /** Optional default Reply-To from env. */
 export function defaultReplyToFromEnv(): string | undefined {
   const raw =
