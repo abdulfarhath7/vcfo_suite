@@ -38,6 +38,20 @@ export const parentEntityAddressSchema = z
   .min(1, 'parent_entity_address_required')
   .max(2000);
 
+/** India subsidiary / GCC entity legal name (Registration / Compliance). */
+export const subsidiaryLegalNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'subsidiary_legal_name_required')
+  .max(240);
+
+/** India subsidiary registered address (Registration / Compliance). */
+export const subsidiaryRegisteredAddressSchema = z
+  .string()
+  .trim()
+  .min(1, 'subsidiary_registered_address_required')
+  .max(2000);
+
 /** India-incorporated vs overseas parent / FEMA track. */
 export const companyTypeSchema = z.enum(['domestic', 'foreign']);
 
@@ -80,21 +94,66 @@ export const createInternBodySchema = z.object({
   phone: z.string().trim().max(32).optional(),
 });
 
-export const createProjectBodySchema = z.object({
-  companyName: companyNameSchema,
-  companyType: companyTypeSchema,
-  entityLegalForm: entityLegalFormSchema.default('company'),
-  parentEntityName: parentEntityNameSchema,
-  parentEntityAddress: parentEntityAddressSchema,
-  clientEmail: emailSchema,
-  clientPassword: clientPasswordSchema,
-  clientName: z.string().trim().max(120).optional(),
-  internId: internIdSchema,
-  /** Required when the caller is admin; ignored for managers (forced to self). */
-  managerId: z.string().uuid().optional(),
-  stage: engagementStageSchema.optional(),
-  health: engagementHealthSchema.optional(),
-});
+export const createProjectBodySchema = z
+  .object({
+    companyName: companyNameSchema,
+    companyType: companyTypeSchema,
+    entityLegalForm: entityLegalFormSchema.default('company'),
+    parentEntityName: parentEntityNameSchema,
+    parentEntityAddress: parentEntityAddressSchema,
+    clientEmail: emailSchema,
+    clientPassword: clientPasswordSchema,
+    clientName: z.string().trim().max(120).optional(),
+    /** Primary lead (legacy). Prefer internIds. */
+    internId: internIdSchema.optional(),
+    /** One or more project leads; first becomes primary. */
+    internIds: z.array(internIdSchema).max(20).optional(),
+    /** Primary manager (legacy). Prefer managerIds. */
+    managerId: z.string().uuid().optional(),
+    /** One or more project managers; first becomes primary (admins). Managers always include self. */
+    managerIds: z.array(z.string().uuid()).max(20).optional(),
+    stage: engagementStageSchema.optional(),
+    health: engagementHealthSchema.optional(),
+    /** Required when stage is Registration or Compliance. */
+    subsidiaryLegalName: z.string().trim().max(240).optional(),
+    subsidiaryRegisteredAddress: z.string().trim().max(2000).optional(),
+  })
+  .refine(
+    (d) => Boolean(d.internId?.trim()) || (d.internIds?.some((id) => id.trim()) ?? false),
+    { message: 'intern_required', path: ['internId'] },
+  )
+  .superRefine((d, ctx) => {
+    const stage = d.stage ?? 'Pre-Incorporation';
+    if (stage === 'Pre-Incorporation') return;
+    const name = d.subsidiaryLegalName?.trim() ?? '';
+    const address = d.subsidiaryRegisteredAddress?.trim() ?? '';
+    if (!name) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'subsidiary_legal_name_required',
+        path: ['subsidiaryLegalName'],
+      });
+    } else if (name.length > 240) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'subsidiary_legal_name_too_long',
+        path: ['subsidiaryLegalName'],
+      });
+    }
+    if (!address) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'subsidiary_registered_address_required',
+        path: ['subsidiaryRegisteredAddress'],
+      });
+    } else if (address.length > 2000) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'subsidiary_registered_address_too_long',
+        path: ['subsidiaryRegisteredAddress'],
+      });
+    }
+  });
 
 export const knowledgeBankIdParamSchema = z.object({
   id: z.uuid('invalid_id'),
