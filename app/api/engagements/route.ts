@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
+import { inArray } from 'drizzle-orm';
 import { requireAuth, requireAdminOrManager } from '@/auth/guards';
 import {
   createProjectWithClient,
   listEngagements,
-  toAppEngagement,
   toAppEngagementsWithLeads,
 } from '@/db/repositories/engagements';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
+import { listManagerIdsForEngagement } from '@/db/repositories/engagement-managers-membership';
+import { db } from '@/db/client';
+import { profiles } from '@/db/schema';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { createProjectBodySchema } from '@/lib/api/schemas';
+import { emptyEmailDispatch, pushEmailSubject } from '@/lib/email/email-dispatch';
 import { fetchEngagementProgressCcEmails } from '@/lib/email/fetch-engagement-progress-cc';
+import { notifyTeamAssignments } from '@/lib/email/notify-team-assignment';
 import { resolvePortalUrl, sendWelcomeEmail } from '@/lib/email/welcome-email';
 
 /**
@@ -71,6 +77,54 @@ export async function POST(request: Request) {
     portalUrl: resolvePortalUrl(),
   });
 
+  const teamEmail = emptyEmailDispatch();
+  try {
+    const recipients = await resolveEngagementRecipients(created.engagement.id);
+    const managerIds = await listManagerIdsForEngagement(recipients.dbId);
+    const managerProfiles =
+      managerIds.length > 0
+        ? await db
+            .select({ id: profiles.id, email: profiles.email, name: profiles.name })
+            .from(profiles)
+            .where(inArray(profiles.id, managerIds))
+        : [];
+
+    const assigned = [
+      ...managerProfiles
+        .filter((m) => m.email?.trim())
+        .map((m) => ({
+          role: 'project manager' as const,
+          party: {
+            userId: m.id,
+            email: m.email.trim(),
+            name: m.name?.trim() || m.email.trim(),
+          },
+        })),
+      ...recipients.leads.map((l) => ({
+        role: 'project lead' as const,
+        party: l,
+      })),
+    ];
+
+    const team = await notifyTeamAssignments({
+      engagementAppId: created.engagement.id,
+      engagementSlug: created.engagement.slug,
+      companyName: created.engagement.companyName,
+      actor: {
+        userId: auth.ctx.userId,
+        name: auth.ctx.name,
+        email: auth.ctx.email,
+      },
+      assigned,
+    });
+    teamEmail.attempted = team.attempted;
+    teamEmail.sent = team.sent;
+    teamEmail.skipped = team.skipped;
+    teamEmail.failed = team.failed;
+  } catch (err) {
+    console.error('[engagements] team assignment notify failed', err);
+  }
+
   await recordAuditEvent(auth.ctx, {
     engagementId: created.engagement.id,
     action: 'engagement.create',
@@ -80,10 +134,38 @@ export async function POST(request: Request) {
       clientUserId: created.clientUserId,
       welcomeEmailSent: emailResult.ok,
       welcomeEmailSkipped: emailResult.skipped ?? false,
+      welcomeEmailError: emailResult.ok ? undefined : emailResult.error,
+      welcomeEmailProvider: emailResult.provider,
+      welcomeEmailMessageId: emailResult.providerMessageId,
+      welcomeEmailRedirectedTo: emailResult.redirectedTo,
+      teamEmailAttempted: teamEmail.attempted,
+      teamEmailSent: teamEmail.sent,
     },
     actorEmail: auth.ctx.email,
     actorName: auth.ctx.name,
   });
+
+  const email = emptyEmailDispatch();
+  email.attempted =
+    (emailResult.ok || emailResult.skipped || Boolean(emailResult.error) ? 1 : 0) +
+    teamEmail.attempted;
+  if (emailResult.ok) {
+    email.sent.push(data.clientEmail.trim().toLowerCase());
+    pushEmailSubject(email, `Welcome to VCFO Suite — ${data.companyName.trim()}`);
+  } else if (emailResult.skipped) {
+    email.skipped.push(data.clientEmail.trim().toLowerCase());
+    pushEmailSubject(email, `Welcome to VCFO Suite — ${data.companyName.trim()}`);
+  } else if (emailResult.error) {
+    email.failed.push(data.clientEmail.trim().toLowerCase());
+    pushEmailSubject(email, `Welcome to VCFO Suite — ${data.companyName.trim()}`);
+  }
+  email.sent.push(...teamEmail.sent);
+  email.skipped.push(...teamEmail.skipped);
+  email.failed.push(...teamEmail.failed);
+  email.subjects = [...new Set([...(email.subjects ?? []), ...(teamEmail.subjects ?? [])])];
+  email.sent = [...new Set(email.sent)];
+  email.skipped = [...new Set(email.skipped)];
+  email.failed = [...new Set(email.failed)];
 
   return NextResponse.json(
     {
@@ -93,6 +175,7 @@ export async function POST(request: Request) {
       emailSent: emailResult.ok,
       emailSkipped: emailResult.skipped ?? false,
       emailError: emailResult.ok ? undefined : emailResult.error,
+      email,
     },
     { status: 201 },
   );
