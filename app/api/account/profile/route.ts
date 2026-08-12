@@ -1,0 +1,61 @@
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { requireAuth } from '@/auth/guards';
+import { getOwnProfile, updateOwnProfile } from '@/db/repositories/profiles';
+import { parseJsonBody } from '@/lib/api/parse-body';
+import { emailSchema } from '@/lib/api/schemas';
+
+const patchSchema = z.object({
+  name: z.string().trim().min(1, 'name_required').max(120),
+  phone: z.string().trim().max(32).optional().nullable(),
+  email: emailSchema.optional(),
+  currentPassword: z.string().min(1).max(128).optional(),
+});
+
+/** GET /api/account/profile — own profile for settings. */
+export async function GET() {
+  const auth = await requireAuth();
+  if (auth.ok === false) {
+    return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
+  }
+
+  try {
+    const profile = await getOwnProfile(auth.ctx);
+    return NextResponse.json({ ok: true, profile });
+  } catch {
+    return NextResponse.json({ ok: false, error: 'account_not_found' }, { status: 404 });
+  }
+}
+
+/** PATCH /api/account/profile — update name / phone / email (email needs password). */
+export async function PATCH(request: Request) {
+  const auth = await requireAuth();
+  if (auth.ok === false) {
+    return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
+  }
+
+  const body = await parseJsonBody(request, patchSchema);
+  if (body.ok === false) {
+    return NextResponse.json({ ok: false, error: body.error }, { status: body.status });
+  }
+
+  try {
+    const result = await updateOwnProfile(auth.ctx, body.data);
+    if (result.ok === false) {
+      const status =
+        result.error === 'account_not_found'
+          ? 404
+          : result.error === 'email_already_registered'
+            ? 409
+            : 401;
+      return NextResponse.json({ ok: false, error: result.error }, { status });
+    }
+    return NextResponse.json({
+      ok: true,
+      profile: { name: result.name, email: result.email, phone: result.phone },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'update_failed';
+    return NextResponse.json({ ok: false, error: message }, { status: 400 });
+  }
+}
