@@ -15,6 +15,8 @@ export type NotificationKind =
   | 'checklist.unlock'
   | 'docs.share'
   | 'request.created'
+  | 'team.assigned'
+  | 'team.removed'
   | 'email.sent'
   | 'email.skipped'
   | 'email.failed';

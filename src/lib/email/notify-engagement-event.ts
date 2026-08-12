@@ -6,9 +6,10 @@ import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipi
 import type { EngagementParty, EngagementRecipients } from '@/db/repositories/engagement-recipients';
 import {
   emptyEmailDispatch,
+  pushEmailSubject,
   type EmailDispatchResult,
 } from '@/lib/email/email-dispatch';
-import { buildProgressEmail, type ProgressEmailKind } from '@/lib/email/progress-emails';
+import { buildDocumentRequestEmail, buildProgressEmail, type ProgressEmailKind } from '@/lib/email/progress-emails';
 import {
   formatFromWithSender,
   formatReplyTo,
@@ -154,14 +155,26 @@ function fromForActor(
   return formatFromWithSender(party);
 }
 
-function recordSend(out: EmailDispatchResult, to: string, result: SendResendResult) {
+function recordSend(
+  out: EmailDispatchResult,
+  to: string,
+  result: SendResendResult,
+  subject?: string,
+) {
   out.attempted += 1;
   // Always report the intended staff/client recipient — not a test redirect address.
   const addr = (result.intendedTo?.[0] ?? to).trim();
   if (!addr) return;
-  if (result.ok) out.sent.push(addr);
-  else if (result.skipped) out.skipped.push(addr);
-  else out.failed.push(addr);
+  if (result.ok) {
+    out.sent.push(addr);
+    pushEmailSubject(out, subject);
+  } else if (result.skipped) {
+    out.skipped.push(addr);
+    pushEmailSubject(out, subject);
+  } else {
+    out.failed.push(addr);
+    pushEmailSubject(out, subject);
+  }
 }
 
 /**
@@ -249,12 +262,24 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     } else if (input.event === 'review_accepted') {
       pushNotifToClients('Submission accepted', `${title} was approved.`);
       pushNotifToLeads('Submission accepted', `${title} was accepted for ${company}.`);
+      pushNotif(
+        recipients.manager?.userId,
+        'manager',
+        'Submission accepted',
+        `${title} was accepted for ${company}.`,
+      );
     } else if (input.event === 'review_rejected') {
       const body = input.note?.trim()
         ? `${title}: ${input.note.trim()}`
         : `${title} needs updates — check the milestone for details.`;
       pushNotifToClients('Corrections requested', body);
       pushNotifToLeads('Corrections requested', `${title} needs updates for ${company}.`);
+      pushNotif(
+        recipients.manager?.userId,
+        'manager',
+        'Corrections requested',
+        `${title} needs updates for ${company}.`,
+      );
     } else if (input.event === 'delivered') {
       pushNotifToClients('New from your VCFO team', `${title} is ready on your portal.`);
       pushNotifToLeads('Delivered to client', `${title} was delivered for ${company}.`);
@@ -286,7 +311,11 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     }
 
     const progressKind = emailKind(input.event);
-    const queue: Array<{ to: string; run: () => Promise<SendResendResult> }> = [];
+    const queue: Array<{
+      to: string;
+      subject: string;
+      run: () => Promise<SendResendResult>;
+    }> = [];
 
     // Directional process mail:
     // - client submits → email lead (not the client)
@@ -299,9 +328,12 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         input.event === 'delivered' ||
         input.event === 'unlocked' ||
         input.event === 'docs_shared');
+    // Staff mail: leads (+ managers on submit/review) always get their own copy.
     const emailLead =
       progressKind != null &&
       (input.event === 'client_submitted' ||
+        input.event === 'review_accepted' ||
+        input.event === 'review_rejected' ||
         input.event === 'delivered' ||
         input.event === 'unlocked' ||
         input.event === 'docs_shared');
@@ -336,6 +368,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         );
         queue.push({
           to,
+          subject: copy.subject,
           run: () =>
             sendResendEmail({
               to,
@@ -376,7 +409,11 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
           : []) {
         pushStaff(lead.email, leadHref, 'lead');
       }
-      if (input.event === 'client_submitted') {
+      if (
+        input.event === 'client_submitted' ||
+        input.event === 'review_accepted' ||
+        input.event === 'review_rejected'
+      ) {
         pushStaff(recipients.manager?.email, managerHref, 'manager');
       } else if (staffTargets.length === 0) {
         pushStaff(recipients.manager?.email, managerHref, 'manager');
@@ -396,6 +433,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
           const replyTo = replyToForStaff(recipients, input.actorUserId);
           queue.push({
             to,
+            subject: copy.subject,
             run: () =>
               sendResendEmail({
                 to,
@@ -419,19 +457,12 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
 
     if (input.event === 'request_created') {
       const href = absolute(clientHref);
-      const subject = `${company}: document requested — ${title}`;
-      const textBase = `Please upload “${title}” for ${company}.\n\nOpen: ${href}${
-        input.note?.trim() ? `\n\nNote: ${input.note.trim()}` : ''
-      }`;
-      const esc = (v: string) =>
-        v
-          .replaceAll('&', '&amp;')
-          .replaceAll('<', '&lt;')
-          .replaceAll('>', '&gt;')
-          .replaceAll('"', '&quot;');
-      const html = `<p>Please upload <strong>${esc(title)}</strong> for ${esc(company)}.</p>
-        ${input.note?.trim() ? `<p><strong>Note:</strong> ${esc(input.note.trim())}</p>` : ''}
-        <p><a href="${esc(href)}">Open client portal</a></p>`;
+      const copy = buildDocumentRequestEmail({
+        companyName: company,
+        title,
+        note: input.note,
+        portalHref: href,
+      });
       const parties =
         recipients.clients.length > 0
           ? recipients.clients
@@ -442,16 +473,16 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       for (const party of parties) {
         queue.push({
           to: party.email,
+          subject: copy.subject,
           run: () =>
             sendResendEmail({
               to: party.email,
-              // Progress CC only — staff are Reply-To, not CC (avoids Resend test 403s).
               cc: excludeEmails(recipients.progressCc, party.email, ...parties.map((p) => p.email)),
               from: fromForActor(recipients, input.actorUserId),
               replyTo,
-              subject,
-              html,
-              text: textBase,
+              subject: copy.subject,
+              html: copy.html,
+              text: copy.text,
               purpose: 'progress.request_created.client',
             }),
         });
@@ -461,11 +492,12 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     const settled = await Promise.all(
       queue.map(async (job) => {
         try {
-          return { to: job.to, result: await job.run() };
+          return { to: job.to, subject: job.subject, result: await job.run() };
         } catch (err) {
           console.error('[notify] send failed', job.to, err);
           return {
             to: job.to,
+            subject: job.subject,
             result: { ok: false, error: 'send_failed' } satisfies SendResendResult,
           };
         }
@@ -473,12 +505,13 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     );
 
     for (const row of settled) {
-      recordSend(email, row.to, row.result);
+      recordSend(email, row.to, row.result, row.subject);
     }
 
     email.sent = [...new Set(email.sent)];
     email.skipped = [...new Set(email.skipped)];
     email.failed = [...new Set(email.failed)];
+    email.subjects = [...new Set(email.subjects ?? [])];
   } catch (err) {
     console.error('[notify] engagement event failed', input.event, err);
   }
