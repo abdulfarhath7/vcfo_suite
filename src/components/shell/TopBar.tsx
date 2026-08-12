@@ -49,18 +49,27 @@ function formatSegmentLabel(segment: string): string {
   return segment.replace(/-/g, " ");
 }
 
-/** Soft context label for the chrome bar — page <h1> lives in PageHeader. */
+/** Primary page title in the chrome bar (prefer this over repeating an on-page H1). */
 function pageTitleFromPath(pathname: string, role: string | undefined): string {
-  const segment = pathname.split("/").filter(Boolean).pop() ?? "";
+  const parts = pathname.split("/").filter(Boolean);
+  const segment = parts[parts.length - 1] ?? "";
+  const parent = parts[parts.length - 2] ?? "";
+
+  if (parent === "projects" && segment === "new") return "New project";
+  if (parent === "projects" && isEngagementRouteParam(segment)) {
+    return role === "admin" || role === "manager" || role === "super_admin" ? "Project" : "Engagement";
+  }
   if (segment === "dashboard") return "Dashboard";
   if (segment === "today") return "Today";
   if (segment === "inbox") return "Inbox";
   if (segment === "incorporation") return "Incorporation";
-  if (segment === "projects") return "GCC Setup Projects";
+  if (segment === "projects") return "Projects";
+  if (segment === "people") return "People";
+  if (segment === "settings") return "Account settings";
   if (segment === "tasks") return "Tasks";
   if (segment === "requests") return "Requests";
   if (segment === "clients") return "Clients";
-  if (segment === "compliance") return "Ongoing Compliance";
+  if (segment === "compliance") return "Compliance";
   if (segment === "vault") return "Document vault";
   if (segment === "analytics") return "Analytics";
   if (segment === "documents") return "Documents";
@@ -68,6 +77,20 @@ function pageTitleFromPath(pathname: string, role: string | undefined): string {
   if (segment === "messages") return "Messages";
   if (segment === "board-resolution") return "Board resolution";
   if (isEngagementRouteParam(segment)) return role === "admin" ? "Project" : "Engagement";
+  return formatSegmentLabel(segment);
+}
+
+function breadcrumbLabel(segment: string, engagementId: string | null, projectLabel: string): string {
+  if (engagementId && segment === engagementId) return projectLabel;
+  if (segment === "new") return "New";
+  if (segment === "projects") return "Projects";
+  if (segment === "people") return "People";
+  if (segment === "settings") return "Settings";
+  if (segment === "dashboard") return "Dashboard";
+  if (segment === "compliance") return "Compliance";
+  if (segment === "admin" || segment === "manager" || segment === "intern" || segment === "client" || segment === "super") {
+    return segment;
+  }
   return formatSegmentLabel(segment);
 }
 
@@ -154,7 +177,7 @@ export function TopBar() {
 
     return segments.map((segment, index) => {
       const isEngagementSegment = Boolean(engagementId && segment === engagementId);
-      const label = isEngagementSegment ? projectLabel : formatSegmentLabel(segment);
+      const label = breadcrumbLabel(segment, engagementId, projectLabel);
       const title = isEngagementSegment && companyName ? companyName : undefined;
       return { key: `${segment}-${index}`, label, title };
     });
@@ -182,9 +205,9 @@ export function TopBar() {
       </button>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-medium leading-tight tracking-tight text-foreground sm:text-sm">
+        <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-foreground sm:text-base">
           {pageTitle}
-        </p>
+        </h1>
         <nav
           aria-label="Breadcrumb"
           className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden font-mono text-[10px] tracking-wide text-muted-foreground"
