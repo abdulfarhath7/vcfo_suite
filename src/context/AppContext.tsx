@@ -63,6 +63,8 @@ export interface AppContextValue {
   signIn: (email: string, password: string) => Promise<SignInResult>;
   signInAsClient: (clientId: string, name: string) => AuthUser;
   signOut: () => Promise<void>;
+  /** Re-read Auth.js session into app user (e.g. after profile edit). */
+  refreshAuth: () => Promise<void>;
 
   clients: Client[];
   engagements: Engagement[];

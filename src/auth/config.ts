@@ -79,23 +79,53 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       // Keep JWT claims aligned with profiles (Node runtime only).
+      // If the profile was deleted/reseeded, clear the token so middleware + APIs
+      // both treat the user as signed out (avoids /app shell with 401 APIs).
       if (token.sub) {
         const [row] = await db
           .select({
             role: profiles.role,
             internId: profiles.internId,
             clientId: profiles.clientId,
+            status: profiles.status,
+            name: profiles.name,
+            email: profiles.email,
           })
           .from(profiles)
           .where(eq(profiles.id, token.sub))
           .limit(1);
-        if (row) {
-          token.role = row.role;
-          token.internId = row.internId ?? undefined;
-          token.clientId = row.clientId ?? undefined;
+        if (!row || row.status !== 'active') {
+          return {};
         }
+        if (row.role === 'intern' && !row.internId?.trim()) {
+          return {};
+        }
+        token.role = row.role;
+        token.internId = row.internId ?? undefined;
+        token.clientId = row.clientId ?? undefined;
+        token.name = row.name ?? undefined;
+        token.email = row.email;
       }
       return token;
+    },
+    async session({ session, token }) {
+      if (!token?.sub || !token.role) {
+        // Force clients to treat this as signed-out.
+        return { ...session, user: undefined as unknown as typeof session.user };
+      }
+      if (session.user) {
+        session.user.id = token.sub as string;
+        if (typeof token.name === 'string') session.user.name = token.name;
+        if (typeof token.email === 'string') session.user.email = token.email;
+        (session.user as { role?: string }).role = token.role as string;
+        (session.user as { internId?: string }).internId = token.internId as
+          | string
+          | undefined;
+        (session.user as { clientId?: string }).clientId = token.clientId as
+          | string
+          | undefined;
+      }
+      return session;
     },
   },
 });

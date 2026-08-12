@@ -33,6 +33,10 @@ export const authConfigBase = {
       return token;
     },
     async session({ session, token }) {
+      // Edge + Node: no role means signed-out (stale JWT after reseed/delete).
+      if (!token?.sub || !token.role) {
+        return { ...session, user: undefined as unknown as typeof session.user };
+      }
       if (session.user) {
         session.user.id = token.sub as string;
         (session.user as { role?: string }).role = token.role as string;

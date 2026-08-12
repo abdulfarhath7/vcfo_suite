@@ -76,6 +76,11 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   });
+  if (res.status === 401 && typeof window !== 'undefined') {
+    // Stale JWT after reseed/delete — clear cookie and bounce to login.
+    void authJsSignOut({ callbackUrl: '/login' });
+    throw new Error('Not authenticated');
+  }
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error || `Request failed (${res.status})`);
@@ -596,7 +601,7 @@ export function useAppProviderValue(): AppContextValue {
     });
 
     if (result?.error) {
-      return { error: "We couldn't sign you in. Check your credentials and try again." };
+      return { error: "We couldn't sign you in. Check your email and password and try again." };
     }
 
     const session = await getSession();
@@ -916,7 +921,7 @@ export function useAppProviderValue(): AppContextValue {
   );
 
   const value = useMemo<AppContextValue>(() => ({
-    user, authLoading, signIn, signInAsClient, signOut,
+    user, authLoading, signIn, signInAsClient, signOut, refreshAuth: hydrateFromSession,
     clients, engagements, tasks, requests, invites, activity, notifications,
     unreadNotificationCount, markNotificationRead, markAllNotificationsRead,
     suppressChecklistNotification, teamMembers,
@@ -1156,6 +1161,7 @@ export function useAppProviderValue(): AppContextValue {
     signIn,
     signInAsClient,
     signOut,
+    hydrateFromSession,
     createProjectWithClientFn,
     updateEngagementFn,
     inviteClient,
