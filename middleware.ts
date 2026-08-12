@@ -39,13 +39,13 @@ export default auth((req) => {
   const isApp = path.startsWith('/app');
   const isAuthPage = path === '/login' || path === '/';
 
-  if (isApp && !session) {
+  if (isApp && (!session?.user || !role)) {
     const url = new URL('/login', nextUrl);
     url.searchParams.set('next', path);
     return NextResponse.redirect(url);
   }
 
-  if (session && isAuthPage && role) {
+  if (session?.user && isAuthPage && role) {
     return NextResponse.redirect(new URL(roleHome[role] ?? '/login', nextUrl));
   }
 
