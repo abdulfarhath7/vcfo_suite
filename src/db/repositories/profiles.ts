@@ -478,6 +478,175 @@ export async function deleteProfileAccount(
   };
 }
 
+/** Authenticated user: load own profile fields for settings. */
+export async function getOwnProfile(ctx: AuthContext): Promise<{
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+}> {
+  const [row] = await db
+    .select({
+      id: profiles.id,
+      name: profiles.name,
+      email: profiles.email,
+      phone: profiles.phone,
+      role: profiles.role,
+    })
+    .from(profiles)
+    .where(eq(profiles.id, ctx.userId))
+    .limit(1);
+
+  if (!row) throw new Error('account_not_found');
+  return {
+    id: row.id,
+    name: row.name?.trim() || row.email.split('@')[0] || 'User',
+    email: row.email,
+    phone: row.phone,
+    role: row.role,
+  };
+}
+
+/**
+ * Authenticated user updates name / phone / email.
+ * Email change requires currentPassword.
+ */
+export async function updateOwnProfile(
+  ctx: AuthContext,
+  input: {
+    name: string;
+    phone?: string | null;
+    email?: string;
+    currentPassword?: string;
+  },
+): Promise<
+  | { ok: true; name: string; email: string; phone: string | null }
+  | { ok: false; error: 'account_not_found' | 'invalid_credentials' | 'email_already_registered' }
+> {
+  const [row] = await db
+    .select({
+      id: profiles.id,
+      email: profiles.email,
+      passwordHash: profiles.passwordHash,
+    })
+    .from(profiles)
+    .where(eq(profiles.id, ctx.userId))
+    .limit(1);
+
+  if (!row) return { ok: false, error: 'account_not_found' };
+
+  const name = input.name.trim();
+  if (!name) throw new Error('name_required');
+
+  const phone = input.phone?.trim() ? input.phone.trim() : null;
+  const nextEmail = input.email?.trim().toLowerCase();
+  const emailChanging = Boolean(nextEmail && nextEmail !== row.email);
+
+  if (emailChanging) {
+    if (!input.currentPassword || !row.passwordHash) {
+      return { ok: false, error: 'invalid_credentials' };
+    }
+    const ok = await bcrypt.compare(input.currentPassword, row.passwordHash);
+    if (!ok) return { ok: false, error: 'invalid_credentials' };
+    try {
+      await assertEmailAvailable(nextEmail!);
+    } catch {
+      return { ok: false, error: 'email_already_registered' };
+    }
+  }
+
+  const [updated] = await db
+    .update(profiles)
+    .set({
+      name,
+      phone,
+      ...(emailChanging ? { email: nextEmail } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(profiles.id, ctx.userId))
+    .returning({
+      name: profiles.name,
+      email: profiles.email,
+      phone: profiles.phone,
+    });
+
+  return {
+    ok: true,
+    name: updated.name?.trim() || name,
+    email: updated.email,
+    phone: updated.phone,
+  };
+}
+
+/**
+ * Admin/manager changes another person's sign-in email.
+ * Permission matrix mirrors deleteProfileAccount.
+ */
+export async function updatePersonEmail(
+  ctx: AuthContext,
+  profileId: string,
+  newEmail: string,
+): Promise<{ id: string; name: string; email: string; previousEmail: string }> {
+  if (ctx.role !== 'admin' && ctx.role !== 'super_admin' && ctx.role !== 'manager') {
+    throw new Error('Not permitted');
+  }
+
+  const email = newEmail.trim().toLowerCase();
+  if (!email) throw new Error('email_required');
+
+  const [target] = await db
+    .select({
+      id: profiles.id,
+      email: profiles.email,
+      name: profiles.name,
+      role: profiles.role,
+      reportsToManagerId: profiles.reportsToManagerId,
+    })
+    .from(profiles)
+    .where(eq(profiles.id, profileId))
+    .limit(1);
+
+  if (!target) throw new Error('not_found');
+
+  if (ctx.role === 'manager') {
+    if (target.role !== 'intern') {
+      throw new Error('managers_may_only_edit_leads');
+    }
+    if (target.reportsToManagerId && target.reportsToManagerId !== ctx.userId) {
+      throw new Error('lead_not_in_your_roster');
+    }
+  }
+
+  if (target.role === 'super_admin' && ctx.role !== 'super_admin') {
+    throw new Error('cannot_edit_super_admin');
+  }
+
+  if (email === target.email) {
+    return {
+      id: target.id,
+      name: target.name?.trim() || target.email,
+      email: target.email,
+      previousEmail: target.email,
+    };
+  }
+
+  await assertEmailAvailable(email);
+
+  const [updated] = await db
+    .update(profiles)
+    .set({ email, updatedAt: new Date() })
+    .where(eq(profiles.id, profileId))
+    .returning({ id: profiles.id, name: profiles.name, email: profiles.email });
+
+  return {
+    id: updated.id,
+    name: updated.name?.trim() || updated.email,
+    email: updated.email,
+    previousEmail: target.email,
+  };
+}
+
 /** Manager options for admin project-create picker. */
 export async function listManagerOptions(
   ctx: AuthContext,
