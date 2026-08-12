@@ -27,6 +27,10 @@ export interface Engagement {
   parentEntityAddress?: string | null;
   /** Registration or incorporation number of the parent entity. */
   parentEntityRegistrationNumber?: string | null;
+  /** India subsidiary / GCC legal name (Registration / Compliance start). */
+  subsidiaryLegalName?: string | null;
+  /** India subsidiary registered address (Registration / Compliance start). */
+  subsidiaryRegisteredAddress?: string | null;
   internId: string;
   /** All delivery leads on this project (includes primary). */
   leadIds?: string[];

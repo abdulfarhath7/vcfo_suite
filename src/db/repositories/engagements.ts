@@ -21,6 +21,10 @@ import {
   listLeadIdsByEngagementIds,
   listLeadMemberEngagementIds,
 } from '@/db/repositories/engagement-leads-membership';
+import {
+  ensureEngagementManager,
+  listManagerMemberEngagementIds,
+} from '@/db/repositories/engagement-managers-membership';
 
 export type EngagementDbRow = typeof engagements.$inferSelect;
 export type EngagementChecklistState = Record<string, ChecklistItemStateSlice>;
@@ -64,7 +68,11 @@ async function scopeFor(ctx: AuthContext) {
   const notDeleted = isNull(engagements.deletedAt);
   if (isFirmWideAdmin(ctx.role)) return notDeleted;
   if (ctx.role === 'manager') {
-    return and(notDeleted, managerOwnsEngagement(ctx.userId));
+    const memberIds = await listManagerMemberEngagementIds(ctx.userId);
+    const conds = [managerOwnsEngagement(ctx.userId)];
+    if (memberIds.length > 0) conds.push(inArray(engagements.id, memberIds));
+    const roleScope = conds.length === 1 ? conds[0] : or(...conds);
+    return and(notDeleted, roleScope);
   }
   if (ctx.role === 'intern') {
     if (!ctx.internId) return eq(engagements.id, '__none__');
@@ -130,6 +138,13 @@ export async function createEngagement(
     await ensureEngagementLead({
       engagementDbId: row.id,
       internId: row.internId,
+      invitedBy: ctx.userId,
+    });
+  }
+  if (row.managerId) {
+    await ensureEngagementManager({
+      engagementDbId: row.id,
+      managerId: row.managerId,
       invitedBy: ctx.userId,
     });
   }
@@ -207,6 +222,8 @@ export function toAppEngagement(
     parentEntityName: row.parentEntityName,
     parentEntityAddress: row.parentEntityAddress,
     parentEntityRegistrationNumber: row.parentEntityRegistrationNumber,
+    subsidiaryLegalName: row.subsidiaryLegalName,
+    subsidiaryRegisteredAddress: row.subsidiaryRegisteredAddress,
     internId: primary,
     leadIds: leads,
     adminId: row.adminId ?? 'admin',
@@ -444,11 +461,18 @@ export interface CreateProjectWithClientInput {
   clientEmail: string;
   clientPassword: string;
   clientName?: string;
-  internId: string;
-  /** Required when ctx.role === 'admin'; ignored for managers (forced to self). */
+  /** Primary lead (legacy). Prefer internIds when present. */
+  internId?: string;
+  /** One or more project leads (profiles.intern_id / profile id). First becomes primary. */
+  internIds?: string[];
+  /** Primary manager. Prefer managerIds when present. */
   managerId?: string;
+  /** One or more project managers (profile UUIDs). First becomes primary. */
+  managerIds?: string[];
   stage?: Engagement['stage'];
   health?: Engagement['health'];
+  subsidiaryLegalName?: string;
+  subsidiaryRegisteredAddress?: string;
 }
 
 export interface CreateProjectWithClientResult {
@@ -486,12 +510,35 @@ export async function createProjectWithClient(
     throw new Error('Only admins or managers may create projects');
   }
 
-  const managerId =
-    ctx.role === 'manager'
-      ? ctx.userId
-      : input.managerId?.trim() || null;
-  if (!managerId) {
+  const managerIdsRaw = [
+    ...(input.managerIds ?? []),
+    ...(input.managerId ? [input.managerId] : []),
+  ]
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const uniqueManagerIds = [...new Set(managerIdsRaw)];
+
+  let primaryManagerId: string | null =
+    ctx.role === 'manager' ? ctx.userId : uniqueManagerIds[0] ?? null;
+  if (ctx.role === 'manager') {
+    // Creating manager is always on the project; extras are co-managers.
+    const extras = uniqueManagerIds.filter((id) => id !== ctx.userId);
+    uniqueManagerIds.splice(0, uniqueManagerIds.length, ctx.userId, ...extras);
+    primaryManagerId = ctx.userId;
+  }
+  if (!primaryManagerId) {
     throw new Error('managerId is required when creating as admin');
+  }
+
+  const leadKeysRaw = [
+    ...(input.internIds ?? []),
+    ...(input.internId ? [input.internId] : []),
+  ]
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const uniqueLeadKeys = [...new Set(leadKeysRaw)];
+  if (uniqueLeadKeys.length === 0) {
+    throw new Error('Invalid internId — at least one project lead is required');
   }
 
   const {
@@ -499,10 +546,15 @@ export async function createProjectWithClient(
     resolveInternScopingId,
   } = await import('@/db/repositories/profiles');
 
-  const resolvedInternId = await resolveInternScopingId(input.internId);
-  if (!resolvedInternId) {
-    throw new Error('Invalid internId — no intern profile found');
+  const resolvedLeadIds: string[] = [];
+  for (const key of uniqueLeadKeys) {
+    const resolved = await resolveInternScopingId(key);
+    if (!resolved) {
+      throw new Error('Invalid internId — no intern profile found');
+    }
+    if (!resolvedLeadIds.includes(resolved)) resolvedLeadIds.push(resolved);
   }
+  const primaryLeadId = resolvedLeadIds[0];
 
   const clientName =
     input.clientName?.trim() || input.companyName.trim() || input.clientEmail.trim();
@@ -516,6 +568,18 @@ export async function createProjectWithClient(
   const slug = await uniqueEngagementSlug(input.companyName);
   const stage = input.stage ?? 'Pre-Incorporation';
   const health = input.health ?? 'on-track';
+  const needsSubsidiary =
+    stage === 'Post-Incorporation' || stage === 'Operational Readiness';
+  const subsidiaryLegalName = input.subsidiaryLegalName?.trim() || null;
+  const subsidiaryRegisteredAddress = input.subsidiaryRegisteredAddress?.trim() || null;
+  if (needsSubsidiary) {
+    if (!subsidiaryLegalName) {
+      throw new Error('subsidiary_legal_name_required');
+    }
+    if (!subsidiaryRegisteredAddress) {
+      throw new Error('subsidiary_registered_address_required');
+    }
+  }
 
   try {
     const row = await createEngagement(ctx, {
@@ -525,16 +589,33 @@ export async function createProjectWithClient(
       entityLegalForm: input.entityLegalForm ?? 'company',
       parentEntityName: input.parentEntityName.trim(),
       parentEntityAddress: input.parentEntityAddress.trim(),
+      subsidiaryLegalName: needsSubsidiary ? subsidiaryLegalName : null,
+      subsidiaryRegisteredAddress: needsSubsidiary ? subsidiaryRegisteredAddress : null,
       clientId: client.clientId,
       clientUserId: client.userId,
-      internId: resolvedInternId,
-      managerId,
+      internId: primaryLeadId,
+      managerId: primaryManagerId,
       adminId: isFirmWideAdmin(ctx.role) ? ctx.userId : null,
       clientName,
       stage,
       health,
       checklistState: {},
     });
+
+    for (const leadId of resolvedLeadIds) {
+      await ensureEngagementLead({
+        engagementDbId: row.id,
+        internId: leadId,
+        invitedBy: ctx.userId,
+      });
+    }
+    for (const mid of uniqueManagerIds.length ? uniqueManagerIds : [primaryManagerId]) {
+      await ensureEngagementManager({
+        engagementDbId: row.id,
+        managerId: mid,
+        invitedBy: ctx.userId,
+      });
+    }
 
     return {
       engagement: toAppEngagement(row, { email: client.email, name: client.name }),

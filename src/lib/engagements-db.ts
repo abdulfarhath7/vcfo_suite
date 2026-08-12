@@ -335,11 +335,18 @@ export interface CreateProjectInput {
   clientEmail: string;
   clientPassword: string;
   clientName?: string;
-  internId: string;
-  /** Required when creating as firm admin. */
+  /** Primary lead (legacy). Prefer internIds. */
+  internId?: string;
+  /** One or more project leads; first becomes primary. */
+  internIds?: string[];
+  /** Primary manager (legacy). Prefer managerIds. */
   managerId?: string;
+  /** One or more project managers; first becomes primary (admins). */
+  managerIds?: string[];
   stage?: Engagement['stage'];
   health?: Engagement['health'];
+  subsidiaryLegalName?: string;
+  subsidiaryRegisteredAddress?: string;
 }
 
 export interface CreateProjectResult {
