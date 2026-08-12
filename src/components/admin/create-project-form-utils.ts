@@ -1,11 +1,31 @@
 import type { CompanyType, EntityLegalForm } from '@/data/engagements';
 import { ENTITY_LEGAL_FORM_LABEL } from '@/lib/compliance/types';
 
+/** DB / API stage values — display labels differ (see STAGE_LABEL). */
 export type Stage = 'Pre-Incorporation' | 'Post-Incorporation' | 'Operational Readiness';
 
+export const STAGE_LABEL: Record<Stage, string> = {
+  'Pre-Incorporation': 'Incorporation',
+  'Post-Incorporation': 'Registration',
+  'Operational Readiness': 'Compliance',
+};
+
 export const PHASES: Array<{ value: Stage; label: string; hint: string }> = [
-  { value: 'Pre-Incorporation', label: 'Pre-Incorporation', hint: 'Name reservation, DSC, MoA/AoA' },
-  { value: 'Post-Incorporation', label: 'Post-Incorporation', hint: 'PAN, TAN, bank, GST registrations' },
+  {
+    value: 'Pre-Incorporation',
+    label: STAGE_LABEL['Pre-Incorporation'],
+    hint: 'Name reservation, DSC, MoA / AoA, SPICe+',
+  },
+  {
+    value: 'Post-Incorporation',
+    label: STAGE_LABEL['Post-Incorporation'],
+    hint: 'PAN, TAN, bank, GST, INC-20A',
+  },
+  {
+    value: 'Operational Readiness',
+    label: STAGE_LABEL['Operational Readiness'],
+    hint: 'FEMA / FCGPR, PF/ESI, ongoing ROC',
+  },
 ];
 
 export const PHASE_MILESTONES: Record<Stage, string[]> = {
@@ -14,7 +34,27 @@ export const PHASE_MILESTONES: Record<Stage, string[]> = {
   'Operational Readiness': ['FCGPR / FEMA filings', 'Payroll & PF/ESI setup', 'Auditor appointment', 'Ongoing ROC compliance'],
 };
 
-export const PHASE_ORDER: Stage[] = ['Pre-Incorporation', 'Post-Incorporation'];
+export const PHASE_ORDER: Stage[] = [
+  'Pre-Incorporation',
+  'Post-Incorporation',
+  'Operational Readiness',
+];
+
+export function stagePhaseState(
+  stage: Stage,
+  phase: Stage,
+): 'done' | 'current' | 'upcoming' {
+  const startIdx = PHASE_ORDER.indexOf(stage);
+  const idx = PHASE_ORDER.indexOf(phase);
+  if (idx < startIdx) return 'done';
+  if (idx === startIdx) return 'current';
+  return 'upcoming';
+}
+
+/** Registration / Compliance start needs India subsidiary legal details. */
+export function stageRequiresSubsidiary(stage: Stage): boolean {
+  return stage === 'Post-Incorporation' || stage === 'Operational Readiness';
+}
 
 export const COMPANY_TYPES: Array<{ value: CompanyType; label: string; hint: string }> = [
   { value: 'domestic', label: 'Domestic', hint: 'India-incorporated entity' },
@@ -55,11 +95,15 @@ export type CreateProjectState = {
   entityLegalForm: EntityLegalForm;
   parentEntityName: string;
   parentEntityAddress: string;
+  subsidiaryLegalName: string;
+  subsidiaryRegisteredAddress: string;
   clientContact: string;
   clientEmail: string;
   clientPassword: string;
-  internId: string;
-  managerId: string;
+  /** Project leads; first is primary. */
+  internIds: string[];
+  /** Project managers; first is primary. */
+  managerIds: string[];
   stage: Stage;
   health: 'on-track' | 'at-risk' | 'overdue';
   submitting: boolean;
@@ -70,7 +114,7 @@ export type CreateProjectState = {
 export type CreateProjectAction =
   | { type: 'patch'; patch: Partial<CreateProjectState> }
   | { type: 'toggle_show_password' }
-  | { type: 'reset'; internId: string; managerId?: string };
+  | { type: 'reset'; internIds: string[]; managerIds?: string[] };
 
 export const DEFAULT_CLIENT_TEMP_PASSWORD = 'SBC@2026';
 
@@ -85,11 +129,13 @@ export function createProjectReducer(state: CreateProjectState, action: CreatePr
         entityLegalForm: 'company',
         parentEntityName: '',
         parentEntityAddress: '',
+        subsidiaryLegalName: '',
+        subsidiaryRegisteredAddress: '',
         clientContact: '',
         clientEmail: '',
         clientPassword: DEFAULT_CLIENT_TEMP_PASSWORD,
-        internId: action.internId,
-        managerId: action.managerId ?? state.managerId,
+        internIds: action.internIds,
+        managerIds: action.managerIds ?? state.managerIds,
         stage: 'Pre-Incorporation',
         health: 'on-track',
         submitting: false,
@@ -102,3 +148,100 @@ export function createProjectReducer(state: CreateProjectState, action: CreatePr
       return state;
   }
 }
+
+const DRAFT_STORAGE_KEY = 'vcfo.create-project.draft.v3';
+
+export type CreateProjectDraftPayload = Omit<
+  CreateProjectState,
+  'submitting' | 'showValidation' | 'showPassword'
+>;
+
+function asIdList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
+  }
+  if (typeof value === 'string' && value.trim()) return [value.trim()];
+  return [];
+}
+
+export function saveCreateProjectDraft(state: CreateProjectState): void {
+  if (typeof window === 'undefined') return;
+  const payload: CreateProjectDraftPayload = {
+    companyName: state.companyName,
+    companyType: state.companyType,
+    entityLegalForm: state.entityLegalForm,
+    parentEntityName: state.parentEntityName,
+    parentEntityAddress: state.parentEntityAddress,
+    subsidiaryLegalName: state.subsidiaryLegalName,
+    subsidiaryRegisteredAddress: state.subsidiaryRegisteredAddress,
+    clientContact: state.clientContact,
+    clientEmail: state.clientEmail,
+    clientPassword: state.clientPassword,
+    internIds: state.internIds,
+    managerIds: state.managerIds,
+    stage: state.stage,
+    health: state.health,
+  };
+  window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
+}
+
+export function loadCreateProjectDraft(): CreateProjectDraftPayload | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw =
+      window.localStorage.getItem(DRAFT_STORAGE_KEY) ??
+      window.localStorage.getItem('vcfo.create-project.draft.v2') ??
+      window.localStorage.getItem('vcfo.create-project.draft.v1');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CreateProjectDraftPayload> & {
+      internId?: string;
+      managerId?: string;
+    };
+    if (!parsed || typeof parsed !== 'object') return null;
+    const internIds = asIdList(parsed.internIds ?? parsed.internId);
+    const managerIds = asIdList(parsed.managerIds ?? parsed.managerId);
+    return {
+      companyName: typeof parsed.companyName === 'string' ? parsed.companyName : '',
+      companyType: parsed.companyType === 'foreign' ? 'foreign' : 'domestic',
+      entityLegalForm:
+        parsed.entityLegalForm === 'llp' ||
+        parsed.entityLegalForm === 'partnership' ||
+        parsed.entityLegalForm === 'proprietorship'
+          ? parsed.entityLegalForm
+          : 'company',
+      parentEntityName: typeof parsed.parentEntityName === 'string' ? parsed.parentEntityName : '',
+      parentEntityAddress:
+        typeof parsed.parentEntityAddress === 'string' ? parsed.parentEntityAddress : '',
+      subsidiaryLegalName:
+        typeof parsed.subsidiaryLegalName === 'string' ? parsed.subsidiaryLegalName : '',
+      subsidiaryRegisteredAddress:
+        typeof parsed.subsidiaryRegisteredAddress === 'string'
+          ? parsed.subsidiaryRegisteredAddress
+          : '',
+      clientContact: typeof parsed.clientContact === 'string' ? parsed.clientContact : '',
+      clientEmail: typeof parsed.clientEmail === 'string' ? parsed.clientEmail : '',
+      clientPassword:
+        typeof parsed.clientPassword === 'string' && parsed.clientPassword
+          ? parsed.clientPassword
+          : DEFAULT_CLIENT_TEMP_PASSWORD,
+      internIds,
+      managerIds,
+      stage:
+        parsed.stage === 'Post-Incorporation' || parsed.stage === 'Operational Readiness'
+          ? parsed.stage
+          : 'Pre-Incorporation',
+      health:
+        parsed.health === 'at-risk' || parsed.health === 'overdue' ? parsed.health : 'on-track',
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function clearCreateProjectDraft(): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+  window.localStorage.removeItem('vcfo.create-project.draft.v2');
+  window.localStorage.removeItem('vcfo.create-project.draft.v1');
+}
+
