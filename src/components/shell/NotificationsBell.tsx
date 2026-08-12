@@ -67,15 +67,15 @@ export function NotificationsBell() {
     () =>
       notifications
         .filter((n) => notificationDirection(n.kind) === filter)
-        .slice(0, 12),
+        .slice(0, 16),
     [notifications, filter],
   );
 
   const hasUnread = unreadNotificationCount > 0;
   const emptyCopy =
     filter === "sent"
-      ? "No sent notifications yet. When you email a client or project lead, it will show up here."
-      : "No received notifications yet. Updates from submissions, reviews, deliveries, and shared docs appear here.";
+      ? "No outbound email activity yet."
+      : "No received notifications yet.";
 
   return (
     <DropdownMenu>
@@ -107,9 +107,14 @@ export function NotificationsBell() {
           </span>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-[min(70vh,420px)] overflow-y-auto">
-        <div className="flex items-center justify-between gap-2 px-2 py-1.5">
-          <DropdownMenuLabel className="p-0 text-xs font-semibold">Notifications</DropdownMenuLabel>
+      <DropdownMenuContent
+        align="end"
+        className="w-[min(100vw-1.5rem,26rem)] max-h-[min(70vh,480px)] overflow-y-auto p-1.5"
+      >
+        <div className="flex items-center justify-between gap-2 px-2 py-1">
+          <DropdownMenuLabel className="p-0 text-[11px] font-semibold tracking-tight">
+            Notifications
+          </DropdownMenuLabel>
           {hasUnread && (
             <button
               type="button"
@@ -126,7 +131,7 @@ export function NotificationsBell() {
         </div>
 
         <div
-          className="mx-2 mb-1.5 grid grid-cols-2 gap-1 rounded-lg bg-raised/70 p-1"
+          className="mx-1 mb-1 grid grid-cols-2 gap-0.5 rounded-md bg-raised/70 p-0.5"
           role="tablist"
           aria-label="Filter notifications"
         >
@@ -142,7 +147,7 @@ export function NotificationsBell() {
                 role="tab"
                 aria-selected={active}
                 className={cn(
-                  "rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors",
+                  "rounded px-2 py-1 text-[10.5px] font-medium transition-colors",
                   active
                     ? "bg-panel text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -168,25 +173,80 @@ export function NotificationsBell() {
           })}
         </div>
 
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="my-1" />
         {filtered.length === 0 ? (
-          <p className="px-3 py-6 text-center text-xs text-muted-foreground">{emptyCopy}</p>
+          <p className="px-2 py-4 text-center text-[11px] text-muted-foreground">
+            {emptyCopy}
+          </p>
         ) : (
-          filtered.map((n) => (
-            <DropdownMenuItem key={n.id} asChild className={cn("cursor-pointer", !n.read && "bg-raised/60")}>
-              <Link
-                href={n.href === "#" ? "#" : n.href}
-                onClick={() => markNotificationRead(n.id)}
-                className="flex flex-col items-start gap-0.5 py-2"
+          filtered.map((n) => {
+            const isOutbound =
+              n.kind === "email.sent" ||
+              n.kind === "email.skipped" ||
+              n.kind === "email.failed";
+            const statusDot =
+              n.kind === "email.sent"
+                ? "bg-emerald-500"
+                : n.kind === "email.skipped"
+                  ? "bg-amber-500"
+                  : n.kind === "email.failed"
+                    ? "bg-danger"
+                    : null;
+            const meta = [
+              isOutbound ? n.body : null,
+              n.companyName || null,
+              formatWhen(n.createdAt),
+            ]
+              .filter(Boolean)
+              .join(" · ");
+
+            return (
+              <DropdownMenuItem
+                key={n.id}
+                asChild
+                className={cn(
+                  "cursor-pointer rounded-md px-2 py-1.5",
+                  !n.read && "bg-raised/50",
+                )}
               >
-                <span className="text-xs font-medium text-foreground line-clamp-1">{n.title}</span>
-                <span className="text-[11px] text-muted-foreground line-clamp-2">{n.body}</span>
-                <span className="text-[10px] text-text-tertiary mt-0.5">
-                  {[n.companyName, formatWhen(n.createdAt)].filter(Boolean).join(" · ")}
-                </span>
-              </Link>
-            </DropdownMenuItem>
-          ))
+                <Link
+                  href={n.href === "#" ? "#" : n.href}
+                  onClick={() => markNotificationRead(n.id)}
+                  className="flex min-w-0 items-start gap-2"
+                >
+                  {statusDot ? (
+                    <span
+                      className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", statusDot)}
+                      aria-hidden
+                    />
+                  ) : (
+                    <span
+                      className={cn(
+                        "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
+                        n.read ? "bg-border" : "bg-orange-500",
+                      )}
+                      aria-hidden
+                    />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[12px] font-medium leading-snug text-foreground">
+                      {n.title}
+                    </span>
+                    {!isOutbound && n.body ? (
+                      <span className="mt-0.5 block truncate text-[10.5px] leading-snug text-muted-foreground">
+                        {n.body}
+                      </span>
+                    ) : null}
+                    {meta ? (
+                      <span className="mt-0.5 block truncate text-[10px] leading-snug text-text-tertiary">
+                        {meta}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            );
+          })
         )}
       </DropdownMenuContent>
     </DropdownMenu>
