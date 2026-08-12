@@ -1,13 +1,11 @@
 import { getItem } from '@/data/checklist';
 import { siteUrl } from '@/lib/site-url';
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
-}
+import {
+  emailCallout,
+  emailParagraph,
+  escapeHtml,
+  renderEmailDocument,
+} from '@/lib/email/email-layout';
 
 export type ProgressEmailKind =
   | 'client_submitted'
@@ -23,29 +21,29 @@ export type ProgressEmailCopy = {
   text: string;
 };
 
-function wrapHtml(title: string, bodyHtml: string, ctaLabel: string, ctaHref: string): string {
-  return `<!DOCTYPE html>
-<html><body style="margin:0;padding:0;background:#F7F6FB;font-family:Manrope,Segoe UI,sans-serif;color:#1A1B22;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F6FB;padding:32px 16px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e8e4f2;overflow:hidden;">
-        <tr><td style="padding:20px 28px;background:#1A1B22;color:#fff;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;">VCFO Suite</td></tr>
-        <tr><td style="padding:28px;">
-          <h1 style="margin:0 0 12px;font-size:22px;line-height:1.25;color:#1A1B22;">${escapeHtml(title)}</h1>
-          ${bodyHtml}
-          <p style="margin:24px 0 0;">
-            <a href="${escapeHtml(ctaHref)}" style="display:inline-block;padding:12px 18px;background:#7C5CFC;color:#fff;text-decoration:none;border-radius:999px;font-weight:600;font-size:14px;">${escapeHtml(ctaLabel)}</a>
-          </p>
-        </td></tr>
-        <tr><td style="padding:16px 28px;font-size:12px;color:#6b6560;border-top:1px solid #eee;">This is an automated update from VCFO Suite.</td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
-}
-
 function stepTitle(itemId: string): string {
   return getItem(itemId)?.title ?? itemId;
+}
+
+function absHref(portalHref: string): string {
+  return portalHref.startsWith('http')
+    ? portalHref
+    : `${siteUrl()}${portalHref.startsWith('/') ? '' : '/'}${portalHref}`;
+}
+
+function wrap(
+  title: string,
+  bodyHtml: string,
+  ctaLabel: string,
+  href: string,
+  eyebrow?: string,
+): string {
+  return renderEmailDocument({
+    title,
+    bodyHtml,
+    eyebrow: eyebrow ?? 'Project update',
+    cta: { label: ctaLabel, href },
+  });
 }
 
 export function buildProgressEmail(input: {
@@ -59,53 +57,71 @@ export function buildProgressEmail(input: {
   const step = stepTitle(input.itemId);
   const company = input.companyName;
   const note = input.note?.trim();
-  const href = input.portalHref.startsWith('http')
-    ? input.portalHref
-    : `${siteUrl()}${input.portalHref.startsWith('/') ? '' : '/'}${input.portalHref}`;
+  const href = absHref(input.portalHref);
 
   if (input.kind === 'client_submitted') {
     if (input.audience === 'lead') {
       return {
-        subject: `${company}: client submitted “${step}”`,
-        html: wrapHtml(
+        subject: `${company}: client submitted “${step}” for review`,
+        html: wrap(
           'Client submission ready for review',
-          `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${escapeHtml(company)} submitted <strong>${escapeHtml(step)}</strong> for review.</p>`,
-          'Open in workspace',
+          emailParagraph(
+            `<strong>${escapeHtml(company)}</strong> submitted <strong>${escapeHtml(step)}</strong> and is waiting for your review.`,
+          ) +
+            emailParagraph(
+              'Open the workspace to accept the submission or request corrections.',
+            ),
+          'Review in workspace',
           href,
+          'Action required',
         ),
         text: `${company} submitted “${step}” for review.\n\nOpen: ${href}`,
       };
     }
     return {
       subject: `${company}: we received your “${step}” submission`,
-      html: wrapHtml(
+      html: wrap(
         'Submission received',
-        `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Thanks — we received your submission for <strong>${escapeHtml(step)}</strong> on ${escapeHtml(company)}. Your project lead will review it next.</p>`,
+        emailParagraph(
+          `Thank you — we received your submission for <strong>${escapeHtml(step)}</strong> on <strong>${escapeHtml(company)}</strong>.`,
+        ) +
+          emailParagraph(
+            'Your engagement team will review it and notify you when it is accepted or if updates are needed.',
+          ),
         'Open client portal',
         href,
       ),
-      text: `We received your submission for “${step}” on ${company}. Your project lead will review it next.\n\nOpen: ${href}`,
+      text: `We received your submission for “${step}” on ${company}. Your engagement team will review it next.\n\nOpen: ${href}`,
     };
   }
 
   if (input.kind === 'review_accepted') {
     if (input.audience === 'lead') {
       return {
-        subject: `${company}: “${step}” accepted`,
-        html: wrapHtml(
+        subject: `${company}: “${step}” accepted by manager`,
+        html: wrap(
           'Submission accepted',
-          `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;"><strong>${escapeHtml(step)}</strong> for ${escapeHtml(company)} was accepted.</p>`,
+          emailParagraph(
+            `<strong>${escapeHtml(step)}</strong> for <strong>${escapeHtml(company)}</strong> was accepted by the project manager.`,
+          ) +
+            emailParagraph(
+              'You can continue with the next delivery steps in the workspace.',
+            ),
           'Open workspace',
           href,
+          'Team update',
         ),
-        text: `“${step}” for ${company} was accepted.\n\nOpen: ${href}`,
+        text: `“${step}” for ${company} was accepted by the project manager.\n\nOpen: ${href}`,
       };
     }
     return {
       subject: `${company}: “${step}” was approved`,
-      html: wrapHtml(
+      html: wrap(
         'Submission approved',
-        `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Good news — <strong>${escapeHtml(step)}</strong> was approved by your engagement team.</p>`,
+        emailParagraph(
+          `Good news — <strong>${escapeHtml(step)}</strong> on your <strong>${escapeHtml(company)}</strong> project was approved by your engagement team.`,
+        ) +
+          emailParagraph('You can track progress and next steps in your client portal.'),
         'Open client portal',
         href,
       ),
@@ -115,28 +131,38 @@ export function buildProgressEmail(input: {
 
   if (input.kind === 'review_rejected') {
     const noteHtml = note
-      ? `<p style="margin:12px 0;padding:12px 14px;background:#F7F6FB;border-radius:8px;font-size:14px;line-height:1.55;"><strong>Note:</strong> ${escapeHtml(note)}</p>`
+      ? emailCallout(`<strong>Note from your team:</strong> ${escapeHtml(note)}`)
       : '';
     const noteText = note ? `\nNote: ${note}\n` : '\n';
     if (input.audience === 'lead') {
       return {
         subject: `${company}: corrections requested on “${step}”`,
-        html: wrapHtml(
+        html: wrap(
           'Corrections requested',
-          `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Corrections were requested on <strong>${escapeHtml(step)}</strong> for ${escapeHtml(company)}.</p>${noteHtml}`,
+          emailParagraph(
+            `Corrections were requested on <strong>${escapeHtml(step)}</strong> for <strong>${escapeHtml(company)}</strong>.`,
+          ) +
+            noteHtml +
+            emailParagraph('Please coordinate the updates so the client can resubmit.'),
           'Open workspace',
           href,
+          'Action required',
         ),
         text: `Corrections requested on “${step}” for ${company}.${noteText}\nOpen: ${href}`,
       };
     }
     return {
       subject: `${company}: updates needed on “${step}”`,
-      html: wrapHtml(
+      html: wrap(
         'Updates needed',
-        `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Your team requested updates on <strong>${escapeHtml(step)}</strong>.</p>${noteHtml}`,
+        emailParagraph(
+          `Your engagement team requested updates on <strong>${escapeHtml(step)}</strong>.`,
+        ) +
+          noteHtml +
+          emailParagraph('Please revise the details in your portal and resubmit when ready.'),
         'Open client portal',
         href,
+        'Action required',
       ),
       text: `Updates needed on “${step}”.${noteText}\nOpen: ${href}`,
     };
@@ -146,9 +172,11 @@ export function buildProgressEmail(input: {
     if (input.audience === 'lead') {
       return {
         subject: `${company}: “${step}” delivered to client`,
-        html: wrapHtml(
+        html: wrap(
           'Delivered to client',
-          `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;"><strong>${escapeHtml(step)}</strong> was marked delivered for ${escapeHtml(company)}.</p>`,
+          emailParagraph(
+            `<strong>${escapeHtml(step)}</strong> was marked delivered for <strong>${escapeHtml(company)}</strong>.`,
+          ),
           'Open workspace',
           href,
         ),
@@ -157,9 +185,11 @@ export function buildProgressEmail(input: {
     }
     return {
       subject: `${company}: “${step}” is ready for you`,
-      html: wrapHtml(
+      html: wrap(
         'Ready on your portal',
-        `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;"><strong>${escapeHtml(step)}</strong> is ready on your client portal.</p>`,
+        emailParagraph(
+          `<strong>${escapeHtml(step)}</strong> is ready on your client portal.`,
+        ) + emailParagraph('Please review the materials and complete any remaining actions.'),
         'Open client portal',
         href,
       ),
@@ -171,9 +201,11 @@ export function buildProgressEmail(input: {
     if (input.audience === 'lead') {
       return {
         subject: `${company}: fields unlocked on “${step}”`,
-        html: wrapHtml(
+        html: wrap(
           'Fields unlocked for client',
-          `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Client fields were unlocked on <strong>${escapeHtml(step)}</strong> for ${escapeHtml(company)}.</p>`,
+          emailParagraph(
+            `Client fields were unlocked on <strong>${escapeHtml(step)}</strong> for <strong>${escapeHtml(company)}</strong>.`,
+          ),
           'Open workspace',
           href,
         ),
@@ -182,11 +214,14 @@ export function buildProgressEmail(input: {
     }
     return {
       subject: `${company}: you can update “${step}” again`,
-      html: wrapHtml(
+      html: wrap(
         'Fields unlocked',
-        `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Your team unlocked fields on <strong>${escapeHtml(step)}</strong> so you can update and resubmit.</p>`,
+        emailParagraph(
+          `Your team unlocked fields on <strong>${escapeHtml(step)}</strong> so you can update and resubmit.`,
+        ),
         'Open client portal',
         href,
+        'Action required',
       ),
       text: `Fields on “${step}” were unlocked so you can update and resubmit.\n\nOpen: ${href}`,
     };
@@ -196,9 +231,11 @@ export function buildProgressEmail(input: {
   if (input.audience === 'lead') {
     return {
       subject: `${company}: incorporation drafts shared with client`,
-      html: wrapHtml(
-        'Drafts shared',
-        `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Incorporation drafts for ${escapeHtml(company)} were shared with the client.</p>`,
+      html: wrap(
+        'Drafts shared with client',
+        emailParagraph(
+          `Incorporation drafts for <strong>${escapeHtml(company)}</strong> were shared with the client portal.`,
+        ),
         'Open workspace',
         href,
       ),
@@ -207,12 +244,42 @@ export function buildProgressEmail(input: {
   }
   return {
     subject: `${company}: incorporation drafts are available`,
-    html: wrapHtml(
+    html: wrap(
       'Drafts available',
-      `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Your incorporation drafts are available to download (and upload signed copies) on your portal.</p>`,
+      emailParagraph(
+        'Your incorporation drafts are available to download (and upload signed copies) on your portal.',
+      ),
       'Open client portal',
       href,
     ),
     text: `Your incorporation drafts are available on your portal.\n\nOpen: ${href}`,
+  };
+}
+
+/** Document request email (client). */
+export function buildDocumentRequestEmail(input: {
+  companyName: string;
+  title: string;
+  note?: string | null;
+  portalHref: string;
+}): ProgressEmailCopy {
+  const href = absHref(input.portalHref);
+  const note = input.note?.trim();
+  return {
+    subject: `${input.companyName}: document requested — ${input.title}`,
+    html: wrap(
+      'Document requested',
+      emailParagraph(
+        `Please upload <strong>${escapeHtml(input.title)}</strong> for <strong>${escapeHtml(input.companyName)}</strong>.`,
+      ) +
+        (note ? emailCallout(`<strong>Note:</strong> ${escapeHtml(note)}`) : '') +
+        emailParagraph('Use the client portal to complete this request.'),
+      'Open client portal',
+      href,
+      'Action required',
+    ),
+    text: `Please upload “${input.title}” for ${input.companyName}.${
+      note ? `\n\nNote: ${note}` : ''
+    }\n\nOpen: ${href}`,
   };
 }
