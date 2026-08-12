@@ -14,8 +14,17 @@ import {
   updateEngagement,
 } from '@/db/repositories/engagements';
 import { listManagerOptions } from '@/db/repositories/profiles';
+import {
+  ensureEngagementManager,
+  removeEngagementManager,
+} from '@/db/repositories/engagement-managers-membership';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import { isFirmWideAdmin } from '@/lib/auth';
+import { emptyEmailDispatch } from '@/lib/email/email-dispatch';
+import { notifyTeamAssignment } from '@/lib/email/notify-team-assignment';
+import { db } from '@/db/client';
+import { profiles } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -30,6 +39,21 @@ const patchBodySchema = z.object({
   incorporationDate: z.string().trim().nullable().optional(),
   entityLegalForm: entityLegalFormSchema.optional(),
 });
+
+async function profileParty(id: string | null | undefined) {
+  if (!id) return null;
+  const [row] = await db
+    .select({ id: profiles.id, email: profiles.email, name: profiles.name })
+    .from(profiles)
+    .where(eq(profiles.id, id))
+    .limit(1);
+  if (!row?.email?.trim()) return null;
+  return {
+    userId: row.id,
+    email: row.email.trim(),
+    name: row.name?.trim() || row.email.trim(),
+  };
+}
 
 export async function GET(_request: Request, context: RouteContext) {
   const guard = await requireAuth();
@@ -59,6 +83,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
+    const before = await getEngagementById(guard.ctx, engagementDbId(id));
+    if (!before) {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
+
     const patch: Parameters<typeof updateEngagement>[2] = {};
     if (body.data.companyName !== undefined) patch.companyName = body.data.companyName;
     if (body.data.internId !== undefined) patch.internId = body.data.internId;
@@ -82,7 +111,73 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const row = await updateEngagement(guard.ctx, engagementDbId(id), patch);
-    return NextResponse.json({ engagement: toAppEngagement(row) });
+    const engagement = toAppEngagement(row);
+    const email = emptyEmailDispatch();
+
+    if (body.data.managerId !== undefined) {
+      const prevId = before.managerId;
+      const nextId = body.data.managerId;
+      const actor = {
+        userId: guard.ctx.userId,
+        name: guard.ctx.name,
+        email: guard.ctx.email,
+      };
+
+      if (prevId && prevId !== nextId) {
+        await removeEngagementManager({
+          engagementDbId: row.id,
+          managerId: prevId,
+        }).catch(() => undefined);
+        const prev = await profileParty(prevId);
+        if (prev) {
+          const part = await notifyTeamAssignment({
+            engagementAppId: engagement.id,
+            engagementSlug: engagement.slug,
+            companyName: engagement.companyName,
+            role: 'project manager',
+            party: prev,
+            action: 'removed',
+            actor,
+          });
+          email.attempted += part.attempted;
+          email.sent.push(...part.sent);
+          email.skipped.push(...part.skipped);
+          email.failed.push(...part.failed);
+        }
+      }
+
+      if (nextId) {
+        await ensureEngagementManager({
+          engagementDbId: row.id,
+          managerId: nextId,
+          invitedBy: guard.ctx.userId,
+        });
+        if (nextId !== prevId) {
+          const next = await profileParty(nextId);
+          if (next) {
+            const part = await notifyTeamAssignment({
+              engagementAppId: engagement.id,
+              engagementSlug: engagement.slug,
+              companyName: engagement.companyName,
+              role: 'project manager',
+              party: next,
+              action: 'assigned',
+              actor,
+            });
+            email.attempted += part.attempted;
+            email.sent.push(...part.sent);
+            email.skipped.push(...part.skipped);
+            email.failed.push(...part.failed);
+          }
+        }
+      }
+    }
+
+    email.sent = [...new Set(email.sent)];
+    email.skipped = [...new Set(email.skipped)];
+    email.failed = [...new Set(email.failed)];
+
+    return NextResponse.json({ engagement, email });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'update_failed';
     const status = message.includes('not found') ? 404 : 400;
