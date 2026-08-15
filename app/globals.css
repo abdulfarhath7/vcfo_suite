@@ -3,170 +3,206 @@
 @tailwind utilities;
 
 /* =====================================================================
-   VCFO Suite · Electric Blue
-   Action #2563EB · Surface #F6F8FA · Ink #111827
-   Status: ok (emerald) · warn (amber) · danger (red) · info (sky)
-   Role accents: admin = blue, intern = teal, client = violet.
-   Light is the primary product surface; dark fully supported.
-   --gold-* / --orange-* / --indigo-* aliases map to BLUE for legacy classes.
-   All colors are OKLCH channel triplets — use oklch(var(--token)).
+   VCFO Suite · cool professional blue (60 / 30 / 10)
+   60% cool slate neutrals · 30% blue (#2563EB) · 10% semantic accents
+   Neutrals: slate with blue undertone — never sand, cream, or beige.
+   Phase washes: sky / teal / teal-green / indigo / violet-blue (analogous).
+   Status: teal-green done · muted gold waiting (chips only) · rose error.
+   Super Admin: tiny gold chip only. --orange-* / --gold-* alias --blue-*.
+   OKLCH channel triplets — use oklch(var(--token)).
    ===================================================================== */
 
 @layer base {
   :root {
-    /* Surfaces — crisp cool gray (#F6F8FA family) */
-    --background: 97.8% 0.005 250;
+    /* Surfaces — cool off-white / slate (hue ~250–264) */
+    --background: 98.4% 0.004 250;
     --ink: 100% 0 0;
     --panel: 100% 0 0;
-    --raised: 95.2% 0.006 250;
-    --surface: 97.8% 0.005 250;
+    --raised: 96.8% 0.006 250;
+    --surface: 98.4% 0.004 250;
 
-    /* Shadow ink — dark slate in light theme; pure black in dark theme
-       (a --foreground-based shadow becomes a white halo in dark mode). */
-    --shadow-ink: 25% 0.015 260;
+    /* Shadow ink — cool blue-slate, never brown */
+    --shadow-ink: 32% 0.04 264;
 
-    /* Text — deep slate ink (#111827 family) */
-    --foreground: 22% 0.015 260;
-    --paper: 22% 0.015 260;
-    --muted-paper: 45% 0.02 258;
-    --subtle-paper: 58% 0.016 255;
+    /* Text — slate-900 with blue undertone */
+    --foreground: 21% 0.042 264;
+    --paper: 21% 0.042 264;
+    --muted-paper: 45% 0.03 255;
+    --subtle-paper: 55% 0.022 255;
 
-    /* Brand blue — Action #2563EB / Hover #1D4ED8 */
-    --gold: 55% 0.21 262;
-    --gold-hi: 62% 0.20 261;
-    --gold-deep: 49% 0.20 262;
-    --orange-50: 97% 0.013 255;
-    --orange-100: 94% 0.03 255;
-    --orange-200: 89% 0.06 257;
-    --orange-300: 81% 0.10 259;
-    --orange-400: 70% 0.16 260;
-    --orange-500: 62% 0.20 261;
-    --orange-600: 55% 0.21 262;
-    --orange-700: 49% 0.20 262;
-    --orange-800: 42% 0.17 263;
-    --orange-900: 36% 0.14 264;
-    --orange-brand: 55% 0.21 262;
-    --orange-muted: 94% 0.03 255;
+    /* Brand BLUE — Action #2563EB / hover #1D4ED8 */
+    --blue-50: 97.2% 0.014 255;
+    --blue-100: 94.2% 0.032 255;
+    --blue-200: 88.5% 0.058 257;
+    --blue-300: 80.5% 0.10 259;
+    --blue-400: 68.5% 0.16 261;
+    --blue-500: 62% 0.19 262;
+    --blue-600: 54.6% 0.215 263;
+    --blue-700: 48.8% 0.217 264;
+    --blue-800: 42.4% 0.181 266;
+    --blue-900: 37.9% 0.146 266;
+    --blue-brand: 54.6% 0.215 263;
+    --blue-muted: 97.2% 0.014 255;
 
-    --indigo-50: 97% 0.013 255;
-    --indigo-100: 94% 0.03 255;
-    --indigo-200: 89% 0.06 257;
-    --indigo-300: 81% 0.10 259;
-    --indigo-400: 70% 0.16 260;
-    --indigo-500: 62% 0.20 261;
-    --indigo-600: 55% 0.21 262;
-    --indigo-700: 49% 0.20 262;
-    --indigo-800: 42% 0.17 263;
-    --indigo-900: 36% 0.14 264;
+    --gold: 54.6% 0.215 263;
+    --gold-hi: 62% 0.19 262;
+    --gold-deep: 48.8% 0.217 264;
+    --orange-50: 97.2% 0.014 255;
+    --orange-100: 94.2% 0.032 255;
+    --orange-200: 88.5% 0.058 257;
+    --orange-300: 80.5% 0.10 259;
+    --orange-400: 68.5% 0.16 261;
+    --orange-500: 62% 0.19 262;
+    --orange-600: 54.6% 0.215 263;
+    --orange-700: 48.8% 0.217 264;
+    --orange-800: 42.4% 0.181 266;
+    --orange-900: 37.9% 0.146 266;
+    --orange-brand: 54.6% 0.215 263;
+    --orange-muted: 97.2% 0.014 255;
+
+    /* Indigo scale — FEMA phase + cool staff tint (supporting, not CTA) */
+    --indigo-50: 97% 0.012 265;
+    --indigo-100: 94% 0.025 265;
+    --indigo-200: 88% 0.05 265;
+    --indigo-300: 78% 0.09 265;
+    --indigo-400: 65% 0.13 270;
+    --indigo-500: 55% 0.15 272;
+    --indigo-600: 48% 0.14 274;
+    --indigo-700: 42% 0.12 275;
+    --indigo-800: 36% 0.10 276;
+    --indigo-900: 30% 0.08 277;
+
+    /* Super Admin chip — true gold (badge only, never CTA) */
+    --super-gold: 78% 0.12 85;
+    --super-gold-soft: 95% 0.04 90;
+    --super-gold-text: 42% 0.08 75;
+
+    /* Journey phase washes — analogous blue family, ~8–12% chroma soft */
+    --phase-pre: 62% 0.12 230;
+    --phase-pre-soft: 96.2% 0.018 230;
+    --phase-pre-text: 42% 0.10 235;
+    --phase-filing: 56% 0.10 195;
+    --phase-filing-soft: 96.2% 0.018 195;
+    --phase-filing-text: 38% 0.08 200;
+    --phase-post: 55% 0.11 175;
+    --phase-post-soft: 96.2% 0.02 175;
+    --phase-post-text: 38% 0.09 175;
+    --phase-fema: 52% 0.12 275;
+    --phase-fema-soft: 96.2% 0.018 275;
+    --phase-fema-text: 40% 0.10 275;
+    --phase-registration: 55% 0.12 285;
+    --phase-registration-soft: 96.2% 0.018 285;
+    --phase-registration-text: 40% 0.10 285;
 
     --hex-loader-primary: 221 83% 53%;
     --hex-loader-gold-hi: 217 91% 60%;
     --hex-loader-gold-deep: 224 76% 48%;
-    --hex-loader-warning: 42 72% 52%;
-    --hex-loader-muted-paper: 220 9% 42%;
+    --hex-loader-warning: 42 55% 48%;
+    --hex-loader-muted-paper: 215 16% 47%;
 
-    --hairline: 90% 0.008 250;
-    --divider: 22% 0.015 260;
+    --hairline: 92.5% 0.01 255;
+    --divider: 21% 0.042 264;
 
     --card: 100% 0 0;
-    --card-foreground: 22% 0.015 260;
+    --card-foreground: 21% 0.042 264;
     --popover: 100% 0 0;
-    --popover-foreground: 22% 0.015 260;
+    --popover-foreground: 21% 0.042 264;
 
-    --primary: 55% 0.21 262;
+    --primary: 54.6% 0.215 263;
     --primary-foreground: 100% 0 0;
-    --primary-light: 95% 0.025 255;
-    --primary-dark: 49% 0.20 262;
+    --primary-light: 97.2% 0.014 255;
+    --primary-dark: 48.8% 0.217 264;
 
-    --brand: 55% 0.21 262;
-    --brand-deep: 49% 0.20 262;
+    --brand: 54.6% 0.215 263;
+    --brand-deep: 48.8% 0.217 264;
 
-    --secondary: 94.5% 0.008 250;
-    --secondary-foreground: 22% 0.015 260;
+    --secondary: 96.5% 0.008 250;
+    --secondary-foreground: 21% 0.042 264;
 
-    --muted: 94.5% 0.008 250;
-    --muted-foreground: 45% 0.02 258;
+    --muted: 96.5% 0.008 250;
+    --muted-foreground: 45% 0.03 255;
 
-    --accent: 94% 0.03 255;
-    --accent-foreground: 46% 0.19 262;
+    --accent: 97.2% 0.014 255;
+    --accent-foreground: 48.8% 0.217 264;
 
-    --destructive: 60% 0.19 25;
+    --destructive: 59% 0.19 18;
     --destructive-foreground: 100% 0 0;
 
-    --border: 89% 0.008 250;
-    --input: 89% 0.008 250;
-    --ring: 55% 0.21 262;
+    --border: 91.5% 0.012 255;
+    --input: 91.5% 0.012 255;
+    --ring: 54.6% 0.215 263;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    /* Functional status colors — the color grammar of the product */
-    --success: 60% 0.13 158;
+    /* Functional status — 10% accents only (never page fill) */
+    --success: 55% 0.12 175;
     --success-foreground: 100% 0 0;
-    --success-light: 94% 0.05 158;
-    --success-text: 40% 0.11 158;
+    --success-light: 95.5% 0.028 175;
+    --success-text: 38% 0.09 175;
 
-    --warning: 75.8% 0.141 82;
-    --warning-foreground: 25% 0.06 82;
-    --warning-light: 95% 0.05 82;
-    --warning-text: 42% 0.13 82;
+    --warning: 72% 0.10 85;
+    --warning-foreground: 32% 0.05 75;
+    --warning-light: 96.8% 0.022 90;
+    --warning-text: 45% 0.08 80;
 
-    --danger: 60% 0.19 25;
-    --danger-light: 94% 0.04 25;
-    --danger-text: 45% 0.16 25;
+    --danger: 59% 0.19 18;
+    --danger-light: 96% 0.025 18;
+    --danger-text: 45% 0.15 18;
 
-    --error: 60% 0.19 25;
+    --error: 59% 0.19 18;
     --error-foreground: 100% 0 0;
-    --error-light: 94% 0.04 25;
-    --error-text: 45% 0.16 25;
+    --error-light: 96% 0.025 18;
+    --error-text: 45% 0.15 18;
 
-    --info: 58% 0.16 237;
+    --info: 58% 0.12 237;
     --info-foreground: 100% 0 0;
-    --info-light: 94% 0.04 237;
-    --info-text: 44% 0.13 240;
+    --info-light: 95.5% 0.025 237;
+    --info-text: 42% 0.10 240;
 
     --sidebar-bg: 100% 0 0;
-    --sidebar-active: 94% 0.035 255;
-    --sidebar-foreground: 45% 0.02 258;
-    --sidebar-foreground-active: 46% 0.19 262;
+    --sidebar-active: 97.2% 0.014 255;
+    --sidebar-foreground: 45% 0.03 255;
+    --sidebar-foreground-active: 48.8% 0.217 264;
 
-    --table-header: 95.2% 0.006 250;
-    --text-secondary: 45% 0.02 258;
-    --text-tertiary: 58% 0.016 255;
+    --table-header: 96.8% 0.006 250;
+    --text-secondary: 45% 0.03 255;
+    --text-tertiary: 55% 0.022 255;
 
     /* Categorical accent set — multi-hue color coding for tags, chips,
        avatars, calendars. Each has a -soft pair for tinted backgrounds. */
-    --accent-emerald: 60% 0.13 158;
-    --accent-emerald-soft: 94% 0.05 158;
-    --accent-sky: 58% 0.16 237;
-    --accent-sky-soft: 94% 0.04 237;
-    --accent-amber: 70% 0.15 70;
-    --accent-amber-soft: 95% 0.05 82;
-    --accent-violet: 58% 0.19 292;
-    --accent-violet-soft: 95% 0.035 292;
-    --accent-rose: 60% 0.19 12;
-    --accent-rose-soft: 94.5% 0.035 12;
-    --accent-orange: 66% 0.17 48;
-    --accent-orange-soft: 95% 0.045 60;
-    --accent-teal: 56% 0.11 195;
-    --accent-teal-soft: 94% 0.05 192;
-    --accent-pink: 62% 0.20 340;
-    --accent-pink-soft: 95% 0.035 340;
-    --accent-cyan: 60% 0.11 215;
-    --accent-cyan-soft: 94% 0.045 215;
-    --accent-lime: 66% 0.14 125;
-    --accent-lime-soft: 94% 0.06 125;
+    --accent-emerald: 55% 0.12 175;
+    --accent-emerald-soft: 95.5% 0.028 175;
+    --accent-sky: 58% 0.12 237;
+    --accent-sky-soft: 95.5% 0.025 237;
+    --accent-amber: 72% 0.10 85;
+    --accent-amber-soft: 96.8% 0.022 90;
+    --accent-violet: 55% 0.12 285;
+    --accent-violet-soft: 96.2% 0.018 285;
+    --accent-rose: 59% 0.16 18;
+    --accent-rose-soft: 96% 0.025 18;
+    --accent-orange: 68% 0.08 70;
+    --accent-orange-soft: 96.8% 0.02 80;
+    --accent-teal: 56% 0.10 195;
+    --accent-teal-soft: 96.2% 0.018 195;
+    --accent-pink: 62% 0.10 340;
+    --accent-pink-soft: 96.5% 0.018 340;
+    --accent-cyan: 60% 0.10 215;
+    --accent-cyan-soft: 96% 0.02 215;
+    --accent-lime: 62% 0.08 160;
+    --accent-lime-soft: 96% 0.02 160;
 
     --sidebar-background: 100% 0 0;
-    --sidebar-primary: 55% 0.21 262;
+    --sidebar-primary: 54.6% 0.215 263;
     --sidebar-primary-foreground: 100% 0 0;
-    --sidebar-accent: 94% 0.035 255;
-    --sidebar-accent-foreground: 46% 0.19 262;
-    --sidebar-border: 89% 0.008 250;
-    --sidebar-ring: 55% 0.21 262;
+    --sidebar-accent: 97.2% 0.014 255;
+    --sidebar-accent-foreground: 48.8% 0.217 264;
+    --sidebar-border: 91.5% 0.012 255;
+    --sidebar-ring: 54.6% 0.215 263;
 
-    --role-accent: 55% 0.21 262;
-    --role-accent-soft: 94% 0.035 255;
-    --role-accent-foreground: 46% 0.19 262;
+    /* Default role = brand blue */
+    --role-accent: 54.6% 0.215 263;
+    --role-accent-soft: 97.2% 0.014 255;
+    --role-accent-foreground: 48.8% 0.217 264;
 
     --text-xs: 0.6875rem;
     --text-sm: 0.8125rem;
@@ -177,199 +213,251 @@
     --text-3xl: 2rem;
   }
 
-  /* Role accents — distinct hues so each shell has its own identity */
-  [data-role="admin"] {
-    --role-accent: 55% 0.21 262;
-    --role-accent-soft: 94% 0.035 255;
-    --role-accent-foreground: 46% 0.19 262;
-    --ring: 55% 0.21 262;
-    --primary: 55% 0.21 262;
-    --sidebar-active: 94% 0.035 255;
-    --sidebar-foreground-active: 46% 0.19 262;
+  /* Role shells — same cool atmosphere; intern accent is still blue-family */
+  [data-role="admin"],
+  [data-role="manager"] {
+    --role-accent: 54.6% 0.215 263;
+    --role-accent-soft: 97.2% 0.014 255;
+    --role-accent-foreground: 48.8% 0.217 264;
+    --ring: 54.6% 0.215 263;
+    --primary: 54.6% 0.215 263;
+    --sidebar-active: 97.2% 0.014 255;
+    --sidebar-foreground-active: 48.8% 0.217 264;
+    --background: 98.4% 0.004 250;
+    --surface: 98.4% 0.004 250;
   }
 
   [data-role="intern"] {
-    --role-accent: 55% 0.12 195;
-    --role-accent-soft: 94% 0.045 192;
-    --role-accent-foreground: 42% 0.10 197;
-    --ring: 55% 0.12 195;
-    --primary: 55% 0.12 195;
-    --sidebar-active: 94% 0.045 192;
-    --sidebar-foreground-active: 42% 0.10 197;
+    --role-accent: 54% 0.18 250;
+    --role-accent-soft: 96% 0.02 250;
+    --role-accent-foreground: 42% 0.12 252;
+    --ring: 54.6% 0.215 263;
+    --primary: 54.6% 0.215 263;
+    --sidebar-active: 96% 0.02 250;
+    --sidebar-foreground-active: 42% 0.12 252;
   }
 
   [data-role="client"] {
-    --role-accent: 55% 0.20 290;
-    --role-accent-soft: 95% 0.035 292;
-    --role-accent-foreground: 46% 0.17 288;
-    --ring: 55% 0.20 290;
-    --primary: 55% 0.20 290;
-    --sidebar-active: 95% 0.035 292;
-    --sidebar-foreground-active: 46% 0.17 288;
+    --role-accent: 54.6% 0.215 263;
+    --role-accent-soft: 97.2% 0.014 255;
+    --role-accent-foreground: 48.8% 0.217 264;
+    --ring: 54.6% 0.215 263;
+    --primary: 54.6% 0.215 263;
+    --sidebar-active: 97.2% 0.014 255;
+    --sidebar-foreground-active: 48.8% 0.217 264;
+    --background: 98.6% 0.005 250;
+    --surface: 98.6% 0.005 250;
   }
 
-  /* DARK · Electric Blue — deep navy-slate surfaces */
+  [data-role="super_admin"] {
+    --role-accent: 54.6% 0.215 263;
+    --role-accent-soft: 97.2% 0.014 255;
+    --role-accent-foreground: 48.8% 0.217 264;
+    --ring: 54.6% 0.215 263;
+    --primary: 54.6% 0.215 263;
+    --sidebar-active: 97.2% 0.014 255;
+    --sidebar-foreground-active: 48.8% 0.217 264;
+  }
+
+  /* DARK · cool slate ink + same blue family (not a brown invert) */
   .dark, [data-theme="dark"] {
-    --background: 16% 0.014 255;
-    --surface: 19% 0.015 255;
-    --raised: 23% 0.016 255;
-    --panel: 21% 0.015 255;
+    --background: 16% 0.018 264;
+    --surface: 19.5% 0.016 264;
+    --raised: 23% 0.018 264;
+    --panel: 21% 0.016 264;
     --shadow-ink: 0% 0 0;
-    --ink: 22% 0.015 255;
-    --hairline: 30% 0.014 256;
-    --divider: 34% 0.014 256;
+    --ink: 21% 0.042 264;
+    --hairline: 30% 0.02 264;
+    --divider: 34% 0.018 264;
 
-    --foreground: 95% 0.006 250;
-    --paper: 95% 0.006 250;
-    --muted-paper: 72% 0.014 252;
-    --subtle-paper: 60% 0.016 252;
-    --text-secondary: 72% 0.014 252;
-    --text-tertiary: 60% 0.016 252;
+    --foreground: 96% 0.008 250;
+    --paper: 96% 0.008 250;
+    --muted-paper: 72% 0.018 255;
+    --subtle-paper: 60% 0.016 255;
+    --text-secondary: 72% 0.018 255;
+    --text-tertiary: 60% 0.016 255;
 
-    --card: 23% 0.016 255;
-    --card-foreground: 95% 0.006 250;
-    --popover: 23% 0.016 255;
-    --popover-foreground: 95% 0.006 250;
+    --card: 23% 0.018 264;
+    --card-foreground: 96% 0.008 250;
+    --popover: 23% 0.018 264;
+    --popover-foreground: 96% 0.008 250;
 
-    --gold: 66% 0.17 262;
-    --gold-hi: 72% 0.14 261;
-    --gold-deep: 60% 0.19 262;
+    --blue-50: 26% 0.03 258;
+    --blue-100: 30% 0.05 259;
+    --blue-200: 34% 0.08 260;
+    --blue-300: 42% 0.12 261;
+    --blue-400: 52% 0.15 262;
+    --blue-500: 62% 0.16 262;
+    --blue-600: 66% 0.16 262;
+    --blue-700: 60% 0.18 264;
+    --blue-800: 52% 0.16 264;
+    --blue-900: 44% 0.14 265;
+    --blue-brand: 66% 0.16 262;
+    --blue-muted: 26% 0.03 258;
+
+    --gold: 66% 0.16 262;
+    --gold-hi: 62% 0.16 262;
+    --gold-deep: 60% 0.18 264;
     --orange-50: 26% 0.03 258;
     --orange-100: 30% 0.05 259;
     --orange-200: 34% 0.08 260;
     --orange-300: 42% 0.12 261;
     --orange-400: 52% 0.15 262;
-    --orange-500: 60% 0.17 262;
-    --orange-600: 66% 0.17 262;
-    --orange-700: 60% 0.19 262;
-    --orange-800: 52% 0.17 262;
-    --orange-900: 44% 0.14 263;
-    --orange-brand: 66% 0.17 262;
-    --orange-muted: 30% 0.05 259;
+    --orange-500: 62% 0.16 262;
+    --orange-600: 66% 0.16 262;
+    --orange-700: 60% 0.18 264;
+    --orange-800: 52% 0.16 264;
+    --orange-900: 44% 0.14 265;
+    --orange-brand: 66% 0.16 262;
+    --orange-muted: 26% 0.03 258;
 
-    --indigo-50: 26% 0.03 258;
-    --indigo-100: 30% 0.05 259;
-    --indigo-200: 34% 0.08 260;
-    --indigo-300: 42% 0.12 261;
-    --indigo-400: 52% 0.15 262;
-    --indigo-500: 60% 0.17 262;
-    --indigo-600: 66% 0.17 262;
-    --indigo-700: 60% 0.19 262;
-    --indigo-800: 52% 0.17 262;
-    --indigo-900: 44% 0.14 263;
+    --indigo-50: 26% 0.03 270;
+    --indigo-100: 30% 0.05 270;
+    --indigo-200: 36% 0.08 270;
+    --indigo-300: 44% 0.11 272;
+    --indigo-400: 54% 0.13 272;
+    --indigo-500: 62% 0.13 272;
+    --indigo-600: 68% 0.12 274;
+    --indigo-700: 60% 0.13 274;
+    --indigo-800: 50% 0.11 275;
+    --indigo-900: 40% 0.09 276;
 
-    --primary: 66% 0.17 262;
-    --primary-foreground: 13% 0.02 260;
-    --primary-light: 30% 0.05 259;
-    --primary-dark: 60% 0.19 262;
-    --brand: 66% 0.17 262;
-    --brand-deep: 60% 0.19 262;
+    --super-gold: 82% 0.11 85;
+    --super-gold-soft: 28% 0.04 85;
+    --super-gold-text: 88% 0.08 90;
 
-    --secondary: 23% 0.016 255;
-    --secondary-foreground: 95% 0.006 250;
-    --muted: 24% 0.014 255;
-    --muted-foreground: 70% 0.014 252;
+    --phase-pre: 72% 0.10 230;
+    --phase-pre-soft: 28% 0.035 230;
+    --phase-pre-text: 84% 0.07 230;
+    --phase-filing: 68% 0.09 195;
+    --phase-filing-soft: 26% 0.03 195;
+    --phase-filing-text: 82% 0.07 195;
+    --phase-post: 68% 0.10 175;
+    --phase-post-soft: 26% 0.04 175;
+    --phase-post-text: 82% 0.08 175;
+    --phase-fema: 68% 0.11 275;
+    --phase-fema-soft: 28% 0.04 275;
+    --phase-fema-text: 84% 0.08 275;
+    --phase-registration: 70% 0.10 285;
+    --phase-registration-soft: 28% 0.04 285;
+    --phase-registration-text: 86% 0.07 285;
 
-    --accent: 30% 0.06 260;
-    --accent-foreground: 80% 0.10 258;
+    --primary: 66% 0.16 262;
+    --primary-foreground: 100% 0 0;
+    --primary-light: 26% 0.03 258;
+    --primary-dark: 60% 0.18 264;
+    --brand: 66% 0.16 262;
+    --brand-deep: 60% 0.18 264;
 
-    /* Categorical accents — dark: brighter hues, deep tinted -soft */
-    --accent-violet: 70% 0.15 292;
-    --accent-violet-soft: 30% 0.06 290;
-    --accent-emerald: 66% 0.13 158;
-    --accent-emerald-soft: 26% 0.05 158;
-    --accent-sky: 70% 0.13 235;
-    --accent-sky-soft: 28% 0.06 240;
-    --accent-amber: 78% 0.14 82;
-    --accent-amber-soft: 28% 0.06 82;
-    --accent-rose: 70% 0.16 12;
-    --accent-rose-soft: 30% 0.07 12;
-    --accent-orange: 72% 0.15 55;
-    --accent-orange-soft: 30% 0.06 55;
-    --accent-teal: 68% 0.12 195;
-    --accent-teal-soft: 28% 0.05 197;
-    --accent-pink: 72% 0.17 340;
-    --accent-pink-soft: 30% 0.07 340;
-    --accent-cyan: 70% 0.11 215;
-    --accent-cyan-soft: 28% 0.05 215;
-    --accent-lime: 72% 0.14 125;
-    --accent-lime-soft: 27% 0.06 125;
+    --secondary: 23% 0.018 264;
+    --secondary-foreground: 96% 0.008 250;
+    --muted: 24% 0.016 264;
+    --muted-foreground: 70% 0.016 255;
 
-    --border: 30% 0.014 256;
-    --input: 30% 0.014 256;
-    --ring: 66% 0.17 262;
+    --accent: 26% 0.03 258;
+    --accent-foreground: 82% 0.08 258;
 
-    --success: 66% 0.13 158;
+    --accent-violet: 70% 0.12 285;
+    --accent-violet-soft: 30% 0.05 285;
+    --accent-emerald: 66% 0.11 175;
+    --accent-emerald-soft: 26% 0.04 175;
+    --accent-sky: 70% 0.11 235;
+    --accent-sky-soft: 28% 0.04 240;
+    --accent-amber: 78% 0.10 85;
+    --accent-amber-soft: 28% 0.04 85;
+    --accent-rose: 70% 0.14 18;
+    --accent-rose-soft: 30% 0.05 18;
+    --accent-orange: 72% 0.08 70;
+    --accent-orange-soft: 30% 0.04 70;
+    --accent-teal: 68% 0.10 195;
+    --accent-teal-soft: 28% 0.04 197;
+    --accent-pink: 72% 0.10 340;
+    --accent-pink-soft: 30% 0.04 340;
+    --accent-cyan: 70% 0.10 215;
+    --accent-cyan-soft: 28% 0.04 215;
+    --accent-lime: 72% 0.08 160;
+    --accent-lime-soft: 27% 0.04 160;
+
+    --border: 30% 0.018 264;
+    --input: 30% 0.018 264;
+    --ring: 66% 0.16 262;
+
+    --success: 66% 0.11 175;
     --success-foreground: 16% 0.014 255;
-    --success-light: 26% 0.05 158;
-    --success-text: 76% 0.11 158;
+    --success-light: 26% 0.04 175;
+    --success-text: 78% 0.09 175;
 
-    --warning: 78% 0.145 82;
-    --warning-foreground: 18% 0.03 82;
-    --warning-light: 28% 0.06 82;
-    --warning-text: 82% 0.12 82;
+    --warning: 78% 0.10 85;
+    --warning-foreground: 18% 0.03 80;
+    --warning-light: 28% 0.04 85;
+    --warning-text: 84% 0.08 85;
 
-    --danger: 66% 0.17 25;
-    --danger-light: 28% 0.07 25;
-    --danger-text: 78% 0.13 25;
-    --destructive: 66% 0.17 25;
+    --danger: 66% 0.15 18;
+    --danger-light: 28% 0.05 18;
+    --danger-text: 80% 0.10 18;
+    --destructive: 66% 0.15 18;
     --destructive-foreground: 100% 0 0;
 
-    --error: 66% 0.17 25;
+    --error: 66% 0.15 18;
     --error-foreground: 100% 0 0;
-    --error-light: 28% 0.07 25;
-    --error-text: 78% 0.13 25;
+    --error-light: 28% 0.05 18;
+    --error-text: 80% 0.10 18;
 
-    --info: 70% 0.13 235;
+    --info: 70% 0.11 235;
     --info-foreground: 15% 0.03 240;
-    --info-light: 28% 0.06 240;
-    --info-text: 78% 0.10 235;
+    --info-light: 28% 0.04 240;
+    --info-text: 80% 0.08 235;
 
-    --sidebar-bg: 19% 0.015 255;
-    --sidebar-background: 19% 0.015 255;
-    --sidebar-active: 30% 0.06 260;
-    --sidebar-foreground: 72% 0.014 252;
-    --sidebar-foreground-active: 80% 0.11 258;
-    --sidebar-primary: 66% 0.17 262;
-    --sidebar-primary-foreground: 13% 0.02 260;
-    --sidebar-accent: 28% 0.05 260;
-    --sidebar-accent-foreground: 80% 0.11 258;
-    --sidebar-border: 30% 0.014 256;
-    --sidebar-ring: 66% 0.17 262;
+    --sidebar-bg: 19.5% 0.016 264;
+    --sidebar-background: 19.5% 0.016 264;
+    --sidebar-active: 26% 0.03 258;
+    --sidebar-foreground: 72% 0.016 255;
+    --sidebar-foreground-active: 86% 0.06 258;
+    --sidebar-primary: 66% 0.16 262;
+    --sidebar-primary-foreground: 100% 0 0;
+    --sidebar-accent: 26% 0.03 258;
+    --sidebar-accent-foreground: 86% 0.06 258;
+    --sidebar-border: 30% 0.018 264;
+    --sidebar-ring: 66% 0.16 262;
 
-    --table-header: 21% 0.015 255;
+    --table-header: 21% 0.016 264;
 
-    --role-accent: 66% 0.17 262;
-    --role-accent-soft: 30% 0.06 260;
-    --role-accent-foreground: 80% 0.11 258;
+    --role-accent: 66% 0.16 262;
+    --role-accent-soft: 26% 0.03 258;
+    --role-accent-foreground: 86% 0.06 258;
   }
 
-  .dark [data-role="admin"], [data-theme="dark"] [data-role="admin"] {
-    --role-accent: 66% 0.17 262;
-    --role-accent-soft: 30% 0.06 260;
-    --role-accent-foreground: 80% 0.11 258;
-    --primary: 66% 0.17 262;
-    --ring: 66% 0.17 262;
-    --sidebar-active: 30% 0.06 260;
-    --sidebar-foreground-active: 80% 0.11 258;
+  .dark [data-role="admin"],
+  .dark [data-role="manager"],
+  .dark [data-role="super_admin"],
+  [data-theme="dark"] [data-role="admin"],
+  [data-theme="dark"] [data-role="manager"],
+  [data-theme="dark"] [data-role="super_admin"] {
+    --role-accent: 66% 0.16 262;
+    --role-accent-soft: 26% 0.03 258;
+    --role-accent-foreground: 86% 0.06 258;
+    --primary: 66% 0.16 262;
+    --ring: 66% 0.16 262;
+    --sidebar-active: 26% 0.03 258;
+    --sidebar-foreground-active: 86% 0.06 258;
   }
   .dark [data-role="intern"], [data-theme="dark"] [data-role="intern"] {
-    --role-accent: 68% 0.12 195;
-    --role-accent-soft: 28% 0.05 197;
-    --role-accent-foreground: 80% 0.10 193;
-    --primary: 68% 0.12 195;
-    --ring: 68% 0.12 195;
-    --sidebar-active: 28% 0.05 197;
-    --sidebar-foreground-active: 80% 0.10 193;
+    --role-accent: 68% 0.12 250;
+    --role-accent-soft: 28% 0.04 250;
+    --role-accent-foreground: 82% 0.08 250;
+    --primary: 66% 0.16 262;
+    --ring: 66% 0.16 262;
+    --sidebar-active: 28% 0.04 250;
+    --sidebar-foreground-active: 82% 0.08 250;
   }
   .dark [data-role="client"], [data-theme="dark"] [data-role="client"] {
-    --role-accent: 68% 0.16 292;
-    --role-accent-soft: 30% 0.06 290;
-    --role-accent-foreground: 82% 0.10 290;
-    --primary: 68% 0.16 292;
-    --ring: 68% 0.16 292;
-    --sidebar-active: 30% 0.06 290;
-    --sidebar-foreground-active: 82% 0.10 290;
+    --role-accent: 66% 0.16 262;
+    --role-accent-soft: 26% 0.03 258;
+    --role-accent-foreground: 86% 0.06 258;
+    --primary: 66% 0.16 262;
+    --ring: 66% 0.16 262;
+    --sidebar-active: 26% 0.03 258;
+    --sidebar-foreground-active: 86% 0.06 258;
   }
 }
 
@@ -387,7 +475,7 @@
     outline-offset: 2px;
   }
   ::selection {
-    background: oklch(var(--orange-600) / 0.22); /* action violet */
+    background: oklch(var(--blue-600) / 0.18);
     color: oklch(var(--foreground));
   }
 
@@ -398,7 +486,7 @@
     border-radius: 8px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(var(--orange-500) / 0.45);
+    background: oklch(var(--blue-500) / 0.4);
   }
 }
 
@@ -422,7 +510,11 @@
   .noir-card-raised {
     @apply rounded-card;
     background: oklch(var(--panel));
-    border: 1px solid oklch(var(--role-accent) / 0.22);
+    border: 1px solid oklch(var(--border));
+  }
+  .card-selected {
+    border: 1.5px solid oklch(var(--blue-600) / 0.55);
+    background: oklch(var(--blue-50) / 0.7);
   }
   .card-surface { @apply noir-card shadow-layered; }
   .surface { @apply noir-card shadow-layered; }
@@ -505,8 +597,8 @@
     height: 1px;
     background: linear-gradient(90deg,
       transparent 0%,
-      oklch(var(--orange-500) / 0.55) 20%,
-      oklch(var(--orange-500) / 0.55) 80%,
+      oklch(var(--blue-500) / 0.55) 20%,
+      oklch(var(--blue-500) / 0.55) 80%,
       transparent 100%);
   }
   .hairline { border-color: oklch(var(--border)); }
@@ -514,7 +606,7 @@
   .row-h { height: 44px; }
   .focus-ring {
     @apply outline-none;
-    box-shadow: 0 0 0 2px oklch(var(--ring) / 0.45);
+    box-shadow: 0 0 0 2px oklch(var(--ring) / 0.5);
   }
 
   .kbd {
@@ -595,7 +687,7 @@
   .text-gold { color: oklch(var(--gold-deep)); }
   .text-gold-hi { color: oklch(var(--gold)); }
   .border-hairline { border-color: oklch(var(--border)); }
-  .border-hairline-strong { border-color: oklch(var(--orange-400) / 0.35); }
+  .border-hairline-strong { border-color: oklch(var(--blue-400) / 0.4); }
   .ring-gold { box-shadow: 0 0 0 1px oklch(var(--ring) / 0.5); }
 
   /* Layered editorial shadows — token-based depth stack.
@@ -604,15 +696,15 @@
      black grounding + a 1px top edge highlight (light-from-above). */
   .shadow-layered {
     box-shadow:
-      0 1px 2px oklch(var(--foreground) / 0.04),
-      0 4px 12px -2px oklch(var(--foreground) / 0.06),
-      0 12px 32px -8px oklch(var(--foreground) / 0.08);
+      0 1px 2px oklch(var(--shadow-ink) / 0.04),
+      0 4px 14px -4px oklch(var(--blue-900) / 0.08),
+      0 12px 32px -10px oklch(var(--blue-900) / 0.06);
   }
   .shadow-layered-lg {
     box-shadow:
-      0 2px 4px oklch(var(--foreground) / 0.05),
-      0 8px 20px -4px oklch(var(--foreground) / 0.08),
-      0 16px 40px -10px oklch(var(--foreground) / 0.1);
+      0 2px 4px oklch(var(--shadow-ink) / 0.05),
+      0 8px 22px -6px oklch(var(--blue-900) / 0.1),
+      0 16px 40px -12px oklch(var(--blue-900) / 0.08);
   }
   .dark .shadow-layered {
     box-shadow:
@@ -628,10 +720,95 @@
   }
 
   .gold-sheen {
-    background: linear-gradient(180deg, oklch(var(--orange-600) / 0.95) 0%, oklch(var(--orange-600)) 100%);
+    background: oklch(var(--blue-600));
     color: oklch(100% 0 0);
   }
-  .gold-sheen:hover { filter: brightness(1.04); }
+  .gold-sheen:hover { background: oklch(var(--blue-700)); }
+
+  .super-gold-chip {
+    background: oklch(var(--super-gold-soft));
+    color: oklch(var(--super-gold-text));
+    border: 1px solid oklch(var(--super-gold) / 0.45);
+  }
+
+  .page-atmosphere {
+    background:
+      radial-gradient(ellipse 80% 45% at 100% 0%, oklch(var(--blue-100) / 0.28), transparent 58%),
+      radial-gradient(ellipse 50% 38% at 0% 100%, oklch(var(--blue-50) / 0.22), transparent 52%),
+      oklch(var(--background));
+  }
+  [data-role="client"] .page-atmosphere,
+  [data-role="admin"] .page-atmosphere,
+  [data-role="manager"] .page-atmosphere,
+  [data-role="intern"] .page-atmosphere,
+  [data-role="super_admin"] .page-atmosphere {
+    background:
+      radial-gradient(ellipse 80% 45% at 100% 0%, oklch(var(--blue-100) / 0.28), transparent 58%),
+      radial-gradient(ellipse 50% 38% at 0% 100%, oklch(var(--indigo-50) / 0.2), transparent 52%),
+      oklch(var(--background));
+  }
+
+  .journey-node-pulse {
+    animation: journey-node-pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes journey-node-pulse {
+    0%, 100% {
+      box-shadow:
+        0 0 0 4px oklch(var(--blue-100) / 0.85),
+        0 0 0 0 oklch(var(--blue-600) / 0);
+    }
+    50% {
+      box-shadow:
+        0 0 0 5px oklch(var(--blue-100)),
+        0 0 0 12px oklch(var(--blue-600) / 0.12);
+    }
+  }
+
+  .journey-unlock {
+    animation: journey-unlock 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes journey-unlock {
+    0% { transform: scale(0.92); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .journey-complete {
+    animation: journey-complete 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes journey-complete {
+    0% { transform: scale(0.88); }
+    60% { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+
+  .page-fade-up {
+    animation: page-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes page-fade-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .skeleton-brand {
+    background: linear-gradient(
+      90deg,
+      oklch(var(--muted)) 0%,
+      oklch(var(--blue-100) / 0.75) 50%,
+      oklch(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.2s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .journey-node-pulse,
+    .journey-unlock,
+    .journey-complete,
+    .page-fade-up,
+    .skeleton-brand {
+      animation: none !important;
+    }
+  }
 
   .accent-bar {
     width: 3px;
@@ -1093,15 +1270,15 @@
   0%, 100% {
     box-shadow:
       0 0 0 6px oklch(var(--raised)),
-      0 0 0 7px oklch(var(--orange-400) / 0.35),
-      0 0 0 0 oklch(var(--orange-500) / 0);
+      0 0 0 7px oklch(var(--blue-400) / 0.35),
+      0 0 0 0 oklch(var(--blue-500) / 0);
     transform: scale(1);
   }
   50% {
     box-shadow:
       0 0 0 6px oklch(var(--raised)),
-      0 0 0 8px oklch(var(--orange-400) / 0.55),
-      0 0 0 16px oklch(var(--orange-500) / 0.12);
+      0 0 0 8px oklch(var(--blue-400) / 0.5),
+      0 0 0 16px oklch(var(--blue-500) / 0.12);
     transform: scale(1.08);
   }
 }

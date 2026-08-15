@@ -1,5 +1,5 @@
 /**
- * Shared Framer Motion presets — orange-primary design system.
+ * Shared Framer Motion presets — cool blue-primary design system.
  * Spring motion for page enter, lists, and interactive surfaces.
  * Default ease fallback: in-out-quart-ish [0.22, 1, 0.36, 1].
  */
