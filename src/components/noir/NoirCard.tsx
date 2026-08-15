@@ -28,8 +28,8 @@ export function NoirCard({
   const reduceMotion = useReducedMotion();
   const classes = cn(
     flat ? (raised ? 'surface-flat-raised' : 'surface-flat') : raised ? 'surface-raised' : 'surface',
-    'border-orange-100/80',
-    interactive && 'transition-all duration-200 hover:border-orange-200 cursor-pointer',
+    'border-border',
+    interactive && 'transition-all duration-200 hover:border-primary/35 cursor-pointer',
     className,
   );
 

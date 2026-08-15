@@ -7,7 +7,7 @@ export function GoldDivider({ className, vertical = false }: { className?: strin
         className={cn('w-px self-stretch', className)}
         style={{
           background:
-            'linear-gradient(180deg, transparent 0%, oklch(var(--orange-400) / 0.4) 20%, oklch(var(--orange-400) / 0.4) 80%, transparent 100%)',
+            'linear-gradient(180deg, transparent 0%, oklch(var(--blue-400) / 0.4) 20%, oklch(var(--blue-400) / 0.4) 80%, transparent 100%)',
         }}
         aria-hidden
       />

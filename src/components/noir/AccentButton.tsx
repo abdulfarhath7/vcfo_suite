@@ -20,13 +20,13 @@ const sizeMap: Record<Size, string> = {
 };
 
 const variantMap: Record<Variant, string> = {
-  solid: "gold-sheen font-medium hover:brightness-105 active:brightness-95 text-white",
+  solid: "bg-primary text-primary-foreground font-medium hover:bg-primary-dark shadow-none",
   outline:
-    "bg-transparent text-orange-700 border border-orange-200 hover:bg-orange-50 hover:border-orange-300",
-  ghost: "bg-transparent text-muted-foreground hover:bg-orange-50/80 hover:text-foreground",
+    "bg-panel text-primary border border-border hover:bg-primary-light hover:border-primary/35",
+  ghost: "bg-transparent text-primary hover:bg-primary-light",
 };
 
-/** Role-aware primary button — orange fill with spring press. */
+/** Role-aware primary button — solid blue, cool outline, blue ghost. */
 export function AccentButton({
   ref,
   className,
@@ -41,9 +41,9 @@ export function AccentButton({
 }: AccentButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
   const reduceMotion = useReducedMotion();
   const classes = cn(
-    "inline-flex items-center justify-center gap-2 rounded-md transition-colors",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40",
-    "disabled:opacity-50 disabled:pointer-events-none",
+    "inline-flex items-center justify-center gap-2 rounded-[10px] transition-colors",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+    "disabled:opacity-40 disabled:pointer-events-none",
     "tracking-tight",
     variantMap[variant],
     sizeMap[size],

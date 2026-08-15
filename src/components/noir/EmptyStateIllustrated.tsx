@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccentButton } from "./AccentButton";
 import { Surface } from "./Surface";
+import { GeometricEmpty } from "@/components/illustrations/GeometricEmpty";
 
 interface EmptyStateIllustratedProps {
   title: string;
@@ -10,6 +11,7 @@ interface EmptyStateIllustratedProps {
   onAction?: () => void;
   icon?: LucideIcon;
   className?: string;
+  art?: "inbox" | "waiting" | "success" | "empty";
 }
 
 export function EmptyStateIllustrated({
@@ -19,6 +21,7 @@ export function EmptyStateIllustrated({
   onAction,
   icon: Icon,
   className,
+  art = "empty",
 }: EmptyStateIllustratedProps) {
   return (
     <Surface
@@ -27,13 +30,13 @@ export function EmptyStateIllustrated({
         className,
       )}
     >
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border role-accent-border role-accent-bg">
-        {Icon ? (
+      {Icon ? (
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border role-accent-border role-accent-bg">
           <Icon className="h-7 w-7 text-brand" aria-hidden />
-        ) : (
-          <div className="h-8 w-8 rounded-md border role-accent-border opacity-60" />
-        )}
-      </div>
+        </div>
+      ) : (
+        <GeometricEmpty variant={art} className="mb-2" />
+      )}
       <h3 className="serif text-xl text-foreground">{title}</h3>
       {description && (
         <p className="prose-narrow mt-2 text-sm text-muted-foreground">{description}</p>

@@ -22,9 +22,9 @@ export function StepIndicator({ current, total, labels, className }: StepIndicat
           {almostThere ? "Almost there" : `${pct}% complete`}
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-orange-100 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-primary-light overflow-hidden">
         <div
-          className="h-full rounded-full bg-orange-600 transition-all duration-500 ease-out"
+          className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -39,8 +39,8 @@ export function StepIndicator({ current, total, labels, className }: StepIndicat
                 key={label}
                 className={cn(
                   "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] mono",
-                  done && "bg-orange-50 text-orange-700",
-                  active && "border border-orange-300 bg-orange-50 text-orange-700 font-medium",
+                  done && "bg-success-light text-success-text",
+                  active && "border border-primary/30 bg-primary-light text-primary font-medium",
                   !done && !active && "text-muted-foreground",
                 )}
               >

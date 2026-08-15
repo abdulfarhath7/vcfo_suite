@@ -52,7 +52,7 @@ export function PhaseDonut({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="oklch(var(--orange-200))"
+          stroke="oklch(var(--blue-200))"
           strokeWidth={thickness}
         />
         {arcs.map((a, i) => (

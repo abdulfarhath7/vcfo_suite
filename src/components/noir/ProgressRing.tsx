@@ -44,7 +44,7 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="oklch(var(--orange-600))"
+          stroke="oklch(var(--blue-600))"
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -52,7 +52,7 @@ export function ProgressRing({
           className="transition-[stroke-dashoffset] duration-500 ease-out"
         />
       </svg>
-      <span className="absolute mono text-[10px] font-medium text-orange-700">{clamped}%</span>
+      <span className="absolute mono text-[10px] font-medium text-primary">{clamped}%</span>
     </progress>
   );
 }

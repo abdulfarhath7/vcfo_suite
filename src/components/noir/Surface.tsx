@@ -12,7 +12,7 @@ interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
   interactive?: boolean;
 }
 
-/** Unified card/surface primitive — warm border, optional spring hover. */
+/** Unified card/surface primitive — cool slate border, optional spring hover. */
 export function Surface({
   ref,
   className,
@@ -29,8 +29,8 @@ export function Surface({
   const reduceMotion = useReducedMotion();
   const classes = cn(
     flat ? (raised ? "surface-flat-raised" : "surface-flat") : raised ? "surface-raised" : "surface",
-    "border-orange-100/80",
-    interactive && "surface-interactive transition-all duration-200 hover:border-orange-200 cursor-pointer",
+    "border-border",
+    interactive && "surface-interactive transition-all duration-200 hover:border-primary/35 cursor-pointer",
     className,
   );
 
