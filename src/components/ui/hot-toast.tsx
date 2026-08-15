@@ -62,7 +62,7 @@ const semanticToastShell: Record<ToastSemanticVariant, CSSProperties> = {
     color: "oklch(var(--foreground))",
     border: "1px solid oklch(var(--border))",
     borderLeftWidth: "3px",
-    borderLeftColor: "oklch(var(--orange-500))",
+    borderLeftColor: "oklch(var(--blue-500))",
   },
 };
 
@@ -78,7 +78,7 @@ const variantIconStyles: Record<ToastIconVariant, { shell: string; icon: string 
   error: { shell: "border border-danger/25 bg-panel/90", icon: "text-danger-text" },
   warning: { shell: "border border-warning/25 bg-panel/90", icon: "text-warning-text" },
   info: { shell: "border border-info/25 bg-panel/90", icon: "text-info-text" },
-  loading: { shell: "border border-orange-200 bg-panel/90", icon: "text-brand" },
+  loading: { shell: "border border-blue-200 bg-panel/90", icon: "text-brand" },
 };
 
 function ToastStatusIcon({
