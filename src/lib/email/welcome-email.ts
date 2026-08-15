@@ -115,7 +115,7 @@ function buildWelcomeEmail(params: WelcomeEmailParams): {
         'For your security, sign in and change your password using <strong>Forgot password</strong> on the login page when convenient.',
       ),
     cta: { label: 'Open client portal', href: params.portalUrl },
-    signatureHtml: `<p style="margin:0;font-size:14px;line-height:1.6;color:#44403c;">Regards,<br/><strong>${escapeHtml(params.managerName)}</strong><br/><a href="mailto:${escapeHtml(params.managerEmail)}" style="color:#ea580c;text-decoration:none;">${escapeHtml(params.managerEmail)}</a></p>`,
+    signatureHtml: `<p style="margin:0;font-size:14px;line-height:1.6;color:#475569;">Regards,<br/><strong>${escapeHtml(params.managerName)}</strong><br/><a href="mailto:${escapeHtml(params.managerEmail)}" style="color:#2563EB;text-decoration:none;">${escapeHtml(params.managerEmail)}</a></p>`,
   });
 
   const text = `Dear ${params.clientName},

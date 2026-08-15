@@ -47,10 +47,10 @@ export function buildInternWelcomeEmail(params: InternWelcomeEmailParams): {
         { label: 'Temporary password', value: params.temporaryPassword },
       ]) +
       emailParagraph(
-        `<strong>Please change your password after your first sign-in.</strong> Use Forgot password on the login page, or open <a href="${escapeHtml(params.resetUrl)}" style="color:#ea580c;">reset password</a> directly.`,
+        `<strong>Please change your password after your first sign-in.</strong> Use Forgot password on the login page, or open <a href="${escapeHtml(params.resetUrl)}" style="color:#2563EB;">reset password</a> directly.`,
       ),
     cta: { label: 'Open VCFO Suite', href: params.portalUrl },
-    signatureHtml: `<p style="margin:0;font-size:14px;line-height:1.6;color:#44403c;">Regards,<br/><strong>${escapeHtml(params.managerName)}</strong><br/><a href="mailto:${escapeHtml(params.managerEmail)}" style="color:#ea580c;text-decoration:none;">${escapeHtml(params.managerEmail)}</a></p>`,
+    signatureHtml: `<p style="margin:0;font-size:14px;line-height:1.6;color:#475569;">Regards,<br/><strong>${escapeHtml(params.managerName)}</strong><br/><a href="mailto:${escapeHtml(params.managerEmail)}" style="color:#2563EB;text-decoration:none;">${escapeHtml(params.managerEmail)}</a></p>`,
   });
 
   const text = `Dear ${params.internName},
