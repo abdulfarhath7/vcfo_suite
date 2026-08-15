@@ -40,7 +40,7 @@ export function LoginHero({ className, variant = 'full' }: LoginHeroProps) {
           <div className="login-hero-compact-extra mt-0 hidden md:mt-6 md:block">
             <Eyebrow className="mb-3">For professional services firms</Eyebrow>
             <p className="max-w-xl text-[clamp(22px,4vw,32px)] font-serif leading-tight text-foreground">
-              Run every engagement <em className="not-italic text-orange-600">on record.</em>
+              Run every engagement <em className="not-italic text-primary">on record.</em>
             </p>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
               Tasks, filings, and client collaboration on one timeline built for Indian compliance.
@@ -89,7 +89,7 @@ export function LoginHero({ className, variant = 'full' }: LoginHeroProps) {
           />{' '}
           <BlurText
             text="on record."
-            className="inline text-orange-600"
+            className="inline text-primary"
             delay={70}
             reducedMotion={reduceMotion ?? false}
           />

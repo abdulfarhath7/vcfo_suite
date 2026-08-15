@@ -25,13 +25,13 @@ export default function ResetPassword() {
         path="/auth/reset-password"
       />
 
-      <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-orange-600 to-orange-700 text-white p-12 overflow-hidden">
+      <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-blue-600 to-blue-700 text-white p-12 overflow-hidden">
         <GrainOverlay className="opacity-10" />
         <div className="relative z-10 flex items-center gap-3">
           <SbcLogo variant="mark" size={36} decorative />
           <div>
             <div className="text-[13px] font-medium tracking-tight text-white">VCFO Suite</div>
-            <Eyebrow className="mt-0.5 text-orange-100">Account security</Eyebrow>
+            <Eyebrow className="mt-0.5 text-blue-100">Account security</Eyebrow>
           </div>
         </div>
 
@@ -41,19 +41,19 @@ export default function ResetPassword() {
           transition={{ duration: 0.6, ease, delay: 0.1 }}
           className="relative z-10 max-w-md"
         >
-          <Eyebrow className="mb-4 text-orange-100">Password help</Eyebrow>
+          <Eyebrow className="mb-4 text-blue-100">Password help</Eyebrow>
           <h1 className="display-lg text-white">
-            Use your <em className="italic text-orange-200">issued password</em>
+            Use your <em className="italic text-blue-200">issued password</em>
           </h1>
           <GoldDivider className="my-6 max-w-[60px] opacity-60" />
-          <p className="text-sm text-orange-50/90 leading-relaxed prose-narrow">
+          <p className="text-sm text-blue-50/90 leading-relaxed prose-narrow">
             Sign in with the temporary password from your welcome email, then ask your firm
             manager if you need a new one issued.
           </p>
           <TrustBadge className="mt-5">Pilot · manager-issued credentials</TrustBadge>
         </m.div>
 
-        <div className="relative z-10 text-[11px] text-orange-100/70">
+        <div className="relative z-10 text-[11px] text-blue-100/70">
           <Mono>Auth.js session</Mono>
         </div>
       </div>

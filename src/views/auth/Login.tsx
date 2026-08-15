@@ -128,14 +128,14 @@ function LoginForm({
           <ThemeToggle />
         </div>
         <div
-          className="pointer-events-none absolute inset-0 opacity-60 lg:opacity-50"
+          className="pointer-events-none absolute inset-0 opacity-70 lg:opacity-55"
           aria-hidden
           style={{
             background:
-              'radial-gradient(ellipse 80% 50% at 50% 0%, oklch(58% 0.18 55 / 0.07) 0%, transparent 55%)',
+              'radial-gradient(ellipse 80% 50% at 50% 0%, oklch(var(--blue-600) / 0.07) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 100% 100%, oklch(var(--blue-100) / 0.35) 0%, transparent 50%)',
           }}
         />
-        <div className="relative z-10 w-full max-w-[min(100%,420px)] sm:max-w-md md:max-w-lg lg:max-w-[420px]">
+        <div className="relative z-10 w-full max-w-[min(100%,420px)] sm:max-w-md md:max-w-lg lg:max-w-[420px] page-fade-up">
         <LoginFormCard
           email={email}
           password={password}
