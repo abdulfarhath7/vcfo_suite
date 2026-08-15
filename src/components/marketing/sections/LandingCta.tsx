@@ -15,8 +15,8 @@ export function LandingCta() {
         className="absolute inset-0"
         style={{
           background: `
-            radial-gradient(circle at 15% 20%, oklch(var(--orange-600) / 0.28), transparent 42%),
-            radial-gradient(circle at 85% 80%, oklch(var(--orange-400) / 0.16), transparent 40%),
+            radial-gradient(circle at 15% 20%, oklch(var(--blue-600) / 0.28), transparent 42%),
+            radial-gradient(circle at 85% 80%, oklch(var(--blue-400) / 0.16), transparent 40%),
             linear-gradient(165deg, oklch(18% 0.015 255), oklch(14% 0.014 255))
           `,
         }}
@@ -28,7 +28,7 @@ export function LandingCta() {
         className="relative z-10 mx-auto max-w-3xl rounded-[2rem] border border-white/12 bg-white/[0.04] px-6 py-12 text-center shadow-[0_32px_120px_-40px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:px-10 sm:py-16 lg:px-14"
       >
         <div
-          className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_top,oklch(var(--orange-500)/0.22),transparent_48%)]"
+          className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_top,oklch(var(--blue-500)/0.22),transparent_48%)]"
           aria-hidden
         />
         <div className="relative">

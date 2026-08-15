@@ -10,7 +10,7 @@ export function LandingProblem() {
         <Reveal className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end lg:gap-16" stagger>
           <RevealItem>
             <Eyebrow>Why it exists</Eyebrow>
-            <div className="mt-4 h-px w-12 bg-gradient-to-r from-orange-500 to-transparent" />
+            <div className="mt-4 h-px w-12 bg-gradient-to-r from-blue-500 to-transparent" />
             <h2 className="mt-5 font-serif text-[clamp(1.95rem,4vw,3rem)] font-medium leading-[1.06] tracking-[-0.02em] text-foreground">
               Compliance is still too fragmented for modern firms.
             </h2>
@@ -46,7 +46,7 @@ export function LandingProblem() {
             },
           ].map((item) => (
             <RevealItem key={item.n}>
-              <p className="font-mono text-[11px] tracking-[0.16em] text-orange-700/75">{item.n}</p>
+              <p className="font-mono text-[11px] tracking-[0.16em] text-blue-700/75">{item.n}</p>
               <h3 className="mt-3 font-serif text-xl font-medium tracking-tight text-foreground sm:text-[1.35rem]">
                 {item.title}
               </h3>

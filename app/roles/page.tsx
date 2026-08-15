@@ -19,7 +19,7 @@ export default function RolesPage() {
           className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 80% 55% at 80% 0%, oklch(var(--orange-100) / 0.5), transparent 55%),
+              radial-gradient(ellipse 80% 55% at 80% 0%, oklch(var(--blue-100) / 0.5), transparent 55%),
               linear-gradient(180deg, oklch(var(--background)), oklch(var(--raised) / 0.5))
             `,
           }}
@@ -29,7 +29,7 @@ export default function RolesPage() {
 
         <div className="relative z-10 mx-auto max-w-6xl px-5 pb-12 pt-32 sm:px-8 sm:pt-36 lg:px-10">
           <Eyebrow>Product</Eyebrow>
-          <div className="mt-5 h-px w-12 bg-gradient-to-r from-orange-500 to-transparent" />
+          <div className="mt-5 h-px w-12 bg-gradient-to-r from-blue-500 to-transparent" />
           <h1 className="mt-7 max-w-xl font-serif text-[clamp(2.1rem,4vw,3.1rem)] font-medium leading-[1.08] tracking-[-0.02em] text-foreground">
             Built for every seat at the firm.
           </h1>
@@ -37,7 +37,7 @@ export default function RolesPage() {
             Three portals, one system — overview for managers, focus for leads, clarity for clients.
           </p>
           <p className="mt-8 text-sm text-muted-foreground">
-            <Link href="/" className="font-medium text-orange-700 underline-offset-4 hover:underline">
+            <Link href="/" className="font-medium text-blue-700 underline-offset-4 hover:underline">
               ← Back to home
             </Link>
           </p>

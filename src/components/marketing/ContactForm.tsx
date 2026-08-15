@@ -95,7 +95,7 @@ export function ContactForm() {
         >
           If your mail app did not open, write to{' '}
           <a
-            className="font-medium text-orange-700 underline-offset-4 hover:underline"
+            className="font-medium text-blue-700 underline-offset-4 hover:underline"
             href={`mailto:${CONTACT_EMAIL}`}
           >
             {CONTACT_EMAIL}
@@ -108,7 +108,7 @@ export function ContactForm() {
 }
 
 const fieldClass =
-  'w-full rounded-md border-0 border-b border-border bg-transparent px-0 py-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground/50 focus-visible:border-orange-500 focus-visible:ring-0';
+  'w-full rounded-md border-0 border-b border-border bg-transparent px-0 py-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground/50 focus-visible:border-blue-500 focus-visible:ring-0';
 
 function Field({
   label,

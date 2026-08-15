@@ -28,11 +28,11 @@ export function LandingHowItWorks() {
       className="relative scroll-mt-24 overflow-hidden border-t border-border/40 bg-[oklch(var(--raised))] py-16 sm:py-18 lg:py-20"
     >
       <div
-        className="pointer-events-none absolute -left-28 top-1/4 h-96 w-96 rounded-full bg-orange-200/25 blur-3xl"
+        className="pointer-events-none absolute -left-28 top-1/4 h-96 w-96 rounded-full bg-blue-200/25 blur-3xl"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-orange-300/20 blur-3xl"
+        className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-blue-300/20 blur-3xl"
         aria-hidden
       />
 
@@ -40,7 +40,7 @@ export function LandingHowItWorks() {
         <Reveal className="max-w-2xl" stagger>
           <RevealItem>
             <Eyebrow>How it works</Eyebrow>
-            <div className="mt-4 h-px w-12 bg-gradient-to-r from-orange-500 to-transparent" />
+            <div className="mt-4 h-px w-12 bg-gradient-to-r from-blue-500 to-transparent" />
             <h2 className="mt-5 font-serif text-[clamp(1.95rem,3.6vw,2.75rem)] font-normal leading-[1.08] tracking-[-0.02em] text-foreground">
               One engagement thread for incorporation, licensing, and filings.
             </h2>
@@ -52,7 +52,7 @@ export function LandingHowItWorks() {
 
         <ol className="relative mt-12 sm:mt-14">
           <div
-            className="absolute bottom-2 left-[0.85rem] top-2 w-px bg-gradient-to-b from-orange-400/80 via-orange-500/40 to-orange-800/20 sm:left-[1.15rem]"
+            className="absolute bottom-2 left-[0.85rem] top-2 w-px bg-gradient-to-b from-blue-400/80 via-blue-500/40 to-blue-800/20 sm:left-[1.15rem]"
             aria-hidden
           />
 

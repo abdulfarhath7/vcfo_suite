@@ -76,7 +76,7 @@ export function MarketingNav() {
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-[13px] font-medium tracking-tight transition-colors',
                   active
-                    ? 'bg-orange-50 text-foreground'
+                    ? 'bg-blue-50 text-foreground'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
@@ -126,7 +126,7 @@ export function MarketingNav() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className="rounded-xl px-3 py-3 font-serif text-xl font-normal tracking-tight text-foreground hover:bg-orange-50/80"
+                  className="rounded-xl px-3 py-3 font-serif text-xl font-normal tracking-tight text-foreground hover:bg-blue-50/80"
                 >
                   {link.label}
                 </Link>

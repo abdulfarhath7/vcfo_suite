@@ -18,7 +18,7 @@ export default function ShinyText({
   speed = 3,
   className = '',
   color = '#78716c',
-  shineColor = '#fff7ed',
+  shineColor = '#EFF6FF',
 }: ShinyTextProps) {
   return (
     <span

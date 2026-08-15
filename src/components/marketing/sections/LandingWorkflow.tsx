@@ -29,7 +29,7 @@ function FlowArrow({ delay = 0, vertical = false }: { delay?: number; vertical?:
     return (
       <div className="flex items-center justify-center py-1" aria-hidden>
         <div
-          className="mkt-flow-arrow-down flex flex-col items-center text-orange-600"
+          className="mkt-flow-arrow-down flex flex-col items-center text-blue-600"
           style={{ animationDelay: `${delay}s` }}
         >
           <svg width="2" height="18" className="overflow-visible">
@@ -82,7 +82,7 @@ export function LandingWorkflow() {
   return (
     <section className="relative border-t border-border/40 bg-[oklch(var(--raised))] py-16 sm:py-20">
       <div
-        className="pointer-events-none absolute left-1/2 top-0 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-orange-200/25 blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-0 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-blue-200/25 blur-3xl"
         aria-hidden
       />
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8 lg:px-10">
@@ -106,7 +106,7 @@ export function LandingWorkflow() {
             <div key={tile.title} className="contents md:block">
               <FadeContent delay={0.08 * i} className="relative">
                 <TiltCard>
-                  <article className="h-full rounded-xl border border-border/60 bg-[oklch(var(--panel)/0.92)] p-6 shadow-[0_20px_50px_-28px_oklch(var(--orange-800)/0.25)] sm:p-7">
+                  <article className="h-full rounded-xl border border-border/60 bg-[oklch(var(--panel)/0.92)] p-6 shadow-[0_20px_50px_-28px_oklch(var(--blue-800)/0.25)] sm:p-7">
                     <Mono className="text-[10px] text-indigo-700/75">{tile.mono}</Mono>
                     <h3 className="mt-4 font-serif text-2xl font-medium tracking-tight text-foreground">
                       {tile.title}

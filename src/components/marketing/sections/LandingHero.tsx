@@ -13,8 +13,8 @@ export function LandingHero() {
         className="absolute inset-0"
         style={{
           background: `
-            radial-gradient(ellipse 100% 80% at 78% 12%, oklch(var(--orange-100) / 0.7), transparent 58%),
-            radial-gradient(ellipse 70% 50% at 8% 88%, oklch(var(--orange-50) / 0.85), transparent 52%),
+            radial-gradient(ellipse 100% 80% at 78% 12%, oklch(var(--blue-100) / 0.7), transparent 58%),
+            radial-gradient(ellipse 70% 50% at 8% 88%, oklch(var(--blue-50) / 0.85), transparent 52%),
             linear-gradient(165deg, oklch(var(--background)) 0%, oklch(var(--raised)) 100%)
           `,
         }}
@@ -29,11 +29,11 @@ export function LandingHero() {
           <p className="discrete-hero-enter discrete-delay-1 font-serif text-[clamp(2.85rem,6.8vw,4.5rem)] font-semibold leading-[0.92] tracking-[-0.04em] text-foreground">
             VCFO
           </p>
-          <p className="discrete-hero-enter discrete-delay-1 mt-2 font-mono text-[11px] uppercase tracking-[0.28em] text-orange-600">
+          <p className="discrete-hero-enter discrete-delay-1 mt-2 font-mono text-[11px] uppercase tracking-[0.28em] text-blue-600">
             Suite · GCC compliance cockpit
           </p>
 
-          <div className="discrete-hero-rule discrete-delay-2 mt-8 h-px w-16 bg-gradient-to-r from-orange-600 to-transparent" />
+          <div className="discrete-hero-rule discrete-delay-2 mt-8 h-px w-16 bg-gradient-to-r from-blue-600 to-transparent" />
 
           <h1 className="discrete-hero-enter discrete-delay-2 mt-8 font-serif text-[clamp(1.7rem,3.8vw,2.5rem)] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground">
             Engagements that feel precise — from intake to filing.
@@ -57,7 +57,7 @@ export function LandingHero() {
             </Magnet>
             <Link
               href="/contact"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-border/80 bg-panel/80 px-6 text-sm font-medium tracking-tight text-foreground backdrop-blur-sm transition-colors hover:border-orange-300 hover:bg-orange-50/70"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-border/80 bg-panel/80 px-6 text-sm font-medium tracking-tight text-foreground backdrop-blur-sm transition-colors hover:border-blue-300 hover:bg-blue-50/70"
             >
               Request demo
             </Link>

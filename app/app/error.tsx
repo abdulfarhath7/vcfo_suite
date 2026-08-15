@@ -30,7 +30,7 @@ export default function AppError({
       animate={preset.animate}
       transition={preset.transition}
     >
-      <AlertTriangle className="h-10 w-10 text-orange-600" aria-hidden />
+      <AlertTriangle className="h-10 w-10 text-blue-600" aria-hidden />
       <div className="space-y-2 max-w-sm">
         <p className="text-base font-semibold text-foreground">Something went wrong</p>
         <p className="text-sm text-muted-foreground">

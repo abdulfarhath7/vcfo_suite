@@ -29,8 +29,8 @@ export function HeroProductPlane({ className }: { className?: string }) {
       className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}
       aria-hidden
     >
-      <div className="absolute -right-[10%] top-[8%] h-[70%] w-[70%] rounded-full bg-[radial-gradient(circle_at_center,oklch(var(--orange-200)/0.35)_0%,transparent_70%)] blur-3xl" />
-      <div className="absolute right-[5%] bottom-[5%] h-[45%] w-[40%] rounded-full bg-[radial-gradient(circle_at_center,oklch(var(--orange-300)/0.18)_0%,transparent_72%)] blur-3xl" />
+      <div className="absolute -right-[10%] top-[8%] h-[70%] w-[70%] rounded-full bg-[radial-gradient(circle_at_center,oklch(var(--blue-200)/0.35)_0%,transparent_70%)] blur-3xl" />
+      <div className="absolute right-[5%] bottom-[5%] h-[45%] w-[40%] rounded-full bg-[radial-gradient(circle_at_center,oklch(var(--blue-300)/0.18)_0%,transparent_72%)] blur-3xl" />
 
       <svg
         className="absolute inset-y-0 right-0 h-full w-[min(110%,980px)] translate-x-[8%] sm:translate-x-[2%] lg:translate-x-0"

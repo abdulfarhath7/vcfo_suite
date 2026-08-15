@@ -18,7 +18,7 @@ export default function ContactPage() {
           className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 80% 55% at 15% 10%, oklch(var(--orange-100) / 0.55), transparent 55%),
+              radial-gradient(ellipse 80% 55% at 15% 10%, oklch(var(--blue-100) / 0.55), transparent 55%),
               linear-gradient(180deg, oklch(var(--background)), oklch(var(--raised) / 0.65))
             `,
           }}
@@ -29,7 +29,7 @@ export default function ContactPage() {
         <div className="relative z-10 mx-auto grid max-w-6xl gap-14 px-5 pb-24 pt-32 sm:px-8 sm:pb-28 sm:pt-36 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 lg:px-10 lg:items-start">
           <div className="max-w-md lg:sticky lg:top-32">
             <Eyebrow>Contact</Eyebrow>
-            <div className="mt-5 h-px w-12 bg-gradient-to-r from-orange-500 to-transparent" />
+            <div className="mt-5 h-px w-12 bg-gradient-to-r from-blue-500 to-transparent" />
             <h1 className="mt-7 font-serif text-[clamp(2.1rem,4vw,3.1rem)] font-medium leading-[1.08] tracking-[-0.02em] text-foreground">
               Tell us about your firm.
             </h1>
@@ -41,7 +41,7 @@ export default function ContactPage() {
               Already have an account?{' '}
                 <Link
                   href="/login"
-                  className="font-medium text-orange-700 underline-offset-4 transition-colors hover:underline"
+                  className="font-medium text-blue-700 underline-offset-4 transition-colors hover:underline"
                 >
                   Sign in
                 </Link>

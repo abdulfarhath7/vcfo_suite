@@ -14,19 +14,19 @@ const STATS = [
     to: 98,
     label: 'On-time filings',
     hint: 'Fewer lost deadlines',
-    accent: 'from-orange-400 to-orange-700',
+    accent: 'from-blue-400 to-blue-700',
   },
   {
     to: 3,
     label: 'Role-aware portals',
     hint: 'Manager · Lead · Client',
-    accent: 'from-orange-500 to-orange-800',
+    accent: 'from-blue-500 to-blue-800',
   },
   {
     to: 1,
     label: 'Single engagement thread',
     hint: 'One source of truth',
-    accent: 'from-orange-400 to-orange-800',
+    accent: 'from-blue-400 to-blue-800',
   },
 ] as const;
 
@@ -67,7 +67,7 @@ function ImpactStatCard({
       className={cn('discrete-fade-up', `discrete-delay-${index + 1}`)}
     >
       <TiltCard className="h-full">
-        <SpotlightCard className="group h-full min-h-[11.5rem] border-border/60 p-0 transition-[border-color,box-shadow] duration-300 hover:border-orange-300/70 hover:shadow-[0_22px_48px_-28px_oklch(var(--orange-800)/0.35)] sm:min-h-[12.5rem]">
+        <SpotlightCard className="group h-full min-h-[11.5rem] border-border/60 p-0 transition-[border-color,box-shadow] duration-300 hover:border-blue-300/70 hover:shadow-[0_22px_48px_-28px_oklch(var(--blue-800)/0.35)] sm:min-h-[12.5rem]">
           <div className="relative flex h-full flex-col p-6 sm:p-7">
             <div
               className={cn('absolute inset-x-0 top-0 h-1 bg-gradient-to-r', stat.accent)}
@@ -81,7 +81,7 @@ function ImpactStatCard({
               {stat.hint}
             </p>
             <div
-              className="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-orange-200/30 blur-2xl transition-opacity duration-500 group-hover:opacity-80"
+              className="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-blue-200/30 blur-2xl transition-opacity duration-500 group-hover:opacity-80"
               aria-hidden
             />
           </div>
@@ -95,13 +95,13 @@ export function LandingImpact() {
   return (
     <section className="relative overflow-hidden border-t border-border/40 bg-background py-14 sm:py-16 lg:py-18">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/50 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"
         aria-hidden
       />
       <div className="mx-auto max-w-6xl px-5 sm:px-8 lg:px-10">
         <FadeContent blur className="mb-8 max-w-xl sm:mb-10">
             <Eyebrow>On the record</Eyebrow>
-          <div className="mt-4 h-px w-12 bg-gradient-to-r from-orange-500 to-transparent" />
+          <div className="mt-4 h-px w-12 bg-gradient-to-r from-blue-500 to-transparent" />
             <h2 className="mt-5 font-serif text-[clamp(1.85rem,3.5vw,2.75rem)] font-medium leading-tight tracking-tight text-foreground">
             Turn compliance noise into confident progress.
           </h2>

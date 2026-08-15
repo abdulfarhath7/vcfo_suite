@@ -21,17 +21,17 @@ export function MarketingFooter() {
             </p>
             <ul className="mt-4 space-y-3 text-sm text-foreground/85">
               <li>
-                <Link href="/#how-it-works" className="transition-colors hover:text-orange-700">
+                <Link href="/#how-it-works" className="transition-colors hover:text-blue-700">
                   How it works
                 </Link>
               </li>
               <li>
-                <Link href="/roles" className="transition-colors hover:text-orange-700">
+                <Link href="/roles" className="transition-colors hover:text-blue-700">
                   Roles
                 </Link>
               </li>
               <li>
-                <Link href="/login" className="transition-colors hover:text-orange-700">
+                <Link href="/login" className="transition-colors hover:text-blue-700">
                   Sign in
                 </Link>
               </li>
@@ -43,7 +43,7 @@ export function MarketingFooter() {
             </p>
             <ul className="mt-4 space-y-3 text-sm text-foreground/85">
               <li>
-                <Link href="/contact" className="transition-colors hover:text-orange-700">
+                <Link href="/contact" className="transition-colors hover:text-blue-700">
                   Contact
                 </Link>
               </li>
