@@ -53,14 +53,14 @@ export function SidebarComplianceMini({
   return (
     <Link
       href={href}
-      className="mx-1 mb-2 block rounded-xl border border-border/60 bg-muted/30 p-2 transition-colors hover:bg-orange-50/50"
+      className="mx-1 mb-2 block rounded-xl border border-border/60 bg-muted/30 p-2 transition-colors hover:bg-blue-50/50"
       title="Open compliance calendar"
     >
       <div className="mb-1.5 flex items-center justify-between px-0.5">
         <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
           {now.toLocaleString('en-IN', { month: 'short' })} {year}
         </span>
-        <span className="text-[9px] text-orange-700/80">{dueDays.size} due</span>
+        <span className="text-[9px] text-blue-700/80">{dueDays.size} due</span>
       </div>
       <div className="grid grid-cols-7 gap-px">
         {cells.map((day, i) => {
@@ -74,7 +74,7 @@ export function SidebarComplianceMini({
               key={day}
               className={cn(
                 'relative flex h-3.5 items-center justify-center rounded-[2px] text-[8px] tabular-nums',
-                isToday && 'ring-1 ring-orange-400/50',
+                isToday && 'ring-1 ring-blue-400/50',
                 hasDue ? 'bg-foreground/85 text-background font-medium' : 'text-muted-foreground/70',
               )}
             >

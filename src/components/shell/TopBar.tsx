@@ -73,7 +73,6 @@ function pageTitleFromPath(pathname: string, role: string | undefined): string {
   if (segment === "vault") return "Document vault";
   if (segment === "analytics") return "Analytics";
   if (segment === "documents") return "Documents";
-  if (segment === "progress") return "Progress";
   if (segment === "messages") return "Messages";
   if (segment === "board-resolution") return "Board resolution";
   if (isEngagementRouteParam(segment)) return role === "admin" ? "Project" : "Engagement";
@@ -198,7 +197,7 @@ export function TopBar() {
       <button
         type="button"
         onClick={openMobile}
-        className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-orange-50 hover:text-foreground lg:hidden"
+        className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground lg:hidden"
         aria-label="Open navigation"
       >
         <PanelLeft className="h-4 w-4" strokeWidth={1.75} />
@@ -213,8 +212,13 @@ export function TopBar() {
           className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden font-mono text-[10px] tracking-wide text-muted-foreground"
         >
           {user && (
-            <span className="shrink-0 uppercase tracking-[0.12em] text-orange-700/80">
+            <span className="shrink-0 uppercase tracking-[0.12em] text-primary/80">
               {ROLE_UI_LABEL[user.role]}
+            </span>
+          )}
+          {user?.role === "super_admin" && (
+            <span className="super-gold-chip shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em]">
+              Super
             </span>
           )}
           {crumbs.length > 0 && user && <span className="shrink-0 text-border">·</span>}
@@ -224,7 +228,7 @@ export function TopBar() {
               <span
                 className={
                   i === crumbs.length - 1
-                    ? "min-w-0 font-medium capitalize text-orange-800"
+                    ? "min-w-0 font-medium capitalize text-primary"
                     : "min-w-0 capitalize"
                 }
               >
@@ -239,7 +243,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => setCommandOpen(true)}
-          className="flex h-9 min-h-[44px] items-center gap-2 rounded-xl border border-border/70 bg-orange-50/40 px-2.5 text-xs text-muted-foreground transition-all hover:border-orange-200 hover:bg-orange-50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-orange-500/35 sm:min-h-9"
+          className="flex h-9 min-h-[44px] items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-2.5 text-xs text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary-light hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 sm:min-h-9"
         >
           <Search className="h-3.5 w-3.5" strokeWidth={1.75} />
           <span className="hidden sm:inline">Search</span>

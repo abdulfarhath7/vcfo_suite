@@ -56,18 +56,7 @@ export function AppShell({
         className="relative min-h-screen bg-[oklch(var(--background))] text-foreground"
         data-role={user.role}
       >
-        {/* Soft ledger atmosphere */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(ellipse 85% 50% at 100% 0%, oklch(var(--orange-100) / 0.45), transparent 55%),
-              radial-gradient(ellipse 55% 40% at 0% 100%, oklch(var(--orange-50) / 0.55), transparent 50%),
-              oklch(var(--background))
-            `,
-          }}
-          aria-hidden
-        />
+        <div className="page-atmosphere pointer-events-none absolute inset-0" aria-hidden />
 
         <RoleSidebar />
         <MobileNavSheet />
@@ -77,7 +66,7 @@ export function AppShell({
           <div className="sticky top-0 z-20 px-3 pt-3 sm:px-4 sm:pt-3.5 lg:pr-4">
             <TopBar />
           </div>
-          <main className={cn("mx-auto px-4 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-5 lg:pr-4", mainMaxWidth)}>
+          <main className={cn("mx-auto px-4 pb-8 pt-4 page-fade-up sm:px-6 sm:pb-10 sm:pt-5 lg:pr-4", mainMaxWidth)}>
             {children}
           </main>
         </div>

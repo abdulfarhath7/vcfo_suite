@@ -81,8 +81,8 @@ export function NotificationsBell() {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-orange-50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/35 sm:min-h-9 sm:min-w-9",
-          hasUnread && "bg-orange-50/70 text-orange-600 hover:bg-orange-50",
+          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:min-h-9 sm:min-w-9",
+          hasUnread && "bg-primary-light text-primary hover:bg-primary-light",
         )}
         aria-label={
           hasUnread
@@ -93,7 +93,7 @@ export function NotificationsBell() {
         <Bell
           className={cn(
             "h-[18px] w-[18px] shrink-0",
-            hasUnread && "fill-orange-200/40",
+            hasUnread && "fill-primary/25",
           )}
           strokeWidth={hasUnread ? 2.25 : 2}
           aria-hidden
@@ -162,7 +162,7 @@ export function NotificationsBell() {
                 <span
                   className={cn(
                     "ml-1 tabular-nums",
-                    unread > 0 ? "text-orange-600" : "text-text-tertiary",
+                    unread > 0 ? "text-primary" : "text-text-tertiary",
                   )}
                 >
                   {count}
@@ -186,9 +186,9 @@ export function NotificationsBell() {
               n.kind === "email.failed";
             const statusDot =
               n.kind === "email.sent"
-                ? "bg-emerald-500"
+                ? "bg-success"
                 : n.kind === "email.skipped"
-                  ? "bg-amber-500"
+                  ? "bg-warning"
                   : n.kind === "email.failed"
                     ? "bg-danger"
                     : null;
@@ -223,7 +223,7 @@ export function NotificationsBell() {
                     <span
                       className={cn(
                         "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                        n.read ? "bg-border" : "bg-orange-500",
+                        n.read ? "bg-border" : "bg-primary",
                       )}
                       aria-hidden
                     />
