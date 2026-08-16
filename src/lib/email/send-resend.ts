@@ -12,6 +12,8 @@ export {
   resolveResendDevRedirect,
   resolveEmailProvider,
   resolveFromEmail,
+  companyFromAddress,
+  sanitizeEmailLocalPart,
   type SendEmailInput,
   type SendEmailResult,
   type SendResendEmailInput,

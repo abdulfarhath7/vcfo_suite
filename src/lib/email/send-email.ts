@@ -24,6 +24,8 @@ export {
   resolveResendDevRedirect,
   resolveEmailProvider,
   resolveFromEmail,
+  companyFromAddress,
+  sanitizeEmailLocalPart,
 } from '@/lib/email/send-email-shared';
 
 /**

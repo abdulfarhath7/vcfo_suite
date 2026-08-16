@@ -8,6 +8,7 @@ import { useState, type ReactNode } from "react";
 import { HotToaster } from "@/components/ui/hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
+import { ComposeOutgoingEmailHost } from "@/components/email/ComposeOutgoingEmailHost";
 import { featureRegistry } from "@/components/_feature-registry";
 import { uiRegistry } from "@/components/ui/_registry";
 
@@ -45,7 +46,10 @@ export function Providers({ children }: { children: ReactNode }) {
       <LazyMotion features={domAnimation}>
         <TooltipProvider>
           <HotToaster />
-          <AppProvider>{children}</AppProvider>
+          <AppProvider>
+            {children}
+            <ComposeOutgoingEmailHost />
+          </AppProvider>
         </TooltipProvider>
       </LazyMotion>
     </QueryClientProvider>

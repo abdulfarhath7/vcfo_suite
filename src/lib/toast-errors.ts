@@ -262,6 +262,7 @@ export function toastInfo(title: string, description?: string) {
 }
 
 export const EMAIL_DISPATCH_NOTIFICATIONS_EVENT = 'vcfo:notifications-refresh';
+export const COMPOSE_OUTGOING_EMAIL_EVENT = 'vcfo:compose-outgoing-email';
 
 export type EmailDispatchToastMeta = {
   engagementId?: string;
@@ -323,8 +324,8 @@ function emailNotificationDraft(
       kind: 'email.failed',
       title: subjectLine ?? "Email didn't send",
       body: subjectLine
-        ? `Failed for ${formatEmailRecipients(email.failed)}`
-        : `Could not deliver to ${formatEmailRecipients(email.failed)}.`,
+        ? `Failed for ${formatEmailRecipients(email.failed)}${email.error ? ` — ${email.error}` : ''}`
+        : `Could not deliver to ${formatEmailRecipients(email.failed)}${email.error ? ` — ${email.error}` : ''}`,
       engagementId: meta?.engagementId ?? '',
       companyName: meta?.companyName ?? '',
       itemId: meta?.itemId,
@@ -353,12 +354,18 @@ function persistEmailDispatchNotification(
 
 /**
  * Toast after an API action that dispatched email(s), and add a matching
- * row to the notifications bell.
+ * row to the notifications bell. Lead → client drafts open the compose modal.
  */
 export function toastEmailDispatch(
   email: EmailDispatchResult | null | undefined,
   meta?: EmailDispatchToastMeta,
 ) {
+  if (email?.outgoingDraft && typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(COMPOSE_OUTGOING_EMAIL_EVENT, { detail: email.outgoingDraft }),
+    );
+  }
+
   if (!email || email.attempted === 0) return;
 
   const draft = emailNotificationDraft(email, meta);

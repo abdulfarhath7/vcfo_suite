@@ -649,3 +649,22 @@ export const notifications = pgTable(
     userIdx: index('notifications_user_idx').on(t.userId),
   }),
 );
+
+/**
+ * Linked Microsoft mailbox for Graph Mail.Send (lead → client).
+ * Not an app login — Credentials remain the only Auth.js provider.
+ */
+export const outlookConnections = pgTable('outlook_connections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .unique()
+    .references(() => profiles.id, { onDelete: 'cascade' }),
+  msEmail: text('ms_email').notNull(),
+  msUserId: text('ms_user_id'),
+  accessTokenEnc: text('access_token_enc').notNull(),
+  refreshTokenEnc: text('refresh_token_enc').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});

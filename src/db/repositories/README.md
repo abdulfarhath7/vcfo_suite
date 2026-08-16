@@ -36,17 +36,19 @@ Corrections from the first draft:
   their assigned engagements. Inserts are allowed for any authenticated user
   but the row's `actor_user_id` is forced to the session user.
 
-`documents`, `tasks`, `document_requests`, `invites`, `activity` and
-`notifications` have no original SQL (they are new, replacing localStorage),
+`documents`, `tasks`, `document_requests`, `invites`, `activity`,
+`notifications`, and `outlook_connections` have no original SQL (they are new, replacing localStorage),
 so their rules are a product decision rather than a port. Default to:
 admin all, manager via owned engagements, intern via assigned engagement,
 client via own engagement. Documents additionally hide non-shared rows from
 clients (`shared_with_client = true` only). Notifications stay per-user
 (`user_id = ctx.userId`); admin/manager may create for another user.
+`outlook_connections` is the signed-in staff user's own Microsoft mailbox
+(Graph Mail.Send); clients have no access.
 
 Implemented: `engagements`, `knowledge-bank`, `profiles`, `audit-events`,
 `board-resolution`, `compliance`, `documents`, `tasks`, `document-requests`,
-`invites`, `activity`, `notifications`.
+`invites`, `activity`, `notifications`, `outlook-connections`.
 
 System jobs (Inngest): `systemGenerateComplianceInstances` /
 `runComplianceGenerate` in `compliance.ts` may touch `db` without AuthContext.

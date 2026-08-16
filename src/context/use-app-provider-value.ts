@@ -486,6 +486,7 @@ export function useAppProviderValue(): AppContextValue {
         'checklist.unlock',
         'docs.share',
         'request.created',
+        'request.uploaded',
       ]);
 
       const fresh: AppNotification[] = [];
@@ -511,7 +512,9 @@ export function useAppProviderValue(): AppContextValue {
                   ? 'unlocked fields on'
                   : draft.kind === 'request.created'
                     ? 'requested a document for'
-                    : 'shared documents for';
+                    : draft.kind === 'request.uploaded'
+                      ? 'uploaded'
+                      : 'shared documents for';
         pushActivity({
           actor: engagement.companyName,
           verb,
@@ -772,13 +775,14 @@ export function useAppProviderValue(): AppContextValue {
             : r,
         ),
       );
-      void fetchJson<{ request: DocRequest }>(`/api/requests/${requestId}`, {
+      void fetchJson<{ request: DocRequest; email?: EmailDispatchResult }>(`/api/requests/${requestId}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: 'uploaded', fileName, uploadedAt }),
       })
         .then((data) => {
           setRequests((p) => p.map((r) => (r.id === requestId ? data.request : r)));
           void queryClient.invalidateQueries({ queryKey: ['requests', user?.id] });
+          toastEmailDispatch(data.email, { engagementId: data.request.engagementId, href: '#' });
         })
         .catch(() => {});
       const req = requests.find((r) => r.id === requestId);

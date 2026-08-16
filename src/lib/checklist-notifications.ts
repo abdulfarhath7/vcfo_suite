@@ -15,6 +15,7 @@ export type NotificationKind =
   | 'checklist.unlock'
   | 'docs.share'
   | 'request.created'
+  | 'request.uploaded'
   | 'team.assigned'
   | 'team.removed'
   | 'email.sent'
@@ -61,6 +62,9 @@ function notificationHref(
     return '/app/client/incorporation';
   }
   if (role === 'intern') {
+    if (kind === 'request.uploaded' || kind === 'request.created') {
+      return '/app/intern/requests';
+    }
     return internEngagementStepPath(engagement, itemId);
   }
   return adminProjectStepPath(engagement, itemId, role);

@@ -3,6 +3,17 @@
  * API routes include this on responses so the UI can toast.
  */
 
+/** Lead → client compose payload (sent via Graph Mail.Send after in-app edit). */
+export type OutgoingEmailDraft = {
+  to: string[];
+  subject: string;
+  html: string;
+  text: string;
+  engagementId?: string;
+  companyName?: string;
+  itemId?: string;
+};
+
 export type EmailDispatchResult = {
   attempted: number;
   /** Addresses that the provider accepted. */
@@ -13,6 +24,10 @@ export type EmailDispatchResult = {
   failed: string[];
   /** Subjects of outbound messages (for Sent tab / toasts). */
   subjects?: string[];
+  /** Last provider error (safe to show in a toast). */
+  error?: string;
+  /** When set, UI should open compose instead of auto-sending to clients. */
+  outgoingDraft?: OutgoingEmailDraft;
 };
 
 export function emptyEmailDispatch(): EmailDispatchResult {
@@ -39,6 +54,8 @@ export function mergeEmailDispatch(
     out.skipped.push(...part.skipped);
     out.failed.push(...part.failed);
     out.subjects!.push(...(part.subjects ?? []));
+    if (!out.error && part.error) out.error = part.error;
+    if (!out.outgoingDraft && part.outgoingDraft) out.outgoingDraft = part.outgoingDraft;
   }
   out.sent = [...new Set(out.sent)];
   out.skipped = [...new Set(out.skipped)];

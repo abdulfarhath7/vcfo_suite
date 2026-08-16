@@ -9,6 +9,7 @@ import {
 
 export type ProgressEmailKind =
   | 'client_submitted'
+  | 'client_uploaded'
   | 'review_accepted'
   | 'review_rejected'
   | 'delivered'
@@ -53,8 +54,10 @@ export function buildProgressEmail(input: {
   note?: string | null;
   portalHref: string;
   audience: 'client' | 'lead';
+  /** Overrides checklist step title (e.g. document request label). */
+  title?: string | null;
 }): ProgressEmailCopy {
-  const step = stepTitle(input.itemId);
+  const step = input.title?.trim() || stepTitle(input.itemId);
   const company = input.companyName;
   const note = input.note?.trim();
   const href = absHref(input.portalHref);
@@ -92,6 +95,37 @@ export function buildProgressEmail(input: {
         href,
       ),
       text: `We received your submission for “${step}” on ${company}. Your engagement team will review it next.\n\nOpen: ${href}`,
+    };
+  }
+
+  if (input.kind === 'client_uploaded') {
+    if (input.audience === 'lead') {
+      return {
+        subject: `${company}: client uploaded “${step}”`,
+        html: wrap(
+          'Client upload ready for review',
+          emailParagraph(
+            `<strong>${escapeHtml(company)}</strong> uploaded <strong>${escapeHtml(step)}</strong>.`,
+          ) +
+            emailParagraph('Open the workspace to review the file.'),
+          'Review in workspace',
+          href,
+          'Action required',
+        ),
+        text: `${company} uploaded “${step}”.\n\nOpen: ${href}`,
+      };
+    }
+    return {
+      subject: `${company}: we received “${step}”`,
+      html: wrap(
+        'Upload received',
+        emailParagraph(
+          `Thank you — we received <strong>${escapeHtml(step)}</strong> for <strong>${escapeHtml(company)}</strong>.`,
+        ),
+        'Open client portal',
+        href,
+      ),
+      text: `We received “${step}” for ${company}.\n\nOpen: ${href}`,
     };
   }
 

@@ -8,10 +8,11 @@ import {
   emptyEmailDispatch,
   pushEmailSubject,
   type EmailDispatchResult,
+  type OutgoingEmailDraft,
 } from '@/lib/email/email-dispatch';
 import { buildDocumentRequestEmail, buildProgressEmail, type ProgressEmailKind } from '@/lib/email/progress-emails';
 import {
-  formatFromWithSender,
+  companyFromAddress,
   formatReplyTo,
   sendResendEmail,
   type SendResendResult,
@@ -27,6 +28,7 @@ export type { EmailDispatchResult };
 
 export type EngagementProcessEvent =
   | 'client_submitted'
+  | 'client_uploaded'
   | 'review_accepted'
   | 'review_rejected'
   | 'delivered'
@@ -53,6 +55,8 @@ function emailKind(event: EngagementProcessEvent): ProgressEmailKind | null {
   switch (event) {
     case 'client_submitted':
       return 'client_submitted';
+    case 'client_uploaded':
+      return 'client_uploaded';
     case 'review_accepted':
       return 'review_accepted';
     case 'review_rejected':
@@ -72,6 +76,8 @@ function notificationKind(event: EngagementProcessEvent): NotificationKind {
   switch (event) {
     case 'client_submitted':
       return 'checklist.submit';
+    case 'client_uploaded':
+      return 'request.uploaded';
     case 'review_accepted':
     case 'review_rejected':
       return 'checklist.review';
@@ -89,16 +95,6 @@ function notificationKind(event: EngagementProcessEvent): NotificationKind {
 function absolute(path: string): string {
   if (path.startsWith('http')) return path;
   return `${siteUrl()}${path.startsWith('/') ? path : `/${path}`}`;
-}
-
-function excludeEmails(list: string[], ...emails: Array<string | undefined | null>): string[] {
-  const skip = new Set(
-    emails.flatMap((e) => {
-      const t = e?.trim().toLowerCase();
-      return t ? [t] : [];
-    }),
-  );
-  return list.filter((e) => !skip.has(e));
 }
 
 function findPartyByUserId(
@@ -130,29 +126,61 @@ function replyToForStaff(
   return formatReplyTo(recipients.client ?? recipients.clients[0] ?? null);
 }
 
-/** Reply-To for mail sent to clients (review, deliver, requests, etc.). */
-function replyToForClient(
-  recipients: EngagementRecipients,
-  actorUserId?: string,
-): string | undefined {
-  const actor = findPartyByUserId(recipients, actorUserId);
-  if (actor && !isClientParty(recipients, actor)) return formatReplyTo(actor);
-  return formatReplyTo(recipients.lead ?? recipients.leads[0] ?? recipients.manager ?? null);
+/** Client → lead From: company@verified-domain for Outlook filters. */
+function fromForCompany(recipients: EngagementRecipients): string | undefined {
+  return companyFromAddress({
+    companyName: recipients.companyName,
+  });
 }
 
-/** From display name — who triggered this mail (falls back to lead / manager). */
-function fromForActor(
+function clientParties(recipients: EngagementRecipients) {
+  if (recipients.clients.length > 0) return recipients.clients;
+  return recipients.client ? [recipients.client] : [];
+}
+
+function buildOutgoingClientDraft(
+  input: NotifyInput,
   recipients: EngagementRecipients,
-  actorUserId?: string,
-): string | undefined {
-  const actor = findPartyByUserId(recipients, actorUserId);
-  const party =
-    actor ??
-    recipients.lead ??
-    recipients.leads[0] ??
-    recipients.manager ??
-    null;
-  return formatFromWithSender(party);
+  company: string,
+  title: string,
+  clientHref: string,
+): OutgoingEmailDraft | undefined {
+  const parties = clientParties(recipients);
+  const to = parties.map((p) => p.email).filter(Boolean);
+  if (to.length === 0) return undefined;
+
+  const href = absolute(clientHref);
+  const progressKind = emailKind(input.event);
+  const copy =
+    input.event === 'request_created'
+      ? buildDocumentRequestEmail({
+          companyName: company,
+          title,
+          note: input.note,
+          portalHref: href,
+        })
+      : progressKind
+        ? buildProgressEmail({
+            kind: progressKind,
+            companyName: company,
+            itemId: input.itemId,
+            note: input.note,
+            portalHref: href,
+            audience: 'client',
+            title: input.requestLabel,
+          })
+        : null;
+  if (!copy) return undefined;
+
+  return {
+    to,
+    subject: copy.subject,
+    html: copy.html,
+    text: copy.text,
+    engagementId: recipients.appId,
+    companyName: company,
+    itemId: input.itemId,
+  };
 }
 
 function recordSend(
@@ -174,6 +202,9 @@ function recordSend(
   } else {
     out.failed.push(addr);
     pushEmailSubject(out, subject);
+    if (result.error && result.error !== 'email_not_configured') {
+      out.error = out.error ?? result.error;
+    }
   }
 }
 
@@ -259,6 +290,14 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         `${company} submitted ${title} for review.`,
       );
       pushNotifToClients('Submission received', `We received your submission for ${title}.`);
+    } else if (input.event === 'client_uploaded') {
+      pushNotifToLeads('Client upload', `${company} uploaded ${title}.`);
+      pushNotif(
+        recipients.manager?.userId,
+        'manager',
+        'Client upload',
+        `${company} uploaded ${title}.`,
+      );
     } else if (input.event === 'review_accepted') {
       pushNotifToClients('Submission accepted', `${title} was approved.`);
       pushNotifToLeads('Submission accepted', `${title} was accepted for ${company}.`);
@@ -317,74 +356,30 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       run: () => Promise<SendResendResult>;
     }> = [];
 
-    // Directional process mail:
-    // - client submits → email lead (not the client)
-    // - lead/manager reviews → email client(s) (not the lead)
-    // - deliver / unlock / docs share → client(s) (+ lead copy for visibility)
-    const emailClients =
-      progressKind != null &&
-      (input.event === 'review_accepted' ||
-        input.event === 'review_rejected' ||
-        input.event === 'delivered' ||
-        input.event === 'unlocked' ||
-        input.event === 'docs_shared');
-    // Staff mail: leads (+ managers on submit/review) always get their own copy.
+    // Client → lead: Resend From company_name@sbctrack.in
+    // Lead/manager → client: in-app compose + Graph Mail.Send
     const emailLead =
-      progressKind != null &&
-      (input.event === 'client_submitted' ||
-        input.event === 'review_accepted' ||
-        input.event === 'review_rejected' ||
-        input.event === 'delivered' ||
-        input.event === 'unlocked' ||
-        input.event === 'docs_shared');
+      input.event === 'client_submitted' || input.event === 'client_uploaded';
 
-    if (emailClients) {
-      const copy = buildProgressEmail({
-        kind: progressKind!,
-        companyName: company,
-        itemId: input.itemId,
-        note: input.note,
-        portalHref: absolute(clientHref),
-        audience: 'client',
-      });
-      const parties =
-        recipients.clients.length > 0
-          ? recipients.clients
-          : recipients.client
-            ? [recipients.client]
-            : [];
-      const replyTo = replyToForClient(recipients, input.actorUserId);
-      // No staff CC — lead gets a dedicated mail when emailLead is set; Resend test
-      // domains also reject CC to non-verified addresses.
-      for (const party of parties) {
-        const to = party.email;
-        const cc = excludeEmails(
-          recipients.progressCc,
-          to,
-          ...parties.map((c) => c.email),
-          ...recipients.leads.map((l) => l.email),
-          recipients.lead?.email,
-          recipients.manager?.email,
-        );
-        queue.push({
-          to,
-          subject: copy.subject,
-          run: () =>
-            sendResendEmail({
-              to,
-              cc,
-              from: fromForActor(recipients, input.actorUserId),
-              replyTo,
-              subject: copy.subject,
-              html: copy.html,
-              text: copy.text,
-              purpose: `progress.${input.event}.client`,
-            }),
-        });
-      }
+    const clientDraftEvents: EngagementProcessEvent[] = [
+      'review_accepted',
+      'review_rejected',
+      'delivered',
+      'unlocked',
+      'docs_shared',
+      'request_created',
+    ];
+    if (clientDraftEvents.includes(input.event)) {
+      email.outgoingDraft = buildOutgoingClientDraft(
+        input,
+        recipients,
+        company,
+        title,
+        clientHref,
+      );
     }
 
-    if (emailLead) {
+    if (emailLead && progressKind) {
       // Client submit → all leads + manager. Never fall back to client / progress CC.
       const clientEmails = new Set(
         [
@@ -411,8 +406,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       }
       if (
         input.event === 'client_submitted' ||
-        input.event === 'review_accepted' ||
-        input.event === 'review_rejected'
+        input.event === 'client_uploaded'
       ) {
         pushStaff(recipients.manager?.email, managerHref, 'manager');
       } else if (staffTargets.length === 0) {
@@ -428,6 +422,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
             note: input.note,
             portalHref: absolute(staff.href),
             audience: 'lead',
+            title: input.requestLabel,
           });
           const to = staff.email;
           const replyTo = replyToForStaff(recipients, input.actorUserId);
@@ -438,7 +433,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
               sendResendEmail({
                 to,
                 cc: [],
-                from: fromForActor(recipients, input.actorUserId),
+                from: fromForCompany(recipients),
                 replyTo,
                 subject: copy.subject,
                 html: copy.html,
@@ -452,40 +447,6 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
           '[notify] staff email skipped — no lead/manager (or they match client)',
           recipients.slug,
         );
-      }
-    }
-
-    if (input.event === 'request_created') {
-      const href = absolute(clientHref);
-      const copy = buildDocumentRequestEmail({
-        companyName: company,
-        title,
-        note: input.note,
-        portalHref: href,
-      });
-      const parties =
-        recipients.clients.length > 0
-          ? recipients.clients
-          : recipients.client
-            ? [recipients.client]
-            : [];
-      const replyTo = replyToForClient(recipients, input.actorUserId);
-      for (const party of parties) {
-        queue.push({
-          to: party.email,
-          subject: copy.subject,
-          run: () =>
-            sendResendEmail({
-              to: party.email,
-              cc: excludeEmails(recipients.progressCc, party.email, ...parties.map((p) => p.email)),
-              from: fromForActor(recipients, input.actorUserId),
-              replyTo,
-              subject: copy.subject,
-              html: copy.html,
-              text: copy.text,
-              purpose: 'progress.request_created.client',
-            }),
-        });
       }
     }
 
