@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import { PhaseTimeline, Phase } from '@/components/admin/PhaseTimeline';
 import { AccentKpi } from '@/components/admin/AccentKpi';
 import { SEO } from '@/components/SEO';
-import { checklist, BUCKET_LABEL, Bucket, STATUS_LABEL, StatusCode } from '@/data/checklist';
+import { checklist, BUCKET_LABEL, Bucket, getActiveCatalogItems } from '@/data/checklist';
 import { COMPANY_TYPE_LABEL } from '@/data/engagements';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Surface, GoldButton, Eyebrow, Mono, StatusDot, GoldDivider } from '@/components/noir';
@@ -40,15 +40,6 @@ import { isAdminOrManager } from '@/lib/auth';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 
 const BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
-
-const STATUS_TONE: Record<StatusCode, { dot: 'gold' | 'success' | 'warning' | 'danger' | 'info' | 'muted'; cls: string }> = {
-  'not-started':     { dot: 'muted',   cls: 'text-paper-subtle' },
-  'in-progress':     { dot: 'info',    cls: 'text-info' },
-  'awaiting-client': { dot: 'warning', cls: 'text-warning' },
-  completed:         { dot: 'success', cls: 'text-success' },
-  overdue:           { dot: 'danger',  cls: 'text-danger' },
-  'not-applicable':  { dot: 'muted',   cls: 'text-paper-subtle' },
-};
 
 export default function ProjectDetail() {
   const params = useParams();
@@ -200,7 +191,11 @@ export default function ProjectDetail() {
   const pendingDocs = eRequests.filter((r) => r.status === 'pending').length;
 
   const tasksByBucket = (b: Bucket) => {
-    const meta = checklist.filter((c) => c.bucket === b);
+    const catalog = getActiveCatalogItems();
+    const meta =
+      b === 'fema'
+        ? checklist.filter((c) => c.bucket === b)
+        : catalog.filter((c) => c.bucket === b);
     return meta.map((item) => {
       const t = eTasks.find((x) => x.checklistKey === item.id);
       return { item, task: t };

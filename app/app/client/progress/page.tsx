@@ -1,10 +1,6 @@
-import ClientProgress from "@/views/client/Progress";
+import { redirect } from "next/navigation";
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Progress", "Incorporation progress");
-
-
+/** Progress board folded into the Incorporation flowchart. */
 export default function Page() {
-  return <ClientProgress />;
+  redirect("/app/client/incorporation");
 }

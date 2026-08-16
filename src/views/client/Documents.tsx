@@ -73,8 +73,10 @@ export default function ClientDocuments() {
                   <Surface className="divide-y divide-border overflow-hidden">
                     {milestone.sections.map((section) =>
                       section.docs.map((doc) => (
-                        <div key={doc.id} className="flex min-h-11 items-center gap-3 px-4 py-3.5 hover:bg-raised/40">
-                          <FileCheck2 className="h-4 w-4 shrink-0 text-success" />
+                        <div key={doc.id} className="flex min-h-11 items-center gap-3 border-l-[3px] border-l-phase-filing px-4 py-3.5 transition-colors hover:bg-primary-light/40">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-phase-filing-soft">
+                            <FileCheck2 className="h-4 w-4 shrink-0 text-phase-filing-text" />
+                          </div>
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-[13px] font-medium text-foreground">{doc.fieldLabel}</div>
                             <div className="text-[11px] text-muted-foreground">
@@ -100,9 +102,9 @@ export default function ClientDocuments() {
         <EmptyStateIllustrated
           icon={FolderOpen}
           title="No milestone documents yet"
-          description="Complete forms under Progress to add files here."
-          actionLabel="View progress"
-          onAction={() => window.location.assign('/app/client/progress')}
+          description="Complete forms under Incorporation to add files here."
+          actionLabel="Open incorporation"
+          onAction={() => window.location.assign('/app/client/incorporation')}
           className="mb-8"
         />
       )}

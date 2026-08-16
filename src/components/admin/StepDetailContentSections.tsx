@@ -70,7 +70,8 @@ export function StepDetailContentView(props: any) {
   emptyCopy,
   bodyText,
   brSnapshot,
-  } = props;
+  stepGate,
+} = props;
 
   return (
     <div className={cn('flex flex-col', isLight ? 'min-h-0' : 'h-full')}>
@@ -81,7 +82,7 @@ export function StepDetailContentView(props: any) {
         )}
       >
         <div className="flex items-center justify-between">
-          <Eyebrow className={isLight ? 'text-orange-700' : undefined}>
+          <Eyebrow className={isLight ? 'text-blue-700' : undefined}>
             Step · {item.bucket.replace('-', ' ')}
           </Eyebrow>
           <Mono
@@ -167,7 +168,7 @@ export function StepDetailContentView(props: any) {
               'mt-4 flex items-center gap-2 border px-3 py-2 rounded-md',
               isLight
                 ? 'border-brand/30 bg-primary-light text-ink'
-                : 'border-orange/40 bg-orange/5 rounded-sm',
+                : 'border-primary/40 bg-primary/5 rounded-sm',
             )}
           >
             <Sparkles className="w-3.5 h-3.5 text-gold" />
@@ -202,6 +203,11 @@ export function StepDetailContentView(props: any) {
               itemId={item.id}
               itemState={itemState}
             />
+            {stepGate?.kind === 'waiting' && stepGate.message && (
+              <div className="rounded-lg border border-warning/30 bg-warning-light/60 px-3 py-2.5 text-sm text-warning-text">
+                {stepGate.message}
+              </div>
+            )}
             <MilestoneResponseForm
               key={`${item.id}-${engagementId}`}
               item={item}
@@ -211,6 +217,7 @@ export function StepDetailContentView(props: any) {
               variant="admin"
               showFieldUnlock
               open={contentReady}
+              readOnly={!stepGate?.canEdit}
             />
           </div>
         )}
@@ -277,7 +284,7 @@ export function StepDetailContentView(props: any) {
                     <motion.li key={f} variants={fadeUp}>
                       <button type="button" onClick={() => toggleForm(f)} className={rowBtn(done)}>
                         {done ? (
-                          <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0" />
+                          <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
                         ) : (
                           <Circle
                             className={cn(
@@ -292,7 +299,7 @@ export function StepDetailContentView(props: any) {
                             done
                               ? isLight
                                 ? 'text-brand'
-                                : 'text-orange-500'
+                                : 'text-blue-500'
                               : isLight
                                 ? 'text-ink'
                                 : 'text-paper',
@@ -335,11 +342,11 @@ export function StepDetailContentView(props: any) {
                       <motion.li key={d} variants={fadeUp}>
                         <button type="button" onClick={() => toggleDoc(d)} className={cn(rowBtn(done), 'group items-start')}>
                           {done ? (
-                            <CheckCircle2 className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                            <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                           ) : (
                             <Upload
                               className={cn(
-                                'w-4 h-4 shrink-0 mt-0.5 transition-colors group-hover:text-orange-600',
+                                'w-4 h-4 shrink-0 mt-0.5 transition-colors group-hover:text-blue-600',
                                 isLight ? 'text-text-tertiary' : 'text-paper-subtle',
                               )}
                             />
@@ -384,7 +391,7 @@ export function StepDetailContentView(props: any) {
                       {a.verb}
                     </span>{' '}
                     {a.target && (
-                      <span className={isLight ? 'text-brand' : 'text-orange-500'}>{a.target}</span>
+                      <span className={isLight ? 'text-brand' : 'text-blue-500'}>{a.target}</span>
                     )}
                     <div
                       className={cn(

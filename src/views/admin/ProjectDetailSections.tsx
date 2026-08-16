@@ -16,7 +16,7 @@ import {
   type ActivityEvent,
 } from '@/data/engagements';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eyebrow, Mono, GoldDivider, Surface, StatusDot, GoldButton } from '@/components/noir';
+import { Eyebrow, Mono, GoldDivider, Surface, StatusDot, GoldButton, ProgressRing } from '@/components/noir';
 import { adminProjectPath, adminProjectStepPath } from '@/lib/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import {
@@ -36,6 +36,7 @@ import {
   Loader2,
   Building2,
   MapPin,
+  Lock,
 } from 'lucide-react';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { cn } from '@/lib/utils';
@@ -49,6 +50,14 @@ import { ProjectDetailResendDialog } from '@/views/admin/ProjectDetailResendDial
 import type { useRouter } from 'next/navigation';
 import type { ChecklistItemState } from '@/context/AppContext';
 import type { AuthUser } from '@/lib/auth';
+import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
+import {
+  checklistGateViewerFrom,
+  gateActiveCatalog,
+  gateDisplayStatus,
+  getStepGate,
+} from '@/lib/checklist-step-gate';
+import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
 
 const STATUS_TONE: Record<
   StatusCode,
@@ -129,12 +138,16 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
   } = props;
 
   const staffBase = useStaffBasePath();
+  const gates = gateActiveCatalog(
+    checklistState,
+    checklistGateViewerFrom('admin', user?.role),
+  );
 
   return (
     <PageTransition>
       <SEO title={`${eng.companyName} — GCC Project`} description="Setup timeline, phase workstreams, documents, and activity for this GCC setup project." path={adminProjectPath(eng, staffBase)} />
 
-      <button type="button" onClick={() => router.push(`${staffBase}/projects`)} className="text-[11px] mono uppercase tracking-[0.18em] text-paper-muted hover:text-orange-600 flex items-center gap-1 mb-4 transition-colors">
+      <button type="button" onClick={() => router.push(`${staffBase}/projects`)} className="text-[11px] mono uppercase tracking-[0.18em] text-paper-muted hover:text-blue-600 flex items-center gap-1 mb-4 transition-colors">
         <ChevronLeft className="w-3.5 h-3.5" /> GCC setup projects
       </button>
 
@@ -143,10 +156,23 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
         eyebrow={eng.slug ? eng.slug.toUpperCase() : undefined}
         title={eng.companyName}
         subtitle={
-          <span className="block">
-            <span>
+          <span className="block space-y-2">
+            <span className="block">
               {COMPANY_TYPE_LABEL[eng.companyType ?? 'domestic']} entity · {intern?.name ?? 'Unassigned'} ·
               Started {eng.createdAt}
+            </span>
+            <span className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-light px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+                {eng.stage}
+              </span>
+              <ProgressRing value={overall} size={40} stroke={3.5} className="shrink-0" />
+              <span className="text-[12px] text-muted-foreground">
+                {blockers > 0
+                  ? `Waiting on client · ${blockers} open`
+                  : pendingDocs > 0
+                    ? `Docs outstanding · ${pendingDocs}`
+                    : 'No client blockers'}
+              </span>
             </span>
             <ProjectPhaseTrail stage={eng.stage} />
           </span>
@@ -233,7 +259,7 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
                     value={p.bucket}
                     className={cn(
                       'relative rounded-none bg-transparent px-4 py-3 text-[12px] mono uppercase tracking-[0.16em] text-paper-muted',
-                      'data-[state=active]:bg-transparent data-[state=active]:text-orange-600 data-[state=active]:shadow-none',
+                      'data-[state=active]:bg-transparent data-[state=active]:text-blue-600 data-[state=active]:shadow-none',
                       'hover:text-paper transition-colors',
                     )}
                   >
@@ -271,27 +297,50 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
                       className="divide-y divide-hairline"
                     >
                       {tasksByBucket(p.bucket).map(({ item, task }, i) => {
-                        const status = (task?.status ?? 'not-started') as StatusCode;
+                        const gate = getStepGate(gates, item.id);
+                        const rawStatus = (task?.status ??
+                          deriveChecklistDisplayStatus(item.id, item, checklistState[item.id]) ??
+                          'not-started') as StatusCode;
+                        const status = gateDisplayStatus(rawStatus, gate);
                         const tone = STATUS_TONE[status];
-                        return (
+                        const openStep = () => {
+                          if (!gate.canOpen) {
+                            notifyChecklistStepLocked(gate.message);
+                            return;
+                          }
+                          router.push(adminProjectStepPath(eng, item, staffBase));
+                        };
+                        const row = (
                           <motion.li
                             key={item.id}
                             variants={fadeUp}
-                            onClick={() => router.push(adminProjectStepPath(eng, item, staffBase))}
+                            onClick={openStep}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
-                                router.push(adminProjectStepPath(eng, item, staffBase));
+                                openStep();
                               }
                             }}
                             role="button"
                             tabIndex={0}
-                            className="py-3.5 flex items-center gap-4 group cursor-pointer hover:bg-raised/40 -mx-2 px-2 rounded-sm transition-colors"
+                            className={cn(
+                              'py-3.5 flex items-center gap-4 group -mx-2 px-2 rounded-sm transition-colors',
+                              gate.canOpen
+                                ? 'cursor-pointer hover:bg-raised/40'
+                                : 'cursor-default opacity-70',
+                            )}
                           >
                             <Mono className="text-[10px] text-paper-subtle w-8 tabular-nums">{String(i + 1).padStart(2, '0')}</Mono>
-                            <StatusDot tone={tone.dot} size={8} pulse={status === 'in-progress'} />
+                            {gate.kind === 'locked' ? (
+                              <Lock className="h-3.5 w-3.5 text-paper-subtle" aria-hidden />
+                            ) : (
+                              <StatusDot tone={tone.dot} size={8} pulse={status === 'in-progress' || gate.kind === 'active'} />
+                            )}
                             <div className="flex-1 min-w-0">
-                              <div className="text-[13px] text-paper truncate group-hover:text-orange-600 transition-colors">{item.title}</div>
+                              <div className={cn('text-[13px] truncate', gate.canOpen ? 'text-paper group-hover:text-blue-600 transition-colors' : 'text-paper-muted')}>{item.title}</div>
+                              {gate.kind === 'waiting' && gate.message && (
+                                <div className="text-[11px] text-warning mt-0.5">{gate.message}</div>
+                              )}
                               <MilestoneResponseRowSummary
                                 item={item}
                                 responses={extractItemResponses(item, checklistState[item.id])}
@@ -300,7 +349,7 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
                               {shouldShowStatutoryFormLabels(item, 'admin') && (
                                 <div className="flex items-center gap-2 mt-1">
                                   {item.forms.slice(0, 3).map((f) => (
-                                    <span key={f} className="text-[9.5px] mono uppercase tracking-[0.14em] px-1.5 py-0.5 border border-hairline rounded-sm text-paper-muted">
+                                    <span key={f} className="text-[9.5px] mono uppercase tracking-[0.16em] px-1.5 py-0.5 border border-hairline rounded-sm text-paper-muted">
                                       {f}
                                     </span>
                                   ))}
@@ -308,14 +357,23 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
                               )}
                             </div>
                             <span className="inline-flex shrink-0 items-center gap-1">
-                              <span className={cn('text-[10.5px] mono uppercase tracking-[0.16em]', tone.cls)}>
-                                {STATUS_LABEL[status]}
-                              </span>
-                              <ChecklistInlineTimeline item={item} className="text-paper-subtle" />
+                              {gate.kind !== 'locked' && (
+                                <span className={cn('text-[10.5px] mono uppercase tracking-[0.16em]', tone.cls)}>
+                                  {STATUS_LABEL[status]}
+                                </span>
+                              )}
+                              {gate.kind !== 'locked' && (
+                                <ChecklistInlineTimeline item={item} className="text-paper-subtle" />
+                              )}
                             </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-paper-subtle group-hover:text-orange-600 group-hover:translate-x-0.5 transition-all" />
+                            {gate.canOpen ? (
+                              <ChevronRight className="w-3.5 h-3.5 text-paper-subtle group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                            ) : (
+                              <Lock className="w-3.5 h-3.5 text-paper-subtle" aria-hidden />
+                            )}
                           </motion.li>
                         );
+                        return row;
                       })}
                     </motion.ul>
                   </AnimatePresence>

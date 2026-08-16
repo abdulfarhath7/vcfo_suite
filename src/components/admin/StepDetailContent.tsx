@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useReducer, useRef } from 'react';
+import { useMemo, useReducer, useRef } from 'react';
 import { ChecklistItem, getPreIncPhaseStep, StatusCode } from '@/data/checklist';
 import { TaskInstance, ActivityEvent } from '@/data/engagements';
 import { useApp } from '@/context/AppContext';
@@ -10,6 +10,12 @@ import { cn } from '@/lib/utils';
 import { toastSuccess } from '@/lib/toast-errors';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
 import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
+import {
+  checklistGateViewerFrom,
+  gateActiveCatalog,
+  gateDisplayStatus,
+  getStepGate,
+} from '@/lib/checklist-step-gate';
 import { StepDetailContentView } from '@/components/admin/StepDetailContentSections';
 import {
   EMPTY_STEP_ACTIVITY,
@@ -96,7 +102,7 @@ function StepDetailContentInner({
   hideLegacyChecklist = false,
   hideDocumentsTab = false,
 }: StepDetailContentProps) {
-  const { updateTask, getStateForEngagement, engagements } = useApp();
+  const { updateTask, getStateForEngagement, engagements, user } = useApp();
   const [ui, dispatchUi] = useReducer(
     stepDetailUiReducer,
     { progress: { forms: [], docs: [] }, tab: 'docs' as const, justCompleted: false },
@@ -176,9 +182,17 @@ function StepDetailContentInner({
     });
 
   const engagement = engagements.find((e) => e.id === engagementId);
-  const itemState = engagement ? getStateForEngagement(engagement)[item.id] : undefined;
+  const checklistState = engagement ? getStateForEngagement(engagement) : {};
+  const itemState = checklistState[item.id];
   const { snapshot: brSnapshot } = useBoardResolutionProgress(engagementId);
-  const status = deriveChecklistDisplayStatus(item.id, item, itemState, brSnapshot);
+  const stepGate = getStepGate(
+    gateActiveCatalog(checklistState, checklistGateViewerFrom('admin', user?.role)),
+    item.id,
+  );
+  const status = gateDisplayStatus(
+    deriveChecklistDisplayStatus(item.id, item, itemState, brSnapshot),
+    stepGate,
+  );
   const tone = STATUS_TONE[status];
   const statusCls = isLight ? tone.clsLight : tone.cls;
   const preIncPhaseStep = item.bucket === 'pre-inc' ? getPreIncPhaseStep(item.id) : null;
@@ -189,7 +203,7 @@ function StepDetailContentInner({
       done
         ? isLight
           ? 'border-brand/30 bg-primary-light/50'
-          : 'border-orange/40 bg-orange/5'
+          : 'border-primary/40 bg-primary/5'
         : isLight
           ? 'border-border hover:border-border/80 hover:bg-muted/40'
           : 'border-hairline hover:border-hairline-strong',
@@ -201,7 +215,7 @@ function StepDetailContentInner({
     'transition-colors',
     isLight
       ? 'text-text-tertiary data-[state=active]:text-brand hover:text-ink'
-      : 'text-paper-muted data-[state=active]:text-orange-600 hover:text-paper',
+      : 'text-paper-muted data-[state=active]:text-blue-600 hover:text-paper',
   );
 
   const emptyCopy = isLight ? 'text-text-tertiary' : 'text-paper-muted';
@@ -252,6 +266,7 @@ function StepDetailContentInner({
     emptyCopy,
     bodyText,
     brSnapshot,
+    stepGate,
   };
   return <StepDetailContentView {...viewProps} />;
 }

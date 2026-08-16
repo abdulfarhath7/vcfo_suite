@@ -30,11 +30,18 @@ import {
   engagementRouteParamFromParams,
   resolveEngagementFromRouteParam,
 } from '@/lib/slug';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Lock } from 'lucide-react';
 import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { ProgressEmailCcSection } from '@/components/incorporation/ProgressEmailCcSection';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
 import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
+import {
+  checklistGateViewerFrom,
+  gateActiveCatalog,
+  gateDisplayStatus,
+  getStepGate,
+} from '@/lib/checklist-step-gate';
+import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
 
 const BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
 
@@ -113,27 +120,42 @@ export default function EngagementDetail() {
   const done = eTasks.filter((t) => t.status === 'completed').length;
   const pct = eTasks.length ? (done / eTasks.length) * 100 : 0;
   const intern = teamMembers.find((t) => t.id === eng.internId);
+  const gates = gateActiveCatalog(
+    checklistState,
+    checklistGateViewerFrom('admin', user?.role),
+  );
 
   const renderChecklistRow = (it: (typeof checklist)[number], displayOrder: number) => {
     const responses = extractItemResponses(it, checklistState[it.id]);
-    const displayStatus = deriveChecklistDisplayStatus(
-      it.id,
-      it,
-      checklistState[it.id],
-      brSnapshot,
+    const gate = getStepGate(gates, it.id);
+    const displayStatus = gateDisplayStatus(
+      deriveChecklistDisplayStatus(it.id, it, checklistState[it.id], brSnapshot),
+      gate,
     );
+    const openStep = () => {
+      if (!gate.canOpen) {
+        notifyChecklistStepLocked(gate.message);
+        return;
+      }
+      router.push(stepPath(eng, it));
+    };
     return (
       <button
         key={it.id}
         type="button"
-        onClick={() => router.push(stepPath(eng, it))}
+        onClick={openStep}
         className="grid w-full grid-cols-[28px_1fr_auto_auto] items-center gap-3 border-b border-border px-4 py-3.5 text-left transition-colors last:border-0 hover:bg-raised/40 min-h-11"
       >
         <div className="text-[11px] text-text-tertiary tabular-nums">{displayOrder}</div>
         <div className="min-w-0">
-          <div className="text-[13px] text-ink truncate">{it.title}</div>
+          <div className={gate.canOpen ? 'text-[13px] text-ink truncate' : 'text-[13px] text-muted-foreground truncate'}>
+            {it.title}
+          </div>
+          {gate.kind === 'waiting' && gate.message && (
+            <div className="mt-0.5 text-[11px] text-warning-text">{gate.message}</div>
+          )}
           <MilestoneResponseRowSummary item={it} responses={responses} variant="admin" />
-          {isIntern && it.id === 'pre-2' && (
+          {isIntern && it.id === 'pre-2' && gate.canOpen && (
             <div
               className="mt-2"
               onClick={(e) => e.stopPropagation()}
@@ -143,8 +165,18 @@ export default function EngagementDetail() {
             </div>
           )}
         </div>
-        <StatusPillWithTimeline status={displayStatus} item={it} />
-        <ChevronRight className="w-3.5 h-3.5 text-text-tertiary" />
+        {gate.kind === 'locked' ? (
+          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Lock className="h-3.5 w-3.5" aria-hidden />
+          </span>
+        ) : (
+          <StatusPillWithTimeline status={displayStatus} item={it} />
+        )}
+        {gate.canOpen ? (
+          <ChevronRight className="w-3.5 h-3.5 text-text-tertiary" />
+        ) : (
+          <Lock className="w-3.5 h-3.5 text-text-tertiary" aria-hidden />
+        )}
       </button>
     );
   };
@@ -168,10 +200,15 @@ export default function EngagementDetail() {
       <Surface raised className="mb-5 flex flex-wrap items-center gap-6 p-6">
         <ProgressRing value={pct} size={64} />
         <div className="min-w-0 flex-1">
-          <Eyebrow>{eng.stage}</Eyebrow>
-          <h1 className="serif mt-1 text-[32px] tracking-tight text-foreground">{eng.companyName}</h1>
+          <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary-light px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+            {eng.stage}
+          </span>
+          <h1 className="serif mt-1.5 text-[32px] tracking-tight text-foreground">{eng.companyName}</h1>
           <div className="mt-1 text-[12.5px] text-muted-foreground">
             Delivery owner · {intern?.name ?? 'Unassigned'}
+            {eTasks.length - done > 0
+              ? ` · Waiting on work · ${eTasks.length - done} remaining`
+              : ' · All tasks clear'}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-6 text-right">

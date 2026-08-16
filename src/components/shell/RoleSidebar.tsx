@@ -20,7 +20,6 @@ import {
   ScrollText,
   ListTodo,
   FileInput,
-  TrendingUp,
   ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -41,16 +40,16 @@ interface Item {
 }
 
 /* Functional icon color map: overview = role accent, work = blue,
-   approvals/queues = amber, people = sky, calendar = green,
-   files = violet, knowledge = amber, analytics = sky, audit = neutral. */
+   approvals/queues = muted gold, people = sky, calendar = teal-green,
+   files = teal, knowledge = sky, analytics = sky, audit = neutral. */
 const TONE = {
   home: 'text-role',
   work: 'text-primary',
   queue: 'text-warning',
   people: 'text-info',
   calendar: 'text-success',
-  files: 'text-accent-violet',
-  knowledge: 'text-accent-amber',
+  files: 'text-phase-filing-text',
+  knowledge: 'text-info',
   analytics: 'text-info',
   audit: 'text-text-tertiary',
 };
@@ -70,7 +69,6 @@ const firmAdminItems: Item[] = [
 const clientItems: Item[] = [
   { to: '/app/client/inbox', label: 'Inbox', icon: Inbox, iconTone: TONE.home },
   { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
-  { to: '/app/client/progress', label: 'Progress', icon: TrendingUp, iconTone: TONE.analytics },
   { to: '/app/client/compliances', label: 'Compliances', icon: CalendarCheck, iconTone: TONE.calendar },
   { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
   { to: '/app/client/team', label: 'Team', icon: Users, iconTone: TONE.people },
@@ -150,8 +148,15 @@ export function SidebarNavBody({
             <div className="text-[13px] font-semibold tracking-tight text-foreground leading-none">
               VCFO Suite
             </div>
-            <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.16em] text-role-foreground/80">
-              {ROLE_UI_LABEL[user.role]}
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-role-foreground/80">
+                {ROLE_UI_LABEL[user.role]}
+              </span>
+              {user.role === 'super_admin' && (
+                <span className="super-gold-chip rounded-full px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em]">
+                  Gold
+                </span>
+              )}
             </div>
           </div>
         )}
