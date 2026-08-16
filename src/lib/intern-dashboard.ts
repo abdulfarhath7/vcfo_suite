@@ -8,6 +8,7 @@ import {
   type BoardResolutionProgressSnapshot,
 } from '@/lib/client-progress-board';
 import { isAwaitingReview } from '@/lib/checklist-item-review';
+import { gateActiveCatalog, getStepGate } from '@/lib/checklist-step-gate';
 
 const NONE_BR: BoardResolutionProgressSnapshot = { status: 'none', hasDraftDoc: false };
 
@@ -26,6 +27,7 @@ export interface InternQueueItem {
   status: StatusCode;
   awaitsReview: boolean;
   isOverdue: boolean;
+  isLocked: boolean;
 }
 
 function buildInternQueueForEngagement(
@@ -34,15 +36,20 @@ function buildInternQueueForEngagement(
   boardResolution?: BoardResolutionProgressSnapshot,
 ): InternQueueItem[] {
   const br = boardResolution ?? NONE_BR;
+  const gates = gateActiveCatalog(checklistState, 'staff');
   return checklist.map((item) => {
     const slice = checklistState[item.id];
     const status = deriveChecklistDisplayStatus(item.id, item, slice, br);
+    const gate = getStepGate(gates, item.id);
+    const isLocked = gate.kind === 'locked';
+    const current = gate.kind === 'active' || gate.kind === 'waiting';
     return {
       engagementId: engagement.id,
       checklistKey: item.id,
       status,
-      awaitsReview: isAwaitingReview(slice),
-      isOverdue: status === 'overdue',
+      awaitsReview: isAwaitingReview(slice) && !isLocked,
+      isOverdue: status === 'overdue' && current,
+      isLocked,
     };
   });
 }
@@ -104,7 +111,7 @@ export function internQueueStats(
 
 /** Overdue → awaiting review → in progress → everything else still open. */
 export function prioritizeInternActions(items: InternQueueItem[], limit = 6): InternQueueItem[] {
-  const open = items.filter((i) => i.status !== 'completed');
+  const open = items.filter((i) => i.status !== 'completed' && !i.isLocked);
   const overdue = open.filter((i) => i.isOverdue);
   const awaitingReview = open.filter((i) => i.awaitsReview && !overdue.includes(i));
   const inProgress = open.filter(

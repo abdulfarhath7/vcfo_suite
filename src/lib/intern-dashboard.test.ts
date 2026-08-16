@@ -71,18 +71,18 @@ describe('internQueueStats', () => {
 });
 
 describe('prioritizeInternActions', () => {
-  it('puts overdue and review items first', () => {
+  it('puts overdue current-gate items first and skips locked future steps', () => {
     const items = buildInternPortfolioQueue(
       [engagement],
       () => ({
         'pre-1': { status: 'overdue' },
-        'pre-2': { status: 'in-progress', reviewStatus: 'reviewing', clientSubmittedAt: '2026-05-01' },
+        'pre-2': { status: 'overdue' },
         'pre-3': { status: 'not-started' },
       }),
       'intern-a',
     );
     const focus = prioritizeInternActions(items, 3);
     expect(focus[0]?.checklistKey).toBe('pre-1');
-    expect(focus[1]?.checklistKey).toBe('pre-2');
+    expect(focus.some((i) => i.checklistKey === 'pre-2')).toBe(false);
   });
 });

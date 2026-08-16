@@ -12,6 +12,7 @@ import { responseFieldIdsForItem } from '@/lib/checklist-responses';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
 import { isFirmWideAdmin } from '@/lib/auth';
+import { sequentialLockMessage } from '@/lib/checklist-step-gate';
 import {
   ensureEngagementClientMember,
   listClientMemberEngagementIds,
@@ -323,7 +324,13 @@ export async function patchChecklistItem(
   const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
   if (!existing) throw new Error('Engagement not found or not permitted');
 
-  const base = current ?? checklistStateFromRow(existing);
+  const persisted = checklistStateFromRow(existing);
+  const lockMessage = sequentialLockMessage(itemId, persisted);
+  if (lockMessage) {
+    throw new Error(lockMessage);
+  }
+
+  const base = current ?? persisted;
   const next: EngagementChecklistState = {
     ...base,
     [itemId]: {
