@@ -116,7 +116,7 @@ const preInc: ChecklistItem[] = [
     slug: 'name-application',
     bucket: 'pre-inc',
     order: 1,
-    title: 'Details to be Requested from the Client',
+    title: 'Client Details',
     responsibleRole: 'client',
     description:
       'Client provides foreign entity details, KYC, proposed names, directors, share capital, and board resolution date.',
@@ -143,7 +143,7 @@ const preInc: ChecklistItem[] = [
     slug: 'board-resolution-draft',
     bucket: 'pre-inc',
     order: 2,
-    title: 'Generation and Transmission of Draft Board Resolution',
+    title: 'Draft Board Resolution',
     responsibleRole: 'intern',
     description:
       'Project lead receives the draft board resolution from the tool, reviews it, and shares the finalized draft with the client.',
@@ -162,7 +162,7 @@ const preInc: ChecklistItem[] = [
     slug: 'board-resolution-execution',
     bucket: 'pre-inc',
     order: 3,
-    title: 'Execution of the Board Resolution by the Client',
+    title: 'Signed Board Resolution',
     responsibleRole: 'client',
     description:
       'Client signs the board resolution on letterhead and uploads the signed copy for the project lead.',
@@ -180,7 +180,7 @@ const preInc: ChecklistItem[] = [
     slug: 'name-application-filing',
     bucket: 'pre-inc',
     order: 4,
-    title: 'Review and Filing of the Name Application',
+    title: 'Name Application',
     responsibleRole: 'intern',
     description:
       'Project lead reviews the signed board resolution, files the name application with ROC, and shares the filing acknowledgement with the client.',
@@ -194,7 +194,7 @@ const preInc: ChecklistItem[] = [
     slug: 'mca-name-approval',
     bucket: 'pre-inc',
     order: 5,
-    title: 'Delivery of MCA Name Approval Letter',
+    title: 'Name Approval',
     responsibleRole: 'intern',
     description:
       'Within 4 to 5 working days, project lead delivers the approved name, approval date, expiry date (20-day validity), and MCA approval letter to the client.',
@@ -210,7 +210,7 @@ const preInc: ChecklistItem[] = [
     slug: 'director-kyc-details',
     bucket: 'pre-inc',
     order: 6,
-    title: 'Details of the Proposed Director (KYC)',
+    title: 'Director KYC',
     responsibleRole: 'client',
     description:
       'Client submits KYC details for non-resident and resident directors, plus shareholder nominees for Spice Part B and INC-35 Agile-Pro-S.',
@@ -231,7 +231,7 @@ const preInc: ChecklistItem[] = [
     slug: 'kyc-review-and-dsc-creation',
     bucket: 'pre-inc',
     order: 7,
-    title: 'Review of KYC Data and Creation of DSC',
+    title: 'KYC Review & DSC',
     responsibleRole: 'intern',
     description:
       'Intern reviews submitted KYC data, initiates DSC with eMudhra, and shares draft incorporation documents with the client.',
@@ -252,7 +252,7 @@ const preInc: ChecklistItem[] = [
     slug: 'execution-of-incorporation-documents',
     bucket: 'pre-inc',
     order: 8,
-    title: 'Execution of the Documents by the Client',
+    title: 'Document Execution',
     responsibleRole: 'client',
     description:
       'Client uploads apostilled/notarized and signed incorporation documents for directors and foreign entity records.',
@@ -270,7 +270,7 @@ const preInc: ChecklistItem[] = [
     slug: 'spice-part-b-confirmation',
     bucket: 'pre-inc',
     order: 9,
-    title: 'Confirmation on Spice Part B',
+    title: 'SPICe+ Confirmation',
     responsibleRole: 'client',
     description:
       'Client reviews the shared SPICe+ Part B application, recommends changes if required, and confirms for filing.',
@@ -289,7 +289,7 @@ const preInc: ChecklistItem[] = [
     slug: 'incorporation-filing',
     bucket: 'pre-inc',
     order: 10,
-    title: 'Filing of application',
+    title: 'SPICe+ Filing',
     responsibleRole: 'intern',
     description:
       'Project lead fills and submits SPICe+ Part B and AGILE-PRO-S forms on the MCA portal.',
@@ -304,7 +304,7 @@ const preInc: ChecklistItem[] = [
     slug: 'mca-remarks-resubmissions',
     bucket: 'pre-inc',
     order: 11,
-    title: 'Remarks and Resubmissions',
+    title: 'MCA Remarks',
     responsibleRole: 'intern',
     description:
       'Project lead reviews MCA portal remarks, requests client information or documents if needed, and resubmits with a clarification letter.',
@@ -325,7 +325,7 @@ const preInc: ChecklistItem[] = [
     slug: 'certificate-of-incorporation-sharing',
     bucket: 'pre-inc',
     order: 12,
-    title: 'Sharing Certificate of Incorporation',
+    title: 'Certificate of Incorporation',
     responsibleRole: 'intern',
     description:
       'Project lead shares MCA-approved company identifiers and incorporation documents with the client.',
@@ -344,13 +344,13 @@ const preInc: ChecklistItem[] = [
 const PRE_INC_PHASES: ChecklistPhaseGroup[] = [
   {
     id: 'pre-inc-phase-1',
-    title: 'Phase 1 — Pre-incorporation: Name Application (Spice Part A)',
+    title: 'Phase 1 — Name Application',
     subtitle: 'Steps 1-5',
     itemIds: ['pre-1', 'pre-2', 'pre-3', 'pre-4', 'pre-5'],
   },
   {
     id: 'pre-inc-phase-2',
-    title: 'Phase 2 — Pre-incorporation: Incorporation Details (Spice Part B and INC-35 Agile-Pro-S)',
+    title: 'Phase 2 — Incorporation',
     subtitle: 'Steps 1–8',
     itemIds: ['pre-6', 'pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
   },
@@ -374,7 +374,7 @@ const postInc: ChecklistItem[] = [
     slug: 'letterhead-preparation',
     bucket: 'post-inc',
     order: 2,
-    title: 'Letterhead Preparation',
+    title: 'Company Letterhead',
     responsibleRole: 'intern',
     forms: [],
     infoRequired: [
@@ -404,7 +404,7 @@ const postInc: ChecklistItem[] = [
     slug: 'share-capital-infusion',
     bucket: 'post-inc',
     order: 4,
-    title: 'Infusion of Share Capital',
+    title: 'Share Capital Infusion',
     responsibleRole: 'intern',
     forms: [],
     infoRequired: ['Bank statement showing capital infused from shareholders'],
@@ -416,7 +416,7 @@ const postInc: ChecklistItem[] = [
     slug: 'share-certificates-sh-1',
     bucket: 'post-inc',
     order: 5,
-    title: 'Issue of Share Certificates (Form SH-1)',
+    title: 'Share Certificates (SH-1)',
     responsibleRole: 'intern',
     forms: ['SH-1'],
     infoRequired: ['Details of the allottees'],
@@ -427,7 +427,7 @@ const postInc: ChecklistItem[] = [
     slug: 'commencement-of-business-inc-20a',
     bucket: 'post-inc',
     order: 6,
-    title: 'Commencement of Business (Form INC-20A)',
+    title: 'Commencement (INC-20A)',
     responsibleRole: 'intern',
     forms: ['INC-20A'],
     infoRequired: ['Declaration of commencement of business', 'Bank statement evidence'],
@@ -438,7 +438,7 @@ const postInc: ChecklistItem[] = [
     slug: 'auditor-appointment-adt-1',
     bucket: 'post-inc',
     order: 7,
-    title: 'Appointment of Auditor (Form ADT-1)',
+    title: 'Auditor Appointment (ADT-1)',
     responsibleRole: 'intern',
     forms: ['ADT-1'],
     infoRequired: [
@@ -454,7 +454,7 @@ const postInc: ChecklistItem[] = [
     slug: 'fcgpr-filing-rbi',
     bucket: 'post-inc',
     order: 8,
-    title: 'FC-GPR Filing with RBI (In case of FDI)',
+    title: 'FC-GPR Filing',
     responsibleRole: 'intern',
     forms: ['FCGPR'],
     infoRequired: [
@@ -474,7 +474,7 @@ const postInc: ChecklistItem[] = [
     slug: 'nominee-shareholder-mgt-4-5-6',
     bucket: 'post-inc',
     order: 9,
-    title: 'Nominee Shareholder Declaration and Filing (MGT-4, MGT-5 and MGT-6)',
+    title: 'Nominee Shareholder (MGT-4/5/6)',
     responsibleRole: 'intern',
     forms: ['MGT-4', 'MGT-5', 'MGT-6'],
     infoRequired: [
@@ -489,7 +489,7 @@ const postInc: ChecklistItem[] = [
     slug: 'change-registered-office-inc-22',
     bucket: 'post-inc',
     order: 10,
-    title: 'Change in Registered Office (Form INC-22)',
+    title: 'Registered Office (INC-22)',
     responsibleRole: 'intern',
     forms: ['INC-22'],
     infoRequired: [
@@ -507,7 +507,7 @@ const postInc: ChecklistItem[] = [
     slug: 'display-name-board-registered-office',
     bucket: 'post-inc',
     order: 11,
-    title: 'Display of Name Board at Registered Office',
+    title: 'Name Board',
     responsibleRole: 'intern',
     forms: [],
     infoRequired: [
@@ -521,7 +521,7 @@ const postInc: ChecklistItem[] = [
 const POST_INC_PHASES: ChecklistPhaseGroup[] = [
   {
     id: 'post-inc-phase-3',
-    title: 'Phase 3 — Post Incorporation Compliances',
+    title: 'Phase 3 — Post-Incorporation',
     subtitle: 'Steps 1–11',
     itemIds: [
       'post-1',
@@ -558,7 +558,7 @@ const registration: ChecklistItem[] = [
     slug: 'pf-dsc-esign-registration',
     bucket: 'statutory',
     order: 3,
-    title: 'EPF Registration & Active Signature',
+    title: 'EPF Registration',
     responsibleRole: 'intern',
     forms: ['PF registration'],
     infoRequired: [...KYC_CORE, 'List of employees', 'Active DSC / e-sign credentials'],
@@ -593,7 +593,7 @@ const registration: ChecklistItem[] = [
     slug: 'gst-registration',
     bucket: 'statutory',
     order: 1,
-    title: 'GST Registration & LUT Filing',
+    title: 'GST & LUT',
     responsibleRole: 'intern',
     forms: ['GST REG-01', 'GST RFD-11'],
     infoRequired: [
@@ -612,7 +612,7 @@ const registration: ChecklistItem[] = [
     slug: 'letter-of-undertaking',
     bucket: 'statutory',
     order: 7,
-    title: 'Letter of Undertaking (LUT)',
+    title: 'LUT Filing',
     responsibleRole: 'intern',
     forms: ['GST RFD-11'],
     infoRequired: ['KYC of 2 witnesses'],
@@ -623,7 +623,7 @@ const registration: ChecklistItem[] = [
     slug: 'legal-entity-identifier',
     bucket: 'statutory',
     order: 6,
-    title: 'Legal Entity Identifier (LEI)',
+    title: 'LEI Registration',
     responsibleRole: 'intern',
     forms: ['Form 1 — LEI'],
     infoRequired: [
@@ -640,7 +640,7 @@ const registration: ChecklistItem[] = [
     slug: 'pt-registration',
     bucket: 'statutory',
     order: 10,
-    title: 'Professional Tax Registration',
+    title: 'Professional Tax',
     responsibleRole: 'intern',
     forms: ['Form 1 — PT'],
     infoRequired: [...KYC_CORE, 'TAN', 'List of employees'],
@@ -662,7 +662,7 @@ const registration: ChecklistItem[] = [
     slug: 'shops-establishments-registration',
     bucket: 'statutory',
     order: 11,
-    title: 'Shops & Establishment Registration',
+    title: 'Shops & Establishment',
     responsibleRole: 'intern',
     forms: ['Form 1 — S&E', 'Form No-I'],
     infoRequired: [
@@ -747,7 +747,7 @@ const registration: ChecklistItem[] = [
     slug: 'posh-she-box-registration',
     bucket: 'statutory',
     order: 9,
-    title: 'POSH — SHE Box Registration',
+    title: 'POSH / SHE Box',
     responsibleRole: 'intern',
     forms: [],
     infoRequired: [
@@ -763,7 +763,7 @@ const registration: ChecklistItem[] = [
     slug: 'msme-registration',
     bucket: 'statutory',
     order: 14,
-    title: 'Micro Small & Medium Enterprises Registration (MSME)',
+    title: 'MSME Registration',
     responsibleRole: 'intern',
     forms: ['Udyam Registration'],
     infoRequired: [
@@ -781,7 +781,7 @@ const REGISTRATION_PHASES: ChecklistPhaseGroup[] = [
   {
     id: 'registration-phase-4',
     title: 'Phase 4 — Registration',
-    subtitle: 'Steps 1–14 · Project lead marks applicability',
+    subtitle: 'Steps 1–14',
     itemIds: [
       'reg-4',
       'reg-13',
@@ -859,6 +859,11 @@ export function getPhaseItems(
 /** All incorporation phases (1–4) for client progress and admin phase maps. */
 export function getIncorporationPhases(): Array<ChecklistPhaseGroup & { items: ChecklistItem[] }> {
   return [...getPreIncPhases(), ...getPostIncPhases(), ...getRegistrationPhases()];
+}
+
+/** Ordered active catalog (phase itemIds). Excludes legacy rows not in a phase. */
+export function getActiveCatalogItems(): ChecklistItem[] {
+  return getPhaseItems(getIncorporationPhases());
 }
 
 export function getPreIncPhaseStep(itemId: string): { phaseId: string; stepNumber: number } | null {

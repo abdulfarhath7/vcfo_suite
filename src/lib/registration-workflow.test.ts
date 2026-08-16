@@ -29,8 +29,8 @@ describe('sheet alignment helpers', () => {
     expect(ids[0]).toBe('reg-4');
     expect(ids[6]).toBe('reg-5');
     expect(ids).not.toContain('reg-2');
-    expect(getRegistrationPhases()[0]!.items[0]!.title).toBe('GST Registration & LUT Filing');
-    expect(getRegistrationPhases()[0]!.items[6]!.title).toBe('Letter of Undertaking (LUT)');
+    expect(getRegistrationPhases()[0]!.items[0]!.title).toBe('GST & LUT');
+    expect(getRegistrationPhases()[0]!.items[6]!.title).toBe('LUT Filing');
   });
 
   it('supports not-applicable status and workflow stages', () => {

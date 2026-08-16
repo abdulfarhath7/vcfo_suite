@@ -25,9 +25,9 @@ export const CLIENT_PROGRESS_TONE_LABEL: Record<ClientProgressTone, string> = {
 };
 
 export const CLIENT_PROGRESS_PHASE_TITLES: Record<string, string> = {
-  'pre-inc-phase-1': 'Phase 1 — Pre-incorporation (Name Application)',
-  'pre-inc-phase-2': 'Phase 2 — Pre-incorporation (Incorporation Details)',
-  'post-inc-phase-3': 'Phase 3 — Post Incorporation Compliances',
+  'pre-inc-phase-1': 'Phase 1 — Name Application',
+  'pre-inc-phase-2': 'Phase 2 — Incorporation',
+  'post-inc-phase-3': 'Phase 3 — Post-Incorporation',
   'registration-phase-4': 'Phase 4 — Registration',
 };
 

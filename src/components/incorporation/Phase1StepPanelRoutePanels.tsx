@@ -48,7 +48,7 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
     if (!isClient) {
       return (
         <div className={className}>
-          <PanelShell title="Draft board resolution (Step 2)">
+          <PanelShell title="Draft Board Resolution">
             {brStatus === 'loading' && <p className="text-text-tertiary">Checking status…</p>}
             {brStatus === 'none' && (
               <p className="text-text-tertiary">
@@ -80,7 +80,7 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
 
     return (
       <div className={className}>
-        <PanelShell title="Draft board resolution">
+        <PanelShell title="Draft Board Resolution">
           {brStatus === 'loading' && (
             <p className="text-text-tertiary">Checking status…</p>
           )}
@@ -97,7 +97,7 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
               </p>
               <Link
                 href={clientBoardResolutionPath()}
-                className="inline-flex items-center gap-1.5 text-orange-700 hover:underline font-medium"
+                className="inline-flex items-center gap-1.5 text-blue-700 hover:underline font-medium"
               >
                 <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 View draft board resolution
@@ -114,7 +114,7 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
     if (isClient) {
       return (
         <div className={className}>
-          <PanelShell title="Sign and upload board resolution">
+          <PanelShell title="Signed Board Resolution">
             <p>
               Download the certified board resolution, sign it on company letterhead, then upload
               the signed copy.
@@ -133,7 +133,7 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
             {(brStatus === 'finalized' || brStatus === 'signed') && (
               <Link
                 href={clientBoardResolutionPath()}
-                className="inline-flex items-center gap-1.5 text-orange-700 hover:underline font-medium"
+                className="inline-flex items-center gap-1.5 text-blue-700 hover:underline font-medium"
               >
                 <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 {brStatus === 'signed' ? 'View or replace signed copy' : 'Upload signed copy'}
@@ -151,7 +151,7 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
 
     return (
       <div className={className}>
-        <PanelShell title="Signed board resolution from client">
+        <PanelShell title="Signed Board Resolution">
           {brStatus === 'loading' && <p className="text-text-tertiary">Checking status…</p>}
           {brStatus === 'signed' ? (
             <p className="flex items-center gap-1.5 text-success-text">
@@ -181,7 +181,7 @@ export function Phase1Pre4Panel(props: Phase1StepPanelRoutesProps) {
     if (isClient) {
       return (
         <div className={className}>
-          <PanelShell title="Name application filing">
+          <PanelShell title="Name Application">
             {deliveredToClient && ack ? (
               <>
                 <p className="flex items-center gap-1.5 text-success-text">
@@ -207,7 +207,7 @@ export function Phase1Pre4Panel(props: Phase1StepPanelRoutesProps) {
 
     return (
       <div className={className}>
-        <PanelShell title="Review signed BR and file with ROC">
+        <PanelShell title="Name Application">
           <p>
             Confirm the signed board resolution is on file, file the name application, then upload
             the ROC acknowledgement and deliver to the client.
@@ -234,7 +234,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
     if (isClient) {
       return (
         <div className={className}>
-          <PanelShell title="MCA name approval">
+          <PanelShell title="Name Approval">
             {deliveredToClient && (approvedName || approvalDate || expiryDate || letter) ? (
               <dl className="space-y-2">
                 {approvedName && (
@@ -285,7 +285,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
 
     return (
       <div className={className}>
-        <PanelShell title="Deliver MCA name approval to client">
+        <PanelShell title="Name Approval">
           <p>
             Once MCA approves the name (typically 4 to 5 working days from filing), enter the approved
             name, approval date, and upload the approval letter. The expiry date (20-day validity) is
@@ -313,7 +313,7 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
     if (isClient) {
       return (
         <div className={className}>
-          <PanelShell title="KYC review and DSC creation">
+          <PanelShell title="KYC Review & DSC">
             {hasDeliveredContent ? (
               <>
                 <p className="flex items-center gap-1.5 text-success-text">
@@ -384,7 +384,7 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
         {engagement && !isClient && (
           <IncorporationDocsGeneratePanel engagement={engagement} responses={responses} />
         )}
-        <PanelShell title="Review KYC, create DSC, and share drafts (Phase 2 Step 2)">
+        <PanelShell title="KYC Review & DSC">
           <p>
             Review submitted KYC data, upload DSC success messages from eMudhra, generate or attach
             draft incorporation documents (DIR-2, DIR-8, INC-9, PAN), then use{' '}
@@ -428,7 +428,7 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
     if (isClient) {
       return (
         <div className={className}>
-          <PanelShell title="Download drafts and upload signed documents (Phase 2 Step 3)">
+          <PanelShell title="Document Execution">
             {hasClientVisibleDrafts ? (
               <>
                 <p className="flex items-center gap-1.5 text-success-text">
@@ -484,7 +484,7 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
             labelOptions={incorpDraftLabelOptions}
           />
         )}
-        <PanelShell title="Client execution of incorporation documents (Phase 2 Step 3)">
+        <PanelShell title="Document Execution">
           {hasClientVisibleDrafts ? (
             <>
               <p>
@@ -531,7 +531,7 @@ export function Phase1Pre9Panel(props: Phase1StepPanelRoutesProps) {
   if (isClient) {
     return (
       <div className={className}>
-        <PanelShell title="Confirm Spice Part B application (Phase 2 Step 5)">
+        <PanelShell title="SPICe+ Confirmation">
           {clientSubmitted ? (
             <>
               <p className="flex items-center gap-1.5 text-success-text">
@@ -563,7 +563,7 @@ export function Phase1Pre9Panel(props: Phase1StepPanelRoutesProps) {
 
   return (
     <div className={className}>
-      <PanelShell title="Client confirmation on Spice Part B (Phase 2 Step 5)">
+      <PanelShell title="SPICe+ Confirmation">
         <p>
           Share the SPICe+ Part B application with the client for review. They confirm or recommend
           changes in the form on this step before you file on Step 6 (Pre-10).
@@ -586,7 +586,7 @@ export function Phase1Pre10Panel(props: Phase1StepPanelRoutesProps) {
   if (isClient) {
     return (
       <div className={className}>
-        <PanelShell title="MCA incorporation filing (Phase 2 Step 6)">
+        <PanelShell title="SPICe+ Filing">
           {deliveredToClient && filedNotes ? (
             <>
               <p className="flex items-center gap-1.5 text-success-text">
@@ -608,7 +608,7 @@ export function Phase1Pre10Panel(props: Phase1StepPanelRoutesProps) {
 
   return (
     <div className={className}>
-      <PanelShell title="File SPICe+ Part B and AGILE-PRO-S (Phase 2 Step 6)">
+      <PanelShell title="SPICe+ Filing">
         <p>
           After client confirmation on Step 5, complete and submit SPICe+ Part B and AGILE-PRO-S on
           the MCA portal. Record filing notes below and use <strong>Deliver to client</strong> when
@@ -627,7 +627,7 @@ export function Phase1Pre11Panel(props: Phase1StepPanelRoutesProps) {
   if (isClient) {
     return (
       <div className={className}>
-        <PanelShell title="MCA remarks and resubmission (Phase 2 Step 7)">
+        <PanelShell title="MCA Remarks">
           {deliveredToClient && remarks ? (
             <>
               <p className="flex items-center gap-1.5 text-success-text">
@@ -653,7 +653,7 @@ export function Phase1Pre11Panel(props: Phase1StepPanelRoutesProps) {
 
   return (
     <div className={className}>
-      <PanelShell title="MCA remarks and resubmissions (Phase 2 Step 7)">
+      <PanelShell title="MCA Remarks">
         <p>
           Review MCA portal remarks, request client information or documents if needed, upload the
           clarification letter, and record resubmission notes. Use <strong>Deliver to client</strong>{' '}
@@ -681,7 +681,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
   if (isClient) {
     return (
       <div className={className}>
-        <PanelShell title="Incorporation certificate and identifiers">
+        <PanelShell title="Certificate of Incorporation">
           {hasDeliveredContent ? (
             <>
               <p className="flex items-center gap-1.5 text-success-text">
@@ -708,7 +708,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 {cin && (
                   <div>
                     <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Corporate Identification Number (CIN)
+                      CIN
                     </dt>
                     <dd className="font-mono text-[11px]">{cin}</dd>
                   </div>
@@ -716,7 +716,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 {pan && (
                   <div>
                     <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Permanent Account Number (PAN)
+                      PAN
                     </dt>
                     <dd className="font-mono text-[11px]">{pan}</dd>
                   </div>
@@ -724,7 +724,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 {tan && (
                   <div>
                     <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Tax Deduction and Collection Account Number (TAN)
+                      TAN
                     </dt>
                     <dd className="font-mono text-[11px]">{tan}</dd>
                   </div>
@@ -732,7 +732,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 {pfCode && (
                   <div>
                     <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Provident Fund Establishment Code (PF)
+                      PF Code
                     </dt>
                     <dd className="font-mono text-[11px]">{pfCode}</dd>
                   </div>
@@ -740,7 +740,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 {esiCode && (
                   <div>
                     <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Employees&apos; State Insurance Code (ESI)
+                      ESI Code
                     </dt>
                     <dd className="font-mono text-[11px]">{esiCode}</dd>
                   </div>
@@ -760,13 +760,13 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                       {panCard && (
                         <MilestoneFileDisplay
                           storagePath={panCard}
-                          label="Permanent Account Number (PAN) Card"
+                          label="PAN Card"
                         />
                       )}
                       {tanCard && (
                         <MilestoneFileDisplay
                           storagePath={tanCard}
-                          label="Tax Deduction and Collection Account Number (TAN) Card"
+                          label="TAN Card"
                         />
                       )}
                     </dd>
@@ -788,7 +788,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
 
   return (
     <div className={className}>
-      <PanelShell title="Deliver incorporation certificate to client (Phase 2 Step 8)">
+      <PanelShell title="Certificate of Incorporation">
         <p>
           Enter MCA-approved company identifiers and upload the certificate of incorporation,
           Permanent Account Number (PAN) card, and Tax Deduction and Collection Account Number

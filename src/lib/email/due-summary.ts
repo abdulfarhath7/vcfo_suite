@@ -38,20 +38,20 @@ function formatTimeline(rule: DeadlineRule): string {
 }
 
 const CHECKLIST: Array<{ bucket: Bucket; title: string; deadline: DeadlineRule }> = [
-  { bucket: 'pre-inc', title: 'Name Application — Approval', deadline: { kind: 'estimated-weeks', weeks: [1, 2] } },
-  { bucket: 'pre-inc', title: "Director's Appointment", deadline: { kind: 'estimated-weeks', weeks: [3, 4] } },
-  { bucket: 'pre-inc', title: 'DSC of Proposed Directors', deadline: { kind: 'estimated-weeks', weeks: [3, 4] } },
-  { bucket: 'pre-inc', title: 'Selection of Registered Office', deadline: { kind: 'estimated-weeks', weeks: [3, 4] } },
-  { bucket: 'pre-inc', title: 'Foreign Entity & Authorised Person Information', deadline: { kind: 'estimated-weeks', weeks: [3, 4] } },
+  { bucket: 'pre-inc', title: 'Name Approval', deadline: { kind: 'estimated-weeks', weeks: [1, 2] } },
+  { bucket: 'pre-inc', title: 'Director Appointment', deadline: { kind: 'estimated-weeks', weeks: [3, 4] } },
+  { bucket: 'pre-inc', title: 'Director DSC', deadline: { kind: 'estimated-weeks', weeks: [3, 4] } },
+  { bucket: 'pre-inc', title: 'Registered Office', deadline: { kind: 'estimated-weeks', weeks: [3, 4] } },
+  { bucket: 'pre-inc', title: 'Foreign Entity Details', deadline: { kind: 'estimated-weeks', weeks: [3, 4] } },
   { bucket: 'post-inc', title: 'First Board Meeting', deadline: { kind: 'days-from-incorporation', days: 30 } },
   { bucket: 'post-inc', title: 'Bank Account Opening', deadline: { kind: 'no-statutory-limit' } },
-  { bucket: 'post-inc', title: 'Intimation of Registered Office to ROC', deadline: { kind: 'days-from-incorporation', days: 30 } },
-  { bucket: 'post-inc', title: 'PAN / TAN Application', deadline: { kind: 'days-from-incorporation', days: 30 } },
+  { bucket: 'post-inc', title: 'ROC Office Intimation', deadline: { kind: 'days-from-incorporation', days: 30 } },
+  { bucket: 'post-inc', title: 'PAN / TAN', deadline: { kind: 'days-from-incorporation', days: 30 } },
   { bucket: 'post-inc', title: 'GST Registration', deadline: { kind: 'days-from-incorporation', days: 30 } },
-  { bucket: 'post-inc', title: 'Professional Tax / Shops & Establishment', deadline: { kind: 'wherever-applicable' } },
-  { bucket: 'fema', title: 'FEMA Compliance — Inward Remittance', deadline: { kind: 'wherever-applicable' } },
+  { bucket: 'post-inc', title: 'PT / Shops & Establishment', deadline: { kind: 'wherever-applicable' } },
+  { bucket: 'fema', title: 'FEMA Inward Remittance', deadline: { kind: 'wherever-applicable' } },
   { bucket: 'fema', title: 'Annual FEMA Return (APR)', deadline: { kind: 'fixed-window-weeks', weeks: 52 } },
-  { bucket: 'statutory', title: 'Annual ROC Filings (AOC-4 / MGT-7)', deadline: { kind: 'fixed-window-weeks', weeks: 52 } },
+  { bucket: 'statutory', title: 'Annual ROC Filings', deadline: { kind: 'fixed-window-weeks', weeks: 52 } },
   { bucket: 'statutory', title: 'Income Tax Return', deadline: { kind: 'fixed-window-weeks', weeks: 52 } },
 ];
 

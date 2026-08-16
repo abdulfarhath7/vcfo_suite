@@ -186,9 +186,9 @@ describe('buildClientProgressPhases', () => {
       'reg-12',
       'reg-15',
     ]);
-    expect(phases[0]!.steps[0]!.title).toBe('Details to be Requested from the Client');
+    expect(phases[0]!.steps[0]!.title).toBe('Client Details');
     expect(phases[2]!.steps[0]!.title).toBe('First Board Meeting');
-    expect(phases[3]!.steps[0]!.title).toBe('GST Registration & LUT Filing');
-    expect(phases[3]!.steps[6]!.title).toBe('Letter of Undertaking (LUT)');
+    expect(phases[3]!.steps[0]!.title).toBe('GST & LUT');
+    expect(phases[3]!.steps[6]!.title).toBe('LUT Filing');
   });
 });
