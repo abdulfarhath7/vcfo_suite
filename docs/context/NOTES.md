@@ -46,10 +46,15 @@ Append here whenever something costs more than a minute to figure out.
 - **SES flip:** set `EMAIL_PROVIDER=ses`, verify domain in SES (`SES_REGION` /
   `ap-south-1`), leave sandbox via production access request. Keep Resend until
   that works. See `docs/context/AWS-DEPLOY.md` §8.
-- Client submit / client document upload → lead (+ manager) via Resend
-  `{company-name}@sbctrack.in`. Review / deliver / share / request / unlock
-  open in-app compose for Graph send to the client. Lead resolve needs
-  `profiles.intern_id` to match `engagements.intern_id`.
+- Client submit / client document upload → **lead + every project manager**
+  via Resend `{company-name}@sbctrack.in` (Reply-To = client). Managers are
+  resolved from `engagements.manager_id`, `engagement_managers` membership,
+  then intern `reports_to_manager_id` if those are empty. Intern “Request
+  manager approval” (`reviewSource=lead_manager_request` on checklist PATCH)
+  emails **managers only** on the same Resend path — not Graph. Review /
+  deliver / share / request / unlock open in-app compose for Graph send to
+  the client. Lead resolve needs `profiles.intern_id` to match
+  `engagements.intern_id`.
 - In-app rows for those events are inserted with `createNotificationsForUsers`
   (server). Client checklist diffs toast + invalidate the bell but do not
   re-persist those kinds (avoids duplicates).
@@ -153,3 +158,25 @@ Append here whenever something costs more than a minute to figure out.
 - Client **Progress** nav (`/app/client/progress`) was removed; the gated catalog
   now lives as a Create-project-style flowchart on Incorporation. Old `/progress`
   URLs redirect there. Staff progress CC / intern % helpers are unrelated.
+
+## Intern / staff step workspace
+
+- Checklist step pages (`…/step/{slug}`) use a two-column workspace: form left,
+  status/action/help rail right (`StepWorkspaceRail`). No “Back to project”
+  row — intern nav + the in-page H1 locate the step. The shell chrome has no
+  page title or breadcrumbs.
+- App shell chrome is an **L** flush to the viewport: sidebar `top-0 left-0
+  bottom-0`, top bar `top-0` from the sidebar’s right edge to the screen
+  edge. No floating inset. Logo in the sidebar header; **“VCFO Suite”** stays
+  visible when collapsed by moving into the top bar (icons-only rail is too
+  narrow for the wordmark). Search is a tool button, not a fake input.
+  CommandPalette is the only type-in search. No page titles/breadcrumbs in
+  the top bar.
+- Checklist file upload is a compact `.milestone-upload-zone` row (~44px, max 88px),
+  not a tall centered dropzone. Remarks use `.milestone-form-textarea` (`min-h` 72px /
+  3 rows, grows with `field-sizing: content`).
+- Checklist fields pair on desktop: `.milestone-form-grid` is 2 columns from `md`.
+  Short = text/date/select (phones, emails, yes/no). Full (`grid-column: 1 / -1`) =
+  textarea, file, address text, or helper copy longer than ~120 chars. Odd leftover
+  shorts stay in one cell (~50%), not stretched. Phone stacks to one column.
+  Infer via `getMilestoneFormFieldLayout`; optional `ChecklistField.layout` override.
