@@ -858,7 +858,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
       </fieldset>
 
       {/* Progress rail — card chrome so it stays readable beside the form */}
-      <div className="pointer-events-none fixed bottom-5 right-3 top-[4.75rem] z-20 hidden w-[13.25rem] lg:block xl:right-5 xl:w-[14rem]">
+      <div className="pointer-events-none fixed bottom-5 right-3 top-[var(--shell-sticky-top)] z-20 hidden w-[13.25rem] lg:block xl:right-5 xl:w-[14rem]">
         <div className="pointer-events-auto h-full">
           <CreateProjectFormFlow {...flowProps} variant="rail" className="h-full" />
         </div>

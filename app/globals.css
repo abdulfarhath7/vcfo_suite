@@ -24,6 +24,10 @@
     /* Shadow ink — cool blue-slate, never brown */
     --shadow-ink: 32% 0.04 264;
 
+    /* Flush L-chrome: sidebar + content top bar (no screen inset) */
+    --shell-rail-height: 3.25rem;
+    --shell-sticky-top: var(--shell-rail-height);
+
     /* Text — slate-900 with blue undertone */
     --foreground: 21% 0.042 264;
     --paper: 21% 0.042 264;

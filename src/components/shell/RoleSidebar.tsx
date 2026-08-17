@@ -29,6 +29,8 @@ import { useShellNav } from '@/components/shell/shell-nav-context';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { SidebarComplianceMini } from '@/components/shell/SidebarComplianceMini';
+import { InternClientsNav, INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
+import { roleHomePath } from '@/lib/auth-routes';
 
 interface Item {
   to: string;
@@ -114,7 +116,7 @@ export function SidebarNavBody({
 
   const internItems: Item[] = [
     { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
-    { to: '/app/intern/clients', label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
+    { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
     { to: '/app/intern/tasks', label: 'Tasks', icon: ListTodo, iconTone: TONE.work },
     { to: '/app/intern/requests', label: 'Requests', icon: FileInput, iconTone: TONE.queue },
     { to: '/app/intern/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
@@ -138,32 +140,43 @@ export function SidebarNavBody({
     <>
       <div
         className={cn(
-          'flex h-[3.75rem] shrink-0 items-center border-b border-border/50',
+          'flex h-[var(--shell-rail-height)] shrink-0 items-center border-b border-border/50',
           expanded ? 'px-3.5' : 'justify-center px-2',
         )}
       >
-        <SbcLogo variant="mark" size={34} decorative={expanded} />
-        {expanded && (
-          <div className="ml-2.5 min-w-0 flex-1">
-            <div className="text-[13px] font-semibold tracking-tight text-foreground leading-none">
+        <Link
+          href={roleHomePath(user.role)}
+          onClick={onNavigate}
+          aria-label="VCFO Suite home"
+          className={cn(
+            'flex min-w-0 items-center rounded-lg py-1 transition-colors hover:bg-primary-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+            expanded ? 'gap-2.5 pr-1.5' : 'justify-center',
+          )}
+        >
+          <SbcLogo variant="mark" size={28} decorative />
+          {expanded && (
+            <span className="truncate text-[13px] font-semibold tracking-tight text-foreground">
               VCFO Suite
-            </div>
-            <div className="mt-1 flex items-center gap-1.5">
-              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-role-foreground/80">
-                {ROLE_UI_LABEL[user.role]}
-              </span>
-              {user.role === 'super_admin' && (
-                <span className="super-gold-chip rounded-full px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em]">
-                  Gold
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+            </span>
+          )}
+        </Link>
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
         {items.map((it) => {
+          if (user.role === 'intern' && it.to === INTERN_CLIENTS_HREF) {
+            return (
+              <InternClientsNav
+                key={it.to}
+                expanded={expanded}
+                pathname={pathname}
+                layoutIdPrefix={layoutIdPrefix}
+                onNavigate={onNavigate}
+                icon={it.icon}
+                iconTone={it.iconTone}
+              />
+            );
+          }
           const active = pathname.startsWith(it.to);
           return (
             <Link
@@ -231,7 +244,8 @@ export function SidebarNavBody({
                   : '/app/client/settings'
           }
           onClick={onNavigate}
-          title={!expanded ? 'Account settings' : undefined}
+          title="Account settings"
+          aria-label="Account settings"
           className={cn(
             'flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-role-soft/50',
             !expanded && 'justify-center',
@@ -243,8 +257,15 @@ export function SidebarNavBody({
           {expanded && (
             <div className="min-w-0 flex-1">
               <div className="truncate text-xs font-medium text-foreground">{user.name}</div>
-              <div className="mono text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
-                Account settings
+              <div className="mt-0.5 flex items-center gap-1.5">
+                <span className="mono truncate text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
+                  {ROLE_UI_LABEL[user.role]}
+                </span>
+                {user.role === 'super_admin' && (
+                  <span className="super-gold-chip shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em]">
+                    Gold
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -261,14 +282,14 @@ export function RoleSidebar() {
   return (
     <aside
       className={cn(
-        'group/sidebar fixed bottom-3 left-3 top-3 z-30 hidden flex-col rounded-2xl border border-border/50 bg-panel/80 shadow-[0_20px_56px_-28px_oklch(var(--shadow-ink)/0.28)] backdrop-blur-2xl transition-[width] duration-300 ease-out lg:flex',
+        'group/sidebar fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border/50 bg-panel/80 backdrop-blur-2xl transition-[width] duration-300 ease-out lg:flex',
         sidebarCollapsed ? 'w-14' : user.role === 'client' ? 'w-[15.5rem]' : 'w-56',
       )}
     >
       {/* Inner wrapper clips nav content during the width transition; the
           aside itself stays overflow-visible so the edge toggle can straddle
           the border. */}
-      <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <SidebarNavBody expanded={!sidebarCollapsed} layoutIdPrefix="sidebar-desktop" />
       </div>
 

@@ -94,6 +94,7 @@ export interface AppContextValue {
 
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
   commandOpen: boolean;
   setCommandOpen: (v: boolean) => void;
 

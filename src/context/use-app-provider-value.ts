@@ -914,6 +914,10 @@ export function useAppProviderValue(): AppContextValue {
     () => setSidebarCollapsed((v) => !v),
     [setSidebarCollapsed],
   );
+  const collapseSidebarTo = useCallback(
+    (collapsed: boolean) => setSidebarCollapsed(collapsed),
+    [setSidebarCollapsed],
+  );
 
   const getState = useCallback(
     (scopeId: string) => {
@@ -932,7 +936,7 @@ export function useAppProviderValue(): AppContextValue {
     createProjectWithClient: createProjectWithClientFn, updateEngagement: updateEngagementFn,
     inviteClient, acceptInvite, updateTask, uploadDoc, approveDoc, createRequest,
     internOptions, internsLoading, engagementsLoading,
-    sidebarCollapsed, toggleSidebar,
+    sidebarCollapsed, toggleSidebar, setSidebarCollapsed: collapseSidebarTo,
     commandOpen, setCommandOpen,
     role: (user?.role as Role) || 'admin',
     selectedClient,
@@ -1179,6 +1183,7 @@ export function useAppProviderValue(): AppContextValue {
     createRequest,
     addClient,
     toggleSidebar,
+    collapseSidebarTo,
     getState,
     internOptions,
     internsLoading,

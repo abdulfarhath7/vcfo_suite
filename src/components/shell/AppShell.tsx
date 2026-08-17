@@ -1,11 +1,13 @@
 "use client";
 
 import { type ReactNode, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import { RoleSidebar, MobileNavSheet } from "./RoleSidebar";
 import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
 import { ShellNavProvider } from "./shell-nav-context";
+import { isInternEngagementPathname } from "@/lib/project-step-path";
 import { cn } from "@/lib/utils";
 import { AuthBootScreen } from "@/components/common/AuthBootScreen";
 
@@ -16,7 +18,9 @@ export function AppShell({
   requireRole?: "super_admin" | "admin" | "manager" | "intern" | "client";
   children: ReactNode;
 }) {
-  const { user, authLoading, sidebarCollapsed } = useApp();
+  const { user, authLoading, sidebarCollapsed, setSidebarCollapsed } = useApp();
+  const pathname = usePathname();
+  const internProjectOpen = isInternEngagementPathname(pathname);
 
   useEffect(() => {
     if (!user) {
@@ -26,6 +30,19 @@ export function AppShell({
     document.body.setAttribute("data-role", user.role);
     return () => document.body.removeAttribute("data-role");
   }, [user]);
+
+  /* Intern clients list keeps the nav open; opening a project collapses it
+     so the workspace (and right-side progress rail) can use the width. */
+  useEffect(() => {
+    if (user?.role !== "intern" && user?.role !== "super_admin") return;
+    if (internProjectOpen) {
+      setSidebarCollapsed(true);
+      return;
+    }
+    if (pathname === "/app/intern/clients") {
+      setSidebarCollapsed(false);
+    }
+  }, [internProjectOpen, pathname, setSidebarCollapsed, user?.role]);
 
   if (authLoading || !user) return <AuthBootScreen />;
   if (
@@ -41,14 +58,16 @@ export function AppShell({
       ? "max-w-[1480px]"
       : user.role === "client"
         ? "max-w-[1200px]"
-        : "max-w-[1400px]";
+        : internProjectOpen
+          ? "max-w-none"
+          : "max-w-[1400px]";
 
-  /* Floating sidebar inset: left-3 (12px) + width + gap */
+  /* Flush to the sidebar: exact width, no screen inset */
   const desktopPad = sidebarCollapsed
-    ? "lg:pl-[4.75rem]"
+    ? "lg:pl-14"
     : user.role === "client"
-      ? "lg:pl-[17rem]"
-      : "lg:pl-[16rem]";
+      ? "lg:pl-[15.5rem]"
+      : "lg:pl-56";
 
   return (
     <ShellNavProvider>
@@ -63,7 +82,7 @@ export function AppShell({
         <CommandPalette />
 
         <div className={cn("relative z-10 pl-0 transition-[padding] duration-300 ease-out", desktopPad)}>
-          <div className="sticky top-0 z-20 px-3 pt-3 sm:px-4 sm:pt-3.5 lg:pr-4">
+          <div className="sticky top-0 z-20">
             <TopBar />
           </div>
           <main className={cn("mx-auto px-4 pb-8 pt-4 page-fade-up sm:px-6 sm:pb-10 sm:pt-5 lg:pr-4", mainMaxWidth)}>

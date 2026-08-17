@@ -5,12 +5,14 @@ import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTra
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { ProgressRing, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
+import { useApp } from '@/context/AppContext';
 import { useRouter } from 'next/navigation';
 import { internEngagementPath } from '@/lib/project-step-path';
 import { ArrowUpRight, Building2, UserSquare2 } from 'lucide-react';
 
 export default function InternClients() {
   const { myEngagements, progressByEngagement } = useInternPortfolio();
+  const { setSidebarCollapsed } = useApp();
   const router = useRouter();
 
   return (
@@ -42,7 +44,10 @@ export default function InternClients() {
                 <StaggerItem key={e.id}>
                   <button
                     type="button"
-                    onClick={() => router.push(internEngagementPath(e))}
+                    onClick={() => {
+                      setSidebarCollapsed(true);
+                      router.push(internEngagementPath(e));
+                    }}
                     className="surface group w-full p-4 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px]"
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">

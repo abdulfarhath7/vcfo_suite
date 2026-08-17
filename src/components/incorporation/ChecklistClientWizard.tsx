@@ -119,7 +119,7 @@ export function ChecklistClientWizard({
   const phaseIds = [...new Set(items.map((row) => row.phaseId))];
 
   return (
-    <div className="relative w-full min-h-[calc(100vh-7rem)] page-fade-up lg:pr-[14rem] xl:pr-[14.75rem]">
+    <div className="relative w-full min-h-[calc(100vh-var(--shell-sticky-top)-2.5rem)] page-fade-up lg:pr-[14rem] xl:pr-[14.75rem]">
       {yourTurn ? (
         <YourTurnBanner
           className="mb-5"
@@ -235,7 +235,7 @@ export function ChecklistClientWizard({
       )}
 
       <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-20 hidden w-[13.25rem] lg:block xl:w-[14rem]">
-        <div className="pointer-events-auto sticky top-[4.75rem] h-[calc(100vh-6.25rem)]">
+        <div className="pointer-events-auto sticky top-[var(--shell-sticky-top)] h-[calc(100vh-var(--shell-sticky-top)-0.75rem)]">
           <ChecklistClientFlow {...flowProps} variant="rail" className="h-full" />
         </div>
       </div>
