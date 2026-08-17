@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VCFO Suite — plan and billing</title>
+  <style>
+    :root {
+      --ink: #16181f;
+      --muted: #5a6170;
+      --line: #e2e5ee;
+      --paper: #ffffff;
+      --wash: #f3f4f8;
+      --navy: #2a3f7a;
+      --navy-soft: #e8edf8;
+      --sky: #e8f1f7;
+      --amber-soft: #f7eed8;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font: 16px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+    nav.top {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+    }
+    nav.top strong { margin-right: 8px; font-size: 14px; }
+    nav.top a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 10px;
+    }
+    nav.top a:hover { color: var(--ink); }
+    nav.top button {
+      margin-left: auto;
+      background: var(--navy);
+      color: #fff;
+      border: 0;
+      padding: 8px 14px;
+      font: 650 13px/1 inherit;
+      cursor: pointer;
+    }
+    .page { max-width: 1040px; margin: 0 auto; padding: 28px 20px 64px; }
+    section.slide {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      padding: 32px 36px 36px;
+      margin-bottom: 18px;
+    }
+    .kicker {
+      margin: 0 0 6px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--navy);
+      font-weight: 700;
+    }
+    h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.15; }
+    h2 { margin: 0 0 8px; font-size: 24px; line-height: 1.2; }
+    .one-line { margin: 0 0 20px; color: var(--muted); font-size: 16px; max-width: 58ch; }
+    .facts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .fact {
+      background: var(--wash);
+      padding: 16px;
+      border: 1px solid var(--line);
+    }
+    .fact b { display: block; font-size: 20px; margin-bottom: 4px; }
+    .fact span { color: var(--muted); font-size: 14px; }
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .role {
+      border: 1px solid var(--line);
+      padding: 14px;
+    }
+    .role .who { font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+    .role h3 { margin: 0 0 6px; font-size: 15px; }
+    .role p { margin: 0; font-size: 13px; color: var(--muted); }
+    .avatar {
+      width: 32px; height: 32px;
+      background: var(--navy-soft);
+      color: var(--navy);
+      display: grid; place-items: center;
+      font-weight: 700;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .map {
+      display: grid;
+      grid-template-columns: 160px 1fr 230px;
+      gap: 14px;
+      align-items: center;
+    }
+    .col { display: flex; flex-direction: column; gap: 10px; }
+    .box {
+      border: 1px solid var(--line);
+      padding: 14px;
+    }
+    .box.hub {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .box h3 { margin: 0 0 4px; font-size: 15px; }
+    .box p { margin: 0; font-size: 13px; color: var(--muted); }
+    .box.hub p { color: #d7def0; }
+    .box.aws { background: var(--sky); }
+    .box.tw { background: var(--amber-soft); }
+    .box.ok { background: var(--navy-soft); }
+    .note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .journey {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+    .j {
+      padding: 14px 12px;
+      border: 1px solid var(--line);
+      border-right: 0;
+    }
+    .j:last-child { border-right: 1px solid var(--line); }
+    .j .n { font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+    .j h3 { margin: 0 0 4px; font-size: 13px; }
+    .j p { margin: 0; font-size: 12px; color: var(--muted); }
+    .pay {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 16px;
+    }
+    .tile {
+      border: 1px solid var(--line);
+      padding: 12px;
+      margin-bottom: 8px;
+      background: var(--wash);
+    }
+    .tile b { display: block; font-size: 14px; margin-bottom: 2px; }
+    .tile span { font-size: 13px; color: var(--muted); }
+    .total {
+      margin-top: 8px;
+      padding: 14px;
+      background: var(--navy-soft);
+      font-size: 15px;
+    }
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .side {
+      border: 1px solid var(--line);
+      padding: 18px;
+      background: var(--wash);
+    }
+    .side.now { background: #f6f4f0; }
+    .side.next { background: var(--navy-soft); }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      color: var(--muted);
+    }
+    .side h3 { margin: 0 0 10px; font-size: 17px; }
+    .side p { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .bucket {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .bucket .cap { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      padding: 6px 0;
+      border-top: 1px solid var(--line);
+    }
+    .row:first-of-type { border-top: 0; }
+    .row .amt { color: var(--muted); white-space: nowrap; }
+    .row.mix .amt { color: #8a5a10; font-weight: 650; }
+    .row.ok { font-weight: 650; }
+    .inv {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .inv-card {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      padding: 14px;
+    }
+    .inv-card.vcfo { border-color: var(--navy); background: var(--navy-soft); }
+    .inv-card .from { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .inv-card h3 { margin: 0 0 8px; font-size: 15px; }
+    .inv-card p { margin: 0; font-size: 13px; color: var(--muted); }
+    .steps3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .st {
+      border: 1px solid var(--line);
+      padding: 14px;
+    }
+    .st .n {
+      width: 24px; height: 24px;
+      background: var(--navy); color: #fff;
+      display: grid; place-items: center;
+      font-size: 12px; font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .st h3 { margin: 0 0 6px; font-size: 15px; }
+    .st p { margin: 0; font-size: 13px; color: var(--muted); }
+    footer { text-align: center; color: var(--muted); font-size: 12px; }
+    @media (max-width: 860px) {
+      .facts, .roles, .map, .journey, .pay, .compare, .inv, .steps3 { grid-template-columns: 1fr; }
+      .j { border-right: 1px solid var(--line); }
+    }
+    @media print {
+      nav.top { display: none; }
+      body { background: #fff; }
+      .page { max-width: none; padding: 0; }
+      section.slide { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="top">
+    <strong>VCFO Suite</strong>
+    <a href="#plan">The plan</a>
+    <a href="#people">Who</a>
+    <a href="#map">Picture</a>
+    <a href="#journey">Journey</a>
+    <a href="#pay">Billing</a>
+    <a href="#split">Separate bills</a>
+    <button type="button" onclick="window.print()">Print / PDF</button>
+  </nav>
+
+  <div class="page">
+    <section class="slide" id="plan">
+      <p class="kicker">Finance briefing · India · August 2026</p>
+      <h1>The plan, and what it costs</h1>
+      <p class="one-line">A website for the firm and the client to run an India company incorporation together. We will host it on AWS in India (Mumbai).</p>
+      <div class="facts">
+        <div class="fact">
+          <b>AWS</b>
+          <span>Website, database, files, and email. Start: <strong>₹30,000–40,000 / month</strong> while testing with 20 people (we store a lot of project data).</span>
+        </div>
+        <div class="fact">
+          <b>Twilio</b>
+          <span>WhatsApp alerts. Separate bill. Grows with how many messages we send.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="people">
+      <p class="kicker">Who uses it</p>
+      <h2>Five people. One client company.</h2>
+      <div class="roles">
+        <article class="role">
+          <div class="avatar">SA</div>
+          <p class="who">Firm owner</p>
+          <h3>Super Admin</h3>
+          <p>Sees the whole firm.</p>
+        </article>
+        <article class="role">
+          <div class="avatar">AD</div>
+          <p class="who">Office</p>
+          <h3>Admin</h3>
+          <p>People, projects, files.</p>
+        </article>
+        <article class="role">
+          <div class="avatar">PM</div>
+          <p class="who">Account</p>
+          <h3>Manager</h3>
+          <p>Owns the project.</p>
+        </article>
+        <article class="role">
+          <div class="avatar">PL</div>
+          <p class="who">Delivery</p>
+          <h3>Project Lead</h3>
+          <p>Runs the checklist.</p>
+        </article>
+        <article class="role">
+          <div class="avatar">CL</div>
+          <p class="who">The company</p>
+          <h3>Client</h3>
+          <p>Fills steps, uploads papers.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="slide" id="map">
+      <p class="kicker">The picture</p>
+      <h2>One website. A few boxes around it.</h2>
+      <div class="map">
+        <div class="box">
+          <h3>People</h3>
+          <p>Staff and clients, in a browser.</p>
+        </div>
+        <div class="box hub">
+          <h3>VCFO Suite</h3>
+          <p>The website — checklists, documents, files, calendar.</p>
+        </div>
+        <div class="col">
+          <div class="box aws">
+            <h3>AWS</h3>
+            <p>Database, file vault, email.</p>
+          </div>
+          <div class="box tw">
+            <h3>Twilio</h3>
+            <p>WhatsApp alerts.</p>
+          </div>
+          <div class="box ok">
+            <h3>Outlook</h3>
+            <p>Lead mails the client from work email.</p>
+            <p class="note">Microsoft 365 we already have. No extra charge.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="journey">
+      <p class="kicker">The work</p>
+      <h2>A company walks through these steps.</h2>
+      <div class="journey">
+        <div class="j"><div class="n">1</div><h3>Create project</h3><p>Start a company file.</p></div>
+        <div class="j"><div class="n">2</div><h3>Invite</h3><p>Lead + client logins.</p></div>
+        <div class="j"><div class="n">3</div><h3>Name</h3><p>Spice Part A.</p></div>
+        <div class="j"><div class="n">4</div><h3>Incorporate</h3><p>Spice Part B, papers.</p></div>
+        <div class="j"><div class="n">5</div><h3>Review</h3><p>Lead checks the work.</p></div>
+        <div class="j"><div class="n">6</div><h3>Certificate</h3><p>Share CIN / PAN.</p></div>
+        <div class="j"><div class="n">7</div><h3>Calendar</h3><p>GST / ROC dates.</p></div>
+      </div>
+    </section>
+
+    <section class="slide" id="pay">
+      <p class="kicker">Billing</p>
+      <h2>Two invoices.</h2>
+      <p class="one-line">Microsoft 365 stays as it is. We are not adding a new Microsoft bill.</p>
+      <div class="pay">
+        <div>
+          <h3>AWS (India · Mumbai)</h3>
+          <div class="tile"><b>Website</b><span>The app, always on.</span></div>
+          <div class="tile"><b>Database</b><span>Projects, people, progress. Hosted in India.</span></div>
+          <div class="tile"><b>Files</b><span>KYC, certificates, uploads.</span></div>
+          <div class="tile"><b>Email</b><span>Automatic mail from the website (Amazon SES).</span></div>
+          <div class="total"><strong>₹30,000–40,000 / month</strong> to start — testing with 20 people, lots of files and project data. Not a signed quote.</div>
+        </div>
+        <div>
+          <h3>Twilio</h3>
+          <div class="tile"><b>WhatsApp</b><span>Alerts when a step moves. Charged per conversation. Grows when the team is busy — not when people are only logged in.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="split">
+      <p class="kicker">Cost allocation across three products</p>
+      <h2>How we separate VCFO from the other two AWS tools</h2>
+      <p class="one-line">The firm already runs three products on Amazon Web Services. They currently share a single AWS account, so Amazon issues a single invoice. That invoice does not name each product. It only lists usage (compute, storage, data transfer) for the account as a whole.</p>
+
+      <div class="compare">
+        <div class="side now">
+          <span class="tag">Current setup</span>
+          <h3>One AWS account, one combined invoice</h3>
+          <p>Tool 1, Tool 2, and VCFO Suite all draw from the same account. Finance receives one payment request from Amazon. There is no line that says “this portion is VCFO.”</p>
+          <div class="bucket">
+            <div class="cap">What the invoice looks like today</div>
+            <div class="row"><span>Compute (all three tools)</span><span class="amt">combined</span></div>
+            <div class="row"><span>Database (all three tools)</span><span class="amt">combined</span></div>
+            <div class="row"><span>File storage (all three tools)</span><span class="amt">combined</span></div>
+            <div class="row mix"><span>VCFO share (₹30–40k)</span><span class="amt">not shown</span></div>
+          </div>
+        </div>
+        <div class="side next">
+          <span class="tag">Proposed setup</span>
+          <h3>One AWS account per product</h3>
+          <p>Each product is moved into its own AWS account. Amazon then issues a separate invoice for each account. VCFO’s start range of ₹30,000–40,000 appears only on the VCFO invoice.</p>
+          <div class="bucket">
+            <div class="cap">What Finance receives after the split</div>
+            <div class="row"><span>Invoice — Tool 1</span><span class="amt">Tool 1 only</span></div>
+            <div class="row"><span>Invoice — Tool 2</span><span class="amt">Tool 2 only</span></div>
+            <div class="row ok"><span>Invoice — VCFO Suite</span><span class="amt">₹30–40k start</span></div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin: 0 0 10px; font-size: 16px;">What arrives each month</h3>
+      <div class="inv">
+        <div class="inv-card">
+          <div class="from">From Amazon · Account 1</div>
+          <h3>Tool 1</h3>
+          <p>Billed on its own. Does not include VCFO usage.</p>
+        </div>
+        <div class="inv-card">
+          <div class="from">From Amazon · Account 2</div>
+          <h3>Tool 2</h3>
+          <p>Billed on its own. Does not include VCFO usage.</p>
+        </div>
+        <div class="inv-card vcfo">
+          <div class="from">From Amazon · Account 3</div>
+          <h3>VCFO Suite</h3>
+          <p>Website, database, files, and email for this product only. Twilio WhatsApp is a separate vendor invoice, not part of this AWS bill.</p>
+        </div>
+      </div>
+
+      <h3 style="margin: 0 0 10px; font-size: 16px;">How we get there</h3>
+      <div class="steps3">
+        <div class="st">
+          <div class="n">1</div>
+          <h3>Open a dedicated AWS account for VCFO</h3>
+          <p>Leave Tool 1 and Tool 2 where they are. Create (or assign) a third account used only for VCFO Suite, in India (Mumbai).</p>
+        </div>
+        <div class="st">
+          <div class="n">2</div>
+          <h3>Attach a billing profile to that account</h3>
+          <p>If each product should be a separate payment to Amazon, use a distinct card or billing profile per account. If one payer is preferred, costs still appear per account in AWS Cost Explorer for internal allocation.</p>
+        </div>
+        <div class="st">
+          <div class="n">3</div>
+          <h3>Run VCFO only in that account</h3>
+          <p>The website, database, file vault, and SES email for VCFO live here. The other two products stay on their accounts, so their spend cannot land on the VCFO invoice.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>VCFO Suite · Finance briefing · August 2026</footer>
+  </div>
+</body>
+</html>

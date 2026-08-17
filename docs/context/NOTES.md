@@ -32,11 +32,13 @@ Append here whenever something costs more than a minute to figure out.
   document-request create. Recipients resolved via
   `src/db/repositories/engagement-recipients.ts`. Without configured From /
   Resend key (or SES identity), sends console-skip (same as welcome).
-- **From + Reply-To:** Always send From `EMAIL_FROM` / `RESEND_FROM_EMAIL` /
-  `SES_FROM_EMAIL` (verified company domain). Process mail sets Reply-To to
-  the human: client submit → Reply-To client; review/deliver/request → Reply-To
-  lead/manager. Welcome emails Reply-To the manager. Do not set From to
-  personal user inboxes.
+- **From + Reply-To:** Client → lead process mail is Resend From
+  `{sanitized-company-name}@sbctrack.in` (e.g. `Acme Pvt Ltd <acme-pvt-ltd@sbctrack.in>`)
+  so Outlook can filter; Reply-To is the client. Lead → client is **not** Resend:
+  the app opens compose, then Graph `Mail.Send` from the lead’s linked Outlook mailbox.
+- **Outlook Graph:** `AZURE_AD_CLIENT_ID` / `_SECRET` / `_TENANT_ID`. Connect at
+  `/api/outlook/connect`. Tokens in `outlook_connections` (encrypted with
+  `AUTH_SECRET`). Not an Auth.js login provider.
 - **Resend onboarding sender:** `FROM` with `@resend.dev` can only deliver to
   the Resend account owner. Use explicit `EMAIL_DEV_REDIRECT_TO` /
   `RESEND_DEV_REDIRECT_TO` only for deliberate local testing. Verify a domain
@@ -44,8 +46,10 @@ Append here whenever something costs more than a minute to figure out.
 - **SES flip:** set `EMAIL_PROVIDER=ses`, verify domain in SES (`SES_REGION` /
   `ap-south-1`), leave sandbox via production access request. Keep Resend until
   that works. See `docs/context/AWS-DEPLOY.md` §8.
-- Client submit emails **lead only** (manager if lead missing). Review emails
-  clients. Lead resolve needs `profiles.intern_id` to match `engagements.intern_id`.
+- Client submit / client document upload → lead (+ manager) via Resend
+  `{company-name}@sbctrack.in`. Review / deliver / share / request / unlock
+  open in-app compose for Graph send to the client. Lead resolve needs
+  `profiles.intern_id` to match `engagements.intern_id`.
 - In-app rows for those events are inserted with `createNotificationsForUsers`
   (server). Client checklist diffs toast + invalidate the bell but do not
   re-persist those kinds (avoids duplicates).
@@ -115,7 +119,37 @@ Append here whenever something costs more than a minute to figure out.
   in sync with `src/lib/milestone-document-storage.ts`.
 
 
-- Primary `#1A1B22` · Action `#7C5CFC` · Surface `#F7F6FB` · Accent `#A78BFA`
-- Status: ok / warn / danger from the palette card
+## Design tokens (cool blue primary)
+
+- **Primary is professional blue** (`--primary` / `--brand` / `--blue-*` ≈ `#2563EB`,
+  hover `#1D4ED8`). Buttons, links, focus rings, current-step nodes, progress,
+  key CTAs. White label on blue — never navy-on-blue. Do **not** use orange,
+  terracotta, peach, or sand as brand or page atmosphere.
+- Neutrals: cool slate with a blue undertone (`--background` ≈ `#F8FAFC`, cards
+  white, borders `--border` ≈ slate-200). Never beige/cream.
+- `--orange-*` / `--gold-*` are **deprecated aliases of `--blue-*`** so leftover
+  class names still resolve blue. Prefer `primary` / `blue-*` in new UI.
+- Phase washes (journey chips only, ~8–12% chroma): `--phase-pre` sky,
+  `--phase-filing` teal, `--phase-post` teal-green, `--phase-fema` indigo,
+  `--phase-registration` violet-blue. Helper: `src/lib/phase-colors.ts`.
+- Status (chips/icons only, never page fill): teal-green done · muted gold
+  waiting · slate lock · rose/red overdue/error.
+- Super Admin: tiny `.super-gold-chip` badge only — never a gold CTA theme.
+- Shared journey node: `JourneyNode` (blue active pulse, teal check, amber
+  clock icon, slate lock). Motion: `.journey-node-pulse`, `.journey-unlock`,
+  `.journey-complete`, `.page-fade-up`, `.skeleton-brand`, `.page-atmosphere`
+  (faint blue mesh ≤4%).
+- Dark mode stays in the same cool blue/slate family — not a brown invert.
 - Fonts: Manrope (UI) + Space Grotesk (display via `--font-serif`) + IBM Plex Mono
-- Legacy class names `orange-*`, `gold-*`, `indigo-*` resolve to violet action tokens
+
+## Sequential checklist gate
+
+- Steps unlock only after the previous **active catalog** item is terminal-complete
+  (`completed` / `not-applicable` / client submit / deliver). Save-draft does not unlock.
+- Rejected or unlocked-for-correction steps re-lock everything after them.
+- Helper: `src/lib/checklist-step-gate.ts`. Server save path: `patchChecklistItem`.
+- Copy: “This opens after {title} is complete.” / “Waiting on the client…” — never “access denied”.
+- Overdue badges only on the current (active/waiting) step, never on locked future steps.
+- Client **Progress** nav (`/app/client/progress`) was removed; the gated catalog
+  now lives as a Create-project-style flowchart on Incorporation. Old `/progress`
+  URLs redirect there. Staff progress CC / intern % helpers are unrelated.

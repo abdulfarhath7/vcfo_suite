@@ -7,6 +7,8 @@
 
 This is a **paid-plan pilot**, not “forever free.” Set a billing alarm on day one.
 
+**Finance architecture pack** (product, request path, AWS + Twilio billable services, SES replacing Resend): open [`docs/architecture/vcfo-aws-architecture.html`](../architecture/vcfo-aws-architecture.html) in a browser and print to PDF. This file remains the engineering deploy checklist.
+
 ---
 
 ## 0. Preconditions (do these before AWS)
@@ -126,7 +128,7 @@ Copy from `.env.example`. Production values:
 | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | MinIO | omit if IAM role; else IAM user keys |
 | `S3_FORCE_PATH_STYLE` | `true` | **`false` or unset** |
 | `RESEND_API_KEY` | empty = console | production key |
-| `RESEND_FROM_EMAIL` | resend.dev OK for tests | `Name <noreply@yourdomain.com>` |
+| `RESEND_FROM_EMAIL` | resend.dev OK for tests | `Name <info@sbctrack.in>` |
 | `RESEND_DEV_REDIRECT_TO` | optional locally | **must be unset** |
 | `NEXT_PUBLIC_ENABLE_DEMO_AUTH` | off | **must be unset / not `true`** |
 | `NEXT_PUBLIC_MAX_UPLOAD_MB` | `50` | same unless you raise intentionally |
@@ -197,7 +199,7 @@ Until then, console provisioning is acceptable for one pilot environment.
 
 ## 9. Cost sanity (quiet 10-user pilot)
 
-Rough ballpark if you stay small: **~$15–40 / month** (micro RDS + small container + S3 + light egress). Credits may cover the first weeks; they will not cover forever.
+Rough ballpark if you stay small: **~$15–40 / month** (micro RDS + small container + S3 + light egress). Credits may cover the first weeks; they will not cover forever. That figure is **before Twilio WhatsApp**. Full billable-service map for Finance: [`docs/architecture/vcfo-aws-architecture.html`](../architecture/vcfo-aws-architecture.html).
 
 ---
 
