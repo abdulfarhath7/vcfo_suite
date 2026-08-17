@@ -146,10 +146,13 @@ export function diffChecklistForNotifications(
       !prevItem?.clientSubmittedAt?.trim() &&
       nextItem.clientSubmittedAt?.trim()
     ) {
+      const leadRequest = nextItem.reviewSource === 'lead_manager_request';
       out.push({
         kind: 'checklist.submit',
-        title: 'Client submission',
-        body: `${companyName} submitted ${title} for review.`,
+        title: leadRequest ? 'Manager approval requested' : 'Client submission',
+        body: leadRequest
+          ? `${companyName}: ${title} is waiting for your approval.`
+          : `${companyName} submitted ${title} for review.`,
         engagementId,
         companyName,
         itemId,

@@ -31,6 +31,24 @@ describe('diffChecklistForNotifications', () => {
     expect(items[0]?.href).toContain('/app/intern/engagements/');
   });
 
+  it('labels lead→manager approval requests distinctly', () => {
+    const items = diffChecklistForNotifications(
+      { 'pre-1': { status: 'in-progress' } },
+      {
+        'pre-1': {
+          status: 'in-progress',
+          clientSubmittedAt: '2026-06-01T00:00:00.000Z',
+          locked: true,
+          reviewSource: 'lead_manager_request',
+          reviewStatus: 'reviewing',
+        },
+      },
+      { engagement, viewerRole: 'manager', viewerUserId: 'mgr-1' },
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0]?.title).toBe('Manager approval requested');
+  });
+
   it('notifies client on review without self-echo', () => {
     const items = diffChecklistForNotifications(
       { 'pre-1': { status: 'in-progress', reviewStatus: 'reviewing' } },

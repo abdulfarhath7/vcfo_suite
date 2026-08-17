@@ -1009,6 +1009,9 @@ export function useAppProviderValue(): AppContextValue {
             engagementId,
           });
         }
+        if (patch.reviewSource === 'lead_manager_request') {
+          suppressChecklistNotification(engagementId, itemId, 'checklist.submit');
+        }
       } catch (err) {
         setDbChecklistState((prev) => ({ ...prev, [engagementId]: previous }));
         const message =

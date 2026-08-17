@@ -92,14 +92,25 @@ export async function POST(request: Request, context: RouteContext) {
     const nextSlice = checklistState[body.data.itemId];
     const newlyDelivered =
       !prevSlice?.deliveredToClientAt?.trim() && Boolean(nextSlice?.deliveredToClientAt?.trim());
-    const email = newlyDelivered
+    const newlyLeadManagerRequest =
+      nextSlice?.reviewSource === 'lead_manager_request' &&
+      prevSlice?.reviewSource !== 'lead_manager_request';
+
+    const email = newlyLeadManagerRequest
       ? await notifyEngagementEvent({
           engagementId: id,
           itemId: body.data.itemId,
-          event: 'delivered',
+          event: 'lead_requested_review',
           actorUserId: guard.ctx.userId,
         })
-      : emptyEmailDispatch();
+      : newlyDelivered
+        ? await notifyEngagementEvent({
+            engagementId: id,
+            itemId: body.data.itemId,
+            event: 'delivered',
+            actorUserId: guard.ctx.userId,
+          })
+        : emptyEmailDispatch();
 
     return NextResponse.json({ checklistState, email });
   } catch (err) {

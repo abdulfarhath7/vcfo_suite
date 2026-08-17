@@ -10,6 +10,14 @@ import {
   type EmailDispatchResult,
   type OutgoingEmailDraft,
 } from '@/lib/email/email-dispatch';
+import {
+  collectLeadParties,
+  collectManagerParties,
+  emailsStaffViaResend,
+  opensClientOutgoingDraft,
+  staffEmailTargetsForEvent,
+  type EngagementProcessEvent,
+} from '@/lib/email/engagement-event-fanout';
 import { buildDocumentRequestEmail, buildProgressEmail, type ProgressEmailKind } from '@/lib/email/progress-emails';
 import {
   companyFromAddress,
@@ -24,17 +32,7 @@ import {
 } from '@/lib/project-step-path';
 import { siteUrl } from '@/lib/site-url';
 
-export type { EmailDispatchResult };
-
-export type EngagementProcessEvent =
-  | 'client_submitted'
-  | 'client_uploaded'
-  | 'review_accepted'
-  | 'review_rejected'
-  | 'delivered'
-  | 'unlocked'
-  | 'docs_shared'
-  | 'request_created';
+export type { EmailDispatchResult, EngagementProcessEvent };
 
 type NotifyInput = {
   engagementId: string;
@@ -57,6 +55,8 @@ function emailKind(event: EngagementProcessEvent): ProgressEmailKind | null {
       return 'client_submitted';
     case 'client_uploaded':
       return 'client_uploaded';
+    case 'lead_requested_review':
+      return 'lead_requested_review';
     case 'review_accepted':
       return 'review_accepted';
     case 'review_rejected':
@@ -78,6 +78,8 @@ function notificationKind(event: EngagementProcessEvent): NotificationKind {
       return 'checklist.submit';
     case 'client_uploaded':
       return 'request.uploaded';
+    case 'lead_requested_review':
+      return 'checklist.submit';
     case 'review_accepted':
     case 'review_rejected':
       return 'checklist.review';
@@ -106,6 +108,8 @@ function findPartyByUserId(
   const fromLeads = recipients.leads.find((l) => l.userId === userId);
   if (fromLeads) return fromLeads;
   if (recipients.manager?.userId === userId) return recipients.manager;
+  const fromManagers = recipients.managers.find((m) => m.userId === userId);
+  if (fromManagers) return fromManagers;
   if (recipients.client?.userId === userId) return recipients.client;
   return recipients.clients.find((c) => c.userId === userId) ?? null;
 }
@@ -116,12 +120,17 @@ function isClientParty(recipients: EngagementRecipients, party: EngagementParty 
   return recipients.clients.some((c) => c.userId === party.userId);
 }
 
-/** Reply-To for mail sent to staff (client submitted, etc.). */
+/** Reply-To for mail sent to staff (client submitted, intern request-approval). */
 function replyToForStaff(
   recipients: EngagementRecipients,
+  event: EngagementProcessEvent,
   actorUserId?: string,
 ): string | undefined {
   const actor = findPartyByUserId(recipients, actorUserId);
+  if (event === 'lead_requested_review') {
+    if (actor && !isClientParty(recipients, actor)) return formatReplyTo(actor);
+    return formatReplyTo(recipients.lead ?? recipients.leads[0] ?? null);
+  }
   if (actor && isClientParty(recipients, actor)) return formatReplyTo(actor);
   return formatReplyTo(recipients.client ?? recipients.clients[0] ?? null);
 }
@@ -266,15 +275,14 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     };
 
     const pushNotifToLeads = (nTitle: string, body: string) => {
-      const seen = new Set<string>();
-      for (const lead of recipients.leads.length > 0
-        ? recipients.leads
-        : recipients.lead
-          ? [recipients.lead]
-          : []) {
-        if (seen.has(lead.userId)) continue;
-        seen.add(lead.userId);
+      for (const lead of collectLeadParties(recipients)) {
         pushNotif(lead.userId, 'intern', nTitle, body);
+      }
+    };
+
+    const pushNotifToManagers = (nTitle: string, body: string) => {
+      for (const mgr of collectManagerParties(recipients)) {
+        pushNotif(mgr.userId, 'manager', nTitle, body);
       }
     };
 
@@ -283,27 +291,23 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         'Client submission',
         `${company} submitted ${title} for review.`,
       );
-      pushNotif(
-        recipients.manager?.userId,
-        'manager',
+      pushNotifToManagers(
         'Client submission',
         `${company} submitted ${title} for review.`,
       );
       pushNotifToClients('Submission received', `We received your submission for ${title}.`);
     } else if (input.event === 'client_uploaded') {
       pushNotifToLeads('Client upload', `${company} uploaded ${title}.`);
-      pushNotif(
-        recipients.manager?.userId,
-        'manager',
-        'Client upload',
-        `${company} uploaded ${title}.`,
+      pushNotifToManagers('Client upload', `${company} uploaded ${title}.`);
+    } else if (input.event === 'lead_requested_review') {
+      pushNotifToManagers(
+        'Manager approval requested',
+        `${company}: ${title} is waiting for your approval.`,
       );
     } else if (input.event === 'review_accepted') {
       pushNotifToClients('Submission accepted', `${title} was approved.`);
       pushNotifToLeads('Submission accepted', `${title} was accepted for ${company}.`);
-      pushNotif(
-        recipients.manager?.userId,
-        'manager',
+      pushNotifToManagers(
         'Submission accepted',
         `${title} was accepted for ${company}.`,
       );
@@ -313,9 +317,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         : `${title} needs updates — check the milestone for details.`;
       pushNotifToClients('Corrections requested', body);
       pushNotifToLeads('Corrections requested', `${title} needs updates for ${company}.`);
-      pushNotif(
-        recipients.manager?.userId,
-        'manager',
+      pushNotifToManagers(
         'Corrections requested',
         `${title} needs updates for ${company}.`,
       );
@@ -346,7 +348,11 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     }
 
     if (notifDrafts.length > 0) {
-      await createNotificationsForUsers(notifDrafts);
+      try {
+        await createNotificationsForUsers(notifDrafts);
+      } catch (err) {
+        console.error('[notify] in-app notifications failed', input.event, err);
+      }
     }
 
     const progressKind = emailKind(input.event);
@@ -356,20 +362,10 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       run: () => Promise<SendResendResult>;
     }> = [];
 
-    // Client → lead: Resend From company_name@sbctrack.in
+    // Client → staff: Resend From company_name@sbctrack.in
+    // Intern → manager (request approval): same Resend path, not Graph
     // Lead/manager → client: in-app compose + Graph Mail.Send
-    const emailLead =
-      input.event === 'client_submitted' || input.event === 'client_uploaded';
-
-    const clientDraftEvents: EngagementProcessEvent[] = [
-      'review_accepted',
-      'review_rejected',
-      'delivered',
-      'unlocked',
-      'docs_shared',
-      'request_created',
-    ];
-    if (clientDraftEvents.includes(input.event)) {
+    if (opensClientOutgoingDraft(input.event)) {
       email.outgoingDraft = buildOutgoingClientDraft(
         input,
         recipients,
@@ -379,44 +375,16 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       );
     }
 
-    if (emailLead && progressKind) {
-      // Client submit → all leads + manager. Never fall back to client / progress CC.
-      const clientEmails = new Set(
-        [
-          ...recipients.clients.map((c) => c.email.trim().toLowerCase()),
-          recipients.client?.email?.trim().toLowerCase(),
-        ].filter((e): e is string => Boolean(e)),
-      );
-      const staffTargets: Array<{ email: string; href: string; label: string }> = [];
-      const seenStaff = new Set<string>();
-      const pushStaff = (email: string | undefined, href: string, label: string) => {
-        const addr = email?.trim();
-        if (!addr) return;
-        const key = addr.toLowerCase();
-        if (clientEmails.has(key) || seenStaff.has(key)) return;
-        seenStaff.add(key);
-        staffTargets.push({ email: addr, href, label });
-      };
-      for (const lead of recipients.leads.length > 0
-        ? recipients.leads
-        : recipients.lead
-          ? [recipients.lead]
-          : []) {
-        pushStaff(lead.email, leadHref, 'lead');
-      }
-      if (
-        input.event === 'client_submitted' ||
-        input.event === 'client_uploaded'
-      ) {
-        pushStaff(recipients.manager?.email, managerHref, 'manager');
-      } else if (staffTargets.length === 0) {
-        pushStaff(recipients.manager?.email, managerHref, 'manager');
-      }
+    if (emailsStaffViaResend(input.event) && progressKind) {
+      const staffTargets = staffEmailTargetsForEvent(input.event, recipients, {
+        leadHref,
+        managerHref,
+      });
 
       if (staffTargets.length > 0) {
         for (const staff of staffTargets) {
           const copy = buildProgressEmail({
-            kind: progressKind!,
+            kind: progressKind,
             companyName: company,
             itemId: input.itemId,
             note: input.note,
@@ -425,7 +393,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
             title: input.requestLabel,
           });
           const to = staff.email;
-          const replyTo = replyToForStaff(recipients, input.actorUserId);
+          const replyTo = replyToForStaff(recipients, input.event, input.actorUserId);
           queue.push({
             to,
             subject: copy.subject,
@@ -444,8 +412,9 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         }
       } else {
         console.warn(
-          '[notify] staff email skipped — no lead/manager (or they match client)',
+          '[notify] staff email skipped — no manager/lead (or they match client)',
           recipients.slug,
+          input.event,
         );
       }
     }

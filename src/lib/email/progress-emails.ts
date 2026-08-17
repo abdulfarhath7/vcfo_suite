@@ -10,6 +10,7 @@ import {
 export type ProgressEmailKind =
   | 'client_submitted'
   | 'client_uploaded'
+  | 'lead_requested_review'
   | 'review_accepted'
   | 'review_rejected'
   | 'delivered'
@@ -126,6 +127,23 @@ export function buildProgressEmail(input: {
         href,
       ),
       text: `We received “${step}” for ${company}.\n\nOpen: ${href}`,
+    };
+  }
+
+  if (input.kind === 'lead_requested_review') {
+    return {
+      subject: `${company}: manager approval requested on “${step}”`,
+      html: wrap(
+        'Manager approval requested',
+        emailParagraph(
+          `The project lead requested your approval on <strong>${escapeHtml(step)}</strong> for <strong>${escapeHtml(company)}</strong>.`,
+        ) +
+          emailParagraph('Open the workspace to accept or request corrections.'),
+        'Review in workspace',
+        href,
+        'Action required',
+      ),
+      text: `The project lead requested manager approval on “${step}” for ${company}.\n\nOpen: ${href}`,
     };
   }
 

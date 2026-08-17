@@ -7,6 +7,7 @@ import { engagementDbId, LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-i
 import { getProgressCcRecipients } from '@/lib/email/merge-cc';
 import { isUuid } from '@/lib/slug';
 import { listLeadIdsByEngagementIds } from '@/db/repositories/engagement-leads-membership';
+import { listManagerIdsForEngagement } from '@/db/repositories/engagement-managers-membership';
 
 export type EngagementParty = {
   userId: string;
@@ -27,7 +28,10 @@ export type EngagementRecipients = {
   lead: EngagementParty | null;
   /** All leads from engagement_leads (+ primary if missing). */
   leads: EngagementParty[];
+  /** Primary PM (`engagements.manager_id`, else first membership / fallback). */
   manager: EngagementParty | null;
+  /** All PMs from engagement_managers (+ primary if missing). */
+  managers: EngagementParty[];
   progressCc: string[];
 };
 
@@ -116,10 +120,9 @@ export async function resolveEngagementRecipients(
       name: m.name?.trim() || m.email.trim(),
     }));
 
-  const [primary, lead, manager] = await Promise.all([
+  const [primary, lead] = await Promise.all([
     profileById(row.clientUserId),
     profileByInternKey(row.internId),
-    profileById(row.managerId ?? row.adminId),
   ]);
 
   if (primary && !clients.some((c) => c.userId === primary.userId)) {
@@ -142,6 +145,38 @@ export async function resolveEngagementRecipients(
     leads.unshift(lead);
   }
 
+  const managerIdQueue: string[] = [];
+  const pushManagerId = (id: string | null | undefined) => {
+    const v = id?.trim();
+    if (!v || !isUuid(v) || managerIdQueue.includes(v)) return;
+    managerIdQueue.push(v);
+  };
+  pushManagerId(row.managerId);
+  const membershipManagerIds = await listManagerIdsForEngagement(row.id);
+  for (const id of membershipManagerIds) pushManagerId(id);
+  if (managerIdQueue.length === 0) pushManagerId(row.adminId);
+  if (managerIdQueue.length === 0) {
+    const internProfileId = (lead ?? leads[0])?.userId;
+    if (internProfileId) {
+      const [internRow] = await db
+        .select({ reportsToManagerId: profiles.reportsToManagerId })
+        .from(profiles)
+        .where(eq(profiles.id, internProfileId))
+        .limit(1);
+      pushManagerId(internRow?.reportsToManagerId);
+    }
+  }
+
+  const managerParties = (
+    await Promise.all(managerIdQueue.map((id) => profileById(id)))
+  ).filter((p): p is EngagementParty => Boolean(p));
+  const managers: EngagementParty[] = [];
+  for (const p of managerParties) {
+    if (!managers.some((m) => m.userId === p.userId)) managers.push(p);
+  }
+  const manager =
+    managers.find((m) => m.userId === row.managerId) ?? managers[0] ?? null;
+
   const client = primary ?? clients[0] ?? null;
   const progressCc = getProgressCcRecipients(row.progressCcEmails ?? [], {
     excludeTo: client?.email,
@@ -157,6 +192,7 @@ export async function resolveEngagementRecipients(
     lead: lead ?? leads[0] ?? null,
     leads,
     manager,
+    managers,
     progressCc,
   };
 }
