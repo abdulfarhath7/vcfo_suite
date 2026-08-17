@@ -72,6 +72,8 @@ export interface ChecklistField {
   showWhen?: { field: string; value: string };
   /** Who fills this field; defaults to the step's responsibleRole */
   filledBy?: ChecklistResponsibleRole;
+  /** Desktop density: short fields pair in a 2-col grid. Omit to infer from type. */
+  layout?: 'short' | 'full';
 }
 
 export interface ChecklistItem {

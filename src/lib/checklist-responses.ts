@@ -1594,8 +1594,7 @@ export const STEP_REMARKS_FIELD: ChecklistField = {
   label: 'Remarks (optional)',
   type: 'textarea',
   placeholder: 'Add any notes for this step…',
-  helperText:
-    'Client or Project Lead may add notes here. Leaving this blank will not block step completion.',
+  helperText: 'Optional notes from client or project lead — blank is fine.',
   required: false,
 };
 

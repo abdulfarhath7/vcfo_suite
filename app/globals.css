@@ -850,18 +850,28 @@
   }
 
   /* Milestone response form (pre-1 Spice Part A) */
+  .milestone-form-grid {
+    @apply grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2;
+  }
+  .milestone-form-grid-relaxed {
+    @apply gap-y-4;
+  }
+  .milestone-form-field-full {
+    grid-column: 1 / -1;
+  }
   .milestone-form-input {
     @apply h-10 text-sm border-border shadow-sm;
     background: oklch(var(--panel));
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-0;
   }
   .milestone-form-textarea {
-    @apply text-sm border-border resize-y min-h-[100px] shadow-sm;
+    @apply text-sm border-border resize-y min-h-[72px] overflow-y-auto shadow-sm;
     background: oklch(var(--panel));
+    field-sizing: content;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-0;
   }
   .milestone-upload-zone {
-    @apply flex min-h-[92px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-4 py-5 text-center transition-[border-color,background-color] duration-200;
+    @apply flex h-11 min-h-11 max-h-[88px] cursor-pointer flex-row items-center justify-start gap-2 rounded-md border border-dashed border-border px-2.5 py-1.5 text-left transition-[border-color,background-color] duration-200;
     background: oklch(var(--panel));
   }
   .milestone-upload-zone:hover {

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
@@ -23,9 +22,7 @@ import {
   resolveChecklistItemFromStepParam,
   resolveEngagementFromRouteParam,
 } from '@/lib/slug';
-import { StatusPillWithTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
 import { ChecklistJourneyRail } from '@/components/incorporation/ChecklistJourneyRail';
-import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
 import { Surface } from '@/components/noir';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
 import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
@@ -132,13 +129,6 @@ export default function EngagementStepDetail() {
     [checklistState, viewer],
   );
   const stepGate = item ? getStepGate(gates, item.id) : undefined;
-  const displayStatus = useMemo(() => {
-    if (!item) return undefined;
-    return gateDisplayStatus(
-      deriveChecklistDisplayStatus(item.id, item, checklistState[item.id], brSnapshot),
-      stepGate,
-    );
-  }, [item, checklistState, brSnapshot, stepGate]);
 
   if (eng && !isInternRoute && eng.slug && engagementParam !== eng.slug) {
     redirect(stepPath(eng, stepParam));
@@ -159,8 +149,6 @@ export default function EngagementStepDetail() {
     });
     redirect(current ? stepPath(eng, current) : projectPath(eng));
   }
-
-  const projectHref = projectPath(eng);
 
   const handleCompleted = (completedId: string) => {
     const completed = eTasks.find((t) => t.id === completedId);
@@ -196,50 +184,29 @@ export default function EngagementStepDetail() {
         path={stepPath(eng, item)}
       />
 
-      <button
-        type="button"
-        onClick={() => router.push(projectHref)}
-        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4 transition-colors min-h-[44px] sm:min-h-0"
+      <div
+        className={cn(
+          !isInternRoute && 'grid gap-5 lg:grid-cols-[minmax(14rem,16rem)_minmax(0,1fr)]',
+        )}
       >
-        <ChevronLeft className="w-3.5 h-3.5" />
-        {eng.companyName}
-      </button>
+        {!isInternRoute && (
+          <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
+            <Surface className="p-3">
+              <ChecklistJourneyRail
+                items={railItems}
+                selectedId={item.id}
+                onSelect={(id) => {
+                  const next = bucketSteps.find((s) => s.id === id);
+                  if (next) router.push(stepPath(eng, next));
+                }}
+              />
+            </Surface>
+          </aside>
+        )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(16rem,19rem)_minmax(0,1fr)]">
-        <aside className="hidden lg:block lg:sticky lg:top-20 lg:self-start">
-          <Surface className="p-3">
-            <ChecklistJourneyRail
-              items={railItems}
-              selectedId={item.id}
-              onSelect={(id) => {
-                const next = bucketSteps.find((s) => s.id === id);
-                if (next) router.push(stepPath(eng, next));
-              }}
-            />
-          </Surface>
-        </aside>
-
-        <div className="min-w-0 max-w-4xl">
-          <header className="mb-5">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <ResponsibleRoleBadge role={item.responsibleRole} />
-              {displayStatus && <StatusPillWithTimeline status={displayStatus} item={item} />}
-            </div>
-            <h1 className="serif text-2xl text-foreground tracking-tight">{item.title}</h1>
-            {item.description && (
-              <p className="text-sm text-muted-foreground leading-relaxed mt-2 prose-narrow max-w-2xl">
-                {item.description}
-              </p>
-            )}
-            {item.notes && (
-              <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 prose-narrow max-w-2xl">
-                {item.notes}
-              </p>
-            )}
-          </header>
-
+        <div className="min-w-0">
           {checklistLoading && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
               <HexgridLoader size="sm" />
               Syncing client answers…
             </div>
@@ -250,25 +217,18 @@ export default function EngagementStepDetail() {
               {stepGate.message}
             </Surface>
           ) : (
-            <Surface
-              className={cn(
-                'p-6 md:p-8',
-                stepGate?.kind === 'active' && 'ring-2 ring-brand/30 ring-offset-2 ring-offset-background',
-              )}
-            >
-              <StepDetailContent
-                item={item}
-                task={task}
-                engagementId={eng.id}
-                responses={responses}
-                activity={eActivity}
-                onCompleted={task ? handleCompleted : undefined}
-                theme="light"
-                contentReady={!checklistLoading}
-                onDone={() => router.push(projectHref)}
+            <StepDetailContent
+              item={item}
+              task={task}
+              engagementId={eng.id}
+              responses={responses}
+              activity={eActivity}
+              onCompleted={task ? handleCompleted : undefined}
+              theme="light"
+              contentReady={!checklistLoading}
                 hideDocumentsTab={isIntern}
-              />
-            </Surface>
+                hideTimeline={isIntern}
+            />
           )}
         </div>
       </div>

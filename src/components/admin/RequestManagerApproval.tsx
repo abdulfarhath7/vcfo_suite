@@ -18,11 +18,13 @@ export function RequestManagerApproval({
   itemId,
   itemState,
   className,
+  emphasis = 'default',
 }: {
   engagementId: string;
   itemId: string;
   itemState?: ChecklistItemStateSlice;
   className?: string;
+  emphasis?: 'default' | 'primary';
 }) {
   const { user, updateItem } = useApp();
   const [busy, setBusy] = useState(false);
@@ -60,15 +62,17 @@ export function RequestManagerApproval({
     }
   };
 
+  const primary = emphasis === 'primary';
+
   return (
     <div className={className}>
       <Button
         type="button"
         size="sm"
-        variant="outline"
+        variant={primary ? 'default' : 'outline'}
         disabled={busy}
         onClick={() => void request()}
-        className="cursor-pointer"
+        className={primary ? 'w-full cursor-pointer' : 'cursor-pointer'}
       >
         {busy ? 'Requesting…' : 'Request manager approval'}
       </Button>

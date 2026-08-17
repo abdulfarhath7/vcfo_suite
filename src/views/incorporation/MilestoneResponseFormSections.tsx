@@ -121,6 +121,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     autoSaveStatus,
     canEdit,
     className,
+    compactChrome,
     cn,
     completedStructuredSections,
     deliveredToClient,
@@ -152,10 +153,12 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
   return (
     <div
       className={cn(
-        (isPre1 || isPre6)
-          ? 'mx-auto w-full max-w-3xl space-y-6'
-          : 'space-y-4 rounded-md border p-4 sm:p-5',
-        !(isPre1 || isPre6) && 'border-border bg-panel',
+        compactChrome
+          ? 'space-y-3'
+          : (isPre1 || isPre6)
+            ? 'mx-auto w-full max-w-3xl space-y-6'
+            : 'space-y-4 rounded-md border p-4 sm:p-5',
+        !compactChrome && !(isPre1 || isPre6) && 'border-border bg-panel',
         className,
       )}
     >
@@ -218,6 +221,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
         <FormErrorSummary errors={fieldErrors} fields={visibleFields} />
       )}
 
+      {!compactChrome && (
       <div className={isPre1 || isPhase2StructuredStep ? 'space-y-1.5 px-0.5' : undefined}>
         {isPre1 || isPhase2StructuredStep ? (
           <div className="space-y-1">
@@ -263,6 +267,15 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           </>
         )}
       </div>
+      )}
+
+      {compactChrome && !readOnly && stepPendingItems.length > 0 && (
+        <PendingFieldsHint
+          items={stepPendingItems}
+          variant="step"
+          className="rounded-md border border-warning/25 bg-warning-light/40 px-3 py-2"
+        />
+      )}
 
       {reviewBanner && isClient && reviewBannerIcon && (
         <div
@@ -320,7 +333,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
       )}
 
       <div
-        className={cn('space-y-5', showStaffSaveFooter && 'pb-24')}
+        className={cn(compactChrome ? 'space-y-3' : 'space-y-5', showStaffSaveFooter && 'pb-24')}
       >
         {renderedFieldGroups}
       </div>

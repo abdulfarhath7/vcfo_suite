@@ -96,6 +96,32 @@ export function groupFieldsBySection(fields: ChecklistField[]): { section: strin
   return groups;
 }
 
+export type MilestoneFormFieldLayout = 'short' | 'full';
+
+const LONG_HELPER_CHARS = 120;
+const ADDRESS_FIELD_RE = /address/i;
+
+/** Paragraph-length helper copy should not sit in a half-width column. */
+function hasLongHelperText(field: ChecklistField): boolean {
+  const helper = field.helperText?.trim();
+  if (!helper) return false;
+  return helper.length > LONG_HELPER_CHARS || helper.includes('\n');
+}
+
+/**
+ * Short controls (dates, selects, names, phones) pair on desktop.
+ * Textareas, uploads, address blocks, and long-helper fields stay full width.
+ */
+export function getMilestoneFormFieldLayout(field: ChecklistField): MilestoneFormFieldLayout {
+  if (field.layout === 'short' || field.layout === 'full') return field.layout;
+  if (field.type === 'textarea' || field.type === 'file') return 'full';
+  if (hasLongHelperText(field)) return 'full';
+  if (field.type === 'text' && ADDRESS_FIELD_RE.test(`${field.id} ${field.label}`)) {
+    return 'full';
+  }
+  return 'short';
+}
+
 export function isImageStoragePath(path: string): boolean {
   return /\.(png|jpe?g|webp|gif)$/i.test(path);
 }

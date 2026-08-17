@@ -18,6 +18,8 @@ interface MilestoneResponseFormProps {
   showFieldUnlock?: boolean;
   open?: boolean;
   className?: string;
+  /** Flatten nested card chrome when the host page already provides a workspace. */
+  compactChrome?: boolean;
 }
 
 function MilestoneResponseFormKeyed(props: MilestoneResponseFormProps) {

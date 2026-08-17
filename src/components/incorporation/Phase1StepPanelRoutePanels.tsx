@@ -207,15 +207,13 @@ export function Phase1Pre4Panel(props: Phase1StepPanelRoutesProps) {
 
     return (
       <div className={className}>
-        <PanelShell title="Name Application">
-          <p>
-            Confirm the signed board resolution is on file, file the name application, then upload
-            the ROC acknowledgement and deliver to the client.
-          </p>
+        <PanelShell>
           {brStatus === 'signed' ? (
-            <p className="text-success-text">Signed board resolution received from client.</p>
+            <p className="text-success-text">Signed board resolution is on file.</p>
           ) : (
-            <p className="text-text-tertiary">Awaiting signed board resolution from client (Step 3).</p>
+            <p className="text-text-tertiary">
+              Awaiting signed board resolution from the client (Step 3).
+            </p>
           )}
         </PanelShell>
       </div>
@@ -285,11 +283,10 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
 
     return (
       <div className={className}>
-        <PanelShell title="Name Approval">
+        <PanelShell>
           <p>
-            Once MCA approves the name (typically 4 to 5 working days from filing), enter the approved
-            name, approval date, and upload the approval letter. The expiry date (20-day validity) is
-            calculated automatically. Use <strong>Deliver to client</strong> when ready.
+            After MCA approval (typically 4–5 working days), enter the name and dates below and
+            upload the letter. Expiry (20-day validity) is calculated automatically.
           </p>
         </PanelShell>
       </div>

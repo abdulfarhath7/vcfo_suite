@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useReducer } from 'react';
-import { X } from 'lucide-react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { Plus, X } from 'lucide-react';
 import { emailSchema } from '@/lib/api/schemas';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { Surface } from '@/components/noir/Surface';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface ProgressCcResponse {
   ok: boolean;
@@ -17,6 +18,9 @@ interface ProgressCcResponse {
 
 interface ProgressEmailCcSectionProps {
   engagementId: string;
+  /** Compact one-line row for intern project heading. */
+  variant?: 'card' | 'inline';
+  className?: string;
 }
 
 type CcState = {
@@ -56,9 +60,19 @@ function ccReducer(state: CcState, action: CcAction): CcState {
   }
 }
 
-export function ProgressEmailCcSection({ engagementId }: ProgressEmailCcSectionProps) {
+export function ProgressEmailCcSection({
+  engagementId,
+  variant = 'card',
+  className,
+}: ProgressEmailCcSectionProps) {
   const [state, dispatch] = useReducer(ccReducer, initialCcState);
   const { emails, defaultCcConfigured, loading, saving, draft, inputError } = state;
+  const [adding, setAdding] = useState(false);
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (adding) addInputRef.current?.focus();
+  }, [adding]);
 
   const load = useCallback(async () => {
     dispatch({ type: 'patch', patch: { loading: true } });
@@ -86,7 +100,7 @@ export function ProgressEmailCcSection({ engagementId }: ProgressEmailCcSectionP
     void load();
   }, [load]);
 
-  const persist = async (next: string[]) => {
+  const persist = async (next: string[]): Promise<boolean> => {
     dispatch({ type: 'patch', patch: { saving: true } });
     try {
       const res = await fetch(`/api/engagements/${encodeURIComponent(engagementId)}/progress-cc`, {
@@ -100,11 +114,11 @@ export function ProgressEmailCcSection({ engagementId }: ProgressEmailCcSectionP
         const code = data.error ?? 'save_failed';
         if (code === 'too_many_cc') {
           toastError('Too many addresses', 'You can add up to 10 CC emails per project.');
-          return;
+          return false;
         }
         if (code === 'invalid_email') {
           toastError('Invalid email', 'Check the address and try again.');
-          return;
+          return false;
         }
         throw new Error(code);
       }
@@ -114,11 +128,18 @@ export function ProgressEmailCcSection({ engagementId }: ProgressEmailCcSectionP
         defaultCcConfigured: Boolean(data.defaultCcConfigured),
       });
       toastSuccess('CC list updated', 'Progress emails will include these addresses.');
+      return true;
     } catch {
       toastError('Could not save CC list', 'Try again in a moment.');
+      return false;
     } finally {
       dispatch({ type: 'patch', patch: { saving: false } });
     }
+  };
+
+  const closeAdding = () => {
+    setAdding(false);
+    dispatch({ type: 'patch', patch: { draft: '', inputError: null } });
   };
 
   const handleAdd = () => {
@@ -137,13 +158,112 @@ export function ProgressEmailCcSection({ engagementId }: ProgressEmailCcSectionP
       dispatch({ type: 'patch', patch: { inputError: 'Maximum 10 additional CC addresses per project.' } });
       return;
     }
-    dispatch({ type: 'patch', patch: { inputError: null, draft: '' } });
-    void persist([...emails, parsed.data]);
+    void persist([...emails, parsed.data]).then((ok) => {
+      if (!ok) return;
+      dispatch({ type: 'patch', patch: { inputError: null, draft: '' } });
+      setAdding(false);
+    });
   };
 
   const handleRemove = (email: string) => {
     void persist(emails.filter((e) => e !== email));
   };
+
+  const inlineAddControl = adding ? (
+    <div className="flex min-w-0 items-center gap-1">
+      <Input
+        ref={addInputRef}
+        type="email"
+        placeholder="name@firm.com"
+        value={draft}
+        onChange={(e) => {
+          dispatch({ type: 'patch', patch: { draft: e.target.value, inputError: null } });
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAdd();
+          }
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            closeAdding();
+          }
+        }}
+        onBlur={(e) => {
+          const next = e.relatedTarget as Node | null;
+          if (next && e.currentTarget.parentElement?.contains(next)) return;
+          if (!draft.trim()) closeAdding();
+        }}
+        disabled={saving}
+        aria-label="Add CC email"
+        className="h-6 w-[9.5rem] rounded-md px-2 py-0 text-[11px] md:text-[11px]"
+      />
+      <button
+        type="button"
+        onClick={handleAdd}
+        disabled={saving || !draft.trim()}
+        aria-label="Confirm CC email"
+        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-primary hover:bg-primary-light disabled:opacity-40"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setAdding(true)}
+      className="inline-flex h-6 items-center gap-1 rounded-md border border-primary/25 bg-primary-light px-2 text-[11px] font-medium text-primary hover:bg-primary-light/80"
+    >
+      <Plus className="h-3 w-3" />
+      Add email
+    </button>
+  );
+
+  if (variant === 'inline') {
+    return (
+      <div className={cn('min-w-0', className)}>
+        <div className="flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1">
+          <span
+            className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-text-tertiary"
+            title={
+              defaultCcConfigured
+                ? 'Firm default CC is always included.'
+                : 'Copied on client progress emails for this project.'
+            }
+          >
+            CC
+          </span>
+          {loading ? (
+            <span className="text-[11px] text-text-tertiary">Loading…</span>
+          ) : (
+            <>
+              {emails.map((email) => (
+                <span
+                  key={email}
+                  className="inline-flex max-w-[11rem] items-center gap-1 rounded-full border border-border bg-muted/40 px-1.5 py-0 text-[10.5px] leading-5 text-ink"
+                >
+                  <span className="truncate font-mono">{email}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(email)}
+                    disabled={saving}
+                    className="text-text-tertiary hover:text-ink disabled:opacity-50"
+                    aria-label={`Remove ${email}`}
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
+              ))}
+              {inlineAddControl}
+            </>
+          )}
+        </div>
+        {inputError ? (
+          <p className="mt-0.5 text-right text-[11px] text-destructive">{inputError}</p>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <Surface className="p-5 mb-5">

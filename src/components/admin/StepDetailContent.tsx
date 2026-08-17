@@ -43,6 +43,8 @@ export interface StepDetailContentProps {
   hideLegacyChecklist?: boolean;
   /** Hide read-only Documents checklist tab (intern portal — uploads live in MilestoneResponseForm). */
   hideDocumentsTab?: boolean;
+  /** Hide expected-timeline / working-days SLA copy (intern portal). */
+  hideTimeline?: boolean;
 }
 
 const STATUS_TONE: Record<
@@ -101,6 +103,7 @@ function StepDetailContentInner({
   contentReady = true,
   hideLegacyChecklist = false,
   hideDocumentsTab = false,
+  hideTimeline = false,
 }: StepDetailContentProps) {
   const { updateTask, getStateForEngagement, engagements, user } = useApp();
   const [ui, dispatchUi] = useReducer(
@@ -241,6 +244,7 @@ function StepDetailContentInner({
     contentReady,
     hideLegacyChecklist,
     hideDocumentsTab,
+    hideTimeline,
     progress,
     setProgress,
     tab,

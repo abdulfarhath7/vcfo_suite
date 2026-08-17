@@ -42,7 +42,7 @@ export function MilestoneFileDisplay({
       rel="noopener noreferrer"
       className={
         variant === 'card'
-          ? 'inline-flex items-center gap-1.5 text-sm text-blue-700 underline-offset-2 hover:underline'
+          ? 'inline-flex max-w-full items-center gap-1 truncate text-xs text-blue-700 underline-offset-2 hover:underline'
           : 'inline-flex items-center gap-1.5 text-sm text-role-foreground underline-offset-2 hover:underline'
       }
     >

@@ -6,10 +6,7 @@ import { AlertCircle, Check, ChevronDown, Loader2, Lock, Unlock, Upload } from '
 import { ease } from '@/lib/motion';
 import type { ChecklistField } from '@/data/checklist';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
-import {
-  fileNameFromStoragePath,
-  getMilestoneDocumentSignedUrl,
-} from '@/lib/milestone-document-storage';
+import { getMilestoneDocumentSignedUrl } from '@/lib/milestone-document-storage';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -139,8 +136,7 @@ export function FieldUnlockIconButton({
     <Button
       type="button"
       variant="ghost"
-      size="icon"
-      className={className}
+      className={cn('h-7 w-7 min-h-7 min-w-7 shrink-0 p-0', className)}
       onClick={onClick}
       aria-label={ariaLabel}
     >
@@ -183,7 +179,7 @@ export function FieldUnlockControl({
       <FieldUnlockIconButton
         isUnlocked={isUnlocked}
         onClick={onToggle}
-        className="h-7 w-7 cursor-pointer hover:opacity-80"
+        className="h-7 w-7 min-h-7 min-w-7 cursor-pointer hover:opacity-80"
         ariaLabel={
           isUnlocked
             ? `Lock ${field.label} for client`
@@ -203,7 +199,6 @@ function UploadedFilePreviewInner({
 }) {
   const [href, setHref] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const name = fileNameFromStoragePath(storagePath);
   const isImage = isImageStoragePath(storagePath);
 
   useEffect(() => {
@@ -221,31 +216,30 @@ function UploadedFilePreviewInner({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-border bg-raised/50 px-3 py-2.5">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Loading preview…</span>
+      <div className="flex h-11 items-center gap-2 rounded-md border border-border bg-raised/50 px-2.5 py-1.5">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Loading preview…</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border role-accent-border role-accent-bg/40 px-3 py-2.5">
+    <div className="flex h-11 items-center gap-2 rounded-md border border-border bg-raised/50 px-2.5 py-1.5">
       {isImage && href ? (
         <Image
           src={href}
           alt=""
-          width={48}
-          height={48}
+          width={32}
+          height={32}
           unoptimized
-          className="h-12 w-12 rounded-md object-cover border border-border shrink-0"
+          className="h-8 w-8 shrink-0 rounded-md object-cover border border-border"
         />
       ) : (
-        <div className="h-12 w-12 rounded-md border border-border bg-panel flex items-center justify-center shrink-0">
-          <Upload className="h-5 w-5 text-role" aria-hidden />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-panel">
+          <Upload className="h-3.5 w-3.5 text-role" aria-hidden />
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-foreground truncate">{name || label}</div>
         <MilestoneFileDisplay storagePath={storagePath} label={label} variant="card" />
       </div>
     </div>
@@ -255,8 +249,8 @@ function UploadedFilePreviewInner({
 export function UploadedFilePreview(props: { storagePath: string; label: string }) {
   if (!props.storagePath.trim()) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-border bg-raised/50 px-3 py-2.5">
-        <span className="text-sm text-muted-foreground">No file uploaded</span>
+      <div className="flex h-11 items-center gap-2 rounded-md border border-border bg-raised/50 px-2.5 py-1.5">
+        <span className="text-xs text-muted-foreground">No file uploaded</span>
       </div>
     );
   }

@@ -19,18 +19,18 @@ export function PanelShell({
   children,
   className,
 }: {
-  title: string;
+  title?: string;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
     <div
       className={cn(
-        'rounded-md border border-primary/25 bg-primary/5 px-4 py-3 space-y-2',
+        'rounded-md border border-primary/25 bg-primary/5 px-3 py-2.5 space-y-1.5',
         className,
       )}
     >
-      <p className="text-[12px] font-medium text-ink">{title}</p>
+      {title ? <p className="text-[12px] font-medium text-ink">{title}</p> : null}
       <div className="text-[12px] leading-relaxed text-text-secondary space-y-1.5">{children}</div>
     </div>
   );

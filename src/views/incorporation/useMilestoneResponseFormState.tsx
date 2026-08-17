@@ -102,7 +102,7 @@ import {
 } from '@/lib/incorporation-docs/client';
 import { IncorporationDraftDocLink } from '@/components/incorporation/IncorporationDraftDocLink';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
-import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, groupFieldsBySection, runStepValidation, computeMilestoneDraftFromSaved, mergeSavedFileFieldsIntoDraft, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
+import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, runStepValidation, computeMilestoneDraftFromSaved, mergeSavedFileFieldsIntoDraft, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { FormErrorSummary, Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 
 const COMPLIANCE_TRIGGER_ITEMS = new Set(['pre-12', 'reg-1', 'reg-2', 'reg-3', 'reg-4']);
@@ -128,10 +128,11 @@ export interface MilestoneResponseFormStateProps {
   showFieldUnlock?: boolean;
   open?: boolean;
   className?: string;
+  compactChrome?: boolean;
 }
 
 export function useMilestoneResponseFormState(props: MilestoneResponseFormStateProps) {
-  const { item, clientId, engagementId, responses: responsesOverride, variant = 'client', readOnly = false, showFieldUnlock = false, open = true, className } = props;
+  const { item, clientId, engagementId, responses: responsesOverride, variant = 'client', readOnly = false, showFieldUnlock = false, open = true, className, compactChrome = false } = props;
   const {
     getState,
     getStateForEngagement,
@@ -862,11 +863,18 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const showStaffSaveFooter = !formReadOnly && canEdit && !isClient;
   const staffSaveStatusText = staffSaveStatusLabel(staffSaveStatus, hasChanges, saving);
 
+  const fieldShellClass = (field: ChecklistField, stacked: string) =>
+    cn(
+      'min-w-0',
+      stacked,
+      getMilestoneFormFieldLayout(field) === 'full' && 'milestone-form-field-full',
+    );
+
   const renderReadOnlyField = (field: ChecklistField, options?: { showUnlock?: boolean }) => {
     const value = (displayValues[field.id] ?? '').trim();
     return (
-      <div key={field.id} className="space-y-1.5">
-        <div className="flex items-start justify-between gap-3">
+      <div key={field.id} className={fieldShellClass(field, 'space-y-1.5')}>
+        <div className="flex items-center justify-between gap-3">
           <p className="flex-1 text-xs font-medium leading-snug text-muted-foreground">
             {field.label}
           </p>
@@ -951,9 +959,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         : null;
 
     return (
-      <div key={field.id} className="space-y-2">
+      <div key={field.id} className={fieldShellClass(field, compactChrome ? 'space-y-1.5' : 'space-y-2')}>
         <div className="space-y-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
             <Label
               htmlFor={`${item.id}-${field.id}`}
               className="flex-1 text-xs font-medium leading-snug text-muted-foreground"
@@ -969,10 +977,10 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             />
           </div>
           {field.helperText && (
-            <p className="text-[11px] leading-relaxed text-slate-600">{field.helperText}</p>
+            <p className="text-[11px] leading-snug text-muted-foreground">{field.helperText}</p>
           )}
           {field.validationHint && (
-            <p className="text-[11px] leading-relaxed text-slate-500">{field.validationHint}</p>
+            <p className="text-[11px] leading-snug text-muted-foreground">{field.validationHint}</p>
           )}
         </div>
 
@@ -984,8 +992,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               onChange={(e) => setField(field.id, e.target.value)}
               onBlur={() => autoSaveEnabled && scheduleAutoSave(true)}
               placeholder={field.placeholder}
-              rows={4}
-              className={cn('milestone-form-textarea', error && 'border-danger')}
+              rows={3}
+              className={cn('milestone-form-textarea min-h-[72px] overflow-y-auto', error && 'border-danger')}
             />
             {field.maxWords != null && (
               <p
@@ -1088,33 +1096,35 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             );
           })()
         ) : field.type === 'file' ? (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {draft[field.id]?.trim() ? (
-              <div className="space-y-2">
-                {engagementId && isIncorpDraftUrlField(field.id) ? (
-                  (() => {
-                    const target = incorpDocTargetFromDraftField(field.id)!;
-                    return (
-                      <IncorporationDraftDocLink
-                        engagementId={engagementId}
-                        checklistItemId="pre-7"
-                        doc={target.doc}
-                        director={target.audience}
-                        storagePath={draft[field.id]!}
-                        label={field.label}
-                        showDocxPreview={false}
-                        docxPreviewPlaceholder="Word preview is in the Generate incorporation drafts panel at the top of this step — click Generate first."
-                      />
-                    );
-                  })()
-                ) : (
-                  <UploadedFilePreview storagePath={draft[field.id]!} label={field.label} />
-                )}
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  {engagementId && isIncorpDraftUrlField(field.id) ? (
+                    (() => {
+                      const target = incorpDocTargetFromDraftField(field.id)!;
+                      return (
+                        <IncorporationDraftDocLink
+                          engagementId={engagementId}
+                          checklistItemId="pre-7"
+                          doc={target.doc}
+                          director={target.audience}
+                          storagePath={draft[field.id]!}
+                          label={field.label}
+                          showDocxPreview={false}
+                          docxPreviewPlaceholder="Word preview is in the Generate incorporation drafts panel at the top of this step — click Generate first."
+                        />
+                      );
+                    })()
+                  ) : (
+                    <UploadedFilePreview storagePath={draft[field.id]!} label={field.label} />
+                  )}
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs"
+                  className="h-7 shrink-0 px-2 text-xs"
                   disabled={uploadingField === field.id}
                   onClick={() => {
                     setField(field.id, '');
@@ -1130,20 +1140,37 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             ) : null}
             <label
               className={cn(
-                'milestone-upload-zone sm:flex-row sm:justify-center',
+                'milestone-upload-zone',
                 error && 'border-danger',
                 uploadingField === field.id && 'pointer-events-none opacity-60',
               )}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0] ?? null;
+                void handleFilePick(field.id, file);
+              }}
             >
               {uploadingField === field.id ? (
-                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-blue-700" aria-hidden />
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-blue-700" aria-hidden />
               ) : (
-                <Upload className="h-5 w-5 shrink-0 text-slate-500" aria-hidden />
+                <Upload className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
               )}
-              <span className="text-sm text-slate-600">
-                {uploadingField === field.id ? 'Uploading…' : `Choose file (PDF, DOCX, or image, max ${maxUploadSizeLabel()})`}
+              <span className="inline-flex h-7 shrink-0 items-center rounded-md border border-border bg-raised px-2.5 text-xs font-medium text-foreground">
+                {uploadingField === field.id
+                  ? 'Uploading…'
+                  : draft[field.id]?.trim()
+                    ? 'Replace file'
+                    : 'Choose file'}
+              </span>
+              <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+                PDF, DOCX, or image · max {maxUploadSizeLabel()}
               </span>
               <input
+                id={`${item.id}-${field.id}`}
                 type="file"
                 className="sr-only"
                 accept={`${field.accept ?? '.pdf,image/*'},.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document`}
@@ -1201,7 +1228,12 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
   const renderedFieldGroups = sectionGroups.map((group, gi) => {
     const fieldsBlock = (
-      <div className="space-y-5">
+      <div
+        className={cn(
+          'milestone-form-grid',
+          !compactChrome && 'milestone-form-grid-relaxed',
+        )}
+      >
         {group.fields.map((field) => {
           if (readOnly || formReadOnly || isFieldLockedForClient(field.id)) {
             return renderReadOnlyField(field, { showUnlock });
@@ -1231,10 +1263,10 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
     return (
       <div key={group.section ?? `ungrouped-${gi}`} className="space-y-3">
-        {group.section && (
-          <p className="text-base font-semibold text-foreground">
-            {group.section}
-          </p>
+        {group.section && !(compactChrome && group.section === item.title) && (
+            <p className="text-base font-semibold text-foreground">
+              {group.section}
+            </p>
         )}
         {fieldsBlock}
       </div>
@@ -1255,6 +1287,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     autoSaveStatus,
     canEdit,
     className,
+    compactChrome,
     clientResubmit,
     cn,
     completedStructuredSections,
