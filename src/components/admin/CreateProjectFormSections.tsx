@@ -390,7 +390,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               </div>
 
               {needsSubsidiary ? (
-                <div className="space-y-5 rounded-xl border border-orange-200/70 bg-orange-50/40 p-4 sm:p-5">
+                <div className="space-y-5 rounded-xl border border-primary/20 bg-primary-light/50 p-4 sm:p-5">
                   <div>
                     <p className="text-[13px] font-medium text-foreground">
                       Subsidiary company details
@@ -483,7 +483,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                         className={cn(
                           choiceBtnClass,
                           active
-                            ? 'border-orange-400/70 bg-orange-50/80 ring-1 ring-orange-200/50'
+                            ? 'border-primary/55 bg-primary-light/80 ring-1 ring-primary/25'
                             : 'border-border/80 bg-background hover:bg-muted/35',
                           fieldError('companyType') && !active && 'border-danger/40',
                         )}
@@ -491,7 +491,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                         <div
                           className={cn(
                             'text-[14px] font-medium',
-                            active ? 'text-orange-900' : 'text-foreground',
+                            active ? 'text-primary' : 'text-foreground',
                           )}
                         >
                           {opt.label}
@@ -529,14 +529,14 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                         className={cn(
                           choiceBtnClass,
                           active
-                            ? 'border-orange-400/70 bg-orange-50/80 ring-1 ring-orange-200/50'
+                            ? 'border-primary/55 bg-primary-light/80 ring-1 ring-primary/25'
                             : 'border-border/80 bg-background hover:bg-muted/35',
                         )}
                       >
                         <div
                           className={cn(
                             'text-[14px] font-medium',
-                            active ? 'text-orange-900' : 'text-foreground',
+                            active ? 'text-primary' : 'text-foreground',
                           )}
                         >
                           {opt.label}

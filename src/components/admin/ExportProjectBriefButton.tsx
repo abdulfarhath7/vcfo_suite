@@ -227,7 +227,7 @@ export function ProjectPhaseTrail({ stage }: { stage: Engagement['stage'] }) {
           <span
             className={
               i === active
-                ? 'rounded-md bg-orange-50 px-1.5 py-0.5 font-medium text-orange-800 ring-1 ring-orange-200'
+                ? 'rounded-md bg-blue-50 px-1.5 py-0.5 font-medium text-blue-800 ring-1 ring-blue-200'
                 : 'px-1'
             }
           >

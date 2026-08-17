@@ -82,7 +82,7 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
             type="button"
             onClick={() => setPhase(p)}
             className={`rounded-full px-3 py-1 text-[11px] border ${
-              phase === p ? 'bg-orange-600 text-white border-orange-600' : 'border-border text-muted-foreground'
+              phase === p ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'
             }`}
           >
             {p === 'all' ? 'All phases' : p === 'Pre-Incorporation' ? 'Pre-incorp' : 'Post-incorp'}
@@ -95,7 +95,7 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
               type="button"
               onClick={() => setStuck(s)}
               className={`rounded-full px-3 py-1 text-[11px] border ${
-                stuck === s ? 'bg-raised text-foreground border-orange-300' : 'border-border text-muted-foreground'
+                stuck === s ? 'bg-raised text-foreground border-primary/40' : 'border-border text-muted-foreground'
               }`}
             >
               {s === 'all' ? 'Any status' : STUCK_LABEL[s]}

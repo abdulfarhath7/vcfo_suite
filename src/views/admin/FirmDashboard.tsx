@@ -104,7 +104,7 @@ export default function FirmDashboard() {
   return (
     <PageTransition>
       <SEO title="Admin home — VCFO Suite" description="Firm-wide portfolio pulse." path="/app/admin/dashboard" />
-      <PageHeader accent="amber" title="Firm home" subtitle={today} />
+      <PageHeader accent="role" title="Firm home" subtitle={today} />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <AccentKpi

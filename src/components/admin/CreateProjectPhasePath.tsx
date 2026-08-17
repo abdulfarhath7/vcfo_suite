@@ -89,16 +89,16 @@ export function CreateProjectFormFlow({
                   className={cn(
                     'flex w-full flex-col items-center gap-1.5 rounded-lg border px-1.5 py-2.5 text-center transition-colors',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    active && 'border-orange-400/70 bg-orange-50/80',
-                    !active && done && 'border-emerald-300/60 bg-emerald-50/45',
+                    active && 'border-primary/50 bg-primary-light/80',
+                    !active && done && 'border-success/40 bg-success-light/45',
                     !active && !done && 'border-border/70 bg-background hover:bg-muted/40',
                   )}
                 >
                   <span
                     className={cn(
                       'inline-flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold',
-                      done && 'bg-emerald-600 text-white',
-                      !done && active && 'bg-orange-600 text-white',
+                      done && 'bg-success text-success-foreground',
+                      !done && active && 'bg-primary text-primary-foreground journey-node-pulse',
                       !done && !active && 'bg-muted text-muted-foreground',
                     )}
                   >
@@ -107,7 +107,7 @@ export function CreateProjectFormFlow({
                   <span
                     className={cn(
                       'text-[10.5px] font-medium leading-tight',
-                      active ? 'text-orange-900' : done ? 'text-emerald-900' : 'text-muted-foreground',
+                      active ? 'text-primary' : done ? 'text-success-text' : 'text-muted-foreground',
                     )}
                   >
                     {step.label}
@@ -126,13 +126,13 @@ export function CreateProjectFormFlow({
       aria-label="Details to complete"
       className={cn(
         'flex h-full min-h-0 flex-col rounded-2xl border border-border/70',
-        'bg-gradient-to-b from-background via-background to-orange-50/35',
-        'px-3.5 py-4 shadow-[0_10px_40px_-24px_rgba(15,23,42,0.35)]',
+        'bg-gradient-to-b from-background via-background to-primary-light/40',
+        'px-3.5 py-4 shadow-[0_10px_40px_-24px_oklch(var(--shadow-ink)/0.35)]',
         className,
       )}
     >
       <div className="mb-5 shrink-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-800/80">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
           Progress
         </p>
         <p className="mt-2 text-[15px] font-semibold tabular-nums tracking-tight text-foreground">
@@ -147,9 +147,9 @@ export function CreateProjectFormFlow({
           </motion.span>
           <span className="font-medium text-muted-foreground"> / {FORM_STEPS.length}</span>
         </p>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-orange-100/90 ring-1 ring-orange-200/60">
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-primary-light ring-1 ring-primary/20">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-orange-500 to-orange-600"
+            className="h-full rounded-full bg-gradient-to-r from-primary to-primary-dark"
             initial={false}
             animate={{ width: `${(readyCount / FORM_STEPS.length) * 100}%` }}
             transition={{ type: 'spring', stiffness: 280, damping: 28 }}
@@ -178,14 +178,14 @@ export function CreateProjectFormFlow({
                   transition={{ type: 'spring', stiffness: 420, damping: 26 }}
                   className={cn(
                     'relative z-[1] flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-bold shadow-sm',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/50',
-                    done && 'border-emerald-500 bg-emerald-600 text-white shadow-emerald-600/25',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+                    done && 'border-success bg-success text-success-foreground shadow-sm',
                     !done &&
                       active &&
-                      'border-orange-500 bg-orange-600 text-white shadow-orange-600/30 ring-4 ring-orange-200/70',
+                      'border-primary bg-primary text-primary-foreground shadow-sm journey-node-pulse ring-4 ring-primary/25',
                     !done &&
                       !active &&
-                      'border-border/90 bg-background text-foreground/70 hover:border-orange-300 hover:text-foreground',
+                      'border-border/90 bg-background text-foreground/70 hover:border-primary/40 hover:text-foreground',
                   )}
                 >
                   {done ? <Check className="h-3.5 w-3.5" strokeWidth={2.75} /> : i + 1}
@@ -193,7 +193,7 @@ export function CreateProjectFormFlow({
                 {!isLast ? (
                   <div aria-hidden className="relative mt-1 w-[2px] flex-1 overflow-hidden rounded-full bg-border/80">
                     <motion.div
-                      className="absolute inset-x-0 top-0 w-full origin-top rounded-full bg-emerald-500"
+                      className="absolute inset-x-0 top-0 w-full origin-top rounded-full bg-success"
                       initial={false}
                       animate={{ scaleY: done ? 1 : 0 }}
                       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
@@ -208,31 +208,21 @@ export function CreateProjectFormFlow({
                 onClick={() => onSelect(step.id)}
                 layout
                 initial={false}
-                animate={{
-                  backgroundColor: active
-                    ? 'rgba(255, 247, 237, 0.95)'
-                    : done
-                      ? 'rgba(236, 253, 245, 0.55)'
-                      : 'rgba(255,255,255,0)',
-                  borderColor: active
-                    ? 'rgba(251, 146, 60, 0.45)'
-                    : done
-                      ? 'rgba(52, 211, 153, 0.35)'
-                      : 'rgba(0,0,0,0)',
-                }}
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
-                  'mb-2 flex min-w-0 flex-1 flex-col items-start justify-start rounded-xl border px-2.5 py-2 text-left',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/40',
+                  'mb-2 flex min-w-0 flex-1 flex-col items-start justify-start rounded-xl border px-2.5 py-2 text-left transition-colors duration-200',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
                   isLast && 'mb-0',
+                  active && 'border-primary/45 bg-primary-light/90',
+                  !active && done && 'border-success/35 bg-success-light/55',
+                  !active && !done && 'border-transparent bg-transparent',
                 )}
               >
                 <span className="flex items-center gap-1.5">
                   <Icon
                     className={cn(
                       'h-3.5 w-3.5 shrink-0 transition-colors duration-200',
-                      active && 'text-orange-700',
-                      done && !active && 'text-emerald-700',
+                      active && 'text-primary',
+                      done && !active && 'text-success-text',
                       !done && !active && 'text-foreground/55',
                     )}
                     aria-hidden
@@ -240,8 +230,8 @@ export function CreateProjectFormFlow({
                   <span
                     className={cn(
                       'text-[13px] font-semibold tracking-tight transition-colors duration-200',
-                      active && 'text-orange-950',
-                      done && !active && 'text-emerald-950',
+                      active && 'text-foreground',
+                      done && !active && 'text-success-text',
                       !done && !active && 'text-foreground/80',
                     )}
                   >
@@ -255,8 +245,8 @@ export function CreateProjectFormFlow({
                   transition={{ duration: 0.22 }}
                   className={cn(
                     'mt-1 text-[11px] font-medium leading-snug',
-                    done && 'text-emerald-700',
-                    active && !done && 'text-orange-800',
+                    done && 'text-success-text',
+                    active && !done && 'text-primary',
                     !done && !active && 'text-foreground/55',
                   )}
                 >
@@ -265,7 +255,7 @@ export function CreateProjectFormFlow({
                 <span
                   className={cn(
                     'mt-1 text-[10.5px] leading-snug transition-colors duration-200',
-                    active ? 'text-orange-900/70' : 'text-foreground/50',
+                    active ? 'text-primary/70' : 'text-foreground/50',
                   )}
                 >
                   {step.hint}
@@ -348,7 +338,7 @@ export function CreateProjectStartingPhasePicker({ stage, onChange }: PhasePicke
         {pill ? (
           <motion.div
             aria-hidden
-            className="pointer-events-none absolute z-0 rounded-md bg-orange-600 shadow-md"
+            className="pointer-events-none absolute z-0 rounded-md bg-primary shadow-sm"
             initial={false}
             animate={{
               left: pill.left,
@@ -392,7 +382,7 @@ export function CreateProjectStartingPhasePicker({ stage, onChange }: PhasePicke
               <span
                 className={cn(
                   'mt-0.5 block text-[10px] leading-tight',
-                  active ? 'text-orange-50/90' : 'text-muted-foreground',
+                  active ? 'text-primary-foreground/85' : 'text-muted-foreground',
                 )}
               >
                 {state === 'done'

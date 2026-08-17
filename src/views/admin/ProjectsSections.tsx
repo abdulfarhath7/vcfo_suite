@@ -162,7 +162,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     onKeyDown={(ev) => {
                       if (ev.key === 'Enter' || ev.key === ' ') router.push(adminProjectPath(e));
                     }}
-                    className="flex w-full cursor-pointer flex-col gap-2.5 rounded-xl border border-border/80 bg-card px-3.5 py-3 text-left transition-colors hover:border-orange-200 hover:bg-orange-50/30"
+                    className="flex w-full cursor-pointer flex-col gap-2.5 rounded-xl border border-border/80 bg-card px-3.5 py-3 text-left transition-colors hover:border-primary/30 hover:bg-primary-light/40"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2.5">
@@ -171,8 +171,11 @@ export function ProjectsView(props: ProjectsViewProps) {
                         </div>
                         <div className="min-w-0">
                           <div className="truncate text-[13px] font-medium text-ink">{e.companyName}</div>
-                          <div className="text-[11px] text-text-tertiary">
-                            {e.stage} · {STUCK_LABEL[stuck]}
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-text-tertiary">
+                            <span className="inline-flex rounded-full border border-primary/20 bg-primary-light px-2 py-0.5 text-[10px] font-medium text-primary">
+                              {e.stage}
+                            </span>
+                            <span>· {STUCK_LABEL[stuck]}</span>
                           </div>
                         </div>
                       </div>
@@ -187,7 +190,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400"
+                          className="h-full rounded-full bg-gradient-to-r from-primary to-primary-dark"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -195,7 +198,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     </div>
                     <div className="flex items-center justify-between text-[11.5px] text-text-tertiary">
                       <span className="truncate">{leadLabel}</span>
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-orange-600/70" />
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-primary/70" />
                     </div>
                   </div>
                 );
@@ -245,7 +248,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400"
+                          className="h-full rounded-full bg-gradient-to-r from-primary to-primary-dark"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
