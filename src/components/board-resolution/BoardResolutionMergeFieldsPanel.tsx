@@ -75,7 +75,7 @@ export function BoardResolutionMergeFieldsPanel({
                   'w-full rounded-md px-3 py-2.5 text-left transition-colors duration-150 motion-reduce:transition-none',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40',
                   isActive
-                    ? 'border border-orange/35 bg-orange/10'
+                    ? 'border border-primary/35 bg-primary/10'
                     : 'border border-transparent hover:bg-raised/60',
                 )}
                 aria-current={isActive ? 'true' : undefined}

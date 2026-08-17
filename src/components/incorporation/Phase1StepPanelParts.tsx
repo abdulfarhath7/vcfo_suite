@@ -26,7 +26,7 @@ export function PanelShell({
   return (
     <div
       className={cn(
-        'rounded-md border border-orange/25 bg-orange/5 px-4 py-3 space-y-2',
+        'rounded-md border border-primary/25 bg-primary/5 px-4 py-3 space-y-2',
         className,
       )}
     >

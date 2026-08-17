@@ -38,7 +38,7 @@ export function IncorporationPreviewErrorPanel({
           type="button"
           onClick={() => void onRecover()}
           disabled={recovering}
-          className="rounded border border-orange/40 bg-orange/10 px-2.5 py-1 text-[11px] font-medium text-orange-700 hover:bg-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-blue-700 hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {recovering ? 'Re-generating…' : 'Re-generate this draft'}
         </button>
@@ -48,7 +48,7 @@ export function IncorporationPreviewErrorPanel({
           href={downloadUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[12px] text-orange-700 underline-offset-2 hover:underline"
+          className="text-[12px] text-blue-700 underline-offset-2 hover:underline"
         >
           Download Word file instead
         </a>

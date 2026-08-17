@@ -61,14 +61,14 @@ export function BoardResolutionStepLink({ engagement, className }: BoardResoluti
     <Link
       href={internBoardResolutionPath(engagement)}
       className={cn(
-        'flex items-center gap-3 rounded-md border border-orange-200 bg-orange-50 px-4 py-3',
-        'hover:border-orange-300 hover:bg-orange-100/80 transition-colors group',
+        'flex items-center gap-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-3',
+        'hover:border-blue-300 hover:bg-blue-100/80 transition-colors group',
         className,
       )}
     >
-      <FileText className="w-5 h-5 text-orange-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+      <FileText className="w-5 h-5 text-blue-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-medium text-ink group-hover:text-orange-700">{label}</p>
+        <p className="text-[13px] font-medium text-ink group-hover:text-blue-700">{label}</p>
         <p className="text-[11px] text-text-tertiary mt-0.5">
           Auto-merged from Pre-1 client data · edit · finalize to release to client portal
         </p>
@@ -80,7 +80,7 @@ export function BoardResolutionStepLink({ engagement, className }: BoardResoluti
             status === 'finalized'
               ? 'border-success/30 bg-success/10 text-success-text'
               : status === 'draft'
-                ? 'border-orange-200 bg-orange-100 text-orange-700'
+                ? 'border-blue-200 bg-blue-100 text-blue-700'
                 : 'border-border bg-raised/60 text-text-tertiary',
           )}
         >

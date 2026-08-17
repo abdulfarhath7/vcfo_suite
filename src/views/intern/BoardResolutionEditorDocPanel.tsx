@@ -249,7 +249,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                 <div className="mb-4">
                   <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-[12px] uppercase tracking-wider text-orange-600 font-semibold">
+                    <p className="text-[12px] uppercase tracking-wider text-blue-600 font-semibold">
                       Document preview
                     </p>
                     {!isFinalized && saveStatusText && (
@@ -308,9 +308,9 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                   </div>
                 </div>
 
-                <div className="mb-6 rounded-lg border border-orange/35 bg-orange/5 p-5">
+                <div className="mb-6 rounded-lg border border-primary/35 bg-primary/5 p-5">
 
-                  <p className="text-[12px] uppercase tracking-wider text-orange-600 font-semibold mb-2">
+                  <p className="text-[12px] uppercase tracking-wider text-blue-600 font-semibold mb-2">
 
                     Word document ready
 

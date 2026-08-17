@@ -4,7 +4,7 @@ const tone: Record<Bucket, string> = {
   'pre-inc': 'bg-indigo-50 text-indigo-700',
   'post-inc': 'bg-accent-violet/10 text-accent-violet',
   fema: 'bg-info-light text-info-text',
-  statutory: 'bg-orange-50 text-orange-700',
+  statutory: 'bg-[oklch(var(--phase-registration-soft))] text-[oklch(var(--phase-registration-text))]',
 };
 
 export function BucketBadge({ bucket }: { bucket: Bucket }) {

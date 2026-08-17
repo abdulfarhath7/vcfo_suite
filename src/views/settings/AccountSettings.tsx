@@ -207,7 +207,7 @@ export default function AccountSettings({ path }: Props) {
         <Surface className="p-5 sm:p-6">
           <div className="flex items-center gap-4">
             <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-orange-50 text-[15px] font-semibold text-orange-900 ring-1 ring-orange-200/70"
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[15px] font-semibold text-blue-900 ring-1 ring-blue-200/70"
               aria-hidden
             >
               {initials}

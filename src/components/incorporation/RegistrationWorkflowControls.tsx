@@ -97,12 +97,12 @@ export function RegistrationWorkflowControls({
                   className={cn(
                     'rounded-md border px-2 py-2 text-left transition-colors',
                     selected
-                      ? 'border-orange-500/60 bg-orange-50 text-orange-950'
+                      ? 'border-blue-500/60 bg-blue-50 text-blue-900'
                       : reached
                         ? 'border-border bg-background text-ink'
                         : 'border-border/70 bg-transparent text-text-tertiary',
                     readOnly && 'cursor-default',
-                    !readOnly && !selected && 'hover:border-orange-400/40 hover:bg-orange-50/40',
+                    !readOnly && !selected && 'hover:border-blue-400/40 hover:bg-blue-50/40',
                   )}
                   aria-pressed={selected}
                 >

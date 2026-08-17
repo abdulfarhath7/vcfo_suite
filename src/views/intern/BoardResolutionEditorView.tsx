@@ -217,7 +217,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             <h1 className="serif text-[28px] text-ink tracking-tight mt-1 flex items-center gap-2">
 
-              <FileText className="w-6 h-6 text-orange-600 shrink-0" />
+              <FileText className="w-6 h-6 text-blue-600 shrink-0" />
 
               Board Resolution
 
@@ -261,7 +261,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
               onClick={() => router.push(pre1StepHref)}
 
-              className="font-medium text-ink underline underline-offset-2 hover:text-orange-700"
+              className="font-medium text-ink underline underline-offset-2 hover:text-blue-700"
 
             >
 

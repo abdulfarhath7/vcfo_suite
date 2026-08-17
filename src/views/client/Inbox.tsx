@@ -6,6 +6,7 @@ import { useApp } from '@/context/AppContext';
 import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { AccentButton, Surface, EmptyStateIllustrated, Eyebrow } from '@/components/noir';
+import { GeometricEmpty } from '@/components/illustrations/GeometricEmpty';
 import { Upload, FileCheck2, Clock, ArrowRight, AlertCircle } from 'lucide-react';
 import { toast } from '@/lib/toast-errors';
 import { m } from 'framer-motion';
@@ -29,6 +30,12 @@ type ChecklistAction = {
   label: string;
   message?: string;
 };
+
+function dueStripClass(bucket: string): string {
+  if (bucket === 'Due today') return 'bg-primary';
+  if (bucket === 'This week') return 'bg-primary/50';
+  return 'bg-muted-foreground/35';
+}
 
 export default function ClientInbox() {
   const router = useRouter();
@@ -54,6 +61,7 @@ export default function ClientInbox() {
   if (!eng) {
     return (
       <EmptyStateIllustrated
+        art="empty"
         title="No active engagement"
         description="We could not find an active engagement for your account."
       />
@@ -101,10 +109,10 @@ export default function ClientInbox() {
       </Surface>
 
       {actionCount === 0 ? (
-        <Surface className="p-10 text-center">
-          <FileCheck2 className="w-10 h-10 mx-auto text-success mb-3" />
-          <div className="serif text-xl text-foreground">You are all caught up</div>
-          <p className="text-sm text-muted-foreground mt-1 prose-narrow mx-auto">
+        <Surface className="flex flex-col items-center p-10 text-center">
+          <GeometricEmpty variant="success" />
+          <div className="serif mt-3 text-xl text-foreground">You are all caught up</div>
+          <p className="mt-1 prose-narrow mx-auto text-sm text-muted-foreground">
             Nothing needs your attention right now. We will email you when something new comes in.
           </p>
         </Surface>
@@ -113,24 +121,25 @@ export default function ClientInbox() {
           <div className="space-y-5">
             {checklistActions.length > 0 && (
               <StaggerItem>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5 font-semibold flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-danger" />
+                <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full bg-danger" />
                   Corrections needed
                   <span className="normal-case font-normal">· {checklistActions.length}</span>
                 </div>
-                <Surface className="divide-y divide-border">
+                <Surface className="overflow-hidden divide-y divide-border">
                   {checklistActions.map((a) => (
                     <div
                       key={a.id}
-                      className="flex flex-wrap items-center gap-4 px-4 py-4 hover:bg-raised/40"
+                      className="relative flex flex-wrap items-center gap-4 py-4 pl-5 pr-4 hover:bg-raised/40"
                     >
-                      <div className="w-10 h-10 rounded-md role-accent-bg flex items-center justify-center shrink-0">
-                        <AlertCircle className="w-4 h-4 text-role" />
+                      <span className="absolute inset-y-0 left-0 w-1 bg-danger" aria-hidden />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md role-accent-bg">
+                        <AlertCircle className="h-4 w-4 text-role" />
                       </div>
-                      <div className="flex-1 min-w-[180px]">
+                      <div className="min-w-[180px] flex-1">
                         <div className="text-sm font-medium text-foreground">{a.label}</div>
                         {a.message && (
-                          <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                          <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                             {a.message}
                           </div>
                         )}
@@ -139,7 +148,7 @@ export default function ClientInbox() {
                         size="sm"
                         onClick={() => router.push('/app/client/incorporation')}
                       >
-                        Fix & resubmit <ArrowRight className="w-3 h-3" />
+                        Fix & resubmit <ArrowRight className="h-3 w-3" />
                       </AccentButton>
                     </div>
                   ))}
@@ -152,44 +161,41 @@ export default function ClientInbox() {
               if (!items?.length) return null;
               return (
                 <StaggerItem key={bucket}>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5 font-semibold flex items-center gap-2">
-                    <span
-                      className={cn(
-                        'w-1.5 h-1.5 rounded-full',
-                        bucket === 'Due today' && 'bg-danger',
-                        bucket === 'This week' && 'bg-warning',
-                        bucket === 'Later' && 'bg-muted-foreground',
-                      )}
-                    />
+                  <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className={cn('h-1.5 w-1.5 rounded-full', dueStripClass(bucket))} />
                     {bucket}
                     <span className="normal-case font-normal">· {items.length}</span>
                   </div>
-                  <Surface className="divide-y divide-border">
+                  <Surface className="overflow-hidden divide-y divide-border">
                     {items.map((r) => (
                       <m.div
                         key={r.id}
                         layout
-                        className="flex flex-wrap items-center gap-4 px-4 py-4 hover:bg-raised/40"
+                        className="relative flex flex-wrap items-center gap-4 py-4 pl-5 pr-4 hover:bg-raised/40"
                       >
-                        <div className="w-10 h-10 rounded-md role-accent-bg flex items-center justify-center shrink-0">
-                          <Upload className="w-4 h-4 text-role" />
+                        <span
+                          className={cn('absolute inset-y-0 left-0 w-1', dueStripClass(bucket))}
+                          aria-hidden
+                        />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md role-accent-bg">
+                          <Upload className="h-4 w-4 text-role" />
                         </div>
-                        <div className="flex-1 min-w-[180px]">
+                        <div className="min-w-[180px] flex-1">
                           <div className="text-sm font-medium text-foreground">{r.label}</div>
                           {r.message && (
-                            <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                            <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
                               {r.message}
                             </div>
                           )}
                           {r.dueAt && (
-                            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                            <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
                               Due by {r.dueAt}
                             </div>
                           )}
                         </div>
                         <AccentButton size="sm" onClick={() => handleUpload(r.id, r.label)}>
-                          Upload file <ArrowRight className="w-3 h-3" />
+                          Upload file <ArrowRight className="h-3 w-3" />
                         </AccentButton>
                       </m.div>
                     ))}
@@ -200,13 +206,13 @@ export default function ClientInbox() {
 
             {done.length > 0 && (
               <StaggerItem>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5 font-semibold mt-6">
+                <div className="mb-1.5 mt-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Recently submitted
                 </div>
                 <Surface className="divide-y divide-border">
                   {done.map((r) => (
                     <div key={r.id} className="flex items-center gap-4 px-4 py-3 text-muted-foreground">
-                      <FileCheck2 className="w-4 h-4 text-success" />
+                      <FileCheck2 className="h-4 w-4 text-success" />
                       <div className="flex-1 text-sm line-through decoration-muted-foreground/40">
                         {r.label}
                       </div>

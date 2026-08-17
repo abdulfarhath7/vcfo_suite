@@ -64,7 +64,7 @@ function MilestoneDocumentLinkInner({
       rel="noopener noreferrer"
       className={cn(
         'inline-flex items-center gap-1.5 text-sm underline-offset-2 hover:underline',
-        isClient ? 'text-orange-700' : 'text-brand',
+        isClient ? 'text-blue-700' : 'text-brand',
         className,
       )}
     >

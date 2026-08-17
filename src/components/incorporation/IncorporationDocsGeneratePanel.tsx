@@ -223,12 +223,12 @@ export function IncorporationDocsGeneratePanel({
   return (
     <div
       className={cn(
-        'rounded-md border border-orange/30 bg-orange/5 px-4 py-3 space-y-3',
+        'rounded-md border border-primary/30 bg-primary/5 px-4 py-3 space-y-3',
         className,
       )}
     >
       <div className="flex items-start gap-3">
-        <FileText className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" aria-hidden />
+        <FileText className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" aria-hidden />
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-[13px] font-medium text-ink">Generate incorporation drafts</p>
           <p className="text-[11px] text-text-tertiary leading-relaxed">
@@ -265,10 +265,10 @@ export function IncorporationDocsGeneratePanel({
         pre7State={pre7State}
         labelOptions={labelOptions}
         flushAllPreviews={flushAllPreviews}
-        className="border-t border-orange/20 pt-3"
+        className="border-t border-primary/20 pt-3"
       />
 
-      <div className="space-y-3 border-t border-orange/20 pt-3">
+      <div className="space-y-3 border-t border-primary/20 pt-3">
         <p className="text-[10px] uppercase tracking-wide text-text-tertiary">
           Incorporation documents
         </p>

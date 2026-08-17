@@ -1136,7 +1136,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               )}
             >
               {uploadingField === field.id ? (
-                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-orange-700" aria-hidden />
+                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-blue-700" aria-hidden />
               ) : (
                 <Upload className="h-5 w-5 shrink-0 text-slate-500" aria-hidden />
               )}

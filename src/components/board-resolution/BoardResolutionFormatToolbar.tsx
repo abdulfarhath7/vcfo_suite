@@ -46,7 +46,7 @@ export function BoardResolutionFormatToolbar({
   );
 
   const activeIconButtonClass =
-    'bg-orange/15 text-orange-600 ring-1 ring-gold/40 hover:bg-orange/15 hover:text-orange-600';
+    'bg-primary/15 text-blue-600 ring-1 ring-gold/40 hover:bg-primary/15 hover:text-blue-600';
 
   return (
     <div

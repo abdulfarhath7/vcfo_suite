@@ -97,7 +97,7 @@ export function IncorporationDocsBulkShareBar({
   return (
     <div
       className={cn(
-        'rounded-md border border-orange/40 bg-panel px-4 py-3 space-y-2',
+        'rounded-md border border-primary/40 bg-panel px-4 py-3 space-y-2',
         className,
       )}
     >

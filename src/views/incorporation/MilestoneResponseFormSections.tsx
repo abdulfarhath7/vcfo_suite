@@ -192,7 +192,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
 
       {isPre6 && !pre1SubmittedForPre6 && (
         <output
-          className="rounded-lg border border-orange/30 bg-primary-light px-4 py-3 text-sm text-foreground block"
+          className="rounded-lg border border-primary/30 bg-primary-light px-4 py-3 text-sm text-foreground block"
         >
           <p className="font-medium">Phase 1 Step 1 required first</p>
           <p className="mt-1 text-muted-foreground">
@@ -221,10 +221,10 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
       <div className={isPre1 || isPhase2StructuredStep ? 'space-y-1.5 px-0.5' : undefined}>
         {isPre1 || isPhase2StructuredStep ? (
           <div className="space-y-1">
-            <p className="eyebrow text-orange-700">
+            <p className="eyebrow text-blue-700">
               {isPre1
-                ? 'Phase 1 - Name of Application (Spice Part A)'
-                : 'Phase 2 - Incorporation Details (Spice Part B and INC-35 Agile-Pro-S)'}
+                ? 'Phase 1 — Name Application'
+                : 'Phase 2 — Incorporation'}
             </p>
             <h2 className="display-md text-foreground">{item.title}</h2>
             {!readOnly && isClient && (
@@ -271,7 +271,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
             reviewBanner.tone === 'rejected' &&
               'border-danger/30 bg-danger-light/80',
             reviewBanner.tone === 'reviewing' &&
-              'border-orange/30 bg-primary-light',
+              'border-primary/30 bg-primary-light',
             reviewBanner.tone === 'accepted' &&
               'border-success/25 bg-success-light',
           )}
@@ -283,7 +283,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
                 className={cn(
                   'h-4 w-4 shrink-0 mt-0.5',
                   reviewBanner.tone === 'rejected' && 'text-danger',
-                  reviewBanner.tone === 'reviewing' && 'text-orange-700',
+                  reviewBanner.tone === 'reviewing' && 'text-blue-700',
                   reviewBanner.tone === 'accepted' && 'text-success',
                 )}
                 aria-hidden

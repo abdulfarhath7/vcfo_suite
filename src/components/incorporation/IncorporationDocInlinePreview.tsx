@@ -317,7 +317,7 @@ export function IncorporationDocInlinePreview({
             download={fileName || undefined}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-[11px] font-medium text-orange-700 underline-offset-2 hover:underline"
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium text-blue-700 underline-offset-2 hover:underline"
           >
             <Download className="h-3 w-3 shrink-0" aria-hidden />
             Download

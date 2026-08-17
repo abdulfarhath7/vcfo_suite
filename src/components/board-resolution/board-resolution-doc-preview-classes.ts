@@ -9,6 +9,6 @@ export const BR_DOCX_PREVIEW_BODY_CLASSES = [
   '[&_section.docx]:shadow-none [&_section.docx]:justify-start',
   '[&_section.docx>article]:!mb-0 [&_section.docx>article]:min-h-0 [&_section.docx>article]:flex-grow-0',
   '[&_.br-editable-document]:h-auto [&_.br-editable-document]:min-h-0',
-  '[&_.br-merge-field-highlight]:rounded-sm [&_.br-merge-field-highlight]:bg-orange/20 [&_.br-merge-field-highlight]:ring-1 [&_.br-merge-field-highlight]:ring-gold/40',
-  '[&_.br-merge-field-highlight-active]:bg-orange/30 [&_.br-merge-field-highlight-active]:ring-2 [&_.br-merge-field-highlight-active]:ring-gold/60',
+  '[&_.br-merge-field-highlight]:rounded-sm [&_.br-merge-field-highlight]:bg-primary/20 [&_.br-merge-field-highlight]:ring-1 [&_.br-merge-field-highlight]:ring-gold/40',
+  '[&_.br-merge-field-highlight-active]:bg-primary/30 [&_.br-merge-field-highlight-active]:ring-2 [&_.br-merge-field-highlight-active]:ring-gold/60',
 ] as const;

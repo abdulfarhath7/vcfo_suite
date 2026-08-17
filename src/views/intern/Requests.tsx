@@ -73,7 +73,7 @@ export default function InternRequests() {
       <SEO title="Document requests — VCFO Suite" description="Track what you have asked clients to upload and approve submissions." path="/app/intern/requests" />
 
       <PageHeader
-        accent="orange"
+        accent="role"
         icon={FileInput}
         eyebrow="Client collaboration"
         title="Document requests"

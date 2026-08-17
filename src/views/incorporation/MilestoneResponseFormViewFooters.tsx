@@ -82,7 +82,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               }
               className={cn(
                 'cursor-pointer',
-                !autoSaveEnabled && isClient && 'bg-orange-600 text-white hover:bg-orange-600/90',
+                !autoSaveEnabled && isClient && 'bg-blue-600 text-white hover:bg-blue-600/90',
               )}
             >
               {saving || autoSaveStatus === 'saving'
@@ -98,7 +98,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               size="sm"
               onClick={() => void handleSubmit()}
               disabled={submitting || saving || autoSaveStatus === 'saving'}
-              className="cursor-pointer bg-orange-600 text-white hover:bg-orange-600/90"
+              className="cursor-pointer bg-blue-600 text-white hover:bg-blue-600/90"
             >
               {submitting ? 'Submitting…' : 'Submit for review'}
             </Button>
@@ -150,7 +150,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                 size="sm"
                 onClick={() => void handleSaveNow()}
                 disabled={saving || (!hasChanges && staffSaveStatus !== 'error')}
-                className="cursor-pointer bg-orange-600 text-white hover:bg-orange-600/90"
+                className="cursor-pointer bg-blue-600 text-white hover:bg-blue-600/90"
               >
                 {saving ? 'Saving…' : 'Save changes'}
               </Button>
@@ -228,7 +228,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               size="sm"
               onClick={() => void handleSubmit()}
               disabled={submitting || saving || autoSaveStatus === 'saving'}
-              className="cursor-pointer bg-orange-600 text-white hover:bg-orange-600/90"
+              className="cursor-pointer bg-blue-600 text-white hover:bg-blue-600/90"
             >
               {submitting ? 'Submitting…' : 'Submit again for review'}
             </Button>

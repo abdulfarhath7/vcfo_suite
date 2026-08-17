@@ -219,7 +219,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
       />
 
       <PageHeader
-        accent="amber"
+        accent="sky"
         icon={BookOpen}
         title="Knowledge Bank"
         subtitle={
