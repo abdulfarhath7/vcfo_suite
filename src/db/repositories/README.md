@@ -44,11 +44,12 @@ client via own engagement. Documents additionally hide non-shared rows from
 clients (`shared_with_client = true` only). Notifications stay per-user
 (`user_id = ctx.userId`); admin/manager may create for another user.
 `outlook_connections` is the signed-in staff user's own Microsoft mailbox
-(Graph Mail.Send); clients have no access.
+(Graph Mail.Send); clients have no access. `email-directory` lists Outlook
+compose recipients from the same engagement scope (+ intern reports-to).
 
 Implemented: `engagements`, `knowledge-bank`, `profiles`, `audit-events`,
 `board-resolution`, `compliance`, `documents`, `tasks`, `document-requests`,
-`invites`, `activity`, `notifications`, `outlook-connections`.
+`invites`, `activity`, `notifications`, `outlook-connections`, `email-directory`.
 
 System jobs (Inngest): `systemGenerateComplianceInstances` /
 `runComplianceGenerate` in `compliance.ts` may touch `db` without AuthContext.

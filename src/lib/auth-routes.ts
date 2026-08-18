@@ -16,6 +16,37 @@ export function roleHomePath(role: Role): string {
   }
 }
 
+/** In-app Outlook compose (staff only). */
+export function roleMailPath(role: Role): string | null {
+  switch (role) {
+    case 'super_admin':
+    case 'admin':
+      return '/app/admin/mail';
+    case 'manager':
+      return '/app/manager/mail';
+    case 'intern':
+      return '/app/intern/mail';
+    case 'client':
+      return null;
+  }
+}
+
+/** Account / profile settings for the signed-in role’s shell. */
+export function roleSettingsPath(role: Role): string {
+  switch (role) {
+    case 'super_admin':
+      return '/app/super/settings';
+    case 'admin':
+      return '/app/admin/settings';
+    case 'manager':
+      return '/app/manager/settings';
+    case 'intern':
+      return '/app/intern/settings';
+    case 'client':
+      return '/app/client/settings';
+  }
+}
+
 /** Role segment index pages — same as role home. */
 export function roleIndexPath(role: Role): string {
   return roleHomePath(role);

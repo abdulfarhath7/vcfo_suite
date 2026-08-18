@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useApp } from "@/context/AppContext";
-import { Briefcase, Inbox, LayoutDashboard, Plus, FolderClosed, BarChart3, Users, BookOpen, ClipboardCheck, History, CalendarCheck } from "lucide-react";
+import { Briefcase, Inbox, LayoutDashboard, Plus, FolderClosed, BarChart3, Users, BookOpen, ClipboardCheck, History, CalendarCheck, Mail } from "lucide-react";
 import { adminProjectPath, internEngagementPath } from '@/lib/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 
@@ -38,6 +38,7 @@ export function CommandPalette() {
           <CommandGroup heading="Firm admin">
             <CommandItem onSelect={() => go("/app/admin/dashboard")}><LayoutDashboard className="w-4 h-4 mr-2" />Home</CommandItem>
             <CommandItem onSelect={() => go("/app/admin/people")}><Users className="w-4 h-4 mr-2" />People</CommandItem>
+            <CommandItem onSelect={() => go("/app/admin/mail")}><Mail className="w-4 h-4 mr-2" />Send email</CommandItem>
             <CommandItem onSelect={() => go("/app/admin/approvals")}><ClipboardCheck className="w-4 h-4 mr-2" />Approvals</CommandItem>
             <CommandItem onSelect={() => go("/app/admin/compliance")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
             <CommandItem onSelect={() => go("/app/admin/vault")}><FolderClosed className="w-4 h-4 mr-2" />Document vault</CommandItem>
@@ -53,6 +54,7 @@ export function CommandPalette() {
             <CommandItem onSelect={() => go("/app/manager/projects")}><Briefcase className="w-4 h-4 mr-2" />GCC setup projects</CommandItem>
             <CommandItem onSelect={() => go("/app/manager/approvals")}><ClipboardCheck className="w-4 h-4 mr-2" />Approvals</CommandItem>
             <CommandItem onSelect={() => go("/app/manager/people")}><Users className="w-4 h-4 mr-2" />People</CommandItem>
+            <CommandItem onSelect={() => go("/app/manager/mail")}><Mail className="w-4 h-4 mr-2" />Send email</CommandItem>
             <CommandItem onSelect={() => go("/app/manager/compliance")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
             <CommandItem onSelect={() => go("/app/manager/vault")}><FolderClosed className="w-4 h-4 mr-2" />Document vault</CommandItem>
             <CommandItem onSelect={() => go("/app/manager/knowledge-bank")}><BookOpen className="w-4 h-4 mr-2" />Knowledge Bank</CommandItem>
@@ -65,6 +67,7 @@ export function CommandPalette() {
           <CommandGroup heading="Project Lead workbench">
             <CommandItem onSelect={() => go("/app/intern/today")}><LayoutDashboard className="w-4 h-4 mr-2" />Today</CommandItem>
             <CommandItem onSelect={() => go("/app/intern/clients")}><Users className="w-4 h-4 mr-2" />Clients</CommandItem>
+            <CommandItem onSelect={() => go("/app/intern/mail")}><Mail className="w-4 h-4 mr-2" />Send email</CommandItem>
             <CommandItem onSelect={() => go("/app/intern/analytics")}><BarChart3 className="w-4 h-4 mr-2" />Analytics</CommandItem>
             <CommandItem onSelect={() => go("/app/intern/compliance")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
             <CommandItem onSelect={() => go("/app/intern/audit-log")}><History className="w-4 h-4 mr-2" />Audit log</CommandItem>
