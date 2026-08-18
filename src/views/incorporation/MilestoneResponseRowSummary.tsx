@@ -12,6 +12,8 @@ interface MilestoneResponseRowSummaryProps {
   variant?: 'admin' | 'client';
   /** Show "Add details" when empty (client portal) */
   showEmptyHint?: boolean;
+  /** Intern/lead: omit the Submitted chip; keep the response summary text. */
+  hideStatus?: boolean;
   className?: string;
 }
 
@@ -20,6 +22,7 @@ export function MilestoneResponseRowSummary({
   responses,
   variant = 'admin',
   showEmptyHint = false,
+  hideStatus = false,
   className,
 }: MilestoneResponseRowSummaryProps) {
   const isClient = variant === 'client';
@@ -43,7 +46,7 @@ export function MilestoneResponseRowSummary({
 
   return (
     <div className={cn('mt-1.5 flex min-w-0 flex-wrap items-center gap-2', className)}>
-      {isComplete && (
+      {isComplete && !hideStatus && (
         <span
           className={cn(
             'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',

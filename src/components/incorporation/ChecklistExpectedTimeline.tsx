@@ -48,17 +48,23 @@ export function StatusBadgeWithTimeline({
   className,
   badgeClassName,
   timelineClassName,
+  hideTimeline = false,
+  hideStatus = false,
 }: {
   status: StatusCode;
   item: ChecklistItem;
   className?: string;
   badgeClassName?: string;
   timelineClassName?: string;
+  hideTimeline?: boolean;
+  /** Intern/lead: omit StatusBadge (Completed / In progress / etc.). */
+  hideStatus?: boolean;
 }) {
+  if (hideStatus && hideTimeline) return null;
   return (
     <span className={cn('inline-flex shrink-0 items-center gap-1', className)}>
-      <StatusBadge status={status} className={badgeClassName} />
-      <ChecklistInlineTimeline item={item} className={timelineClassName} />
+      {!hideStatus && <StatusBadge status={status} className={badgeClassName} />}
+      {!hideTimeline && <ChecklistInlineTimeline item={item} className={timelineClassName} />}
     </span>
   );
 }
@@ -69,17 +75,23 @@ export function StatusPillWithTimeline({
   className,
   pillClassName,
   timelineClassName,
+  hideTimeline = false,
+  hideStatus = false,
 }: {
   status: StatusCode;
   item: ChecklistItem;
   className?: string;
   pillClassName?: string;
   timelineClassName?: string;
+  hideTimeline?: boolean;
+  /** Intern/lead: omit StatusPill (Completed / In progress / etc.). */
+  hideStatus?: boolean;
 }) {
+  if (hideStatus && hideTimeline) return null;
   return (
     <span className={cn('inline-flex shrink-0 items-center gap-1.5', className)}>
-      <StatusPill status={status} className={pillClassName} />
-      <ChecklistInlineTimeline item={item} className={timelineClassName} />
+      {!hideStatus && <StatusPill status={status} className={pillClassName} />}
+      {!hideTimeline && <ChecklistInlineTimeline item={item} className={timelineClassName} />}
     </span>
   );
 }

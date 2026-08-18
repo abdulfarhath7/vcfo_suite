@@ -104,6 +104,11 @@ export function getChecklistStepTimelineLabel(item: ChecklistItem): string {
   return item.expectedTimeline ?? formatTimeline(item.deadline);
 }
 
+/** Playbook SLA duration copy intern UI must not show. */
+export function copyMentionsWorkingDaysSla(text: string): boolean {
+  return /\bworking days?\b/i.test(text);
+}
+
 export interface ChecklistPhaseGroup {
   id: string;
   title: string;

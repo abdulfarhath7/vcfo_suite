@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { CheckCircle2, Clock, FileText, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import type { ChecklistItem } from '@/data/checklist';
 import { getItem } from '@/data/checklist';
@@ -15,7 +16,7 @@ import {
 import { formatPre1DateDisplay } from '@/lib/checklist-pre1-validation';
 import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
 import { isDeliveredToClient } from '@/lib/checklist-state-key';
-import { clientBoardResolutionPath } from '@/lib/project-step-path';
+import { clientBoardResolutionPath, isInternEngagementPathname } from '@/lib/project-step-path';
 import {
   incorpDraftDocLinksFromResponses,
   incorpDraftDocSlotsFromResponses,
@@ -66,8 +67,9 @@ export function Phase1StepPanel({
   className,
 }: Phase1StepPanelProps) {
   const { user, getStateForEngagement } = useApp();
+  const pathname = usePathname();
   const isClient = variant === 'client';
-  const isIntern = user?.role === 'intern';
+  const isIntern = user?.role === 'intern' || isInternEngagementPathname(pathname);
   const brFetchKey = `${engagement?.id ?? ''}:${item.id}`;
   const brFetchScopeRef = useRef(brFetchKey);
   const [brStatus, setBrStatus] = useState<
