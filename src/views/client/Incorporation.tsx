@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { PageTransition } from "@/components/shell/PageTransition";
 import { SEO } from "@/components/SEO";
 import { ChecklistPhaseJourney } from "@/components/incorporation/ChecklistPhaseJourney";
+import { ClientBoardResolutionCard } from "@/components/client/ClientBoardResolutionCard";
 import { initialsFromName, type AuthUser } from "@/lib/auth";
 import type { Client } from "@/data/mockData";
 import type { Engagement } from "@/data/engagements";
@@ -124,6 +125,8 @@ export default function ClientIncorporation() {
           <ProgressRing value={Math.round((totalDone / totalSteps) * 100) || 0} size={52} />
         </div>
       </header>
+
+      <ClientBoardResolutionCard engagement={engagement} />
 
       <ChecklistPhaseJourney
         phases={phases}

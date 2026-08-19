@@ -453,14 +453,14 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                 type="button"
                 variant="success"
                 disabled={
-                  isFinalized ||
                   busy !== null ||
                   saveStatus === 'saving' ||
-                  saveStatus === 'pending'
+                  saveStatus === 'pending' ||
+                  (isFinalized && !hasDocx)
                 }
                 onClick={() => setFinalizeOpen(true)}
               >
-                Finalize for client
+                {isFinalized ? 'Send to client' : 'Finalize for client'}
               </Button>
 
             </div>

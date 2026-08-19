@@ -14,6 +14,18 @@ describe('diffChecklistForNotifications', () => {
     expect(items[0]?.kind).toBe('checklist.deliver');
   });
 
+  it('points board-resolution delivery at the client BR page', () => {
+    const items = diffChecklistForNotifications(
+      { 'pre-2': { status: 'in-progress' } },
+      { 'pre-2': { status: 'completed', deliveredToClientAt: '2026-06-01T00:00:00.000Z' } },
+      { engagement, viewerRole: 'client', viewerUserId: 'client-1' },
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0]?.title).toBe('Board resolution ready');
+    expect(items[0]?.body).toMatch(/download and sign/i);
+    expect(items[0]?.href).toBe('/app/client/board-resolution');
+  });
+
   it('notifies intern on client submit', () => {
     const items = diffChecklistForNotifications(
       { 'pre-1': { status: 'in-progress' } },

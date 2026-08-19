@@ -391,13 +391,15 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
           <AlertDialogHeader>
 
-            <AlertDialogTitle>Finalize board resolution?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isFinalized ? 'Send board resolution to client?' : 'Finalize board resolution?'}
+            </AlertDialogTitle>
 
             <AlertDialogDescription>
 
-              The client will only receive the generated Word document. You will not be able to edit
-
-              this record after finalization.
+              {isFinalized
+                ? 'This opens an email to the client from your linked Outlook mailbox. They can download the Word file, sign it, and upload the signed copy.'
+                : 'The client will receive the generated Word document to download, sign, and re-upload. You will not be able to edit this record after finalization.'}
 
             </AlertDialogDescription>
 
@@ -416,7 +418,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
               }}
             >
 
-              {busy === 'finalize' ? 'Finalizing…' : 'Finalize'}
+              {busy === 'finalize' ? 'Finalizing…' : isFinalized ? 'Send to client' : 'Finalize'}
 
             </AlertDialogAction>
 

@@ -15,7 +15,8 @@ export type ProgressEmailKind =
   | 'review_rejected'
   | 'delivered'
   | 'unlocked'
-  | 'docs_shared';
+  | 'docs_shared'
+  | 'board_resolution_shared';
 
 export type ProgressEmailCopy = {
   subject: string;
@@ -276,6 +277,39 @@ export function buildProgressEmail(input: {
         'Action required',
       ),
       text: `Fields on “${step}” were unlocked so you can update and resubmit.\n\nOpen: ${href}`,
+    };
+  }
+
+  if (input.kind === 'board_resolution_shared') {
+    if (input.audience === 'lead') {
+      return {
+        subject: `${company}: board resolution sent to client`,
+        html: wrap(
+          'Board resolution sent to client',
+          emailParagraph(
+            `The certified board resolution for <strong>${escapeHtml(company)}</strong> was released to the client.`,
+          ),
+          'Open workspace',
+          href,
+        ),
+        text: `The board resolution for ${company} was released to the client.\n\nOpen: ${href}`,
+      };
+    }
+    return {
+      subject: `${company}: board resolution is ready to download and sign`,
+      html: wrap(
+        'Board resolution ready',
+        emailParagraph(
+          'The certified board resolution is ready on your portal.',
+        ) +
+          emailParagraph(
+            'Download the Word document, sign it on company letterhead, then scan and upload the signed copy.',
+          ),
+        'Open board resolution',
+        href,
+        'Action required',
+      ),
+      text: `The board resolution is ready to download and sign.\n\nOpen: ${href}`,
     };
   }
 

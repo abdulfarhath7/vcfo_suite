@@ -4,6 +4,8 @@ import type { EngagementChecklistState } from '@/lib/engagements-db';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import {
   adminProjectStepPath,
+  clientBoardResolutionPath,
+  internBoardResolutionPath,
   internEngagementStepPath,
 } from '@/lib/project-step-path';
 import type { Engagement } from '@/data/engagements';
@@ -58,13 +60,14 @@ function notificationHref(
   kind: NotificationKind,
 ): string {
   if (role === 'client') {
-    if (kind === 'docs.share') return '/app/client/incorporation';
+    if (itemId === 'pre-2' || itemId === 'pre-3') return clientBoardResolutionPath();
     return '/app/client/incorporation';
   }
   if (role === 'intern') {
     if (kind === 'request.uploaded' || kind === 'request.created') {
       return '/app/intern/requests';
     }
+    if (itemId === 'pre-2' || itemId === 'pre-3') return internBoardResolutionPath(engagement);
     return internEngagementStepPath(engagement, itemId);
   }
   return adminProjectStepPath(engagement, itemId, role);
@@ -109,10 +112,13 @@ export function diffChecklistForNotifications(
       !prevItem?.deliveredToClientAt?.trim() &&
       nextItem.deliveredToClientAt?.trim()
     ) {
+      const isBoardResolution = itemId === 'pre-2';
       out.push({
         kind: 'checklist.deliver',
-        title: 'New from your VCFO team',
-        body: `${title} is ready on your portal.`,
+        title: isBoardResolution ? 'Board resolution ready' : 'New from your VCFO team',
+        body: isBoardResolution
+          ? 'The board resolution is ready to download and sign.'
+          : `${title} is ready on your portal.`,
         engagementId,
         companyName,
         itemId,

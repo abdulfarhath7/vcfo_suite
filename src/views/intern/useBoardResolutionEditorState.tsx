@@ -780,6 +780,8 @@ export function useBoardResolutionEditorState(props: Record<string, unknown>) {
 
     try {
 
+      if (!isFinalized) {
+
       const flushedDoc = await flushPendingAutosave();
 
       let nextDoc = flushedDoc ?? doc;
@@ -822,6 +824,8 @@ export function useBoardResolutionEditorState(props: Record<string, unknown>) {
 
       }
 
+      }
+
       const saved = await finalizeBoardResolutionInDb(eng.id);
 
       setDoc(saved);
@@ -834,9 +838,9 @@ export function useBoardResolutionEditorState(props: Record<string, unknown>) {
 
       toastSuccess(
 
-        'Board resolution finalized',
+        isFinalized ? 'Ready to email the client' : 'Board resolution finalized',
 
-        'The client can now view this document in their portal.',
+        'Compose and send from your Outlook mailbox so the client can download and sign.',
 
       );
 
@@ -867,6 +871,7 @@ export function useBoardResolutionEditorState(props: Record<string, unknown>) {
     reloadPreviewFromDoc,
     refreshEngagementChecklist,
     setGenerateError,
+    isFinalized,
   ]);
 
   return {

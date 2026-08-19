@@ -25,4 +25,17 @@ describe('buildProgressEmail', () => {
     });
     expect(copy.subject).toContain('client submitted');
   });
+
+  it('writes board-resolution download-and-sign copy for the client', () => {
+    const copy = buildProgressEmail({
+      kind: 'board_resolution_shared',
+      companyName: 'Acme Pvt Ltd',
+      itemId: 'pre-2',
+      portalHref: '/app/client/board-resolution',
+      audience: 'client',
+    });
+    expect(copy.subject).toMatch(/download and sign/i);
+    expect(copy.text).toMatch(/download and sign/i);
+    expect(copy.html).toContain('Open board resolution');
+  });
 });

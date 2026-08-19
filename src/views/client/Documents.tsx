@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
 import { EmptyStateIllustrated, Surface, Eyebrow } from '@/components/noir';
+import { ClientBoardResolutionCard } from '@/components/client/ClientBoardResolutionCard';
 import { collectVaultDocuments, groupVaultDocuments } from '@/lib/vault-documents';
 import { findEngagementForClientUser } from '@/lib/checklist-state-key';
 import { FileCheck2, FileText, FolderOpen } from 'lucide-react';
@@ -62,6 +63,8 @@ export default function ClientDocuments() {
         title="Documents"
         subtitle={`${milestoneDocs.length} milestone upload${milestoneDocs.length === 1 ? '' : 's'}${uploadedLegacy.length ? ` · ${uploadedLegacy.length} request${uploadedLegacy.length === 1 ? '' : 's'} on file` : ''}${pendingLegacy.length ? ` · ${pendingLegacy.length} still needed` : ''}`}
       />
+
+      <ClientBoardResolutionCard engagement={engagement} />
 
       {entity ? (
         <Stagger>

@@ -88,9 +88,13 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     const updated = await setSignedBoardResolution(auth.ctx, engagementParam, storagePath);
-    await patchChecklistItem(auth.ctx, engagementParam, 'pre-3', {
-      responses: { signedBoardResolutionUrl: storagePath },
-    });
+    try {
+      await patchChecklistItem(auth.ctx, engagementParam, 'pre-3', {
+        responses: { signedBoardResolutionUrl: storagePath },
+      });
+    } catch (err) {
+      console.error('[board-resolution] could not attach signed copy to pre-3', err);
+    }
     return NextResponse.json({
       ok: true,
       path: storagePath,

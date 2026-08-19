@@ -197,9 +197,9 @@ async function boardResolutionMutation(
   init: RequestInit,
   fallback: string,
 ): Promise<BoardResolutionDoc> {
-  let payload: { boardResolution?: unknown };
+  let payload: { boardResolution?: unknown; email?: EmailDispatchResult };
   try {
-    payload = await apiFetch<{ boardResolution?: unknown }>(path, {
+    payload = await apiFetch<{ boardResolution?: unknown; email?: EmailDispatchResult }>(path, {
       ...init,
       fallbackError: fallback,
     });
@@ -210,6 +210,7 @@ async function boardResolutionMutation(
     throw err;
   }
 
+  toastEmailDispatch(payload.email);
   const doc = parseBoardResolutionRpcPayload(payload.boardResolution);
   if (!doc) throw new BoardResolutionSaveError(fallback);
   return doc;
