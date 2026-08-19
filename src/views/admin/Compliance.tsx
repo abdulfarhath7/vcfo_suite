@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import { m } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
@@ -30,7 +31,9 @@ const riskMap = {
 };
 
 export default function Compliance() {
-  const { engagements, teamMembers, getStateForEngagement } = useApp();
+  const { user, engagements, teamMembers, getStateForEngagement } = useApp();
+  const pathname = usePathname();
+  const isInternView = user?.role === 'intern' || pathname.startsWith('/app/intern/');
   const allFilings = useComplianceFilings(engagements, getStateForEngagement);
   const [tab, setTab] = useState<'statutory' | 'tracker'>('statutory');
   const [filter, setFilter] = useState<'all' | ComplianceFiling['status']>('all');
@@ -62,14 +65,18 @@ export default function Compliance() {
     <PageTransition>
       <SEO title="Compliance calendar — VCFO Suite" description="Recurring statutory filings — GST, TDS, ROC, PF, RBI — across your GCC portfolio." path="/app/manager/compliance" />
 
-      <PageHeader accent="emerald" icon={CalendarCheck2} title="Compliance calendar" />
+      {!isInternView && (
+        <>
+          <PageHeader accent="emerald" icon={CalendarCheck2} title="Compliance calendar" />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <AccentKpi tone="violet" icon={Calendar}      label="Active filings"  value={allFilings.length} hint="Recurring obligations" />
-        <AccentKpi tone="sky"     icon={Clock}         label="Due in 30 days"       value={upcoming} hint="Schedule ahead" />
-        <AccentKpi tone="amber"   icon={CheckCircle2}  label="In preparation"    value={inProgress} hint="Work in progress" />
-        <AccentKpi tone="emerald" icon={AlertTriangle} label="Past due"        value={overdue} hint={overdue ? 'Review immediately' : 'Nothing overdue'} />
-      </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <AccentKpi tone="violet" icon={Calendar}      label="Active filings"  value={allFilings.length} hint="Recurring obligations" />
+            <AccentKpi tone="sky"     icon={Clock}         label="Due in 30 days"       value={upcoming} hint="Schedule ahead" />
+            <AccentKpi tone="amber"   icon={CheckCircle2}  label="In preparation"    value={inProgress} hint="Work in progress" />
+            <AccentKpi tone="emerald" icon={AlertTriangle} label="Past due"        value={overdue} hint={overdue ? 'Review immediately' : 'Nothing overdue'} />
+          </div>
+        </>
+      )}
 
       {/* Statutory reference calendar vs per-client filing tracker */}
       <div className="mb-4 inline-flex rounded-lg border border-border bg-panel p-0.5">
