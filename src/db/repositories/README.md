@@ -46,10 +46,13 @@ clients (`shared_with_client = true` only). Notifications stay per-user
 `outlook_connections` is the signed-in staff user's own Microsoft mailbox
 (Graph Mail.Send); clients have no access. `email-directory` lists Outlook
 compose recipients from the same engagement scope (+ intern reports-to).
+`email_templates` is firm-scoped compose library (SBC branded vs plain):
+staff list/create; admin/manager mutate any; intern mutate own; client none.
 
 Implemented: `engagements`, `knowledge-bank`, `profiles`, `audit-events`,
 `board-resolution`, `compliance`, `documents`, `tasks`, `document-requests`,
-`invites`, `activity`, `notifications`, `outlook-connections`, `email-directory`.
+`invites`, `activity`, `notifications`, `outlook-connections`, `email-directory`,
+`email-templates`.
 
 System jobs (Inngest): `systemGenerateComplianceInstances` /
 `runComplianceGenerate` in `compliance.ts` may touch `db` without AuthContext.

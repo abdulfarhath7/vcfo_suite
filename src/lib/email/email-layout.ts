@@ -11,6 +11,27 @@ export function escapeHtml(value: string): string {
     .replaceAll('"', '&quot;');
 }
 
+export type EmailDocumentBrand = 'vcfo' | 'sbc';
+
+const DOCUMENT_BRAND: Record<
+  EmailDocumentBrand,
+  { mark: string; tagline: string; footerDefault: string; copyright: string }
+> = {
+  vcfo: {
+    mark: 'VCFO Suite',
+    tagline: 'Compliance · Incorporation · Client portal',
+    footerDefault:
+      'This is an automated message from VCFO Suite. Please do not reply to this address unless a Reply-To is set.',
+    copyright: 'VCFO Suite',
+  },
+  sbc: {
+    mark: 'SBC',
+    tagline: 'Company secretarial · Incorporation · Compliance',
+    footerDefault: 'This message was sent by SBC.',
+    copyright: 'SBC',
+  },
+};
+
 export type EmailLayoutInput = {
   /** Main headline inside the card */
   title: string;
@@ -23,6 +44,8 @@ export type EmailLayoutInput = {
   footerNote?: string;
   /** Who to contact / signature block (HTML) */
   signatureHtml?: string;
+  /** Letterhead. Default `vcfo` keeps transactional mail unchanged. */
+  brand?: EmailDocumentBrand;
 };
 
 /**
@@ -30,6 +53,7 @@ export type EmailLayoutInput = {
  * slate header, white card, blue CTA (matches product UI).
  */
 export function renderEmailDocument(input: EmailLayoutInput): string {
+  const brand = DOCUMENT_BRAND[input.brand ?? 'vcfo'];
   const eyebrow = input.eyebrow
     ? `<p style="margin:0 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#64748B;font-weight:600;">${escapeHtml(input.eyebrow)}</p>`
     : '';
@@ -44,9 +68,7 @@ export function renderEmailDocument(input: EmailLayoutInput): string {
   const signature = input.signatureHtml
     ? `<div style="margin-top:28px;padding-top:20px;border-top:1px solid #E2E8F0;">${input.signatureHtml}</div>`
     : '';
-  const footer =
-    input.footerNote ??
-    'This is an automated message from VCFO Suite. Please do not reply to this address unless a Reply-To is set.';
+  const footer = input.footerNote ?? brand.footerDefault;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -63,10 +85,10 @@ export function renderEmailDocument(input: EmailLayoutInput): string {
           <tr>
             <td style="padding:22px 32px;background:#0F172A;">
               <p style="margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#93C5FD;font-weight:700;">
-                VCFO Suite
+                ${escapeHtml(brand.mark)}
               </p>
               <p style="margin:6px 0 0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:13px;color:#94A3B8;">
-                Compliance · Incorporation · Client portal
+                ${escapeHtml(brand.tagline)}
               </p>
             </td>
           </tr>
@@ -90,7 +112,7 @@ export function renderEmailDocument(input: EmailLayoutInput): string {
           </tr>
         </table>
         <p style="margin:16px 0 0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:11px;color:#94A3B8;">
-          © ${new Date().getFullYear()} VCFO Suite
+          © ${new Date().getFullYear()} ${escapeHtml(brand.copyright)}
         </p>
       </td>
     </tr>

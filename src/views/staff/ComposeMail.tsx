@@ -2,50 +2,27 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, Mail, Search } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
+import { ComposeRecipientPicker } from '@/components/email/ComposeRecipientPicker';
+import { ComposeTemplatePanel } from '@/components/email/ComposeTemplatePanel';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { Surface } from '@/components/noir';
 import { AccentButton } from '@/components/noir/AccentButton';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useApp } from '@/context/AppContext';
-import { ROLE_UI_LABEL, type Role } from '@/lib/auth';
 import { roleSettingsPath } from '@/lib/auth-routes';
-import {
-  directoryKindLabel,
-  directoryRoleLabel,
-  filterDirectoryPeople,
-  uniqueDirectoryProjects,
-  type DirectoryKindFilter,
-  type DirectoryPerson,
-  type DirectoryRoleFilter,
-} from '@/lib/email/directory-filter';
+import { emailBrandingLabel, type EmailTemplateDto } from '@/lib/email/compose-branding';
+import type { DirectoryPerson } from '@/lib/email/directory-filter';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
-import { cn } from '@/lib/utils';
 
 type Props = {
   path: string;
 };
-
-const ROLE_FILTERS: DirectoryRoleFilter[] = [
-  'all',
-  'admin',
-  'manager',
-  'intern',
-  'client',
-];
 
 export default function ComposeMail({ path }: Props) {
   const { user } = useApp();
@@ -58,15 +35,11 @@ export default function ComposeMail({ path }: Props) {
   const [msEmail, setMsEmail] = useState<string | undefined>();
   const [loadingStatus, setLoadingStatus] = useState(true);
 
-  const [query, setQuery] = useState('');
-  const [kind, setKind] = useState<DirectoryKindFilter>('all');
-  const [role, setRole] = useState<DirectoryRoleFilter>('all');
-  const [projectId, setProjectId] = useState('all');
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
+  const [appliedTemplate, setAppliedTemplate] = useState<EmailTemplateDto | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,11 +87,6 @@ export default function ComposeMail({ path }: Props) {
     };
   }, []);
 
-  const projects = useMemo(() => uniqueDirectoryProjects(people), [people]);
-  const visible = useMemo(
-    () => filterDirectoryPeople(people, { query, kind, role, projectId }),
-    [people, query, kind, role, projectId],
-  );
   const selectedPeople = useMemo(
     () => people.filter((p) => selected.has(p.userId)),
     [people, selected],
@@ -133,10 +101,16 @@ export default function ComposeMail({ path }: Props) {
     });
   }
 
+  function applyTemplate(template: EmailTemplateDto) {
+    setAppliedTemplate(template);
+    setSubject(template.subject);
+    setBody(template.bodyText);
+  }
+
   async function send() {
     const to = selectedPeople.map((p) => p.email);
     if (to.length === 0) {
-      toastError('Pick a recipient', 'Select at least one person from the list.');
+      toastError('Pick a recipient', 'Select at least one person in To.');
       return;
     }
     if (!subject.trim()) {
@@ -156,6 +130,8 @@ export default function ComposeMail({ path }: Props) {
           to,
           subject: subject.trim(),
           text: body,
+          branding: appliedTemplate?.branding ?? 'plain',
+          templateId: appliedTemplate?.id,
         }),
       });
       const json = (await res.json()) as { ok?: boolean; error?: string; from?: string };
@@ -170,6 +146,7 @@ export default function ComposeMail({ path }: Props) {
       setSubject('');
       setBody('');
       setSelected(new Set());
+      setAppliedTemplate(null);
     } catch (err) {
       toastError("Email didn't send", errorMessage(err));
     } finally {
@@ -190,10 +167,10 @@ export default function ComposeMail({ path }: Props) {
         icon={Mail}
         eyebrow="Outlook"
         title="Send email"
-        subtitle="From your linked mailbox to firm people or clients on your projects."
+        subtitle="From your linked mailbox. Add people in To, and apply an SBC template on the right."
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
         <Surface className="p-5 sm:p-6">
           <div className="space-y-1">
             <Label htmlFor="mail-from">From</Label>
@@ -221,26 +198,21 @@ export default function ComposeMail({ path }: Props) {
             ) : null}
           </div>
 
-          <div className="mt-4 space-y-1">
-            <Label>To</Label>
-            {selectedPeople.length === 0 ? (
-              <p className="text-[13px] text-muted-foreground">Nobody selected — use the filters on the right.</p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {selectedPeople.map((person) => (
-                  <button
-                    key={person.userId}
-                    type="button"
-                    onClick={() => toggle(person.userId)}
-                    className="rounded-md border border-border bg-muted/40 px-2 py-1 text-[12px] text-foreground hover:border-primary/40"
-                    title="Remove"
-                  >
-                    {person.name}
-                    <span className="ml-1 font-mono text-[11px] text-muted-foreground">{person.email}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="mt-4">
+            <ComposeRecipientPicker
+              people={people}
+              loading={loadingPeople}
+              selected={selected}
+              onToggle={toggle}
+              onApplyAutoFill={(removeIds, addIds) => {
+                setSelected((prev) => {
+                  const next = new Set(prev);
+                  for (const id of removeIds) next.delete(id);
+                  for (const id of addIds) next.add(id);
+                  return next;
+                });
+              }}
+            />
           </div>
 
           <div className="mt-4 space-y-1">
@@ -252,6 +224,20 @@ export default function ComposeMail({ path }: Props) {
               maxLength={500}
               placeholder="Subject"
             />
+            {appliedTemplate ? (
+              <p className="flex flex-wrap items-center gap-2 pt-1 text-[12.5px] text-muted-foreground">
+                Using {appliedTemplate.name} ({emailBrandingLabel(appliedTemplate.branding)})
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-1 py-0 text-[12.5px]"
+                  onClick={() => setAppliedTemplate(null)}
+                >
+                  Write without a template
+                </Button>
+              </p>
+            ) : null}
           </div>
 
           <div className="mt-4 space-y-1">
@@ -285,126 +271,11 @@ export default function ComposeMail({ path }: Props) {
         </Surface>
 
         <Surface className="p-5 sm:p-6">
-          <h2 className="font-serif text-xl tracking-tight">People</h2>
-          <p className="mt-1 text-[12.5px] text-muted-foreground">
-            Firm = SBC staff. Client = people on your projects.
-          </p>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="relative sm:col-span-2">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search name, email, company"
-                className="pl-9"
-              />
-            </div>
-            <div>
-              <Label className="text-[12px] text-muted-foreground">Who</Label>
-              <Select value={kind} onValueChange={(v) => setKind(v as DirectoryKindFilter)}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="firm">Firm (SBC)</SelectItem>
-                  <SelectItem value="client">Client</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[12px] text-muted-foreground">Role</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as DirectoryRoleFilter)}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_FILTERS.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value === 'all' ? 'All roles' : directoryRoleLabel(value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="sm:col-span-2">
-              <Label className="text-[12px] text-muted-foreground">Project</Label>
-              <Select value={projectId} onValueChange={setProjectId}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All projects</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.companyName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="mt-4 max-h-[28rem] space-y-1 overflow-y-auto pr-1">
-            {loadingPeople ? (
-              <p className="text-[13px] text-muted-foreground">Loading people…</p>
-            ) : visible.length === 0 ? (
-              <p className="text-[13px] text-muted-foreground">No one matches these filters.</p>
-            ) : (
-              visible.map((person) => {
-                const checked = selected.has(person.userId);
-                return (
-                  <label
-                    key={person.userId}
-                    className={cn(
-                      'flex cursor-pointer items-start gap-2.5 rounded-lg border border-transparent px-2 py-2 hover:bg-muted/40',
-                      checked && 'border-primary/25 bg-primary-light/40',
-                    )}
-                  >
-                    <Checkbox
-                      className="mt-0.5"
-                      checked={checked}
-                      onCheckedChange={() => toggle(person.userId)}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-medium text-foreground">
-                        {person.name}
-                      </span>
-                      <span className="block truncate font-mono text-[11px] text-muted-foreground">
-                        {person.email}
-                      </span>
-                      <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                        {directoryKindLabel(person.kind)} · {ROLE_UI_LABEL[person.role as Role]}
-                        {person.projects.length > 0
-                          ? ` · ${person.projects.map((p) => p.companyName).join(', ')}`
-                          : ''}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })
-            )}
-          </div>
-
-          {visible.length > 0 ? (
-            <div className="mt-3 flex justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelected((prev) => {
-                    const next = new Set(prev);
-                    for (const person of visible) next.add(person.userId);
-                    return next;
-                  });
-                }}
-              >
-                Select visible
-              </Button>
-            </div>
-          ) : null}
+          <ComposeTemplatePanel
+            selectedId={appliedTemplate?.id ?? null}
+            onApply={applyTemplate}
+            onClear={() => setAppliedTemplate(null)}
+          />
         </Surface>
       </div>
     </PageTransition>

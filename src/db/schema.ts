@@ -372,6 +372,8 @@ export const emailTemplates = pgTable('email_templates', {
   bodyText: text('body_text'),
   // firm_default | assigned_manager
   fromIdentity: text('from_identity').notNull().default('firm_default'),
+  /** Compose / outbound wrap: `sbc` (firm letterhead) or `plain`. */
+  branding: text('branding').notNull().default('sbc'),
   isActive: boolean('is_active').notNull().default(true),
   createdBy: uuid('created_by')
     .notNull()

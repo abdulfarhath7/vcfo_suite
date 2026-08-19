@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { eq, inArray, or } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { engagementClients, engagementLeads, engagementManagers, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -28,17 +28,20 @@ function projectRef(row: { id: string; slug: string; companyName: string }): Dir
 
 type Bucket = {
   projects: Map<string, DirectoryProject>;
+  primaryProjectIds: Set<string>;
 };
 
 function addToBucket(
   buckets: Map<string, Bucket>,
   userId: string | null | undefined,
   project: DirectoryProject | null,
+  opts?: { primary?: boolean },
 ) {
   const id = userId?.trim();
   if (!id) return;
-  const existing = buckets.get(id) ?? { projects: new Map() };
+  const existing = buckets.get(id) ?? { projects: new Map(), primaryProjectIds: new Set() };
   if (project) existing.projects.set(project.id, project);
+  if (opts?.primary && project) existing.primaryProjectIds.add(project.id);
   buckets.set(id, existing);
 }
 
@@ -53,6 +56,7 @@ async function profilesByIds(ids: string[]) {
       role: profiles.role,
       internId: profiles.internId,
       status: profiles.status,
+      reportsToManagerId: profiles.reportsToManagerId,
     })
     .from(profiles)
     .where(inArray(profiles.id, unique));
@@ -74,6 +78,7 @@ async function profilesByInternKeys(keys: string[]) {
       role: profiles.role,
       internId: profiles.internId,
       status: profiles.status,
+      reportsToManagerId: profiles.reportsToManagerId,
     })
     .from(profiles)
     .where(match);
@@ -99,7 +104,7 @@ export async function listEmailDirectory(ctx: AuthContext): Promise<DirectoryPer
 
   for (const row of rows) {
     const project = projectRef(row);
-    addToBucket(buckets, row.clientUserId, project);
+    addToBucket(buckets, row.clientUserId, project, { primary: true });
     addToBucket(buckets, row.managerId, project);
     addToBucket(buckets, row.adminId, project);
     addInternKey(row.internId, project);
@@ -112,6 +117,7 @@ export async function listEmailDirectory(ctx: AuthContext): Promise<DirectoryPer
         .select({
           engagementId: engagementClients.engagementId,
           userId: engagementClients.userId,
+          memberRole: engagementClients.memberRole,
         })
         .from(engagementClients)
         .where(inArray(engagementClients.engagementId, dbIds)),
@@ -134,7 +140,10 @@ export async function listEmailDirectory(ctx: AuthContext): Promise<DirectoryPer
     const projectByDbId = new Map(rows.map((r) => [r.id, projectRef(r)]));
 
     for (const member of clientRows) {
-      addToBucket(buckets, member.userId, projectByDbId.get(member.engagementId) ?? null);
+      const project = projectByDbId.get(member.engagementId) ?? null;
+      addToBucket(buckets, member.userId, project, {
+        primary: member.memberRole === 'owner',
+      });
     }
     for (const lead of leadRows) {
       const project = projectByDbId.get(lead.engagementId);
@@ -164,23 +173,65 @@ export async function listEmailDirectory(ctx: AuthContext): Promise<DirectoryPer
     }
   }
 
+  const clientScopeKeys = [
+    ...new Set(rows.map((r) => r.clientId?.trim()).filter((k): k is string => Boolean(k))),
+  ];
+  if (clientScopeKeys.length > 0) {
+    const clientByScope = await db
+      .select({
+        id: profiles.id,
+        clientId: profiles.clientId,
+      })
+      .from(profiles)
+      .where(and(eq(profiles.role, 'client'), inArray(profiles.clientId, clientScopeKeys)));
+    for (const profile of clientByScope) {
+      const key = profile.clientId?.trim();
+      if (!key) continue;
+      for (const row of rows) {
+        if (row.clientId?.trim() !== key) continue;
+        const project = projectRef(row);
+        addToBucket(buckets, profile.id, project, {
+          primary: !row.clientUserId || row.clientUserId === profile.id,
+        });
+      }
+    }
+  }
+
   const profileRows = await profilesByIds([...buckets.keys()]);
   const byId = new Map(profileRows.map((p) => [p.id, p]));
+
+  const missingManagerIds = [
+    ...new Set(
+      profileRows
+        .map((p) => p.reportsToManagerId)
+        .filter((id): id is string => Boolean(id && !byId.has(id))),
+    ),
+  ];
+  for (const row of await profilesByIds(missingManagerIds)) {
+    byId.set(row.id, row);
+  }
 
   const people: DirectoryPerson[] = [];
   for (const [userId, bucket] of buckets) {
     if (userId === ctx.userId) continue;
     const row = byId.get(userId);
     const email = row?.email?.trim();
-    if (!row || !email || row.status !== 'active') continue;
+    if (!row || !email) continue;
     const role = row.role as Role;
+    const manager = row.reportsToManagerId ? byId.get(row.reportsToManagerId) : undefined;
     people.push({
       userId: row.id,
       name: row.name?.trim() || email,
       email,
       role,
       kind: kindForRole(role),
-      projects: [...bucket.projects.values()].sort((a, b) => a.companyName.localeCompare(b.companyName)),
+      status: row.status === 'inactive' ? 'inactive' : 'active',
+      reportsToManagerId: row.reportsToManagerId ?? null,
+      managerName: manager ? manager.name?.trim() || manager.email : null,
+      projects: [...bucket.projects.values()].sort((a, b) =>
+        a.companyName.localeCompare(b.companyName),
+      ),
+      primaryForProjectIds: [...bucket.primaryProjectIds],
     });
   }
 

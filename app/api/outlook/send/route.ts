@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { sendMailViaOutlook } from '@/db/repositories/outlook-connections';
-import { escapeHtml } from '@/lib/email/email-layout';
+import { getEmailTemplate } from '@/db/repositories/email-templates';
+import { wrapComposeBodyHtml, type EmailBranding } from '@/lib/email/compose-branding';
 
 const bodySchema = z.object({
   to: z.union([z.string().email(), z.array(z.string().email()).min(1)]),
@@ -11,12 +12,9 @@ const bodySchema = z.object({
   subject: z.string().trim().min(1).max(500),
   text: z.string().max(20000).optional(),
   html: z.string().max(50000).optional(),
+  branding: z.enum(['sbc', 'plain']).optional(),
+  templateId: z.string().uuid().optional(),
 });
-
-function htmlFromText(text: string): string {
-  const escaped = escapeHtml(text).replace(/\n/g, '<br />');
-  return `<div style="font-family:sans-serif;font-size:14px;line-height:1.5">${escaped}</div>`;
-}
 
 /** POST /api/outlook/send — Graph Mail.Send from the linked mailbox. */
 export async function POST(request: Request) {
@@ -34,7 +32,23 @@ export async function POST(request: Request) {
   const ccRaw = body.data.cc;
   const cc = ccRaw ? (Array.isArray(ccRaw) ? ccRaw : [ccRaw]) : [];
   const text = body.data.text?.trim() ?? '';
-  const html = body.data.html?.trim() || (text ? htmlFromText(text) : '');
+  let branding: EmailBranding = body.data.branding ?? 'plain';
+  if (body.data.templateId) {
+    try {
+      const template = await getEmailTemplate(guard.ctx, body.data.templateId);
+      if (!template) {
+        return NextResponse.json({ error: 'template_not_found' }, { status: 400 });
+      }
+      branding = template.branding;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'template_failed';
+      const status = message.includes('not permitted') ? 403 : 400;
+      return NextResponse.json({ error: message }, { status });
+    }
+  }
+  const html =
+    body.data.html?.trim() ||
+    (text ? wrapComposeBodyHtml(text, branding, body.data.subject) : '');
   if (!html) {
     return NextResponse.json({ error: 'body_required' }, { status: 400 });
   }
