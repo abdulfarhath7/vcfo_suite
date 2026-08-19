@@ -62,6 +62,7 @@ import {
 import {
   canClientResubmit,
   getClientReviewBanner,
+  internLeadManagerRequestPatch,
   isReviewAccepted,
 } from '@/lib/checklist-item-review';
 import {
@@ -104,8 +105,8 @@ import {
 import { IncorporationDraftDocLink } from '@/components/incorporation/IncorporationDraftDocLink';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 import { internEngagementPath, internEngagementStepPath } from '@/lib/project-step-path';
-import { internFormNextLabel, internFormNextTarget } from '@/lib/intern-overview-progress';
-import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internNamedSectionGroups, runStepValidation, computeMilestoneDraftFromSaved, mergeSavedFileFieldsIntoDraft, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
+import { internFormNextTarget } from '@/lib/intern-overview-progress';
+import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, mergeSavedFileFieldsIntoDraft, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { FormErrorSummary, Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 
 const COMPLIANCE_TRIGGER_ITEMS = new Set(['pre-12', 'reg-1', 'reg-2', 'reg-3', 'reg-4']);
@@ -259,7 +260,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const [fieldWarnings, setFieldWarnings] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [delivering, setDelivering] = useState(false);
-  const [peakEndMoment, setPeakEndMoment] = useState<'submit' | 'deliver' | null>(null);
+  const [peakEndMoment, setPeakEndMoment] = useState<'submit' | null>(null);
 
   const isClient = variant === 'client';
   const submissionLocked = isClientSubmissionLocked(itemState);
@@ -338,7 +339,12 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       return user.clientId != null && user.clientId === clientId;
     })();
 
-  const autoSaveEnabled = variant === 'client' && !formReadOnly && canEdit;
+  const internWorkspace = Boolean(sectionTabs);
+  const internActor = user?.role === 'intern';
+  const autoSaveEnabled =
+    !formReadOnly &&
+    canEdit &&
+    (variant === 'client' || (internWorkspace && internActor));
   const scopeId = engagement ? checklistStateKeyForEngagement(engagement) : clientId;
 
   const flushPendingAutoSave = useCallback(() => {
@@ -448,27 +454,29 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
       clearDebounce();
 
-      const partial = getChangedPartial(fields, draftRef.current, savedRef.current);
-      const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
-      if (Object.keys(editablePartial).length === 0) {
-        if (autoSaveStatusRef.current !== 'error') setAutoSaveStatus('idle');
-        return;
-      }
-
-      if (immediate) {
-        void performSave(editablePartial);
-        return;
-      }
-
-      setAutoSaveStatus('pending');
-      debounceRef.current = setTimeout(() => {
-        debounceRef.current = null;
+      const runPersist = () => {
         const nextPartial = filterResponsesToEditableFields(
           itemState,
           getChangedPartial(fields, draftRef.current, savedRef.current),
           isClient,
         );
+        if (Object.keys(nextPartial).length === 0) {
+          if (autoSaveStatusRef.current !== 'error') setAutoSaveStatus('idle');
+          return;
+        }
         void performSave(nextPartial);
+      };
+
+      if (immediate) {
+        runPersist();
+        return;
+      }
+
+      // Always schedule: draftRef may still be stale until the post-commit effect.
+      setAutoSaveStatus('pending');
+      debounceRef.current = setTimeout(() => {
+        debounceRef.current = null;
+        runPersist();
       }, AUTO_SAVE_DEBOUNCE_MS);
     },
     [autoSaveEnabled, clearDebounce, fields, isClient, itemState, performSave],
@@ -563,16 +571,15 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     }
   }, [selectedSectionIndex, structuredSectionLabels.length]);
 
-  const internNextTarget = internFormNextTarget(
-    item.id,
+  const internFooterAction = internSectionFooterAction(
     selectedSectionIndex,
     internSectionNav ? internSectionGroups.length : 0,
   );
-  const internSectionNextLabel = internFormNextLabel(internNextTarget);
+  const internSectionNextLabel = internSectionFooterLabel(internFooterAction);
 
   const router = useRouter();
-  const handleInternSectionNext = useCallback(() => {
-    if (!sectionTabs) return;
+  const navigateInternAfterLastTab = useCallback(() => {
+    if (!engagement) return;
     const target = internFormNextTarget(
       item.id,
       selectedSectionIndex,
@@ -582,7 +589,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       setSelectedSectionIndex(target.index);
       return;
     }
-    if (!engagement) return;
     if (target.kind === 'step') {
       router.push(internEngagementStepPath(engagement, target.item));
       return;
@@ -594,6 +600,28 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     internSectionNav,
     item.id,
     router,
+    selectedSectionIndex,
+  ]);
+
+  const handleInternSectionNext = useCallback(() => {
+    if (!sectionTabs) return;
+    clearDebounce({ flush: true });
+    const target = internFormNextTarget(
+      item.id,
+      selectedSectionIndex,
+      internSectionNav ? internSectionGroups.length : 0,
+    );
+    if (target.kind === 'section') {
+      setSelectedSectionIndex(target.index);
+      return;
+    }
+    navigateInternAfterLastTab();
+  }, [
+    clearDebounce,
+    internSectionGroups.length,
+    internSectionNav,
+    item.id,
+    navigateInternAfterLastTab,
     sectionTabs,
     selectedSectionIndex,
   ]);
@@ -755,7 +783,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         return next;
       });
       clearDebounce();
-      void performSave({ [fieldId]: path });
+      await performSave({ [fieldId]: path });
       toastSuccess('Uploaded', file.name);
     } catch (err) {
       toastError('Upload failed', errorMessage(err, 'Could not upload file.'));
@@ -764,8 +792,42 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     }
   };
 
+  const waitForSaveIdle = async () => {
+    if (!saveInFlightRef.current) return;
+    await new Promise<void>((resolve) => {
+      const started = Date.now();
+      const tick = () => {
+        if (!saveInFlightRef.current || Date.now() - started > 8000) {
+          resolve();
+          return;
+        }
+        window.setTimeout(tick, 40);
+      };
+      window.setTimeout(tick, 40);
+    });
+  };
+
   const handleSaveNow = async () => {
     clearDebounce();
+
+    if (internWorkspace && autoSaveEnabled) {
+      const responsesToSave = isPre1 ? pre1Draft : draft;
+      const partial = getChangedPartial(fields, responsesToSave, saved);
+      const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+      if (Object.keys(editablePartial).length === 0 && autoSaveStatus !== 'error') return;
+      setSaving(true);
+      try {
+        await performSave(
+          Object.keys(editablePartial).length > 0
+            ? editablePartial
+            : getChangedPartial(fields, draftRef.current, savedRef.current),
+          { explicit: true },
+        );
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
 
     const { ok, errors, warnings } = runStepValidation(
       item.id,
@@ -821,6 +883,57 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleInternSubmit = async () => {
+    if (!internWorkspace) return;
+    clearDebounce();
+    pendingAfterFlightRef.current = null;
+    await waitForSaveIdle();
+
+    const { ok, errors, warnings } = runStepValidation(
+      item.id,
+      isPre1,
+      isPre6,
+      pre1Draft,
+      draft,
+      pre1Responses,
+      pre1SubmittedForPre6,
+    );
+    setFieldErrors(errors);
+    setFieldWarnings(warnings);
+    if (!ok) {
+      toastError(
+        'Please complete required fields',
+        'Fix the highlighted items before submitting.',
+      );
+      if (internSectionNav) {
+        const errorIndex = internSectionGroups.findIndex((group) =>
+          group.fields.some((field) => errors[field.id]),
+        );
+        if (errorIndex >= 0) setSelectedSectionIndex(errorIndex);
+      }
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const submitDraft = isPre1 ? pre1Draft : draft;
+      await updateItem(scopeId, item.id, {
+        responses: submitDraft,
+        ...internLeadManagerRequestPatch(itemState),
+      });
+      toastSuccess(
+        'Submitted for review',
+        'The manager can review this step in Approvals.',
+        { id: `intern-submit:${scopeId}:${item.id}` },
+      );
+      navigateInternAfterLastTab();
+    } catch (err) {
+      toastError('Could not submit', errorMessage(err, 'Try again or use Save to keep a draft.'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -900,13 +1013,13 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         deliveredToClientAt: new Date().toISOString(),
       });
       setDraft(deliveryDraft);
-      setPeakEndMoment('deliver');
       const wasDelivered = isDeliveredToClient(itemState);
       toastSuccess(
         wasDelivered ? 'Client portal updated' : 'Delivered to client',
         wasDelivered
           ? 'The client will see your latest answers in their portal.'
-          : 'The client can now view the document and details in their portal.',
+          : 'The client can now view this step in their portal.',
+        { id: `delivered-to-client:${scopeId}:${item.id}` },
       );
       if (item.id === 'pre-12' && deliveryDraft.dateOfIncorporation?.trim() && engagement) {
         const incDate = deliveryDraft.dateOfIncorporation.trim();
@@ -939,6 +1052,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const draftForSave = isPre1 ? pre1Draft : draft;
   const hasChanges = fields.some((f) => (draftForSave[f.id] ?? '') !== (saved[f.id] ?? ''));
   const showStaffSaveFooter = !formReadOnly && canEdit && !isClient;
+  const internAutoSave = internWorkspace && autoSaveEnabled;
+  const internAutoSaveStatusText = internAutoSave ? internAutoSaveHint(autoSaveStatus) : null;
+  const showInternSave = internAutoSave && internShowSaveButton(autoSaveStatus);
   const staffSaveStatusText = staffSaveStatusLabel(staffSaveStatus, hasChanges, saving);
 
   const fieldShellClass = (field: ChecklistField, stacked: string) =>
@@ -1394,15 +1510,19 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     extraFooterActions,
     handleDeliverToClient,
     handleInternSectionNext,
+    handleInternSubmit,
     handleRetryAutoSave,
     handleSaveNow,
     handleSubmit,
     hasChanges,
+    internAutoSave,
+    internAutoSaveStatusText,
+    internFooterAction,
+    internSectionNav,
+    internSectionNextLabel,
     isClient,
     isInternDeliveryStep,
     isPhase2StructuredStep,
-    internSectionNav,
-    internSectionNextLabel,
     isPre1,
     isPre6,
     item,
@@ -1420,6 +1540,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     selectedSectionIndex,
     setSelectedSectionIndex,
     showFieldUnlock,
+    showInternSave,
     showStaffSaveFooter,
     staffSaveStatus,
     staffSaveStatusText,

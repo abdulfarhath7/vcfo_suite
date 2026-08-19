@@ -31,7 +31,7 @@ export type MilestoneFormState = {
   fieldWarnings: Record<string, string>;
   submitting: boolean;
   delivering: boolean;
-  peakEndMoment: 'submit' | 'deliver' | null;
+  peakEndMoment: 'submit' | null;
   optimisticUnlock: Record<string, boolean>;
 };
 
@@ -63,6 +63,39 @@ export function staffSaveStatusLabel(
   if (status === 'error') return 'Save failed — try again';
   if (status === 'saved' && !hasChanges) return 'All changes saved';
   if (hasChanges) return 'Unsaved changes';
+  return null;
+}
+
+export type InternSectionFooterAction = 'next' | 'submit';
+
+/** Earlier intern section tabs: Next. Last tab (or no tabs): Submit. */
+export function internSectionFooterAction(
+  selectedSectionIndex: number,
+  sectionCount: number,
+): InternSectionFooterAction {
+  if (sectionCount > 0 && selectedSectionIndex < sectionCount - 1) return 'next';
+  return 'submit';
+}
+
+export function internSectionFooterLabel(
+  action: InternSectionFooterAction,
+): 'Next' | 'Submit' {
+  return action === 'next' ? 'Next' : 'Submit';
+}
+
+/** Intern Save is only for pending debounce, in-flight persist, or a failed auto-save. */
+export function internShowSaveButton(autoSaveStatus: AutoSaveStatus): boolean {
+  return (
+    autoSaveStatus === 'pending' ||
+    autoSaveStatus === 'saving' ||
+    autoSaveStatus === 'error'
+  );
+}
+
+export function internAutoSaveHint(autoSaveStatus: AutoSaveStatus): string | null {
+  if (autoSaveStatus === 'pending' || autoSaveStatus === 'saving') return 'Saving…';
+  if (autoSaveStatus === 'saved') return 'Saved';
+  if (autoSaveStatus === 'error') return "Couldn't save — retry";
   return null;
 }
 

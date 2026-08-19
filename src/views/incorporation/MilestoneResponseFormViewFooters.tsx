@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, Check, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertCircle, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { MilestoneResponseFormViewModel } from '@/views/incorporation/useMilestoneResponseFormState';
@@ -17,10 +17,14 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
     formReadOnly,
     handleDeliverToClient,
     handleInternSectionNext,
+    handleInternSubmit,
     handleRetryAutoSave,
     handleSaveNow,
     handleSubmit,
     hasChanges,
+    internAutoSave,
+    internAutoSaveStatusText,
+    internFooterAction,
     internSectionNextLabel,
     isClient,
     isInternDeliveryStep,
@@ -29,6 +33,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
     reviewAccepted,
     saving,
     sectionTabs,
+    showInternSave,
     showStaffSaveFooter,
     staffSaveStatus,
     staffSaveStatusText,
@@ -123,18 +128,6 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                 ),
           )}
         >
-          {showStaffSaveFooter && deliveredToClient && isInternDeliveryStep && (
-            <p className="mb-2 text-[12px] text-muted-foreground">
-              <span className="flex items-center gap-1.5 text-success-text">
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                Delivered to client
-              </span>
-              <span className="mt-1 block">
-                You can still edit below. Save changes to update records, or use Update client
-                portal to push corrections to the client view.
-              </span>
-            </p>
-          )}
           {p.aboveFooterActions ? (
             <div className="mb-3">{p.aboveFooterActions}</div>
           ) : null}
@@ -147,7 +140,37 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
             {internNavFooter ? (
               <>
                 <div className="mr-auto flex min-h-[20px] flex-wrap items-center gap-2">
-                  {showStaffSaveFooter && staffSaveStatusText ? (
+                  {internAutoSave ? (
+                    <div
+                      aria-live="polite"
+                      className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-muted-foreground"
+                    >
+                      {(autoSaveStatus === 'pending' || autoSaveStatus === 'saving') && (
+                        <>
+                          <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden />
+                          <span>Saving…</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'saved' && (
+                        <>
+                          <Check className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden />
+                          <span>Saved</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'error' && (
+                        <button
+                          type="button"
+                          onClick={handleRetryAutoSave}
+                          className="cursor-pointer text-danger hover:underline"
+                        >
+                          Couldn&apos;t save — retry
+                        </button>
+                      )}
+                      {autoSaveStatus === 'idle' && internAutoSaveStatusText ? (
+                        <span>{internAutoSaveStatusText}</span>
+                      ) : null}
+                    </div>
+                  ) : showStaffSaveFooter && staffSaveStatusText ? (
                     <span
                       aria-live="polite"
                       className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
@@ -167,23 +190,29 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {showStaffSaveFooter && (
                     <>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void handleSaveNow()}
-                        disabled={saving || (!hasChanges && staffSaveStatus !== 'error')}
-                        className="cursor-pointer"
-                      >
-                        {saving ? 'Saving…' : 'Save'}
-                      </Button>
+                      {(!internAutoSave || showInternSave) && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void handleSaveNow()}
+                          disabled={
+                            internAutoSave
+                              ? saving || autoSaveStatus === 'saving'
+                              : saving || (!hasChanges && staffSaveStatus !== 'error')
+                          }
+                          className="cursor-pointer"
+                        >
+                          {saving || autoSaveStatus === 'saving' ? 'Saving…' : 'Save'}
+                        </Button>
+                      )}
                       {isInternDeliveryStep && (
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
                           onClick={() => void handleDeliverToClient()}
-                          disabled={delivering || saving}
+                          disabled={delivering || saving || submitting}
                           className="cursor-pointer"
                         >
                           {delivering
@@ -198,10 +227,21 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                   <Button
                     type="button"
                     size="sm"
-                    onClick={handleInternSectionNext}
+                    onClick={
+                      internFooterAction === 'submit'
+                        ? () => void handleInternSubmit()
+                        : handleInternSectionNext
+                    }
+                    disabled={
+                      internFooterAction === 'submit'
+                        ? submitting || saving || autoSaveStatus === 'saving'
+                        : submitting
+                    }
                     className="cursor-pointer bg-blue-600 text-white hover:bg-blue-600/90"
                   >
-                    {internSectionNextLabel}
+                    {internFooterAction === 'submit' && submitting
+                      ? 'Submitting…'
+                      : internSectionNextLabel}
                   </Button>
                 </div>
               </>

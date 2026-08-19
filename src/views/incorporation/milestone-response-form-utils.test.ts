@@ -4,6 +4,9 @@ import {
   getMilestoneFormFieldLayout,
   groupFieldsBySection,
   internNamedSectionGroups,
+  internSectionFooterAction,
+  internSectionFooterLabel,
+  internShowSaveButton,
 } from '@/views/incorporation/milestone-response-form-utils';
 
 function field(partial: Partial<ChecklistField> & Pick<ChecklistField, 'id' | 'type'>): ChecklistField {
@@ -74,5 +77,27 @@ describe('internNamedSectionGroups', () => {
       'proof',
       'stepRemarks',
     ]);
+  });
+});
+
+describe('internSectionFooterAction', () => {
+  it('uses Next on earlier tabs and Submit on the last tab', () => {
+    expect(internSectionFooterAction(0, 10)).toBe('next');
+    expect(internSectionFooterLabel(internSectionFooterAction(0, 10))).toBe('Next');
+    expect(internSectionFooterAction(8, 10)).toBe('next');
+    expect(internSectionFooterAction(9, 10)).toBe('submit');
+    expect(internSectionFooterLabel(internSectionFooterAction(9, 10))).toBe('Submit');
+    expect(internSectionFooterAction(0, 1)).toBe('submit');
+    expect(internSectionFooterAction(0, 0)).toBe('submit');
+  });
+});
+
+describe('internShowSaveButton', () => {
+  it('hides Save when auto-save is clean and shows it while pending, saving, or failed', () => {
+    expect(internShowSaveButton('idle')).toBe(false);
+    expect(internShowSaveButton('saved')).toBe(false);
+    expect(internShowSaveButton('pending')).toBe(true);
+    expect(internShowSaveButton('saving')).toBe(true);
+    expect(internShowSaveButton('error')).toBe(true);
   });
 });
