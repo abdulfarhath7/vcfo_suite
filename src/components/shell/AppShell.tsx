@@ -8,6 +8,7 @@ import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
 import { ShellNavProvider } from "./shell-nav-context";
 import { isInternEngagementPathname } from "@/lib/project-step-path";
+import { shellDesktopNavExpanded } from "@/components/shell/intern-sidebar";
 import { cn } from "@/lib/utils";
 import { AuthBootScreen } from "@/components/common/AuthBootScreen";
 
@@ -18,9 +19,10 @@ export function AppShell({
   requireRole?: "super_admin" | "admin" | "manager" | "intern" | "client";
   children: ReactNode;
 }) {
-  const { user, authLoading, sidebarCollapsed, setSidebarCollapsed } = useApp();
+  const { user, authLoading, sidebarMode } = useApp();
   const pathname = usePathname();
   const internProjectOpen = isInternEngagementPathname(pathname);
+  const navExpanded = shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
 
   useEffect(() => {
     if (!user) {
@@ -30,19 +32,6 @@ export function AppShell({
     document.body.setAttribute("data-role", user.role);
     return () => document.body.removeAttribute("data-role");
   }, [user]);
-
-  /* Intern clients list keeps the nav open; opening a project collapses it
-     so the workspace (and right-side progress rail) can use the width. */
-  useEffect(() => {
-    if (user?.role !== "intern" && user?.role !== "super_admin") return;
-    if (internProjectOpen) {
-      setSidebarCollapsed(true);
-      return;
-    }
-    if (pathname === "/app/intern/clients") {
-      setSidebarCollapsed(false);
-    }
-  }, [internProjectOpen, pathname, setSidebarCollapsed, user?.role]);
 
   if (authLoading || !user) return <AuthBootScreen />;
   if (
@@ -63,11 +52,11 @@ export function AppShell({
           : "max-w-[1400px]";
 
   /* Flush to the sidebar: exact width, no screen inset */
-  const desktopPad = sidebarCollapsed
-    ? "lg:pl-14"
-    : user.role === "client"
+  const desktopPad = navExpanded
+    ? user.role === "client"
       ? "lg:pl-[15.5rem]"
-      : "lg:pl-56";
+      : "lg:pl-56"
+    : "lg:pl-14";
 
   return (
     <ShellNavProvider>
@@ -85,7 +74,12 @@ export function AppShell({
           <div className="sticky top-0 z-20">
             <TopBar />
           </div>
-          <main className={cn("mx-auto px-4 pb-8 pt-4 page-fade-up sm:px-6 sm:pb-10 sm:pt-5 lg:pr-4", mainMaxWidth)}>
+          <main
+            className={cn(
+              "mx-auto page-fade-up px-4 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-5 lg:pr-4",
+              mainMaxWidth,
+            )}
+          >
             {children}
           </main>
         </div>

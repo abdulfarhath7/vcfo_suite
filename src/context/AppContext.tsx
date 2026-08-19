@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from 'react';
+import { use, type SetStateAction } from 'react';
 import { Client, teamMembers } from '@/data/mockData';
 import { StatusCode } from '@/data/checklist';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
@@ -22,6 +22,9 @@ import {
   type AppNotification,
   type NotificationKind,
 } from '@/lib/checklist-notifications';
+import type { SidebarMode } from '@/components/shell/intern-sidebar';
+
+export type { SidebarMode };
 
 export interface ChecklistItemState {
   status: StatusCode;
@@ -45,7 +48,10 @@ export interface ChecklistItemState {
   workflowStage?: 'collection' | 'filing' | 'approval';
 }
 
-export type ChecklistItemPatch = Partial<ChecklistItemState>;
+export type ChecklistItemPatch = Partial<ChecklistItemState> & {
+  /** Lead → manager approval mail retry; not persisted on the item. */
+  resendManagerEmail?: boolean;
+};
 
 export interface UpdateItemOptions {
   /** When true, only `responses` is applied (client portal). */
@@ -93,6 +99,8 @@ export interface AppContextValue {
   createRequest: (input: { engagementId: string; taskId: string; label: string; message?: string; dueAt?: string }) => DocRequest;
 
   sidebarCollapsed: boolean;
+  sidebarMode: SidebarMode;
+  setSidebarMode: (mode: SetStateAction<SidebarMode>) => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   commandOpen: boolean;

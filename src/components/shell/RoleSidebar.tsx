@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { m } from 'framer-motion';
+import { useEffect, useRef } from 'react';
+import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import {
   LayoutDashboard,
@@ -18,19 +19,23 @@ import {
   BookOpen,
   ClipboardCheck,
   ScrollText,
-  ListTodo,
   FileInput,
-  ChevronLeft,
+  Mail,
+  Pin,
+  PanelLeftClose,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_UI_LABEL } from '@/lib/auth';
+import type { SidebarMode } from '@/context/AppContext';
 import { SbcLogo } from '@/components/brand/SbcLogo';
 import { useShellNav } from '@/components/shell/shell-nav-context';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { SidebarComplianceMini } from '@/components/shell/SidebarComplianceMini';
 import { InternClientsNav, INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
-import { roleHomePath } from '@/lib/auth-routes';
+import { shellDesktopNavExpanded } from '@/components/shell/intern-sidebar';
+import { MotionActivePill } from '@/components/shell/MotionActivePill';
+import { roleHomePath, roleSettingsPath } from '@/lib/auth-routes';
 
 interface Item {
   to: string;
@@ -60,6 +65,7 @@ const firmAdminItems: Item[] = [
   { to: '/app/admin/dashboard', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
   { to: '/app/admin/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
+  { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
   { to: '/app/admin/approvals', label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
   { to: '/app/admin/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
   { to: '/app/admin/vault', label: 'Doc vault', icon: FolderClosed, iconTone: TONE.files },
@@ -81,6 +87,7 @@ const superAdminItems: Item[] = [
   { to: '/app/super/dashboard', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
   { to: '/app/admin/dashboard', label: 'Firm home', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
+  { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
   { to: '/app/admin/audit-log', label: 'Firm audit', icon: HistoryIcon, iconTone: TONE.audit },
   { to: '/app/client/inbox', label: 'Client portal', icon: Inbox, iconTone: TONE.home },
   { to: '/app/client/audit', label: 'Client audit', icon: ScrollText, iconTone: TONE.audit },
@@ -90,14 +97,20 @@ export function SidebarNavBody({
   expanded,
   onNavigate,
   layoutIdPrefix = 'sidebar',
+  mode,
+  onSetMode,
 }: {
   expanded: boolean;
   onNavigate?: () => void;
   layoutIdPrefix?: string;
+  /** Desktop preference controls — omit on the mobile sheet. */
+  mode?: SidebarMode;
+  onSetMode?: (mode: SidebarMode) => void;
 }) {
   const { user } = useApp();
   const pathname = usePathname();
   const staffBase = useStaffBasePath();
+  const reduceMotion = useReducedMotion();
 
   if (!user) return null;
 
@@ -106,6 +119,7 @@ export function SidebarNavBody({
     { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
     { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
     { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
+    { to: `${staffBase}/mail`, label: 'Send email', icon: Mail, iconTone: TONE.work },
     { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
     { to: `${staffBase}/compliance`, label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
     { to: `${staffBase}/vault`, label: 'Document vault', icon: FolderClosed, iconTone: TONE.files },
@@ -117,7 +131,7 @@ export function SidebarNavBody({
   const internItems: Item[] = [
     { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
     { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
-    { to: '/app/intern/tasks', label: 'Tasks', icon: ListTodo, iconTone: TONE.work },
+    { to: '/app/intern/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
     { to: '/app/intern/requests', label: 'Requests', icon: FileInput, iconTone: TONE.queue },
     { to: '/app/intern/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
     { to: '/app/intern/knowledge-bank', label: 'Knowledge Bank', icon: BookOpen, iconTone: TONE.knowledge },
@@ -162,7 +176,8 @@ export function SidebarNavBody({
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
+      <nav className="sidebar-scroll flex-1 space-y-0.5 px-2 py-3">
+        <LayoutGroup id={layoutIdPrefix}>
         {items.map((it) => {
           if (user.role === 'intern' && it.to === INTERN_CLIENTS_HREF) {
             return (
@@ -194,17 +209,17 @@ export function SidebarNavBody({
               )}
             >
               {active && (
-                <m.div
+                <MotionActivePill
                   layoutId={`${layoutIdPrefix}-active`}
+                  reduced={reduceMotion}
                   className="absolute inset-0 rounded-xl border border-role/25 bg-role-soft shadow-[inset_0_1px_0_oklch(100%_0_0/0.35)] dark:shadow-[inset_0_1px_0_oklch(100%_0_0/0.07)]"
-                  transition={{ type: 'spring', stiffness: 420, damping: 32, mass: 0.8 }}
                 />
               )}
               {active && expanded && (
-                <m.div
+                <MotionActivePill
                   layoutId={`${layoutIdPrefix}-rail`}
+                  reduced={reduceMotion}
                   className="absolute bottom-2 left-0 top-2 w-[3px] rounded-full bg-role"
-                  transition={{ type: 'spring', stiffness: 420, damping: 32 }}
                 />
               )}
               <it.icon
@@ -228,21 +243,33 @@ export function SidebarNavBody({
           );
         })}
         <SidebarComplianceMini expanded={expanded} staffBase={staffBase} />
+        </LayoutGroup>
       </nav>
 
-      <div className="space-y-2 border-t border-border/50 p-2">
+      <div className="space-y-1 border-t border-border/50 p-2">
+        {onSetMode && mode ? (
+          <div className="flex flex-col gap-1">
+            <SidebarModeButton
+              expanded={expanded}
+              active={mode === 'open'}
+              icon={Pin}
+              fillWhenActive
+              label={mode === 'open' ? 'Kept open' : 'Keep open'}
+              hint={mode === 'open' ? 'Hover to collapse' : 'Keep sidebar open'}
+              onClick={() => onSetMode(mode === 'open' ? 'auto' : 'open')}
+            />
+            <SidebarModeButton
+              expanded={expanded}
+              active={mode === 'closed'}
+              icon={PanelLeftClose}
+              label={mode === 'closed' ? 'Kept closed' : 'Keep closed'}
+              hint={mode === 'closed' ? 'Click for hover open' : 'Keep sidebar closed'}
+              onClick={() => onSetMode(mode === 'closed' ? 'auto' : 'closed')}
+            />
+          </div>
+        ) : null}
         <Link
-          href={
-            user.role === 'super_admin'
-              ? '/app/super/settings'
-              : user.role === 'admin'
-              ? '/app/admin/settings'
-              : user.role === 'manager'
-                ? '/app/manager/settings'
-                : user.role === 'intern'
-                  ? '/app/intern/settings'
-                  : '/app/client/settings'
-          }
+          href={roleSettingsPath(user.role)}
           onClick={onNavigate}
           title="Account settings"
           aria-label="Account settings"
@@ -275,47 +302,107 @@ export function SidebarNavBody({
   );
 }
 
+const HOVER_CLOSE_MS = 200;
+
+function SidebarModeButton({
+  expanded,
+  active,
+  icon: Icon,
+  fillWhenActive,
+  label,
+  hint,
+  onClick,
+}: {
+  expanded: boolean;
+  active: boolean;
+  icon: typeof Pin;
+  fillWhenActive?: boolean;
+  label: string;
+  hint: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={hint}
+      aria-pressed={active}
+      aria-label={hint}
+      className={cn(
+        'flex min-h-[42px] w-full items-center gap-2.5 rounded-xl px-2.5 text-[13px] transition-colors',
+        active
+          ? 'bg-role-soft/70 font-medium text-role-foreground'
+          : 'text-muted-foreground hover:bg-role-soft/50 hover:text-foreground',
+        !expanded && 'justify-center px-0',
+      )}
+    >
+      <Icon
+        className={cn('h-4 w-4 shrink-0', active && fillWhenActive && 'fill-current')}
+        strokeWidth={1.75}
+        aria-hidden
+      />
+      {expanded ? <span className="truncate">{label}</span> : null}
+    </button>
+  );
+}
+
 export function RoleSidebar() {
-  const { user, sidebarCollapsed, toggleSidebar } = useApp();
+  const { user, sidebarMode, setSidebarMode } = useApp();
+  const { sidebarPeeking, setSidebarPeeking } = useShellNav();
+  const pathname = usePathname();
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const expanded =
+    shellDesktopNavExpanded(sidebarMode, pathname, user?.role) || sidebarPeeking;
+  const expandedWidth = user?.role === 'client' ? 'w-[15.5rem]' : 'w-56';
+
+  const clearLeaveTimer = () => {
+    if (leaveTimer.current) {
+      clearTimeout(leaveTimer.current);
+      leaveTimer.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (sidebarMode !== 'auto') {
+      clearLeaveTimer();
+      setSidebarPeeking(false);
+    }
+  }, [sidebarMode, setSidebarPeeking]);
+
+  useEffect(() => () => clearLeaveTimer(), []);
+
   if (!user) return null;
+
+  const onMouseEnter = () => {
+    clearLeaveTimer();
+    if (sidebarMode === 'auto') setSidebarPeeking(true);
+  };
+
+  const onMouseLeave = () => {
+    clearLeaveTimer();
+    if (sidebarMode !== 'auto') return;
+    leaveTimer.current = setTimeout(() => setSidebarPeeking(false), HOVER_CLOSE_MS);
+  };
 
   return (
     <aside
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       className={cn(
-        'group/sidebar fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border/50 bg-panel/80 backdrop-blur-2xl transition-[width] duration-300 ease-out lg:flex',
-        sidebarCollapsed ? 'w-14' : user.role === 'client' ? 'w-[15.5rem]' : 'w-56',
+        'fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border/50 bg-panel/80 backdrop-blur-2xl transition-[width,box-shadow] duration-300 ease-out lg:flex',
+        expanded ? expandedWidth : 'w-14',
+        sidebarMode === 'auto' && sidebarPeeking && 'z-40 shadow-[12px_0_32px_-16px_oklch(var(--shadow-ink)/0.35)]',
       )}
     >
-      {/* Inner wrapper clips nav content during the width transition; the
-          aside itself stays overflow-visible so the edge toggle can straddle
-          the border. */}
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        <SidebarNavBody expanded={!sidebarCollapsed} layoutIdPrefix="sidebar-desktop" />
-      </div>
-
-      {/* Floating collapse toggle — vertically centered on the sidebar edge */}
-      <button
-        type="button"
-        onClick={toggleSidebar}
-        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className={cn(
-          'sidebar-edge-toggle absolute -right-[11px] top-1/2 z-40 flex h-11 w-[22px] -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground',
-          // Reveal on sidebar hover (Notion-style); stay visible when
-          // collapsed so the way back is always obvious.
-          sidebarCollapsed
-            ? 'opacity-100'
-            : 'opacity-0 focus-visible:opacity-100 group-hover/sidebar:opacity-100',
-        )}
-      >
-        <ChevronLeft
-          className={cn(
-            'h-3.5 w-3.5 transition-transform duration-300 ease-out',
-            sidebarCollapsed && 'rotate-180',
-          )}
-          strokeWidth={2.25}
+        <SidebarNavBody
+          expanded={expanded}
+          layoutIdPrefix="sidebar-desktop"
+          mode={sidebarMode}
+          onSetMode={setSidebarMode}
         />
-      </button>
+      </div>
     </aside>
   );
 }
