@@ -12,7 +12,7 @@ Last updated: 2026-08-10 (multi-client projects + super_admin + client audit).
 | Repositories | engagements, profiles, knowledge-bank, audit-events, board-resolution, tasks, document-requests, invites, activity, notifications, compliance, documents, engagement-recipients, engagement-clients |
 | Phase 2 localStorage → API | done (AppContext TanStack Query) |
 | Phase 3 compliance Inngest job + shared Resend helper | done |
-| Process lifecycle emails + multi-user notifications | done — submit/review/unlock/deliver/share/doc-request |
+| Process lifecycle emails + multi-user notifications | done — intern Save on complete step emails manager; manager Accept composes to client (CC admin + lead) |
 | Multi-client per project + client self-invite | done — `engagement_clients` + `/app/client/team` |
 | Client-side audit trail | done — `/app/client/audit` via scoped `/api/audit-logs` |
 | Super Admin bird's-eye role | done — `super_admin`, `/app/super/*`, may enter all shells |
