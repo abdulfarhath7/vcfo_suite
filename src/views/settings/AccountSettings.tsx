@@ -1,8 +1,9 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getSession, useSession } from 'next-auth/react';
-import { Loader2, Lock, Pencil, UserRound } from 'lucide-react';
+import { Loader2, Lock, Mail, Pencil, UserRound } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { Surface } from '@/components/noir';
@@ -27,8 +28,9 @@ type ProfileData = {
 };
 
 export default function AccountSettings({ path }: Props) {
-  const { user, refreshAuth } = useApp();
+  const { user, refreshAuth, signOut } = useApp();
   const { update: updateSession } = useSession();
+  const router = useRouter();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -193,6 +195,11 @@ export default function AccountSettings({ path }: Props) {
   const roleLabel = display.role
     ? ROLE_UI_LABEL[display.role as Role] ?? display.role
     : '—';
+  const isStaff =
+    display.role === 'super_admin' ||
+    display.role === 'admin' ||
+    display.role === 'manager' ||
+    display.role === 'intern';
 
   return (
     <PageTransition>
@@ -345,6 +352,8 @@ export default function AccountSettings({ path }: Props) {
           )}
         </Surface>
 
+        {isStaff ? <OutlookMailboxCard /> : null}
+
         {/* Security card */}
         <Surface className="p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
@@ -451,8 +460,160 @@ export default function AccountSettings({ path }: Props) {
             </form>
           )}
         </Surface>
+
+        <section className="border-t border-border/60 pt-6">
+          <h2 className="text-[13px] font-medium text-foreground">Session</h2>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">
+            Sign out of this device.
+          </p>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            className="mt-4"
+            onClick={() => {
+              void signOut()
+                .then(() => router.push('/login'))
+                .catch(() => {
+                  toastError('Sign out failed. Please try again.');
+                });
+            }}
+          >
+            Sign out
+          </Button>
+        </section>
       </div>
     </PageTransition>
+  );
+}
+
+function OutlookMailboxCard() {
+  const [configured, setConfigured] = useState(true);
+  const [connected, setConnected] = useState(false);
+  const [msEmail, setMsEmail] = useState<string | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/outlook');
+        const json = (await res.json()) as {
+          configured?: boolean;
+          connected?: boolean;
+          msEmail?: string;
+        };
+        if (cancelled) return;
+        setConfigured(json.configured !== false);
+        setConnected(Boolean(json.connected));
+        setMsEmail(json.msEmail);
+      } catch {
+        if (!cancelled) setConnected(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const outlook = params.get('outlook');
+    if (!outlook) return;
+    if (outlook === 'connected') {
+      toastSuccess('Outlook connected', 'Client emails will send from this mailbox.');
+    } else {
+      const reason = params.get('reason')?.trim();
+      toastError('Outlook did not connect', reason || 'Try Connect Outlook again.');
+    }
+    params.delete('outlook');
+    params.delete('reason');
+    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
+    window.history.replaceState({}, '', next);
+  }, []);
+
+  async function disconnect() {
+    setDisconnecting(true);
+    try {
+      const res = await fetch('/api/outlook/disconnect', { method: 'DELETE' });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error || 'disconnect_failed');
+      setConnected(false);
+      setMsEmail(undefined);
+      toastSuccess('Outlook disconnected');
+    } catch (err) {
+      toastError('Could not disconnect Outlook', errorMessage(err));
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
+  return (
+    <Surface className="p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-foreground">
+            <Mail className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <h2 className="font-serif text-xl tracking-tight">Outlook</h2>
+          </div>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">
+            Link your SBC mailbox once. Client emails send from it until you disconnect.
+          </p>
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="mt-5 text-[13px] text-muted-foreground">Checking mailbox…</p>
+      ) : !configured ? (
+        <p className="mt-5 text-[13px] text-muted-foreground">
+          Outlook is not configured for this app yet (Azure app credentials). Ask an admin.
+        </p>
+      ) : (
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13px] text-foreground">
+            {connected && msEmail ? (
+              <>
+                Connected as{' '}
+                <span className="font-mono text-[12px]">{msEmail}</span>
+              </>
+            ) : (
+              'Not connected'
+            )}
+          </p>
+          {connected ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disconnecting}
+              onClick={() => void disconnect()}
+            >
+              {disconnecting ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+                  Disconnecting…
+                </>
+              ) : (
+                'Disconnect'
+              )}
+            </Button>
+          ) : (
+            <AccentButton
+              type="button"
+              size="sm"
+              onClick={() => {
+                window.location.href = '/api/outlook/connect';
+              }}
+            >
+              Connect Outlook
+            </AccentButton>
+          )}
+        </div>
+      )}
+    </Surface>
   );
 }
 

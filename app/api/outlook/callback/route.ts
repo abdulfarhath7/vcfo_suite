@@ -7,7 +7,7 @@ import {
 } from '@/lib/outlook/oauth';
 import { upsertOutlookConnection } from '@/db/repositories/outlook-connections';
 import { siteUrl } from '@/lib/site-url';
-import { roleHomePath } from '@/lib/auth-routes';
+import { roleSettingsPath } from '@/lib/auth-routes';
 
 /** GET /api/outlook/callback — Microsoft OAuth redirect. */
 export async function GET(request: Request) {
@@ -18,9 +18,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?outlook=error`);
   }
 
-  const home = `${origin}${roleHomePath(guard.ctx.role)}`;
+  const settings = `${origin}${roleSettingsPath(guard.ctx.role)}`;
   const fail = (reason: string) =>
-    NextResponse.redirect(`${home}?outlook=error&reason=${encodeURIComponent(reason)}`);
+    NextResponse.redirect(`${settings}?outlook=error&reason=${encodeURIComponent(reason)}`);
 
   const url = new URL(request.url);
   const err = url.searchParams.get('error_description') || url.searchParams.get('error');
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
     return fail(message.slice(0, 120));
   }
 
-  const res = NextResponse.redirect(`${home}?outlook=connected`);
+  const res = NextResponse.redirect(`${settings}?outlook=connected`);
   res.cookies.set('vcfo_outlook_oauth', '', { path: '/', maxAge: 0 });
   return res;
 }
