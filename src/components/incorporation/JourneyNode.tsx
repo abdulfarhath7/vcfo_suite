@@ -9,6 +9,8 @@ type JourneyNodeProps = {
   stepNumber?: number;
   selected?: boolean;
   size?: 'sm' | 'md';
+  /** Intern/lead rail: upcoming steps stay numbered, never a lock glyph. */
+  showLock?: boolean;
   className?: string;
 };
 
@@ -18,6 +20,7 @@ export function JourneyNode({
   stepNumber,
   selected = false,
   size = 'md',
+  showLock = true,
   className,
 }: JourneyNodeProps) {
   const dim = size === 'sm' ? 'h-6 w-6 text-[10px]' : 'h-8 w-8 text-[11px]';
@@ -73,10 +76,15 @@ export function JourneyNode({
       className={cn(
         'relative z-[1] flex items-center justify-center rounded-full border border-dashed border-border bg-muted/40 text-muted-foreground',
         dim,
+        selected && 'ring-4 ring-primary/25',
         className,
       )}
     >
-      <Lock className={size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3'} aria-hidden />
+      {showLock ? (
+        <Lock className={size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3'} aria-hidden />
+      ) : (
+        (stepNumber ?? <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />)
+      )}
     </span>
   );
 }
