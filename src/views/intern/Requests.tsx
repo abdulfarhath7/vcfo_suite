@@ -14,8 +14,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/lib/toast-errors';
 import { Send, Copy, CheckCircle2, Clock, Plus, FileInput } from 'lucide-react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { pressScale } from '@/lib/motion';
 
 const statusMap = {
   pending: { label: 'Awaiting upload', cls: 'bg-warning-light text-warning-text', dot: 'bg-warning', icon: Clock },
@@ -52,6 +53,7 @@ export default function InternRequests() {
     inviteLink: '',
   });
   const { open, inviteOpen, engId, label, message, email, inviteLink } = state;
+  const reduceMotion = useReducedMotion();
 
   const submit = () => {
     if (!engId || !label) return;
@@ -110,8 +112,11 @@ export default function InternRequests() {
           return (
             <m.div
               key={r.id}
-              initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 * i }}
-              className="grid grid-cols-[1fr_180px_120px_120px_100px] gap-4 items-center border-b border-border px-4 py-3.5 last:border-0 hover:bg-raised/40 min-h-11"
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: reduceMotion ? 0 : 0.03 * i }}
+              whileTap={reduceMotion ? undefined : pressScale.whileTap}
+              className="grid grid-cols-[1fr_180px_120px_120px_100px] gap-4 items-center border-b border-border px-4 py-3.5 last:border-0 hover:bg-raised/40 min-h-11 transition-colors"
             >
               <div className="min-w-0">
                 <div className="text-[13px] text-ink truncate">{r.label}</div>

@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
-import { LazyMotion, domAnimation } from "framer-motion";
+import { LazyMotion, domMax } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { HotToaster } from "@/components/ui/hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -43,7 +43,7 @@ export function Providers({ children }: { children: ReactNode }) {
     >
     <SessionProvider>
     <QueryClientProvider client={queryClient}>
-      <LazyMotion features={domAnimation}>
+      <LazyMotion features={domMax}>
         <TooltipProvider>
           <HotToaster />
           <AppProvider>

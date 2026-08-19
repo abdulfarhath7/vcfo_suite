@@ -1,8 +1,9 @@
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { KpiNumber } from '@/components/noir/KpiNumber';
+import { cardHover, pressScale } from '@/lib/motion';
 
 /** Legacy decorative names map to semantic design tokens. */
 export type AccentTone =
@@ -92,13 +93,25 @@ interface Props {
   icon?: LucideIcon;
   /** When set, tile is a link and gets hover lift; otherwise static. */
   href?: string;
+  /** Hover lift + press even when the tile is not a link (lead dashboard). */
+  interactive?: boolean;
 }
 
 /**
  * Editorial KPI tile with per-metric semantic accent.
  * Numeric values render with KpiNumber count-up; strings render in serif at scale.
  */
-export function AccentKpi({ label, value, hint, delta, tone = 'primary', icon: Icon, href }: Props) {
+export function AccentKpi({
+  label,
+  value,
+  hint,
+  delta,
+  tone = 'primary',
+  icon: Icon,
+  href,
+  interactive,
+}: Props) {
+  const reduceMotion = useReducedMotion();
   const semantic = LEGACY_TONE_MAP[tone];
   const styles = TONE_STYLES[semantic];
 
@@ -164,15 +177,27 @@ export function AccentKpi({ label, value, hint, delta, tone = 'primary', icon: I
     href && 'block transition-shadow hover:shadow-layered-lg',
   );
 
-  if (href) {
+  const lift = Boolean(href || interactive) && !reduceMotion;
+  const inner = href ? (
+    <Link href={href} className={shellClass}>
+      {body}
+    </Link>
+  ) : (
+    <div className={shellClass}>{body}</div>
+  );
+
+  if (lift) {
     return (
-      <m.div whileHover={{ y: -2 }} transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}>
-        <Link href={href} className={shellClass}>
-          {body}
-        </Link>
+      <m.div
+        className="h-full"
+        whileHover={cardHover.whileHover}
+        whileTap={pressScale.whileTap}
+        transition={cardHover.transition}
+      >
+        {inner}
       </m.div>
     );
   }
 
-  return <div className={shellClass}>{body}</div>;
+  return inner;
 }

@@ -5,15 +5,16 @@ import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTra
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { ProgressRing, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
-import { useApp } from '@/context/AppContext';
 import { useRouter } from 'next/navigation';
 import { internEngagementPath } from '@/lib/project-step-path';
 import { ArrowUpRight, Building2, UserSquare2 } from 'lucide-react';
+import { m, useReducedMotion } from 'framer-motion';
+import { cardHover, pressScale } from '@/lib/motion';
 
 export default function InternClients() {
   const { myEngagements, progressByEngagement } = useInternPortfolio();
-  const { setSidebarCollapsed } = useApp();
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
 
   return (
     <PageTransition>
@@ -42,12 +43,14 @@ export default function InternClients() {
               const initials = e.companyName.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
               return (
                 <StaggerItem key={e.id}>
-                  <button
+                  <m.button
                     type="button"
                     onClick={() => {
-                      setSidebarCollapsed(true);
                       router.push(internEngagementPath(e));
                     }}
+                    whileHover={reduceMotion ? undefined : cardHover.whileHover}
+                    whileTap={reduceMotion ? undefined : pressScale.whileTap}
+                    transition={cardHover.transition}
                     className="surface group w-full p-4 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px]"
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
@@ -67,9 +70,9 @@ export default function InternClients() {
                         <div className="h-full bg-primary transition-[width] duration-300" style={{ width: `${pct}%` }} />
                       </div>
                       <span className="text-[11px] tabular-nums text-muted-foreground">{pct}%</span>
-                      <ArrowUpRight className="h-3.5 w-3.5 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
+                      <ArrowUpRight className="h-3.5 w-3.5 text-primary opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
                     </div>
-                  </button>
+                  </m.button>
                 </StaggerItem>
               );
             })}
