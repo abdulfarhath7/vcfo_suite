@@ -67,14 +67,15 @@ browser. No AWS, nothing leaves the building.
 2. Find the server's LAN IP:
    - Windows: `ipconfig`  ·  macOS/Linux: `ipconfig getifaddr en0` / `ip addr`
    - e.g. `192.168.1.50`
-3. Auth / email links — either leave `AUTH_URL` unset (`AUTH_TRUST_HOST=true`
-   is already on) or point both at the LAN URL:
+3. Auth / email links — leave `AUTH_URL` unset (`AUTH_TRUST_HOST=true`
+   is already on). Only pin both to a LAN URL if everyone uses that IP:
    ```
    AUTH_URL="http://192.168.1.50:3000"
    NEXT_PUBLIC_SITE_URL="http://192.168.1.50:3000"
    ```
-   Restart the server after changing env. `next.config.mjs` already allow-lists
-   private LAN ranges for `next dev` so phones can load JS (login fields, toggles).
+   Do not pin them to a `*.trycloudflare.com` URL (it rotates). Restart after
+   env changes. `next.config.mjs` allow-lists LAN ranges and trycloudflare
+   for `next dev` so remote browsers can load JS (login fields, toggles).
 4. Testers visit **`http://192.168.1.50:3000`** on the office WiFi.
 
 Notes for the pilot:

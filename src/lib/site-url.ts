@@ -1,27 +1,23 @@
 /** Canonical site origin for redirects, emails, and OG (no trailing slash). */
-function isLoopbackOrigin(origin: string): boolean {
-  try {
-    const { hostname } = new URL(origin);
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
-  } catch {
-    return false;
-  }
+
+export function resolveSiteUrl(
+  fromEnv: string | undefined,
+  windowOrigin: string | undefined,
+): string {
+  const env = fromEnv?.trim().replace(/\/$/, '') || '';
+  // Browser: always use the origin the user opened (LAN IP, rotating tunnel,
+  // localhost). A baked NEXT_PUBLIC_SITE_URL for a previous trycloudflare host
+  // would otherwise send fetches/links to a dead origin.
+  if (windowOrigin) return windowOrigin.replace(/\/$/, '');
+  if (env) return env;
+  return 'http://localhost:3000';
 }
 
 function getSiteUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '');
-
-  // In the browser, prefer the origin the user actually opened (LAN IP),
-  // even if NEXT_PUBLIC_SITE_URL was baked as localhost at build/dev start.
-  if (typeof window !== 'undefined') {
-    const live = window.location.origin.replace(/\/$/, '');
-    if (!fromEnv || isLoopbackOrigin(fromEnv) || fromEnv === live) {
-      return live;
-    }
-  }
-
-  if (fromEnv) return fromEnv;
-  return 'http://localhost:3000';
+  return resolveSiteUrl(
+    process.env.NEXT_PUBLIC_SITE_URL,
+    typeof window === 'undefined' ? undefined : window.location.origin,
+  );
 }
 
 export function loginUrl(): string {

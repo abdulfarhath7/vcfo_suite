@@ -2,8 +2,6 @@
 
 import { useEffect } from "react";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-
 interface SEOProps {
   title: string;
   description: string;
@@ -11,10 +9,10 @@ interface SEOProps {
 }
 
 export function SEO({ title, description, path }: SEOProps) {
-  const url = BASE ? `${BASE.replace(/\/$/, "")}${path}` : path;
-
   useEffect(() => {
     document.title = title;
+    const origin = window.location.origin.replace(/\/$/, "");
+    const url = `${origin}${path}`;
 
     const setMeta = (name: string, content: string, property = false) => {
       const attr = property ? "property" : "name";
@@ -30,23 +28,19 @@ export function SEO({ title, description, path }: SEOProps) {
     setMeta("description", description);
     setMeta("og:title", title, true);
     setMeta("og:description", description, true);
-    if (BASE) {
-      setMeta("og:url", url, true);
-    }
+    setMeta("og:url", url, true);
     setMeta("og:type", "website", true);
     setMeta("twitter:title", title);
     setMeta("twitter:description", description);
 
-    if (BASE) {
-      let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-      if (!canonical) {
-        canonical = document.createElement("link");
-        canonical.rel = "canonical";
-        document.head.appendChild(canonical);
-      }
-      canonical.href = url;
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
     }
-  }, [title, description, url]);
+    canonical.href = url;
+  }, [title, description, path]);
 
   return null;
 }

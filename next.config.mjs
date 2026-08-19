@@ -5,14 +5,70 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Allow LAN devices to load `/_next/*` during `next dev`.
- * Without this, phones/tablets hitting http://192.168.x.x:3000 get HTML but
- * blocked JS chunks — login fields never hydrate, toggles do nothing.
+ * Allow LAN + Cloudflare quick-tunnel browsers to load `/_next/*` during `next dev`.
+ * Without this, phones/tablets or tunnel hostnames get HTML but blocked JS/HMR —
+ * login fields never hydrate, toggles do nothing.
  *
- * Extra hosts: ALLOWED_DEV_ORIGINS=192.168.1.50,10.0.0.5 (comma-separated).
+ * Next 16 `allowedDevOrigins` matches Origin/Referer hostname (`*.example.com`
+ * wildcards are supported). The process still listens on localhost / 0.0.0.0, so
+ * a trycloudflare hostname is a foreign origin even though HTML/API GETs 200.
+ *
+ * Extra hosts: ALLOWED_DEV_ORIGINS / DEV_TUNNEL_HOST (comma-separated host or URL).
+ * AUTH_URL / NEXTAUTH_URL / NEXT_PUBLIC_SITE_URL hostnames are also included.
+ *
+ * Next compares Origin/Referer *hostname* (no scheme, no port) via
+ * `isCsrfOriginAllowed` (`*.example.com` = one label, `**.example.com` = rest).
  */
+function extraDevOriginsFromEnv() {
+  return [
+    process.env.ALLOWED_DEV_ORIGINS,
+    process.env.DEV_TUNNEL_HOST,
+    process.env.AUTH_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.NEXT_PUBLIC_SITE_URL,
+  ]
+    .filter(Boolean)
+    .join(',')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .flatMap((entry) => {
+      try {
+        if (entry.includes('://')) {
+          const u = new URL(entry);
+          return [u.hostname, u.host];
+        }
+      } catch {
+        /* plain host */
+      }
+      // Next matches hostname only; keep `host:port` and the hostname without port.
+      const withPort = entry.match(/^([^[\]]+):(\d+)$/);
+      if (withPort) return [entry, withPort[1]];
+      return [entry];
+    });
+}
+
+function warnIfAuthUrlPinnedToQuickTunnel() {
+  if (process.env.NODE_ENV !== 'development') return;
+  for (const key of ['AUTH_URL', 'NEXTAUTH_URL', 'NEXT_PUBLIC_SITE_URL']) {
+    const raw = process.env[key];
+    if (!raw) continue;
+    try {
+      const host = raw.includes('://') ? new URL(raw).hostname : raw.split(':')[0];
+      if (host === 'trycloudflare.com' || host.endsWith('.trycloudflare.com')) {
+        console.warn(
+          `[vcfo] ${key} is pinned to a Cloudflare quick-tunnel hostname. Those rotate every \`cloudflared\` run. Leave it unset (keep AUTH_TRUST_HOST=true) so Auth.js uses the Host the browser opened.`,
+        );
+        return;
+      }
+    } catch {
+      /* ignore malformed */
+    }
+  }
+}
+
 function lanAllowedDevOrigins() {
-  const privateLan = [
+  const defaults = [
     '127.0.0.1',
     '127.0.0.1:3000',
     'localhost',
@@ -35,24 +91,15 @@ function lanAllowedDevOrigins() {
     '172.29.*.*',
     '172.30.*.*',
     '172.31.*.*',
+    // Cloudflare quick tunnels rotate the subdomain every `cloudflared tunnel` run.
+    // `*` = one label (quick tunnels); `**` = nested labels (same convention as Next's `**.localhost`).
+    '*.trycloudflare.com',
+    '**.trycloudflare.com',
   ];
-  const fromEnv = (process.env.ALLOWED_DEV_ORIGINS ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .flatMap((entry) => {
-      try {
-        if (entry.includes('://')) {
-          const u = new URL(entry);
-          return [u.host, u.hostname];
-        }
-      } catch {
-        /* plain host */
-      }
-      return [entry];
-    });
-  return [...new Set([...privateLan, ...fromEnv])];
+  return [...new Set([...defaults, ...extraDevOriginsFromEnv()])];
 }
+
+warnIfAuthUrlPinnedToQuickTunnel();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
