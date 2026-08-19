@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getSession, useSession } from 'next-auth/react';
 import { Loader2, Lock, Mail, Pencil, UserRound } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { Surface } from '@/components/noir';
 import { AccentButton } from '@/components/noir/AccentButton';
@@ -220,9 +221,12 @@ export default function AccountSettings({ path }: Props) {
               {initials}
             </div>
             <div className="min-w-0">
-              <h1 className="truncate font-serif text-2xl tracking-tight text-foreground">
-                {loading ? 'Loading…' : display.name || 'Your profile'}
-              </h1>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <PageBackButton className="-ml-1.5" />
+                <h1 className="truncate font-serif text-2xl tracking-tight text-foreground">
+                  {loading ? 'Loading…' : display.name || 'Your profile'}
+                </h1>
+              </div>
               <p className="mt-0.5 truncate font-mono text-[12px] text-muted-foreground">
                 {display.email || '—'}
               </p>

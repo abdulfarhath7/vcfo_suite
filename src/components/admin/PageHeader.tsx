@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Eyebrow } from '@/components/noir';
 import { IconChip, type IconChipTone } from '@/components/common/IconChip';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -13,6 +14,9 @@ interface Props {
   /** Optional section icon rendered as a tinted chip beside the title. */
   icon?: LucideIcon;
   actions?: ReactNode;
+  /** Show the back control even on a sidebar-home route (query-param drill-down). */
+  forceBack?: boolean;
+  backFallbackHref?: string;
 }
 
 const RAIL: Record<string, string> = {
@@ -35,7 +39,16 @@ const RAIL: Record<string, string> = {
   lime: 'bg-accent-lime',
 };
 
-export function PageHeader({ title, subtitle, eyebrow, accent = 'role', icon, actions }: Props) {
+export function PageHeader({
+  title,
+  subtitle,
+  eyebrow,
+  accent = 'role',
+  icon,
+  actions,
+  forceBack,
+  backFallbackHref,
+}: Props) {
   const rail = RAIL[accent] ?? RAIL.role;
   return (
     <header className="mb-5 flex flex-col gap-3.5 sm:mb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
@@ -49,9 +62,12 @@ export function PageHeader({ title, subtitle, eyebrow, accent = 'role', icon, ac
         ) : null}
         <div className="min-w-0">
           {eyebrow ? <Eyebrow className="mb-1">{eyebrow}</Eyebrow> : null}
-          <h1 className="font-serif text-[clamp(1.35rem,2.2vw,1.75rem)] font-semibold leading-[1.15] tracking-tight text-foreground">
-            {title}
-          </h1>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <PageBackButton className="-ml-1.5" force={forceBack} fallbackHref={backFallbackHref} />
+            <h1 className="min-w-0 font-serif text-[clamp(1.35rem,2.2vw,1.75rem)] font-semibold leading-[1.15] tracking-tight text-foreground">
+              {title}
+            </h1>
+          </div>
           {subtitle ? (
             <div className="prose-narrow mt-1 text-[13px] leading-relaxed text-muted-foreground">
               {subtitle}

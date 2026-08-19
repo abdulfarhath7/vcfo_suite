@@ -10,8 +10,6 @@ import {
 
   AlertTriangle,
 
-  ArrowLeft,
-
   Download,
 
   FileText,
@@ -74,7 +72,8 @@ import {
 
 } from '@/lib/engagements-db';
 
-import { internBoardResolutionPath, internEngagementStepPath } from '@/lib/project-step-path';
+import { internBoardResolutionPath } from '@/lib/project-step-path';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 
 import {
 
@@ -191,22 +190,6 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
       />
 
-      <button
-
-        type="button"
-
-        onClick={() => router.push(internEngagementStepPath(eng, 'pre-2'))}
-
-        className="text-[12px] text-text-tertiary hover:text-ink flex items-center gap-1 mb-4"
-
-      >
-
-        <ArrowLeft className="w-3.5 h-3.5" />
-
-        {eng.companyName}
-
-      </button>
-
       <div className="surface p-6 md:p-8 max-w-4xl">
 
         <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
@@ -215,13 +198,19 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             <Eyebrow>Legal document</Eyebrow>
 
-            <h1 className="serif text-[28px] text-ink tracking-tight mt-1 flex items-center gap-2">
+            <div className="mt-1 flex min-w-0 items-center gap-1.5">
 
-              <FileText className="w-6 h-6 text-blue-600 shrink-0" />
+              <PageBackButton className="-ml-1.5" />
 
-              Board Resolution
+              <h1 className="serif text-[28px] text-ink tracking-tight flex min-w-0 items-center gap-2">
 
-            </h1>
+                <FileText className="w-6 h-6 text-blue-600 shrink-0" />
+
+                Board Resolution
+
+              </h1>
+
+            </div>
 
             <p className="text-[13px] text-text-tertiary mt-2 max-w-xl">
 

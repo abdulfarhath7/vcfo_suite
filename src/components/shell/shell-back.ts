@@ -78,7 +78,8 @@ function roleHomeForPath(pathname: string): string {
   return (role && ROLE_HOME[role]) || '/';
 }
 
-/** True on nested AppShell routes; false on marketing, login, and nav homes. */
+/** True on nested AppShell routes; false on marketing, login, and nav homes.
+ *  Consumed by `PageBackButton` (page title), not the top bar. */
 export function shouldShowShellBack(pathname: string): boolean {
   const path = normalizeShellPathname(pathname);
   if (!path.startsWith('/app/')) return false;

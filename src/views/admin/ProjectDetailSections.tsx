@@ -24,7 +24,6 @@ import {
   ProjectPhaseTrail,
 } from '@/components/admin/ExportProjectBriefButton';
 import {
-  ChevronLeft,
   ListChecks,
   AlertTriangle,
   FolderCheck,
@@ -145,11 +144,7 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
 
   return (
     <PageTransition>
-      <SEO title={`${eng.companyName} — GCC Project`} description="Setup timeline, phase workstreams, documents, and activity for this GCC setup project." path={adminProjectPath(eng, staffBase)} />
-
-      <button type="button" onClick={() => router.push(`${staffBase}/projects`)} className="text-[11px] mono uppercase tracking-[0.18em] text-paper-muted hover:text-blue-600 flex items-center gap-1 mb-4 transition-colors">
-        <ChevronLeft className="w-3.5 h-3.5" /> GCC setup projects
-      </button>
+        <SEO title={`${eng.companyName} — GCC Project`} description="Setup timeline, phase workstreams, documents, and activity for this GCC setup project." path={adminProjectPath(eng, staffBase)} />
 
       <PageHeader
         accent="primary"

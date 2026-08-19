@@ -30,7 +30,6 @@ import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import {
   Briefcase,
   Check,
-  ChevronLeft,
   Eye,
   EyeOff,
   FolderPlus,
@@ -691,18 +690,13 @@ export default function FirmPeople() {
           description="Manager-wise leads, clients, and projects."
           path={`${staffBase}/people`}
         />
-        <button
-          type="button"
-          onClick={() => router.push(`${staffBase}/people`)}
-          className="mb-4 inline-flex items-center gap-1 text-[11px] mono uppercase tracking-[0.16em] text-muted-foreground hover:text-primary-dark"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" /> All people
-        </button>
         <PageHeader
           accent="violet"
           icon={Users}
           title={mgrName}
           subtitle={mgrEmail || 'Manager-wise view: leads, clients, and project work'}
+          forceBack
+          backFallbackHref={`${staffBase}/people`}
           actions={
             selectedManager && selectedManager.id !== user?.id ? (
               <DropdownMenu>
