@@ -55,11 +55,12 @@ Append here whenever something costs more than a minute to figure out.
 - Client submit / client document upload → **lead + every project manager**
   via Resend `{company-name}@sbctrack.in` (Reply-To = client). Managers are
   resolved from `engagements.manager_id`, `engagement_managers` membership,
-  then intern `reports_to_manager_id` if those are empty. Intern validated Save
-  (and “Request manager approval”) on **any bucket** sets
-  `reviewSource=lead_manager_request` and emails **managers only** from the
-  lead’s Outlook when connected, else Resend. Saving **updated answers** reopens
-  review (even after accept) and repeats that email; manager Accept then
+  then intern `reports_to_manager_id` if those are empty. Intern **Request
+  manager approval**, **Email manager again**, and **Submit** set
+  `reviewSource=lead_manager_request` and email **managers only** from the
+  lead’s Outlook when connected, else Resend. Intern **autosave** only patches
+  `{ responses }` and must **not** repeat that email. Re-requesting after
+  accept (Request / Submit) reopens review and emails again; manager Accept then
   composes to the client again (CC admin + lead). Manager Accept opens Graph
   compose **to the client**, CC firm admins + leads (+ engagement progress CC).
   Review reject / deliver / share / request / unlock / **board-resolution
@@ -76,6 +77,12 @@ Append here whenever something costs more than a minute to figure out.
 - In-app rows for those events are inserted with `createNotificationsForUsers`
   (server). Client checklist diffs toast + invalidate the bell but do not
   re-persist those kinds (avoids duplicates).
+- Intern deliver / Update client portal: no in-page “Delivered to client”
+  card (that was `peakEndMoment === 'deliver'`). Success is a green toast with
+  stable id `delivered-to-client:{scope}:{item}` plus a Received bell row via
+  `notifyEngagementEvent({ event: 'delivered' })`. First deliver still opens
+  Graph compose; re-deliver is `inAppOnly` so it does not reopen compose or
+  email. Autosave never sends `deliveredToClientAt` and must not fan out.
 
 ## Stubs
 
@@ -194,14 +201,14 @@ Append here whenever something costs more than a minute to figure out.
 ## Intern engagement overview
 
 - No Progress side rail and no equal-weight `internWeightedProgress` %. Overview
-  is company name + compact CC (two chips, `+N` popover for the rest),
-  InternPhaseStepper (`INTERN_PHASE_STEPPER_ENABLED`: slim nodes + hairline
-  connectors, no labels). Overview chrome is intern-only
-  (`InternEngagementOverview`): serif H1 + inline CC (no header Surface); four
-  phases are one list surface (full width, not a 4-col row) with title-band tick
-  equalizers. Each row is
+  is company name + compact CC (two chips, `+N` popover for the rest) in the same
+  `surface` card as the phase list. The 4-node `InternPhaseStepper` was removed —
+  it duplicated `InternPhaseTickTrack` on each list row (`InternPhaseStepper.tsx`
+  deleted). Overview chrome is intern-only (`InternEngagementOverview`): back
+  chevron + serif H1 + inline CC. Four phases are one list surface (full width, not a 4-col row)
+  with title-band tick equalizers. Each row is
   node + title (+ Pre-incorporation subtitle on A/B) + that phase’s
-  InternPhaseTickTrack + chevron. Card / stepper-node click →
+  InternPhaseTickTrack + chevron. Card / row click →
   `internOverviewCurrentItemInPhase` (first not-done in that phase, else last)
   via `internEngagementStepPath`. Phase tabs + `{done} of {total}` checklist
   panel are off (`INTERN_PHASE_TABS_ENABLED`);
@@ -229,8 +236,8 @@ Append here whenever something costs more than a minute to figure out.
   Now vs Waiting comes from sequential gates: `active` = intern-owned (“Your
   step”), `waiting` = client-owned (“Waiting on the client”). Open step uses
   `internEngagementStepPath`. Helpers: `src/lib/intern-overview-progress.ts`.
-  Registration panel rows are grouped under intern-only sub-headers (Registrations,
-  FEMA, Customs, Foreign Trade, Labour, Local Compliance, IP/Brand) by matching
+  Registration panel rows are grouped under intern-only sub-headers (General,
+  Customs, Foreign Trade, Labour, Local Compliance, IP/Brand, FEMA) by matching
   catalog titles; FEMA-bucket items nest here instead of a fifth top-level tab.
   `InternProgressRail` was deleted.
 
@@ -243,24 +250,31 @@ Append here whenever something costs more than a minute to figure out.
   attachments list, Help, or Lead → manager approval inset). Rail buttons move to
   a quiet sticky footer with Save: Request manager approval / Email manager again,
   Mark all complete (legacy), plus the existing Save / Deliver actions. No “Back
-  to project” row — intern nav + the in-page H1 locate the step. Pre-2 “Generate
-  draft board resolution” sits in the form-card footer immediately above Save/Next
-  (not the H1, not the rail). Pre-7 generate panel renders after the form.
+  to project” row — intern nav + the in-page H1 locate the step. Pre-2 board
+  resolution CTA is a **single** `BoardResolutionStepLink` card in the form-card
+  footer (`aboveFooterActions`, above Email manager / Save / Submit) — generate,
+  draft, or finalized+pill. Never above the H1/tabs, never a second footer
+  button. Pre-7 generate panel renders after the form.
   Intern journey rows: person icon only (neutral = client, blue = project lead),
   kebab → Attachments required (green tick if uploaded + quiet filename; empty
   circle if not; “None” when the step has no file fields). Intern step rail lists
   **only the current intern phase** (Part A on Client Details — never Part A +
-  Part B).   Intern step workspace is one composition: H1 above a single form
-  surface (scrollable section tabs, fields, attached Save/Next footer). The
-  right progress rail is a compact `Surface` card (natural node spacing, not a
-  full-viewport slab). Intern step `main` uses normal page scroll like other
+  Part B).   Intern step workspace is one composition: H1 full-width, then a row
+  of form Surface + phase journey rail so the rail’s top edge matches the form
+  card (not the title). The rail is a compact `Surface` (natural height, not a
+  viewport slab). Intern step `main` uses normal page scroll like other
   intern pages. Tab-strip chevrons sit in dedicated 36px edge slots, vertically
   centered with labels. Section tabs
   stay one row (`overflow-x`), map vertical wheel to `scrollLeft`, and use
   edge arrows. Intern Client Details (and other intern accordion forms)
-  use a single-row underline tab strip; footer Next advances the heading, then
-  `internEngagementStepPath` in the same phase, then the engagement page
-  (label Done). The shell chrome has
+  use a single-row underline tab strip; earlier tabs use footer **Next**
+  (next heading). The **last** tab is **Submit** (validated persist +
+  `internLeadManagerRequestPatch`, then next step in the intern phase or
+  the engagement page). Intern forms auto-save drafts (~600ms debounce)
+  via the same `updateItem` path as Save; Save is hidden while clean and
+  shown while pending, saving, or failed. File fields POST to
+  `/api/engagements/:id/milestone-documents` then PATCH the storage path
+  immediately. The shell chrome has
   no page title or breadcrumbs. Intern never shows playbook SLA / “working days”
   duration: `hideTimeline` on `StepDetailContent` is not enough — the journey
   rail still used `StatusBadgeWithTimeline` until `hideTimeline` was passed
@@ -288,12 +302,14 @@ Append here whenever something costs more than a minute to figure out.
   Nav scrollers use
   `.sidebar-scroll` (no visible bar). Search is a tool button, not a fake input.
   CommandPalette is the only type-in search. No page titles/breadcrumbs in
-  the top bar. Nested AppShell routes get a compact **Back** chevron in the
-  top bar (left of Search) — `shell-back.ts` / `TopBar`. Hide on sidebar
-  primary exact paths (Today, Clients list, Compliance root, …); **show** on
-  settings, engagement/project/step, board-resolution. Do not add a second
+  the top bar. Nested AppShell routes get a compact **Back** chevron immediately
+  left of the page H1 (company name, step title, settings name, etc.) —
+  `PageBackButton` + `shell-back.ts`. Hide on sidebar primary exact paths
+  (Today, Clients list, Compliance root, dashboards, …); **show** on settings,
+  engagement/project/step, board-resolution. Do not add a second
   “Back to portfolio” on intern engagement. Click is `router.back()` when
-  `history.length > 1`, else the parent path.
+  `history.length > 1`, else the parent path. The top bar is wordmark + Search
+  only (no back slot).
 - Checklist file upload is a compact `.milestone-upload-zone` row (~44px, max 88px),
   not a tall centered dropzone. Remarks use `.milestone-form-textarea` (`min-h` 72px /
   3 rows, grows with `field-sizing: content`).
@@ -305,9 +321,13 @@ Append here whenever something costs more than a minute to figure out.
 
 ## Intern Today week queue
 
-- Week queue on `/app/intern/today` is grouped **by company** (A–Z), one InternPhaseCard-style
-  card per engagement. Rows match the intern checklist: number, title, StatusPill (dot +
-  Completed / In progress), chevron → `internEngagementStepPath`.
+- Week queue on `/app/intern/today` is grouped **by company** (A–Z), one card per engagement
+  (`md:grid-cols-2 xl:grid-cols-3`). Company-card Today was never committed — only the helpers
+  landed; rebuild the view from `groupInternWeekQueueByCompany` if it reverts to the 148-line
+  “Next up this week” list.
+- Quiet IST clock via `useClientLocaleNow` (`en-IN`), enlarged serif. No “Next up this week”,
+  first-name hero, or Analytics. Rows: `InternStepDoneMark` + title + chevron →
+  `internEngagementStepPath` — **no** Completed / In progress word chips.
 - Unlocked work stays visible: **completed + in-progress + awaiting-client**. Locked future
   steps are omitted. Helpers: `internWeekQueueItems` / `groupInternWeekQueueByCompany`.
 - Intern **Tasks** (`/app/intern/tasks`) was removed; that URL redirects to Today. Manager/admin
@@ -319,7 +339,7 @@ Append here whenever something costs more than a minute to figure out.
   Client **sub-rows** use a nested pair (`*-client-active` / `*-client-rail`) so the pill slides
   between companies and View all without stealing the parent Clients highlight.
 - Lead dashboard motion lives in intern-only surfaces (Today, Clients, Requests, InternClientsNav,
-  InternPhaseTabs, InternPhaseStepper, intern journey rail via `allowLockedOpen`). Shared
+  InternPhaseTabs, intern journey rail via `allowLockedOpen`). Shared
   Analytics / Compliance / Mail / Audit keep their existing PageTransition only.
 - Reuse `src/lib/motion.ts` presets and `MotionActivePill`. Always respect `useReducedMotion`.
   Prefer `m` (LazyMotion) over `motion`.
@@ -332,6 +352,14 @@ Append here whenever something costs more than a minute to figure out.
   feedback on those hosts: color / opacity only. Nested client-row stagger must
   stay opacity-only for the same reason (`y` on the row ancestor isolates pills).
 
+## Intern form error summary
+
+- Intern step pages (`sectionTabs` → intern workspace) hide `FormErrorSummary`
+  (“N items need attention”). Per-field required errors still show. Restore:
+  `SHOW_INTERN_FORM_ERROR_SUMMARY = true` in
+  `src/views/incorporation/MilestoneResponseFormParts.tsx`. Client/manager
+  forms are unchanged.
+
 ## Intern typecheck seams
 
 - Intern step/overview UI is split across many files. If `tsc` reports missing
@@ -339,6 +367,47 @@ Append here whenever something costs more than a minute to figure out.
   `InternSectionHeadingNav`) or extra props (`sectionTabs`, `extraFooterActions`,
   `hideStatus`, `sidebarMode`), the consumers landed without the helpers.
   Restore the helper, then add the props to the source type — do not delete the
-  call sites. `resendManagerEmail` is a `ChecklistItemPatch` extra, not persisted
+  call sites.   `resendManagerEmail` is a `ChecklistItemPatch` extra, not persisted
   `ChecklistItemState`.
+
+## Send email compose (To filters + templates)
+
+- Staff page: `/app/{intern|manager|admin}/mail`. To is one compact row:
+  chips + name search, with **Team** (reports-to manager) and **Client**
+  (engagement company) selects beside the field. Picking a **Client** writes
+  that company’s client `profiles.email` into the To field as a visible
+  address chip (not a name-only pill). Directory also resolves clients via
+  `engagements.client_id` → `profiles.client_id` when `client_user_id` is
+  empty. Changing or clearing Client swaps only those auto-added chips.
+- Templates reuse `email_templates` (firm-scoped). New column `branding`
+  (`sbc` | `plain`) via `0008_email_template_branding.sql`. CRUD:
+  `/api/email-templates`. Interns edit/delete **own** rows; admin/manager any.
+- Send path: `POST /api/outlook/send` with `templateId` / `branding`. If
+  `templateId` is set, branding is loaded from the DB (not trusted from the
+  client). `sbc` wraps HTML with `renderEmailDocument({ brand: 'sbc' })`
+  (`src/lib/email/compose-branding.ts`). Process-email compose that already
+  sends `html` is unchanged. Default untemplated send stays `plain`.
+- Directory now returns inactive people too; To defaults to **Active**. Team
+  filter uses `profiles.reports_to_manager_id`.
+
+## Intern autosave vs manager-approval email
+
+- Intern draft persist uses the same `POST /checklist` as Save, but only
+  `{ responses }`. Do **not** fan out `lead_requested_review` when answers
+  change while the step is already awaiting review — that stacked identical
+  “manager approval requested” toasts (and emails) on every field debounce.
+  Notify only when the PATCH itself includes `reviewSource=lead_manager_request`
+  (Request / Submit) or `resendManagerEmail` (Email manager again). Helper:
+  `src/lib/email/lead-manager-request-notify.ts`. Email toasts use a stable
+  `email-dispatch:…` id so a retry replaces rather than stacks. Undo toast id
+  stays `notification-undo` (top-right).
+
+## Notifications delete / undo
+
+- Bell panel (`NotificationsBell`) hard-deletes rows (`POST /api/notifications`
+  `{ action: 'delete', ids }`) — no `deletedAt` on `notifications`. Undo
+  re-inserts original ids via `{ action: 'restore', notifications }` after the
+  in-flight delete promise. Toast lives **7s**; row exit animation **250ms**.
+  Clear all is per Received/Sent tab only. `DropdownMenu modal={false}` so the
+  undo toast stays clickable while the panel is open.
 
