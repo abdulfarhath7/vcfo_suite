@@ -17,6 +17,7 @@ import {
   internFormNextTarget,
   internOverviewPhaseTitle,
   internOverviewPhases,
+  internPhaseProgressFraction,
   internPhaseProgressLabel,
   internPhaseProgressPercent,
   internPhaseStepCounts,
@@ -50,6 +51,9 @@ describe('intern overview progress', () => {
     expect(internPhaseProgressLabel(3, 7)).toBe('3 of 7 complete');
     expect(internPhaseProgressLabel(5, 5)).toBe('5 of 5 complete');
     expect(internPhaseProgressLabel(0, 7)).toBe('0 of 7 complete');
+    expect(internPhaseProgressFraction(5, 5)).toBe('5/5');
+    expect(internPhaseProgressFraction(0, 7)).toBe('0/7');
+    expect(internPhaseProgressFraction(2, 8)).toBe('2/8');
     expect(internPhaseProgressPercent(3, 7)).toBe(43);
     expect(internOverviewPhaseTitle('pre-inc-phase-1', 'Phase 1 — Name Application')).toBe(
       'SPICe+ Part A',
@@ -135,37 +139,54 @@ describe('intern overview progress', () => {
     const titles = (heading: string) =>
       groups.find((group) => group.heading === heading)?.items.map((item) => item.title) ?? [];
 
-    expect(internRegistrationHeadingForTitle('GST & LUT')).toBe('Registrations');
+    expect(internRegistrationHeadingForTitle('GST Registration')).toBe('General');
+    expect(internRegistrationHeadingForTitle('GST & LUT')).toBe('General');
     expect(internRegistrationHeadingForTitle('LUT Filing')).toBe('Customs');
     expect(internRegistrationHeadingForTitle('FC-GPR Filing')).toBe('FEMA');
     expect(internRegistrationHeadingForTitle('FCGPR Filing')).toBe('FEMA');
 
     expect(groups.map((group) => group.heading)).toEqual([
-      'Registrations',
+      'General',
       'Customs',
       'Foreign Trade',
       'Labour',
       'Local Compliance',
       'IP/Brand',
+      'FEMA',
     ]);
-    expect(titles('Registrations')).toEqual([
-      'GST & LUT',
-      'EPF Registration',
+    expect(titles('General')).toEqual([
+      'GST Registration',
+      'PF Registration',
       'ESI Registration',
+      'PT Registration',
       'LEI Registration',
-      'Professional Tax',
       'MSME Registration',
     ]);
-    expect(titles('FEMA')).toEqual([]);
-    expect(titles('Customs')).toEqual(['IEC Registration', 'LUT Filing']);
-    expect(titles('Foreign Trade')).toEqual(['Non-STPI Registration']);
+    expect(titles('Customs')).toEqual([
+      'ICEGATE Registrations',
+      'IEC Registration',
+      'LUT Filing',
+    ]);
+    expect(titles('Foreign Trade')).toEqual(['Non-STPI Compliance']);
     expect(titles('Labour')).toEqual([
+      'Shops & Establishment',
       'CLRA Registration',
       'POSH / SHE Box',
-      'Shops & Establishment',
     ]);
-    expect(titles('Local Compliance')).toEqual(['Trade License']);
-    expect(titles('IP/Brand')).toEqual(['Trademark Registration']);
+    expect(titles('Local Compliance')).toEqual(['Trade Licence']);
+    expect(titles('IP/Brand')).toEqual([
+      'Trademark Registration',
+      'Trademark Renewal',
+      'Patent Registration',
+      'ICDR Registration',
+    ]);
+    expect(titles('FEMA')).toEqual([
+      'FCGPR Filing',
+      'FDI Reporting',
+      'ODI Reporting',
+      'FLA Return',
+      'FCTRS Filing',
+    ]);
     expect(registration).toHaveLength(getRegistrationPhases()[0]!.items.length);
   });
 
@@ -184,9 +205,9 @@ describe('intern overview progress', () => {
       },
     ]);
     expect(groups.map((group) => group.heading)).toContain('FEMA');
-    expect(groups.find((group) => group.heading === 'FEMA')?.items.map((item) => item.title)).toEqual(
-      ['FCGPR Filing'],
-    );
+    expect(
+      groups.find((group) => group.heading === 'FEMA')?.items.map((item) => item.id),
+    ).toContain('fema-test');
   });
 });
 
@@ -253,15 +274,15 @@ describe('internOverviewPhaseForItem', () => {
     expect(internEngagementPhaseTabDefault(null, null, ids)).toBe('pre-inc-phase-1');
   });
 
-  it('advances intern Next through headings, then the same phase, then Done', () => {
+  it('advances intern Next through headings; last tab is Submit', () => {
     expect(internFormNextTarget('pre-1', 0, 10)).toEqual({ kind: 'section', index: 1 });
     expect(internFormNextLabel(internFormNextTarget('pre-1', 0, 10))).toBe('Next');
     const lastClientDetails = internFormNextTarget('pre-1', 9, 10);
     expect(lastClientDetails.kind).toBe('step');
     if (lastClientDetails.kind === 'step') expect(lastClientDetails.item.id).toBe('pre-2');
-    expect(internFormNextLabel(lastClientDetails)).toBe('Next');
+    expect(internFormNextLabel(lastClientDetails)).toBe('Submit');
     expect(internFormNextTarget('pre-5', 0, 1)).toEqual({ kind: 'engagement' });
-    expect(internFormNextLabel(internFormNextTarget('pre-5', 0, 0))).toBe('Done');
+    expect(internFormNextLabel(internFormNextTarget('pre-5', 0, 0))).toBe('Submit');
     expect(internFormNextTarget('pre-12', 2, 3)).toEqual({ kind: 'engagement' });
   });
 });

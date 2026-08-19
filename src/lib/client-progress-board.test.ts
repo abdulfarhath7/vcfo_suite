@@ -134,14 +134,14 @@ describe('derivePreIncStepTone', () => {
 });
 
 describe('buildClientProgressPhases', () => {
-  it('returns four phases with thirty-four steps total', () => {
+  it('returns four phases with forty-six steps total', () => {
     const phases = buildClientProgressPhases({}, noneBr);
     expect(phases).toHaveLength(4);
     expect(phases[0]!.steps).toHaveLength(5);
     expect(phases[1]!.steps).toHaveLength(7);
     expect(phases[2]!.steps).toHaveLength(11);
-    expect(phases[3]!.steps).toHaveLength(14);
-    expect(phases.reduce((n, p) => n + p.totalCount, 0)).toBe(37);
+    expect(phases[3]!.steps).toHaveLength(23);
+    expect(phases.reduce((n, p) => n + p.totalCount, 0)).toBe(46);
   });
 
   it('uses phase titles and checklist step ids', () => {
@@ -172,23 +172,32 @@ describe('buildClientProgressPhases', () => {
     ]);
     expect(phases[3]!.steps.map((s) => s.itemId)).toEqual([
       'reg-4',
-      'reg-13',
       'reg-1',
       'reg-3',
-      'reg-8',
+      'reg-7',
       'reg-6',
+      'reg-15',
+      'reg-16',
+      'reg-8',
       'reg-5',
       'reg-11',
-      'reg-14',
-      'reg-7',
       'reg-9',
+      'reg-13',
+      'reg-14',
       'reg-10',
       'reg-12',
-      'reg-15',
+      'reg-17',
+      'reg-18',
+      'reg-19',
+      'reg-20',
+      'reg-21',
+      'reg-22',
+      'reg-23',
+      'reg-24',
     ]);
     expect(phases[0]!.steps[0]!.title).toBe('Client Details');
     expect(phases[2]!.steps[0]!.title).toBe('First Board Meeting');
-    expect(phases[3]!.steps[0]!.title).toBe('GST & LUT');
-    expect(phases[3]!.steps[6]!.title).toBe('LUT Filing');
+    expect(phases[3]!.steps[0]!.title).toBe('GST Registration');
+    expect(phases[3]!.steps.find((s) => s.itemId === 'reg-5')!.title).toBe('LUT Filing');
   });
 });

@@ -23,14 +23,37 @@ describe('sheet alignment helpers', () => {
     ]);
   });
 
-  it('shows 14 registrations matching the master sheet (no PAN/TAN)', () => {
-    const ids = getPhaseItems(getRegistrationPhases()).map((i) => i.id);
-    expect(ids).toHaveLength(14);
-    expect(ids[0]).toBe('reg-4');
-    expect(ids[6]).toBe('reg-5');
+  it('shows registrations matching the master list (no PAN/TAN)', () => {
+    const items = getPhaseItems(getRegistrationPhases());
+    const ids = items.map((i) => i.id);
+    expect(ids).toEqual([
+      'reg-4',
+      'reg-1',
+      'reg-3',
+      'reg-7',
+      'reg-6',
+      'reg-15',
+      'reg-16',
+      'reg-8',
+      'reg-5',
+      'reg-11',
+      'reg-9',
+      'reg-13',
+      'reg-14',
+      'reg-10',
+      'reg-12',
+      'reg-17',
+      'reg-18',
+      'reg-19',
+      'reg-20',
+      'reg-21',
+      'reg-22',
+      'reg-23',
+      'reg-24',
+    ]);
     expect(ids).not.toContain('reg-2');
-    expect(getRegistrationPhases()[0]!.items[0]!.title).toBe('GST & LUT');
-    expect(getRegistrationPhases()[0]!.items[6]!.title).toBe('LUT Filing');
+    expect(items[0]!.title).toBe('GST Registration');
+    expect(items.find((item) => item.id === 'reg-5')!.title).toBe('LUT Filing');
   });
 
   it('supports not-applicable status and workflow stages', () => {

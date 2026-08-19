@@ -11,6 +11,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 
 const INLINE_VISIBLE_CC = 2;
+/** Shared pill chrome for inline CC chips, +N overflow, and Add. */
+const INLINE_CC_PILL =
+  'inline-flex h-6 shrink-0 items-center rounded-full border border-border/80 bg-raised/50 text-[10.5px] text-ink';
 
 interface ProgressCcResponse {
   ok: boolean;
@@ -71,6 +74,7 @@ export function ProgressEmailCcSection({
   const [state, dispatch] = useReducer(ccReducer, initialCcState);
   const { emails, defaultCcConfigured, loading, saving, draft, inputError } = state;
   const [adding, setAdding] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const addInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -173,8 +177,13 @@ export function ProgressEmailCcSection({
   };
 
   const inlineAddControl = adding ? (
-    <div className="flex min-w-0 items-center gap-1">
-      <Input
+    <div
+      className={cn(
+        INLINE_CC_PILL,
+        'min-w-0 gap-1 py-0 pl-2 pr-0.5 focus-within:border-primary',
+      )}
+    >
+      <input
         ref={addInputRef}
         type="email"
         placeholder="name@firm.com"
@@ -199,24 +208,26 @@ export function ProgressEmailCcSection({
         }}
         disabled={saving}
         aria-label="Add CC email"
-        className="h-6 w-[9.5rem] rounded-md px-2 py-0 text-[11px] md:text-[11px]"
+        aria-invalid={Boolean(inputError)}
+        className="h-full w-[9.5rem] bg-transparent p-0 font-mono text-[10.5px] text-ink outline-none placeholder:text-text-tertiary disabled:opacity-50"
       />
       <button
         type="button"
         onClick={handleAdd}
         disabled={saving || !draft.trim()}
         aria-label="Confirm CC email"
-        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-primary hover:bg-primary-light disabled:opacity-40"
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-text-tertiary hover:text-ink disabled:opacity-40"
       >
-        <Plus className="h-3.5 w-3.5" />
+        <Plus className="h-2.5 w-2.5" />
       </button>
     </div>
   ) : (
     <button
       type="button"
       onClick={() => setAdding(true)}
+      disabled={saving}
       aria-label="Add CC email"
-      className="inline-flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-muted-foreground hover:bg-raised hover:text-foreground"
+      className={cn(INLINE_CC_PILL, 'gap-1 px-2 font-medium hover:bg-raised disabled:opacity-50')}
     >
       <Plus className="h-3 w-3" />
       Add
@@ -230,7 +241,7 @@ export function ProgressEmailCcSection({
     const renderChip = (email: string) => (
       <span
         key={email}
-        className="inline-flex min-w-0 max-w-[8.5rem] items-center gap-1 rounded-full border border-border/80 bg-raised/50 px-1.5 py-0 text-[10.5px] leading-5 text-ink"
+        className={cn(INLINE_CC_PILL, 'min-w-0 max-w-[8.5rem] gap-1 px-1.5')}
       >
         <span className="min-w-0 truncate font-mono" title={email}>
           {email}
@@ -266,11 +277,11 @@ export function ProgressEmailCcSection({
             <>
               {visibleEmails.map(renderChip)}
               {hiddenEmails.length > 0 ? (
-                <Popover>
+                <Popover open={moreOpen} onOpenChange={setMoreOpen}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="inline-flex h-6 shrink-0 items-center rounded-full border border-border/80 bg-raised/50 px-2 text-[10.5px] font-medium tabular-nums text-ink hover:bg-raised"
+                      className={cn(INLINE_CC_PILL, 'px-2 font-medium tabular-nums hover:bg-raised')}
                       aria-label={`${hiddenEmails.length} more CC ${hiddenEmails.length === 1 ? 'address' : 'addresses'}`}
                     >
                       +{hiddenEmails.length}
@@ -300,11 +311,14 @@ export function ProgressEmailCcSection({
                     </ul>
                     <button
                       type="button"
-                      onClick={() => setAdding(true)}
-                      className="mt-1.5 inline-flex h-7 w-full items-center justify-center gap-1 rounded-md px-2 text-[11px] font-medium text-primary hover:bg-primary-light"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        setAdding(true);
+                      }}
+                      className={cn(INLINE_CC_PILL, 'mt-1.5 gap-1 px-2 font-medium hover:bg-raised')}
                     >
                       <Plus className="h-3 w-3" />
-                      Add email
+                      Add
                     </button>
                   </PopoverContent>
                 </Popover>

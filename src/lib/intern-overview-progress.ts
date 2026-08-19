@@ -62,6 +62,11 @@ export function internPhaseProgressLabel(done: number, total: number): string {
   return `${done} of ${total} complete`;
 }
 
+/** Compact n/m for intern overview phase rows (matches tick-track length). */
+export function internPhaseProgressFraction(done: number, total: number): string {
+  return `${done}/${total}`;
+}
+
 export function internPhaseProgressPercent(done: number, total: number): number {
   if (total <= 0) return 0;
   return Math.round((done / total) * 100);
@@ -149,8 +154,8 @@ export type InternFormNextTarget =
   | { kind: 'engagement' };
 
 /**
- * Intern form footer Next: remaining headings in this step, then the next catalog
- * item in the same intern phase, then the engagement page.
+ * Intern form footer destination after Next (next heading) or last-tab Submit
+ * (next catalog item in the same intern phase, else the engagement page).
  */
 export function internFormNextTarget(
   itemId: string,
@@ -165,19 +170,19 @@ export function internFormNextTarget(
   return { kind: 'engagement' };
 }
 
-export function internFormNextLabel(target: InternFormNextTarget): 'Next' | 'Done' {
-  return target.kind === 'engagement' ? 'Done' : 'Next';
+export function internFormNextLabel(target: InternFormNextTarget): 'Next' | 'Submit' {
+  return target.kind === 'section' ? 'Next' : 'Submit';
 }
 
 /** Sub-headers inside the intern Registration card (catalog order within each group). */
 export const INTERN_REGISTRATION_HEADING_ORDER = [
-  'Registrations',
-  'FEMA',
+  'General',
   'Customs',
   'Foreign Trade',
   'Labour',
   'Local Compliance',
   'IP/Brand',
+  'FEMA',
 ] as const;
 
 export type InternRegistrationHeading = (typeof INTERN_REGISTRATION_HEADING_ORDER)[number];
@@ -192,7 +197,7 @@ function normalizeRegistrationTitle(title: string): string {
 
 /**
  * Map a catalog title to the intern Registration sub-header.
- * GST wins over LUT so "GST & LUT" stays under Registrations; standalone LUT is Customs.
+ * GST wins over LUT so a combined GST title stays under General; standalone LUT is Customs.
  */
 export function internRegistrationHeadingForTitle(title: string): InternRegistrationHeading {
   const t = normalizeRegistrationTitle(title);
@@ -203,6 +208,7 @@ export function internRegistrationHeadingForTitle(title: string): InternRegistra
     /\bodi\b/.test(t) ||
     /\bfla\b/.test(t) ||
     /\bfctrs\b/.test(t) ||
+    /\bfc\s*trs\b/.test(t) ||
     /\bfema\b/.test(t)
   ) {
     return 'FEMA';
@@ -221,7 +227,7 @@ export function internRegistrationHeadingForTitle(title: string): InternRegistra
     /\bpan\b/.test(t) ||
     /\btan\b/.test(t)
   ) {
-    return 'Registrations';
+    return 'General';
   }
   if (/\bicegate\b/.test(t) || /\biec\b/.test(t) || /\blut\b/.test(t)) {
     return 'Customs';
@@ -244,7 +250,7 @@ export function internRegistrationHeadingForTitle(title: string): InternRegistra
   if (/\btrademark\b/.test(t) || /\bpatent\b/.test(t) || /\bicdr\b/.test(t)) {
     return 'IP/Brand';
   }
-  return 'Registrations';
+  return 'General';
 }
 
 /** Registration phase rows plus FEMA-bucket items intern no longer sees as a top-level card. */

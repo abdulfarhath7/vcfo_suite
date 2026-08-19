@@ -2,10 +2,11 @@
 
 import type { ReactNode } from 'react';
 import { ProgressEmailCcSection } from '@/components/incorporation/ProgressEmailCcSection';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { cn } from '@/lib/utils';
 import styles from './intern-engagement-overview.module.css';
 
-/** Intern project overview chrome — company name + CC, then phase map/list. */
+/** Intern project overview chrome — company name + CC, then phase list. */
 export function InternEngagementOverview({
   companyName,
   engagementId,
@@ -17,8 +18,11 @@ export function InternEngagementOverview({
 }) {
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={cn('serif', styles.title)}>{companyName}</h1>
+      <header className={cn('surface', styles.header)}>
+        <div className={styles.titleCluster}>
+          <PageBackButton className="-ml-1.5" />
+          <h1 className={cn('serif', styles.title)}>{companyName}</h1>
+        </div>
         <ProgressEmailCcSection
           engagementId={engagementId}
           variant="inline"

@@ -14,6 +14,7 @@ import {
   internEngagementPhaseTabDefault,
   internNodeKind,
   internOverviewPhaseTitle,
+  internPhaseProgressFraction,
   internPhaseProgressLabel,
   internPhaseProgressPercent,
   internPhaseStepCounts,
@@ -126,6 +127,7 @@ export function InternPhaseEntryCards({
         const current = kind === 'current';
         const subtitle = internPhaseCardSubtitle(phase.id);
         const { done: doneCount, total } = internPhaseStepCounts(phase.items, gates);
+        const allDone = total > 0 && doneCount === total;
         return (
           <Link
             key={phase.id}
@@ -136,20 +138,28 @@ export function InternPhaseEntryCards({
           >
             <span className={styles.rowLead}>
               <span className={styles.rowMark}>
-                <InternStepDoneMark done={done} decorative />
+                <InternStepDoneMark done={done} decorative className="h-5 w-5" />
               </span>
               <span className={styles.rowCopy}>
                 <span className={styles.phaseTitle}>{title}</span>
                 {subtitle ? <span className={styles.phaseSubtitle}>{subtitle}</span> : null}
               </span>
             </span>
-            <InternPhaseTickTrack
-              items={phase.items}
-              gates={gates}
-              className={styles.rowTrack}
-            />
+            <span className={styles.rowProgress}>
+              <InternPhaseTickTrack
+                items={phase.items}
+                gates={gates}
+                className={styles.rowTrack}
+              />
+              <span
+                className={cn(styles.rowCount, allDone && styles.rowCountDone)}
+                aria-hidden
+              >
+                {internPhaseProgressFraction(doneCount, total)}
+              </span>
+            </span>
             <span className={styles.rowChevron}>
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              <ChevronRight className="h-4 w-4" aria-hidden />
             </span>
           </Link>
         );

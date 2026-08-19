@@ -46,10 +46,6 @@ import {
   InternStepDoneMark,
 } from '@/components/incorporation/InternOverviewProgress';
 import {
-  INTERN_PHASE_STEPPER_ENABLED,
-  InternPhaseStepper,
-} from '@/components/incorporation/InternPhaseStepper';
-import {
   internOverviewCurrentItemInPhase,
   internOverviewNow,
   internOverviewPhases,
@@ -64,6 +60,7 @@ import {
   getStepGate,
 } from '@/lib/checklist-step-gate';
 import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { cn } from '@/lib/utils';
 
 const ALL_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
@@ -335,14 +332,6 @@ export default function EngagementDetail() {
             </InternOverviewSyncNotice>
           ) : null}
 
-          {INTERN_PHASE_STEPPER_ENABLED ? (
-            <InternPhaseStepper
-              phases={internPhases}
-              gates={gates}
-              currentPhaseId={internNow?.phaseId ?? null}
-              hrefForPhase={internPhaseHref}
-            />
-          ) : null}
           {INTERN_PHASE_TABS_ENABLED ? (
             renderInternPhases()
           ) : (
@@ -361,7 +350,10 @@ export default function EngagementDetail() {
               <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary-light px-2.5 py-0.5 text-[11px] font-semibold text-primary">
                 {eng.stage}
               </span>
-              <h1 className="serif mt-1.5 text-[32px] tracking-tight text-foreground">{eng.companyName}</h1>
+              <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
+                <PageBackButton className="-ml-1.5" />
+                <h1 className="serif min-w-0 text-[32px] tracking-tight text-foreground">{eng.companyName}</h1>
+              </div>
               <div className="mt-1 text-[12.5px] text-muted-foreground">
                 Delivery owner · {intern?.name ?? 'Unassigned'}
                 {eTasks.length - done > 0
