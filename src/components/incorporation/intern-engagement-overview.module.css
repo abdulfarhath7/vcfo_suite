@@ -1,0 +1,257 @@
+/* Intern engagement overview only — do not import from step detail. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 44rem;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.25rem;
+  padding: 0.125rem 0.125rem 0;
+}
+
+.title {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 12rem;
+  font-size: 1.5rem;
+  line-height: 1.12;
+  color: oklch(var(--foreground));
+}
+
+.cc {
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sync {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: oklch(var(--muted-foreground));
+}
+
+/* Slim map: nodes + hairline. Labels live on the list below. */
+.stepper {
+  margin: 0;
+  padding: 0.125rem 0.75rem 0.25rem;
+}
+
+.stepperGrid {
+  display: grid;
+  width: 100%;
+  align-items: center;
+}
+
+.connector {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 1rem;
+  align-items: center;
+  padding: 0 0.5rem;
+}
+
+.connectorLine {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: oklch(var(--muted-foreground) / 0.18);
+}
+
+.node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  border-radius: 9999px;
+  color: inherit;
+}
+
+.nodeInteractive:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px oklch(var(--background)),
+    0 0 0 4px oklch(var(--ring) / 0.4);
+}
+
+.nodeCurrent::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  pointer-events: none;
+  border-radius: 9999px;
+  border: 1.5px solid oklch(var(--brand) / 0.4);
+}
+
+.tickTrack {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  height: 1.25rem;
+  align-items: center;
+  gap: 2px;
+}
+
+.tick {
+  min-width: 2px;
+  height: 4px;
+  border-radius: 1px;
+  background: oklch(var(--muted-foreground) / 0.16);
+  transition: background-color 0.25s ease;
+}
+
+.tickDone {
+  background: oklch(var(--success) / 0.9);
+}
+
+/* One list. Rows share chrome; ticks sit on the title band. */
+.list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  min-height: 3.25rem;
+  padding: 0.8125rem 1rem;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  background: oklch(var(--panel));
+  border-bottom: 1px solid oklch(var(--border));
+  transition: background-color 0.15s ease;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.rowCurrent {
+  box-shadow: inset 2px 0 0 oklch(var(--brand));
+}
+
+.rowLead {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 9.5rem;
+  max-width: 13.5rem;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+
+.rowMark {
+  display: flex;
+  height: 1.25rem;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.rowCopy {
+  min-width: 0;
+}
+
+.phaseTitle {
+  display: block;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  letter-spacing: -0.02em;
+  color: oklch(var(--foreground));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phaseSubtitle {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  color: oklch(var(--muted-foreground));
+}
+
+.rowTrack {
+  min-width: 3.5rem;
+  max-width: 14rem;
+  flex: 1 1 6rem;
+  height: 1.25rem;
+}
+
+.rowChevron {
+  display: flex;
+  height: 1.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  color: oklch(var(--muted-foreground) / 0.7);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .row:hover {
+    background: oklch(var(--raised));
+  }
+
+  .row:hover .rowChevron {
+    color: oklch(var(--muted-foreground));
+    transform: translateX(2px);
+  }
+}
+
+.row:focus-visible {
+  z-index: 1;
+  outline: none;
+  box-shadow: inset 0 0 0 2px oklch(var(--ring) / 0.45);
+}
+
+.rowCurrent:focus-visible {
+  box-shadow:
+    inset 2px 0 0 oklch(var(--brand)),
+    inset 0 0 0 2px oklch(var(--ring) / 0.45);
+}
+
+.row:active {
+  transform: scale(0.997);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .rowChevron,
+  .tick {
+    transition: none;
+  }
+
+  .row:active {
+    transform: none;
+  }
+
+  .row:hover .rowChevron {
+    transform: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .cc {
+    flex: 0 1 auto;
+    max-width: min(36rem, 58%);
+  }
+}

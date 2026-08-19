@@ -7,7 +7,10 @@ import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { Surface } from '@/components/noir/Surface';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+
+const INLINE_VISIBLE_CC = 2;
 
 interface ProgressCcResponse {
   ok: boolean;
@@ -212,19 +215,43 @@ export function ProgressEmailCcSection({
     <button
       type="button"
       onClick={() => setAdding(true)}
-      className="inline-flex h-6 items-center gap-1 rounded-md border border-primary/25 bg-primary-light px-2 text-[11px] font-medium text-primary hover:bg-primary-light/80"
+      aria-label="Add CC email"
+      className="inline-flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-muted-foreground hover:bg-raised hover:text-foreground"
     >
       <Plus className="h-3 w-3" />
-      Add email
+      Add
     </button>
   );
 
   if (variant === 'inline') {
+    const visibleEmails = emails.slice(0, INLINE_VISIBLE_CC);
+    const hiddenEmails = emails.slice(INLINE_VISIBLE_CC);
+
+    const renderChip = (email: string) => (
+      <span
+        key={email}
+        className="inline-flex min-w-0 max-w-[8.5rem] items-center gap-1 rounded-full border border-border/80 bg-raised/50 px-1.5 py-0 text-[10.5px] leading-5 text-ink"
+      >
+        <span className="min-w-0 truncate font-mono" title={email}>
+          {email}
+        </span>
+        <button
+          type="button"
+          onClick={() => handleRemove(email)}
+          disabled={saving}
+          className="shrink-0 text-text-tertiary hover:text-ink disabled:opacity-50"
+          aria-label={`Remove ${email}`}
+        >
+          <X className="h-2.5 w-2.5" />
+        </button>
+      </span>
+    );
+
     return (
       <div className={cn('min-w-0', className)}>
-        <div className="flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1">
+        <div className="flex min-w-0 flex-nowrap items-center justify-end gap-1.5 overflow-hidden">
           <span
-            className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-text-tertiary"
+            className="shrink-0 text-[9.5px] font-semibold uppercase tracking-[0.16em] text-text-tertiary"
             title={
               defaultCcConfigured
                 ? 'Firm default CC is always included.'
@@ -234,27 +261,55 @@ export function ProgressEmailCcSection({
             CC
           </span>
           {loading ? (
-            <span className="text-[11px] text-text-tertiary">Loading…</span>
+            <span className="shrink-0 text-[11px] text-text-tertiary">Loading…</span>
           ) : (
             <>
-              {emails.map((email) => (
-                <span
-                  key={email}
-                  className="inline-flex max-w-[11rem] items-center gap-1 rounded-full border border-border bg-muted/40 px-1.5 py-0 text-[10.5px] leading-5 text-ink"
-                >
-                  <span className="truncate font-mono">{email}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemove(email)}
-                    disabled={saving}
-                    className="text-text-tertiary hover:text-ink disabled:opacity-50"
-                    aria-label={`Remove ${email}`}
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </button>
-                </span>
-              ))}
-              {inlineAddControl}
+              {visibleEmails.map(renderChip)}
+              {hiddenEmails.length > 0 ? (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex h-6 shrink-0 items-center rounded-full border border-border/80 bg-raised/50 px-2 text-[10.5px] font-medium tabular-nums text-ink hover:bg-raised"
+                      aria-label={`${hiddenEmails.length} more CC ${hiddenEmails.length === 1 ? 'address' : 'addresses'}`}
+                    >
+                      +{hiddenEmails.length}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-64 p-2">
+                    <ul className="flex flex-col gap-1">
+                      {hiddenEmails.map((email) => (
+                        <li
+                          key={email}
+                          className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 hover:bg-muted/50"
+                        >
+                          <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-ink" title={email}>
+                            {email}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemove(email)}
+                            disabled={saving}
+                            className="shrink-0 text-text-tertiary hover:text-ink disabled:opacity-50"
+                            aria-label={`Remove ${email}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => setAdding(true)}
+                      className="mt-1.5 inline-flex h-7 w-full items-center justify-center gap-1 rounded-md px-2 text-[11px] font-medium text-primary hover:bg-primary-light"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add email
+                    </button>
+                  </PopoverContent>
+                </Popover>
+              ) : null}
+              <div className="shrink-0">{inlineAddControl}</div>
             </>
           )}
         </div>
