@@ -167,6 +167,18 @@ describe('gateChecklistSteps', () => {
     expect(gates.c.kind).toBe('active');
     expect(gates.d.canOpen).toBe(false);
   });
+
+  it('lets intern open and edit every step without changing sequence kinds', () => {
+    const gates = gateChecklistSteps({ items: seq, viewer: 'intern' });
+    expect(gates.a.kind).toBe('waiting');
+    expect(gates.a.canOpen).toBe(true);
+    expect(gates.a.canEdit).toBe(true);
+    expect(gates.a.message).toBe('Waiting on the client…');
+    expect(gates.b.kind).toBe('locked');
+    expect(gates.b.canOpen).toBe(true);
+    expect(gates.b.canEdit).toBe(true);
+    expect(gates.b.message).toBeNull();
+  });
 });
 
 describe('gateDisplayStatus', () => {
@@ -195,6 +207,15 @@ describe('active catalog sequence', () => {
     expect(gates['pre-1'].kind).toBe('waiting');
     expect(sequentialLockMessage('post-1', {})).toMatch(/This opens after .+ is complete/);
   });
+
+  it('lets intern open post-inc before pre-inc is complete', () => {
+    const gates = gateActiveCatalog({}, 'intern');
+    const post1 = getItem('post-1')!;
+    expect(gates[post1.id].kind).toBe('locked');
+    expect(gates[post1.id].canOpen).toBe(true);
+    expect(gates[post1.id].canEdit).toBe(true);
+    expect(gates[post1.id].message).toBeNull();
+  });
 });
 
 describe('checklistGateViewerFrom', () => {
@@ -202,6 +223,7 @@ describe('checklistGateViewerFrom', () => {
     expect(checklistGateViewerFrom('client', 'intern')).toBe('client');
     expect(checklistGateViewerFrom('admin', 'client')).toBe('client');
     expect(checklistGateViewerFrom('admin', 'manager')).toBe('staff');
+    expect(checklistGateViewerFrom('admin', 'intern')).toBe('intern');
     expect(checklistGateViewerFrom('admin', 'super_admin')).toBe('staff');
   });
 });

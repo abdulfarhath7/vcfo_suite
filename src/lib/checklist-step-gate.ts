@@ -10,7 +10,7 @@ import { isReviewRejected } from '@/lib/checklist-item-review';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 
 export type ChecklistStepGateKind = 'done' | 'active' | 'waiting' | 'locked';
-export type ChecklistGateViewer = 'client' | 'staff';
+export type ChecklistGateViewer = 'client' | 'staff' | 'intern';
 
 export interface ChecklistStepGate {
   kind: ChecklistStepGateKind;
@@ -30,7 +30,18 @@ export function checklistGateViewerFrom(
   role?: string | null,
 ): ChecklistGateViewer {
   if (variant === 'client' || role === 'client') return 'client';
+  if (role === 'intern') return 'intern';
   return 'staff';
+}
+
+/** Intern leads can open and fill any catalog step; sequence `kind` is unchanged. */
+function internViewerAccess(gate: ChecklistStepGate): ChecklistStepGate {
+  return {
+    ...gate,
+    canOpen: true,
+    canEdit: true,
+    message: gate.kind === 'locked' ? null : gate.message,
+  };
 }
 
 function ownerParty(item: ChecklistItem): ChecklistResponsibleRole {
@@ -135,6 +146,12 @@ export function gateChecklistSteps(params: {
       message: blockerTitle ? lockedMessage(blockerTitle) : 'This opens after the previous step is complete.',
     };
   });
+
+  if (viewer === 'intern') {
+    for (const id of Object.keys(out)) {
+      out[id] = internViewerAccess(out[id]!);
+    }
+  }
 
   return out;
 }

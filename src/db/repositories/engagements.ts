@@ -325,9 +325,11 @@ export async function patchChecklistItem(
   if (!existing) throw new Error('Engagement not found or not permitted');
 
   const persisted = checklistStateFromRow(existing);
-  const lockMessage = sequentialLockMessage(itemId, persisted);
-  if (lockMessage) {
-    throw new Error(lockMessage);
+  if (ctx.role === 'client') {
+    const lockMessage = sequentialLockMessage(itemId, persisted);
+    if (lockMessage) {
+      throw new Error(lockMessage);
+    }
   }
 
   const base = current ?? persisted;
