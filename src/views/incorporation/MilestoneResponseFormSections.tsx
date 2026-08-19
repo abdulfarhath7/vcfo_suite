@@ -8,8 +8,6 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
-  Lock,
-  Unlock,
   Upload,
 } from 'lucide-react';
 import { ease } from '@/lib/motion';
@@ -111,7 +109,7 @@ const PHASE2_STRUCTURED_STEP_IDS = new Set([
 ]);
 
 
-import { FormErrorSummary, PendingFieldsHint } from '@/views/incorporation/MilestoneResponseFormParts';
+import { FormErrorSummary, InternSectionHeadingNav } from '@/views/incorporation/MilestoneResponseFormParts';
 import { MilestoneResponseFormViewFooters } from '@/views/incorporation/MilestoneResponseFormViewFooters';
 import type { MilestoneResponseFormViewModel } from '@/views/incorporation/useMilestoneResponseFormState';
 
@@ -131,6 +129,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     isPhase2StructuredStep,
     isPre1,
     isPre6,
+    internSectionNav,
     item,
     peakEndMoment,
     pre1SubmittedForPre6,
@@ -140,9 +139,11 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     reviewBanner,
     reviewBannerIcon,
     saving,
-    showFieldUnlock,
+    sectionCompleteFlags,
+    sectionTabs,
+    selectedSectionIndex,
+    setSelectedSectionIndex,
     showStaffSaveFooter,
-    stepPendingItems,
     structuredSectionLabels,
     submissionLocked,
     submitting,
@@ -150,15 +151,19 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     visibleFields,
   } = p;
 
+  const internWorkspace = Boolean(sectionTabs);
+
   return (
     <div
       className={cn(
-        compactChrome
-          ? 'space-y-3'
-          : (isPre1 || isPre6)
-            ? 'mx-auto w-full max-w-3xl space-y-6'
-            : 'space-y-4 rounded-md border p-4 sm:p-5',
-        !compactChrome && !(isPre1 || isPre6) && 'border-border bg-panel',
+        internWorkspace
+          ? 'surface overflow-hidden'
+          : compactChrome
+            ? 'space-y-3'
+            : (isPre1 || isPre6)
+              ? 'mx-auto w-full max-w-3xl space-y-6'
+              : 'space-y-4 rounded-md border p-4 sm:p-5',
+        !internWorkspace && !compactChrome && !(isPre1 || isPre6) && 'border-border bg-panel',
         className,
       )}
     >
@@ -183,7 +188,16 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
         </motion.div>
       )}
 
-      {(isPre1 || isPhase2StructuredStep) && structuredSectionLabels.length > 0 && (
+      {internSectionNav ? (
+        <InternSectionHeadingNav
+          sections={structuredSectionLabels.map((title, index) => ({
+            title,
+            complete: sectionCompleteFlags[index] ?? false,
+          }))}
+          selectedIndex={selectedSectionIndex}
+          onSelect={setSelectedSectionIndex}
+        />
+      ) : (isPre1 || isPhase2StructuredStep) && structuredSectionLabels.length > 0 ? (
         <div className="sticky top-14 z-10 surface px-4 py-3 -mx-0.5">
           <StepIndicator
             current={completedStructuredSections}
@@ -191,8 +205,14 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
             labels={structuredSectionLabels.slice(0, 4)}
           />
         </div>
-      )}
+      ) : null}
 
+      <div
+        className={cn(
+          internWorkspace ? 'space-y-4 px-5 py-5' : compactChrome ? 'space-y-3' : 'space-y-5',
+          showStaffSaveFooter && !internWorkspace && 'pb-24',
+        )}
+      >
       {isPre6 && !pre1SubmittedForPre6 && (
         <output
           className="rounded-lg border border-primary/30 bg-primary-light px-4 py-3 text-sm text-foreground block"
@@ -221,7 +241,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
         <FormErrorSummary errors={fieldErrors} fields={visibleFields} />
       )}
 
-      {!compactChrome && (
+      {!compactChrome && !internWorkspace && (
       <div className={isPre1 || isPhase2StructuredStep ? 'space-y-1.5 px-0.5' : undefined}>
         {isPre1 || isPhase2StructuredStep ? (
           <div className="space-y-1">
@@ -244,13 +264,6 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
                 locked until you unlock fields for them.
               </p>
             )}
-            {!readOnly && stepPendingItems.length > 0 && (
-              <PendingFieldsHint
-                items={stepPendingItems}
-                variant="step"
-                className="mt-2 rounded-md border border-warning/25 bg-warning-light/40 px-3 py-2"
-              />
-            )}
           </div>
         ) : (
           <>
@@ -267,14 +280,6 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           </>
         )}
       </div>
-      )}
-
-      {compactChrome && !readOnly && stepPendingItems.length > 0 && (
-        <PendingFieldsHint
-          items={stepPendingItems}
-          variant="step"
-          className="rounded-md border border-warning/25 bg-warning-light/40 px-3 py-2"
-        />
       )}
 
       {reviewBanner && isClient && reviewBannerIcon && (
@@ -322,19 +327,6 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
         </div>
       )}
 
-      {showFieldUnlock && submissionLocked && !isClient && (
-        <div className="surface flex flex-wrap items-center gap-x-1.5 gap-y-1 px-4 py-3 text-xs text-muted-foreground">
-          <span>Client submitted this milestone.</span>
-          <Lock className="inline h-3 w-3 shrink-0 text-success" aria-hidden />
-          <span>locked;</span>
-          <Unlock className="inline h-3 w-3 shrink-0 text-destructive" aria-hidden />
-          <span>unlocked fields are editable by the client.</span>
-        </div>
-      )}
-
-      <div
-        className={cn(compactChrome ? 'space-y-3' : 'space-y-5', showStaffSaveFooter && 'pb-24')}
-      >
         {renderedFieldGroups}
       </div>
 

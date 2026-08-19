@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ChecklistField } from '@/data/checklist';
-import { getMilestoneFormFieldLayout } from '@/views/incorporation/milestone-response-form-utils';
+import {
+  getMilestoneFormFieldLayout,
+  groupFieldsBySection,
+  internNamedSectionGroups,
+} from '@/views/incorporation/milestone-response-form-utils';
 
 function field(partial: Partial<ChecklistField> & Pick<ChecklistField, 'id' | 'type'>): ChecklistField {
   return { label: partial.id, ...partial };
@@ -52,5 +56,23 @@ describe('getMilestoneFormFieldLayout', () => {
     expect(
       getMilestoneFormFieldLayout(field({ id: 'notes', type: 'textarea', layout: 'short' })),
     ).toBe('short');
+  });
+});
+
+describe('internNamedSectionGroups', () => {
+  it('folds ungrouped remarks into intern named section tabs', () => {
+    const groups = groupFieldsBySection([
+      field({ id: 'name', type: 'text', section: 'Foreign Entity' }),
+      field({ id: 'proof', type: 'file', section: 'Foreign Entity Proof' }),
+      field({ id: 'stepRemarks', type: 'textarea' }),
+    ]);
+    expect(internNamedSectionGroups(groups).map((group) => group.section)).toEqual([
+      'Foreign Entity',
+      'Foreign Entity Proof',
+    ]);
+    expect(internNamedSectionGroups(groups)[1]?.fields.map((row) => row.id)).toEqual([
+      'proof',
+      'stepRemarks',
+    ]);
   });
 });

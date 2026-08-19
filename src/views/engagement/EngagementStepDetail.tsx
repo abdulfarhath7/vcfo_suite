@@ -8,8 +8,17 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { StepDetailContent } from '@/components/admin/StepDetailContent';
 import { RedirectTo } from '@/components/routing/RedirectTo';
-import { checklist, getActiveCatalogItems } from '@/data/checklist';
+import {
+  checklist,
+  getActiveCatalogItems,
+  type ChecklistItem,
+} from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
+import { getStepAttachmentRequirements } from '@/lib/checklist-step-attachments';
+import {
+  internOverviewPhaseForItem,
+  internRegistrationHeadingGroups,
+} from '@/lib/intern-overview-progress';
 import {
   adminProjectPath,
   adminProjectStepPath,
@@ -22,7 +31,10 @@ import {
   resolveChecklistItemFromStepParam,
   resolveEngagementFromRouteParam,
 } from '@/lib/slug';
-import { ChecklistJourneyRail } from '@/components/incorporation/ChecklistJourneyRail';
+import {
+  ChecklistJourneyRail,
+  type JourneyRailItem,
+} from '@/components/incorporation/ChecklistJourneyRail';
 import { Surface } from '@/components/noir';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
 import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
@@ -31,8 +43,32 @@ import {
   gateActiveCatalog,
   gateDisplayStatus,
   getStepGate,
+  type ChecklistStepGate,
 } from '@/lib/checklist-step-gate';
-import { cn } from '@/lib/utils';
+import type { BoardResolutionProgressSnapshot } from '@/lib/client-progress-board';
+import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+
+function journeyRailItems(
+  steps: readonly ChecklistItem[],
+  gates: Record<string, ChecklistStepGate>,
+  checklistState: Record<string, ChecklistItemStateSlice | undefined>,
+  brSnapshot: BoardResolutionProgressSnapshot | null | undefined,
+): JourneyRailItem[] {
+  return steps.map((step, index) => {
+    const gate = getStepGate(gates, step.id);
+    const slice = checklistState[step.id];
+    return {
+      item: step,
+      gate,
+      status: gateDisplayStatus(
+        deriveChecklistDisplayStatus(step.id, step, slice, brSnapshot ?? undefined),
+        gate,
+      ),
+      stepNumber: index + 1,
+      attachments: getStepAttachmentRequirements(step, extractItemResponses(step, slice)),
+    };
+  });
+}
 
 /** Shared checklist step detail for admin projects and intern engagements. */
 export default function EngagementStepDetail() {
@@ -93,6 +129,10 @@ export default function EngagementStepDetail() {
   );
 
   const catalog = useMemo(() => getActiveCatalogItems(), []);
+  const internPhase = useMemo(
+    () => (item ? internOverviewPhaseForItem(item.id) : null),
+    [item],
+  );
   const bucketSteps = useMemo(() => {
     if (!item) return [];
     const fromCatalog = catalog.filter((c) => c.bucket === item.bucket);
@@ -123,7 +163,7 @@ export default function EngagementStepDetail() {
   }, [item, checklistState]);
 
   const { snapshot: brSnapshot } = useBoardResolutionProgress(eng?.id);
-  const viewer = checklistGateViewerFrom('admin', user?.role);
+  const viewer = checklistGateViewerFrom('admin', isInternRoute ? 'intern' : user?.role);
   const gates = useMemo(
     () => gateActiveCatalog(checklistState, viewer),
     [checklistState, viewer],
@@ -142,7 +182,7 @@ export default function EngagementStepDetail() {
   if (!item) return <RedirectTo href={projectPath(eng)} />;
 
   const checklistLoading = engagementsLoading || checklistRefreshing;
-  if (!checklistLoading && stepGate?.kind === 'locked') {
+  if (!isInternRoute && !checklistLoading && stepGate?.kind === 'locked') {
     const current = catalog.find((row) => {
       const kind = gates[row.id]?.kind;
       return kind === 'active' || kind === 'waiting';
@@ -166,15 +206,27 @@ export default function EngagementStepDetail() {
     }
   };
 
-  const railItems = bucketSteps.map((step, index) => ({
-    item: step,
-    gate: getStepGate(gates, step.id),
-    status: gateDisplayStatus(
-      deriveChecklistDisplayStatus(step.id, step, checklistState[step.id], brSnapshot),
-      getStepGate(gates, step.id),
-    ),
-    stepNumber: index + 1,
-  }));
+  const railItems = journeyRailItems(bucketSteps, gates, checklistState, brSnapshot);
+  const internPhaseRailItems = internPhase
+    ? journeyRailItems(internPhase.items, gates, checklistState, brSnapshot)
+    : [];
+  const internPhaseRailGroups = (() => {
+    if (!internPhase || internPhase.id !== 'registration-phase-4') return [];
+    const byId = new Map(internPhaseRailItems.map((row) => [row.item.id, row]));
+    return internRegistrationHeadingGroups(internPhase.items).map((group) => ({
+      heading: group.heading,
+      items: group.items
+        .map((step) => byId.get(step.id))
+        .filter((row): row is NonNullable<typeof row> => Boolean(row)),
+    }));
+  })();
+
+  const openStep = (id: string) => {
+    const next = catalog.find((s) => s.id === id) ?? bucketSteps.find((s) => s.id === id);
+    if (next) router.push(stepPath(eng, next));
+  };
+
+  const internWorkspace = isIntern;
 
   return (
     <PageTransition>
@@ -185,20 +237,21 @@ export default function EngagementStepDetail() {
       />
 
       <div
-        className={cn(
-          !isInternRoute && 'grid gap-5 lg:grid-cols-[minmax(14rem,16rem)_minmax(0,1fr)]',
-        )}
+        className={
+          internWorkspace && internPhase
+            ? 'grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18.5rem)]'
+            : internWorkspace
+              ? 'min-w-0'
+              : 'grid gap-5 lg:grid-cols-[minmax(14rem,16rem)_minmax(0,1fr)]'
+        }
       >
-        {!isInternRoute && (
+        {!isIntern && (
           <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
-            <Surface className="p-3">
+            <Surface className="max-h-[calc(100vh-var(--shell-sticky-top)-1.5rem)] overflow-y-auto p-3 sidebar-scroll">
               <ChecklistJourneyRail
                 items={railItems}
                 selectedId={item.id}
-                onSelect={(id) => {
-                  const next = bucketSteps.find((s) => s.id === id);
-                  if (next) router.push(stepPath(eng, next));
-                }}
+                onSelect={openStep}
               />
             </Surface>
           </aside>
@@ -212,7 +265,7 @@ export default function EngagementStepDetail() {
             </div>
           )}
 
-          {stepGate?.kind === 'locked' ? (
+          {stepGate?.kind === 'locked' && !isInternRoute ? (
             <Surface className="p-6 text-sm text-muted-foreground">
               {stepGate.message}
             </Surface>
@@ -226,11 +279,53 @@ export default function EngagementStepDetail() {
               onCompleted={task ? handleCompleted : undefined}
               theme="light"
               contentReady={!checklistLoading}
-                hideDocumentsTab={isIntern}
-                hideTimeline={isIntern}
+              hideDocumentsTab={isIntern}
+              hideTimeline={isIntern}
+              hideStatus={isIntern}
+              hideWorkspaceRail={isIntern}
             />
           )}
         </div>
+
+        {isIntern && internPhase ? (
+          <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
+            <Surface className="max-h-[calc(100vh-var(--shell-sticky-top)-1.5rem)] overflow-y-auto p-3 sidebar-scroll">
+              <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                {internPhase.title}
+              </p>
+              {internPhase.id === 'registration-phase-4' ? (
+                <div className="space-y-4">
+                  {internPhaseRailGroups.map((group) => (
+                    <div key={group.heading}>
+                      <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        {group.heading}
+                      </p>
+                      <ChecklistJourneyRail
+                        items={group.items}
+                        selectedId={item.id}
+                        allowLockedOpen
+                        hideTimeline
+                        hideStatus
+                        showAttachmentMenu
+                        onSelect={openStep}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <ChecklistJourneyRail
+                  items={internPhaseRailItems}
+                  selectedId={item.id}
+                  allowLockedOpen
+                  hideTimeline
+                  hideStatus
+                  showAttachmentMenu
+                  onSelect={openStep}
+                />
+              )}
+            </Surface>
+          </aside>
+        ) : null}
       </div>
     </PageTransition>
   );

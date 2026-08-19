@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { AnimatePresence, m as motion, useReducedMotion, type Variants } from 'framer-motion';
 import {
   AlertCircle,
@@ -102,7 +103,9 @@ import {
 } from '@/lib/incorporation-docs/client';
 import { IncorporationDraftDocLink } from '@/components/incorporation/IncorporationDraftDocLink';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
-import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, runStepValidation, computeMilestoneDraftFromSaved, mergeSavedFileFieldsIntoDraft, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
+import { internEngagementPath, internEngagementStepPath } from '@/lib/project-step-path';
+import { internFormNextLabel, internFormNextTarget } from '@/lib/intern-overview-progress';
+import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internNamedSectionGroups, runStepValidation, computeMilestoneDraftFromSaved, mergeSavedFileFieldsIntoDraft, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { FormErrorSummary, Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 
 const COMPLIANCE_TRIGGER_ITEMS = new Set(['pre-12', 'reg-1', 'reg-2', 'reg-3', 'reg-4']);
@@ -129,10 +132,27 @@ export interface MilestoneResponseFormStateProps {
   open?: boolean;
   className?: string;
   compactChrome?: boolean;
+  extraFooterActions?: ReactNode;
+  aboveFooterActions?: ReactNode;
+  sectionTabs?: boolean;
 }
 
 export function useMilestoneResponseFormState(props: MilestoneResponseFormStateProps) {
-  const { item, clientId, engagementId, responses: responsesOverride, variant = 'client', readOnly = false, showFieldUnlock = false, open = true, className, compactChrome = false } = props;
+  const {
+    item,
+    clientId,
+    engagementId,
+    responses: responsesOverride,
+    variant = 'client',
+    readOnly = false,
+    showFieldUnlock = false,
+    open = true,
+    className,
+    compactChrome = false,
+    extraFooterActions,
+    aboveFooterActions,
+    sectionTabs = false,
+  } = props;
   const {
     getState,
     getStateForEngagement,
@@ -511,14 +531,72 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     [completionValues, liveValidationErrors],
   );
 
+  const internSectionGroups = useMemo(
+    () => internNamedSectionGroups(sectionGroups),
+    [sectionGroups],
+  );
+  const internSectionNav = sectionTabs && internSectionGroups.length > 0;
+
   const structuredSectionLabels = useMemo(() => {
+    if (internSectionNav) return internSectionGroups.map((group) => group.section);
     if (!isPre1 && !isPhase2StructuredStep) return [];
     const labels: string[] = [];
     for (const g of sectionGroups) {
       if (g.section) labels.push(g.section);
     }
     return labels;
-  }, [isPre1, isPhase2StructuredStep, sectionGroups]);
+  }, [internSectionNav, internSectionGroups, isPre1, isPhase2StructuredStep, sectionGroups]);
+
+  const sectionCompleteFlags = useMemo(() => {
+    if (!internSectionNav) return [] as boolean[];
+    return internSectionGroups.map((group) => isSectionComplete(group.fields));
+  }, [internSectionNav, internSectionGroups, isSectionComplete]);
+
+  const [selectedSectionIndex, setSelectedSectionIndex] = useState(0);
+  useEffect(() => {
+    setSelectedSectionIndex(0);
+  }, [item.id]);
+  useEffect(() => {
+    if (structuredSectionLabels.length === 0) return;
+    if (selectedSectionIndex >= structuredSectionLabels.length) {
+      setSelectedSectionIndex(0);
+    }
+  }, [selectedSectionIndex, structuredSectionLabels.length]);
+
+  const internNextTarget = internFormNextTarget(
+    item.id,
+    selectedSectionIndex,
+    internSectionNav ? internSectionGroups.length : 0,
+  );
+  const internSectionNextLabel = internFormNextLabel(internNextTarget);
+
+  const router = useRouter();
+  const handleInternSectionNext = useCallback(() => {
+    if (!sectionTabs) return;
+    const target = internFormNextTarget(
+      item.id,
+      selectedSectionIndex,
+      internSectionNav ? internSectionGroups.length : 0,
+    );
+    if (target.kind === 'section') {
+      setSelectedSectionIndex(target.index);
+      return;
+    }
+    if (!engagement) return;
+    if (target.kind === 'step') {
+      router.push(internEngagementStepPath(engagement, target.item));
+      return;
+    }
+    router.push(internEngagementPath(engagement));
+  }, [
+    engagement,
+    internSectionGroups.length,
+    internSectionNav,
+    item.id,
+    router,
+    sectionTabs,
+    selectedSectionIndex,
+  ]);
 
   const completedStructuredSections = useMemo(() => {
     if (!isPre1 && !isPhase2StructuredStep) return 0;
@@ -1225,8 +1303,12 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   };
 
   const showUnlock = showFieldUnlock && submissionLocked && !isClient;
+  const groupsForRender =
+    internSectionNav && internSectionGroups.length > 0
+      ? internSectionGroups.filter((_, index) => index === selectedSectionIndex)
+      : sectionGroups;
 
-  const renderedFieldGroups = sectionGroups.map((group, gi) => {
+  const renderedFieldGroups = groupsForRender.map((group, gi) => {
     const fieldsBlock = (
       <div
         className={cn(
@@ -1242,6 +1324,19 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         })}
       </div>
     );
+
+    if (internSectionNav && group.section) {
+      return (
+        <div
+          key={group.section}
+          role="tabpanel"
+          aria-labelledby={`intern-section-tab-${selectedSectionIndex}`}
+          className="space-y-3"
+        >
+          {fieldsBlock}
+        </div>
+      );
+    }
 
     if ((isPre1 || isPhase2StructuredStep) && group.section) {
       const sectionNum = premiumSectionIndex.get(group.section) ?? gi + 1;
@@ -1283,6 +1378,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
           : null;
 
   return {
+    aboveFooterActions,
     autoSaveEnabled,
     autoSaveStatus,
     canEdit,
@@ -1295,7 +1391,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     delivering,
     fieldErrors,
     formReadOnly,
+    extraFooterActions,
     handleDeliverToClient,
+    handleInternSectionNext,
     handleRetryAutoSave,
     handleSaveNow,
     handleSubmit,
@@ -1303,6 +1401,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     isClient,
     isInternDeliveryStep,
     isPhase2StructuredStep,
+    internSectionNav,
+    internSectionNextLabel,
     isPre1,
     isPre6,
     item,
@@ -1315,6 +1415,10 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     reviewBanner,
     reviewBannerIcon,
     saving,
+    sectionCompleteFlags,
+    sectionTabs,
+    selectedSectionIndex,
+    setSelectedSectionIndex,
     showFieldUnlock,
     showStaffSaveFooter,
     staffSaveStatus,

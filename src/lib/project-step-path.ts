@@ -44,6 +44,11 @@ export function isInternEngagementPathname(pathname: string): boolean {
   return /^\/app\/intern\/engagements\/[^/]+/.test(pathname);
 }
 
+/** True for intern checklist step detail (`…/engagements/{id}/step/…`). */
+export function isInternEngagementStepPathname(pathname: string): boolean {
+  return /^\/app\/intern\/engagements\/[^/]+\/step(?:\/|$)/.test(pathname);
+}
+
 /** Intern engagement detail (slug when available, else id / UUID). */
 export function internEngagementPath(project: ProjectRouteTarget): string {
   return `/app/intern/engagements/${project.slug ?? project.id}`;

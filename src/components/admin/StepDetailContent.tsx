@@ -45,6 +45,10 @@ export interface StepDetailContentProps {
   hideDocumentsTab?: boolean;
   /** Hide expected-timeline / working-days SLA copy (intern portal). */
   hideTimeline?: boolean;
+  /** Intern/lead: no Completed / In progress status words. */
+  hideStatus?: boolean;
+  /** Intern/lead: footer actions live on the form; skip the staff workspace rail. */
+  hideWorkspaceRail?: boolean;
 }
 
 const STATUS_TONE: Record<
@@ -104,6 +108,8 @@ function StepDetailContentInner({
   hideLegacyChecklist = false,
   hideDocumentsTab = false,
   hideTimeline = false,
+  hideStatus = false,
+  hideWorkspaceRail = false,
 }: StepDetailContentProps) {
   const { updateTask, getStateForEngagement, engagements, user } = useApp();
   const [ui, dispatchUi] = useReducer(
@@ -245,6 +251,8 @@ function StepDetailContentInner({
     hideLegacyChecklist,
     hideDocumentsTab,
     hideTimeline,
+    hideStatus,
+    hideWorkspaceRail,
     progress,
     setProgress,
     tab,

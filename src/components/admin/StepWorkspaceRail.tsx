@@ -44,6 +44,8 @@ export type StepWorkspaceRailProps = {
   theme?: 'light' | 'dark';
   showLegacyChecklist?: boolean;
   hideTimeline?: boolean;
+  /** Intern/lead: hide StatusDot + Completed / In progress words. */
+  hideStatus?: boolean;
   totalsPct?: number;
   onMarkAll?: () => void;
   className?: string;
@@ -147,6 +149,7 @@ export function StepWorkspaceRail({
   theme = 'light',
   showLegacyChecklist = false,
   hideTimeline = false,
+  hideStatus = false,
   totalsPct = 0,
   onMarkAll,
   className,
@@ -163,16 +166,20 @@ export function StepWorkspaceRail({
     >
       <div className="space-y-4">
         <section>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
-            Status
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <StatusDot tone={STATUS_TONE_DOT[status]} size={8} pulse={status === 'in-progress'} />
-            <span className={cn('text-[11px] font-medium uppercase tracking-[0.12em]', statusCls)}>
-              {STATUS_LABEL[status]}
-            </span>
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          {!hideStatus ? (
+            <>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+                Status
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <StatusDot tone={STATUS_TONE_DOT[status]} size={8} pulse={status === 'in-progress'} />
+                <span className={cn('text-[11px] font-medium uppercase tracking-[0.12em]', statusCls)}>
+                  {STATUS_LABEL[status]}
+                </span>
+              </div>
+            </>
+          ) : null}
+          <div className={cn('flex flex-wrap items-center gap-2', !hideStatus && 'mt-2')}>
             <ResponsibleRoleBadge role={item.responsibleRole} />
             {!hideTimeline && (
               <ChecklistInlineTimeline item={item} className="text-muted-foreground" />

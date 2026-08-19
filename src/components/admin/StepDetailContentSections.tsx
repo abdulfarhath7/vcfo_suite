@@ -2,13 +2,15 @@
 
 import { m as motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { STATUS_LABEL } from '@/data/checklist';
+import { STATUS_LABEL, copyMentionsWorkingDaysSla } from '@/data/checklist';
 import { MilestoneResponseForm } from '@/views/incorporation/MilestoneResponseForm';
 import { Phase1StepPanel } from '@/components/incorporation/Phase1StepPanel';
 import { ChecklistInlineTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
 import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
 import { ChecklistReviewActions } from '@/components/admin/ChecklistReviewActions';
 import { RequestManagerApproval } from '@/components/admin/RequestManagerApproval';
+import { InternStepActionBar } from '@/components/admin/InternStepActionBar';
+import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { StepWorkspaceRail } from '@/components/admin/StepWorkspaceRail';
 import { Eyebrow, Mono, GoldDivider, StatusDot, GoldButton } from '@/components/noir';
 import {
@@ -46,6 +48,8 @@ export function StepDetailContentView(props: any) {
     contentReady,
     hideDocumentsTab,
     hideTimeline,
+    hideStatus,
+    hideWorkspaceRail,
     progress,
     tab,
     setTab,
@@ -70,8 +74,13 @@ export function StepDetailContentView(props: any) {
     emptyCopy,
     bodyText,
     stepGate,
+    formReadOnly,
     theme,
   } = props;
+
+  const notesForView =
+    item.notes && (!hideTimeline || !copyMentionsWorkingDaysSla(item.notes)) ? item.notes : null;
+  const showDeadline = Boolean(item.deadline) && !hideTimeline;
 
   const justCompletedBanner = (
     <AnimatePresence>
@@ -107,6 +116,25 @@ export function StepDetailContentView(props: any) {
       />
     ) : null;
 
+  const internActionBar = hideWorkspaceRail ? (
+    <InternStepActionBar
+      engagementId={engagementId}
+      item={item}
+      itemState={itemState}
+      showLegacyChecklist={showLegacyChecklist}
+      totalsPct={totals.pct}
+      onMarkAll={showLegacyChecklist ? markAll : undefined}
+    />
+  ) : null;
+
+  const internBoardResolutionAction =
+    hideWorkspaceRail && item.id === 'pre-2' && engagement ? (
+      <BoardResolutionStepLink engagement={engagement} variant="button" />
+    ) : null;
+
+  const internFooterFallback =
+    hideWorkspaceRail && internActionBar && !hasClientFields;
+
   const responseForm =
     hasClientFields && scopeId ? (
       <MilestoneResponseForm
@@ -116,10 +144,13 @@ export function StepDetailContentView(props: any) {
         engagementId={engagementId}
         responses={responses}
         variant="admin"
-        showFieldUnlock
+        showFieldUnlock={!hideWorkspaceRail}
         open={contentReady}
-        readOnly={!stepGate?.canEdit}
+        readOnly={formReadOnly ?? !stepGate?.canEdit}
         compactChrome={isLight}
+        extraFooterActions={hideWorkspaceRail ? internActionBar : undefined}
+        aboveFooterActions={internBoardResolutionAction ?? undefined}
+        sectionTabs={hideWorkspaceRail}
       />
     ) : null;
 
@@ -310,66 +341,91 @@ export function StepDetailContentView(props: any) {
         </TabsContent>
       </Tabs>
 
-      {(item.notes || item.deadline) && (
+      {notesForView || showDeadline ? (
         <div className="mt-6">
           <GoldDivider className="mb-3" />
           <Eyebrow className={cn('mb-2', isLight && 'text-text-tertiary')}>Step notes</Eyebrow>
-          {item.notes && (
+          {notesForView && (
             <p className={cn('text-[12px] leading-relaxed', isLight ? 'text-text-secondary' : 'text-paper-muted')}>
-              {item.notes}
+              {notesForView}
             </p>
           )}
-          <Mono
-            className={cn(
-              'text-[10px] uppercase tracking-[0.18em] mt-2 block',
-              isLight ? 'text-text-tertiary' : 'text-paper-subtle',
-            )}
-          >
-            Deadline · {item.deadline.kind.replace(/-/g, ' ')}
-            {'days' in item.deadline && ` · ${item.deadline.days}d`}
-            {'weeks' in item.deadline &&
-              ` · ${Array.isArray(item.deadline.weeks) ? item.deadline.weeks.join('–') : item.deadline.weeks}w`}
-          </Mono>
+          {showDeadline && (
+            <Mono
+              className={cn(
+                'text-[10px] uppercase tracking-[0.18em] mt-2 block',
+                isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+              )}
+            >
+              Deadline · {item.deadline.kind.replace(/-/g, ' ')}
+              {'days' in item.deadline && ` · ${item.deadline.days}d`}
+              {'weeks' in item.deadline &&
+                ` · ${Array.isArray(item.deadline.weeks) ? item.deadline.weeks.join('–') : item.deadline.weeks}w`}
+            </Mono>
+          )}
         </div>
-      )}
+      ) : null}
     </>
   ) : null;
 
   if (isLight) {
+    const internPageFooter = internFooterFallback ? (
+      <div className="sticky bottom-0 z-20 mt-4 border-t border-border/70 bg-panel/95 px-4 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-panel/80">
+        {internBoardResolutionAction ? (
+          <div className="mb-2">{internBoardResolutionAction}</div>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-2">{internActionBar}</div>
+      </div>
+    ) : null;
+
     return (
       <div className="flex min-h-0 flex-col">
         {justCompletedBanner}
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18.5rem)] lg:items-start lg:gap-5">
-          <div className="min-w-0 space-y-3">
-            {phase1Panel}
+        {hideWorkspaceRail ? (
+          <div className="min-w-0 space-y-4">
+            <h1 className="serif text-[22px] leading-tight tracking-tight text-foreground">
+              {item.title}
+            </h1>
+            {item.id !== 'pre-7' ? phase1Panel : null}
             {responseForm}
-            <div className="lg:hidden empty:hidden">
-              <RequestManagerApproval
-                engagementId={engagementId}
-                itemId={item.id}
-                itemState={itemState}
-                emphasis="primary"
-              />
-            </div>
+            {item.id === 'pre-7' ? phase1Panel : null}
             {legacyChecklist}
+            {internPageFooter}
           </div>
-          <StepWorkspaceRail
-            item={item}
-            status={status}
-            statusCls={statusCls}
-            engagementId={engagementId}
-            itemState={itemState}
-            responses={responses}
-            activity={stepActivity}
-            stepGate={stepGate}
-            theme={theme}
-            showLegacyChecklist={showLegacyChecklist}
-            hideTimeline={hideTimeline}
-            totalsPct={totals.pct}
-            onMarkAll={showLegacyChecklist ? markAll : undefined}
-            className="mt-4 lg:sticky lg:top-[var(--shell-sticky-top)] lg:mt-0"
-          />
-        </div>
+        ) : (
+          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18.5rem)] lg:items-start lg:gap-5">
+            <div className="min-w-0 space-y-3">
+              {phase1Panel}
+              {responseForm}
+              <div className="lg:hidden empty:hidden">
+                <RequestManagerApproval
+                  engagementId={engagementId}
+                  itemId={item.id}
+                  itemState={itemState}
+                  emphasis="primary"
+                />
+              </div>
+              {legacyChecklist}
+            </div>
+            <StepWorkspaceRail
+              item={item}
+              status={status}
+              statusCls={statusCls}
+              engagementId={engagementId}
+              itemState={itemState}
+              responses={responses}
+              activity={stepActivity}
+              stepGate={stepGate}
+              theme={theme}
+              showLegacyChecklist={showLegacyChecklist}
+              hideTimeline={hideTimeline}
+              hideStatus={hideStatus}
+              totalsPct={totals.pct}
+              onMarkAll={showLegacyChecklist ? markAll : undefined}
+              className="mt-4 lg:sticky lg:top-[var(--shell-sticky-top)] lg:mt-0"
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -394,10 +450,14 @@ export function StepDetailContentView(props: any) {
           <p className="text-[12px] leading-relaxed pt-1 text-paper-subtle">{item.notes}</p>
         )}
         <div className="flex items-center gap-3 pt-1">
-          <StatusDot tone={tone.dot} size={8} pulse={status === 'in-progress'} />
-          <span className={cn('text-[10.5px] mono uppercase tracking-[0.18em]', statusCls)}>
-            {STATUS_LABEL[status]}
-          </span>
+          {!hideStatus && (
+            <>
+              <StatusDot tone={tone.dot} size={8} pulse={status === 'in-progress'} />
+              <span className={cn('text-[10.5px] mono uppercase tracking-[0.18em]', statusCls)}>
+                {STATUS_LABEL[status]}
+              </span>
+            </>
+          )}
           {!hideTimeline && (
             <ChecklistInlineTimeline item={item} className="normal-case tracking-normal text-paper-subtle" />
           )}

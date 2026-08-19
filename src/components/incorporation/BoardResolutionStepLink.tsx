@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { FileText } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import type { Engagement } from '@/data/engagements';
 import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
 import { internBoardResolutionPath } from '@/lib/project-step-path';
@@ -11,10 +12,16 @@ import { cn } from '@/lib/utils';
 interface BoardResolutionStepLinkProps {
   engagement: Engagement;
   className?: string;
+  /** Compact button (intern form footer) vs the overview card. */
+  variant?: 'card' | 'button';
 }
 
 /** Intern-only CTA from Pre-2 step to draft/finalize board resolution. */
-export function BoardResolutionStepLink({ engagement, className }: BoardResolutionStepLinkProps) {
+export function BoardResolutionStepLink({
+  engagement,
+  className,
+  variant = 'card',
+}: BoardResolutionStepLinkProps) {
   const fetchKey = `${engagement.id}:1`;
   const fetchScopeRef = useRef(fetchKey);
   const [status, setStatus] = useState<'draft' | 'finalized' | 'none' | 'loading'>('loading');
@@ -56,6 +63,14 @@ export function BoardResolutionStepLink({ engagement, className }: BoardResoluti
         : status === 'none'
           ? 'Not started'
           : null;
+
+  if (variant === 'button') {
+    return (
+      <Button asChild size="sm" variant="outline" className={cn('cursor-pointer', className)}>
+        <Link href={internBoardResolutionPath(engagement)}>{label}</Link>
+      </Button>
+    );
+  }
 
   return (
     <Link

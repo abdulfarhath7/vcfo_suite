@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, m, useReducedMotion, type Variants } from 'framer-motion';
-import { AlertCircle, Check, ChevronDown, Loader2, Lock, Unlock, Upload } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Loader2, Lock, Unlock, Upload } from 'lucide-react';
 import { ease } from '@/lib/motion';
 import type { ChecklistField } from '@/data/checklist';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
@@ -16,36 +16,11 @@ import {
   EMPTY_PENDING_ITEMS,
   isImageStoragePath,
 } from '@/views/incorporation/milestone-response-form-utils';
-
-export function PendingFieldsHint({
-  items,
-  className,
-  variant = 'section',
-}: {
-  items: SectionPendingItem[];
-  className?: string;
-  variant?: 'section' | 'step';
-}) {
-  if (!items.length) return null;
-  return (
-    <div className={cn('text-warning-text', className)}>
-      <p className="text-[11px] font-medium text-warning">
-        {variant === 'step' ? 'Still needed in this step' : 'Still needed'}
-      </p>
-      <ul className="mt-1 space-y-0.5 text-[11px] leading-relaxed text-warning-text/90">
-        {items.slice(0, 6).map((item) => (
-          <li key={item.fieldId} className="flex gap-1.5">
-            <span aria-hidden>·</span>
-            <span>{item.label}</span>
-          </li>
-        ))}
-        {items.length > 6 && (
-          <li className="text-warning-text/75">+ {items.length - 6} more</li>
-        )}
-      </ul>
-    </div>
-  );
-}
+import {
+  tabStripHorizontalDelta,
+  tabStripOverflowState,
+  tabStripScrollChunk,
+} from '@/views/incorporation/intern-section-tab-strip';
 
 export function Pre1SectionCard({
   index,
@@ -85,9 +60,6 @@ export function Pre1SectionCard({
             </span>
             <span className="min-w-0 flex-1 pt-0.5">
               <h3 className="text-base font-semibold leading-snug text-foreground">{title}</h3>
-              {!complete && pendingItems.length > 0 && (
-                <PendingFieldsHint items={pendingItems} className="mt-1.5 pr-2" />
-              )}
             </span>
             <ChevronDown className={cn('w-4 h-4 shrink-0 text-muted-foreground transition-transform mt-1', open && 'rotate-180')} />
           </button>
@@ -294,5 +266,145 @@ export function FormErrorSummary({
         </div>
       </div>
     </div>
+  );
+}
+
+export function InternSectionHeadingNav({
+  sections,
+  selectedIndex,
+  onSelect,
+}: {
+  sections: { title: string; complete: boolean }[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState({
+    overflowing: false,
+    canScrollLeft: false,
+    canScrollRight: false,
+  });
+
+  const updateOverflow = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setOverflow(tabStripOverflowState(el.scrollLeft, el.scrollWidth, el.clientWidth));
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    updateOverflow();
+    const observer = new ResizeObserver(updateOverflow);
+    observer.observe(el);
+    el.addEventListener('scroll', updateOverflow, { passive: true });
+    return () => {
+      observer.disconnect();
+      el.removeEventListener('scroll', updateOverflow);
+    };
+  }, [sections.length, selectedIndex, updateOverflow]);
+
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const tab = el.querySelector(`#intern-section-tab-${selectedIndex}`);
+    if (tab instanceof HTMLElement) {
+      tab.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+  }, [selectedIndex]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const onWheel = (event: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth + 1) return;
+      const delta = tabStripHorizontalDelta(event.deltaX, event.deltaY);
+      if (delta === 0) return;
+      event.preventDefault();
+      el.scrollLeft += delta;
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [sections.length]);
+
+  const scrollTabs = (direction: -1 | 1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const tab = el.querySelector('[role="tab"]');
+    const chunk = tabStripScrollChunk(
+      tab instanceof HTMLElement ? tab.getBoundingClientRect().width : undefined,
+    );
+    el.scrollBy({ left: direction * chunk, behavior: 'smooth' });
+  };
+
+  if (sections.length === 0) return null;
+
+  const arrowClass =
+    'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-raised hover:text-foreground disabled:pointer-events-none disabled:opacity-30';
+
+  return (
+    <nav aria-label="Step sections" className="border-b border-border">
+      <div className="flex h-11 min-w-0 items-stretch">
+        {overflow.overflowing ? (
+          <div className="flex w-9 shrink-0 items-center justify-center border-r border-border/60">
+            <button
+              type="button"
+              className={arrowClass}
+              aria-label="Scroll sections left"
+              disabled={!overflow.canScrollLeft}
+              onClick={() => scrollTabs(-1)}
+            >
+              <ChevronLeft className="h-5 w-5" strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+        ) : null}
+        <div
+          ref={scrollerRef}
+          className="flex min-w-0 flex-1 flex-nowrap items-stretch overflow-x-auto overflow-y-hidden overscroll-x-contain px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0"
+          role="tablist"
+        >
+          {sections.map((section, index) => {
+            const selected = index === selectedIndex;
+            return (
+              <button
+                key={section.title}
+                id={`intern-section-tab-${index}`}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => onSelect(index)}
+                className={cn(
+                  'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-3 text-[13.5px] font-medium transition-colors',
+                  selected ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  {section.complete ? (
+                    <Check className="h-3 w-3 shrink-0 text-success" aria-hidden />
+                  ) : null}
+                  {section.title}
+                </span>
+                {selected ? (
+                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" aria-hidden />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+        {overflow.overflowing ? (
+          <div className="flex w-9 shrink-0 items-center justify-center border-l border-border/60">
+            <button
+              type="button"
+              className={arrowClass}
+              aria-label="Scroll sections right"
+              disabled={!overflow.canScrollRight}
+              onClick={() => scrollTabs(1)}
+            >
+              <ChevronRight className="h-5 w-5" strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </nav>
   );
 }

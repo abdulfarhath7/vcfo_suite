@@ -96,6 +96,34 @@ export function groupFieldsBySection(fields: ChecklistField[]): { section: strin
   return groups;
 }
 
+/** Named intern section tabs; leading/trailing ungrouped fields fold into the nearest heading. */
+export function internNamedSectionGroups(
+  groups: { section: string | null; fields: ChecklistField[] }[],
+): { section: string; fields: ChecklistField[] }[] {
+  const named: { section: string; fields: ChecklistField[] }[] = [];
+  for (const group of groups) {
+    if (group.section) {
+      named.push({ section: group.section, fields: [...group.fields] });
+    }
+  }
+  if (named.length === 0) return [];
+
+  const firstNamedIndex = groups.findIndex((group) => Boolean(group.section));
+  const lastNamedIndex = groups.reduce(
+    (found, group, index) => (group.section ? index : found),
+    -1,
+  );
+  if (firstNamedIndex > 0) {
+    const leading = groups.slice(0, firstNamedIndex).flatMap((group) => group.fields);
+    named[0]!.fields = [...leading, ...named[0]!.fields];
+  }
+  if (lastNamedIndex >= 0 && lastNamedIndex < groups.length - 1) {
+    const trailing = groups.slice(lastNamedIndex + 1).flatMap((group) => group.fields);
+    named[named.length - 1]!.fields.push(...trailing);
+  }
+  return named;
+}
+
 export type MilestoneFormFieldLayout = 'short' | 'full';
 
 const LONG_HELPER_CHARS = 120;
