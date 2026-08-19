@@ -543,51 +543,6 @@
     }
   }
 
-  /* Sidebar edge toggle — premium grab-handle: glass pill, inset top light,
-     accent glow on hover, micro press. Transform states must re-declare the
-     -50% centering because they override Tailwind's translate utility. */
-  .sidebar-edge-toggle {
-    background: oklch(var(--panel) / 0.95);
-    border: 1px solid oklch(var(--border));
-    backdrop-filter: blur(12px);
-    box-shadow:
-      inset 0 1px 0 oklch(100% 0 0 / 0.55),
-      0 1px 2px oklch(var(--shadow-ink) / 0.08),
-      0 4px 12px oklch(var(--shadow-ink) / 0.14);
-    transition:
-      color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease,
-      transform 0.18s ease, opacity 0.2s ease;
-  }
-  .sidebar-edge-toggle:hover {
-    color: oklch(var(--role-accent-foreground));
-    border-color: oklch(var(--role-accent) / 0.45);
-    box-shadow:
-      inset 0 1px 0 oklch(100% 0 0 / 0.55),
-      0 2px 6px oklch(var(--shadow-ink) / 0.12),
-      0 8px 20px oklch(var(--shadow-ink) / 0.18),
-      0 0 0 3px oklch(var(--role-accent) / 0.12);
-    transform: translateY(-50%) scale(1.05);
-  }
-  .sidebar-edge-toggle:active {
-    transform: translateY(-50%) scale(0.92);
-  }
-  .dark .sidebar-edge-toggle {
-    box-shadow:
-      inset 0 1px 0 oklch(100% 0 0 / 0.08),
-      0 1px 2px oklch(0% 0 0 / 0.4),
-      0 4px 12px oklch(0% 0 0 / 0.4);
-  }
-  .dark .sidebar-edge-toggle:hover {
-    box-shadow:
-      inset 0 1px 0 oklch(100% 0 0 / 0.12),
-      0 2px 6px oklch(0% 0 0 / 0.45),
-      0 8px 20px oklch(0% 0 0 / 0.5),
-      0 0 0 3px oklch(var(--role-accent) / 0.22);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .sidebar-edge-toggle { transition: none; }
-  }
-
   .role-accent-text { color: oklch(var(--role-accent-foreground)); }
   .role-accent-bg { background: oklch(var(--role-accent-soft)); }
   .role-accent-border { border-color: oklch(var(--role-accent) / 0.35); }
@@ -663,6 +618,19 @@
 }
 
 @layer utilities {
+  /* Sidebar nav: scroll with wheel/trackpad, no visible bar */
+  .sidebar-scroll {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .sidebar-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   .grain {
     position: relative;
   }
