@@ -17,6 +17,10 @@ export type FanoutRecipients = {
   manager: FanoutParty | null;
   /** All PMs (membership + primary). Prefer this over `manager` alone. */
   managers: FanoutParty[];
+  /** Firm admins / super admins. */
+  admins: FanoutParty[];
+  /** Extra CC from the engagement / env (client-facing mail). */
+  progressCc?: string[];
 };
 
 export type EngagementProcessEvent =
@@ -28,6 +32,7 @@ export type EngagementProcessEvent =
   | 'delivered'
   | 'unlocked'
   | 'docs_shared'
+  | 'board_resolution_shared'
   | 'request_created';
 
 export type StaffEmailTarget = {
@@ -67,12 +72,50 @@ export function collectManagerParties(recipients: FanoutRecipients): FanoutParty
   );
 }
 
+export function collectAdminParties(recipients: FanoutRecipients): FanoutParty[] {
+  return uniqueParties(recipients.admins ?? []);
+}
+
 function clientEmailSet(recipients: FanoutRecipients): Set<string> {
   const emails = [
     ...recipients.clients.map((c) => c.email.trim().toLowerCase()),
     recipients.client?.email?.trim().toLowerCase(),
   ].filter((e): e is string => Boolean(e));
   return new Set(emails);
+}
+
+/** CC on manager → client approval: firm admins + project leads (not the client). */
+export function approvalCcEmails(
+  recipients: FanoutRecipients,
+  opts?: { excludeEmails?: string[] },
+): string[] {
+  const exclude = new Set(
+    [
+      ...clientEmailSet(recipients),
+      ...(opts?.excludeEmails ?? []).map((e) => e.trim().toLowerCase()),
+    ].filter(Boolean),
+  );
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (party: FanoutParty | null | undefined) => {
+    const addr = party?.email?.trim();
+    if (!addr) return;
+    const key = addr.toLowerCase();
+    if (exclude.has(key) || seen.has(key)) return;
+    seen.add(key);
+    out.push(addr);
+  };
+  for (const admin of collectAdminParties(recipients)) push(admin);
+  for (const lead of collectLeadParties(recipients)) push(lead);
+  for (const extra of recipients.progressCc ?? []) {
+    const addr = extra.trim();
+    if (!addr) continue;
+    const key = addr.toLowerCase();
+    if (exclude.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    out.push(addr);
+  }
+  return out;
 }
 
 /** Client → staff Resend (not Graph). */
@@ -92,6 +135,7 @@ export function opensClientOutgoingDraft(event: EngagementProcessEvent): boolean
     event === 'delivered' ||
     event === 'unlocked' ||
     event === 'docs_shared' ||
+    event === 'board_resolution_shared' ||
     event === 'request_created'
   );
 }

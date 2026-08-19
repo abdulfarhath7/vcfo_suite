@@ -16,7 +16,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { GoldButton } from '@/components/noir';
 import { useApp } from '@/context/AppContext';
 import type { OutgoingEmailDraft } from '@/lib/email/email-dispatch';
-import { COMPOSE_OUTGOING_EMAIL_EVENT, toastError, toastSuccess } from '@/lib/toast-errors';
+import { COMPOSE_OUTGOING_EMAIL_EVENT, toastError, toastEmailDispatch } from '@/lib/toast-errors';
+
+function parseAddressList(value: string): string[] {
+  return [...new Set(value.split(/[,;\s]+/).map((e) => e.trim()).filter(Boolean))];
+}
 
 function isStaffRole(role: string | undefined): boolean {
   return role === 'super_admin' || role === 'admin' || role === 'manager' || role === 'intern';
@@ -26,6 +30,7 @@ export function ComposeOutgoingEmailHost() {
   const { user } = useApp();
   const [draft, setDraft] = useState<OutgoingEmailDraft | null>(null);
   const [to, setTo] = useState('');
+  const [cc, setCc] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [initialBody, setInitialBody] = useState('');
@@ -62,6 +67,7 @@ export function ComposeOutgoingEmailHost() {
       if (!detail?.to?.length) return;
       setDraft(detail);
       setTo(detail.to.join(', '));
+      setCc((detail.cc ?? []).join(', '));
       setSubject(detail.subject);
       setBody(detail.text);
       setInitialBody(detail.text);
@@ -80,10 +86,10 @@ export function ComposeOutgoingEmailHost() {
   };
 
   const send = async () => {
-    const addresses = to
-      .split(/[,;\s]+/)
-      .map((e) => e.trim())
-      .filter(Boolean);
+    const addresses = parseAddressList(to);
+    const ccAddresses = parseAddressList(cc).filter(
+      (addr) => !addresses.some((toAddr) => toAddr.toLowerCase() === addr.toLowerCase()),
+    );
     if (addresses.length === 0 || !subject.trim()) {
       toastError('Cannot send', 'Add at least one recipient and a subject.');
       return;
@@ -96,6 +102,7 @@ export function ComposeOutgoingEmailHost() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: addresses,
+          cc: ccAddresses,
           subject: subject.trim(),
           text: body,
           html: edited ? undefined : draft?.html,
@@ -110,12 +117,38 @@ export function ComposeOutgoingEmailHost() {
         }
         throw new Error(json.error ?? 'send_failed');
       }
-      toastSuccess('Email sent', `From ${json.from ?? 'your Outlook mailbox'} to ${addresses.join(', ')}`);
+      toastEmailDispatch(
+        {
+          attempted: addresses.length,
+          sent: addresses,
+          skipped: [],
+          failed: [],
+          subjects: [subject.trim()],
+        },
+        {
+          engagementId: draft?.engagementId,
+          companyName: draft?.companyName,
+          itemId: draft?.itemId,
+          href: '#',
+        },
+      );
       close();
     } catch (err) {
-      toastError(
-        "Email didn't send",
-        err instanceof Error ? err.message : 'Try again in a moment.',
+      toastEmailDispatch(
+        {
+          attempted: addresses.length,
+          sent: [],
+          skipped: [],
+          failed: addresses,
+          subjects: [subject.trim()],
+          error: err instanceof Error ? err.message : 'send_failed',
+        },
+        {
+          engagementId: draft?.engagementId,
+          companyName: draft?.companyName,
+          itemId: draft?.itemId,
+          href: '#',
+        },
       );
     } finally {
       setSending(false);
@@ -128,7 +161,8 @@ export function ComposeOutgoingEmailHost() {
         <DialogHeader>
           <DialogTitle>Email client</DialogTitle>
           <DialogDescription>
-            Edit the message, then send from your Outlook mailbox.
+            Edit the message, then send from your Outlook mailbox. Approvals prefill CC with
+            admin and project lead.
           </DialogDescription>
         </DialogHeader>
 
@@ -152,6 +186,15 @@ export function ComposeOutgoingEmailHost() {
           <div className="space-y-1">
             <Label htmlFor="outgoing-to">To</Label>
             <Input id="outgoing-to" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="outgoing-cc">CC</Label>
+            <Input
+              id="outgoing-cc"
+              value={cc}
+              onChange={(e) => setCc(e.target.value)}
+              placeholder="Admin and project lead"
+            />
           </div>
           <div className="space-y-1">
             <Label htmlFor="outgoing-subject">Subject</Label>

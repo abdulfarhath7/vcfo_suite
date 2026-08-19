@@ -101,7 +101,7 @@ async function validAccessToken(ctx: AuthContext): Promise<{ access: string; msE
 
 export async function sendMailViaOutlook(
   ctx: AuthContext,
-  input: { to: string[]; subject: string; html: string; text?: string },
+  input: { to: string[]; cc?: string[]; subject: string; html: string; text?: string },
 ): Promise<{ msEmail: string }> {
   const { access, msEmail } = await validAccessToken(ctx);
   await graphSendMail(access, input);

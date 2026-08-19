@@ -7,6 +7,7 @@ import { escapeHtml } from '@/lib/email/email-layout';
 
 const bodySchema = z.object({
   to: z.union([z.string().email(), z.array(z.string().email()).min(1)]),
+  cc: z.union([z.string().email(), z.array(z.string().email())]).optional(),
   subject: z.string().trim().min(1).max(500),
   text: z.string().max(20000).optional(),
   html: z.string().max(50000).optional(),
@@ -30,6 +31,8 @@ export async function POST(request: Request) {
   }
 
   const to = Array.isArray(body.data.to) ? body.data.to : [body.data.to];
+  const ccRaw = body.data.cc;
+  const cc = ccRaw ? (Array.isArray(ccRaw) ? ccRaw : [ccRaw]) : [];
   const text = body.data.text?.trim() ?? '';
   const html = body.data.html?.trim() || (text ? htmlFromText(text) : '');
   if (!html) {
@@ -39,6 +42,7 @@ export async function POST(request: Request) {
   try {
     const sent = await sendMailViaOutlook(guard.ctx, {
       to,
+      cc,
       subject: body.data.subject,
       html,
       text: text || undefined,

@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Client, clients as seedClients } from '@/data/mockData';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import type { AppContextValue, ChecklistItemState } from '@/context/AppContext';
+import { applySidebarCollapsed } from '@/components/shell/intern-sidebar';
 import {
   Engagement,
   TaskInstance,
@@ -121,7 +122,7 @@ type AppProviderState = {
   invites: Invite[];
   activity: ActivityEvent[];
   notifications: AppNotification[];
-  sidebarCollapsed: boolean;
+  sidebarMode: 'auto' | 'open' | 'closed';
   commandOpen: boolean;
   dbChecklistState: Record<string, EngagementChecklistState>;
   selectedClient: Client | null;
@@ -144,7 +145,7 @@ function createInitialAppProviderState(): AppProviderState {
     invites: [],
     activity: [],
     notifications: [],
-    sidebarCollapsed: false,
+    sidebarMode: 'auto',
     commandOpen: false,
     dbChecklistState: {},
     selectedClient: null,
@@ -176,7 +177,7 @@ export function useAppProviderValue(): AppContextValue {
     invites,
     activity,
     notifications,
-    sidebarCollapsed,
+    sidebarMode,
     commandOpen,
     dbChecklistState,
     selectedClient,
@@ -208,8 +209,8 @@ export function useAppProviderValue(): AppContextValue {
   const setNotifications = useCallback((value: SetStateAction<AppProviderState['notifications']>) => {
     dispatch({ type: 'patch', key: 'notifications', value });
   }, [dispatch]);
-  const setSidebarCollapsed = useCallback((value: SetStateAction<AppProviderState['sidebarCollapsed']>) => {
-    dispatch({ type: 'patch', key: 'sidebarCollapsed', value });
+  const setSidebarMode = useCallback((value: SetStateAction<AppProviderState['sidebarMode']>) => {
+    dispatch({ type: 'patch', key: 'sidebarMode', value });
   }, [dispatch]);
   const setCommandOpen = useCallback((value: SetStateAction<AppProviderState['commandOpen']>) => {
     dispatch({ type: 'patch', key: 'commandOpen', value });
@@ -910,13 +911,15 @@ export function useAppProviderValue(): AppContextValue {
     [setClients, setSelectedClient],
   );
 
+  const sidebarCollapsed = sidebarMode !== 'open';
   const toggleSidebar = useCallback(
-    () => setSidebarCollapsed((v) => !v),
-    [setSidebarCollapsed],
+    () => setSidebarMode((mode) => (mode === 'open' ? 'auto' : 'open')),
+    [setSidebarMode],
   );
   const collapseSidebarTo = useCallback(
-    (collapsed: boolean) => setSidebarCollapsed(collapsed),
-    [setSidebarCollapsed],
+    (collapsed: boolean) =>
+      setSidebarMode((mode) => applySidebarCollapsed(mode, collapsed)),
+    [setSidebarMode],
   );
 
   const getState = useCallback(
@@ -936,7 +939,7 @@ export function useAppProviderValue(): AppContextValue {
     createProjectWithClient: createProjectWithClientFn, updateEngagement: updateEngagementFn,
     inviteClient, acceptInvite, updateTask, uploadDoc, approveDoc, createRequest,
     internOptions, internsLoading, engagementsLoading,
-    sidebarCollapsed, toggleSidebar, setSidebarCollapsed: collapseSidebarTo,
+    sidebarCollapsed, sidebarMode, setSidebarMode, toggleSidebar, setSidebarCollapsed: collapseSidebarTo,
     commandOpen, setCommandOpen,
     role: (user?.role as Role) || 'admin',
     selectedClient,
@@ -978,18 +981,19 @@ export function useAppProviderValue(): AppContextValue {
       }
 
       const engagementId = engagement.id;
+      const { resendManagerEmail: _resendManagerEmail, ...statePatch } = patch;
       const previous = dbChecklistState[engagementId] ?? {};
       const optimistic: EngagementChecklistState = {
         ...previous,
         [itemId]: {
           status: 'not-started',
           ...previous[itemId],
-          ...patch,
-          ...(patch.responses
+          ...statePatch,
+          ...(statePatch.responses
             ? {
                 responses: {
                   ...(previous[itemId]?.responses ?? {}),
-                  ...patch.responses,
+                  ...statePatch.responses,
                 },
               }
             : {}),
@@ -1162,6 +1166,7 @@ export function useAppProviderValue(): AppContextValue {
     markAllNotificationsRead,
     suppressChecklistNotification,
     sidebarCollapsed,
+    sidebarMode,
     commandOpen,
     selectedClient,
     engagementChecklist,
@@ -1184,6 +1189,7 @@ export function useAppProviderValue(): AppContextValue {
     addClient,
     toggleSidebar,
     collapseSidebarTo,
+    setSidebarMode,
     getState,
     internOptions,
     internsLoading,

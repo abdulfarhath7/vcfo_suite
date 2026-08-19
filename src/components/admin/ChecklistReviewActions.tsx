@@ -66,7 +66,7 @@ export function ChecklistReviewActions({
       toastSuccess(
         action === 'accept' ? 'Submission accepted' : 'Submission rejected',
         action === 'accept'
-          ? 'This milestone is marked approved.'
+          ? 'This milestone is marked approved. Send the client email (admin and lead are on CC).'
           : 'The client can update unlocked fields and resubmit.',
       );
       if (action === 'reject') {

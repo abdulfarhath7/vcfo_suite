@@ -1,6 +1,8 @@
 import 'server-only';
 
+import type { AuthContext } from '@/auth/guards';
 import { getItem } from '@/data/checklist';
+import { sendMailViaOutlook } from '@/db/repositories/outlook-connections';
 import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import type { EngagementParty, EngagementRecipients } from '@/db/repositories/engagement-recipients';
@@ -11,6 +13,8 @@ import {
   type OutgoingEmailDraft,
 } from '@/lib/email/email-dispatch';
 import {
+  approvalCcEmails,
+  collectAdminParties,
   collectLeadParties,
   collectManagerParties,
   emailsStaffViaResend,
@@ -28,6 +32,8 @@ import {
 import type { NotificationKind } from '@/lib/checklist-notifications';
 import {
   adminProjectStepPath,
+  clientBoardResolutionPath,
+  internBoardResolutionPath,
   internEngagementStepPath,
 } from '@/lib/project-step-path';
 import { siteUrl } from '@/lib/site-url';
@@ -43,6 +49,10 @@ type NotifyInput = {
   requestLabel?: string;
   /** Actor userId — skip notifying the person who triggered the action. */
   actorUserId?: string;
+  /** Re-open compose without inserting another in-app row. */
+  skipInAppNotifications?: boolean;
+  /** When set, lead→manager approval tries Graph from this staff mailbox first. */
+  outlookCtx?: AuthContext;
 };
 
 function stepTitle(itemId: string): string {
@@ -67,6 +77,8 @@ function emailKind(event: EngagementProcessEvent): ProgressEmailKind | null {
       return 'unlocked';
     case 'docs_shared':
       return 'docs_shared';
+    case 'board_resolution_shared':
+      return 'board_resolution_shared';
     case 'request_created':
       return null;
   }
@@ -89,6 +101,8 @@ function notificationKind(event: EngagementProcessEvent): NotificationKind {
       return 'checklist.unlock';
     case 'docs_shared':
       return 'docs.share';
+    case 'board_resolution_shared':
+      return 'checklist.deliver';
     case 'request_created':
       return 'request.created';
   }
@@ -110,6 +124,8 @@ function findPartyByUserId(
   if (recipients.manager?.userId === userId) return recipients.manager;
   const fromManagers = recipients.managers.find((m) => m.userId === userId);
   if (fromManagers) return fromManagers;
+  const fromAdmins = recipients.admins.find((a) => a.userId === userId);
+  if (fromAdmins) return fromAdmins;
   if (recipients.client?.userId === userId) return recipients.client;
   return recipients.clients.find((c) => c.userId === userId) ?? null;
 }
@@ -181,8 +197,16 @@ function buildOutgoingClientDraft(
         : null;
   if (!copy) return undefined;
 
+  const actor = findPartyByUserId(recipients, input.actorUserId);
+  const cc =
+    input.event === 'review_accepted'
+      ? approvalCcEmails(recipients, {
+          excludeEmails: actor?.email ? [actor.email] : [],
+        })
+      : [];
   return {
     to,
+    ...(cc.length > 0 ? { cc } : {}),
     subject: copy.subject,
     html: copy.html,
     text: copy.text,
@@ -239,8 +263,14 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     const title = input.requestLabel?.trim() || stepTitle(input.itemId);
     const company = recipients.companyName;
     const kind = notificationKind(input.event);
-    const clientHref = '/app/client/incorporation';
-    const leadHref = internEngagementStepPath(project, input.itemId);
+    const clientHref =
+      input.event === 'board_resolution_shared'
+        ? clientBoardResolutionPath()
+        : '/app/client/incorporation';
+    const leadHref =
+      input.event === 'board_resolution_shared'
+        ? internBoardResolutionPath(project)
+        : internEngagementStepPath(project, input.itemId);
     const managerHref = adminProjectStepPath(project, input.itemId, 'manager');
 
     const notifDrafts: Array<
@@ -286,6 +316,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       }
     };
 
+    if (!input.skipInAppNotifications) {
     if (input.event === 'client_submitted') {
       pushNotifToLeads(
         'Client submission',
@@ -311,6 +342,20 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         'Submission accepted',
         `${title} was accepted for ${company}.`,
       );
+      const adminHref = adminProjectStepPath(project, input.itemId, 'admin');
+      for (const admin of collectAdminParties(recipients)) {
+        if (!admin.userId || admin.userId === input.actorUserId) continue;
+        notifDrafts.push({
+          userId: admin.userId,
+          kind,
+          title: 'Submission accepted',
+          body: `${title} was accepted for ${company}.`,
+          engagementId: recipients.appId,
+          companyName: company,
+          itemId: input.itemId,
+          href: adminHref,
+        });
+      }
     } else if (input.event === 'review_rejected') {
       const body = input.note?.trim()
         ? `${title}: ${input.note.trim()}`
@@ -339,12 +384,33 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         'Drafts shared',
         `Incorporation drafts shared with client for ${company}.`,
       );
+    } else if (input.event === 'board_resolution_shared') {
+      pushNotifToClients(
+        'Board resolution ready',
+        'The board resolution is ready to download and sign.',
+      );
+      // Include the acting lead: process row lands in Received; Graph send
+      // writes email.sent on the Sent tab after they click Send.
+      for (const lead of collectLeadParties(recipients)) {
+        if (!lead.userId) continue;
+        notifDrafts.push({
+          userId: lead.userId,
+          kind,
+          title: 'Sent to client',
+          body: `Board resolution sent to client for ${company}.`,
+          engagementId: recipients.appId,
+          companyName: company,
+          itemId: input.itemId,
+          href: leadHref,
+        });
+      }
     } else if (input.event === 'request_created') {
       pushNotifToClients('Document requested', `Please upload: ${title}.`);
       pushNotifToLeads(
         'Document requested',
         `Document request “${title}” sent to client for ${company}.`,
       );
+    }
     }
 
     if (notifDrafts.length > 0) {
@@ -363,8 +429,8 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     }> = [];
 
     // Client → staff: Resend From company_name@sbctrack.in
-    // Intern → manager (request approval): same Resend path, not Graph
-    // Lead/manager → client: in-app compose + Graph Mail.Send
+    // Intern → manager: Graph from the lead mailbox when connected, else Resend
+    // Lead/manager → client: in-app compose + Graph Mail.Send (CC admin + lead on accept)
     if (opensClientOutgoingDraft(input.event)) {
       email.outgoingDraft = buildOutgoingClientDraft(
         input,
@@ -375,7 +441,50 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       );
     }
 
-    if (emailsStaffViaResend(input.event) && progressKind) {
+    let skippedResendBecauseOutlook = false;
+    if (
+      input.event === 'lead_requested_review' &&
+      input.outlookCtx &&
+      progressKind
+    ) {
+      const staffTargets = staffEmailTargetsForEvent(input.event, recipients, {
+        leadHref,
+        managerHref,
+      });
+      const to = staffTargets.map((s) => s.email).filter(Boolean);
+      if (to.length > 0) {
+        const copy = buildProgressEmail({
+          kind: progressKind,
+          companyName: company,
+          itemId: input.itemId,
+          note: input.note,
+          portalHref: absolute(staffTargets[0]!.href),
+          audience: 'lead',
+          title: input.requestLabel,
+        });
+        try {
+          await sendMailViaOutlook(input.outlookCtx, {
+            to,
+            subject: copy.subject,
+            html: copy.html,
+            text: copy.text,
+          });
+          for (const addr of to) {
+            email.attempted += 1;
+            email.sent.push(addr);
+          }
+          pushEmailSubject(email, copy.subject);
+          skippedResendBecauseOutlook = true;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'outlook_send_failed';
+          if (message !== 'outlook_not_connected' && message !== 'outlook_not_configured') {
+            console.error('[notify] outlook lead→manager failed', message);
+          }
+        }
+      }
+    }
+
+    if (emailsStaffViaResend(input.event) && progressKind && !skippedResendBecauseOutlook) {
       const staffTargets = staffEmailTargetsForEvent(input.event, recipients, {
         leadHref,
         managerHref,

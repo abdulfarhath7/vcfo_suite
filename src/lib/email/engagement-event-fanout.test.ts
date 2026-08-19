@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  approvalCcEmails,
   collectManagerParties,
   emailsStaffViaResend,
   opensClientOutgoingDraft,
@@ -22,6 +23,7 @@ function recipients(partial: Partial<FanoutRecipients> = {}): FanoutRecipients {
     leads: [lead],
     manager,
     managers: [manager],
+    admins: [],
     ...partial,
   };
 }
@@ -88,6 +90,39 @@ describe('collectManagerParties', () => {
   });
 });
 
+describe('approvalCcEmails', () => {
+  const admin = { userId: 'adm-1', email: 'admin@sbcllp.in', name: 'Admin' };
+
+  it('CCs firm admins and leads, not the client', () => {
+    expect(
+      approvalCcEmails(
+        recipients({
+          admins: [admin],
+        }),
+      ).sort(),
+    ).toEqual(['admin@sbcllp.in', 'intern@vcfo.local']);
+  });
+
+  it('drops excluded addresses', () => {
+    expect(
+      approvalCcEmails(recipients({ admins: [admin] }), {
+        excludeEmails: ['intern@vcfo.local'],
+      }),
+    ).toEqual(['admin@sbcllp.in']);
+  });
+
+  it('includes engagement progress CC addresses', () => {
+    expect(
+      approvalCcEmails(
+        recipients({
+          admins: [admin],
+          progressCc: ['extra@sbcllp.in', 'intern@vcfo.local'],
+        }),
+      ).sort(),
+    ).toEqual(['admin@sbcllp.in', 'extra@sbcllp.in', 'intern@vcfo.local']);
+  });
+});
+
 describe('channel rules', () => {
   it('uses Resend for client→staff and intern→manager, Graph compose for staff→client', () => {
     expect(emailsStaffViaResend('client_submitted')).toBe(true);
@@ -95,6 +130,8 @@ describe('channel rules', () => {
     expect(opensClientOutgoingDraft('client_submitted')).toBe(false);
     expect(opensClientOutgoingDraft('lead_requested_review')).toBe(false);
     expect(opensClientOutgoingDraft('review_accepted')).toBe(true);
+    expect(opensClientOutgoingDraft('board_resolution_shared')).toBe(true);
     expect(emailsStaffViaResend('review_accepted')).toBe(false);
+    expect(emailsStaffViaResend('board_resolution_shared')).toBe(false);
   });
 });

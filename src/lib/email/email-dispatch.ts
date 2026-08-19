@@ -6,6 +6,7 @@
 /** Lead → client compose payload (sent via Graph Mail.Send after in-app edit). */
 export type OutgoingEmailDraft = {
   to: string[];
+  cc?: string[];
   subject: string;
   html: string;
   text: string;

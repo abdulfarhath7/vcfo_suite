@@ -131,8 +131,9 @@ export async function graphMe(accessToken: string): Promise<{ id?: string; mail?
 
 export async function graphSendMail(
   accessToken: string,
-  input: { to: string[]; subject: string; html: string; text?: string },
+  input: { to: string[]; cc?: string[]; subject: string; html: string; text?: string },
 ): Promise<void> {
+  const cc = [...new Set((input.cc ?? []).map((a) => a.trim()).filter(Boolean))];
   const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
     method: 'POST',
     headers: {
@@ -149,6 +150,13 @@ export async function graphSendMail(
         toRecipients: input.to.map((address) => ({
           emailAddress: { address },
         })),
+        ...(cc.length > 0
+          ? {
+              ccRecipients: cc.map((address) => ({
+                emailAddress: { address },
+              })),
+            }
+          : {}),
       },
       saveToSentItems: true,
     }),

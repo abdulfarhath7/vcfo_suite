@@ -92,6 +92,24 @@ export function getClientReviewBanner(slice: SliceLike): ClientReviewBanner | nu
   };
 }
 
+/** Intern Save / Request manager approval — mark the step for the PM inbox. */
+export function internLeadManagerRequestPatch(
+  itemState?: SliceLike,
+): Partial<ChecklistItemStateSlice> {
+  const now = new Date().toISOString();
+  return {
+    reviewStatus: 'reviewing',
+    reviewSource: 'lead_manager_request',
+    locked: true,
+    clientSubmittedAt: now,
+    unlockedFields: [],
+    rejectionNote: undefined,
+    reviewedAt: undefined,
+    reviewedBy: undefined,
+    status: itemState?.status === 'completed' ? 'completed' : 'in-progress',
+  };
+}
+
 export function getInternReviewLabel(slice: SliceLike): string | null {
   const status = getReviewStatus(slice);
   if (status === 'reviewing') return 'Awaiting manager / admin approval';

@@ -59,7 +59,11 @@ export async function POST(request: Request, context: RouteContext) {
       ? checklistStateFromRow(before)[body.data.itemId]
       : undefined;
 
-    let patch = body.data.patch as Partial<ChecklistItemStateSlice>;
+    let { resendManagerEmail, ...patchFields } = body.data.patch as {
+      resendManagerEmail?: unknown;
+    } & Partial<ChecklistItemStateSlice>;
+    const retryManagerEmail = resendManagerEmail === true;
+    let patch = patchFields;
     if (guard.ctx.role === 'client') {
       const {
         reviewStatus: _rs,
@@ -92,25 +96,40 @@ export async function POST(request: Request, context: RouteContext) {
     const nextSlice = checklistState[body.data.itemId];
     const newlyDelivered =
       !prevSlice?.deliveredToClientAt?.trim() && Boolean(nextSlice?.deliveredToClientAt?.trim());
-    const newlyLeadManagerRequest =
+    const awaitingLeadRequest =
       nextSlice?.reviewSource === 'lead_manager_request' &&
-      prevSlice?.reviewSource !== 'lead_manager_request';
+      nextSlice?.reviewStatus === 'reviewing';
+    const enteredLeadReview =
+      awaitingLeadRequest &&
+      (prevSlice?.reviewSource !== 'lead_manager_request' ||
+        prevSlice?.reviewStatus !== 'reviewing');
+    const responsesChanged =
+      JSON.stringify(prevSlice?.responses ?? {}) !== JSON.stringify(nextSlice?.responses ?? {});
+    const retryLeadManagerEmail =
+      retryManagerEmail && guard.ctx.role === 'intern' && awaitingLeadRequest;
+    const internResubmittedForApproval =
+      guard.ctx.role === 'intern' && awaitingLeadRequest && responsesChanged;
+    const notifyLeadRequest =
+      enteredLeadReview || internResubmittedForApproval || retryLeadManagerEmail;
 
-    const email = newlyLeadManagerRequest
-      ? await notifyEngagementEvent({
-          engagementId: id,
-          itemId: body.data.itemId,
-          event: 'lead_requested_review',
-          actorUserId: guard.ctx.userId,
-        })
-      : newlyDelivered
+    const email =
+      notifyLeadRequest
         ? await notifyEngagementEvent({
             engagementId: id,
             itemId: body.data.itemId,
-            event: 'delivered',
+            event: 'lead_requested_review',
             actorUserId: guard.ctx.userId,
+            skipInAppNotifications: retryLeadManagerEmail && !enteredLeadReview && !responsesChanged,
+            outlookCtx: guard.ctx,
           })
-        : emptyEmailDispatch();
+        : newlyDelivered
+          ? await notifyEngagementEvent({
+              engagementId: id,
+              itemId: body.data.itemId,
+              event: 'delivered',
+              actorUserId: guard.ctx.userId,
+            })
+          : emptyEmailDispatch();
 
     return NextResponse.json({ checklistState, email });
   } catch (err) {

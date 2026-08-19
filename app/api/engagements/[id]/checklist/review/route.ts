@@ -40,6 +40,7 @@ export async function POST(request: Request, context: RouteContext) {
       event: body.data.action === 'accept' ? 'review_accepted' : 'review_rejected',
       note: body.data.note,
       actorUserId: guard.ctx.userId,
+      outlookCtx: guard.ctx,
     });
     return NextResponse.json({ checklistState, email });
   } catch (err) {

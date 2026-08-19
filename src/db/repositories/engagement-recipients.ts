@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { engagementClients, engagements, profiles } from '@/db/schema';
 import { engagementDbId, LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
@@ -32,6 +32,8 @@ export type EngagementRecipients = {
   manager: EngagementParty | null;
   /** All PMs from engagement_managers (+ primary if missing). */
   managers: EngagementParty[];
+  /** Active firm admins / super admins (CC on manager → client approval). */
+  admins: EngagementParty[];
   progressCc: string[];
 };
 
@@ -177,6 +179,27 @@ export async function resolveEngagementRecipients(
   const manager =
     managers.find((m) => m.userId === row.managerId) ?? managers[0] ?? null;
 
+  const adminRows = await db
+    .select({ id: profiles.id, email: profiles.email, name: profiles.name })
+    .from(profiles)
+    .where(
+      and(
+        inArray(profiles.role, ['admin', 'super_admin']),
+        eq(profiles.status, 'active'),
+      ),
+    );
+  const admins: EngagementParty[] = [];
+  for (const a of adminRows) {
+    const email = a.email?.trim();
+    if (!email) continue;
+    if (admins.some((x) => x.userId === a.id)) continue;
+    admins.push({
+      userId: a.id,
+      email,
+      name: a.name?.trim() || email,
+    });
+  }
+
   const client = primary ?? clients[0] ?? null;
   const progressCc = getProgressCcRecipients(row.progressCcEmails ?? [], {
     excludeTo: client?.email,
@@ -193,6 +216,7 @@ export async function resolveEngagementRecipients(
     leads,
     manager,
     managers,
+    admins,
     progressCc,
   };
 }
