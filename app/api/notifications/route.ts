@@ -3,11 +3,18 @@ import { requireAuth } from '@/auth/guards';
 import {
   createNotification,
   createNotifications,
+  deleteNotifications,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  restoreNotifications,
 } from '@/db/repositories/notifications';
 import type { AppNotification } from '@/lib/checklist-notifications';
+import {
+  isPersistedNotificationId,
+  parseNotificationIds,
+  parseRestoreNotifications,
+} from '@/lib/notification-dismiss';
 
 /** GET /api/notifications */
 export async function GET() {
@@ -24,7 +31,7 @@ export async function GET() {
   }
 }
 
-/** POST /api/notifications — create one or many; or mark read. */
+/** POST /api/notifications — create one or many; mark read; delete; restore. */
 export async function POST(request: Request) {
   const guard = await requireAuth();
   if (guard.ok === false) {
@@ -33,8 +40,9 @@ export async function POST(request: Request) {
   let body: {
     action?: string;
     id?: string;
+    ids?: unknown;
     notification?: Omit<AppNotification, 'id' | 'read' | 'createdAt'>;
-    notifications?: Array<Omit<AppNotification, 'id' | 'read' | 'createdAt'>>;
+    notifications?: unknown;
   };
   try {
     body = await request.json();
@@ -58,8 +66,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ count });
   }
 
+  if (body.action === 'delete') {
+    const parsed = parseNotificationIds(body.ids ?? body.id);
+    if (!parsed) {
+      return NextResponse.json({ error: 'ids_required' }, { status: 400 });
+    }
+    const ids = parsed.filter(isPersistedNotificationId);
+    try {
+      const notifications = await deleteNotifications(guard.ctx, ids);
+      return NextResponse.json({ notifications });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'delete_failed';
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  }
+
+  if (body.action === 'restore') {
+    const parsed = parseRestoreNotifications(body.notifications);
+    if (!parsed) {
+      return NextResponse.json({ error: 'invalid_notifications' }, { status: 400 });
+    }
+    const items = parsed.filter((n) => isPersistedNotificationId(n.id));
+    try {
+      const notifications = await restoreNotifications(guard.ctx, items);
+      return NextResponse.json({ notifications });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'restore_failed';
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  }
+
   if (body.notifications && Array.isArray(body.notifications)) {
-    const notifications = await createNotifications(guard.ctx, body.notifications);
+    const notifications = await createNotifications(
+      guard.ctx,
+      body.notifications as Array<Omit<AppNotification, 'id' | 'read' | 'createdAt'>>,
+    );
     return NextResponse.json({ notifications }, { status: 201 });
   }
 

@@ -10,19 +10,28 @@ import {
 } from '@/lib/project-step-path';
 import type { Engagement } from '@/data/engagements';
 
-export type NotificationKind =
-  | 'checklist.deliver'
-  | 'checklist.submit'
-  | 'checklist.review'
-  | 'checklist.unlock'
-  | 'docs.share'
-  | 'request.created'
-  | 'request.uploaded'
-  | 'team.assigned'
-  | 'team.removed'
-  | 'email.sent'
-  | 'email.skipped'
-  | 'email.failed';
+export const NOTIFICATION_KINDS = [
+  'checklist.deliver',
+  'checklist.submit',
+  'checklist.review',
+  'checklist.unlock',
+  'docs.share',
+  'request.created',
+  'request.uploaded',
+  'team.assigned',
+  'team.removed',
+  'email.sent',
+  'email.skipped',
+  'email.failed',
+] as const;
+
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+const NOTIFICATION_KIND_SET: ReadonlySet<string> = new Set(NOTIFICATION_KINDS);
+
+export function isNotificationKind(value: unknown): value is NotificationKind {
+  return typeof value === 'string' && NOTIFICATION_KIND_SET.has(value);
+}
 
 /** Outbound email confirmations vs inbound process updates. */
 export type NotificationDirection = 'sent' | 'received';
@@ -48,6 +57,13 @@ export interface AppNotification {
 }
 
 export type NotificationDraft = Omit<AppNotification, 'id' | 'read' | 'createdAt'>;
+
+export function notificationsInDirection(
+  items: AppNotification[],
+  direction: NotificationDirection,
+): AppNotification[] {
+  return items.filter((n) => notificationDirection(n.kind) === direction);
+}
 
 function itemTitle(itemId: string): string {
   return getItem(itemId)?.title ?? itemId;

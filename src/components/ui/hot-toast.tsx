@@ -133,7 +133,10 @@ export function HotToaster() {
     <Toaster
       position="top-right"
       gutter={10}
-      containerStyle={{ top: 16, right: 16 }}
+      containerStyle={{
+        top: "calc(var(--shell-sticky-top) + 0.5rem)",
+        right: 16,
+      }}
       toastOptions={{
         duration: 4500,
         style: getToastVariantStyle("default"),

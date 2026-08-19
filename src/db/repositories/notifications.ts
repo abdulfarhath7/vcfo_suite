@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { notifications } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -161,4 +161,41 @@ export async function markAllNotificationsRead(ctx: AuthContext): Promise<number
     .where(and(eq(notifications.userId, ctx.userId), eq(notifications.status, 'unread')))
     .returning({ id: notifications.id });
   return rows.length;
+}
+
+export async function deleteNotifications(
+  ctx: AuthContext,
+  ids: string[],
+): Promise<AppNotification[]> {
+  if (ids.length === 0) return [];
+  const rows = await db
+    .delete(notifications)
+    .where(and(eq(notifications.userId, ctx.userId), inArray(notifications.id, ids)))
+    .returning();
+  return rows.map(toAppNotification);
+}
+
+/** Re-insert rows the user undid, preserving id / read / createdAt. Scoped to self. */
+export async function restoreNotifications(
+  ctx: AuthContext,
+  items: AppNotification[],
+): Promise<AppNotification[]> {
+  if (items.length === 0) return [];
+  const inserted = await db
+    .insert(notifications)
+    .values(
+      items.map((n) => {
+        const parsed = Date.parse(n.createdAt);
+        return {
+          id: n.id,
+          userId: ctx.userId,
+          title: n.title,
+          description: encodePayload(n),
+          status: n.read ? ('read' as const) : ('unread' as const),
+          createdAt: Number.isNaN(parsed) ? new Date() : new Date(parsed),
+        };
+      }),
+    )
+    .returning();
+  return inserted.map(toAppNotification);
 }

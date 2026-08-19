@@ -82,6 +82,8 @@ export interface AppContextValue {
   unreadNotificationCount: number;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  dismissNotifications: (items: AppNotification[]) => void;
+  restoreNotifications: (items: AppNotification[]) => void;
   /** Suppress duplicate realtime notification after a local checklist mutation. */
   suppressChecklistNotification: (engagementId: string, itemId: string, kind: NotificationKind) => void;
   teamMembers: typeof teamMembers;

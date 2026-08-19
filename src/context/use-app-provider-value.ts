@@ -67,6 +67,10 @@ import {
   checklistNotifySuppressKey,
   diffChecklistForNotifications,
 } from '@/lib/checklist-notifications';
+import {
+  isPersistedNotificationId,
+  mergeNotificationsByCreatedAt,
+} from '@/lib/notification-dismiss';
 import { checklistItemLabel } from '@/lib/audit-log';
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -280,6 +284,81 @@ export function useAppProviderValue(): AppContextValue {
     }).catch(() => {});
   }, [setNotifications]);
 
+  const dismissedIdsRef = useRef(new Set<string>());
+  const deleteInflightRef = useRef(new Map<string, Promise<void>>());
+
+  const patchNotificationsCache = useCallback(
+    (updater: (prev: AppNotification[]) => AppNotification[]) => {
+      if (!user?.id) return;
+      queryClient.setQueryData(['notifications', user.id], (old: AppNotification[] | undefined) =>
+        updater(old ?? []),
+      );
+    },
+    [queryClient, user?.id],
+  );
+
+  const dismissNotifications = useCallback(
+    (items: AppNotification[]) => {
+      if (items.length === 0) return;
+      const idSet = new Set(items.map((n) => n.id));
+      for (const id of idSet) dismissedIdsRef.current.add(id);
+      setNotifications((prev) => prev.filter((n) => !idSet.has(n.id)));
+      patchNotificationsCache((prev) => prev.filter((n) => !idSet.has(n.id)));
+
+      const persistedIds = items.map((n) => n.id).filter(isPersistedNotificationId);
+      const request =
+        persistedIds.length === 0
+          ? Promise.resolve()
+          : fetchJson('/api/notifications', {
+              method: 'POST',
+              body: JSON.stringify({ action: 'delete', ids: persistedIds }),
+            }).then(() => undefined);
+
+      const tracked = request.catch(() => {
+        for (const id of idSet) dismissedIdsRef.current.delete(id);
+        setNotifications((prev) => mergeNotificationsByCreatedAt(prev, items));
+        patchNotificationsCache((prev) => mergeNotificationsByCreatedAt(prev, items));
+      });
+      for (const id of idSet) {
+        deleteInflightRef.current.set(
+          id,
+          tracked.then(() => {
+            deleteInflightRef.current.delete(id);
+          }),
+        );
+      }
+    },
+    [patchNotificationsCache, setNotifications],
+  );
+
+  const restoreNotifications = useCallback(
+    (items: AppNotification[]) => {
+      if (items.length === 0) return;
+      const idSet = new Set(items.map((n) => n.id));
+      for (const id of idSet) dismissedIdsRef.current.delete(id);
+      setNotifications((prev) => mergeNotificationsByCreatedAt(prev, items));
+      patchNotificationsCache((prev) => mergeNotificationsByCreatedAt(prev, items));
+
+      const persisted = items.filter((n) => isPersistedNotificationId(n.id));
+      if (persisted.length === 0) return;
+
+      void (async () => {
+        await Promise.all(
+          persisted.map((n) => deleteInflightRef.current.get(n.id) ?? Promise.resolve()),
+        );
+        try {
+          await fetchJson('/api/notifications', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'restore', notifications: persisted }),
+          });
+        } catch {
+          /* optimistic UI; refetch will reconcile */
+        }
+      })();
+    },
+    [patchNotificationsCache, setNotifications],
+  );
+
   const engagementsQuery = useQuery({
     queryKey: ['engagements', user?.id],
     queryFn: async () => fetchEngagements(),
@@ -392,7 +471,11 @@ export function useAppProviderValue(): AppContextValue {
   }, [activityQuery.data, setActivity]);
 
   useEffect(() => {
-    if (notificationsQuery.data) setNotifications(notificationsQuery.data);
+    if (notificationsQuery.data) {
+      setNotifications(
+        notificationsQuery.data.filter((n) => !dismissedIdsRef.current.has(n.id)),
+      );
+    }
   }, [notificationsQuery.data, setNotifications]);
 
   useEffect(() => {
@@ -639,6 +722,8 @@ export function useAppProviderValue(): AppContextValue {
   const signOut = useCallback(async () => {
     await authJsSignOut({ redirect: false });
     queryClient.clear();
+    dismissedIdsRef.current.clear();
+    deleteInflightRef.current.clear();
     setUser(null);
     setNotifications([]);
     setEngagements([]);
@@ -935,6 +1020,7 @@ export function useAppProviderValue(): AppContextValue {
     user, authLoading, signIn, signInAsClient, signOut, refreshAuth: hydrateFromSession,
     clients, engagements, tasks, requests, invites, activity, notifications,
     unreadNotificationCount, markNotificationRead, markAllNotificationsRead,
+    dismissNotifications, restoreNotifications,
     suppressChecklistNotification, teamMembers,
     createProjectWithClient: createProjectWithClientFn, updateEngagement: updateEngagementFn,
     inviteClient, acceptInvite, updateTask, uploadDoc, approveDoc, createRequest,
@@ -1016,6 +1102,9 @@ export function useAppProviderValue(): AppContextValue {
             target: checklistItemLabel(itemId),
             engagementId,
           });
+          if (user?.id) {
+            void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+          }
         }
         if (patch.reviewSource === 'lead_manager_request') {
           suppressChecklistNotification(engagementId, itemId, 'checklist.submit');
@@ -1164,6 +1253,8 @@ export function useAppProviderValue(): AppContextValue {
     unreadNotificationCount,
     markNotificationRead,
     markAllNotificationsRead,
+    dismissNotifications,
+    restoreNotifications,
     suppressChecklistNotification,
     sidebarCollapsed,
     sidebarMode,
