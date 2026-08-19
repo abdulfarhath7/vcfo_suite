@@ -5,6 +5,7 @@ import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { StepDetailContent } from '@/components/admin/StepDetailContent';
 import { RedirectTo } from '@/components/routing/RedirectTo';
@@ -228,6 +229,78 @@ export default function EngagementStepDetail() {
 
   const internWorkspace = isIntern;
 
+  const stepTitleRow = (
+    <div className="mb-4 flex min-w-0 items-center gap-1.5">
+      <PageBackButton className="-ml-1.5" />
+      <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-foreground">
+        {item.title}
+      </h1>
+    </div>
+  );
+
+  const stepForm = (
+    <>
+      {stepGate?.kind === 'locked' && !isInternRoute ? (
+        <Surface className="p-6 text-sm text-muted-foreground">{stepGate.message}</Surface>
+      ) : (
+        <StepDetailContent
+          item={item}
+          task={task}
+          engagementId={eng.id}
+          responses={responses}
+          activity={eActivity}
+          onCompleted={task ? handleCompleted : undefined}
+          theme="light"
+          contentReady={!checklistLoading}
+          hideDocumentsTab={isIntern}
+          hideTimeline={isIntern}
+          hideStatus={isIntern}
+          hideWorkspaceRail={isIntern}
+        />
+      )}
+    </>
+  );
+
+  const internPhaseRail = internWorkspace && internPhase ? (
+    <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
+      <Surface className="p-3">
+        <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          {internPhase.title}
+        </p>
+        {internPhase.id === 'registration-phase-4' ? (
+          <div className="space-y-4">
+            {internPhaseRailGroups.map((group) => (
+              <div key={group.heading}>
+                <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  {group.heading}
+                </p>
+                <ChecklistJourneyRail
+                  items={group.items}
+                  selectedId={item.id}
+                  allowLockedOpen
+                  hideTimeline
+                  hideStatus
+                  showAttachmentMenu
+                  onSelect={openStep}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ChecklistJourneyRail
+            items={internPhaseRailItems}
+            selectedId={item.id}
+            allowLockedOpen
+            hideTimeline
+            hideStatus
+            showAttachmentMenu
+            onSelect={openStep}
+          />
+        )}
+      </Surface>
+    </aside>
+  ) : null;
+
   return (
     <PageTransition>
       <SEO
@@ -236,97 +309,44 @@ export default function EngagementStepDetail() {
         path={stepPath(eng, item)}
       />
 
-      <div
-        className={
-          internWorkspace && internPhase
-            ? 'grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18.5rem)]'
-            : internWorkspace
-              ? 'min-w-0'
-              : 'grid gap-5 lg:grid-cols-[minmax(14rem,16rem)_minmax(0,1fr)]'
-        }
-      >
-        {!isIntern && (
-          <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
-            <Surface className="max-h-[calc(100vh-var(--shell-sticky-top)-1.5rem)] overflow-y-auto p-3 sidebar-scroll">
-              <ChecklistJourneyRail
-                items={railItems}
-                selectedId={item.id}
-                onSelect={openStep}
-              />
-            </Surface>
-          </aside>
-        )}
-
+      {internWorkspace ? (
         <div className="min-w-0">
           {checklistLoading && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+            <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
               <HexgridLoader size="sm" />
               Syncing client answers…
             </div>
           )}
-
-          {stepGate?.kind === 'locked' && !isInternRoute ? (
-            <Surface className="p-6 text-sm text-muted-foreground">
-              {stepGate.message}
-            </Surface>
+          {stepTitleRow}
+          {internPhase ? (
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18.5rem)] lg:items-start">
+              <div className="min-w-0">{stepForm}</div>
+              {internPhaseRail}
+            </div>
           ) : (
-            <StepDetailContent
-              item={item}
-              task={task}
-              engagementId={eng.id}
-              responses={responses}
-              activity={eActivity}
-              onCompleted={task ? handleCompleted : undefined}
-              theme="light"
-              contentReady={!checklistLoading}
-              hideDocumentsTab={isIntern}
-              hideTimeline={isIntern}
-              hideStatus={isIntern}
-              hideWorkspaceRail={isIntern}
-            />
+            stepForm
           )}
         </div>
-
-        {isIntern && internPhase ? (
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-[minmax(14rem,16rem)_minmax(0,1fr)]">
           <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
             <Surface className="max-h-[calc(100vh-var(--shell-sticky-top)-1.5rem)] overflow-y-auto p-3 sidebar-scroll">
-              <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                {internPhase.title}
-              </p>
-              {internPhase.id === 'registration-phase-4' ? (
-                <div className="space-y-4">
-                  {internPhaseRailGroups.map((group) => (
-                    <div key={group.heading}>
-                      <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                        {group.heading}
-                      </p>
-                      <ChecklistJourneyRail
-                        items={group.items}
-                        selectedId={item.id}
-                        allowLockedOpen
-                        hideTimeline
-                        hideStatus
-                        showAttachmentMenu
-                        onSelect={openStep}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <ChecklistJourneyRail
-                  items={internPhaseRailItems}
-                  selectedId={item.id}
-                  allowLockedOpen
-                  hideTimeline
-                  hideStatus
-                  showAttachmentMenu
-                  onSelect={openStep}
-                />
-              )}
+              <ChecklistJourneyRail items={railItems} selectedId={item.id} onSelect={openStep} />
             </Surface>
           </aside>
-        ) : null}
-      </div>
+
+          <div className="min-w-0">
+            {checklistLoading && (
+              <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <HexgridLoader size="sm" />
+                Syncing client answers…
+              </div>
+            )}
+            {stepTitleRow}
+            {stepForm}
+          </div>
+        </div>
+      )}
     </PageTransition>
   );
 }

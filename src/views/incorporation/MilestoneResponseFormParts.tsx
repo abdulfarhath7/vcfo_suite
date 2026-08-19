@@ -229,6 +229,9 @@ export function UploadedFilePreview(props: { storagePath: string; label: string 
   return <UploadedFilePreviewInner key={props.storagePath} {...props} />;
 }
 
+/** Intern step pages hide the aggregate banner. Set true to restore it. */
+export const SHOW_INTERN_FORM_ERROR_SUMMARY = false;
+
 export function FormErrorSummary({
   errors,
   fields,

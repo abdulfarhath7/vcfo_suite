@@ -129,7 +129,7 @@ export function StepDetailContentView(props: any) {
 
   const internBoardResolutionAction =
     hideWorkspaceRail && item.id === 'pre-2' && engagement ? (
-      <BoardResolutionStepLink engagement={engagement} variant="button" />
+      <BoardResolutionStepLink engagement={engagement} />
     ) : null;
 
   const internFooterFallback =
@@ -371,9 +371,6 @@ export function StepDetailContentView(props: any) {
   if (isLight) {
     const internPageFooter = internFooterFallback ? (
       <div className="sticky bottom-0 z-20 mt-4 border-t border-border/70 bg-panel/95 px-4 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-panel/80">
-        {internBoardResolutionAction ? (
-          <div className="mb-2">{internBoardResolutionAction}</div>
-        ) : null}
         <div className="flex flex-wrap items-center gap-2">{internActionBar}</div>
       </div>
     ) : null;
@@ -383,9 +380,6 @@ export function StepDetailContentView(props: any) {
         {justCompletedBanner}
         {hideWorkspaceRail ? (
           <div className="min-w-0 space-y-4">
-            <h1 className="serif text-[22px] leading-tight tracking-tight text-foreground">
-              {item.title}
-            </h1>
             {item.id !== 'pre-7' ? phase1Panel : null}
             {responseForm}
             {item.id === 'pre-7' ? phase1Panel : null}

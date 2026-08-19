@@ -109,7 +109,11 @@ const PHASE2_STRUCTURED_STEP_IDS = new Set([
 ]);
 
 
-import { FormErrorSummary, InternSectionHeadingNav } from '@/views/incorporation/MilestoneResponseFormParts';
+import {
+  FormErrorSummary,
+  InternSectionHeadingNav,
+  SHOW_INTERN_FORM_ERROR_SUMMARY,
+} from '@/views/incorporation/MilestoneResponseFormParts';
 import { MilestoneResponseFormViewFooters } from '@/views/incorporation/MilestoneResponseFormViewFooters';
 import type { MilestoneResponseFormViewModel } from '@/views/incorporation/useMilestoneResponseFormState';
 
@@ -122,7 +126,6 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     compactChrome,
     cn,
     completedStructuredSections,
-    deliveredToClient,
     fieldErrors,
     formReadOnly,
     isClient,
@@ -167,22 +170,19 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
         className,
       )}
     >
-      {peakEndMoment && (
+      {peakEndMoment === 'submit' && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           className="surface-raised px-5 py-6 text-center"
         >
           <CheckCircle2 className="w-10 h-10 mx-auto text-success mb-3" aria-hidden />
-          <p className="serif text-xl text-foreground">
-            {peakEndMoment === 'submit' ? 'Submitted for review' : 'Delivered to client'}
-          </p>
+          <p className="serif text-xl text-foreground">Submitted for review</p>
           <p className="text-sm text-muted-foreground mt-1 prose-narrow mx-auto">
-            {peakEndMoment === 'submit'
-              ? 'Your engagement team has been notified. You will hear back once your answers are reviewed.'
-              : 'The client can now view this step in their portal with full document access.'}
+            Your engagement team has been notified. You will hear back once your answers are
+            reviewed.
           </p>
-          {peakEndMoment === 'submit' && isClient && (
+          {isClient && (
             <TrustBadge className="mt-4 mx-auto w-fit">Received by VCFO · under review</TrustBadge>
           )}
         </motion.div>
@@ -237,9 +237,10 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
         </output>
       )}
 
-      {Object.keys(fieldErrors).length > 0 && (
-        <FormErrorSummary errors={fieldErrors} fields={visibleFields} />
-      )}
+      {Object.keys(fieldErrors).length > 0 &&
+        (!internWorkspace || SHOW_INTERN_FORM_ERROR_SUMMARY) && (
+          <FormErrorSummary errors={fieldErrors} fields={visibleFields} />
+        )}
 
       {!compactChrome && !internWorkspace && (
       <div className={isPre1 || isPhase2StructuredStep ? 'space-y-1.5 px-0.5' : undefined}>

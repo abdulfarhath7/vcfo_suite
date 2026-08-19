@@ -19,7 +19,6 @@ import {
   hasAnyClientVisibleIncorpDraft,
 } from '@/lib/incorporation-docs/share';
 import { cn } from '@/lib/utils';
-import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { IncorporationDocsGeneratePanel } from '@/components/incorporation/IncorporationDocsGeneratePanel';
 import { IncorporationDocsBulkShareBar } from '@/components/incorporation/IncorporationDocsBulkShareBar';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
@@ -37,13 +36,8 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
   const { item, engagement, responses, className, isClient, isIntern, brStatus, deliveredToClient, itemState, incorpDraftLabelOptions, getStateForEngagement } = props;
     if (!engagement) return null;
 
-    if (isIntern) {
-      return (
-        <div className={className}>
-          <BoardResolutionStepLink engagement={engagement} />
-        </div>
-      );
-    }
+    // Intern CTA lives in the form-card footer (`aboveFooterActions`), not above the fields.
+    if (isIntern) return null;
 
     if (!isClient) {
       return (
@@ -229,65 +223,54 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
       (approvalDate ? computeMcaNameApprovalExpiryDate(approvalDate) : '');
     const letter = responses.mcaApprovalLetterUrl?.trim();
 
-    if (isClient) {
-      return (
-        <div className={className}>
-          <PanelShell title="Name Approval">
-            {deliveredToClient && (approvedName || approvalDate || expiryDate || letter) ? (
-              <dl className="space-y-2">
-                {approvedName && (
-                  <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Approved name
-                    </dt>
-                    <dd className="text-ink font-medium">{approvedName}</dd>
-                  </div>
-                )}
-                {approvalDate && (
-                  <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Approval date
-                    </dt>
-                    <dd>{formatPre1DateDisplay(approvalDate) ?? approvalDate}</dd>
-                  </div>
-                )}
-                {expiryDate && (
-                  <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Expiry date
-                    </dt>
-                    <dd>{formatPre1DateDisplay(expiryDate) ?? expiryDate}</dd>
-                  </div>
-                )}
-                {letter && (
-                  <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Approval letter
-                    </dt>
-                    <dd>
-                      <MilestoneFileDisplay storagePath={letter} label="MCA approval letter" />
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            ) : (
-              <p>
-                MCA name approval typically arrives within 4 to 5 working days from the date of
-                filing. Your Project Lead will share the approved name and approval letter here.
-              </p>
-            )}
-          </PanelShell>
-        </div>
-      );
-    }
+    if (!isClient) return null;
 
     return (
       <div className={className}>
-        <PanelShell>
-          <p>
-            After MCA approval (typically 4–5 working days), enter the name and dates below and
-            upload the letter. Expiry (20-day validity) is calculated automatically.
-          </p>
+        <PanelShell title="Name Approval">
+          {deliveredToClient && (approvedName || approvalDate || expiryDate || letter) ? (
+            <dl className="space-y-2">
+              {approvedName && (
+                <div>
+                  <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    Approved name
+                  </dt>
+                  <dd className="text-ink font-medium">{approvedName}</dd>
+                </div>
+              )}
+              {approvalDate && (
+                <div>
+                  <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    Approval date
+                  </dt>
+                  <dd>{formatPre1DateDisplay(approvalDate) ?? approvalDate}</dd>
+                </div>
+              )}
+              {expiryDate && (
+                <div>
+                  <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    Expiry date
+                  </dt>
+                  <dd>{formatPre1DateDisplay(expiryDate) ?? expiryDate}</dd>
+                </div>
+              )}
+              {letter && (
+                <div>
+                  <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    Approval letter
+                  </dt>
+                  <dd>
+                    <MilestoneFileDisplay storagePath={letter} label="MCA approval letter" />
+                  </dd>
+                </div>
+              )}
+            </dl>
+          ) : (
+            <p>
+              MCA name approval typically arrives within 4 to 5 working days from the date of
+              filing. Your Project Lead will share the approved name and approval letter here.
+            </p>
+          )}
         </PanelShell>
       </div>
     );

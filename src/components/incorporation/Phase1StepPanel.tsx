@@ -29,7 +29,6 @@ import {
 import { draftUrlFieldFor } from '@/lib/incorporation-docs/types';
 import type { IncorpDocKind } from '@/lib/incorporation-docs/types';
 import { cn } from '@/lib/utils';
-import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { IncorporationDocsGeneratePanel } from '@/components/incorporation/IncorporationDocsGeneratePanel';
 import { IncorporationDocsBulkShareBar } from '@/components/incorporation/IncorporationDocsBulkShareBar';
 import {

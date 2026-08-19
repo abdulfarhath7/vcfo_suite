@@ -136,7 +136,7 @@ export function ChecklistJourneyRail({
   return (
     <nav aria-label="Checklist steps" className={cn('relative', className)}>
       <LayoutGroup id="intern-journey-rail">
-      <ol className="space-y-0">
+      <ol className="list-none space-y-0">
         {items.map((row, index) => {
           const { item, gate, status, stepNumber, attachments = [] } = row;
           const selected = selectedId === item.id;
@@ -170,9 +170,6 @@ export function ChecklistJourneyRail({
           const labelBlock = (
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex items-start gap-1.5">
-                <span className="mt-px font-mono text-[10px] text-text-tertiary tabular-nums">
-                  {stepNumber}.
-                </span>
                 <p
                   className={cn(
                     'min-w-0 text-[13px] font-medium leading-snug',
@@ -186,7 +183,7 @@ export function ChecklistJourneyRail({
                 <ResponsibleRoleBadge role={item.responsibleRole} iconOnly className="mt-0.5" />
               </div>
               {!visuallyLocked && (
-                <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-5 empty:hidden">
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 empty:hidden">
                   <StatusBadgeWithTimeline
                     status={displayStatus}
                     item={item}
@@ -196,7 +193,7 @@ export function ChecklistJourneyRail({
                 </div>
               )}
               {gate.kind === 'waiting' && gate.message && (
-                <p className="mt-1 pl-5 text-[11px] text-muted-foreground">{gate.message}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">{gate.message}</p>
               )}
             </div>
           );
