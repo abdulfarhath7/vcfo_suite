@@ -141,6 +141,14 @@ export function opensClientOutgoingDraft(event: EngagementProcessEvent): boolean
 }
 
 /**
+ * Most events skip the actor so they don't notify themselves.
+ * Deliver / board-resolution share also write a Received row for the acting lead.
+ */
+export function inAppIncludesActor(event: EngagementProcessEvent): boolean {
+  return event === 'delivered' || event === 'board_resolution_shared';
+}
+
+/**
  * Who should receive Resend process mail.
  * Client submit/upload → every lead + every manager.
  * Intern request-approval → managers only (never Graph, never the client).

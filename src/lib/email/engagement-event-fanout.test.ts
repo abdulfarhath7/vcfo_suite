@@ -3,6 +3,7 @@ import {
   approvalCcEmails,
   collectManagerParties,
   emailsStaffViaResend,
+  inAppIncludesActor,
   opensClientOutgoingDraft,
   staffEmailTargetsForEvent,
   type FanoutRecipients,
@@ -133,5 +134,12 @@ describe('channel rules', () => {
     expect(opensClientOutgoingDraft('board_resolution_shared')).toBe(true);
     expect(emailsStaffViaResend('review_accepted')).toBe(false);
     expect(emailsStaffViaResend('board_resolution_shared')).toBe(false);
+  });
+
+  it('writes a Received row for the acting lead on deliver and board-resolution share', () => {
+    expect(inAppIncludesActor('delivered')).toBe(true);
+    expect(inAppIncludesActor('board_resolution_shared')).toBe(true);
+    expect(inAppIncludesActor('client_submitted')).toBe(false);
+    expect(inAppIncludesActor('lead_requested_review')).toBe(false);
   });
 });

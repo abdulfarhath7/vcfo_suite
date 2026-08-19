@@ -11,6 +11,7 @@ import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 import { emptyEmailDispatch } from '@/lib/email/email-dispatch';
+import { leadManagerRequestNotifyPlan } from '@/lib/email/lead-manager-request-notify';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -59,7 +60,7 @@ export async function POST(request: Request, context: RouteContext) {
       ? checklistStateFromRow(before)[body.data.itemId]
       : undefined;
 
-    let { resendManagerEmail, ...patchFields } = body.data.patch as {
+    const { resendManagerEmail, ...patchFields } = body.data.patch as {
       resendManagerEmail?: unknown;
     } & Partial<ChecklistItemStateSlice>;
     const retryManagerEmail = resendManagerEmail === true;
@@ -94,40 +95,35 @@ export async function POST(request: Request, context: RouteContext) {
     );
 
     const nextSlice = checklistState[body.data.itemId];
+    const deliverRequested = Boolean(patch.deliveredToClientAt?.trim());
     const newlyDelivered =
       !prevSlice?.deliveredToClientAt?.trim() && Boolean(nextSlice?.deliveredToClientAt?.trim());
-    const awaitingLeadRequest =
-      nextSlice?.reviewSource === 'lead_manager_request' &&
-      nextSlice?.reviewStatus === 'reviewing';
-    const enteredLeadReview =
-      awaitingLeadRequest &&
-      (prevSlice?.reviewSource !== 'lead_manager_request' ||
-        prevSlice?.reviewStatus !== 'reviewing');
-    const responsesChanged =
-      JSON.stringify(prevSlice?.responses ?? {}) !== JSON.stringify(nextSlice?.responses ?? {});
-    const retryLeadManagerEmail =
-      retryManagerEmail && guard.ctx.role === 'intern' && awaitingLeadRequest;
-    const internResubmittedForApproval =
-      guard.ctx.role === 'intern' && awaitingLeadRequest && responsesChanged;
-    const notifyLeadRequest =
-      enteredLeadReview || internResubmittedForApproval || retryLeadManagerEmail;
+    // Autosave is responses-only and must not fan out. Request / Submit /
+    // Email manager again send reviewSource or resendManagerEmail.
+    const leadNotify = leadManagerRequestNotifyPlan({
+      role: guard.ctx.role,
+      prevSlice,
+      nextSlice,
+      patch: { resendManagerEmail: retryManagerEmail, ...patch },
+    });
 
     const email =
-      notifyLeadRequest
+      leadNotify.notify
         ? await notifyEngagementEvent({
             engagementId: id,
             itemId: body.data.itemId,
             event: 'lead_requested_review',
             actorUserId: guard.ctx.userId,
-            skipInAppNotifications: retryLeadManagerEmail && !enteredLeadReview && !responsesChanged,
+            skipInAppNotifications: leadNotify.skipInAppNotifications,
             outlookCtx: guard.ctx,
           })
-        : newlyDelivered
+        : deliverRequested
           ? await notifyEngagementEvent({
               engagementId: id,
               itemId: body.data.itemId,
               event: 'delivered',
               actorUserId: guard.ctx.userId,
+              inAppOnly: !newlyDelivered,
             })
           : emptyEmailDispatch();
 

@@ -188,7 +188,14 @@ async function checklistMutation(
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new ChecklistSaveError(fallback);
   }
-  toastEmailDispatch(payload.email);
+  const itemId =
+    typeof body === 'object' &&
+    body !== null &&
+    'itemId' in body &&
+    typeof (body as { itemId?: unknown }).itemId === 'string'
+      ? (body as { itemId: string }).itemId
+      : undefined;
+  toastEmailDispatch(payload.email, itemId ? { itemId } : undefined);
   return normalizeEngagementChecklistState(raw as Record<string, unknown>);
 }
 

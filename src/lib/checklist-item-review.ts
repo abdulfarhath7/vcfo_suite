@@ -92,7 +92,7 @@ export function getClientReviewBanner(slice: SliceLike): ClientReviewBanner | nu
   };
 }
 
-/** Intern Save / Request manager approval — mark the step for the PM inbox. */
+/** Intern Submit / Request manager approval / Email manager again — not autosave. */
 export function internLeadManagerRequestPatch(
   itemState?: SliceLike,
 ): Partial<ChecklistItemStateSlice> {

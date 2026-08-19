@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/hot-toast';
 import {
   formatEmailRecipients,
+  emailDispatchToastId,
   type EmailDispatchResult,
 } from '@/lib/email/email-dispatch';
 import type { NotificationKind } from '@/lib/checklist-notifications';
@@ -239,17 +240,23 @@ export function toastError(title: string, description?: string) {
   });
 }
 
-export function toastSuccess(title: string, description?: string) {
+export function toastSuccess(
+  title: string,
+  description?: string,
+  options?: { id?: string },
+) {
   toast.success(toastMessage(title, description), {
     duration: SUCCESS_DURATION_MS,
+    ...(options?.id ? { id: options.id } : {}),
   });
 }
 
-export function toastWarning(title: string, description?: string) {
+export function toastWarning(title: string, description?: string, options?: { id?: string }) {
   toast(toastMessage(title, description), {
     duration: WARNING_DURATION_MS,
     icon: warningToastIcon(),
     style: getToastVariantStyle('warning'),
+    ...(options?.id ? { id: options.id } : {}),
   });
 }
 
@@ -371,10 +378,11 @@ export function toastEmailDispatch(
   const draft = emailNotificationDraft(email, meta);
   if (!draft) return;
 
+  const toastId = emailDispatchToastId(draft, meta);
   if (draft.kind === 'email.sent') {
-    toastSuccess(draft.title, draft.body);
+    toastSuccess(draft.title, draft.body, { id: toastId });
   } else {
-    toastWarning(draft.title, draft.body);
+    toastWarning(draft.title, draft.body, { id: toastId });
   }
 
   persistEmailDispatchNotification(draft);

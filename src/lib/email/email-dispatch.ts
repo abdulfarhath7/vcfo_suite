@@ -74,3 +74,14 @@ export function pushEmailSubject(
   if (!email.subjects) email.subjects = [];
   if (!email.subjects.includes(s)) email.subjects.push(s);
 }
+
+/** Stable react-hot-toast id so retries replace instead of stacking. */
+export function emailDispatchToastId(
+  draft: { kind: string; title: string },
+  meta?: { engagementId?: string; itemId?: string },
+): string {
+  return ['email-dispatch', draft.kind, meta?.engagementId, meta?.itemId, draft.title]
+    .map((part) => (typeof part === 'string' ? part.trim() : ''))
+    .filter(Boolean)
+    .join(':');
+}

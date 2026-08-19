@@ -46,6 +46,7 @@ export function RequestManagerApproval({
         toastSuccess(
           'Sent to Approvals inbox',
           'The manager can review in VCFO. Watch for a second toast — that is the email from your Outlook (or Resend if Outlook is not connected).',
+          { id: `lead-request:${engagementId}:${itemId}` },
         );
       }
     } catch (err) {

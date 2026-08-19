@@ -18,6 +18,7 @@ import {
   collectLeadParties,
   collectManagerParties,
   emailsStaffViaResend,
+  inAppIncludesActor,
   opensClientOutgoingDraft,
   staffEmailTargetsForEvent,
   type EngagementProcessEvent,
@@ -47,10 +48,12 @@ type NotifyInput = {
   note?: string | null;
   /** Optional label for document requests (overrides step title in body). */
   requestLabel?: string;
-  /** Actor userId — skip notifying the person who triggered the action. */
+  /** Actor userId — skip notifying the person who triggered the action (except deliver / BR share). */
   actorUserId?: string;
   /** Re-open compose without inserting another in-app row. */
   skipInAppNotifications?: boolean;
+  /** In-app Received rows only — no Graph compose / Resend (Update client portal). */
+  inAppOnly?: boolean;
   /** When set, lead→manager approval tries Graph from this staff mailbox first. */
   outlookCtx?: AuthContext;
 };
@@ -283,7 +286,8 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       nTitle: string,
       body: string,
     ) => {
-      if (!userId || userId === input.actorUserId) return;
+      if (!userId) return;
+      if (userId === input.actorUserId && !inAppIncludesActor(input.event)) return;
       const href =
         role === 'client' ? clientHref : role === 'intern' ? leadHref : managerHref;
       notifDrafts.push({
@@ -367,8 +371,25 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         `${title} needs updates for ${company}.`,
       );
     } else if (input.event === 'delivered') {
+      const deliveredTitle = 'Delivered to client';
+      const deliveredBody = `${title} was delivered for ${company}.`;
       pushNotifToClients('New from your VCFO team', `${title} is ready on your portal.`);
-      pushNotifToLeads('Delivered to client', `${title} was delivered for ${company}.`);
+      pushNotifToLeads(deliveredTitle, deliveredBody);
+      if (
+        input.actorUserId &&
+        !notifDrafts.some((n) => n.userId === input.actorUserId)
+      ) {
+        notifDrafts.push({
+          userId: input.actorUserId,
+          kind,
+          title: deliveredTitle,
+          body: deliveredBody,
+          engagementId: recipients.appId,
+          companyName: company,
+          itemId: input.itemId,
+          href: leadHref,
+        });
+      }
     } else if (input.event === 'unlocked') {
       pushNotifToClients('Fields unlocked', `You can update ${title} again and resubmit.`);
       pushNotifToLeads(
@@ -431,7 +452,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     // Client → staff: Resend From company_name@sbctrack.in
     // Intern → manager: Graph from the lead mailbox when connected, else Resend
     // Lead/manager → client: in-app compose + Graph Mail.Send (CC admin + lead on accept)
-    if (opensClientOutgoingDraft(input.event)) {
+    if (!input.inAppOnly && opensClientOutgoingDraft(input.event)) {
       email.outgoingDraft = buildOutgoingClientDraft(
         input,
         recipients,
@@ -443,6 +464,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
 
     let skippedResendBecauseOutlook = false;
     if (
+      !input.inAppOnly &&
       input.event === 'lead_requested_review' &&
       input.outlookCtx &&
       progressKind
@@ -484,7 +506,12 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       }
     }
 
-    if (emailsStaffViaResend(input.event) && progressKind && !skippedResendBecauseOutlook) {
+    if (
+      !input.inAppOnly &&
+      emailsStaffViaResend(input.event) &&
+      progressKind &&
+      !skippedResendBecauseOutlook
+    ) {
       const staffTargets = staffEmailTargetsForEvent(input.event, recipients, {
         leadHref,
         managerHref,
