@@ -3,7 +3,9 @@ import type { Engagement } from '@/data/engagements';
 import {
   buildInternPortfolioQueue,
   engagementSetupProgressPercent,
+  groupInternWeekQueueByCompany,
   internQueueStats,
+  internWeekQueueItems,
   prioritizeInternActions,
 } from '@/lib/intern-dashboard';
 
@@ -84,5 +86,49 @@ describe('prioritizeInternActions', () => {
     const focus = prioritizeInternActions(items, 3);
     expect(focus[0]?.checklistKey).toBe('pre-1');
     expect(focus.some((i) => i.checklistKey === 'pre-2')).toBe(false);
+  });
+});
+
+describe('groupInternWeekQueueByCompany', () => {
+  const zeta: Engagement = {
+    ...engagement,
+    id: 'eng-z',
+    companyName: 'Zeta Co',
+  };
+
+  it('keeps completed unlocked steps in the week queue', () => {
+    const items = buildInternPortfolioQueue(
+      [engagement],
+      () => ({
+        'pre-1': { status: 'completed' },
+        'pre-2': { status: 'in-progress' },
+      }),
+      'intern-a',
+    );
+    const week = internWeekQueueItems(items);
+    const completed = week.find((i) => i.checklistKey === 'pre-1');
+    const current = week.find((i) => i.checklistKey === 'pre-2');
+    expect(completed?.status).toBe('completed');
+    expect(current?.status).toBe('in-progress');
+    expect(week.every((i) => !i.isLocked)).toBe(true);
+    expect(week.some((i) => i.checklistKey === 'pre-3')).toBe(false);
+  });
+
+  it('groups by company and sorts cards A–Z by company name', () => {
+    const items = buildInternPortfolioQueue(
+      [zeta, engagement],
+      (e) =>
+        e.id === 'eng-1'
+          ? { 'pre-1': { status: 'completed' }, 'pre-2': { status: 'awaiting-client' } }
+          : {},
+      'intern-a',
+    );
+    const groups = groupInternWeekQueueByCompany(items, [zeta, engagement]);
+    expect(groups.map((g) => g.companyName)).toEqual(['ABC', 'Zeta Co']);
+    expect(groups[0]?.items.map((i) => i.checklistKey)).toEqual(['pre-1', 'pre-2']);
+    expect(groups[0]?.items[0]?.status).toBe('completed');
+    expect(groups[0]?.items[1]?.status).not.toBe('completed');
+    expect(groups[0]?.items[1]?.isLocked).toBe(false);
+    expect(groups[1]?.items.map((i) => i.checklistKey)).toEqual(['pre-1']);
   });
 });

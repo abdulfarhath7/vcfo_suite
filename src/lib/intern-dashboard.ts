@@ -1,4 +1,4 @@
-import { checklist, type StatusCode } from '@/data/checklist';
+import { checklist, getActiveCatalogItems, type StatusCode } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
@@ -121,4 +121,49 @@ export function prioritizeInternActions(items: InternQueueItem[], limit = 6): In
     (i) => !overdue.includes(i) && !awaitingReview.includes(i) && !inProgress.includes(i),
   );
   return [...overdue, ...awaitingReview, ...inProgress, ...rest].slice(0, limit);
+}
+
+export interface InternWeekQueueCompanyGroup {
+  engagementId: string;
+  companyName: string;
+  stage?: string;
+  items: InternQueueItem[];
+}
+
+const ACTIVE_CATALOG_IDS = new Set(getActiveCatalogItems().map((item) => item.id));
+
+/** Unlocked catalog work for Today — completed, in-progress, and awaiting-client stay visible. */
+export function internWeekQueueItems(items: InternQueueItem[]): InternQueueItem[] {
+  return items.filter((i) => !i.isLocked && ACTIVE_CATALOG_IDS.has(i.checklistKey));
+}
+
+/** One card per company, A–Z by name; rows stay in catalog order. */
+export function groupInternWeekQueueByCompany(
+  items: InternQueueItem[],
+  engagements: Pick<Engagement, 'id' | 'companyName' | 'stage'>[],
+): InternWeekQueueCompanyGroup[] {
+  const byId = new Map(engagements.map((e) => [e.id, e]));
+  const groups = new Map<string, InternWeekQueueCompanyGroup>();
+
+  for (const item of internWeekQueueItems(items)) {
+    const eng = byId.get(item.engagementId);
+    if (!eng) continue;
+    let group = groups.get(item.engagementId);
+    if (!group) {
+      group = {
+        engagementId: item.engagementId,
+        companyName: eng.companyName,
+        stage: eng.stage,
+        items: [],
+      };
+      groups.set(item.engagementId, group);
+    }
+    group.items.push(item);
+  }
+
+  return [...groups.values()].sort(
+    (a, b) =>
+      a.companyName.localeCompare(b.companyName, undefined, { sensitivity: 'base' }) ||
+      a.engagementId.localeCompare(b.engagementId),
+  );
 }

@@ -1,10 +1,6 @@
-import InternTasks from "@/views/intern/Tasks";
+import { redirect } from "next/navigation";
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Tasks", "Intern tasks");
-
-
+/** Intern Tasks folded into Today’s week queue. */
 export default function Page() {
-  return <InternTasks />;
+  redirect("/app/intern/today");
 }
