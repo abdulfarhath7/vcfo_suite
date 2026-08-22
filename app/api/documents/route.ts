@@ -6,12 +6,14 @@ import { createDocument, listDocuments } from '@/db/repositories/documents';
 
 /**
  * GET /api/documents?engagementId=…
+ * GET /api/documents — cross-client list, scoped by AuthContext (vault).
  * POST /api/documents — register an index row for an already-uploaded object.
  *
  * Milestone binary upload/download still goes through
  * `/api/engagements/.../milestone-documents` and
  * `/api/milestone-documents/signed-url` (see milestone-document-storage.ts).
- * This route is the optional documents-table index.
+ * This route is the optional documents-table index. Indexed-file download:
+ * `/api/documents/:id/signed-url`.
  */
 export async function GET(request: Request) {
   const auth = await requireRole(['admin', 'manager', 'intern', 'client']);

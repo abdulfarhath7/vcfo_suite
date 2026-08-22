@@ -159,6 +159,10 @@ export const knowledgeBankIdParamSchema = z.object({
   id: z.uuid('invalid_id'),
 });
 
+export const documentIdParamSchema = z.object({
+  id: z.uuid('invalid_id'),
+});
+
 const knowledgeBankTitleSchema = z
   .string()
   .trim()

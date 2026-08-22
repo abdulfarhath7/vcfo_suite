@@ -14,8 +14,11 @@ describe('shouldShowShellBack', () => {
 
   it('hides on intern sidebar homes and the clients list', () => {
     expect(shouldShowShellBack('/app/intern/today')).toBe(false);
+    expect(shouldShowShellBack('/app/intern/tasks')).toBe(false);
+    expect(shouldShowShellBack('/app/intern/announcements')).toBe(false);
     expect(shouldShowShellBack('/app/intern/clients')).toBe(false);
     expect(shouldShowShellBack('/app/intern/clients/')).toBe(false);
+    expect(shouldShowShellBack('/app/intern/vault')).toBe(false);
     expect(shouldShowShellBack('/app/intern/compliance')).toBe(false);
     expect(shouldShowShellBack('/app/intern/knowledge-bank')).toBe(false);
     expect(shouldShowShellBack('/app/intern/mail')).toBe(false);

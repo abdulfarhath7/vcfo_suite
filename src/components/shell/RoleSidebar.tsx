@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import {
@@ -23,9 +23,13 @@ import {
   Mail,
   Pin,
   PanelLeftClose,
+  Columns3,
+  Megaphone,
+  Archive,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_UI_LABEL } from '@/lib/auth';
+import { UserFace } from '@/components/common/UserFace';
 import type { SidebarMode } from '@/context/AppContext';
 import { SbcLogo } from '@/components/brand/SbcLogo';
 import { useShellNav } from '@/components/shell/shell-nav-context';
@@ -34,8 +38,16 @@ import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { SidebarComplianceMini } from '@/components/shell/SidebarComplianceMini';
 import { InternClientsNav, INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
 import { shellDesktopNavExpanded } from '@/components/shell/intern-sidebar';
-import { MotionActivePill } from '@/components/shell/MotionActivePill';
+import {
+  MotionActivePill,
+  SidebarHoverGlass,
+  sidebarHoverHandlers,
+  type SidebarHoverFollow,
+} from '@/components/shell/MotionActivePill';
 import { roleHomePath, roleSettingsPath } from '@/lib/auth-routes';
+import { useInternPortfolio } from '@/lib/use-intern-portfolio';
+import { useShellAppearance } from '@/lib/use-shell-appearance';
+import { surfaceCssVars } from '@/lib/shell-appearance';
 
 interface Item {
   to: string;
@@ -57,12 +69,14 @@ const TONE = {
   calendar: 'text-success',
   files: 'text-phase-filing-text',
   knowledge: 'text-info',
+  news: 'text-accent-violet',
   analytics: 'text-info',
   audit: 'text-text-tertiary',
 };
 
 const firmAdminItems: Item[] = [
   { to: '/app/admin/dashboard', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
+  { to: '/app/admin/announcements', label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
   { to: '/app/admin/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
@@ -76,6 +90,7 @@ const firmAdminItems: Item[] = [
 
 const clientItems: Item[] = [
   { to: '/app/client/inbox', label: 'Inbox', icon: Inbox, iconTone: TONE.home },
+  { to: '/app/client/announcements', label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
   { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
   { to: '/app/client/compliances', label: 'Compliances', icon: CalendarCheck, iconTone: TONE.calendar },
   { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
@@ -85,6 +100,7 @@ const clientItems: Item[] = [
 
 const superAdminItems: Item[] = [
   { to: '/app/super/dashboard', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
+  { to: '/app/super/announcements', label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
   { to: '/app/admin/dashboard', label: 'Firm home', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
@@ -99,6 +115,7 @@ export function SidebarNavBody({
   layoutIdPrefix = 'sidebar',
   mode,
   onSetMode,
+  ink = 'dark',
 }: {
   expanded: boolean;
   onNavigate?: () => void;
@@ -106,16 +123,42 @@ export function SidebarNavBody({
   /** Desktop preference controls — omit on the mobile sheet. */
   mode?: SidebarMode;
   onSetMode?: (mode: SidebarMode) => void;
+  ink?: 'light' | 'dark';
 }) {
   const { user } = useApp();
   const pathname = usePathname();
   const staffBase = useStaffBasePath();
-  const reduceMotion = useReducedMotion();
+  const osReduce = useReducedMotion();
+  const { reduceMotion: prefReduce, motion: motionStyle } = useShellAppearance();
+  const reduceMotion = Boolean(osReduce) || prefReduce;
+  const staticHover = reduceMotion || motionStyle === 'minimal';
+  const { kpis } = useInternPortfolio();
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const [hoverVisible, setHoverVisible] = useState(false);
+
+  const onHoverEnter = useCallback((id: string) => {
+    setHoverId(id);
+    setHoverVisible(true);
+  }, []);
+
+  const onHoverLeave = useCallback(() => {
+    setHoverVisible(false);
+  }, []);
 
   if (!user) return null;
 
+  const hoverFollow: SidebarHoverFollow = {
+    hoverId,
+    visible: hoverVisible,
+    onEnter: onHoverEnter,
+    layoutId: `${layoutIdPrefix}-hover`,
+    reduced: staticHover,
+    ink,
+  };
+
   const managerItems: Item[] = [
     { to: `${staffBase}/dashboard`, label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
+    { to: `${staffBase}/announcements`, label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
     { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
     { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
     { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
@@ -130,7 +173,16 @@ export function SidebarNavBody({
 
   const internItems: Item[] = [
     { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
+    {
+      to: '/app/intern/tasks',
+      label: 'My work',
+      icon: Columns3,
+      iconTone: TONE.work,
+      badge: kpis.action.total,
+    },
     { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
+    { to: '/app/intern/vault', label: 'Document vault', icon: Archive, iconTone: TONE.files },
+    { to: '/app/intern/announcements', label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
     { to: '/app/intern/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
     { to: '/app/intern/requests', label: 'Requests', icon: FileInput, iconTone: TONE.queue },
     { to: '/app/intern/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
@@ -154,8 +206,9 @@ export function SidebarNavBody({
     <>
       <div
         className={cn(
-          'flex h-[var(--shell-rail-height)] shrink-0 items-center border-b border-border/50',
+          'flex h-[var(--shell-rail-height)] shrink-0 items-center',
           expanded ? 'px-3.5' : 'justify-center px-2',
+          ink === 'light' ? 'border-b border-white/12' : 'border-b border-border/50',
         )}
       >
         <Link
@@ -169,14 +222,28 @@ export function SidebarNavBody({
         >
           <SbcLogo variant="mark" size={28} decorative />
           {expanded && (
-            <span className="truncate text-[13px] font-semibold tracking-tight text-foreground">
+            <span
+              className={cn(
+                'truncate text-[13px] font-semibold tracking-tight',
+                ink === 'light' ? 'text-white' : 'text-foreground',
+              )}
+            >
               VCFO Suite
             </span>
           )}
         </Link>
       </div>
 
-      <nav className="sidebar-scroll flex-1 space-y-0.5 px-2 py-3">
+      <nav
+        className="sidebar-scroll flex-1 space-y-0.5 px-2 py-3"
+        onMouseLeave={onHoverLeave}
+        onPointerLeave={onHoverLeave}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+            onHoverLeave();
+          }
+        }}
+      >
         <LayoutGroup id={layoutIdPrefix}>
         {items.map((it) => {
           if (user.role === 'intern' && it.to === INTERN_CLIENTS_HREF) {
@@ -189,6 +256,8 @@ export function SidebarNavBody({
                 onNavigate={onNavigate}
                 icon={it.icon}
                 iconTone={it.iconTone}
+                ink={ink}
+                hoverFollow={hoverFollow}
               />
             );
           }
@@ -203,11 +272,15 @@ export function SidebarNavBody({
                 'nav-item relative flex min-h-[42px] items-center gap-2.5 rounded-xl px-2.5 text-[13px] transition-colors',
                 active
                   ? 'font-medium text-role-foreground'
-                  : 'text-muted-foreground hover:bg-role-soft/50 hover:text-foreground',
+                  : ink === 'light'
+                    ? 'text-white/90 hover:text-white'
+                    : 'text-muted-foreground hover:text-foreground',
                 !expanded && 'justify-center px-0',
                 user.role === 'client' && expanded && 'text-[13.5px]',
               )}
+              {...sidebarHoverHandlers(hoverFollow, it.to)}
             >
+              <SidebarHoverGlass itemId={it.to} follow={hoverFollow} />
               {active && (
                 <MotionActivePill
                   layoutId={`${layoutIdPrefix}-active`}
@@ -219,7 +292,7 @@ export function SidebarNavBody({
                 <MotionActivePill
                   layoutId={`${layoutIdPrefix}-rail`}
                   reduced={reduceMotion}
-                  className="absolute bottom-2 left-0 top-2 w-[3px] rounded-full bg-role"
+                  className="absolute bottom-2 left-0 top-2 z-[2] w-[3px] rounded-full bg-role"
                 />
               )}
               <it.icon
@@ -242,11 +315,13 @@ export function SidebarNavBody({
             </Link>
           );
         })}
-        <SidebarComplianceMini expanded={expanded} staffBase={staffBase} />
+        <div onMouseEnter={onHoverLeave}>
+          <SidebarComplianceMini expanded={expanded} staffBase={staffBase} ink={ink} />
+        </div>
         </LayoutGroup>
       </nav>
 
-      <div className="space-y-1 border-t border-border/50 p-2">
+      <div className={cn('space-y-1 p-2', ink === 'light' ? 'border-t border-white/12' : 'border-t border-border/50')}>
         {onSetMode && mode ? (
           <div className="flex flex-col gap-1">
             <SidebarModeButton
@@ -257,6 +332,7 @@ export function SidebarNavBody({
               label={mode === 'open' ? 'Kept open' : 'Keep open'}
               hint={mode === 'open' ? 'Hover to collapse' : 'Keep sidebar open'}
               onClick={() => onSetMode(mode === 'open' ? 'auto' : 'open')}
+              ink={ink}
             />
             <SidebarModeButton
               expanded={expanded}
@@ -265,6 +341,7 @@ export function SidebarNavBody({
               label={mode === 'closed' ? 'Kept closed' : 'Keep closed'}
               hint={mode === 'closed' ? 'Click for hover open' : 'Keep sidebar closed'}
               onClick={() => onSetMode(mode === 'closed' ? 'auto' : 'closed')}
+              ink={ink}
             />
           </div>
         ) : null}
@@ -274,18 +351,33 @@ export function SidebarNavBody({
           title="Account settings"
           aria-label="Account settings"
           className={cn(
-            'flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-role-soft/50',
+            'flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors',
+            ink === 'light' ? 'hover:bg-white/12' : 'hover:bg-role-soft/50',
             !expanded && 'justify-center',
           )}
         >
-          <div className="gold-sheen flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold">
-            {user.initials}
-          </div>
+          <UserFace
+            src={user.imageUrl}
+            initials={user.initials}
+            className="gold-sheen h-8 w-8 text-[11px] font-semibold"
+          />
           {expanded && (
             <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-medium text-foreground">{user.name}</div>
+              <div
+                className={cn(
+                  'truncate text-xs font-medium',
+                  ink === 'light' ? 'text-white' : 'text-foreground',
+                )}
+              >
+                {user.name}
+              </div>
               <div className="mt-0.5 flex items-center gap-1.5">
-                <span className="mono truncate text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
+                <span
+                  className={cn(
+                    'mono truncate text-[9.5px] uppercase tracking-[0.16em]',
+                    ink === 'light' ? 'text-white/85' : 'text-muted-foreground',
+                  )}
+                >
                   {ROLE_UI_LABEL[user.role]}
                 </span>
                 {user.role === 'super_admin' && (
@@ -312,6 +404,7 @@ function SidebarModeButton({
   label,
   hint,
   onClick,
+  ink = 'dark',
 }: {
   expanded: boolean;
   active: boolean;
@@ -320,6 +413,7 @@ function SidebarModeButton({
   label: string;
   hint: string;
   onClick: () => void;
+  ink?: 'light' | 'dark';
 }) {
   return (
     <button
@@ -332,7 +426,9 @@ function SidebarModeButton({
         'flex min-h-[42px] w-full items-center gap-2.5 rounded-xl px-2.5 text-[13px] transition-colors',
         active
           ? 'bg-role-soft/70 font-medium text-role-foreground'
-          : 'text-muted-foreground hover:bg-role-soft/50 hover:text-foreground',
+          : ink === 'light'
+            ? 'text-white/90 hover:bg-white/12 hover:text-white'
+            : 'text-muted-foreground hover:bg-role-soft/50 hover:text-foreground',
         !expanded && 'justify-center px-0',
       )}
     >
@@ -349,6 +445,7 @@ function SidebarModeButton({
 export function RoleSidebar() {
   const { user, sidebarMode, setSidebarMode } = useApp();
   const { sidebarPeeking, setSidebarPeeking } = useShellNav();
+  const { sidebar } = useShellAppearance();
   const pathname = usePathname();
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -390,10 +487,13 @@ export function RoleSidebar() {
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
-        'fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border/50 bg-panel/80 backdrop-blur-2xl transition-[width,box-shadow] duration-300 ease-out lg:flex',
+        'shell-sidebar-skin fixed inset-y-0 left-0 z-30 hidden flex-col backdrop-blur-2xl transition-[width,box-shadow] duration-300 ease-out lg:flex',
+        sidebar.ink === 'light' ? 'border-r border-white/12' : 'border-r border-border/50',
         expanded ? expandedWidth : 'w-14',
         sidebarMode === 'auto' && sidebarPeeking && 'z-40 shadow-[12px_0_32px_-16px_oklch(var(--shadow-ink)/0.35)]',
       )}
+      data-ink={sidebar.ink}
+      style={surfaceCssVars(sidebar, 'sidebar')}
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <SidebarNavBody
@@ -401,6 +501,7 @@ export function RoleSidebar() {
           layoutIdPrefix="sidebar-desktop"
           mode={sidebarMode}
           onSetMode={setSidebarMode}
+          ink={sidebar.ink}
         />
       </div>
     </aside>
@@ -410,16 +511,19 @@ export function RoleSidebar() {
 export function MobileNavSheet() {
   const { user } = useApp();
   const { mobileOpen, setMobileOpen, closeMobile } = useShellNav();
+  const { sidebar } = useShellAppearance();
   if (!user) return null;
 
   return (
     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
       <SheetContent
         side="left"
-        className="flex h-full w-[min(18rem,88vw)] flex-col gap-0 border-border/60 bg-background/95 p-0 backdrop-blur-xl sm:max-w-xs"
+        className="shell-sidebar-skin flex h-full w-[min(18rem,88vw)] flex-col gap-0 border-border/60 bg-transparent p-0 sm:max-w-xs"
+        data-ink={sidebar.ink}
+        style={surfaceCssVars(sidebar, 'sidebar')}
       >
         <SheetTitle className="sr-only">Navigation</SheetTitle>
-        <SidebarNavBody expanded onNavigate={closeMobile} layoutIdPrefix="sidebar-mobile" />
+        <SidebarNavBody expanded onNavigate={closeMobile} layoutIdPrefix="sidebar-mobile" ink={sidebar.ink} />
       </SheetContent>
     </Sheet>
   );

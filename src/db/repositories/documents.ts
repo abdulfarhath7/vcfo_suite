@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { documents, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
+import { isFirmWideAdmin } from '@/lib/auth';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import {
   assertEngagementAccess,
@@ -11,6 +12,7 @@ import {
   managerOwnsEngagement,
 } from '@/db/repositories/engagements';
 import { listLeadMemberEngagementIds } from '@/db/repositories/engagement-leads-membership';
+import { listManagerMemberEngagementIds } from '@/db/repositories/engagement-managers-membership';
 
 /**
  * DOCUMENTS REPOSITORY.
@@ -41,9 +43,15 @@ export interface DocumentDto {
   stepId: string | null;
   sharedWithClient: boolean;
   createdAt: string;
+  companyName?: string;
+  slug?: string | null;
+  stage?: string | null;
 }
 
-function mapRow(row: DocumentRow): DocumentDto {
+function mapRow(
+  row: DocumentRow,
+  extra?: { companyName?: string; slug?: string | null; stage?: string | null },
+): DocumentDto {
   return {
     id: row.id,
     engagementId: row.engagementId,
@@ -56,7 +64,30 @@ function mapRow(row: DocumentRow): DocumentDto {
     stepId: row.stepId,
     sharedWithClient: row.sharedWithClient,
     createdAt: row.createdAt.toISOString(),
+    companyName: extra?.companyName,
+    slug: extra?.slug,
+    stage: extra?.stage,
   };
+}
+
+const joinedSelect = {
+  doc: documents,
+  companyName: engagements.companyName,
+  slug: engagements.slug,
+  stage: engagements.stage,
+};
+
+function mapJoined(row: {
+  doc: DocumentRow;
+  companyName: string;
+  slug: string | null;
+  stage: string;
+}): DocumentDto {
+  return mapRow(row.doc, {
+    companyName: row.companyName,
+    slug: row.slug,
+    stage: row.stage,
+  });
 }
 
 function clientEngagementScope(ctx: AuthContext) {
@@ -86,26 +117,35 @@ export async function listDocuments(
         : eq(documents.engagementId, access.dbId);
 
     const rows = await db
-      .select()
+      .select(joinedSelect)
       .from(documents)
+      .innerJoin(engagements, eq(engagements.id, documents.engagementId))
       .where(where)
       .orderBy(desc(documents.createdAt));
-    return rows.map(mapRow);
+    return rows.map(mapJoined);
   }
 
-  if (ctx.role === 'admin') {
-    const rows = await db.select().from(documents).orderBy(desc(documents.createdAt));
-    return rows.map(mapRow);
+  if (isFirmWideAdmin(ctx.role)) {
+    const rows = await db
+      .select(joinedSelect)
+      .from(documents)
+      .innerJoin(engagements, eq(engagements.id, documents.engagementId))
+      .orderBy(desc(documents.createdAt));
+    return rows.map(mapJoined);
   }
 
   if (ctx.role === 'manager') {
+    const memberIds = await listManagerMemberEngagementIds(ctx.userId);
+    const conds = [managerOwnsEngagement(ctx.userId)];
+    if (memberIds.length > 0) conds.push(inArray(engagements.id, memberIds));
+    const roleScope = conds.length === 1 ? conds[0] : or(...conds);
     const rows = await db
-      .select({ doc: documents })
+      .select(joinedSelect)
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
-      .where(managerOwnsEngagement(ctx.userId))
+      .where(roleScope)
       .orderBy(desc(documents.createdAt));
-    return rows.map((r) => mapRow(r.doc));
+    return rows.map(mapJoined);
   }
 
   if (ctx.role === 'intern') {
@@ -116,21 +156,36 @@ export async function listDocuments(
         ? or(eq(engagements.internId, ctx.internId), inArray(engagements.id, memberIds))
         : eq(engagements.internId, ctx.internId);
     const rows = await db
-      .select({ doc: documents })
+      .select(joinedSelect)
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
       .where(scope)
       .orderBy(desc(documents.createdAt));
-    return rows.map((r) => mapRow(r.doc));
+    return rows.map(mapJoined);
   }
 
   const rows = await db
-    .select({ doc: documents })
+    .select(joinedSelect)
     .from(documents)
     .innerJoin(engagements, eq(engagements.id, documents.engagementId))
     .where(and(eq(documents.sharedWithClient, true), clientEngagementScope(ctx)))
     .orderBy(desc(documents.createdAt));
-  return rows.map((r) => mapRow(r.doc));
+  return rows.map(mapJoined);
+}
+
+/** Single index row, scoped by engagement access (clients: shared rows only). */
+export async function getDocumentById(
+  ctx: AuthContext,
+  id: string,
+): Promise<DocumentDto | null> {
+  const [row] = await db.select().from(documents).where(eq(documents.id, id)).limit(1);
+  if (!row) return null;
+
+  const access = await assertEngagementAccess(ctx, row.engagementId);
+  if (!access.ok) return null;
+  if (ctx.role === 'client' && !row.sharedWithClient) return null;
+
+  return mapRow(row);
 }
 
 export interface CreateDocumentInput {
