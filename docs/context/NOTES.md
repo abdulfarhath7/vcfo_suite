@@ -139,6 +139,10 @@ Append here whenever something costs more than a minute to figure out.
   nothing has been installed or run). Trust `docs/context/STATE.md` over it.
 - `CLAUDE.md` carries a Next.js block auto-written by `next dev`. Committing it alongside
   other work keeps the tree clean; deleting it just regenerates.
+- Product/UX briefing for a *different* Claude (features + visual redesign, not
+  implementation): `docs/claude-briefing/`. Start with `CLAUDE-CONTEXT.md`.
+  `docs/context/UX-AUDIT.md` (2026-08-11) still says Graphite Violet; live brand is
+  cool professional blue — trust `globals.css` and the briefing pack.
 
 ## Multi-client + Super Admin
 
@@ -176,10 +180,12 @@ Append here whenever something costs more than a minute to figure out.
 - Phase washes (journey chips only, ~8–12% chroma): `--phase-pre` sky,
   `--phase-filing` teal, `--phase-post` teal-green, `--phase-fema` indigo,
   `--phase-registration` violet-blue. Helper: `src/lib/phase-colors.ts`.
-- Status (chips/icons only, never page fill): teal-green done · muted gold
-  waiting · slate lock · rose/red overdue/error.
+- Status (chips/icons only, never page fill): teal-green done · coral waiting ·
+  slate lock · rose/red overdue/error. Never khaki, ochre, or brown — waiting
+  used to be muted gold and read as brown; it is now coral. Categorical
+  `--accent-amber` is lemon, `--accent-orange` is tangerine (high chroma).
 - Super Admin: tiny `.super-gold-chip` badge only — never a gold CTA theme.
-- Shared journey node: `JourneyNode` (blue active pulse, teal check, amber
+- Shared journey node: `JourneyNode` (blue active pulse, teal check, coral
   clock icon, slate lock). Motion: `.journey-node-pulse`, `.journey-unlock`,
   `.journey-complete`, `.page-fade-up`, `.skeleton-brand`, `.page-atmosphere`
   (faint blue mesh ≤4%).
@@ -288,9 +294,9 @@ Append here whenever something costs more than a minute to figure out.
   remain.
 - App shell chrome is an **L** flush to the viewport: sidebar `top-0 left-0
   bottom-0`, top bar `top-0` from the sidebar’s right edge to the screen
-  edge. No floating inset. Logo in the sidebar header; **“VCFO Suite”** stays
-  visible when collapsed by moving into the top bar (icons-only rail is too
-  narrow for the wordmark). Hover-peek expands the collapsed rail over content
+  edge. No floating inset. Sidebar header keeps the VCFO Suite mark (+ wordmark
+  when the rail is expanded). The top bar always shows the official SBC lockup
+  (`public/sbc-logo.png`) in a white chip — compact mark below `sm`. Hover-peek expands the collapsed rail over content
   (200ms leave delay). Footer: **Keep open** / **Keep closed** (mutually
   exclusive; default is auto/hover). Re-expand via the slim-rail Keep open
   pin. `sidebarCollapsed` is derived (`mode !== 'open'`). Do **not** call
@@ -308,7 +314,7 @@ Append here whenever something costs more than a minute to figure out.
   (Today, Clients list, Compliance root, dashboards, …); **show** on settings,
   engagement/project/step, board-resolution. Do not add a second
   “Back to portfolio” on intern engagement. Click is `router.back()` when
-  `history.length > 1`, else the parent path. The top bar is wordmark + Search
+  `history.length > 1`, else the parent path. The top bar is SBC lockup + Search
   only (no back slot).
 - Checklist file upload is a compact `.milestone-upload-zone` row (~44px, max 88px),
   not a tall centered dropzone. Remarks use `.milestone-form-textarea` (`min-h` 72px /
@@ -319,26 +325,51 @@ Append here whenever something costs more than a minute to figure out.
   shorts stay in one cell (~50%), not stretched. Phone stacks to one column.
   Infer via `getMilestoneFormFieldLayout`; optional `ChecklistField.layout` override.
 
-## Intern Today week queue
+## Intern Today + My work
 
-- Week queue on `/app/intern/today` is grouped **by company** (A–Z), one card per engagement
-  (`md:grid-cols-2 xl:grid-cols-3`). Company-card Today was never committed — only the helpers
-  landed; rebuild the view from `groupInternWeekQueueByCompany` if it reverts to the 148-line
-  “Next up this week” list.
-- Quiet IST clock via `useClientLocaleNow` (`en-IN`), enlarged serif. No “Next up this week”,
-  first-name hero, or Analytics. Rows: `InternStepDoneMark` + title + chevron →
-  `internEngagementStepPath` — **no** Completed / In progress word chips.
-- Unlocked work stays visible: **completed + in-progress + awaiting-client**. Locked future
-  steps are omitted. Helpers: `internWeekQueueItems` / `groupInternWeekQueueByCompany`.
-- Intern **Tasks** (`/app/intern/tasks`) was removed; that URL redirects to Today. Manager/admin
-  task UIs are unchanged.
+- Today (`/app/intern/today`) is one greeting hero (greeting + inline stats + today’s
+  focus) plus week strip, action queue, phase progress, compliance health, waiting-on.
+  Stats deep-link into My work with `?focus=`. Helpers: `src/lib/intern-work.ts`.
+  Appearance (hero/sidebar/motion) is localStorage `vcfo.shell.appearance`.
+- My work (`/app/intern/tasks`) is List / Board / Timeline of the same classified items
+  (steps + filings + pending document requests). Nav badge = needs-action count.
+  `groupInternWeekQueueByCompany` still exists for tests; Today no longer renders that grid.
+  This week strip + My work `?focus=due` list **completed this IST week** (struck / done chip).
+  Hero “This week” KPI stays remaining due (`dueWeek`), not activity. Historical done stays out.
+- Metric top-bar colours use semantic tokens (`primary`, `danger`, `accent-sky`,
+  `success`) — never `orange-*` (those still alias blue). Waiting is sky/pink/cyan,
+  never khaki or brown.
+- Quiet IST clock stays in the hero. Today's todos (`vcfo.intern.focus.{userId}`) mix
+  pinned work `{ id, done }` and typed rows `{ id, done, custom: true, title }` — no
+  3-item cap; `parseInternFocus` keeps legacy pins.
+
+## Announcements (not notifications)
+
+- Announcements are firm-wide news (Finance Act, circulars, process notes). The
+  bell is still per-user work alerts (`notifications`).
+- Super Admin, Admin, and Project Manager can post. The author's name is stored
+  on the row. Project leads and clients can read the same board; they cannot compose.
+- Routes: `/app/{role}/announcements`. Navbar megaphone (unread via
+  `vcfo.announcements.read.{userId}`) is the in-app list; client inbox still has a
+  compact list. Kind + `author_role` on the row (migration 0010).
+- Official RSS/Atom: staff paste a **feed URL** (not a homepage) from an allowlisted
+  host (`src/lib/announcements.ts` `OFFICIAL_FEED_HOSTS`). Inngest `announcement-feeds`
+  runs once at 06:00 Asia/Kolkata. We do **not** scrape HTML listing or login pages
+  (MCA/GST/EPFO portals, Income Tax “What's New”). If a department has no RSS, open
+  the circular from the portals directory or post by hand. Tracking junk
+  (`utm_source=chatgpt.com`, gclid) is stripped from URLs.
+- Portals catalog: `src/lib/announcement-portals.ts`, rendered on the Announcements
+  page. LEI renewal uses `ccilindia-lei.co.in` (official LOU), not the ads agent at
+  legalentityidentifier.in. First shell load of the IST day can popup unread /
+  today's posts; close stores `vcfo.announcements.daily.{userId}.{ymd}`.
+- Apply schema: `npm run db:migrate` (0009_announcements, 0010_announcement_kind).
 
 ## Intern / lead motion
 
 - Sidebar active item uses Framer `layoutId` (`sidebar-*-active` / `-rail`) with `springSnappy`.
   Client **sub-rows** use a nested pair (`*-client-active` / `*-client-rail`) so the pill slides
   between companies and View all without stealing the parent Clients highlight.
-- Lead dashboard motion lives in intern-only surfaces (Today, Clients, Requests, InternClientsNav,
+- Lead dashboard motion lives in intern-only surfaces (Today, My work, Clients, Requests, InternClientsNav,
   InternPhaseTabs, intern journey rail via `allowLockedOpen`). Shared
   Analytics / Compliance / Mail / Audit keep their existing PageTransition only.
 - Reuse `src/lib/motion.ts` presets and `MotionActivePill`. Always respect `useReducedMotion`.
@@ -410,4 +441,39 @@ Append here whenever something costs more than a minute to figure out.
   in-flight delete promise. Toast lives **7s**; row exit animation **250ms**.
   Clear all is per Received/Sent tab only. `DropdownMenu modal={false}` so the
   undo toast stays clickable while the panel is open.
+
+## Shell sidebar skin vs `fixed`
+
+- `.shell-sidebar-skin` must **not** set `position`. Unlayered `globals.css`
+  overrides Tailwind `fixed` on the desktop `aside` (and the mobile sheet),
+  so the rail re-enters flow: icons in a horizontal row at the top-left and
+  the page drops below a full-height gap. `::before` overlay still works —
+  `fixed`/`relative` on the host is already a containing block. Settings
+  preview keeps Tailwind `relative` on the sample tile.
+
+## Profile avatars
+
+- `profiles.avatar_object_key` (migration `0011_profile_avatar`) stores the S3
+  key `avatars/{userId}/photo`. Run `npm run db:migrate` after pull. Bytes go
+  through MinIO/S3 like other uploads; the client only loads
+  `/api/account/avatar` (own photo, Auth.js cookie). Outlook copy is
+  `POST /api/account/avatar/outlook` using the existing Graph token
+  (`User.Read` already on `OUTLOOK_SCOPES`) — not an Auth.js login. Upload
+  overwrites Outlook and vice versa; last write wins.
+
+## Intern document vault + sidebar order
+
+- Project Lead sidebar order (high-frequency first): Today → My work → Clients
+  dropdown → Document vault → Announcements → mail/requests/compliance/KB/
+  analytics/audit. Settings stays in the footer. Do not set `position` on
+  `.shell-sidebar-skin`.
+- Vault is `/app/intern/vault` (shared view `src/views/vault/DocumentVaultPage.tsx`).
+  Manager/admin already had `/vault`. Files are grouped by assigned company,
+  then checklist step / category. Search matches client name or file name.
+  Milestone downloads stay on `/api/milestone-documents/signed-url`. Indexed
+  `documents` rows use `GET /api/documents` (AuthContext-scoped, no
+  `engagementId`) and `/api/documents/:id/signed-url`. Intern isolation is
+  Path A in `listDocuments` / `getDocumentById` (assigned + membership only).
+  No extra migration.
+
 
