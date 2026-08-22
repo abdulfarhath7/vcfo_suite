@@ -9,6 +9,8 @@ import {
   prioritizeInternActions,
 } from '@/lib/intern-dashboard';
 import type { BoardResolutionProgressSnapshot } from '@/lib/client-progress-board';
+import { useComplianceFilings } from '@/hooks/use-compliance-filings';
+import { buildInternWorkItems, internWorkKpis } from '@/lib/intern-work';
 
 /** Intern-scoped engagements, checklist queue, and progress from AppContext. */
 export function useInternPortfolio() {
@@ -36,14 +38,14 @@ export function useInternPortfolio() {
     [myEngagements, getStateForEngagement, internId, boardResolutionByEngagement],
   );
 
-  const pendingRequests = useMemo(
-    () =>
-      requests.filter(
-        (r) =>
-          r.status === 'pending' &&
-          myEngagements.some((e) => e.id === r.engagementId),
-      ).length,
+  const myRequests = useMemo(
+    () => requests.filter((r) => myEngagements.some((e) => e.id === r.engagementId)),
     [requests, myEngagements],
+  );
+
+  const pendingRequests = useMemo(
+    () => myRequests.filter((r) => r.status === 'pending').length,
+    [myRequests],
   );
 
   const stats = useMemo(
@@ -67,5 +69,31 @@ export function useInternPortfolio() {
 
   const focusActions = useMemo(() => prioritizeInternActions(queue), [queue]);
 
-  return { myEngagements, queue, stats, progressByEngagement, focusActions };
+  const filings = useComplianceFilings(myEngagements, getStateForEngagement);
+
+  const workItems = useMemo(
+    () =>
+      buildInternWorkItems({
+        engagements: myEngagements,
+        getChecklistState: getStateForEngagement,
+        internId,
+        filings,
+        requests: myRequests,
+      }),
+    [myEngagements, getStateForEngagement, internId, filings, myRequests],
+  );
+
+  const kpis = useMemo(() => internWorkKpis(workItems, new Date()), [workItems]);
+
+  return {
+    myEngagements,
+    queue,
+    stats,
+    progressByEngagement,
+    focusActions,
+    filings,
+    myRequests,
+    workItems,
+    kpis,
+  };
 }

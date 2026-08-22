@@ -1,0 +1,399 @@
+'use client';
+
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { CalendarClock, Columns3, List } from 'lucide-react';
+import { PageTransition } from '@/components/shell/PageTransition';
+import { SEO } from '@/components/SEO';
+import { InternWorkBoardCard } from '@/components/intern/InternWorkRow';
+import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
+import { LeadCompanyChip } from '@/components/intern/LeadCompanyChip';
+import { internToneBadge, internToneBg, internToneText } from '@/components/intern/intern-tones';
+import { useInternPortfolio } from '@/lib/use-intern-portfolio';
+import {
+  INTERN_WORK_VIEW_KEY,
+  filterInternWork,
+  formatDueLabel,
+  internTimelineRows,
+  internTimelineWindow,
+  internWorkBoard,
+  internWorkPath,
+  istWeekdayMon0,
+  parseInternWorkFocus,
+  parseInternWorkKindFilter,
+  parseInternWorkTag,
+  parseInternWorkView,
+  parseIstNoon,
+  sortInternWork,
+  ymdInIst,
+  type InternWorkFocus,
+  type InternWorkItem,
+  type InternWorkKindFilter,
+  type InternWorkTag,
+  type InternWorkView,
+} from '@/lib/intern-work';
+import { KIND_TONE } from '@/components/intern/intern-tones';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+
+const VIEW_BTN: { id: InternWorkView; label: string; icon: typeof List }[] = [
+  { id: 'list', label: 'List', icon: List },
+  { id: 'board', label: 'Board', icon: Columns3 },
+  { id: 'tl', label: 'Timeline', icon: CalendarClock },
+];
+
+function InternMyWorkInner() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const { workItems, kpis, myEngagements } = useInternPortfolio();
+  const now = useMemo(() => new Date(), []);
+  const focus = parseInternWorkFocus(params.get('focus'));
+  const tag = parseInternWorkTag(params.get('tag'));
+  const companyId = params.get('company');
+  const kind = parseInternWorkKindFilter(params.get('kind'));
+  const [view, setView] = useState<InternWorkView>(() => parseInternWorkView(params.get('view')));
+  const [kb, setKb] = useState(-1);
+
+  useEffect(() => {
+    const fromUrl = params.get('view');
+    if (fromUrl) {
+      setView(parseInternWorkView(fromUrl));
+      return;
+    }
+    try {
+      const stored = window.localStorage.getItem(INTERN_WORK_VIEW_KEY);
+      if (stored) setView(parseInternWorkView(stored));
+    } catch {
+      /* ignore */
+    }
+  }, [params]);
+
+  const filtered = useMemo(
+    () =>
+      sortInternWork(
+        filterInternWork(workItems, { focus, tag, companyId, kind }, now),
+      ),
+    [workItems, focus, tag, companyId, kind, now],
+  );
+
+  const companies = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const e of myEngagements) seen.set(e.id, e.companyName);
+    return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: 'base' }));
+  }, [myEngagements]);
+
+  const go = (next: {
+    focus?: InternWorkFocus;
+    tag?: InternWorkTag | null;
+    companyId?: string | null;
+    kind?: InternWorkKindFilter;
+    view?: InternWorkView;
+  }) => {
+    const href = internWorkPath({
+      focus: next.focus ?? focus,
+      tag: next.tag === undefined ? tag : next.tag,
+      companyId: next.companyId === undefined ? companyId : next.companyId,
+      kind: next.kind ?? kind,
+      view: next.view ?? view,
+    });
+    router.replace(href, { scroll: false });
+  };
+
+  const chooseView = (next: InternWorkView) => {
+    setView(next);
+    try {
+      window.localStorage.setItem(INTERN_WORK_VIEW_KEY, next);
+    } catch {
+      /* ignore */
+    }
+    go({ view: next });
+  };
+
+  useEffect(() => {
+    if (view !== 'list') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'j' || e.key === 'J') setKb((i) => Math.min(i + 1, filtered.length - 1));
+      else if (e.key === 'k' || e.key === 'K') setKb((i) => Math.max(i - 1, 0));
+      else if (e.key === 'Enter' && kb >= 0 && filtered[kb]) {
+        router.push(filtered[kb]!.href);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [view, filtered, kb, router]);
+
+  return (
+    <PageTransition>
+      <SEO title="My work — VCFO Suite" description="List, board, and timeline of your open steps and filings." path="/app/intern/tasks" />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <h1 className="serif text-[26px] font-semibold tracking-tight text-ink">My work</h1>
+        <span className="text-xs font-bold text-text-tertiary">
+          {kpis.openCount} open · {kpis.companyCount} {kpis.companyCount === 1 ? 'company' : 'companies'}
+        </span>
+        <div className="ml-auto flex overflow-hidden rounded-md border border-border bg-panel shadow-layered" role="tablist">
+          {VIEW_BTN.map((btn) => {
+            const Icon = btn.icon;
+            const on = view === btn.id;
+            return (
+              <button
+                key={btn.id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => chooseView(btn.id)}
+                className={cn(
+                  'flex items-center gap-1.5 px-4 py-2 text-[12.5px] font-extrabold text-muted-foreground',
+                  on && 'bg-primary text-white',
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {btn.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        <FilterChip on={!companyId} label="All companies" onClick={() => go({ companyId: null })} />
+        {companies.map(([id, name]) => (
+          <FilterChip key={id} on={companyId === id} label={name.split(/\s+/)[0] ?? name} onClick={() => go({ companyId: id })} />
+        ))}
+        <span className="w-2" />
+        <FilterChip on={kind === 'all'} label="Steps + filings" onClick={() => go({ kind: 'all' })} />
+        <FilterChip on={kind === 'steps'} label="Steps only" onClick={() => go({ kind: 'steps' })} />
+        <FilterChip on={kind === 'filings'} label="Filings only" onClick={() => go({ kind: 'filings' })} />
+      </div>
+
+      {view === 'list' ? <ListView items={filtered} kb={kb} now={now} /> : null}
+      {view === 'board' ? <BoardView items={filtered} now={now} /> : null}
+      {view === 'tl' ? <TimelineView items={filtered} now={now} /> : null}
+    </PageTransition>
+  );
+}
+
+function FilterChip({ on, label, onClick }: { on: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'rounded-full border border-border bg-panel px-3.5 py-1.5 text-xs font-extrabold text-muted-foreground hover:border-border',
+        on && 'border-transparent bg-primary-light text-primary-dark',
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now: Date }) {
+  if (items.length === 0) {
+    return <EmptyWork />;
+  }
+  return (
+    <>
+      <div className="surface overflow-hidden">
+        <div className="grid grid-cols-[minmax(200px,2fr)_1.2fr_1.1fr_0.7fr_96px] text-[10.5px] font-extrabold uppercase tracking-[0.07em] text-text-tertiary">
+          <div className="px-3.5 py-2.5">Step / filing</div>
+          <div className="px-3.5 py-2.5">Company</div>
+          <div className="px-3.5 py-2.5">State</div>
+          <div className="px-3.5 py-2.5">Due</div>
+          <div className="px-3.5 py-2.5" />
+        </div>
+        {items.map((item, i) => (
+          <div
+            key={item.id}
+            className={cn(
+              'grid grid-cols-[minmax(200px,2fr)_1.2fr_1.1fr_0.7fr_96px] items-center border-t border-border text-[13px] font-semibold hover:bg-raised/70',
+              kb === i && 'bg-raised',
+              item.kind === 'done' && 'opacity-70',
+            )}
+          >
+            <Link
+              href={item.href}
+              className={cn(
+                'truncate px-3.5 py-3 hover:underline',
+                item.kind === 'done' && 'text-text-tertiary line-through',
+              )}
+            >
+              {item.title}
+            </Link>
+            <div className="px-3.5 py-3">
+              <LeadCompanyChip name={item.companyName} engagementId={item.engagementId} />
+            </div>
+            <div className="px-3.5 py-3">
+              <span className={cn('inline-block rounded-full px-2.5 py-0.5 text-[11px] font-extrabold', internToneBadge(KIND_TONE[item.kind] ?? 'info'))}>
+                {item.why}
+              </span>
+            </div>
+            <div className={cn('px-3.5 py-3 font-mono text-[11.5px]', item.isOverdue && internToneText('danger'))}>
+              {formatDueLabel(item.dueAt, now)}
+            </div>
+            <div className="px-3.5 py-3">
+              <InternWorkCtaButton item={item} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2.5 text-[11px] font-semibold text-text-tertiary">
+        Tip: <kbd className="rounded border border-border px-1 font-mono text-[10px]">J</kbd>/
+        <kbd className="rounded border border-border px-1 font-mono text-[10px]">K</kbd> to move ·{' '}
+        <kbd className="rounded border border-border px-1 font-mono text-[10px]">Enter</kbd> to open
+      </p>
+    </>
+  );
+}
+
+function BoardView({ items, now }: { items: InternWorkItem[]; now: Date }) {
+  const cols = internWorkBoard(items, now);
+  const meta: { key: keyof typeof cols; label: string; tone: string }[] = [
+    { key: 'action', label: 'Needs action', tone: 'bg-primary text-white' },
+    { key: 'progress', label: 'In progress', tone: 'bg-accent-violet text-white' },
+    { key: 'waiting', label: 'Waiting', tone: 'bg-accent-sky text-white' },
+    { key: 'done', label: 'Done this week', tone: 'bg-success text-white' },
+  ];
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {meta.map((col) => (
+          <div key={col.key} className="lead-board-col" data-col={col.key}>
+            <span className={cn('mb-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-extrabold', col.tone)}>
+              <i className="h-2 w-2 rounded-full bg-white" />
+              {col.label} <span className="opacity-75">{cols[col.key].length}</span>
+            </span>
+            <div className="flex flex-col gap-2">
+              {cols[col.key].map((item) => (
+                <InternWorkBoardCard key={item.id} item={item} dim={col.key === 'done'} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 flex items-center gap-1.5 text-[11.5px] font-semibold text-text-tertiary">
+        Cards move when the work moves — reviews, approvals, and deliveries update the board. Open a card to act.
+      </p>
+    </>
+  );
+}
+
+function TimelineView({ items, now }: { items: InternWorkItem[]; now: Date }) {
+  const window = internTimelineWindow(now);
+  const today = ymdInIst(now);
+  const todayIdx = window.indexOf(today);
+  const rows = internTimelineRows(items, now);
+  const byCompany: { name: string; id: string; rows: typeof rows }[] = [];
+  for (const row of rows) {
+    let g = byCompany.find((x) => x.id === row.item.engagementId);
+    if (!g) {
+      g = { id: row.item.engagementId, name: row.item.companyName, rows: [] };
+      byCompany.push(g);
+    }
+    g.rows.push(row);
+  }
+
+  if (rows.length === 0) return <EmptyWork />;
+
+  return (
+    <>
+      <div className="surface overflow-x-auto p-4">
+        <div className="relative min-w-[860px]">
+          {todayIdx >= 0 ? (
+            <div
+              className="lead-tl-today"
+              style={{
+                left: `calc(200px + (100% - 200px) * ${todayIdx} / 14)`,
+                width: 'calc((100% - 200px) / 14)',
+              }}
+            />
+          ) : null}
+          <div className="lead-tl relative z-[1] border-b border-border pb-2 text-center text-[10.5px] font-extrabold text-text-tertiary">
+            <div />
+            {window.map((ymd) => {
+              const d = parseIstNoon(ymd);
+              const weekend = istWeekdayMon0(d) >= 5;
+              return (
+                <div
+                  key={ymd}
+                  className={cn(
+                    'dh py-0.5',
+                    ymd === today && 'rounded-md bg-primary text-white',
+                    weekend && ymd !== today && 'opacity-45',
+                  )}
+                >
+                  {format(d, 'EEE')}
+                  <br />
+                  {format(d, 'd')}
+                </div>
+              );
+            })}
+          </div>
+          {byCompany.map((group) => (
+            <div key={group.id}>
+              <div className="relative z-[1] flex items-center gap-2 py-3 text-xs font-extrabold">
+                <LeadCompanyChip name={group.name} engagementId={group.id} compact />
+                <span>{group.name}</span>
+              </div>
+              {group.rows.map(({ item, mark }) => (
+                <div key={item.id} className="lead-tl relative z-[1] min-h-9">
+                  <Link href={item.href} className="truncate pr-3 text-xs font-bold text-muted-foreground hover:text-ink">
+                    {item.title}
+                  </Link>
+                  {mark.type === 'bar' ? (
+                    <div
+                      className={cn(
+                        'flex h-[22px] items-center overflow-hidden rounded-md px-2 text-[10.5px] font-extrabold',
+                        internToneBadge(mark.tone),
+                        mark.openStart && 'rounded-l-sm',
+                      )}
+                      style={{ gridColumn: `${mark.startCol} / span ${mark.span}` }}
+                    >
+                      {mark.label}
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        className={cn('h-3 w-3 rotate-45 justify-self-center rounded-sm', internToneBg(mark.tone))}
+                        style={{ gridColumn: mark.col }}
+                      />
+                      <div
+                        className={cn('self-center pl-1.5 text-[10px] font-extrabold', internToneText(mark.tone))}
+                        style={{ gridColumn: `${Math.min(mark.col + 1, 15)} / span ${mark.col >= 13 ? 1 : 3}` }}
+                      >
+                        {mark.label}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="mt-3.5 flex flex-wrap gap-4 text-[11px] font-bold text-muted-foreground">
+          <span>◆ Filing deadline</span>
+          <span>Bars are statutory windows — they can&apos;t be dragged. Open an item to act.</span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function EmptyWork() {
+  return (
+    <div className="surface px-6 py-12 text-center">
+      <p className="serif text-lg">Nothing in this view</p>
+      <p className="mt-1 text-sm text-muted-foreground">Clear a filter or pick another company.</p>
+    </div>
+  );
+}
+
+export default function InternMyWork() {
+  return (
+    <Suspense fallback={<div className="serif text-lg">My work</div>}>
+      <InternMyWorkInner />
+    </Suspense>
+  );
+}
