@@ -36,6 +36,7 @@ import {
   isAdminOrManager,
   type DbRole,
 } from '@/lib/auth';
+import { ownAvatarSrc } from '@/lib/account-avatar';
 import { getSession, signIn as authJsSignIn, signOut as authJsSignOut } from 'next-auth/react';
 import { clearAllStepProgress } from '@/components/admin/step-detail-progress';
 import {
@@ -100,6 +101,8 @@ type SessionUser = {
   role?: string;
   internId?: string;
   clientId?: string;
+  hasAvatar?: boolean;
+  avatarVersion?: number;
 };
 
 function authUserFromSessionUser(user: SessionUser | undefined): AuthUser | null {
@@ -111,6 +114,7 @@ function authUserFromSessionUser(user: SessionUser | undefined): AuthUser | null
     email: user.email,
     role: mapDbRoleToAppRole(user.role as DbRole),
     initials: initialsFromName(name),
+    imageUrl: user.hasAvatar ? ownAvatarSrc(user.avatarVersion) : null,
     clientId: user.clientId,
     internId: user.internId,
   };

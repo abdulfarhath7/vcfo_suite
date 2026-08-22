@@ -17,6 +17,8 @@ export interface AuthUser {
   email: string;
   role: Role;
   initials: string;
+  /** Same-origin `/api/account/avatar?v=…` when the user has a photo. */
+  imageUrl?: string | null;
   clientId?: string;
   internId?: string;
 }

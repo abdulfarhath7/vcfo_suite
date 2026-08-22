@@ -59,6 +59,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: row.role,
           internId: row.internId ?? undefined,
           clientId: row.clientId ?? undefined,
+          hasAvatar: Boolean(row.avatarObjectKey),
+          avatarVersion: row.updatedAt.getTime(),
         };
       },
     }),
@@ -71,10 +73,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role?: string;
           internId?: string;
           clientId?: string;
+          hasAvatar?: boolean;
+          avatarVersion?: number;
         };
         token.role = u.role;
         token.internId = u.internId;
         token.clientId = u.clientId;
+        token.hasAvatar = Boolean(u.hasAvatar);
+        token.avatarVersion = u.avatarVersion;
         return token;
       }
 
@@ -90,6 +96,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             status: profiles.status,
             name: profiles.name,
             email: profiles.email,
+            avatarObjectKey: profiles.avatarObjectKey,
+            updatedAt: profiles.updatedAt,
           })
           .from(profiles)
           .where(eq(profiles.id, token.sub))
@@ -105,6 +113,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.clientId = row.clientId ?? undefined;
         token.name = row.name ?? undefined;
         token.email = row.email;
+        token.hasAvatar = Boolean(row.avatarObjectKey);
+        token.avatarVersion = row.updatedAt.getTime();
       }
       return token;
     },
@@ -124,6 +134,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as { clientId?: string }).clientId = token.clientId as
           | string
           | undefined;
+        (session.user as { hasAvatar?: boolean }).hasAvatar = Boolean(token.hasAvatar);
+        (session.user as { avatarVersion?: number }).avatarVersion =
+          typeof token.avatarVersion === 'number' ? token.avatarVersion : undefined;
       }
       return session;
     },

@@ -129,6 +129,20 @@ export async function graphMe(accessToken: string): Promise<{ id?: string; mail?
   return (await res.json()) as { id?: string; mail?: string; userPrincipalName?: string };
 }
 
+/** Profile photo bytes from the signed-in Microsoft account. 404 → null (no photo). */
+export async function graphGetPhoto(
+  accessToken: string,
+): Promise<{ bytes: Buffer; contentType: string } | null> {
+  const res = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('graph_photo_failed');
+  const bytes = Buffer.from(await res.arrayBuffer());
+  const contentType = res.headers.get('content-type')?.split(';')[0]?.trim() || 'image/jpeg';
+  return { bytes, contentType };
+}
+
 export async function graphSendMail(
   accessToken: string,
   input: { to: string[]; cc?: string[]; subject: string; html: string; text?: string },

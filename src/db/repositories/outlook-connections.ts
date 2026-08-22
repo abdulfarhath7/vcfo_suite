@@ -4,7 +4,7 @@ import { db } from '@/db/client';
 import { outlookConnections } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { decryptSecret, encryptSecret } from '@/lib/outlook/token-crypto';
-import { graphSendMail, refreshAccessToken } from '@/lib/outlook/oauth';
+import { graphGetPhoto, graphSendMail, refreshAccessToken } from '@/lib/outlook/oauth';
 
 function assertStaff(ctx: AuthContext) {
   if (ctx.role === 'client') {
@@ -97,6 +97,16 @@ async function validAccessToken(ctx: AuthContext): Promise<{ access: string; msE
     expiresInSec: tokens.expires_in ?? 3600,
   });
   return { access: tokens.access_token, msEmail: row.msEmail };
+}
+
+/** Fetch the connected mailbox’s Graph profile photo. Staff only. */
+export async function fetchOwnOutlookPhoto(
+  ctx: AuthContext,
+): Promise<{ bytes: Buffer; contentType: string }> {
+  const { access } = await validAccessToken(ctx);
+  const photo = await graphGetPhoto(access);
+  if (!photo) throw new Error('outlook_photo_missing');
+  return photo;
 }
 
 export async function sendMailViaOutlook(

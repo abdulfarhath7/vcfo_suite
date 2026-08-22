@@ -14,6 +14,7 @@ import {
 } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { initialsFromName, isFirmWideAdmin } from '@/lib/auth';
+import { ownAvatarSrc } from '@/lib/account-avatar';
 import { isUuid } from '@/lib/slug';
 
 /**
@@ -485,6 +486,7 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
   email: string;
   phone: string | null;
   role: string;
+  avatarUrl: string | null;
 }> {
   const [row] = await db
     .select({
@@ -493,6 +495,8 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
       email: profiles.email,
       phone: profiles.phone,
       role: profiles.role,
+      avatarObjectKey: profiles.avatarObjectKey,
+      updatedAt: profiles.updatedAt,
     })
     .from(profiles)
     .where(eq(profiles.id, ctx.userId))
@@ -505,6 +509,37 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
     email: row.email,
     phone: row.phone,
     role: row.role,
+    avatarUrl: row.avatarObjectKey ? ownAvatarSrc(row.updatedAt) : null,
+  };
+}
+
+/** Own avatar S3 key only — never another user’s. */
+export async function getOwnAvatarObjectKey(ctx: AuthContext): Promise<string | null> {
+  const [row] = await db
+    .select({ avatarObjectKey: profiles.avatarObjectKey })
+    .from(profiles)
+    .where(eq(profiles.id, ctx.userId))
+    .limit(1);
+  if (!row) throw new Error('account_not_found');
+  return row.avatarObjectKey ?? null;
+}
+
+/** Persist the signed-in user’s avatar key (upload / Outlook / remove). */
+export async function setOwnAvatarObjectKey(
+  ctx: AuthContext,
+  objectKey: string | null,
+): Promise<{ avatarUrl: string | null }> {
+  const [updated] = await db
+    .update(profiles)
+    .set({ avatarObjectKey: objectKey, updatedAt: new Date() })
+    .where(eq(profiles.id, ctx.userId))
+    .returning({
+      avatarObjectKey: profiles.avatarObjectKey,
+      updatedAt: profiles.updatedAt,
+    });
+  if (!updated) throw new Error('account_not_found');
+  return {
+    avatarUrl: updated.avatarObjectKey ? ownAvatarSrc(updated.updatedAt) : null,
   };
 }
 
