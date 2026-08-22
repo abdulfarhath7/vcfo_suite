@@ -77,6 +77,8 @@ export const profiles = pgTable('profiles', {
   clientId: text('client_id'),
   /** Project lead → Project Manager org chart (Admin Team + PM roster). */
   reportsToManagerId: uuid('reports_to_manager_id'),
+  /** S3 object key for the user’s chosen photo (upload or Outlook Graph). */
+  avatarObjectKey: text('avatar_object_key'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -670,3 +672,53 @@ export const outlookConnections = pgTable('outlook_connections', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Firm-wide news (Finance Act, circulars, process notes).
+ * Distinct from `notifications` (per-user work alerts).
+ * Read: every signed-in role. Write: super_admin / admin / manager.
+ */
+export const announcementSources = pgTable(
+  'announcement_sources',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    feedUrl: text('feed_url').notNull(),
+    homepageUrl: text('homepage_url'),
+    enabled: boolean('enabled').notNull().default(true),
+    lastFetchedAt: timestamp('last_fetched_at', { withTimezone: true }),
+    lastError: text('last_error'),
+    createdById: uuid('created_by_id').references(() => profiles.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    feedUrlUidx: uniqueIndex('announcement_sources_feed_url_uidx').on(t.feedUrl),
+  }),
+);
+
+export const announcements = pgTable(
+  'announcements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    body: text('body').notNull().default(''),
+    origin: text('origin').notNull().default('manual'), // manual | feed
+    kind: text('kind').notNull().default('general'),
+    sourceId: uuid('source_id').references(() => announcementSources.id, { onDelete: 'set null' }),
+    externalId: text('external_id'),
+    sourceUrl: text('source_url'),
+    authorId: uuid('author_id').references(() => profiles.id, { onDelete: 'set null' }),
+    authorName: text('author_name').notNull(),
+    authorRole: text('author_role'),
+    publishedAt: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    publishedIdx: index('announcements_published_idx').on(t.publishedAt),
+    sourceExternalUidx: uniqueIndex('announcements_source_external_uidx').on(
+      t.sourceId,
+      t.externalId,
+    ),
+  }),
+);

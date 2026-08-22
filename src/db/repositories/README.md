@@ -37,23 +37,34 @@ Corrections from the first draft:
   but the row's `actor_user_id` is forced to the session user.
 
 `documents`, `tasks`, `document_requests`, `invites`, `activity`,
-`notifications`, and `outlook_connections` have no original SQL (they are new, replacing localStorage),
+`notifications`, `outlook_connections`, and `announcements` have no original SQL (they are new, replacing localStorage),
 so their rules are a product decision rather than a port. Default to:
 admin all, manager via owned engagements, intern via assigned engagement,
 client via own engagement. Documents additionally hide non-shared rows from
-clients (`shared_with_client = true` only). Notifications stay per-user
+clients (`shared_with_client = true` only). `GET /api/documents` without
+`engagementId` is the staff vault list — same Path A scope; intern cannot see
+another intern’s client files. Notifications stay per-user
 (`user_id = ctx.userId`); admin/manager may create for another user.
 `outlook_connections` is the signed-in staff user's own Microsoft mailbox
 (Graph Mail.Send); clients have no access. `email-directory` lists Outlook
 compose recipients from the same engagement scope (+ intern reports-to).
 `email_templates` is firm-scoped compose library (SBC branded vs plain):
 staff list/create; admin/manager mutate any; intern mutate own; client none.
+`announcements` is firm-wide news (not the notification bell): every signed-in
+role may read; super_admin / admin / manager may post and delete. Author name
+is stored on the row. `announcement_sources` are official RSS/Atom URLs
+(allowlisted hosts); Inngest `announcement-feeds` pulls them once each morning IST.
+Do not HTML-scrape homepages or login pages. System ingest:
+`systemListEnabledAnnouncementSources` / `systemUpsertFeedAnnouncements` /
+`systemGetOrCreateAnnouncementSource` (only after a catalog URL parses as a feed)
+— job-only, no AuthContext.
 
 Implemented: `engagements`, `knowledge-bank`, `profiles`, `audit-events`,
 `board-resolution`, `compliance`, `documents`, `tasks`, `document-requests`,
 `invites`, `activity`, `notifications`, `outlook-connections`, `email-directory`,
-`email-templates`.
+`email-templates`, `announcements`.
 
 System jobs (Inngest): `systemGenerateComplianceInstances` /
-`runComplianceGenerate` in `compliance.ts` may touch `db` without AuthContext.
-Do not call them from request handlers.
+`runComplianceGenerate` in `compliance.ts`, and feed ingest helpers in
+`announcements.ts`, may touch `db` without AuthContext. Routes still must
+not import `db`. Staff “Pull now” goes through `ingestAnnouncementSource`.

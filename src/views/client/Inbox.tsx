@@ -7,12 +7,14 @@ import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTra
 import { SEO } from '@/components/SEO';
 import { AccentButton, Surface, EmptyStateIllustrated, Eyebrow } from '@/components/noir';
 import { GeometricEmpty } from '@/components/illustrations/GeometricEmpty';
-import { Upload, FileCheck2, Clock, ArrowRight, AlertCircle } from 'lucide-react';
+import { Upload, FileCheck2, Clock, ArrowRight, AlertCircle, Megaphone } from 'lucide-react';
 import { toast } from '@/lib/toast-errors';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { canClientResubmit, isReviewRejected } from '@/lib/checklist-item-review';
 import { checklistItemLabel } from '@/lib/audit-log';
+import { useAnnouncements } from '@/lib/use-announcements';
+import { AnnouncementCompactList } from '@/components/announcements/AnnouncementList';
 
 function groupBy<T>(arr: T[], fn: (x: T) => string) {
   return arr.reduce<Record<string, T[]>>((acc, x) => {
@@ -40,6 +42,7 @@ function dueStripClass(bucket: string): string {
 export default function ClientInbox() {
   const router = useRouter();
   const { user, engagements, requests, uploadDoc, getStateForEngagement } = useApp();
+  const announcementsQuery = useAnnouncements(3);
   const eng = engagements.find((e) => e.clientId === user?.clientId);
 
   const checklistActions = useMemo(() => {
@@ -106,6 +109,17 @@ export default function ClientInbox() {
         <p className="mt-1.5 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">{actionCount}</span> awaiting your action
         </p>
+      </Surface>
+
+      <Surface className="mb-6 px-5 py-4">
+        <div className="mb-2.5 flex items-center gap-2 text-accent-violet">
+          <Megaphone className="h-3.5 w-3.5" />
+          <Eyebrow className="mb-0 text-accent-violet">Announcements</Eyebrow>
+        </div>
+        <AnnouncementCompactList
+          items={announcementsQuery.data?.announcements ?? []}
+          href="/app/client/announcements"
+        />
       </Surface>
 
       {actionCount === 0 ? (
