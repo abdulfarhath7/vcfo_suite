@@ -32,7 +32,7 @@ const CHIP =
   'inline-flex h-7 max-w-[min(100%,18rem)] shrink-0 items-center gap-1 rounded-md border border-border/80 bg-raised/50 px-2 text-foreground hover:border-primary/40';
 
 const FIELD =
-  'box-border flex min-h-10 min-w-0 w-full flex-wrap items-center gap-1 rounded-[10px] border border-input bg-panel px-2 py-1 text-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/40';
+  'box-border flex min-h-10 min-w-0 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-panel px-2 py-1 text-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/40';
 
 function isInsideSelectPortal(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest('[data-radix-select-content]'));
@@ -253,7 +253,7 @@ function RowFilter({
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger
         aria-label={label}
-        className="h-10 w-[10.5rem] rounded-[10px] text-sm"
+        className="h-10 w-[10.5rem] rounded-md text-sm"
       >
         <span className="truncate">{selectedName}</span>
       </SelectTrigger>

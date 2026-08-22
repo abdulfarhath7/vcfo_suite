@@ -25,7 +25,7 @@ export function LandingCta() {
 
       <FadeContent
         blur
-        className="relative z-10 mx-auto max-w-3xl rounded-[2rem] border border-white/12 bg-white/[0.04] px-6 py-12 text-center shadow-[0_32px_120px_-40px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:px-10 sm:py-16 lg:px-14"
+        className="relative z-10 mx-auto max-w-3xl rounded-3xl border border-white/12 bg-white/[0.04] px-6 py-12 text-center shadow-[0_32px_120px_-40px_rgba(0,0,0,0.55)] backdrop-blur-2xl sm:px-10 sm:py-16 lg:px-14"
       >
         <div
           className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_top,oklch(var(--blue-500)/0.22),transparent_48%)]"

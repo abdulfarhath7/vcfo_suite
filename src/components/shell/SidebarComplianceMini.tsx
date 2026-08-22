@@ -19,9 +19,11 @@ function complianceHref(role: string | undefined, staffBase: string): string {
 export function SidebarComplianceMini({
   expanded,
   staffBase,
+  ink = 'dark',
 }: {
   expanded: boolean;
   staffBase: string;
+  ink?: 'light' | 'dark';
 }) {
   const { user, engagements, getStateForEngagement } = useApp();
   const filings = useComplianceFilings(engagements, getStateForEngagement);
@@ -49,18 +51,31 @@ export function SidebarComplianceMini({
   const cells: Array<number | null> = [];
   for (let i = 0; i < startWeekday; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  const light = ink === 'light';
 
   return (
     <Link
       href={href}
-      className="mx-1 mb-2 block rounded-xl border border-border/60 bg-muted/30 p-2 transition-colors hover:bg-blue-50/50"
+      className={cn(
+        'mx-1 mb-2 block rounded-xl border p-2 transition-colors',
+        light
+          ? 'border-white/18 bg-white/8 hover:bg-white/12'
+          : 'border-border/60 bg-muted/30 hover:bg-blue-50/50',
+      )}
       title="Open compliance calendar"
     >
       <div className="mb-1.5 flex items-center justify-between px-0.5">
-        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted-foreground">
+        <span
+          className={cn(
+            'font-mono text-[9px] uppercase tracking-[0.14em]',
+            light ? 'text-white/88' : 'text-muted-foreground',
+          )}
+        >
           {now.toLocaleString('en-IN', { month: 'short' })} {year}
         </span>
-        <span className="text-[9px] text-blue-700/80">{dueDays.size} due</span>
+        <span className={cn('text-[9px]', light ? 'text-white/90' : 'text-blue-700/80')}>
+          {dueDays.size} due
+        </span>
       </div>
       <div className="grid grid-cols-7 gap-px">
         {cells.map((day, i) => {
@@ -74,8 +89,14 @@ export function SidebarComplianceMini({
               key={day}
               className={cn(
                 'relative flex h-3.5 items-center justify-center rounded-[2px] text-[8px] tabular-nums',
-                isToday && 'ring-1 ring-blue-400/50',
-                hasDue ? 'bg-foreground/85 text-background font-medium' : 'text-muted-foreground/70',
+                isToday && (light ? 'ring-1 ring-white/45' : 'ring-1 ring-blue-400/50'),
+                hasDue
+                  ? light
+                    ? 'bg-white/90 font-medium text-slate-900'
+                    : 'bg-foreground/85 font-medium text-background'
+                  : light
+                    ? 'text-white/80'
+                    : 'text-muted-foreground/70',
               )}
             >
               {day}

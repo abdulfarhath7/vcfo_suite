@@ -8,7 +8,7 @@ function Textarea({ ref, className, ...props }: TextareaProps & { ref?: React.Re
   return (
     <textarea
       className={cn(
-        "box-border flex min-h-[80px] w-full overflow-hidden rounded-[10px] border border-input bg-panel px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-40",
+        "box-border flex min-h-[80px] w-full overflow-hidden rounded-md border border-input bg-panel px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-40",
         className,
       )}
       ref={ref}

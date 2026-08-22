@@ -15,7 +15,7 @@ function SelectTrigger({ ref, className, children, ...props }: React.ComponentPr
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "box-border flex h-10 w-full items-center justify-between overflow-hidden rounded-[10px] border border-input bg-panel px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-40 [&>span]:line-clamp-1",
+      "box-border flex h-10 w-full items-center justify-between overflow-hidden rounded-md border border-input bg-panel px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-40 [&>span]:line-clamp-1",
       className,
     )}
     {...props}

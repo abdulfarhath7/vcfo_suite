@@ -41,7 +41,7 @@ export function AccentButton({
 }: AccentButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
   const reduceMotion = useReducedMotion();
   const classes = cn(
-    "inline-flex items-center justify-center gap-2 rounded-[10px] transition-colors",
+    "inline-flex items-center justify-center gap-2 rounded-md transition-colors",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
     "disabled:opacity-40 disabled:pointer-events-none",
     "tracking-tight",

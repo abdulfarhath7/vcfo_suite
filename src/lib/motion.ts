@@ -60,6 +60,20 @@ export const pageEnterReduced = {
   transition: { duration: 0.2 },
 } as const;
 
+export const pageEnterDynamic = {
+  initial: { opacity: 0, y: 14 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: springSnappy,
+} as const;
+
+export const pageEnterAmbient = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.45, ease },
+} as const;
+
 export const cardHover = {
   whileHover: { y: -2 },
   transition: springSnappy,
