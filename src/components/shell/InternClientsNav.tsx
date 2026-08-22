@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useId, useMemo, useState, type ComponentType } from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { ChevronDown, LayoutGrid } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { initialsFromName } from '@/lib/auth';
 import { internEngagementPath, isInternEngagementPathname } from '@/lib/project-step-path';
@@ -12,8 +12,21 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Engagement } from '@/data/engagements';
+import {
+  SidebarHoverGlass,
+  sidebarHoverHandlers,
+  type SidebarHoverFollow,
+} from '@/components/shell/MotionActivePill';
 
 export const INTERN_CLIENTS_HREF = '/app/intern/clients';
+
+type SidebarInk = 'light' | 'dark';
+
+function inactiveOnSkin(ink: SidebarInk, hoverSoft: string, fillHover = true) {
+  return ink === 'light'
+    ? cn('text-white/90 hover:text-white', fillHover && 'hover:bg-white/12')
+    : cn('text-muted-foreground hover:text-foreground', fillHover && hoverSoft);
+}
 
 function isClientsSectionActive(pathname: string) {
   return pathname.startsWith(INTERN_CLIENTS_HREF) || isInternEngagementPathname(pathname);
@@ -51,15 +64,21 @@ function InternClientRow({
   engagement,
   pathname,
   onNavigate,
+  ink,
+  hoverFollow,
 }: {
   engagement: Engagement;
   pathname: string;
   onNavigate?: () => void;
+  ink: SidebarInk;
+  hoverFollow?: SidebarHoverFollow;
 }) {
   const href = internEngagementPath(engagement);
   const active = isEngagementNavActive(pathname, engagement);
   const subtitle = clientSubtitle(engagement);
   const initials = initialsFromName(engagement.companyName) || '•';
+  const itemId = `client:${engagement.id}`;
+  const followed = Boolean(hoverFollow);
 
   return (
     <Link
@@ -72,26 +91,37 @@ function InternClientRow({
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
         active
           ? 'bg-role-soft/80 text-role-foreground'
-          : 'text-muted-foreground hover:bg-role-soft/45 hover:text-foreground',
+          : inactiveOnSkin(ink, 'hover:bg-role-soft/45', !followed),
       )}
+      {...(hoverFollow ? sidebarHoverHandlers(hoverFollow, itemId) : undefined)}
     >
+      {hoverFollow ? <SidebarHoverGlass itemId={itemId} follow={hoverFollow} /> : null}
       {active ? (
         <span
           aria-hidden
-          className="absolute left-0 top-1/2 h-3.5 w-[2.5px] -translate-y-1/2 rounded-full bg-role"
+          className="absolute left-0 top-1/2 z-[2] h-3.5 w-[2.5px] -translate-y-1/2 rounded-full bg-role"
         />
       ) : null}
       <span
         aria-hidden
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary-light text-[9px] font-semibold text-primary-dark"
+        className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary-light text-[9px] font-semibold text-primary-dark"
       >
         {initials}
       </span>
-      <span className="min-w-0 flex-1">
+      <span className="relative z-10 min-w-0 flex-1">
         <span className="block truncate text-[12.5px] font-medium leading-tight text-inherit">
           {engagement.companyName}
         </span>
-        <span className="mt-px block truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-muted-foreground/80">
+        <span
+          className={cn(
+            'mt-px block truncate font-mono text-[9.5px] uppercase tracking-[0.08em]',
+            active
+              ? 'text-inherit opacity-80'
+              : ink === 'light'
+                ? 'text-white/80'
+                : 'text-muted-foreground/80',
+          )}
+        >
           {subtitle}
         </span>
       </span>
@@ -105,15 +135,18 @@ function InternClientsPanel({
   loading,
   clients,
   showRail,
+  ink,
+  hoverFollow,
 }: {
   pathname: string;
   onNavigate?: () => void;
   loading: boolean;
   clients: Engagement[];
   showRail: boolean;
+  ink: SidebarInk;
+  hoverFollow?: SidebarHoverFollow;
 }) {
   const reduceMotion = useReducedMotion();
-  const overviewActive = pathname === INTERN_CLIENTS_HREF || pathname.startsWith(`${INTERN_CLIENTS_HREF}/`);
   const itemVariants = reduceMotion ? fadeUpReduced : fadeUp;
 
   const body = loading ? (
@@ -129,7 +162,12 @@ function InternClientsPanel({
       ))}
     </div>
   ) : clients.length === 0 ? (
-    <p className="px-1 py-1.5 text-[11px] leading-snug text-muted-foreground">
+    <p
+      className={cn(
+        'px-1 py-1.5 text-[11px] leading-snug',
+        ink === 'light' ? 'text-white/85' : 'text-muted-foreground',
+      )}
+    >
       No clients assigned
     </p>
   ) : (
@@ -146,6 +184,8 @@ function InternClientsPanel({
             engagement={engagement}
             pathname={pathname}
             onNavigate={onNavigate}
+            ink={ink}
+            hoverFollow={hoverFollow}
           />
         </m.li>
       ))}
@@ -160,29 +200,16 @@ function InternClientsPanel({
       <div
         className={cn(
           showRail &&
-            'relative border-l border-primary/25 pl-2.5 before:absolute before:-left-px before:top-0 before:h-1.5 before:w-px before:bg-primary/40',
+            'relative border-l pl-2.5 before:absolute before:-left-px before:top-0 before:h-1.5 before:w-px',
+          showRail &&
+            (ink === 'light'
+              ? 'border-white/25 before:bg-white/40'
+              : 'border-primary/25 before:bg-primary/40'),
         )}
       >
         <div className="max-h-52 space-y-0.5 overflow-y-auto overscroll-contain py-0.5 pr-0.5">
           {loading ? <span className="sr-only">Loading clients</span> : null}
           {body}
-          {!loading ? (
-            <Link
-              href={INTERN_CLIENTS_HREF}
-              onClick={onNavigate}
-              aria-current={overviewActive ? 'page' : undefined}
-              className={cn(
-                'relative mt-0.5 flex min-h-8 items-center gap-1.5 rounded-lg px-2 text-[11px] transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-                overviewActive
-                  ? 'font-medium text-role-foreground'
-                  : 'text-muted-foreground/90 hover:bg-role-soft/40 hover:text-foreground',
-              )}
-            >
-              <LayoutGrid className="h-3 w-3 shrink-0 opacity-80" strokeWidth={1.75} />
-              <span className="truncate">View all</span>
-            </Link>
-          ) : null}
         </div>
       </div>
     </div>
@@ -196,6 +223,8 @@ export function InternClientsNav({
   onNavigate,
   icon: Icon,
   iconTone,
+  ink = 'dark',
+  hoverFollow,
 }: {
   expanded: boolean;
   pathname: string;
@@ -203,6 +232,8 @@ export function InternClientsNav({
   onNavigate?: () => void;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   iconTone?: string;
+  ink?: SidebarInk;
+  hoverFollow?: SidebarHoverFollow;
 }) {
   const { clients, loading } = useAssignedInternClients();
   const reduceMotion = useReducedMotion();
@@ -222,12 +253,13 @@ export function InternClientsNav({
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
     sectionActive
       ? 'font-medium text-role-foreground'
-      : 'text-muted-foreground hover:bg-role-soft/50 hover:text-foreground',
+      : inactiveOnSkin(ink, 'hover:bg-role-soft/50', !hoverFollow),
     !expanded && 'justify-center px-0',
   );
 
   const triggerInner = (
     <>
+      {hoverFollow ? <SidebarHoverGlass itemId="clients" follow={hoverFollow} /> : null}
       {sectionActive ? (
         <m.div
           layoutId={`${layoutIdPrefix}-active`}
@@ -238,7 +270,7 @@ export function InternClientsNav({
       {sectionActive && expanded ? (
         <m.div
           layoutId={`${layoutIdPrefix}-rail`}
-          className="absolute bottom-2 left-0 top-2 w-[3px] rounded-full bg-role"
+          className="absolute bottom-2 left-0 top-2 z-[2] w-[3px] rounded-full bg-role"
           transition={{ type: 'spring', stiffness: 420, damping: 32 }}
         />
       ) : null}
@@ -261,7 +293,11 @@ export function InternClientsNav({
             aria-hidden
             className={cn(
               'relative z-10 h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-out',
-              sectionActive ? 'text-role-foreground/80' : 'text-muted-foreground',
+              sectionActive
+                ? 'text-role-foreground/80'
+                : ink === 'light'
+                  ? 'text-white/80'
+                  : 'text-muted-foreground',
               open && 'rotate-180',
             )}
             strokeWidth={2}
@@ -282,6 +318,7 @@ export function InternClientsNav({
             aria-haspopup="dialog"
             aria-expanded={flyoutOpen}
             className={triggerClass}
+            {...(hoverFollow ? sidebarHoverHandlers(hoverFollow, 'clients') : undefined)}
           >
             {triggerInner}
           </button>
@@ -307,6 +344,7 @@ export function InternClientsNav({
             loading={loading}
             clients={clients}
             showRail={false}
+            ink="dark"
             onNavigate={() => {
               setFlyoutOpen(false);
               onNavigate?.();
@@ -326,6 +364,7 @@ export function InternClientsNav({
         aria-label={count > 0 ? `Clients, ${count} assigned` : 'Clients'}
         onClick={() => setOpen((v) => !v)}
         className={triggerClass}
+        {...(hoverFollow ? sidebarHoverHandlers(hoverFollow, 'clients') : undefined)}
       >
         {triggerInner}
       </button>
@@ -346,6 +385,8 @@ export function InternClientsNav({
               loading={loading}
               clients={clients}
               showRail
+              ink={ink}
+              hoverFollow={hoverFollow}
             />
           </m.div>
         ) : null}

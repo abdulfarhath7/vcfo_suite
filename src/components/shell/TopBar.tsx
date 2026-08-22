@@ -3,15 +3,14 @@
 import { useApp } from "@/context/AppContext";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Search, PanelLeft } from "lucide-react";
+import { AnnouncementsBell } from "@/components/shell/AnnouncementsBell";
 import { NotificationsBell } from "@/components/shell/NotificationsBell";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { useShellNav } from "@/components/shell/shell-nav-context";
-import { SbcLogo } from "@/components/brand/SbcLogo";
+import { SBC_LOGO_LABEL, SbcLogo } from "@/components/brand/SbcLogo";
 import { roleHomePath, roleSettingsPath } from "@/lib/auth-routes";
-import { cn } from "@/lib/utils";
-import { shellDesktopNavExpanded } from "@/components/shell/intern-sidebar";
+import { UserFace } from "@/components/common/UserFace";
 
 function useModShortcut() {
   const [isApple, setIsApple] = useState<boolean | null>(null);
@@ -22,16 +21,11 @@ function useModShortcut() {
 }
 
 export function TopBar() {
-  const { user, setCommandOpen, sidebarMode } = useApp();
-  const { openMobile, sidebarPeeking } = useShellNav();
-  const pathname = usePathname();
+  const { user, setCommandOpen } = useApp();
+  const { openMobile } = useShellNav();
   const isApple = useModShortcut();
   const homeHref = user ? roleHomePath(user.role) : "/";
   const profileHref = user ? roleSettingsPath(user.role) : "/";
-  /* Wordmark lives in the sidebar when pinned, on Clients list (auto), or
-     hover-expanded; keep it here on mobile and when the desktop rail is icons-only. */
-  const showWordmarkInBar =
-    !shellDesktopNavExpanded(sidebarMode, pathname, user?.role) && !sidebarPeeking;
 
   return (
     <header className="flex h-[var(--shell-rail-height)] items-center gap-1.5 border-b border-border/50 bg-panel/80 px-2.5 backdrop-blur-2xl sm:px-3">
@@ -46,14 +40,10 @@ export function TopBar() {
 
       <Link
         href={homeHref}
-        aria-label="VCFO Suite home"
-        className={cn(
-          "flex min-w-0 items-center gap-2 rounded-lg py-1 pr-1.5 text-[13px] font-semibold tracking-tight text-foreground transition-colors hover:bg-primary-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-          showWordmarkInBar ? "inline-flex" : "inline-flex lg:hidden",
-        )}
+        aria-label={`${SBC_LOGO_LABEL} home`}
+        className="inline-flex shrink-0 items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       >
-        <SbcLogo variant="mark" size={28} decorative className="lg:hidden" />
-        <span className="truncate">VCFO Suite</span>
+        <SbcLogo variant="navbar" decorative />
       </Link>
 
       <button
@@ -79,6 +69,7 @@ export function TopBar() {
       </button>
 
       <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+        <AnnouncementsBell />
         <NotificationsBell />
         <ThemeToggle />
         {user && (
@@ -88,12 +79,11 @@ export function TopBar() {
             title="Profile"
             className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:px-2"
           >
-            <span
-              className="gold-sheen flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold"
-              aria-hidden
-            >
-              {user.initials}
-            </span>
+            <UserFace
+              src={user.imageUrl}
+              initials={user.initials}
+              className="gold-sheen h-6 w-6 text-[9px] font-semibold"
+            />
             <span className="hidden sm:inline">Profile</span>
           </Link>
         )}

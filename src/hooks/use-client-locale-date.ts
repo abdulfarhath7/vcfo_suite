@@ -16,7 +16,7 @@ function subscribeEverySecond(onStoreChange: () => void) {
   return () => window.clearInterval(id);
 }
 
-/** `Monday · 17 Aug 2026 · 5:47 PM` in en-IN / IST. */
+/** `Monday · 17 Aug 2026 · 5:47:32 PM` in en-IN / IST. */
 export function formatClientNowLabel(now = new Date(), locale = DEFAULT_LOCALE): string {
   const weekday = now.toLocaleDateString(locale, { weekday: 'long', timeZone: IST });
   const date = now.toLocaleDateString(locale, {
@@ -29,6 +29,7 @@ export function formatClientNowLabel(now = new Date(), locale = DEFAULT_LOCALE):
     .toLocaleTimeString(locale, {
       hour: 'numeric',
       minute: '2-digit',
+      second: '2-digit',
       hour12: true,
       timeZone: IST,
     })
