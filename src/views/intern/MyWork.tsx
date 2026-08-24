@@ -438,12 +438,10 @@ function TimelineWorkCard({
           {internKindChipLabel(item.kind)}
         </span>
       </div>
-      <div className="mt-1 flex min-w-0 items-center justify-between gap-1">
-        <span className={cn('font-mono text-[10.5px] font-semibold text-text-tertiary', item.isOverdue && internToneText('danger'))}>
-          {formatDueLabel(item.dueAt, now)}
-        </span>
-        <InternWorkCtaButton item={item} className="px-2 py-0.5 text-[10.5px]" />
+      <div className="mt-1 font-mono text-[10.5px] font-semibold text-text-tertiary">
+        <span className={cn(item.isOverdue && internToneText('danger'))}>{formatDueLabel(item.dueAt, now)}</span>
       </div>
+      <InternWorkCtaButton item={item} className="mt-1.5 w-full px-2 py-1 text-[10.5px]" />
     </article>
   );
 }
