@@ -131,6 +131,13 @@ export function LeadWeekStrip({
             </Link>
           ) : null}
         </div>
+        {days.every((ymd) => WEEK_CHIP_KIND_ORDER.every((kind) => internWeekDayCounts(items, ymd, today)[kind] === 0)) ? (
+          <p className="mt-2 text-[12px] font-semibold text-muted-foreground">
+            {items.length === 0
+              ? 'No assigned work yet — deadlines will show here by IST day.'
+              : 'Nothing lands on this IST week. Overdue and undated open work appears on today.'}
+          </p>
+        ) : null}
       </div>
     </section>
   );
