@@ -60,7 +60,7 @@ export function AnnouncementComposeForm({
       setMessage('');
       setLink('');
       setKind('general');
-      toastSuccess('Announcement posted', 'Everyone in the firm can see it.');
+      toastSuccess('Announcement posted');
       await queryClient.invalidateQueries({ queryKey: ['announcements'] });
       onPosted?.();
       onClose();
