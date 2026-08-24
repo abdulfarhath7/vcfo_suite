@@ -212,14 +212,6 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             </div>
 
-            <p className="text-[13px] text-text-tertiary mt-2 max-w-xl">
-
-              Generate the Word document from Pre-1 data, edit the full document in the preview, then
-
-              finalize so the client can download the `.docx`.
-
-            </p>
-
           </div>
 
           {isFinalized && (

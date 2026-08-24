@@ -73,7 +73,6 @@ function LatestList({
       <div className="flex items-center justify-between gap-3 border-b border-border/80 px-4 py-3 sm:px-5">
         <div>
           <h2 className="text-[13px] font-semibold tracking-tight text-ink">Latest</h2>
-          <p className="text-[12px] text-muted-foreground">Visible to every role.</p>
         </div>
         {!loading && items.length > 0 ? (
           <span className="tabular-nums text-[12px] text-muted-foreground">{items.length}</span>
@@ -93,7 +92,6 @@ function LatestList({
         <EmptyStateIllustrated
           icon={Megaphone}
           title="Nothing on the board yet"
-          description="When a manager or admin posts — or a feed lands — it shows here for every role."
           actionLabel={canWrite ? 'New announcement' : undefined}
           onAction={canWrite ? onCompose : undefined}
           className="rounded-none border-0 bg-transparent shadow-none"
@@ -209,7 +207,7 @@ function FeedsSection({
       </div>
       <div className="mt-3 divide-y divide-border/80 border-t border-border/80">
         {sources.length === 0 ? (
-          <p className="py-3 text-[12.5px] text-muted-foreground">No feeds yet. Add an RSS URL when you have one.</p>
+          <p className="py-3 text-[12.5px] text-muted-foreground">No feeds yet.</p>
         ) : (
           sources.map((source) => (
             <div key={source.id} className="flex flex-wrap items-center gap-2 py-2.5">
@@ -380,7 +378,6 @@ export default function AnnouncementsPage() {
       />
       <PageHeader
         title="Announcements"
-        subtitle="Firm notes, circulars, and official filings."
         actions={
           canWrite ? (
             <AccentButton

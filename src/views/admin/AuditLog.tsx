@@ -596,7 +596,7 @@ export default function AuditLog() {
               events={globalEvents}
               engagementsByDbId={engagementsByDbId}
               loading={globalLoading}
-              emptyMessage="Actions appear here when clients submit milestones, leads review work, or board resolution steps run."
+              emptyMessage="No events yet."
               filters={globalFilters}
               onFiltersChange={(patch) =>
                 dispatch({ type: 'patch', patch: { globalFilters: { ...globalFilters, ...patch } } })
@@ -638,7 +638,6 @@ export default function AuditLog() {
               <EmptyStateIllustrated
                 icon={ScrollText}
                 title="No projects yet"
-                description="Create a GCC setup project to see per-project audit history."
                 className="m-4 border-0 bg-transparent"
               />
             ) : (

@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { Building2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { PageTransition } from "@/components/shell/PageTransition";
+import { PageBackButton } from "@/components/shell/PageBackButton";
 import { SEO } from "@/components/SEO";
 import { ChecklistPhaseJourney } from "@/components/incorporation/ChecklistPhaseJourney";
 import { ClientBoardResolutionCard } from "@/components/client/ClientBoardResolutionCard";
@@ -88,7 +89,6 @@ export default function ClientIncorporation() {
       <EmptyStateIllustrated
         icon={Building2}
         title="No active engagement"
-        description="We could not find an incorporation project for your account yet."
         className="mx-auto max-w-md"
       />
     );
@@ -115,9 +115,12 @@ export default function ClientIncorporation() {
       <header className="mb-4 sm:mb-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <h1 className="serif mb-1 text-2xl tracking-tight text-foreground sm:text-3xl">
-              {engagement.companyName}
-            </h1>
+            <div className="mb-1 flex min-w-0 items-center gap-1.5">
+              <PageBackButton className="-ml-1.5" />
+              <h1 className="serif min-w-0 text-2xl tracking-tight text-foreground sm:text-3xl">
+                {engagement.companyName}
+              </h1>
+            </div>
             <p className="text-sm text-muted-foreground">
               {incLabel} · {totalDone}/{totalSteps} steps
             </p>

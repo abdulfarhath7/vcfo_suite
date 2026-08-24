@@ -31,7 +31,6 @@ export default function InternClients() {
         <EmptyStateIllustrated
           icon={UserSquare2}
           title="No engagements assigned yet"
-          description="When your manager assigns projects, they will appear here."
           className="border-primary/25 bg-primary-light/30"
         />
       ) : (
@@ -50,15 +49,15 @@ export default function InternClients() {
                     whileHover={reduceMotion ? undefined : cardHover.whileHover}
                     whileTap={reduceMotion ? undefined : pressScale.whileTap}
                     transition={cardHover.transition}
-                    className="surface group w-full p-4 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px]"
+                    className="surface group w-full min-w-0 p-4 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[44px]"
                   >
-                    <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="mb-4 flex min-w-0 items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2.5">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-light text-[12px] font-semibold text-primary-dark border border-primary/20">
                           {initials}
                         </div>
                         <div className="min-w-0">
-                          <div className="truncate text-[13px] font-medium text-foreground">{e.companyName}</div>
+                          <div className="truncate text-[13px] font-medium text-foreground" title={e.companyName}>{e.companyName}</div>
                           <Eyebrow className="mt-0.5 text-[10px]">{e.stage}</Eyebrow>
                         </div>
                       </div>

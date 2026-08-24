@@ -283,18 +283,11 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                 fieldError('companyName') && 'border-danger focus-visible:ring-danger/30',
               )}
               aria-invalid={!!fieldError('companyName')}
-              aria-describedby={
-                fieldError('companyName') ? 'create-company-name-error' : 'create-company-name-hint'
-              }
+              aria-describedby={fieldError('companyName') ? 'create-company-name-error' : undefined}
               autoFocus
               maxLength={120}
             />
             <FieldError id="create-company-name-error" message={fieldError('companyName')} />
-            {!fieldError('companyName') ? (
-              <p id="create-company-name-hint" className="mt-2 text-[12px] text-muted-foreground">
-                Short name for this engagement in VCFO Suite.
-              </p>
-            ) : null}
           </div>
 
           {/* Progressive disclosure */}

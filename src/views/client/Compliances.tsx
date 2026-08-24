@@ -54,7 +54,6 @@ export default function ClientCompliances() {
       <EmptyStateIllustrated
         icon={CalendarCheck}
         title="No active engagement"
-        description="We could not find an engagement linked to your account yet."
         className="mx-auto max-w-md"
       />
     );
@@ -79,7 +78,7 @@ export default function ClientCompliances() {
         accent="emerald"
         icon={CalendarCheck2}
         title="Compliances"
-        subtitle={`${eng.companyName} · filter by type and upload status`}
+        subtitle={eng.companyName}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">

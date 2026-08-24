@@ -77,7 +77,6 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
           <EmptyStateIllustrated
             icon={ClipboardCheck}
             title="Nothing waiting for approval"
-            description="When a project lead submits a milestone for review, it lands here. You'll also get a notification."
             actionLabel="View projects"
             onAction={() => router.push(scope === 'firm' ? '/app/admin/projects' : `${staffBase}/projects`)}
             className="rounded-none border-0 bg-transparent"

@@ -79,10 +79,7 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
             <p className="text-text-tertiary">Checking status…</p>
           )}
           {brStatus === 'none' || brStatus === 'draft' ? (
-            <p>
-              Your engagement team is preparing the draft board resolution. It will appear here once
-              finalized.
-            </p>
+            <p>Not finalized yet.</p>
           ) : (
             <>
               <p className="flex items-center gap-1.5 text-success-text">
@@ -188,10 +185,7 @@ export function Phase1Pre4Panel(props: Phase1StepPanelRoutesProps) {
                 />
               </>
             ) : (
-              <p>
-                Your project lead is reviewing the signed board resolution and filing the name
-                application with ROC. The acknowledgement will appear here once delivered.
-              </p>
+              <p>Name application is being filed. Acknowledgement appears here when delivered.</p>
             )}
             {deliveredToClient && notes && <p className="text-text-tertiary">{notes}</p>}
           </PanelShell>
@@ -349,10 +343,7 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
                 )}
               </>
             ) : (
-              <p>
-                Your project lead is reviewing KYC data, creating DSCs via eMudhra, and preparing
-                draft incorporation documents. They will appear here once delivered.
-              </p>
+              <p>Draft incorporation documents appear here when delivered.</p>
             )}
           </PanelShell>
         </div>
@@ -428,15 +419,9 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
                 </div>
               </>
             ) : pre7Delivered && !hasCoreDrafts ? (
-              <p>
-                Your project lead has delivered Step 2, but draft DIR-2, DIR-8, INC-9, or PAN
-                documents are not attached yet. Contact your engagement team if downloads are missing.
-              </p>
+              <p>Drafts have been delivered, but DIR-2, DIR-8, INC-9, or PAN files are not attached yet.</p>
             ) : (
-              <p>
-                Your project lead is preparing draft incorporation documents on Phase 2 Step 2.
-                DIR-2, DIR-8, INC-9, and PAN downloads will appear here once shared with you.
-              </p>
+              <p>Draft DIR-2, DIR-8, INC-9, and PAN files appear here when shared.</p>
             )}
             {clientSubmitted ? (
               <p className="flex items-center gap-1.5 text-success-text">
@@ -576,10 +561,7 @@ export function Phase1Pre10Panel(props: Phase1StepPanelRoutesProps) {
               <p className="text-text-tertiary">{filedNotes}</p>
             </>
           ) : (
-            <p>
-              Your project lead is filing SPICe+ Part B and AGILE-PRO-S on the MCA portal. Filing
-              details will appear here once delivered (typically 1–2 working days).
-            </p>
+            <p>SPICe+ filing details appear here when delivered.</p>
           )}
         </PanelShell>
       </div>

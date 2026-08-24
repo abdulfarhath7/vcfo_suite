@@ -2,6 +2,7 @@
 
 import { useApp } from '@/context/AppContext';
 import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTransition';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { KpiCard } from '@/components/common/KpiCard';
 import { SEO } from '@/components/SEO';
 import { useRouter } from 'next/navigation';
@@ -27,19 +28,22 @@ export default function AdminOverview() {
     <PageTransition>
       <SEO title="Overview — VCFO Suite" description="Portfolio health, KPIs, and team activity across GCC setup projects." path="/app/manager/overview" />
 
-      <div className="flex items-end justify-between mb-6">
+      <div className="flex items-end justify-between mb-4">
         <div>
-          <h1 className="serif text-[34px] tracking-tight text-ink">Overview</h1>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <PageBackButton className="-ml-1.5" />
+            <h1 className="serif text-[34px] tracking-tight text-ink">Overview</h1>
+          </div>
           <p className="text-[13px] text-text-tertiary mt-0.5">Portfolio pulse across {engagements.length} GCC setup projects</p>
         </div>
       </div>
 
       <Stagger>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <StaggerItem><KpiCard label="GCC setup projects" value={engagements.length} hint={`${atRisk} need manager review`} /></StaggerItem>
           <StaggerItem><KpiCard label="Checklist complete" value={`${pct}%`} delta={`${completed}/${tasks.length}`} trend="up" /></StaggerItem>
-          <StaggerItem><KpiCard label="Client requests" value={pending} hint="Waiting on client" /></StaggerItem>
-          <StaggerItem><KpiCard label="Delivery owners" value={`${teamMembers.length}`} hint="Project leads on roster" /></StaggerItem>
+          <StaggerItem><KpiCard label="Client requests" value={pending} /></StaggerItem>
+          <StaggerItem><KpiCard label="Delivery owners" value={`${teamMembers.length}`} /></StaggerItem>
         </div>
       </Stagger>
 

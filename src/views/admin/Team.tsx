@@ -35,7 +35,6 @@ export default function Team() {
         accent="violet"
         icon={Users}
         title="Project leads"
-        subtitle="Provision intern portal accounts and monitor GCC project workload."
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
@@ -55,7 +54,7 @@ export default function Team() {
             </div>
           ) : roster.length === 0 ? (
             <p className="p-6 text-[13px] text-text-tertiary">
-              No project leads in the database yet. Create one using the form.
+              No project leads yet.
             </p>
           ) : (
             roster.map((m) => (

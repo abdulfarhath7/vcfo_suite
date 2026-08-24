@@ -129,7 +129,7 @@ export function OfficialPortalsDirectory({ compact }: { compact?: boolean }) {
         <div>
           <h2 className="text-[13px] font-semibold tracking-tight text-ink">Official portals & circulars</h2>
           <p className="mt-0.5 max-w-2xl text-[12.5px] leading-relaxed text-muted-foreground">
-            Filing desks and notification pages. HTML pages are not scraped.
+            HTML pages are not scraped.
           </p>
         </div>
       </div>

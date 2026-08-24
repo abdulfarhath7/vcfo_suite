@@ -211,14 +211,13 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
             <Eyebrow>Setup progress</Eyebrow>
             <div className="mt-2 flex items-end gap-2.5">
               <span className="serif text-3xl tabular-nums text-foreground sm:text-4xl">{overall}%</span>
-              <span className="pb-1 text-[12px] text-muted-foreground">across phases</span>
             </div>
           </Surface>
         </motion.div>
         {[
           { tone: 'sky' as const, icon: ListChecks, label: 'Current phase', value: active, hint: `${phases.find((p) => p.status === 'in-progress')?.percent ?? 100}% of phase complete` },
-          { tone: 'amber' as const, icon: AlertTriangle, label: 'Waiting on client', value: blockers, hint: 'Client inputs still open' },
-          { tone: 'emerald' as const, icon: FolderCheck, label: 'Docs outstanding', value: pendingDocs, hint: 'Uploads still needed' },
+          { tone: 'amber' as const, icon: AlertTriangle, label: 'Waiting on client', value: blockers },
+          { tone: 'emerald' as const, icon: FolderCheck, label: 'Docs outstanding', value: pendingDocs },
         ].map((k) => (
           <motion.div key={k.label} variants={fadeUp} className="min-h-[7.5rem]">
             <div className="h-full min-h-[7.5rem]">

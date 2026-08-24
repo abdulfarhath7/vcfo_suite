@@ -506,7 +506,7 @@ export function StepDetailContentView(props: any) {
 
       <footer className="flex items-center justify-between gap-3 border-t border-hairline px-6 py-4 bg-panel">
         <Mono className="text-[10.5px] uppercase tracking-[0.18em] text-paper-muted">
-          {!showLegacyChecklist ? 'Use the form above to complete this step' : `${totals.pct}% of requirements met`}
+          {showLegacyChecklist ? `${totals.pct}% of requirements met` : ''}
         </Mono>
         <div className="flex items-center gap-2">
           <GoldButton variant="ghost" size="sm" onClick={onDone}>

@@ -14,10 +14,6 @@ export function Step5Review({ data }: { data: WizardData }) {
     <div className="space-y-5">
       <div>
         <h2 className="text-base font-semibold text-foreground">Review & confirm</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Confirm the details below. VCFO Suite will generate a tailored compliance checklist when you
-          finish.
-        </p>
       </div>
 
       <div className="flex items-center gap-3 rounded-md border border-primary/25 bg-primary-light p-4">

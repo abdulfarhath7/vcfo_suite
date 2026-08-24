@@ -106,7 +106,7 @@ export default function FirmDashboard() {
       <SEO title="Admin home — VCFO Suite" description="Firm-wide portfolio pulse." path="/app/admin/dashboard" />
       <PageHeader accent="role" title="Firm home" subtitle={today} />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-4 grid gap-4 sm:grid-cols-3">
         <AccentKpi
           label="Total projects"
           value={pulse.total}
@@ -125,7 +125,7 @@ export default function FirmDashboard() {
         <AccentKpi label="On track" value={pulse.good} tone="success" icon={CheckCircle2} />
       </div>
 
-      <div className="mb-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="mb-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <FirmProjectsPanel />
 
         <Surface className="h-fit p-5">

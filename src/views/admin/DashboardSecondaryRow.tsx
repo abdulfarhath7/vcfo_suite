@@ -29,7 +29,7 @@ export function AdminDashboardFilingsPanel({
       </div>
       <div className="p-2">
         {dueSoon.length === 0 ? (
-          <p className="px-3 py-6 text-center text-[12.5px] text-text-tertiary">
+          <p className="px-3 py-4 text-center text-[12.5px] text-text-tertiary">
             No filings due in the next 14 days.
           </p>
         ) : (

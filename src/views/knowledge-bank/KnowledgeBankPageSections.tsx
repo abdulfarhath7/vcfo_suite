@@ -158,7 +158,6 @@ function DocumentCard({
 
 interface KnowledgeBankPageViewProps {
   basePath: string;
-  isManager: boolean;
   canDelete: boolean;
   title: string;
   setTitle: (value: string) => void;
@@ -183,7 +182,7 @@ interface KnowledgeBankPageViewProps {
 
 export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
   const {
-    basePath, isManager, canDelete, title, setTitle, description, setDescription,
+    basePath, canDelete, title, setTitle, description, setDescription,
     selectedFile, setSelectedFile, fileInputRef, uploading, handleUpload, filesQuery,
     filteredFiles, q, setQ, handleDownload, downloadingId, deleteTarget, setDeleteTarget,
     confirmDelete, deleting,
@@ -222,11 +221,6 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
         accent="sky"
         icon={BookOpen}
         title="Knowledge Bank"
-        subtitle={
-          isManager
-            ? 'Upload firm templates and guidance. You can remove any file.'
-            : 'Upload and download shared reference documents. Deletion is manager-only.'
-        }
         actions={
           <AccentButton size="sm" className="min-h-11" onClick={() => setUploadOpen(true)}>
             <Upload className="mr-1.5 h-3.5 w-3.5" />
@@ -290,11 +284,6 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
         <EmptyStateIllustrated
           icon={FileText}
           title={q.trim() ? 'No documents match your search' : 'No documents yet'}
-          description={
-            q.trim()
-              ? 'Try a different search term or clear the filter.'
-              : 'Upload templates, checklists, and reference files for your team.'
-          }
           actionLabel={q.trim() ? undefined : 'Upload document'}
           onAction={q.trim() ? undefined : () => setUploadOpen(true)}
         />

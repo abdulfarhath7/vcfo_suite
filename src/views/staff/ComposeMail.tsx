@@ -167,7 +167,6 @@ export default function ComposeMail({ path }: Props) {
         icon={Mail}
         eyebrow="Outlook"
         title="Send email"
-        subtitle="From your linked mailbox. Add people in To, and apply an SBC template on the right."
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
@@ -189,11 +188,11 @@ export default function ComposeMail({ path }: Props) {
             />
             {!loadingStatus && configured && !connected ? (
               <p className="pt-1 text-[12.5px] text-muted-foreground">
-                Connect once in{' '}
+                Connect Outlook in{' '}
                 <Link href={settingsHref} className="text-primary underline-offset-2 hover:underline">
                   Settings
                 </Link>
-                . Tokens stay on this account, so any device can send after that.
+                .
               </p>
             ) : null}
           </div>

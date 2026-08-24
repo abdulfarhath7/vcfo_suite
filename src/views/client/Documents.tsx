@@ -104,7 +104,6 @@ export default function ClientDocuments() {
         <EmptyStateIllustrated
           icon={FolderOpen}
           title="No milestone documents yet"
-          description="Complete forms under Incorporation to add files here."
           actionLabel="Open incorporation"
           onAction={() => window.location.assign('/app/client/incorporation')}
           className="mb-8"

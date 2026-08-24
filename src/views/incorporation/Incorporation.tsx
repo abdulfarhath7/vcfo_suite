@@ -17,7 +17,6 @@ export default function Incorporation() {
       <EmptyState
         icon={Building2}
         title="Select a client"
-        description="Choose a client from the header to open their incorporation tracker and FEMA log."
         action={
           role === 'admin' && (
             <div className="flex flex-wrap justify-center gap-2">

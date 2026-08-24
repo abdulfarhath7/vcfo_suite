@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -35,7 +36,10 @@ export default function AdminEngagements() {
 
       <div className="flex items-end justify-between mb-5">
         <div>
-          <h1 className="serif text-[32px] tracking-tight text-ink">GCC setup projects</h1>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <PageBackButton className="-ml-1.5" />
+            <h1 className="serif text-[32px] tracking-tight text-ink">GCC setup projects</h1>
+          </div>
           <p className="text-[13px] text-text-tertiary mt-0.5">{engagements.length} in portfolio</p>
         </div>
         <Button size="sm" onClick={() => router.push('/app/manager/projects/new')}>

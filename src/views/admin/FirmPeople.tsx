@@ -562,7 +562,6 @@ export default function FirmPeople() {
               <EmptyStateIllustrated
                 icon={Briefcase}
                 title="No active projects"
-                description="Create a project first, then assign it here."
                 className="py-8"
               />
             ) : (
@@ -694,7 +693,7 @@ export default function FirmPeople() {
           accent="violet"
           icon={Users}
           title={mgrName}
-          subtitle={mgrEmail || 'Manager-wise view: leads, clients, and project work'}
+          subtitle={mgrEmail || undefined}
           forceBack
           backFallbackHref={`${staffBase}/people`}
           actions={
@@ -777,7 +776,6 @@ export default function FirmPeople() {
               <EmptyStateIllustrated
                 icon={Users}
                 title="No leads yet"
-                description="No project leads report to this manager."
                 className="m-4 py-8"
               />
             ) : (
@@ -811,7 +809,6 @@ export default function FirmPeople() {
               <EmptyStateIllustrated
                 icon={Briefcase}
                 title="No projects assigned"
-                description="Projects handed to this manager will appear here."
                 className="m-4 py-8"
               />
             ) : (
@@ -874,7 +871,6 @@ export default function FirmPeople() {
               <EmptyStateIllustrated
                 icon={Users}
                 title="No admins"
-                description="Firm admins will appear here once created."
                 className="m-4 py-8"
               />
             ) : (
@@ -893,13 +889,11 @@ export default function FirmPeople() {
           <Surface className="divide-y divide-border">
             <div className="px-4 py-3">
               <Eyebrow>Managers</Eyebrow>
-              <p className="mt-1 text-[11px] text-muted-foreground">Click a name for leads & clients</p>
             </div>
             {managers.length === 0 ? (
               <EmptyStateIllustrated
                 icon={Users}
                 title="No managers yet"
-                description="Create a project manager to start assigning leads and projects."
                 actionLabel="Create manager"
                 onAction={() => openCreate('manager')}
                 className="m-4 py-8"
@@ -930,7 +924,6 @@ export default function FirmPeople() {
             <EmptyStateIllustrated
               icon={Users}
               title="No project leads yet"
-              description="Leads run the day-to-day checklist for each project."
               actionLabel={canCreate ? 'Create lead' : undefined}
               onAction={canCreate ? () => openCreate('intern') : undefined}
               className="m-4 py-8"
@@ -960,7 +953,6 @@ export default function FirmPeople() {
             <EmptyStateIllustrated
               icon={UserSquare2}
               title="No client logins yet"
-              description="Client accounts are created when a project invites its first client."
               className="m-4 py-8"
             />
           ) : (
@@ -983,7 +975,6 @@ export default function FirmPeople() {
           <EmptyStateIllustrated
             icon={Briefcase}
             title="No active projects"
-            description="Active incorporation projects across the firm will appear here."
             className="m-4 py-8"
           />
         ) : (

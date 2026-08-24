@@ -253,9 +253,7 @@ export function SurfacePicker({
               Your image
             </p>
             {dense ? null : (
-              <p className="mt-0.5 text-[12px] text-muted-foreground">
-                JPEG or PNG. Stored on this device.
-              </p>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">JPEG or PNG.</p>
             )}
             <button
               type="button"
@@ -294,17 +292,11 @@ export function AppearanceSettings() {
       <div className="overflow-hidden rounded-lg border border-border bg-panel">
         <header className="px-5 py-4 sm:px-6">
           <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Appearance</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-            Greeting card, sidebar, and motion. Saved on this device.
-          </p>
         </header>
 
-        <StudioBlock
-          title="Greeting Card Appearance"
-          description="Background for the Today greeting. Text stays readable over photos."
-        >
+        <StudioBlock title="Greeting Card Appearance">
           <div
-            className="lead-hero px-5 py-5 sm:px-6 sm:py-6"
+            className="lead-hero px-5 py-4 sm:px-6 sm:py-5"
             data-hero-image={hero.image ? 'true' : 'false'}
             style={surfaceCssVars(hero, 'hero')}
           >
@@ -331,13 +323,10 @@ export function AppearanceSettings() {
           <SurfacePicker value={prefs.hero} solids={HERO_SOLIDS} onChange={patchHero} />
         </StudioBlock>
 
-        <StudioBlock
-          title="Sidebar Appearance"
-          description="Independent from the greeting card. Applies to the navigation rail."
-        >
+        <StudioBlock title="Sidebar Appearance">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <div
-              className="shell-sidebar-skin relative h-[176px] w-[104px] shrink-0 overflow-hidden rounded-lg border border-border/70"
+              className="shell-sidebar-skin h-[176px] w-[104px] shrink-0 overflow-hidden rounded-lg border border-border/70"
               data-ink={sidebar.ink}
               style={surfaceCssVars(sidebar, 'sidebar')}
             >
@@ -355,11 +344,7 @@ export function AppearanceSettings() {
           </div>
         </StudioBlock>
 
-        <StudioBlock
-          title="Animations"
-          description="Motion on the greeting, page enters, and navigation. Keep it quiet."
-          last
-        >
+        <StudioBlock title="Animations" last>
           <div className="flex flex-wrap gap-1.5">
             {MOTION_STYLES.map((style) => {
               const on = prefs.motion === style.id;
@@ -382,16 +367,9 @@ export function AppearanceSettings() {
               );
             })}
           </div>
-          <p className="mt-2.5 text-[12px] text-muted-foreground">
-            {MOTION_STYLES.find((style) => style.id === prefs.motion)?.hint}
-          </p>
-
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-4">
             <div>
               <p className="text-[13px] font-medium text-foreground">Reduce motion</p>
-              <p className="mt-0.5 text-[12px] text-muted-foreground">
-                Turns off atmosphere and keeps fades only. Also respects the system setting.
-              </p>
             </div>
             <Switch
               checked={prefs.reduceMotion}
@@ -412,14 +390,16 @@ function StudioBlock({
   children,
 }: {
   title: string;
-  description: string;
+  description?: string;
   last?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className={cn('border-t border-border/70 px-5 py-5 sm:px-6', last && 'pb-6')}>
       <h3 className="text-[13px] font-semibold tracking-tight text-foreground">{title}</h3>
-      <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{description}</p>
+      {description ? (
+        <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{description}</p>
+      ) : null}
       <div className="mt-4">{children}</div>
     </div>
   );

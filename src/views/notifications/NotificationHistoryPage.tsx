@@ -90,7 +90,6 @@ export default function NotificationHistoryPage() {
       />
       <PageHeader
         title="Notifications"
-        subtitle="Everything sent to you, including items cleared from the bell. Times are Asia/Kolkata."
         accent="sky"
         icon={Bell}
       />
@@ -165,7 +164,6 @@ export default function NotificationHistoryPage() {
         <EmptyStateIllustrated
           icon={Bell}
           title="No notifications in this view"
-          description="New work alerts and outbound email confirmations will appear here."
           className="border-primary/25 bg-primary-light/30"
         />
       ) : (

@@ -25,7 +25,6 @@ export default function ProjectsNew() {
         accent="primary"
         icon={Plus}
         title="New project"
-        subtitle="Start a GCC setup project and provision the client portal account."
       />
 
       <div className="mx-auto w-full max-w-3xl lg:max-w-none lg:pr-0">

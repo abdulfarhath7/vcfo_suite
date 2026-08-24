@@ -38,9 +38,6 @@ export function Step4Foreign({ data, update }: Props) {
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-base font-semibold text-foreground">Foreign parent entity</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Complete this section only when the Indian entity has an overseas parent.
-          </p>
         </div>
         <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-text-secondary">
           <input
@@ -55,7 +52,7 @@ export function Step4Foreign({ data, update }: Props) {
 
       {!data.foreign.enabled ? (
         <div className="rounded-md border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
-          No overseas parent? Select <strong>Next</strong> to skip this step.
+          No overseas parent.
         </div>
       ) : (
         <>

@@ -170,8 +170,7 @@ export function ChecklistClientWizard({
         >
           {selected.item.bucket === 'post-inc' && !incorporationDate ? (
             <p className="mb-4 rounded-md border border-primary/20 bg-primary-light/70 px-3 py-2.5 text-xs leading-relaxed text-foreground/80">
-              Once your company is incorporated, statutory deadlines for post-incorporation
-              filings will appear here.
+              Deadlines appear after incorporation.
             </p>
           ) : null}
           <div className="mb-4 flex flex-wrap items-center gap-2">

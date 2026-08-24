@@ -390,7 +390,7 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
 
   const saveDraft = () => {
     saveCreateProjectDraft(state);
-    toastSuccess('Draft saved', 'Come back anytime — your answers are waiting on this device.');
+    toastSuccess('Draft saved');
   };
 
   const discard = () => {

@@ -256,7 +256,6 @@ export default function BoardResolutionView() {
         <EmptyStateIllustrated
           icon={FileText}
           title="Document not generated yet"
-          description="Your board resolution has been marked finalized, but the Word document is not available yet. Please contact your engagement team."
           actionLabel="Back to incorporation"
           onAction={() => window.location.assign('/app/client/incorporation')}
         />
@@ -264,7 +263,6 @@ export default function BoardResolutionView() {
         <EmptyStateIllustrated
           icon={FileText}
           title="Not available yet"
-          description="Your engagement team is preparing the board resolution. It will appear here once finalized."
           actionLabel="Back to incorporation"
           onAction={() => window.location.assign('/app/client/incorporation')}
         />

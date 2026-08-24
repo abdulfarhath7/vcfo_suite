@@ -143,9 +143,6 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-serif text-xl tracking-tight">Templates</h2>
-          <p className="mt-1 text-[12.5px] text-muted-foreground">
-            Choose a template for SBC-branded mail, or create one the team can reuse.
-          </p>
         </div>
         <AccentButton type="button" variant="outline" size="sm" onClick={openCreate}>
           <Plus className="h-3.5 w-3.5" aria-hidden />
@@ -160,11 +157,7 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 bg-panel">
             <FileText className="h-5 w-5 text-brand" aria-hidden />
           </div>
-          <h3 className="font-serif text-lg text-foreground">Choose a template</h3>
-          <p className="mt-1 max-w-sm text-[13px] text-muted-foreground">
-            No templates yet. Create an SBC-branded letterhead for client mail, or a plain note for
-            internal send.
-          </p>
+          <h3 className="font-serif text-lg text-foreground">No templates yet</h3>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <AccentButton type="button" variant="outline" disabled>
               Choose a template

@@ -104,7 +104,7 @@ export function AdminDashboardView({
               icon={Briefcase}
               label="Active projects"
               value={engagements.length}
-              hint={blockers ? `${blockers} at risk` : 'Portfolio healthy'}
+              hint={blockers ? `${blockers} at risk` : undefined}
               tone={blockers ? 'warning' : 'primary'}
             />
           </StaggerItem>
@@ -113,7 +113,6 @@ export function AdminDashboardView({
               icon={Calendar}
               label="Due in 2 days"
               value={dueInTwoDays}
-              hint="Filings needing action soon"
               tone={dueInTwoDays ? 'warning' : 'success'}
             />
           </StaggerItem>
@@ -122,7 +121,6 @@ export function AdminDashboardView({
               icon={Send}
               label="Approvals to send"
               value={approvalsToSend}
-              hint="Outbound / client follow-ups"
               tone={approvalsToSend ? 'info' : 'success'}
             />
           </StaggerItem>
@@ -131,7 +129,6 @@ export function AdminDashboardView({
               icon={Inbox}
               label="Approvals received"
               value={approvalsReceived}
-              hint="Awaiting your review"
               tone={approvalsReceived ? 'warning' : 'success'}
             />
           </StaggerItem>
@@ -157,7 +154,7 @@ export function AdminDashboardView({
           </button>
         </div>
 
-        <div className="px-5 py-5">
+        <div className="px-5 py-4">
           <PhaseTimeline phases={portfolioPhases} variant="journey" />
         </div>
 

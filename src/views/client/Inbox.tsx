@@ -66,7 +66,6 @@ export default function ClientInbox() {
       <EmptyStateIllustrated
         art="empty"
         title="No active engagement"
-        description="We could not find an active engagement for your account."
       />
     );
   }
@@ -126,9 +125,6 @@ export default function ClientInbox() {
         <Surface className="flex flex-col items-center p-10 text-center">
           <GeometricEmpty variant="success" />
           <div className="serif mt-3 text-xl text-foreground">You are all caught up</div>
-          <p className="mt-1 prose-narrow mx-auto text-sm text-muted-foreground">
-            Nothing needs your attention right now. We will email you when something new comes in.
-          </p>
         </Surface>
       ) : (
         <Stagger>

@@ -89,7 +89,6 @@ export default function KnowledgeBankPage({ basePath }: Props) {
     dispatchUi({ type: 'set_delete_target', file: value });
 
   const canDelete = isAdminOrManager(user?.role);
-  const isManager = isAdminOrManager(user?.role);
 
   const filesQuery = useQuery({
     queryKey: ["knowledge-bank"],
@@ -205,11 +204,8 @@ export default function KnowledgeBankPage({ basePath }: Props) {
     }
   }
 
-  const isIntern = user?.role === 'intern';
   const viewProps = {
     basePath,
-    isManager,
-    isIntern,
     canDelete,
     title,
     setTitle,

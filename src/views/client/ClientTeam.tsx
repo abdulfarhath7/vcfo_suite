@@ -191,7 +191,7 @@ export default function ClientTeamPage() {
         title="Project team"
         subtitle={
           engagement
-            ? `Collaborators for ${engagement.companyName}. Invite someone new, or substitute an existing client with another person.`
+            ? engagement.companyName
             : "No project linked to your account yet."
         }
       />
@@ -208,7 +208,6 @@ export default function ClientTeamPage() {
             <EmptyStateIllustrated
               icon={Users}
               title="No client members yet"
-              description="Invite a colleague to give them access to this project."
               className="py-8"
             />
           ) : (

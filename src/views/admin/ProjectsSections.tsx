@@ -136,7 +136,6 @@ export function ProjectsView(props: ProjectsViewProps) {
                 <EmptyStateIllustrated
                   icon={Briefcase}
                   title="No GCC setup projects yet"
-                  description="Start a project to provision the client portal and phase checklist."
                   actionLabel="Start GCC project"
                   onAction={() => router.push('/app/manager/projects/new')}
                   className="border-0 bg-transparent py-8 shadow-none"

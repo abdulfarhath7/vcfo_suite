@@ -182,7 +182,7 @@ export default function AccountSettings({ path }: Props) {
         }
         throw new Error(errorMessage(body.error, 'Could not update password.'));
       }
-      toastSuccess('Password updated', 'Use your new password next time you sign in.');
+      toastSuccess('Password updated');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -222,8 +222,6 @@ export default function AccountSettings({ path }: Props) {
       />
 
       <div className="mx-auto max-w-[1080px]">
-        <PageBackButton className="-ml-1.5 mb-5" />
-
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(20rem,24.5rem)_minmax(0,1fr)] lg:gap-8">
           <div className="order-2 flex flex-col gap-6 lg:order-1">
             <IdentityCard
@@ -249,7 +247,6 @@ export default function AccountSettings({ path }: Props) {
               <section className="px-5 py-5">
                 <SectionHead
                   title="Profile"
-                  description="Name, email, and phone used across VCFO Suite."
                   action={
                     !editingProfile ? (
                       <Button
@@ -390,7 +387,6 @@ export default function AccountSettings({ path }: Props) {
               <section className="px-5 py-5">
                 <SectionHead
                   title="Security"
-                  description="Change the password you use to sign in."
                   action={
                     !editingSecurity ? (
                       <Button
@@ -504,11 +500,7 @@ export default function AccountSettings({ path }: Props) {
           </div>
         </div>
 
-        <footer className="mt-10 flex flex-col gap-3 border-t border-border/70 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[13px] font-medium text-foreground">Sign out</p>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">End this session on this device.</p>
-          </div>
+        <footer className="mt-10 flex justify-end border-t border-border/70 pt-6">
           <Button
             type="button"
             variant="destructive"
@@ -649,9 +641,12 @@ function IdentityCard({
           className="h-[4.5rem] w-[4.5rem] bg-primary-light text-[1.05rem] font-semibold tracking-tight text-primary ring-1 ring-primary/20 sm:h-20 sm:w-20 sm:text-[1.15rem]"
         />
         <div className="min-w-0">
-          <h1 className="truncate font-serif text-[1.5rem] leading-none tracking-tight text-foreground sm:text-[1.75rem]">
-            {name}
-          </h1>
+          <div className="flex min-w-0 items-center gap-2">
+            <PageBackButton className="-ml-1.5" />
+            <h1 className="truncate font-serif text-[1.5rem] leading-none tracking-tight text-foreground sm:text-[1.75rem]">
+              {name}
+            </h1>
+          </div>
           <p className="mt-2 truncate font-mono text-[13px] text-muted-foreground">{email}</p>
           <span className="mt-3 inline-flex rounded-md bg-primary-light px-2 py-0.5 text-[11px] font-semibold text-primary">
             {roleLabel}
@@ -691,9 +686,7 @@ function IdentityCard({
             className="h-8"
             disabled={loading || busy !== null || !outlookConnected}
             title={
-              outlookConnected
-                ? 'Use the photo from your connected Microsoft account'
-                : 'Connect Outlook below to use your Microsoft photo'
+              outlookConnected ? undefined : 'Connect Outlook below to use your Microsoft photo'
             }
             onClick={() => void useOutlookPhoto()}
           >
@@ -800,10 +793,7 @@ function OutlookMailboxCard({
 
   return (
     <section className="px-5 py-5">
-      <SectionHead
-        title="Outlook"
-        description="Link your SBC mailbox once. Client emails send from it until you disconnect."
-      />
+      <SectionHead title="Outlook" />
 
       {loading ? (
         <div className="mt-1">
@@ -876,14 +866,16 @@ function SectionHead({
   action,
 }: {
   title: string;
-  description: string;
+  description?: string;
   action?: ReactNode;
 }) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
         <h2 className="text-[15px] font-semibold tracking-tight text-foreground">{title}</h2>
-        <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{description}</p>
+        {description ? (
+          <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{description}</p>
+        ) : null}
       </div>
       {action}
     </div>

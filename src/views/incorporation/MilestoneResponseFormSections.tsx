@@ -274,8 +274,8 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
             {!readOnly && (
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {autoSaveEnabled
-                  ? 'Fill in what you can — your answers save automatically.'
-                  : 'Fill in what you can; your engagement team will use this for filings.'}
+                  ? 'Answers save automatically.'
+                  : 'Your engagement team will use this for filings.'}
               </p>
             )}
           </>

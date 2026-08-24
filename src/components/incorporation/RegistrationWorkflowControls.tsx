@@ -35,9 +35,6 @@ export function RegistrationWorkflowControls({
           <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
             Applicability
           </p>
-          <p className="mt-0.5 text-[11px] text-text-secondary">
-            Project lead selects whether this registration applies.
-          </p>
         </div>
         {readOnly ? (
           <span

@@ -33,9 +33,6 @@ export function LoadingScreen({ message = "Opening VCFO Suite…" }: { message?:
             className="loading-progress h-0.5 w-full overflow-hidden rounded-full bg-border [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-border [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-[hsl(var(--hex-loader-primary)/0.55)] [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-[hsl(var(--hex-loader-primary)/0.55)]"
             aria-label="Loading"
           />
-          <p className="text-[11px] leading-relaxed text-muted-paper">
-            GCC setup · compliance filings · document vault
-          </p>
         </div>
       </div>
     </output>

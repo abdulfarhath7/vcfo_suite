@@ -285,7 +285,6 @@ export default function DocumentVaultPage() {
           accent="teal"
           icon={Vault}
           title="Vault"
-          subtitle="Client files organized by company and checklist step."
         />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -319,11 +318,6 @@ export default function DocumentVaultPage() {
         accent="teal"
         icon={Vault}
         title="Vault"
-        subtitle={
-          isIntern
-            ? 'Every file across the companies assigned to you, grouped by client and step.'
-            : 'Client-submitted documents from milestone forms, grouped by entity.'
-        }
       />
 
       {entityGroups.length > 0 && (
@@ -347,11 +341,6 @@ export default function DocumentVaultPage() {
                 <p className="serif text-[22px] leading-none tabular-nums text-ink">{entityGroups.length}</p>
               </div>
             </div>
-            <p className="max-w-sm text-[12px] leading-relaxed text-text-tertiary">
-              {isIntern
-                ? 'Milestone uploads and indexed files for your assigned clients.'
-                : 'Milestone uploads across your active GCC setup engagements.'}
-            </p>
           </div>
         </Surface>
       )}
@@ -360,11 +349,6 @@ export default function DocumentVaultPage() {
         <EmptyStateIllustrated
           icon={FolderOpen}
           title={isIntern ? 'No clients assigned yet' : 'No submitted documents yet'}
-          description={
-            isIntern
-              ? 'When a manager assigns companies to you, their files will appear here in one vault.'
-              : 'Files uploaded through milestone forms (e.g. Pre-Incorporation step 1 KYC) will appear here, organized by company.'
-          }
           actionLabel={portfolioLabel}
           onAction={() => router.push(portfolioHref)}
         />
@@ -470,7 +454,6 @@ export default function DocumentVaultPage() {
                     <EmptyStateIllustrated
                       icon={FolderOpen}
                       title="No files for this client yet"
-                      description="Uploads from checklist steps and indexed files will land here."
                       className="border-0 bg-transparent py-6"
                     />
                   </div>

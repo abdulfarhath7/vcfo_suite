@@ -83,10 +83,9 @@ export default function SuperDashboardPage() {
       />
       <PageHeader
         title="Bird's-eye overview"
-        subtitle="Jump into the firm console or any client portal. You can open every role workspace."
       />
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <AccentKpi label="Projects" value={pulse.total} tone="primary" icon={Briefcase} />
         <AccentKpi
           label="Needs attention"
@@ -97,7 +96,7 @@ export default function SuperDashboardPage() {
         <AccentKpi label="On track" value={pulse.onTrack} tone="success" icon={CheckCircle2} />
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {LAUNCHERS.map((card) => (
           <Link
             key={card.href}
@@ -111,7 +110,7 @@ export default function SuperDashboardPage() {
         ))}
       </div>
 
-      <section className="mt-8 rounded-xl border border-border/70 bg-panel p-5">
+      <section className="mt-5 rounded-xl border border-border/70 bg-panel p-5">
         <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
           <IconChip icon={Users} tone="info" size="sm" />
           All GCC setup projects ({engagements.length})

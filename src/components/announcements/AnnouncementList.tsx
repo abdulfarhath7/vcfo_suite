@@ -176,7 +176,7 @@ export function AnnouncementCompactList({
   if (items.length === 0) {
     return (
       <p className="text-[12.5px] text-muted-foreground">
-        No firm announcements yet.{' '}
+        No announcements yet.{' '}
         <Link href={href} className="font-semibold text-primary hover:underline">
           Open the board
         </Link>

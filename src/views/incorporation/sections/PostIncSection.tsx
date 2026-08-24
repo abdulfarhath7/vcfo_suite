@@ -75,7 +75,7 @@ export function PostIncSection({
           )}
         >
           {isClient
-            ? 'Once your company is incorporated, statutory deadlines for post-incorporation filings will appear here.'
+            ? 'Deadlines appear after incorporation.'
             : 'Add the incorporation date to activate statutory countdowns for post-incorporation filings.'}
         </div>
       )}

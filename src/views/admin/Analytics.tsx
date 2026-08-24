@@ -82,7 +82,6 @@ export default function Analytics() {
         accent="sky"
         icon={BarChart3}
         title="Analytics"
-        subtitle="Live portfolio pulse; trend charts show sample data until export history accrues."
         actions={
           <select
             value={period}
@@ -95,14 +94,13 @@ export default function Analytics() {
         }
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <AccentKpi label="Projects" value={live.projects} tone="primary" icon={Briefcase} />
         <AccentKpi
           label="Steps completed"
           value={`${live.pct}%`}
           tone="success"
           icon={CheckCircle2}
-          hint="Across all engagements"
         />
         <AccentKpi
           label="Waiting on client"
