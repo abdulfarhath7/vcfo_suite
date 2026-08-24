@@ -300,107 +300,151 @@ function BoardView({ items, now }: { items: InternWorkItem[]; now: Date }) {
   );
 }
 
-function TimelineView({ items, now }: { items: InternWorkItem[]; now: Date }) {
-  const window = internTimelineWindow(now);
+function TimelineView({
+  items,
+  now,
+  selectedDay,
+}: {
+  items: InternWorkItem[];
+  now: Date;
+  selectedDay: string | null;
+}) {
   const today = ymdInIst(now);
-  const todayIdx = window.indexOf(today);
-  const rows = internTimelineRows(items, now);
-  const byCompany: { name: string; id: string; rows: typeof rows }[] = [];
-  for (const row of rows) {
-    let g = byCompany.find((x) => x.id === row.item.engagementId);
-    if (!g) {
-      g = { id: row.item.engagementId, name: row.item.companyName, rows: [] };
-      byCompany.push(g);
-    }
-    g.rows.push(row);
-  }
+  const grid = internTimelineGrid(items, now);
+  const thisWeek = grid.days.slice(0, 7);
+  const nextWeek = grid.days.slice(7, 14);
+  const hasCards = grid.days.some((col) => col.items.length > 0) || grid.later.length > 0;
 
-  if (rows.length === 0) return <EmptyWork />;
+  if (!hasCards) return <EmptyWork />;
 
   return (
-    <>
-      <div className="surface overflow-x-auto p-4">
-        <div className="relative min-w-[860px]">
-          {todayIdx >= 0 ? (
-            <div
-              className="lead-tl-today"
-              style={{
-                left: `calc(200px + (100% - 200px) * ${todayIdx} / 14)`,
-                width: 'calc((100% - 200px) / 14)',
-              }}
-            />
-          ) : null}
-          <div className="lead-tl relative z-[1] border-b border-border pb-2 text-center text-[10.5px] font-extrabold text-text-tertiary">
-            <div />
-            {window.map((ymd) => {
-              const d = parseIstNoon(ymd);
-              const weekend = istWeekdayMon0(d) >= 5;
-              return (
-                <div
-                  key={ymd}
-                  className={cn(
-                    'dh py-0.5',
-                    ymd === today && 'rounded-md bg-primary text-white',
-                    weekend && ymd !== today && 'opacity-45',
-                  )}
-                >
-                  {format(d, 'EEE')}
-                  <br />
-                  {format(d, 'd')}
-                </div>
-              );
-            })}
+    <div className="flex flex-col gap-3">
+      <TimelineWeekRow label="This week" days={thisWeek} today={today} selectedDay={selectedDay} now={now} />
+      {nextWeek.some((col) => col.items.length > 0) ? (
+        <TimelineWeekRow label="Next week" days={nextWeek} today={today} selectedDay={selectedDay} now={now} />
+      ) : null}
+      {grid.later.length > 0 ? (
+        <section className="surface p-3.5">
+          <h2 className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">
+            Later / no date this fortnight
+          </h2>
+          <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {grid.later.map((item) => (
+              <TimelineWorkCard key={item.id} item={item} now={now} />
+            ))}
           </div>
-          {byCompany.map((group) => (
-            <div key={group.id}>
-              <div className="relative z-[1] flex items-center gap-2 py-3 text-xs font-extrabold">
-                <LeadCompanyChip name={group.name} engagementId={group.id} compact />
-                <span>{group.name}</span>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function TimelineWeekRow({
+  label,
+  days,
+  today,
+  selectedDay,
+  now,
+}: {
+  label: string;
+  days: { ymd: string; items: InternWorkItem[] }[];
+  today: string;
+  selectedDay: string | null;
+  now: Date;
+}) {
+  return (
+    <section className="surface overflow-hidden p-3.5">
+      <h2 className="mb-2.5 text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">
+        {label} · Mon–Sun · IST
+      </h2>
+      <div className="lead-tl-grid">
+        {days.map((col) => {
+          const heading = formatIstWeekdayDay(col.ymd);
+          const isToday = col.ymd === today;
+          const isSelected = selectedDay === col.ymd;
+          const weekend = heading.weekday === 'Sat' || heading.weekday === 'Sun';
+          return (
+            <div
+              key={col.ymd}
+              id={isSelected ? 'intern-tl-day' : undefined}
+              className={cn(
+                'flex min-h-[12.5rem] min-w-0 flex-col rounded-lg bg-raised p-1.5',
+                isToday && 'outline outline-2 outline-offset-[-2px] outline-primary',
+                isSelected && 'ring-2 ring-primary ring-offset-1 ring-offset-panel',
+                weekend && !isToday && 'border border-dashed border-border bg-transparent',
+              )}
+            >
+              <div
+                className={cn(
+                  'mb-1.5 rounded-md px-1 py-1 text-center text-[11px] font-extrabold leading-tight text-text-tertiary',
+                  isToday && 'bg-primary text-white',
+                )}
+              >
+                <span className="block truncate">{heading.weekday}</span>
+                <span className="block tabular-nums">{heading.day}</span>
               </div>
-              {group.rows.map(({ item, mark }) => (
-                <div key={item.id} className="lead-tl relative z-[1] min-h-9">
-                  <Link href={item.href} className="min-w-0 truncate pr-3 text-xs font-bold text-muted-foreground hover:text-ink">
-                    {item.title}
-                  </Link>
-                  {mark.type === 'bar' ? (
-                    <div
-                      className={cn(
-                        'flex h-[22px] items-center overflow-hidden rounded-md px-2 text-[10.5px] font-extrabold',
-                        internToneBadge(mark.tone),
-                        mark.openStart && 'rounded-l-sm',
-                      )}
-                      style={{ gridColumn: `${mark.startCol} / span ${mark.span}` }}
-                    >
-                      {mark.label}
-                    </div>
-                  ) : (
-                    <>
-                      <div
-                        className={cn('h-3 w-3 rotate-45 justify-self-center rounded-sm', internToneBg(mark.tone))}
-                        style={{ gridColumn: mark.col }}
-                      />
-                      <div
-                        className={cn(
-                          'min-w-0 self-center truncate pl-1.5 text-[10px] font-extrabold',
-                          internToneText(mark.tone),
-                        )}
-                        title={mark.label}
-                        style={{ gridColumn: `${Math.min(mark.col + 1, 15)} / span ${mark.col >= 13 ? 1 : 3}` }}
-                      >
-                        {mark.label}
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
+              <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+                {col.items.length === 0 ? (
+                  <p className="px-0.5 pt-2 text-center text-[10.5px] font-semibold text-text-tertiary">—</p>
+                ) : (
+                  col.items.map((item) => <TimelineWorkCard key={item.id} item={item} now={now} compact />)
+                )}
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="mt-3.5 flex flex-wrap gap-4 text-[11px] font-bold text-muted-foreground">
-          <span>◆ Filing deadline</span>
-        </div>
+          );
+        })}
       </div>
-    </>
+    </section>
+  );
+}
+
+function TimelineWorkCard({
+  item,
+  now,
+  compact,
+}: {
+  item: InternWorkItem;
+  now: Date;
+  compact?: boolean;
+}) {
+  const mark = internWeekMarkKind(item);
+  const tone = mark ? WEEK_CHIP_TONE[mark] : KIND_TONE[item.kind] ?? 'info';
+  return (
+    <article
+      className={cn(
+        'min-w-0 rounded-md border border-border bg-panel p-2 shadow-layered',
+        item.kind === 'done' && 'opacity-70',
+      )}
+    >
+      <Link
+        href={item.href}
+        title={item.title}
+        className={cn(
+          'block text-[12px] font-bold leading-snug text-ink hover:underline',
+          compact ? 'line-clamp-2' : 'truncate',
+          item.kind === 'done' && 'text-text-tertiary line-through',
+        )}
+      >
+        {item.title}
+      </Link>
+      <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1">
+        <LeadCompanyPill name={item.companyName} engagementId={item.engagementId} />
+        <span
+          className={cn(
+            'inline-flex max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] font-extrabold',
+            internToneBadge(tone),
+          )}
+        >
+          {internKindChipLabel(item.kind)}
+        </span>
+      </div>
+      <div className="mt-1 flex min-w-0 items-center justify-between gap-1">
+        <span className={cn('font-mono text-[10.5px] font-semibold text-text-tertiary', item.isOverdue && internToneText('danger'))}>
+          {formatDueLabel(item.dueAt, now)}
+        </span>
+        <InternWorkCtaButton item={item} className="px-2 py-0.5 text-[10.5px]" />
+      </div>
+    </article>
   );
 }
 
@@ -408,6 +452,7 @@ function EmptyWork() {
   return (
     <div className="surface px-6 py-8 text-center">
       <p className="serif text-lg">Nothing in this view</p>
+      <p className="mt-1 text-sm text-muted-foreground">Clear a filter or pick another company.</p>
     </div>
   );
 }
