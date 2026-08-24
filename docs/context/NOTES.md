@@ -350,6 +350,8 @@ Append here whenever something costs more than a minute to figure out.
   Dates go through `ymdFromIsoInIst` — never UTC `slice(0, 10)` on a timestamp.
   My work Timeline is a Mon–Sun CSS grid of cards (`internTimelineGrid`), not
   a 14-column Gantt with overlapping diamonds.
+  Intern portfolio includes `engagement.leadIds` (not only primary intern_id).
+  Seed upsert must not overwrite `profiles.intern_id` — that unlinks DemoCo.
 - Metric top-bar colours use semantic tokens (`primary`, `danger`, `accent-sky`,
   `success`) — never `orange-*` (those still alias blue). Waiting is sky/pink/cyan,
   never khaki or brown.
