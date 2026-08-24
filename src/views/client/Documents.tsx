@@ -59,7 +59,6 @@ export default function ClientDocuments() {
       <PageHeader
         accent="teal"
         icon={FolderOpen}
-        eyebrow="Document vault"
         title="Documents"
         subtitle={`${milestoneDocs.length} milestone upload${milestoneDocs.length === 1 ? '' : 's'}${uploadedLegacy.length ? ` · ${uploadedLegacy.length} request${uploadedLegacy.length === 1 ? '' : 's'} on file` : ''}${pendingLegacy.length ? ` · ${pendingLegacy.length} still needed` : ''}`}
       />

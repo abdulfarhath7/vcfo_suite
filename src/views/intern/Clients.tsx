@@ -23,7 +23,6 @@ export default function InternClients() {
       <PageHeader
         accent="cyan"
         icon={Building2}
-        eyebrow="Portfolio"
         title="Clients"
         subtitle={`${myEngagements.length} active engagement${myEngagements.length === 1 ? '' : 's'}`}
       />

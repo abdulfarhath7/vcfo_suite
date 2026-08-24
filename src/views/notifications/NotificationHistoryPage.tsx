@@ -89,9 +89,8 @@ export default function NotificationHistoryPage() {
         path={pathname}
       />
       <PageHeader
-        title="Notification history"
+        title="Notifications"
         subtitle="Everything sent to you, including items cleared from the bell. Times are Asia/Kolkata."
-        eyebrow="Inbox archive"
         accent="sky"
         icon={Bell}
       />

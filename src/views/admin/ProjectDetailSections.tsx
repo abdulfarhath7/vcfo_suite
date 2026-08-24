@@ -148,7 +148,6 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
 
       <PageHeader
         accent="primary"
-        eyebrow={eng.slug ? eng.slug.toUpperCase() : undefined}
         title={eng.companyName}
         subtitle={
           <span className="block space-y-2">

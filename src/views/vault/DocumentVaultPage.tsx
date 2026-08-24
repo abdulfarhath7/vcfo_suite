@@ -284,7 +284,7 @@ export default function DocumentVaultPage() {
         <PageHeader
           accent="teal"
           icon={Vault}
-          title="Document Vault"
+          title="Vault"
           subtitle="Client files organized by company and checklist step."
         />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -318,7 +318,7 @@ export default function DocumentVaultPage() {
       <PageHeader
         accent="teal"
         icon={Vault}
-        title="Document Vault"
+        title="Vault"
         subtitle={
           isIntern
             ? 'Every file across the companies assigned to you, grouped by client and step.'

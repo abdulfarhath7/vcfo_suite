@@ -157,7 +157,6 @@ export default function BoardResolutionView() {
       <PageHeader
         accent="violet"
         icon={FileSignature}
-        eyebrow="Incorporation"
         title="Board Resolution"
         subtitle={engagement.companyName}
       />
