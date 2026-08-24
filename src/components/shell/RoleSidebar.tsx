@@ -11,6 +11,7 @@ import {
   Inbox,
   UserSquare2,
   FolderClosed,
+  FolderOpen,
   CalendarCheck,
   BarChart3,
   Landmark,
@@ -26,6 +27,7 @@ import {
   Columns3,
   Megaphone,
   Archive,
+  Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_UI_LABEL } from '@/lib/auth';
@@ -37,6 +39,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { SidebarComplianceMini } from '@/components/shell/SidebarComplianceMini';
 import { InternClientsNav, INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
+import { SidebarNavGroup, type SidebarNavLeaf } from '@/components/shell/SidebarNavGroup';
 import { shellDesktopNavExpanded } from '@/components/shell/intern-sidebar';
 import {
   MotionActivePill,
@@ -58,6 +61,20 @@ interface Item {
   iconTone?: string;
 }
 
+interface NavGroupDef {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  iconTone?: string;
+  items: SidebarNavLeaf[];
+}
+
+type NavEntry = Item | NavGroupDef;
+
+function isNavGroup(entry: NavEntry): entry is NavGroupDef {
+  return 'items' in entry;
+}
+
 /* Functional icon color map: overview = role accent, work = blue,
    approvals/queues = muted gold, people = sky, calendar = teal-green,
    files = teal, knowledge = sky, analytics = sky, audit = neutral. */
@@ -74,23 +91,48 @@ const TONE = {
   audit: 'text-text-tertiary',
 };
 
-const firmAdminItems: Item[] = [
+function docsGroup(base: string, vaultIcon: Item['icon'] = FolderClosed): NavGroupDef {
+  return {
+    id: `docs:${base}`,
+    label: 'Docs',
+    icon: FolderOpen,
+    iconTone: TONE.files,
+    items: [
+      { to: `${base}/vault`, label: 'Vault', icon: vaultIcon, iconTone: TONE.files },
+      { to: `${base}/knowledge-bank`, label: 'Knowledge Bank', icon: BookOpen, iconTone: TONE.knowledge },
+    ],
+  };
+}
+
+function updatesGroup(base: string): NavGroupDef {
+  return {
+    id: `updates:${base}`,
+    label: 'Updates',
+    icon: Bell,
+    iconTone: TONE.news,
+    items: [
+      { to: `${base}/announcements`, label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
+      { to: `${base}/notifications`, label: 'Notifications', icon: Bell, iconTone: TONE.work },
+    ],
+  };
+}
+
+const firmAdminItems: NavEntry[] = [
   { to: '/app/admin/dashboard', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/admin/announcements', label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
+  updatesGroup('/app/admin'),
   { to: '/app/admin/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
   { to: '/app/admin/approvals', label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
   { to: '/app/admin/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
-  { to: '/app/admin/vault', label: 'Doc vault', icon: FolderClosed, iconTone: TONE.files },
-  { to: '/app/admin/knowledge-bank', label: 'Knowledge Bank', icon: BookOpen, iconTone: TONE.knowledge },
+  docsGroup('/app/admin'),
   { to: '/app/admin/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
   { to: '/app/admin/audit-log', label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
 ];
 
-const clientItems: Item[] = [
+const clientItems: NavEntry[] = [
   { to: '/app/client/inbox', label: 'Inbox', icon: Inbox, iconTone: TONE.home },
-  { to: '/app/client/announcements', label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
+  updatesGroup('/app/client'),
   { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
   { to: '/app/client/compliances', label: 'Compliances', icon: CalendarCheck, iconTone: TONE.calendar },
   { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
@@ -98,9 +140,9 @@ const clientItems: Item[] = [
   { to: '/app/client/audit', label: 'Activity audit', icon: HistoryIcon, iconTone: TONE.audit },
 ];
 
-const superAdminItems: Item[] = [
+const superAdminItems: NavEntry[] = [
   { to: '/app/super/dashboard', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/super/announcements', label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
+  updatesGroup('/app/super'),
   { to: '/app/admin/dashboard', label: 'Firm home', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
@@ -156,22 +198,21 @@ export function SidebarNavBody({
     ink,
   };
 
-  const managerItems: Item[] = [
+  const managerItems: NavEntry[] = [
     { to: `${staffBase}/dashboard`, label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-    { to: `${staffBase}/announcements`, label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
+    updatesGroup(staffBase),
     { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
     { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
     { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
     { to: `${staffBase}/mail`, label: 'Send email', icon: Mail, iconTone: TONE.work },
     { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
     { to: `${staffBase}/compliance`, label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
-    { to: `${staffBase}/vault`, label: 'Document vault', icon: FolderClosed, iconTone: TONE.files },
-    { to: `${staffBase}/knowledge-bank`, label: 'Knowledge Bank', icon: BookOpen, iconTone: TONE.knowledge },
+    docsGroup(staffBase),
     { to: `${staffBase}/analytics`, label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
     { to: `${staffBase}/audit-log`, label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
   ];
 
-  const internItems: Item[] = [
+  const internItems: NavEntry[] = [
     { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
     {
       to: '/app/intern/tasks',
@@ -181,12 +222,11 @@ export function SidebarNavBody({
       badge: kpis.action.total,
     },
     { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
-    { to: '/app/intern/vault', label: 'Document vault', icon: Archive, iconTone: TONE.files },
-    { to: '/app/intern/announcements', label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
+    docsGroup('/app/intern', Archive),
+    updatesGroup('/app/intern'),
     { to: '/app/intern/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
     { to: '/app/intern/requests', label: 'Requests', icon: FileInput, iconTone: TONE.queue },
     { to: '/app/intern/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
-    { to: '/app/intern/knowledge-bank', label: 'Knowledge Bank', icon: BookOpen, iconTone: TONE.knowledge },
     { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
     { to: '/app/intern/audit-log', label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
   ];
@@ -246,6 +286,24 @@ export function SidebarNavBody({
       >
         <LayoutGroup id={layoutIdPrefix}>
         {items.map((it) => {
+          if (isNavGroup(it)) {
+            return (
+              <SidebarNavGroup
+                key={it.id}
+                id={it.id}
+                label={it.label}
+                icon={it.icon}
+                iconTone={it.iconTone}
+                items={it.items}
+                expanded={expanded}
+                pathname={pathname}
+                layoutIdPrefix={layoutIdPrefix}
+                onNavigate={onNavigate}
+                ink={ink}
+                hoverFollow={hoverFollow}
+              />
+            );
+          }
           if (user.role === 'intern' && it.to === INTERN_CLIENTS_HREF) {
             return (
               <InternClientsNav
