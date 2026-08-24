@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { m, useReducedMotion } from 'framer-motion';
 import { Megaphone, X } from 'lucide-react';
-import { AccentButton } from '@/components/noir';
 import { AnnouncementKindChip, formatAnnouncementWhen } from '@/components/announcements/AnnouncementList';
 import { useApp } from '@/context/AppContext';
 import { useAnnouncements } from '@/lib/use-announcements';
@@ -72,13 +71,11 @@ function readBellBox(): GenieBox {
 
 function AnnouncementGenieCard({
   item,
-  remaining,
   replay,
   reduceMotion,
   onParked,
 }: {
   item: Announcement;
-  remaining: number;
   replay: boolean;
   reduceMotion: boolean;
   onParked: () => void;
@@ -192,8 +189,8 @@ function AnnouncementGenieCard({
       >
         <div className={cn('relative', flying && 'pointer-events-none opacity-0 transition-opacity duration-150')}>
           <div className="h-[3px] w-full bg-primary" />
-          <div className="flex items-start justify-between gap-3 px-5 pt-4">
-            <div className="flex min-w-0 items-center gap-2">
+          <div className="flex items-start justify-between gap-3 px-5 pb-4 pt-4">
+            <div className="flex min-w-0 items-center gap-2.5">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-light text-primary">
                 <Megaphone className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
               </span>
@@ -201,7 +198,7 @@ function AnnouncementGenieCard({
                 <p id="announcement-live-title" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   {replay ? 'Announcement' : 'New announcement'}
                 </p>
-                <div className="mt-1">
+                <div className="mt-1.5">
                   <AnnouncementKindChip kind={item.kind} />
                 </div>
               </div>
@@ -215,12 +212,12 @@ function AnnouncementGenieCard({
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="px-5 pb-2 pt-4">
+          <div className="px-5 pb-6 pt-1">
             {extraTitle ? (
-              <p className="mb-1.5 text-[12px] font-medium text-muted-foreground">{item.title}</p>
+              <p className="mb-2 text-[12px] font-medium text-muted-foreground">{item.title}</p>
             ) : null}
-            <p className="text-[17px] font-semibold leading-snug tracking-tight text-ink">{message}</p>
-            <p className="mt-3 text-[13px] text-muted-foreground">
+            <p className="text-[17px] font-semibold leading-relaxed tracking-tight text-ink">{message}</p>
+            <p className="mt-4 text-[13px] leading-snug text-muted-foreground">
               {announcementAttribution(item)}
               <span className="mx-1.5 text-border">·</span>
               <time dateTime={item.publishedAt}>{formatAnnouncementWhen(item.publishedAt)}</time>
@@ -230,19 +227,11 @@ function AnnouncementGenieCard({
                 href={item.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-block text-[12px] font-medium text-primary hover:underline"
+                className="mt-2.5 inline-block text-[12px] font-medium text-primary hover:underline"
               >
                 Open source
               </a>
             ) : null}
-          </div>
-          <div className="flex items-center justify-between gap-3 px-5 pb-4 pt-3">
-            <p className="text-[11px] text-muted-foreground">
-              {remaining > 1 ? `${remaining - 1} more after this` : 'Parks on the megaphone until you read it.'}
-            </p>
-            <AccentButton type="button" size="sm" onClick={park}>
-              Got it
-            </AccentButton>
           </div>
         </div>
       </div>
@@ -319,7 +308,6 @@ export function AnnouncementLivePopup() {
     <AnnouncementGenieCard
       key={`${current.id}-${showNonce}`}
       item={current}
-      remaining={queue.length}
       replay={sessionManualIds.has(current.id)}
       reduceMotion={reduceMotion}
       onParked={onParked}
