@@ -36,7 +36,7 @@ async function upsertUser(input: {
         passwordHash,
         name: input.name,
         role: input.role,
-        internId: input.internId,
+        internId: existing.internId ?? input.internId,
         clientId: input.clientId,
         reportsToManagerId: input.reportsToManagerId,
         updatedAt: new Date(),
