@@ -571,7 +571,10 @@ Append here whenever something costs more than a minute to figure out.
 - Category chips: “Select all” is first and on by default (empty `mutedActs`).
   No “Clear all”. Date cells use a category tint plus a left color stripe
   (stacked when a day has multiple acts) — not dots under the number.
-  Clicking a dated cell smooth-scrolls `#statutory-agenda-YYYY-MM-DD`.
+  Act colours are `--stat-*` in `ACT_SWATCH` (hues ≥45° apart). Do not reuse
+  IconChip emerald/teal or rose/pink — those merge on stacked stripes. Multi-act
+  days skip the wash and separate stripes with a 1px gap. Clicking a dated cell
+  smooth-scrolls `#statutory-agenda-YYYY-MM-DD`.
 
 ## Unified sidebar disclosure row
 
