@@ -30,12 +30,17 @@ const riskMap = {
   high:   'text-danger-text',
 };
 
-export default function Compliance() {
+export default function Compliance({
+  initialView = 'statutory',
+}: {
+  initialView?: 'statutory' | 'tracker';
+}) {
   const { user, engagements, teamMembers, getStateForEngagement } = useApp();
   const pathname = usePathname();
   const isInternView = user?.role === 'intern' || pathname.startsWith('/app/intern/');
   const allFilings = useComplianceFilings(engagements, getStateForEngagement);
-  const [tab, setTab] = useState<'statutory' | 'tracker'>('statutory');
+  const [tab, setTab] = useState<'statutory' | 'tracker'>(initialView);
+  const active = isInternView ? initialView : tab;
   const [filter, setFilter] = useState<'all' | ComplianceFiling['status']>('all');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [viewMonth, setViewMonth] = useState(() => {
@@ -63,50 +68,69 @@ export default function Compliance() {
 
   return (
     <PageTransition>
-      <SEO title="Compliance calendar — VCFO Suite" description="Recurring statutory filings — GST, TDS, ROC, PF, RBI — across your GCC portfolio." path="/app/manager/compliance" />
+      <SEO
+        title="Compliance calendar — VCFO Suite"
+        description="Recurring statutory filings — GST, TDS, ROC, PF, RBI — across your GCC portfolio."
+        path={isInternView ? '/app/intern/compliance' : '/app/manager/compliance'}
+      />
 
-      {!isInternView && (
+      {isInternView ? (
+        <PageHeader
+          accent="emerald"
+          icon={CalendarCheck2}
+          title={active === 'tracker' ? 'Filing tracker' : 'Compliance calendar'}
+        />
+      ) : (
         <>
           <PageHeader accent="emerald" icon={CalendarCheck2} title="Compliance calendar" />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <AccentKpi tone="violet" icon={Calendar}      label="Active filings"  value={allFilings.length} hint="Recurring obligations" />
-            <AccentKpi tone="sky"     icon={Clock}         label="Due in 30 days"       value={upcoming} hint="Schedule ahead" />
-            <AccentKpi tone="amber"   icon={CheckCircle2}  label="In preparation"    value={inProgress} hint="Work in progress" />
-            <AccentKpi tone="emerald" icon={AlertTriangle} label="Past due"        value={overdue} hint={overdue ? 'Review immediately' : 'Nothing overdue'} />
+            <AccentKpi tone="violet" icon={Calendar}      label="Active filings"  value={allFilings.length} />
+            <AccentKpi tone="sky"     icon={Clock}         label="Due in 30 days"       value={upcoming} />
+            <AccentKpi tone="amber"   icon={CheckCircle2}  label="In preparation"    value={inProgress} />
+            <AccentKpi tone="emerald" icon={AlertTriangle} label="Past due"        value={overdue} />
           </div>
         </>
       )}
 
-      {/* Statutory reference calendar vs per-client filing tracker */}
-      <div className="mb-4 inline-flex rounded-lg border border-border bg-panel p-0.5">
-        {(
-          [
-            { id: 'statutory', label: 'Statutory calendar' },
-            { id: 'tracker', label: 'Client filing tracker' },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={cn(
-              'h-8 rounded-md px-3.5 text-[12.5px] font-medium transition-colors',
-              tab === t.id
-                ? 'bg-role-soft text-role-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Manager/admin keep the two views as tabs. Intern: statutory is the page; tracker is /compliance/tracker. */}
+      {!isInternView && (
+        <div className="mb-4 inline-flex rounded-lg border border-border bg-panel p-0.5">
+          {(
+            [
+              { id: 'statutory', label: 'Statutory calendar' },
+              { id: 'tracker', label: 'Client filing tracker' },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={cn(
+                'h-8 rounded-md px-3.5 text-[12.5px] font-medium transition-colors',
+                tab === t.id
+                  ? 'bg-role-soft text-role-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {tab === 'statutory' && <StatutoryCalendar engagements={engagements} />}
+      {active === 'statutory' && (
+        <StatutoryCalendar
+          engagements={engagements}
+          trackerHref={isInternView ? '/app/intern/compliance/tracker' : undefined}
+        />
+      )}
 
-      <div className={cn('surface overflow-hidden', tab !== 'tracker' && 'hidden')}>
+      <div className={cn('surface overflow-hidden', active !== 'tracker' && 'hidden')}>
         <div className="px-4 py-3 border-b border-border flex items-center gap-3 flex-wrap">
-          <div className="text-[13px] font-semibold text-ink mr-2">All compliances</div>
+          <div className="text-[13px] font-semibold text-ink mr-2">
+            {isInternView ? 'Client filing tracker' : 'All compliances'}
+          </div>
           <select
             value={clientFilter}
             onChange={(e) => setClientFilter(e.target.value)}
