@@ -1508,6 +1508,25 @@ html[data-reduce-motion="true"] .discrete-panel {
 [data-reduce-motion="true"] .announcement-live-enter {
   animation: none;
 }
+.notification-live-enter {
+  animation: announcement-live-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+[data-reduce-motion="true"] .notification-live-enter {
+  animation: none;
+}
+.notif-kind {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: oklch(var(--primary-light));
+  color: oklch(var(--primary-dark));
+}
 
 .ann-kind {
   display: inline-flex;

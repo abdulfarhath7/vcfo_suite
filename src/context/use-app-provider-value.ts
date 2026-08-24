@@ -72,6 +72,7 @@ import {
   isPersistedNotificationId,
   mergeNotificationsByCreatedAt,
 } from '@/lib/notification-dismiss';
+import { NOTIFICATION_LIVE_POLL_MS } from '@/lib/notification-popup';
 import { checklistItemLabel } from '@/lib/audit-log';
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -468,6 +469,8 @@ export function useAppProviderValue(): AppContextValue {
     },
     enabled: Boolean(user),
     staleTime: 15_000,
+    refetchInterval: NOTIFICATION_LIVE_POLL_MS,
+    refetchOnWindowFocus: true,
   });
 
   const internOptions = internsQuery.data ?? [];

@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { m, useReducedMotion } from "framer-motion";
 import { Bell, CheckCheck, History } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -22,6 +23,10 @@ import {
   type NotificationClearScope,
 } from "@/lib/notification-dismiss";
 import { roleNotificationsPath } from "@/lib/auth-routes";
+import {
+  NOTIFICATION_GENIE_LAND_EVENT,
+  requestNotificationPopup,
+} from "@/lib/notification-popup";
 import { toast } from "@/lib/toast-errors";
 import { cn } from "@/lib/utils";
 
@@ -95,7 +100,18 @@ export function NotificationsBell() {
   const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
   const [exitingRows, setExitingRows] = useState<AppNotification[]>([]);
   const [exitDelayMsById, setExitDelayMsById] = useState<Record<string, number>>({});
+  const [catching, setCatching] = useState(false);
   const exitTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const osReduce = useReducedMotion();
+
+  useEffect(() => {
+    const land = () => {
+      setCatching(true);
+      window.setTimeout(() => setCatching(false), 480);
+    };
+    window.addEventListener(NOTIFICATION_GENIE_LAND_EVENT, land);
+    return () => window.removeEventListener(NOTIFICATION_GENIE_LAND_EVENT, land);
+  }, []);
 
   const historyHref = user ? roleNotificationsPath(user.role) : "/";
 
@@ -251,9 +267,11 @@ export function NotificationsBell() {
       }}
     >
       <PopoverTrigger
+        data-notifications-bell=""
         className={cn(
           "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:min-h-9 sm:min-w-9",
           hasUnread && "bg-primary-light text-primary hover:bg-primary-light",
+          catching && "bg-primary-light text-primary",
         )}
         aria-label={
           hasUnread
@@ -261,14 +279,24 @@ export function NotificationsBell() {
             : "View notifications"
         }
       >
-        <Bell
-          className={cn(
-            "h-[18px] w-[18px] shrink-0",
-            hasUnread && "fill-primary/25",
-          )}
-          strokeWidth={hasUnread ? 2.25 : 2}
-          aria-hidden
-        />
+        {catching ? (
+          <span className="pointer-events-none absolute inset-1 rounded-lg bg-primary/20" aria-hidden />
+        ) : null}
+        <m.span
+          data-notifications-bell-target=""
+          className="relative inline-flex"
+          animate={catching && !osReduce ? { scale: [1, 1.38, 0.94, 1.08, 1] } : { scale: 1 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Bell
+            className={cn(
+              "h-[18px] w-[18px] shrink-0",
+              hasUnread && "fill-primary/25",
+            )}
+            strokeWidth={hasUnread ? 2.25 : 2}
+            aria-hidden
+          />
+        </m.span>
         {hasUnread && (
           <span
             className="absolute top-1 right-1 min-w-[15px] h-[15px] px-0.5 flex items-center justify-center rounded-full bg-role text-[9px] font-semibold text-role-foreground leading-none ring-2 ring-panel"
@@ -402,6 +430,11 @@ export function NotificationsBell() {
                     showOpenLink
                     onOpen={() => {
                       markNotificationRead(n.id);
+                      if (notificationDirection(n.kind) === "received") {
+                        requestNotificationPopup(n);
+                        setOpen(false);
+                        return;
+                      }
                       setSelectedId((current) => (current === n.id ? null : n.id));
                     }}
                     onDismiss={() => handleDeleteOne(n)}

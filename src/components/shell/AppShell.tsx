@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { RoleSidebar, MobileNavSheet } from "./RoleSidebar";
 import { TopBar } from "./TopBar";
 import { AnnouncementLivePopup } from "@/components/announcements/AnnouncementLivePopup";
+import { NotificationLivePopup } from "@/components/notifications/NotificationLivePopup";
 import { ShellNavProvider } from "./shell-nav-context";
 import { isInternEngagementPathname } from "@/lib/project-step-path";
 import { shellDesktopNavExpanded } from "@/components/shell/intern-sidebar";
@@ -77,6 +78,7 @@ export function AppShell({
         <RoleSidebar />
         <MobileNavSheet />
         <AnnouncementLivePopup />
+        <NotificationLivePopup />
 
         <div className={cn("relative z-10 pl-0 transition-[padding] duration-300 ease-out", desktopPad)}>
           <div className="sticky top-0 z-20">

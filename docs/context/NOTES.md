@@ -362,7 +362,9 @@ Append here whenever something costs more than a minute to figure out.
   their own posts. Queue is one-at-a-time. Clicking a megaphone-dropdown row or
   Latest row always reopens the same card (`requestAnnouncementPopup` /
   `vcfo-announcements-show`) even if the id is already in the popup set; close
-  still genies to the megaphone. Row click still marks read.
+  still genies to the megaphone. Close the live card with X, backdrop, or Esc
+  (no Got it button; no “parks on the megaphone” / queue footer copy). Row click
+  still marks read.
 - Official RSS/Atom: staff paste a **feed URL** (not a homepage) from an allowlisted
   host (`src/lib/announcements.ts` `OFFICIAL_FEED_HOSTS`). Inngest `announcement-feeds`
   runs once at 06:00 Asia/Kolkata. We do **not** scrape HTML listing or login pages
@@ -451,11 +453,23 @@ Append here whenever something costs more than a minute to figure out.
   `email-dispatch:…` id so a retry replaces rather than stacks. Undo toast id
   stays `notification-undo` (top-right).
 
+## Notifications live popup
+
+- Inbox-only (the signed-in user’s **received** rows, not firm-wide, not sent
+  email). New ids popup one-at-a-time; first visit seeds history so refresh
+  does not replay. Storage `vcfo.notifications.popup.{userId}`.
+- Poll: notifications query `refetchInterval` 4s (same as announcements).
+- Close (X / backdrop / Esc) genies into `[data-notifications-bell-target]`
+  via shared `measureGenieDock`. Reduce-motion skips the flight. Landing
+  pulses the bell. Auto-popup does **not** mark read. No Got it / parks copy.
+- Clicking a received row in the bell panel reopens the card
+  (`requestNotificationPopup` / `vcfo-notifications-show`).
+
 ## Notifications dismiss / history
 
-- Bell is a **Popover** (click outside or Esc to close). Row click marks read
-  and expands detail **inside the panel** — it does not dismiss the popover.
-  Unread is `.unread-edge` (left primary bar), not a dot.
+- Bell is a **Popover** (click outside or Esc to close). Received row click
+  marks read and reopens the live popup. Sent row click expands detail
+  **inside the panel**. Unread is `.unread-edge` (left primary bar), not a dot.
 - Clear (today / this week / all) **hides from the inbox** via
   `notifications.dismissed_at`. Rows are not deleted. Undo undismisses
   (`dismissed_at = null`). Legacy `action: 'delete'` maps to dismiss.

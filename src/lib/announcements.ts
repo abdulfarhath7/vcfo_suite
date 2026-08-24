@@ -126,24 +126,8 @@ export const ANNOUNCEMENT_SHOW_EVENT = 'vcfo-announcements-show';
 export const ANNOUNCEMENT_BELL_SELECTOR = '[data-announcements-bell]';
 export const ANNOUNCEMENT_BELL_TARGET_SELECTOR = '[data-announcements-bell-target]';
 
-export type GenieBox = { left: number; top: number; width: number; height: number };
-
-/** End the flight as a disc in the middle of the megaphone, not beside it. */
-export function measureGenieDock(
-  from: GenieBox,
-  to: GenieBox,
-): { from: GenieBox; to: GenieBox } {
-  const size = Math.max(5, Math.min(to.width, to.height) * 0.38);
-  return {
-    from: { left: from.left, top: from.top, width: from.width, height: from.height },
-    to: {
-      left: to.left + (to.width - size) / 2,
-      top: to.top + (to.height - size) / 2,
-      width: size,
-      height: size,
-    },
-  };
-}
+export type { GenieBox } from '@/lib/genie-dock';
+export { measureGenieDock } from '@/lib/genie-dock';
 export const ANNOUNCEMENT_FIRST_VISIT_POPUP_CAP = 3;
 export const ANNOUNCEMENT_LIVE_POPUP_CAP = 8;
 export const ANNOUNCEMENT_IST = 'Asia/Kolkata';
