@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ACT_SWATCH } from '@/data/statutory-calendar-fy2627';
 import {
   dateHasAgendaItems,
   isSelectAllActive,
@@ -36,6 +37,14 @@ describe('select-all chips', () => {
     muted = selectAllActs();
     expect(isSelectAllActive(muted)).toBe(true);
     expect(muted.size).toBe(0);
+  });
+});
+
+describe('act swatches', () => {
+  it('gives every statutory act a unique solid class', () => {
+    const solids = Object.values(ACT_SWATCH).map((s) => s.solid);
+    expect(new Set(solids).size).toBe(solids.length);
+    expect(solids).toHaveLength(8);
   });
 });
 

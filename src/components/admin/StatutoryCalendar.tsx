@@ -7,13 +7,13 @@ import { ChevronLeft, ChevronRight, CalendarDays, CheckCheck, ListChecks } from 
 import type { Engagement } from '@/data/engagements';
 import {
   ACT_META,
+  ACT_SWATCH,
   FY_LABEL,
   STATUTORY_DEADLINES,
   deadlineAppliesTo,
   type StatutoryAct,
   type StatutoryDeadline,
 } from '@/data/statutory-calendar-fy2627';
-import { TONE_BADGE, TONE_BG } from '@/components/common/IconChip';
 import { CompanyPicker } from '@/components/admin/CompanyPicker';
 import {
   dateHasAgendaItems,
@@ -218,11 +218,11 @@ export function StatutoryCalendar({
                 'inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-[10.5px] font-semibold transition-all',
                 muted
                   ? 'bg-muted/60 text-text-tertiary opacity-55'
-                  : TONE_BADGE[meta.tone],
+                  : ACT_SWATCH[act].chip,
               )}
             >
               <span
-                className={cn('h-1.5 w-1.5 rounded-full', muted ? 'bg-text-tertiary' : TONE_BG[meta.tone])}
+                className={cn('h-2 w-2 shrink-0 rounded-full', muted ? 'bg-text-tertiary' : ACT_SWATCH[act].solid)}
                 aria-hidden
               />
               {meta.label}
@@ -272,7 +272,7 @@ export function StatutoryCalendar({
               const hasItems = Boolean(items && items.length > 0);
               const isToday = cell.iso === todayIso;
               const isSelected = cell.iso === selectedDay;
-              const washTone = acts[0] ? ACT_META[acts[0]].tone : null;
+              const washAct = acts.length === 1 ? acts[0] : null;
               const dayNum = (
                 <span
                   className={cn(
@@ -288,19 +288,19 @@ export function StatutoryCalendar({
 
               const cellInner = (
                 <>
-                  {hasItems && washTone ? (
+                  {washAct ? (
                     <span
-                      className={cn('absolute inset-0 rounded-md', TONE_BADGE[washTone], 'opacity-90')}
+                      className={cn('absolute inset-0 rounded-md', ACT_SWATCH[washAct].soft)}
                       aria-hidden
                     />
                   ) : null}
                   {acts.length > 0 ? (
                     <span
-                      className="absolute inset-y-1 left-0.5 z-10 flex w-[3px] flex-col overflow-hidden rounded-full"
+                      className="absolute inset-y-1 left-0.5 z-10 flex w-1 flex-col gap-px overflow-hidden rounded-full bg-surface"
                       aria-hidden
                     >
                       {acts.map((act) => (
-                        <span key={act} className={cn('min-h-[3px] w-full flex-1', TONE_BG[ACT_META[act].tone])} />
+                        <span key={act} className={cn('min-h-[4px] w-full flex-1', ACT_SWATCH[act].solid)} />
                       ))}
                     </span>
                   ) : null}
@@ -408,7 +408,7 @@ export function StatutoryCalendar({
                             <span
                               className={cn(
                                 'mt-px inline-flex w-[4.5rem] shrink-0 justify-center rounded px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide',
-                                TONE_BADGE[meta.tone],
+                                ACT_SWATCH[item.act].chip,
                               )}
                               title={meta.full}
                             >

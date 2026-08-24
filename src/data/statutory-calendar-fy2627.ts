@@ -48,6 +48,21 @@ export const ACT_META: Record<
   TP:         { label: 'TP',       full: 'Transfer Pricing',          tone: 'amber' },
 };
 
+/** Calendar-only swatches — not IconChip tones (those sit too close and merge). */
+export const ACT_SWATCH: Record<
+  StatutoryAct,
+  { solid: string; soft: string; chip: string }
+> = {
+  GST:        { solid: 'bg-stat-gst',    soft: 'bg-stat-gst-soft',    chip: 'bg-stat-gst-soft text-stat-gst' },
+  IT:         { solid: 'bg-stat-it',     soft: 'bg-stat-it-soft',     chip: 'bg-stat-it-soft text-stat-it' },
+  MCA:        { solid: 'bg-stat-mca',    soft: 'bg-stat-mca-soft',    chip: 'bg-stat-mca-soft text-stat-mca' },
+  FEMA:       { solid: 'bg-stat-fema',   soft: 'bg-stat-fema-soft',   chip: 'bg-stat-fema-soft text-stat-fema' },
+  'STPI/SEZ': { solid: 'bg-stat-stpi',   soft: 'bg-stat-stpi-soft',   chip: 'bg-stat-stpi-soft text-stat-stpi' },
+  LABOUR:     { solid: 'bg-stat-labour', soft: 'bg-stat-labour-soft', chip: 'bg-stat-labour-soft text-stat-labour' },
+  RERA:       { solid: 'bg-stat-rera',   soft: 'bg-stat-rera-soft',   chip: 'bg-stat-rera-soft text-stat-rera' },
+  TP:         { solid: 'bg-stat-tp',     soft: 'bg-stat-tp-soft',     chip: 'bg-stat-tp-soft text-stat-tp' },
+};
+
 export const FY_LABEL = 'FY 2026-27';
 export const FY_START = '2026-04-01';
 export const FY_END = '2027-03-31';

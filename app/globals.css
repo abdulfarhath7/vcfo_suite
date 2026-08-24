@@ -202,6 +202,24 @@
     --accent-lime: 74% 0.16 135;
     --accent-lime-soft: 96.8% 0.05 135;
 
+    /* Statutory calendar acts — hues ≥45° apart so stacked stripes do not merge. */
+    --stat-gst: 52% 0.17 145;
+    --stat-gst-soft: 95.8% 0.045 145;
+    --stat-it: 54% 0.18 250;
+    --stat-it-soft: 96% 0.04 250;
+    --stat-mca: 50% 0.20 300;
+    --stat-mca-soft: 96.2% 0.04 300;
+    --stat-fema: 56% 0.21 12;
+    --stat-fema-soft: 96.4% 0.045 12;
+    --stat-stpi: 60% 0.19 58;
+    --stat-stpi-soft: 96.6% 0.05 58;
+    --stat-labour: 50% 0.14 200;
+    --stat-labour-soft: 96.2% 0.04 200;
+    --stat-rera: 54% 0.20 328;
+    --stat-rera-soft: 96.5% 0.045 328;
+    --stat-tp: 72% 0.18 95;
+    --stat-tp-soft: 96.8% 0.055 95;
+
     --sidebar-background: 100% 0 0;
     --sidebar-primary: 54.6% 0.215 263;
     --sidebar-primary-foreground: 100% 0 0;
@@ -388,6 +406,23 @@
     --accent-cyan-soft: 30% 0.05 210;
     --accent-lime: 80% 0.14 135;
     --accent-lime-soft: 30% 0.06 135;
+
+    --stat-gst: 72% 0.16 145;
+    --stat-gst-soft: 30% 0.06 145;
+    --stat-it: 74% 0.16 250;
+    --stat-it-soft: 30% 0.055 250;
+    --stat-mca: 76% 0.16 300;
+    --stat-mca-soft: 32% 0.07 300;
+    --stat-fema: 72% 0.18 12;
+    --stat-fema-soft: 32% 0.07 12;
+    --stat-stpi: 76% 0.16 58;
+    --stat-stpi-soft: 32% 0.07 58;
+    --stat-labour: 72% 0.12 200;
+    --stat-labour-soft: 30% 0.055 200;
+    --stat-rera: 74% 0.16 328;
+    --stat-rera-soft: 32% 0.065 328;
+    --stat-tp: 84% 0.16 95;
+    --stat-tp-soft: 32% 0.07 95;
 
     --border: 30% 0.018 264;
     --input: 30% 0.018 264;
@@ -1724,6 +1759,32 @@ html[data-reduce-motion="true"] .discrete-panel {
 .intern-work-dense-cta > * {
   max-width: 100%;
 }
+
+/* Statutory calendar — one unique hue per act (see --stat-* tokens). */
+.bg-stat-gst { background-color: oklch(var(--stat-gst)); }
+.bg-stat-it { background-color: oklch(var(--stat-it)); }
+.bg-stat-mca { background-color: oklch(var(--stat-mca)); }
+.bg-stat-fema { background-color: oklch(var(--stat-fema)); }
+.bg-stat-stpi { background-color: oklch(var(--stat-stpi)); }
+.bg-stat-labour { background-color: oklch(var(--stat-labour)); }
+.bg-stat-rera { background-color: oklch(var(--stat-rera)); }
+.bg-stat-tp { background-color: oklch(var(--stat-tp)); }
+.bg-stat-gst-soft { background-color: oklch(var(--stat-gst-soft)); }
+.bg-stat-it-soft { background-color: oklch(var(--stat-it-soft)); }
+.bg-stat-mca-soft { background-color: oklch(var(--stat-mca-soft)); }
+.bg-stat-fema-soft { background-color: oklch(var(--stat-fema-soft)); }
+.bg-stat-stpi-soft { background-color: oklch(var(--stat-stpi-soft)); }
+.bg-stat-labour-soft { background-color: oklch(var(--stat-labour-soft)); }
+.bg-stat-rera-soft { background-color: oklch(var(--stat-rera-soft)); }
+.bg-stat-tp-soft { background-color: oklch(var(--stat-tp-soft)); }
+.text-stat-gst { color: oklch(var(--stat-gst)); }
+.text-stat-it { color: oklch(var(--stat-it)); }
+.text-stat-mca { color: oklch(var(--stat-mca)); }
+.text-stat-fema { color: oklch(var(--stat-fema)); }
+.text-stat-stpi { color: oklch(var(--stat-stpi)); }
+.text-stat-labour { color: oklch(var(--stat-labour)); }
+.text-stat-rera { color: oklch(var(--stat-rera)); }
+.text-stat-tp { color: oklch(var(--stat-tp)); }
 
 @media (prefers-reduced-motion: reduce) {
   .lead-hero-fx { display: none; }
