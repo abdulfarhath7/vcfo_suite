@@ -3,8 +3,9 @@ import { requireAuth } from '@/auth/guards';
 import { listAuditEvents } from '@/db/repositories/audit-events';
 
 /**
- * GET /api/audit-logs — role-scoped audit feed.
- * Clients/interns see their engagements; managers see owned; admins/super see all.
+ * GET /api/audit-logs — role-scoped audit feed (Path A in listAuditEvents).
+ * Intern: own actor + assigned-engagement events. Manager: owned clients only.
+ * Client: own engagements. Admin/super: firm-wide.
  */
 export async function GET(request: Request) {
   const guard = await requireAuth();

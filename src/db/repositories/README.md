@@ -25,16 +25,20 @@ this table, so re-check the migration before trusting a row.
 | knowledge_bank_files | all | all | **read all** + insert own (`uploaded_by = self`) | **none** | `20260529160000_knowledge_bank.sql` |
 | compliance_obligations | all | all | read | read | `20260708120000_compliance_calendar.sql` |
 | compliance_instances / _events / _triggers | all | via owned engagement | write via assigned engagement | read-only via own engagement | `20260708120000`, `20260805130000` |
-| audit_events | **read: all** | **read: owned engagements** | none | none | four-role + `20260529120000` |
+| audit_events | **read: all** | **read: owned/assigned engagements** | **own actor + assigned engagements** | own engagements | four-role + `20260529120000` + product |
 | email_send_log | read | read | none | none | `20260806120000_email_send_log_seeds.sql` |
 
 Corrections from the first draft:
 
 - **knowledge_bank_files** has no `visible_to_roles` column. Interns can read
   every file and insert their own; clients get nothing at all.
-- **audit_events** is manager-read-only — interns do *not* see the trail for
-  their assigned engagements. Inserts are allowed for any authenticated user
-  but the row's `actor_user_id` is forced to the session user.
+- **audit_events** original RLS was manager-read-only (intern none). Product
+  override: intern (Project Lead) sees `actor_user_id = self` plus events on
+  assigned engagements (`intern_id` + `engagement_leads`) — that is the
+  shared-client trail. Manager still sees only owned/assigned engagements
+  (`manager_id` + `engagement_managers` + legacy); unscoped rows are dropped.
+  Admin / super_admin remain firm-wide. Inserts: any authenticated user;
+  `actor_user_id` is forced to the session user.
 
 `documents`, `tasks`, `document_requests`, `invites`, `activity`,
 `notifications`, `outlook_connections`, and `announcements` have no original SQL (they are new, replacing localStorage),

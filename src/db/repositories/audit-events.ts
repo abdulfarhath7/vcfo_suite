@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, desc, eq, inArray, lt } from 'drizzle-orm';
+import { and, desc, eq, inArray, lt, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditEvents } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -11,10 +11,15 @@ import type { AuditEventRow, RecordAuditEventInput } from '@/lib/audit-log';
  * AUDIT EVENTS REPOSITORY — the write/read half of src/lib/audit-log.ts.
  *
  * >>> ACCESS CONTROL (Path A) <<<
- * Four-role read:
- *   admin   — unrestricted (old is_manager / firm-wide)
- *   manager — events whose engagement_id is in their owned set
- *   intern/client — none
+ * Predicate: `src/lib/audit-event-access.ts`.
+ *   admin / super_admin — unrestricted (firm-wide)
+ *   manager — events whose engagement_id is in owned/assigned set
+ *             (`manager_id` + `engagement_managers` + legacy admin_id).
+ *             Null engagement_id rows are dropped.
+ *   intern  — actor_user_id = self OR engagement_id in assigned set
+ *             (`intern_id` + `engagement_leads`). Own actor always.
+ *             Unrelated-company and unscoped admin noise stay hidden.
+ *   client  — engagement_id in own set (primary + `engagement_clients`).
  *
  * Insert: any authenticated user; actor_user_id forced to session user.
  */
@@ -71,7 +76,7 @@ export interface ListAuditEventsOptions {
   limit?: number;
 }
 
-/** Admin (all), super admin (all), manager (owned), intern/client (scoped). */
+/** Admin/super (all), manager (owned clients), intern (own actor + shared clients). */
 export async function listAuditEvents(
   ctx: AuthContext,
   options: ListAuditEventsOptions = {},
@@ -95,15 +100,23 @@ export async function listAuditEvents(
   const conds = [];
   if (options.engagementId) {
     const dbId = engagementDbId(options.engagementId);
-    // Clients/interns may only request their accessible engagements.
-    if (ctx.role === 'client' || ctx.role === 'intern' || ctx.role === 'manager') {
-      const access = await (
-        await import('@/db/repositories/engagements')
-      ).assertEngagementAccess(ctx, dbId);
-      if (!access.ok) return [];
+    // Path A allowlist (includes lead/manager membership, not only primary pointer).
+    if (!isFirmWideAdmin(ctx.role)) {
+      const rows = await listEngagements(ctx);
+      if (!rows.some((r) => r.id === dbId)) return [];
     }
     conds.push(eq(auditEvents.engagementId, dbId));
-  } else if (!isFirmWideAdmin(ctx.role)) {
+  } else if (isFirmWideAdmin(ctx.role)) {
+    // Firm-wide: no extra predicate.
+  } else if (ctx.role === 'intern') {
+    const rows = await listEngagements(ctx);
+    const ids = rows.map((r) => r.id);
+    const internScope =
+      ids.length > 0
+        ? or(eq(auditEvents.actorUserId, ctx.userId), inArray(auditEvents.engagementId, ids))
+        : eq(auditEvents.actorUserId, ctx.userId);
+    conds.push(internScope);
+  } else {
     const rows = await listEngagements(ctx);
     const ids = rows.map((r) => r.id);
     if (ids.length === 0) return [];
