@@ -86,7 +86,7 @@ export function AppShell({
           </div>
           <main
             className={cn(
-              "mx-auto page-fade-up px-5 pb-10 pt-5 sm:px-7 sm:pb-12 sm:pt-6 lg:pr-6",
+              "mx-auto page-fade-up px-5 pb-10 pt-1.5 sm:px-7 sm:pb-12 sm:pt-2 lg:pr-6",
               mainMaxWidth,
             )}
           >
