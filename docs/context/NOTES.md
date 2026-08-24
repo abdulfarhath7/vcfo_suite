@@ -341,7 +341,8 @@ Append here whenever something costs more than a minute to figure out.
   never khaki or brown.
 - Quiet IST clock stays in the hero. Today's todos (`vcfo.intern.focus.{userId}`) mix
   pinned work `{ id, done }` and typed rows `{ id, done, custom: true, title }` — no
-  3-item cap; `parseInternFocus` keeps legacy pins.
+  3-item cap; `parseInternFocus` keeps legacy pins. Action queue expanded companies
+  persist as `vcfo.intern.queue.expanded.{userId}` (engagement id set; not accordion).
 
 ## Announcements (not notifications)
 
@@ -352,6 +353,16 @@ Append here whenever something costs more than a minute to figure out.
 - Routes: `/app/{role}/announcements`. Navbar megaphone (unread via
   `vcfo.announcements.read.{userId}`) is the in-app list; client inbox still has a
   compact list. Kind + `author_role` on the row (migration 0010).
+- Live popup: new posts (compose or RSS ingest) appear for every signed-in role
+  within a few seconds (`useAnnouncements` refetches every 4s). The card genies
+  into `[data-announcements-bell]` (~1s, Framer `m` + FLIP rects). Reduce-motion
+  / appearance `motion === 'none'` skips the genie and just hides. Genie does
+  **not** mark read. Already-shown ids live in `vcfo.announcements.popup.{userId}`.
+  First visit seeds history and may queue today’s unseen (cap 3). Authors skip
+  their own posts. Queue is one-at-a-time. Clicking a megaphone-dropdown row or
+  Latest row always reopens the same card (`requestAnnouncementPopup` /
+  `vcfo-announcements-show`) even if the id is already in the popup set; close
+  still genies to the megaphone. Row click still marks read.
 - Official RSS/Atom: staff paste a **feed URL** (not a homepage) from an allowlisted
   host (`src/lib/announcements.ts` `OFFICIAL_FEED_HOSTS`). Inngest `announcement-feeds`
   runs once at 06:00 Asia/Kolkata. We do **not** scrape HTML listing or login pages
@@ -360,9 +371,16 @@ Append here whenever something costs more than a minute to figure out.
   (`utm_source=chatgpt.com`, gclid) is stripped from URLs.
 - Portals catalog: `src/lib/announcement-portals.ts`, rendered on the Announcements
   page. LEI renewal uses `ccilindia-lei.co.in` (official LOU), not the ads agent at
-  legalentityidentifier.in. First shell load of the IST day can popup unread /
-  today's posts; close stores `vcfo.announcements.daily.{userId}.{ymd}`.
+  legalentityidentifier.in. The old once-per-IST-day dialog
+  (`vcfo.announcements.daily.{userId}.{ymd}`) is only a skip-list on first popup
+  init so those users are not replayed.
 - Apply schema: `npm run db:migrate` (0009_announcements, 0010_announcement_kind).
+- Megaphone dropdown filters All / Important / General. There is no `important`
+  kind: Important = `deadline` + `compliance`; General = `general`; All = every
+  kind. Unread uses a 3px left primary bar (`.unread-edge`) plus a name-dot;
+  same bar replaces the notifications unread dot. Writer CTA goes to
+  `/app/{role}/announcements?compose=1`. Storage is still
+  `vcfo.announcements.read.{userId}`. Genie target: `[data-announcements-bell]`.
 
 ## Intern / lead motion
 
@@ -433,14 +451,25 @@ Append here whenever something costs more than a minute to figure out.
   `email-dispatch:…` id so a retry replaces rather than stacks. Undo toast id
   stays `notification-undo` (top-right).
 
-## Notifications delete / undo
+## Notifications dismiss / history
 
-- Bell panel (`NotificationsBell`) hard-deletes rows (`POST /api/notifications`
-  `{ action: 'delete', ids }`) — no `deletedAt` on `notifications`. Undo
-  re-inserts original ids via `{ action: 'restore', notifications }` after the
-  in-flight delete promise. Toast lives **7s**; row exit animation **250ms**.
-  Clear all is per Received/Sent tab only. `DropdownMenu modal={false}` so the
-  undo toast stays clickable while the panel is open.
+- Bell is a **Popover** (click outside or Esc to close). Row click marks read
+  and expands detail **inside the panel** — it does not dismiss the popover.
+  Unread is `.unread-edge` (left primary bar), not a dot.
+- Clear (today / this week / all) **hides from the inbox** via
+  `notifications.dismissed_at`. Rows are not deleted. Undo undismisses
+  (`dismissed_at = null`). Legacy `action: 'delete'` maps to dismiss.
+- **Today** = calendar date in `Asia/Kolkata`. **This week** = Monday 00:00 IST
+  through Sunday 23:59 IST (includes today). Clear actions apply to the
+  current Received/Sent tab.
+- History: `/app/{intern|manager|admin|client|super}/notifications`,
+  `GET /api/notifications?history=1`. Apply `0012_notification_dismissed_at`.
+- Toast id `notification-undo` (top-right, 7s). Row exit animation 300ms.
+
+## Notifications delete / undo (superseded)
+
+- Hard-delete + re-insert restore was replaced by `dismissed_at`. See
+  “Notifications dismiss / history” above.
 
 ## Shell sidebar skin vs `fixed`
 
