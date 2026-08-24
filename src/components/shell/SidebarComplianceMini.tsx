@@ -15,7 +15,7 @@ function complianceHref(role: string | undefined, staffBase: string): string {
   return '/app/manager/compliance';
 }
 
-/** Compact month grid with dark marks on compliance due dates — links to full calendar. */
+/** Compact month grid. Today is the bright cell; due days are round marks. */
 export function SidebarComplianceMini({
   expanded,
   staffBase,
@@ -80,7 +80,7 @@ export function SidebarComplianceMini({
       <div className="grid grid-cols-7 gap-px">
         {cells.map((day, i) => {
           if (day == null) {
-            return <div key={`e-${i}`} className="h-3.5" />;
+            return <div key={`e-${i}`} className="h-4" />;
           }
           const hasDue = dueDays.has(day);
           const isToday = day === now.getDate();
@@ -88,15 +88,12 @@ export function SidebarComplianceMini({
             <div
               key={day}
               className={cn(
-                'relative flex h-3.5 items-center justify-center rounded-[2px] text-[8px] tabular-nums',
-                isToday && (light ? 'ring-1 ring-white/45' : 'ring-1 ring-blue-400/50'),
-                hasDue
-                  ? light
-                    ? 'bg-white/90 font-medium text-slate-900'
-                    : 'bg-foreground/85 font-medium text-background'
-                  : light
-                    ? 'text-white/80'
-                    : 'text-muted-foreground/70',
+                'relative flex h-4 w-full items-center justify-center text-[8px] tabular-nums leading-none',
+                isToday && 'rounded-full font-semibold',
+                isToday && (light ? 'bg-white text-primary' : 'bg-primary text-white'),
+                !isToday && hasDue && 'rounded-full font-medium',
+                !isToday && hasDue && (light ? 'ring-1 ring-white/70 text-white' : 'ring-1 ring-primary/55 text-foreground'),
+                !isToday && !hasDue && (light ? 'text-white/55' : 'text-muted-foreground/65'),
               )}
             >
               {day}
