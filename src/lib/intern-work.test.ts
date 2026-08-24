@@ -441,6 +441,23 @@ describe('intern timeline grid', () => {
     expect(todayCol?.items.map((i) => i.id)).toEqual(['step:open']);
     expect(grid.days).toHaveLength(14);
   });
+
+  it('keeps filings due after the fortnight in Later, not on today', () => {
+    const grid = internTimelineGrid(
+      [
+        weekItem({
+          id: 'filing:sept',
+          source: 'filing',
+          kind: 'filing',
+          title: 'Advance Tax',
+          dueAt: '2026-09-15',
+        }),
+      ],
+      now,
+    );
+    expect(grid.later.map((i) => i.id)).toEqual(['filing:sept']);
+    expect(grid.days.find((col) => col.ymd === '2026-08-20')?.items).toEqual([]);
+  });
 });
 
 describe('internWorkPath', () => {

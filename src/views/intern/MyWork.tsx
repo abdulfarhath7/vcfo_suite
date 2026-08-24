@@ -368,7 +368,7 @@ function TimelineWeekRow({
               key={col.ymd}
               id={isSelected ? 'intern-tl-day' : undefined}
               className={cn(
-                'flex min-h-[12.5rem] min-w-0 flex-col rounded-lg bg-raised p-1.5',
+                'flex max-h-[28rem] min-h-[12.5rem] min-w-0 flex-col overflow-y-auto rounded-lg bg-raised p-1.5',
                 isToday && 'outline outline-2 outline-offset-[-2px] outline-primary',
                 isSelected && 'ring-2 ring-primary ring-offset-1 ring-offset-panel',
                 weekend && !isToday && 'border border-dashed border-border bg-transparent',
