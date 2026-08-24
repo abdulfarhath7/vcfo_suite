@@ -1,10 +1,6 @@
-import InternRequests from "@/views/intern/Requests";
+import { redirect } from "next/navigation";
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Requests", "Document requests");
-
-
+/** Document-request list removed; pending items live on My work. */
 export default function Page() {
-  return <InternRequests />;
+  redirect("/app/intern/tasks");
 }

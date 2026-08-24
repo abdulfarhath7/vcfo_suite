@@ -6,6 +6,7 @@ import {
   adminProjectStepPath,
   clientBoardResolutionPath,
   internBoardResolutionPath,
+  internEngagementPath,
   internEngagementStepPath,
 } from '@/lib/project-step-path';
 import type { Engagement } from '@/data/engagements';
@@ -83,7 +84,7 @@ function notificationHref(
   }
   if (role === 'intern') {
     if (kind === 'request.uploaded' || kind === 'request.created') {
-      return '/app/intern/requests';
+      return internEngagementPath(engagement);
     }
     if (itemId === 'pre-2' || itemId === 'pre-3') return internBoardResolutionPath(engagement);
     return internEngagementStepPath(engagement, itemId);
