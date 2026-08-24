@@ -2,7 +2,7 @@
  * Lead cockpit — classify intern steps, filings, and document requests
  * into action / overdue / waiting / due-this-week work items.
  */
-import { addDays, differenceInDays, differenceInHours, format } from 'date-fns';
+import { addDays, differenceInDays, differenceInHours } from 'date-fns';
 import { checklist, getItem, type ChecklistItem } from '@/data/checklist';
 import type { ComplianceFiling } from '@/data/compliance';
 import type { DocRequest, Engagement } from '@/data/engagements';
@@ -117,6 +117,8 @@ export interface InternWorkFilters {
   tag?: InternWorkTag | null;
   companyId?: string | null;
   kind?: InternWorkKindFilter;
+  /** IST calendar day `YYYY-MM-DD` — week-strip / timeline day filter. */
+  day?: string | null;
 }
 
 const ACTIVE_IDS = new Set(checklist.map((item) => item.id));
@@ -174,16 +176,103 @@ export function istWeekYmds(now: Date, days = 7): string[] {
 }
 
 export function isYmdThisIstWeek(ymd: string, now: Date): boolean {
-  return istWeekYmds(now, 7).includes(ymd.slice(0, 10));
+  const day = ymdFromIsoInIst(ymd);
+  return Boolean(day && istWeekYmds(now, 7).includes(day));
 }
 
-function isoToYmd(iso: string | undefined | null): string | undefined {
+const IST_YMD_RE = /^(\d{4})-(\d{2})-(\d{2})/;
+
+/**
+ * Calendar date in Asia/Kolkata for an ISO timestamp or `YYYY-MM-DD`.
+ * Date-only strings stay on that civil day (not UTC-midnight shifted).
+ */
+export function ymdFromIsoInIst(iso: string | undefined | null): string | undefined {
   if (!iso) return undefined;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) {
-    return iso.length >= 10 ? iso.slice(0, 10) : undefined;
-  }
+  const trimmed = iso.trim();
+  const dateOnly = IST_YMD_RE.exec(trimmed);
+  const ymd = dateOnly ? `${dateOnly[1]}-${dateOnly[2]}-${dateOnly[3]}` : undefined;
+  if (trimmed.length === 10 && ymd) return ymd;
+  const tail = trimmed.length > 10 ? trimmed.slice(10) : '';
+  if (ymd && tail.startsWith('T') && !/[zZ]|[+-]\d{2}/.test(tail)) return ymd;
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) return ymd;
   return ymdInIst(d);
+}
+
+export function formatIstWeekdayDay(ymd: string): { weekday: string; day: number; label: string } {
+  const d = parseIstNoon(ymd);
+  const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: IST });
+  const day = Number(ymd.slice(8, 10));
+  return { weekday, day, label: `${weekday} ${day}` };
+}
+
+export function formatIstDayMonth(ymd: string): string {
+  return parseIstNoon(ymd).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: IST,
+  });
+}
+
+export type WeekChipKind = 'filing' | 'step' | 'nudge' | 'done';
+
+export const WEEK_CHIP_TONE: Record<WeekChipKind, InternChipTone> = {
+  filing: 'danger',
+  step: 'primary',
+  nudge: 'pink',
+  done: 'success',
+};
+
+export const WEEK_CHIP_KIND_ORDER: WeekChipKind[] = ['filing', 'step', 'nudge', 'done'];
+
+/** Which legend bucket an item belongs in on the week strip / timeline. */
+export function internWeekMarkKind(item: InternWorkItem): WeekChipKind | null {
+  if (item.kind === 'done') return 'done';
+  if (item.source === 'filing') return 'filing';
+  if (
+    item.kind === 'waiting-manager' ||
+    item.kind === 'waiting-client' ||
+    item.kind === 'waiting-request'
+  ) {
+    return 'nudge';
+  }
+  if (item.source === 'step') return 'step';
+  return null;
+}
+
+/**
+ * IST day this item should appear on a week/timeline grid.
+ * Due/complete dates in the window stay on that day; overdue or undated open
+ * work lands on today so the rail matches Waiting On / filings that already exist.
+ */
+export function internWeekAnchorYmd(
+  item: InternWorkItem,
+  todayYmd: string,
+  weekYmds?: Iterable<string>,
+): string | null {
+  const week = weekYmds === undefined ? null : new Set(weekYmds);
+  const allowed = (ymd: string | undefined): ymd is string =>
+    Boolean(ymd) && (week === null || week.has(ymd));
+
+  if (item.kind === 'done') {
+    const done = ymdFromIsoInIst(item.completedAt);
+    return allowed(done) ? done : null;
+  }
+
+  const due = ymdFromIsoInIst(item.dueAt);
+  if (due && due > todayYmd) return allowed(due) ? due : null;
+  if (allowed(todayYmd) && (!due || due <= todayYmd)) return todayYmd;
+  return allowed(due) ? due : null;
+}
+
+export function internWorkItemsForDay(
+  items: InternWorkItem[],
+  ymd: string,
+  todayYmd: string,
+  weekYmds?: Iterable<string>,
+): InternWorkItem[] {
+  const week = weekYmds ?? istWeekYmds(parseIstNoon(todayYmd), 7);
+  return sortInternWork(items.filter((item) => internWeekAnchorYmd(item, todayYmd, week) === ymd));
 }
 
 export function catalogShortLabel(item: ChecklistItem): string {
@@ -218,12 +307,13 @@ function ageLabelFrom(fromIso: string | undefined, now: Date, mode: 'age' | 'day
 
 export function formatDueLabel(dueAt: string | undefined, now: Date): string {
   if (!dueAt) return '—';
-  const ymd = dueAt.slice(0, 10);
+  const ymd = ymdFromIsoInIst(dueAt);
+  if (!ymd) return '—';
   const today = ymdInIst(now);
   if (ymd === today) return 'today';
   const due = parseIstNoon(ymd);
   if (Number.isNaN(due.getTime())) return '—';
-  return format(due, 'd MMM');
+  return formatIstDayMonth(ymd);
 }
 
 export function internWorkHref(opts: {
@@ -232,15 +322,16 @@ export function internWorkHref(opts: {
   catalogId?: string;
 }): string {
   if (opts.source === 'filing') return '/app/intern/compliance';
-  if (opts.source === 'request') return '/app/intern/requests';
+  if (opts.source === 'request') return internEngagementPath(opts.engagement);
   const item = opts.catalogId ? getItem(opts.catalogId) : undefined;
   if (item) return internEngagementStepPath(opts.engagement, item);
   return internEngagementPath(opts.engagement);
 }
 
 function daysLate(dueAt: string | undefined, now: Date): number {
-  if (!dueAt) return 0;
-  return differenceInDays(parseIstNoon(ymdInIst(now)), parseIstNoon(dueAt.slice(0, 10)));
+  const ymd = ymdFromIsoInIst(dueAt);
+  if (!ymd) return 0;
+  return differenceInDays(parseIstNoon(ymdInIst(now)), parseIstNoon(ymd));
 }
 
 function isCriticalOverdue(opts: {
@@ -325,7 +416,7 @@ function ctaForKind(kind: InternWorkKind): { label: string; variant: 'solid' | '
     case 'waiting-client':
       return { label: 'Send reminder', variant: 'ghost', action: 'remind-client' };
     case 'waiting-request':
-      return { label: 'View request', variant: 'ghost', action: 'open' };
+      return { label: 'Open company', variant: 'ghost', action: 'open' };
     case 'filing':
       return { label: 'Open filing', variant: 'ghost', action: 'open' };
     case 'done':
@@ -361,7 +452,7 @@ function filingKind(
   filing: ComplianceFiling,
   now: Date,
 ): InternWorkKind | null {
-  const dueYmd = filing.nextDue.slice(0, 10);
+  const dueYmd = ymdFromIsoInIst(filing.nextDue) ?? filing.nextDue.slice(0, 10);
   const thisWeek = isYmdThisIstWeek(dueYmd, now);
   if (filing.status === 'filed') {
     return thisWeek ? 'done' : null;
@@ -397,9 +488,8 @@ export function buildInternWorkItems(opts: {
   for (const engagement of opts.engagements) {
     if (engagement.internId !== opts.internId) continue;
     const state = opts.getChecklistState(engagement);
-    const incorporation = engagement.incorporationDate
-      ? new Date(engagement.incorporationDate)
-      : null;
+    const incYmd = ymdFromIsoInIst(engagement.incorporationDate);
+    const incorporation = incYmd ? parseIstNoon(incYmd) : null;
 
     for (const def of checklist) {
       if (!ACTIVE_IDS.has(def.id)) continue;
@@ -411,7 +501,7 @@ export function buildInternWorkItems(opts: {
 
       const completedAt = slice?.completedOn || slice?.deliveredToClientAt;
       if (kind === 'done') {
-        const doneYmd = isoToYmd(completedAt);
+        const doneYmd = ymdFromIsoInIst(completedAt);
         if (!doneYmd || !weekYmds.has(doneYmd)) continue;
       }
 
@@ -455,7 +545,7 @@ export function buildInternWorkItems(opts: {
     if (!engagement || engagement.internId !== opts.internId) continue;
     const kind = filingKind(filing, now);
     if (!kind) continue;
-    const dueAt = filing.nextDue.slice(0, 10);
+    const dueAt = ymdFromIsoInIst(filing.nextDue) ?? filing.nextDue.slice(0, 10);
     const overdue = filing.status === 'overdue' || dueAt < todayYmd;
     const days = differenceInDays(parseIstNoon(dueAt), parseIstNoon(todayYmd));
     const why =
@@ -504,7 +594,7 @@ export function buildInternWorkItems(opts: {
       title: request.label,
       kind: 'waiting-request',
       href: internWorkHref({ source: 'request', engagement }),
-      dueAt: request.dueAt,
+      dueAt: ymdFromIsoInIst(request.dueAt) ?? request.dueAt,
       startedAt: request.uploadedAt,
       ageLabel: age,
       why: whyForKind('waiting-request', age),
@@ -533,9 +623,12 @@ export function internWorkKpis(items: InternWorkItem[], now: Date): InternWorkKp
       i.kind === 'waiting-manager' ||
       i.kind === 'waiting-request',
   );
-  const dueWeek = items.filter((i) => i.kind !== 'done' && i.dueAt && week.has(i.dueAt.slice(0, 10)));
+  const dueWeek = items.filter((i) => {
+    const due = ymdFromIsoInIst(i.dueAt);
+    return i.kind !== 'done' && Boolean(due && week.has(due));
+  });
   const doneToday = items.filter(
-    (i) => i.kind === 'done' && isoToYmd(i.completedAt) === today,
+    (i) => i.kind === 'done' && ymdFromIsoInIst(i.completedAt) === today,
   ).length;
   const companies = new Set(items.filter((i) => i.kind !== 'done').map((i) => i.engagementId));
 
@@ -570,11 +663,19 @@ export function internWorkKpis(items: InternWorkItem[], now: Date): InternWorkKp
 export function internWorkMatches(item: InternWorkItem, filters: InternWorkFilters, now = new Date()): boolean {
   const focus = filters.focus ?? 'all';
   const week = new Set(istWeekYmds(now, 7));
+  const todayYmd = ymdInIst(now);
 
   if (filters.companyId && item.engagementId !== filters.companyId) return false;
 
   if (filters.kind === 'steps' && item.source !== 'step') return false;
   if (filters.kind === 'filings' && item.source !== 'filing') return false;
+
+  if (filters.day) {
+    const window = new Set(istWeekYmds(now, 14));
+    window.add(filters.day);
+    window.add(todayYmd);
+    if (internWeekAnchorYmd(item, todayYmd, window) !== filters.day) return false;
+  }
 
   if (filters.tag) {
     switch (filters.tag) {
@@ -619,10 +720,11 @@ export function internWorkMatches(item: InternWorkItem, filters: InternWorkFilte
       return internWorkBoardColumn(item, now) === 'waiting';
     case 'due': {
       if (item.kind === 'done') {
-        const doneYmd = isoToYmd(item.completedAt);
+        const doneYmd = ymdFromIsoInIst(item.completedAt);
         return Boolean(doneYmd && week.has(doneYmd));
       }
-      return Boolean(item.dueAt && week.has(item.dueAt.slice(0, 10)));
+      const due = ymdFromIsoInIst(item.dueAt);
+      return Boolean(due && week.has(due));
     }
     case 'progress':
       return internWorkBoardColumn(item, now) === 'progress';
@@ -740,8 +842,6 @@ export function internQueueCompanyHref(engagementId: string, items: InternWorkIt
   return internEngagementPath({ id: engagementId });
 }
 
-export type WeekChipKind = 'filing' | 'step' | 'nudge' | 'done';
-
 export interface InternWeekChip {
   id: string;
   label: string;
@@ -751,24 +851,26 @@ export interface InternWeekChip {
 }
 
 export function internWeekChipKind(item: InternWorkItem, ymd: string, todayYmd: string): WeekChipKind | null {
-  if (item.kind === 'done' && isoToYmd(item.completedAt) === ymd) return 'done';
-  if (item.source === 'filing' && item.dueAt?.slice(0, 10) === ymd && item.kind !== 'done') return 'filing';
-  if (item.kind === 'waiting-manager' && (item.dueAt?.slice(0, 10) === ymd || (!item.dueAt && ymd === todayYmd))) {
-    return 'nudge';
+  const week = istWeekYmds(parseIstNoon(todayYmd), 7);
+  if (internWeekAnchorYmd(item, todayYmd, week) !== ymd) return null;
+  return internWeekMarkKind(item);
+}
+
+export function internWeekDayCounts(
+  items: InternWorkItem[],
+  ymd: string,
+  todayYmd: string,
+): Record<WeekChipKind, number> {
+  const counts: Record<WeekChipKind, number> = { filing: 0, step: 0, nudge: 0, done: 0 };
+  for (const item of items) {
+    const kind = internWeekChipKind(item, ymd, todayYmd);
+    if (kind) counts[kind] += 1;
   }
-  if (item.source === 'step' && item.dueAt?.slice(0, 10) === ymd && item.kind !== 'done') return 'step';
-  return null;
+  return counts;
 }
 
 function internWeekChip(item: InternWorkItem, kind: WeekChipKind): InternWeekChip {
-  const tone: InternChipTone =
-    kind === 'filing'
-      ? 'danger'
-      : kind === 'nudge'
-        ? 'pink'
-        : kind === 'done'
-          ? 'success'
-          : 'primary';
+  const tone = WEEK_CHIP_TONE[kind];
   const short =
     item.source === 'filing'
       ? item.title.split('·')[0]?.trim() ?? item.title
@@ -895,6 +997,7 @@ export function internWorkPath(filters: InternWorkFilters & { view?: InternWorkV
   if (filters.tag) params.set('tag', filters.tag);
   if (filters.companyId) params.set('company', filters.companyId);
   if (filters.kind && filters.kind !== 'all') params.set('kind', filters.kind);
+  if (filters.day) params.set('day', filters.day);
   if (filters.view && filters.view !== 'tl') params.set('view', filters.view);
   const qs = params.toString();
   return qs ? `${INTERN_TASKS_PATH}?${qs}` : INTERN_TASKS_PATH;
@@ -941,87 +1044,57 @@ export function parseInternWorkKindFilter(value: string | null | undefined): Int
   return 'all';
 }
 
-export type InternTimelineMark =
-  | { type: 'bar'; startCol: number; span: number; openStart: boolean; label: string; tone: InternChipTone }
-  | { type: 'diamond'; col: number; label: string; tone: InternChipTone };
-
-export interface InternTimelineRow {
-  item: InternWorkItem;
-  mark: InternTimelineMark;
+export function parseInternWorkDay(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return IST_YMD_RE.test(value.trim()) ? value.trim().slice(0, 10) : null;
 }
 
 export function internTimelineWindow(now: Date): string[] {
   return istWeekYmds(now, 14);
 }
 
-function ymdIndex(ymds: string[], ymd: string | undefined): number {
-  if (!ymd) return -1;
-  return ymds.indexOf(ymd.slice(0, 10));
+export interface InternTimelineDayColumn {
+  ymd: string;
+  items: InternWorkItem[];
 }
 
-export function internTimelineRows(items: InternWorkItem[], now: Date): InternTimelineRow[] {
-  const window = internTimelineWindow(now);
-  const rows: InternTimelineRow[] = [];
-  for (const item of sortInternWork(items)) {
-    if (item.kind === 'done') {
-      const col = ymdIndex(window, isoToYmd(item.completedAt));
-      if (col < 0) continue;
-      rows.push({
-        item,
-        mark: {
-          type: 'diamond',
-          col: col + 2,
-          label: 'done',
-          tone: 'success',
-        },
-      });
-      continue;
-    }
-    if (item.source === 'filing' && item.dueAt) {
-      const col = ymdIndex(window, item.dueAt);
-      if (col < 0) continue;
-      rows.push({
-        item,
-        mark: {
-          type: 'diamond',
-          col: col + 2,
-          label: `due ${formatDueLabel(item.dueAt, now)}`,
-          tone: item.isOverdue ? 'danger' : 'cyan',
-        },
-      });
-      continue;
-    }
+export interface InternTimelineGrid {
+  days: InternTimelineDayColumn[];
+  later: InternWorkItem[];
+}
 
-    const dueIdx = ymdIndex(window, item.dueAt);
-    const startYmd = isoToYmd(item.startedAt) ?? window[0];
-    let startIdx = ymdIndex(window, startYmd);
-    const openStart = startIdx < 0 && Boolean(item.startedAt);
-    if (startIdx < 0) startIdx = 0;
-    let endIdx = dueIdx >= 0 ? dueIdx : Math.max(startIdx, ymdIndex(window, ymdInIst(now)));
-    if (endIdx < 0) endIdx = startIdx;
-    if (endIdx < startIdx) endIdx = startIdx;
-    const span = Math.max(1, endIdx - startIdx + 1);
-    const tone: InternChipTone =
-      item.kind === 'rejected'
-        ? 'rose'
-        : item.kind === 'waiting-client' || item.kind === 'waiting-manager'
-          ? 'sky'
-          : item.kind === 'deliver'
-            ? 'teal'
-            : 'sky';
-    rows.push({
-      item,
-      mark: {
-        type: 'bar',
-        startCol: startIdx + 2,
-        span,
-        openStart,
-        label: item.why,
-        tone,
-      },
-    });
+/** Two IST weeks (Mon–Sun × 2) of cards, plus open items that do not land in the window. */
+export function internTimelineGrid(items: InternWorkItem[], now: Date): InternTimelineGrid {
+  const today = ymdInIst(now);
+  const window = internTimelineWindow(now);
+  const week = new Set(window);
+  const byDay = new Map<string, InternWorkItem[]>(window.map((ymd) => [ymd, []]));
+  const later: InternWorkItem[] = [];
+
+  for (const item of sortInternWork(items)) {
+    const anchor = internWeekAnchorYmd(item, today, week);
+    if (anchor && byDay.has(anchor)) {
+      byDay.get(anchor)!.push(item);
+      continue;
+    }
+    if (item.kind !== 'done') later.push(item);
   }
-  return rows;
+
+  return {
+    days: window.map((ymd) => ({ ymd, items: byDay.get(ymd) ?? [] })),
+    later,
+  };
+}
+
+export function internTimelineRows(items: InternWorkItem[], now: Date) {
+  const grid = internTimelineGrid(items, now);
+  return grid.days.flatMap((col) =>
+    col.items.map((item) => ({
+      item,
+      ymd: col.ymd,
+      kind: internWeekMarkKind(item),
+    })),
+  );
 }
 
 export function internWaitingItems(items: InternWorkItem[]): InternWorkItem[] {

@@ -31,10 +31,10 @@ function LeadActionCompanyCard({
   const href = internQueueCompanyHref(group.engagementId, group.items);
 
   return (
-    <div className="mb-2.5 overflow-hidden rounded-xl border border-border last:mb-0">
+    <div className="mb-2 overflow-hidden rounded-xl border border-border last:mb-0">
       <div
         className={cn(
-          'relative flex items-center gap-2.5 bg-raised px-3.5 py-2.5 transition-colors',
+          'relative flex min-w-0 items-center gap-2.5 bg-raised px-3.5 py-2.5 transition-colors',
           'hover:bg-primary-light/40',
         )}
       >
@@ -113,18 +113,17 @@ export function LeadActionQueue({
 
   return (
     <section className="surface h-fit min-w-0 overflow-hidden">
-      <div className="flex items-center gap-2.5 px-4 pt-3.5">
-        <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent-violet text-white">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 px-4 pt-3">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-violet text-white">
           <Zap className="h-3.5 w-3.5" />
         </span>
-        <h2 className="min-w-0 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
+        <h2 className="min-w-0 flex-1 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
           Action queue · by company
         </h2>
-        <span className="ml-auto shrink-0 text-[11.5px] font-semibold text-text-tertiary">sorted by urgency</span>
       </div>
-      <div className={cn('px-4 pb-4 pt-3', dense && 'max-h-[min(34rem,70vh)] overflow-y-auto pr-3')}>
+      <div className={cn('px-4 pb-3 pt-2.5', dense && 'max-h-[min(34rem,70vh)] overflow-y-auto pr-3')}>
         {groups.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Nothing needs you right now.</p>
+          <p className="py-4 text-center text-sm text-muted-foreground">Nothing needs you right now.</p>
         ) : (
           groups.map((group) => (
             <LeadActionCompanyCard
@@ -135,7 +134,7 @@ export function LeadActionQueue({
             />
           ))
         )}
-        <Link href={INTERN_TASKS_PATH} className="mt-3 inline-flex text-xs font-extrabold text-primary hover:underline">
+        <Link href={INTERN_TASKS_PATH} className="mt-2 inline-flex text-xs font-extrabold text-primary hover:underline">
           View all work →
         </Link>
       </div>

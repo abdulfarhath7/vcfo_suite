@@ -4,10 +4,8 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { Check, Clock } from 'lucide-react';
 import type { ComplianceFiling } from '@/data/compliance';
-import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
-import { internKindChipLabel, internToneBadge, KIND_TONE } from '@/components/intern/intern-tones';
-import { formatDueLabel, internWaitingItems, type InternWorkItem } from '@/lib/intern-work';
-import { cn } from '@/lib/utils';
+import { InternWorkDenseRow } from '@/components/intern/InternWorkRow';
+import { formatDueLabel, internWaitingItems, ymdFromIsoInIst, type InternWorkItem } from '@/lib/intern-work';
 
 function Donut({
   filed,
@@ -84,33 +82,34 @@ export function LeadSideRail({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <section className="surface overflow-hidden">
-        <div className="flex items-center gap-2.5 px-4 pt-3.5">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-success text-white">
+        <div className="flex min-w-0 items-center gap-2.5 px-4 pt-3">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-success text-white">
             <Check className="h-3.5 w-3.5" />
           </span>
-          <h2 className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">Compliance health</h2>
-          <span className="ml-auto text-[11.5px] font-semibold text-text-tertiary">all companies</span>
+          <h2 className="min-w-0 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
+            Compliance health
+          </h2>
         </div>
-        <div className="px-4 pb-4 pt-3">
-          <div className="flex items-center gap-4">
+        <div className="px-4 pb-3 pt-2.5">
+          <div className="flex min-w-0 items-center gap-3">
             <Donut filed={filed} dueSoon={dueSoon} overdue={overdue} upcoming={upcoming} />
-            <div className="flex flex-col gap-1.5 text-[12px] font-bold text-muted-foreground">
-              <span><i className="mr-2 inline-block h-2.5 w-2.5 rounded-sm bg-success" />Filed · {filed}</span>
-              <span><i className="mr-2 inline-block h-2.5 w-2.5 rounded-sm bg-accent-cyan" />Due soon · {dueSoon}</span>
-              <span><i className="mr-2 inline-block h-2.5 w-2.5 rounded-sm bg-danger" />Overdue · {overdue}</span>
-              <span><i className="mr-2 inline-block h-2.5 w-2.5 rounded-sm bg-primary-light outline outline-1 outline-primary" />Upcoming · {upcoming}</span>
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5 text-[12px] font-bold text-muted-foreground">
+              <span className="min-w-0 truncate"><i className="mr-2 inline-block h-2.5 w-2.5 rounded-sm bg-success" />Filed · {filed}</span>
+              <span className="min-w-0 truncate"><i className="mr-2 inline-block h-2.5 w-2.5 rounded-sm bg-accent-cyan" />Due soon · {dueSoon}</span>
+              <span className="min-w-0 truncate"><i className="mr-2 inline-block h-2.5 w-2.5 rounded-sm bg-danger" />Overdue · {overdue}</span>
+              <span className="min-w-0 truncate"><i className="mr-2 inline-block h-2.5 w-2.5 rounded-sm bg-primary-light outline outline-1 outline-primary" />Upcoming · {upcoming}</span>
             </div>
           </div>
           {nextFilings.map((f) => (
             <Link
               key={f.id}
               href="/app/intern/compliance"
-              className="mt-2.5 flex items-center gap-2.5"
+              className="mt-2.5 flex min-w-0 items-center gap-2.5"
             >
-              <span className="grid h-9 w-9 place-items-center rounded-lg bg-raised text-[11px] font-extrabold text-ink">
-                {f.nextDue.slice(8, 10)}
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-raised text-[11px] font-extrabold tabular-nums text-ink">
+                {(ymdFromIsoInIst(f.nextDue) ?? f.nextDue).slice(8, 10)}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[12.5px] font-semibold text-ink">{f.filing}</span>
@@ -121,41 +120,20 @@ export function LeadSideRail({
         </div>
       </section>
 
-      <section className="surface overflow-hidden">
-        <div className="flex items-center gap-2.5 px-4 pt-3.5">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent-sky text-white">
+      <section className="surface overflow-hidden" data-intern-waiting-on>
+        <div className="flex min-w-0 items-center gap-2.5 px-4 pt-3">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-sky text-white">
             <Clock className="h-3.5 w-3.5" />
           </span>
-          <h2 className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">Waiting on</h2>
+          <h2 className="min-w-0 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">Waiting on</h2>
         </div>
-        <div className="px-4 pb-4 pt-3">
+        <div className="px-4 pb-3 pt-2.5">
           {waiting.length === 0 ? (
             <p className="text-[12.5px] text-muted-foreground">Nobody is blocking you.</p>
           ) : (
             waiting.map((item) => (
-              <div key={item.id} className="flex items-start gap-2 border-t border-border py-2 first:border-0 first:pt-0">
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[12.5px] font-semibold text-ink">{item.title}</div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="min-w-0 truncate text-[11px] text-muted-foreground">{item.companyName}</span>
-                    <span
-                      className={cn(
-                        'ml-auto inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] font-extrabold',
-                        internToneBadge(KIND_TONE[item.kind] ?? 'sky'),
-                      )}
-                    >
-                      {internKindChipLabel(item.kind)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2 self-end">
-                  {item.ageLabel ? (
-                    <span className={cn('rounded-full px-2 py-0.5 text-[10.5px] font-extrabold', internToneBadge(item.kind === 'waiting-manager' ? 'danger' : 'info'))}>
-                      {item.ageLabel}
-                    </span>
-                  ) : null}
-                  <InternWorkCtaButton item={item} />
-                </div>
+              <div key={item.id} className="border-t border-border py-2.5 first:border-0 first:pt-0">
+                <InternWorkDenseRow item={item} showCompany />
               </div>
             ))
           )}

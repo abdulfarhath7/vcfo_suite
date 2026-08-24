@@ -5,26 +5,28 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarClock, Columns3, List } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
-import { InternWorkBoardCard } from '@/components/intern/InternWorkRow';
+import { InternWorkBoardCard, InternWorkDenseRow } from '@/components/intern/InternWorkRow';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
-import { LeadCompanyChip } from '@/components/intern/LeadCompanyChip';
-import { internToneBadge, internToneBg, internToneText } from '@/components/intern/intern-tones';
+import { LeadCompanyChip, LeadCompanyPill } from '@/components/intern/LeadCompanyChip';
+import { internKindChipLabel, internToneBadge, internToneText } from '@/components/intern/intern-tones';
 import { useInternPortfolio } from '@/lib/use-intern-portfolio';
 import {
   INTERN_WORK_VIEW_KEY,
+  WEEK_CHIP_TONE,
   filterInternWork,
   formatDueLabel,
-  internTimelineRows,
-  internTimelineWindow,
+  formatIstWeekdayDay,
+  internTimelineGrid,
+  internWeekMarkKind,
   internWorkBoard,
   internWorkPath,
-  istWeekdayMon0,
+  parseInternWorkDay,
   parseInternWorkFocus,
   parseInternWorkKindFilter,
   parseInternWorkTag,
   parseInternWorkView,
-  parseIstNoon,
   sortInternWork,
   ymdInIst,
   type InternWorkFocus,
@@ -35,7 +37,6 @@ import {
 } from '@/lib/intern-work';
 import { KIND_TONE } from '@/components/intern/intern-tones';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 
 const VIEW_BTN: { id: InternWorkView; label: string; icon: typeof List }[] = [
   { id: 'list', label: 'List', icon: List },
@@ -52,6 +53,7 @@ function InternMyWorkInner() {
   const tag = parseInternWorkTag(params.get('tag'));
   const companyId = params.get('company');
   const kind = parseInternWorkKindFilter(params.get('kind'));
+  const day = parseInternWorkDay(params.get('day'));
   const [view, setView] = useState<InternWorkView>(() => parseInternWorkView(params.get('view')));
   const [kb, setKb] = useState(-1);
 
@@ -72,9 +74,9 @@ function InternMyWorkInner() {
   const filtered = useMemo(
     () =>
       sortInternWork(
-        filterInternWork(workItems, { focus, tag, companyId, kind }, now),
+        filterInternWork(workItems, { focus, tag, companyId, kind, day }, now),
       ),
-    [workItems, focus, tag, companyId, kind, now],
+    [workItems, focus, tag, companyId, kind, day, now],
   );
 
   const companies = useMemo(() => {
@@ -89,6 +91,7 @@ function InternMyWorkInner() {
     companyId?: string | null;
     kind?: InternWorkKindFilter;
     view?: InternWorkView;
+    day?: string | null;
   }) => {
     const href = internWorkPath({
       focus: next.focus ?? focus,
@@ -96,6 +99,7 @@ function InternMyWorkInner() {
       companyId: next.companyId === undefined ? companyId : next.companyId,
       kind: next.kind ?? kind,
       view: next.view ?? view,
+      day: next.day === undefined ? day : next.day,
     });
     router.replace(href, { scroll: false });
   };
@@ -128,12 +132,15 @@ function InternMyWorkInner() {
     <PageTransition>
       <SEO title="My work — VCFO Suite" description="List, board, and timeline of your open steps and filings." path="/app/intern/tasks" />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h1 className="serif text-[26px] font-semibold tracking-tight text-ink">My work</h1>
+      <div className="mb-3 flex min-w-0 flex-wrap items-center gap-3">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <PageBackButton className="-ml-1.5" />
+          <h1 className="serif min-w-0 text-[26px] font-semibold tracking-tight text-ink">My work</h1>
+        </div>
         <span className="text-xs font-bold text-text-tertiary">
           {kpis.openCount} open · {kpis.companyCount} {kpis.companyCount === 1 ? 'company' : 'companies'}
         </span>
-        <div className="ml-auto flex overflow-hidden rounded-md border border-border bg-panel shadow-layered" role="tablist">
+        <div className="ml-auto flex shrink-0 overflow-hidden rounded-md border border-border bg-panel shadow-layered" role="tablist">
           {VIEW_BTN.map((btn) => {
             const Icon = btn.icon;
             const on = view === btn.id;
@@ -157,7 +164,7 @@ function InternMyWorkInner() {
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         <FilterChip on={!companyId} label="All companies" onClick={() => go({ companyId: null })} />
         {companies.map(([id, name]) => (
           <FilterChip key={id} on={companyId === id} label={name.split(/\s+/)[0] ?? name} onClick={() => go({ companyId: id })} />
@@ -166,11 +173,14 @@ function InternMyWorkInner() {
         <FilterChip on={kind === 'all'} label="Steps + filings" onClick={() => go({ kind: 'all' })} />
         <FilterChip on={kind === 'steps'} label="Steps only" onClick={() => go({ kind: 'steps' })} />
         <FilterChip on={kind === 'filings'} label="Filings only" onClick={() => go({ kind: 'filings' })} />
+        {day ? (
+          <FilterChip on label={`${formatIstWeekdayDay(day).label} · IST`} onClick={() => go({ day: null })} />
+        ) : null}
       </div>
 
       {view === 'list' ? <ListView items={filtered} kb={kb} now={now} /> : null}
       {view === 'board' ? <BoardView items={filtered} now={now} /> : null}
-      {view === 'tl' ? <TimelineView items={filtered} now={now} /> : null}
+      {view === 'tl' ? <TimelineView items={filtered} now={now} selectedDay={day} /> : null}
     </PageTransition>
   );
 }
@@ -190,6 +200,9 @@ function FilterChip({ on, label, onClick }: { on: boolean; label: string; onClic
   );
 }
 
+const LIST_COLS =
+  'grid-cols-[minmax(0,1.5fr)_minmax(0,0.95fr)_minmax(0,1.05fr)_minmax(4.25rem,0.55fr)_auto]';
+
 function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now: Date }) {
   if (items.length === 0) {
     return <EmptyWork />;
@@ -197,10 +210,10 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
   return (
     <>
       <div className="surface overflow-hidden">
-        <div className="grid grid-cols-[minmax(200px,2fr)_1.2fr_1.1fr_0.7fr_96px] text-[10.5px] font-extrabold uppercase tracking-[0.07em] text-text-tertiary">
+        <div className={cn('hidden xl:grid text-[10.5px] font-extrabold uppercase tracking-[0.07em] text-text-tertiary', LIST_COLS)}>
           <div className="px-3.5 py-2.5">Step / filing</div>
-          <div className="px-3.5 py-2.5">Company</div>
-          <div className="px-3.5 py-2.5">State</div>
+          <div className="min-w-0 px-3.5 py-2.5">Company</div>
+          <div className="min-w-0 px-3.5 py-2.5">State</div>
           <div className="px-3.5 py-2.5">Due</div>
           <div className="px-3.5 py-2.5" />
         </div>
@@ -208,42 +221,52 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
           <div
             key={item.id}
             className={cn(
-              'grid grid-cols-[minmax(200px,2fr)_1.2fr_1.1fr_0.7fr_96px] items-center border-t border-border text-[13px] font-semibold hover:bg-raised/70',
+              'border-t border-border text-[13px] font-semibold hover:bg-raised/70',
               kb === i && 'bg-raised',
               item.kind === 'done' && 'opacity-70',
             )}
           >
-            <Link
-              href={item.href}
-              className={cn(
-                'truncate px-3.5 py-3 hover:underline',
-                item.kind === 'done' && 'text-text-tertiary line-through',
-              )}
-            >
-              {item.title}
-            </Link>
-            <div className="px-3.5 py-3">
-              <LeadCompanyChip name={item.companyName} engagementId={item.engagementId} />
+            <div className="px-3.5 py-3 xl:hidden">
+              <InternWorkDenseRow item={item} showCompany />
+              <p className={cn('mt-1.5 font-mono text-[11.5px] font-semibold', item.isOverdue && internToneText('danger'))}>
+                Due {formatDueLabel(item.dueAt, now)}
+              </p>
             </div>
-            <div className="px-3.5 py-3">
-              <span className={cn('inline-block rounded-full px-2.5 py-0.5 text-[11px] font-extrabold', internToneBadge(KIND_TONE[item.kind] ?? 'info'))}>
-                {item.why}
-              </span>
-            </div>
-            <div className={cn('px-3.5 py-3 font-mono text-[11.5px]', item.isOverdue && internToneText('danger'))}>
-              {formatDueLabel(item.dueAt, now)}
-            </div>
-            <div className="px-3.5 py-3">
-              <InternWorkCtaButton item={item} />
+            <div className={cn('hidden items-center xl:grid', LIST_COLS)}>
+              <Link
+                href={item.href}
+                title={item.title}
+                className={cn(
+                  'min-w-0 truncate px-3.5 py-3 hover:underline',
+                  item.kind === 'done' && 'text-text-tertiary line-through',
+                )}
+              >
+                {item.title}
+              </Link>
+              <div className="min-w-0 overflow-hidden px-3.5 py-3">
+                <LeadCompanyChip name={item.companyName} engagementId={item.engagementId} />
+              </div>
+              <div className="min-w-0 overflow-hidden px-3.5 py-3">
+                <span
+                  title={item.why}
+                  className={cn(
+                    'inline-block max-w-full truncate rounded-full px-2.5 py-0.5 text-[11px] font-extrabold',
+                    internToneBadge(KIND_TONE[item.kind] ?? 'info'),
+                  )}
+                >
+                  {item.why}
+                </span>
+              </div>
+              <div className={cn('px-3.5 py-3 font-mono text-[11.5px]', item.isOverdue && internToneText('danger'))}>
+                {formatDueLabel(item.dueAt, now)}
+              </div>
+              <div className="px-3.5 py-3">
+                <InternWorkCtaButton item={item} />
+              </div>
             </div>
           </div>
         ))}
       </div>
-      <p className="mt-2.5 text-[11px] font-semibold text-text-tertiary">
-        Tip: <kbd className="rounded border border-border px-1 font-mono text-[10px]">J</kbd>/
-        <kbd className="rounded border border-border px-1 font-mono text-[10px]">K</kbd> to move ·{' '}
-        <kbd className="rounded border border-border px-1 font-mono text-[10px]">Enter</kbd> to open
-      </p>
     </>
   );
 }
@@ -273,9 +296,6 @@ function BoardView({ items, now }: { items: InternWorkItem[]; now: Date }) {
           </div>
         ))}
       </div>
-      <p className="mt-3 flex items-center gap-1.5 text-[11.5px] font-semibold text-text-tertiary">
-        Cards move when the work moves — reviews, approvals, and deliveries update the board. Open a card to act.
-      </p>
     </>
   );
 }
@@ -339,7 +359,7 @@ function TimelineView({ items, now }: { items: InternWorkItem[]; now: Date }) {
               </div>
               {group.rows.map(({ item, mark }) => (
                 <div key={item.id} className="lead-tl relative z-[1] min-h-9">
-                  <Link href={item.href} className="truncate pr-3 text-xs font-bold text-muted-foreground hover:text-ink">
+                  <Link href={item.href} className="min-w-0 truncate pr-3 text-xs font-bold text-muted-foreground hover:text-ink">
                     {item.title}
                   </Link>
                   {mark.type === 'bar' ? (
@@ -360,7 +380,11 @@ function TimelineView({ items, now }: { items: InternWorkItem[]; now: Date }) {
                         style={{ gridColumn: mark.col }}
                       />
                       <div
-                        className={cn('self-center pl-1.5 text-[10px] font-extrabold', internToneText(mark.tone))}
+                        className={cn(
+                          'min-w-0 self-center truncate pl-1.5 text-[10px] font-extrabold',
+                          internToneText(mark.tone),
+                        )}
+                        title={mark.label}
                         style={{ gridColumn: `${Math.min(mark.col + 1, 15)} / span ${mark.col >= 13 ? 1 : 3}` }}
                       >
                         {mark.label}
@@ -374,7 +398,6 @@ function TimelineView({ items, now }: { items: InternWorkItem[]; now: Date }) {
         </div>
         <div className="mt-3.5 flex flex-wrap gap-4 text-[11px] font-bold text-muted-foreground">
           <span>◆ Filing deadline</span>
-          <span>Bars are statutory windows — they can&apos;t be dragged. Open an item to act.</span>
         </div>
       </div>
     </>
@@ -383,9 +406,8 @@ function TimelineView({ items, now }: { items: InternWorkItem[]; now: Date }) {
 
 function EmptyWork() {
   return (
-    <div className="surface px-6 py-12 text-center">
+    <div className="surface px-6 py-8 text-center">
       <p className="serif text-lg">Nothing in this view</p>
-      <p className="mt-1 text-sm text-muted-foreground">Clear a filter or pick another company.</p>
     </div>
   );
 }

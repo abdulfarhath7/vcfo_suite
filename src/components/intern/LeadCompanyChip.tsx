@@ -31,7 +31,10 @@ export function LeadCompanyPill({ name, engagementId }: { name: string; engageme
   const tone = toneForKey(engagementId);
   const short = name.split(/\s+/)[0] ?? name;
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10.5px] font-extrabold ${TONE_BADGE[tone]}`}>
+    <span
+      className={`inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[10.5px] font-extrabold ${TONE_BADGE[tone]}`}
+      title={name}
+    >
       {short}
     </span>
   );

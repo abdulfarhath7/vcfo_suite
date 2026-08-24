@@ -173,6 +173,7 @@ describe('buildInternWorkItems', () => {
       ],
     });
     expect(items.find((i) => i.requestId === 'req-1')?.kind).toBe('waiting-request');
+    expect(items.find((i) => i.requestId === 'req-1')?.href).toBe('/app/intern/engagements/eng-1');
     expect(internWorkKpis(items, now).waiting.client).toBeGreaterThanOrEqual(1);
   });
 

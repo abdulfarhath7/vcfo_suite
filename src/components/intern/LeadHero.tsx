@@ -73,7 +73,7 @@ export function LeadHero({
 
   return (
     <section
-      className="lead-hero px-5 py-5 sm:px-6 sm:py-6"
+      className="lead-hero px-5 py-4 sm:px-6 sm:py-5"
       data-hero-image={hero.image ? 'true' : 'false'}
       style={surfaceCssVars(hero, 'hero')}
     >
@@ -105,16 +105,16 @@ export function LeadHero({
           <LeadHeroSettings />
         </div>
         <div className="mt-1 flex items-start justify-between gap-4">
-          <h1 className="serif min-w-0 flex-1 text-[1.7rem] font-semibold leading-[1.15] tracking-tight text-white [text-shadow:0_1px_16px_rgb(15_23_42_/_0.35)] sm:text-[1.95rem]">
+          <h1 className="serif min-w-0 flex-1 break-words text-[1.7rem] font-semibold leading-[1.15] tracking-tight text-white [text-shadow:0_1px_16px_rgb(15_23_42_/_0.35)] sm:text-[1.95rem]">
             Good {greet}, {first}
           </h1>
           <ProgressRing done={kpis.doneToday} total={totalToday} />
         </div>
       </div>
 
-      <div className="relative z-[2] mt-5 h-px bg-white/12" />
+      <div className="relative z-[2] mt-3.5 h-px bg-white/12" />
 
-      <div className="relative z-[2] mt-3.5 flex flex-wrap items-baseline text-white">
+      <div className="relative z-[2] mt-2.5 flex min-w-0 flex-wrap items-baseline gap-y-1 text-white">
         {stats.map((stat, i) => (
           <Link
             key={stat.label}

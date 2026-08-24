@@ -32,5 +32,6 @@ export const KIND_TONE: Record<string, InternChipTone> = {
 
 export function internKindChipLabel(kind: string): string {
   if (kind === 'in-progress') return 'In progress';
-  return kind.replaceAll('-', ' ');
+  const raw = kind.replaceAll('-', ' ');
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
 }

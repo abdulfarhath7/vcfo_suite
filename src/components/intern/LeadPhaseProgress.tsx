@@ -31,24 +31,20 @@ export function LeadPhaseProgress({
 }) {
   const rows = engagements.map((eng) => internCompanyPhaseProgress(eng, getState(eng)));
   const dense = rows.length > 5;
-  const compact = rows.length <= 2;
 
   return (
     <section className="surface h-fit min-w-0 overflow-hidden">
-      <div className="flex items-center gap-2.5 px-4 pt-3.5">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 px-4 pt-3">
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-success text-white">
           <TrendingUp className="h-3.5 w-3.5" />
         </span>
         <h2 className="min-w-0 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
           My companies · phase progress
         </h2>
-        <span className="ml-auto hidden shrink-0 text-[11.5px] font-semibold text-text-tertiary sm:inline">
-          Part A → Registration
-        </span>
       </div>
-      <div className={cn('px-4 pb-4 pt-3', dense && 'max-h-[22rem] overflow-y-auto pr-3')}>
+      <div className={cn('px-4 pb-3 pt-2.5', dense && 'max-h-[22rem] overflow-y-auto pr-3')}>
         {rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No companies assigned yet.</p>
+          <p className="py-4 text-center text-sm text-muted-foreground">No companies assigned yet.</p>
         ) : (
           rows.map((row) => {
             const complete = row.phases.length > 0 && row.phases.every((phase) => phase.pct >= 100);
@@ -58,9 +54,9 @@ export function LeadPhaseProgress({
                 key={row.engagementId}
                 href={row.href}
                 title={row.currentLabel}
-                className={cn('block', compact ? 'mt-2.5 first:mt-0.5' : 'mt-3.5 first:mt-0.5')}
+                className="mt-2.5 block first:mt-0.5"
               >
-                <div className="mb-1.5 flex items-center gap-2 text-[12.5px]">
+                <div className="mb-1.5 flex min-w-0 items-center gap-2 text-[12.5px]">
                   <b className="min-w-0 truncate font-extrabold text-ink">{row.companyName}</b>
                   <span
                     className={cn(
@@ -89,11 +85,11 @@ export function LeadPhaseProgress({
             );
           })
         )}
-        <div className="mt-2 flex text-[10.5px] font-bold">
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] font-bold">
           {PHASE_KEY.map((k) => (
-            <span key={k.label} className="flex min-w-0 items-center gap-1.5" style={{ flex: k.flex }}>
+            <span key={k.label} className="inline-flex items-center gap-1.5">
               <i className={cn('h-2 w-2 shrink-0 rounded-sm', k.color)} />
-              <span className={cn('truncate', k.text)}>{k.label}</span>
+              <span className={k.text}>{k.label}</span>
             </span>
           ))}
         </div>

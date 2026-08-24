@@ -139,10 +139,9 @@ export function LeadFocusCard({
 
   return (
     <section className="surface h-fit min-w-0 overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 pt-3.5">
+      <div className="flex min-w-0 items-start justify-between gap-3 px-4 pt-3">
         <div className="min-w-0">
           <h2 className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">Todos</h2>
-          <p className="mt-0.5 text-[12px] text-muted-foreground">Type your own, or pin from the queue.</p>
         </div>
         <QueuePinPopover
           open={picking}
@@ -153,7 +152,7 @@ export function LeadFocusCard({
       </div>
 
       <form
-        className="px-4 pb-1 pt-3"
+        className="px-4 pb-1 pt-2.5"
         onSubmit={(e) => {
           e.preventDefault();
           addCustom();
@@ -181,7 +180,7 @@ export function LeadFocusCard({
       </form>
 
       {focus.length === 0 ? (
-        <div className="px-4 pb-4 pt-2">
+        <div className="px-4 pb-3 pt-2">
           <button
             type="button"
             onClick={() => draftRef.current?.focus()}
@@ -196,7 +195,7 @@ export function LeadFocusCard({
       ) : null}
 
       {focus.length > 0 ? (
-        <div className="max-h-[min(20rem,46vh)] space-y-2 overflow-y-auto px-4 pb-4 pt-3">
+        <div className="max-h-[min(20rem,46vh)] space-y-2 overflow-y-auto px-4 pb-3 pt-2.5">
           {focus.map((entry) => {
             const item = byId.get(entry.id);
             if (item) {
@@ -218,15 +217,15 @@ export function LeadFocusCard({
                   >
                     {entry.done ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                   </button>
-                  <Link href={item.href} className="min-w-0 flex-1">
-                    <span className={cn('block truncate text-[13px] font-semibold text-ink', entry.done && 'text-muted-foreground line-through')}>
+                  <Link href={item.href} className="min-w-0 flex-1 overflow-hidden">
+                    <span className={cn('block line-clamp-2 text-[13px] font-semibold leading-snug text-ink', entry.done && 'text-muted-foreground line-through')}>
                       {item.title}
                     </span>
-                    <span className="mt-1 flex items-center gap-2">
+                    <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="min-w-0 truncate text-[11px] text-muted-foreground">{item.companyName}</span>
                       <span
                         className={cn(
-                          'ml-auto inline-flex shrink-0 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                          'inline-flex max-w-full shrink-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold',
                           internToneBadge(KIND_TONE[entry.done ? 'done' : item.kind] ?? 'info'),
                         )}
                       >
