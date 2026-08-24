@@ -98,8 +98,15 @@ Append here whenever something costs more than a minute to figure out.
 - Creating a project as admin requires `managerId` in the POST body; as
   manager, `managerId` is forced to `ctx.userId` and `adminId` stays null.
 - Prefer `requireAdminOrManager()` for firm ops (create project, interns,
-  KB write/delete, welcome email, audit-log read). Reserve `requireAdmin()`
+  KB write/delete, welcome email). Reserve `requireAdmin()`
   for create/list managers APIs.
+- Audit log is Path A in `listAuditEvents`, not original intern-none RLS.
+  Intern (Project Lead): own actor rows always, plus events on assigned
+  engagements (`intern_id` + `engagement_leads`). Manager: only those
+  engagement ids (`manager_id` + `engagement_managers` + legacy) — not own
+  actor on someone else’s client, not unscoped admin noise. Admin /
+  super_admin stay firm-wide. Interns read `GET /api/audit-logs`
+  (`requireAuth`); `/api/admin/audit-logs` stays admin/manager.
 - Cross-role URLs bounce via middleware segment check — use `staffBase` /
   `adminProjectPath(eng, roleOrBase)`, not hardcoded `/app/manager`.
 - Guard narrowing: use `if (guard.ok === false)` so TS sees `error`/`status`.
@@ -280,8 +287,8 @@ Append here whenever something costs more than a minute to figure out.
   via the same `updateItem` path as Save; Save is hidden while clean and
   shown while pending, saving, or failed. File fields POST to
   `/api/engagements/:id/milestone-documents` then PATCH the storage path
-  immediately. The shell chrome has
-  no page title or breadcrumbs. Intern never shows playbook SLA / “working days”
+  immediately. The shell chrome shows a full location trail in the top bar
+  (see “Shell location trail”). Intern never shows playbook SLA / “working days”
   duration: `hideTimeline` on `StepDetailContent` is not enough — the journey
   rail still used `StatusBadgeWithTimeline` until `hideTimeline` was passed
   there too. Help/notes that mention working days are filtered.
@@ -307,15 +314,16 @@ Append here whenever something costs more than a minute to figure out.
   workspace width; Keep open/closed are never mutated by the route.
   Nav scrollers use
   `.sidebar-scroll` (no visible bar). Search is a tool button, not a fake input.
-  CommandPalette is the only type-in search. No page titles/breadcrumbs in
-  the top bar. Nested AppShell routes get a compact **Back** chevron immediately
-  left of the page H1 (company name, step title, settings name, etc.) —
-  `PageBackButton` + `shell-back.ts`. Hide on sidebar primary exact paths
-  (Today, Clients list, Compliance root, dashboards, …); **show** on settings,
-  engagement/project/step, board-resolution. Do not add a second
+  CommandPalette is the only type-in search. The top bar trail is the full
+  location path (Home › … › leaf). Nested AppShell routes get a compact **Back**
+  chevron immediately left of the page H1 (company name, step title, settings
+  name, etc.) — `PageBackButton` + `shell-back.ts`. Hide only on the true home
+  (intern Today, staff dashboards, client Inbox, role index). Show on every
+  other page that has an H1 / PageHeader (Clients, Vault, My work, compliance,
+  settings, engagement/project/step, board-resolution). Do not add a second
   “Back to portfolio” on intern engagement. Click is `router.back()` when
-  `history.length > 1`, else the parent path. The top bar is SBC lockup + Search
-  only (no back slot).
+  `history.length > 1`, else the parent path. The top bar has no back slot
+  (crumbs + search only).
 - Checklist file upload is a compact `.milestone-upload-zone` row (~44px, max 88px),
   not a tall centered dropzone. Remarks use `.milestone-form-textarea` (`min-h` 72px /
   3 rows, grows with `field-sizing: content`).
@@ -343,6 +351,9 @@ Append here whenever something costs more than a minute to figure out.
   pinned work `{ id, done }` and typed rows `{ id, done, custom: true, title }` — no
   3-item cap; `parseInternFocus` keeps legacy pins. Action queue expanded companies
   persist as `vcfo.intern.queue.expanded.{userId}` (engagement id set; not accordion).
+- Intern **Requests** page is gone. `/app/intern/requests` redirects to My work.
+  Pending document requests still show on Today / My work (`waiting-request`);
+  client Inbox/Documents and staff project Documents still use the data layer.
 
 ## Announcements (not notifications)
 
@@ -389,7 +400,7 @@ Append here whenever something costs more than a minute to figure out.
 - Sidebar active item uses Framer `layoutId` (`sidebar-*-active` / `-rail`) with `springSnappy`.
   Client **sub-rows** use a nested pair (`*-client-active` / `*-client-rail`) so the pill slides
   between companies and View all without stealing the parent Clients highlight.
-- Lead dashboard motion lives in intern-only surfaces (Today, My work, Clients, Requests, InternClientsNav,
+- Lead dashboard motion lives in intern-only surfaces (Today, My work, Clients, InternClientsNav,
   InternPhaseTabs, intern journey rail via `allowLockedOpen`). Shared
   Analytics / Compliance / Mail / Audit keep their existing PageTransition only.
 - Reuse `src/lib/motion.ts` presets and `MotionActivePill`. Always respect `useReducedMotion`.
@@ -507,9 +518,12 @@ Append here whenever something costs more than a minute to figure out.
 ## Intern document vault + sidebar order
 
 - Project Lead sidebar order (high-frequency first): Today → My work → Clients
-  dropdown → Document vault → Announcements → mail/requests/compliance/KB/
-  analytics/audit. Settings stays in the footer. Do not set `position` on
-  `.shell-sidebar-skin`.
+  dropdown → Send email → Docs (Vault, Knowledge Bank) → Updates →
+  Compliance calendar, then a thin “Insights” hairline, then Analytics + Audit Log.
+  Calendar stays in the work cluster; Analytics + Audit Log are a quieter
+  footer pair (same break after Docs on admin/manager). Settings stays in the
+  footer. Staff roles that have both Send email and Docs put Send email
+  immediately above Docs. Do not set `position` on `.shell-sidebar-skin`.
 - Vault is `/app/intern/vault` (shared view `src/views/vault/DocumentVaultPage.tsx`).
   Manager/admin already had `/vault`. Files are grouped by assigned company,
   then checklist step / category. Search matches client name or file name.
@@ -521,12 +535,62 @@ Append here whenever something costs more than a minute to figure out.
 
 ## Shell location trail + attached search
 
-- Top bar trail is `[icon chip] parent › leaf` from `shellBreadcrumb`
-  (`shell-crumbs.ts`). Docs / Updates parents have no href (no `/docs` or
-  `/updates` page). Intern engagement parent is Clients → `/app/intern/clients`.
-  Page H1 is the leaf only — not a second breadcrumb. Do not use ASCII `->`.
-- Command palette is not a centered dialog. Typing happens in the TopBar search
-  pill; results drop down under it. Cmd/Ctrl+K focuses that input. Do not mount
+- Top bar trail is a full path from `shellBreadcrumb` (`shell-crumbs.ts`):
+  **Home › …** then every real nested segment. Intern engagement step example:
+  `Home › Clients › DemoCo › SPICe+ Part B › Director KYC`. Phase labels come
+  from `internOverviewPhaseForItem` / intern overview titles (`SPICe+ Part A/B`,
+  Post-incorporation, Registration) — Director KYC is Part B in the catalog.
+  Intern Registration also inserts the rail sub-header (General, FEMA, …).
+- Home links to the role home (`/app/intern/today`, staff dashboard, client
+  Inbox). Every non-leaf crumb is a `Link`. Phase → first catalog step of that
+  part (`…/step/{slug}`); company → engagement/project page; Docs → Vault;
+  Updates → Announcements. The leaf is `aria-current` (not a link). Separator
+  is `›` (ChevronRight), never ASCII `->`.
+- Page H1 stays the leaf. `PageBackButton` sits beside the H1 on every AppShell
+  page except the true home (Today / dashboards / client Inbox).
+- Search sits to the right of crumbs and shrinks (`max-w-xs`) so long trails
+  can grow; crumbs scroll horizontally inside the fixed-height top bar rather
+  than middle-ellipsis. Cmd/Ctrl+K still focuses the TopBar input. Do not mount
   a second `CommandPalette` in AppShell.
+
+## Intern compliance calendar (no page tabs)
+
+- Intern `/app/intern/compliance` is the statutory calendar only — do not put
+  “Statutory calendar / Client filing tracker” pill tabs on that page.
+- Client filing tracker stays reachable at `/app/intern/compliance/tracker`
+  (header “Filing tracker” link, command palette, crumb parent = Compliance
+  calendar). Manager/admin still use the in-page tabs.
+- Category chips: “Select all” is first and on by default (empty `mutedActs`).
+  No “Clear all”. Date cells use a category tint plus a left color stripe
+  (stacked when a day has multiple acts) — not dots under the number.
+  Clicking a dated cell smooth-scrolls `#statutory-agenda-YYYY-MM-DD`.
+
+## Unified sidebar disclosure row
+
+- Clients, Docs, Updates (and any `SidebarNavGroup`) share `SidebarNavDisclosure`
+  in `SidebarNavGroup.tsx`. Intern Clients is not a second trigger style.
+- Chevron is Lucide `ChevronDown` (stroke, `fill-none`) in
+  `.sidebar-nav-disclosure-meta` (`margin-left: auto`). Count badge sits
+  immediately before the chevron; My work uses the same badge chip without a
+  chevron. Active pill/rail only when that section’s route is current — open
+  but inactive groups do not get a rectangular box. Child indent is
+  `SidebarNavGroupRail`. Do not set `position` on `.shell-sidebar-skin`.
+
+## Intern Today Waiting On overlap
+
+- Waiting On lives in `LeadSideRail` (318px column). A shrink-0 “Email manager
+  again” CTA left ~80px for the left stack; the `shrink-0` kind chip then
+  overflowed (visible) into the age pill. Use `InternWorkDenseLayout`: status
+  + age wrap as siblings; CTA is `flex: 1 0 100%` so it cannot share pixels
+  with those badges. Same row is used for action-queue tasks and My work
+  list below `xl`.
+
+## App copy — no instructional chrome
+
+- Do not add helper lines that restate a control (e.g. Sign out: “End this
+  session on this device”). PageHeader `subtitle` is for live counts/dates/
+  company names, not a second sentence of the H1. Empty states: title only,
+  or one short line. Keep `aria-label` / `sr-only`. Do not set `position` on
+  `.shell-sidebar-skin`.
 
 
