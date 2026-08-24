@@ -1,10 +1,28 @@
 "use client";
 
 import { useApp } from "@/context/AppContext";
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Search, PanelLeft } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  BookOpen,
+  Briefcase,
+  CalendarCheck,
+  ChevronRight,
+  ClipboardCheck,
+  FolderOpen,
+  History,
+  Inbox,
+  LayoutDashboard,
+  Mail,
+  Megaphone,
+  PanelLeft,
+  Search,
+  Settings,
+  Users,
+} from "lucide-react";
 import { AnnouncementsBell } from "@/components/shell/AnnouncementsBell";
 import { NotificationsBell } from "@/components/shell/NotificationsBell";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
@@ -12,28 +30,96 @@ import { useShellNav } from "@/components/shell/shell-nav-context";
 import { SBC_LOGO_LABEL, SbcLogo } from "@/components/brand/SbcLogo";
 import { roleHomePath, roleSettingsPath } from "@/lib/auth-routes";
 import { UserFace } from "@/components/common/UserFace";
-import { shellBreadcrumb } from "@/components/shell/shell-crumbs";
+import { CommandPalette } from "@/components/shell/CommandPalette";
+import {
+  resolveShellCrumbCurrent,
+  shellBreadcrumb,
+  type ShellCrumb,
+  type ShellCrumbIcon,
+} from "@/components/shell/shell-crumbs";
 import { cn } from "@/lib/utils";
 
-function useModShortcut() {
-  const [isApple, setIsApple] = useState<boolean | null>(null);
-  useEffect(() => {
-    setIsApple(/Mac|iPhone|iPad/.test(navigator.platform));
-  }, []);
-  return isApple;
+const CRUMB_ICONS: Record<ShellCrumbIcon, LucideIcon> = {
+  users: Users,
+  folder: FolderOpen,
+  megaphone: Megaphone,
+  bell: Bell,
+  layout: LayoutDashboard,
+  briefcase: Briefcase,
+  inbox: Inbox,
+  mail: Mail,
+  calendar: CalendarCheck,
+  book: BookOpen,
+  chart: BarChart3,
+  clipboard: ClipboardCheck,
+  history: History,
+  settings: Settings,
+  home: LayoutDashboard,
+};
+
+function ShellLocationTrail({
+  crumb,
+  leaf,
+}: {
+  crumb: ShellCrumb;
+  leaf: string;
+}) {
+  const Icon = CRUMB_ICONS[crumb.icon];
+
+  return (
+    <nav
+      aria-label="Location"
+      className="hidden min-w-0 max-w-[min(46vw,22rem)] items-center gap-1.5 md:flex"
+    >
+      <span
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-primary-light text-primary"
+        aria-hidden
+      >
+        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+      </span>
+      {crumb.parent ? (
+        <>
+          {crumb.parentHref ? (
+            <Link
+              href={crumb.parentHref}
+              className="min-w-0 truncate text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {crumb.parent}
+            </Link>
+          ) : (
+            <span className="min-w-0 truncate text-[13px] text-muted-foreground">
+              {crumb.parent}
+            </span>
+          )}
+          <ChevronRight
+            className="h-3 w-3 shrink-0 text-muted-foreground/45"
+            strokeWidth={2}
+            aria-hidden
+          />
+        </>
+      ) : null}
+      <span
+        className="max-w-[28ch] truncate text-[13px] font-medium text-ink"
+        title={leaf}
+        aria-current="page"
+      >
+        {leaf}
+      </span>
+    </nav>
+  );
 }
 
 export function TopBar() {
-  const { user, setCommandOpen } = useApp();
+  const { user, setCommandOpen, commandOpen, engagements } = useApp();
   const { openMobile } = useShellNav();
   const pathname = usePathname();
   const crumb = shellBreadcrumb(pathname);
-  const isApple = useModShortcut();
+  const leaf = resolveShellCrumbCurrent(crumb, engagements);
   const homeHref = user ? roleHomePath(user.role) : "/";
   const profileHref = user ? roleSettingsPath(user.role) : "/";
 
   return (
-    <header className="flex h-[var(--shell-rail-height)] items-center gap-2 border-b border-border/60 bg-panel/90 px-2.5 backdrop-blur-2xl sm:gap-3 sm:px-4">
+    <header className="relative flex h-[var(--shell-rail-height)] items-center gap-2 border-b border-border/60 bg-panel/90 px-2.5 backdrop-blur-2xl sm:gap-3 sm:px-4">
       <button
         type="button"
         onClick={openMobile}
@@ -51,47 +137,18 @@ export function TopBar() {
         <SbcLogo variant="navbar" decorative />
       </Link>
 
-      <nav
-        aria-label="Breadcrumb"
-        className="hidden min-w-0 items-center gap-1 text-[13px] md:flex"
-      >
-        {crumb.parent ? (
-          <>
-            <span className="truncate text-muted-foreground">{crumb.parent}</span>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" strokeWidth={2} aria-hidden />
-          </>
-        ) : null}
-        <span className="truncate font-medium text-ink">{crumb.current}</span>
-      </nav>
+      <ShellLocationTrail crumb={crumb} leaf={leaf} />
 
-      <button
-        type="button"
-        onClick={() => setCommandOpen(true)}
-        aria-haspopup="dialog"
-        aria-keyshortcuts="Meta+K Control+K"
-        aria-label="Search"
-        className={cn(
-          "mx-auto hidden h-9 min-w-0 max-w-md flex-1 items-center gap-2 rounded-xl border border-border/70 bg-raised/50 px-3 text-[13px] text-muted-foreground transition-colors",
-          "hover:border-primary/30 hover:bg-raised hover:text-foreground",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-          "sm:flex",
-        )}
-      >
-        <Search className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
-        <span className="flex-1 truncate text-left">Search</span>
-        {isApple != null && (
-          <span className="hidden items-center gap-0.5 lg:flex" aria-hidden>
-            {isApple ? <span className="kbd">⌘</span> : <span className="kbd px-1">Ctrl</span>}
-            <span className="kbd">K</span>
-          </span>
-        )}
-      </button>
+      <CommandPalette />
 
       <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
         <button
           type="button"
           onClick={() => setCommandOpen(true)}
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-primary-light hover:text-foreground sm:hidden"
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-primary-light hover:text-foreground sm:hidden",
+            commandOpen && "pointer-events-none opacity-0",
+          )}
           aria-label="Search"
         >
           <Search className="h-4 w-4" strokeWidth={1.75} />

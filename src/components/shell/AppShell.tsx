@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import { RoleSidebar, MobileNavSheet } from "./RoleSidebar";
 import { TopBar } from "./TopBar";
-import { CommandPalette } from "./CommandPalette";
 import { AnnouncementLivePopup } from "@/components/announcements/AnnouncementLivePopup";
 import { ShellNavProvider } from "./shell-nav-context";
 import { isInternEngagementPathname } from "@/lib/project-step-path";
@@ -77,7 +76,6 @@ export function AppShell({
 
         <RoleSidebar />
         <MobileNavSheet />
-        <CommandPalette />
         <AnnouncementLivePopup />
 
         <div className={cn("relative z-10 pl-0 transition-[padding] duration-300 ease-out", desktopPad)}>

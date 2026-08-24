@@ -33,10 +33,20 @@ const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   );
 };
 
-function CommandInput({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> & { ref?: React.Ref<React.ElementRef<typeof CommandPrimitive.Input>> }) {
+function CommandInput({
+  ref,
+  className,
+  wrapperClassName,
+  showIcon = true,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> & {
+  ref?: React.Ref<React.ElementRef<typeof CommandPrimitive.Input>>;
+  wrapperClassName?: string;
+  showIcon?: boolean;
+}) {
   return (
-  <div className="flex items-center border-b px-3" data-cmdk-input-wrapper="">
-    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+  <div className={cn("flex items-center border-b px-3", wrapperClassName)} data-cmdk-input-wrapper="">
+    {showIcon ? <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" /> : null}
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
