@@ -2,17 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCheck, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, History } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getToastVariantStyle } from "@/components/ui/hot-toast";
+import { NotificationItem } from "@/components/notifications/NotificationItem";
 import {
   notificationDirection,
   notificationsInDirection,
@@ -24,22 +18,12 @@ import {
   NOTIFICATION_ROW_EXIT_STAGGER_MS,
   NOTIFICATION_UNDO_TOAST_MS,
   mergeNotificationsByCreatedAt,
+  notificationsMatchingClearScope,
+  type NotificationClearScope,
 } from "@/lib/notification-dismiss";
+import { roleNotificationsPath } from "@/lib/auth-routes";
 import { toast } from "@/lib/toast-errors";
 import { cn } from "@/lib/utils";
-
-function formatWhen(iso: string): string {
-  try {
-    const d = new Date(iso);
-    const diffMs = Date.now() - d.getTime();
-    if (diffMs < 60_000) return "Just now";
-    if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}m ago`;
-    if (diffMs < 86_400_000) return `${Math.floor(diffMs / 3_600_000)}h ago`;
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  } catch {
-    return "";
-  }
-}
 
 const FILTERS: Array<{ id: NotificationDirection; label: string }> = [
   { id: "received", label: "Received" },
@@ -87,8 +71,16 @@ function offerUndoToast(message: string, onUndo: () => void) {
   );
 }
 
+function clearCopy(scope: NotificationClearScope, count: number, filter: NotificationDirection): string {
+  if (count === 1) return "Notification cleared";
+  if (scope === "today") return `Cleared ${count} from today`;
+  if (scope === "week") return `Cleared ${count} from this week`;
+  return `Cleared ${count} ${filter} notifications`;
+}
+
 export function NotificationsBell() {
   const {
+    user,
     notifications,
     unreadNotificationCount,
     markNotificationRead,
@@ -97,11 +89,15 @@ export function NotificationsBell() {
     restoreNotifications,
   } = useApp();
 
+  const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<NotificationDirection>("received");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
   const [exitingRows, setExitingRows] = useState<AppNotification[]>([]);
   const [exitDelayMsById, setExitDelayMsById] = useState<Record<string, number>>({});
   const exitTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+
+  const historyHref = user ? roleNotificationsPath(user.role) : "/";
 
   const counts = useMemo(() => {
     let received = 0;
@@ -136,6 +132,10 @@ export function NotificationsBell() {
     filter === "sent"
       ? "No outbound email activity yet."
       : "No received notifications yet.";
+
+  const now = useMemo(() => new Date(), [notifications, filter, open]);
+  const todayCount = notificationsMatchingClearScope(tabItems, "today", now).length;
+  const weekCount = notificationsMatchingClearScope(tabItems, "week", now).length;
 
   const finishExit = (items: AppNotification[]) => {
     const ids = new Set(items.map((n) => n.id));
@@ -219,25 +219,38 @@ export function NotificationsBell() {
   };
 
   const handleDeleteOne = (item: AppNotification) => {
-    dismissWithUndo([item], "Notification deleted");
+    dismissWithUndo([item], "Notification cleared");
   };
 
-  const handleClearTab = () => {
-    const batch = mergeNotificationsByCreatedAt(
-      tabItems,
-      exitingRows.filter((n) => notificationDirection(n.kind) === filter),
+  const handleClearScope = (scope: NotificationClearScope) => {
+    const batch = notificationsMatchingClearScope(
+      mergeNotificationsByCreatedAt(
+        tabItems,
+        exitingRows.filter((n) => notificationDirection(n.kind) === filter),
+      ),
+      scope,
+      new Date(),
     );
-    dismissWithUndo(
-      batch,
-      batch.length === 1
-        ? "Notification deleted"
-        : `Cleared ${batch.length} ${filter} notifications`,
-    );
+    dismissWithUndo(batch, clearCopy(scope, batch.length, filter));
+  };
+
+  const guardOutside = (event: { target: EventTarget | null; preventDefault: () => void }) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest("[data-notification-undo-toast]")) {
+      event.preventDefault();
+    }
   };
 
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger
+    <Popover
+      modal={false}
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSelectedId(null);
+      }}
+    >
+      <PopoverTrigger
         className={cn(
           "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:min-h-9 sm:min-w-9",
           hasUnread && "bg-primary-light text-primary hover:bg-primary-light",
@@ -264,60 +277,32 @@ export function NotificationsBell() {
             {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
           </span>
         )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
+      </PopoverTrigger>
+      <PopoverContent
         align="end"
-        className="w-[min(100vw-1.5rem,26rem)] max-h-[min(70vh,480px)] overflow-x-hidden overflow-y-auto p-1.5"
-        onPointerDownOutside={(event) => {
-          const target = event.target;
-          if (target instanceof Element && target.closest("[data-notification-undo-toast]")) {
-            event.preventDefault();
-          }
-        }}
-        onInteractOutside={(event) => {
-          const target = event.target;
-          if (target instanceof Element && target.closest("[data-notification-undo-toast]")) {
-            event.preventDefault();
-          }
-        }}
+        sideOffset={6}
+        className="flex w-[min(100vw-1.5rem,26rem)] max-h-[min(74vh,520px)] flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-panel p-0 text-foreground shadow-[0_12px_40px_-18px_oklch(22%_0.04_260_/_0.38)]"
+        onPointerDownOutside={guardOutside}
+        onInteractOutside={guardOutside}
       >
-        <div className="flex items-center justify-between gap-2 px-2 py-1">
-          <DropdownMenuLabel className="p-0 text-[11px] font-semibold tracking-tight">
+        <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-1.5">
+          <p className="p-0 text-[13px] font-bold leading-tight tracking-tight text-ink">
             Notifications
-          </DropdownMenuLabel>
-          <div className="flex items-center gap-2">
-            {hasUnread && (
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-                onClick={(e) => {
-                  e.preventDefault();
-                  markAllNotificationsRead();
-                }}
-              >
-                <CheckCheck className="h-3 w-3" aria-hidden />
-                Mark all read
-              </button>
-            )}
-            {tabCount > 0 && (
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-                aria-label={`Clear all ${filter} notifications`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleClearTab();
-                }}
-              >
-                Clear all
-              </button>
-            )}
-          </div>
+          </p>
+          {hasUnread && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+              onClick={() => markAllNotificationsRead()}
+            >
+              <CheckCheck className="h-3 w-3" aria-hidden />
+              Mark all read
+            </button>
+          )}
         </div>
 
         <div
-          className="mx-1 mb-1 grid grid-cols-2 gap-0.5 rounded-md bg-raised/70 p-0.5"
+          className="mx-2 mb-1 grid grid-cols-2 gap-0.5 rounded-md bg-raised/70 p-0.5"
           role="tablist"
           aria-label="Filter notifications"
         >
@@ -338,11 +323,7 @@ export function NotificationsBell() {
                     ? "bg-panel text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setFilter(tab.id);
-                }}
+                onClick={() => setFilter(tab.id)}
               >
                 {tab.label}
                 <span
@@ -359,117 +340,89 @@ export function NotificationsBell() {
           })}
         </div>
 
-        <DropdownMenuSeparator className="my-1" />
-        {filtered.length === 0 ? (
-          <p className="px-2 py-4 text-center text-[11px] text-muted-foreground">
-            {emptyCopy}
-          </p>
-        ) : (
-          filtered.map((n) => {
-            const isOutbound =
-              n.kind === "email.sent" ||
-              n.kind === "email.skipped" ||
-              n.kind === "email.failed";
-            const statusDot =
-              n.kind === "email.sent"
-                ? "bg-success"
-                : n.kind === "email.skipped"
-                  ? "bg-warning"
-                  : n.kind === "email.failed"
-                    ? "bg-danger"
-                    : null;
-            const meta = [
-              isOutbound ? n.body : null,
-              n.companyName || null,
-              formatWhen(n.createdAt),
-            ]
-              .filter(Boolean)
-              .join(" · ");
-            const exiting = exitingIds.has(n.id);
-            const exitDelayMs = exiting ? (exitDelayMsById[n.id] ?? 0) : 0;
-
-            return (
-              <div
-                key={n.id}
-                className={cn(
-                  "transition-[transform,opacity] ease motion-reduce:transition-none",
-                  exiting
-                    ? "translate-x-full opacity-0"
-                    : "translate-x-0 opacity-100",
-                )}
-                style={{
-                  transitionDuration: `${NOTIFICATION_ROW_EXIT_MS}ms`,
-                  transitionDelay: `${exitDelayMs}ms`,
-                }}
+        {tabCount > 0 && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pb-2 text-[10px]">
+            {todayCount > 0 && (
+              <button
+                type="button"
+                className="font-medium text-muted-foreground hover:text-primary"
+                onClick={() => handleClearScope("today")}
               >
-                <div
-                  className={cn(
-                    "flex min-w-0",
-                    exiting && "pointer-events-none",
-                  )}
-                >
-                  <DropdownMenuItem
-                    asChild
-                    className={cn(
-                      "min-w-0 flex-1 cursor-pointer rounded-md px-2 py-1.5",
-                      !n.read && "bg-raised/50",
-                    )}
-                  >
-                    <Link
-                      href={n.href === "#" ? "#" : n.href}
-                      onClick={() => markNotificationRead(n.id)}
-                      className="flex min-w-0 items-start gap-2"
-                    >
-                      {statusDot ? (
-                        <span
-                          className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", statusDot)}
-                          aria-hidden
-                        />
-                      ) : (
-                        <span
-                          className={cn(
-                            "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                            n.read ? "bg-border" : "bg-primary",
-                          )}
-                          aria-hidden
-                        />
-                      )}
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[12px] font-medium leading-snug text-foreground">
-                          {n.title}
-                        </span>
-                        {!isOutbound && n.body ? (
-                          <span className="mt-0.5 block truncate text-[10.5px] leading-snug text-muted-foreground">
-                            {n.body}
-                          </span>
-                        ) : null}
-                        {meta ? (
-                          <span className="mt-0.5 block truncate text-[10px] leading-snug text-text-tertiary">
-                            {meta}
-                          </span>
-                        ) : null}
-                      </span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <button
-                    type="button"
-                    className="mt-0.5 mr-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-                    aria-label={`Delete notification: ${n.title}`}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDeleteOne(n);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
-                  </button>
-                </div>
-              </div>
-            );
-          })
+                Clear today
+              </button>
+            )}
+            {weekCount > 0 && (
+              <button
+                type="button"
+                className="font-medium text-muted-foreground hover:text-primary"
+                onClick={() => handleClearScope("week")}
+              >
+                Clear this week
+              </button>
+            )}
+            <button
+              type="button"
+              className="font-medium text-muted-foreground hover:text-primary"
+              aria-label={`Clear all ${filter} notifications`}
+              onClick={() => handleClearScope("all")}
+            >
+              Clear all
+            </button>
+          </div>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-t border-border px-1 py-1">
+          {filtered.length === 0 ? (
+            <p className="px-2 py-8 text-center text-[11px] text-muted-foreground">
+              {emptyCopy}
+            </p>
+          ) : (
+            filtered.map((n) => {
+              const exiting = exitingIds.has(n.id);
+              const exitDelayMs = exiting ? (exitDelayMsById[n.id] ?? 0) : 0;
+
+              return (
+                <div
+                  key={n.id}
+                  className={cn(
+                    "transition-[transform,opacity] ease motion-reduce:transition-none",
+                    exiting
+                      ? "translate-x-full opacity-0"
+                      : "translate-x-0 opacity-100",
+                  )}
+                  style={{
+                    transitionDuration: `${NOTIFICATION_ROW_EXIT_MS}ms`,
+                    transitionDelay: `${exitDelayMs}ms`,
+                  }}
+                >
+                  <NotificationItem
+                    item={n}
+                    expanded={selectedId === n.id}
+                    exiting={exiting}
+                    showOpenLink
+                    onOpen={() => {
+                      markNotificationRead(n.id);
+                      setSelectedId((current) => (current === n.id ? null : n.id));
+                    }}
+                    onDismiss={() => handleDeleteOne(n)}
+                  />
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="border-t border-border px-3 py-2">
+          <Link
+            href={historyHref}
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-primary-dark"
+            onClick={() => setOpen(false)}
+          >
+            <History className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+            Notification history
+          </Link>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -45,6 +45,9 @@ clients (`shared_with_client = true` only). `GET /api/documents` without
 `engagementId` is the staff vault list — same Path A scope; intern cannot see
 another intern’s client files. Notifications stay per-user
 (`user_id = ctx.userId`); admin/manager may create for another user.
+Clear/dismiss sets `dismissed_at` (inbox hide) and is self-scoped — other
+users’ ids in a batch are ignored. History (`GET /api/notifications?history=1`)
+returns dismissed + current. Do not hard-delete from the bell.
 `outlook_connections` is the signed-in staff user's own Microsoft mailbox
 (Graph Mail.Send); clients have no access. `email-directory` lists Outlook
 compose recipients from the same engagement scope (+ intern reports-to).

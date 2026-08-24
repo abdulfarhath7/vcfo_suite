@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { notifications } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -7,12 +7,18 @@ import type {
   AppNotification,
   NotificationKind,
 } from '@/lib/checklist-notifications';
+import {
+  NOTIFICATION_HISTORY_LIMIT,
+  NOTIFICATION_INBOX_LIMIT,
+} from '@/lib/notification-dismiss';
 
 /**
  * NOTIFICATIONS REPOSITORY — replaces vcfo.notifications localStorage.
  *
  * Access: each user only sees/updates their own rows (user_id = ctx.userId).
  * Extra AppNotification fields are JSON-encoded in `description` for round-trip.
+ * Clear/dismiss sets dismissed_at (inbox hide). History lists all rows including
+ * dismissed. Destroying rows is not part of the bell/history product.
  */
 
 type Row = typeof notifications.$inferSelect;
@@ -42,7 +48,7 @@ function parsePayload(description: string | null): StoredPayload & { body: strin
   return { body: description };
 }
 
-function encodePayload(n: Omit<AppNotification, 'id' | 'read' | 'createdAt'> & { body: string }): string {
+function encodePayload(n: Omit<AppNotification, 'id' | 'read' | 'createdAt' | 'dismissedAt'> & { body: string }): string {
   return JSON.stringify({
     body: n.body,
     kind: n.kind,
@@ -66,16 +72,26 @@ export function toAppNotification(row: Row): AppNotification {
     href: payload.href ?? '#',
     createdAt: row.createdAt.toISOString(),
     read: row.status === 'read',
+    dismissedAt: row.dismissedAt ? row.dismissedAt.toISOString() : null,
   };
 }
 
-export async function listNotifications(ctx: AuthContext): Promise<AppNotification[]> {
+export async function listNotifications(
+  ctx: AuthContext,
+  opts?: { includeDismissed?: boolean; limit?: number },
+): Promise<AppNotification[]> {
+  const includeDismissed = opts?.includeDismissed === true;
+  const limit =
+    opts?.limit ?? (includeDismissed ? NOTIFICATION_HISTORY_LIMIT : NOTIFICATION_INBOX_LIMIT);
+  const where = includeDismissed
+    ? eq(notifications.userId, ctx.userId)
+    : and(eq(notifications.userId, ctx.userId), isNull(notifications.dismissedAt));
   const rows = await db
     .select()
     .from(notifications)
-    .where(eq(notifications.userId, ctx.userId))
+    .where(where)
     .orderBy(desc(notifications.createdAt))
-    .limit(80);
+    .limit(limit);
   return rows.map(toAppNotification);
 }
 
@@ -158,44 +174,48 @@ export async function markAllNotificationsRead(ctx: AuthContext): Promise<number
   const rows = await db
     .update(notifications)
     .set({ status: 'read' })
-    .where(and(eq(notifications.userId, ctx.userId), eq(notifications.status, 'unread')))
+    .where(
+      and(
+        eq(notifications.userId, ctx.userId),
+        eq(notifications.status, 'unread'),
+        isNull(notifications.dismissedAt),
+      ),
+    )
     .returning({ id: notifications.id });
   return rows.length;
 }
 
-export async function deleteNotifications(
+/** Hide from the bell inbox. Does not delete. Other users' ids are ignored. */
+export async function dismissNotifications(
   ctx: AuthContext,
   ids: string[],
 ): Promise<AppNotification[]> {
   if (ids.length === 0) return [];
   const rows = await db
-    .delete(notifications)
-    .where(and(eq(notifications.userId, ctx.userId), inArray(notifications.id, ids)))
+    .update(notifications)
+    .set({ dismissedAt: new Date() })
+    .where(
+      and(
+        eq(notifications.userId, ctx.userId),
+        inArray(notifications.id, ids),
+        isNull(notifications.dismissedAt),
+      ),
+    )
     .returning();
   return rows.map(toAppNotification);
 }
 
-/** Re-insert rows the user undid, preserving id / read / createdAt. Scoped to self. */
+/** Put dismissed rows back in the inbox. Scoped to self. */
 export async function restoreNotifications(
   ctx: AuthContext,
-  items: AppNotification[],
+  items: AppNotification[] | string[],
 ): Promise<AppNotification[]> {
   if (items.length === 0) return [];
-  const inserted = await db
-    .insert(notifications)
-    .values(
-      items.map((n) => {
-        const parsed = Date.parse(n.createdAt);
-        return {
-          id: n.id,
-          userId: ctx.userId,
-          title: n.title,
-          description: encodePayload(n),
-          status: n.read ? ('read' as const) : ('unread' as const),
-          createdAt: Number.isNaN(parsed) ? new Date() : new Date(parsed),
-        };
-      }),
-    )
+  const ids = items.map((item) => (typeof item === 'string' ? item : item.id));
+  const rows = await db
+    .update(notifications)
+    .set({ dismissedAt: null })
+    .where(and(eq(notifications.userId, ctx.userId), inArray(notifications.id, ids)))
     .returning();
-  return inserted.map(toAppNotification);
+  return rows.map(toAppNotification);
 }

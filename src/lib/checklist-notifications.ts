@@ -54,6 +54,8 @@ export interface AppNotification {
   href: string;
   createdAt: string;
   read: boolean;
+  /** ISO time when cleared from the bell inbox; null/absent = still in inbox. */
+  dismissedAt?: string | null;
 }
 
 export type NotificationDraft = Omit<AppNotification, 'id' | 'read' | 'createdAt'>;

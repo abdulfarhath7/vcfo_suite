@@ -3,7 +3,7 @@ import { requireAuth } from '@/auth/guards';
 import {
   createNotification,
   createNotifications,
-  deleteNotifications,
+  dismissNotifications,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -16,14 +16,22 @@ import {
   parseRestoreNotifications,
 } from '@/lib/notification-dismiss';
 
-/** GET /api/notifications */
-export async function GET() {
+function historyRequested(request: Request): boolean {
+  const url = new URL(request.url);
+  const history = url.searchParams.get('history');
+  const scope = url.searchParams.get('scope');
+  return history === '1' || history === 'true' || scope === 'history';
+}
+
+/** GET /api/notifications — inbox (undismissed). `?history=1` includes dismissed. */
+export async function GET(request: Request) {
   const guard = await requireAuth();
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
   try {
-    const notifications = await listNotifications(guard.ctx);
+    const includeDismissed = historyRequested(request);
+    const notifications = await listNotifications(guard.ctx, { includeDismissed });
     return NextResponse.json({ notifications });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'list_failed';
@@ -31,7 +39,19 @@ export async function GET() {
   }
 }
 
-/** POST /api/notifications — create one or many; mark read; delete; restore. */
+function restoreIdsFromBody(body: {
+  id?: string;
+  ids?: unknown;
+  notifications?: unknown;
+}): string[] | null {
+  const fromIds = parseNotificationIds(body.ids ?? body.id);
+  if (fromIds) return fromIds;
+  const parsed = parseRestoreNotifications(body.notifications);
+  if (!parsed) return null;
+  return parsed.map((n) => n.id);
+}
+
+/** POST /api/notifications — create; mark read; dismiss (inbox hide); restore. */
 export async function POST(request: Request) {
   const guard = await requireAuth();
   if (guard.ok === false) {
@@ -66,29 +86,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ count });
   }
 
-  if (body.action === 'delete') {
+  if (body.action === 'dismiss' || body.action === 'delete') {
     const parsed = parseNotificationIds(body.ids ?? body.id);
     if (!parsed) {
       return NextResponse.json({ error: 'ids_required' }, { status: 400 });
     }
     const ids = parsed.filter(isPersistedNotificationId);
     try {
-      const notifications = await deleteNotifications(guard.ctx, ids);
+      const notifications = await dismissNotifications(guard.ctx, ids);
       return NextResponse.json({ notifications });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'delete_failed';
+      const message = err instanceof Error ? err.message : 'dismiss_failed';
       return NextResponse.json({ error: message }, { status: 500 });
     }
   }
 
   if (body.action === 'restore') {
-    const parsed = parseRestoreNotifications(body.notifications);
+    const parsed = restoreIdsFromBody(body);
     if (!parsed) {
       return NextResponse.json({ error: 'invalid_notifications' }, { status: 400 });
     }
-    const items = parsed.filter((n) => isPersistedNotificationId(n.id));
+    const ids = parsed.filter(isPersistedNotificationId);
     try {
-      const notifications = await restoreNotifications(guard.ctx, items);
+      const notifications = await restoreNotifications(guard.ctx, ids);
       return NextResponse.json({ notifications });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'restore_failed';

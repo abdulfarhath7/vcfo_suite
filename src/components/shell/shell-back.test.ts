@@ -16,6 +16,7 @@ describe('shouldShowShellBack', () => {
     expect(shouldShowShellBack('/app/intern/today')).toBe(false);
     expect(shouldShowShellBack('/app/intern/tasks')).toBe(false);
     expect(shouldShowShellBack('/app/intern/announcements')).toBe(false);
+    expect(shouldShowShellBack('/app/intern/notifications')).toBe(false);
     expect(shouldShowShellBack('/app/intern/clients')).toBe(false);
     expect(shouldShowShellBack('/app/intern/clients/')).toBe(false);
     expect(shouldShowShellBack('/app/intern/vault')).toBe(false);
@@ -44,6 +45,8 @@ describe('shouldShowShellBack', () => {
     expect(shouldShowShellBack('/app/admin/projects')).toBe(false);
     expect(shouldShowShellBack('/app/super/dashboard')).toBe(false);
     expect(shouldShowShellBack('/app/client/inbox')).toBe(false);
+    expect(shouldShowShellBack('/app/manager/notifications')).toBe(false);
+    expect(shouldShowShellBack('/app/client/notifications')).toBe(false);
     expect(shouldShowShellBack('/app/client/incorporation')).toBe(false);
     expect(shouldShowShellBack('/app/admin/people')).toBe(false);
   });

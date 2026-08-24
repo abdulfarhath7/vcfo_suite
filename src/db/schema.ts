@@ -648,9 +648,12 @@ export const notifications = pgTable(
     description: text('description'),
     status: text('status').notNull().default('unread'), // unread|read
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /** Inbox hide only — history still lists the row. */
+    dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
   },
   (t) => ({
     userIdx: index('notifications_user_idx').on(t.userId),
+    userDismissedIdx: index('notifications_user_dismissed_idx').on(t.userId, t.dismissedAt),
   }),
 );
 

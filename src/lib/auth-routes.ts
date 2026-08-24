@@ -31,6 +31,22 @@ export function roleMailPath(role: Role): string | null {
   }
 }
 
+/** Per-user notification history (dismissed + current). */
+export function roleNotificationsPath(role: Role): string {
+  switch (role) {
+    case 'super_admin':
+      return '/app/super/notifications';
+    case 'admin':
+      return '/app/admin/notifications';
+    case 'manager':
+      return '/app/manager/notifications';
+    case 'intern':
+      return '/app/intern/notifications';
+    case 'client':
+      return '/app/client/notifications';
+  }
+}
+
 /** Account / profile settings for the signed-in role’s shell. */
 export function roleSettingsPath(role: Role): string {
   switch (role) {

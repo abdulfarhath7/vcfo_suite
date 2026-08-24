@@ -272,13 +272,20 @@ export function useAppProviderValue(): AppContextValue {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
+    if (user?.id) {
+      queryClient.setQueryData(
+        ['notifications', user.id, 'history'],
+        (old: AppNotification[] | undefined) =>
+          old?.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      );
+    }
     void fetchJson('/api/notifications', {
       method: 'POST',
       body: JSON.stringify({ action: 'mark_read', id }),
     }).catch(() => {
       /* optimistic UI; refetch will reconcile */
     });
-  }, [setNotifications]);
+  }, [queryClient, setNotifications, user?.id]);
 
   const markAllNotificationsRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -315,8 +322,14 @@ export function useAppProviderValue(): AppContextValue {
           ? Promise.resolve()
           : fetchJson('/api/notifications', {
               method: 'POST',
-              body: JSON.stringify({ action: 'delete', ids: persistedIds }),
-            }).then(() => undefined);
+              body: JSON.stringify({ action: 'dismiss', ids: persistedIds }),
+            }).then(() => {
+              if (user?.id) {
+                void queryClient.invalidateQueries({
+                  queryKey: ['notifications', user.id, 'history'],
+                });
+              }
+            });
 
       const tracked = request.catch(() => {
         for (const id of idSet) dismissedIdsRef.current.delete(id);
@@ -332,7 +345,7 @@ export function useAppProviderValue(): AppContextValue {
         );
       }
     },
-    [patchNotificationsCache, setNotifications],
+    [patchNotificationsCache, queryClient, setNotifications, user?.id],
   );
 
   const restoreNotifications = useCallback(
@@ -340,8 +353,9 @@ export function useAppProviderValue(): AppContextValue {
       if (items.length === 0) return;
       const idSet = new Set(items.map((n) => n.id));
       for (const id of idSet) dismissedIdsRef.current.delete(id);
-      setNotifications((prev) => mergeNotificationsByCreatedAt(prev, items));
-      patchNotificationsCache((prev) => mergeNotificationsByCreatedAt(prev, items));
+      const restored = items.map((n) => ({ ...n, dismissedAt: null }));
+      setNotifications((prev) => mergeNotificationsByCreatedAt(prev, restored));
+      patchNotificationsCache((prev) => mergeNotificationsByCreatedAt(prev, restored));
 
       const persisted = items.filter((n) => isPersistedNotificationId(n.id));
       if (persisted.length === 0) return;
@@ -353,14 +367,22 @@ export function useAppProviderValue(): AppContextValue {
         try {
           await fetchJson('/api/notifications', {
             method: 'POST',
-            body: JSON.stringify({ action: 'restore', notifications: persisted }),
+            body: JSON.stringify({
+              action: 'restore',
+              ids: persisted.map((n) => n.id),
+            }),
           });
+          if (user?.id) {
+            void queryClient.invalidateQueries({
+              queryKey: ['notifications', user.id, 'history'],
+            });
+          }
         } catch {
           /* optimistic UI; refetch will reconcile */
         }
       })();
     },
-    [patchNotificationsCache, setNotifications],
+    [patchNotificationsCache, queryClient, setNotifications, user?.id],
   );
 
   const engagementsQuery = useQuery({
