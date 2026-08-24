@@ -559,6 +559,18 @@
     min-height: 44px;
   }
 
+  /* Shared expandable sidebar row: badge then far-right line chevron. */
+  .sidebar-nav-disclosure-trigger {
+    width: 100%;
+  }
+  .sidebar-nav-disclosure-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
   .gold-rule {
     height: 1px;
     background: linear-gradient(90deg,
@@ -1635,7 +1647,7 @@ html[data-reduce-motion="true"] .discrete-panel {
 .lead-board-col {
   border-radius: var(--radius);
   padding: 10px;
-  min-height: 280px;
+  min-height: 11rem;
 }
 .lead-board-col[data-col="action"] { background: oklch(var(--primary-light)); }
 .lead-board-col[data-col="progress"] { background: oklch(var(--accent-violet-soft)); }
@@ -1656,6 +1668,61 @@ html[data-reduce-motion="true"] .discrete-panel {
   border-radius: 8px;
   z-index: 0;
   pointer-events: none;
+}
+
+/*
+  Intern work dense row (Waiting On, action-queue tasks, My work < xl).
+  Status + age wrap as separate items; the CTA is flex-basis 100% so it
+  cannot share pixels with those badges on a 318px side rail.
+*/
+.intern-work-dense {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.intern-work-dense-main {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.intern-work-dense-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.intern-work-dense-title {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.intern-work-dense-sub {
+  margin-top: 0.125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.intern-work-dense-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.5rem;
+  min-width: 0;
+}
+.intern-work-dense-status,
+.intern-work-dense-age {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.intern-work-dense-cta {
+  flex: 1 0 100%;
+}
+.intern-work-dense-cta > * {
+  max-width: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {

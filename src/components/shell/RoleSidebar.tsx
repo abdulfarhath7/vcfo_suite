@@ -20,7 +20,6 @@ import {
   BookOpen,
   ClipboardCheck,
   ScrollText,
-  FileInput,
   Mail,
   Pin,
   PanelLeftClose,
@@ -39,7 +38,12 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { SidebarComplianceMini } from '@/components/shell/SidebarComplianceMini';
 import { InternClientsNav, INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
-import { SidebarNavGroup, type SidebarNavLeaf } from '@/components/shell/SidebarNavGroup';
+import {
+  SidebarNavCountBadge,
+  SidebarNavGroup,
+  sidebarNavTriggerClass,
+  type SidebarNavLeaf,
+} from '@/components/shell/SidebarNavGroup';
 import { shellDesktopNavExpanded } from '@/components/shell/intern-sidebar';
 import {
   MotionActivePill,
@@ -69,7 +73,16 @@ interface NavGroupDef {
   items: SidebarNavLeaf[];
 }
 
-type NavEntry = Item | NavGroupDef;
+type NavSectionBreak = { kind: 'break'; id: string };
+
+type NavEntry = Item | NavGroupDef | NavSectionBreak;
+
+/** Hairline before Analytics + Audit Log so they read as a quieter tools cluster. */
+const NAV_TOOLS_BREAK: NavSectionBreak = { kind: 'break', id: 'tools' };
+
+function isNavSectionBreak(entry: NavEntry): entry is NavSectionBreak {
+  return 'kind' in entry && entry.kind === 'break';
+}
 
 function isNavGroup(entry: NavEntry): entry is NavGroupDef {
   return 'items' in entry;
@@ -122,10 +135,11 @@ const firmAdminItems: NavEntry[] = [
   updatesGroup('/app/admin'),
   { to: '/app/admin/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
-  { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
   { to: '/app/admin/approvals', label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
   { to: '/app/admin/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
+  { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/admin'),
+  NAV_TOOLS_BREAK,
   { to: '/app/admin/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
   { to: '/app/admin/audit-log', label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
 ];
@@ -204,10 +218,11 @@ export function SidebarNavBody({
     { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
     { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
     { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
-    { to: `${staffBase}/mail`, label: 'Send email', icon: Mail, iconTone: TONE.work },
     { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
     { to: `${staffBase}/compliance`, label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
+    { to: `${staffBase}/mail`, label: 'Send email', icon: Mail, iconTone: TONE.work },
     docsGroup(staffBase),
+    NAV_TOOLS_BREAK,
     { to: `${staffBase}/analytics`, label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
     { to: `${staffBase}/audit-log`, label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
   ];
@@ -222,11 +237,11 @@ export function SidebarNavBody({
       badge: kpis.action.total,
     },
     { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
+    { to: '/app/intern/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
     docsGroup('/app/intern', Archive),
     updatesGroup('/app/intern'),
-    { to: '/app/intern/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
-    { to: '/app/intern/requests', label: 'Requests', icon: FileInput, iconTone: TONE.queue },
     { to: '/app/intern/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
+    NAV_TOOLS_BREAK,
     { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
     { to: '/app/intern/audit-log', label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
   ];
@@ -286,6 +301,9 @@ export function SidebarNavBody({
       >
         <LayoutGroup id={layoutIdPrefix}>
         {items.map((it) => {
+          if (isNavSectionBreak(it)) {
+            return <SidebarNavSectionBreak key={it.id} expanded={expanded} ink={ink} />;
+          }
           if (isNavGroup(it)) {
             return (
               <SidebarNavGroup
@@ -327,13 +345,12 @@ export function SidebarNavBody({
               onClick={onNavigate}
               title={!expanded ? it.label : undefined}
               className={cn(
-                'nav-item relative flex min-h-[42px] items-center gap-2.5 rounded-xl px-2.5 text-[13px] transition-colors',
-                active
-                  ? 'font-medium text-role-foreground'
-                  : ink === 'light'
-                    ? 'text-white/90 hover:text-white'
-                    : 'text-muted-foreground hover:text-foreground',
-                !expanded && 'justify-center px-0',
+                sidebarNavTriggerClass({
+                  ink,
+                  active,
+                  expanded,
+                  fillHover: false,
+                }),
                 user.role === 'client' && expanded && 'text-[13.5px]',
               )}
               {...sidebarHoverHandlers(hoverFollow, it.to)}
@@ -362,12 +379,12 @@ export function SidebarNavBody({
               />
               {expanded && (
                 <>
-                  <span className="relative z-10 flex-1 truncate">{it.label}</span>
-                  {it.badge != null && it.badge > 0 && (
-                    <span className="relative z-10 mono min-w-[1.25rem] rounded-full bg-role px-1.5 py-0.5 text-center text-[10px] font-medium text-white">
-                      {it.badge > 99 ? '99+' : it.badge}
+                  <span className="relative z-10 min-w-0 flex-1 truncate">{it.label}</span>
+                  {(it.badge ?? 0) > 0 ? (
+                    <span className="sidebar-nav-disclosure-meta relative z-10 ml-auto inline-flex shrink-0 items-center gap-1">
+                      <SidebarNavCountBadge count={it.badge ?? 0} />
                     </span>
-                  )}
+                  ) : null}
                 </>
               )}
             </Link>
@@ -449,6 +466,45 @@ export function SidebarNavBody({
         </Link>
       </div>
     </>
+  );
+}
+
+function SidebarNavSectionBreak({
+  expanded,
+  ink,
+}: {
+  expanded: boolean;
+  ink: 'light' | 'dark';
+}) {
+  return (
+    <div
+      role="separator"
+      aria-hidden
+      className={cn('flex items-center gap-2 px-2.5', expanded ? 'py-2.5' : 'py-1.5')}
+    >
+      <span
+        className={cn(
+          'h-px flex-1 rounded-full',
+          ink === 'light' ? 'bg-white/28' : 'bg-primary/22',
+        )}
+      />
+      {expanded ? (
+        <span
+          className={cn(
+            'shrink-0 font-mono text-[8.5px] uppercase tracking-[0.14em]',
+            ink === 'light' ? 'text-white/50' : 'text-primary/55',
+          )}
+        >
+          Insights
+        </span>
+      ) : null}
+      <span
+        className={cn(
+          'h-px flex-1 rounded-full',
+          ink === 'light' ? 'bg-white/28' : 'bg-primary/22',
+        )}
+      />
+    </div>
   );
 }
 

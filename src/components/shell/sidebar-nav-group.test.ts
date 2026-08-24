@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { isSidebarGroupActive, type SidebarNavLeaf } from '@/components/shell/SidebarNavGroup';
+import {
+  isSidebarGroupActive,
+  sidebarNavTriggerClass,
+  type SidebarNavLeaf,
+} from '@/components/shell/SidebarNavGroup';
 
 const leaves: SidebarNavLeaf[] = [
   { to: '/app/intern/vault', label: 'Vault', icon: () => null },
@@ -11,5 +15,16 @@ describe('sidebar nav groups', () => {
     expect(isSidebarGroupActive('/app/intern/vault', leaves)).toBe(true);
     expect(isSidebarGroupActive('/app/intern/knowledge-bank', leaves)).toBe(true);
     expect(isSidebarGroupActive('/app/intern/today', leaves)).toBe(false);
+  });
+
+  it('uses the shared full-width disclosure trigger', () => {
+    const cls = sidebarNavTriggerClass({
+      ink: 'light',
+      active: false,
+      expanded: true,
+      fillHover: false,
+    });
+    expect(cls).toContain('sidebar-nav-disclosure-trigger');
+    expect(cls).toContain('w-full');
   });
 });
