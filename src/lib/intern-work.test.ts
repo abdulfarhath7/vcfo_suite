@@ -6,9 +6,15 @@ import {
   internGreeting,
   internPaceLine,
   internQueueCompanyHref,
+  internTimelineGrid,
   internTimelineRows,
+  internWeekAnchorYmd,
   internWeekChipKind,
   internWeekChipsForDay,
+  internWeekDayCounts,
+  internWorkItemsForDay,
+  istWeekYmds,
+  ymdFromIsoInIst,
   internWorkBoard,
   internWorkKpis,
   internWorkMatches,
@@ -331,7 +337,98 @@ describe('this-week done visibility', () => {
       now,
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.mark).toMatchObject({ type: 'diamond', label: 'done', tone: 'success' });
+    expect(rows[0]).toMatchObject({ ymd: '2026-08-18', kind: 'done' });
+  });
+});
+
+describe('IST date mapping', () => {
+  it('keeps YYYY-MM-DD on the civil day and maps IST midnight from UTC', () => {
+    expect(ymdFromIsoInIst('2026-08-25')).toBe('2026-08-25');
+    expect(ymdFromIsoInIst('2026-08-24T18:30:00.000Z')).toBe('2026-08-25');
+    expect(ymdFromIsoInIst('2026-08-20T09:00:00+05:30')).toBe('2026-08-20');
+  });
+
+  it('builds a Monday–Sunday IST week that includes today', () => {
+    const week = istWeekYmds(now, 7);
+    expect(week).toHaveLength(7);
+    expect(week[0]).toBe('2026-08-17');
+    expect(week[6]).toBe('2026-08-23');
+    expect(week).toContain('2026-08-20');
+  });
+
+  it('places overdue filings and undated nudges on today, not empty cells', () => {
+    const today = '2026-08-20';
+    const overdueFiling = weekItem({
+      id: 'filing:old',
+      source: 'filing',
+      kind: 'filing',
+      title: 'GSTR-1',
+      dueAt: '2026-08-11',
+      isOverdue: true,
+    });
+    const nudge = weekItem({
+      id: 'step:nudge',
+      kind: 'waiting-manager',
+      title: 'Pre-1 · Name reservation',
+    });
+    const thursday = weekItem({
+      id: 'filing:thu',
+      source: 'filing',
+      kind: 'filing',
+      title: 'GSTR-3B',
+      dueAt: '2026-08-21',
+    });
+    expect(internWeekChipKind(overdueFiling, today, today)).toBe('filing');
+    expect(internWeekChipKind(overdueFiling, '2026-08-21', today)).toBeNull();
+    expect(internWeekChipKind(nudge, today, today)).toBe('nudge');
+    expect(internWeekChipKind(nudge, '2026-08-21', today)).toBeNull();
+    expect(internWeekChipKind(thursday, '2026-08-21', today)).toBe('filing');
+    expect(internWeekChipKind(thursday, today, today)).toBeNull();
+    expect(internWeekDayCounts([overdueFiling, nudge, thursday], today, today)).toEqual({
+      filing: 1,
+      step: 0,
+      nudge: 1,
+      done: 0,
+    });
+    expect(internWorkItemsForDay([overdueFiling, nudge, thursday], '2026-08-21', today).map((i) => i.id)).toEqual([
+      'filing:thu',
+    ]);
+  });
+
+  it('anchors waiting-client steps on their IST due day this week', () => {
+    const item = weekItem({
+      id: 'step:wait',
+      kind: 'waiting-client',
+      dueAt: '2026-08-22',
+    });
+    expect(internWeekAnchorYmd(item, '2026-08-20', istWeekYmds(now, 7))).toBe('2026-08-22');
+    expect(internWeekChipKind(item, '2026-08-22', '2026-08-20')).toBe('nudge');
+  });
+});
+
+describe('intern timeline grid', () => {
+  it('puts cards in the due-day column instead of spanning a gantt bar', () => {
+    const grid = internTimelineGrid(
+      [
+        weekItem({
+          id: 'filing:a',
+          source: 'filing',
+          kind: 'filing',
+          title: 'GSTR-1',
+          dueAt: '2026-08-21',
+        }),
+        weekItem({
+          id: 'step:open',
+          kind: 'in-progress',
+        }),
+      ],
+      now,
+    );
+    const friday = grid.days.find((col) => col.ymd === '2026-08-21');
+    const todayCol = grid.days.find((col) => col.ymd === '2026-08-20');
+    expect(friday?.items.map((i) => i.id)).toEqual(['filing:a']);
+    expect(todayCol?.items.map((i) => i.id)).toEqual(['step:open']);
+    expect(grid.days).toHaveLength(14);
   });
 });
 
@@ -340,6 +437,7 @@ describe('internWorkPath', () => {
     expect(internWorkPath({ focus: 'action', tag: 'rejected' })).toBe(
       '/app/intern/tasks?focus=action&tag=rejected',
     );
+    expect(internWorkPath({ day: '2026-08-25', view: 'tl' })).toBe('/app/intern/tasks?day=2026-08-25');
   });
 });
 
