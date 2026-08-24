@@ -7,6 +7,13 @@ import type { Transition, Variants } from 'framer-motion';
 
 export const ease = [0.22, 1, 0.36, 1] as const;
 
+/** macOS minimize — slow start, then a hard suck into the dock. */
+export const genieEase = [0.42, 0, 0.9, 0.12] as const;
+export const genieTransition: Transition = {
+  duration: 0.72,
+  ease: genieEase,
+};
+
 export const springSnappy: Transition = {
   type: 'spring',
   stiffness: 420,

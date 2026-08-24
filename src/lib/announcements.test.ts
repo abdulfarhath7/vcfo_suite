@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   OFFICIAL_FEED_HOSTS,
   announcementAttribution,
+  announcementAuthorName,
+  announcementMatchesFilter,
   announcementYmdIst,
   announcementsForDailyPopup,
+  announcementPopupStorageKey,
+  ANNOUNCEMENT_FIRST_VISIT_POPUP_CAP,
+  ANNOUNCEMENT_LIVE_POPUP_CAP,
   assertSafeFeedUrl,
   assertSafeHttpsUrl,
   canWriteAnnouncements,
@@ -14,6 +19,10 @@ import {
   isOfficialFeedHost,
   parseAnnouncementKind,
   parseRssOrAtom,
+  requestAnnouncementPopup,
+  measureGenieDock,
+  ANNOUNCEMENT_SHOW_EVENT,
+  selectAnnouncementPopups,
   stripHtml,
   type Announcement,
 } from '@/lib/announcements';
@@ -145,6 +154,80 @@ describe('daily announcement popup', () => {
   });
 });
 
+describe('live announcement popup queue', () => {
+  it('keys popup storage per user', () => {
+    expect(announcementPopupStorageKey('user-1')).toBe('vcfo.announcements.popup.user-1');
+  });
+
+  it('on first visit shows today’s unseen only, and seeds the full history', () => {
+    const now = new Date('2026-08-24T09:00:00+05:30');
+    const items = [
+      fakeAnnouncement('new-today', '2026-08-24T08:00:00+05:30'),
+      fakeAnnouncement('also-today', '2026-08-24T07:00:00+05:30'),
+      fakeAnnouncement('old', '2026-08-20T10:00:00+05:30'),
+    ];
+    const { queue, seedIds } = selectAnnouncementPopups({
+      items,
+      viewerId: 'intern-1',
+      poppedIds: null,
+      readIds: new Set(),
+      dailySeenIds: new Set(),
+      now,
+    });
+    expect(queue.map((row) => row.id)).toEqual(['new-today', 'also-today']);
+    expect(seedIds).toEqual(['new-today', 'also-today', 'old']);
+    expect(queue.length).toBeLessThanOrEqual(ANNOUNCEMENT_FIRST_VISIT_POPUP_CAP);
+  });
+
+  it('skips already-read, daily-seen, and the author’s own posts on first visit', () => {
+    const now = new Date('2026-08-24T09:00:00+05:30');
+    const items = [
+      fakeAnnouncement('mine', '2026-08-24T08:00:00+05:30', { authorId: 'mgr-1' }),
+      fakeAnnouncement('read', '2026-08-24T07:00:00+05:30'),
+      fakeAnnouncement('daily', '2026-08-24T06:00:00+05:30'),
+      fakeAnnouncement('fresh', '2026-08-24T05:00:00+05:30'),
+    ];
+    const { queue } = selectAnnouncementPopups({
+      items,
+      viewerId: 'mgr-1',
+      poppedIds: null,
+      readIds: new Set(['read']),
+      dailySeenIds: new Set(['daily']),
+      now,
+    });
+    expect(queue.map((row) => row.id)).toEqual(['fresh']);
+  });
+
+  it('after init, queues only ids that have not been genie-popped', () => {
+    const items = [
+      fakeAnnouncement('brand-new', '2026-08-24T10:00:00+05:30'),
+      fakeAnnouncement('already', '2026-08-24T08:00:00+05:30'),
+    ];
+    const { queue, seedIds } = selectAnnouncementPopups({
+      items,
+      viewerId: 'intern-1',
+      poppedIds: new Set(['already']),
+      readIds: new Set(),
+      dailySeenIds: new Set(),
+    });
+    expect(queue.map((row) => row.id)).toEqual(['brand-new']);
+    expect(seedIds).toEqual(['brand-new']);
+    expect(queue.length).toBeLessThanOrEqual(ANNOUNCEMENT_LIVE_POPUP_CAP);
+  });
+
+  it('requestAnnouncementPopup always fires a show event, even for already-popped ids', () => {
+    const item = fakeAnnouncement('clicked', '2026-08-24T10:00:00+05:30');
+    let seen: string | null = null;
+    const onShow = (event: Event) => {
+      seen = (event as CustomEvent<{ announcement: Announcement }>).detail.announcement.id;
+    };
+    window.addEventListener(ANNOUNCEMENT_SHOW_EVENT, onShow);
+    requestAnnouncementPopup(item);
+    window.removeEventListener(ANNOUNCEMENT_SHOW_EVENT, onShow);
+    expect(seen).toBe('clicked');
+  });
+});
+
 describe('vCFO portal catalog', () => {
   it('groups by service-line task head and keeps Quarterly spelling', () => {
     const heads = groupedVcfoPortalTasks().map((group) => group.head);
@@ -236,14 +319,52 @@ describe('announcement kind and attribution', () => {
     expect(parseAnnouncementKind('incorp')).toBe('incorp');
   });
 
-  it('attributes feed vs manager vs admin', () => {
+  it('attributes feeds as VCFOSuite and people by name, not role', () => {
     expect(announcementAttribution({ origin: 'feed', authorName: 'Income Tax' })).toBe('From VCFOSuite');
     expect(
       announcementAttribution({ origin: 'manual', authorName: 'Priya Shah', authorRole: 'manager' }),
-    ).toBe('From Manager — Priya Shah');
+    ).toBe('From Priya Shah');
     expect(announcementAttribution({ origin: 'manual', authorName: 'Ops', authorRole: 'admin' })).toBe(
-      'From Admin',
+      'From Ops',
     );
+    expect(
+      announcementAttribution({ origin: 'manual', authorName: 'Asha Rao', authorRole: 'super_admin' }),
+    ).toBe('From Asha Rao');
+    expect(announcementAttribution({ origin: 'manual', authorName: 'priya@vcfo.local' })).toBe('From priya');
+    expect(announcementAttribution({ origin: 'manual', authorName: '  ' })).toBe('From Staff');
+  });
+
+  it('maps All / Important / General filters onto existing kinds', () => {
+    expect(announcementMatchesFilter('general', 'all')).toBe(true);
+    expect(announcementMatchesFilter('deadline', 'all')).toBe(true);
+    expect(announcementMatchesFilter('gst', 'all')).toBe(true);
+    expect(announcementMatchesFilter('deadline', 'important')).toBe(true);
+    expect(announcementMatchesFilter('compliance', 'important')).toBe(true);
+    expect(announcementMatchesFilter('general', 'important')).toBe(false);
+    expect(announcementMatchesFilter('tax', 'important')).toBe(false);
+    expect(announcementMatchesFilter('general', 'general')).toBe(true);
+    expect(announcementMatchesFilter('deadline', 'general')).toBe(false);
+  });
+
+  it('shows author name without a From prefix in row chrome', () => {
+    expect(announcementAuthorName({ origin: 'feed', authorName: 'Income Tax' })).toBe('VCFOSuite');
+    expect(announcementAuthorName({ origin: 'manual', authorName: 'Krishna Tungam' })).toBe('Krishna Tungam');
+    expect(announcementAuthorName({ origin: 'manual', authorName: 'priya@vcfo.local' })).toBe('priya');
+  });
+});
+
+describe('genie dock', () => {
+  it('lands the flight inside the megaphone, not beside it', () => {
+    const dock = measureGenieDock(
+      { left: 400, top: 200, width: 420, height: 280 },
+      { left: 900, top: 8, width: 36, height: 36 },
+    );
+    expect(dock.to.width).toBeLessThan(36);
+    expect(dock.to.height).toBe(dock.to.width);
+    expect(dock.to.left).toBeGreaterThan(900);
+    expect(dock.to.left + dock.to.width).toBeLessThan(900 + 36);
+    expect(dock.to.top).toBeGreaterThan(8);
+    expect(dock.to.top + dock.to.height).toBeLessThan(8 + 36);
   });
 });
 

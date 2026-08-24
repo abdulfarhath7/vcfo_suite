@@ -20,6 +20,9 @@ export function useAnnouncements(limit?: number) {
         await fetch(`/api/announcements${q}`),
       );
     },
+    staleTime: 2_000,
+    refetchInterval: 4_000,
+    refetchOnWindowFocus: true,
   });
 }
 

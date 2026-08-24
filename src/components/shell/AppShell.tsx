@@ -6,7 +6,7 @@ import { useApp } from "@/context/AppContext";
 import { RoleSidebar, MobileNavSheet } from "./RoleSidebar";
 import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
-import { DailyAnnouncementsDialog } from "@/components/announcements/DailyAnnouncementsDialog";
+import { AnnouncementLivePopup } from "@/components/announcements/AnnouncementLivePopup";
 import { ShellNavProvider } from "./shell-nav-context";
 import { isInternEngagementPathname } from "@/lib/project-step-path";
 import { shellDesktopNavExpanded } from "@/components/shell/intern-sidebar";
@@ -78,7 +78,7 @@ export function AppShell({
         <RoleSidebar />
         <MobileNavSheet />
         <CommandPalette />
-        <DailyAnnouncementsDialog />
+        <AnnouncementLivePopup />
 
         <div className={cn("relative z-10 pl-0 transition-[padding] duration-300 ease-out", desktopPad)}>
           <div className="sticky top-0 z-20">
@@ -86,7 +86,7 @@ export function AppShell({
           </div>
           <main
             className={cn(
-              "mx-auto page-fade-up px-4 pb-8 pt-4 sm:px-6 sm:pb-10 sm:pt-5 lg:pr-4",
+              "mx-auto page-fade-up px-5 pb-10 pt-5 sm:px-7 sm:pb-12 sm:pt-6 lg:pr-6",
               mainMaxWidth,
             )}
           >

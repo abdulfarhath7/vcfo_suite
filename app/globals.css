@@ -1498,6 +1498,17 @@ html[data-reduce-motion="true"] .discrete-panel {
   transition-duration: 160ms;
 }
 
+@keyframes announcement-live-enter {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+.announcement-live-enter {
+  animation: announcement-live-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+[data-reduce-motion="true"] .announcement-live-enter {
+  animation: none;
+}
+
 .ann-kind {
   display: inline-flex;
   align-items: center;
@@ -1514,6 +1525,22 @@ html[data-reduce-motion="true"] .discrete-panel {
 .ann-kind-mca, .ann-kind-reg { background: oklch(var(--accent-sky-soft)); color: oklch(var(--accent-sky)); }
 .ann-kind-compliance, .ann-kind-deadline { background: oklch(var(--danger-light)); color: oklch(var(--danger-text)); }
 .ann-kind-incorp, .ann-kind-post-incorp { background: oklch(var(--success-light)); color: oklch(var(--success-text)); }
+
+/* Unread affordance: 3px primary bar on the row’s left edge (announcements + notifications). */
+.unread-edge {
+  position: relative;
+}
+.unread-edge[data-unread="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: oklch(var(--primary));
+  pointer-events: none;
+  z-index: 1;
+}
 
 .appear-swatch {
   position: relative;

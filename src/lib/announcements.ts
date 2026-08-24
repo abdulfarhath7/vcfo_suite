@@ -49,18 +49,44 @@ export function inferAnnouncementKind(title: string, sourceName?: string | null)
   return 'general';
 }
 
+function authorDisplayLabel(authorName: string): string {
+  const name = authorName.trim();
+  if (!name) return 'Staff';
+  const at = name.indexOf('@');
+  if (at > 0) return name.slice(0, at);
+  return name;
+}
+
+export function announcementAuthorName(item: {
+  origin: AnnouncementOrigin;
+  authorName: string;
+}): string {
+  if (item.origin === 'feed') return 'VCFOSuite';
+  return authorDisplayLabel(item.authorName);
+}
+
 export function announcementAttribution(item: {
   origin: AnnouncementOrigin;
   authorName: string;
   authorRole?: string | null;
 }): string {
   if (item.origin === 'feed') return 'From VCFOSuite';
-  if (item.authorRole === 'manager') {
-    const name = item.authorName.trim();
-    return name ? `From Manager — ${name}` : 'From Manager';
-  }
-  if (item.authorRole === 'admin' || item.authorRole === 'super_admin') return 'From Admin';
-  return item.authorName.trim() ? `From ${item.authorName.trim()}` : 'From VCFOSuite';
+  return `From ${authorDisplayLabel(item.authorName)}`;
+}
+
+export const ANNOUNCEMENT_LIST_FILTERS = ['all', 'important', 'general'] as const;
+export type AnnouncementListFilter = (typeof ANNOUNCEMENT_LIST_FILTERS)[number];
+
+/** No `important` kind exists — deadline + compliance are the urgency equivalents. */
+export const ANNOUNCEMENT_IMPORTANT_KINDS: readonly AnnouncementKind[] = ['deadline', 'compliance'];
+
+export function announcementMatchesFilter(
+  kind: AnnouncementKind,
+  filter: AnnouncementListFilter,
+): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'general') return kind === 'general';
+  return ANNOUNCEMENT_IMPORTANT_KINDS.includes(kind);
 }
 
 export interface Announcement {
@@ -93,6 +119,33 @@ export interface AnnouncementSource {
 export const ANNOUNCEMENT_READ_PREFIX = 'vcfo.announcements.read.';
 export const ANNOUNCEMENT_READ_EVENT = 'vcfo-announcements-read';
 export const ANNOUNCEMENT_DAILY_PREFIX = 'vcfo.announcements.daily.';
+export const ANNOUNCEMENT_POPUP_PREFIX = 'vcfo.announcements.popup.';
+export const ANNOUNCEMENT_POPUP_EVENT = 'vcfo-announcements-popup';
+export const ANNOUNCEMENT_GENIE_LAND_EVENT = 'vcfo-announcements-genie-land';
+export const ANNOUNCEMENT_SHOW_EVENT = 'vcfo-announcements-show';
+export const ANNOUNCEMENT_BELL_SELECTOR = '[data-announcements-bell]';
+export const ANNOUNCEMENT_BELL_TARGET_SELECTOR = '[data-announcements-bell-target]';
+
+export type GenieBox = { left: number; top: number; width: number; height: number };
+
+/** End the flight as a disc in the middle of the megaphone, not beside it. */
+export function measureGenieDock(
+  from: GenieBox,
+  to: GenieBox,
+): { from: GenieBox; to: GenieBox } {
+  const size = Math.max(5, Math.min(to.width, to.height) * 0.38);
+  return {
+    from: { left: from.left, top: from.top, width: from.width, height: from.height },
+    to: {
+      left: to.left + (to.width - size) / 2,
+      top: to.top + (to.height - size) / 2,
+      width: size,
+      height: size,
+    },
+  };
+}
+export const ANNOUNCEMENT_FIRST_VISIT_POPUP_CAP = 3;
+export const ANNOUNCEMENT_LIVE_POPUP_CAP = 8;
 export const ANNOUNCEMENT_IST = 'Asia/Kolkata';
 
 export function announcementYmdIst(date: Date = new Date()): string {
@@ -136,6 +189,103 @@ export function announcementsForDailyPopup(
       return publishedDay === today || !readIds.has(item.id);
     })
     .slice(0, 12);
+}
+
+export function announcementPopupStorageKey(userId: string): string {
+  return `${ANNOUNCEMENT_POPUP_PREFIX}${userId}`;
+}
+
+function parseStoredIdSet(raw: string | null): Set<string> {
+  if (!raw) return new Set();
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Ids already presented as a live popup. `null` means this browser has never initialized the set. */
+export function readAnnouncementPopupIds(userId: string): Set<string> | null {
+  if (typeof window === 'undefined' || !userId) return null;
+  try {
+    const raw = window.localStorage.getItem(announcementPopupStorageKey(userId));
+    if (raw == null) return null;
+    return parseStoredIdSet(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function writeAnnouncementPopupIds(userId: string, ids: Iterable<string>): void {
+  if (typeof window === 'undefined' || !userId) return;
+  try {
+    window.localStorage.setItem(announcementPopupStorageKey(userId), JSON.stringify([...new Set(ids)]));
+    window.dispatchEvent(new Event(ANNOUNCEMENT_POPUP_EVENT));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function addAnnouncementPopupIds(userId: string, ids: Iterable<string>): Set<string> {
+  const next = readAnnouncementPopupIds(userId) ?? new Set<string>();
+  for (const id of ids) {
+    if (id) next.add(id);
+  }
+  writeAnnouncementPopupIds(userId, next);
+  return next;
+}
+
+export type AnnouncementShowDetail = { announcement: Announcement };
+
+/** Explicit reopen — ignores the auto-popup seen set. */
+export function requestAnnouncementPopup(item: Announcement): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<AnnouncementShowDetail>(ANNOUNCEMENT_SHOW_EVENT, { detail: { announcement: item } }),
+  );
+}
+
+export function readDailyAnnouncementSeenIds(userId: string, ymd: string): string[] {
+  if (typeof window === 'undefined' || !userId) return [];
+  try {
+    const raw = window.localStorage.getItem(dailyAnnouncementStorageKey(userId, ymd));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { ids?: unknown };
+    return Array.isArray(parsed?.ids) ? parsed.ids.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function selectAnnouncementPopups(input: {
+  items: Announcement[];
+  viewerId: string;
+  poppedIds: Set<string> | null;
+  readIds: Set<string>;
+  dailySeenIds: ReadonlySet<string>;
+  now?: Date;
+}): { queue: Announcement[]; seedIds: string[] } {
+  const { items, viewerId, poppedIds, readIds, dailySeenIds } = input;
+  const today = announcementYmdIst(input.now ?? new Date());
+
+  if (poppedIds === null) {
+    const queue = items
+      .filter((item) => {
+        if (item.authorId === viewerId) return false;
+        if (readIds.has(item.id)) return false;
+        if (dailySeenIds.has(item.id)) return false;
+        return announcementYmdIst(new Date(item.publishedAt)) === today;
+      })
+      .slice(0, ANNOUNCEMENT_FIRST_VISIT_POPUP_CAP);
+    return { queue, seedIds: items.map((item) => item.id) };
+  }
+
+  const fresh = items.filter((item) => !poppedIds.has(item.id));
+  const queue = fresh
+    .filter((item) => item.authorId !== viewerId)
+    .slice(0, ANNOUNCEMENT_LIVE_POPUP_CAP);
+  return { queue, seedIds: fresh.map((item) => item.id) };
 }
 
 export function readAnnouncementIds(userId: string): Set<string> {

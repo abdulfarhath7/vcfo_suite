@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { Megaphone, Plus, RefreshCw, Rss, Trash2, X } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
@@ -10,19 +10,22 @@ import { SEO } from '@/components/SEO';
 import { AccentButton, EmptyStateIllustrated, Surface } from '@/components/noir';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/context/AppContext';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import {
+  ANNOUNCEMENT_READ_EVENT,
   OFFICIAL_FEED_HOSTS,
   canManageAnnouncementSources,
   canWriteAnnouncements,
+  readAnnouncementIds,
+  requestAnnouncementPopup,
+  writeAnnouncementReadIds,
   type Announcement,
-  type AnnouncementKind,
   type AnnouncementSource,
 } from '@/lib/announcements';
 import { useAnnouncementSources, useAnnouncements } from '@/lib/use-announcements';
-import { AnnouncementBody, AnnouncementKindPicker } from '@/components/announcements/AnnouncementList';
+import { AnnouncementComposeForm } from '@/components/announcements/AnnouncementCompose';
+import { AnnouncementRow } from '@/components/announcements/AnnouncementList';
 import { OfficialPortalsDirectory } from '@/components/announcements/OfficialPortalsDirectory';
 import { cn } from '@/lib/utils';
 
@@ -40,105 +43,30 @@ function feedErrorMessage(code: string): string {
   return code.replaceAll('_', ' ');
 }
 
-function ComposePanel({
-  kind,
-  setKind,
-  message,
-  setMessage,
-  link,
-  setLink,
-  posting,
-  onPost,
-  onClose,
-}: {
-  kind: AnnouncementKind;
-  setKind: (kind: AnnouncementKind) => void;
-  message: string;
-  setMessage: (value: string) => void;
-  link: string;
-  setLink: (value: string) => void;
-  posting: boolean;
-  onPost: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <Surface flat className="p-4 xl:sticky xl:top-20">
-      <form
-        aria-labelledby="compose-heading"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onPost();
-        }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 id="compose-heading" className="text-[13px] font-semibold tracking-tight text-ink">
-              New announcement
-            </h2>
-            <p className="mt-0.5 text-[12px] text-muted-foreground">Posted under your name.</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-raised hover:text-ink"
-            aria-label="Close composer"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="mt-3 grid gap-3">
-          <div>
-            <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Type</p>
-            <AnnouncementKindPicker value={kind} onChange={setKind} />
-          </div>
-          <div>
-            <Label htmlFor="ann-message" className="text-[11px] text-muted-foreground">
-              Message
-            </Label>
-            <Textarea
-              id="ann-message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="What changed, who it affects, and what the team should do."
-              maxLength={8000}
-              className="mt-1.5 min-h-[88px]"
-            />
-          </div>
-          <div>
-            <Label htmlFor="ann-link" className="text-[11px] text-muted-foreground">
-              Source link <span className="font-normal">(optional)</span>
-            </Label>
-            <Input
-              id="ann-link"
-              type="url"
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder="https://"
-              className="mt-1.5 h-9"
-            />
-          </div>
-          <AccentButton type="submit" disabled={posting || !message.trim()}>
-            <Plus className="h-4 w-4" />
-            {posting ? 'Posting…' : 'Post'}
-          </AccentButton>
-        </div>
-      </form>
-    </Surface>
-  );
+function ComposeQueryOpener({ canWrite, onOpen }: { canWrite: boolean; onOpen: () => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (canWrite && searchParams.get('compose') === '1') onOpen();
+  }, [canWrite, onOpen, searchParams]);
+  return null;
 }
 
 function LatestList({
   loading,
   items,
   canWrite,
+  readIds,
   onCompose,
   onRemove,
+  onView,
 }: {
   loading: boolean;
   items: Announcement[];
   canWrite: boolean;
+  readIds: Set<string>;
   onCompose: () => void;
   onRemove: (id: string) => void;
+  onView: (item: Announcement) => void;
 }) {
   return (
     <Surface flat className="overflow-hidden">
@@ -172,27 +100,31 @@ function LatestList({
         />
       ) : (
         <div className="divide-y divide-border/80">
-          {items.map((item) => (
-            <article
-              key={item.id}
-              className="flex gap-3 px-4 py-3.5 transition-colors hover:bg-raised/50 sm:px-5"
-            >
-              <div className="min-w-0 flex-1">
-                <AnnouncementBody item={item} />
-              </div>
-              {canWrite ? (
-                <button
-                  type="button"
-                  onClick={() => onRemove(item.id)}
-                  aria-label="Remove announcement"
-                  className="inline-flex h-8 shrink-0 items-center gap-1 self-start rounded-md px-2 text-[12px] text-muted-foreground hover:bg-danger-light hover:text-danger-text"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only">Remove</span>
-                </button>
-              ) : null}
-            </article>
-          ))}
+          {items.map((item) => {
+            const unread = !readIds.has(item.id);
+            return (
+              <article key={item.id} className="flex items-stretch hover:bg-raised/40">
+                <div className="min-w-0 flex-1">
+                  <AnnouncementRow
+                    item={item}
+                    unread={unread}
+                    onActivate={() => onView(item)}
+                  />
+                </div>
+                {canWrite ? (
+                  <button
+                    type="button"
+                    onClick={() => onRemove(item.id)}
+                    aria-label="Remove announcement"
+                    className="inline-flex h-8 shrink-0 items-center gap-1 self-center rounded-md px-2 text-[12px] text-muted-foreground hover:bg-danger-light hover:text-danger-text"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only">Remove</span>
+                  </button>
+                ) : null}
+              </article>
+            );
+          })}
         </div>
       )}
     </Surface>
@@ -325,48 +257,41 @@ export default function AnnouncementsPage() {
   const sources = useAnnouncementSources(canSources);
 
   const [composing, setComposing] = useState(false);
-  const [message, setMessage] = useState('');
-  const [link, setLink] = useState('');
-  const [kind, setKind] = useState<AnnouncementKind>('general');
+  const [readTick, setReadTick] = useState(0);
   const [sourceName, setSourceName] = useState('');
   const [feedUrl, setFeedUrl] = useState('');
-  const [posting, setPosting] = useState(false);
   const [addingFeed, setAddingFeed] = useState(false);
   const [fetchingId, setFetchingId] = useState<string | null>(null);
+
+  const openCompose = useCallback(() => setComposing(true), []);
+
+  useEffect(() => {
+    const sync = () => setReadTick((n) => n + 1);
+    window.addEventListener(ANNOUNCEMENT_READ_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(ANNOUNCEMENT_READ_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  const items = list.data?.announcements ?? [];
+  const readIds = useMemo(
+    () => (user?.id ? readAnnouncementIds(user.id) : new Set<string>()),
+    [user?.id, items, readTick],
+  );
+
+  const markOne = (id: string) => {
+    if (!user?.id) return;
+    const next = new Set(readIds);
+    next.add(id);
+    writeAnnouncementReadIds(user.id, next);
+    setReadTick((n) => n + 1);
+  };
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['announcements'] });
     await queryClient.invalidateQueries({ queryKey: ['announcement-sources'] });
-  };
-
-  const post = async () => {
-    const body = message.trim();
-    if (!body) return;
-    setPosting(true);
-    try {
-      const res = await fetch('/api/announcements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: body.split('\n')[0].slice(0, 200),
-          body,
-          kind,
-          sourceUrl: link.trim() || null,
-        }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(data.error ?? 'create_failed');
-      setMessage('');
-      setLink('');
-      setKind('general');
-      setComposing(false);
-      toastSuccess('Announcement posted', 'Everyone in the firm can see it.');
-      await refresh();
-    } catch (err) {
-      toastError('Could not post', err instanceof Error ? feedErrorMessage(err.message) : 'Try again.');
-    } finally {
-      setPosting(false);
-    }
   };
 
   const remove = async (id: string) => {
@@ -441,11 +366,13 @@ export default function AnnouncementsPage() {
     }
   };
 
-  const items = list.data?.announcements ?? [];
   const showComposer = canWrite && composing;
 
   return (
     <PageTransition>
+      <Suspense fallback={null}>
+        <ComposeQueryOpener canWrite={canWrite} onOpen={openCompose} />
+      </Suspense>
       <SEO
         title="Announcements — VCFO Suite"
         description="Firm-wide news posted by managers and admins, plus official tax feeds."
@@ -454,9 +381,6 @@ export default function AnnouncementsPage() {
       <PageHeader
         title="Announcements"
         subtitle="Firm notes, circulars, and official filings."
-        eyebrow="Firm board"
-        accent="sky"
-        icon={Megaphone}
         actions={
           canWrite ? (
             <AccentButton
@@ -464,60 +388,52 @@ export default function AnnouncementsPage() {
               variant={composing ? 'outline' : 'solid'}
               onClick={() => setComposing((open) => !open)}
               aria-expanded={composing}
+              className="rounded-xl"
             >
               {composing ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
               {composing ? 'Close' : 'New announcement'}
             </AccentButton>
           ) : undefined
         }
-      />
-
-      <div
-        className={cn(
-          'flex flex-col gap-5',
-          showComposer && 'xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start xl:gap-5',
-        )}
-      >
-        {showComposer ? (
-          <div className="xl:order-2">
-            <ComposePanel
-              kind={kind}
-              setKind={setKind}
-              message={message}
-              setMessage={setMessage}
-              link={link}
-              setLink={setLink}
-              posting={posting}
-              onPost={() => void post()}
+        footer={
+          showComposer ? (
+            <AnnouncementComposeForm
+              bare
+              idPrefix="page-ann"
               onClose={() => setComposing(false)}
             />
-          </div>
-        ) : null}
+          ) : null
+        }
+      />
 
-        <div className="flex min-w-0 flex-col gap-5 xl:order-1">
-          <LatestList
-            loading={list.isLoading}
-            items={items}
-            canWrite={canWrite}
-            onCompose={() => setComposing(true)}
-            onRemove={(id) => void remove(id)}
+      <div className="flex min-w-0 flex-col gap-5">
+        <LatestList
+          loading={list.isLoading}
+          items={items}
+          canWrite={canWrite}
+          readIds={readIds}
+          onCompose={openCompose}
+          onRemove={(id) => void remove(id)}
+          onView={(item) => {
+            markOne(item.id);
+            requestAnnouncementPopup(item);
+          }}
+        />
+        <OfficialPortalsDirectory />
+        {canSources ? (
+          <FeedsSection
+            sources={sources.data?.sources ?? []}
+            sourceName={sourceName}
+            setSourceName={setSourceName}
+            feedUrl={feedUrl}
+            setFeedUrl={setFeedUrl}
+            addingFeed={addingFeed}
+            fetchingId={fetchingId}
+            onAdd={() => void addFeed()}
+            onPull={(id) => void pullFeed(id)}
+            onRemove={(id) => void removeFeed(id)}
           />
-          <OfficialPortalsDirectory />
-          {canSources ? (
-            <FeedsSection
-              sources={sources.data?.sources ?? []}
-              sourceName={sourceName}
-              setSourceName={setSourceName}
-              feedUrl={feedUrl}
-              setFeedUrl={setFeedUrl}
-              addingFeed={addingFeed}
-              fetchingId={fetchingId}
-              onAdd={() => void addFeed()}
-              onPull={(id) => void pullFeed(id)}
-              onRemove={(id) => void removeFeed(id)}
-            />
-          ) : null}
-        </div>
+        ) : null}
       </div>
     </PageTransition>
   );
