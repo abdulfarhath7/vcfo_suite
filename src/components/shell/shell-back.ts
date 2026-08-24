@@ -21,7 +21,6 @@ export const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
   INTERN_CLIENTS_HREF,
   '/app/intern/vault',
   '/app/intern/mail',
-  '/app/intern/requests',
   '/app/intern/compliance',
   '/app/intern/knowledge-bank',
   '/app/intern/analytics',
@@ -90,13 +89,25 @@ function roleHomeForPath(pathname: string): string {
   return (role && ROLE_HOME[role]) || '/';
 }
 
-/** True on nested AppShell routes; false on marketing, login, and nav homes.
+/** Role home for crumbs (intern Today, staff dashboards, client Inbox). */
+export function shellRoleHomePath(pathname: string): string {
+  return roleHomeForPath(pathname);
+}
+
+/** True home / role index — omit the page-title back control. */
+export function isShellHomePath(pathname: string): boolean {
+  const path = normalizeShellPathname(pathname);
+  if (!path.startsWith('/app/')) return false;
+  if (ROLE_INDEX_PATHS.has(path)) return true;
+  return path === roleHomeForPath(path);
+}
+
+/** True on nested AppShell routes; false on marketing, login, and the true home.
  *  Consumed by `PageBackButton` (page title), not the top bar. */
 export function shouldShowShellBack(pathname: string): boolean {
   const path = normalizeShellPathname(pathname);
   if (!path.startsWith('/app/')) return false;
-  if (ROLE_INDEX_PATHS.has(path)) return false;
-  return !SHELL_PRIMARY_PATHS.has(path);
+  return !isShellHomePath(path);
 }
 
 /**

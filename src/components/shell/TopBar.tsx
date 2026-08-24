@@ -32,9 +32,9 @@ import { roleHomePath, roleSettingsPath } from "@/lib/auth-routes";
 import { UserFace } from "@/components/common/UserFace";
 import { CommandPalette } from "@/components/shell/CommandPalette";
 import {
-  resolveShellCrumbCurrent,
+  resolveShellCrumbSegments,
   shellBreadcrumb,
-  type ShellCrumb,
+  type ShellCrumbSegment,
   type ShellCrumbIcon,
 } from "@/components/shell/shell-crumbs";
 import { cn } from "@/lib/utils";
@@ -58,53 +58,51 @@ const CRUMB_ICONS: Record<ShellCrumbIcon, LucideIcon> = {
 };
 
 function ShellLocationTrail({
-  crumb,
-  leaf,
+  icon,
+  segments,
 }: {
-  crumb: ShellCrumb;
-  leaf: string;
+  icon: ShellCrumbIcon;
+  segments: ShellCrumbSegment[];
 }) {
-  const Icon = CRUMB_ICONS[crumb.icon];
+  const Icon = CRUMB_ICONS[icon];
 
   return (
-    <nav
-      aria-label="Location"
-      className="hidden min-w-0 max-w-[min(46vw,22rem)] items-center gap-1.5 md:flex"
-    >
+    <nav aria-label="Location" className="hidden min-w-0 flex-1 items-center gap-1.5 sm:flex">
       <span
         className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-primary-light text-primary"
         aria-hidden
       >
         <Icon className="h-3.5 w-3.5" strokeWidth={2} />
       </span>
-      {crumb.parent ? (
-        <>
-          {crumb.parentHref ? (
-            <Link
-              href={crumb.parentHref}
-              className="min-w-0 truncate text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {crumb.parent}
-            </Link>
-          ) : (
-            <span className="min-w-0 truncate text-[13px] text-muted-foreground">
-              {crumb.parent}
-            </span>
-          )}
-          <ChevronRight
-            className="h-3 w-3 shrink-0 text-muted-foreground/45"
-            strokeWidth={2}
-            aria-hidden
-          />
-        </>
-      ) : null}
-      <span
-        className="max-w-[28ch] truncate text-[13px] font-medium text-ink"
-        title={leaf}
-        aria-current="page"
-      >
-        {leaf}
-      </span>
+      <ol className="flex min-w-0 list-none items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {segments.map((seg, index) => (
+          <li key={`${seg.label}-${index}`} className="flex shrink-0 items-center gap-1">
+            {index > 0 ? (
+              <ChevronRight
+                className="h-3 w-3 shrink-0 text-muted-foreground/45"
+                strokeWidth={2}
+                aria-hidden
+              />
+            ) : null}
+            {seg.href ? (
+              <Link
+                href={seg.href}
+                className="whitespace-nowrap text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {seg.label}
+              </Link>
+            ) : (
+              <span
+                className="whitespace-nowrap text-[13px] font-medium text-ink"
+                title={seg.label}
+                aria-current="page"
+              >
+                {seg.label}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
     </nav>
   );
 }
@@ -114,7 +112,7 @@ export function TopBar() {
   const { openMobile } = useShellNav();
   const pathname = usePathname();
   const crumb = shellBreadcrumb(pathname);
-  const leaf = resolveShellCrumbCurrent(crumb, engagements);
+  const segments = resolveShellCrumbSegments(crumb, engagements);
   const homeHref = user ? roleHomePath(user.role) : "/";
   const profileHref = user ? roleSettingsPath(user.role) : "/";
 
@@ -137,7 +135,7 @@ export function TopBar() {
         <SbcLogo variant="navbar" decorative />
       </Link>
 
-      <ShellLocationTrail crumb={crumb} leaf={leaf} />
+      <ShellLocationTrail icon={crumb.icon} segments={segments} />
 
       <CommandPalette />
 

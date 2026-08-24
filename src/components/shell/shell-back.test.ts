@@ -12,21 +12,20 @@ describe('shouldShowShellBack', () => {
     expect(shouldShowShellBack('/roles')).toBe(false);
   });
 
-  it('hides on intern sidebar homes and the clients list', () => {
+  it('hides only on intern Today / role index, not other intern pages', () => {
     expect(shouldShowShellBack('/app/intern/today')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/tasks')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/announcements')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/notifications')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/clients')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/clients/')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/vault')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/compliance')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/knowledge-bank')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/mail')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/requests')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/analytics')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/audit-log')).toBe(false);
     expect(shouldShowShellBack('/app/intern')).toBe(false);
+    expect(shouldShowShellBack('/app/intern/tasks')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/announcements')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/notifications')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/clients')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/clients/')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/vault')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/compliance')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/knowledge-bank')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/mail')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/analytics')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/audit-log')).toBe(true);
   });
 
   it('shows on intern settings, engagement, step, and board-resolution', () => {
@@ -38,17 +37,19 @@ describe('shouldShowShellBack', () => {
     expect(shouldShowShellBack('/app/intern/engagements/pexpo-inc/board-resolution')).toBe(
       true,
     );
+    expect(shouldShowShellBack('/app/intern/compliance/tracker')).toBe(true);
   });
 
-  it('hides on manager, admin, super, and client primary nav', () => {
+  it('hides on other-role homes only; other primary pages get a back control', () => {
     expect(shouldShowShellBack('/app/manager/dashboard')).toBe(false);
-    expect(shouldShowShellBack('/app/admin/projects')).toBe(false);
+    expect(shouldShowShellBack('/app/admin/dashboard')).toBe(false);
     expect(shouldShowShellBack('/app/super/dashboard')).toBe(false);
     expect(shouldShowShellBack('/app/client/inbox')).toBe(false);
-    expect(shouldShowShellBack('/app/manager/notifications')).toBe(false);
-    expect(shouldShowShellBack('/app/client/notifications')).toBe(false);
-    expect(shouldShowShellBack('/app/client/incorporation')).toBe(false);
-    expect(shouldShowShellBack('/app/admin/people')).toBe(false);
+    expect(shouldShowShellBack('/app/admin/projects')).toBe(true);
+    expect(shouldShowShellBack('/app/manager/notifications')).toBe(true);
+    expect(shouldShowShellBack('/app/client/notifications')).toBe(true);
+    expect(shouldShowShellBack('/app/client/incorporation')).toBe(true);
+    expect(shouldShowShellBack('/app/admin/people')).toBe(true);
   });
 
   it('shows on staff project detail, new project, step, settings, and people extra segments', () => {

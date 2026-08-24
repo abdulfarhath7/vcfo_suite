@@ -111,8 +111,8 @@ export function CommandPalette() {
       className={cn(
         "min-w-0",
         commandOpen
-          ? "absolute inset-x-2 top-[7px] z-40 sm:relative sm:inset-x-auto sm:top-auto sm:z-auto sm:mx-auto sm:max-w-md sm:flex-1"
-          : "relative mx-auto hidden max-w-md flex-1 sm:block",
+          ? "absolute inset-x-2 top-[7px] z-40 sm:relative sm:inset-x-auto sm:top-auto sm:z-auto sm:w-[min(100%,18rem)] sm:min-w-[8rem] sm:max-w-xs sm:flex-none sm:shrink"
+          : "relative hidden min-w-[8rem] w-[min(100%,12.5rem)] max-w-xs shrink sm:block lg:w-[min(100%,16rem)]",
       )}
     >
       <Command
@@ -218,6 +218,7 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/mail")}><Mail className="w-4 h-4 mr-2" />Send email</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/analytics")}><BarChart3 className="w-4 h-4 mr-2" />Analytics</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/compliance")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/intern/compliance/tracker")}><CalendarCheck className="w-4 h-4 mr-2" />Filing tracker</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/audit-log")}><History className="w-4 h-4 mr-2" />Audit log</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/knowledge-bank")}><BookOpen className="w-4 h-4 mr-2" />Knowledge Bank</CommandItem>
             </CommandGroup>
