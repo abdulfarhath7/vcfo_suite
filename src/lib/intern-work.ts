@@ -128,6 +128,16 @@ export function internFirstName(name: string | null | undefined): string {
   return token || 'there';
 }
 
+/** Primary intern_id or engagement_leads membership. */
+export function internAssignedToEngagement(
+  engagement: Pick<Engagement, 'internId' | 'leadIds'>,
+  internId: string,
+): boolean {
+  if (!internId) return false;
+  if (engagement.internId === internId) return true;
+  return Boolean(engagement.leadIds?.includes(internId));
+}
+
 export function internGreeting(hour: number): 'morning' | 'afternoon' | 'evening' {
   if (hour < 12) return 'morning';
   if (hour < 17) return 'afternoon';
@@ -486,7 +496,7 @@ export function buildInternWorkItems(opts: {
   const out: InternWorkItem[] = [];
 
   for (const engagement of opts.engagements) {
-    if (engagement.internId !== opts.internId) continue;
+    if (!internAssignedToEngagement(engagement, opts.internId)) continue;
     const state = opts.getChecklistState(engagement);
     const incYmd = ymdFromIsoInIst(engagement.incorporationDate);
     const incorporation = incYmd ? parseIstNoon(incYmd) : null;
@@ -542,7 +552,7 @@ export function buildInternWorkItems(opts: {
 
   for (const filing of opts.filings ?? []) {
     const engagement = byId.get(filing.engagementId);
-    if (!engagement || engagement.internId !== opts.internId) continue;
+    if (!engagement || !internAssignedToEngagement(engagement, opts.internId)) continue;
     const kind = filingKind(filing, now);
     if (!kind) continue;
     const dueAt = ymdFromIsoInIst(filing.nextDue) ?? filing.nextDue.slice(0, 10);
@@ -584,7 +594,7 @@ export function buildInternWorkItems(opts: {
   for (const request of opts.requests ?? []) {
     if (request.status !== 'pending') continue;
     const engagement = byId.get(request.engagementId);
-    if (!engagement || engagement.internId !== opts.internId) continue;
+    if (!engagement || !internAssignedToEngagement(engagement, opts.internId)) continue;
     const age = ageLabelFrom(request.uploadedAt, now, 'age');
     out.push({
       id: `request:${request.id}`,

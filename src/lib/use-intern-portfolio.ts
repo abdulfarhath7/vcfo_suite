@@ -10,7 +10,7 @@ import {
 } from '@/lib/intern-dashboard';
 import type { BoardResolutionProgressSnapshot } from '@/lib/client-progress-board';
 import { useComplianceFilings } from '@/hooks/use-compliance-filings';
-import { buildInternWorkItems, internWorkKpis } from '@/lib/intern-work';
+import { buildInternWorkItems, internAssignedToEngagement, internWorkKpis } from '@/lib/intern-work';
 
 /** Intern-scoped engagements, checklist queue, and progress from AppContext. */
 export function useInternPortfolio() {
@@ -18,7 +18,7 @@ export function useInternPortfolio() {
   const internId = user?.internId ?? '';
 
   const myEngagements = useMemo(
-    () => (internId ? engagements.filter((e) => e.internId === internId) : []),
+    () => (internId ? engagements.filter((e) => internAssignedToEngagement(e, internId)) : []),
     [engagements, internId],
   );
 
