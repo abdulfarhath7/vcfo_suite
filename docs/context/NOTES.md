@@ -342,8 +342,14 @@ Append here whenever something costs more than a minute to figure out.
 - My work (`/app/intern/tasks`) is List / Board / Timeline of the same classified items
   (steps + filings + pending document requests). Nav badge = needs-action count.
   `groupInternWeekQueueByCompany` still exists for tests; Today no longer renders that grid.
-  This week strip + My work `?focus=due` list **completed this IST week** (struck / done chip).
-  Hero “This week” KPI stays remaining due (`dueWeek`), not activity. Historical done stays out.
+  This week strip maps intern work onto IST days: due/complete dates stay on
+  that civil day; overdue or undated open work (waiting, filings, steps) lands
+  on **today** so the rail is not empty while Waiting On still has rows. Day
+  cells show legend-coloured counts (not truncated labels). Clicking a day
+  filters the action queue + waiting list; `?day=YYYY-MM-DD` opens My work.
+  Dates go through `ymdFromIsoInIst` — never UTC `slice(0, 10)` on a timestamp.
+  My work Timeline is a Mon–Sun CSS grid of cards (`internTimelineGrid`), not
+  a 14-column Gantt with overlapping diamonds.
 - Metric top-bar colours use semantic tokens (`primary`, `danger`, `accent-sky`,
   `success`) — never `orange-*` (those still alias blue). Waiting is sky/pink/cyan,
   never khaki or brown.
