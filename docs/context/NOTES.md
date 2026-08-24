@@ -505,4 +505,14 @@ Append here whenever something costs more than a minute to figure out.
   Path A in `listDocuments` / `getDocumentById` (assigned + membership only).
   No extra migration.
 
+## Shell location trail + attached search
+
+- Top bar trail is `[icon chip] parent › leaf` from `shellBreadcrumb`
+  (`shell-crumbs.ts`). Docs / Updates parents have no href (no `/docs` or
+  `/updates` page). Intern engagement parent is Clients → `/app/intern/clients`.
+  Page H1 is the leaf only — not a second breadcrumb. Do not use ASCII `->`.
+- Command palette is not a centered dialog. Typing happens in the TopBar search
+  pill; results drop down under it. Cmd/Ctrl+K focuses that input. Do not mount
+  a second `CommandPalette` in AppShell.
+
 
