@@ -49,7 +49,7 @@ export default function InternToday() {
                   : 'lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,1fr)]',
               )}
             >
-              <LeadActionQueue items={workItems} now={now} />
+              <LeadActionQueue userId={user?.id ?? ''} items={workItems} now={now} />
               <div className="flex min-w-0 flex-col gap-4">
                 <LeadFocusCard userId={user?.id ?? ''} items={workItems} />
                 <LeadPhaseProgress engagements={myEngagements} getState={getStateForEngagement} />

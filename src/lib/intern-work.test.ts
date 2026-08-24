@@ -5,6 +5,7 @@ import {
   createCustomInternFocus,
   internGreeting,
   internPaceLine,
+  internQueueCompanyHref,
   internTimelineRows,
   internWeekChipKind,
   internWeekChipsForDay,
@@ -15,7 +16,9 @@ import {
   internWorkStepTitle,
   isCustomInternFocus,
   parseInternFocus,
+  parseInternQueueExpanded,
   serializeInternFocus,
+  serializeInternQueueExpanded,
   ymdInIst,
   type InternWorkItem,
 } from '@/lib/intern-work';
@@ -347,6 +350,22 @@ describe('internWorkStepTitle', () => {
   });
 });
 
+describe('internQueueCompanyHref', () => {
+  it('uses the intern engagement path from a step href', () => {
+    expect(
+      internQueueCompanyHref('eng-1', [
+        weekItem({ id: 'x', href: '/app/intern/engagements/abc-india/step/client-details' }),
+      ]),
+    ).toBe('/app/intern/engagements/abc-india');
+  });
+
+  it('falls back to /app/intern/engagements/{id}', () => {
+    expect(internQueueCompanyHref('eng-1', [weekItem({ id: 'x', href: '/app/intern/compliance' })])).toBe(
+      '/app/intern/engagements/eng-1',
+    );
+  });
+});
+
 describe('ymdInIst', () => {
   it('formats the fixture instant as 20 Aug 2026 in IST', () => {
     expect(ymdInIst(now)).toBe('2026-08-20');
@@ -402,5 +421,17 @@ describe('intern focus todos', () => {
   it('ignores garbage rows', () => {
     expect(parseInternFocus(null)).toEqual([]);
     expect(parseInternFocus([{ done: true }, 12, { id: '' }])).toEqual([]);
+  });
+});
+
+describe('intern queue expanded ids', () => {
+  it('parses unique trimmed engagement ids', () => {
+    expect(parseInternQueueExpanded(['eng-1', ' eng-2 ', 'eng-1', 12, ''])).toEqual(['eng-1', 'eng-2']);
+  });
+
+  it('ignores non-arrays and serializes a set without duplicates', () => {
+    expect(parseInternQueueExpanded(null)).toEqual([]);
+    expect(parseInternQueueExpanded({ ids: ['x'] })).toEqual([]);
+    expect(serializeInternQueueExpanded(new Set(['b', 'a', 'b']))).toEqual(['b', 'a']);
   });
 });

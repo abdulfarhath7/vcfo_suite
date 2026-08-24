@@ -47,6 +47,7 @@ export type InternChipTone =
 export const IST = 'Asia/Kolkata';
 export const INTERN_TASKS_PATH = '/app/intern/tasks';
 export const INTERN_FOCUS_STORAGE_PREFIX = 'vcfo.intern.focus.';
+export const INTERN_QUEUE_EXPANDED_STORAGE_PREFIX = 'vcfo.intern.queue.expanded.';
 export const INTERN_WORK_VIEW_KEY = 'vcfo.intern.workView';
 export const INTERN_HERO_MOOD_KEY = 'vcfo.intern.heroMood';
 
@@ -730,6 +731,15 @@ export function internActionQueueByCompany(
   return list;
 }
 
+/** Intern client page for an action-queue company (`/app/intern/engagements/{slug|id}`). */
+export function internQueueCompanyHref(engagementId: string, items: InternWorkItem[] = []): string {
+  for (const item of items) {
+    const match = /^(\/app\/intern\/engagements\/[^/]+)/.exec(item.href);
+    if (match?.[1]) return match[1];
+  }
+  return internEngagementPath({ id: engagementId });
+}
+
 export type WeekChipKind = 'filing' | 'step' | 'nudge' | 'done';
 
 export interface InternWeekChip {
@@ -1027,6 +1037,52 @@ export function internWaitingItems(items: InternWorkItem[]): InternWorkItem[] {
 
 export function internFocusStorageKey(userId: string): string {
   return `${INTERN_FOCUS_STORAGE_PREFIX}${userId}`;
+}
+
+export function internQueueExpandedStorageKey(userId: string): string {
+  return `${INTERN_QUEUE_EXPANDED_STORAGE_PREFIX}${userId}`;
+}
+
+/** Unique trimmed engagement ids. Drops non-strings and empties. */
+export function parseInternQueueExpanded(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const row of raw) {
+    if (typeof row !== 'string') continue;
+    const id = row.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
+
+export function serializeInternQueueExpanded(ids: Iterable<string>): string[] {
+  return parseInternQueueExpanded([...ids]);
+}
+
+export function readInternQueueExpanded(userId: string): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(internQueueExpandedStorageKey(userId));
+    if (!raw) return [];
+    return parseInternQueueExpanded(JSON.parse(raw) as unknown);
+  } catch {
+    return [];
+  }
+}
+
+export function writeInternQueueExpanded(userId: string, ids: Iterable<string>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(
+      internQueueExpandedStorageKey(userId),
+      JSON.stringify(serializeInternQueueExpanded(ids)),
+    );
+  } catch {
+    /* quota / private mode */
+  }
 }
 
 export interface InternFocusEntry {
