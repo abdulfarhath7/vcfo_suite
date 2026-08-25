@@ -1,3 +1,5 @@
+import { ACT_SWATCH, type StatutoryAct } from '@/data/statutory-calendar-fy2627';
+
 /** DOM id for a statutory agenda day group — calendar clicks scroll here. */
 export function statutoryAgendaId(isoDate: string): string {
   return `statutory-agenda-${isoDate}`;
@@ -31,4 +33,14 @@ export function dateHasAgendaItems(
 ): boolean {
   const items = byDate.get(isoDate);
   return Boolean(items && items.length > 0);
+}
+
+/**
+ * Soft cell wash for a day that has deadlines.
+ * Single-act: that act’s `--stat-*-soft`. Multi-act: the first act’s soft wash
+ * (not a hue blend) so the cell still reads as “has work”.
+ */
+export function statutoryCellWash(acts: readonly StatutoryAct[]): string | null {
+  const lead = acts[0];
+  return lead ? ACT_SWATCH[lead].soft : null;
 }

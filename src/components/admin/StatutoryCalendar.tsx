@@ -21,6 +21,7 @@ import {
   muteAllActs,
   selectAllActs,
   statutoryAgendaId,
+  statutoryCellWash,
   toggleMutedAct,
 } from '@/components/admin/statutory-calendar-utils';
 import { cn } from '@/lib/utils';
@@ -275,7 +276,7 @@ export function StatutoryCalendar({
               const hasItems = Boolean(items && items.length > 0);
               const isToday = cell.iso === todayIso;
               const isSelected = cell.iso === selectedDay;
-              const washAct = acts.length === 1 ? acts[0] : null;
+              const washClass = statutoryCellWash(acts);
               const dayNum = (
                 <span
                   className={cn(
@@ -291,9 +292,9 @@ export function StatutoryCalendar({
 
               const cellInner = (
                 <>
-                  {washAct ? (
+                  {washClass ? (
                     <span
-                      className={cn('absolute inset-0 rounded-md', ACT_SWATCH[washAct].soft)}
+                      className={cn('absolute inset-0 rounded-md', washClass)}
                       aria-hidden
                     />
                   ) : null}

@@ -6,6 +6,7 @@ import {
   muteAllActs,
   selectAllActs,
   statutoryAgendaId,
+  statutoryCellWash,
   toggleMutedAct,
 } from './statutory-calendar-utils';
 
@@ -62,6 +63,21 @@ describe('act swatches', () => {
     const solids = Object.values(ACT_SWATCH).map((s) => s.solid);
     expect(new Set(solids).size).toBe(solids.length);
     expect(solids).toHaveLength(8);
+  });
+});
+
+describe('statutoryCellWash', () => {
+  it('uses that act’s soft wash for a single-act day', () => {
+    expect(statutoryCellWash(['GST'])).toBe(ACT_SWATCH.GST.soft);
+  });
+
+  it('uses the first act’s soft wash on multi-act days (no blend)', () => {
+    expect(statutoryCellWash(['FEMA', 'IT', 'STPI/SEZ'])).toBe(ACT_SWATCH.FEMA.soft);
+    expect(statutoryCellWash(['GST', 'LABOUR', 'STPI/SEZ'])).toBe(ACT_SWATCH.GST.soft);
+  });
+
+  it('returns null when the day has no acts', () => {
+    expect(statutoryCellWash([])).toBeNull();
   });
 });
 
