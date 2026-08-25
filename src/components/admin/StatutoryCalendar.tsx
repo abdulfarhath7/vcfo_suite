@@ -18,6 +18,7 @@ import { CompanyPicker } from '@/components/admin/CompanyPicker';
 import {
   dateHasAgendaItems,
   isSelectAllActive,
+  muteAllActs,
   selectAllActs,
   statutoryAgendaId,
   toggleMutedAct,
@@ -192,7 +193,9 @@ export function StatutoryCalendar({
         <button
           type="button"
           aria-pressed={selectAllOn}
-          onClick={() => setMutedActs(selectAllActs())}
+          onClick={() =>
+            setMutedActs(selectAllOn ? muteAllActs(ACTS) : selectAllActs())
+          }
           className={cn(
             'inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-[10.5px] font-semibold transition-all',
             selectAllOn

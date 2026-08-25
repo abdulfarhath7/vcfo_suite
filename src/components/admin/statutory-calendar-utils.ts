@@ -20,6 +20,11 @@ export function selectAllActs<T>(): Set<T> {
   return new Set();
 }
 
+/** Mute every category so the calendar shows no deadlines. */
+export function muteAllActs<T>(acts: Iterable<T>): Set<T> {
+  return new Set(acts);
+}
+
 export function dateHasAgendaItems(
   isoDate: string,
   byDate: ReadonlyMap<string, readonly unknown[]>,

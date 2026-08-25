@@ -3,6 +3,7 @@ import { ACT_SWATCH } from '@/data/statutory-calendar-fy2627';
 import {
   dateHasAgendaItems,
   isSelectAllActive,
+  muteAllActs,
   selectAllActs,
   statutoryAgendaId,
   toggleMutedAct,
@@ -33,6 +34,22 @@ describe('select-all chips', () => {
 
   it('select-all click clears mutes even after a partial toggle', () => {
     let muted: Set<(typeof ACTS)[number]> = toggleMutedAct(new Set<(typeof ACTS)[number]>(), 'IT');
+    expect(isSelectAllActive(muted)).toBe(false);
+    muted = selectAllActs();
+    expect(isSelectAllActive(muted)).toBe(true);
+    expect(muted.size).toBe(0);
+  });
+
+  it('all-on click mutes every act', () => {
+    expect(isSelectAllActive(selectAllActs())).toBe(true);
+    const muted = muteAllActs(ACTS);
+    expect(isSelectAllActive(muted)).toBe(false);
+    expect(muted.size).toBe(ACTS.length);
+    for (const act of ACTS) expect(muted.has(act)).toBe(true);
+  });
+
+  it('all-muted click restores select-all', () => {
+    let muted: Set<(typeof ACTS)[number]> = muteAllActs(ACTS);
     expect(isSelectAllActive(muted)).toBe(false);
     muted = selectAllActs();
     expect(isSelectAllActive(muted)).toBe(true);
