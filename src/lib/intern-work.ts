@@ -1107,6 +1107,106 @@ export function internTimelineRows(items: InternWorkItem[], now: Date) {
   );
 }
 
+export type InternTimelinePriority = 'overdue' | 'soon' | 'ok' | 'done';
+
+/** Civil IST start/end for a Gantt bar. */
+export function internTimelineSpan(
+  item: InternWorkItem,
+  todayYmd: string,
+): { start: string; end: string } {
+  if (item.kind === 'done') {
+    const end =
+      ymdFromIsoInIst(item.completedAt) ?? ymdFromIsoInIst(item.dueAt) ?? todayYmd;
+    const start = ymdFromIsoInIst(item.startedAt) ?? end;
+    return start > end ? { start: end, end } : { start, end };
+  }
+  const end = ymdFromIsoInIst(item.dueAt) ?? todayYmd;
+  const start = ymdFromIsoInIst(item.startedAt) ?? todayYmd;
+  return start > end ? { start: end, end } : { start, end };
+}
+
+/** Time-left colour bucket (IST). Soon = due today through 3 days out. */
+export function internTimelinePriority(
+  item: InternWorkItem,
+  todayYmd: string,
+): InternTimelinePriority {
+  if (item.kind === 'done') return 'done';
+  const { end } = internTimelineSpan(item, todayYmd);
+  if (item.isOverdue || end < todayYmd) return 'overdue';
+  const days = differenceInDays(parseIstNoon(end), parseIstNoon(todayYmd));
+  if (days <= 3) return 'soon';
+  return 'ok';
+}
+
+export const TIMELINE_PRIORITY_TONE: Record<InternTimelinePriority, InternChipTone> = {
+  overdue: 'danger',
+  soon: 'warning',
+  ok: 'sky',
+  done: 'success',
+};
+
+export interface InternTimelineGanttRow {
+  item: InternWorkItem;
+  /** Inclusive column in the 14-day window. */
+  startIdx: number;
+  endIdx: number;
+  clippedStart: boolean;
+  clippedEnd: boolean;
+  priority: InternTimelinePriority;
+}
+
+export interface InternTimelineGantt {
+  window: string[];
+  rows: InternTimelineGanttRow[];
+  later: InternWorkItem[];
+}
+
+function clipSpanToWindow(
+  start: string,
+  end: string,
+  window: string[],
+): { startIdx: number; endIdx: number; clippedStart: boolean; clippedEnd: boolean } | null {
+  const first = window[0];
+  const last = window[window.length - 1];
+  if (!first || !last) return null;
+  if (end < first) {
+    return { startIdx: 0, endIdx: 0, clippedStart: true, clippedEnd: true };
+  }
+  if (start > last) return null;
+  const clippedStart = start < first;
+  const clippedEnd = end > last;
+  const from = clippedStart ? first : start;
+  const to = clippedEnd ? last : end;
+  const startIdx = window.indexOf(from);
+  const endIdx = window.indexOf(to);
+  if (startIdx < 0 || endIdx < 0 || startIdx > endIdx) return null;
+  return { startIdx, endIdx, clippedStart, clippedEnd };
+}
+
+/** Fortnight Gantt rows: bars clipped to the window; no overlap with week-strip anchors. */
+export function internTimelineGantt(items: InternWorkItem[], now: Date): InternTimelineGantt {
+  const today = ymdInIst(now);
+  const window = internTimelineWindow(now);
+  const rows: InternTimelineGanttRow[] = [];
+  const later: InternWorkItem[] = [];
+
+  for (const item of sortInternWork(items)) {
+    const span = internTimelineSpan(item, today);
+    const clip = clipSpanToWindow(span.start, span.end, window);
+    if (!clip) {
+      if (item.kind !== 'done') later.push(item);
+      continue;
+    }
+    rows.push({
+      item,
+      ...clip,
+      priority: internTimelinePriority(item, today),
+    });
+  }
+
+  return { window, rows, later };
+}
+
 export function internWaitingItems(items: InternWorkItem[]): InternWorkItem[] {
   return sortInternWork(
     items.filter(

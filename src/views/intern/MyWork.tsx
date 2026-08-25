@@ -10,15 +10,16 @@ import { SEO } from '@/components/SEO';
 import { InternWorkBoardCard, InternWorkDenseRow } from '@/components/intern/InternWorkRow';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { LeadCompanyChip, LeadCompanyPill } from '@/components/intern/LeadCompanyChip';
-import { internKindChipLabel, internToneBadge, internToneText } from '@/components/intern/intern-tones';
+import { internKindChipLabel, internToneBadge, internToneBg, internToneText, KIND_TONE } from '@/components/intern/intern-tones';
 import { useInternPortfolio } from '@/lib/use-intern-portfolio';
 import {
   INTERN_WORK_VIEW_KEY,
+  TIMELINE_PRIORITY_TONE,
   WEEK_CHIP_TONE,
   filterInternWork,
   formatDueLabel,
   formatIstWeekdayDay,
-  internTimelineGrid,
+  internTimelineGantt,
   internWeekMarkKind,
   internWorkBoard,
   internWorkPath,
@@ -35,7 +36,6 @@ import {
   type InternWorkTag,
   type InternWorkView,
 } from '@/lib/intern-work';
-import { KIND_TONE } from '@/components/intern/intern-tones';
 import { cn } from '@/lib/utils';
 
 const VIEW_BTN: { id: InternWorkView; label: string; icon: typeof List }[] = [
@@ -310,91 +310,111 @@ function TimelineView({
   selectedDay: string | null;
 }) {
   const today = ymdInIst(now);
-  const grid = internTimelineGrid(items, now);
-  const thisWeek = grid.days.slice(0, 7);
-  const nextWeek = grid.days.slice(7, 14);
-  const hasCards = grid.days.some((col) => col.items.length > 0) || grid.later.length > 0;
+  const gantt = internTimelineGantt(items, now);
+  const todayIdx = gantt.window.indexOf(today);
+  const groups: { id: string; name: string; rows: typeof gantt.rows }[] = [];
+  for (const row of gantt.rows) {
+    let g = groups.find((x) => x.id === row.item.engagementId);
+    if (!g) {
+      g = { id: row.item.engagementId, name: row.item.companyName, rows: [] };
+      groups.push(g);
+    }
+    g.rows.push(row);
+  }
 
-  if (!hasCards) return <EmptyWork />;
+  if (gantt.rows.length === 0 && gantt.later.length === 0) return <EmptyWork />;
 
   return (
     <div className="flex flex-col gap-3">
-      <TimelineWeekRow label="This week" days={thisWeek} today={today} selectedDay={selectedDay} now={now} />
-      {nextWeek.some((col) => col.items.length > 0) ? (
-        <TimelineWeekRow label="Next week" days={nextWeek} today={today} selectedDay={selectedDay} now={now} />
-      ) : null}
-      {grid.later.length > 0 ? (
+      <section className="surface overflow-x-auto p-3.5">
+        <div className="lead-tl">
+          <div className="lead-tl-head">
+            <div className="min-w-0 px-2 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.07em] text-text-tertiary">
+              Task
+            </div>
+            <div className="lead-tl-track">
+              {gantt.window.map((ymd, i) => {
+                const heading = formatIstWeekdayDay(ymd);
+                const isToday = ymd === today;
+                const isSelected = selectedDay === ymd;
+                const weekend = heading.weekday === 'Sat' || heading.weekday === 'Sun';
+                return (
+                  <div
+                    key={ymd}
+                    id={isSelected ? 'intern-tl-day' : undefined}
+                    className={cn(
+                      'min-w-0 px-0.5 py-1 text-center text-[10.5px] font-extrabold leading-tight text-text-tertiary',
+                      weekend && !isToday && 'opacity-45',
+                      isToday && 'rounded-md bg-primary text-white',
+                      isSelected && !isToday && 'rounded-md ring-2 ring-primary ring-offset-1 ring-offset-panel',
+                    )}
+                  >
+                    <span className="block truncate">{heading.weekday}</span>
+                    <span className="block tabular-nums">{heading.day}</span>
+                    {i === 6 ? <span className="sr-only">End of this week</span> : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {groups.map((group) => (
+            <div key={group.id} className="lead-tl-company">
+              <p className="min-w-0 truncate px-2 pt-2 text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">
+                {group.name}
+              </p>
+              {group.rows.map((row) => (
+                <div key={row.item.id} className="lead-tl-row">
+                  <Link
+                    href={row.item.href}
+                    title={row.item.title}
+                    className="min-w-0 truncate px-2 py-1.5 text-[12px] font-bold text-ink hover:underline"
+                  >
+                    {row.item.title}
+                  </Link>
+                  <div className="lead-tl-track">
+                    {todayIdx >= 0 ? (
+                      <span
+                        className="lead-tl-today"
+                        style={{ gridColumn: `${todayIdx + 1} / ${todayIdx + 2}` }}
+                        aria-hidden
+                      />
+                    ) : null}
+                    <Link
+                      href={row.item.href}
+                      title={`${row.item.title} · ${row.item.why}`}
+                      className={cn(
+                        'lead-tl-bar',
+                        internToneBg(TIMELINE_PRIORITY_TONE[row.priority]),
+                        row.priority === 'soon' ? 'text-warning-text' : 'text-white',
+                        row.clippedStart && 'rounded-l-sm',
+                        row.clippedEnd && 'rounded-r-sm',
+                      )}
+                      style={{
+                        gridColumn: `${row.startIdx + 1} / ${row.endIdx + 2}`,
+                      }}
+                    >
+                      <span className="min-w-0 truncate">{row.item.why}</span>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </section>
+      {gantt.later.length > 0 ? (
         <section className="surface p-3.5">
           <h2 className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">
-            Later / no date this fortnight
+            Later / outside this fortnight
           </h2>
           <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {grid.later.map((item) => (
+            {gantt.later.map((item) => (
               <TimelineWorkCard key={item.id} item={item} now={now} />
             ))}
           </div>
         </section>
       ) : null}
     </div>
-  );
-}
-
-function TimelineWeekRow({
-  label,
-  days,
-  today,
-  selectedDay,
-  now,
-}: {
-  label: string;
-  days: { ymd: string; items: InternWorkItem[] }[];
-  today: string;
-  selectedDay: string | null;
-  now: Date;
-}) {
-  return (
-    <section className="surface overflow-hidden p-3.5">
-      <h2 className="mb-2.5 text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">
-        {label} · Mon–Sun · IST
-      </h2>
-      <div className="lead-tl-grid">
-        {days.map((col) => {
-          const heading = formatIstWeekdayDay(col.ymd);
-          const isToday = col.ymd === today;
-          const isSelected = selectedDay === col.ymd;
-          const weekend = heading.weekday === 'Sat' || heading.weekday === 'Sun';
-          return (
-            <div
-              key={col.ymd}
-              id={isSelected ? 'intern-tl-day' : undefined}
-              className={cn(
-                'flex max-h-[28rem] min-h-[12.5rem] min-w-0 flex-col overflow-y-auto rounded-lg bg-raised p-1.5',
-                isToday && 'outline outline-2 outline-offset-[-2px] outline-primary',
-                isSelected && 'ring-2 ring-primary ring-offset-1 ring-offset-panel',
-                weekend && !isToday && 'border border-dashed border-border bg-transparent',
-              )}
-            >
-              <div
-                className={cn(
-                  'mb-1.5 rounded-md px-1 py-1 text-center text-[11px] font-extrabold leading-tight text-text-tertiary',
-                  isToday && 'bg-primary text-white',
-                )}
-              >
-                <span className="block truncate">{heading.weekday}</span>
-                <span className="block tabular-nums">{heading.day}</span>
-              </div>
-              <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-                {col.items.length === 0 ? (
-                  <p className="px-0.5 pt-2 text-center text-[10.5px] font-semibold text-text-tertiary">—</p>
-                ) : (
-                  col.items.map((item) => <TimelineWorkCard key={item.id} item={item} now={now} compact />)
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
   );
 }
 

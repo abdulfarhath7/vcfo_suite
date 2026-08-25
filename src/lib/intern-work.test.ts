@@ -6,8 +6,11 @@ import {
   internGreeting,
   internPaceLine,
   internQueueCompanyHref,
+  internTimelineGantt,
   internTimelineGrid,
+  internTimelinePriority,
   internTimelineRows,
+  internTimelineSpan,
   internWeekAnchorYmd,
   internWeekChipKind,
   internWeekChipsForDay,
@@ -457,6 +460,94 @@ describe('intern timeline grid', () => {
     );
     expect(grid.later.map((i) => i.id)).toEqual(['filing:sept']);
     expect(grid.days.find((col) => col.ymd === '2026-08-20')?.items).toEqual([]);
+  });
+});
+
+describe('intern timeline gantt span', () => {
+  const today = '2026-08-20';
+
+  it('spans open work from startedAt through dueAt', () => {
+    expect(
+      internTimelineSpan(
+        weekItem({
+          id: 'step:span',
+          startedAt: '2026-08-18',
+          dueAt: '2026-08-22',
+        }),
+        today,
+      ),
+    ).toEqual({ start: '2026-08-18', end: '2026-08-22' });
+  });
+
+  it('uses today as start when open work has no startedAt', () => {
+    expect(
+      internTimelineSpan(weekItem({ id: 'step:open', dueAt: '2026-08-25' }), today),
+    ).toEqual({ start: today, end: '2026-08-25' });
+  });
+
+  it('spans done work onto the completion day', () => {
+    expect(
+      internTimelineSpan(
+        weekItem({
+          id: 'step:done',
+          kind: 'done',
+          startedAt: '2026-08-17',
+          completedAt: '2026-08-19',
+          dueAt: '2026-08-22',
+        }),
+        today,
+      ),
+    ).toEqual({ start: '2026-08-17', end: '2026-08-19' });
+  });
+
+  it('clamps start to end when started after due', () => {
+    expect(
+      internTimelineSpan(
+        weekItem({ id: 'step:late', startedAt: '2026-08-24', dueAt: '2026-08-21' }),
+        today,
+      ),
+    ).toEqual({ start: '2026-08-21', end: '2026-08-21' });
+  });
+
+  it('colours by time left: overdue, soon (≤3 days), ok, done', () => {
+    expect(
+      internTimelinePriority(
+        weekItem({ id: 'a', dueAt: '2026-08-11', isOverdue: true }),
+        today,
+      ),
+    ).toBe('overdue');
+    expect(internTimelinePriority(weekItem({ id: 'b', dueAt: '2026-08-23' }), today)).toBe('soon');
+    expect(internTimelinePriority(weekItem({ id: 'c', dueAt: '2026-08-28' }), today)).toBe('ok');
+    expect(
+      internTimelinePriority(weekItem({ id: 'd', kind: 'done', completedAt: '2026-08-18' }), today),
+    ).toBe('done');
+  });
+
+  it('clips a bar to the 14-day window and leaves later-start work out', () => {
+    const gantt = internTimelineGantt(
+      [
+        weekItem({
+          id: 'step:span',
+          startedAt: '2026-08-10',
+          dueAt: '2026-08-22',
+        }),
+        weekItem({
+          id: 'filing:sept',
+          source: 'filing',
+          kind: 'filing',
+          title: 'Advance Tax',
+          startedAt: '2026-09-01',
+          dueAt: '2026-09-15',
+        }),
+      ],
+      now,
+    );
+    const span = gantt.rows.find((r) => r.item.id === 'step:span');
+    expect(span?.startIdx).toBe(0);
+    expect(span?.endIdx).toBe(gantt.window.indexOf('2026-08-22'));
+    expect(span?.clippedStart).toBe(true);
+    expect(span?.clippedEnd).toBe(false);
+    expect(gantt.later.map((i) => i.id)).toEqual(['filing:sept']);
   });
 });
 
