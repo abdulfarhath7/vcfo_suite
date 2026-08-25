@@ -355,9 +355,14 @@ Append here whenever something costs more than a minute to figure out.
 - Metric top-bar colours use semantic tokens (`primary`, `danger`, `accent-sky`,
   `success`) — never `orange-*` (those still alias blue). Waiting is sky/pink/cyan,
   never khaki or brown.
-- Quiet IST clock stays in the hero. Today's todos (`vcfo.intern.focus.{userId}`) mix
-  pinned work `{ id, done }` and typed rows `{ id, done, custom: true, title }` — no
-  3-item cap; `parseInternFocus` keeps legacy pins. Action queue expanded companies
+- Quiet IST clock stays in the hero. Today's todos persist on `tasks` (`engagement_id`
+  null, `assigned_to` = owner, `step_id` prefix `todo:`) via `/api/todos`. Interns
+  see/edit only their own. Manager lists self + leads/co-managers on scoped clients
+  plus intern reports; admin/super list firm-wide staff. Mutate is owner-only.
+  localStorage `vcfo.intern.focus.{userId}` is cache/fallback (and one-shot migrate).
+  Rows mix pinned work `{ id, done, title? }` and typed `{ id, done, custom: true, title }`
+  — no 3-item cap; `parseInternFocus` keeps legacy pins. Staff dashboards show a
+  grouped open-todos panel (`TeamTodosPanel`). Action queue expanded companies
   persist as `vcfo.intern.queue.expanded.{userId}` (engagement id set; not accordion).
 - Intern **Requests** page is gone. `/app/intern/requests` redirects to My work.
   Pending document requests still show on Today / My work (`waiting-request`);
@@ -534,7 +539,15 @@ Append here whenever something costs more than a minute to figure out.
   immediately above Docs. Do not set `position` on `.shell-sidebar-skin`.
 - Vault is `/app/intern/vault` (shared view `src/views/vault/DocumentVaultPage.tsx`).
   Manager/admin already had `/vault`. Files are grouped by assigned company,
-  then checklist step / category. Search matches client name or file name.
+  then phase (pre-inc / post-inc / FEMA / statutory) then checklist step.
+  Search matches file name (and company); results show file + company + path.
+  CommandPalette (debounced) uses the same Path A `GET /api/documents` and
+  `GET /api/knowledge-bank` lists — intern only assigned companies; manager
+  their clients; admin all. Click goes to vault/KB with `?q=`.
+  Staff/intern milestone POST `/api/engagements/:id/milestone-documents` also
+  `createDocument` so the vault index is complete (clients stay storage-only
+  in checklist_state). Demo rows: APIs map uuid → `e1`; matching uses
+  `engagementIdAliases` so indexed files are not dropped.
   Milestone downloads stay on `/api/milestone-documents/signed-url`. Indexed
   `documents` rows use `GET /api/documents` (AuthContext-scoped, no
   `engagementId`) and `/api/documents/:id/signed-url`. Intern isolation is
@@ -595,6 +608,20 @@ Append here whenever something costs more than a minute to figure out.
   + age wrap as siblings; CTA is `flex: 1 0 100%` so it cannot share pixels
   with those badges. Same row is used for action-queue tasks and My work
   list below `xl`.
+
+## Knowledge Bank folders
+
+- Nested folders live in `knowledge_bank_folders` (`parent_id` null = root). Files
+  use nullable `folder_id`. Migration `0013_knowledge_bank_folders.sql`.
+- Delete **refuses non-empty** folders (child folders or files). FKs are
+  `ON DELETE restrict` — no cascade. Empty the folder first.
+- Path A: admin/manager write+delete; intern read all + insert own; intern cannot
+  delete files or folders; client none. List DTO includes `folderPath` for
+  CommandPalette / global filename search.
+- GET `/api/knowledge-bank` returns `{ files, folders, tree }`. Optional
+  `?folderId=` (or `root`) adds `{ current: { folder, ancestors, folders, files } }`.
+  Create: `POST /api/knowledge-bank/folders`. Delete empty:
+  `DELETE /api/knowledge-bank/folders/:id`.
 
 ## App copy — no instructional chrome
 
