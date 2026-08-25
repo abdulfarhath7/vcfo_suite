@@ -386,8 +386,8 @@ export function vaultFileNameMatches(doc: VaultDocument, query: string): boolean
   const q = query.trim().toLowerCase();
   if (!q) return false;
   return (
-    doc.fileName.toLowerCase().includes(q) ||
-    doc.fieldLabel.toLowerCase().includes(q)
+    (doc.fileName ?? '').toLowerCase().includes(q) ||
+    (doc.fieldLabel ?? '').toLowerCase().includes(q)
   );
 }
 
@@ -424,11 +424,11 @@ export function vaultDocMatchesQuery(doc: VaultDocument, query: string): boolean
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return (
-    doc.fileName.toLowerCase().includes(q) ||
-    doc.fieldLabel.toLowerCase().includes(q) ||
-    doc.section.toLowerCase().includes(q) ||
-    doc.milestoneTitle.toLowerCase().includes(q) ||
-    doc.companyName.toLowerCase().includes(q)
+    (doc.fileName ?? '').toLowerCase().includes(q) ||
+    (doc.fieldLabel ?? '').toLowerCase().includes(q) ||
+    (doc.section ?? '').toLowerCase().includes(q) ||
+    (doc.milestoneTitle ?? '').toLowerCase().includes(q) ||
+    (doc.companyName ?? '').toLowerCase().includes(q)
   );
 }
 

@@ -234,6 +234,7 @@ describe('vault grouping', () => {
     });
     expect(vaultFileNameMatches(gstr, 'gstr-1')).toBe(true);
     expect(vaultFileNameMatches(gstr, 'epfo')).toBe(false);
+    expect(vaultFileNameMatches({ ...gstr, fileName: undefined as unknown as string }, 'gstr')).toBe(false);
     expect(formatVaultCommandHit(gstr)).toBe('GSTR-1.pdf — Acme Pvt Ltd · Statutory');
     expect(vaultLocationLabel(gstr)).toBe('Statutory · GST Registration · Returns');
     const hits = vaultSearchHits([gstr, doc(otherIntern, 'other.pdf')], 'GSTR-1');

@@ -400,7 +400,7 @@ function DocumentVaultPageContent() {
         </Surface>
       )}
 
-      {entityGroups.length === 0 ? (
+      {entityGroups.length === 0 && !isSearching ? (
         <EmptyStateIllustrated
           icon={FolderOpen}
           title={isIntern ? 'No clients assigned yet' : 'No submitted documents yet'}
