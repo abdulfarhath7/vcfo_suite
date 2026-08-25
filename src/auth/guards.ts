@@ -123,12 +123,11 @@ export async function requireSuperAdmin(): Promise<GuardResult> {
   return requireRole('super_admin');
 }
 
-/** One of several roles. */
+/** One of several roles. Super Admin satisfies `admin` the same way `requireRole('admin')` does. */
 export async function requireAnyRole(...roles: AppRole[]): Promise<GuardResult> {
   const ctx = await currentContext();
   if (!ctx) return { ok: false, status: 401, error: 'Not authenticated' };
-  if (!roles.includes(ctx.role)) {
-    return { ok: false, status: 403, error: `Requires one of: ${roles.join(', ')}` };
-  }
-  return { ok: true, ctx };
+  if (roles.includes(ctx.role)) return { ok: true, ctx };
+  if (ctx.role === 'super_admin' && roles.includes('admin')) return { ok: true, ctx };
+  return { ok: false, status: 403, error: `Requires one of: ${roles.join(', ')}` };
 }
