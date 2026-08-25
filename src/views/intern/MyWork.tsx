@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarClock, Columns3, List } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageBackButton } from '@/components/shell/PageBackButton';
+import { PageBackCluster } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { InternWorkBoardCard, InternWorkDenseRow } from '@/components/intern/InternWorkRow';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
@@ -133,13 +133,12 @@ function InternMyWorkInner() {
       <SEO title="My work — VCFO Suite" description="List, board, and timeline of your open steps and filings." path="/app/intern/tasks" />
 
       <div className="mb-3 flex min-w-0 flex-wrap items-center gap-3">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <PageBackButton className="-ml-1.5" />
-          <h1 className="serif min-w-0 text-[26px] font-semibold tracking-tight text-ink">My work</h1>
-        </div>
-        <span className="text-xs font-bold text-text-tertiary">
-          {kpis.openCount} open · {kpis.companyCount} {kpis.companyCount === 1 ? 'company' : 'companies'}
-        </span>
+        <PageBackCluster>
+          <h1 className="sr-only">My work</h1>
+          <span className="text-xs font-bold text-text-tertiary">
+            {kpis.openCount} open · {kpis.companyCount} {kpis.companyCount === 1 ? 'company' : 'companies'}
+          </span>
+        </PageBackCluster>
         <div className="ml-auto flex shrink-0 overflow-hidden rounded-md border border-border bg-panel shadow-layered" role="tablist">
           {VIEW_BTN.map((btn) => {
             const Icon = btn.icon;

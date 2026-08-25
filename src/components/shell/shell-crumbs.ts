@@ -167,6 +167,24 @@ export function resolveShellCrumbCurrent(
   return segments[segments.length - 1]?.label ?? 'Home';
 }
 
+/** Compare crumb / page titles without case or spacing noise. */
+export function normalizeShellTrailLabel(label: string): string {
+  return label.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/**
+ * True when an in-page title only restates the top-bar leaf.
+ * Those titles stay in the trail (and document title); they should not be a giant H1.
+ */
+export function pageTitleRepeatsTrail(
+  title: string,
+  pathname: string,
+  engagements: ReadonlyArray<ShellCrumbEngagement> = [],
+): boolean {
+  const leaf = resolveShellCrumbCurrent(shellBreadcrumb(pathname), engagements);
+  return normalizeShellTrailLabel(title) === normalizeShellTrailLabel(leaf);
+}
+
 function markLeaf(segments: ShellCrumbSegment[]): ShellCrumbSegment[] {
   if (segments.length === 0) return segments;
   return segments.map((seg, index) =>

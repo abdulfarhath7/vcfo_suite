@@ -631,4 +631,17 @@ Append here whenever something costs more than a minute to figure out.
   or one short line. Keep `aria-label` / `sr-only`. Do not set `position` on
   `.shell-sidebar-skin`.
 
+## Shell titles vs crumbs
+
+- Top-bar crumbs are the location. `PageHeader` drops the giant H1 / icon
+  lockup when `pageTitleRepeatsTrail(title, pathname)` (case-insensitive).
+  Keep a visually hidden H1 so the page still has a heading. Unique extras
+  (counts, actions, compose footer, Outlook eyebrow) stay in a slim toolbar.
+- Card/section titles that add information stay visible — intern calendar
+  H1 is **Statutory calendar** + FY, not “Compliance calendar”. Back sits
+  beside that section title (`PageBackCluster`), not in a second billboard.
+  Filing tracker on `/compliance/tracker` is the same pattern.
+- Do not gut in-card form headings (Profile, Security). Do not set
+  `position` on `.shell-sidebar-skin`.
+
 

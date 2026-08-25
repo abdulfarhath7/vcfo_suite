@@ -6,6 +6,7 @@ import { m } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { PageBackCluster } from '@/components/shell/PageBackButton';
 import { AccentKpi } from '@/components/admin/AccentKpi';
 import { SEO } from '@/components/SEO';
 import { ComplianceFiling } from '@/data/compliance';
@@ -69,18 +70,22 @@ export default function Compliance({
   return (
     <PageTransition>
       <SEO
-        title="Compliance calendar — VCFO Suite"
+        title={
+          isInternView && active === 'tracker'
+            ? 'Filing tracker — VCFO Suite'
+            : 'Compliance calendar — VCFO Suite'
+        }
         description="Recurring statutory filings — GST, TDS, ROC, PF, RBI — across your GCC portfolio."
-        path={isInternView ? '/app/intern/compliance' : '/app/manager/compliance'}
+        path={
+          isInternView
+            ? active === 'tracker'
+              ? '/app/intern/compliance/tracker'
+              : '/app/intern/compliance'
+            : '/app/manager/compliance'
+        }
       />
 
-      {isInternView ? (
-        <PageHeader
-          accent="emerald"
-          icon={CalendarCheck2}
-          title={active === 'tracker' ? 'Filing tracker' : 'Compliance calendar'}
-        />
-      ) : (
+      {isInternView ? null : (
         <>
           <PageHeader accent="emerald" icon={CalendarCheck2} title="Compliance calendar" />
 
@@ -123,14 +128,23 @@ export default function Compliance({
         <StatutoryCalendar
           engagements={engagements}
           trackerHref={isInternView ? '/app/intern/compliance/tracker' : undefined}
+          showBack={isInternView}
         />
       )}
 
       <div className={cn('surface overflow-hidden', active !== 'tracker' && 'hidden')}>
         <div className="px-4 py-3 border-b border-border flex items-center gap-3 flex-wrap">
-          <div className="text-[13px] font-semibold text-ink mr-2">
-            {isInternView ? 'Client filing tracker' : 'All compliances'}
-          </div>
+          {isInternView ? (
+            active === 'tracker' ? (
+              <PageBackCluster className="mr-2">
+                <h1 className="text-[13px] font-semibold text-ink">Filing tracker</h1>
+              </PageBackCluster>
+            ) : (
+              <div className="mr-2 text-[13px] font-semibold text-ink">Filing tracker</div>
+            )
+          ) : (
+            <h2 className="mr-2 text-[13px] font-semibold text-ink">All compliances</h2>
+          )}
           <select
             value={clientFilter}
             onChange={(e) => setClientFilter(e.target.value)}

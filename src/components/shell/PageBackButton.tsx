@@ -1,5 +1,6 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -49,5 +50,25 @@ export function PageBackButton({
         Back
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+/** Back chevron clustered with the first useful in-page title (not the crumb leaf). */
+export function PageBackCluster({
+  children,
+  forceBack,
+  backFallbackHref,
+  className,
+}: {
+  children?: ReactNode;
+  forceBack?: boolean;
+  backFallbackHref?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex min-w-0 items-center gap-2", className)}>
+      <PageBackButton className="-ml-1.5" force={forceBack} fallbackHref={backFallbackHref} />
+      {children}
+    </div>
   );
 }

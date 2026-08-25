@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  pageTitleRepeatsTrail,
   resolveShellCrumbCurrent,
   resolveShellCrumbSegments,
   shellBreadcrumb,
@@ -190,6 +191,32 @@ describe('shellBreadcrumb', () => {
       '/app/intern/compliance',
       null,
     ]);
+  });
+});
+
+describe('pageTitleRepeatsTrail', () => {
+  it('treats route names that match the last crumb as redundant', () => {
+    expect(pageTitleRepeatsTrail('Compliance calendar', '/app/intern/compliance')).toBe(true);
+    expect(pageTitleRepeatsTrail('compliance calendar', '/app/intern/compliance')).toBe(true);
+    expect(pageTitleRepeatsTrail('Filing tracker', '/app/intern/compliance/tracker')).toBe(true);
+    expect(pageTitleRepeatsTrail('Vault', '/app/intern/vault')).toBe(true);
+    expect(pageTitleRepeatsTrail('Knowledge Bank', '/app/manager/knowledge-bank')).toBe(true);
+    expect(pageTitleRepeatsTrail('Announcements', '/app/intern/announcements')).toBe(true);
+    expect(pageTitleRepeatsTrail('My work', '/app/intern/tasks')).toBe(true);
+    expect(pageTitleRepeatsTrail('Clients', '/app/intern/clients')).toBe(true);
+    expect(pageTitleRepeatsTrail('Notifications', '/app/manager/notifications')).toBe(true);
+    expect(pageTitleRepeatsTrail('Audit Log', '/app/admin/audit-log')).toBe(true);
+    expect(pageTitleRepeatsTrail('Send email', '/app/intern/mail')).toBe(true);
+    expect(pageTitleRepeatsTrail('New project', '/app/admin/projects/new')).toBe(true);
+  });
+
+  it('keeps titles that add information beyond the trail leaf', () => {
+    expect(pageTitleRepeatsTrail('Statutory calendar', '/app/intern/compliance')).toBe(false);
+    expect(pageTitleRepeatsTrail('GCC Setup Projects', '/app/manager/projects')).toBe(false);
+    expect(pageTitleRepeatsTrail('Project leads', '/app/manager/team')).toBe(false);
+    expect(pageTitleRepeatsTrail("Bird's-eye overview", '/app/super/dashboard')).toBe(false);
+    expect(pageTitleRepeatsTrail('Firm home', '/app/admin/dashboard')).toBe(false);
+    expect(pageTitleRepeatsTrail('Dashboard', '/app/manager/dashboard')).toBe(false);
   });
 });
 

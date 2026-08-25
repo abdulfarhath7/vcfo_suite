@@ -15,6 +15,7 @@ import {
   type StatutoryDeadline,
 } from '@/data/statutory-calendar-fy2627';
 import { CompanyPicker } from '@/components/admin/CompanyPicker';
+import { PageBackCluster } from '@/components/shell/PageBackButton';
 import {
   dateHasAgendaItems,
   isSelectAllActive,
@@ -54,10 +55,13 @@ const FLASH_MS = 1400;
 export function StatutoryCalendar({
   engagements,
   trackerHref,
+  showBack,
 }: {
   engagements: Engagement[];
   /** Intern-only: filing tracker lives on its own route, not page tabs. */
   trackerHref?: string;
+  /** Place the shell back chevron beside the section title (intern calendar). */
+  showBack?: boolean;
 }) {
   const todayIso = toIso(new Date());
   const reduceMotion = useReducedMotion();
@@ -165,8 +169,14 @@ export function StatutoryCalendar({
   return (
     <div className="surface overflow-hidden">
       <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2 mr-1">
-          <div className="text-[13px] font-semibold text-ink">Statutory calendar</div>
+        <div className="mr-1 flex items-center gap-2">
+          {showBack ? (
+            <PageBackCluster>
+              <h1 className="text-[13px] font-semibold text-ink">Statutory calendar</h1>
+            </PageBackCluster>
+          ) : (
+            <h2 className="text-[13px] font-semibold text-ink">Statutory calendar</h2>
+          )}
           <span className="mono rounded bg-primary-light px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary-dark">
             {FY_LABEL}
           </span>
