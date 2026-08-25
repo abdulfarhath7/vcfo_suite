@@ -3,22 +3,68 @@ import { requireRole } from '@/lib/api/require-role';
 import { knowledgeBankRegisterBodySchema } from '@/lib/api/schemas';
 import { parseJsonBody } from '@/lib/api/validate';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { listKnowledgeBankLibrary, registerKnowledgeBankFile } from '@/db/repositories/knowledge-bank';
 import {
-  listKnowledgeBankFiles,
-  registerKnowledgeBankFile,
-} from '@/db/repositories/knowledge-bank';
+  knowledgeBankChildFolders,
+  knowledgeBankFilesInFolder,
+  knowledgeBankFolderAncestors,
+} from '@/lib/knowledge-bank-folders';
 import { isKnowledgeBankStoragePath } from '@/lib/knowledge-bank-storage';
 import { bucketKey, deleteObject } from '@/storage/s3';
 
-export async function GET() {
+function knowledgeBankErrorStatus(message: string): number {
+  if (message.startsWith('Not permitted') || message.startsWith('Only admins')) return 403;
+  if (message === 'parent_not_found') return 400;
+  if (message === 'invalid_folder_name' || message === 'folder_too_deep') return 400;
+  if (message === 'duplicate_folder_name' || message === 'folder_not_empty') return 409;
+  return 500;
+}
+
+export async function GET(request: Request) {
   const auth = await requireRole(['admin', 'manager', 'intern']);
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
 
+  const url = new URL(request.url);
+  const folderIdParam = url.searchParams.get('folderId');
+
   try {
-    const files = await listKnowledgeBankFiles(auth.ctx, 200);
-    return NextResponse.json({ ok: true, files });
+    const library = await listKnowledgeBankLibrary(auth.ctx, 200);
+    const payload: Record<string, unknown> = {
+      ok: true,
+      files: library.files,
+      folders: library.folders,
+      tree: library.tree,
+    };
+
+    if (folderIdParam !== null) {
+      const folderId =
+        folderIdParam.trim() === '' || folderIdParam === 'root' ? null : folderIdParam;
+      if (folderId) {
+        const folder = library.folders.find((row) => row.id === folderId) ?? null;
+        if (!folder) {
+          return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
+        }
+        payload.current = {
+          folderId,
+          folder,
+          ancestors: knowledgeBankFolderAncestors(folderId, library.folders),
+          folders: knowledgeBankChildFolders(folderId, library.folders),
+          files: knowledgeBankFilesInFolder(folderId, library.files),
+        };
+      } else {
+        payload.current = {
+          folderId: null,
+          folder: null,
+          ancestors: [],
+          folders: knowledgeBankChildFolders(null, library.folders),
+          files: knowledgeBankFilesInFolder(null, library.files),
+        };
+      }
+    }
+
+    return NextResponse.json(payload);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'fetch_failed';
     return NextResponse.json(
@@ -59,23 +105,34 @@ export async function POST(request: Request) {
       fileName: body.fileName,
       mimeType: body.mimeType,
       sizeBytes: body.sizeBytes,
+      folderId: body.folderId ?? null,
     });
 
     await recordAuditEvent(auth.ctx, {
       action: 'knowledge_bank.upload',
       summary: `Uploaded "${body.title}" to Knowledge Bank`,
-      metadata: { fileId: body.id, fileName: body.fileName },
+      metadata: {
+        fileId: body.id,
+        fileName: body.fileName,
+        folderId: file.folderId,
+        folderPath: file.folderPath,
+      },
       actorEmail: auth.ctx.email,
       actorName: auth.ctx.name,
     });
 
     return NextResponse.json({ ok: true, file }, { status: 201 });
-  } catch {
+  } catch (err) {
     try {
       await deleteObject(bucketKey('knowledge-bank', storagePath));
     } catch {
       /* best-effort cleanup */
     }
-    return NextResponse.json({ ok: false, error: 'save_failed' }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'save_failed';
+    const status = knowledgeBankErrorStatus(message);
+    return NextResponse.json(
+      { ok: false, error: status === 500 ? 'save_failed' : message },
+      { status },
+    );
   }
 }

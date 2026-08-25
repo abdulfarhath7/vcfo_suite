@@ -188,6 +188,18 @@ export const knowledgeBankRegisterBodySchema = z.object({
     .int()
     .positive()
     .max(SUPABASE_MAX_UPLOAD_BYTES, 'file_too_large'),
+  folderId: z.uuid('invalid_folder_id').nullable().optional(),
+});
+
+const knowledgeBankFolderNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'name_required')
+  .max(80, 'name_too_long');
+
+export const knowledgeBankCreateFolderBodySchema = z.object({
+  name: knowledgeBankFolderNameSchema,
+  parentId: z.uuid('invalid_parent_id').nullable().optional(),
 });
 
 /** Signed board resolution path after direct Storage upload (client role). */

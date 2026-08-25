@@ -1,3 +1,7 @@
+import type { KnowledgeBankFolderRecord } from '@/lib/knowledge-bank-folders';
+
+export type KnowledgeBankFolder = KnowledgeBankFolderRecord;
+
 export type KnowledgeBankFile = {
   id: string;
   title: string;
@@ -9,7 +13,13 @@ export type KnowledgeBankFile = {
   uploaderName: string | null;
   uploaderEmail: string | null;
   createdAt: string;
+  folderId: string | null;
+  folderPath: string;
 };
+
+export type KnowledgeBankDeleteTarget =
+  | { kind: 'file'; file: KnowledgeBankFile }
+  | { kind: 'folder'; folder: KnowledgeBankFolder };
 
 export type KnowledgeBankUiState = {
   q: string;
@@ -17,7 +27,9 @@ export type KnowledgeBankUiState = {
   description: string;
   selectedFile: File | null;
   uploading: boolean;
-  deleteTarget: KnowledgeBankFile | null;
+  folderName: string;
+  creatingFolder: boolean;
+  deleteTarget: KnowledgeBankDeleteTarget | null;
   deleting: boolean;
   downloadingId: string | null;
 };
@@ -25,7 +37,8 @@ export type KnowledgeBankUiState = {
 export type KnowledgeBankUiAction =
   | { type: 'patch'; patch: Partial<KnowledgeBankUiState> }
   | { type: 'clear_upload_form' }
-  | { type: 'set_delete_target'; file: KnowledgeBankFile | null };
+  | { type: 'clear_folder_form' }
+  | { type: 'set_delete_target'; target: KnowledgeBankDeleteTarget | null };
 
 export function knowledgeBankUiReducer(
   state: KnowledgeBankUiState,
@@ -36,8 +49,10 @@ export function knowledgeBankUiReducer(
       return { ...state, ...action.patch };
     case 'clear_upload_form':
       return { ...state, title: '', description: '', selectedFile: null };
+    case 'clear_folder_form':
+      return { ...state, folderName: '' };
     case 'set_delete_target':
-      return { ...state, deleteTarget: action.file };
+      return { ...state, deleteTarget: action.target };
     default:
       return state;
   }
@@ -49,6 +64,8 @@ export const initialKnowledgeBankUiState: KnowledgeBankUiState = {
   description: '',
   selectedFile: null,
   uploading: false,
+  folderName: '',
+  creatingFolder: false,
   deleteTarget: null,
   deleting: false,
   downloadingId: null,

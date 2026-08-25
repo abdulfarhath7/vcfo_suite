@@ -23,6 +23,7 @@ this table, so re-check the migration before trusting a row.
 | engagements | all | `manager_id = ctx.userId` (legacy: `manager_id` null + `admin_id = ctx.userId`) | `intern_id = ctx.internId` | `client_user_id = ctx.userId OR client_id = ctx.clientId` | four-role + `20260522120000` |
 | engagement_board_resolutions | all | via owned engagement | read + insert via assigned engagement; update only while `status = 'draft'` | read via own engagement | `20260525200000_board_resolution.sql` |
 | knowledge_bank_files | all | all | **read all** + insert own (`uploaded_by = self`) | **none** | `20260529160000_knowledge_bank.sql` |
+| knowledge_bank_folders | all | all | **read all** + insert own (`created_by = self`); **no delete** | **none** | `0013_knowledge_bank_folders.sql` |
 | compliance_obligations | all | all | read | read | `20260708120000_compliance_calendar.sql` |
 | compliance_instances / _events / _triggers | all | via owned engagement | write via assigned engagement | read-only via own engagement | `20260708120000`, `20260805130000` |
 | audit_events | **read: all** | **read: owned/assigned engagements** | **own actor + assigned engagements** | own engagements | four-role + `20260529120000` + product |
@@ -32,6 +33,9 @@ Corrections from the first draft:
 
 - **knowledge_bank_files** has no `visible_to_roles` column. Interns can read
   every file and insert their own; clients get nothing at all.
+- **knowledge_bank_folders** is nested (`parent_id` null = root). Files sit in
+  a folder via `folder_id` (null = root). Delete **refuses non-empty** folders
+  (child folders or files) — no cascade. Interns cannot delete folders.
 - **audit_events** original RLS was manager-read-only (intern none). Product
   override: intern (Project Lead) sees `actor_user_id = self` plus events on
   assigned engagements (`intern_id` + `engagement_leads`) — that is the
@@ -44,7 +48,12 @@ Corrections from the first draft:
 `notifications`, `outlook_connections`, and `announcements` have no original SQL (they are new, replacing localStorage),
 so their rules are a product decision rather than a port. Default to:
 admin all, manager via owned engagements, intern via assigned engagement,
-client via own engagement. Documents additionally hide non-shared rows from
+client via own engagement. Personal todos (LeadFocusCard) reuse `tasks` with
+`engagement_id` null, `assigned_to` = owner, and `step_id` prefix `todo:`
+(`/api/todos`). Intern: own rows only. Manager: self + leads/co-managers on
+scoped engagements + intern reports. Admin / super_admin: firm-wide staff.
+Mutate is owner-only. Clients: none. Those rows are excluded from `/api/tasks`.
+Documents additionally hide non-shared rows from
 clients (`shared_with_client = true` only). `GET /api/documents` without
 `engagementId` is the staff vault list — same Path A scope; intern cannot see
 another intern’s client files. Notifications stay per-user

@@ -18,6 +18,7 @@ import {
   emailTemplates,
   engagements,
   knowledgeBankFiles,
+  knowledgeBankFolders,
   profiles,
   tasks,
 } from '../src/db/schema';
@@ -66,6 +67,10 @@ async function main() {
         .update(knowledgeBankFiles)
         .set({ uploadedBy: adminId })
         .where(eq(knowledgeBankFiles.uploadedBy, person.id));
+      await tx
+        .update(knowledgeBankFolders)
+        .set({ createdBy: adminId })
+        .where(eq(knowledgeBankFolders.createdBy, person.id));
       await tx
         .update(documentTemplates)
         .set({ uploadedBy: adminId })

@@ -31,10 +31,25 @@ import { SEO } from '@/components/SEO';
 import { AccentButton, EmptyStateIllustrated, Mono, NoirCard, Surface } from '@/components/noir';
 import { TONE_BADGE, type IconChipTone } from '@/components/common/IconChip';
 import { formatKnowledgeBankFileSize } from '@/lib/knowledge-bank-storage';
-import type { KnowledgeBankFile } from '@/views/knowledge-bank/knowledge-bank-ui-state';
+import type {
+  KnowledgeBankDeleteTarget,
+  KnowledgeBankFile,
+  KnowledgeBankFolder,
+} from '@/views/knowledge-bank/knowledge-bank-ui-state';
 import { maxUploadSizeLabel } from '@/lib/upload-limits';
 import { cn } from '@/lib/utils';
-import { Download, Loader2, Search, Trash2, Upload, BookOpen, FileText } from 'lucide-react';
+import {
+  BookOpen,
+  ChevronRight,
+  Download,
+  FileText,
+  Folder,
+  FolderPlus,
+  Loader2,
+  Search,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -62,11 +77,69 @@ function fileTone(fileName: string): { tone: IconChipTone; ext: string } {
   return { tone: 'neutral', ext };
 }
 
+function FolderCard({
+  folder,
+  index,
+  canDelete,
+  empty,
+  onOpen,
+  onDelete,
+}: {
+  folder: KnowledgeBankFolder;
+  index: number;
+  canDelete: boolean;
+  empty: boolean;
+  onOpen: (id: string) => void;
+  onDelete: (folder: KnowledgeBankFolder) => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.03 * index }}
+      className="h-full"
+    >
+      <NoirCard className="flex h-full flex-col p-4 sm:p-5">
+        <button
+          type="button"
+          onClick={() => onOpen(folder.id)}
+          className="flex min-w-0 flex-1 items-start gap-3 text-left"
+        >
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary-light text-primary">
+            <Folder className="h-4 w-4" aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-[13.5px] font-medium text-ink">{folder.name}</h3>
+            <p className="mt-0.5 text-[11.5px] text-text-tertiary">Folder</p>
+          </div>
+        </button>
+        {canDelete && empty ? (
+          <div className="mt-auto flex items-center border-t border-border pt-3">
+            <button
+              type="button"
+              onClick={() => onDelete(folder)}
+              className={cn(
+                'inline-flex h-9 min-h-9 items-center justify-center gap-1.5 rounded-md border border-border px-3 text-xs',
+                'text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive',
+              )}
+              aria-label={`Delete ${folder.name}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only">Delete</span>
+            </button>
+          </div>
+        ) : null}
+      </NoirCard>
+    </motion.div>
+  );
+}
+
 function DocumentCard({
   file,
   index,
   canDelete,
   downloadingId,
+  showFolderPath,
   onDownload,
   onDelete,
 }: {
@@ -74,6 +147,7 @@ function DocumentCard({
   index: number;
   canDelete: boolean;
   downloadingId: string | null;
+  showFolderPath: boolean;
   onDownload: (file: KnowledgeBankFile) => void;
   onDelete: (file: KnowledgeBankFile) => void;
 }) {
@@ -101,6 +175,11 @@ function DocumentCard({
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-[13.5px] font-medium text-ink">{file.title}</h3>
             <p className="mt-0.5 truncate text-[11.5px] text-text-tertiary">{file.fileName}</p>
+            {showFolderPath ? (
+              <p className="mt-0.5 truncate text-[11px] text-primary/80">
+                {file.folderPath || 'Knowledge Bank'}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -168,14 +247,24 @@ interface KnowledgeBankPageViewProps {
   fileInputRef: RefObject<HTMLInputElement | null>;
   uploading: boolean;
   handleUpload: (e: FormEvent) => Promise<void>;
-  filesQuery: UseQueryResult<KnowledgeBankFile[], Error>;
+  folderName: string;
+  setFolderName: (value: string) => void;
+  creatingFolder: boolean;
+  handleCreateFolder: (e: FormEvent) => Promise<void>;
+  libraryQuery: UseQueryResult<{ files: KnowledgeBankFile[]; folders: KnowledgeBankFolder[] }, Error>;
   filteredFiles: KnowledgeBankFile[];
+  filteredFolders: KnowledgeBankFolder[];
   q: string;
   setQ: (value: string) => void;
+  searching: boolean;
+  currentFolderId: string | null;
+  ancestors: KnowledgeBankFolder[];
+  openFolder: (folderId: string | null) => void;
+  folderIsEmpty: (folderId: string) => boolean;
   handleDownload: (file: KnowledgeBankFile) => Promise<void>;
   downloadingId: string | null;
-  deleteTarget: KnowledgeBankFile | null;
-  setDeleteTarget: (value: KnowledgeBankFile | null) => void;
+  deleteTarget: KnowledgeBankDeleteTarget | null;
+  setDeleteTarget: (value: KnowledgeBankDeleteTarget | null) => void;
   confirmDelete: () => Promise<void>;
   deleting: boolean;
 }
@@ -183,13 +272,17 @@ interface KnowledgeBankPageViewProps {
 export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
   const {
     basePath, canDelete, title, setTitle, description, setDescription,
-    selectedFile, setSelectedFile, fileInputRef, uploading, handleUpload, filesQuery,
-    filteredFiles, q, setQ, handleDownload, downloadingId, deleteTarget, setDeleteTarget,
-    confirmDelete, deleting,
+    selectedFile, setSelectedFile, fileInputRef, uploading, handleUpload,
+    folderName, setFolderName, creatingFolder, handleCreateFolder,
+    libraryQuery, filteredFiles, filteredFolders, q, setQ, searching,
+    currentFolderId, ancestors, openFolder, folderIsEmpty, handleDownload,
+    downloadingId, deleteTarget, setDeleteTarget, confirmDelete, deleting,
   } = props;
 
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [folderOpen, setFolderOpen] = useState(false);
   const wasUploadingRef = useRef(false);
+  const wasCreatingRef = useRef(false);
 
   useEffect(() => {
     if (wasUploadingRef.current && !uploading && !title && !selectedFile) {
@@ -197,6 +290,13 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
     }
     wasUploadingRef.current = uploading;
   }, [uploading, title, selectedFile]);
+
+  useEffect(() => {
+    if (wasCreatingRef.current && !creatingFolder && !folderName) {
+      setFolderOpen(false);
+    }
+    wasCreatingRef.current = creatingFolder;
+  }, [creatingFolder, folderName]);
 
   function closeUploadDialog() {
     if (uploading) return;
@@ -207,7 +307,15 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  const totalCount = filesQuery.data?.length ?? 0;
+  function closeFolderDialog() {
+    if (creatingFolder) return;
+    setFolderOpen(false);
+    setFolderName('');
+  }
+
+  const currentName = ancestors.at(-1)?.name;
+  const empty = filteredFolders.length === 0 && filteredFiles.length === 0;
+  const itemCount = filteredFolders.length + filteredFiles.length;
 
   return (
     <PageTransition>
@@ -222,26 +330,65 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
         icon={BookOpen}
         title="Knowledge Bank"
         actions={
-          <AccentButton size="sm" className="min-h-11" onClick={() => setUploadOpen(true)}>
-            <Upload className="mr-1.5 h-3.5 w-3.5" />
-            Upload document
-          </AccentButton>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-11"
+              onClick={() => setFolderOpen(true)}
+            >
+              <FolderPlus className="mr-1.5 h-3.5 w-3.5" />
+              New folder
+            </Button>
+            <AccentButton size="sm" className="min-h-11" onClick={() => setUploadOpen(true)}>
+              <Upload className="mr-1.5 h-3.5 w-3.5" />
+              Upload document
+            </AccentButton>
+          </div>
         }
       />
 
       <Surface className="mb-4 overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <nav
+          aria-label="Folder path"
+          className="flex flex-wrap items-center gap-1 border-b border-border px-4 py-2.5 text-[13px]"
+        >
+          <button
+            type="button"
+            onClick={() => openFolder(null)}
+            className={cn(
+              'rounded-md px-1.5 py-0.5 text-primary hover:bg-primary-light',
+              !currentFolderId && 'font-medium text-ink',
+            )}
+          >
+            Knowledge Bank
+          </button>
+          {ancestors.map((folder, index) => (
+            <span key={folder.id} className="inline-flex min-w-0 items-center gap-1">
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-text-tertiary" aria-hidden />
+              <button
+                type="button"
+                onClick={() => openFolder(folder.id)}
+                className={cn(
+                  'max-w-[12rem] truncate rounded-md px-1.5 py-0.5 text-primary hover:bg-primary-light',
+                  index === ancestors.length - 1 && 'font-medium text-ink',
+                )}
+                aria-current={index === ancestors.length - 1 ? 'page' : undefined}
+              >
+                {folder.name}
+              </button>
+            </span>
+          ))}
+        </nav>
+        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-role" aria-hidden />
             <p className="text-[11px] uppercase tracking-[0.14em] text-text-tertiary">
               <span className="tabular-nums text-ink">
-                {filesQuery.isLoading ? '…' : filteredFiles.length}
+                {libraryQuery.isLoading ? '…' : itemCount}
               </span>
-              <span className="ml-1.5">
-                {!filesQuery.isLoading && q.trim() && totalCount !== filteredFiles.length
-                  ? `of ${totalCount} files`
-                  : 'files'}
-              </span>
+              <span className="ml-1.5">{searching ? 'matches' : 'items'}</span>
             </p>
           </div>
           <div className="relative w-full sm:w-72">
@@ -249,14 +396,15 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search title, file, uploader…"
+              placeholder="Search files by name…"
+              aria-label="Search files by name"
               className="h-9 pl-8"
             />
           </div>
         </div>
       </Surface>
 
-      {filesQuery.isLoading ? (
+      {libraryQuery.isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <NoirCard key={i} className="h-[220px] animate-pulse p-5">
@@ -274,30 +422,38 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
             </NoirCard>
           ))}
         </div>
-      ) : filesQuery.isError ? (
+      ) : libraryQuery.isError ? (
+        <EmptyStateIllustrated icon={BookOpen} title="Could not load Knowledge Bank" />
+      ) : empty ? (
         <EmptyStateIllustrated
-          icon={BookOpen}
-          title="Could not load Knowledge Bank"
-          description="Apply the latest Supabase migration and try again."
-        />
-      ) : filteredFiles.length === 0 ? (
-        <EmptyStateIllustrated
-          icon={FileText}
-          title={q.trim() ? 'No documents match your search' : 'No documents yet'}
-          actionLabel={q.trim() ? undefined : 'Upload document'}
-          onAction={q.trim() ? undefined : () => setUploadOpen(true)}
+          icon={searching ? FileText : Folder}
+          title={searching ? 'No documents match your search' : currentFolderId ? 'This folder is empty' : 'No documents yet'}
+          actionLabel={searching ? undefined : 'Upload document'}
+          onAction={searching ? undefined : () => setUploadOpen(true)}
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredFolders.map((folder, index) => (
+            <FolderCard
+              key={folder.id}
+              folder={folder}
+              index={index}
+              canDelete={canDelete}
+              empty={folderIsEmpty(folder.id)}
+              onOpen={openFolder}
+              onDelete={(value) => setDeleteTarget({ kind: 'folder', folder: value })}
+            />
+          ))}
           {filteredFiles.map((file, index) => (
             <DocumentCard
               key={file.id}
               file={file}
-              index={index}
+              index={filteredFolders.length + index}
               canDelete={canDelete}
               downloadingId={downloadingId}
+              showFolderPath={searching}
               onDownload={handleDownload}
-              onDelete={setDeleteTarget}
+              onDelete={(value) => setDeleteTarget({ kind: 'file', file: value })}
             />
           ))}
         </div>
@@ -314,7 +470,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
           <DialogHeader>
             <DialogTitle>Upload document</DialogTitle>
             <DialogDescription>
-              Add a reference file to the shared Knowledge Bank library.
+              {currentName ? `Into ${currentName}` : 'Into Knowledge Bank'}
             </DialogDescription>
           </DialogHeader>
           <form
@@ -377,14 +533,67 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={folderOpen}
+        onOpenChange={(open) => {
+          if (open) setFolderOpen(true);
+          else closeFolderDialog();
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New folder</DialogTitle>
+            <DialogDescription>
+              {currentName ? `Inside ${currentName}` : 'In Knowledge Bank'}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              void handleCreateFolder(e);
+            }}
+            className="space-y-4 py-1"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="kb-folder-name">Name</Label>
+              <Input
+                id="kb-folder-name"
+                value={folderName}
+                onChange={(e) => setFolderName(e.target.value)}
+                placeholder="e.g. GST"
+                maxLength={80}
+                disabled={creatingFolder}
+                autoFocus
+              />
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button type="button" variant="outline" disabled={creatingFolder} onClick={closeFolderDialog}>
+                Cancel
+              </Button>
+              <AccentButton type="submit" disabled={creatingFolder || !folderName.trim()}>
+                {creatingFolder ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FolderPlus className="h-4 w-4" />
+                )}
+                {creatingFolder ? 'Creating…' : 'Create folder'}
+              </AccentButton>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this document?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteTarget?.kind === 'folder' ? 'Delete this folder?' : 'Delete this document?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget
-                ? `"${deleteTarget.title}" will be permanently removed from the Knowledge Bank. This cannot be undone.`
-                : ''}
+              {deleteTarget?.kind === 'folder'
+                ? `"${deleteTarget.folder.name}" will be removed. Only empty folders can be deleted.`
+                : deleteTarget?.kind === 'file'
+                  ? `"${deleteTarget.file.title}" will be permanently removed from the Knowledge Bank. This cannot be undone.`
+                  : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

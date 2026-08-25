@@ -5,6 +5,7 @@ import { db } from '@/db/client';
 import {
   profiles,
   knowledgeBankFiles,
+  knowledgeBankFolders,
   documentTemplates,
   emailTemplates,
   documents,
@@ -436,6 +437,10 @@ export async function deleteProfileAccount(
         .update(knowledgeBankFiles)
         .set({ uploadedBy: ctx.userId })
         .where(eq(knowledgeBankFiles.uploadedBy, profileId));
+      await tx
+        .update(knowledgeBankFolders)
+        .set({ createdBy: ctx.userId })
+        .where(eq(knowledgeBankFolders.createdBy, profileId));
       await tx
         .update(documentTemplates)
         .set({ uploadedBy: ctx.userId })

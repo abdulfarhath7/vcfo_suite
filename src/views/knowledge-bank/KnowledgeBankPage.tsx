@@ -1,66 +1,52 @@
 "use client";
 
-import { useCallback, useMemo, useReducer, useRef } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
 import { KnowledgeBankPageView } from '@/views/knowledge-bank/KnowledgeBankPageSections';
-import { m as motion } from "framer-motion";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { PageTransition } from "@/components/shell/PageTransition";
-import { PageHeader } from "@/components/admin/PageHeader";
-import { SEO } from "@/components/SEO";
-import { AccentButton, NoirCard, Surface } from "@/components/noir";
 import { useApp } from "@/context/AppContext";
 import { useRealtimeKnowledgeBank } from "@/lib/supabase/use-realtime-knowledge-bank";
 import {
-  formatKnowledgeBankFileSize,
   removeKnowledgeBankStorageObject,
   uploadKnowledgeBankFile,
   validateKnowledgeBankUploadFile,
 } from "@/lib/knowledge-bank-storage";
-import { maxUploadSizeLabel, KNOWLEDGE_BANK_EXTENSIONS, resolveUploadContentType } from "@/lib/upload-limits";
+import { KNOWLEDGE_BANK_EXTENSIONS, resolveUploadContentType } from "@/lib/upload-limits";
 import { toastError, toastSuccess } from "@/lib/toast-errors";
-import {
-  BookOpen,
-  Download,
-  FileText,
-  Loader2,
-  Search,
-  Trash2,
-  Upload,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { isAdminOrManager } from "@/lib/auth";
+import { isUuid } from "@/lib/slug";
+import { knowledgeBankFileMatchesQuery } from "@/lib/knowledge-bank-search";
+import {
+  isKnowledgeBankFolderEmpty,
+  knowledgeBankChildFolders,
+  knowledgeBankFilesInFolder,
+  knowledgeBankFolderAncestors,
+} from "@/lib/knowledge-bank-folders";
 import {
   initialKnowledgeBankUiState,
   knowledgeBankUiReducer,
+  type KnowledgeBankDeleteTarget,
   type KnowledgeBankFile,
+  type KnowledgeBankFolder,
 } from '@/views/knowledge-bank/knowledge-bank-ui-state';
 
-interface ListResponse {
+interface LibraryResponse {
   ok: boolean;
   files?: KnowledgeBankFile[];
+  folders?: KnowledgeBankFolder[];
   error?: string;
 }
 
-async function fetchKnowledgeBankFiles(): Promise<KnowledgeBankFile[]> {
+async function fetchKnowledgeBankLibrary(): Promise<{
+  files: KnowledgeBankFile[];
+  folders: KnowledgeBankFolder[];
+}> {
   const res = await fetch("/api/knowledge-bank");
-  const data = (await res.json()) as ListResponse;
+  const data = (await res.json()) as LibraryResponse;
   if (!res.ok || !data.ok) {
     throw new Error(data.error ?? "fetch_failed");
   }
-  return data.files ?? [];
+  return { files: data.files ?? [], folders: data.folders ?? [] };
 }
 
 function uploaderLabel(file: KnowledgeBankFile): string {
@@ -74,44 +60,108 @@ interface Props {
 }
 
 export default function KnowledgeBankPage({ basePath }: Props) {
+  return (
+    <Suspense fallback={null}>
+      <KnowledgeBankPageInner basePath={basePath} />
+    </Suspense>
+  );
+}
+
+function KnowledgeBankPageInner({ basePath }: Props) {
   const { user } = useApp();
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   useRealtimeKnowledgeBank({ user, queryClient });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [ui, dispatchUi] = useReducer(knowledgeBankUiReducer, initialKnowledgeBankUiState);
-  const { q, title, description, selectedFile, uploading, deleteTarget, deleting, downloadingId } = ui;
+  const {
+    q,
+    title,
+    description,
+    selectedFile,
+    uploading,
+    folderName,
+    creatingFolder,
+    deleteTarget,
+    deleting,
+    downloadingId,
+  } = ui;
   const setQ = (value: string) => dispatchUi({ type: 'patch', patch: { q: value } });
   const setTitle = (value: string) => dispatchUi({ type: 'patch', patch: { title: value } });
   const setDescription = (value: string) => dispatchUi({ type: 'patch', patch: { description: value } });
   const setSelectedFile = (value: File | null) => dispatchUi({ type: 'patch', patch: { selectedFile: value } });
-  const setDeleteTarget = (value: KnowledgeBankFile | null) =>
-    dispatchUi({ type: 'set_delete_target', file: value });
+  const setFolderName = (value: string) => dispatchUi({ type: 'patch', patch: { folderName: value } });
+  const setDeleteTarget = (value: KnowledgeBankDeleteTarget | null) =>
+    dispatchUi({ type: 'set_delete_target', target: value });
 
   const canDelete = isAdminOrManager(user?.role);
 
-  const filesQuery = useQuery({
+  const libraryQuery = useQuery({
     queryKey: ["knowledge-bank"],
-    queryFn: fetchKnowledgeBankFiles,
+    queryFn: fetchKnowledgeBankLibrary,
     staleTime: 30_000,
   });
 
+  const folders = libraryQuery.data?.folders ?? [];
+  const files = libraryQuery.data?.files ?? [];
+  const folderParam = searchParams.get("folder");
+  const urlQ = searchParams.get("q") ?? "";
+  const requestedFolderId = folderParam && isUuid(folderParam) ? folderParam : null;
+  const currentFolderId =
+    requestedFolderId &&
+    (libraryQuery.isLoading || folders.some((folder) => folder.id === requestedFolderId))
+      ? requestedFolderId
+      : null;
+
+  useEffect(() => {
+    if (urlQ) setQ(urlQ);
+  }, [urlQ]);
+
+  const ancestors = useMemo(
+    () => knowledgeBankFolderAncestors(currentFolderId, folders),
+    [currentFolderId, folders],
+  );
+  const childFolders = useMemo(
+    () => knowledgeBankChildFolders(currentFolderId, folders),
+    [currentFolderId, folders],
+  );
+  const childFiles = useMemo(
+    () => knowledgeBankFilesInFolder(currentFolderId, files),
+    [currentFolderId, files],
+  );
+
+  const searching = q.trim().length > 0;
+  const query = q.trim().toLowerCase();
+
+  const filteredFolders = useMemo(() => {
+    if (!searching) return childFolders;
+    return folders.filter((folder) => folder.name.toLowerCase().includes(query));
+  }, [searching, childFolders, folders, query]);
+
   const filteredFiles = useMemo(() => {
-    const files = filesQuery.data ?? [];
-    const query = q.trim().toLowerCase();
-    if (!query) return files;
-    return files.filter(
+    const pool = searching ? files : childFiles;
+    if (!query) return pool;
+    return pool.filter(
       (file) =>
-        file.title.toLowerCase().includes(query) ||
-        file.fileName.toLowerCase().includes(query) ||
-        (file.description?.toLowerCase().includes(query) ?? false) ||
+        knowledgeBankFileMatchesQuery(file, q) ||
         uploaderLabel(file).toLowerCase().includes(query),
     );
-  }, [filesQuery.data, q]);
+  }, [searching, files, childFiles, query, q]);
 
   const refresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["knowledge-bank"] });
   }, [queryClient]);
+
+  const openFolder = useCallback(
+    (folderId: string | null) => {
+      dispatchUi({ type: 'patch', patch: { q: '' } });
+      if (folderId) router.push(`${basePath}?folder=${folderId}`);
+      else router.push(basePath);
+    },
+    [basePath, router],
+  );
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -146,6 +196,7 @@ export default function KnowledgeBankPage({ basePath }: Props) {
           fileName: selectedFile.name,
           mimeType: resolveUploadContentType(selectedFile, KNOWLEDGE_BANK_EXTENSIONS),
           sizeBytes: selectedFile.size,
+          folderId: currentFolderId,
         }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
@@ -164,6 +215,45 @@ export default function KnowledgeBankPage({ basePath }: Props) {
       toastError(message);
     } finally {
       dispatchUi({ type: 'patch', patch: { uploading: false } });
+    }
+  }
+
+  async function handleCreateFolder(e: React.FormEvent) {
+    e.preventDefault();
+    if (!folderName.trim()) {
+      toastError("Enter a folder name.");
+      return;
+    }
+
+    dispatchUi({ type: 'patch', patch: { creatingFolder: true } });
+    try {
+      const res = await fetch("/api/knowledge-bank/folders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: folderName.trim(),
+          parentId: currentFolderId,
+        }),
+      });
+      const data = (await res.json()) as { ok: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        if (data.error === "duplicate_folder_name") {
+          toastError("A folder with that name already exists here.");
+        } else if (data.error === "folder_too_deep") {
+          toastError("This folder is nested too deeply.");
+        } else {
+          toastError(data.error ?? "Could not create folder.");
+        }
+        return;
+      }
+      toastSuccess("Folder created.");
+      dispatchUi({ type: 'clear_folder_form' });
+      await refresh();
+    } catch {
+      toastError("Could not create folder.");
+    } finally {
+      dispatchUi({ type: 'patch', patch: { creatingFolder: false } });
     }
   }
 
@@ -188,13 +278,30 @@ export default function KnowledgeBankPage({ basePath }: Props) {
     if (!deleteTarget) return;
     dispatchUi({ type: 'patch', patch: { deleting: true } });
     try {
-      const res = await fetch(`/api/knowledge-bank/${deleteTarget.id}`, { method: "DELETE" });
-      const data = (await res.json()) as { ok: boolean; error?: string };
-      if (!res.ok || !data.ok) {
-        toastError(data.error ?? "Delete failed.");
-        return;
+      if (deleteTarget.kind === "folder") {
+        const res = await fetch(`/api/knowledge-bank/folders/${deleteTarget.folder.id}`, {
+          method: "DELETE",
+        });
+        const data = (await res.json()) as { ok: boolean; error?: string };
+        if (!res.ok || !data.ok) {
+          if (data.error === "folder_not_empty") {
+            toastError("Remove files and subfolders first.");
+          } else {
+            toastError(data.error ?? "Delete failed.");
+          }
+          return;
+        }
+        toastSuccess("Folder removed.");
+        if (currentFolderId === deleteTarget.folder.id) openFolder(deleteTarget.folder.parentId);
+      } else {
+        const res = await fetch(`/api/knowledge-bank/${deleteTarget.file.id}`, { method: "DELETE" });
+        const data = (await res.json()) as { ok: boolean; error?: string };
+        if (!res.ok || !data.ok) {
+          toastError(data.error ?? "Delete failed.");
+          return;
+        }
+        toastSuccess("Document removed from Knowledge Bank.");
       }
-      toastSuccess("Document removed from Knowledge Bank.");
       setDeleteTarget(null);
       await refresh();
     } catch {
@@ -216,10 +323,20 @@ export default function KnowledgeBankPage({ basePath }: Props) {
     fileInputRef,
     uploading,
     handleUpload,
-    filesQuery,
+    folderName,
+    setFolderName,
+    creatingFolder,
+    handleCreateFolder,
+    libraryQuery,
     filteredFiles,
+    filteredFolders,
     q,
     setQ,
+    searching,
+    currentFolderId,
+    ancestors,
+    openFolder,
+    folderIsEmpty: (folderId: string) => isKnowledgeBankFolderEmpty(folderId, folders, files),
     handleDownload,
     downloadingId,
     deleteTarget,

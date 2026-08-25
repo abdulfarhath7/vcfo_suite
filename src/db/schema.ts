@@ -11,6 +11,7 @@ import {
   bigint,
   index,
   uniqueIndex,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 
 /**
@@ -304,26 +305,62 @@ export const documents = pgTable(
 );
 
 /**
+ * Nested folders for the firm Knowledge Bank (not the document vault).
+ * `parent_id` null = library root. Delete refuses non-empty folders —
+ * ON DELETE restrict on `parent_id` and on `knowledge_bank_files.folder_id`.
+ *
+ * ACCESS: same as knowledge_bank_files — admin/manager all; intern read all
+ * + insert own (`created_by = self`); client none. Intern cannot delete.
+ */
+export const knowledgeBankFolders = pgTable(
+  'knowledge_bank_folders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    parentId: uuid('parent_id').references((): AnyPgColumn => knowledgeBankFolders.id, {
+      onDelete: 'restrict',
+    }),
+    name: text('name').notNull(),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    parentIdx: index('knowledge_bank_folders_parent_idx').on(t.parentId),
+  }),
+);
+
+/**
  * Shared firm library. Reconciled against 20260529160000_knowledge_bank.sql.
  *
  * ACCESS CONTROL: the original had NO `visible_to_roles` column — visibility
  * was entirely in RLS: manager = ALL, intern = SELECT + INSERT (own uploads),
  * client = no access at all. That rule now lives in the repository, so do not
  * reintroduce a visibility column. `storage_path` holds the S3 object key.
+ * `folder_id` null = library root (migration 0013).
  */
-export const knowledgeBankFiles = pgTable('knowledge_bank_files', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  title: text('title').notNull(),
-  description: text('description'),
-  storagePath: text('storage_path').notNull().unique(),
-  fileName: text('file_name').notNull(),
-  mimeType: text('mime_type').notNull(),
-  sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
-  uploadedBy: uuid('uploaded_by')
-    .notNull()
-    .references(() => profiles.id, { onDelete: 'restrict' }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const knowledgeBankFiles = pgTable(
+  'knowledge_bank_files',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    description: text('description'),
+    storagePath: text('storage_path').notNull().unique(),
+    fileName: text('file_name').notNull(),
+    mimeType: text('mime_type').notNull(),
+    sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
+    uploadedBy: uuid('uploaded_by')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'restrict' }),
+    folderId: uuid('folder_id').references(() => knowledgeBankFolders.id, {
+      onDelete: 'restrict',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    folderIdx: index('knowledge_bank_files_folder_idx').on(t.folderId),
+  }),
+);
 
 /**
  * Append-only change trail behind the Audit Log view.
