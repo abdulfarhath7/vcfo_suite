@@ -135,3 +135,17 @@ export function clientRecipientsForProject(
     return a.name.localeCompare(b.name);
   });
 }
+
+/** Match `?to=` on staff compose to a directory person (email or user id). */
+export function matchDirectoryPersonByToParam(
+  people: Array<Pick<DirectoryPerson, 'userId' | 'email'>>,
+  to: string | null | undefined,
+): string | null {
+  const raw = to?.trim();
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+  const match = people.find(
+    (person) => person.userId === raw || person.email.trim().toLowerCase() === lower,
+  );
+  return match?.userId ?? null;
+}

@@ -10,6 +10,7 @@ import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { LeadWeekStrip } from '@/components/intern/LeadWeekStrip';
 import { LeadActionQueue } from '@/components/intern/LeadActionQueue';
 import { LeadPhaseProgress } from '@/components/intern/LeadPhaseProgress';
+import { LeadManagersCard } from '@/components/intern/LeadManagersCard';
 import { LeadSideRail } from '@/components/intern/LeadSideRail';
 import {
   formatIstWeekdayDay,
@@ -91,6 +92,7 @@ export default function InternToday() {
               <div className="flex min-w-0 flex-col gap-3">
                 <LeadFocusCard userId={user?.id ?? ''} items={workItems} />
                 <LeadPhaseProgress engagements={myEngagements} getState={getStateForEngagement} />
+                <LeadManagersCard engagements={myEngagements} />
               </div>
             </div>
           </div>

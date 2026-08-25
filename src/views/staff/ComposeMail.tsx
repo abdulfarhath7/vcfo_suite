@@ -17,7 +17,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/context/AppContext';
 import { roleSettingsPath } from '@/lib/auth-routes';
 import { emailBrandingLabel, type EmailTemplateDto } from '@/lib/email/compose-branding';
-import type { DirectoryPerson } from '@/lib/email/directory-filter';
+import {
+  matchDirectoryPersonByToParam,
+  type DirectoryPerson,
+} from '@/lib/email/directory-filter';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 
 type Props = {
@@ -75,7 +78,16 @@ export default function ComposeMail({ path }: Props) {
         const res = await fetch('/api/outlook/directory');
         const json = (await res.json()) as { people?: DirectoryPerson[]; error?: string };
         if (!res.ok) throw new Error(json.error || 'directory_failed');
-        if (!cancelled) setPeople(json.people ?? []);
+        if (!cancelled) {
+          const list = json.people ?? [];
+          setPeople(list);
+          const to =
+            typeof window !== 'undefined'
+              ? new URLSearchParams(window.location.search).get('to')
+              : null;
+          const selectedId = matchDirectoryPersonByToParam(list, to);
+          if (selectedId) setSelected(new Set([selectedId]));
+        }
       } catch (err) {
         if (!cancelled) toastError('Could not load people', errorMessage(err));
       } finally {

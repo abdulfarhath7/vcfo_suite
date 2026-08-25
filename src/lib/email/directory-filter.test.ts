@@ -3,6 +3,7 @@ import {
   clientRecipientsForProject,
   filterDirectoryPeople,
   kindForRole,
+  matchDirectoryPersonByToParam,
   uniqueDirectoryManagers,
   uniqueDirectoryProjects,
   type DirectoryPerson,
@@ -145,5 +146,14 @@ describe('clientRecipientsForProject', () => {
   it('returns empty for all or unknown company', () => {
     expect(clientRecipientsForProject(people, 'all')).toEqual([]);
     expect(clientRecipientsForProject(people, 'missing')).toEqual([]);
+  });
+});
+
+describe('matchDirectoryPersonByToParam', () => {
+  it('matches email case-insensitively or user id', () => {
+    expect(matchDirectoryPersonByToParam(people, 'Pranay.K@sbcllp.in')).toBe('m1');
+    expect(matchDirectoryPersonByToParam(people, 'l1')).toBe('l1');
+    expect(matchDirectoryPersonByToParam(people, ' missing ')).toBeNull();
+    expect(matchDirectoryPersonByToParam(people, null)).toBeNull();
   });
 });
