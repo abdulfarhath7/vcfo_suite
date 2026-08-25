@@ -5,7 +5,7 @@ import { db } from '@/db/client';
 import { documents, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { appEngagementId, engagementDbId } from '@/lib/legacy-engagement-ids';
 import {
   assertEngagementAccess,
   getEngagementById,
@@ -54,7 +54,7 @@ function mapRow(
 ): DocumentDto {
   return {
     id: row.id,
-    engagementId: row.engagementId,
+    engagementId: appEngagementId(row.engagementId),
     category: row.category,
     fileName: row.fileName,
     objectKey: row.objectKey,
@@ -210,12 +210,24 @@ export async function createDocument(
   const engagement = await getEngagementById(ctx, engagementDbId(input.engagementId));
   if (!engagement) throw new Error('Engagement not found or not permitted');
 
+  const objectKey = input.objectKey.trim();
+  const [existing] = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.objectKey, objectKey))
+    .limit(1);
+  if (existing) {
+    const access = await assertEngagementAccess(ctx, existing.engagementId);
+    if (!access.ok) throw new Error('Engagement not found or not permitted');
+    return mapRow(existing);
+  }
+
   const [row] = await db
     .insert(documents)
     .values({
       engagementId: engagement.id,
       fileName: input.fileName.trim(),
-      objectKey: input.objectKey.trim(),
+      objectKey,
       category: input.category?.trim() || null,
       contentType: input.contentType?.trim() || null,
       sizeBytes: input.sizeBytes ?? null,

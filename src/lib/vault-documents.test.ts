@@ -6,10 +6,16 @@ import {
 } from '@/lib/document-access';
 import {
   collectIndexedVaultDocuments,
+  collectVaultDocuments,
   filterVaultEntityGroups,
+  formatVaultCommandHit,
   groupVaultDocuments,
   mergeVaultDocuments,
   scopeVaultDocumentsToEngagements,
+  vaultFileNameMatches,
+  vaultLocationLabel,
+  vaultPhaseForItem,
+  vaultSearchHits,
   type VaultDocument,
 } from '@/lib/vault-documents';
 
@@ -81,6 +87,9 @@ describe('intern document access (Path A)', () => {
     expect(internMayAccessEngagementDocuments(internA, otherIntern)).toBe(false);
     expect(internMayAccessEngagementDocuments(internA, memberOnly, [memberOnly.id])).toBe(true);
     expect(internMayAccessEngagementDocuments(undefined, assigned)).toBe(false);
+    expect(
+      internMayAccessEngagementDocuments(internA, { ...memberOnly, leadIds: [internA] }),
+    ).toBe(true);
   });
 
   it('strips another intern’s client documents from a mixed list', () => {
@@ -166,5 +175,83 @@ describe('vault grouping', () => {
       ],
     );
     expect(merged).toHaveLength(1);
+  });
+
+  it('maps a documents-table uuid onto the demo app engagement id', () => {
+    const demo: Engagement = { ...assigned, id: 'e1' };
+    const indexed = collectIndexedVaultDocuments(
+      [
+        {
+          id: 'doc-uuid',
+          engagementId: '11111111-1111-1111-1111-111111111101',
+          category: 'documents',
+          fileName: 'lead-upload.pdf',
+          objectKey: '11111111-1111-1111-1111-111111111101/ack/1710000000000-lead-upload.pdf',
+          stepId: 'pre-4',
+          createdAt: '2026-08-21T00:00:00.000Z',
+        },
+      ],
+      [demo],
+    );
+    expect(indexed[0]?.engagementId).toBe('e1');
+    expect(indexed[0]?.companyName).toBe('Acme Pvt Ltd');
+    const scoped = scopeVaultDocumentsToEngagements(indexed, [demo]);
+    expect(scoped).toHaveLength(1);
+  });
+
+  it('groups FEMA filings and intern uploads under phase labels', () => {
+    const internAck = doc(assigned, 'name-ack.pdf', {
+      milestoneId: 'pre-4',
+      milestoneTitle: 'Name reservation',
+      bucket: 'Pre-Incorporation',
+    });
+    const fcgpr = doc(assigned, 'fcgpr.pdf', {
+      milestoneId: 'reg-20',
+      milestoneTitle: 'FCGPR Filing',
+      bucket: 'Registration',
+    });
+    const gst = doc(assigned, 'gst.pdf', {
+      milestoneId: 'reg-1',
+      milestoneTitle: 'GST Registration',
+      bucket: 'Registration',
+    });
+    const groups = groupVaultDocuments([internAck, fcgpr, gst], [assigned]);
+    expect(groups[0]?.phases.map((phase) => phase.phaseKey)).toEqual([
+      'pre-inc',
+      'fema',
+      'statutory',
+    ]);
+    expect(vaultPhaseForItem({ bucket: 'statutory', title: 'FCGPR Filing' })).toBe('fema');
+    expect(vaultPhaseForItem({ bucket: 'statutory', title: 'GST Registration' })).toBe('statutory');
+  });
+
+  it('matches by file name and shows company plus phase path', () => {
+    const gstr = doc(assigned, 'GSTR-1.pdf', {
+      milestoneId: 'reg-1',
+      milestoneTitle: 'GST Registration',
+      bucket: 'Registration',
+      section: 'Returns',
+    });
+    expect(vaultFileNameMatches(gstr, 'gstr-1')).toBe(true);
+    expect(vaultFileNameMatches(gstr, 'epfo')).toBe(false);
+    expect(formatVaultCommandHit(gstr)).toBe('GSTR-1.pdf — Acme Pvt Ltd · Statutory');
+    expect(vaultLocationLabel(gstr)).toBe('Statutory · GST Registration · Returns');
+    const hits = vaultSearchHits([gstr, doc(otherIntern, 'other.pdf')], 'GSTR-1');
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.companyName).toBe('Acme Pvt Ltd');
+  });
+
+  it('collects intern checklist uploads from file fields', () => {
+    const path = `${assigned.id}/nameApplicationAcknowledgementUrl/1710000000000-name-ack.pdf`;
+    const collected = collectVaultDocuments([assigned], () => ({
+      'pre-4': {
+        status: 'in-progress',
+        responses: { nameApplicationAcknowledgementUrl: path },
+      },
+    }));
+    expect(collected).toHaveLength(1);
+    expect(collected[0]?.fileName).toBe('name-ack.pdf');
+    expect(collected[0]?.bucket).toBe('Pre-incorporation');
+    expect(collected[0]?.milestoneId).toBe('pre-4');
   });
 });

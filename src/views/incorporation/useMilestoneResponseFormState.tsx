@@ -774,7 +774,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     }
     setUploadingField(fieldId);
     try {
-      const path = await uploadMilestoneDocument(engagement.id, fieldId, file);
+      const path = await uploadMilestoneDocument(engagement.id, fieldId, file, {
+        stepId: item.id,
+      });
       userEditedRef.current = true;
       setDraft((prev) => ({ ...prev, [fieldId]: path }));
       setFieldErrors((prev) => {

@@ -4,6 +4,9 @@ import {
   assertEngagementAccess,
   getEngagementBySlug,
 } from '@/db/repositories/engagements';
+import { createDocument } from '@/db/repositories/documents';
+import { getItem } from '@/data/checklist';
+import { getClientResponseFields } from '@/lib/checklist-responses';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import { isEngagementRouteParam } from '@/lib/slug';
 import {
@@ -16,6 +19,7 @@ import {
   resolveUploadContentType,
 } from '@/lib/upload-limits';
 import { bucketKey, putObject } from '@/storage/s3';
+import { checklistItemForFieldId, vaultPhaseForItem } from '@/lib/vault-documents';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -102,9 +106,33 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     await putObject(bucketKey(MILESTONE_DOCUMENTS_BUCKET, storagePath), bytes, contentType);
-    return NextResponse.json({ path: storagePath });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'upload_failed';
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
+
+  if (guard.ctx.role !== 'client') {
+    const stepIdRaw = String(form.get('stepId') ?? '').trim();
+    const item =
+      (stepIdRaw && FIELD_ID_RE.test(stepIdRaw) ? getItem(stepIdRaw) : undefined) ??
+      checklistItemForFieldId(fieldId);
+    const field = item
+      ? getClientResponseFields(item).find((row) => row.id === fieldId)
+      : undefined;
+    try {
+      await createDocument(guard.ctx, {
+        engagementId: access.dbId,
+        fileName: file.name,
+        objectKey: storagePath,
+        category: field?.section ?? (item ? vaultPhaseForItem(item) : 'documents'),
+        contentType,
+        sizeBytes: file.size,
+        stepId: item?.id ?? null,
+      });
+    } catch (err) {
+      console.warn('[milestone-documents] document index row failed', err);
+    }
+  }
+
+  return NextResponse.json({ path: storagePath });
 }

@@ -1,7 +1,9 @@
-import { BUCKET_LABEL, checklist, getItem, type ChecklistItem } from '@/data/checklist';
+import { checklist, getItem, type ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
+import { internRegistrationHeadingForTitle } from '@/lib/intern-overview-progress';
+import { appEngagementId, engagementIdAliases } from '@/lib/legacy-engagement-ids';
 import {
   fileNameFromStoragePath,
   isMilestoneStoragePath,
@@ -31,6 +33,54 @@ export interface VaultDocument {
 /** Indexed files that are not tied to a checklist step. */
 export const INDEXED_MILESTONE_ID = '_indexed';
 
+export type VaultPhaseKey = 'pre-inc' | 'post-inc' | 'fema' | 'statutory';
+
+export const VAULT_PHASE_ORDER: VaultPhaseKey[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
+
+export const VAULT_PHASE_LABEL: Record<VaultPhaseKey, string> = {
+  'pre-inc': 'Pre-incorporation',
+  'post-inc': 'Post-incorporation',
+  fema: 'FEMA',
+  statutory: 'Statutory',
+};
+
+/** Map a catalog item onto the four vault phases (FEMA filings nest out of statutory). */
+export function vaultPhaseForItem(item: Pick<ChecklistItem, 'bucket' | 'title'>): VaultPhaseKey {
+  if (item.bucket === 'pre-inc') return 'pre-inc';
+  if (item.bucket === 'post-inc') return 'post-inc';
+  if (item.bucket === 'fema') return 'fema';
+  if (internRegistrationHeadingForTitle(item.title) === 'FEMA') return 'fema';
+  return 'statutory';
+}
+
+export function vaultPhaseForDocument(doc: VaultDocument): VaultPhaseKey {
+  const item = getItem(doc.milestoneId);
+  if (item) return vaultPhaseForItem(item);
+  const label = doc.bucket.trim().toLowerCase();
+  if (label.startsWith('pre')) return 'pre-inc';
+  if (label.startsWith('post')) return 'post-inc';
+  if (label.includes('fema')) return 'fema';
+  return 'statutory';
+}
+
+export function checklistItemForFieldId(fieldId: string): ChecklistItem | undefined {
+  const trimmed = fieldId.trim();
+  if (!trimmed) return undefined;
+  return checklist.find((item) =>
+    getClientResponseFields(item).some((field) => field.id === trimmed),
+  );
+}
+
+export function engagementForVaultId(
+  engagements: Engagement[],
+  engagementId: string,
+): Engagement | undefined {
+  const aliases = new Set(engagementIdAliases(engagementId));
+  return engagements.find((engagement) =>
+    engagementIdAliases(engagement.id).some((id) => aliases.has(id)),
+  );
+}
+
 export interface IndexedDocumentRow {
   id: string;
   engagementId: string;
@@ -55,13 +105,27 @@ export interface VaultMilestoneGroup {
   docCount: number;
 }
 
+export interface VaultPhaseGroup {
+  phaseKey: VaultPhaseKey;
+  phaseLabel: string;
+  milestones: VaultMilestoneGroup[];
+  docCount: number;
+}
+
 export interface VaultEntityGroup {
   engagementId: string;
   companyName: string;
   stage: Engagement['stage'];
   slug?: string;
+  phases: VaultPhaseGroup[];
   milestones: VaultMilestoneGroup[];
   docCount: number;
+}
+
+export interface VaultSearchHit {
+  doc: VaultDocument;
+  companyName: string;
+  location: string;
 }
 
 function milestoneOrder(a: ChecklistItem, b: ChecklistItem): number {
@@ -129,7 +193,12 @@ function milestonesFromDocs(engagementDocs: VaultDocument[]): VaultMilestoneGrou
   for (const item of orderedItems) {
     used.add(item.id);
     milestones.push(
-      milestoneGroup(item.id, item.title, BUCKET_LABEL[item.bucket], docsByMilestone.get(item.id)!),
+      milestoneGroup(
+        item.id,
+        item.title,
+        VAULT_PHASE_LABEL[vaultPhaseForItem(item)],
+        docsByMilestone.get(item.id)!,
+      ),
     );
   }
 
@@ -149,6 +218,41 @@ function milestonesFromDocs(engagementDocs: VaultDocument[]): VaultMilestoneGrou
   return milestones;
 }
 
+function phasesFromMilestones(milestones: VaultMilestoneGroup[]): VaultPhaseGroup[] {
+  const byPhase = new Map<VaultPhaseKey, VaultMilestoneGroup[]>();
+  for (const milestone of milestones) {
+    const sample = milestone.sections[0]?.docs[0];
+    const item = getItem(milestone.milestoneId);
+    const key = sample
+      ? vaultPhaseForDocument(sample)
+      : item
+        ? vaultPhaseForItem(item)
+        : 'statutory';
+    const list = byPhase.get(key) ?? [];
+    list.push(milestone);
+    byPhase.set(key, list);
+  }
+
+  return VAULT_PHASE_ORDER.flatMap((key) => {
+    const phaseMilestones = byPhase.get(key);
+    if (!phaseMilestones?.length) return [];
+    return [
+      {
+        phaseKey: key,
+        phaseLabel: VAULT_PHASE_LABEL[key],
+        milestones: phaseMilestones,
+        docCount: phaseMilestones.reduce((sum, milestone) => sum + milestone.docCount, 0),
+      },
+    ];
+  });
+}
+
+function withEntityPhases(
+  entity: Omit<VaultEntityGroup, 'phases'> & { phases?: VaultPhaseGroup[] },
+): VaultEntityGroup {
+  return { ...entity, phases: phasesFromMilestones(entity.milestones) };
+}
+
 /** Collect file uploads from checklist responses across engagements. */
 export function collectVaultDocuments(
   engagements: Engagement[],
@@ -165,29 +269,43 @@ export function collectVaultDocuments(
 
       const responses = extractItemResponses(item, slice);
       const fields = getClientResponseFields(item);
+      const fieldById = new Map(fields.map((field) => [field.id, field]));
+      const used = new Set<string>();
+      const phaseKey = vaultPhaseForItem(item);
+      const phaseLabel = VAULT_PHASE_LABEL[phaseKey];
 
-      for (const field of fields) {
-        if (field.type !== 'file') continue;
-        const storagePath = (responses[field.id] ?? '').trim();
-        if (!isMilestoneStoragePath(storagePath)) continue;
-
+      const addPath = (fieldId: string, storagePath: string, fieldLabel: string, section: string) => {
         const ts = uploadTimestampFromStoragePath(storagePath);
-
         docs.push({
-          id: `${engagement.id}:${item.id}:${field.id}`,
+          id: `${engagement.id}:${item.id}:${fieldId}`,
           engagementId: engagement.id,
           companyName: engagement.companyName,
           milestoneId: item.id,
           milestoneTitle: item.title,
-          bucket: BUCKET_LABEL[item.bucket],
-          section: field.section ?? item.title,
-          fieldId: field.id,
-          fieldLabel: field.label,
+          bucket: phaseLabel,
+          section,
+          fieldId,
+          fieldLabel,
           fileName: fileNameFromStoragePath(storagePath),
           storagePath,
           uploadedAt: ts ? new Date(ts).toISOString() : null,
           source: 'milestone',
         });
+      };
+
+      for (const field of fields) {
+        if (field.type !== 'file') continue;
+        const storagePath = (responses[field.id] ?? '').trim();
+        if (!isMilestoneStoragePath(storagePath)) continue;
+        used.add(field.id);
+        addPath(field.id, storagePath, field.label, field.section ?? item.title);
+      }
+
+      // Lead uploads stored as a path on a non-file key still belong in the vault.
+      for (const [fieldId, value] of Object.entries(responses)) {
+        if (used.has(fieldId) || !isMilestoneStoragePath(value)) continue;
+        const field = fieldById.get(fieldId);
+        addPath(fieldId, value.trim(), field?.label ?? fieldId, field?.section ?? item.title);
       }
     }
   }
@@ -204,22 +322,28 @@ export function collectIndexedVaultDocuments(
   rows: IndexedDocumentRow[],
   engagements: Engagement[],
 ): VaultDocument[] {
-  const byId = new Map(engagements.map((e) => [e.id, e]));
+  const byIdLookup = (engagementId: string) => engagementForVaultId(engagements, engagementId);
   const docs: VaultDocument[] = [];
 
   for (const row of rows) {
-    const engagement = byId.get(row.engagementId);
+    const engagement = byIdLookup(row.engagementId);
     const item = row.stepId ? getItem(row.stepId) : undefined;
     const category = row.category?.trim() || '';
-    const section = item ? (category ? titleCaseCategory(category) : item.title) : titleCaseCategory(category) || 'Other';
+    const section = item
+      ? category
+        ? titleCaseCategory(category)
+        : item.title
+      : titleCaseCategory(category) || 'Other';
+    const phaseKey = item ? vaultPhaseForItem(item) : 'statutory';
+    const appId = engagement?.id ?? appEngagementId(row.engagementId);
 
     docs.push({
       id: `index:${row.id}`,
-      engagementId: row.engagementId,
+      engagementId: appId,
       companyName: row.companyName?.trim() || engagement?.companyName || 'Unknown company',
       milestoneId: item?.id ?? INDEXED_MILESTONE_ID,
       milestoneTitle: item?.title ?? (category ? titleCaseCategory(category) : 'Other files'),
-      bucket: item ? BUCKET_LABEL[item.bucket] : 'Files',
+      bucket: VAULT_PHASE_LABEL[phaseKey],
       section,
       fieldId: row.id,
       fieldLabel: row.fileName,
@@ -240,7 +364,7 @@ export function mergeVaultDocuments(...lists: VaultDocument[][]): VaultDocument[
   const out: VaultDocument[] = [];
   for (const list of lists) {
     for (const doc of list) {
-      const key = `${doc.engagementId}:${doc.storagePath}`;
+      const key = `${appEngagementId(doc.engagementId)}:${doc.storagePath}`;
       if (seen.has(key)) continue;
       seen.add(key);
       out.push(doc);
@@ -254,8 +378,46 @@ export function scopeVaultDocumentsToEngagements(
   docs: VaultDocument[],
   engagements: Engagement[],
 ): VaultDocument[] {
-  const ids = new Set(engagements.map((e) => e.id));
-  return docs.filter((doc) => ids.has(doc.engagementId));
+  const ids = new Set(engagements.flatMap((engagement) => engagementIdAliases(engagement.id)));
+  return docs.filter((doc) => engagementIdAliases(doc.engagementId).some((id) => ids.has(id)));
+}
+
+export function vaultFileNameMatches(doc: VaultDocument, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+  return (
+    doc.fileName.toLowerCase().includes(q) ||
+    doc.fieldLabel.toLowerCase().includes(q)
+  );
+}
+
+export function vaultLocationLabel(doc: VaultDocument): string {
+  const phase = VAULT_PHASE_LABEL[vaultPhaseForDocument(doc)];
+  const parts: string[] = [];
+  if (phase) parts.push(phase);
+  if (doc.milestoneTitle && doc.milestoneTitle !== phase) parts.push(doc.milestoneTitle);
+  if (doc.section && doc.section !== doc.milestoneTitle && doc.section !== phase) {
+    parts.push(doc.section);
+  }
+  return parts.join(' · ');
+}
+
+/** Command palette line: `GSTR-1.pdf — DemoCo · Pre-incorporation`. */
+export function formatVaultCommandHit(doc: VaultDocument): string {
+  const phase = VAULT_PHASE_LABEL[vaultPhaseForDocument(doc)];
+  return `${doc.fileName} — ${doc.companyName} · ${phase}`;
+}
+
+export function vaultSearchHits(docs: VaultDocument[], query: string): VaultSearchHit[] {
+  const q = query.trim();
+  if (!q) return [];
+  return docs
+    .filter((doc) => vaultDocMatchesQuery(doc, q))
+    .map((doc) => ({
+      doc,
+      companyName: doc.companyName,
+      location: vaultLocationLabel(doc),
+    }));
 }
 
 export function vaultDocMatchesQuery(doc: VaultDocument, query: string): boolean {
@@ -296,13 +458,13 @@ export function filterVaultEntityGroups(groups: VaultEntityGroup[], query: strin
     });
     const docCount = milestones.reduce((sum, milestone) => sum + milestone.docCount, 0);
     if (milestones.length > 0) {
-      out.push({ ...entity, milestones, docCount });
+      out.push(withEntityPhases({ ...entity, milestones, docCount }));
     }
   }
   return out;
 }
 
-/** Group flat vault documents by entity → milestone → section. */
+/** Group flat vault documents by entity → phase → checklist step → section. */
 export function groupVaultDocuments(
   docs: VaultDocument[],
   engagements: Engagement[],
@@ -310,39 +472,58 @@ export function groupVaultDocuments(
 ): VaultEntityGroup[] {
   const docsByEngagement = new Map<string, VaultDocument[]>();
   for (const doc of docs) {
-    const list = docsByEngagement.get(doc.engagementId) ?? [];
+    const key = appEngagementId(doc.engagementId);
+    const list = docsByEngagement.get(key) ?? [];
     list.push(doc);
-    docsByEngagement.set(doc.engagementId, list);
+    docsByEngagement.set(key, list);
   }
 
   const groups: VaultEntityGroup[] = [];
   const seen = new Set<string>();
 
+  const takeDocs = (engagementId: string): VaultDocument[] => {
+    const out: VaultDocument[] = [];
+    const used = new Set<string>();
+    for (const alias of engagementIdAliases(engagementId)) {
+      for (const doc of docsByEngagement.get(appEngagementId(alias)) ?? []) {
+        if (used.has(doc.id)) continue;
+        used.add(doc.id);
+        out.push(doc);
+      }
+      seen.add(alias);
+      seen.add(appEngagementId(alias));
+    }
+    return out;
+  };
+
   for (const engagement of engagements) {
-    seen.add(engagement.id);
-    const engagementDocs = docsByEngagement.get(engagement.id) ?? [];
+    const engagementDocs = takeDocs(engagement.id);
     if (!engagementDocs.length && !options?.includeEmpty) continue;
 
-    groups.push({
-      engagementId: engagement.id,
-      companyName: engagement.companyName,
-      stage: engagement.stage,
-      slug: engagement.slug,
-      milestones: milestonesFromDocs(engagementDocs),
-      docCount: engagementDocs.length,
-    });
+    groups.push(
+      withEntityPhases({
+        engagementId: engagement.id,
+        companyName: engagement.companyName,
+        stage: engagement.stage,
+        slug: engagement.slug,
+        milestones: milestonesFromDocs(engagementDocs),
+        docCount: engagementDocs.length,
+      }),
+    );
   }
 
   for (const [engagementId, engagementDocs] of docsByEngagement) {
     if (seen.has(engagementId) || engagementDocs.length === 0) continue;
     const sample = engagementDocs[0];
-    groups.push({
-      engagementId,
-      companyName: sample?.companyName ?? 'Unknown company',
-      stage: 'Pre-Incorporation',
-      milestones: milestonesFromDocs(engagementDocs),
-      docCount: engagementDocs.length,
-    });
+    groups.push(
+      withEntityPhases({
+        engagementId,
+        companyName: sample?.companyName ?? 'Unknown company',
+        stage: 'Pre-Incorporation',
+        milestones: milestonesFromDocs(engagementDocs),
+        docCount: engagementDocs.length,
+      }),
+    );
   }
 
   return groups;

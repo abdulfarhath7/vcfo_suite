@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { m } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
@@ -19,8 +19,10 @@ import {
   groupVaultDocuments,
   mergeVaultDocuments,
   scopeVaultDocumentsToEngagements,
+  vaultSearchHits,
   type VaultDocument,
 } from '@/lib/vault-documents';
+import { internVisibleDocuments } from '@/lib/document-access';
 import { getIndexedDocumentSignedUrl, useIndexedDocuments } from '@/lib/use-vault-documents';
 import { isMilestoneStoragePath } from '@/lib/milestone-document-storage';
 import { adminProjectPath, internEngagementPath } from '@/lib/project-step-path';
@@ -110,7 +112,15 @@ function DocumentOpenLink({ doc }: { doc: VaultDocument }) {
   );
 }
 
-function DocumentCard({ doc, index }: { doc: VaultDocument; index: number }) {
+function DocumentCard({
+  doc,
+  index,
+  location,
+}: {
+  doc: VaultDocument;
+  index: number;
+  location?: string;
+}) {
   const sectionTone = TONE_BADGE[toneForKey(doc.section)];
   return (
     <m.div
@@ -126,13 +136,15 @@ function DocumentCard({ doc, index }: { doc: VaultDocument; index: number }) {
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-[13.5px] font-medium text-ink">{doc.fileName}</h3>
-            <p className="mt-0.5 truncate text-[11.5px] text-text-tertiary">{doc.fieldLabel}</p>
+            <p className="mt-0.5 truncate text-[11.5px] text-text-tertiary">
+              {location ?? doc.fieldLabel}
+            </p>
           </div>
         </div>
 
         <div className="mb-4 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-text-tertiary">
           <span className={cn('inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[10.5px] font-medium', sectionTone)}>
-            {doc.section}
+            {location ? doc.companyName : doc.section}
           </span>
           <span aria-hidden className="text-border">
             ·
@@ -217,12 +229,48 @@ function EntitySidebarItem({
 }
 
 export default function DocumentVaultPage() {
+  return (
+    <Suspense fallback={<VaultPageSkeleton />}>
+      <DocumentVaultPageContent />
+    </Suspense>
+  );
+}
+
+function VaultPageSkeleton() {
+  return (
+    <PageTransition>
+      <SEO title="Document Vault — VCFO Suite" description="Central evidence repository for GCC setup projects." path="/app/intern/vault" />
+      <PageHeader accent="teal" icon={Vault} title="Vault" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <NoirCard key={i} flat className="h-[180px] animate-pulse p-5">
+            <div className="mb-3 flex gap-3">
+              <div className="h-10 w-10 rounded-md bg-muted" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-3/4 rounded bg-muted" />
+                <div className="h-3 w-1/2 rounded bg-muted" />
+              </div>
+            </div>
+          </NoirCard>
+        ))}
+      </div>
+    </PageTransition>
+  );
+}
+
+function DocumentVaultPageContent() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const staffBase = useStaffBasePath();
   const { user, engagements, getStateForEngagement, engagementsLoading, refreshEngagementChecklist } = useApp();
   const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
-  const [q, setQ] = useState('');
+  const urlQ = searchParams.get('q') ?? '';
+  const [q, setQ] = useState(urlQ);
+
+  useEffect(() => {
+    setQ(urlQ);
+  }, [urlQ]);
   const [checklistRefreshing, setChecklistRefreshing] = useState(false);
 
   const isIntern = user?.role === 'intern' || pathname.startsWith('/app/intern/');
@@ -248,11 +296,15 @@ export default function DocumentVaultPage() {
   const allDocs = useMemo(() => {
     const milestoneDocs = collectVaultDocuments(engagements, getStateForEngagement);
     const indexedDocs = collectIndexedVaultDocuments(indexedQuery.data ?? [], engagements);
-    return scopeVaultDocumentsToEngagements(
+    const merged = scopeVaultDocumentsToEngagements(
       mergeVaultDocuments(milestoneDocs, indexedDocs),
       engagements,
     );
-  }, [engagements, getStateForEngagement, indexedQuery.data]);
+    if (user?.role === 'intern') {
+      return internVisibleDocuments(user.internId, merged, engagements);
+    }
+    return merged;
+  }, [engagements, getStateForEngagement, indexedQuery.data, user?.internId, user?.role]);
 
   const entityGroups = useMemo(
     () => groupVaultDocuments(allDocs, engagements, { includeEmpty: true }),
@@ -263,6 +315,9 @@ export default function DocumentVaultPage() {
     () => filterVaultEntityGroups(entityGroups, q),
     [entityGroups, q],
   );
+
+  const searchHits = useMemo(() => vaultSearchHits(allDocs, q), [allDocs, q]);
+  const isSearching = q.trim().length > 0;
 
   const selectedEntityId =
     (activeEntityId && filteredGroups.some((g) => g.engagementId === activeEntityId)
@@ -398,7 +453,19 @@ export default function DocumentVaultPage() {
             </NoirCard>
 
             <div className="min-w-0 space-y-5">
-              {selectedEntity && (
+              {isSearching ? (
+                <div className="min-w-0">
+                  <h2 className="serif text-[24px] leading-tight tracking-tight text-ink">Results</h2>
+                  <p className="mt-1 text-[12px] text-text-tertiary">
+                    <Mono>{searchHits.length}</Mono>
+                    {' file'}
+                    {searchHits.length === 1 ? '' : 's'}
+                    {' matching “'}
+                    {q.trim()}
+                    {'”'}
+                  </p>
+                </div>
+              ) : selectedEntity ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div className="min-w-0">
                     <h2 className="serif text-[24px] leading-tight tracking-tight text-ink">
@@ -424,7 +491,7 @@ export default function DocumentVaultPage() {
                     <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
                   </Link>
                 </div>
-              )}
+              ) : null}
 
               <Surface className="overflow-hidden">
                 <div className="border-b border-border px-4 py-3 sm:px-5">
@@ -433,19 +500,39 @@ export default function DocumentVaultPage() {
                     <Input
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
-                      placeholder="Search clients or document names…"
-                      aria-label="Search clients or document names"
+                      placeholder="Search by document name…"
+                      aria-label="Search by document name"
                       className="h-9 border-0 bg-transparent pl-8 shadow-none focus-visible:ring-0"
                     />
                   </div>
                 </div>
 
-                {!selectedEntity ? (
+                {isSearching ? (
+                  searchHits.length === 0 ? (
+                    <div className="px-4 py-12 sm:px-5">
+                      <EmptyStateIllustrated
+                        icon={FileText}
+                        title="No documents match your search"
+                        className="border-0 bg-transparent py-6"
+                      />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4 px-4 py-5 md:grid-cols-2 xl:grid-cols-3 sm:px-5">
+                      {searchHits.map((hit, i) => (
+                        <DocumentCard
+                          key={hit.doc.id}
+                          doc={hit.doc}
+                          index={i}
+                          location={`${hit.companyName} · ${hit.location}`}
+                        />
+                      ))}
+                    </div>
+                  )
+                ) : !selectedEntity ? (
                   <div className="px-4 py-12 sm:px-5">
                     <EmptyStateIllustrated
                       icon={FileText}
                       title="No documents match your search"
-                      description="Try a different client or file name."
                       className="border-0 bg-transparent py-6"
                     />
                   </div>
@@ -457,53 +544,55 @@ export default function DocumentVaultPage() {
                       className="border-0 bg-transparent py-6"
                     />
                   </div>
-                ) : selectedEntity.milestones.length === 0 ? (
+                ) : (selectedEntity.phases?.length ? selectedEntity.phases : []).length === 0 ? (
                   <div className="px-4 py-12 sm:px-5">
                     <EmptyStateIllustrated
                       icon={FileText}
                       title="No documents match your search"
-                      description="Try a different file name, field label, or section keyword."
                       className="border-0 bg-transparent py-6"
                     />
                   </div>
                 ) : (
-                  <div className="space-y-8 px-4 py-5 sm:px-5">
-                    {selectedEntity.milestones.map((milestone) => (
-                      <section key={milestone.milestoneId} aria-labelledby={`milestone-${milestone.milestoneId}`}>
-                        <div className="mb-4 flex flex-wrap items-end justify-between gap-2 border-b border-border pb-3">
-                          <div className="min-w-0">
-                            <h3
-                              id={`milestone-${milestone.milestoneId}`}
-                              className="serif text-[18px] leading-snug text-ink"
-                            >
-                              {milestone.milestoneTitle}
-                            </h3>
-                            <p className="mt-0.5 text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
-                              {milestone.bucket}
-                            </p>
-                          </div>
+                  <div className="space-y-10 px-4 py-5 sm:px-5">
+                    {(selectedEntity.phases ?? []).map((phase) => (
+                      <section key={phase.phaseKey} aria-labelledby={`phase-${phase.phaseKey}`}>
+                        <div className="mb-5 flex flex-wrap items-end justify-between gap-2 border-b border-border pb-3">
+                          <h3
+                            id={`phase-${phase.phaseKey}`}
+                            className="serif text-[20px] leading-snug text-ink"
+                          >
+                            {phase.phaseLabel}
+                          </h3>
                           <Mono className="shrink-0 text-[11px] text-text-tertiary">
-                            {milestone.docCount} file{milestone.docCount === 1 ? '' : 's'}
+                            {phase.docCount} file{phase.docCount === 1 ? '' : 's'}
                           </Mono>
                         </div>
-
-                        {milestone.sections.map((section) => (
-                          <div
-                            key={`${milestone.milestoneId}-${section.section}`}
-                            className="mb-6 last:mb-0"
-                          >
-                            {milestone.sections.length > 1 && (
-                              <p className="mb-3 text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
-                                {section.section}
-                              </p>
-                            )}
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                              {section.docs.map((doc, i) => (
-                                <DocumentCard key={doc.id} doc={doc} index={i} />
+                        <div className="space-y-8">
+                          {phase.milestones.map((milestone) => (
+                            <div key={milestone.milestoneId}>
+                              <div className="mb-3 min-w-0">
+                                <p className="text-[13px] font-medium text-ink">{milestone.milestoneTitle}</p>
+                              </div>
+                              {milestone.sections.map((section) => (
+                                <div
+                                  key={`${milestone.milestoneId}-${section.section}`}
+                                  className="mb-6 last:mb-0"
+                                >
+                                  {milestone.sections.length > 1 && (
+                                    <p className="mb-3 text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
+                                      {section.section}
+                                    </p>
+                                  )}
+                                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                    {section.docs.map((doc, i) => (
+                                      <DocumentCard key={doc.id} doc={doc} index={i} />
+                                    ))}
+                                  </div>
+                                </div>
                               ))}
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </section>
                     ))}
                   </div>

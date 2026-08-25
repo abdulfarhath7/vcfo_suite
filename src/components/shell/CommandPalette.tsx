@@ -28,10 +28,40 @@ import {
   Archive,
   Bell,
   Search,
+  FileText,
 } from "lucide-react";
 import { adminProjectPath, internEngagementPath } from "@/lib/project-step-path";
 import { useStaffBasePath } from "@/hooks/use-staff-base-path";
+import { internVisibleDocuments } from "@/lib/document-access";
+import {
+  formatKnowledgeBankCommandHit,
+  knowledgeBankFileMatchesQuery,
+} from "@/lib/knowledge-bank-search";
+import {
+  collectIndexedVaultDocuments,
+  collectVaultDocuments,
+  formatVaultCommandHit,
+  mergeVaultDocuments,
+  scopeVaultDocumentsToEngagements,
+  vaultFileNameMatches,
+  type IndexedDocumentRow,
+} from "@/lib/vault-documents";
 import { cn } from "@/lib/utils";
+import type { Role } from "@/lib/auth";
+
+type PaletteFileHit = {
+  id: string;
+  label: string;
+  href: string;
+  value: string;
+};
+
+function staffLibraryPaths(role: Role | undefined, staffBase: string) {
+  if (role === "intern") {
+    return { vault: "/app/intern/vault", kb: "/app/intern/knowledge-bank" };
+  }
+  return { vault: `${staffBase}/vault`, kb: `${staffBase}/knowledge-bank` };
+}
 
 function useModShortcut() {
   const [isApple, setIsApple] = useState<boolean | null>(null);
@@ -42,7 +72,7 @@ function useModShortcut() {
 }
 
 export function CommandPalette() {
-  const { commandOpen, setCommandOpen, user, engagements } = useApp();
+  const { commandOpen, setCommandOpen, user, engagements, getStateForEngagement } = useApp();
   const router = useRouter();
   const staffBase = useStaffBasePath();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -50,7 +80,12 @@ export function CommandPalette() {
   const wasOpen = useRef(false);
   const [query, setQuery] = useState("");
   const [idleKey, setIdleKey] = useState(0);
+  const [vaultHits, setVaultHits] = useState<PaletteFileHit[]>([]);
+  const [kbHits, setKbHits] = useState<PaletteFileHit[]>([]);
   const isApple = useModShortcut();
+  const canSearchLibraries =
+    user?.role === "intern" || user?.role === "manager" || user?.role === "admin";
+  const libraryPaths = staffLibraryPaths(user?.role, staffBase);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -96,6 +131,106 @@ export function CommandPalette() {
       document.removeEventListener("keydown", onEsc);
     };
   }, [commandOpen, setCommandOpen]);
+
+  useEffect(() => {
+    if (!commandOpen || !canSearchLibraries) {
+      setVaultHits([]);
+      setKbHits([]);
+      return;
+    }
+    const q = query.trim();
+    if (!q) {
+      setVaultHits([]);
+      setKbHits([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const encoded = encodeURIComponent(q);
+        const vaultHref = `${libraryPaths.vault}?q=${encoded}`;
+        const kbHref = `${libraryPaths.kb}?q=${encoded}`;
+        try {
+          const [docsRes, kbRes] = await Promise.all([
+            fetch("/api/documents"),
+            fetch("/api/knowledge-bank"),
+          ]);
+          const docsJson = (await docsRes.json().catch(() => null)) as
+            | { documents?: IndexedDocumentRow[] }
+            | null;
+          const kbJson = (await kbRes.json().catch(() => null)) as
+            | {
+                files?: Array<{
+                  id: string;
+                  title: string;
+                  fileName: string;
+                  description?: string | null;
+                  folderPath?: string | null;
+                }>;
+              }
+            | null;
+
+          if (cancelled) return;
+
+          const milestoneDocs = collectVaultDocuments(engagements, getStateForEngagement);
+          const indexedDocs = collectIndexedVaultDocuments(docsJson?.documents ?? [], engagements);
+          let merged = scopeVaultDocumentsToEngagements(
+            mergeVaultDocuments(milestoneDocs, indexedDocs),
+            engagements,
+          );
+          if (user?.role === "intern") {
+            merged = internVisibleDocuments(user.internId, merged, engagements);
+          }
+
+          setVaultHits(
+            merged
+              .filter((doc) => vaultFileNameMatches(doc, q))
+              .slice(0, 8)
+              .map((doc) => ({
+                id: doc.id,
+                label: formatVaultCommandHit(doc),
+                href: vaultHref,
+                value: `vault ${doc.fileName} ${doc.companyName} ${doc.bucket} ${doc.section}`,
+              })),
+          );
+
+          const kbFiles = kbRes.ok ? kbJson?.files ?? [] : [];
+          setKbHits(
+            kbFiles
+              .filter((file) => knowledgeBankFileMatchesQuery(file, q))
+              .slice(0, 8)
+              .map((file) => ({
+                id: file.id,
+                label: formatKnowledgeBankCommandHit(file),
+                href: kbHref,
+                value: `kb ${file.fileName} ${file.title} ${file.folderPath ?? ""}`,
+              })),
+          );
+        } catch {
+          if (!cancelled) {
+            setVaultHits([]);
+            setKbHits([]);
+          }
+        }
+      })();
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    canSearchLibraries,
+    commandOpen,
+    engagements,
+    getStateForEngagement,
+    libraryPaths.kb,
+    libraryPaths.vault,
+    query,
+    user?.internId,
+    user?.role,
+  ]);
 
   const go = (to: string) => {
     setCommandOpen(false);
@@ -167,6 +302,36 @@ export function CommandPalette() {
           <CommandEmpty className="py-6 text-center text-[13px] text-muted-foreground">
             Nothing matched. Try another term.
           </CommandEmpty>
+          {vaultHits.length > 0 && (
+            <CommandGroup heading="Documents">
+              {vaultHits.map((hit) => (
+                <CommandItem
+                  key={hit.id}
+                  className={itemClass}
+                  value={hit.value}
+                  onSelect={() => go(hit.href)}
+                >
+                  <FileText className="w-4 h-4 mr-2 shrink-0" />
+                  <span className="truncate">{hit.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+          {kbHits.length > 0 && (
+            <CommandGroup heading="Knowledge Bank">
+              {kbHits.map((hit) => (
+                <CommandItem
+                  key={hit.id}
+                  className={itemClass}
+                  value={hit.value}
+                  onSelect={() => go(hit.href)}
+                >
+                  <BookOpen className="w-4 h-4 mr-2 shrink-0" />
+                  <span className="truncate">{hit.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
           {user?.role === "super_admin" && (
             <CommandGroup heading="Super admin">
               <CommandItem className={itemClass} onSelect={() => go("/app/super/dashboard")}><LayoutDashboard className="w-4 h-4 mr-2" />Overview</CommandItem>

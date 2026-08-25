@@ -12,3 +12,15 @@ export const APP_ID_TO_DB_ID: Record<string, string> = Object.fromEntries(
 export function engagementDbId(appId: string): string {
   return APP_ID_TO_DB_ID[appId] ?? appId;
 }
+
+/** Map a DB uuid back to the app id (`e1`) when it is a seeded demo row. */
+export function appEngagementId(id: string): string {
+  return LEGACY_ENGAGEMENT_IDS[id] ?? id;
+}
+
+/** App id + DB uuid for the same engagement (demo rows have both). */
+export function engagementIdAliases(id: string): string[] {
+  const db = engagementDbId(id);
+  const app = appEngagementId(id);
+  return [...new Set([id, db, app])];
+}

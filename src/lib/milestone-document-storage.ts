@@ -67,12 +67,14 @@ export async function uploadMilestoneDocument(
   appEngagementId: string,
   fieldId: string,
   file: File,
+  options?: { stepId?: string },
 ): Promise<string> {
   const err = validateMilestoneUploadFile(file);
   if (err) throw new Error(err);
 
   const body = new FormData();
   body.append('fieldId', fieldId);
+  if (options?.stepId?.trim()) body.append('stepId', options.stepId.trim());
   body.append('file', file);
 
   const res = await fetch(
