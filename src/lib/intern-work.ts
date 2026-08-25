@@ -1274,6 +1274,8 @@ export interface InternFocusEntry {
   /** Typed personal todo — not a pinned InternWorkItem. */
   custom?: boolean;
   title?: string;
+  /** Server `tasks.id` when persisted. */
+  dbId?: string;
 }
 
 export const CUSTOM_INTERN_FOCUS_PREFIX = 'custom:';
@@ -1298,11 +1300,12 @@ function parseInternFocusRow(row: unknown): InternFocusEntry | null {
   const obj = row as Record<string, unknown>;
   if (typeof obj.id !== 'string' || !obj.id.trim()) return null;
   const title = typeof obj.title === 'string' ? obj.title.trim().slice(0, INTERN_FOCUS_TITLE_MAX) : undefined;
+  const dbId = typeof obj.dbId === 'string' && obj.dbId.trim() ? obj.dbId.trim() : undefined;
   const custom = obj.custom === true || obj.id.startsWith(CUSTOM_INTERN_FOCUS_PREFIX);
   if (custom) {
-    return { id: obj.id, done: Boolean(obj.done), custom: true, title: title ?? '' };
+    return { id: obj.id, done: Boolean(obj.done), custom: true, title: title ?? '', ...(dbId ? { dbId } : {}) };
   }
-  return { id: obj.id, done: Boolean(obj.done) };
+  return { id: obj.id, done: Boolean(obj.done), ...(title ? { title } : {}), ...(dbId ? { dbId } : {}) };
 }
 
 /** Accepts legacy `{ id, done }` / string ids plus custom `{ id, done, custom, title }` rows. */
@@ -1312,16 +1315,25 @@ export function parseInternFocus(raw: unknown): InternFocusEntry[] {
 }
 
 export function serializeInternFocus(entries: InternFocusEntry[]): InternFocusEntry[] {
-  return entries.map((entry) =>
-    isCustomInternFocus(entry)
-      ? {
-          id: entry.id,
-          done: Boolean(entry.done),
-          custom: true,
-          title: (entry.title ?? '').trim().slice(0, INTERN_FOCUS_TITLE_MAX),
-        }
-      : { id: entry.id, done: Boolean(entry.done) },
-  );
+  return entries.map((entry) => {
+    const dbId = entry.dbId?.trim() || undefined;
+    if (isCustomInternFocus(entry)) {
+      return {
+        id: entry.id,
+        done: Boolean(entry.done),
+        custom: true,
+        title: (entry.title ?? '').trim().slice(0, INTERN_FOCUS_TITLE_MAX),
+        ...(dbId ? { dbId } : {}),
+      };
+    }
+    const title = entry.title?.trim().slice(0, INTERN_FOCUS_TITLE_MAX);
+    return {
+      id: entry.id,
+      done: Boolean(entry.done),
+      ...(title ? { title } : {}),
+      ...(dbId ? { dbId } : {}),
+    };
+  });
 }
 
 export function readInternFocus(userId: string): InternFocusEntry[] {

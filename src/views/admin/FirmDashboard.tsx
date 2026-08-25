@@ -14,6 +14,8 @@ import { Briefcase, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { deriveStuckReason, primaryPhaseItems } from '@/lib/project-stuck';
 import { isAwaitingReview } from '@/lib/checklist-item-review';
 import { FirmProjectsPanel } from '@/views/admin/FirmProjectsPanel';
+import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
+import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
 
 type ManagerOption = { id: string; name: string; email: string };
 
@@ -25,7 +27,7 @@ async function fetchManagers(): Promise<ManagerOption[]> {
 }
 
 export default function FirmDashboard() {
-  const { engagements, getStateForEngagement } = useApp();
+  const { user, engagements, getStateForEngagement } = useApp();
   const today = useMemo(
     () =>
       new Date().toLocaleDateString(undefined, {
@@ -173,6 +175,13 @@ export default function FirmDashboard() {
           )}
         </Surface>
       </div>
+
+      {user?.id ? (
+        <div className="mb-4 grid gap-4 lg:grid-cols-2">
+          <LeadFocusCard userId={user.id} items={[]} />
+          <TeamTodosPanel userId={user.id} />
+        </div>
+      ) : null}
     </PageTransition>
   );
 }

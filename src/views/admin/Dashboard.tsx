@@ -18,7 +18,7 @@ const PROCESS_KEYS = [
 ] as const;
 
 export default function AdminDashboard() {
-  const { engagements, tasks, teamMembers, getStateForEngagement } = useApp();
+  const { user, engagements, tasks, teamMembers, getStateForEngagement } = useApp();
   const allFilings = useComplianceFilings(engagements, getStateForEngagement);
   const headerDateLabel = useClientLocaleDate({
     weekday: 'long',
@@ -132,6 +132,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminDashboardView
+      userId={user?.id ?? ''}
       engagements={engagements}
       tasks={tasks}
       teamMembers={teamMembers}

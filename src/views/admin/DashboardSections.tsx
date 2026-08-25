@@ -14,6 +14,8 @@ import { adminProjectPath } from '@/lib/project-step-path';
 import type { TaskInstance } from '@/data/engagements';
 import type { Engagement } from '@/data/engagements';
 import { AdminDashboardFilingsPanel } from '@/views/admin/DashboardSecondaryRow';
+import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
+import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
 import {
   Briefcase,
   Calendar,
@@ -25,6 +27,7 @@ import {
 } from 'lucide-react';
 
 export type AdminDashboardViewProps = {
+  userId?: string;
   engagements: Engagement[];
   tasks: TaskInstance[];
   teamMembers: Array<{ id: string; name: string }>;
@@ -49,6 +52,7 @@ export type AdminDashboardViewProps = {
 };
 
 export function AdminDashboardView({
+  userId,
   engagements,
   tasks,
   teamMembers,
@@ -134,6 +138,13 @@ export function AdminDashboardView({
           </StaggerItem>
         </div>
       </Stagger>
+
+      {userId ? (
+        <div className="mb-5 grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
+          <LeadFocusCard userId={userId} items={[]} />
+          <TeamTodosPanel userId={userId} />
+        </div>
+      ) : null}
 
       <NoirCard flat className="mb-5 overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">

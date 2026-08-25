@@ -640,6 +640,21 @@ describe('intern focus todos', () => {
     expect(parseInternFocus(null)).toEqual([]);
     expect(parseInternFocus([{ done: true }, 12, { id: '' }])).toEqual([]);
   });
+
+  it('round-trips server dbId and pin titles in the localStorage cache', () => {
+    const stored = serializeInternFocus([
+      { id: 'step:a', done: false, title: 'Director KYC', dbId: '11111111-1111-1111-1111-111111111111' },
+    ]);
+    expect(stored).toEqual([
+      {
+        id: 'step:a',
+        done: false,
+        title: 'Director KYC',
+        dbId: '11111111-1111-1111-1111-111111111111',
+      },
+    ]);
+    expect(parseInternFocus(stored)).toEqual(stored);
+  });
 });
 
 describe('intern queue expanded ids', () => {

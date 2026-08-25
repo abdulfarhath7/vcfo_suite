@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { Check, Plus, X } from 'lucide-react';
 import { internKindChipLabel, internToneBadge, KIND_TONE } from '@/components/intern/intern-tones';
@@ -16,11 +16,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   createCustomInternFocus,
   isCustomInternFocus,
-  readInternFocus,
-  writeInternFocus,
-  type InternFocusEntry,
   type InternWorkItem,
 } from '@/lib/intern-work';
+import { useOwnFocusTodos } from '@/lib/use-personal-todos';
 import { cn } from '@/lib/utils';
 
 function QueuePinPopover({
@@ -102,33 +100,11 @@ export function LeadFocusCard({
   userId: string;
   items: InternWorkItem[];
 }) {
-  const [focus, setFocus] = useState<InternFocusEntry[]>([]);
+  const { focus, persist, byId } = useOwnFocusTodos(userId, items);
   const [picking, setPicking] = useState(false);
   const [draft, setDraft] = useState('');
   const draftRef = useRef<HTMLInputElement>(null);
-  const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
-
-  useEffect(() => {
-    if (!userId) return;
-    const stored = readInternFocus(userId);
-    if (items.length === 0) {
-      setFocus(stored);
-      return;
-    }
-    const valid = stored.filter((row) => isCustomInternFocus(row) || byId.has(row.id));
-    setFocus(valid);
-    if (valid.length !== stored.length) writeInternFocus(userId, valid);
-  }, [userId, items, byId]);
-
-  const pickable = useMemo(
-    () => items.filter((i) => i.kind !== 'done' && !focus.some((f) => f.id === i.id)),
-    [items, focus],
-  );
-
-  const persist = (next: InternFocusEntry[]) => {
-    setFocus(next);
-    writeInternFocus(userId, next);
-  };
+  const pickable = items.filter((i) => i.kind !== 'done' && !focus.some((f) => f.id === i.id));
 
   const addCustom = () => {
     const title = draft.trim();
@@ -143,12 +119,14 @@ export function LeadFocusCard({
         <div className="min-w-0">
           <h2 className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">Todos</h2>
         </div>
-        <QueuePinPopover
-          open={picking}
-          onOpenChange={setPicking}
-          pickable={pickable}
-          onPin={(item) => persist([...focus, { id: item.id, done: false }])}
-        />
+        {items.length > 0 ? (
+          <QueuePinPopover
+            open={picking}
+            onOpenChange={setPicking}
+            pickable={pickable}
+            onPin={(item) => persist([...focus, { id: item.id, done: false, title: item.title }])}
+          />
+        ) : null}
       </div>
 
       <form
@@ -187,9 +165,11 @@ export function LeadFocusCard({
             className="flex min-h-[3.25rem] w-full flex-col items-start justify-center rounded-xl border border-dashed border-border/80 px-3 py-2 text-left transition-colors hover:border-primary/35 hover:bg-primary-light/40"
           >
             <span className="text-[13px] font-semibold text-ink">Type a todo</span>
-            <span className="mt-0.5 text-[12px] text-muted-foreground">
-              Add what you need to get done — or pin work from the queue.
-            </span>
+            {items.length > 0 ? (
+              <span className="mt-0.5 text-[12px] text-muted-foreground">
+                Add what you need to get done — or pin work from the queue.
+              </span>
+            ) : null}
           </button>
         </div>
       ) : null}
@@ -245,7 +225,7 @@ export function LeadFocusCard({
               );
             }
 
-            if (!isCustomInternFocus(entry)) return null;
+            if (!isCustomInternFocus(entry) && !entry.title?.trim()) return null;
 
             return (
               <div

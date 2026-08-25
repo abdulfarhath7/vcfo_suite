@@ -18,6 +18,8 @@ import { PageHeader } from "@/components/admin/PageHeader";
 import { AccentKpi } from "@/components/admin/AccentKpi";
 import { IconChip, type IconChipTone } from "@/components/common/IconChip";
 import { SEO } from "@/components/SEO";
+import { LeadFocusCard } from "@/components/intern/LeadFocusCard";
+import { TeamTodosPanel } from "@/components/staff/TeamTodosPanel";
 import { deriveStuckReason } from "@/lib/project-stuck";
 
 const LAUNCHERS: {
@@ -58,7 +60,7 @@ const LAUNCHERS: {
 ];
 
 export default function SuperDashboardPage() {
-  const { engagements, getStateForEngagement } = useApp();
+  const { user, engagements, getStateForEngagement } = useApp();
 
   const pulse = useMemo(() => {
     let total = 0;
@@ -95,6 +97,13 @@ export default function SuperDashboardPage() {
         />
         <AccentKpi label="On track" value={pulse.onTrack} tone="success" icon={CheckCircle2} />
       </div>
+
+      {user?.id ? (
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <LeadFocusCard userId={user.id} items={[]} />
+          <TeamTodosPanel userId={user.id} />
+        </div>
+      ) : null}
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {LAUNCHERS.map((card) => (
