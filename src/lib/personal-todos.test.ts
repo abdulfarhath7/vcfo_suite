@@ -148,6 +148,11 @@ describe('admin / super_admin firm-wide list', () => {
 });
 
 describe('groupOpenPersonalTodosByOwner', () => {
+  it('does not throw when the list payload is not an array', () => {
+    expect(groupOpenPersonalTodosByOwner(undefined)).toEqual([]);
+    expect(groupOpenPersonalTodosByOwner({ todos: [] } as unknown as PersonalTodoDto[])).toEqual([]);
+  });
+
   it('drops done rows, excludes a viewer, and sorts names', () => {
     const groups = groupOpenPersonalTodosByOwner(
       [

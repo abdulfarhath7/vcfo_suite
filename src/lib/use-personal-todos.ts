@@ -26,8 +26,14 @@ async function readJson<T>(res: Response): Promise<T> {
 }
 
 export async function fetchPersonalTodos(): Promise<PersonalTodoDto[]> {
-  const data = await readJson<{ todos: PersonalTodoDto[] }>(await fetch('/api/todos'));
-  return data.todos;
+  const data: unknown = await readJson(await fetch('/api/todos'));
+  // TanStack Query v5 throws if queryFn returns undefined; a wrapped `{ todos }`
+  // object is also not iterable and would crash TeamTodosPanel / Today.
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object' && Array.isArray((data as { todos?: unknown }).todos)) {
+    return (data as { todos: PersonalTodoDto[] }).todos;
+  }
+  return [];
 }
 
 async function createPersonalTodoRequest(entry: InternFocusEntry): Promise<PersonalTodoDto> {
@@ -143,7 +149,7 @@ export function useOwnFocusTodos(userId: string, items: InternWorkItem[]) {
     if (hydratedUserRef.current === userId) return;
     hydratedUserRef.current = userId;
 
-    const mine = (listQuery.data ?? [])
+    const mine = (Array.isArray(listQuery.data) ? listQuery.data : [])
       .filter((todo) => todo.ownerId === userId)
       .map(personalTodoToFocusEntry);
     const local = readInternFocus(userId);

@@ -144,16 +144,17 @@ export function focusEntryToCreateBody(entry: InternFocusEntry): {
 }
 
 export function groupOpenPersonalTodosByOwner(
-  todos: PersonalTodoDto[],
+  todos: PersonalTodoDto[] | null | undefined,
   opts?: { viewerUserId?: string; excludeUserId?: string },
 ): PersonalTodoOwnerGroup[] {
+  if (!Array.isArray(todos)) return [];
   const map = new Map<string, PersonalTodoOwnerGroup>();
   for (const todo of todos) {
-    if (todo.done) continue;
+    if (!todo || todo.done) continue;
     if (opts?.excludeUserId && todo.ownerId === opts.excludeUserId) continue;
     const group = map.get(todo.ownerId) ?? {
       ownerId: todo.ownerId,
-      ownerName: todo.ownerName,
+      ownerName: todo.ownerName || 'Teammate',
       ownerRole: todo.ownerRole,
       todos: [],
     };
@@ -166,7 +167,7 @@ export function groupOpenPersonalTodosByOwner(
       if (a.ownerId === viewerUserId && b.ownerId !== viewerUserId) return -1;
       if (b.ownerId === viewerUserId && a.ownerId !== viewerUserId) return 1;
     }
-    return a.ownerName.localeCompare(b.ownerName);
+    return (a.ownerName ?? '').localeCompare(b.ownerName ?? '');
   });
 }
 
