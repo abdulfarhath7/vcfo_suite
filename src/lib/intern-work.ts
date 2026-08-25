@@ -135,7 +135,8 @@ export function internAssignedToEngagement(
 ): boolean {
   if (!internId) return false;
   if (engagement.internId === internId) return true;
-  return Boolean(engagement.leadIds?.includes(internId));
+  const leadIds = engagement.leadIds;
+  return Array.isArray(leadIds) && leadIds.includes(internId);
 }
 
 export function internGreeting(hour: number): 'morning' | 'afternoon' | 'evening' {

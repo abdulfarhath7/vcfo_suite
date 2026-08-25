@@ -19,7 +19,7 @@ export function internMayAccessEngagementDocuments(
 ): boolean {
   if (!internId) return false;
   if (engagement.internId === internId) return true;
-  if (engagement.leadIds?.includes(internId)) return true;
+  if (Array.isArray(engagement.leadIds) && engagement.leadIds.includes(internId)) return true;
   const aliases = new Set(engagementIdAliases(engagement.id));
   return memberEngagementIds.some((id) => aliases.has(id) || engagementIdAliases(id).some((alias) => aliases.has(alias)));
 }

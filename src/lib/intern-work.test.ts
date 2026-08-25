@@ -208,6 +208,18 @@ describe('buildInternWorkItems', () => {
     expect(items.some((i) => i.engagementId === 'eng-1' && i.catalogId === 'pre-1')).toBe(true);
   });
 
+  it('does not throw when leadIds is not an array', () => {
+    const shared = { ...engagement, internId: 'intern-b', leadIds: { intern: 'intern-a' } as unknown as string[] };
+    expect(() =>
+      buildInternWorkItems({
+        engagements: [shared],
+        internId: 'intern-a',
+        now,
+        getChecklistState: () => ({ 'pre-1': { status: 'overdue' } }),
+      }),
+    ).not.toThrow();
+  });
+
   it('keeps steps completed this IST week and drops last week', () => {
     const items = buildInternWorkItems({
       engagements: [engagement],

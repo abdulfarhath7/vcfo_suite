@@ -62,7 +62,7 @@ export function buildInternPortfolioQueue(
 ): InternQueueItem[] {
   const items: InternQueueItem[] = [];
   for (const e of engagements) {
-    if (e.internId !== internId && !e.leadIds?.includes(internId)) continue;
+    if (e.internId !== internId && !(Array.isArray(e.leadIds) && e.leadIds.includes(internId))) continue;
     items.push(
       ...buildInternQueueForEngagement(
         e,
