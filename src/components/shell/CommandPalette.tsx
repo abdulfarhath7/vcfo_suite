@@ -36,6 +36,7 @@ import { internVisibleDocuments } from "@/lib/document-access";
 import {
   formatKnowledgeBankCommandHit,
   knowledgeBankFileMatchesQuery,
+  knowledgeBankFilesFromResponse,
 } from "@/lib/knowledge-bank-search";
 import {
   collectIndexedVaultDocuments,
@@ -159,17 +160,7 @@ export function CommandPalette() {
           const docsJson = (await docsRes.json().catch(() => null)) as
             | { documents?: IndexedDocumentRow[] }
             | null;
-          const kbJson = (await kbRes.json().catch(() => null)) as
-            | {
-                files?: Array<{
-                  id: string;
-                  title: string;
-                  fileName: string;
-                  description?: string | null;
-                  folderPath?: string | null;
-                }>;
-              }
-            | null;
+          const kbJson: unknown = await kbRes.json().catch(() => null);
 
           if (cancelled) return;
 
@@ -195,13 +186,13 @@ export function CommandPalette() {
               })),
           );
 
-          const kbFiles = kbRes.ok ? kbJson?.files ?? [] : [];
+          const kbFiles = kbRes.ok ? knowledgeBankFilesFromResponse(kbJson) : [];
           setKbHits(
             kbFiles
               .filter((file) => knowledgeBankFileMatchesQuery(file, q))
               .slice(0, 8)
               .map((file) => ({
-                id: file.id,
+                id: file.id ?? `${file.fileName}-${file.title}`,
                 label: formatKnowledgeBankCommandHit(file),
                 href: kbHref,
                 value: `kb ${file.fileName} ${file.title} ${file.folderPath ?? ""}`,

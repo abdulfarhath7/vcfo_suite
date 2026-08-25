@@ -104,6 +104,9 @@ describe('Knowledge Bank intern cannot delete', () => {
   it('lets admin and manager delete; clients have no access', () => {
     expect(canDeleteKnowledgeBank('admin')).toBe(true);
     expect(canDeleteKnowledgeBank('manager')).toBe(true);
+    expect(canReadKnowledgeBank('super_admin')).toBe(true);
+    expect(canInsertKnowledgeBank('super_admin')).toBe(true);
+    expect(canDeleteKnowledgeBank('super_admin')).toBe(true);
     expect(canReadKnowledgeBank('client')).toBe(false);
     expect(canInsertKnowledgeBank('client')).toBe(false);
     expect(canDeleteKnowledgeBank('client')).toBe(false);

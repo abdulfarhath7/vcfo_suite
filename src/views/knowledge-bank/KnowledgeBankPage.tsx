@@ -15,7 +15,9 @@ import { KNOWLEDGE_BANK_EXTENSIONS, resolveUploadContentType } from "@/lib/uploa
 import { toastError, toastSuccess } from "@/lib/toast-errors";
 import { isAdminOrManager } from "@/lib/auth";
 import { isUuid } from "@/lib/slug";
-import { knowledgeBankFileMatchesQuery } from "@/lib/knowledge-bank-search";
+import {
+  knowledgeBankFileMatchesQuery,
+} from "@/lib/knowledge-bank-search";
 import {
   isKnowledgeBankFolderEmpty,
   knowledgeBankChildFolders,
@@ -31,10 +33,27 @@ import {
 } from '@/views/knowledge-bank/knowledge-bank-ui-state';
 
 interface LibraryResponse {
-  ok: boolean;
+  ok?: boolean;
   files?: KnowledgeBankFile[];
   folders?: KnowledgeBankFolder[];
   error?: string;
+}
+
+function parseKnowledgeBankLibrary(data: unknown): {
+  files: KnowledgeBankFile[];
+  folders: KnowledgeBankFolder[];
+} {
+  if (Array.isArray(data)) {
+    return { files: data as KnowledgeBankFile[], folders: [] };
+  }
+  if (!data || typeof data !== 'object') {
+    return { files: [], folders: [] };
+  }
+  const body = data as LibraryResponse;
+  return {
+    files: Array.isArray(body.files) ? body.files : [],
+    folders: Array.isArray(body.folders) ? body.folders : [],
+  };
 }
 
 async function fetchKnowledgeBankLibrary(): Promise<{
@@ -42,11 +61,12 @@ async function fetchKnowledgeBankLibrary(): Promise<{
   folders: KnowledgeBankFolder[];
 }> {
   const res = await fetch("/api/knowledge-bank");
-  const data = (await res.json()) as LibraryResponse;
-  if (!res.ok || !data.ok) {
-    throw new Error(data.error ?? "fetch_failed");
+  const data: unknown = await res.json();
+  const body = data as LibraryResponse;
+  if (!res.ok || (body && typeof body === 'object' && !Array.isArray(body) && body.ok === false)) {
+    throw new Error(body?.error ?? "fetch_failed");
   }
-  return { files: data.files ?? [], folders: data.folders ?? [] };
+  return parseKnowledgeBankLibrary(data);
 }
 
 function uploaderLabel(file: KnowledgeBankFile): string {
@@ -72,10 +92,15 @@ function KnowledgeBankPageInner({ basePath }: Props) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const urlQ = searchParams.get("q") ?? "";
 
   useRealtimeKnowledgeBank({ user, queryClient });
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [ui, dispatchUi] = useReducer(knowledgeBankUiReducer, initialKnowledgeBankUiState);
+  const [ui, dispatchUi] = useReducer(
+    knowledgeBankUiReducer,
+    urlQ,
+    (q) => ({ ...initialKnowledgeBankUiState, q }),
+  );
   const {
     q,
     title,
@@ -107,7 +132,6 @@ function KnowledgeBankPageInner({ basePath }: Props) {
   const folders = libraryQuery.data?.folders ?? [];
   const files = libraryQuery.data?.files ?? [];
   const folderParam = searchParams.get("folder");
-  const urlQ = searchParams.get("q") ?? "";
   const requestedFolderId = folderParam && isUuid(folderParam) ? folderParam : null;
   const currentFolderId =
     requestedFolderId &&
@@ -116,7 +140,7 @@ function KnowledgeBankPageInner({ basePath }: Props) {
       : null;
 
   useEffect(() => {
-    if (urlQ) setQ(urlQ);
+    setQ(urlQ);
   }, [urlQ]);
 
   const ancestors = useMemo(

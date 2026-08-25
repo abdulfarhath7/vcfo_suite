@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatKnowledgeBankCommandHit,
   knowledgeBankFileMatchesQuery,
+  knowledgeBankFilesFromResponse,
   knowledgeBankLocationLabel,
 } from '@/lib/knowledge-bank-search';
 
@@ -25,6 +26,23 @@ describe('knowledge bank filename search', () => {
     expect(knowledgeBankLocationLabel({ folderPath: '' })).toBe('Knowledge Bank');
     expect(formatKnowledgeBankCommandHit(gstReturn)).toBe(
       'GSTR-1.pdf — Knowledge Bank · Policies / GST',
+    );
+  });
+
+  it('reads files from { files } or a legacy array payload', () => {
+    expect(
+      knowledgeBankFilesFromResponse({
+        ok: true,
+        files: [gstReturn],
+        folders: [],
+        tree: [],
+      }).map((file) => file.fileName),
+    ).toEqual(['GSTR-1.pdf']);
+    expect(knowledgeBankFilesFromResponse([gstReturn]).map((file) => file.fileName)).toEqual([
+      'GSTR-1.pdf',
+    ]);
+    expect(knowledgeBankFileMatchesQuery({ title: '', fileName: undefined as unknown as string }, 'pdf')).toBe(
+      false,
     );
   });
 });

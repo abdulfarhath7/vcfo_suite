@@ -26,7 +26,9 @@ export type KnowledgeBankFileLocation = {
 };
 
 export function canReadKnowledgeBank(role: string | undefined): boolean {
-  return role === 'admin' || role === 'manager' || role === 'intern';
+  return (
+    role === 'super_admin' || role === 'admin' || role === 'manager' || role === 'intern'
+  );
 }
 
 /** Admin/manager write+delete; intern insert own; client none. */
