@@ -37,6 +37,7 @@ import {
   type InternWorkView,
 } from '@/lib/intern-work';
 import { cn } from '@/lib/utils';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 const VIEW_BTN: { id: InternWorkView; label: string; icon: typeof List }[] = [
   { id: 'list', label: 'List', icon: List },
@@ -139,28 +140,24 @@ function InternMyWorkInner() {
             {kpis.openCount} open · {kpis.companyCount} {kpis.companyCount === 1 ? 'company' : 'companies'}
           </span>
         </PageBackCluster>
-        <div className="ml-auto flex shrink-0 overflow-hidden rounded-md border border-border bg-panel shadow-layered" role="tablist">
-          {VIEW_BTN.map((btn) => {
+        <SegmentedPicker
+          value={view}
+          options={VIEW_BTN.map((btn) => {
             const Icon = btn.icon;
-            const on = view === btn.id;
-            return (
-              <button
-                key={btn.id}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                onClick={() => chooseView(btn.id)}
-                className={cn(
-                  'flex items-center gap-1.5 px-4 py-2 text-[12.5px] font-extrabold text-muted-foreground',
-                  on && 'bg-primary text-white',
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {btn.label}
-              </button>
-            );
+            return {
+              value: btn.id,
+              label: (
+                <>
+                  <Icon className="h-3.5 w-3.5" aria-hidden />
+                  {btn.label}
+                </>
+              ),
+            };
           })}
-        </div>
+          onChange={(next) => chooseView(next)}
+          ariaLabel="Work view"
+          className="ml-auto inline-grid shrink-0"
+        />
       </div>
 
       <div className="mb-3 flex flex-wrap gap-2">

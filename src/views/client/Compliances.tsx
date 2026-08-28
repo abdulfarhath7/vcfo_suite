@@ -11,6 +11,7 @@ import { useComplianceFilings } from "@/hooks/use-compliance-filings";
 import { findEngagementForClientUser } from "@/lib/checklist-state-key";
 import { toneForKey, TONE_BADGE } from "@/components/common/IconChip";
 import { cn } from "@/lib/utils";
+import { SegmentedPicker } from "@/components/admin/SegmentedPicker";
 
 type Category = "all" | "gst" | "tax" | "payroll" | "other";
 type UploadFilter = "all" | "received" | "pending";
@@ -83,39 +84,27 @@ export default function ClientCompliances() {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-        {cats.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => setCategory(c.id)}
-            className={cn(
-              "h-8 rounded-md px-3 text-[12px] font-medium transition-colors",
-              category === c.id ? "gold-sheen" : "border border-border text-muted-foreground hover:bg-muted",
-            )}
-          >
-            {c.label}
-          </button>
-        ))}
+        <SegmentedPicker
+          value={category}
+          options={cats.map((c) => ({ value: c.id, label: c.label }))}
+          onChange={(next) => setCategory(next)}
+          ariaLabel="Filter by category"
+          size="sm"
+          className="inline-grid"
+        />
         <span className="mx-1 h-4 w-px bg-border" />
-        {(
-          [
-            { id: "all", label: "All uploads" },
-            { id: "received", label: "Upload received" },
-            { id: "pending", label: "Awaiting upload" },
-          ] as const
-        ).map((u) => (
-          <button
-            key={u.id}
-            type="button"
-            onClick={() => setUpload(u.id)}
-            className={cn(
-              "h-8 rounded-md px-3 text-[12px] font-medium transition-colors",
-              upload === u.id ? "bg-role-soft text-role-foreground ring-1 ring-role/30" : "text-muted-foreground hover:bg-muted",
-            )}
-          >
-            {u.label}
-          </button>
-        ))}
+        <SegmentedPicker
+          value={upload}
+          options={[
+            { value: "all", label: "All uploads" },
+            { value: "received", label: "Upload received" },
+            { value: "pending", label: "Awaiting upload" },
+          ]}
+          onChange={(next: UploadFilter) => setUpload(next)}
+          ariaLabel="Filter by upload"
+          size="sm"
+          className="inline-grid"
+        />
       </div>
 
       <Surface className="divide-y divide-border overflow-hidden">

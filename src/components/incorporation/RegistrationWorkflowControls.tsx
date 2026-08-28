@@ -8,6 +8,7 @@ import {
   type RegistrationWorkflowStage,
 } from '@/lib/registration-workflow';
 import { cn } from '@/lib/utils';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 interface RegistrationWorkflowControlsProps {
   status: StatusCode;
@@ -46,32 +47,22 @@ export function RegistrationWorkflowControls({
             {isNa ? 'Not applicable' : 'Applicable'}
           </span>
         ) : (
-          <div className="inline-flex rounded-md border border-border bg-background p-0.5">
-            <button
-              type="button"
-              onClick={() => {
-                if (isNa) onStatusChange('not-started');
-              }}
-              className={cn(
-                'rounded px-2.5 py-1 text-[11px] font-medium transition-colors',
-                !isNa ? 'bg-ink text-paper' : 'text-text-secondary hover:text-ink',
-              )}
-              aria-pressed={!isNa}
-            >
-              Applicable
-            </button>
-            <button
-              type="button"
-              onClick={() => onStatusChange('not-applicable')}
-              className={cn(
-                'rounded px-2.5 py-1 text-[11px] font-medium transition-colors',
-                isNa ? 'bg-ink text-paper' : 'text-text-secondary hover:text-ink',
-              )}
-              aria-pressed={isNa}
-            >
-              N/A
-            </button>
-          </div>
+          <SegmentedPicker
+            value={isNa ? 'na' : 'applicable'}
+            options={[
+              { value: 'applicable', label: 'Applicable' },
+              { value: 'na', label: 'N/A' },
+            ]}
+            onChange={(next: 'applicable' | 'na') => {
+              // Only act on an actual switch — re-clicking Applicable must not
+              // reset an in-progress status back to not-started.
+              if (next === 'na' && !isNa) onStatusChange('not-applicable');
+              if (next === 'applicable' && isNa) onStatusChange('not-started');
+            }}
+            ariaLabel="Applicability"
+            size="sm"
+            className="inline-grid shrink-0"
+          />
         )}
       </div>
 

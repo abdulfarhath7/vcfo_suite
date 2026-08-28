@@ -22,7 +22,7 @@ import {
   notificationsInDirection,
   type NotificationDirection,
 } from '@/lib/checklist-notifications';
-import { cn } from '@/lib/utils';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 const RANGE_FILTERS = [
   { id: 'all', label: 'All' },
@@ -95,58 +95,22 @@ export default function NotificationHistoryPage() {
       />
 
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div
-          className="flex flex-wrap items-center gap-0.5"
-          role="tablist"
-          aria-label="Filter by date"
-        >
-          {RANGE_FILTERS.map((tab) => {
-            const active = range === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                className={cn(
-                  'rounded-full px-2.5 py-1 text-[12px] transition-colors',
-                  active
-                    ? 'bg-primary-light font-semibold text-primary'
-                    : 'font-medium text-muted-foreground hover:text-foreground',
-                )}
-                onClick={() => setRange(tab.id)}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-        <div
-          className="flex flex-wrap items-center gap-0.5"
-          role="tablist"
-          aria-label="Filter by direction"
-        >
-          {DIRECTION_FILTERS.map((tab) => {
-            const active = direction === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                className={cn(
-                  'rounded-full px-2.5 py-1 text-[12px] transition-colors',
-                  active
-                    ? 'bg-primary-light font-semibold text-primary'
-                    : 'font-medium text-muted-foreground hover:text-foreground',
-                )}
-                onClick={() => setDirection(tab.id)}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedPicker
+          value={range}
+          options={RANGE_FILTERS.map((tab) => ({ value: tab.id, label: tab.label }))}
+          onChange={(next) => setRange(next)}
+          ariaLabel="Filter by date"
+          size="sm"
+          className="inline-grid"
+        />
+        <SegmentedPicker
+          value={direction}
+          options={DIRECTION_FILTERS.map((tab) => ({ value: tab.id, label: tab.label }))}
+          onChange={(next) => setDirection(next)}
+          ariaLabel="Filter by direction"
+          size="sm"
+          className="inline-grid"
+        />
       </div>
 
       {query.isLoading ? (
