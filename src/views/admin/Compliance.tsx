@@ -1,22 +1,21 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { m } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageHeader } from '@/components/admin/PageHeader';
 import { PageBackCluster } from '@/components/shell/PageBackButton';
-import { AccentKpi } from '@/components/admin/AccentKpi';
 import { SEO } from '@/components/SEO';
 import { ComplianceFiling } from '@/data/compliance';
 import { ComplianceCalendar } from '@/components/admin/ComplianceCalendar';
 import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { isFilingInMonth } from '@/components/admin/compliance-calendar-utils';
 import { useComplianceFilings } from '@/hooks/use-compliance-filings';
-import { Calendar, CalendarCheck, CalendarCheck2, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
+import { CalendarCheck } from 'lucide-react';
 import { IconChip, toneForKey, TONE_BADGE } from '@/components/common/IconChip';
 import { cn } from '@/lib/utils';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 const statusMap: Record<ComplianceFiling['status'], { label: string; cls: string }> = {
   'upcoming':    { label: 'Due soon',    cls: 'bg-info-light text-info-text' },
@@ -36,12 +35,15 @@ export default function Compliance({
 }: {
   initialView?: 'statutory' | 'tracker';
 }) {
-  const { user, engagements, teamMembers, getStateForEngagement } = useApp();
+  const { engagements, teamMembers, getStateForEngagement } = useApp();
   const pathname = usePathname();
-  const isInternView = user?.role === 'intern' || pathname.startsWith('/app/intern/');
+  const base = pathname.startsWith('/app/intern/')
+    ? '/app/intern'
+    : pathname.startsWith('/app/admin/')
+      ? '/app/admin'
+      : '/app/manager';
   const allFilings = useComplianceFilings(engagements, getStateForEngagement);
-  const [tab, setTab] = useState<'statutory' | 'tracker'>(initialView);
-  const active = isInternView ? initialView : tab;
+  const active = initialView;
   const [filter, setFilter] = useState<'all' | ComplianceFiling['status']>('all');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [viewMonth, setViewMonth] = useState(() => {
@@ -63,88 +65,33 @@ export default function Compliance({
       .sort((a, b) => new Date(a.nextDue).getTime() - new Date(b.nextDue).getTime());
   }, [filteredFilings, viewMonth]);
 
-  const overdue = allFilings.filter((c) => c.status === 'overdue').length;
-  const inProgress = allFilings.filter((c) => c.status === 'in-progress').length;
-  const upcoming = allFilings.filter((c) => c.status === 'upcoming').length;
-
   return (
     <PageTransition>
       <SEO
         title={
-          isInternView && active === 'tracker'
+          active === 'tracker'
             ? 'Filing tracker — VCFO Suite'
             : 'Compliance calendar — VCFO Suite'
         }
         description="Recurring statutory filings — GST, TDS, ROC, PF, RBI — across your GCC portfolio."
-        path={
-          isInternView
-            ? active === 'tracker'
-              ? '/app/intern/compliance/tracker'
-              : '/app/intern/compliance'
-            : '/app/manager/compliance'
-        }
+        path={active === 'tracker' ? `${base}/compliance/tracker` : `${base}/compliance`}
       />
 
-      {isInternView ? null : (
-        <>
-          <PageHeader accent="emerald" icon={CalendarCheck2} title="Compliance calendar" />
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            <AccentKpi tone="violet" icon={Calendar}      label="Active filings"  value={allFilings.length} />
-            <AccentKpi tone="sky"     icon={Clock}         label="Due in 30 days"       value={upcoming} />
-            <AccentKpi tone="amber"   icon={CheckCircle2}  label="In preparation"    value={inProgress} />
-            <AccentKpi tone="emerald" icon={AlertTriangle} label="Past due"        value={overdue} />
-          </div>
-        </>
-      )}
-
-      {/* Manager/admin keep the two views as tabs. Intern: statutory is the page; tracker is /compliance/tracker. */}
-      {!isInternView && (
-        <div className="mb-4 inline-flex rounded-lg border border-border bg-panel p-0.5">
-          {(
-            [
-              { id: 'statutory', label: 'Statutory calendar' },
-              { id: 'tracker', label: 'Client filing tracker' },
-            ] as const
-          ).map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={cn(
-                'h-8 rounded-md px-3.5 text-[12.5px] font-medium transition-colors',
-                tab === t.id
-                  ? 'bg-role-soft text-role-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      )}
-
       {active === 'statutory' && (
-        <StatutoryCalendar
-          engagements={engagements}
-          trackerHref={isInternView ? '/app/intern/compliance/tracker' : undefined}
-          showBack={isInternView}
-        />
+        <div className="stat-cal-intern">
+          <StatutoryCalendar
+            engagements={engagements}
+            trackerHref={`${base}/compliance/tracker`}
+            showBack
+          />
+        </div>
       )}
 
       <div className={cn('surface overflow-hidden', active !== 'tracker' && 'hidden')}>
         <div className="px-4 py-3 border-b border-border flex items-center gap-3 flex-wrap">
-          {isInternView ? (
-            active === 'tracker' ? (
-              <PageBackCluster className="mr-2">
-                <h1 className="text-[13px] font-semibold text-ink">Filing tracker</h1>
-              </PageBackCluster>
-            ) : (
-              <div className="mr-2 text-[13px] font-semibold text-ink">Filing tracker</div>
-            )
-          ) : (
-            <h2 className="mr-2 text-[13px] font-semibold text-ink">All compliances</h2>
-          )}
+          <PageBackCluster className="mr-2">
+            <h1 className="text-[13px] font-semibold text-ink">Filing tracker</h1>
+          </PageBackCluster>
           <select
             value={clientFilter}
             onChange={(e) => setClientFilter(e.target.value)}
@@ -153,20 +100,16 @@ export default function Compliance({
             <option value="all">All companies</option>
             {engagements.map((e) => <option key={e.id} value={e.id}>{e.companyName}</option>)}
           </select>
-          <div className="flex items-center gap-1 ml-auto">
-            {(['all', 'upcoming', 'in-progress', 'overdue', 'filed'] as const).map((s) => (
-              <button type="button"
-                key={s}
-                onClick={() => setFilter(s)}
-                className={cn(
-                  'h-7 px-2.5 rounded-md text-[11.5px] font-medium transition-colors',
-                  filter === s ? 'gold-sheen' : 'text-text-tertiary hover:bg-muted',
-                )}
-              >
-                {s === 'all' ? 'All' : statusMap[s].label}
-              </button>
-            ))}
-          </div>
+          <SegmentedPicker
+            value={filter}
+            options={(['all', 'upcoming', 'in-progress', 'overdue', 'filed'] as const).map(
+              (s) => ({ value: s, label: s === 'all' ? 'All' : statusMap[s].label }),
+            )}
+            onChange={(next: 'all' | ComplianceFiling['status']) => setFilter(next)}
+            ariaLabel="Filter by status"
+            size="sm"
+            className="ml-auto inline-grid"
+          />
         </div>
 
         <div className="grid lg:grid-cols-[minmax(280px,320px)_1fr]">
