@@ -6,7 +6,7 @@ import type { AuthContext } from '@/auth/guards';
 import type { Invite } from '@/data/engagements';
 import {
   assertEngagementAccess,
-  listEngagements,
+  listScopedEngagementIds,
 } from '@/db/repositories/engagements';
 import { LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
 
@@ -36,8 +36,7 @@ export function toAppInvite(row: Row): Invite {
 
 async function scopedEngagementIds(ctx: AuthContext): Promise<string[] | 'all'> {
   if (ctx.role === 'admin') return 'all';
-  const rows = await listEngagements(ctx);
-  return rows.map((r) => r.id);
+  return listScopedEngagementIds(ctx);
 }
 
 export async function listInvites(ctx: AuthContext): Promise<Invite[]> {

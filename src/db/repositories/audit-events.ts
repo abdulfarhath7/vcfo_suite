@@ -94,7 +94,7 @@ export async function listAuditEvents(
   }
 
   // Dynamic import avoids circular init with engagements → auditChecklistItemPatch.
-  const { listEngagements } = await import('@/db/repositories/engagements');
+  const { listScopedEngagementIds } = await import('@/db/repositories/engagements');
   const { engagementDbId } = await import('@/lib/legacy-engagement-ids');
 
   const conds = [];
@@ -102,23 +102,21 @@ export async function listAuditEvents(
     const dbId = engagementDbId(options.engagementId);
     // Path A allowlist (includes lead/manager membership, not only primary pointer).
     if (!isFirmWideAdmin(ctx.role)) {
-      const rows = await listEngagements(ctx);
-      if (!rows.some((r) => r.id === dbId)) return [];
+      const ids = await listScopedEngagementIds(ctx);
+      if (!ids.includes(dbId)) return [];
     }
     conds.push(eq(auditEvents.engagementId, dbId));
   } else if (isFirmWideAdmin(ctx.role)) {
     // Firm-wide: no extra predicate.
   } else if (ctx.role === 'intern') {
-    const rows = await listEngagements(ctx);
-    const ids = rows.map((r) => r.id);
+    const ids = await listScopedEngagementIds(ctx);
     const internScope =
       ids.length > 0
         ? or(eq(auditEvents.actorUserId, ctx.userId), inArray(auditEvents.engagementId, ids))
         : eq(auditEvents.actorUserId, ctx.userId);
     conds.push(internScope);
   } else {
-    const rows = await listEngagements(ctx);
-    const ids = rows.map((r) => r.id);
+    const ids = await listScopedEngagementIds(ctx);
     if (ids.length === 0) return [];
     conds.push(inArray(auditEvents.engagementId, ids));
   }

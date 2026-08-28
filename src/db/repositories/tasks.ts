@@ -8,6 +8,7 @@ import type { TaskInstance } from '@/data/engagements';
 import {
   assertEngagementAccess,
   listEngagements,
+  listScopedEngagementIds,
 } from '@/db/repositories/engagements';
 import {
   engagementDbId,
@@ -90,8 +91,7 @@ export function toAppTask(row: Row): TaskInstance {
 
 async function scopedEngagementIds(ctx: AuthContext): Promise<string[] | 'all'> {
   if (isFirmWideAdmin(ctx.role)) return 'all';
-  const rows = await listEngagements(ctx);
-  return rows.map((r) => r.id);
+  return listScopedEngagementIds(ctx);
 }
 
 const notPersonalTodo = or(

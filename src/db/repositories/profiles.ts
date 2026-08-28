@@ -1,6 +1,6 @@
 import 'server-only';
 import bcrypt from 'bcryptjs';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   profiles,
@@ -80,7 +80,7 @@ export async function listInternOptions(ctx: AuthContext): Promise<InternOptionR
       ? rows.filter((r) => !r.reportsToManagerId || r.reportsToManagerId === ctx.userId)
       : rows;
 
-  return scoped.map((row) => {
+  const mapped = scoped.map((row) => {
     const name = row.name?.trim() || 'Project lead';
     return {
       id: row.internId?.trim() || row.id,
@@ -90,6 +90,14 @@ export async function listInternOptions(ctx: AuthContext): Promise<InternOptionR
       initials: initialsFromName(name),
       reportsToManagerId: row.reportsToManagerId,
     };
+  });
+  // Duplicate intern_id keys break Radix Select (same value on two items) and
+  // POST internId is a single scoping key — keep the first row per id.
+  const seen = new Set<string>();
+  return mapped.filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
   });
 }
 
@@ -699,6 +707,27 @@ export async function listManagerOptions(
     .from(profiles)
     .where(eq(profiles.role, 'manager'))
     .orderBy(asc(profiles.name));
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name?.trim() || r.email,
+    email: r.email,
+  }));
+}
+
+/** Profile contacts for assignment emails (create-project fan-out). */
+export async function listStaffContactsByIds(
+  ctx: AuthContext,
+  ids: string[],
+): Promise<{ id: string; email: string; name: string }[]> {
+  if (!isFirmWideAdmin(ctx.role) && ctx.role !== 'manager') {
+    throw new Error('Not permitted');
+  }
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+  if (unique.length === 0) return [];
+  const rows = await db
+    .select({ id: profiles.id, email: profiles.email, name: profiles.name })
+    .from(profiles)
+    .where(inArray(profiles.id, unique));
   return rows.map((r) => ({
     id: r.id,
     name: r.name?.trim() || r.email,
