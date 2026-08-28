@@ -35,7 +35,7 @@ export function MilestoneResponseRowSummary({
       <p
         className={cn(
           'mt-1.5 text-xs',
-          isClient ? 'text-text-tertiary/80' : 'text-slate-400',
+          isClient ? 'text-text-tertiary/80' : 'text-text-tertiary',
           className,
         )}
       >
@@ -63,7 +63,7 @@ export function MilestoneResponseRowSummary({
         <p
           className={cn(
             'min-w-0 flex-1 text-xs leading-snug line-clamp-2',
-            isClient ? 'text-text-secondary' : 'text-slate-500',
+            isClient ? 'text-text-secondary' : 'text-muted-foreground',
           )}
           title={summary}
         >

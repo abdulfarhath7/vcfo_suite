@@ -8,17 +8,17 @@ import { cn } from '@/lib/utils';
 const SHOWCASE_TONES = {
   success: {
     card: 'border-l-success border-success/20 bg-success-light',
-    iconShell: 'border-success/25 bg-white',
+    iconShell: 'border-success/25 bg-panel',
     icon: 'text-success-text',
   },
   info: {
     card: 'border-l-info border-info/20 bg-info-light',
-    iconShell: 'border-info/25 bg-white',
+    iconShell: 'border-info/25 bg-panel',
     icon: 'text-info-text',
   },
   warning: {
     card: 'border-l-warning border-warning/20 bg-warning-light',
-    iconShell: 'border-warning/25 bg-white',
+    iconShell: 'border-warning/25 bg-panel',
     icon: 'text-warning-text',
   },
 } as const;

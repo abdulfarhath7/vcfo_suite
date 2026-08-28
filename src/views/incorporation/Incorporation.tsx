@@ -24,7 +24,7 @@ export default function Incorporation() {
                 <button type="button"
                   key={c.id}
                   onClick={() => setSelectedClient(c)}
-                  className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-md border border-border bg-panel px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
                 >
                   {c.name}
                 </button>
@@ -41,8 +41,8 @@ export default function Incorporation() {
       <SEO title="Incorporation tracker — VCFO Suite" description="Pre- and post-incorporation milestones, statutory deadlines, and FEMA FCGPR filing log." path="/incorporation" />
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Incorporation tracker</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-xl font-semibold text-foreground">Incorporation tracker</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {selectedClient.name} ·{' '}
             <span className="inline-flex items-center gap-1">
               <Calendar className="h-3.5 w-3.5" />
