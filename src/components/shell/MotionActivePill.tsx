@@ -1,5 +1,13 @@
 'use client';
 
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type FocusEvent,
+  type PointerEvent,
+} from 'react';
 import { m } from 'framer-motion';
 import { springSnappy } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -37,15 +45,28 @@ export type SidebarHoverFollow = {
   ink: 'light' | 'dark';
 };
 
+export function sidebarHoverIdFromNode(node: EventTarget | null): string | null {
+  if (!(node instanceof Element)) return null;
+  const el = node.closest('[data-sidebar-hover]');
+  if (!(el instanceof HTMLElement)) return null;
+  return el.dataset.sidebarHover || null;
+}
+
+export function sidebarHoverAttrs(itemId: string) {
+  return { 'data-sidebar-hover': itemId } as const;
+}
+
 export function sidebarHoverGlassClass(ink: 'light' | 'dark') {
   return cn(
-    'pointer-events-none absolute inset-0 z-[1] rounded-[inherit]',
+    /* Tint/ring only. Item-sized blur is tempting but layoutId re-samples it every frame. */
+    'sidebar-hover-glass pointer-events-none absolute inset-0 z-[1] rounded-[inherit]',
     ink === 'light'
-      ? 'bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] ring-1 ring-inset ring-white/20 backdrop-blur-md'
-      : 'bg-black/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] ring-1 ring-inset ring-black/[0.07] backdrop-blur-md dark:bg-white/[0.08] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] dark:ring-white/12',
+      ? 'bg-white/14 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] ring-1 ring-inset ring-white/20'
+      : 'bg-black/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] ring-1 ring-inset ring-black/[0.07] dark:bg-white/[0.10] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] dark:ring-white/12',
   );
 }
 
+/** @deprecated Prefer data-sidebar-hover + useSidebarHoverFollow nav props. */
 export function sidebarHoverHandlers(follow: SidebarHoverFollow, itemId: string) {
   return {
     onMouseEnter: () => follow.onEnter(itemId),
@@ -90,10 +111,10 @@ export function SidebarHoverGlass({
   className,
 }: {
   itemId: string;
-  follow: SidebarHoverFollow;
+  follow: SidebarHoverFollow | undefined;
   className?: string;
 }) {
-  if (follow.hoverId !== itemId) return null;
+  if (!follow || follow.hoverId !== itemId) return null;
   return (
     <MotionHoverPill
       layoutId={follow.layoutId}
@@ -102,4 +123,61 @@ export function SidebarHoverGlass({
       className={cn(sidebarHoverGlassClass(follow.ink), className)}
     />
   );
+}
+
+export function useSidebarHoverFollow(
+  layoutIdPrefix: string,
+  ink: 'light' | 'dark',
+  reduced: boolean,
+) {
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+  const lastId = useRef<string | null>(null);
+
+  const onEnter = useCallback((id: string) => {
+    if (lastId.current !== id) {
+      lastId.current = id;
+      setHoverId(id);
+    }
+    setVisible((open) => open || true);
+  }, []);
+
+  const onLeave = useCallback(() => {
+    lastId.current = null;
+    setVisible(false);
+  }, []);
+
+  const follow = useMemo<SidebarHoverFollow>(
+    () => ({
+      hoverId,
+      visible,
+      onEnter,
+      layoutId: `${layoutIdPrefix}-hover`,
+      reduced,
+      ink,
+    }),
+    [hoverId, visible, onEnter, layoutIdPrefix, reduced, ink],
+  );
+
+  const navHoverProps = useMemo(
+    () => ({
+      onPointerLeave: onLeave,
+      onPointerOver: (event: PointerEvent<HTMLElement>) => {
+        const id = sidebarHoverIdFromNode(event.target);
+        if (id) onEnter(id);
+      },
+      onFocusCapture: (event: FocusEvent<HTMLElement>) => {
+        const id = sidebarHoverIdFromNode(event.target);
+        if (id) onEnter(id);
+      },
+      onBlurCapture: (event: FocusEvent<HTMLElement>) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          onLeave();
+        }
+      },
+    }),
+    [onEnter, onLeave],
+  );
+
+  return { follow, onLeave, navHoverProps };
 }

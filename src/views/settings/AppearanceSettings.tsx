@@ -20,6 +20,7 @@ import {
 import { useShellAppearance } from '@/lib/use-shell-appearance';
 import { toastError } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 const KINDS: { id: SurfaceKind; label: string }[] = [
   { id: 'solid', label: 'Solid' },
@@ -326,7 +327,7 @@ export function AppearanceSettings() {
         <StudioBlock title="Sidebar Appearance">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <div
-              className="shell-sidebar-skin h-[176px] w-[104px] shrink-0 overflow-hidden rounded-lg border border-border/70"
+              className="shell-sidebar-skin relative h-[176px] w-[104px] shrink-0 overflow-hidden rounded-lg border border-border/70"
               data-ink={sidebar.ink}
               style={surfaceCssVars(sidebar, 'sidebar')}
             >
@@ -345,28 +346,13 @@ export function AppearanceSettings() {
         </StudioBlock>
 
         <StudioBlock title="Animations" last>
-          <div className="flex flex-wrap gap-1.5">
-            {MOTION_STYLES.map((style) => {
-              const on = prefs.motion === style.id;
-              return (
-                <button
-                  key={style.id}
-                  type="button"
-                  aria-pressed={on}
-                  title={style.hint}
-                  onClick={() => update({ motion: style.id as MotionStyle })}
-                  className={cn(
-                    'rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors',
-                    on
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground',
-                  )}
-                >
-                  {style.label}
-                </button>
-              );
-            })}
-          </div>
+          <SegmentedPicker
+            value={prefs.motion}
+            options={MOTION_STYLES.map((style) => ({ value: style.id, label: style.label }))}
+            onChange={(next) => update({ motion: next as MotionStyle })}
+            ariaLabel="Animations"
+            className="inline-grid"
+          />
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-4">
             <div>
               <p className="text-[13px] font-medium text-foreground">Reduce motion</p>

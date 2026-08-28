@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SHELL_APPEARANCE,
+  SIDEBAR_SOLIDS,
   parseShellAppearance,
   resolveSurface,
 } from '@/lib/shell-appearance';
@@ -38,6 +39,8 @@ describe('resolveSurface', () => {
 
     const glass = resolveSurface(DEFAULT_SHELL_APPEARANCE.sidebar, 'sidebar');
     expect(glass.ink).toBe('dark');
+    expect(glass.background).toBe('oklch(var(--panel))');
+    expect(SIDEBAR_SOLIDS.find((s) => s.id === 'glass')?.value).toBe('oklch(var(--panel))');
 
     const preset = resolveSurface(
       { ...DEFAULT_SHELL_APPEARANCE.hero, kind: 'preset', presetId: 'night' },

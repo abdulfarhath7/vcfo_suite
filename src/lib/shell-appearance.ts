@@ -31,7 +31,9 @@ export const HERO_SOLIDS = [
 ] as const;
 
 export const SIDEBAR_SOLIDS = [
-  { id: 'glass', label: 'Glass', value: 'oklch(var(--panel) / 0.88)' },
+  /* Opaque: theme-aware panel. Alpha + blur used to frost the page; a full-rail
+     backdrop-filter re-blurs on every hover-peek frame. Porcelain stays #F8FAFC. */
+  { id: 'glass', label: 'Glass', value: 'oklch(var(--panel))' },
   { id: 'white', label: 'Porcelain', value: '#F8FAFC' },
   { id: 'mist', label: 'Mist', value: '#EEF2FF' },
   { id: 'ice', label: 'Ice', value: '#ECFEFF' },

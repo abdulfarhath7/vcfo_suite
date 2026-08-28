@@ -12,6 +12,7 @@ import {
   type InternWorkKpis,
 } from '@/lib/intern-work';
 import { LeadHeroSettings } from '@/components/intern/LeadHeroSettings';
+import { ClientLocaleNowLabel } from '@/hooks/use-client-locale-date';
 
 function ProgressRing({ done, total }: { done: number; total: number }) {
   const pct = total <= 0 ? 1 : Math.min(1, done / total);
@@ -50,11 +51,9 @@ function ProgressRing({ done, total }: { done: number; total: number }) {
 
 export function LeadHero({
   name,
-  clockLabel,
   kpis,
 }: {
   name: string;
-  clockLabel: string;
   kpis: InternWorkKpis;
 }) {
   const first = internFirstName(name);
@@ -100,7 +99,7 @@ export function LeadHero({
       <div className="relative z-[2]">
         <div className="flex items-center justify-between gap-3">
           <p className="font-mono text-[11px] font-medium tracking-[0.04em] text-white/65">
-            {clockLabel || 'Today'}
+            <ClientLocaleNowLabel />
           </p>
           <LeadHeroSettings />
         </div>

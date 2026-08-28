@@ -14,6 +14,7 @@ import {
 } from '@/lib/shell-appearance';
 import { useShellAppearance } from '@/lib/use-shell-appearance';
 import { cn } from '@/lib/utils';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { SurfacePicker } from '@/views/settings/AppearanceSettings';
 
 export function LeadHeroSettings() {
@@ -60,28 +61,14 @@ export function LeadHeroSettings() {
             <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
               Animations
             </p>
-            <div className="mt-2 grid grid-cols-5 gap-1">
-              {MOTION_STYLES.map((style) => {
-                const on = prefs.motion === style.id;
-                return (
-                  <button
-                    key={style.id}
-                    type="button"
-                    aria-pressed={on}
-                    title={style.hint}
-                    onClick={() => update({ motion: style.id as MotionStyle })}
-                    className={cn(
-                      'rounded-md px-0.5 py-1.5 text-center text-[10px] font-semibold leading-none transition-colors',
-                      on
-                        ? 'bg-primary-light text-primary ring-1 ring-primary/25'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                    )}
-                  >
-                    {style.label}
-                  </button>
-                );
-              })}
-            </div>
+            <SegmentedPicker
+              value={prefs.motion}
+              options={MOTION_STYLES.map((style) => ({ value: style.id, label: style.label }))}
+              onChange={(next) => update({ motion: next as MotionStyle })}
+              ariaLabel="Animations"
+              size="sm"
+              className="mt-2"
+            />
             <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-2.5 py-2">
               <span className="text-[12px] font-medium text-foreground">Reduce motion</span>
               <Switch

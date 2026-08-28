@@ -14,6 +14,7 @@ export const genieTransition: Transition = {
   ease: genieEase,
 };
 
+/** Shared-element pills (sidebar active / hover). Small nodes — a little overshoot is cheap. */
 export const springSnappy: Transition = {
   type: 'spring',
   stiffness: 420,
@@ -33,14 +34,20 @@ export const springBounce: Transition = {
   damping: 18,
 };
 
+/** Cheap compositor tween — prefer over springs for full-page / hover lift. */
+export const tweenShort: Transition = {
+  duration: 0.2,
+  ease,
+};
+
 export const listStagger = {
   staggerChildren: 0.06,
   delayChildren: 0.04,
 } as const;
 
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: springGentle },
+  hidden: { opacity: 0, y: 6 },
+  show: { opacity: 1, y: 0, transition: tweenShort },
 };
 
 export const fadeUpReduced: Variants = {
@@ -48,16 +55,25 @@ export const fadeUpReduced: Variants = {
   show: { opacity: 1, transition: { duration: 0.2 } },
 };
 
+/** Opacity-only — safe on ancestors of layoutId pills (transform would isolate projection). */
+export const fadeOpacity: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.16, ease } },
+};
+
 export const staggerKids = (stagger = 0.06, delayChildren = 0.04): Variants => ({
   hidden: {},
   show: { transition: { staggerChildren: stagger, delayChildren } },
 });
 
+/** Sidebar disclosure children — module-level so hover does not allocate variants. */
+export const sidebarPanelStagger: Variants = staggerKids(0.03, 0.02);
+
 export const pageEnter = {
-  initial: { opacity: 0, y: 10 },
+  initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -6 },
-  transition: springGentle,
+  exit: { opacity: 0 },
+  transition: tweenShort,
 } as const;
 
 export const pageEnterReduced = {
@@ -68,10 +84,10 @@ export const pageEnterReduced = {
 } as const;
 
 export const pageEnterDynamic = {
-  initial: { opacity: 0, y: 14 },
+  initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
-  transition: springSnappy,
+  exit: { opacity: 0 },
+  transition: { duration: 0.22, ease },
 } as const;
 
 export const pageEnterAmbient = {
@@ -83,19 +99,19 @@ export const pageEnterAmbient = {
 
 export const cardHover = {
   whileHover: { y: -2 },
-  transition: springSnappy,
+  transition: { duration: 0.16, ease },
 } as const;
 
 export const pressScale = {
   whileTap: { scale: 0.98 },
-  transition: springSnappy,
+  transition: { duration: 0.12, ease },
 } as const;
 
 export const fadeSwap = {
-  initial: { opacity: 0, y: 6 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -4 },
-  transition: springGentle,
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: tweenShort,
 } as const;
 
 export const fadeSwapReduced = {
@@ -104,3 +120,14 @@ export const fadeSwapReduced = {
   exit: { opacity: 0 },
   transition: { duration: 0.16 },
 } as const;
+
+/** Month canvas swap — opacity + short translate, not layout. `dir` is +1 next / −1 prev. */
+export function monthPaneMotion(dir: 1 | -1, reduce: boolean) {
+  if (reduce) return fadeSwapReduced;
+  return {
+    initial: { opacity: 0, x: dir * 18 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: dir * -14 },
+    transition: tweenShort,
+  };
+}

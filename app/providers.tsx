@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
@@ -8,15 +9,14 @@ import { useState, type ReactNode } from "react";
 import { HotToaster } from "@/components/ui/hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
-import { ComposeOutgoingEmailHost } from "@/components/email/ComposeOutgoingEmailHost";
-import { featureRegistry } from "@/components/_feature-registry";
-import { uiRegistry } from "@/components/ui/_registry";
 
-/** Dev-only anchor so registry symbols stay referenced. */
-if (process.env.NODE_ENV === "development") {
-  void featureRegistry;
-  void uiRegistry;
-}
+const ComposeOutgoingEmailHost = dynamic(
+  () =>
+    import("@/components/email/ComposeOutgoingEmailHost").then((mod) => ({
+      default: mod.ComposeOutgoingEmailHost,
+    })),
+  { ssr: false },
+);
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -24,6 +24,9 @@ export function Providers({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
+            staleTime: 30_000,
+            refetchOnWindowFocus: false,
+            refetchIntervalInBackground: false,
             retry: (failureCount, error) => {
               const msg = error instanceof Error ? error.message.toLowerCase() : '';
               if (msg.includes('unauthorized') || msg.includes('forbidden')) return false;
@@ -41,9 +44,9 @@ export function Providers({ children }: { children: ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-    <SessionProvider>
+    <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
     <QueryClientProvider client={queryClient}>
-      <LazyMotion features={domMax}>
+      <LazyMotion features={domMax} strict>
         <TooltipProvider>
           <HotToaster />
           <AppProvider>
