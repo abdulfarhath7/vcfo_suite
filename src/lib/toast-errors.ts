@@ -59,6 +59,16 @@ const CODE_MESSAGES: Record<string, string> = {
   invalid_credentials: 'Invalid email or password.',
   user_not_found: 'No account found for that email.',
   email_not_confirmed: 'Confirm your email before signing in.',
+  intern_required: 'Assign at least one project lead.',
+  invalid_email: 'Use a valid work email.',
+  company_required: 'Enter the project or GCC entity name.',
+  parent_entity_name_required: 'Enter the parent entity’s full legal name.',
+  parent_entity_address_required: 'Enter the parent entity’s registered address.',
+  subsidiary_legal_name_required: 'Enter the subsidiary company’s legal name.',
+  subsidiary_registered_address_required: 'Enter the subsidiary company’s registered address.',
+  email_already_registered: 'That email already has an account. Use a different client email.',
+  invalid_body: 'Check the required fields and try again.',
+  invalid_json: 'The request was not valid JSON. Try again.',
 };
 
 function looksLikeDatabaseMessage(message: string): boolean {
@@ -133,8 +143,15 @@ export function mapSupabaseError(
   rawMessage: string,
 ): string {
   if (code && CODE_MESSAGES[code]) return CODE_MESSAGES[code];
+  if (CODE_MESSAGES[rawMessage]) return CODE_MESSAGES[rawMessage];
 
   const lower = rawMessage.toLowerCase();
+  if (lower.includes('managerid is required')) {
+    return 'Assign at least one project manager.';
+  }
+  if (lower.includes('invalid internid')) {
+    return 'Select a valid project lead from the team list.';
+  }
   if (lower.includes('column') && lower.includes('does not exist')) {
     return CODE_MESSAGES['42703'];
   }

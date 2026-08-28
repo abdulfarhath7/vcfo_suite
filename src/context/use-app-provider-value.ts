@@ -37,10 +37,11 @@ import {
   type DbRole,
 } from '@/lib/auth';
 import { ownAvatarSrc } from '@/lib/account-avatar';
-import { getSession, signIn as authJsSignIn, signOut as authJsSignOut } from 'next-auth/react';
+import { getSession, signIn as authJsSignIn, signOut as authJsSignOut, useSession } from 'next-auth/react';
 import { clearAllStepProgress } from '@/components/admin/step-detail-progress';
 import {
   fetchEngagements,
+  fetchChecklistIndex,
   fetchInternOptions,
   createProjectWithClient,
   updateEngagementInDb,
@@ -49,6 +50,7 @@ import {
   fetchChecklistState,
   ChecklistSaveError,
   type EngagementChecklistState,
+  type InternOption,
   submitChecklistItemInDb,
   setChecklistUnlockedFieldsInDb,
   reviewChecklistItemInDb,
@@ -56,8 +58,8 @@ import {
 import {
   findEngagementForClientUser,
   engagementScopeIds,
-  normalizeEngagementChecklistState,
 } from '@/lib/checklist-state-key';
+import { mergeChecklistIndexIntoState } from '@/lib/checklist-index';
 import { toastError, toastSuccess, errorMessage, toastEmailDispatch, EMAIL_DISPATCH_NOTIFICATIONS_EVENT } from '@/lib/toast-errors';
 import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
 import { debouncedPersist, read } from '@/lib/storage';
@@ -72,7 +74,7 @@ import {
   isPersistedNotificationId,
   mergeNotificationsByCreatedAt,
 } from '@/lib/notification-dismiss';
-import { NOTIFICATION_LIVE_POLL_MS } from '@/lib/notification-popup';
+import { fingerprintHead, useInvalidateOnHeadChange } from '@/lib/live-poll';
 import { checklistItemLabel } from '@/lib/audit-log';
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -171,10 +173,23 @@ function appProviderReducer(state: AppProviderState, action: AppProviderAction):
   return { ...state, [action.key]: next };
 }
 
+const EMPTY_INTERN_OPTIONS: InternOption[] = [];
+const EMPTY_CHECKLIST_STATE: EngagementChecklistState = {};
+
+function preferUnchangedList<T>(prev: T[], next: T[]): T[] {
+  if (prev === next) return prev;
+  if (prev.length !== next.length) return next;
+  for (let i = 0; i < prev.length; i++) {
+    if (prev[i] !== next[i]) return next;
+  }
+  return prev;
+}
+
 
 
 export function useAppProviderValue(): AppContextValue {
   const queryClient = useQueryClient();
+  const { data: session, status: sessionStatus } = useSession();
   const [state, dispatch] = useReducer(appProviderReducer, undefined, createInitialAppProviderState);
   const {
     user,
@@ -458,7 +473,7 @@ export function useAppProviderValue(): AppContextValue {
       return data.activity;
     },
     enabled: Boolean(user),
-    staleTime: 15_000,
+    staleTime: 30_000,
   });
 
   const notificationsQuery = useQuery({
@@ -468,43 +483,80 @@ export function useAppProviderValue(): AppContextValue {
       return data.notifications;
     },
     enabled: Boolean(user),
-    staleTime: 15_000,
-    refetchInterval: NOTIFICATION_LIVE_POLL_MS,
-    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    notifyOnChangeProps: ['data', 'error'],
   });
 
-  const internOptions = internsQuery.data ?? [];
+  useInvalidateOnHeadChange({
+    enabled: Boolean(user?.id),
+    headQueryKey: ['notifications-head', user?.id],
+    queryFn: async () => {
+      const data = await fetchJson<{
+        latestId: string | null;
+        unreadCount: number;
+        count: number;
+      }>('/api/notifications?head=1');
+      return { fingerprint: fingerprintHead([data.latestId, data.unreadCount, data.count]) };
+    },
+    invalidateQueryKey: ['notifications', user?.id],
+    exact: true,
+  });
+
+  const internOptions = internsQuery.data ?? EMPTY_INTERN_OPTIONS;
   const teamMembers = internOptions;
   const internsLoading = internsQuery.isLoading;
   const engagementsLoading = engagementsQuery.isLoading;
+  const engagementIndexKey = (engagementsQuery.data?.engagements ?? []).map((e) => e.id).join(',');
+
+  const checklistIndexQuery = useQuery({
+    queryKey: ['checklist-index', user?.id, engagementIndexKey],
+    queryFn: fetchChecklistIndex,
+    enabled: Boolean(user) && engagementsQuery.isSuccess,
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
-    if (!engagementsQuery.data) return;
-    setEngagements(engagementsQuery.data.engagements);
+    const next = engagementsQuery.data?.engagements;
+    if (!next) return;
+    setEngagements((prev) => preferUnchangedList(prev, next));
   }, [engagementsQuery.data, setEngagements]);
 
   useEffect(() => {
-    if (tasksQuery.data) setTasks(tasksQuery.data);
+    const next = tasksQuery.data;
+    if (!next) return;
+    setTasks((prev) => preferUnchangedList(prev, next));
   }, [tasksQuery.data, setTasks]);
 
   useEffect(() => {
-    if (requestsQuery.data) setRequests(requestsQuery.data);
+    const next = requestsQuery.data;
+    if (!next) return;
+    setRequests((prev) => preferUnchangedList(prev, next));
   }, [requestsQuery.data, setRequests]);
 
   useEffect(() => {
-    if (invitesQuery.data) setInvites(invitesQuery.data);
+    const next = invitesQuery.data;
+    if (!next) return;
+    setInvites((prev) => preferUnchangedList(prev, next));
   }, [invitesQuery.data, setInvites]);
 
   useEffect(() => {
-    if (activityQuery.data) setActivity(activityQuery.data);
+    const next = activityQuery.data;
+    if (!next) return;
+    setActivity((prev) => preferUnchangedList(prev, next));
   }, [activityQuery.data, setActivity]);
 
   useEffect(() => {
-    if (notificationsQuery.data) {
-      setNotifications(
-        notificationsQuery.data.filter((n) => !dismissedIdsRef.current.has(n.id)),
-      );
-    }
+    const next = checklistIndexQuery.data;
+    if (!next) return;
+    setDbChecklistState((prev) => mergeChecklistIndexIntoState(prev, next));
+  }, [checklistIndexQuery.data, setDbChecklistState]);
+
+  useEffect(() => {
+    const data = notificationsQuery.data;
+    if (!data) return;
+    const next = data.filter((n) => !dismissedIdsRef.current.has(n.id));
+    setNotifications((prev) => preferUnchangedList(prev, next));
   }, [notificationsQuery.data, setNotifications]);
 
   useEffect(() => {
@@ -551,8 +603,8 @@ export function useAppProviderValue(): AppContextValue {
 
   const hydrateFromSession = useCallback(async () => {
     try {
-      const session = await getSession();
-      setUser(authUserFromSessionUser(session?.user as SessionUser | undefined));
+      const next = await getSession();
+      setUser(authUserFromSessionUser(next?.user as SessionUser | undefined));
     } catch {
       setUser(null);
     } finally {
@@ -561,8 +613,13 @@ export function useAppProviderValue(): AppContextValue {
   }, [setUser, setAuthLoading]);
 
   useEffect(() => {
-    void hydrateFromSession();
-  }, [hydrateFromSession]);
+    if (sessionStatus === 'loading') {
+      setAuthLoading(true);
+      return;
+    }
+    setUser(authUserFromSessionUser(session?.user as SessionUser | undefined));
+    setAuthLoading(false);
+  }, [session, sessionStatus, setUser, setAuthLoading]);
 
   const pushActivity = useCallback((ev: Omit<ActivityEvent, 'id' | 'at'>) => {
     const optimistic: ActivityEvent = {
@@ -761,6 +818,7 @@ export function useAppProviderValue(): AppContextValue {
     setRequests([]);
     setInvites([]);
     setActivity([]);
+    setDbChecklistState({});
     clearAllStepProgress();
   }, [
     queryClient,
@@ -772,6 +830,7 @@ export function useAppProviderValue(): AppContextValue {
     setRequests,
     setInvites,
     setActivity,
+    setDbChecklistState,
   ]);
 
   const createProjectWithClientFn = useCallback<AppContextValue['createProjectWithClient']>(async (input) => {
@@ -1008,8 +1067,7 @@ export function useAppProviderValue(): AppContextValue {
 
   const engagementChecklist = useCallback(
     (engagement: Engagement): Record<string, ChecklistItemState> => {
-      const raw = dbChecklistState[engagement.id] ?? {};
-      return normalizeEngagementChecklistState(raw as Record<string, unknown>);
+      return dbChecklistState[engagement.id] ?? EMPTY_CHECKLIST_STATE;
     },
     [dbChecklistState],
   );
@@ -1061,7 +1119,7 @@ export function useAppProviderValue(): AppContextValue {
     setSelectedClient,
     addClient,
     getState,
-    getStateForEngagement: (engagement) => engagementChecklist(engagement),
+    getStateForEngagement: engagementChecklist,
     updateItem: async (scopeId, itemId, patch, options) => {
       let engagement: Engagement | undefined;
 

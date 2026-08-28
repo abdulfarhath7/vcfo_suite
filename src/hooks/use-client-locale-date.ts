@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { createElement, useSyncExternalStore } from 'react';
 
 type DateFormatOptions = Intl.DateTimeFormatOptions;
 
@@ -55,4 +55,16 @@ export function useClientLocaleNow(locale = DEFAULT_LOCALE): string {
     () => formatClientNowLabel(new Date(), locale),
     () => '',
   );
+}
+
+/** Leaf clock so a 1s tick cannot re-render the surrounding page. */
+export function ClientLocaleNowLabel({
+  className,
+  locale = DEFAULT_LOCALE,
+}: {
+  className?: string;
+  locale?: string;
+}) {
+  const label = useClientLocaleNow(locale);
+  return createElement('span', { className }, label || 'Today');
 }

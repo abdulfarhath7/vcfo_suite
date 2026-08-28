@@ -128,10 +128,6 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       <div>
         <Eyebrow>Add project lead</Eyebrow>
-        <p className="text-[11.5px] text-text-tertiary mt-1 leading-snug">
-          Creates a project lead login with the intern role and emails sign-in credentials when Resend is configured.
-          Ask them to change their password after first login.
-        </p>
       </div>
 
       <div className="space-y-4">
@@ -210,9 +206,6 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
-          <p className="text-[11px] text-text-tertiary mt-1">
-            Sent once by email — not stored in VCFO Suite.
-          </p>
           {fieldErrors.password ? (
             <p className="text-[11px] text-danger mt-1">{fieldErrors.password}</p>
           ) : null}

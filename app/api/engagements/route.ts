@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { inArray } from 'drizzle-orm';
 import { requireAuth, requireAdminOrManager } from '@/auth/guards';
 import {
   createProjectWithClient,
@@ -9,8 +8,7 @@ import {
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { listManagerIdsForEngagement } from '@/db/repositories/engagement-managers-membership';
-import { db } from '@/db/client';
-import { profiles } from '@/db/schema';
+import { listStaffContactsByIds } from '@/db/repositories/profiles';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { createProjectBodySchema } from '@/lib/api/schemas';
 import { emptyEmailDispatch, pushEmailSubject } from '@/lib/email/email-dispatch';
@@ -63,31 +61,31 @@ export async function POST(request: Request) {
     created.engagement.id,
   ).catch(() => [] as string[]);
 
-  const emailResult = await sendWelcomeEmail({
-    clientEmail: data.clientEmail.trim().toLowerCase(),
-    clientName: data.clientName?.trim() || data.companyName.trim(),
-    companyName: data.companyName.trim(),
-    stage: created.engagement.stage,
-    health: created.engagement.health,
-    createdAt: created.engagement.createdAt,
-    clientPassword: data.clientPassword,
-    engagementProgressCc,
-    managerName: auth.ctx.name,
-    managerEmail: auth.ctx.email,
-    portalUrl: resolvePortalUrl(),
-  });
+  let emailResult: Awaited<ReturnType<typeof sendWelcomeEmail>>;
+  try {
+    emailResult = await sendWelcomeEmail({
+      clientEmail: data.clientEmail.trim().toLowerCase(),
+      clientName: data.clientName?.trim() || data.companyName.trim(),
+      companyName: data.companyName.trim(),
+      stage: created.engagement.stage,
+      health: created.engagement.health,
+      createdAt: created.engagement.createdAt,
+      clientPassword: data.clientPassword,
+      engagementProgressCc,
+      managerName: auth.ctx.name,
+      managerEmail: auth.ctx.email,
+      portalUrl: resolvePortalUrl(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'welcome_email_failed';
+    emailResult = { ok: false, error: message };
+  }
 
   const teamEmail = emptyEmailDispatch();
   try {
     const recipients = await resolveEngagementRecipients(created.engagement.id);
     const managerIds = await listManagerIdsForEngagement(recipients.dbId);
-    const managerProfiles =
-      managerIds.length > 0
-        ? await db
-            .select({ id: profiles.id, email: profiles.email, name: profiles.name })
-            .from(profiles)
-            .where(inArray(profiles.id, managerIds))
-        : [];
+    const managerProfiles = await listStaffContactsByIds(auth.ctx, managerIds);
 
     const assigned = [
       ...managerProfiles
