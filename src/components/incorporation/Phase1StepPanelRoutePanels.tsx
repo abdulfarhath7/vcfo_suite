@@ -106,10 +106,6 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
       return (
         <div className={className}>
           <PanelShell title="Signed Board Resolution">
-            <p>
-              Download the certified board resolution, sign it on company letterhead, then upload
-              the signed copy.
-            </p>
             {brStatus === 'signed' ? (
               <p className="flex items-center gap-1.5 text-success-text">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -356,12 +352,6 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
           <IncorporationDocsGeneratePanel engagement={engagement} responses={responses} />
         )}
         <PanelShell title="KYC Review & DSC">
-          <p>
-            Review submitted KYC data, upload DSC success messages from eMudhra, generate or attach
-            draft incorporation documents (DIR-2, DIR-8, INC-9, PAN), then use{' '}
-            <strong>Share with client</strong> in the generate panel when all seven drafts are ready.
-            Clients download shared drafts on Step 3 (Pre-8).
-          </p>
           {coreDraftDocs.length > 0 && (
             <p className="text-success-text">
               {coreDraftDocs.length} core draft document{coreDraftDocs.length === 1 ? '' : 's'}{' '}
@@ -452,11 +442,6 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
         <PanelShell title="Document Execution">
           {hasClientVisibleDrafts ? (
             <>
-              <p>
-                Drafts were shared from Phase 2 Step 2 (Pre-7). The client downloads each form
-                below, signs and notarizes them, then uploads executed copies in the form on this
-                step.
-              </p>
               <div className="space-y-1">
                 <p className="text-[10px] uppercase tracking-wide text-text-tertiary">
                   Shared draft documents (from Step 2)
@@ -529,10 +514,6 @@ export function Phase1Pre9Panel(props: Phase1StepPanelRoutesProps) {
   return (
     <div className={className}>
       <PanelShell title="SPICe+ Confirmation">
-        <p>
-          Share the SPICe+ Part B application with the client for review. They confirm or recommend
-          changes in the form on this step before you file on Step 6 (Pre-10).
-        </p>
         {clientSubmitted && (
           <p className="flex items-center gap-1.5 text-success-text">
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -568,17 +549,7 @@ export function Phase1Pre10Panel(props: Phase1StepPanelRoutesProps) {
     );
   }
 
-  return (
-    <div className={className}>
-      <PanelShell title="SPICe+ Filing">
-        <p>
-          After client confirmation on Step 5, complete and submit SPICe+ Part B and AGILE-PRO-S on
-          the MCA portal. Record filing notes below and use <strong>Deliver to client</strong> when
-          ready.
-        </p>
-      </PanelShell>
-    </div>
-  );
+  return null;
 }
 
 export function Phase1Pre11Panel(props: Phase1StepPanelRoutesProps) {
@@ -613,17 +584,7 @@ export function Phase1Pre11Panel(props: Phase1StepPanelRoutesProps) {
     );
   }
 
-  return (
-    <div className={className}>
-      <PanelShell title="MCA Remarks">
-        <p>
-          Review MCA portal remarks, request client information or documents if needed, upload the
-          clarification letter, and record resubmission notes. Use <strong>Deliver to client</strong>{' '}
-          when the resubmission is complete.
-        </p>
-      </PanelShell>
-    </div>
-  );
+  return null;
 }
 
 export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {

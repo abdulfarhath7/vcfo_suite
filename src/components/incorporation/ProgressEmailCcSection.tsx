@@ -339,12 +339,6 @@ export function ProgressEmailCcSection({
       <h2 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
         Progress email CC
       </h2>
-      <p className="text-[12.5px] text-text-secondary mb-4 leading-relaxed">
-        Additional recipients copied on client progress emails for this project.
-        {defaultCcConfigured
-          ? ' Firm default CC is always included.'
-          : ' Add addresses below for this project only.'}
-      </p>
       {defaultCcConfigured && (
         <p className="text-[11.5px] text-text-tertiary mb-3 font-mono">
           Firm default CC included

@@ -169,10 +169,6 @@ export default function BoardResolutionView() {
       ) : visible ? (
         <article className="surface-raised p-6 md:p-8 print:shadow-none print:border-0">
           <Eyebrow className="mb-4">Certified true copy</Eyebrow>
-          <p className="text-[13px] text-text-secondary mb-5 max-w-lg">
-            Review your certified board resolution below. Download the Word file, sign it, then
-            upload the signed copy so your engagement team can proceed.
-          </p>
 
           <div className="mb-6 flex items-start justify-center print:hidden">
             <BoardResolutionDocPreview

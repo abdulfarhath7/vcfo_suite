@@ -1060,7 +1060,6 @@ export default function FirmPeople() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-              <p className="mt-1 text-[11px] text-muted-foreground">Temporary password — share securely with the new user.</p>
             </div>
             {form.role === 'intern' && isAdmin && (
               <div>

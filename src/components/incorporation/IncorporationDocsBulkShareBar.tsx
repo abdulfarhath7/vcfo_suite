@@ -104,11 +104,6 @@ export function IncorporationDocsBulkShareBar({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-[12px] font-medium text-ink">Share all drafts with client</p>
-          <p className="text-[11px] leading-relaxed text-text-tertiary">
-            After you generate and review every draft, share them in one step. The client downloads
-            each form on <strong>Pre-8</strong>, notarizes or apostilles them, then uploads signed
-            copies using the fields on that step.
-          </p>
         </div>
         {shareComplete ? (
           <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-success-text shrink-0">

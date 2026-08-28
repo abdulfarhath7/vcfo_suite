@@ -60,9 +60,6 @@ export function FemaSection() {
       <div className="mb-4">
         <Eyebrow>FEMA compliance</Eyebrow>
         <h2 className="serif mt-1 text-lg font-semibold text-foreground">FEMA — FCGPR</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Foreign Currency–Gross Provisional Return (FCGPR) under FEMA
-        </p>
       </div>
 
       {selectedClient.incorporationDate && (

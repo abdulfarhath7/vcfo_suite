@@ -119,7 +119,6 @@ import type { MilestoneResponseFormViewModel } from '@/views/incorporation/useMi
 
 export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
   const {
-    autoSaveEnabled,
     autoSaveStatus,
     canEdit,
     className,
@@ -148,9 +147,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     setSelectedSectionIndex,
     showStaffSaveFooter,
     structuredSectionLabels,
-    submissionLocked,
     submitting,
-    unlockedFields,
     visibleFields,
   } = p;
 
@@ -178,10 +175,6 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
         >
           <CheckCircle2 className="w-10 h-10 mx-auto text-success mb-3" aria-hidden />
           <p className="serif text-xl text-foreground">Submitted for review</p>
-          <p className="text-sm text-muted-foreground mt-1 prose-narrow mx-auto">
-            Your engagement team has been notified. You will hear back once your answers are
-            reviewed.
-          </p>
           {isClient && (
             <TrustBadge className="mt-4 mx-auto w-fit">Received by VCFO · under review</TrustBadge>
           )}
@@ -218,10 +211,6 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           className="rounded-lg border border-primary/30 bg-primary-light px-4 py-3 text-sm text-foreground block"
         >
           <p className="font-medium">Phase 1 Step 1 required first</p>
-          <p className="mt-1 text-muted-foreground">
-            Submit proposed directors (count and India residency) in Phase 1 Step 1. Director KYC
-            sections here are based on that information.
-          </p>
         </output>
       )}
 
@@ -230,10 +219,6 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           className="rounded-lg border border-warning/25 bg-warning-light/40 px-4 py-3 text-sm text-foreground block"
         >
           <p className="font-medium">No director KYC sections yet</p>
-          <p className="mt-1 text-muted-foreground">
-            Set each proposed director&apos;s &quot;Resident of India&quot; in Phase 1 Step 1 to
-            show the matching KYC forms.
-          </p>
         </output>
       )}
 
@@ -252,32 +237,12 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
                 : 'Phase 2 — Incorporation'}
             </p>
             <h2 className="display-md text-foreground">{item.title}</h2>
-            {!readOnly && isClient && (
-              <p className="text-xs leading-relaxed text-muted-foreground pt-0.5">
-                {autoSaveEnabled
-                  ? 'Fill in each section below — your answers save automatically.'
-                  : 'Fill in each section below; your engagement team will use this for filings.'}
-              </p>
-            )}
-            {!readOnly && !isClient && submissionLocked && (
-              <p className="text-xs leading-relaxed text-muted-foreground pt-0.5">
-                Client submitted this step — edit any field below and save. The client stays
-                locked until you unlock fields for them.
-              </p>
-            )}
           </div>
         ) : (
           <>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               {readOnly ? 'Client submission' : 'Your answers'}
             </p>
-            {!readOnly && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {autoSaveEnabled
-                  ? 'Answers save automatically.'
-                  : 'Your engagement team will use this for filings.'}
-              </p>
-            )}
           </>
         )}
       </div>
@@ -313,16 +278,6 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
             <p className="font-semibold text-foreground">{reviewBanner.title}</p>
             {reviewBanner.body && (
               <p className="text-muted-foreground leading-relaxed">{reviewBanner.body}</p>
-            )}
-            {reviewBanner.tone === 'rejected' && unlockedFields.length > 0 && (
-              <p className="text-muted-foreground leading-relaxed">
-                Highlighted fields below are unlocked — update them, save, then submit again.
-              </p>
-            )}
-            {reviewBanner.tone === 'rejected' && unlockedFields.length === 0 && (
-              <p className="text-muted-foreground leading-relaxed">
-                Your engagement team will unlock specific fields for you to edit.
-              </p>
             )}
           </div>
         </div>

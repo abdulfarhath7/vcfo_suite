@@ -1172,12 +1172,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               onToggle={() => toggleFieldUnlock(field.id)}
             />
           </div>
-          {field.helperText && (
-            <p className="text-[11px] leading-snug text-muted-foreground">{field.helperText}</p>
-          )}
-          {field.validationHint && (
-            <p className="text-[11px] leading-snug text-muted-foreground">{field.validationHint}</p>
-          )}
         </div>
 
         {field.type === 'textarea' ? (
@@ -1222,7 +1216,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
                   className={cn(
                     'milestone-segment-option',
                     selected
-                      ? 'bg-white text-foreground shadow-sm ring-1 ring-border'
+                      ? 'bg-panel text-foreground shadow-sm ring-1 ring-border'
                       : 'text-slate-600 hover:bg-white/70 hover:text-foreground',
                   )}
                 >
@@ -1249,7 +1243,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
                   className={cn(
                     'milestone-segment-option',
                     selected
-                      ? 'bg-white text-foreground shadow-sm ring-1 ring-border'
+                      ? 'bg-panel text-foreground shadow-sm ring-1 ring-border'
                       : 'text-slate-600 hover:bg-white/70 hover:text-foreground',
                   )}
                 >

@@ -42,9 +42,6 @@ export function Step2Directors({ data, update }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold text-foreground">Directors</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            At least two directors required; one must be resident in India.
-          </p>
         </div>
         <button type="button"
           onClick={addDir}

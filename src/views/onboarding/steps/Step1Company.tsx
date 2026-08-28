@@ -17,9 +17,6 @@ export function Step1Company({ data, update }: Props) {
     <div className="space-y-5">
       <div>
         <h2 className="text-base font-semibold text-foreground">Company details</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Details used for your RUN (Reserve Unique Name) filing with the ROC.
-        </p>
       </div>
 
       <Field

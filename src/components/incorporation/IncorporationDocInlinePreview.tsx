@@ -555,7 +555,6 @@ function IncorporationDocGenerateRow({
     );
   }
 
-  const hasStoredDraft = Boolean(initialPath.trim());
 
   return (
     <article
@@ -583,17 +582,6 @@ function IncorporationDocGenerateRow({
         </GoldButton>
       </header>
       <div className="space-y-2 px-4 py-3">
-        {hasStoredDraft ? (
-          <p className="text-[11px] leading-relaxed text-text-tertiary">
-            A stored draft exists on file. Click <strong>Generate</strong> to rebuild from latest
-            client data and open the Word preview.
-          </p>
-        ) : (
-          <p className="text-[11px] leading-relaxed text-text-tertiary">
-            Click <strong>Generate</strong> to build this draft from saved KYC and company name
-            responses.
-          </p>
-        )}
         {error ? (
           <p className="text-[11px] leading-relaxed text-danger" role="alert">
             {error}

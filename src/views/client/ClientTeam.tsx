@@ -242,10 +242,6 @@ export default function ClientTeamPage() {
               ))}
             </ul>
           )}
-          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-            Substitute replaces that person on this project only. If they were Primary, the new
-            person becomes Primary. Substituting yourself removes your access.
-          </p>
         </section>
 
         <section className="rounded-xl border border-border/70 bg-panel p-5">
@@ -284,10 +280,6 @@ export default function ClientTeamPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <p className="text-[11px] text-muted-foreground">
-                Sent in their welcome email when this is a new account. Ask them to change it after
-                first login.
-              </p>
             </div>
             <Button type="submit" disabled={!engagement || submitting} className="w-full">
               {submitting ? "Adding…" : "Add client to project"}
@@ -350,9 +342,6 @@ export default function ClientTeamPage() {
                 value={subPassword}
                 onChange={(e) => setSubPassword(e.target.value)}
               />
-              <p className="text-[11px] text-muted-foreground">
-                Used only when creating a new account. Existing client accounts keep their password.
-              </p>
             </div>
             <DialogFooter className="gap-2 sm:gap-0">
               <Button

@@ -16,9 +16,6 @@ export function Step3Office({ data, update }: Props) {
     <div className="space-y-5">
       <div>
         <h2 className="text-base font-semibold text-foreground">Registered office</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          This address will be filed with the Registrar of Companies (INC-22).
-        </p>
       </div>
 
       <div>

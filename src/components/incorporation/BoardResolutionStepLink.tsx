@@ -84,9 +84,6 @@ export function BoardResolutionStepLink({
       <FileText className="w-5 h-5 text-blue-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />
       <div className="min-w-0 flex-1">
         <p className="text-[13px] font-medium text-ink group-hover:text-blue-700">{label}</p>
-        <p className="text-[11px] text-text-tertiary mt-0.5">
-          Auto-merged from Pre-1 client data · edit · finalize to release to client portal
-        </p>
       </div>
       {statusLabel && (
         <span

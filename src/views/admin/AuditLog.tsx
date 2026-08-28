@@ -316,9 +316,6 @@ function AuditTable({
     [events, filters, engagementsByDbId],
   );
 
-  const hasActiveFilters =
-    filters.search.trim() !== '' || filters.role !== 'all' || filters.category !== 'all';
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -386,11 +383,6 @@ function AuditTable({
         </div>
       )}
 
-      {hasActiveFilters && events.length > 0 && filtered.length > 0 && (
-        <p className="border-t border-hairline px-4 py-2 text-[11px] text-text-tertiary">
-          Filters apply to loaded events only (most recent 200).
-        </p>
-      )}
     </>
   );
 }

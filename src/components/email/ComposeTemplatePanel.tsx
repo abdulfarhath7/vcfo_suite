@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -235,9 +234,6 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
             <DialogTitle>
               {editor === 'create' || editor === null ? 'Create a template' : 'Edit template'}
             </DialogTitle>
-            <DialogDescription>
-              SBC branded wraps the message in firm letterhead. Plain sends the text as written.
-            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
@@ -293,18 +289,12 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
                   <RadioGroupItem value="sbc" id="brand-sbc" className="mt-0.5" />
                   <Label htmlFor="brand-sbc" className="cursor-pointer font-normal">
                     <span className="block text-[13px] font-medium">SBC branded</span>
-                    <span className="block text-[12px] text-muted-foreground">
-                      Firm letterhead for client and official mail.
-                    </span>
                   </Label>
                 </div>
                 <div className="flex items-start gap-2.5 rounded-lg border border-border px-3 py-2">
                   <RadioGroupItem value="plain" id="brand-plain" className="mt-0.5" />
                   <Label htmlFor="brand-plain" className="cursor-pointer font-normal">
                     <span className="block text-[13px] font-medium">Plain</span>
-                    <span className="block text-[12px] text-muted-foreground">
-                      Unbranded body — internal notes without SBC chrome.
-                    </span>
                   </Label>
                 </div>
               </RadioGroup>

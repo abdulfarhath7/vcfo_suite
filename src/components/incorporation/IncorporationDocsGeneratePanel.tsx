@@ -231,12 +231,6 @@ export function IncorporationDocsGeneratePanel({
         <FileText className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" aria-hidden />
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-[13px] font-medium text-ink">Generate incorporation drafts</p>
-          <p className="text-[11px] text-text-tertiary leading-relaxed">
-            Click <strong>Generate</strong> on each document to build drafts from client data (Pre-6
-            KYC and company name from Pre-1 / Pre-5). Word previews appear only after you generate.
-            When all drafts are ready, use <strong>Share with client</strong> so they can
-            download on Pre-8, notarize, and upload signed copies.
-          </p>
         </div>
       </div>
 

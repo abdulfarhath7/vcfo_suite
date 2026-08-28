@@ -8,7 +8,6 @@ import { deriveStuckReason, STUCK_LABEL } from '@/lib/project-stuck';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -129,9 +128,6 @@ export function ExportProjectBriefButton({
         <DialogContent className="max-h-[85vh] max-w-3xl overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{eng.companyName} — project brief</DialogTitle>
-            <DialogDescription>
-              Preview analytics and milestone table. Download a CSV when ready.
-            </DialogDescription>
           </DialogHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto space-y-4 pr-1">

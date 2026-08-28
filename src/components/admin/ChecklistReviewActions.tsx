@@ -163,8 +163,7 @@ export function ChecklistReviewActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Reject submission</AlertDialogTitle>
             <AlertDialogDescription>
-              The client will be asked to fix and resubmit. Optionally add a short note explaining
-              what needs to change.
+              The client will be asked to fix and resubmit.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2 py-1">

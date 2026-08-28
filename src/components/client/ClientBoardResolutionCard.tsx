@@ -61,9 +61,6 @@ export function ClientBoardResolutionCard({ engagement }: ClientBoardResolutionC
       <FileText className="w-5 h-5 text-blue-600 shrink-0" />
       <div>
         <p className="text-[13px] font-medium text-ink">Board resolution ready</p>
-        <p className="text-[11px] text-text-tertiary">
-          Download the certified Word document, sign it, and upload the signed copy
-        </p>
       </div>
     </Link>
   );

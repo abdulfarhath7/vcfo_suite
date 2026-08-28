@@ -5,7 +5,6 @@ import { Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -160,10 +159,6 @@ export function ComposeOutgoingEmailHost() {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Email client</DialogTitle>
-          <DialogDescription>
-            Edit the message, then send from your Outlook mailbox. Approvals prefill CC with
-            admin and project lead.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
