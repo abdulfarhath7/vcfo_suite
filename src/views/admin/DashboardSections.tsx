@@ -1,30 +1,24 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
+import { useRouter, usePathname } from 'next/navigation';
 import { m } from 'framer-motion';
-import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTransition';
-import { PageHeader } from '@/components/admin/PageHeader';
-import { AccentKpi } from '@/components/admin/AccentKpi';
+import { PageTransition } from '@/components/shell/PageTransition';
+import { DashHero, type DashHeroStat } from '@/components/dash/DashHero';
+import { DashSection } from '@/components/dash/DashSection';
 import { PhaseTimeline, type Phase } from '@/components/admin/PhaseTimeline';
-import { Eyebrow } from '@/components/noir/Eyebrow';
-import { GoldButton } from '@/components/noir/GoldButton';
-import { NoirCard, Mono } from '@/components/noir';
+import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
+import { initialsFromName } from '@/lib/auth';
 import { SEO } from '@/components/SEO';
-import { adminProjectPath } from '@/lib/project-step-path';
+import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import type { TaskInstance } from '@/data/engagements';
 import type { Engagement } from '@/data/engagements';
 import { AdminDashboardFilingsPanel } from '@/views/admin/DashboardSecondaryRow';
 import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
-import {
-  Briefcase,
-  Calendar,
-  Clock,
-  ArrowUpRight,
-  Plus,
-  Send,
-  Inbox,
-} from 'lucide-react';
+import { Briefcase, Clock, Plus, Inbox } from 'lucide-react';
 
 export type AdminDashboardViewProps = {
   userId?: string;
@@ -54,7 +48,6 @@ export type AdminDashboardViewProps = {
 export function AdminDashboardView({
   userId,
   engagements,
-  tasks,
   teamMembers,
   headerDateLabel,
   blockers,
@@ -69,179 +62,173 @@ export function AdminDashboardView({
   tasksByEngagement,
 }: AdminDashboardViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const staffBase = useStaffBasePath();
+  const projectBase = staffProjectBaseFromPathname(pathname, staffBase);
+  const newProjectHref = staffNewProjectPath(projectBase);
 
-  const subtitle = [
-    headerDateLabel,
-    overdueTasks ? `${overdueTasks} overdue` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const heroStats: DashHeroStat[] = [
+    { label: 'active projects', value: engagements.length, href: `${projectBase}/projects` },
+    {
+      label: 'due in 2 days',
+      value: dueInTwoDays,
+      href: `${projectBase}/compliance`,
+      hot: dueInTwoDays > 0,
+    },
+    { label: 'approvals to send', value: approvalsToSend, href: `${projectBase}/approvals` },
+    {
+      label: 'approvals received',
+      value: approvalsReceived,
+      href: `${projectBase}/approvals`,
+      hot: approvalsReceived > 0,
+    },
+  ];
+  if (blockers > 0) {
+    heroStats.push({
+      label: 'at risk',
+      value: blockers,
+      href: `${projectBase}/projects`,
+      hot: true,
+    });
+  }
+  if (overdueTasks > 0) {
+    heroStats.push({ label: 'overdue', value: overdueTasks, hot: true });
+  }
 
   return (
     <PageTransition>
       <SEO
         title="Dashboard — VCFO Suite"
         description="Portfolio overview: filings, approvals, and process health."
-        path="/app/manager/dashboard"
+        path={`${staffBase}/dashboard`}
       />
 
-      <PageHeader
-        title="Dashboard"
-        subtitle={subtitle || undefined}
-        actions={
-          <div className="flex items-center gap-2">
-            <GoldButton variant="ghost" onClick={() => router.push('/app/manager/approvals')}>
-              Approvals
-            </GoldButton>
-            <GoldButton onClick={() => router.push('/app/manager/projects/new')}>
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-              New project
-            </GoldButton>
-          </div>
-        }
-      />
+      <div className="flex flex-col gap-3">
+        <DashHero
+          kicker={headerDateLabel}
+          title="Dashboard"
+          ring={{ value: completionRate, total: 100, caption: '% complete' }}
+          stats={heroStats}
+        />
 
-      <Stagger>
-        <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StaggerItem>
-            <AccentKpi
-              icon={Briefcase}
-              label="Active projects"
-              value={engagements.length}
-              hint={blockers ? `${blockers} at risk` : undefined}
-              tone={blockers ? 'warning' : 'primary'}
-            />
-          </StaggerItem>
-          <StaggerItem>
-            <AccentKpi
-              icon={Calendar}
-              label="Due in 2 days"
-              value={dueInTwoDays}
-              tone={dueInTwoDays ? 'warning' : 'success'}
-            />
-          </StaggerItem>
-          <StaggerItem>
-            <AccentKpi
-              icon={Send}
-              label="Approvals to send"
-              value={approvalsToSend}
-              tone={approvalsToSend ? 'info' : 'success'}
-            />
-          </StaggerItem>
-          <StaggerItem>
-            <AccentKpi
-              icon={Inbox}
-              label="Approvals received"
-              value={approvalsReceived}
-              tone={approvalsReceived ? 'warning' : 'success'}
-            />
-          </StaggerItem>
-        </div>
-      </Stagger>
-
-      {userId ? (
-        <div className="mb-5 grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
-          <LeadFocusCard userId={userId} items={[]} />
-          <TeamTodosPanel userId={userId} />
-        </div>
-      ) : null}
-
-      <NoirCard flat className="mb-5 overflow-hidden">
-        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-          <div>
-            <Eyebrow>Process</Eyebrow>
-            <p className="mt-1 text-[12px] text-text-tertiary">
-              Pre-incorp → Post → Registration → Compliance ·{' '}
-              <Mono className="text-ink-soft">{completionRate}% tasks complete</Mono>
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => router.push('/app/manager/projects')}
-            className="inline-flex shrink-0 items-center gap-1 text-[11.5px] text-brand hover:text-brand-deep"
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link
+            href={`${projectBase}/approvals`}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3.5 py-1.5 text-[12px] font-extrabold text-primary transition-opacity hover:opacity-80"
           >
-            All projects
-            <ArrowUpRight className="h-3 w-3" />
-          </button>
+            <Inbox className="h-3.5 w-3.5" aria-hidden />
+            Approvals
+          </Link>
+          <Link
+            href={newProjectHref}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[12px] font-extrabold text-white transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            New project
+          </Link>
         </div>
 
-        <div className="px-5 py-4">
-          <PhaseTimeline phases={portfolioPhases} variant="journey" />
-        </div>
+        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
+          <div className="flex min-w-0 flex-col gap-3">
+            {userId ? (
+              <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
+                <LeadFocusCard userId={userId} items={[]} />
+                <TeamTodosPanel userId={userId} />
+              </div>
+            ) : null}
 
-        <div className="border-t border-border px-5 py-4">
-          <div className="mb-3 flex items-center justify-between">
-            <Eyebrow>By project</Eyebrow>
-            <Mono className="text-[10.5px] text-text-tertiary">{engagements.length} total</Mono>
-          </div>
-          <div className="divide-y divide-border/80">
-            {engagements.map((e, i) => {
-              const eTasks = tasksByEngagement[e.id] ?? [];
-              const eDone = eTasks.filter((t) => t.status === 'completed').length;
-              const epct = eTasks.length ? Math.round((eDone / eTasks.length) * 100) : 0;
-              const intern = teamMembers.find((t) => t.id === e.internId);
-              const stuck = eTasks.filter(
-                (t) => t.status === 'awaiting-client' || t.status === 'overdue',
-              ).length;
+            <DashSection
+              icon={Briefcase}
+              tone="primary"
+              title="Process"
+              meta={`${completionRate}% tasks complete`}
+              href={`${projectBase}/projects`}
+              hrefLabel="All projects"
+            >
+              <PhaseTimeline phases={portfolioPhases} variant="journey" />
 
-              return (
-                <m.button
-                  key={e.id}
-                  type="button"
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.03 * i, duration: 0.24 }}
-                  onClick={() => router.push(adminProjectPath(e))}
-                  className="group flex w-full items-center gap-3 py-3 text-left transition-colors hover:bg-muted/30"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-panel serif text-[13px] text-brand">
-                    {e.companyName
-                      .split(/\s+/)
-                      .slice(0, 2)
-                      .map((w) => w[0])
-                      .join('')
-                      .toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-medium text-ink group-hover:text-brand">
-                      {e.companyName}
-                    </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-text-tertiary">
-                      <Mono>{e.stage}</Mono>
-                      {intern && <span>{intern.name}</span>}
-                      {stuck > 0 && (
-                        <span className="inline-flex items-center gap-1 text-warning-text">
-                          <Clock className="h-3 w-3" />
-                          {stuck} blocked
+              <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                <span className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-muted-foreground">
+                  By project
+                </span>
+                <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-primary-light px-1.5 text-[11px] font-extrabold tabular-nums text-primary">
+                  {engagements.length}
+                </span>
+              </div>
+
+              <div className="divide-y divide-border">
+                {engagements.map((e, i) => {
+                  const eTasks = tasksByEngagement[e.id] ?? [];
+                  const eDone = eTasks.filter((t) => t.status === 'completed').length;
+                  const epct = eTasks.length ? Math.round((eDone / eTasks.length) * 100) : 0;
+                  const intern = teamMembers.find((t) => t.id === e.internId);
+                  const stuck = eTasks.filter(
+                    (t) => t.status === 'awaiting-client' || t.status === 'overdue',
+                  ).length;
+
+                  return (
+                    <m.button
+                      key={e.id}
+                      type="button"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.03 * i, duration: 0.24 }}
+                      onClick={() => router.push(adminProjectPath(e, projectBase))}
+                      className="group flex w-full items-center gap-3 py-2.5 text-left transition-colors hover:bg-muted/30"
+                    >
+                      <span
+                        className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-extrabold ${TONE_BADGE[toneForKey(e.id)]}`}
+                      >
+                        {initialsFromName(e.companyName).slice(0, 2)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-primary">
+                          {e.companyName}
                         </span>
-                      )}
-                      {pendingClientActions > 0 && eTasks.some((t) => t.status === 'awaiting-client') && (
-                        <span className="text-info-text">Client pending</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="hidden w-28 items-center gap-2 sm:flex">
-                    <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-muted">
-                      <m.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${epct}%` }}
-                        transition={{ duration: 0.6, delay: 0.08 + 0.04 * i }}
-                        className="h-full rounded-full bg-gradient-to-r from-gold-deep via-gold to-gold-hi"
-                      />
-                    </div>
-                    <Mono className="w-8 text-right tabular-nums text-[10.5px]">{epct}%</Mono>
-                  </div>
-                </m.button>
-              );
-            })}
+                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-px text-[10px] font-extrabold ${TONE_BADGE[toneForKey(e.stage)]}`}
+                          >
+                            {stageDisplayLabel(e.stage)}
+                          </span>
+                          {intern && <span>{intern.name}</span>}
+                          {stuck > 0 && (
+                            <span className="inline-flex items-center gap-1 font-semibold text-warning-text">
+                              <Clock className="h-3 w-3" aria-hidden />
+                              {stuck} blocked
+                            </span>
+                          )}
+                          {pendingClientActions > 0 &&
+                            eTasks.some((t) => t.status === 'awaiting-client') && (
+                              <span className="font-semibold text-info-text">Client pending</span>
+                            )}
+                        </span>
+                      </span>
+                      <span className="hidden w-28 items-center gap-2 sm:flex">
+                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                          <m.span
+                            initial={{ width: 0 }}
+                            animate={{ width: `${epct}%` }}
+                            transition={{ duration: 0.6, delay: 0.08 + 0.04 * i }}
+                            className="block h-full rounded-full bg-primary"
+                          />
+                        </span>
+                        <span className="w-8 shrink-0 text-right text-[11px] font-bold tabular-nums text-muted-foreground">
+                          {epct}%
+                        </span>
+                      </span>
+                    </m.button>
+                  );
+                })}
+              </div>
+            </DashSection>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-3">
+            <AdminDashboardFilingsPanel engagements={engagements} dueSoon={dueSoon} />
           </div>
         </div>
-      </NoirCard>
-
-      <div className="mb-2">
-        <Eyebrow>Filings</Eyebrow>
       </div>
-      <AdminDashboardFilingsPanel engagements={engagements} dueSoon={dueSoon} />
     </PageTransition>
   );
 }

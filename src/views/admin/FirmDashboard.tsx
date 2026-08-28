@@ -5,17 +5,18 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
-import { Surface, Eyebrow } from '@/components/noir';
-import { AccentKpi } from '@/components/admin/AccentKpi';
-import { IconChip } from '@/components/common/IconChip';
-import { Briefcase, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { DashHero } from '@/components/dash/DashHero';
+import { DashSection, DashDonut, DashLegendRow } from '@/components/dash/DashSection';
+import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
+import { Activity, Users } from 'lucide-react';
 import { deriveStuckReason, primaryPhaseItems } from '@/lib/project-stuck';
 import { isAwaitingReview } from '@/lib/checklist-item-review';
 import { FirmProjectsPanel } from '@/views/admin/FirmProjectsPanel';
 import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
+import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern-work';
+import { initialsFromName } from '@/lib/auth';
 
 type ManagerOption = { id: string; name: string; email: string };
 
@@ -38,6 +39,8 @@ export default function FirmDashboard() {
       }),
     [],
   );
+  const greet = internGreeting(internGreetingHour(new Date()));
+  const first = internFirstName(user?.name ?? '');
 
   const managersQuery = useQuery({
     queryKey: ['admin-managers'],
@@ -100,88 +103,114 @@ export default function FirmDashboard() {
     if (id === 'unassigned') return 'Unassigned';
     return managersQuery.data?.find((m) => m.id === id)?.name ?? 'Project manager';
   };
-  const emailFor = (id: string) =>
-    managersQuery.data?.find((m) => m.id === id)?.email ?? '';
 
   return (
     <PageTransition>
       <SEO title="Admin home — VCFO Suite" description="Firm-wide portfolio pulse." path="/app/admin/dashboard" />
-      <PageHeader accent="role" title="Firm home" subtitle={today} />
 
-      <div className="mb-4 grid gap-4 sm:grid-cols-3">
-        <AccentKpi
-          label="Total projects"
-          value={pulse.total}
-          tone="primary"
-          icon={Briefcase}
-          href="/app/admin/projects"
+      <div className="flex flex-col gap-3">
+        <DashHero
+          kicker={today}
+          title={first ? `${greet}, ${first}` : 'Firm home'}
+          ring={{ value: pulse.good, total: pulse.total, caption: 'on track' }}
+          stats={[
+            { label: 'projects', value: pulse.total, href: '/app/admin/projects' },
+            {
+              label: 'need attention',
+              value: pulse.pending + pendingApprovals,
+              href: '/app/admin/approvals',
+              hot: pulse.pending + pendingApprovals > 0,
+            },
+            { label: 'awaiting approval', value: pendingApprovals, href: '/app/admin/approvals' },
+            { label: 'on track', value: pulse.good },
+          ]}
         />
-        <AccentKpi
-          label="Needs attention"
-          value={pulse.pending + pendingApprovals}
-          tone="warning"
-          icon={AlertTriangle}
-          hint={`${pendingApprovals} awaiting approval · ${pulse.pending} stuck`}
-          href="/app/admin/approvals"
-        />
-        <AccentKpi label="On track" value={pulse.good} tone="success" icon={CheckCircle2} />
-      </div>
 
-      <div className="mb-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <FirmProjectsPanel />
+        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
+          <div className="flex min-w-0 flex-col gap-3">
+            <FirmProjectsPanel />
+            {user?.id ? (
+              <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
+                <LeadFocusCard userId={user.id} items={[]} />
+                <TeamTodosPanel userId={user.id} />
+              </div>
+            ) : null}
+          </div>
 
-        <Surface className="h-fit p-5">
-          <Eyebrow>Managers</Eyebrow>
-          {managerStrip.length === 0 ? (
-            <div className="mt-3 flex items-center gap-2.5">
-              <IconChip icon={Briefcase} tone="neutral" size="sm" />
-              <p className="text-[13px] text-muted-foreground">No open Pre/Post projects.</p>
-            </div>
-          ) : (
-            <ul className="mt-3 divide-y divide-border">
-              {managerStrip.map((row) => (
-                <li key={row.managerId} className="py-3">
-                  {row.managerId === 'unassigned' ? (
-                    <div className="text-[13px] font-medium text-foreground">
-                      {nameFor(row.managerId)}
-                    </div>
-                  ) : (
-                    <Link
-                      href={`/app/admin/people?managerId=${row.managerId}`}
-                      className="text-[13px] font-medium text-foreground hover:text-primary-dark hover:underline"
-                    >
-                      {nameFor(row.managerId)}
-                    </Link>
-                  )}
-                  {emailFor(row.managerId) ? (
-                    <div className="font-mono text-[11px] text-muted-foreground">
-                      {emailFor(row.managerId)}
-                    </div>
-                  ) : null}
-                  <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
-                    <span className="rounded-md border border-border px-2 py-0.5">
-                      {row.open} open projects
-                    </span>
-                    <span className="rounded-md border border-border px-2 py-0.5">
-                      {row.stuck} need attention
-                    </span>
-                    <span className="rounded-md border border-border px-2 py-0.5">
-                      {row.awaitingPm} awaiting PM approval
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Surface>
-      </div>
+          <div className="flex min-w-0 flex-col gap-3">
+            <DashSection icon={Activity} tone="success" title="Portfolio health">
+              <div className="flex min-w-0 items-center gap-3">
+                <DashDonut
+                  segments={[
+                    { n: pulse.good, color: 'oklch(var(--success))' },
+                    { n: pulse.pending, color: 'oklch(var(--warning))' },
+                    { n: pendingApprovals, color: 'oklch(var(--accent-cyan))' },
+                  ]}
+                  centerLabel={pulse.total}
+                  centerCaption="projects"
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <DashLegendRow swatchClassName="bg-success" label="On track" count={pulse.good} />
+                  <DashLegendRow swatchClassName="bg-warning" label="Stuck" count={pulse.pending} />
+                  <DashLegendRow
+                    swatchClassName="bg-accent-cyan"
+                    label="Awaiting PM"
+                    count={pendingApprovals}
+                  />
+                </div>
+              </div>
+            </DashSection>
 
-      {user?.id ? (
-        <div className="mb-4 grid gap-4 lg:grid-cols-2">
-          <LeadFocusCard userId={user.id} items={[]} />
-          <TeamTodosPanel userId={user.id} />
+            <DashSection
+              icon={Users}
+              tone="violet"
+              title="Managers"
+              meta={managerStrip.length || undefined}
+            >
+              {managerStrip.length === 0 ? (
+                <p className="py-3 text-center text-[12.5px] text-muted-foreground">
+                  No open Pre/Post projects.
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {managerStrip.map((row) => {
+                    const name = nameFor(row.managerId);
+                    return (
+                      <li key={row.managerId} className="flex min-w-0 items-center gap-2.5 py-2.5">
+                        <span
+                          className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-extrabold ${TONE_BADGE[toneForKey(row.managerId)]}`}
+                        >
+                          {initialsFromName(name).slice(0, 2)}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          {row.managerId === 'unassigned' ? (
+                            <span className="block truncate text-[12.5px] font-semibold text-ink">
+                              {name}
+                            </span>
+                          ) : (
+                            <Link
+                              href={`/app/admin/people?managerId=${row.managerId}`}
+                              className="block truncate text-[12.5px] font-semibold text-ink hover:text-primary hover:underline"
+                            >
+                              {name}
+                            </Link>
+                          )}
+                          <span className="block text-[11px] text-muted-foreground">
+                            {row.open} open · {row.stuck} stuck · {row.awaitingPm} awaiting
+                          </span>
+                        </span>
+                        <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full bg-primary-light px-1.5 text-[11px] font-extrabold tabular-nums text-primary">
+                          {row.open}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </DashSection>
+          </div>
         </div>
-      ) : null}
+      </div>
     </PageTransition>
   );
 }

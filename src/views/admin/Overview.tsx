@@ -1,13 +1,16 @@
 "use client";
 
 import { useApp } from '@/context/AppContext';
-import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTransition';
-import { PageBackButton } from '@/components/shell/PageBackButton';
-import { KpiCard } from '@/components/common/KpiCard';
+import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
+import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
+import { DashHero } from '@/components/dash/DashHero';
+import { DashSection, DashDonut, DashLegendRow } from '@/components/dash/DashSection';
+import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
+import { initialsFromName } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
+import { Activity, Briefcase, HeartPulse } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const healthMap = {
@@ -22,99 +25,156 @@ export default function AdminOverview() {
   const completed = tasks.filter((t) => t.status === 'completed').length;
   const pct = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
   const pending = requests.filter((r) => r.status === 'pending').length;
-  const atRisk = engagements.filter((e) => e.health !== 'on-track').length;
+  const onTrack = engagements.filter((e) => e.health === 'on-track').length;
+  const atRiskOnly = engagements.filter((e) => e.health === 'at-risk').length;
+  const overdue = engagements.filter((e) => e.health === 'overdue').length;
+  const atRisk = atRiskOnly + overdue;
 
   return (
     <PageTransition>
       <SEO title="Overview — VCFO Suite" description="Portfolio health, KPIs, and team activity across GCC setup projects." path="/app/manager/overview" />
 
-      <div className="flex items-end justify-between mb-4">
-        <div>
-          <div className="flex min-w-0 items-center gap-1.5">
-            <PageBackButton className="-ml-1.5" />
-            <h1 className="serif text-[34px] tracking-tight text-ink">Overview</h1>
-          </div>
-          <p className="text-[13px] text-text-tertiary mt-0.5">Portfolio pulse across {engagements.length} GCC setup projects</p>
-        </div>
-      </div>
+      <div className="flex flex-col gap-3">
+        <DashHero
+          kicker={`Portfolio pulse · ${engagements.length} projects`}
+          title="Overview"
+          ring={{ value: pct, total: 100, caption: '% complete' }}
+          stats={[
+            { label: 'GCC projects', value: engagements.length, href: '/app/manager/projects' },
+            { label: 'checklist complete', value: `${pct}%` },
+            { label: 'client requests', value: pending, hot: pending > 0 },
+            { label: 'delivery owners', value: teamMembers.length },
+          ]}
+        />
 
-      <Stagger>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-          <StaggerItem><KpiCard label="GCC setup projects" value={engagements.length} hint={`${atRisk} need manager review`} /></StaggerItem>
-          <StaggerItem><KpiCard label="Checklist complete" value={`${pct}%`} delta={`${completed}/${tasks.length}`} trend="up" /></StaggerItem>
-          <StaggerItem><KpiCard label="Client requests" value={pending} /></StaggerItem>
-          <StaggerItem><KpiCard label="Delivery owners" value={`${teamMembers.length}`} /></StaggerItem>
-        </div>
-      </Stagger>
+        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
+          <DashSection
+            icon={Briefcase}
+            tone="primary"
+            title="Portfolio"
+            meta={engagements.length}
+            href="/app/manager/projects"
+            hrefLabel="GCC setup projects"
+            bodyClassName="px-0 pb-0 pt-1"
+          >
+            <div className="divide-y divide-border">
+              {engagements.map((e, i) => {
+                const eTasks = tasks.filter((t) => t.engagementId === e.id);
+                const eDone = eTasks.filter((t) => t.status === 'completed').length;
+                const epct = eTasks.length ? Math.round((eDone / eTasks.length) * 100) : 0;
+                const intern = teamMembers.find((t) => t.id === e.internId);
+                const h = healthMap[e.health];
+                return (
+                  <m.button
+                    key={e.id}
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.04 * i, duration: 0.22 }}
+                    onClick={() => router.push(`/app/manager/engagements/${e.id}`)}
+                    className="flex w-full min-w-0 items-center gap-3 px-4 py-3 text-left hover:bg-muted/40"
+                  >
+                    <span
+                      className={cn(
+                        'grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-extrabold',
+                        TONE_BADGE[toneForKey(e.id)],
+                      )}
+                    >
+                      {initialsFromName(e.companyName).slice(0, 2)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[12.5px] font-semibold text-ink">{e.companyName}</span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {stageDisplayLabel(e.stage)} · {intern?.name}
+                      </span>
+                    </span>
+                    <span className="hidden w-32 items-center gap-2 md:flex">
+                      <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
+                        <span className="block h-full rounded-full bg-primary" style={{ width: `${epct}%` }} />
+                      </span>
+                      <span className="w-8 shrink-0 text-right text-[11px] font-bold tabular-nums text-muted-foreground">
+                        {epct}%
+                      </span>
+                    </span>
+                    <span
+                      className={cn(
+                        'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-extrabold',
+                        h.cls,
+                      )}
+                    >
+                      <span className={cn('h-1.5 w-1.5 rounded-full', h.dot)} />
+                      {h.label}
+                    </span>
+                  </m.button>
+                );
+              })}
+              {engagements.length === 0 ? (
+                <p className="py-6 text-center text-[12.5px] text-muted-foreground">No projects yet.</p>
+              ) : null}
+            </div>
+          </DashSection>
 
-      <div className="grid lg:grid-cols-[1.6fr_1fr] gap-4">
-        {/* Portfolio table */}
-        <div className="surface overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <div className="text-[13px] font-semibold text-ink">Portfolio</div>
-            <button type="button" onClick={() => router.push('/app/manager/projects')} className="text-[12px] text-brand hover:underline flex items-center gap-1">GCC setup projects <ArrowUpRight className="w-3 h-3" /></button>
-          </div>
-          <div className="divide-y divide-border">
-            {engagements.map((e, i) => {
-              const eTasks = tasks.filter((t) => t.engagementId === e.id);
-              const eDone = eTasks.filter((t) => t.status === 'completed').length;
-              const epct = eTasks.length ? Math.round((eDone / eTasks.length) * 100) : 0;
-              const intern = teamMembers.find((t) => t.id === e.internId);
-              const h = healthMap[e.health];
-              return (
-                <m.button
-                  key={e.id}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.04 * i, duration: 0.22 }}
-                  onClick={() => router.push(`/app/manager/engagements/${e.id}`)}
-                  className="w-full flex items-center gap-4 px-4 py-3 hover:bg-muted/40 text-left"
-                >
-                  <div className="w-8 h-8 rounded-md bg-primary-light text-brand text-[11px] font-semibold flex items-center justify-center shrink-0">
-                    {e.companyName.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-ink truncate">{e.companyName}</div>
-                    <div className="text-[11.5px] text-text-tertiary">{e.stage} · {intern?.name}</div>
-                  </div>
-                  <div className="hidden md:flex items-center gap-2 w-32">
-                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-brand" style={{ width: `${epct}%` }} />
-                    </div>
-                    <span className="text-[11px] text-text-tertiary tabular-nums w-8 text-right">{epct}%</span>
-                  </div>
-                  <span className={cn('inline-flex items-center gap-1.5 px-2 h-5 rounded-full text-[10.5px] font-medium', h.cls)}>
-                    <span className={cn('w-1.5 h-1.5 rounded-full', h.dot)} />{h.label}
-                  </span>
-                </m.button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Activity */}
-        <div className="surface">
-          <div className="px-4 py-3 border-b border-border text-[13px] font-semibold text-ink">Live activity</div>
-          <div className="p-2">
-            {activity.slice(0, 10).map((a, i) => (
-              <m.div
-                key={a.id}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.03 * i }}
-                className="flex gap-2.5 px-2 py-2 rounded-md hover:bg-muted/40"
-              >
-                <div className="w-6 h-6 rounded-full bg-primary-light text-brand text-[10px] font-semibold flex items-center justify-center shrink-0 mt-0.5">
-                  {a.actor.split(' ').map((w) => w[0]).slice(0, 2).join('')}
+          <div className="flex min-w-0 flex-col gap-3">
+            <DashSection icon={HeartPulse} tone="success" title="Portfolio health" meta={atRisk ? `${atRisk} need review` : undefined}>
+              <div className="flex min-w-0 items-center gap-3">
+                <DashDonut
+                  segments={[
+                    { n: onTrack, color: 'oklch(var(--success))' },
+                    { n: atRiskOnly, color: 'oklch(var(--warning))' },
+                    { n: overdue, color: 'oklch(var(--danger))' },
+                  ]}
+                  centerLabel={engagements.length}
+                  centerCaption="projects"
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <DashLegendRow swatchClassName="bg-success" label="On track" count={onTrack} />
+                  <DashLegendRow swatchClassName="bg-warning" label="Needs review" count={atRiskOnly} />
+                  <DashLegendRow swatchClassName="bg-danger" label="Past due" count={overdue} />
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[12.5px] text-ink">
-                    <span className="font-medium">{a.actor}</span> <span className="text-text-tertiary">{a.verb}</span> {a.target && <span className="font-medium">{a.target}</span>}
-                  </div>
-                  <div className="text-[11px] text-text-tertiary mt-0.5">{a.at}</div>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
+                  <span className="block h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                </span>
+                <span className="shrink-0 text-[11px] font-bold tabular-nums text-muted-foreground">
+                  {completed}/{tasks.length} checklist
+                </span>
+              </div>
+            </DashSection>
+
+            <DashSection icon={Activity} tone="sky" title="Live activity" meta={activity.length || undefined}>
+              {activity.length === 0 ? (
+                <p className="py-3 text-center text-[12.5px] text-muted-foreground">Nothing yet today.</p>
+              ) : (
+                <div className="flex min-w-0 flex-col">
+                  {activity.slice(0, 10).map((a, i) => (
+                    <m.div
+                      key={a.id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.03 * i }}
+                      className="flex min-w-0 gap-2.5 rounded-md px-1 py-2 hover:bg-muted/40"
+                    >
+                      <span
+                        className={cn(
+                          'mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] font-extrabold',
+                          TONE_BADGE[toneForKey(a.actor)],
+                        )}
+                      >
+                        {initialsFromName(a.actor).slice(0, 2)}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[12.5px] text-ink">
+                          <span className="font-semibold">{a.actor}</span>{' '}
+                          <span className="text-muted-foreground">{a.verb}</span>{' '}
+                          {a.target && <span className="font-semibold">{a.target}</span>}
+                        </span>
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground">{a.at}</span>
+                      </span>
+                    </m.div>
+                  ))}
                 </div>
-              </m.div>
-            ))}
+              )}
+            </DashSection>
           </div>
         </div>
       </div>

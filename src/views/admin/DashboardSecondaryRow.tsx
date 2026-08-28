@@ -2,11 +2,18 @@
 
 import { useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
-import { Eyebrow } from '@/components/noir/Eyebrow';
-import { NoirCard, Mono } from '@/components/noir';
+import { CalendarDays } from 'lucide-react';
+import { DashSection } from '@/components/dash/DashSection';
 import { toneForKey, TONE_BADGE } from '@/components/common/IconChip';
-import { ArrowUpRight } from 'lucide-react';
 import type { AdminDashboardViewProps } from '@/views/admin/DashboardSections';
+
+/** Status dot color for a filing — overdue reads red, in-progress amber,
+    everything else the calm primary. */
+function filingDotClass(status: string): string {
+  if (status === 'overdue') return 'bg-danger';
+  if (status === 'in-progress') return 'bg-warning';
+  return 'bg-primary';
+}
 
 export function AdminDashboardFilingsPanel({
   engagements,
@@ -15,67 +22,63 @@ export function AdminDashboardFilingsPanel({
   const router = useRouter();
 
   return (
-    <NoirCard flat className="overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <Eyebrow>Upcoming filings</Eyebrow>
-        <button
-          type="button"
-          onClick={() => router.push('/app/manager/compliance')}
-          className="inline-flex items-center gap-1 text-[11.5px] text-brand hover:text-brand-deep"
-        >
-          Compliance calendar
-          <ArrowUpRight className="h-3 w-3" />
-        </button>
-      </div>
-      <div className="p-2">
-        {dueSoon.length === 0 ? (
-          <p className="px-3 py-4 text-center text-[12.5px] text-text-tertiary">
-            No filings due in the next 14 days.
-          </p>
-        ) : (
-          dueSoon.slice(0, 8).map((c, i) => {
-            const eng = engagements.find((e) => e.id === c.engagementId);
-            return (
-              <m.button
-                type="button"
-                key={c.id}
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.03 * i }}
-                onClick={() => router.push('/app/manager/compliance')}
-                className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-muted/30"
-              >
+    <DashSection
+      icon={CalendarDays}
+      tone="cyan"
+      title="Upcoming filings"
+      href="/app/manager/compliance"
+      hrefLabel="Calendar"
+    >
+      {dueSoon.length === 0 ? (
+        <p className="py-3 text-center text-[12.5px] text-muted-foreground">
+          No filings due in the next 14 days.
+        </p>
+      ) : (
+        dueSoon.slice(0, 8).map((c, i) => {
+          const eng = engagements.find((e) => e.id === c.engagementId);
+          const due = new Date(c.nextDue);
+          const day = due.toLocaleDateString('en-IN', { day: '2-digit' });
+          const month = due.toLocaleDateString('en-IN', { month: 'short' });
+          return (
+            <m.button
+              type="button"
+              key={c.id}
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.03 * i }}
+              onClick={() => router.push('/app/manager/compliance')}
+              className="group flex w-full min-w-0 items-center gap-2.5 border-t border-border py-2.5 text-left first:border-0 first:pt-0 last:pb-0"
+            >
+              <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-raised">
+                <span className="flex flex-col items-center leading-none">
+                  <span className="text-[13px] font-extrabold tabular-nums text-ink">{day}</span>
+                  <span className="mt-0.5 text-[8px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {month}
+                  </span>
+                </span>
                 <span
-                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                    c.status === 'overdue'
-                      ? 'bg-danger'
-                      : c.status === 'in-progress'
-                        ? 'bg-warning'
-                        : 'bg-gold'
-                  }`}
+                  className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-panel ${filingDotClass(c.status)}`}
                 />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 truncate text-[12.5px] text-ink">
-                    <span className="truncate">{c.filing}</span>
-                    <span
-                      className={`inline-flex shrink-0 rounded px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wide ${TONE_BADGE[toneForKey(c.authority)]}`}
-                    >
-                      {c.authority}
-                    </span>
-                  </div>
-                  <div className="truncate text-[11px] text-text-tertiary">{eng?.companyName}</div>
-                </div>
-                <Mono className="shrink-0 tabular-nums text-[10.5px]">
-                  {new Date(c.nextDue).toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                  })}
-                </Mono>
-              </m.button>
-            );
-          })
-        )}
-      </div>
-    </NoirCard>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-primary">
+                    {c.filing}
+                  </span>
+                  <span
+                    className={`inline-flex shrink-0 rounded-full px-2 py-px text-[9.5px] font-extrabold uppercase tracking-wide ${TONE_BADGE[toneForKey(c.authority)]}`}
+                  >
+                    {c.authority}
+                  </span>
+                </span>
+                <span className="block truncate text-[11px] text-muted-foreground">
+                  {eng?.companyName}
+                </span>
+              </span>
+            </m.button>
+          );
+        })
+      )}
+    </DashSection>
   );
 }
