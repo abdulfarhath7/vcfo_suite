@@ -1,0 +1,1 @@
+ALTER TABLE "engagements" ADD COLUMN "compliance_questionnaire" jsonb DEFAULT '{}'::jsonb NOT NULL;
