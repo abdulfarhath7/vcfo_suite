@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { Announcement, AnnouncementSource } from '@/lib/announcements';
+import { fingerprintHead, useInvalidateOnHeadChange } from '@/lib/live-poll';
 
 async function readJson<T>(res: Response): Promise<T> {
   const data = (await res.json()) as T & { error?: string };
@@ -11,7 +12,30 @@ async function readJson<T>(res: Response): Promise<T> {
   return data;
 }
 
+/**
+ * Firm-wide announcements. Pass `limit` for a snapshot (client inbox).
+ * Unbounded callers (bell / live popup / board) keep a 4s *head* poll and
+ * only refetch this list when the board actually changes.
+ */
 export function useAnnouncements(limit?: number) {
+  const live = limit == null;
+
+  useInvalidateOnHeadChange({
+    enabled: live,
+    headQueryKey: ['announcements-head'],
+    queryFn: async () => {
+      const data = await readJson<{
+        latestId: string | null;
+        latestCreatedAt: string | null;
+        count: number;
+      }>(await fetch('/api/announcements?head=1'));
+      return {
+        fingerprint: fingerprintHead([data.latestId, data.latestCreatedAt, data.count]),
+      };
+    },
+    invalidateQueryKey: ['announcements'],
+  });
+
   return useQuery({
     queryKey: ['announcements', limit ?? 'all'],
     queryFn: async () => {
@@ -20,9 +44,9 @@ export function useAnnouncements(limit?: number) {
         await fetch(`/api/announcements${q}`),
       );
     },
-    staleTime: 2_000,
-    refetchInterval: 4_000,
-    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    notifyOnChangeProps: ['data', 'error'],
   });
 }
 
@@ -33,5 +57,6 @@ export function useAnnouncementSources(enabled: boolean) {
     queryFn: async () => {
       return readJson<{ sources: AnnouncementSource[] }>(await fetch('/api/announcements/sources'));
     },
+    staleTime: 5 * 60_000,
   });
 }

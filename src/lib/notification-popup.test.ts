@@ -4,6 +4,7 @@ import {
   NOTIFICATION_LIVE_POLL_MS,
   NOTIFICATION_LIVE_POPUP_CAP,
   NOTIFICATION_SHOW_EVENT,
+  addNotificationPopupIds,
   notificationPopupStorageKey,
   requestNotificationPopup,
   selectNotificationPopups,
@@ -38,6 +39,20 @@ describe('notification live popup', () => {
 
   it('polls on the same cadence as announcements', () => {
     expect(NOTIFICATION_LIVE_POLL_MS).toBe(4_000);
+  });
+
+  it('does not rewrite popup storage when no new ids were added', () => {
+    const userId = 'user-stable';
+    addNotificationPopupIds(userId, [uuid(1)]);
+    const writes: string[] = [];
+    const original = window.localStorage.setItem.bind(window.localStorage);
+    window.localStorage.setItem = ((key: string, value: string) => {
+      writes.push(key);
+      original(key, value);
+    }) as typeof localStorage.setItem;
+    addNotificationPopupIds(userId, [uuid(1)]);
+    window.localStorage.setItem = original;
+    expect(writes).toEqual([]);
   });
 
   it('on first visit seeds received inbox ids and does not replay history', () => {

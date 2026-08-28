@@ -18,7 +18,6 @@ import {
   NOTIFICATION_BELL_TARGET_SELECTOR,
   NOTIFICATION_GENIE_LAND_EVENT,
   NOTIFICATION_KIND_LABEL,
-  NOTIFICATION_LIVE_POLL_MS,
   NOTIFICATION_SHOW_EVENT,
   addNotificationPopupIds,
   readNotificationPopupIds,
@@ -254,9 +253,8 @@ export function NotificationLivePopup() {
       return data.notifications ?? [];
     },
     enabled: Boolean(user?.id),
-    staleTime: 15_000,
-    refetchInterval: NOTIFICATION_LIVE_POLL_MS,
-    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+    notifyOnChangeProps: ['data', 'error'],
   });
   const osReduce = useReducedMotion();
   const { reduceMotion: prefReduce } = useShellAppearance();
@@ -265,20 +263,28 @@ export function NotificationLivePopup() {
   const [gap, setGap] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showNonce, setShowNonce] = useState(0);
-  const items = list.data ?? [];
-  const itemKey = items.map((item) => item.id).join('|');
+  const items = list.data;
+  const itemKey = items?.map((item) => item.id).join('|') ?? '';
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!user?.id || !list.isSuccess) return;
+    if (!user?.id || !items) return;
     const poppedIds = readNotificationPopupIds(user.id);
     const { queue: incoming, seedIds } = selectNotificationPopups({ items, poppedIds });
-    addNotificationPopupIds(user.id, seedIds);
-    setQueue(mergeSessionQueue(user.id, incoming));
-  }, [user?.id, list.isSuccess, itemKey, items]);
+    if (poppedIds === null || seedIds.length > 0) {
+      addNotificationPopupIds(user.id, seedIds);
+    }
+    setQueue((prev) => {
+      const next = mergeSessionQueue(user.id, incoming);
+      if (prev.length === next.length && prev.every((row, i) => row.id === next[i]?.id)) {
+        return prev;
+      }
+      return next;
+    });
+  }, [user?.id, itemKey, items]);
 
   useEffect(() => {
     if (!user?.id) return;

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { announcementSources, announcements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -79,6 +79,23 @@ export async function listAnnouncements(
     .orderBy(desc(announcements.publishedAt))
     .limit(cap);
   return rows.map((row) => mapAnnouncement(row.announcement, row.sourceName));
+}
+
+/** Cheap board signal for the 4s live poll — no announcement bodies. */
+export async function getAnnouncementBoardHead(
+  _ctx: AuthContext,
+): Promise<{ latestId: string | null; latestCreatedAt: string | null; count: number }> {
+  const [latest] = await db
+    .select({ id: announcements.id, createdAt: announcements.createdAt })
+    .from(announcements)
+    .orderBy(desc(announcements.createdAt), desc(announcements.id))
+    .limit(1);
+  const [agg] = await db.select({ n: count() }).from(announcements);
+  return {
+    latestId: latest?.id ?? null,
+    latestCreatedAt: latest?.createdAt.toISOString() ?? null,
+    count: Number(agg?.n ?? 0),
+  };
 }
 
 export async function createAnnouncement(

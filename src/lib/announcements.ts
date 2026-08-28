@@ -212,10 +212,16 @@ export function writeAnnouncementPopupIds(userId: string, ids: Iterable<string>)
 }
 
 export function addAnnouncementPopupIds(userId: string, ids: Iterable<string>): Set<string> {
-  const next = readAnnouncementPopupIds(userId) ?? new Set<string>();
-  for (const id of ids) {
-    if (id) next.add(id);
+  const incoming = [...ids].filter(Boolean);
+  const existing = readAnnouncementPopupIds(userId);
+  const next = existing ?? new Set<string>();
+  let changed = existing === null;
+  for (const id of incoming) {
+    if (next.has(id)) continue;
+    next.add(id);
+    changed = true;
   }
+  if (!changed) return next;
   writeAnnouncementPopupIds(userId, next);
   return next;
 }

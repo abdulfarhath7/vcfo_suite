@@ -25,6 +25,7 @@ import {
 import { AnnouncementComposeForm } from "@/components/announcements/AnnouncementCompose";
 import { AnnouncementRow } from "@/components/announcements/AnnouncementList";
 import { cn } from "@/lib/utils";
+import { SegmentedPicker } from "@/components/admin/SegmentedPicker";
 
 const FILTER_TABS: Array<{ id: AnnouncementListFilter; label: string }> = [
   { id: "all", label: "All" },
@@ -176,36 +177,14 @@ export function AnnouncementsBell() {
           />
         ) : null}
 
-        <div
-          className="flex items-center gap-0.5 px-3 pb-2.5"
-          role="tablist"
-          aria-label="Filter announcements"
-        >
-          {FILTER_TABS.map((tab) => {
-            const active = filter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[12px] transition-colors",
-                  active
-                    ? "bg-primary-light font-semibold text-primary"
-                    : "font-medium text-muted-foreground hover:text-foreground",
-                )}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setFilter(tab.id);
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedPicker
+          value={filter}
+          options={FILTER_TABS.map((tab) => ({ value: tab.id, label: tab.label }))}
+          onChange={(next) => setFilter(next)}
+          ariaLabel="Filter announcements"
+          size="sm"
+          className="mx-3 mb-2.5"
+        />
 
         <div className="min-h-0 flex-1 overflow-y-auto border-t border-border">
           {visible.length === 0 ? (

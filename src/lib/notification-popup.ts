@@ -66,10 +66,16 @@ export function writeNotificationPopupIds(userId: string, ids: Iterable<string>)
 }
 
 export function addNotificationPopupIds(userId: string, ids: Iterable<string>): Set<string> {
-  const next = readNotificationPopupIds(userId) ?? new Set<string>();
-  for (const id of ids) {
-    if (id) next.add(id);
+  const incoming = [...ids].filter(Boolean);
+  const existing = readNotificationPopupIds(userId);
+  const next = existing ?? new Set<string>();
+  let changed = existing === null;
+  for (const id of incoming) {
+    if (next.has(id)) continue;
+    next.add(id);
+    changed = true;
   }
+  if (!changed) return next;
   writeNotificationPopupIds(userId, next);
   return next;
 }

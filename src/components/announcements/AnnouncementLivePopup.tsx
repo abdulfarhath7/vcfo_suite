@@ -249,15 +249,15 @@ export function AnnouncementLivePopup() {
   const [gap, setGap] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showNonce, setShowNonce] = useState(0);
-  const items = list.data?.announcements ?? [];
-  const itemKey = items.map((item) => item.id).join('|');
+  const items = list.data?.announcements;
+  const itemKey = items?.map((item) => item.id).join('|') ?? '';
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!user?.id || !list.isSuccess) return;
+    if (!user?.id || !items) return;
     const poppedIds = readAnnouncementPopupIds(user.id);
     const readIds = readAnnouncementIds(user.id);
     const dailySeenIds = new Set(readDailyAnnouncementSeenIds(user.id, announcementYmdIst()));
@@ -268,9 +268,17 @@ export function AnnouncementLivePopup() {
       readIds,
       dailySeenIds,
     });
-    addAnnouncementPopupIds(user.id, seedIds);
-    setQueue(mergeSessionQueue(user.id, incoming));
-  }, [user?.id, list.isSuccess, itemKey, items]);
+    if (poppedIds === null || seedIds.length > 0) {
+      addAnnouncementPopupIds(user.id, seedIds);
+    }
+    setQueue((prev) => {
+      const next = mergeSessionQueue(user.id, incoming);
+      if (prev.length === next.length && prev.every((row, i) => row.id === next[i]?.id)) {
+        return prev;
+      }
+      return next;
+    });
+  }, [user?.id, itemKey, items]);
 
   useEffect(() => {
     if (!user?.id) return;

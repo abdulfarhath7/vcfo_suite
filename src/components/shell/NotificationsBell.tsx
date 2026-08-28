@@ -29,6 +29,7 @@ import {
 } from "@/lib/notification-popup";
 import { toast } from "@/lib/toast-errors";
 import { cn } from "@/lib/utils";
+import { SegmentedPicker } from "@/components/admin/SegmentedPicker";
 
 const FILTERS: Array<{ id: NotificationDirection; label: string }> = [
   { id: "received", label: "Received" },
@@ -329,44 +330,30 @@ export function NotificationsBell() {
           )}
         </div>
 
-        <div
-          className="mx-2 mb-1 grid grid-cols-2 gap-0.5 rounded-md bg-raised/70 p-0.5"
-          role="tablist"
-          aria-label="Filter notifications"
-        >
-          {FILTERS.map((tab) => {
-            const active = filter === tab.id;
+        <SegmentedPicker
+          value={filter}
+          options={FILTERS.map((tab) => {
             const count = tab.id === "sent" ? counts.sent : counts.received;
             const unread =
               tab.id === "sent" ? counts.sentUnread : counts.receivedUnread;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                className={cn(
-                  "rounded px-2 py-1 text-[10.5px] font-medium transition-colors",
-                  active
-                    ? "bg-panel text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-                onClick={() => setFilter(tab.id)}
-              >
-                {tab.label}
-                <span
-                  className={cn(
-                    "ml-1 tabular-nums",
-                    unread > 0 ? "text-primary" : "text-text-tertiary",
-                  )}
-                >
-                  {count}
-                  {unread > 0 ? ` · ${unread}` : ""}
-                </span>
-              </button>
-            );
+            return {
+              value: tab.id,
+              label: (
+                <>
+                  {tab.label}
+                  <span className="tabular-nums opacity-75">
+                    {count}
+                    {unread > 0 ? ` · ${unread}` : ""}
+                  </span>
+                </>
+              ),
+            };
           })}
-        </div>
+          onChange={(next) => setFilter(next)}
+          ariaLabel="Filter notifications"
+          size="sm"
+          className="mx-2 mb-1"
+        />
 
         {tabCount > 0 && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pb-2 text-[10px]">

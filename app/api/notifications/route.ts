@@ -4,6 +4,7 @@ import {
   createNotification,
   createNotifications,
   dismissNotifications,
+  getNotificationInboxHead,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -30,6 +31,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
   try {
+    const url = new URL(request.url);
+    if (url.searchParams.get('head') === '1') {
+      const head = await getNotificationInboxHead(guard.ctx);
+      return NextResponse.json(head);
+    }
     const includeDismissed = historyRequested(request);
     const notifications = await listNotifications(guard.ctx, { includeDismissed });
     return NextResponse.json({ notifications });

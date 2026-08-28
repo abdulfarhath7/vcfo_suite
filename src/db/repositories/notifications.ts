@@ -95,6 +95,33 @@ export async function listNotifications(
   return rows.map(toAppNotification);
 }
 
+/** Cheap inbox signal for the 4s live poll — no description JSON. */
+export async function getNotificationInboxHead(ctx: AuthContext): Promise<{
+  latestId: string | null;
+  unreadCount: number;
+  count: number;
+}> {
+  const rows = await db
+    .select({
+      id: notifications.id,
+      status: notifications.status,
+    })
+    .from(notifications)
+    .where(and(eq(notifications.userId, ctx.userId), isNull(notifications.dismissedAt)))
+    .orderBy(desc(notifications.createdAt))
+    .limit(NOTIFICATION_INBOX_LIMIT);
+
+  let unreadCount = 0;
+  for (const row of rows) {
+    if (row.status === 'unread') unreadCount += 1;
+  }
+  return {
+    latestId: rows[0]?.id ?? null,
+    unreadCount,
+    count: rows.length,
+  };
+}
+
 export async function createNotification(
   ctx: AuthContext,
   input: Omit<AppNotification, 'id' | 'read' | 'createdAt'> & { userId?: string },

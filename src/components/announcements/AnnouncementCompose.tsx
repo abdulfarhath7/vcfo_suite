@@ -62,6 +62,7 @@ export function AnnouncementComposeForm({
       setKind('general');
       toastSuccess('Announcement posted');
       await queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      await queryClient.invalidateQueries({ queryKey: ['announcements-head'] });
       onPosted?.();
       onClose();
     } catch (err) {
@@ -89,7 +90,6 @@ export function AnnouncementComposeForm({
             <h2 id={headingId} className="text-[13px] font-semibold tracking-tight text-ink">
               New announcement
             </h2>
-            <p className="mt-0.5 text-[12px] text-muted-foreground">Posted under your name.</p>
           </div>
           {bare ? null : (
             <button

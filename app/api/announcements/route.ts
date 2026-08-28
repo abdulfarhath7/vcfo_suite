@@ -3,7 +3,11 @@ import { z } from 'zod';
 import { requireAuth, requireAdminOrManager } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
-import { createAnnouncement, listAnnouncements } from '@/db/repositories/announcements';
+import {
+  createAnnouncement,
+  getAnnouncementBoardHead,
+  listAnnouncements,
+} from '@/db/repositories/announcements';
 import { canWriteAnnouncements } from '@/lib/announcements';
 
 const createSchema = z.object({
@@ -30,6 +34,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
   const url = new URL(request.url);
+  if (url.searchParams.get('head') === '1') {
+    try {
+      const head = await getAnnouncementBoardHead(guard.ctx);
+      return NextResponse.json(head);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'list_failed';
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  }
   const rawLimit = Number(url.searchParams.get('limit') ?? '80');
   const limit = Number.isFinite(rawLimit) ? rawLimit : 80;
   try {

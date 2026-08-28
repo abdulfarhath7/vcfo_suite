@@ -14,7 +14,6 @@ import { useApp } from '@/context/AppContext';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import {
   ANNOUNCEMENT_READ_EVENT,
-  OFFICIAL_FEED_HOSTS,
   canManageAnnouncementSources,
   canWriteAnnouncements,
   readAnnouncementIds,
@@ -152,7 +151,6 @@ function FeedsSection({
   onPull: (id: string) => void;
   onRemove: (id: string) => void;
 }) {
-  const hosts = OFFICIAL_FEED_HOSTS.slice(0, 8).join(', ');
   return (
     <Surface flat className="p-4 sm:p-5">
       <div className="flex items-start gap-2.5">
@@ -161,10 +159,6 @@ function FeedsSection({
         </span>
         <div className="min-w-0">
           <h2 className="text-[13px] font-semibold tracking-tight text-ink">Official RSS feeds</h2>
-          <p className="mt-0.5 max-w-2xl text-[12.5px] leading-relaxed text-muted-foreground">
-            HTTPS RSS or Atom only — pulled each morning (06:00 IST). Allowed hosts include {hosts}, and other listed
-            MCA / GST / RBI / EPFO hosts.
-          </p>
         </div>
       </div>
       <div className="mt-4 grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
@@ -289,6 +283,7 @@ export default function AnnouncementsPage() {
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['announcements'] });
+    await queryClient.invalidateQueries({ queryKey: ['announcements-head'] });
     await queryClient.invalidateQueries({ queryKey: ['announcement-sources'] });
   };
 
