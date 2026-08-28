@@ -1,6 +1,7 @@
 "use client";
 
 import { useInternPortfolio } from '@/lib/use-intern-portfolio';
+import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
@@ -58,7 +59,7 @@ export default function InternClients() {
                         </div>
                         <div className="min-w-0">
                           <div className="truncate text-[13px] font-medium text-foreground" title={e.companyName}>{e.companyName}</div>
-                          <Eyebrow className="mt-0.5 text-[10px]">{e.stage}</Eyebrow>
+                          <Eyebrow className="mt-0.5 text-[10px]">{stageDisplayLabel(e.stage)}</Eyebrow>
                         </div>
                       </div>
                       <ProgressRing value={pct} size={44} />

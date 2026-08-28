@@ -1,8 +1,10 @@
 'use client';
 
 import { m as motion, AnimatePresence } from 'framer-motion';
+import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import { AccentKpi } from '@/components/admin/AccentKpi';
 import { PhaseTimeline, type Phase } from '@/components/admin/PhaseTimeline';
 import { SEO } from '@/components/SEO';
@@ -157,7 +159,7 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
             </span>
             <span className="flex flex-wrap items-center gap-3">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-light px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-                {eng.stage}
+                {stageDisplayLabel(eng.stage)}
               </span>
               <ProgressRing value={overall} size={40} stroke={3.5} className="shrink-0" />
               <span className="text-[12px] text-muted-foreground">
@@ -195,6 +197,10 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
               blockers={blockers}
               pendingDocs={pendingDocs}
               internName={intern?.name}
+            />
+            <ProjectActionsMenu
+              engagement={eng}
+              onDeleted={() => router.push(`${staffBase}/projects`)}
             />
           </>
         }

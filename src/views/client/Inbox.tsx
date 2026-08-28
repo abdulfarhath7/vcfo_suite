@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTransition';
@@ -101,7 +102,7 @@ export default function ClientInbox() {
       />
 
       <Surface raised className="mb-6 px-6 py-5">
-        <Eyebrow>{eng.stage}</Eyebrow>
+        <Eyebrow>{stageDisplayLabel(eng.stage)}</Eyebrow>
         <h1 className="serif mt-1 text-[clamp(1.75rem,3vw,2.25rem)] tracking-tight text-foreground">
           {eng.companyName}
         </h1>

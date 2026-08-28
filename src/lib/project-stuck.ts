@@ -13,10 +13,10 @@ export type StuckReason =
   | 'on_track';
 
 export const STUCK_LABEL: Record<StuckReason, string> = {
-  waiting_client: 'Waiting on client',
-  waiting_manager: 'Waiting on manager approval',
-  waiting_lead: 'Waiting on project lead',
-  waiting_signed: 'Waiting on signed return',
+  waiting_client: 'Client pending',
+  waiting_manager: 'PM approval',
+  waiting_lead: 'Lead pending',
+  waiting_signed: 'Signed return',
   blocked: 'Blocked',
   on_track: 'On track',
 };

@@ -1,21 +1,25 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from 'react';
-import type { useRouter } from 'next/navigation';
+import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
+import { usePathname, type useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { m as motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
-import { ArrowRight, Plus, Table as TableIcon, LayoutGrid, MapPin, Briefcase } from 'lucide-react';
+import { ArrowRight, Plus, Table as TableIcon, LayoutGrid, MapPin, Briefcase, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Surface, StatusDot, Mono, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
 import { staggerKids, fadeUp } from '@/lib/motion';
-import { adminProjectPath } from '@/lib/project-step-path';
+import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import type { Engagement } from '@/data/engagements';
 import { STUCK_LABEL } from '@/lib/project-stuck';
+import { useStaffBasePath } from '@/hooks/use-staff-base-path';
+import { useApp } from '@/context/AppContext';
+import { isFirmWideAdmin } from '@/lib/auth';
 
 type View = 'table' | 'board';
 type Router = ReturnType<typeof useRouter>;
@@ -64,10 +68,19 @@ export function ProjectsView(props: ProjectsViewProps) {
   setView,
   enriched,
   } = props;
+  const pathname = usePathname();
+  const staffBase = useStaffBasePath();
+  const { user } = useApp();
+  const projectBase = staffProjectBaseFromPathname(pathname, staffBase);
+  const newProjectHref = staffNewProjectPath(projectBase);
 
   return (
     <PageTransition>
-      <SEO title="GCC Setup Projects — VCFO Suite" description="Portfolio of GCC setup projects — phase, delivery owner, and health at a glance." path="/app/manager/projects" />
+      <SEO
+        title="GCC Setup Projects — VCFO Suite"
+        description="Portfolio of GCC setup projects — phase, delivery owner, and health at a glance."
+        path={`${projectBase}/projects`}
+      />
 
       <PageHeader
         accent="primary"
@@ -105,8 +118,17 @@ export function ProjectsView(props: ProjectsViewProps) {
                 })}
               </div>
             </LayoutGroup>
+            {isFirmWideAdmin(user?.role) ? (
+              <Link
+                href="/app/admin/projects/recycle-bin"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Deleted
+              </Link>
+            ) : null}
             <Link
-              href="/app/manager/projects/new"
+              href={newProjectHref}
               className="h-9 px-3 rounded-md gold-sheen text-[12.5px] font-medium hover:opacity-95 inline-flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -137,7 +159,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                   icon={Briefcase}
                   title="No GCC setup projects yet"
                   actionLabel="Start GCC project"
-                  onAction={() => router.push('/app/manager/projects/new')}
+                  onAction={() => router.push(newProjectHref)}
                   className="border-0 bg-transparent py-8 shadow-none"
                 />
               </div>
@@ -157,9 +179,9 @@ export function ProjectsView(props: ProjectsViewProps) {
                     key={e.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => router.push(adminProjectPath(e))}
+                    onClick={() => router.push(adminProjectPath(e, projectBase))}
                     onKeyDown={(ev) => {
-                      if (ev.key === 'Enter' || ev.key === ' ') router.push(adminProjectPath(e));
+                      if (ev.key === 'Enter' || ev.key === ' ') router.push(adminProjectPath(e, projectBase));
                     }}
                     className="flex w-full cursor-pointer flex-col gap-2.5 rounded-xl border border-border/80 bg-card px-3.5 py-3 text-left transition-colors hover:border-primary/30 hover:bg-primary-light/40"
                   >
@@ -172,7 +194,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                           <div className="truncate text-[13px] font-medium text-ink">{e.companyName}</div>
                           <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-text-tertiary">
                             <span className="inline-flex rounded-full border border-primary/20 bg-primary-light px-2 py-0.5 text-[10px] font-medium text-primary">
-                              {e.stage}
+                              {stageDisplayLabel(e.stage)}
                             </span>
                             <span>· {STUCK_LABEL[stuck]}</span>
                           </div>
@@ -233,7 +255,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     variants={fadeUp}
                     className="w-full grid grid-cols-[1.6fr_1fr_1.2fr_1fr_120px_88px] gap-3 px-4 py-3 items-center hover:bg-muted/40 text-left group"
                   >
-                    <button type="button" onClick={() => router.push(adminProjectPath(e))} className="contents">
+                    <button type="button" onClick={() => router.push(adminProjectPath(e, projectBase))} className="contents">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-md bg-primary-light text-brand text-[11px] font-semibold flex items-center justify-center shrink-0">
                         {e.companyName.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
@@ -243,7 +265,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                         <div className="text-[11px] text-text-tertiary">{STUCK_LABEL[stuck]}</div>
                       </div>
                     </div>
-                    <div className="text-[12.5px] text-ink-soft">{e.stage}</div>
+                    <div className="truncate text-[12.5px] text-ink-soft">{stageDisplayLabel(e.stage)}</div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                         <div
@@ -263,7 +285,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     </button>
                     <div className="flex items-center justify-end gap-1">
                       <ProjectActionsMenu engagement={e} />
-                      <button type="button" onClick={() => router.push(adminProjectPath(e))} className="p-1.5 text-text-tertiary hover:text-ink">
+                      <button type="button" onClick={() => router.push(adminProjectPath(e, projectBase))} className="p-1.5 text-text-tertiary hover:text-ink">
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -312,7 +334,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                           key={e.id}
                           layout
                           variants={fadeUp}
-                          onClick={() => router.push(adminProjectPath(e))}
+                          onClick={() => router.push(adminProjectPath(e, projectBase))}
                           className="group w-full text-left rounded-md border border-border bg-card p-3 hover:border-hairline-strong hover:-translate-y-px transition-all"
                         >
                           <div className="flex items-start justify-between gap-2 mb-2">

@@ -8,6 +8,7 @@ import { Surface, Eyebrow } from '@/components/noir';
 import { Button } from '@/components/ui/button';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/project-stuck';
+import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import { adminProjectPath } from '@/lib/project-step-path';
 
 type ManagerOption = { id: string; name: string; email: string };
@@ -121,14 +122,9 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
                 onClick={() => router.push(adminProjectPath(eng, '/app/admin'))}
               >
                 <div className="text-[13px] font-medium truncate">{eng.companyName}</div>
-                <div className="text-[11px] text-muted-foreground">
-                  {eng.stage === 'Pre-Incorporation'
-                    ? 'Pre-incorp'
-                    : eng.stage === 'Post-Incorporation'
-                      ? 'Post-incorp'
-                      : eng.stage}{' '}
-                  · PM {managerName(eng.managerId ?? eng.adminId)} · Lead {leadNames(eng)} ·{' '}
-                  {STUCK_LABEL[reason]}
+                <div className="truncate text-[11px] text-muted-foreground">
+                  {stageDisplayLabel(eng.stage)} · PM {managerName(eng.managerId ?? eng.adminId)} ·
+                  Lead {leadNames(eng)} · {STUCK_LABEL[reason]}
                 </div>
               </button>
               <div className="flex shrink-0 items-center gap-2">

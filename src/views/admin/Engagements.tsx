@@ -7,6 +7,7 @@
  */
 
 import { useState } from 'react';
+import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackButton } from '@/components/shell/PageBackButton';
@@ -16,6 +17,8 @@ import { useRouter } from 'next/navigation';
 import { Plus, Search } from 'lucide-react';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { staffNewProjectPath } from '@/lib/project-step-path';
+import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 
 const healthMap = {
   'on-track': { label: 'On track', cls: 'bg-success-light text-success-text', dot: 'bg-success' },
@@ -26,6 +29,7 @@ const healthMap = {
 export default function AdminEngagements() {
   const { engagements, tasks, teamMembers } = useApp();
   const router = useRouter();
+  const staffBase = useStaffBasePath();
   const [q, setQ] = useState('');
 
   const filtered = engagements.filter((e) => e.companyName.toLowerCase().includes(q.toLowerCase()));
@@ -42,7 +46,7 @@ export default function AdminEngagements() {
           </div>
           <p className="text-[13px] text-text-tertiary mt-0.5">{engagements.length} in portfolio</p>
         </div>
-        <Button size="sm" onClick={() => router.push('/app/manager/projects/new')}>
+        <Button size="sm" onClick={() => router.push(staffNewProjectPath(staffBase))}>
           <Plus className="w-3.5 h-3.5 mr-1.5" />Start GCC project
         </Button>
       </div>
@@ -79,7 +83,7 @@ export default function AdminEngagements() {
                 </div>
                 <div className="text-[13px] font-medium text-ink truncate">{e.companyName}</div>
               </div>
-              <div className="text-[12px] text-text-secondary">{e.stage}</div>
+              <div className="truncate text-[12px] text-text-secondary">{stageDisplayLabel(e.stage)}</div>
               <div className="text-[12px] text-text-secondary">{intern?.name}</div>
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden max-w-[120px]">
