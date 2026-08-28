@@ -7,12 +7,22 @@ import {
   engagementStageSchema,
   internIdSchema,
 } from '@/lib/api/engagement-schemas';
-import { entityLegalFormSchema } from '@/lib/api/schemas';
+import {
+  companyNameSchema,
+  companyTypeSchema,
+  entityLegalFormSchema,
+  parentEntityAddressSchema,
+  parentEntityNameSchema,
+  subsidiaryLegalNameSchema,
+  subsidiaryRegisteredAddressSchema,
+} from '@/lib/api/schemas';
 import {
   getEngagementById,
+  softDeleteEngagement,
   toAppEngagement,
   updateEngagement,
 } from '@/db/repositories/engagements';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { listManagerOptions } from '@/db/repositories/profiles';
 import {
   ensureEngagementManager,
@@ -28,8 +38,19 @@ import { eq } from 'drizzle-orm';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+/** Optional free text that clears to NULL when sent empty. */
+const nullableText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((v) => (v.length === 0 ? null : v))
+    .nullable()
+    .optional();
+
 const patchBodySchema = z.object({
-  companyName: z.string().trim().min(1).max(120).optional(),
+  companyName: companyNameSchema.optional(),
+  companyType: companyTypeSchema.optional(),
   /** Pass null to unassign the delivery lead. */
   internId: z.union([internIdSchema, z.null()]).optional(),
   /** Pass null to unassign the project manager (admin only). */
@@ -38,6 +59,17 @@ const patchBodySchema = z.object({
   health: engagementHealthSchema.optional(),
   incorporationDate: z.string().trim().nullable().optional(),
   entityLegalForm: entityLegalFormSchema.optional(),
+  parentEntityName: parentEntityNameSchema.optional(),
+  parentEntityAddress: parentEntityAddressSchema.optional(),
+  parentEntityRegistrationNumber: nullableText(120),
+  subsidiaryLegalName: z.union([subsidiaryLegalNameSchema, z.null()]).optional(),
+  subsidiaryRegisteredAddress: z.union([subsidiaryRegisteredAddressSchema, z.null()]).optional(),
+  /** Display name of the client contact on this project (not the login). */
+  clientName: nullableText(120),
+  /** Compliance questionnaire answers — replaces the stored set wholesale. */
+  complianceQuestionnaire: z
+    .record(z.string(), z.union([z.boolean(), z.number(), z.string()]))
+    .optional(),
 });
 
 async function profileParty(id: string | null | undefined) {
@@ -108,6 +140,26 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (body.data.entityLegalForm !== undefined) patch.entityLegalForm = body.data.entityLegalForm;
     if (body.data.incorporationDate !== undefined) {
       patch.incorporationDate = body.data.incorporationDate;
+    }
+    if (body.data.companyType !== undefined) patch.companyType = body.data.companyType;
+    if (body.data.parentEntityName !== undefined) {
+      patch.parentEntityName = body.data.parentEntityName;
+    }
+    if (body.data.parentEntityAddress !== undefined) {
+      patch.parentEntityAddress = body.data.parentEntityAddress;
+    }
+    if (body.data.parentEntityRegistrationNumber !== undefined) {
+      patch.parentEntityRegistrationNumber = body.data.parentEntityRegistrationNumber;
+    }
+    if (body.data.subsidiaryLegalName !== undefined) {
+      patch.subsidiaryLegalName = body.data.subsidiaryLegalName;
+    }
+    if (body.data.subsidiaryRegisteredAddress !== undefined) {
+      patch.subsidiaryRegisteredAddress = body.data.subsidiaryRegisteredAddress;
+    }
+    if (body.data.clientName !== undefined) patch.clientName = body.data.clientName;
+    if (body.data.complianceQuestionnaire !== undefined) {
+      patch.complianceQuestionnaire = body.data.complianceQuestionnaire;
     }
 
     const row = await updateEngagement(guard.ctx, engagementDbId(id), patch);
@@ -181,6 +233,43 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'update_failed';
     const status = message.includes('not found') ? 404 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+/**
+ * DELETE /api/engagements/:id — soft delete a project (firm admin only).
+ *
+ * Sets `deleted_at`, which every repository scope already filters on, so the
+ * project disappears from staff lists and the client portal at once while
+ * documents, checklist history, and the audit trail stay intact. Managers do
+ * not reach this route — they file a `delete_project` change request instead.
+ */
+export async function DELETE(_request: Request, context: RouteContext) {
+  const guard = await requireAnyRole('admin', 'super_admin');
+  if (guard.ok === false) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
+  }
+
+  const { id } = await context.params;
+  try {
+    const before = await getEngagementById(guard.ctx, engagementDbId(id));
+    if (!before) {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
+
+    const row = await softDeleteEngagement(guard.ctx, id);
+    await recordAuditEvent(guard.ctx, {
+      engagementId: row.id,
+      action: 'project.deleted',
+      summary: `Deleted project ${row.companyName}`,
+      metadata: { companyName: row.companyName, slug: row.slug, softDelete: true },
+    });
+
+    return NextResponse.json({ ok: true, deletedId: toAppEngagement(row).id });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'delete_failed';
+    const status = message.includes('not found') ? 404 : message.includes('Only firm admins') ? 403 : 400;
     return NextResponse.json({ error: message }, { status });
   }
 }

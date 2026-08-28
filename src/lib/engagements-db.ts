@@ -132,7 +132,7 @@ interface ApiErrorBody {
  * Calls an API route and unwraps the JSON. Throws AppApiError on non-2xx so
  * callers get the same toast-friendly error type the Supabase helpers produced.
  */
-async function apiFetch<T>(
+export async function apiFetch<T>(
   path: string,
   init?: RequestInit & { fallbackError?: string },
 ): Promise<T> {
@@ -240,8 +240,17 @@ export async function fetchEngagements(): Promise<FetchEngagementsResult> {
   const data = await apiFetch<{ engagements: Engagement[] }>('/api/engagements', {
     fallbackError: 'Could not load projects.',
   });
-  // checklist_state is lazy-loaded per engagement via fetchChecklistState.
+  // Full checklist_state stays off this list. Dashboards hydrate via
+  // fetchChecklistIndex; step/vault pages still call fetchChecklistState.
   return { engagements: data.engagements ?? [], checklistByEngagement: {} };
+}
+
+export async function fetchChecklistIndex(): Promise<Record<string, EngagementChecklistState>> {
+  const data = await apiFetch<{ byEngagement?: Record<string, EngagementChecklistState> }>(
+    '/api/checklist-index',
+    { fallbackError: 'Could not load checklist progress.' },
+  );
+  return data.byEngagement ?? {};
 }
 
 export async function fetchEngagementBySlug(slug: string): Promise<Engagement | null> {
@@ -355,6 +364,8 @@ export interface CreateProjectInput {
   health?: Engagement['health'];
   subsidiaryLegalName?: string;
   subsidiaryRegisteredAddress?: string;
+  /** Compliance questionnaire answers (question id → yes/no, count, or pick). */
+  complianceQuestionnaire?: Record<string, boolean | number | string>;
 }
 
 export interface CreateProjectResult {
@@ -397,6 +408,7 @@ export async function createProjectWithClient(
 
 export interface UpdateEngagementInput {
   companyName?: string;
+  companyType?: Engagement['companyType'];
   /** Delivery lead scoping id — null clears the assignment. */
   internId?: string | null;
   /** Project manager profile UUID — null clears (admin only). */
@@ -405,6 +417,15 @@ export interface UpdateEngagementInput {
   health?: Engagement['health'];
   incorporationDate?: string | null;
   entityLegalForm?: Engagement['entityLegalForm'];
+  parentEntityName?: string;
+  parentEntityAddress?: string;
+  parentEntityRegistrationNumber?: string | null;
+  subsidiaryLegalName?: string | null;
+  subsidiaryRegisteredAddress?: string | null;
+  /** Client contact display name on this project — not their login. */
+  clientName?: string | null;
+  /** Compliance questionnaire answers — replaces the stored set wholesale. */
+  complianceQuestionnaire?: Record<string, boolean | number | string>;
 }
 
 export async function updateEngagementInDb(

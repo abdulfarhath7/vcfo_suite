@@ -45,6 +45,8 @@ export interface Engagement {
   clientUserId?: string | null;
   clientEmail?: string | null;
   clientDisplayName?: string | null;
+  /** Compliance questionnaire answers captured at creation (question id → answer). */
+  complianceQuestionnaire?: Record<string, boolean | number | string> | null;
 }
 
 export interface TaskInstance {

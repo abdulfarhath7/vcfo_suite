@@ -117,6 +117,10 @@ export const createProjectBodySchema = z
     /** Required when stage is Registration or Compliance. */
     subsidiaryLegalName: z.string().trim().max(240).optional(),
     subsidiaryRegisteredAddress: z.string().trim().max(2000).optional(),
+    /** Compliance questionnaire answers (question id → yes/no, count, or pick). */
+    complianceQuestionnaire: z
+      .record(z.string(), z.union([z.boolean(), z.number(), z.string()]))
+      .optional(),
   })
   .refine(
     (d) => Boolean(d.internId?.trim()) || (d.internIds?.some((id) => id.trim()) ?? false),
