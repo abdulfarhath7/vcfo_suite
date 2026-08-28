@@ -13,6 +13,7 @@ import { primaryPhaseItems } from '@/lib/project-stuck';
 import { checklistItemLabel } from '@/lib/audit-log';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { adminProjectStepPath } from '@/lib/project-step-path';
+import { ProjectChangeRequestsPanel } from '@/views/admin/ProjectChangeRequestsPanel';
 
 export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' }) {
   const { engagements, getStateForEngagement, user } = useApp();
@@ -62,16 +63,13 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
         accent="amber"
         icon={ClipboardCheck}
         title="Approvals"
-        subtitle={
-          scope === 'firm'
-            ? 'Firm-wide milestones awaiting project manager review (Pre + Post incorporation).'
-            : 'Milestones your project leads submitted for approval.'
-        }
       />
+
+      <ProjectChangeRequestsPanel scope={scope} />
 
       <Surface className="divide-y divide-border">
         <div className="px-4 py-3">
-          <Eyebrow>Pending</Eyebrow>
+          <Eyebrow>Pending milestones</Eyebrow>
         </div>
         {rows.length === 0 ? (
           <EmptyStateIllustrated

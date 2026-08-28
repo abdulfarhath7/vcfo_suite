@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
+import { usePathname, useRouter } from 'next/navigation';
+import { adminProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -34,12 +37,19 @@ import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
 import {
   Loader2,
   MoreHorizontal,
+  Pencil,
+  Trash2,
   UserMinus,
   UserPlus,
   UserRoundCog,
   UserRoundPlus,
 } from 'lucide-react';
 import type { Engagement } from '@/data/engagements';
+import { ChangeClientDialog } from '@/components/admin/ChangeClientDialog';
+import { DeleteProjectDialog } from '@/components/admin/DeleteProjectDialog';
+import { createChangeRequestInDb } from '@/lib/project-admin-db';
+import { changeRequestDiffValue } from '@/lib/project-change-request-types';
+import { projectEditAccess } from '@/lib/project-edit-policy';
 
 type DialogKind =
   | 'add-manager'
@@ -48,6 +58,9 @@ type DialogKind =
   | 'add-lead'
   | 'change-lead'
   | 'delete-lead';
+
+/** Dialogs that own their own state and submission, rendered outside the shared one. */
+type StandaloneDialog = 'change-client' | 'delete-project';
 
 type LeadRow = { internId: string; name: string; email: string; isPrimary: boolean };
 type PersonOption = { id: string; name: string; email: string };
@@ -60,6 +73,11 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || `http_${res.status}`);
   return body as T;
+}
+
+/** Managers see the same entry, marked as something an admin must approve. */
+function approvalLabel(base: string, access: 'direct' | 'request' | 'denied'): string {
+  return access === 'request' ? `${base} (needs approval)` : base;
 }
 
 function leadIdsOf(engagement: Engagement): string[] {
@@ -75,17 +93,31 @@ function leadIdsOf(engagement: Engagement): string[] {
 export function ProjectActionsMenu({
   engagement,
   className,
+  onDeleted,
 }: {
   engagement: Engagement;
   className?: string;
+  /** Called after a direct delete — detail pages navigate away. */
+  onDeleted?: () => void;
 }) {
   const { user } = useApp();
+  const router = useRouter();
+  const pathname = usePathname();
+  const staffBase = staffProjectBaseFromPathname(pathname, useStaffBasePath());
   const queryClient = useQueryClient();
   const isAdmin = isFirmWideAdmin(user?.role);
   const isManager = user?.role === 'manager';
   const canEdit = isAdmin || isManager;
 
+  // A manager owns only the projects assigned to them; admins reach every project.
+  const ownsProject = isAdmin || Boolean(user?.id && engagement.managerId === user.id);
+  const managerAccess = projectEditAccess('change_manager', user?.role, ownsProject);
+  const clientAccess = projectEditAccess('change_client', user?.role, ownsProject);
+  const deleteAccess = projectEditAccess('delete_project', user?.role, ownsProject);
+  const detailsAccess = projectEditAccess('edit_details', user?.role, ownsProject);
+
   const [dialog, setDialog] = useState<DialogKind | null>(null);
+  const [standalone, setStandalone] = useState<StandaloneDialog | null>(null);
   const [saving, setSaving] = useState(false);
   const [managerId, setManagerId] = useState('');
   const [internId, setInternId] = useState('');
@@ -96,7 +128,10 @@ export function ProjectActionsMenu({
     queryFn: () =>
       fetchJson<{ managers: PersonOption[] }>('/api/admin/managers').then((d) => d.managers),
     staleTime: 5 * 60_000,
-    enabled: dialog === 'add-manager' || dialog === 'change-manager',
+    enabled:
+      dialog === 'add-manager' ||
+      dialog === 'change-manager' ||
+      dialog === 'delete-manager',
   });
 
   const internsQuery = useQuery({
@@ -141,26 +176,51 @@ export function ProjectActionsMenu({
     setSaving(true);
     try {
       let email: EmailDispatchResult | undefined;
-      if (dialog === 'add-manager' || dialog === 'change-manager') {
-        if (!managerId) return;
+      if (dialog === 'add-manager' || dialog === 'change-manager' || dialog === 'delete-manager') {
+        const nextManagerId = dialog === 'delete-manager' ? null : managerId;
+        if (dialog !== 'delete-manager' && !managerId) return;
+
+        // Reassigning the PM is admin-only; a manager files it for approval.
+        if (managerAccess === 'request') {
+          const roster = managersQuery.data ?? [];
+          await createChangeRequestInDb({
+            engagementId: engagement.id,
+            kind: 'change_manager',
+            payload: { managerId: nextManagerId },
+            preview: {
+              companyName: engagement.companyName,
+              fields: [
+                {
+                  label: 'Project manager',
+                  from: changeRequestDiffValue(
+                    roster.find((m) => m.id === engagement.managerId)?.name,
+                  ),
+                  to: nextManagerId
+                    ? changeRequestDiffValue(roster.find((m) => m.id === nextManagerId)?.name)
+                    : 'Unassigned',
+                },
+              ],
+            },
+          });
+          toastSuccess('Sent for approval', 'An admin will review this reassignment.');
+          setDialog(null);
+          return;
+        }
+
         const data = await fetchJson<{ email?: EmailDispatchResult }>(
           `/api/engagements/${engagement.id}`,
-          { method: 'PATCH', body: JSON.stringify({ managerId }) },
+          { method: 'PATCH', body: JSON.stringify({ managerId: nextManagerId }) },
         );
         email = data.email;
         await refreshEngagements();
         toastSuccess(
-          dialog === 'add-manager' ? 'Manager assigned' : 'Manager updated',
+          dialog === 'add-manager'
+            ? 'Manager assigned'
+            : dialog === 'delete-manager'
+              ? 'Manager removed'
+              : 'Manager updated',
           engagement.companyName,
         );
-      } else if (dialog === 'delete-manager') {
-        const data = await fetchJson<{ email?: EmailDispatchResult }>(
-          `/api/engagements/${engagement.id}`,
-          { method: 'PATCH', body: JSON.stringify({ managerId: null }) },
-        );
-        email = data.email;
-        await refreshEngagements();
-        toastSuccess('Manager removed', engagement.companyName);
       } else if (dialog === 'add-lead') {
         if (!internId) return;
         const data = await fetchJson<{ email?: EmailDispatchResult }>(
@@ -250,26 +310,42 @@ export function ProjectActionsMenu({
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
 
-          {isAdmin ? (
+          {detailsAccess !== 'denied' ? (
+            <>
+              <DropdownMenuItem
+                onSelect={() =>
+                  router.push(`${adminProjectPath(engagement, staffBase)}/edit`)
+                }
+              >
+                <Pencil className="mr-2 h-3.5 w-3.5 text-accent-emerald" />
+                Edit project details
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
+
+          {managerAccess !== 'denied' ? (
             <>
               {hasManager ? (
                 <DropdownMenuItem onSelect={() => open('change-manager')}>
                   <UserRoundCog className="mr-2 h-3.5 w-3.5 text-accent-violet" />
-                  Change manager
+                  {approvalLabel('Change manager', managerAccess)}
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem onSelect={() => open('add-manager')}>
                   <UserPlus className="mr-2 h-3.5 w-3.5 text-accent-violet" />
-                  Add manager
+                  {approvalLabel('Add manager', managerAccess)}
                 </DropdownMenuItem>
               )}
               {hasManager ? (
                 <DropdownMenuItem
-                  className="text-danger focus:text-danger"
+                  className={
+                    managerAccess === 'direct' ? 'text-danger focus:text-danger' : undefined
+                  }
                   onSelect={() => open('delete-manager')}
                 >
                   <UserMinus className="mr-2 h-3.5 w-3.5" />
-                  Delete manager
+                  {approvalLabel('Delete manager', managerAccess)}
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuSeparator />
@@ -296,8 +372,54 @@ export function ProjectActionsMenu({
               </DropdownMenuItem>
             </>
           ) : null}
+
+          {clientAccess !== 'denied' ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setStandalone('change-client')}>
+                <UserRoundCog className="mr-2 h-3.5 w-3.5 text-accent-amber" />
+                {approvalLabel('Change client', clientAccess)}
+              </DropdownMenuItem>
+            </>
+          ) : null}
+
+          {deleteAccess !== 'denied' ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className={deleteAccess === 'direct' ? 'text-danger focus:text-danger' : undefined}
+                onSelect={() => setStandalone('delete-project')}
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                {approvalLabel('Delete project', deleteAccess)}
+              </DropdownMenuItem>
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {standalone === 'change-client' ? (
+        <ChangeClientDialog
+          engagement={engagement}
+          open
+          onOpenChange={(next) => setStandalone(next ? 'change-client' : null)}
+          mode={clientAccess === 'request' ? 'request' : 'direct'}
+          onDone={() => void refreshEngagements()}
+        />
+      ) : null}
+
+      {standalone === 'delete-project' ? (
+        <DeleteProjectDialog
+          engagement={engagement}
+          open
+          onOpenChange={(next) => setStandalone(next ? 'delete-project' : null)}
+          mode={deleteAccess === 'request' ? 'request' : 'direct'}
+          onDeleted={() => {
+            void refreshEngagements();
+            onDeleted?.();
+          }}
+        />
+      ) : null}
 
       <Dialog
         open={dialog !== null}
@@ -313,7 +435,7 @@ export function ProjectActionsMenu({
                   {dialog === 'add-manager' ? 'Add project manager' : 'Change project manager'}
                 </DialogTitle>
                 <DialogDescription className="text-[12px]">
-                  {engagement.companyName} — one manager per project.
+                  {engagement.companyName}
                 </DialogDescription>
               </DialogHeader>
               <div className="py-1">
@@ -352,9 +474,9 @@ export function ProjectActionsMenu({
               <DialogHeader>
                 <DialogTitle className="text-[17px]">Add delivery lead</DialogTitle>
                 <DialogDescription className="text-[12px]">
-                  {engagement.companyName} — projects can have multiple leads.
+                  {engagement.companyName}
                   {assignedLeadIds.length > 0
-                    ? ` Currently ${assignedLeadIds.length}.`
+                    ? ` — ${assignedLeadIds.length} assigned`
                     : ''}
                 </DialogDescription>
               </DialogHeader>
@@ -390,7 +512,7 @@ export function ProjectActionsMenu({
               <DialogHeader>
                 <DialogTitle className="text-[17px]">Change delivery lead</DialogTitle>
                 <DialogDescription className="text-[12px]">
-                  {engagement.companyName} — replace one lead with another.
+                  {engagement.companyName}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-3 py-1">
@@ -434,7 +556,7 @@ export function ProjectActionsMenu({
               <DialogHeader>
                 <DialogTitle className="text-[17px]">Remove delivery lead?</DialogTitle>
                 <DialogDescription className="text-[12px]">
-                  {engagement.companyName} — pick which lead to remove.
+                  {engagement.companyName}
                 </DialogDescription>
               </DialogHeader>
               <div className="py-1">
