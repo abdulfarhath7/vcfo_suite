@@ -40,7 +40,8 @@ export function plainTextFromHtml(html: string): string {
 
 /**
  * Wrap a compose-body for Graph HTML send.
- * `sbc` uses the SBC letterhead; `plain` is unbranded text.
+ * `sbc` uses the SBC letterhead (`/sbc-logo-light.png` via `siteUrl()`);
+ * `plain` is unbranded text.
  */
 export function wrapComposeBodyHtml(
   text: string,

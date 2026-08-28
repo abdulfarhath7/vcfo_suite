@@ -30,13 +30,7 @@ export function LoginHero({ className, variant = 'full' }: LoginHeroProps) {
         <Aurora className="opacity-90" variant="light" />
         <GrainOverlay className="opacity-[0.08]" />
         <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <SbcLogo variant="mark" size={40} decorative />
-            <div className="min-w-0">
-              <div className="text-[13px] font-medium tracking-tight text-foreground sm:text-[14px]">VCFO Suite</div>
-              <Eyebrow className="mt-0.5">Compliance workspace</Eyebrow>
-            </div>
-          </div>
+          <SbcLogo variant="lockup" size={32} decorative />
         </div>
       </div>
     );
@@ -60,13 +54,9 @@ export function LoginHero({ className, variant = 'full' }: LoginHeroProps) {
         initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={springGentle}
-        className="relative z-10 flex items-center gap-3"
+        className="relative z-10"
       >
-        <SbcLogo variant="mark" size={40} decorative />
-        <div>
-          <div className="text-[14px] font-medium tracking-tight text-foreground">VCFO Suite</div>
-          <Eyebrow className="mt-0.5">Compliance workspace</Eyebrow>
-        </div>
+        <SbcLogo variant="lockup" size={40} decorative />
       </m.div>
 
       <div className="relative z-10 max-w-lg">

@@ -1,20 +1,35 @@
 import { cn } from '@/lib/utils';
 
-export const SBC_LOCKUP_SRC = '/sbc-logo.png';
-export const SBC_LOCKUP_SIZE = { width: 422, height: 168 } as const;
+/** Official lockup, black mark — light UI (`html` without `.dark`). */
+export const SBC_LOCKUP_LIGHT_SRC = '/sbc-logo-light.png';
+export const SBC_LOCKUP_LIGHT_SIZE = { width: 971, height: 288 } as const;
+/** Official lockup, white mark — dark UI (`html.dark`). */
+export const SBC_LOCKUP_DARK_SRC = '/sbc-logo-dark.png';
+export const SBC_LOCKUP_DARK_SIZE = { width: 1020, height: 301 } as const;
+export const SBC_LOCKUP_SRC = SBC_LOCKUP_LIGHT_SRC;
+export const SBC_LOCKUP_SIZE = SBC_LOCKUP_LIGHT_SIZE;
 export const SBC_MARK_SRC = '/sbc-logo-mark.png';
 export const SBC_MARK_SIZE = { width: 118, height: 140 } as const;
 export const SBC_LOGO_LABEL = 'SBC — Local connect. Global outlook.';
 
+export function sbcLockupSrc(theme: 'light' | 'dark'): string {
+  return theme === 'dark' ? SBC_LOCKUP_DARK_SRC : SBC_LOCKUP_LIGHT_SRC;
+}
+
 type SbcLogoProps = {
-  variant?: 'mark' | 'full' | 'wordmark' | 'navbar';
+  variant?: 'mark' | 'full' | 'wordmark' | 'navbar' | 'lockup';
   /** Wordmark tone when variant is full (SVG product mark) */
   tone?: 'light' | 'dark';
+  /**
+   * Official PNG lockup (`variant="lockup"`): which surface it sits on.
+   * `auto` follows `html.dark`. Use `dark` on always-dark heroes (blue panels).
+   */
+  surface?: 'auto' | 'light' | 'dark';
   /** Hide mark from assistive tech when adjacent wordmark is visible */
   decorative?: boolean;
   className?: string;
   markClassName?: string;
-  /** Icon size in px (mark / SVG full / PNG wordmark height) */
+  /** Icon size in px (mark / SVG full / PNG wordmark / lockup height) */
   size?: number;
 };
 
@@ -66,13 +81,19 @@ function SbcOfficialImg({
   className,
   decorative,
   heightPx,
+  theme = 'light',
 }: {
   compact?: boolean;
   className?: string;
   decorative?: boolean;
   heightPx: number;
+  theme?: 'light' | 'dark';
 }) {
-  const asset = compact ? { src: SBC_MARK_SRC, ...SBC_MARK_SIZE } : { src: SBC_LOCKUP_SRC, ...SBC_LOCKUP_SIZE };
+  const lockup =
+    theme === 'dark'
+      ? { src: SBC_LOCKUP_DARK_SRC, ...SBC_LOCKUP_DARK_SIZE }
+      : { src: SBC_LOCKUP_LIGHT_SRC, ...SBC_LOCKUP_LIGHT_SIZE };
+  const asset = compact ? { src: SBC_MARK_SRC, ...SBC_MARK_SIZE } : lockup;
   return (
     <img
       src={asset.src}
@@ -87,9 +108,56 @@ function SbcOfficialImg({
   );
 }
 
+function SbcThemeLockup({
+  surface = 'auto',
+  decorative,
+  heightPx,
+  className,
+}: {
+  surface?: 'auto' | 'light' | 'dark';
+  decorative: boolean;
+  heightPx: number;
+  className?: string;
+}) {
+  const light = (
+    <SbcOfficialImg
+      theme="light"
+      decorative
+      heightPx={heightPx}
+      className={surface === 'auto' ? 'dark:hidden' : undefined}
+    />
+  );
+  const dark = (
+    <SbcOfficialImg
+      theme="dark"
+      decorative
+      heightPx={heightPx}
+      className={surface === 'auto' ? 'hidden dark:block' : undefined}
+    />
+  );
+  const inner = surface === 'light' ? light : surface === 'dark' ? dark : (
+    <>
+      {light}
+      {dark}
+    </>
+  );
+
+  return (
+    <span
+      className={cn('inline-flex shrink-0 items-center', className)}
+      role={decorative ? undefined : 'img'}
+      aria-hidden={decorative ? true : undefined}
+      aria-label={decorative ? undefined : SBC_LOGO_LABEL}
+    >
+      {inner}
+    </span>
+  );
+}
+
 export function SbcLogo({
   variant = 'mark',
   tone = 'dark',
+  surface = 'auto',
   decorative = true,
   className,
   markClassName,
@@ -97,25 +165,46 @@ export function SbcLogo({
 }: SbcLogoProps) {
   const gradientId = `vcfo-logo-mark-grad-${variant}-${tone}-${size}`;
 
+  if (variant === 'lockup') {
+    return (
+      <SbcThemeLockup
+        surface={surface}
+        decorative={decorative}
+        heightPx={Math.max(18, size)}
+        className={className}
+      />
+    );
+  }
+
   if (variant === 'navbar') {
     const imgH = 28;
     return (
-      <span
-        className={cn(
-          'inline-flex h-9 shrink-0 items-center overflow-hidden rounded-sm border border-black/[0.08] bg-white px-1.5 dark:border-black/[0.12] dark:bg-white',
-          className,
-        )}
-      >
+      <span className={cn('inline-flex h-9 shrink-0 items-center', className)}>
+        <span className="relative h-7 w-[26px] overflow-hidden sm:hidden">
+          <SbcOfficialImg
+            decorative={decorative}
+            heightPx={imgH}
+            theme="light"
+            className="absolute left-0 top-1/2 max-w-none -translate-y-1/2 dark:hidden"
+          />
+          <SbcOfficialImg
+            decorative={decorative}
+            heightPx={imgH}
+            theme="dark"
+            className="absolute left-0 top-1/2 hidden max-w-none -translate-y-1/2 dark:block"
+          />
+        </span>
         <SbcOfficialImg
-          compact
           decorative={decorative}
           heightPx={imgH}
-          className="sm:hidden"
+          theme="light"
+          className="hidden sm:block dark:hidden"
         />
         <SbcOfficialImg
           decorative={decorative}
           heightPx={imgH}
-          className="hidden sm:block"
+          theme="dark"
+          className="hidden dark:sm:block"
         />
       </span>
     );

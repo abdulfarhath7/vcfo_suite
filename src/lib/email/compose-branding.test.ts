@@ -27,11 +27,13 @@ describe('email branding helpers', () => {
 
   it('wraps SBC templates in the branded shell', () => {
     const html = wrapComposeBodyHtml('Dear client,\n\nPlease sign.', 'sbc', 'Board pack');
-    expect(html).toMatch(/>\s*SBC\s*</);
+    expect(html).toContain('/sbc-logo-light.png');
+    expect(html).toContain('alt="SBC"');
     expect(html).toContain('Board pack');
     expect(html).toContain('Dear client,');
     expect(html).toContain('Please sign.');
     expect(html).toContain('This message was sent by SBC.');
+    expect(html).not.toContain('/sbc-logo.png');
     expect(html).not.toMatch(/>\s*VCFO Suite\s*</);
   });
 

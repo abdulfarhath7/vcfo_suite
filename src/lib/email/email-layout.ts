@@ -3,6 +3,8 @@
  * Inline styles only — email clients strip external CSS.
  */
 
+import { siteUrl } from '@/lib/site-url';
+
 export function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -12,6 +14,20 @@ export function escapeHtml(value: string): string {
 }
 
 export type EmailDocumentBrand = 'vcfo' | 'sbc';
+
+/** Black mark — light email / compose letterhead (`public/sbc-logo-light.png`). */
+export const SBC_EMAIL_LOGO_LIGHT_PATH = '/sbc-logo-light.png';
+/** White mark — dark backgrounds (`public/sbc-logo-dark.png`). Not used in the light letterhead. */
+export const SBC_EMAIL_LOGO_DARK_PATH = '/sbc-logo-dark.png';
+
+/** Display size in the letterhead (intrinsic 971×288). */
+export const SBC_EMAIL_LOGO_DISPLAY = { width: 189, height: 56 } as const;
+
+/** Absolute URL for Resend / Graph HTML. Same `siteUrl()` host as portal links — no CID / extra Resend attachment. */
+export function sbcEmailLogoUrl(tone: 'light' | 'dark' = 'light'): string {
+  const path = tone === 'dark' ? SBC_EMAIL_LOGO_DARK_PATH : SBC_EMAIL_LOGO_LIGHT_PATH;
+  return `${siteUrl()}${path}`;
+}
 
 const DOCUMENT_BRAND: Record<
   EmailDocumentBrand,
@@ -31,6 +47,27 @@ const DOCUMENT_BRAND: Record<
     copyright: 'SBC',
   },
 };
+
+function brandHeaderHtml(
+  brandKey: EmailDocumentBrand,
+  brand: (typeof DOCUMENT_BRAND)[EmailDocumentBrand],
+): string {
+  if (brandKey === 'sbc') {
+    const { width, height } = SBC_EMAIL_LOGO_DISPLAY;
+    return `<td style="padding:22px 32px 18px;background:#ffffff;border-bottom:1px solid #E2E8F0;">
+              <img src="${escapeHtml(sbcEmailLogoUrl('light'))}" alt="${escapeHtml(brand.mark)}" width="${width}" height="${height}" style="display:block;height:${height}px;width:auto;max-width:100%;border:0;outline:none;text-decoration:none;" />
+            </td>`;
+  }
+
+  return `<td style="padding:22px 32px;background:#0F172A;">
+              <p style="margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#93C5FD;font-weight:700;">
+                ${escapeHtml(brand.mark)}
+              </p>
+              <p style="margin:6px 0 0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:13px;color:#94A3B8;">
+                ${escapeHtml(brand.tagline)}
+              </p>
+            </td>`;
+}
 
 export type EmailLayoutInput = {
   /** Main headline inside the card */
@@ -53,7 +90,8 @@ export type EmailLayoutInput = {
  * slate header, white card, blue CTA (matches product UI).
  */
 export function renderEmailDocument(input: EmailLayoutInput): string {
-  const brand = DOCUMENT_BRAND[input.brand ?? 'vcfo'];
+  const brandKey = input.brand ?? 'vcfo';
+  const brand = DOCUMENT_BRAND[brandKey];
   const eyebrow = input.eyebrow
     ? `<p style="margin:0 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#64748B;font-weight:600;">${escapeHtml(input.eyebrow)}</p>`
     : '';
@@ -83,14 +121,7 @@ export function renderEmailDocument(input: EmailLayoutInput): string {
       <td align="center">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden;">
           <tr>
-            <td style="padding:22px 32px;background:#0F172A;">
-              <p style="margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#93C5FD;font-weight:700;">
-                ${escapeHtml(brand.mark)}
-              </p>
-              <p style="margin:6px 0 0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:13px;color:#94A3B8;">
-                ${escapeHtml(brand.tagline)}
-              </p>
-            </td>
+            ${brandHeaderHtml(brandKey, brand)}
           </tr>
           <tr>
             <td style="padding:32px;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;">

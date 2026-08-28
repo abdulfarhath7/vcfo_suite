@@ -8,7 +8,7 @@ export function MarketingFooter() {
     <footer className="border-t border-border/50 bg-background">
       <div className="mx-auto flex max-w-6xl flex-col gap-12 px-5 py-14 sm:px-8 sm:py-16 lg:flex-row lg:items-start lg:justify-between lg:px-10">
         <div className="max-w-xs">
-          <SbcLogo variant="full" size={34} />
+          <SbcLogo variant="lockup" size={36} decorative={false} />
           <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
             Compliance cockpit for GCC setup, filings, and client collaboration.
           </p>
