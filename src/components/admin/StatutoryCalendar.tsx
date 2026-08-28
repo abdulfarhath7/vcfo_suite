@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import Link from 'next/link';
-import { m, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CalendarDays, CheckCheck, ListChecks } from 'lucide-react';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { Bell, CalendarDays, ChevronLeft, ChevronRight, ListChecks, Maximize2 } from 'lucide-react';
 import type { Engagement } from '@/data/engagements';
+import { useApp } from '@/context/AppContext';
+import { isFirmWideAdmin } from '@/lib/auth';
 import {
   ACT_META,
   ACT_SWATCH,
+  FY_END,
   FY_LABEL,
+  FY_START,
   STATUTORY_DEADLINES,
   deadlineAppliesTo,
   type StatutoryAct,
@@ -17,29 +21,54 @@ import {
 import { CompanyPicker } from '@/components/admin/CompanyPicker';
 import { PageBackCluster } from '@/components/shell/PageBackButton';
 import {
-  dateHasAgendaItems,
-  isSelectAllActive,
-  muteAllActs,
-  selectAllActs,
+  buildStatutoryMonthGrid,
+  isoFromDate,
+  isoInStatutoryFy,
+  nextInMonthCellIndex,
   statutoryAgendaId,
-  statutoryCellWash,
+  statutoryCellActs,
+  statutoryFilingName,
+  statutoryReturnPeriod,
+  statutoryStatus,
+  statutoryStatusLabel,
+  readCalendarViewPrefs,
   toggleMutedAct,
+  writeCalendarViewPrefs,
+  type StatutoryCalendarMode,
+  type StatutoryMonthCell,
+  type StatutoryStatus,
 } from '@/components/admin/statutory-calendar-utils';
+import { StatutoryMaxiCalendar } from '@/components/admin/StatutoryMaxiCalendar';
+import { monthPaneMotion } from '@/lib/motion';
+import { useShellAppearance } from '@/lib/use-shell-appearance';
 import { cn } from '@/lib/utils';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 const ACTS = Object.keys(ACT_META) as StatutoryAct[];
+const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
+const FY_FIRST_MONTH = new Date(2026, 3, 1);
+const FY_LAST_MONTH = new Date(2027, 2, 1);
+const FLASH_MS = 1400;
+const EMPTY_ITEMS: StatutoryDeadline[] = [];
+/** Fixed dot slots per cell so every calendar cell keeps the same height. */
+const DOT_SLOTS = [0, 1, 2] as const;
 
-const FY_FIRST_MONTH = new Date(2026, 3, 1); // Apr 2026
-const FY_LAST_MONTH = new Date(2027, 2, 1); // Mar 2027
+type Scope = 'all' | 'overdue';
+
+const SCOPES: { id: Scope; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'overdue', label: 'Overdue' },
+];
+
+/** Status lane — reuses the app's existing status meanings, never category colour. */
+const STATUS_PILL: Record<StatutoryStatus, string> = {
+  overdue: 'bg-danger-light text-danger-text',
+  'due-soon': 'bg-accent-teal-soft text-accent-teal',
+  upcoming: 'bg-primary-light text-primary-dark',
+};
 
 function monthKey(d: Date): number {
   return d.getFullYear() * 12 + d.getMonth();
-}
-
-function toIso(d: Date): string {
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 function clampToFy(d: Date): Date {
@@ -49,8 +78,167 @@ function clampToFy(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const FLASH_MS = 1400;
+function parseLocalIso(iso: string): Date {
+  return new Date(`${iso}T12:00:00`);
+}
+
+function deadlineLabel(n: number): string {
+  return n === 1 ? '1 deadline' : `${n} deadlines`;
+}
+
+function prefixFromMonth(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function StatutoryDayTile({
+  cell,
+  items,
+  todayIso,
+  selected,
+  focused,
+  monthLabel,
+  onSelect,
+}: {
+  cell: StatutoryMonthCell;
+  items: readonly StatutoryDeadline[];
+  todayIso: string;
+  selected: boolean;
+  focused: boolean;
+  monthLabel: string;
+  onSelect: (iso: string) => void;
+}) {
+  const inFy = isoInStatutoryFy(cell.iso, FY_START, FY_END);
+  const isToday = cell.iso === todayIso;
+  const local = parseLocalIso(cell.iso);
+  const weekday = local.toLocaleDateString('en-IN', { weekday: 'long' });
+  const { acts } = statutoryCellActs(items);
+
+  if (!inFy || !cell.inMonth) {
+    return (
+      <div role="gridcell" className="stat-cal-cell is-outside" aria-hidden>
+        <span className="stat-cal-cell-num">{cell.day}</span>
+        <span className="stat-cal-dots" />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      role="gridcell"
+      data-cal-iso={cell.iso}
+      tabIndex={focused ? 0 : -1}
+      aria-current={isToday ? 'date' : undefined}
+      aria-pressed={selected}
+      aria-label={`${weekday} ${cell.day} ${monthLabel}${items.length ? `, ${deadlineLabel(items.length)}` : ''}`}
+      onClick={() => onSelect(cell.iso)}
+      className="stat-cal-cell"
+      data-today={isToday ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+    >
+      <span className="stat-cal-cell-num">{cell.day}</span>
+      <span className="stat-cal-dots" aria-hidden>
+        {DOT_SLOTS.map((slot) => {
+          const act = acts[slot];
+          return (
+            <span
+              key={slot}
+              className={cn('stat-cal-dot', act ? ACT_SWATCH[act].solid : 'is-empty')}
+            />
+          );
+        })}
+      </span>
+    </button>
+  );
+}
+
+function StatutoryListRow({ item, todayIso }: { item: StatutoryDeadline; todayIso: string }) {
+  const meta = ACT_META[item.act];
+  const status = statutoryStatus(item.date, todayIso);
+  const period = statutoryReturnPeriod(item.title);
+  const d = parseLocalIso(item.date);
+
+  return (
+    <li className="stat-cal-row">
+      <span className="stat-cal-row-date" aria-hidden>
+        <span className="stat-cal-row-dow">{d.toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+        <span className="stat-cal-row-day">{d.getDate()}</span>
+      </span>
+      <span
+        className={cn('stat-cal-tag mono', ACT_SWATCH[item.act].chip)}
+        title={meta.full}
+      >
+        {meta.label}
+      </span>
+      <span className="stat-cal-row-main">
+        <span className="stat-cal-row-title">{statutoryFilingName(item.title)}</span>
+        {period ? (
+          <span className="stat-cal-row-period">
+            {period}
+            <span className="stat-cal-row-period-cap">Return period</span>
+          </span>
+        ) : null}
+      </span>
+      <span className={cn('stat-cal-status', STATUS_PILL[status])}>
+        {statutoryStatusLabel(item.date, todayIso)}
+      </span>
+      <button
+        type="button"
+        className="stat-cal-remind"
+        disabled
+        title="Reminders are not wired up yet"
+      >
+        <Bell className="h-3 w-3" strokeWidth={2} aria-hidden />
+        Remind me
+      </button>
+    </li>
+  );
+}
+
+function StatutoryAgendaGroup({
+  dateIso,
+  items,
+  todayIso,
+  selected,
+  flashing,
+  reduceMotion,
+}: {
+  dateIso: string;
+  items: readonly StatutoryDeadline[];
+  todayIso: string;
+  selected: boolean;
+  flashing: boolean;
+  reduceMotion: boolean;
+}) {
+  const d = parseLocalIso(dateIso);
+  const isPast = dateIso < todayIso;
+  const isToday = dateIso === todayIso;
+  return (
+    <section
+      id={statutoryAgendaId(dateIso)}
+      className={cn(
+        'stat-cal-group',
+        selected && 'is-selected',
+        flashing && 'is-flash',
+        isPast && !selected && !flashing && 'is-past',
+        !reduceMotion && 'stat-cal-group-motion',
+      )}
+    >
+      <header className="stat-cal-group-head">
+        <span className={cn('stat-cal-group-label', isToday && 'is-today')}>
+          {isToday ? 'Today' : d.toLocaleDateString('en-IN', { weekday: 'short' })}{' '}
+          <span className="tabular-nums">{d.getDate()}</span>
+        </span>
+        <span className="stat-cal-group-n">{items.length}</span>
+      </header>
+      <ul className="stat-cal-rows">
+        {items.map((item) => (
+          <StatutoryListRow key={item.id} item={item} todayIso={todayIso} />
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 export function StatutoryCalendar({
   engagements,
@@ -63,385 +251,421 @@ export function StatutoryCalendar({
   /** Place the shell back chevron beside the section title (intern calendar). */
   showBack?: boolean;
 }) {
-  const todayIso = toIso(new Date());
-  const reduceMotion = useReducedMotion();
+  const todayIso = isoFromDate(new Date());
+  const monthHeadingId = useId();
+  const gridHintId = useId();
+  const osReduce = useReducedMotion();
+  const { reduceMotion: prefReduce } = useShellAppearance();
+  const reduceMotion = Boolean(osReduce) || prefReduce;
   const [viewMonth, setViewMonth] = useState(() => clampToFy(new Date()));
-  const [companyId, setCompanyId] = useState<string>('all');
-  const [mutedActs, setMutedActs] = useState<Set<StatutoryAct>>(() => selectAllActs());
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [flashDay, setFlashDay] = useState<string | null>(null);
-  const agendaScrollRef = useRef<HTMLDivElement>(null);
-  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [mode, setMode] = useState<StatutoryCalendarMode>('minimized');
+  const { sidebarMode, setSidebarMode, user } = useApp();
+  /** Admin and super see the full master calendar; leads and managers only the
+      deadlines that apply to a client in their own scoped portfolio. */
+  const firmWide = isFirmWideAdmin(user?.role);
+  /** True when maximizing unpinned the sidebar — minimize must re-pin it. */
+  const unpinnedForMax = useRef(false);
 
-  const company = companyId === 'all' ? null : engagements.find((e) => e.id === companyId) ?? null;
-  const selectAllOn = isSelectAllActive(mutedActs);
+  const unpinSidebarForMax = () => {
+    if (sidebarMode === 'open') {
+      unpinnedForMax.current = true;
+      setSidebarMode('auto');
+    }
+  };
+  const restoreSidebarAfterMax = () => {
+    if (unpinnedForMax.current) {
+      unpinnedForMax.current = false;
+      setSidebarMode('open');
+    }
+  };
 
-  const applicable = useMemo(() => {
-    return STATUTORY_DEADLINES.filter((d) => {
-      if (mutedActs.has(d.act)) return false;
-      if (company) return deadlineAppliesTo(d, company);
-      return true;
-    });
-  }, [company, mutedActs]);
+  useEffect(() => {
+    if (readCalendarViewPrefs().mode === 'maximized') {
+      setMode('maximized');
+      unpinSidebarForMax();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const monthPrefix = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth() + 1).padStart(2, '0')}`;
-  const monthItems = useMemo(
-    () => applicable.filter((d) => d.date.startsWith(monthPrefix)),
-    [applicable, monthPrefix],
+  // Leaving the page while maximized must not strand an unpinned sidebar.
+  useEffect(
+    () => () => {
+      if (unpinnedForMax.current) setSidebarMode('open');
+    },
+    [setSidebarMode],
   );
 
-  const byDate = useMemo(() => {
-    const map = new Map<string, StatutoryDeadline[]>();
-    for (const item of monthItems) {
-      const list = map.get(item.date);
-      if (list) list.push(item);
-      else map.set(item.date, [item]);
-    }
-    return map;
-  }, [monthItems]);
-
-  const agendaDates = useMemo(() => [...byDate.keys()].sort(), [byDate]);
-
-  const actCounts = useMemo(() => {
-    const counts = {} as Record<StatutoryAct, number>;
-    for (const act of ACTS) counts[act] = 0;
-    for (const d of STATUTORY_DEADLINES) {
-      if (!d.date.startsWith(monthPrefix)) continue;
-      if (company && !deadlineAppliesTo(d, company)) continue;
-      counts[d.act] += 1;
-    }
-    return counts;
-  }, [company, monthPrefix]);
-
-  const cells = useMemo(() => {
-    const year = viewMonth.getFullYear();
-    const month = viewMonth.getMonth();
-    const firstWeekday = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const out: Array<{ iso: string; day: number } | null> = [];
-    for (let i = 0; i < firstWeekday; i++) out.push(null);
-    for (let day = 1; day <= daysInMonth; day++) {
-      out.push({ iso: toIso(new Date(year, month, day)), day });
-    }
-    return out;
-  }, [viewMonth]);
-
-  const canPrev = monthKey(viewMonth) > monthKey(FY_FIRST_MONTH);
-  const canNext = monthKey(viewMonth) < monthKey(FY_LAST_MONTH);
+  const applyMode = (nextMode: StatutoryCalendarMode) => {
+    if (nextMode === 'maximized') unpinSidebarForMax();
+    else restoreSidebarAfterMax();
+    setMode(nextMode);
+    writeCalendarViewPrefs({ mode: nextMode });
+  };
+  const [monthDir, setMonthDir] = useState<1 | -1>(1);
+  const [companyId, setCompanyId] = useState<string>('all');
+  const [scope, setScope] = useState<Scope>('all');
+  const [mutedActs, setMutedActs] = useState<Set<StatutoryAct>>(() => new Set());
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [flashDay, setFlashDay] = useState<string | null>(null);
+  const [focusedIso, setFocusedIso] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const scrollRequest = useRef<string | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
     if (flashTimer.current) clearTimeout(flashTimer.current);
   }, []);
 
+  const company = companyId === 'all' ? null : engagements.find((e) => e.id === companyId) ?? null;
+
+  /** Company + scope, but before category mutes — legend counts must not vanish. */
+  const scoped = useMemo(() => {
+    return STATUTORY_DEADLINES.filter((d) => {
+      if (company && !deadlineAppliesTo(d, company)) return false;
+      if (!firmWide && !company && !engagements.some((e) => deadlineAppliesTo(d, e))) {
+        return false;
+      }
+      if (scope === 'overdue' && statutoryStatus(d.date, todayIso) !== 'overdue') return false;
+      return true;
+    });
+  }, [company, scope, todayIso, firmWide, engagements]);
+
+  const visible = useMemo(() => scoped.filter((d) => !mutedActs.has(d.act)), [scoped, mutedActs]);
+
+  const monthPrefix = prefixFromMonth(viewMonth);
+
+  const byDate = useMemo(() => {
+    const map = new Map<string, StatutoryDeadline[]>();
+    for (const item of visible) {
+      if (!item.date.startsWith(monthPrefix)) continue;
+      const list = map.get(item.date);
+      if (list) list.push(item);
+      else map.set(item.date, [item]);
+    }
+    return map;
+  }, [visible, monthPrefix]);
+
+  const agendaDates = useMemo(() => [...byDate.keys()].sort(), [byDate]);
+  const monthCount = useMemo(
+    () => agendaDates.reduce((sum, iso) => sum + (byDate.get(iso)?.length ?? 0), 0),
+    [agendaDates, byDate],
+  );
+
+  const actCounts = useMemo(() => {
+    const counts = {} as Record<StatutoryAct, number>;
+    for (const act of ACTS) counts[act] = 0;
+    for (const d of scoped) {
+      if (!d.date.startsWith(monthPrefix)) continue;
+      counts[d.act] += 1;
+    }
+    return counts;
+  }, [scoped, monthPrefix]);
+
+  const cells = useMemo(() => buildStatutoryMonthGrid(viewMonth), [viewMonth]);
+
+  const rovingIso =
+    focusedIso && cells.some((c) => c.inMonth && c.iso === focusedIso)
+      ? focusedIso
+      : (cells.find((c) => c.inMonth && c.iso === todayIso)?.iso ??
+        cells.find((c) => c.inMonth)?.iso ??
+        null);
+
+  const canPrev = monthKey(viewMonth) > monthKey(FY_FIRST_MONTH);
+  const canNext = monthKey(viewMonth) < monthKey(FY_LAST_MONTH);
+  const monthName = viewMonth.toLocaleDateString('en-IN', { month: 'long' });
+  const monthYear = viewMonth.getFullYear();
+  const monthLabel = `${monthName} ${monthYear}`;
+  const pane = monthPaneMotion(monthDir, reduceMotion);
+
+  function jumpToToday() {
+    const next = clampToFy(new Date());
+    const delta = monthKey(next) - monthKey(viewMonth);
+    if (delta !== 0) {
+      setMonthDir(delta < 0 ? -1 : 1);
+      setViewMonth(next);
+      setSelectedDay(null);
+      setFlashDay(null);
+      setFocusedIso(null);
+      scrollRequest.current = null;
+    }
+  }
+
   function shiftMonth(delta: number) {
+    setMonthDir(delta < 0 ? -1 : 1);
     setViewMonth((d) => clampToFy(new Date(d.getFullYear(), d.getMonth() + delta, 1)));
     setSelectedDay(null);
     setFlashDay(null);
+    setFocusedIso(null);
+    scrollRequest.current = null;
   }
 
   function jumpToDay(iso: string) {
-    if (!dateHasAgendaItems(iso, byDate)) return;
+    if (!isoInStatutoryFy(iso, FY_START, FY_END)) return;
     setSelectedDay(iso);
+    setFocusedIso(iso);
+    if (!byDate.has(iso)) {
+      scrollRequest.current = null;
+      setFlashDay(null);
+      return;
+    }
     setFlashDay(iso);
+    scrollRequest.current = iso;
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => {
       setFlashDay((d) => (d === iso ? null : d));
     }, FLASH_MS);
-
-    const el = document.getElementById(statutoryAgendaId(iso));
-    const parent = agendaScrollRef.current;
-    if (!el) return;
-    const behavior: ScrollBehavior = reduceMotion ? 'auto' : 'smooth';
-    if (parent && parent.contains(el)) {
-      const parentRect = parent.getBoundingClientRect();
-      const elRect = el.getBoundingClientRect();
-      parent.scrollTo({
-        top: parent.scrollTop + (elRect.top - parentRect.top) - 6,
-        behavior,
-      });
-      return;
-    }
-    el.scrollIntoView({ behavior, block: 'start' });
   }
 
-  const monthLabel = viewMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  useEffect(() => {
+    const iso = scrollRequest.current;
+    if (!iso || iso !== selectedDay) return;
+    if (!byDate.has(iso)) return;
+    const el = document.getElementById(statutoryAgendaId(iso));
+    if (!el) return;
+    scrollRequest.current = null;
+    el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }, [selectedDay, byDate, reduceMotion]);
+
+  function onGridKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const iso = (e.target as HTMLElement).dataset.calIso;
+    if (!iso) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      jumpToDay(iso);
+      return;
+    }
+    const from = cells.findIndex((c) => c.iso === iso);
+    const next = nextInMonthCellIndex(cells, from, e.key);
+    if (next == null || next === from) return;
+    e.preventDefault();
+    const nextIso = cells[next]?.iso;
+    if (!nextIso) return;
+    setFocusedIso(nextIso);
+    requestAnimationFrame(() => {
+      gridRef.current?.querySelector<HTMLElement>(`[data-cal-iso="${nextIso}"]`)?.focus();
+    });
+  }
+
+  const title = showBack ? (
+    <PageBackCluster>
+      <h1 className="text-[1.05rem] font-semibold leading-none tracking-tight text-ink">
+        Statutory calendar
+      </h1>
+    </PageBackCluster>
+  ) : (
+    <h2 className="text-[1.05rem] font-semibold leading-none tracking-tight text-ink">
+      Statutory calendar
+    </h2>
+  );
 
   return (
-    <div className="surface overflow-hidden">
-      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
-        <div className="mr-1 flex items-center gap-2">
-          {showBack ? (
-            <PageBackCluster>
-              <h1 className="text-[13px] font-semibold text-ink">Statutory calendar</h1>
-            </PageBackCluster>
-          ) : (
-            <h2 className="text-[13px] font-semibold text-ink">Statutory calendar</h2>
-          )}
-          <span className="mono rounded bg-primary-light px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary-dark">
+    <div className="stat-cal">
+      <div className="flex flex-wrap items-center gap-3 px-1 pb-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {title}
+          <span className="mono rounded-md bg-primary-light px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary">
             {FY_LABEL}
           </span>
         </div>
-        <CompanyPicker
-          engagements={engagements}
-          value={companyId}
-          onChange={(id) => {
-            setCompanyId(id);
-            setSelectedDay(null);
-          }}
-        />
-        {trackerHref ? (
-          <Link
-            href={trackerHref}
-            className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-medium text-role-foreground transition-colors hover:bg-role-soft"
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <CompanyPicker
+            engagements={engagements}
+            value={companyId}
+            onChange={(id) => {
+              setCompanyId(id);
+              setSelectedDay(null);
+            }}
+          />
+          {trackerHref ? (
+            <Link
+              href={trackerHref}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-medium text-primary transition-colors hover:bg-primary-light"
+            >
+              <ListChecks className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              Filing tracker
+            </Link>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => applyMode('maximized')}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-panel px-2.5 text-[12.5px] font-medium text-primary transition-colors hover:border-primary/35 hover:bg-primary-light"
           >
-            <ListChecks className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-            Filing tracker
-          </Link>
-        ) : null}
+            <Maximize2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+            Full screen
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-4 py-2.5">
-        <button
-          type="button"
-          aria-pressed={selectAllOn}
-          onClick={() =>
-            setMutedActs(selectAllOn ? muteAllActs(ACTS) : selectAllActs())
-          }
-          className={cn(
-            'inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-[10.5px] font-semibold transition-all',
-            selectAllOn
-              ? 'bg-role-soft text-role-foreground ring-1 ring-role/25'
-              : 'bg-muted/60 text-text-tertiary opacity-70 hover:opacity-100',
-          )}
-        >
-          <CheckCheck className="h-3 w-3" strokeWidth={2.25} aria-hidden />
-          Select all
-        </button>
-        {ACTS.map((act) => {
-          const meta = ACT_META[act];
-          const muted = mutedActs.has(act);
-          const count = actCounts[act];
-          return (
-            <button
-              key={act}
-              type="button"
-              onClick={() => setMutedActs((prev) => toggleMutedAct(prev, act))}
-              title={meta.full}
-              aria-pressed={!muted}
-              className={cn(
-                'inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-[10.5px] font-semibold transition-all',
-                muted
-                  ? 'bg-muted/60 text-text-tertiary opacity-55'
-                  : ACT_SWATCH[act].chip,
-              )}
-            >
-              <span
-                className={cn('h-2 w-2 shrink-0 rounded-full', muted ? 'bg-text-tertiary' : ACT_SWATCH[act].solid)}
-                aria-hidden
-              />
-              {meta.label}
-              <span className="mono tabular-nums font-normal opacity-70">{count}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="grid lg:grid-cols-[minmax(300px,340px)_1fr]">
-        <div className="border-b border-border bg-muted/20 p-4 lg:border-b-0 lg:border-r">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => shiftMonth(-1)}
-              disabled={!canPrev}
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground transition-colors hover:text-foreground disabled:opacity-35"
-              aria-label="Previous month"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-            <div className="font-serif text-[13.5px] font-semibold text-ink">{monthLabel}</div>
-            <button
-              type="button"
-              onClick={() => shiftMonth(1)}
-              disabled={!canNext}
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground transition-colors hover:text-foreground disabled:opacity-35"
-              aria-label="Next month"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+      <div className="stat-cal-stage">
+        <section className="surface stat-cal-list overflow-hidden">
+          <div className="stat-cal-list-head">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-violet text-white">
+              <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+            </span>
+            <h3 className="min-w-0 flex-1 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
+              {monthName} · {deadlineLabel(monthCount)}
+            </h3>
+            <SegmentedPicker
+              value={scope}
+              options={SCOPES.map((s) => ({ value: s.id, label: s.label }))}
+              onChange={(next) => {
+                setScope(next);
+                setSelectedDay(null);
+              }}
+              ariaLabel="Filter deadlines"
+              size="sm"
+              className="inline-grid shrink-0"
+            />
           </div>
 
-          <div className="grid grid-cols-7 gap-1 rounded-lg border border-border bg-surface p-2">
-            {WEEKDAYS.map((w, i) => (
-              <div
-                key={`${w}-${i}`}
-                className="flex h-6 items-center justify-center text-[10px] font-semibold uppercase text-text-tertiary"
-              >
-                {w}
-              </div>
-            ))}
-            {cells.map((cell, i) => {
-              if (!cell) return <div key={`blank-${i}`} />;
-              const items = byDate.get(cell.iso);
-              const acts = items ? [...new Set(items.map((x) => x.act))] : [];
-              const hasItems = Boolean(items && items.length > 0);
-              const isToday = cell.iso === todayIso;
-              const isSelected = cell.iso === selectedDay;
-              const washClass = statutoryCellWash(acts);
-              const dayNum = (
-                <span
-                  className={cn(
-                    'relative z-10 flex h-7 w-7 items-center justify-center text-[12px] tabular-nums',
-                    isToday && 'rounded-full bg-role font-semibold text-white shadow-sm',
-                    !isToday && hasItems && 'font-semibold text-ink',
-                    !isToday && !hasItems && 'text-text-tertiary/70',
-                  )}
-                >
-                  {cell.day}
-                </span>
-              );
+          <div className="stat-cal-list-body">
+            {agendaDates.length === 0 ? (
+              <p className="stat-cal-empty">No deadlines in {monthLabel} for these filters.</p>
+            ) : (
+              agendaDates.map((dateIso) => (
+                <StatutoryAgendaGroup
+                  key={dateIso}
+                  dateIso={dateIso}
+                  items={byDate.get(dateIso) ?? EMPTY_ITEMS}
+                  todayIso={todayIso}
+                  selected={dateIso === selectedDay}
+                  flashing={flashDay === dateIso}
+                  reduceMotion={reduceMotion}
+                />
+              ))
+            )}
+          </div>
+        </section>
 
-              const cellInner = (
-                <>
-                  {washClass ? (
+        <section className="surface stat-cal-nav overflow-hidden">
+          <div className="stat-cal-nav-head">
+            <p id={monthHeadingId} className="stat-cal-nav-month">
+              {monthName}
+              <span className="ml-1.5 font-medium text-muted-foreground">{monthYear}</span>
+            </p>
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => shiftMonth(-1)}
+                disabled={!canPrev}
+                className="stat-cal-chevron"
+                aria-label="Previous month"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </button>
+              <button
+                type="button"
+                onClick={() => shiftMonth(1)}
+                disabled={!canNext}
+                className="stat-cal-chevron"
+                aria-label="Next month"
+              >
+                <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </button>
+              <button
+                type="button"
+                onClick={() => applyMode('maximized')}
+                className="stat-cal-chevron"
+                aria-label="Maximize calendar"
+                title="Maximize"
+              >
+                <Maximize2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </button>
+            </div>
+          </div>
+
+          <div className="stat-cal-nav-body">
+            <p id={gridHintId} className="sr-only">
+              Use arrow keys to move between days. Choose a day to jump to it in the list.
+            </p>
+            <div className="stat-cal-dows" aria-hidden>
+              {WEEKDAYS.map((w, i) => (
+                <div key={`${w}-${i}`} className={cn('stat-cal-dow', (i === 0 || i === 6) && 'is-weekend')}>
+                  {w}
+                </div>
+              ))}
+            </div>
+            <AnimatePresence mode="wait" initial={false}>
+              <m.div
+                key={monthPrefix}
+                ref={gridRef}
+                role="grid"
+                aria-labelledby={monthHeadingId}
+                aria-describedby={gridHintId}
+                onKeyDown={onGridKeyDown}
+                initial={pane.initial}
+                animate={pane.animate}
+                exit={pane.exit}
+                transition={pane.transition}
+                className="stat-cal-month"
+              >
+                {cells.map((cell) => (
+                  <StatutoryDayTile
+                    key={cell.iso}
+                    cell={cell}
+                    items={byDate.get(cell.iso) ?? EMPTY_ITEMS}
+                    todayIso={todayIso}
+                    selected={cell.iso === selectedDay}
+                    focused={cell.iso === rovingIso}
+                    monthLabel={monthLabel}
+                    onSelect={jumpToDay}
+                  />
+                ))}
+              </m.div>
+            </AnimatePresence>
+
+            <div className="stat-cal-legend" role="group" aria-label="Categories">
+              <p className="stat-cal-legend-cap">Legend</p>
+              {ACTS.map((act) => {
+                const meta = ACT_META[act];
+                const muted = mutedActs.has(act);
+                return (
+                  <button
+                    key={act}
+                    type="button"
+                    onClick={() => setMutedActs((prev) => toggleMutedAct(prev, act))}
+                    title={meta.full}
+                    aria-pressed={!muted}
+                    className={cn('stat-cal-legend-row', muted && 'is-muted')}
+                  >
                     <span
-                      className={cn('absolute inset-0 rounded-md', washClass)}
+                      className={cn('stat-cal-legend-dot', muted ? 'bg-text-tertiary/40' : ACT_SWATCH[act].solid)}
                       aria-hidden
                     />
-                  ) : null}
-                  {acts.length > 0 ? (
-                    <span
-                      className="absolute inset-y-1 left-0.5 z-10 flex w-1 flex-col gap-px overflow-hidden rounded-full bg-surface"
-                      aria-hidden
-                    >
-                      {acts.map((act) => (
-                        <span key={act} className={cn('min-h-[4px] w-full flex-1', ACT_SWATCH[act].solid)} />
-                      ))}
-                    </span>
-                  ) : null}
-                  {hasItems && items && items.length > 1 ? (
-                    <span className="absolute right-0.5 top-0.5 z-10 mono rounded-sm bg-surface/80 px-0.5 text-[8px] font-bold tabular-nums leading-none text-ink/80">
-                      {items.length}
-                    </span>
-                  ) : null}
-                  {dayNum}
-                </>
-              );
-
-              if (!hasItems) {
-                return (
-                  <div
-                    key={cell.iso}
-                    className={cn(
-                      'relative flex h-11 items-center justify-center rounded-md',
-                      isToday && 'ring-1 ring-role/40',
-                    )}
-                  >
-                    {dayNum}
-                  </div>
-                );
-              }
-
-              return (
-                <button
-                  key={cell.iso}
-                  type="button"
-                  onClick={() => jumpToDay(cell.iso)}
-                  className={cn(
-                    'relative flex h-11 w-full items-center justify-center overflow-hidden rounded-md transition-colors hover:brightness-[0.97]',
-                    isSelected && 'ring-2 ring-role/55',
-                    isToday && !isSelected && 'ring-1 ring-role/40',
-                  )}
-                  aria-label={`${cell.day} ${monthLabel}, ${items!.length} deadline${items!.length === 1 ? '' : 's'}`}
-                  title={`${items!.length} deadline${items!.length === 1 ? '' : 's'}`}
-                >
-                  {cellInner}
-                </button>
-              );
-            })}
-          </div>
-
-          <p className="mt-3 text-center text-[11px] text-text-tertiary">
-            <span className="tabular-nums font-medium text-ink">{monthItems.length}</span> deadline
-            {monthItems.length === 1 ? '' : 's'} in {monthLabel}
-          </p>
-        </div>
-
-        <div
-          ref={agendaScrollRef}
-          className="min-w-0 max-h-[min(70vh,40rem)] overflow-y-auto scroll-smooth"
-        >
-          {agendaDates.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
-              <CalendarDays className="h-8 w-8 text-text-tertiary/60" aria-hidden />
-              <p className="max-w-sm text-[13px] text-muted-foreground">
-                No statutory deadlines match the current filters in {monthLabel}.
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {agendaDates.map((dateIso) => {
-                const items = byDate.get(dateIso) ?? [];
-                const d = new Date(`${dateIso}T00:00:00`);
-                const isPast = dateIso < todayIso;
-                const isToday = dateIso === todayIso;
-                const flashing = flashDay === dateIso;
-                return (
-                  <div
-                    key={dateIso}
-                    id={statutoryAgendaId(dateIso)}
-                    className={cn(
-                      'flex scroll-mt-2 gap-4 px-4 py-3 transition-colors duration-500',
-                      isPast && !flashing && 'opacity-55',
-                      flashing && 'bg-role-soft/80 ring-1 ring-inset ring-role/30',
-                    )}
-                  >
-                    <div className="w-11 shrink-0 pt-0.5 text-center">
-                      <div
-                        className={cn(
-                          'font-serif text-[19px] font-semibold leading-none tabular-nums',
-                          isToday ? 'text-role-foreground' : 'text-ink',
-                        )}
-                      >
-                        {d.getDate()}
-                      </div>
-                      <div className="mt-1 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">
-                        {isToday ? 'Today' : d.toLocaleDateString('en-IN', { weekday: 'short' })}
-                      </div>
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      {items.map((item, i) => {
-                        const meta = ACT_META[item.act];
-                        return (
-                          <m.div
-                            key={item.id}
-                            initial={{ opacity: 0, y: 3 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.02 * i }}
-                            className="flex items-start gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/40"
-                          >
-                            <span
-                              className={cn(
-                                'mt-px inline-flex w-[4.5rem] shrink-0 justify-center rounded px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide',
-                                ACT_SWATCH[item.act].chip,
-                              )}
-                              title={meta.full}
-                            >
-                              {meta.label}
-                            </span>
-                            <span className="min-w-0 text-[12.5px] leading-snug text-ink-soft">
-                              {item.title}
-                            </span>
-                          </m.div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                    <span className="stat-cal-legend-name">{meta.label}</span>
+                    <span className="stat-cal-legend-n">{actCounts[act]}</span>
+                  </button>
                 );
               })}
             </div>
-          )}
-        </div>
+          </div>
+        </section>
       </div>
+
+      {mode === 'maximized' ? (
+        <StatutoryMaxiCalendar
+          acts={ACTS}
+          actCounts={actCounts}
+          mutedActs={mutedActs}
+          onToggleAct={(act) => setMutedActs((prev) => toggleMutedAct(prev, act))}
+          onSetMutedActs={setMutedActs}
+          scope={scope}
+          scopes={SCOPES}
+          onScopeChange={(next) => {
+            setScope(next);
+            setSelectedDay(null);
+          }}
+          viewMonth={viewMonth}
+          monthLabel={monthLabel}
+          canPrev={canPrev}
+          canNext={canNext}
+          onShiftMonth={shiftMonth}
+          onJumpToday={jumpToToday}
+          byDate={byDate}
+          todayIso={todayIso}
+          onMinimize={() => applyMode('minimized')}
+        />
+      ) : null}
     </div>
   );
 }
