@@ -23,6 +23,8 @@ interface Props {
   footer?: ReactNode;
   forceBack?: boolean;
   backFallbackHref?: string;
+  /** Suppress the shell back chevron (full-page forms with their own exit). */
+  hideBack?: boolean;
 }
 
 function labelsMatch(a: string, b: string): boolean {
@@ -38,6 +40,7 @@ export function PageHeader({
   footer,
   forceBack,
   backFallbackHref,
+  hideBack,
 }: Props) {
   const pathname = usePathname();
   const repeatsTrail = pageTitleRepeatsTrail(title, pathname);
@@ -48,7 +51,7 @@ export function PageHeader({
       !pageTitleRepeatsTrail(eyebrow, pathname),
   );
   const showIcon = showTitle && Boolean(Icon);
-  const showBack = Boolean(forceBack) || shouldShowShellBack(pathname);
+  const showBack = !hideBack && (Boolean(forceBack) || shouldShowShellBack(pathname));
   const hasExtras = Boolean(subtitle || actions || footer || showEyebrow);
 
   const heading = showTitle ? (

@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  ArrowRight,
   Building2,
+  Check,
+  ClipboardList,
+  Pencil,
   User,
   Layers,
   Globe2,
@@ -12,6 +16,7 @@ import {
   Plus,
   X,
 } from 'lucide-react';
+import { m as motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,13 +29,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { FieldError } from '@/components/admin/create-project-form-shared';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
+import { CreateProjectQuestionnaire } from '@/components/admin/CreateProjectQuestionnaire';
+import {
+  questionnaireProgress,
+  type QuestionnaireAnswers,
+} from '@/data/compliance-questionnaire';
 import {
   CreateProjectFormFlow,
   CreateProjectStartingPhasePicker,
@@ -40,7 +45,6 @@ import { CreateProjectClientFields } from '@/components/admin/CreateProjectFormC
 import {
   COMPANY_TYPES,
   ENTITY_LEGAL_FORMS,
-  STAGE_LABEL,
   stageRequiresSubsidiary,
   type Stage,
 } from '@/components/admin/create-project-form-utils';
@@ -68,8 +72,6 @@ type CreateProjectFieldErrorKey =
 const fieldLabelClass =
   'flex items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground';
 const fieldControlClass = 'mt-2 h-11 px-3.5 text-[14px]';
-const choiceBtnClass =
-  'flex min-h-[4.25rem] flex-col justify-center rounded-xl border px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 export type CreateProjectFormViewProps = {
   onCancel?: () => void;
@@ -106,6 +108,8 @@ export type CreateProjectFormViewProps = {
   managersLoading: boolean;
   stage: Stage;
   setStage: (value: Stage) => void;
+  questionnaire: QuestionnaireAnswers;
+  setQuestionnaire: (value: QuestionnaireAnswers) => void;
   showPassword: boolean;
   setShowPassword: (value: boolean) => void;
   owners: CreateProjectOwnerOption[];
@@ -116,18 +120,79 @@ export type CreateProjectFormViewProps = {
   saveDraft: () => void;
   companyTypeValid: boolean;
   canSubmit: boolean;
+  /** Editing an existing project — same form, PATCH semantics. */
+  editMode?: boolean;
+  /** Current portal sign-in, shown read-only while editing. */
+  existingClientEmail?: string;
 };
 
-function sectionMeta(complete: boolean, summary: string) {
+const SECTION_TABS: Array<{ id: FormFlowSection; label: string; icon: typeof Building2 }> = [
+  { id: 'entity', label: 'Entity details', icon: Building2 },
+  { id: 'team', label: 'Team', icon: User },
+  { id: 'client', label: 'Client portal', icon: KeyRound },
+  { id: 'questionnaire', label: 'Questionnaire', icon: ClipboardList },
+];
+
+/**
+ * In-card tab bar: underline indicator slides between tabs (shared layout
+ * animation), completed steps carry a filled green check. The bar's bottom
+ * border doubles as the card header rule.
+ */
+function SectionTabs({
+  active,
+  complete,
+  onSelect,
+}: {
+  active: FormFlowSection;
+  complete: Record<FormFlowSection, boolean>;
+  onSelect: (section: FormFlowSection) => void;
+}) {
   return (
-    <span
-      className={cn(
-        'mr-2 hidden text-[11px] font-normal sm:inline',
-        complete ? 'text-emerald-700' : 'text-muted-foreground',
-      )}
+    <div
+      role="tablist"
+      aria-label="Project details"
+      className="flex gap-0.5 overflow-x-auto border-b border-border/70 px-2 sm:px-4"
     >
-      {summary}
-    </span>
+      {SECTION_TABS.map((tab) => {
+        const isActive = tab.id === active;
+        const done = complete[tab.id];
+        const Icon = tab.icon;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onSelect(tab.id)}
+            className={cn(
+              'relative inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3.5 py-3 text-[13px] font-medium transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+              isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {done ? (
+              <span
+                className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-success text-white"
+                aria-hidden
+              >
+                <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+              </span>
+            ) : (
+              <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            )}
+            {tab.label}
+            {isActive ? (
+              <motion.span
+                layoutId="create-section-tab-underline"
+                aria-hidden
+                className="absolute inset-x-2 bottom-0 h-[2.5px] rounded-full bg-primary"
+                transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+              />
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -160,11 +225,15 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     managersLoading,
     stage,
     setStage,
+    questionnaire,
+    setQuestionnaire,
     owners,
     internsLoading,
     fieldError,
     submit,
     saveDraft,
+    editMode,
+    existingClientEmail,
   } = props;
 
   const needsSubsidiary = stageRequiresSubsidiary(stage);
@@ -179,9 +248,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     internIds.some((id) => id.trim()) &&
       (!showManagerPicker || managerIds.some((id) => id.trim())),
   );
-  const clientDone = Boolean(props.clientEmail.trim() && props.clientPassword);
-  const selectedOwners = owners.filter((o) => internIds.includes(o.id));
-  const selectedManagers = managers.filter((m) => managerIds.includes(m.id));
+  const clientDone = editMode ? true : Boolean(props.clientEmail.trim() && props.clientPassword);
   const lockedManager =
     lockFirstManager && selfManagerId
       ? managers.find((m) => m.id === selfManagerId) ?? {
@@ -237,93 +304,133 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     setInternIds([...internIds, '']);
   };
 
-  const [openSections, setOpenSections] = useState<FormFlowSection[]>(['entity']);
+  const [activeSection, setActiveSection] = useState<FormFlowSection>('entity');
+  /** Filled + blurred = plain title; click brings the field back. */
+  const [nameEditing, setNameEditing] = useState(false);
+  const nameFieldVisible =
+    nameEditing || !companyName.trim() || Boolean(fieldError('companyName'));
+
+  const internErr = fieldError('internId');
+  const managerErr = fieldError('managerId');
+  const entityErr =
+    fieldError('companyName') ||
+    fieldError('companyType') ||
+    fieldError('parentEntityName') ||
+    fieldError('parentEntityAddress') ||
+    fieldError('subsidiaryLegalName') ||
+    fieldError('subsidiaryRegisteredAddress');
+  const clientErr = fieldError('clientEmail') || fieldError('clientPassword');
+
+  // Jump to the first section with a validation error.
+  useEffect(() => {
+    if (entityErr) setActiveSection('entity');
+    else if (internErr || managerErr) setActiveSection('team');
+    else if (clientErr) setActiveSection('client');
+  }, [entityErr, internErr, managerErr, clientErr]);
+
+  const questionnaireDone = questionnaireProgress(questionnaire).complete;
 
   const sectionComplete: Record<FormFlowSection, boolean> = {
     entity: entityDone,
     team: teamDone,
     client: clientDone,
-  };
-
-  const selectSection = (section: FormFlowSection) => {
-    setOpenSections((prev) => (prev.includes(section) ? prev : [...prev, section]));
-    requestAnimationFrame(() => {
-      document
-        .getElementById(`create-section-${section}`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
+    questionnaire: questionnaireDone,
   };
 
   const flowProps = {
-    openSections,
+    openSections: [activeSection] as FormFlowSection[],
     sectionComplete,
-    onSelect: selectSection,
+    onSelect: setActiveSection,
+  };
+
+  const SECTION_ORDER: FormFlowSection[] = ['entity', 'team', 'client', 'questionnaire'];
+  /** Questionnaire is optional — the submit gate is the three required tabs. */
+  const requiredSectionsDone = entityDone && teamDone && clientDone;
+  /** Next tab in order; from the last tab, jump back to the first unfinished one. */
+  const goNext = () => {
+    const idx = SECTION_ORDER.indexOf(activeSection);
+    const next =
+      idx < SECTION_ORDER.length - 1
+        ? SECTION_ORDER[idx + 1]
+        : SECTION_ORDER.find((id) => !sectionComplete[id]);
+    if (next) setActiveSection(next);
   };
 
   return (
-    <div className="relative w-full lg:pr-[14rem] xl:pr-[14.75rem]">
-      {/* Mobile / tablet: compact top stepper */}
-      <div className="mb-8 lg:hidden">
+    <div className="relative w-full items-start gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_13.5rem] xl:grid-cols-[minmax(0,1fr)_14rem]">
+      {/* Mobile / tablet: compact stepper above the form */}
+      <div className="mb-6 lg:hidden">
         <CreateProjectFormFlow {...flowProps} variant="compact" />
       </div>
 
-      <fieldset disabled={submitting} className="m-0 min-w-0 space-y-8 border-0 p-0">
-        <div className="rounded-2xl border border-border/70 bg-panel/70 p-5 sm:p-8 lg:p-9">
-          <div>
+      <fieldset disabled={submitting} className="m-0 min-w-0 space-y-4 border-0 p-0">
+        {/* One card: name in the header, underline tabs inside, content below */}
+        <div className="overflow-hidden rounded-2xl border border-border/70 bg-panel">
+          <div className="px-5 pb-4 pt-5 sm:px-7 sm:pt-6">
             <Label htmlFor="create-company-name" className="text-[12px] text-muted-foreground">
               Project name <span className="font-normal text-danger">*</span>
             </Label>
-            <Input
-              id="create-company-name"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="e.g. ABC India GCC"
-              className={cn(
-                'mt-2 h-11 px-3.5 text-[15px]',
-                fieldError('companyName') && 'border-danger focus-visible:ring-danger/30',
-              )}
-              aria-invalid={!!fieldError('companyName')}
-              aria-describedby={fieldError('companyName') ? 'create-company-name-error' : undefined}
-              autoFocus
-              maxLength={120}
-            />
+            {nameFieldVisible ? (
+              <Input
+                id="create-company-name"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                onBlur={() => {
+                  if (companyName.trim()) setNameEditing(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && companyName.trim()) {
+                    e.preventDefault();
+                    setNameEditing(false);
+                  }
+                }}
+                placeholder="e.g. ABC India GCC"
+                className={cn(
+                  'mt-2 h-11 max-w-xl px-3.5 text-[15px] font-medium',
+                  fieldError('companyName') && 'border-danger focus-visible:ring-danger/30',
+                )}
+                aria-invalid={!!fieldError('companyName')}
+                aria-describedby={
+                  fieldError('companyName') ? 'create-company-name-error' : undefined
+                }
+                autoFocus
+                maxLength={120}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setNameEditing(true)}
+                title="Edit project name"
+                className={cn(
+                  'group mt-1 flex w-full max-w-xl items-center gap-2 rounded-md px-0.5 py-1 text-left',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                )}
+              >
+                <span className="min-w-0 truncate text-[1.3rem] font-semibold tracking-tight text-ink">
+                  {companyName}
+                </span>
+                <Pencil
+                  className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                  aria-hidden
+                />
+              </button>
+            )}
             <FieldError id="create-company-name-error" message={fieldError('companyName')} />
           </div>
 
-          {/* Progressive disclosure */}
-          <Accordion
-            type="multiple"
-            value={openSections}
-            onValueChange={(v) => setOpenSections(v as FormFlowSection[])}
-            className="mt-6 border-t border-border/60 pt-2"
-          >
-            <AccordionItem value="entity" id="create-section-entity" className="border-border/50">
-            <AccordionTrigger className="py-4 text-[14px] font-medium hover:no-underline">
-              <span className="flex flex-1 items-center justify-between gap-3 pr-2 text-left">
-                <span className="inline-flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-muted-foreground" aria-hidden />
-                  Entity details
-                </span>
-                {sectionMeta(
-                  entityDone,
-                  entityDone
-                    ? `${STAGE_LABEL[stage]} · ${companyType === 'foreign' ? 'Foreign' : 'Domestic'} · ${ENTITY_LEGAL_FORMS.find((f) => f.value === entityLegalForm)?.label ?? ''}`
-                    : needsSubsidiary
-                      ? 'Start phase, subsidiary, parent, origin, legal form'
-                      : 'Parent, origin, start phase, legal form',
-                )}
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="space-y-5 pb-6">
+          <SectionTabs
+            active={activeSection}
+            complete={sectionComplete}
+            onSelect={setActiveSection}
+          />
+
+          <div className="p-5 sm:p-7 lg:p-8">
+            {activeSection === 'entity' ? (
+              <div id="create-section-entity" className="space-y-5">
               <CreateProjectStartingPhasePicker stage={stage} onChange={setStage} />
 
               <div className="space-y-5 rounded-xl border border-border/80 bg-muted/25 p-4 sm:p-5">
-                <div>
-                  <p className="text-[13px] font-medium text-foreground">Parent company details</p>
-                  <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
-                    Full legal name and registered address of the parent / group entity.
-                  </p>
-                </div>
+                <p className="text-[13px] font-medium text-foreground">Parent company details</p>
                 <div>
                   <Label
                     htmlFor="create-parent-entity-name"
@@ -384,15 +491,9 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
 
               {needsSubsidiary ? (
                 <div className="space-y-5 rounded-xl border border-primary/20 bg-primary-light/50 p-4 sm:p-5">
-                  <div>
-                    <p className="text-[13px] font-medium text-foreground">
-                      Subsidiary company details
-                    </p>
-                    <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
-                      Required when starting at {STAGE_LABEL[stage]} — the India entity already
-                      exists.
-                    </p>
-                  </div>
+                  <p className="text-[13px] font-medium text-foreground">
+                    Subsidiary company details
+                  </p>
                   <div>
                     <Label
                       htmlFor="create-subsidiary-legal-name"
@@ -461,41 +562,13 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   <Globe2 className="h-3.5 w-3.5" aria-hidden />
                   Entity origin <span className="font-normal text-danger">*</span>
                 </span>
-                <fieldset
-                  aria-labelledby="create-company-type-label"
-                  className="mt-2 m-0 grid min-w-0 grid-cols-1 gap-3 border-0 p-0 sm:grid-cols-2"
-                >
-                  {COMPANY_TYPES.map((opt) => {
-                    const active = companyType === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setCompanyType(opt.value)}
-                        aria-pressed={active}
-                        className={cn(
-                          choiceBtnClass,
-                          active
-                            ? 'border-primary/55 bg-primary-light/80 ring-1 ring-primary/25'
-                            : 'border-border/80 bg-background hover:bg-muted/35',
-                          fieldError('companyType') && !active && 'border-danger/40',
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'text-[14px] font-medium',
-                            active ? 'text-primary' : 'text-foreground',
-                          )}
-                        >
-                          {opt.label}
-                        </div>
-                        <div className="mt-1 text-[12px] leading-snug text-muted-foreground">
-                          {opt.hint}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </fieldset>
+                <SegmentedPicker
+                  value={companyType}
+                  options={COMPANY_TYPES.map((opt) => ({ value: opt.value, label: opt.label }))}
+                  onChange={setCompanyType}
+                  labelledBy="create-company-type-label"
+                  className="mt-2 max-w-xs"
+                />
                 <FieldError id="create-company-type-error" message={fieldError('companyType')} />
               </div>
 
@@ -507,75 +580,20 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   <Layers className="h-3.5 w-3.5" aria-hidden />
                   Entity legal form <span className="font-normal text-danger">*</span>
                 </span>
-                <fieldset
-                  aria-labelledby="create-entity-legal-form-label"
-                  className="mt-2 m-0 grid min-w-0 grid-cols-1 gap-3 border-0 p-0 sm:grid-cols-2"
-                >
-                  {ENTITY_LEGAL_FORMS.map((opt) => {
-                    const active = entityLegalForm === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setEntityLegalForm(opt.value)}
-                        aria-pressed={active}
-                        className={cn(
-                          choiceBtnClass,
-                          active
-                            ? 'border-primary/55 bg-primary-light/80 ring-1 ring-primary/25'
-                            : 'border-border/80 bg-background hover:bg-muted/35',
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'text-[14px] font-medium',
-                            active ? 'text-primary' : 'text-foreground',
-                          )}
-                        >
-                          {opt.label}
-                        </div>
-                        <div className="mt-1 text-[12px] leading-snug text-muted-foreground">
-                          {opt.hint}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </fieldset>
-                <p className="mt-2 text-[12px] text-muted-foreground">
-                  Drives which recurring compliances appear on the calendar for this project.
-                </p>
+                <SegmentedPicker
+                  value={entityLegalForm}
+                  options={ENTITY_LEGAL_FORMS.map((opt) => ({ value: opt.value, label: opt.label }))}
+                  onChange={setEntityLegalForm}
+                  labelledBy="create-entity-legal-form-label"
+                  className="mt-2 max-w-2xl"
+                  columns={4}
+                />
               </div>
-            </AccordionContent>
-          </AccordionItem>
+              </div>
+            ) : null}
 
-          <AccordionItem value="team" id="create-section-team" className="border-border/50">
-            <AccordionTrigger className="py-5 text-[14px] font-medium hover:no-underline">
-              <span className="flex flex-1 items-center justify-between gap-3 pr-2 text-left">
-                <span className="inline-flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" aria-hidden />
-                  Team
-                </span>
-                {sectionMeta(
-                  teamDone,
-                  teamDone
-                    ? [
-                        ...(lockFirstManager
-                          ? [
-                              lockedManager?.name,
-                              ...selectedManagers
-                                .filter((m) => m.id !== selfManagerId)
-                                .map((m) => m.name),
-                            ]
-                          : selectedManagers.map((m) => m.name)),
-                        ...selectedOwners.map((o) => o.name),
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')
-                    : 'Managers left · leads right',
-                )}
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-7 pt-1">
+            {activeSection === 'team' ? (
+              <div id="create-section-team">
               <div
                 className={cn(
                   'grid grid-cols-1 gap-6',
@@ -590,9 +608,6 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                       Project manager{managerIds.length > 1 ? 's' : ''}{' '}
                       <span className="font-normal text-danger">*</span>
                     </Label>
-                    <p className="text-[12px] leading-snug text-muted-foreground">
-                      Primary manager first. Add co-managers if needed.
-                    </p>
                     <div className="space-y-2.5">
                       {(managerIds.length ? managerIds : ['']).map((id, index) => {
                         const locked = lockFirstManager && index === 0;
@@ -621,7 +636,9 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                               </div>
                             ) : (
                               <Select
-                                value={id || undefined}
+                                value={
+                                  id && managers.some((m) => m.id === id) ? id : undefined
+                                }
                                 onValueChange={(v) => updateManagerAt(index, v)}
                                 disabled={managersLoading}
                               >
@@ -670,7 +687,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                       })}
                     </div>
                     <FieldError id="create-manager-error" message={fieldError('managerId')} />
-                    {canAddManager ? (
+                    {canAddManager && !editMode ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -692,14 +709,11 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                     Project lead{internIds.filter((id) => id.trim()).length > 1 ? 's' : ''}{' '}
                     <span className="font-normal text-danger">*</span>
                   </Label>
-                  <p className="text-[12px] leading-snug text-muted-foreground">
-                    First lead is primary. Add more for shared delivery.
-                  </p>
                   <div className="space-y-2.5">
                     {(internIds.length ? internIds : ['']).map((id, index) => (
                       <div key={`lead-${index}`} className="flex items-start gap-2">
                         <Select
-                          value={id || undefined}
+                          value={id && owners.some((o) => o.id === id) ? id : undefined}
                           onValueChange={(v) => updateLeadAt(index, v)}
                           disabled={internsLoading}
                         >
@@ -773,44 +787,63 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                     <Plus className="h-3.5 w-3.5" aria-hidden />
                     Add another lead
                   </Button>
-                  {!canAddLead && !internsLoading && owners.length > 0 ? (
-                    <p className="text-[11px] text-muted-foreground">
-                      All available project leads are already assigned. Add more in People to expand
-                      the team.
-                    </p>
-                  ) : null}
                 </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
+              </div>
+            ) : null}
 
-          <AccordionItem value="client" id="create-section-client" className="border-b-0 border-border/50">
-            <AccordionTrigger className="py-4 text-[14px] font-medium hover:no-underline">
-              <span className="flex flex-1 items-center justify-between gap-3 pr-2 text-left">
-                <span className="inline-flex items-center gap-2">
-                  <KeyRound className="h-4 w-4 text-muted-foreground" aria-hidden />
-                  Client portal access
-                </span>
-                {sectionMeta(
-                  clientDone,
-                  clientDone
-                    ? props.clientEmail.trim() || 'Ready'
-                    : 'Email + initial password',
+            {activeSection === 'client' ? (
+              <div id="create-section-client">
+                {editMode ? (
+                  <div className="grid max-w-xl grid-cols-1 gap-5">
+                    <div>
+                      <Label
+                        htmlFor="edit-client-contact"
+                        className="flex items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground"
+                      >
+                        <User className="h-3.5 w-3.5" aria-hidden />
+                        Client contact name
+                      </Label>
+                      <Input
+                        id="edit-client-contact"
+                        value={props.clientContact}
+                        onChange={(e) => props.setClientContact(e.target.value)}
+                        className="mt-2 h-11 px-3.5 text-[14px]"
+                        maxLength={120}
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="edit-client-email"
+                        className="text-[12.5px] font-medium text-muted-foreground"
+                      >
+                        Portal sign-in email
+                      </Label>
+                      <Input
+                        id="edit-client-email"
+                        value={existingClientEmail || '—'}
+                        disabled
+                        readOnly
+                        className="mt-2 h-11 px-3.5 text-[14px]"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <CreateProjectClientFields {...props} />
                 )}
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="pb-7 pt-1">
-              <CreateProjectClientFields {...props} />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              </div>
+            ) : null}
+
+            {activeSection === 'questionnaire' ? (
+              <div id="create-section-questionnaire">
+                <CreateProjectQuestionnaire answers={questionnaire} onChange={setQuestionnaire} />
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[12px] leading-snug text-muted-foreground">
-            Seeds phase tasks · provisions client login · welcome email when Resend is set
-          </p>
-          <div className="flex flex-wrap items-center justify-end gap-2.5">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2.5">
             {onCancel ? (
               <Button
                 type="button"
@@ -819,42 +852,56 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                 onClick={onCancel}
                 disabled={submitting}
               >
-                Discard
+                {editMode ? 'Cancel' : 'Discard'}
               </Button>
             ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              className="h-10 px-4"
-              onClick={saveDraft}
-              disabled={submitting}
-            >
-              Save as draft
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void submit()}
-              disabled={submitting}
-              className="gold-sheen h-10 min-w-[10.5rem] px-5"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
-                  Creating…
-                </>
-              ) : (
-                'Create project'
-              )}
-            </Button>
+            {editMode ? null : (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 px-4"
+                onClick={saveDraft}
+                disabled={submitting}
+              >
+                Save as draft
+              </Button>
+            )}
+            {requiredSectionsDone ? (
+              <Button
+                type="button"
+                onClick={() => void submit()}
+                disabled={submitting}
+                className="gold-sheen h-10 min-w-[10.5rem] px-5"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+                    {editMode ? 'Saving…' : 'Creating…'}
+                  </>
+                ) : editMode ? (
+                  'Save changes'
+                ) : (
+                  'Create project'
+                )}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={goNext}
+                disabled={submitting}
+                className="h-10 min-w-[8.5rem] gap-1.5 px-5"
+              >
+                Next
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Button>
+            )}
           </div>
         </div>
       </fieldset>
 
-      {/* Progress rail — card chrome so it stays readable beside the form */}
-      <div className="pointer-events-none fixed bottom-5 right-3 top-[var(--shell-sticky-top)] z-20 hidden w-[13.25rem] lg:block xl:right-5 xl:w-[14rem]">
-        <div className="pointer-events-auto h-full">
-          <CreateProjectFormFlow {...flowProps} variant="rail" className="h-full" />
-        </div>
+      {/* Progress flowchart — in flow, sticky beside the card (never overlaps) */}
+      <div className="hidden lg:sticky lg:top-[calc(var(--shell-sticky-top)+0.75rem)] lg:block">
+        <CreateProjectFormFlow {...flowProps} variant="rail" />
       </div>
     </div>
   );

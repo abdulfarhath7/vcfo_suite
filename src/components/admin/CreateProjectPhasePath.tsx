@@ -1,43 +1,26 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Building2, Check, KeyRound, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Building2, Check, ClipboardList, KeyRound, User } from 'lucide-react';
+import { m as motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import {
-  PHASE_MILESTONES,
   PHASE_ORDER,
   STAGE_LABEL,
-  stagePhaseState,
   type Stage,
 } from '@/components/admin/create-project-form-utils';
 
-export type FormFlowSection = 'entity' | 'team' | 'client';
+export type FormFlowSection = 'entity' | 'team' | 'client' | 'questionnaire';
 
 const FORM_STEPS: Array<{
   id: FormFlowSection;
   label: string;
-  hint: string;
   icon: typeof Building2;
 }> = [
-  {
-    id: 'entity',
-    label: 'Entity details',
-    hint: 'Parent, origin, legal form, start phase',
-    icon: Building2,
-  },
-  {
-    id: 'team',
-    label: 'Team',
-    hint: 'Project manager and project lead',
-    icon: User,
-  },
-  {
-    id: 'client',
-    label: 'Client portal',
-    hint: 'Sign-in email and initial password',
-    icon: KeyRound,
-  },
+  { id: 'entity', label: 'Entity details', icon: Building2 },
+  { id: 'team', label: 'Team', icon: User },
+  { id: 'client', label: 'Client portal', icon: KeyRound },
+  { id: 'questionnaire', label: 'Questionnaire', icon: ClipboardList },
 ];
 
 type FormFlowProps = {
@@ -238,28 +221,6 @@ export function CreateProjectFormFlow({
                     {step.label}
                   </span>
                 </span>
-                <motion.span
-                  key={`${step.id}-${done ? 'ready' : active ? 'active' : 'next'}`}
-                  initial={{ opacity: 0, y: 3 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.22 }}
-                  className={cn(
-                    'mt-1 text-[11px] font-medium leading-snug',
-                    done && 'text-success-text',
-                    active && !done && 'text-primary',
-                    !done && !active && 'text-foreground/55',
-                  )}
-                >
-                  {done ? 'Ready' : active ? 'In progress' : 'Up next'}
-                </motion.span>
-                <span
-                  className={cn(
-                    'mt-1 text-[10.5px] leading-snug transition-colors duration-200',
-                    active ? 'text-primary/70' : 'text-foreground/50',
-                  )}
-                >
-                  {step.hint}
-                </span>
               </motion.button>
             </li>
           );
@@ -274,133 +235,21 @@ type PhasePickerProps = {
   onChange: (stage: Stage) => void;
 };
 
-type PillRect = { left: number; top: number; width: number; height: number };
-
-/**
- * Starting phase control inside Entity details.
- * One shared highlight slides between Incorporation / Registration / Compliance.
- */
+/** Starting phase — a compact sliding control, no commentary. */
 export function CreateProjectStartingPhasePicker({ stage, onChange }: PhasePickerProps) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const btnRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const [pill, setPill] = useState<PillRect | null>(null);
-  const activeIndex = Math.max(0, PHASE_ORDER.indexOf(stage));
-
-  const measurePill = () => {
-    const track = trackRef.current;
-    const btn = btnRefs.current[activeIndex];
-    if (!track || !btn) return;
-    const trackBox = track.getBoundingClientRect();
-    const btnBox = btn.getBoundingClientRect();
-    setPill({
-      left: btnBox.left - trackBox.left,
-      top: btnBox.top - trackBox.top,
-      width: btnBox.width,
-      height: btnBox.height,
-    });
-  };
-
-  useLayoutEffect(() => {
-    measurePill();
-  }, [activeIndex, stage]);
-
-  useEffect(() => {
-    const onResize = () => measurePill();
-    window.addEventListener('resize', onResize);
-    const ro =
-      typeof ResizeObserver !== 'undefined' && trackRef.current
-        ? new ResizeObserver(onResize)
-        : null;
-    if (trackRef.current && ro) ro.observe(trackRef.current);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      ro?.disconnect();
-    };
-  }, [activeIndex]);
-
+  const labelId = 'create-start-phase-label';
   return (
-    <div className="rounded-lg border border-border/80 bg-muted/20 p-3 sm:p-3.5">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <p className="text-[12px] font-medium text-foreground">Where should work start?</p>
-          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-            Prior phases are seeded as complete. Client checklist begins at your selection.
-          </p>
-        </div>
-      </div>
-
-      <div
-        ref={trackRef}
-        role="radiogroup"
-        aria-label="Starting setup phase"
-        className="relative mt-3 grid grid-cols-1 gap-1.5 rounded-lg bg-background p-1 ring-1 ring-border/80 sm:grid-cols-3"
-      >
-        {pill ? (
-          <motion.div
-            aria-hidden
-            className="pointer-events-none absolute z-0 rounded-md bg-primary shadow-sm"
-            initial={false}
-            animate={{
-              left: pill.left,
-              top: pill.top,
-              width: pill.width,
-              height: pill.height,
-            }}
-            transition={{
-              type: 'spring',
-              stiffness: 380,
-              damping: 32,
-              mass: 0.8,
-            }}
-          />
-        ) : null}
-
-        {PHASE_ORDER.map((p, i) => {
-          const active = stage === p;
-          const state = stagePhaseState(stage, p);
-          return (
-            <button
-              key={p}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              ref={(el) => {
-                btnRefs.current[i] = el;
-              }}
-              onClick={() => onChange(p)}
-              className={cn(
-                'relative z-[1] rounded-md px-2.5 py-2 text-left transition-colors duration-200',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                active
-                  ? 'text-white'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <span className="block text-[12.5px] font-semibold tracking-tight">
-                {STAGE_LABEL[p]}
-              </span>
-              <span
-                className={cn(
-                  'mt-0.5 block text-[10px] leading-tight',
-                  active ? 'text-primary-foreground/85' : 'text-muted-foreground',
-                )}
-              >
-                {state === 'done'
-                  ? 'Will mark prior'
-                  : state === 'current'
-                    ? 'Entry point'
-                    : 'Comes later'}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
-        <span className="font-medium text-foreground">{STAGE_LABEL[stage]}</span>
-        {' · '}
-        {PHASE_MILESTONES[stage].slice(0, 3).join(' · ')}
-      </p>
+    <div>
+      <span id={labelId} className="text-[12px] text-muted-foreground">
+        Where should work start? <span className="font-normal text-danger">*</span>
+      </span>
+      <SegmentedPicker
+        value={stage}
+        options={PHASE_ORDER.map((p) => ({ value: p, label: STAGE_LABEL[p] }))}
+        onChange={onChange}
+        labelledBy={labelId}
+        className="mt-2 max-w-md"
+      />
     </div>
   );
 }

@@ -39,11 +39,6 @@ export function CreateProjectClientFields(props: Record<string, unknown>) {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <p className="text-[12.5px] leading-snug text-muted-foreground">
-          We create their login with the initial password below (prefilled SBC@2026).
-        </p>
-      </div>
-      <div className="sm:col-span-2">
         <Label htmlFor="create-client-contact" className={fieldLabelClass}>
           <User className="h-3.5 w-3.5" aria-hidden />
           Client contact name <span className="font-normal">(optional)</span>

@@ -1,4 +1,5 @@
 import type { CompanyType, EntityLegalForm } from '@/data/engagements';
+import type { QuestionnaireAnswers } from '@/data/compliance-questionnaire';
 import { ENTITY_LEGAL_FORM_LABEL } from '@/lib/compliance/types';
 
 /** DB / API stage values — display labels differ (see STAGE_LABEL). */
@@ -28,11 +29,11 @@ export const PHASES: Array<{ value: Stage; label: string; hint: string }> = [
   },
 ];
 
-export const PHASE_MILESTONES: Record<Stage, string[]> = {
-  'Pre-Incorporation': ['Name approval (RUN)', 'DSC for directors', 'MoA / AoA drafting', 'SPICe+ filing'],
-  'Post-Incorporation': ['PAN & TAN allotment', 'Bank account opening', 'INC-20A commencement', 'GST registration'],
-  'Operational Readiness': ['FCGPR / FEMA filings', 'Payroll & PF/ESI setup', 'Auditor appointment', 'Ongoing ROC compliance'],
-};
+/** Short display name for any stage string — falls back to the raw value. */
+export function stageDisplayLabel(stage: string | null | undefined): string {
+  if (!stage) return '';
+  return STAGE_LABEL[stage as Stage] ?? stage;
+}
 
 export const PHASE_ORDER: Stage[] = [
   'Pre-Incorporation',
@@ -106,6 +107,7 @@ export type CreateProjectState = {
   managerIds: string[];
   stage: Stage;
   health: 'on-track' | 'at-risk' | 'overdue';
+  questionnaire: QuestionnaireAnswers;
   submitting: boolean;
   showValidation: boolean;
   showPassword: boolean;
@@ -138,6 +140,7 @@ export function createProjectReducer(state: CreateProjectState, action: CreatePr
         managerIds: action.managerIds ?? state.managerIds,
         stage: 'Pre-Incorporation',
         health: 'on-track',
+        questionnaire: {},
         submitting: false,
         showValidation: false,
         showPassword: false,
@@ -181,6 +184,7 @@ export function saveCreateProjectDraft(state: CreateProjectState): void {
     managerIds: state.managerIds,
     stage: state.stage,
     health: state.health,
+    questionnaire: state.questionnaire,
   };
   window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
 }
@@ -226,6 +230,10 @@ export function loadCreateProjectDraft(): CreateProjectDraftPayload | null {
           : DEFAULT_CLIENT_TEMP_PASSWORD,
       internIds,
       managerIds,
+      questionnaire:
+        parsed.questionnaire && typeof parsed.questionnaire === 'object' && !Array.isArray(parsed.questionnaire)
+          ? (parsed.questionnaire as QuestionnaireAnswers)
+          : {},
       stage:
         parsed.stage === 'Post-Incorporation' || parsed.stage === 'Operational Readiness'
           ? parsed.stage
@@ -243,5 +251,37 @@ export function clearCreateProjectDraft(): void {
   window.localStorage.removeItem(DRAFT_STORAGE_KEY);
   window.localStorage.removeItem('vcfo.create-project.draft.v2');
   window.localStorage.removeItem('vcfo.create-project.draft.v1');
+}
+
+export function uniqueNonEmptyIds(ids: string[]): string[] {
+  const out: string[] = [];
+  for (const id of ids) {
+    const trimmed = id.trim();
+    if (trimmed && !out.includes(trimmed)) out.push(trimmed);
+  }
+  return out;
+}
+
+/** Legacy mock roster ids from `src/data` — never send these to POST /api/engagements. */
+export function isPlaceholderTeamId(id: string): boolean {
+  return /^tm\d+$/i.test(id.trim());
+}
+
+export function sameIdList(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((id, i) => id === b[i]);
+}
+
+/**
+ * Drop unknown / mock ids so Radix Select is never given a value with no item.
+ * If nothing valid remains, default to the first available option.
+ */
+export function reconcileSelectedIds(current: string[], available: string[]): string[] {
+  if (available.length === 0) {
+    return uniqueNonEmptyIds(current).filter((id) => !isPlaceholderTeamId(id));
+  }
+  const known = uniqueNonEmptyIds(current).filter((id) => available.includes(id));
+  const hasEmptySlot = current.some((id) => !id.trim());
+  if (known.length === 0) return [available[0]];
+  return hasEmptySlot ? [...known, ''] : known;
 }
 

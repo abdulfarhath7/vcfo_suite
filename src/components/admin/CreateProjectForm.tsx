@@ -25,21 +25,61 @@ import {
   saveCreateProjectDraft,
   clearCreateProjectDraft,
   stageRequiresSubsidiary,
+  uniqueNonEmptyIds,
+  reconcileSelectedIds,
+  sameIdList,
+  isPlaceholderTeamId,
   type CreateProjectState,
 } from '@/components/admin/create-project-form-utils';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
+import { prunedAnswers, type QuestionnaireAnswers } from '@/data/compliance-questionnaire';
+import {
+  addEngagementLeadInDb,
+  listEngagementClientsFromDb,
+  removeEngagementLeadInDb,
+} from '@/lib/project-admin-db';
 
 export type CreateProjectFormProps = {
   onSuccess: (engagement: Engagement) => void;
   onCancel?: () => void;
   /** Called after successful create so parent can close dialog / reset */
   onCreated?: () => void;
+  /** Present = the same form edits this project instead of creating one. */
+  editEngagement?: Engagement;
 };
 
 type ManagerOption = { id: string; name: string; email: string };
 
-function initialCreateProjectState(internIds: string[]): CreateProjectState {
+function stateFromEngagement(eng: Engagement): CreateProjectState {
   return {
+    companyName: eng.companyName ?? '',
+    companyType: (eng.companyType ?? 'domestic') as CreateProjectState['companyType'],
+    entityLegalForm: (eng.entityLegalForm ?? 'company') as CreateProjectState['entityLegalForm'],
+    parentEntityName: eng.parentEntityName ?? '',
+    parentEntityAddress: eng.parentEntityAddress ?? '',
+    subsidiaryLegalName: eng.subsidiaryLegalName ?? '',
+    subsidiaryRegisteredAddress: eng.subsidiaryRegisteredAddress ?? '',
+    clientContact: eng.clientDisplayName ?? '',
+    clientEmail: eng.clientEmail ?? '',
+    clientPassword: DEFAULT_CLIENT_TEMP_PASSWORD,
+    internIds:
+      eng.leadIds && eng.leadIds.length > 0
+        ? [...eng.leadIds]
+        : eng.internId
+          ? [eng.internId]
+          : [],
+    managerIds: eng.managerId ? [eng.managerId] : [],
+    stage: (eng.stage ?? 'Pre-Incorporation') as CreateProjectState['stage'],
+    health: (eng.health ?? 'on-track') as CreateProjectState['health'],
+    questionnaire: eng.complianceQuestionnaire ?? {},
+    submitting: false,
+    showValidation: false,
+    showPassword: false,
+  };
+}
+
+function initialCreateProjectState(internIds: string[]): CreateProjectState {
+  const base: CreateProjectState = {
     companyName: '',
     companyType: 'domestic',
     entityLegalForm: 'company',
@@ -54,29 +94,49 @@ function initialCreateProjectState(internIds: string[]): CreateProjectState {
     managerIds: [],
     stage: 'Pre-Incorporation',
     health: 'on-track',
+    questionnaire: {},
+    submitting: false,
+    showValidation: false,
+    showPassword: false,
+  };
+  const draft = loadCreateProjectDraft();
+  if (!draft) return base;
+  return {
+    ...base,
+    ...draft,
+    internIds: uniqueNonEmptyIds(draft.internIds).filter((id) => !isPlaceholderTeamId(id)),
+    managerIds: uniqueNonEmptyIds(draft.managerIds),
     submitting: false,
     showValidation: false,
     showPassword: false,
   };
 }
 
-function uniqueNonEmpty(ids: string[]): string[] {
-  const out: string[] = [];
-  for (const id of ids) {
-    const trimmed = id.trim();
-    if (trimmed && !out.includes(trimmed)) out.push(trimmed);
-  }
-  return out;
-}
-
-export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProjectFormProps) {
-  const { createProjectWithClient, internOptions, internsLoading, teamMembers, user } = useApp();
+export function CreateProjectForm({
+  onSuccess,
+  onCancel,
+  onCreated,
+  editEngagement,
+}: CreateProjectFormProps) {
+  const { createProjectWithClient, updateEngagement, internOptions, internsLoading, teamMembers, user } = useApp();
+  const isEdit = Boolean(editEngagement);
   const owners = internOptions.length ? internOptions : teamMembers;
-  const defaultInternId = owners[0]?.id || 'tm1';
+  const defaultInternId = owners[0]?.id ?? '';
   const isFirmAdmin = isFirmWideAdmin(user?.role);
   const isManager = user?.role === 'manager';
   const canCreate = isAdminOrManager(user?.role);
   const selfManagerId = user?.id ?? '';
+
+  const clientsQuery = useQuery({
+    queryKey: ['engagement-clients', editEngagement?.id ?? 'none'],
+    queryFn: () => listEngagementClientsFromDb(editEngagement?.id ?? ''),
+    enabled: isEdit && Boolean(editEngagement?.id),
+    staleTime: 60_000,
+  });
+  const existingClient =
+    (clientsQuery.data ?? []).find((c) => c.memberRole === 'owner') ??
+    (clientsQuery.data ?? [])[0] ??
+    null;
 
   const managersQuery = useQuery({
     queryKey: ['admin-managers'],
@@ -92,28 +152,10 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
 
   const [state, dispatch] = useReducer(
     createProjectReducer,
-    [defaultInternId],
-    initialCreateProjectState,
+    [],
+    (ids: string[]) =>
+      editEngagement ? stateFromEngagement(editEngagement) : initialCreateProjectState(ids),
   );
-
-  useEffect(() => {
-    const draft = loadCreateProjectDraft();
-    if (!draft) return;
-    const internIds =
-      draft.internIds.length > 0 ? draft.internIds : defaultInternId ? [defaultInternId] : [];
-    let managerIds = draft.managerIds;
-    if (isManager && selfManagerId) {
-      managerIds = uniqueNonEmpty([selfManagerId, ...managerIds]);
-    }
-    dispatch({
-      type: 'patch',
-      patch: {
-        ...draft,
-        internIds,
-        managerIds,
-      },
-    });
-  }, [defaultInternId, isManager, selfManagerId]);
 
   const {
     companyName,
@@ -129,38 +171,41 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
     internIds,
     managerIds,
     stage,
+    questionnaire,
     submitting,
     showValidation,
     showPassword,
   } = state;
 
   useEffect(() => {
-    if (!canCreate) return;
+    if (!canCreate || isEdit) return;
     if (isManager && selfManagerId) {
-      if (!managerIds.includes(selfManagerId)) {
-        dispatch({
-          type: 'patch',
-          patch: { managerIds: uniqueNonEmpty([selfManagerId, ...managerIds]) },
-        });
+      const next = uniqueNonEmptyIds([selfManagerId, ...managerIds]);
+      if (!sameIdList(next, managerIds)) {
+        dispatch({ type: 'patch', patch: { managerIds: next } });
       }
       return;
     }
-    if (isFirmAdmin) {
-      const first = managersQuery.data?.[0]?.id;
-      if (first && managerIds.length === 0) {
-        dispatch({ type: 'patch', patch: { managerIds: [first] } });
-      }
+    const available = (managersQuery.data ?? []).map((m) => m.id);
+    if (!isFirmAdmin || available.length === 0) return;
+    const next = reconcileSelectedIds(managerIds, available);
+    if (!sameIdList(next, managerIds)) {
+      dispatch({ type: 'patch', patch: { managerIds: next } });
     }
-  }, [canCreate, isFirmAdmin, isManager, selfManagerId, managersQuery.data, managerIds]);
+  }, [canCreate, isEdit, isFirmAdmin, isManager, selfManagerId, managersQuery.data, managerIds]);
 
   useEffect(() => {
-    if (internIds.length === 0 && defaultInternId) {
-      dispatch({ type: 'patch', patch: { internIds: [defaultInternId] } });
+    if (isEdit) return;
+    const available = owners.map((o) => o.id).filter(Boolean);
+    if (available.length === 0 && internIds.length === 0) return;
+    const next = reconcileSelectedIds(internIds, available);
+    if (!sameIdList(next, internIds)) {
+      dispatch({ type: 'patch', patch: { internIds: next } });
     }
-  }, [defaultInternId, internIds.length]);
+  }, [isEdit, owners, internIds]);
 
-  const emailValid = emailSchema.safeParse(clientEmail).success;
-  const passwordValid = clientPasswordSchema.safeParse(clientPassword).success;
+  const emailValid = isEdit || emailSchema.safeParse(clientEmail).success;
+  const passwordValid = isEdit || clientPasswordSchema.safeParse(clientPassword).success;
   const companyValid = companyNameSchema.safeParse(companyName).success;
   const companyTypeValid = companyTypeSchema.safeParse(companyType).success;
   const entityLegalFormValid = entityLegalFormSchema.safeParse(entityLegalForm).success;
@@ -173,9 +218,9 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
   const subsidiaryAddressValid = !needsSubsidiary
     ? true
     : subsidiaryRegisteredAddressSchema.safeParse(subsidiaryRegisteredAddress).success;
-  const leadsValid = internIds.some((id) => id.trim());
+  const leadsValid = internIds.some((id) => owners.some((o) => o.id === id));
   const managersValid = isFirmAdmin
-    ? managerIds.some((id) => id.trim())
+    ? managerIds.some((id) => (managersQuery.data ?? []).some((m) => m.id === id))
     : Boolean(selfManagerId);
   const canSubmit =
     companyValid &&
@@ -189,7 +234,8 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
     passwordValid &&
     leadsValid &&
     managersValid &&
-    canCreate;
+    canCreate &&
+    !internsLoading;
   const pwStrength = passwordStrength(clientPassword);
 
   const fieldErrors = useMemo(
@@ -220,22 +266,36 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
             ? 'Address must be 2,000 characters or fewer.'
             : ''
         : '',
-      clientEmail: !clientEmail.trim()
-        ? 'Client portal email is required.'
-        : !emailValid
-          ? 'Use a valid work email (e.g. founder@company.in).'
+      clientEmail: isEdit
+        ? ''
+        : !clientEmail.trim()
+          ? 'Client portal email is required.'
+          : !emailValid
+            ? 'Use a valid work email (e.g. founder@company.in).'
+            : '',
+      clientPassword: isEdit
+        ? ''
+        : !clientPassword
+          ? 'Set the client’s initial portal password.'
+          : !passwordValid
+            ? 'Use at least 8 characters.'
+            : '',
+      internId:
+        !owners.length && !internsLoading
+          ? 'No project leads available. Add a project lead in People first.'
+          : !leadsValid
+            ? 'Assign at least one project lead.'
+            : '',
+      managerId:
+        isFirmAdmin &&
+        !managerIds.some((id) => (managersQuery.data ?? []).some((m) => m.id === id))
+          ? managersQuery.isLoading
+            ? 'Loading project managers…'
+            : 'Assign at least one project manager.'
           : '',
-      clientPassword: !clientPassword
-        ? 'Set the client’s initial portal password.'
-        : !passwordValid
-          ? 'Use at least 8 characters.'
-          : '',
-      managerId: isFirmAdmin && !managerIds.some((id) => id.trim())
-        ? 'Assign at least one project manager.'
-        : '',
-      internId: !leadsValid ? 'Assign at least one project lead.' : '',
     }),
     [
+      isEdit,
       companyName,
       companyTypeValid,
       parentEntityName,
@@ -253,7 +313,11 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
       passwordValid,
       isFirmAdmin,
       managerIds,
+      managersQuery.data,
+      managersQuery.isLoading,
       leadsValid,
+      owners,
+      internsLoading,
     ],
   );
 
@@ -279,7 +343,7 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
     dispatch({ type: 'patch', patch: { clientPassword: value } });
   /** Keep selected ids unique; allow a single trailing empty slot while picking. */
   const setInternIds = (value: string[]) => {
-    const selected = uniqueNonEmpty(value);
+    const selected = uniqueNonEmptyIds(value);
     const hasEmptySlot = value.some((id) => !id.trim());
     dispatch({
       type: 'patch',
@@ -287,18 +351,20 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
     });
   };
   const setManagerIds = (value: string[]) => {
-    const next = uniqueNonEmpty(value);
+    const next = uniqueNonEmptyIds(value);
     dispatch({
       type: 'patch',
       patch: {
         managerIds:
           isManager && selfManagerId
-            ? uniqueNonEmpty([selfManagerId, ...next.filter((id) => id !== selfManagerId)])
+            ? uniqueNonEmptyIds([selfManagerId, ...next.filter((id) => id !== selfManagerId)])
             : next,
       },
     });
   };
   const setStage = (value: typeof stage) => dispatch({ type: 'patch', patch: { stage: value } });
+  const setQuestionnaire = (value: QuestionnaireAnswers) =>
+    dispatch({ type: 'patch', patch: { questionnaire: value } });
   const setShowPassword = (value: boolean) => dispatch({ type: 'patch', patch: { showPassword: value } });
 
   const defaultManagerIdsAfterReset = () => {
@@ -314,11 +380,65 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
     if (!canSubmit) return;
     dispatch({ type: 'patch', patch: { submitting: true } });
     try {
-      const cleanInternIds = uniqueNonEmpty(internIds);
-      const cleanManagerIds =
-        isManager && selfManagerId
-          ? uniqueNonEmpty([selfManagerId, ...managerIds])
-          : uniqueNonEmpty(managerIds);
+      const cleanInternIds = uniqueNonEmptyIds(internIds).filter((id) =>
+        owners.some((o) => o.id === id),
+      );
+
+      if (isEdit && editEngagement) {
+        const needsSub = stageRequiresSubsidiary(stage);
+        const managerChanged =
+          isFirmAdmin && (editEngagement.managerId ?? '') !== (uniqueNonEmptyIds(managerIds)[0] ?? '');
+        const updated = await updateEngagement(editEngagement.id, {
+          companyName: name,
+          companyType,
+          entityLegalForm,
+          parentEntityName: parentEntityName.trim(),
+          parentEntityAddress: parentEntityAddress.trim(),
+          subsidiaryLegalName: needsSub ? subsidiaryLegalName.trim() : null,
+          subsidiaryRegisteredAddress: needsSub ? subsidiaryRegisteredAddress.trim() : null,
+          clientName: clientContact.trim() || null,
+          stage,
+          ...(cleanInternIds[0] ? { internId: cleanInternIds[0] } : {}),
+          ...(managerChanged ? { managerId: uniqueNonEmptyIds(managerIds)[0] ?? null } : {}),
+          complianceQuestionnaire: prunedAnswers(questionnaire) as Record<
+            string,
+            boolean | number | string
+          >,
+        });
+
+        // Delivery team diff — adds first so the project never drops to zero leads.
+        const before = new Set(
+          editEngagement.leadIds?.length
+            ? editEngagement.leadIds
+            : editEngagement.internId
+              ? [editEngagement.internId]
+              : [],
+        );
+        const after = new Set(cleanInternIds);
+        for (const id of after) {
+          if (!before.has(id)) await addEngagementLeadInDb(editEngagement.id, id);
+        }
+        for (const id of before) {
+          if (!after.has(id)) {
+            await removeEngagementLeadInDb(editEngagement.id, id).catch(() => undefined);
+          }
+        }
+
+        toastSuccess('Project updated', name);
+        onCreated?.();
+        onSuccess(updated ?? editEngagement);
+        return;
+      }
+      const managerRoster = managersQuery.data ?? [];
+      const cleanManagerIds = uniqueNonEmptyIds(
+        isManager && selfManagerId ? [selfManagerId, ...managerIds] : managerIds,
+      ).filter((id) =>
+        isManager && id === selfManagerId
+          ? true
+          : managerRoster.length === 0
+            ? Boolean(id)
+            : managerRoster.some((m) => m.id === id),
+      );
       const result = await createProjectWithClient({
         companyName: name,
         companyType,
@@ -338,6 +458,10 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
         managerId: cleanManagerIds[0],
         stage,
         health: 'on-track',
+        complianceQuestionnaire: prunedAnswers(questionnaire) as Record<
+          string,
+          boolean | number | string
+        >,
       });
       const { engagement } = result;
       toastSuccess(
@@ -394,6 +518,10 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
   };
 
   const discard = () => {
+    if (isEdit) {
+      onCancel?.();
+      return;
+    }
     clearCreateProjectDraft();
     dispatch({
       type: 'reset',
@@ -437,6 +565,8 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
     managersLoading: managersQuery.isLoading,
     stage,
     setStage,
+    questionnaire,
+    setQuestionnaire,
     showPassword,
     setShowPassword,
     owners,
@@ -447,6 +577,8 @@ export function CreateProjectForm({ onSuccess, onCancel, onCreated }: CreateProj
     saveDraft,
     companyTypeValid,
     canSubmit,
+    editMode: isEdit,
+    existingClientEmail: existingClient?.email ?? editEngagement?.clientEmail ?? '',
   };
   return <CreateProjectFormView {...viewProps} />;
 }
