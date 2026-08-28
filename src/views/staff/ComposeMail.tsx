@@ -9,6 +9,7 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { Surface } from '@/components/noir';
+import { PageBackCluster } from '@/components/shell/PageBackButton';
 import { AccentButton } from '@/components/noir/AccentButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -174,15 +175,15 @@ export default function ComposeMail({ path }: Props) {
         path={path}
       />
 
-      <PageHeader
-        accent="cyan"
-        icon={Mail}
-        eyebrow="Outlook"
-        title="Send email"
-      />
+      <PageHeader accent="cyan" icon={Mail} title="Send email" hideBack />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
         <Surface className="p-5 sm:p-6">
+          <PageBackCluster forceBack className="mb-4">
+            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Outlook
+            </h2>
+          </PageBackCluster>
           <div className="space-y-1">
             <Label htmlFor="mail-from">From</Label>
             <Input

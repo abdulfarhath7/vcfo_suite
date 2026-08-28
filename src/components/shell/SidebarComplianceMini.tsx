@@ -1,10 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { useComplianceFilings } from '@/hooks/use-compliance-filings';
-import { parseIsoDate } from '@/components/admin/compliance-calendar-utils';
+import { STATUTORY_DEADLINES } from '@/data/statutory-calendar-fy2627';
 import { cn } from '@/lib/utils';
 
 function complianceHref(role: string | undefined, staffBase: string): string {
@@ -16,7 +15,7 @@ function complianceHref(role: string | undefined, staffBase: string): string {
 }
 
 /** Compact month grid. Today is the bright cell; due days are round marks. */
-export function SidebarComplianceMini({
+export const SidebarComplianceMini = memo(function SidebarComplianceMini({
   expanded,
   staffBase,
   ink = 'dark',
@@ -25,8 +24,7 @@ export function SidebarComplianceMini({
   staffBase: string;
   ink?: 'light' | 'dark';
 }) {
-  const { user, engagements, getStateForEngagement } = useApp();
-  const filings = useComplianceFilings(engagements, getStateForEngagement);
+  const { user } = useApp();
 
   const now = useMemo(() => new Date(), []);
   const year = now.getFullYear();
@@ -34,16 +32,15 @@ export function SidebarComplianceMini({
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startWeekday = new Date(year, month, 1).getDay();
 
+  // Same source as the statutory calendar page this card links to.
   const dueDays = useMemo(() => {
+    const prefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
     const set = new Set<number>();
-    for (const f of filings) {
-      const d = parseIsoDate(f.nextDue);
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        set.add(d.getDate());
-      }
+    for (const d of STATUTORY_DEADLINES) {
+      if (d.date.startsWith(prefix)) set.add(Number(d.date.slice(8, 10)));
     }
     return set;
-  }, [filings, year, month]);
+  }, [year, month]);
 
   if (!user || !expanded) return null;
 
@@ -77,10 +74,10 @@ export function SidebarComplianceMini({
           {dueDays.size} due
         </span>
       </div>
-      <div className="grid grid-cols-7 gap-px">
+      <div className="grid grid-cols-7 gap-0.5">
         {cells.map((day, i) => {
           if (day == null) {
-            return <div key={`e-${i}`} className="h-4" />;
+            return <div key={`e-${i}`} className="h-[18px]" />;
           }
           const hasDue = dueDays.has(day);
           const isToday = day === now.getDate();
@@ -88,12 +85,16 @@ export function SidebarComplianceMini({
             <div
               key={day}
               className={cn(
-                'relative flex h-4 w-full items-center justify-center text-[8px] tabular-nums leading-none',
-                isToday && 'rounded-full font-semibold',
+                'relative flex h-[18px] w-full items-center justify-center rounded-full text-[8.5px] tabular-nums leading-none',
+                isToday && 'font-bold',
                 isToday && (light ? 'bg-white text-primary' : 'bg-primary text-white'),
-                !isToday && hasDue && 'rounded-full font-medium',
-                !isToday && hasDue && (light ? 'ring-1 ring-white/70 text-white' : 'ring-1 ring-primary/55 text-foreground'),
-                !isToday && !hasDue && (light ? 'text-white/55' : 'text-muted-foreground/65'),
+                !isToday && hasDue && 'border bg-transparent font-semibold',
+                !isToday &&
+                  hasDue &&
+                  (light
+                    ? 'border-white/80 text-white'
+                    : 'border-primary/70 text-primary'),
+                !isToday && !hasDue && (light ? 'text-white/80' : 'text-foreground/75'),
               )}
             >
               {day}
@@ -103,4 +104,4 @@ export function SidebarComplianceMini({
       </div>
     </Link>
   );
-}
+});
