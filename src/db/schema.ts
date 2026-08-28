@@ -120,6 +120,8 @@ export const engagements = pgTable(
     stage: stageEnum('stage').notNull().default('Pre-Incorporation'),
     health: healthEnum('health').notNull().default('on-track'),
     checklistState: jsonb('checklist_state').notNull().default({}),
+    /** Compliance questionnaire answers captured at project creation. */
+    complianceQuestionnaire: jsonb('compliance_questionnaire').notNull().default({}),
     // SQL type is text[], not jsonb — merge-cc.ts treats it as a string array.
     progressCcEmails: text('progress_cc_emails').array().notNull().default([]),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -760,5 +762,50 @@ export const announcements = pgTable(
       t.sourceId,
       t.externalId,
     ),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Project change requests — manager asks, admin approves
+// ---------------------------------------------------------------------------
+// Managers edit low-risk project fields directly on their own projects. The
+// high-risk ones (delete, swap the client, reassign the project manager) land
+// here instead: the manager submits the proposed payload, an admin sees the
+// before/after diff, and approving APPLIES the change. The payload is what gets
+// executed, so an approval can never write values the admin did not see.
+
+export const engagementChangeRequests = pgTable(
+  'engagement_change_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => engagements.id, { onDelete: 'cascade' }),
+    /** delete_project | change_client | change_manager */
+    kind: text('kind').notNull(),
+    /** pending | approved | rejected | cancelled */
+    status: text('status').notNull().default('pending'),
+    requestedBy: uuid('requested_by')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    requestedByName: text('requested_by_name'),
+    reason: text('reason'),
+    /** The change to execute on approval — shape depends on `kind`. */
+    payload: jsonb('payload').notNull().default({}),
+    /** Human-readable before/after, frozen at request time for the admin diff. */
+    preview: jsonb('preview').notNull().default({}),
+    decidedBy: uuid('decided_by').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    decidedByName: text('decided_by_name'),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    decisionNote: text('decision_note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    engIdx: index('engagement_change_requests_engagement_idx').on(t.engagementId),
+    statusIdx: index('engagement_change_requests_status_idx').on(t.status),
+    requesterIdx: index('engagement_change_requests_requester_idx').on(t.requestedBy),
   }),
 );

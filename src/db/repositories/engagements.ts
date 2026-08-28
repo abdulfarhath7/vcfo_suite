@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, desc, eq, getTableColumns, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { engagements, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -8,11 +8,13 @@ import {
   type ChecklistItemStateSlice,
   normalizeEngagementChecklistState,
 } from '@/lib/checklist-state-key';
+import { slimChecklistIndexState } from '@/lib/checklist-index';
 import { responseFieldIdsForItem } from '@/lib/checklist-responses';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { sequentialLockMessage } from '@/lib/checklist-step-gate';
+import { resolveCreateProjectManagerAssignment } from '@/lib/create-project-scope';
 import {
   ensureEngagementClientMember,
   listClientMemberEngagementIds,
@@ -29,6 +31,40 @@ import {
 
 export type EngagementDbRow = typeof engagements.$inferSelect;
 export type EngagementChecklistState = Record<string, ChecklistItemStateSlice>;
+/** List/directory rows — same columns as the table except the jsonb blob. */
+export type EngagementListRow = Omit<EngagementDbRow, 'checklistState'>;
+
+const { checklistState: _checklistState, ...engagementListColumns } = getTableColumns(engagements);
+void _checklistState;
+
+/**
+ * Postgres-side slim of checklist_state: drop answers/notes, keep status +
+ * sequential-gate fields and the few compliance trigger dates.
+ */
+const checklistIndexSql = sql<Record<string, unknown>>`
+  COALESCE(
+    (
+      SELECT jsonb_object_agg(
+        kv.key,
+        (kv.value - 'responses' - 'notes')
+        || jsonb_build_object(
+          'responses',
+          jsonb_strip_nulls(
+            jsonb_build_object(
+              'dateOfIncorporation', kv.value #>> '{responses,dateOfIncorporation}',
+              'gstRegistrationDate', kv.value #>> '{responses,gstRegistrationDate}',
+              'pfRegistrationDate', kv.value #>> '{responses,pfRegistrationDate}',
+              'esiRegistrationDate', kv.value #>> '{responses,esiRegistrationDate}',
+              'panTanAllotmentDate', kv.value #>> '{responses,panTanAllotmentDate}'
+            )
+          )
+        )
+      )
+      FROM jsonb_each(engagements.checklist_state) AS kv
+    ),
+    '{}'::jsonb
+  )
+`;
 
 /**
  * ENGAGEMENTS REPOSITORY — the reference implementation of the seam.
@@ -93,9 +129,45 @@ async function scopeFor(ctx: AuthContext) {
   return and(notDeleted, roleScope);
 }
 
-export async function listEngagements(ctx: AuthContext) {
+export async function listEngagements(ctx: AuthContext): Promise<EngagementListRow[]> {
   const scope = await scopeFor(ctx);
-  return db.select().from(engagements).where(scope);
+  return db.select(engagementListColumns).from(engagements).where(scope);
+}
+
+/** Role-scoped ids only — used by tasks/requests/activity/invites/audit. */
+export async function listScopedEngagementIds(ctx: AuthContext): Promise<string[]> {
+  const scope = await scopeFor(ctx);
+  const rows = await db.select({ id: engagements.id }).from(engagements).where(scope);
+  return rows.map((row) => row.id);
+}
+
+/**
+ * Slim checklist maps keyed by app engagement id (legacy e1 or uuid).
+ * Dashboards / intern Today use this instead of N+1 full /checklist fetches.
+ */
+export async function listChecklistIndex(
+  ctx: AuthContext,
+): Promise<Record<string, EngagementChecklistState>> {
+  const scope = await scopeFor(ctx);
+  const rows = await db
+    .select({
+      id: engagements.id,
+      checklistIndex: checklistIndexSql,
+    })
+    .from(engagements)
+    .where(scope);
+
+  const out: Record<string, EngagementChecklistState> = {};
+  for (const row of rows) {
+    const appId = LEGACY_ENGAGEMENT_IDS[row.id] ?? row.id;
+    const raw = row.checklistIndex;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      out[appId] = {};
+      continue;
+    }
+    out[appId] = slimChecklistIndexState(raw);
+  }
+  return out;
 }
 
 export async function getEngagementById(ctx: AuthContext, id: string) {
@@ -210,7 +282,7 @@ export async function updateEngagement(
 
 /** Map a DB row to the app Engagement shape (legacy e1 ids preserved). */
 export function toAppEngagement(
-  row: EngagementDbRow,
+  row: EngagementListRow | EngagementDbRow,
   client?: { email: string; name: string | null } | null,
   leadIds?: string[],
 ): Engagement {
@@ -244,12 +316,19 @@ export function toAppEngagement(
     clientUserId: row.clientUserId,
     clientEmail: client?.email ?? null,
     clientDisplayName: row.clientName?.trim() || client?.name?.trim() || null,
+    complianceQuestionnaire:
+      'complianceQuestionnaire' in row &&
+      row.complianceQuestionnaire &&
+      typeof row.complianceQuestionnaire === 'object' &&
+      !Array.isArray(row.complianceQuestionnaire)
+        ? (row.complianceQuestionnaire as Record<string, boolean | number | string>)
+        : null,
   };
 }
 
 /** Attach leadIds to app engagements in one round-trip. */
 export async function toAppEngagementsWithLeads(
-  rows: EngagementDbRow[],
+  rows: Array<EngagementListRow | EngagementDbRow>,
 ): Promise<Engagement[]> {
   const leadMap = await listLeadIdsByEngagementIds(rows.map((r) => r.id));
   return rows.map((row) => toAppEngagement(row, null, leadMap.get(row.id)));
@@ -301,7 +380,7 @@ export async function assertEngagementAccess(
 }
 
 /** Client portal: the single engagement owned by the session user. */
-export async function getMyEngagement(ctx: AuthContext): Promise<EngagementDbRow | null> {
+export async function getMyEngagement(ctx: AuthContext): Promise<EngagementListRow | null> {
   if (ctx.role !== 'client') return null;
   const rows = await listEngagements(ctx);
   return rows[0] ?? null;
@@ -491,6 +570,7 @@ export interface CreateProjectWithClientInput {
   health?: Engagement['health'];
   subsidiaryLegalName?: string;
   subsidiaryRegisteredAddress?: string;
+  complianceQuestionnaire?: Record<string, boolean | number | string>;
 }
 
 export interface CreateProjectWithClientResult {
@@ -528,25 +608,12 @@ export async function createProjectWithClient(
     throw new Error('Only admins or managers may create projects');
   }
 
-  const managerIdsRaw = [
-    ...(input.managerIds ?? []),
-    ...(input.managerId ? [input.managerId] : []),
-  ]
-    .map((id) => id.trim())
-    .filter(Boolean);
-  const uniqueManagerIds = [...new Set(managerIdsRaw)];
-
-  let primaryManagerId: string | null =
-    ctx.role === 'manager' ? ctx.userId : uniqueManagerIds[0] ?? null;
-  if (ctx.role === 'manager') {
-    // Creating manager is always on the project; extras are co-managers.
-    const extras = uniqueManagerIds.filter((id) => id !== ctx.userId);
-    uniqueManagerIds.splice(0, uniqueManagerIds.length, ctx.userId, ...extras);
-    primaryManagerId = ctx.userId;
-  }
-  if (!primaryManagerId) {
-    throw new Error('managerId is required when creating as admin');
-  }
+  const { primaryManagerId, uniqueManagerIds } = resolveCreateProjectManagerAssignment({
+    role: ctx.role,
+    userId: ctx.userId,
+    managerId: input.managerId,
+    managerIds: input.managerIds,
+  });
 
   const leadKeysRaw = [
     ...(input.internIds ?? []),
@@ -618,6 +685,7 @@ export async function createProjectWithClient(
       stage,
       health,
       checklistState: {},
+      complianceQuestionnaire: input.complianceQuestionnaire ?? {},
     });
 
     for (const leadId of resolvedLeadIds) {
@@ -645,4 +713,68 @@ export async function createProjectWithClient(
     await db.delete(profiles).where(eq(profiles.id, client.userId));
     throw err;
   }
+}
+
+/* ── Soft delete ────────────────────────────────────────────────────────────
+   `scopeFor()` already excludes rows with a non-null deleted_at, so setting it
+   removes the project from every list, detail page, and client portal at once
+   without destroying documents, checklist history, or the audit trail. Only a
+   firm-wide admin may delete or restore; managers go through a change request. */
+
+export async function softDeleteEngagement(
+  ctx: AuthContext,
+  appOrDbId: string,
+): Promise<EngagementDbRow> {
+  if (!isFirmWideAdmin(ctx.role)) {
+    throw new Error('Only firm admins may delete projects');
+  }
+  const dbId = engagementDbId(appOrDbId);
+  const [row] = await db
+    .update(engagements)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(engagements.id, dbId), isNull(engagements.deletedAt)))
+    .returning();
+  if (!row) throw new Error('Engagement not found');
+  return row;
+}
+
+export async function restoreEngagement(
+  ctx: AuthContext,
+  appOrDbId: string,
+): Promise<EngagementDbRow> {
+  if (!isFirmWideAdmin(ctx.role)) {
+    throw new Error('Only firm admins may restore projects');
+  }
+  const dbId = engagementDbId(appOrDbId);
+  const [row] = await db
+    .update(engagements)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(eq(engagements.id, dbId))
+    .returning();
+  if (!row) throw new Error('Engagement not found');
+  return row;
+}
+
+/** Recycle bin — soft-deleted projects, newest first. Admin only. */
+export async function listDeletedEngagements(ctx: AuthContext): Promise<EngagementListRow[]> {
+  if (!isFirmWideAdmin(ctx.role)) return [];
+  return db
+    .select(engagementListColumns)
+    .from(engagements)
+    .where(isNotNull(engagements.deletedAt))
+    .orderBy(desc(engagements.deletedAt));
+}
+
+/** Unscoped read used by delete/restore flows — a soft-deleted row is invisible to getEngagementById. */
+export async function getEngagementIncludingDeleted(
+  ctx: AuthContext,
+  appOrDbId: string,
+): Promise<EngagementDbRow | null> {
+  if (!isFirmWideAdmin(ctx.role)) return null;
+  const [row] = await db
+    .select()
+    .from(engagements)
+    .where(eq(engagements.id, engagementDbId(appOrDbId)))
+    .limit(1);
+  return row ?? null;
 }
