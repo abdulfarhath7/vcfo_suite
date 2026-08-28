@@ -19,12 +19,10 @@ import {
   ymdInIst,
 } from '@/lib/intern-work';
 import { cn } from '@/lib/utils';
-import { useClientLocaleNow } from '@/hooks/use-client-locale-date';
 
 export default function InternToday() {
   const { user, getStateForEngagement } = useApp();
   const { myEngagements, workItems, kpis, filings } = useInternPortfolio();
-  const nowLabel = useClientLocaleNow();
   const now = useMemo(() => new Date(), []);
   const todayYmd = ymdInIst(now);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -51,7 +49,6 @@ export default function InternToday() {
       <div className="flex flex-col gap-3">
         <LeadHero
           name={user?.name ?? ''}
-          clockLabel={nowLabel}
           kpis={kpis}
         />
 

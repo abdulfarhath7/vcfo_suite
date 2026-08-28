@@ -30,7 +30,7 @@ export default function InviteAccept() {
 
   if (!inv || !eng) {
     return (
-      <div className="min-h-screen grid place-items-center bg-blue-50/40 p-6" data-role="client">
+      <div className="public-lockup-theme min-h-screen grid place-items-center bg-blue-50/40 p-6" data-role="client">
         <SEO title="Invite unavailable — VCFO Suite" description="This client portal invite is invalid or has expired." path={`/invite/${token}`} />
         <GrainOverlay className="fixed inset-0 pointer-events-none opacity-30" />
         <m.div
@@ -55,17 +55,13 @@ export default function InviteAccept() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1fr_1.05fr] bg-blue-50/40" data-role="client">
+    <div className="public-lockup-theme min-h-screen grid lg:grid-cols-[1fr_1.05fr] bg-blue-50/40" data-role="client">
       <SEO title={`Join ${eng.companyName} — VCFO Suite`} description="Accept your invite to the VCFO Suite client portal." path={`/invite/${token}`} />
 
       <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-blue-700 to-blue-800 text-white p-12 overflow-hidden">
         <GrainOverlay className="opacity-10" />
-        <div className="relative z-10 flex items-center gap-3">
-          <SbcLogo variant="mark" size={36} decorative />
-          <div>
-            <div className="text-[13px] font-medium tracking-tight text-white">VCFO Suite</div>
-            <Eyebrow className="mt-0.5 text-blue-100">Client portal</Eyebrow>
-          </div>
+        <div className="relative z-10">
+          <SbcLogo variant="lockup" size={36} surface="dark" decorative />
         </div>
 
         <m.div
@@ -100,9 +96,8 @@ export default function InviteAccept() {
           transition={{ duration: 0.4, ease }}
           className="surface relative z-10 w-full max-w-[420px] p-8"
         >
-          <div className="mb-6 flex items-center gap-2.5 lg:hidden">
-            <SbcLogo variant="mark" size={32} decorative />
-            <span className="text-[14px] font-medium">VCFO Suite</span>
+          <div className="mb-6 lg:hidden">
+            <SbcLogo variant="lockup" size={28} decorative />
           </div>
 
           <Eyebrow>Client portal</Eyebrow>

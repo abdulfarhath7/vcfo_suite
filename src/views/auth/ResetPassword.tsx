@@ -18,7 +18,7 @@ export default function ResetPassword() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1fr_1.05fr] bg-background" data-role="admin">
+    <div className="public-lockup-theme min-h-screen grid lg:grid-cols-[1fr_1.05fr] bg-background" data-role="admin">
       <SEO
         title="Password help — VCFO Suite"
         description="How to update your VCFO Suite password."
@@ -27,12 +27,8 @@ export default function ResetPassword() {
 
       <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-blue-600 to-blue-700 text-white p-12 overflow-hidden">
         <GrainOverlay className="opacity-10" />
-        <div className="relative z-10 flex items-center gap-3">
-          <SbcLogo variant="mark" size={36} decorative />
-          <div>
-            <div className="text-[13px] font-medium tracking-tight text-white">VCFO Suite</div>
-            <Eyebrow className="mt-0.5 text-blue-100">Account security</Eyebrow>
-          </div>
+        <div className="relative z-10">
+          <SbcLogo variant="lockup" size={36} surface="dark" decorative />
         </div>
 
         <m.div

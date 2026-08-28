@@ -111,7 +111,7 @@ function LoginForm({
 
   return (
     <div
-      className="flex min-h-[100dvh] flex-col overflow-x-hidden lg:grid lg:min-h-screen lg:grid-cols-[1.05fr_1fr]"
+      className="public-lockup-theme flex min-h-[100dvh] flex-col overflow-x-hidden lg:grid lg:min-h-screen lg:grid-cols-[1.05fr_1fr]"
       data-role="admin"
     >
       <SEO
