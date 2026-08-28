@@ -109,6 +109,22 @@ Append here whenever something costs more than a minute to figure out.
   (`requireAuth`); `/api/admin/audit-logs` stays admin/manager.
 - Cross-role URLs bounce via middleware segment check — use `staffBase` /
   `adminProjectPath(eng, roleOrBase)`, not hardcoded `/app/manager`.
+  Super Admin has no `/app/super/projects/*` — `staffProjectBase` / `staffNewProjectPath`
+  map super → `/app/admin`. Prefer `staffProjectBaseFromPathname` so Super in a
+  manager shell stays on `/app/manager/projects`.
+- Create-project intern picker must not default to mock `tm1`. That id is not in
+  the live roster, so Radix Select gets a value with no item and POST sends
+  `Invalid internId`. Reconcile against `/api/admin/interns` (`intern_id` keys —
+  seed may be `intern-1`, UI-created leads are `i` + 10 hex chars). Duplicate
+  `intern_id` values on two profiles also break Radix (same Select value twice);
+  `listInternOptions` uniques by that key. Admin POST still requires a real
+  `managerId`.
+- `parseJsonBody` now returns the first Zod issue message (e.g. `intern_required`)
+  instead of a generic `invalid_body`, so create-project toasts can show the real
+  reason. Welcome email failures after insert are caught so the 201 still returns.
+- `LazyMotion strict` in `app/providers.tsx` throws if a page renders `motion.*`
+  instead of `m.*`. Create-project’s phase rail (`CreateProjectPhasePath`) must
+  import `m as motion` or the error boundary replaces the whole form.
 - Guard narrowing: use `if (guard.ok === false)` so TS sees `error`/`status`.
 
 ## LAN / phone access
@@ -173,6 +189,16 @@ Append here whenever something costs more than a minute to figure out.
 - A 404 on upload almost always meant these routes were missing — they must stay
   in sync with `src/lib/milestone-document-storage.ts`.
 
+## Runtime performance (2026-08-25)
+
+- `listEngagements` does not select `checklist_state`. Tasks/requests/activity/invites/audit
+  scope via `listScopedEngagementIds` (id-only). The jsonb blob is the expensive part of
+  every previously duplicated list call on boot.
+- Intern Today / dashboards hydrate status from `GET /api/checklist-index` (answers stripped
+  in SQL). Step pages and vault still load full `/checklist` per engagement. Do not put
+  `refetchInterval` on the fat list. Live popups stay on 4s `?head=1`.
+- Command palette mounts the cmdk result list only while open. Compose-email host is
+  dynamically imported from providers.
 
 ## Design tokens (cool blue primary)
 
@@ -303,10 +329,13 @@ Append here whenever something costs more than a minute to figure out.
   bottom-0`, top bar `top-0` from the sidebar’s right edge to the screen
   edge. No floating inset. Sidebar header keeps the VCFO Suite mark (+ wordmark
   when the rail is expanded). The top bar always shows the official SBC lockup
-  (`public/sbc-logo.png`) in a white chip — compact mark below `sm`. Hover-peek expands the collapsed rail over content
-  (200ms leave delay). Footer: **Keep open** / **Keep closed** (mutually
-  exclusive; default is auto/hover). Re-expand via the slim-rail Keep open
-  pin. `sidebarCollapsed` is derived (`mode !== 'open'`). Do **not** call
+  (`public/sbc-logo-light.png` / `sbc-logo-dark.png`, via `html.dark`) with
+  transparent backing — compact mark crop below `sm`. Hover-peek expands the collapsed rail over content
+  (200ms leave delay). Footer pin is one compact control (`SidebarPinButton`,
+  same on the slim rail) that cycles Auto (hover peek) → Keep open → Keep closed.
+  Tooltip names the current pin and the next click. Do **not** restore the old
+  dual Keep open / Keep closed buttons when editing `RoleSidebar` motion. `sidebarCollapsed` is derived
+  (`mode !== 'open'`). Do **not** call
   `setSidebarCollapsed(true)` on intern project open — that used to rewrite
   Keep open (`open`) to Auto. Intern Clients list expand is visual only
   (`shellDesktopNavExpanded` in `intern-sidebar.ts`): auto + `/app/intern/clients`
@@ -355,7 +384,10 @@ Append here whenever something costs more than a minute to figure out.
 - Metric top-bar colours use semantic tokens (`primary`, `danger`, `accent-sky`,
   `success`) — never `orange-*` (those still alias blue). Waiting is sky/pink/cyan,
   never khaki or brown.
-- Quiet IST clock stays in the hero. Today's todos persist on `tasks` (`engagement_id`
+- Quiet IST clock stays in the hero as `ClientLocaleNowLabel` (1s tick in that
+  leaf only). Never call `useClientLocaleNow()` in Today / AppContext — that
+  re-rendered the whole intern home every second and froze hover/clicks.
+  Today's todos persist on `tasks` (`engagement_id`
   null, `assigned_to` = owner, `step_id` prefix `todo:`) via `/api/todos`. Interns
   see/edit only their own. Manager lists self + leads/co-managers on scoped clients
   plus intern reports; admin/super list firm-wide staff. Mutate is owner-only.
@@ -378,9 +410,13 @@ Append here whenever something costs more than a minute to figure out.
   `vcfo.announcements.read.{userId}`) is the in-app list; client inbox still has a
   compact list. Kind + `author_role` on the row (migration 0010).
 - Live popup: new posts (compose or RSS ingest) appear for every signed-in role
-  within a few seconds (`useAnnouncements` refetches every 4s). The card genies
-  into `[data-announcements-bell]` (~1s, Framer `m` + FLIP rects). Reduce-motion
-  / appearance `motion === 'none'` skips the genie and just hides. Genie does
+  within a few seconds. `useAnnouncements` keeps a 4s **head** poll
+  (`GET /api/announcements?head=1`) and only refetches the full board when
+  latest id / count changes. Do not put `refetchInterval` on the fat list —
+  JSON.parse of announcement bodies on the main thread froze hover/clicks.
+  The card genies into `[data-announcements-bell]` (~1s, Framer `m` + FLIP rects).
+  Reduce-motion / appearance `motion === 'none'` skips the genie and just hides.
+  Genie does
   **not** mark read. Already-shown ids live in `vcfo.announcements.popup.{userId}`.
   First visit seeds history and may queue today’s unseen (cap 3). Authors skip
   their own posts. Queue is one-at-a-time. Clicking a megaphone-dropdown row or
@@ -421,11 +457,26 @@ Append here whenever something costs more than a minute to figure out.
 - `LazyMotion` in `app/providers.tsx` must use `domMax`, not `domAnimation`.
   `m` + `layoutId` is a silent no-op without the layout feature — the sidebar pill
   never slides. `domAnimation` covers fade / stagger / hover / tap only.
+  Keep `strict` so `m` does not search for features on every component.
+  Do **not** import `_feature-registry` / `ui/_registry` from `providers.tsx` —
+  that pulls the entire component catalog into the root client bundle and
+  freezes the main thread.
+- AppContext value identity must stay stable across the 4s live poll. Empty
+  `internOptions` is a module-level constant (never `?? []` in render). Copy
+  TanStack lists into reducer state only when item refs actually change.
 - Never put CSS `transform` / `transition-transform` / `active:scale` / Framer
   `whileTap` scale on a node that hosts or wraps a `layoutId` pill. Projection
   uses transform; a competing transform kills the shared-element spring. Press
   feedback on those hosts: color / opacity only. Nested client-row stagger must
   stay opacity-only for the same reason (`y` on the row ancestor isolates pills).
+- Hover-peek state is **local to `RoleSidebar`**, never `ShellNavContext` (that
+  re-rendered the whole workspace). Item hover glass is local to `SidebarNavBody`
+  (`useSidebarHoverFollow` + `data-sidebar-hover`); skip `setState` when the
+  hovered id has not changed. Do not remount Popover vs accordion on peek —
+  keep both trees with `hidden`. No full-height `backdrop-filter` on the
+  width-animating rail; hover glass is tint/ring only. `will-change: width`
+  only for the peek transition, then drop it. Keep `useInternPortfolio` in
+  `InternMyWorkBadge` (memo) so hover does not rebuild the intern queue.
 
 ## Intern form error summary
 
@@ -460,7 +511,8 @@ Append here whenever something costs more than a minute to figure out.
 - Send path: `POST /api/outlook/send` with `templateId` / `branding`. If
   `templateId` is set, branding is loaded from the DB (not trusted from the
   client). `sbc` wraps HTML with `renderEmailDocument({ brand: 'sbc' })`
-  (`src/lib/email/compose-branding.ts`). Process-email compose that already
+  (`src/lib/email/compose-branding.ts`), hosting `public/sbc-logo-light.png`
+  via `siteUrl()` (no CID / Resend attachment). Process-email compose that already
   sends `html` is unchanged. Default untemplated send stays `plain`.
 - Directory now returns inactive people too; To defaults to **Active**. Team
   filter uses `profiles.reports_to_manager_id`.
@@ -482,7 +534,9 @@ Append here whenever something costs more than a minute to figure out.
 - Inbox-only (the signed-in user’s **received** rows, not firm-wide, not sent
   email). New ids popup one-at-a-time; first visit seeds history so refresh
   does not replay. Storage `vcfo.notifications.popup.{userId}`.
-- Poll: notifications query `refetchInterval` 4s (same as announcements).
+- Poll: 4s **head** (`GET /api/notifications?head=1` → latestId / unread / count)
+  then invalidate the inbox query only when that fingerprint changes. Same
+  cadence as announcements; do not refetchInterval the full inbox on AppContext.
 - Close (X / backdrop / Esc) genies into `[data-notifications-bell-target]`
   via shared `measureGenieDock`. Reduce-motion skips the flight. Landing
   pulses the bell. Auto-popup does **not** mark read. No Got it / parks copy.
@@ -517,6 +571,11 @@ Append here whenever something costs more than a minute to figure out.
   the page drops below a full-height gap. `::before` overlay still works —
   `fixed`/`relative` on the host is already a containing block. Settings
   preview keeps Tailwind `relative` on the sample tile.
+- Do **not** add an opaque `::after` floor of `oklch(var(--panel))`. Negative
+  z-index still paints *above* the host `background`, hiding
+  `--sidebar-surface-bg` so appearance skins (and photos) look stuck on
+  Glass/white. Skin stays on the host. Glass is opaque `oklch(var(--panel))`
+  (follows light/dark) — not `panel / 0.88` and not a viewport-sized blur.
 
 ## Profile avatars
 
@@ -576,18 +635,37 @@ Append here whenever something costs more than a minute to figure out.
 
 ## Intern compliance calendar (no page tabs)
 
-- Intern `/app/intern/compliance` is the statutory calendar only — do not put
-  “Statutory calendar / Client filing tracker” pill tabs on that page.
-- Client filing tracker stays reachable at `/app/intern/compliance/tracker`
-  (header “Filing tracker” link, command palette, crumb parent = Compliance
-  calendar). Manager/admin still use the in-page tabs.
-- Category chips: “Select all” is first and on by default (empty `mutedActs`).
-  No “Clear all”. Date cells use a category tint plus a left color stripe
-  (stacked when a day has multiple acts) — not dots under the number.
-  Act colours are `--stat-*` in `ACT_SWATCH` (hues ≥45° apart). Do not reuse
-  IconChip emerald/teal or rose/pink — those merge on stacked stripes. Multi-act
-  days skip the wash and separate stripes with a 1px gap. Clicking a dated cell
-  smooth-scrolls `#statutory-agenda-YYYY-MM-DD`.
+- EVERY role's `/compliance` page is now the intern layout: statutory calendar
+  only — no PageHeader, no KPI row, no pill tabs, back cluster in the card.
+- The filing tracker lives on `<base>/compliance/tracker` for intern, admin,
+  and manager alike (header “Filing tracker” link on the calendar). The old
+  admin/manager in-page tabs are gone.
+- Deadline scoping: admin/super see the full master calendar; managers and
+  leads only see deadlines that apply to a client in their role-scoped
+  portfolio (`deadlineAppliesTo` over `engagements`, which the API scopes).
+- Layout is two panels: the month's deadlines grouped by date on the left
+  (`.stat-cal-list`), a compact month navigator + legend on the right
+  (`.stat-cal-nav`, sticky from `lg`). The old FY heat strip and the act chip
+  toolbar are gone — the legend rows are the category filter now, and they
+  still drive `mutedActs` via `toggleMutedAct`.
+- **Two colour lanes, never blended.** Category (which law) = `--stat-*` from
+  `ACT_SWATCH`, used only on the row's code tag and the calendar dots. Status
+  (state of the filing) = danger / accent-teal / primary-light, used only on
+  the pill at the right of a row. Act hues are ≥45° apart; do not reuse
+  IconChip emerald/teal or rose/pink — those merge as adjacent dots.
+- Calendar cells carry up to 3 category dots in catalog order
+  (`statutoryCellActs`, cap 3) over three fixed slots so every cell keeps the
+  same height. Days with more acts than the cap say the true count in their
+  `aria-label` only; the left list is the full record. Clicking a dated cell
+  smooth-scrolls `#statutory-agenda-YYYY-MM-DD` and flashes that group.
+- `STATUTORY_DEADLINES` has no status, owner, or period column — it is a fixed
+  FY master calendar. The list derives all three for display only:
+  `statutoryStatus` (past = overdue, ≤7 days = due soon, else upcoming — there
+  is no `filed`), `statutoryReturnPeriod` / `statutoryFilingName` (trailing
+  parenthetical off the title), and "Mine" = applies to any engagement in the
+  passed portfolio via `deadlineAppliesTo`. Do not add these to the data file.
+- "Remind me" is deliberately a disabled button — there is no reminder backend
+  for statutory deadlines yet. Wire it only alongside real delivery.
 
 ## Unified sidebar disclosure row
 
@@ -644,4 +722,56 @@ Append here whenever something costs more than a minute to figure out.
 - Do not gut in-card form headings (Profile, Security). Do not set
   `position` on `.shell-sidebar-skin`.
 
+## SBC lockups (login / marketing)
 
+- Canonical files: `public/sbc-logo-light.png` (black mark, light UI) and
+  `public/sbc-logo-dark.png` (white mark, dark UI). Source exports were JPEG
+  with an opaque black artboard — near-black was knocked to alpha so they
+  don't sit as a black rectangle on a white page. `html.dark` swaps via
+  `dark:hidden` / `hidden dark:block` (`variant="lockup"`). Always-dark blue
+  auth heroes pass `surface="dark"`.
+- `[data-role="admin"]` pins a light `--background` that beats `html.dark`.
+  Login + marketing wrappers add `public-lockup-theme` so dark mode actually
+  darkens those surfaces (otherwise the white lockup lands on a pale panel).
+- Do not change `variant="navbar"` / TopBar / RoleSidebar from this work —
+  shell owns those. Left `public/sbc-logo.png` to the shell agent.
+
+
+
+## Project management: edit, delete, and manager change requests
+
+- **Soft delete only.** `DELETE /api/engagements/:id` sets `engagements.deleted_at`;
+  nothing is destroyed. Every repository scope already filters on it
+  (`scopeFor()` in `engagements.ts`), so one write hides the project from staff
+  lists, the client portal, and direct GETs at once. `POST /api/engagements/:id/restore`
+  clears it. `GET /api/admin/projects/deleted` is the recycle bin
+  (`/app/admin/projects/recycle-bin`). All three are firm-admin only.
+- **The engagement PATCH now covers every field the create form collects** —
+  companyType, parentEntityName/Address/RegistrationNumber, subsidiaryLegalName/
+  RegisteredAddress and clientName joined the existing set. `EditProjectDialog`
+  sends only the fields that actually changed.
+- **Who may do what lives in `src/lib/project-edit-policy.ts`** — a pure,
+  unit-tested table. Admins act directly on everything. A manager edits the
+  low-risk fields of their own projects directly but must file a change request
+  for the three high-risk actions: delete the project, change the client,
+  reassign the project manager. That last one matches the pre-existing
+  `manager_reassign_admin_only` guard in the PATCH route. The policy module
+  drives the UI; the API routes remain the enforcement point.
+- **Approving a change request APPLIES it.** The manager's proposed values are
+  stored on the row (`payload`) together with a frozen before/after (`preview`).
+  `applyChangeRequest()` in `src/lib/project-change-requests.ts` re-validates the
+  payload and executes it under the APPROVING ADMIN's context — that is what lets
+  a manager's delete or PM reassignment succeed at all. If execution throws, the
+  request is re-opened rather than left claiming a change that never happened.
+  Decisions are guarded on `status = 'pending'`, so two admins racing get one
+  winner and one `already_decided`.
+- Pending requests render in `ProjectChangeRequestsPanel`, mounted on the
+  existing Approvals page for both scopes: admins decide, managers withdraw.
+- The kebab is `ProjectActionsMenu` (projects list, board cards, firm panel, and
+  the project detail header). Its manager/lead entries and their assignment-email
+  toasts are the original behaviour — Edit details, Change client, and Delete
+  project were added around them. Entries a manager can only request are labelled
+  "(needs approval)" rather than hidden, so the path is discoverable.
+- Migration `0014` was hand-trimmed: drizzle-kit emitted a large drift backlog for
+  tables that already exist in the database. Only `engagement_change_requests`
+  remains in the SQL; the snapshot is intact so future diffs are correct.
