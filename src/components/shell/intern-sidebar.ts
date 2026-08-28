@@ -29,6 +29,25 @@ export function shellDesktopNavExpanded(
   return isInternClientsListPath(pathname);
 }
 
+/** Footer pin: Auto (hover) → pin open → pin closed → Auto. */
+export function cycleSidebarMode(mode: SidebarMode): SidebarMode {
+  if (mode === 'auto') return 'open';
+  if (mode === 'open') return 'closed';
+  return 'auto';
+}
+
+/** Short label plus tooltip/aria that names the current pin and the next click. */
+export function sidebarPinCopy(mode: SidebarMode): { label: string; hint: string } {
+  switch (mode) {
+    case 'open':
+      return { label: 'Pin', hint: 'Pinned open. Click to pin closed' };
+    case 'closed':
+      return { label: 'Closed', hint: 'Pinned closed. Click for auto (hover)' };
+    default:
+      return { label: 'Auto', hint: 'Auto (hover). Click to pin open' };
+  }
+}
+
 /**
  * `setSidebarCollapsed` maps onto `sidebarMode`. Collapse must not unpin
  * Keep open, and neither collapse nor expand may override Keep closed.

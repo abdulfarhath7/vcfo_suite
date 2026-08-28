@@ -47,7 +47,6 @@ import {
   vaultFileNameMatches,
   type IndexedDocumentRow,
 } from "@/lib/vault-documents";
-import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/auth";
 
 type PaletteFileHit = {
@@ -230,16 +229,45 @@ export function CommandPalette() {
   };
 
   const itemClass = "rounded-lg px-2 py-2 text-[13px]";
+  const shortcutHint =
+    isApple != null && !query ? (
+      <span className="hidden shrink-0 items-center gap-0.5 lg:flex" aria-hidden>
+        {isApple ? <span className="kbd">⌘</span> : <span className="kbd px-1">Ctrl</span>}
+        <span className="kbd">K</span>
+      </span>
+    ) : null;
+
+  if (!commandOpen) {
+    return (
+      <div
+        ref={rootRef}
+        className="relative hidden min-w-[8rem] w-[min(100%,12.5rem)] max-w-xs shrink sm:block lg:w-[min(100%,16rem)]"
+      >
+        <div className="flex h-9 items-center gap-2 rounded-xl border border-border/70 bg-raised/50 px-3 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-raised hover:text-foreground">
+          <Search className="h-3.5 w-3.5 shrink-0 text-primary/80" strokeWidth={1.75} aria-hidden />
+          <input
+            className="h-9 min-w-0 flex-1 bg-transparent py-0 text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
+            placeholder="Search"
+            aria-label="Search"
+            aria-expanded={false}
+            aria-keyshortcuts="Meta+K Control+K"
+            value=""
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setCommandOpen(true);
+            }}
+            onFocus={() => setCommandOpen(true)}
+          />
+          {shortcutHint}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={rootRef}
-      className={cn(
-        "min-w-0",
-        commandOpen
-          ? "absolute inset-x-2 top-[7px] z-40 sm:relative sm:inset-x-auto sm:top-auto sm:z-auto sm:w-[min(100%,18rem)] sm:min-w-[8rem] sm:max-w-xs sm:flex-none sm:shrink"
-          : "relative hidden min-w-[8rem] w-[min(100%,12.5rem)] max-w-xs shrink sm:block lg:w-[min(100%,16rem)]",
-      )}
+      className="absolute inset-x-2 top-[7px] z-40 min-w-0 sm:relative sm:inset-x-auto sm:top-auto sm:z-auto sm:w-[min(100%,18rem)] sm:min-w-[8rem] sm:max-w-xs sm:flex-none sm:shrink"
     >
       <Command
         key={idleKey}
@@ -247,48 +275,25 @@ export function CommandPalette() {
         shouldFilter
         loop
       >
-        <div
-          className={cn(
-            "flex h-9 items-center gap-2 rounded-xl border bg-raised/50 px-3 text-[13px] text-muted-foreground transition-colors",
-            commandOpen
-              ? "border-primary/35 bg-raised text-foreground shadow-[0_0_0_3px_oklch(var(--primary)_/_0.12)]"
-              : "border-border/70 hover:border-primary/30 hover:bg-raised hover:text-foreground",
-          )}
-        >
+        <div className="flex h-9 items-center gap-2 rounded-xl border border-primary/35 bg-raised px-3 text-[13px] text-foreground shadow-[0_0_0_3px_oklch(var(--primary)_/_0.12)]">
           <Search className="h-3.5 w-3.5 shrink-0 text-primary/80" strokeWidth={1.75} aria-hidden />
           <CommandInput
             ref={inputRef}
             showIcon={false}
             wrapperClassName="flex min-w-0 flex-1 items-center border-0 p-0"
-            onValueChange={(value) => {
-              setQuery(value);
-              if (!commandOpen) setCommandOpen(true);
-            }}
-            onFocus={() => setCommandOpen(true)}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                setCommandOpen(true);
-              }
-            }}
+            value={query}
+            onValueChange={setQuery}
             placeholder="Search"
             aria-label="Search"
-            aria-expanded={commandOpen}
+            aria-expanded
             aria-keyshortcuts="Meta+K Control+K"
             className="h-9 py-0 text-[13px] text-foreground placeholder:text-muted-foreground"
           />
-          {isApple != null && !query && (
-            <span className="hidden shrink-0 items-center gap-0.5 lg:flex" aria-hidden>
-              {isApple ? <span className="kbd">⌘</span> : <span className="kbd px-1">Ctrl</span>}
-              <span className="kbd">K</span>
-            </span>
-          )}
+          {shortcutHint}
         </div>
 
         <CommandList
-          className={cn(
-            "absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[min(22rem,70vh)] overflow-y-auto overflow-x-hidden rounded-xl border border-border/70 bg-panel p-1 shadow-[0_16px_40px_-18px_oklch(22%_0.06_260_/_0.5)] ring-1 ring-primary/10",
-            !commandOpen && "hidden",
-          )}
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[min(22rem,70vh)] overflow-y-auto overflow-x-hidden rounded-xl border border-border/70 bg-panel p-1 shadow-[0_16px_40px_-18px_oklch(22%_0.06_260_/_0.5)] ring-1 ring-primary/10"
         >
           <CommandEmpty className="py-6 text-center text-[13px] text-muted-foreground">
             Nothing matched. Try another term.
@@ -326,6 +331,7 @@ export function CommandPalette() {
           {user?.role === "super_admin" && (
             <CommandGroup heading="Super admin">
               <CommandItem className={itemClass} onSelect={() => go("/app/super/dashboard")}><LayoutDashboard className="w-4 h-4 mr-2" />Overview</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/admin/projects/new")}><Plus className="w-4 h-4 mr-2" />New project</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/super/announcements")}><Megaphone className="w-4 h-4 mr-2" />Announcements</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/super/notifications")}><Bell className="w-4 h-4 mr-2" />Notification history</CommandItem>
             </CommandGroup>

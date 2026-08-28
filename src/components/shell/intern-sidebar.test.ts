@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   applySidebarCollapsed,
+  cycleSidebarMode,
   isInternClientsListPath,
   shellDesktopNavExpanded,
+  sidebarPinCopy,
 } from './intern-sidebar';
 
 describe('isInternClientsListPath', () => {
@@ -65,5 +67,30 @@ describe('applySidebarCollapsed', () => {
   it('lets auto collapse for workspace width and expand when requested', () => {
     expect(applySidebarCollapsed('auto', true)).toBe('auto');
     expect(applySidebarCollapsed('auto', false)).toBe('open');
+  });
+});
+
+describe('cycleSidebarMode', () => {
+  it('cycles Auto → pin open → pin closed → Auto', () => {
+    expect(cycleSidebarMode('auto')).toBe('open');
+    expect(cycleSidebarMode('open')).toBe('closed');
+    expect(cycleSidebarMode('closed')).toBe('auto');
+  });
+});
+
+describe('sidebarPinCopy', () => {
+  it('names the current pin and the next click', () => {
+    expect(sidebarPinCopy('auto')).toEqual({
+      label: 'Auto',
+      hint: 'Auto (hover). Click to pin open',
+    });
+    expect(sidebarPinCopy('open')).toEqual({
+      label: 'Pin',
+      hint: 'Pinned open. Click to pin closed',
+    });
+    expect(sidebarPinCopy('closed')).toEqual({
+      label: 'Closed',
+      hint: 'Pinned closed. Click for auto (hover)',
+    });
   });
 });

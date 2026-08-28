@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type TransitionEvent } from 'react';
 import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import {
@@ -22,6 +22,7 @@ import {
   ScrollText,
   Mail,
   Pin,
+  PanelLeft,
   PanelLeftClose,
   Columns3,
   Megaphone,
@@ -44,13 +45,8 @@ import {
   sidebarNavTriggerClass,
   type SidebarNavLeaf,
 } from '@/components/shell/SidebarNavGroup';
-import { shellDesktopNavExpanded } from '@/components/shell/intern-sidebar';
-import {
-  MotionActivePill,
-  SidebarHoverGlass,
-  sidebarHoverHandlers,
-  type SidebarHoverFollow,
-} from '@/components/shell/MotionActivePill';
+import { cycleSidebarMode, shellDesktopNavExpanded, sidebarPinCopy } from '@/components/shell/intern-sidebar';
+import { MotionActivePill, SidebarHoverGlass, sidebarHoverAttrs, useSidebarHoverFollow } from '@/components/shell/MotionActivePill';
 import { roleHomePath, roleSettingsPath } from '@/lib/auth-routes';
 import { useInternPortfolio } from '@/lib/use-intern-portfolio';
 import { useShellAppearance } from '@/lib/use-shell-appearance';
@@ -165,6 +161,11 @@ const superAdminItems: NavEntry[] = [
   { to: '/app/client/audit', label: 'Client audit', icon: ScrollText, iconTone: TONE.audit },
 ];
 
+const InternMyWorkBadge = memo(function InternMyWorkBadge() {
+  const { kpis } = useInternPortfolio();
+  return <SidebarNavCountBadge count={kpis.action.total} />;
+});
+
 export function SidebarNavBody({
   expanded,
   onNavigate,
@@ -188,63 +189,47 @@ export function SidebarNavBody({
   const { reduceMotion: prefReduce, motion: motionStyle } = useShellAppearance();
   const reduceMotion = Boolean(osReduce) || prefReduce;
   const staticHover = reduceMotion || motionStyle === 'minimal';
-  const { kpis } = useInternPortfolio();
-  const [hoverId, setHoverId] = useState<string | null>(null);
-  const [hoverVisible, setHoverVisible] = useState(false);
+  const { follow: hoverFollow, onLeave: onHoverLeave, navHoverProps } = useSidebarHoverFollow(
+    layoutIdPrefix,
+    ink,
+    staticHover,
+  );
 
-  const onHoverEnter = useCallback((id: string) => {
-    setHoverId(id);
-    setHoverVisible(true);
-  }, []);
+  const managerItems = useMemo<NavEntry[]>(
+    () => [
+      { to: `${staffBase}/dashboard`, label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
+      updatesGroup(staffBase),
+      { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
+      { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
+      { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
+      { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
+      { to: `${staffBase}/compliance`, label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
+      { to: `${staffBase}/mail`, label: 'Send email', icon: Mail, iconTone: TONE.work },
+      docsGroup(staffBase),
+      NAV_TOOLS_BREAK,
+      { to: `${staffBase}/analytics`, label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
+      { to: `${staffBase}/audit-log`, label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
+    ],
+    [staffBase],
+  );
 
-  const onHoverLeave = useCallback(() => {
-    setHoverVisible(false);
-  }, []);
+  const internItems = useMemo<NavEntry[]>(
+    () => [
+      { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
+      { to: '/app/intern/tasks', label: 'My work', icon: Columns3, iconTone: TONE.work },
+      { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
+      { to: '/app/intern/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
+      docsGroup('/app/intern', Archive),
+      updatesGroup('/app/intern'),
+      { to: '/app/intern/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
+      NAV_TOOLS_BREAK,
+      { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
+      { to: '/app/intern/audit-log', label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
+    ],
+    [],
+  );
 
   if (!user) return null;
-
-  const hoverFollow: SidebarHoverFollow = {
-    hoverId,
-    visible: hoverVisible,
-    onEnter: onHoverEnter,
-    layoutId: `${layoutIdPrefix}-hover`,
-    reduced: staticHover,
-    ink,
-  };
-
-  const managerItems: NavEntry[] = [
-    { to: `${staffBase}/dashboard`, label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-    updatesGroup(staffBase),
-    { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
-    { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
-    { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
-    { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
-    { to: `${staffBase}/compliance`, label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
-    { to: `${staffBase}/mail`, label: 'Send email', icon: Mail, iconTone: TONE.work },
-    docsGroup(staffBase),
-    NAV_TOOLS_BREAK,
-    { to: `${staffBase}/analytics`, label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-    { to: `${staffBase}/audit-log`, label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
-  ];
-
-  const internItems: NavEntry[] = [
-    { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
-    {
-      to: '/app/intern/tasks',
-      label: 'My work',
-      icon: Columns3,
-      iconTone: TONE.work,
-      badge: kpis.action.total,
-    },
-    { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
-    { to: '/app/intern/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
-    docsGroup('/app/intern', Archive),
-    updatesGroup('/app/intern'),
-    { to: '/app/intern/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
-    NAV_TOOLS_BREAK,
-    { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-    { to: '/app/intern/audit-log', label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
-  ];
 
   const items =
     user.role === 'super_admin'
@@ -276,29 +261,19 @@ export function SidebarNavBody({
           )}
         >
           <SbcLogo variant="mark" size={28} decorative />
-          {expanded && (
-            <span
-              className={cn(
-                'truncate text-[13px] font-semibold tracking-tight',
-                ink === 'light' ? 'text-white' : 'text-foreground',
-              )}
-            >
-              VCFO Suite
-            </span>
-          )}
+          <span
+            className={cn(
+              'truncate text-[13px] font-semibold tracking-tight',
+              ink === 'light' ? 'text-white' : 'text-foreground',
+              !expanded && 'hidden',
+            )}
+          >
+            VCFO Suite
+          </span>
         </Link>
       </div>
 
-      <nav
-        className="sidebar-scroll flex-1 space-y-0.5 px-2 py-3"
-        onMouseLeave={onHoverLeave}
-        onPointerLeave={onHoverLeave}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-            onHoverLeave();
-          }
-        }}
-      >
+      <nav className="sidebar-scroll flex-1 space-y-0.5 px-2 py-3" {...navHoverProps}>
         <LayoutGroup id={layoutIdPrefix}>
         {items.map((it) => {
           if (isNavSectionBreak(it)) {
@@ -338,6 +313,7 @@ export function SidebarNavBody({
             );
           }
           const active = pathname.startsWith(it.to);
+          const showInternBadge = user.role === 'intern' && it.to === '/app/intern/tasks';
           return (
             <Link
               key={it.to}
@@ -353,7 +329,7 @@ export function SidebarNavBody({
                 }),
                 user.role === 'client' && expanded && 'text-[13.5px]',
               )}
-              {...sidebarHoverHandlers(hoverFollow, it.to)}
+              {...sidebarHoverAttrs(it.to)}
             >
               <SidebarHoverGlass itemId={it.to} follow={hoverFollow} />
               {active && (
@@ -377,93 +353,87 @@ export function SidebarNavBody({
                 )}
                 strokeWidth={1.75}
               />
-              {expanded && (
-                <>
-                  <span className="relative z-10 min-w-0 flex-1 truncate">{it.label}</span>
-                  {(it.badge ?? 0) > 0 ? (
-                    <span className="sidebar-nav-disclosure-meta relative z-10 ml-auto inline-flex shrink-0 items-center gap-1">
-                      <SidebarNavCountBadge count={it.badge ?? 0} />
-                    </span>
-                  ) : null}
-                </>
-              )}
+              <span className={cn('relative z-10 min-w-0 flex-1 truncate', !expanded && 'hidden')}>
+                {it.label}
+              </span>
+              <span
+                className={cn(
+                  'sidebar-nav-disclosure-meta relative z-10 ml-auto inline-flex shrink-0 items-center gap-1',
+                  !expanded && 'hidden',
+                )}
+              >
+                {showInternBadge ? <InternMyWorkBadge /> : <SidebarNavCountBadge count={it.badge ?? 0} />}
+              </span>
             </Link>
           );
         })}
-        <div onMouseEnter={onHoverLeave}>
+        <div onPointerEnter={onHoverLeave}>
           <SidebarComplianceMini expanded={expanded} staffBase={staffBase} ink={ink} />
         </div>
         </LayoutGroup>
       </nav>
 
-      <div className={cn('space-y-1 p-2', ink === 'light' ? 'border-t border-white/12' : 'border-t border-border/50')}>
-        {onSetMode && mode ? (
-          <div className="flex flex-col gap-1">
-            <SidebarModeButton
-              expanded={expanded}
-              active={mode === 'open'}
-              icon={Pin}
-              fillWhenActive
-              label={mode === 'open' ? 'Kept open' : 'Keep open'}
-              hint={mode === 'open' ? 'Hover to collapse' : 'Keep sidebar open'}
-              onClick={() => onSetMode(mode === 'open' ? 'auto' : 'open')}
-              ink={ink}
-            />
-            <SidebarModeButton
-              expanded={expanded}
-              active={mode === 'closed'}
-              icon={PanelLeftClose}
-              label={mode === 'closed' ? 'Kept closed' : 'Keep closed'}
-              hint={mode === 'closed' ? 'Click for hover open' : 'Keep sidebar closed'}
-              onClick={() => onSetMode(mode === 'closed' ? 'auto' : 'closed')}
-              ink={ink}
-            />
-          </div>
-        ) : null}
-        <Link
-          href={roleSettingsPath(user.role)}
-          onClick={onNavigate}
-          title="Account settings"
-          aria-label="Account settings"
+      <div className={cn('p-2', ink === 'light' ? 'border-t border-white/12' : 'border-t border-border/50')}>
+        <div
           className={cn(
-            'flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors',
-            ink === 'light' ? 'hover:bg-white/12' : 'hover:bg-role-soft/50',
-            !expanded && 'justify-center',
+            'flex gap-1',
+            expanded ? 'flex-row items-center' : 'flex-col items-center',
           )}
         >
-          <UserFace
-            src={user.imageUrl}
-            initials={user.initials}
-            className="gold-sheen h-8 w-8 text-[11px] font-semibold"
-          />
-          {expanded && (
-            <div className="min-w-0 flex-1">
-              <div
-                className={cn(
-                  'truncate text-xs font-medium',
-                  ink === 'light' ? 'text-white' : 'text-foreground',
-                )}
-              >
-                {user.name}
-              </div>
-              <div className="mt-0.5 flex items-center gap-1.5">
-                <span
+          {onSetMode && mode ? (
+            <SidebarPinButton
+              mode={mode}
+              expanded={expanded}
+              ink={ink}
+              onClick={() => onSetMode(cycleSidebarMode(mode))}
+              className={expanded ? 'order-last' : undefined}
+            />
+          ) : null}
+          <Link
+            href={roleSettingsPath(user.role)}
+            onClick={onNavigate}
+            title="Account settings"
+            aria-label="Account settings"
+            className={cn(
+              'flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors',
+              ink === 'light' ? 'hover:bg-white/12' : 'hover:bg-role-soft/50',
+              expanded ? 'min-w-0 flex-1' : 'justify-center',
+            )}
+          >
+            <UserFace
+              src={user.imageUrl}
+              initials={user.initials}
+              className="gold-sheen h-8 w-8 text-[11px] font-semibold"
+            />
+            {expanded && (
+              <div className="min-w-0 flex-1">
+                <div
                   className={cn(
-                    'mono truncate text-[9.5px] uppercase tracking-[0.16em]',
-                    ink === 'light' ? 'text-white/85' : 'text-muted-foreground',
+                    'truncate text-xs font-medium',
+                    ink === 'light' ? 'text-white' : 'text-foreground',
                   )}
                 >
-                  {ROLE_UI_LABEL[user.role]}
-                </span>
-                {user.role === 'super_admin' && (
-                  <span className="super-gold-chip shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em]">
-                    Gold
+                  {user.name}
+                </div>
+                <div className="mt-0.5 flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      'mono truncate text-[9.5px] uppercase tracking-[0.16em]',
+                      ink === 'light' ? 'text-white/85' : 'text-muted-foreground',
+                    )}
+                  >
+                    {ROLE_UI_LABEL[user.role]}
                   </span>
-                )}
+                  {user.role === 'super_admin' && (
+                    <span className="super-gold-chip shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em]">
+                      Gold
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </Link>
+            )}
+          </Link>
+        </div>
       </div>
     </>
   );
@@ -510,44 +480,48 @@ function SidebarNavSectionBreak({
 
 const HOVER_CLOSE_MS = 200;
 
-function SidebarModeButton({
+const SIDEBAR_PIN_ICON = {
+  auto: PanelLeft,
+  open: Pin,
+  closed: PanelLeftClose,
+} as const;
+
+function SidebarPinButton({
+  mode,
   expanded,
-  active,
-  icon: Icon,
-  fillWhenActive,
-  label,
-  hint,
   onClick,
   ink = 'dark',
+  className,
 }: {
+  mode: SidebarMode;
   expanded: boolean;
-  active: boolean;
-  icon: typeof Pin;
-  fillWhenActive?: boolean;
-  label: string;
-  hint: string;
   onClick: () => void;
   ink?: 'light' | 'dark';
+  className?: string;
 }) {
+  const { label, hint } = sidebarPinCopy(mode);
+  const Icon = SIDEBAR_PIN_ICON[mode];
+  const pinned = mode !== 'auto';
   return (
     <button
       type="button"
       onClick={onClick}
       title={hint}
-      aria-pressed={active}
       aria-label={hint}
+      data-sidebar-pin={mode}
       className={cn(
-        'flex min-h-[42px] w-full items-center gap-2.5 rounded-xl px-2.5 text-[13px] transition-colors',
-        active
-          ? 'bg-role-soft/70 font-medium text-role-foreground'
+        'flex h-8 shrink-0 items-center justify-center gap-1 rounded-lg text-[11px] font-medium transition-[color,background-color,opacity] duration-200',
+        expanded ? 'px-2' : 'w-8 px-0',
+        pinned
+          ? 'bg-role-soft/70 text-role-foreground'
           : ink === 'light'
             ? 'text-white/90 hover:bg-white/12 hover:text-white'
             : 'text-muted-foreground hover:bg-role-soft/50 hover:text-foreground',
-        !expanded && 'justify-center px-0',
+        className,
       )}
     >
       <Icon
-        className={cn('h-4 w-4 shrink-0', active && fillWhenActive && 'fill-current')}
+        className={cn('h-4 w-4 shrink-0', mode === 'open' && 'fill-current')}
         strokeWidth={1.75}
         aria-hidden
       />
@@ -558,53 +532,85 @@ function SidebarModeButton({
 
 export function RoleSidebar() {
   const { user, sidebarMode, setSidebarMode } = useApp();
-  const { sidebarPeeking, setSidebarPeeking } = useShellNav();
   const { sidebar } = useShellAppearance();
   const pathname = usePathname();
+  const [peeking, setPeeking] = useState(false);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const railRef = useRef<HTMLElement>(null);
+  const lastExpanded = useRef<boolean | null>(null);
 
-  const expanded =
-    shellDesktopNavExpanded(sidebarMode, pathname, user?.role) || sidebarPeeking;
+  const pinned = shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
+  const expanded = pinned || peeking;
   const expandedWidth = user?.role === 'client' ? 'w-[15.5rem]' : 'w-56';
 
-  const clearLeaveTimer = () => {
+  const clearLeaveTimer = useCallback(() => {
     if (leaveTimer.current) {
       clearTimeout(leaveTimer.current);
       leaveTimer.current = null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (sidebarMode !== 'auto') {
       clearLeaveTimer();
-      setSidebarPeeking(false);
+      setPeeking(false);
     }
-  }, [sidebarMode, setSidebarPeeking]);
+  }, [sidebarMode, clearLeaveTimer]);
 
-  useEffect(() => () => clearLeaveTimer(), []);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const sync = () => {
+      if (!mq.matches) {
+        clearLeaveTimer();
+        setPeeking(false);
+      }
+    };
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, [clearLeaveTimer]);
+
+  useEffect(() => () => clearLeaveTimer(), [clearLeaveTimer]);
+
+  useEffect(() => {
+    if (lastExpanded.current === null) {
+      lastExpanded.current = expanded;
+      return;
+    }
+    if (lastExpanded.current === expanded) return;
+    lastExpanded.current = expanded;
+    const el = railRef.current;
+    if (el) el.style.willChange = 'width';
+  }, [expanded]);
+
+  const onPointerEnter = useCallback(() => {
+    clearLeaveTimer();
+    if (sidebarMode === 'auto') setPeeking(true);
+  }, [clearLeaveTimer, sidebarMode]);
+
+  const onPointerLeave = useCallback(() => {
+    clearLeaveTimer();
+    if (sidebarMode !== 'auto') return;
+    leaveTimer.current = setTimeout(() => setPeeking(false), HOVER_CLOSE_MS);
+  }, [clearLeaveTimer, sidebarMode]);
+
+  const onWidthTransitionEnd = useCallback((event: TransitionEvent<HTMLElement>) => {
+    if (event.propertyName !== 'width') return;
+    event.currentTarget.style.willChange = 'auto';
+  }, []);
 
   if (!user) return null;
 
-  const onMouseEnter = () => {
-    clearLeaveTimer();
-    if (sidebarMode === 'auto') setSidebarPeeking(true);
-  };
-
-  const onMouseLeave = () => {
-    clearLeaveTimer();
-    if (sidebarMode !== 'auto') return;
-    leaveTimer.current = setTimeout(() => setSidebarPeeking(false), HOVER_CLOSE_MS);
-  };
-
   return (
     <aside
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      ref={railRef}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
+      onTransitionEnd={onWidthTransitionEnd}
       className={cn(
-        'shell-sidebar-skin fixed inset-y-0 left-0 z-30 hidden flex-col backdrop-blur-2xl transition-[width,box-shadow] duration-300 ease-out lg:flex',
+        'shell-sidebar-skin fixed inset-y-0 left-0 z-30 hidden flex-col overflow-hidden transition-[width] duration-300 ease-out lg:flex',
         sidebar.ink === 'light' ? 'border-r border-white/12' : 'border-r border-border/50',
         expanded ? expandedWidth : 'w-14',
-        sidebarMode === 'auto' && sidebarPeeking && 'z-40 shadow-[12px_0_32px_-16px_oklch(var(--shadow-ink)/0.35)]',
+        sidebarMode === 'auto' && peeking && 'z-40 shadow-[12px_0_32px_-16px_oklch(var(--shadow-ink)/0.35)]',
       )}
       data-ink={sidebar.ink}
       style={surfaceCssVars(sidebar, 'sidebar')}

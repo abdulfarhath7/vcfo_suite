@@ -1,16 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useId, useState, type ComponentType, type ReactNode } from 'react';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { useEffect, useId, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { m, useReducedMotion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
-import { fadeUp, fadeUpReduced, springGentle, staggerKids } from '@/lib/motion';
+import { fadeOpacity, sidebarPanelStagger, springGentle } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   MotionActivePill,
   SidebarHoverGlass,
-  sidebarHoverHandlers,
+  sidebarHoverAttrs,
   type SidebarHoverFollow,
 } from '@/components/shell/MotionActivePill';
 
@@ -26,6 +26,10 @@ export type SidebarInk = 'light' | 'dark';
 const PILL_CLASS =
   'absolute inset-0 rounded-xl border border-role/25 bg-role-soft shadow-[inset_0_1px_0_oklch(100%_0_0/0.35)] dark:shadow-[inset_0_1px_0_oklch(100%_0_0/0.07)]';
 const RAIL_CLASS = 'absolute bottom-2 left-0 top-2 z-[2] w-[3px] rounded-full bg-role';
+const LEAF_PILL_CLASS =
+  'absolute inset-0 rounded-lg border border-role/20 bg-role-soft/80 shadow-[inset_0_1px_0_oklch(100%_0_0/0.28)] dark:shadow-[inset_0_1px_0_oklch(100%_0_0/0.06)]';
+/* No translate — layoutId projection owns transform. */
+const LEAF_RAIL_CLASS = 'absolute bottom-1.5 left-0 top-1.5 z-[2] w-[2.5px] rounded-full bg-role';
 
 export function sidebarInactiveOnSkin(ink: SidebarInk, hoverSoft: string, fillHover = true) {
   return ink === 'light'
@@ -107,8 +111,9 @@ export function SidebarNavGroupRail({
   return (
     <div
       className={cn(
+        'sidebar-nav-disclosure-panel',
         showRail &&
-          'sidebar-nav-disclosure-panel relative border-l pl-2.5 before:absolute before:-left-px before:top-0 before:h-1.5 before:w-px',
+          'relative border-l pl-2.5 before:absolute before:-left-px before:top-0 before:h-1.5 before:w-px',
         showRail &&
           (ink === 'light'
             ? 'border-white/25 before:bg-white/40'
@@ -174,17 +179,25 @@ function SidebarNavTriggerFace({
         )}
         strokeWidth={1.75}
       />
-      {sidebarExpanded ? (
-        <>
-          <span className="relative z-10 min-w-0 flex-1 truncate text-left">{label}</span>
-          <span className="sidebar-nav-disclosure-meta relative z-10 ml-auto inline-flex shrink-0 items-center gap-1">
-            <SidebarNavCountBadge count={badge ?? 0} />
-            {showChevron ? (
-              <SidebarNavChevron open={chevronOpen} ink={ink} active={sectionActive} />
-            ) : null}
-          </span>
-        </>
-      ) : null}
+      <span
+        className={cn(
+          'relative z-10 min-w-0 flex-1 truncate text-left',
+          !sidebarExpanded && 'hidden',
+        )}
+      >
+        {label}
+      </span>
+      <span
+        className={cn(
+          'sidebar-nav-disclosure-meta relative z-10 ml-auto inline-flex shrink-0 items-center gap-1',
+          !sidebarExpanded && 'hidden',
+        )}
+      >
+        <SidebarNavCountBadge count={badge ?? 0} />
+        {showChevron ? (
+          <SidebarNavChevron open={chevronOpen} ink={ink} active={sectionActive} />
+        ) : null}
+      </span>
     </>
   );
 }
@@ -225,16 +238,39 @@ export function SidebarNavDisclosure({
     ink: SidebarInk;
     onNavigate?: () => void;
     hoverFollow?: SidebarHoverFollow;
+    open: boolean;
   }) => ReactNode;
 }) {
-  const reduceMotion = useReducedMotion();
+  const osReduce = useReducedMotion();
+  const reduceMotion = Boolean(osReduce);
   const panelId = useId();
   const [open, setOpen] = useState(sectionActive);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
+  const [wideReady, setWideReady] = useState(sidebarExpanded);
+  const wideMounted = useRef(sidebarExpanded);
+  const compactMounted = useRef(!sidebarExpanded);
+  if (sidebarExpanded || wideReady) wideMounted.current = true;
+  if (!sidebarExpanded) compactMounted.current = true;
 
   useEffect(() => {
     if (sectionActive) setOpen(true);
   }, [sectionActive]);
+
+  useEffect(() => {
+    if (sidebarExpanded) setFlyoutOpen(false);
+  }, [sidebarExpanded]);
+
+  useEffect(() => {
+    if (wideReady) return;
+    const idle = window.requestIdleCallback;
+    const id = idle
+      ? idle(() => setWideReady(true), { timeout: 900 })
+      : window.setTimeout(() => setWideReady(true), 500);
+    return () => {
+      if (idle) window.cancelIdleCallback(id as number);
+      else window.clearTimeout(id as number);
+    };
+  }, [wideReady]);
 
   const triggerClass = sidebarNavTriggerClass({
     ink,
@@ -243,7 +279,7 @@ export function SidebarNavDisclosure({
     fillHover: !hoverFollow,
   });
 
-  const triggerInner = (
+  const triggerFace = (pillsReduced: boolean, glass: boolean) => (
     <SidebarNavTriggerFace
       icon={icon}
       iconTone={iconTone}
@@ -254,19 +290,19 @@ export function SidebarNavDisclosure({
       sidebarExpanded={sidebarExpanded}
       sectionActive={sectionActive}
       ink={ink}
-      hoverFollow={hoverFollow}
+      hoverFollow={glass ? hoverFollow : undefined}
       hoverKey={hoverKey}
       layoutIdPrefix={layoutIdPrefix}
-      reduceMotion={reduceMotion}
+      reduceMotion={pillsReduced}
     />
   );
 
-  const hoverProps = hoverFollow ? sidebarHoverHandlers(hoverFollow, hoverKey) : undefined;
   const labelForAria = ariaLabel ?? label;
+  const hoverAttrs = hoverFollow ? sidebarHoverAttrs(hoverKey) : undefined;
 
-  if (!sidebarExpanded) {
-    return (
-      <Popover open={flyoutOpen} onOpenChange={setFlyoutOpen}>
+  const flyout = compactMounted.current ? (
+    <div hidden={sidebarExpanded}>
+      <Popover open={!sidebarExpanded && flyoutOpen} onOpenChange={setFlyoutOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -275,16 +311,17 @@ export function SidebarNavDisclosure({
             aria-haspopup="dialog"
             aria-expanded={flyoutOpen}
             className={triggerClass}
-            {...hoverProps}
+            tabIndex={sidebarExpanded ? -1 : undefined}
+            {...hoverAttrs}
           >
-            {triggerInner}
+            {triggerFace(sidebarExpanded ? true : reduceMotion, !sidebarExpanded)}
           </button>
         </PopoverTrigger>
         <PopoverContent
           side="right"
           align="start"
           sideOffset={12}
-          className="w-[16.25rem] rounded-2xl border-border/50 bg-panel/95 p-2 shadow-[0_20px_56px_-28px_oklch(var(--shadow-ink)/0.32)] backdrop-blur-2xl"
+          className="w-[16.25rem] rounded-2xl border-border/50 bg-panel p-2 shadow-[0_20px_56px_-28px_oklch(var(--shadow-ink)/0.32)]"
         >
           <div className="mb-1.5 flex items-center justify-between px-1.5 pt-0.5">
             <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -295,6 +332,7 @@ export function SidebarNavDisclosure({
           {panel({
             showRail: false,
             ink: 'dark',
+            open: true,
             onNavigate: () => {
               setFlyoutOpen(false);
               onNavigate?.();
@@ -302,11 +340,11 @@ export function SidebarNavDisclosure({
           })}
         </PopoverContent>
       </Popover>
-    );
-  }
+    </div>
+  ) : null;
 
-  return (
-    <div>
+  const accordion = wideMounted.current ? (
+    <div hidden={!sidebarExpanded}>
       <button
         type="button"
         aria-expanded={open}
@@ -314,30 +352,37 @@ export function SidebarNavDisclosure({
         aria-label={labelForAria}
         onClick={() => setOpen((value) => !value)}
         className={triggerClass}
-        {...hoverProps}
+        {...hoverAttrs}
       >
-        {triggerInner}
+        {triggerFace(sidebarExpanded ? reduceMotion : true, sidebarExpanded)}
       </button>
-      <AnimatePresence initial={false}>
-        {open ? (
-          <m.div
-            key={`${id}-panel`}
-            id={panelId}
-            initial={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-            animate={reduceMotion ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
-            exit={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
-            transition={reduceMotion ? { duration: 0.16 } : springGentle}
-            className="overflow-hidden"
-          >
-            {panel({
-              showRail: true,
-              ink,
-              onNavigate,
-              hoverFollow,
-            })}
-          </m.div>
-        ) : null}
-      </AnimatePresence>
+      <m.div
+        id={panelId}
+        initial={false}
+        animate={
+          reduceMotion
+            ? { height: open ? 'auto' : 0, opacity: open ? 1 : 0 }
+            : { height: open ? 'auto' : 0, opacity: open ? 1 : 0 }
+        }
+        transition={reduceMotion ? { duration: 0.12 } : springGentle}
+        className="overflow-hidden"
+        style={{ pointerEvents: open ? undefined : 'none' }}
+      >
+        {panel({
+          showRail: true,
+          ink,
+          onNavigate,
+          hoverFollow,
+          open,
+        })}
+      </m.div>
+    </div>
+  ) : null;
+
+  return (
+    <div data-sidebar-nav-group={id}>
+      {flyout}
+      {accordion}
     </div>
   );
 }
@@ -348,12 +393,18 @@ function SidebarGroupRow({
   onNavigate,
   ink,
   hoverFollow,
+  layoutIdPrefix,
+  groupId,
+  reduceMotion,
 }: {
   child: SidebarNavLeaf;
   pathname: string;
   onNavigate?: () => void;
   ink: SidebarInk;
   hoverFollow?: SidebarHoverFollow;
+  layoutIdPrefix: string;
+  groupId: string;
+  reduceMotion: boolean;
 }) {
   const Icon = child.icon;
   const active = pathname === child.to || pathname.startsWith(`${child.to}/`);
@@ -370,16 +421,24 @@ function SidebarGroupRow({
         'relative flex min-h-[2.35rem] items-center gap-2 rounded-lg py-1 pl-2.5 pr-1.5 transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
         active
-          ? 'bg-role-soft/80 text-role-foreground'
+          ? 'font-medium text-role-foreground'
           : sidebarInactiveOnSkin(ink, 'hover:bg-role-soft/45', !followed),
       )}
-      {...(hoverFollow ? sidebarHoverHandlers(hoverFollow, itemId) : undefined)}
+      {...(hoverFollow ? sidebarHoverAttrs(itemId) : undefined)}
     >
       {hoverFollow ? <SidebarHoverGlass itemId={itemId} follow={hoverFollow} /> : null}
       {active ? (
-        <span
-          aria-hidden
-          className="absolute left-0 top-1/2 z-[2] h-3.5 w-[2.5px] -translate-y-1/2 rounded-full bg-role"
+        <MotionActivePill
+          layoutId={`${layoutIdPrefix}-${groupId}-leaf-active`}
+          reduced={reduceMotion}
+          className={LEAF_PILL_CLASS}
+        />
+      ) : null}
+      {active ? (
+        <MotionActivePill
+          layoutId={`${layoutIdPrefix}-${groupId}-leaf-rail`}
+          reduced={reduceMotion}
+          className={LEAF_RAIL_CLASS}
         />
       ) : null}
       <Icon
@@ -403,6 +462,9 @@ function SidebarGroupPanel({
   showRail,
   onNavigate,
   hoverFollow,
+  layoutIdPrefix,
+  groupId,
+  open,
 }: {
   pathname: string;
   items: SidebarNavLeaf[];
@@ -410,26 +472,32 @@ function SidebarGroupPanel({
   showRail: boolean;
   onNavigate?: () => void;
   hoverFollow?: SidebarHoverFollow;
+  layoutIdPrefix: string;
+  groupId: string;
+  open: boolean;
 }) {
-  const reduceMotion = useReducedMotion();
-  const variants = reduceMotion ? fadeUpReduced : fadeUp;
+  const osReduce = Boolean(useReducedMotion());
+  const pillsReduced = osReduce || !showRail;
 
   return (
     <SidebarNavGroupRail showRail={showRail} ink={ink}>
       <m.div
         className="space-y-0.5 py-0.5 pr-0.5"
-        variants={staggerKids(0.04, 0.02)}
-        initial="hidden"
-        animate="show"
+        variants={sidebarPanelStagger}
+        initial={false}
+        animate={open ? 'show' : 'hidden'}
       >
         {items.map((child) => (
-          <m.div key={child.to} variants={variants}>
+          <m.div key={child.to} variants={fadeOpacity}>
             <SidebarGroupRow
               child={child}
               pathname={pathname}
               onNavigate={onNavigate}
               ink={ink}
               hoverFollow={hoverFollow}
+              layoutIdPrefix={layoutIdPrefix}
+              groupId={groupId}
+              reduceMotion={pillsReduced}
             />
           </m.div>
         ))}
@@ -478,7 +546,7 @@ export function SidebarNavGroup({
       hoverFollow={hoverFollow}
       hoverKey={`group:${id}`}
       onNavigate={onNavigate}
-      panel={({ showRail, ink: panelInk, onNavigate: panelNav, hoverFollow: panelHover }) => (
+      panel={({ showRail, ink: panelInk, onNavigate: panelNav, hoverFollow: panelHover, open }) => (
         <SidebarGroupPanel
           pathname={pathname}
           items={items}
@@ -486,6 +554,9 @@ export function SidebarNavGroup({
           ink={panelInk}
           onNavigate={panelNav}
           hoverFollow={panelHover}
+          layoutIdPrefix={layoutIdPrefix}
+          groupId={id}
+          open={open}
         />
       )}
     />

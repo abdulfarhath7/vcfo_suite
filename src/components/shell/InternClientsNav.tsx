@@ -1,18 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, type ComponentType } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { memo, useMemo, type ComponentType } from 'react';
+import { LayoutGroup, m, useReducedMotion } from 'framer-motion';
+import { LayoutGrid } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { initialsFromName } from '@/lib/auth';
 import { internEngagementPath, isInternEngagementPathname } from '@/lib/project-step-path';
-import { fadeUp, fadeUpReduced, staggerKids } from '@/lib/motion';
+import { fadeOpacity, sidebarPanelStagger } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Engagement } from '@/data/engagements';
 import {
+  MotionActivePill,
   SidebarHoverGlass,
-  sidebarHoverHandlers,
+  sidebarHoverAttrs,
   type SidebarHoverFollow,
 } from '@/components/shell/MotionActivePill';
 import {
@@ -23,6 +25,10 @@ import {
 } from '@/components/shell/SidebarNavGroup';
 
 export const INTERN_CLIENTS_HREF = '/app/intern/clients';
+
+const CLIENT_PILL_CLASS =
+  'absolute inset-0 rounded-lg border border-role/20 bg-role-soft/80 shadow-[inset_0_1px_0_oklch(100%_0_0/0.28)] dark:shadow-[inset_0_1px_0_oklch(100%_0_0/0.06)]';
+const CLIENT_RAIL_CLASS = 'absolute bottom-1.5 left-0 top-1.5 z-[2] w-[2.5px] rounded-full bg-role';
 
 function isClientsSectionActive(pathname: string) {
   return pathname.startsWith(INTERN_CLIENTS_HREF) || isInternEngagementPathname(pathname);
@@ -56,18 +62,22 @@ function useAssignedInternClients() {
   return { clients, loading: engagementsLoading };
 }
 
-function InternClientRow({
+const InternClientRow = memo(function InternClientRow({
   engagement,
   pathname,
   onNavigate,
   ink,
   hoverFollow,
+  layoutIdPrefix,
+  reduceMotion,
 }: {
   engagement: Engagement;
   pathname: string;
   onNavigate?: () => void;
   ink: SidebarInk;
   hoverFollow?: SidebarHoverFollow;
+  layoutIdPrefix: string;
+  reduceMotion: boolean;
 }) {
   const href = internEngagementPath(engagement);
   const active = isEngagementNavActive(pathname, engagement);
@@ -86,16 +96,24 @@ function InternClientRow({
         'relative flex min-h-[2.35rem] items-center gap-2 rounded-lg py-1 pl-2.5 pr-1.5 transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
         active
-          ? 'bg-role-soft/80 text-role-foreground'
+          ? 'font-medium text-role-foreground'
           : sidebarInactiveOnSkin(ink, 'hover:bg-role-soft/45', !followed),
       )}
-      {...(hoverFollow ? sidebarHoverHandlers(hoverFollow, itemId) : undefined)}
+      {...(hoverFollow ? sidebarHoverAttrs(itemId) : undefined)}
     >
       {hoverFollow ? <SidebarHoverGlass itemId={itemId} follow={hoverFollow} /> : null}
       {active ? (
-        <span
-          aria-hidden
-          className="absolute left-0 top-1/2 z-[2] h-3.5 w-[2.5px] -translate-y-1/2 rounded-full bg-role"
+        <MotionActivePill
+          layoutId={`${layoutIdPrefix}-client-active`}
+          reduced={reduceMotion}
+          className={CLIENT_PILL_CLASS}
+        />
+      ) : null}
+      {active ? (
+        <MotionActivePill
+          layoutId={`${layoutIdPrefix}-client-rail`}
+          reduced={reduceMotion}
+          className={CLIENT_RAIL_CLASS}
         />
       ) : null}
       <span
@@ -123,6 +141,60 @@ function InternClientRow({
       </span>
     </Link>
   );
+});
+
+function InternClientsViewAll({
+  pathname,
+  onNavigate,
+  ink,
+  hoverFollow,
+  layoutIdPrefix,
+  reduceMotion,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+  ink: SidebarInk;
+  hoverFollow?: SidebarHoverFollow;
+  layoutIdPrefix: string;
+  reduceMotion: boolean;
+}) {
+  const active = pathname === INTERN_CLIENTS_HREF || pathname.startsWith(`${INTERN_CLIENTS_HREF}/`);
+  const itemId = 'client:view-all';
+  const followed = Boolean(hoverFollow);
+
+  return (
+    <Link
+      href={INTERN_CLIENTS_HREF}
+      onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'relative mt-0.5 flex min-h-8 items-center gap-1.5 rounded-lg px-2 text-[11px] transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+        active
+          ? 'font-medium text-role-foreground'
+          : sidebarInactiveOnSkin(ink, 'hover:bg-role-soft/40', !followed),
+      )}
+      {...(hoverFollow ? sidebarHoverAttrs(itemId) : undefined)}
+    >
+      {hoverFollow ? <SidebarHoverGlass itemId={itemId} follow={hoverFollow} /> : null}
+      {active ? (
+        <MotionActivePill
+          layoutId={`${layoutIdPrefix}-client-active`}
+          reduced={reduceMotion}
+          className={CLIENT_PILL_CLASS}
+        />
+      ) : null}
+      {active ? (
+        <MotionActivePill
+          layoutId={`${layoutIdPrefix}-client-rail`}
+          reduced={reduceMotion}
+          className={CLIENT_RAIL_CLASS}
+        />
+      ) : null}
+      <LayoutGrid className="relative z-10 h-3 w-3 shrink-0 opacity-80" strokeWidth={1.75} />
+      <span className="relative z-10 truncate">View all</span>
+    </Link>
+  );
 }
 
 function InternClientsPanel({
@@ -133,6 +205,8 @@ function InternClientsPanel({
   showRail,
   ink,
   hoverFollow,
+  layoutIdPrefix,
+  open,
 }: {
   pathname: string;
   onNavigate?: () => void;
@@ -141,9 +215,11 @@ function InternClientsPanel({
   showRail: boolean;
   ink: SidebarInk;
   hoverFollow?: SidebarHoverFollow;
+  layoutIdPrefix: string;
+  open: boolean;
 }) {
-  const reduceMotion = useReducedMotion();
-  const itemVariants = reduceMotion ? fadeUpReduced : fadeUp;
+  const osReduce = Boolean(useReducedMotion());
+  const pillsReduced = osReduce || !showRail;
 
   const body = loading ? (
     <div className="space-y-1 py-0.5" aria-hidden>
@@ -167,25 +243,39 @@ function InternClientsPanel({
       No clients assigned
     </p>
   ) : (
-    <m.ul
-      initial="hidden"
-      animate="show"
-      variants={staggerKids(reduceMotion ? 0 : 0.03, reduceMotion ? 0 : 0.02)}
-      className="space-y-0.5"
-      aria-label="Assigned clients"
-    >
-      {clients.map((engagement) => (
-        <m.li key={engagement.id} variants={itemVariants}>
-          <InternClientRow
-            engagement={engagement}
-            pathname={pathname}
-            onNavigate={onNavigate}
-            ink={ink}
-            hoverFollow={hoverFollow}
-          />
-        </m.li>
-      ))}
-    </m.ul>
+    <LayoutGroup id={`${layoutIdPrefix}-clients-${showRail ? 'wide' : 'fly'}`}>
+      <m.ul
+        initial={false}
+        animate={open ? 'show' : 'hidden'}
+        variants={sidebarPanelStagger}
+        className="space-y-0.5"
+        aria-label="Assigned clients"
+      >
+        {clients.map((engagement) => (
+          <m.li key={engagement.id} variants={fadeOpacity}>
+            <InternClientRow
+              engagement={engagement}
+              pathname={pathname}
+              onNavigate={onNavigate}
+              ink={ink}
+              hoverFollow={
+                hoverFollow?.hoverId === `client:${engagement.id}` ? hoverFollow : undefined
+              }
+              layoutIdPrefix={layoutIdPrefix}
+              reduceMotion={pillsReduced}
+            />
+          </m.li>
+        ))}
+      </m.ul>
+      <InternClientsViewAll
+        pathname={pathname}
+        onNavigate={onNavigate}
+        ink={ink}
+        hoverFollow={hoverFollow?.hoverId === 'client:view-all' ? hoverFollow : undefined}
+        layoutIdPrefix={layoutIdPrefix}
+        reduceMotion={pillsReduced}
+      />
+    </LayoutGroup>
   );
 
   return (
@@ -243,7 +333,7 @@ export function InternClientsNav({
           <span className="font-mono text-[10px] tabular-nums text-muted-foreground">{count}</span>
         ) : null
       }
-      panel={({ showRail, ink: panelInk, onNavigate: panelNav, hoverFollow: panelHover }) => (
+      panel={({ showRail, ink: panelInk, onNavigate: panelNav, hoverFollow: panelHover, open }) => (
         <InternClientsPanel
           pathname={pathname}
           loading={loading}
@@ -252,6 +342,8 @@ export function InternClientsNav({
           ink={panelInk}
           onNavigate={panelNav}
           hoverFollow={panelHover}
+          layoutIdPrefix={layoutIdPrefix}
+          open={open}
         />
       )}
     />

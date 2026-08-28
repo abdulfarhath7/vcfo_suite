@@ -19,12 +19,38 @@ function resolveStaffBase(baseOrRole?: StaffPathBase): StaffBasePath {
   return staffBasePathForRole(baseOrRole);
 }
 
+/**
+ * Project pages live under admin / manager shells only.
+ * Super Admin has no `/app/super/projects/*` routes — use the firm admin shell.
+ */
+export function staffProjectBase(
+  baseOrRole?: StaffPathBase,
+): '/app/admin' | '/app/manager' {
+  const base = resolveStaffBase(baseOrRole);
+  return base === '/app/manager' ? '/app/manager' : '/app/admin';
+}
+
+/** Prefer the current shell so Super Admin stays on admin/manager project routes. */
+export function staffProjectBaseFromPathname(
+  pathname: string | null | undefined,
+  role?: StaffPathBase,
+): '/app/admin' | '/app/manager' {
+  const seg = pathname?.split('/')[2];
+  if (seg === 'manager') return '/app/manager';
+  if (seg === 'admin' || seg === 'super') return '/app/admin';
+  return staffProjectBase(role);
+}
+
+export function staffNewProjectPath(baseOrRole?: StaffPathBase): string {
+  return `${staffProjectBase(baseOrRole)}/projects/new`;
+}
+
 /** Staff (admin/manager) project detail path (prefers slug). */
 export function adminProjectPath(
   project: ProjectRouteTarget,
   baseOrRole?: StaffPathBase,
 ): string {
-  const base = resolveStaffBase(baseOrRole);
+  const base = staffProjectBase(baseOrRole);
   return `${base}/projects/${project.slug ?? project.id}`;
 }
 

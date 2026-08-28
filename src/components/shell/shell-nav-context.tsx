@@ -16,9 +16,6 @@ type ShellNavContextValue = {
   openMobile: () => void;
   closeMobile: () => void;
   isLgUp: boolean;
-  /** Temporary hover-expand of the collapsed desktop sidebar (not pinned). */
-  sidebarPeeking: boolean;
-  setSidebarPeeking: (peeking: boolean) => void;
 };
 
 const ShellNavContext = createContext<ShellNavContextValue | null>(null);
@@ -26,14 +23,12 @@ const ShellNavContext = createContext<ShellNavContextValue | null>(null);
 export function ShellNavProvider({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLgUp, setIsLgUp] = useState(true);
-  const [sidebarPeeking, setSidebarPeeking] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1024px)');
     const sync = () => {
       setIsLgUp(mq.matches);
       if (mq.matches) setMobileOpen(false);
-      else setSidebarPeeking(false);
     };
     sync();
     mq.addEventListener('change', sync);
@@ -50,10 +45,8 @@ export function ShellNavProvider({ children }: { children: ReactNode }) {
       openMobile,
       closeMobile,
       isLgUp,
-      sidebarPeeking,
-      setSidebarPeeking,
     }),
-    [mobileOpen, openMobile, closeMobile, isLgUp, sidebarPeeking],
+    [mobileOpen, openMobile, closeMobile, isLgUp],
   );
 
   return <ShellNavContext.Provider value={value}>{children}</ShellNavContext.Provider>;
