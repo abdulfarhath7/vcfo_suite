@@ -9,6 +9,7 @@ import { SEO } from '@/components/SEO';
 import { Surface, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
 import { ClipboardCheck } from 'lucide-react';
 import { isAwaitingReview } from '@/lib/checklist-item-review';
+import { isClientFillPending } from '@/lib/checklist-client-fill';
 import { primaryPhaseItems } from '@/lib/project-stuck';
 import { checklistItemLabel } from '@/lib/audit-log';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
@@ -27,6 +28,8 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
       itemId: string;
       slug?: string;
       reviewSource?: string;
+      /** Lead is asking to send this step to the client — approve before it goes out. */
+      clientFill?: { requestedByName?: string; note?: string };
     }[] = [];
     for (const eng of engagements) {
       if (eng.stage === 'Operational Readiness') continue;
@@ -43,6 +46,18 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
             itemId: item.id,
             slug: eng.slug,
             reviewSource: slice?.reviewSource,
+          });
+        }
+        if (isClientFillPending(slice?.clientFillRequest)) {
+          out.push({
+            engagementId: eng.id,
+            companyName: eng.companyName,
+            itemId: item.id,
+            slug: eng.slug,
+            clientFill: {
+              requestedByName: slice?.clientFillRequest?.requestedByName,
+              note: slice?.clientFillRequest?.note,
+            },
           });
         }
       }
@@ -81,15 +96,25 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
           />
         ) : (
           rows.map((row) => (
-            <div key={`${row.engagementId}-${row.itemId}`} className="p-4 flex items-center justify-between gap-3">
+            <div
+              key={`${row.engagementId}-${row.itemId}-${row.clientFill ? 'fill' : 'review'}`}
+              className="p-4 flex items-center justify-between gap-3"
+            >
               <div className="min-w-0">
                 <div className="text-[13px] font-medium truncate">{row.companyName}</div>
                 <div className="text-[11px] text-muted-foreground">
                   {checklistItemLabel(row.itemId)}
-                  {row.reviewSource === 'lead_manager_request'
-                    ? ' · Lead request'
-                    : ' · Client submit'}
+                  {row.clientFill
+                    ? ` · Send to client${
+                        row.clientFill.requestedByName ? ` · ${row.clientFill.requestedByName}` : ''
+                      }`
+                    : row.reviewSource === 'lead_manager_request'
+                      ? ' · Lead request'
+                      : ' · Client submit'}
                 </div>
+                {row.clientFill?.note ? (
+                  <div className="mt-1 text-[11px] text-muted-foreground">{row.clientFill.note}</div>
+                ) : null}
               </div>
               <button
                 type="button"

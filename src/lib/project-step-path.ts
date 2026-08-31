@@ -99,3 +99,13 @@ export function internBoardResolutionPath(project: ProjectRouteTarget): string {
 export function clientBoardResolutionPath(): string {
   return '/app/client/board-resolution';
 }
+
+/**
+ * Client incorporation checklist. The portal is one page, so a specific step is
+ * addressed with `?step=` — the wizard opens that step when it is unlocked.
+ */
+export function clientIncorporationPath(itemId?: string): string {
+  const base = '/app/client/incorporation';
+  const id = itemId?.trim();
+  return id ? `${base}?step=${encodeURIComponent(id)}` : base;
+}

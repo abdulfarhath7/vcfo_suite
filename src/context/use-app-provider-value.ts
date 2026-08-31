@@ -54,6 +54,7 @@ import {
   submitChecklistItemInDb,
   setChecklistUnlockedFieldsInDb,
   reviewChecklistItemInDb,
+  setClientFillRequestInDb,
 } from '@/lib/engagements-db';
 import {
   findEngagementForClientUser,
@@ -1322,6 +1323,42 @@ export function useAppProviderValue(): AppContextValue {
             : err instanceof Error
               ? err.message
               : 'Could not update review. Try again.';
+        throw new Error(message, { cause: err });
+      }
+    },
+    setClientFillRequest: async (scopeId, itemId, action, note) => {
+      if (user?.role === 'client') {
+        throw new Error('Clients cannot manage fill requests.');
+      }
+      const engagement = resolveEngagementForScope(scopeId);
+      if (!engagement) {
+        throw new Error('Could not send the request. Try again.');
+      }
+
+      const engagementId = engagement.id;
+      const previous = dbChecklistState[engagementId] ?? {};
+      try {
+        const saved = await setClientFillRequestInDb(engagementId, itemId, action, note);
+        setDbChecklistState((prev) => ({ ...prev, [engagementId]: saved }));
+        pushActivity({
+          actor: user?.name || 'VCFO Team',
+          verb:
+            action === 'request'
+              ? 'requested client input on'
+              : action === 'approve'
+                ? 'sent the client a request for'
+                : 'declined a client request for',
+          target: checklistItemLabel(itemId),
+          engagementId,
+        });
+      } catch (err) {
+        setDbChecklistState((prev) => ({ ...prev, [engagementId]: previous }));
+        const message =
+          err instanceof ChecklistSaveError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Could not send the request. Try again.';
         throw new Error(message, { cause: err });
       }
     },

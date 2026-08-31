@@ -2,6 +2,7 @@
 
 import { Lock } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { ChecklistItem, StatusCode } from '@/data/checklist';
 import { StatusBadgeWithTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
 import { ChecklistClientFlow } from '@/components/incorporation/ChecklistClientFlow';
@@ -73,6 +74,20 @@ export function ChecklistClientWizard({
     current?.item.id ?? items.find((row) => row.gate.kind === 'done')?.item.id ?? null;
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // `?step=` from a "please fill this" email opens that step, once, if it is unlocked.
+  const searchParams = useSearchParams();
+  const requestedStepId = searchParams.get('step');
+  const consumedRequestedStep = useRef(false);
+  useEffect(() => {
+    if (consumedRequestedStep.current || !requestedStepId) return;
+    const row = items.find((entry) => entry.item.id === requestedStepId);
+    if (!row) return;
+    consumedRequestedStep.current = true;
+    if (!row.gate.canOpen) return;
+    setSelectedId(requestedStepId);
+  }, [requestedStepId, items]);
+
   const prevCurrentId = useRef(currentId);
   useEffect(() => {
     const previous = prevCurrentId.current;

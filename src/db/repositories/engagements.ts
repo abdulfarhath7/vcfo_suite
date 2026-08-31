@@ -6,8 +6,17 @@ import type { AuthContext } from '@/auth/guards';
 import type { Engagement } from '@/data/engagements';
 import {
   type ChecklistItemStateSlice,
+  type ClientFillRequest,
   normalizeEngagementChecklistState,
 } from '@/lib/checklist-state-key';
+import {
+  buildClientFillRequest,
+  canRequestClientFill,
+  decideClientFillRequest as applyClientFillDecision,
+  fulfillClientFillRequest,
+  isClientFillPending,
+  type ClientFillDecision,
+} from '@/lib/checklist-client-fill';
 import { slimChecklistIndexState } from '@/lib/checklist-index';
 import { responseFieldIdsForItem } from '@/lib/checklist-responses';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-ids';
@@ -449,6 +458,11 @@ export async function submitChecklistItem(
     throw new Error('Only clients may submit checklist items');
   }
   const now = new Date().toISOString();
+  const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
+  const openRequest = existing
+    ? checklistStateFromRow(existing)[itemId]?.clientFillRequest
+    : undefined;
+  const fulfilled = fulfillClientFillRequest(openRequest, now);
   return patchChecklistItem(ctx, appEngagementId, itemId, {
     responses,
     clientSubmittedAt: now,
@@ -459,6 +473,7 @@ export async function submitChecklistItem(
     rejectionNote: undefined,
     reviewedAt: undefined,
     reviewedBy: undefined,
+    ...(fulfilled ? { clientFillRequest: fulfilled } : {}),
   });
 }
 
@@ -500,6 +515,79 @@ export async function reviewChecklistItem(
     // Auto-reopen all response fields so the client can fix and resubmit.
     unlockedFields: responseFieldIdsForItem(itemId),
   });
+}
+
+export type ClientFillRequestOutcome = {
+  checklistState: EngagementChecklistState;
+  request: ClientFillRequest;
+};
+
+/**
+ * Project lead asks the client to fill a step. Nothing reaches the client until
+ * a project manager (or firm admin) approves — the caller fans out the emails.
+ */
+export async function requestClientFill(
+  ctx: AuthContext,
+  appEngagementId: string,
+  itemId: string,
+  note?: string | null,
+): Promise<ClientFillRequestOutcome> {
+  if (ctx.role !== 'intern') {
+    throw new Error('Only the project lead may ask the client to fill a step');
+  }
+  const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
+  if (!existing) throw new Error('Engagement not found or not permitted');
+  const current = checklistStateFromRow(existing)[itemId]?.clientFillRequest;
+  if (!canRequestClientFill(current)) {
+    throw new Error(
+      current?.status === 'pending_manager'
+        ? 'client_fill_already_pending'
+        : 'client_fill_already_with_client',
+    );
+  }
+
+  const request = buildClientFillRequest({
+    requestedBy: ctx.userId,
+    requestedByName: ctx.name,
+    note: note ?? undefined,
+    now: new Date().toISOString(),
+  });
+  const checklistState = await patchChecklistItem(ctx, appEngagementId, itemId, {
+    clientFillRequest: request,
+  });
+  return { checklistState, request };
+}
+
+/** Manager / firm admin approves or declines the lead's ask. Leads may not. */
+export async function decideClientFillRequest(
+  ctx: AuthContext,
+  appEngagementId: string,
+  itemId: string,
+  decision: ClientFillDecision,
+  note?: string | null,
+): Promise<ClientFillRequestOutcome> {
+  if (!isFirmWideAdmin(ctx.role) && ctx.role !== 'manager') {
+    throw new Error('Only the project manager or admin may decide a client fill request');
+  }
+  const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
+  if (!existing) throw new Error('Engagement not found or not permitted');
+  const current = checklistStateFromRow(existing)[itemId]?.clientFillRequest;
+  if (!isClientFillPending(current) || !current) {
+    throw new Error('client_fill_not_pending');
+  }
+
+  const request = applyClientFillDecision(current, {
+    decision,
+    decidedBy: ctx.userId,
+    decidedByName: ctx.name,
+    note: note ?? undefined,
+    now: new Date().toISOString(),
+  });
+  const checklistState = await patchChecklistItem(ctx, appEngagementId, itemId, {
+    clientFillRequest: request,
+    ...(decision === 'approve' ? { status: 'awaiting-client' as const } : {}),
+  });
+  return { checklistState, request };
 }
 
 /** Staff reopen specific client fields after submit/reject. */
@@ -558,6 +646,10 @@ export interface CreateProjectWithClientInput {
   clientEmail: string;
   clientPassword: string;
   clientName?: string;
+  /** WhatsApp destination in E.164. Stored on the client profile, not the engagement. */
+  clientPhoneE164?: string;
+  /** Explicit WhatsApp consent captured on the create form. */
+  clientWhatsappConsent?: boolean;
   /** Primary lead (legacy). Prefer internIds when present. */
   internId?: string;
   /** One or more project leads (profiles.intern_id / profile id). First becomes primary. */
@@ -648,6 +740,9 @@ export async function createProjectWithClient(
     email: input.clientEmail,
     password: input.clientPassword,
     fullName: clientName,
+    phoneE164: input.clientPhoneE164,
+    // Consent only counts when a number was actually given.
+    whatsappConsent: Boolean(input.clientWhatsappConsent && input.clientPhoneE164?.trim()),
   });
 
   const slug = await uniqueEngagementSlug(input.companyName);

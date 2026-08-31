@@ -81,6 +81,7 @@ export async function POST(request: Request, context: RouteContext) {
         workflowStage: _ws,
         completedOn: _co,
         assigneeId: _ai,
+        clientFillRequest: _cfr,
         ...safe
       } = patch;
       patch = safe;

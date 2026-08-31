@@ -9,6 +9,7 @@ import { ChecklistInlineTimeline } from '@/components/incorporation/ChecklistExp
 import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
 import { ChecklistReviewActions } from '@/components/admin/ChecklistReviewActions';
 import { RequestManagerApproval } from '@/components/admin/RequestManagerApproval';
+import { RequestClientFill } from '@/components/admin/RequestClientFill';
 import { InternStepActionBar } from '@/components/admin/InternStepActionBar';
 import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { StepWorkspaceRail } from '@/components/admin/StepWorkspaceRail';
@@ -398,6 +399,13 @@ export function StepDetailContentView(props: any) {
                   itemState={itemState}
                   emphasis="primary"
                 />
+                <RequestClientFill
+                  engagementId={engagementId}
+                  itemId={item.id}
+                  itemState={itemState}
+                  emphasis="primary"
+                  className="mt-2"
+                />
               </div>
               {legacyChecklist}
             </div>
@@ -489,6 +497,11 @@ export function StepDetailContentView(props: any) {
               theme={theme}
             />
             <RequestManagerApproval
+              engagementId={engagementId}
+              itemId={item.id}
+              itemState={itemState}
+            />
+            <RequestClientFill
               engagementId={engagementId}
               itemId={item.id}
               itemState={itemState}

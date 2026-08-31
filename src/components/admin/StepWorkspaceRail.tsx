@@ -4,6 +4,7 @@ import { ChecklistInlineTimeline } from '@/components/incorporation/ChecklistExp
 import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
 import { ChecklistReviewActions } from '@/components/admin/ChecklistReviewActions';
 import { RequestManagerApproval } from '@/components/admin/RequestManagerApproval';
+import { RequestClientFill } from '@/components/admin/RequestClientFill';
 import { StatusDot } from '@/components/noir';
 import { Button } from '@/components/ui/button';
 import { STATUS_LABEL, type ChecklistItem, type StatusCode } from '@/data/checklist';
@@ -202,6 +203,13 @@ export function StepWorkspaceRail({
           itemState={itemState}
           emphasis="primary"
           className="hidden lg:block"
+        />
+
+        <RequestClientFill
+          engagementId={engagementId}
+          itemId={item.id}
+          itemState={itemState}
+          emphasis="primary"
         />
 
         <ChecklistReviewActions

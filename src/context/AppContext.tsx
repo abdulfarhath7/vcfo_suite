@@ -4,6 +4,7 @@ import { use, type SetStateAction } from 'react';
 import { Client, teamMembers } from '@/data/mockData';
 import { StatusCode } from '@/data/checklist';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ClientFillRequest } from '@/lib/checklist-state-key';
 import {
   Engagement,
   TaskInstance,
@@ -46,6 +47,8 @@ export interface ChecklistItemState {
   incorpDraftsSharedAt?: string;
   /** Statutory registration 3-step workflow (Client → VCFO → Department) */
   workflowStage?: 'collection' | 'filing' | 'approval';
+  /** Lead → manager → client "please fill this step" request. */
+  clientFillRequest?: ClientFillRequest;
 }
 
 export type ChecklistItemPatch = Partial<ChecklistItemState> & {
@@ -139,6 +142,16 @@ export interface AppContextValue {
     scopeId: string,
     itemId: string,
     action: 'accept' | 'reject',
+    note?: string,
+  ) => Promise<void>;
+  /**
+   * Lead asks the client to fill a step, or a manager approves / declines it.
+   * Nothing reaches the client until a manager approves.
+   */
+  setClientFillRequest: (
+    scopeId: string,
+    itemId: string,
+    action: 'request' | 'approve' | 'decline',
     note?: string,
   ) => Promise<void>;
   /** Reload checklist_state from Supabase for one engagement (admin project detail). */

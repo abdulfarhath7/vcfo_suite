@@ -1,6 +1,7 @@
 'use client';
 
 import { RequestManagerApproval } from '@/components/admin/RequestManagerApproval';
+import { RequestClientFill } from '@/components/admin/RequestClientFill';
 import { Button } from '@/components/ui/button';
 import type { ChecklistItem } from '@/data/checklist';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
@@ -31,6 +32,13 @@ export function InternStepActionBar({
         itemState={itemState}
         emphasis="default"
         className="inline-flex"
+      />
+      <RequestClientFill
+        engagementId={engagementId}
+        itemId={item.id}
+        itemState={itemState}
+        emphasis="default"
+        className="inline-flex flex-col items-start"
       />
       {showLegacyChecklist && onMarkAll ? (
         <Button

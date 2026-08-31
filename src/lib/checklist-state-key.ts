@@ -11,6 +11,26 @@ import {
 } from '@/lib/registration-workflow';
 
 export type ChecklistReviewStatus = 'reviewing' | 'accepted' | 'rejected';
+
+/** Lead asks the client to fill a step; a manager has to approve before the client hears about it. */
+export type ClientFillRequestStatus = 'pending_manager' | 'approved' | 'declined';
+
+export interface ClientFillRequest {
+  status: ClientFillRequestStatus;
+  requestedBy: string;
+  requestedByName?: string;
+  requestedAt: string;
+  /** Lead's note to the manager, carried into the client email. */
+  note?: string;
+  decidedBy?: string;
+  decidedByName?: string;
+  decidedAt?: string;
+  decisionNote?: string;
+  /** ISO time the approved request actually reached the client. */
+  sentToClientAt?: string;
+  /** ISO time the client submitted the step after being asked. */
+  fulfilledAt?: string;
+}
 /** Who put the item into reviewing — client KYC vs lead→manager request. */
 export type ChecklistReviewSource = 'client_submission' | 'lead_manager_request';
 
@@ -32,6 +52,7 @@ const ITEM_META_KEYS = new Set([
   'sharedIncorpDraftDocs',
   'incorpDraftsSharedAt',
   'workflowStage',
+  'clientFillRequest',
 ]);
 
 export interface ChecklistItemStateSlice {
@@ -61,6 +82,36 @@ export interface ChecklistItemStateSlice {
   incorpDraftsSharedAt?: string;
   /** Statutory registration 3-step workflow (Client → VCFO → Department) */
   workflowStage?: RegistrationWorkflowStage;
+  /** Lead → manager → client "please fill this step" request. */
+  clientFillRequest?: ClientFillRequest;
+}
+
+/** Narrow one jsonb blob to a ClientFillRequest, or undefined when it is not one. */
+export function normalizeClientFillRequest(raw: unknown): ClientFillRequest | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const obj = raw as Record<string, unknown>;
+  const status = obj.status;
+  if (status !== 'pending_manager' && status !== 'approved' && status !== 'declined') {
+    return undefined;
+  }
+  const str = (value: unknown): string | undefined =>
+    typeof value === 'string' && value.trim() ? value : undefined;
+  const requestedBy = str(obj.requestedBy);
+  const requestedAt = str(obj.requestedAt);
+  if (!requestedBy || !requestedAt) return undefined;
+  return {
+    status,
+    requestedBy,
+    requestedAt,
+    requestedByName: str(obj.requestedByName),
+    note: str(obj.note),
+    decidedBy: str(obj.decidedBy),
+    decidedByName: str(obj.decidedByName),
+    decidedAt: str(obj.decidedAt),
+    decisionNote: str(obj.decisionNote),
+    sentToClientAt: str(obj.sentToClientAt),
+    fulfilledAt: str(obj.fulfilledAt),
+  };
 }
 
 /** True when project lead has formally delivered this step to the client portal. */
@@ -162,6 +213,8 @@ export function normalizeChecklistItemSlice(
     typeof obj.workflowStage === 'string' ? obj.workflowStage : undefined,
   );
 
+  const clientFillRequest = normalizeClientFillRequest(obj.clientFillRequest);
+
   return {
     status,
     assigneeId: typeof obj.assigneeId === 'string' ? obj.assigneeId : undefined,
@@ -189,6 +242,7 @@ export function normalizeChecklistItemSlice(
     incorpDraftsSharedAt:
       typeof obj.incorpDraftsSharedAt === 'string' ? obj.incorpDraftsSharedAt : undefined,
     ...(workflowStage ? { workflowStage } : {}),
+    ...(clientFillRequest ? { clientFillRequest } : {}),
     ...(Object.keys(responses).length ? { responses } : {}),
   };
 }
