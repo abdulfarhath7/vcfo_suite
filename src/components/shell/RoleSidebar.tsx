@@ -42,6 +42,8 @@ import { InternClientsNav, INTERN_CLIENTS_HREF } from '@/components/shell/Intern
 import {
   SidebarNavCountBadge,
   SidebarNavGroup,
+  SidebarRailBadge,
+  SidebarRailLabel,
   sidebarNavTriggerClass,
   type SidebarNavLeaf,
 } from '@/components/shell/SidebarNavGroup';
@@ -132,12 +134,12 @@ const firmAdminItems: NavEntry[] = [
   { to: '/app/admin/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   { to: '/app/admin/approvals', label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
-  { to: '/app/admin/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
-  { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
+  { to: '/app/admin/compliance', label: 'Compliance', icon: CalendarCheck, iconTone: TONE.calendar },
+  { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/admin'),
   NAV_TOOLS_BREAK,
   { to: '/app/admin/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-  { to: '/app/admin/audit-log', label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
+  { to: '/app/admin/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
 ];
 
 const clientItems: NavEntry[] = [
@@ -147,23 +149,28 @@ const clientItems: NavEntry[] = [
   { to: '/app/client/compliances', label: 'Compliances', icon: CalendarCheck, iconTone: TONE.calendar },
   { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
   { to: '/app/client/team', label: 'Team', icon: Users, iconTone: TONE.people },
-  { to: '/app/client/audit', label: 'Activity audit', icon: HistoryIcon, iconTone: TONE.audit },
+  { to: '/app/client/audit', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
 ];
 
 const superAdminItems: NavEntry[] = [
   { to: '/app/super/dashboard', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
   updatesGroup('/app/super'),
-  { to: '/app/admin/dashboard', label: 'Firm home', icon: Briefcase, iconTone: TONE.work },
+  { to: '/app/admin/dashboard', label: 'Firm', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
-  { to: '/app/admin/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
-  { to: '/app/admin/audit-log', label: 'Firm audit', icon: HistoryIcon, iconTone: TONE.audit },
-  { to: '/app/client/inbox', label: 'Client portal', icon: Inbox, iconTone: TONE.home },
-  { to: '/app/client/audit', label: 'Client audit', icon: ScrollText, iconTone: TONE.audit },
+  { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
+  { to: '/app/admin/audit-log', label: 'Firm log', icon: HistoryIcon, iconTone: TONE.audit },
+  { to: '/app/client/inbox', label: 'Portal', icon: Inbox, iconTone: TONE.home },
+  { to: '/app/client/audit', label: 'Client log', icon: ScrollText, iconTone: TONE.audit },
 ];
 
 const InternMyWorkBadge = memo(function InternMyWorkBadge() {
   const { kpis } = useInternPortfolio();
   return <SidebarNavCountBadge count={kpis.action.total} />;
+});
+
+const StackedInternWorkBadge = memo(function StackedInternWorkBadge() {
+  const { kpis } = useInternPortfolio();
+  return <SidebarRailBadge count={kpis.action.total} />;
 });
 
 export function SidebarNavBody({
@@ -173,6 +180,7 @@ export function SidebarNavBody({
   mode,
   onSetMode,
   ink = 'dark',
+  stacked = false,
 }: {
   expanded: boolean;
   onNavigate?: () => void;
@@ -181,6 +189,8 @@ export function SidebarNavBody({
   mode?: SidebarMode;
   onSetMode?: (mode: SidebarMode) => void;
   ink?: 'light' | 'dark';
+  /** Pinned closed: icon over a short label. Hover-peek stays icon-only. */
+  stacked?: boolean;
 }) {
   const { user } = useApp();
   const pathname = usePathname();
@@ -202,13 +212,13 @@ export function SidebarNavBody({
       { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
       { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
       { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
-      { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
-      { to: `${staffBase}/compliance`, label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
-      { to: `${staffBase}/mail`, label: 'Send email', icon: Mail, iconTone: TONE.work },
+      { to: `${staffBase}/team`, label: 'Leads', icon: UserSquare2, iconTone: TONE.people },
+      { to: `${staffBase}/compliance`, label: 'Compliance', icon: CalendarCheck, iconTone: TONE.calendar },
+      { to: `${staffBase}/mail`, label: 'Email', icon: Mail, iconTone: TONE.work },
       docsGroup(staffBase),
       NAV_TOOLS_BREAK,
       { to: `${staffBase}/analytics`, label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-      { to: `${staffBase}/audit-log`, label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
+      { to: `${staffBase}/audit-log`, label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
     ],
     [staffBase],
   );
@@ -216,15 +226,15 @@ export function SidebarNavBody({
   const internItems = useMemo<NavEntry[]>(
     () => [
       { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
-      { to: '/app/intern/tasks', label: 'My work', icon: Columns3, iconTone: TONE.work },
+      { to: '/app/intern/tasks', label: 'Work', icon: Columns3, iconTone: TONE.work },
       { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
-      { to: '/app/intern/mail', label: 'Send email', icon: Mail, iconTone: TONE.work },
+      { to: '/app/intern/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
       docsGroup('/app/intern', Archive),
       updatesGroup('/app/intern'),
-      { to: '/app/intern/compliance', label: 'Compliance calendar', icon: CalendarCheck, iconTone: TONE.calendar },
+      { to: '/app/intern/compliance', label: 'Compliance', icon: CalendarCheck, iconTone: TONE.calendar },
       NAV_TOOLS_BREAK,
       { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-      { to: '/app/intern/audit-log', label: 'Audit Log', icon: HistoryIcon, iconTone: TONE.audit },
+      { to: '/app/intern/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
     ],
     [],
   );
@@ -247,7 +257,7 @@ export function SidebarNavBody({
       <div
         className={cn(
           'flex h-[var(--shell-rail-height)] shrink-0 items-center',
-          expanded ? 'px-3.5' : 'justify-center px-2',
+          expanded ? 'px-3.5' : 'justify-center px-1',
           ink === 'light' ? 'border-b border-white/12' : 'border-b border-border/50',
         )}
       >
@@ -273,7 +283,10 @@ export function SidebarNavBody({
         </Link>
       </div>
 
-      <nav className="sidebar-scroll flex-1 space-y-0.5 px-2 py-3" {...navHoverProps}>
+      <nav
+        className={cn('sidebar-scroll flex-1 space-y-0.5 py-3', stacked ? 'px-1' : 'px-2')}
+        {...navHoverProps}
+      >
         <LayoutGroup id={layoutIdPrefix}>
         {items.map((it) => {
           if (isNavSectionBreak(it)) {
@@ -294,6 +307,7 @@ export function SidebarNavBody({
                 onNavigate={onNavigate}
                 ink={ink}
                 hoverFollow={hoverFollow}
+                stacked={stacked}
               />
             );
           }
@@ -309,6 +323,7 @@ export function SidebarNavBody({
                 iconTone={it.iconTone}
                 ink={ink}
                 hoverFollow={hoverFollow}
+                stacked={stacked}
               />
             );
           }
@@ -326,6 +341,7 @@ export function SidebarNavBody({
                   active,
                   expanded,
                   fillHover: false,
+                  stacked,
                 }),
                 user.role === 'client' && expanded && 'text-[13.5px]',
               )}
@@ -348,11 +364,15 @@ export function SidebarNavBody({
               )}
               <it.icon
                 className={cn(
-                  'relative z-10 h-4 w-4 shrink-0',
+                  'relative z-10 shrink-0',
+                  stacked ? 'h-[1.15rem] w-[1.15rem]' : 'h-4 w-4',
                   active ? 'text-role-foreground' : it.iconTone,
                 )}
                 strokeWidth={1.75}
               />
+              {stacked ? <SidebarRailLabel>{it.label}</SidebarRailLabel> : null}
+              {stacked && showInternBadge ? <StackedInternWorkBadge /> : null}
+              {stacked && !showInternBadge ? <SidebarRailBadge count={it.badge ?? 0} /> : null}
               <span className={cn('relative z-10 min-w-0 flex-1 truncate', !expanded && 'hidden')}>
                 {it.label}
               </span>
@@ -542,6 +562,9 @@ export function RoleSidebar() {
   const pinned = shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
   const expanded = pinned || peeking;
   const expandedWidth = user?.role === 'client' ? 'w-[15.5rem]' : 'w-56';
+  // Pinned closed is a destination, so it gets labels. Hover-peek collapse is
+  // transient — labels there would make the rail jitter on every pointer exit.
+  const stackedRail = !expanded && sidebarMode === 'closed';
 
   const clearLeaveTimer = useCallback(() => {
     if (leaveTimer.current) {
@@ -609,7 +632,7 @@ export function RoleSidebar() {
       className={cn(
         'shell-sidebar-skin fixed inset-y-0 left-0 z-30 hidden flex-col overflow-hidden transition-[width] duration-300 ease-out lg:flex',
         sidebar.ink === 'light' ? 'border-r border-white/12' : 'border-r border-border/50',
-        expanded ? expandedWidth : 'w-14',
+        expanded ? expandedWidth : stackedRail ? 'w-16' : 'w-14',
         sidebarMode === 'auto' && peeking && 'z-40 shadow-[12px_0_32px_-16px_oklch(var(--shadow-ink)/0.35)]',
       )}
       data-ink={sidebar.ink}
@@ -622,6 +645,7 @@ export function RoleSidebar() {
           mode={sidebarMode}
           onSetMode={setSidebarMode}
           ink={sidebar.ink}
+          stacked={stackedRail}
         />
       </div>
     </aside>

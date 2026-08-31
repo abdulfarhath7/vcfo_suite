@@ -299,6 +299,7 @@ export function InternClientsNav({
   iconTone,
   ink = 'dark',
   hoverFollow,
+  stacked = false,
 }: {
   expanded: boolean;
   pathname: string;
@@ -308,6 +309,7 @@ export function InternClientsNav({
   iconTone?: string;
   ink?: SidebarInk;
   hoverFollow?: SidebarHoverFollow;
+  stacked?: boolean;
 }) {
   const { clients, loading } = useAssignedInternClients();
   const sectionActive = isClientsSectionActive(pathname);
@@ -328,6 +330,7 @@ export function InternClientsNav({
       hoverKey="clients"
       ariaLabel={count > 0 ? `Clients, ${count} assigned` : 'Clients'}
       onNavigate={onNavigate}
+      stacked={stacked}
       flyoutAside={
         count > 0 ? (
           <span className="font-mono text-[10px] tabular-nums text-muted-foreground">{count}</span>

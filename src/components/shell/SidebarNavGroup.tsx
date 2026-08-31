@@ -7,6 +7,8 @@ import { ChevronDown } from 'lucide-react';
 import { fadeOpacity, sidebarPanelStagger, springGentle } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useShellAppearance } from '@/lib/use-shell-appearance';
+import { surfaceCssVars } from '@/lib/shell-appearance';
 import {
   MotionActivePill,
   SidebarHoverGlass,
@@ -42,19 +44,44 @@ export function sidebarNavTriggerClass({
   active,
   expanded,
   fillHover,
+  stacked = false,
 }: {
   ink: SidebarInk;
   active: boolean;
   expanded: boolean;
   fillHover: boolean;
+  /** Pinned-closed rail: icon over a short label instead of an icon-only square. */
+  stacked?: boolean;
 }) {
   return cn(
-    'nav-item sidebar-nav-disclosure-trigger relative flex min-h-[42px] w-full items-center gap-2.5 rounded-xl px-2.5 text-[13px] transition-colors',
+    'nav-item sidebar-nav-disclosure-trigger relative flex w-full items-center transition-colors',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+    stacked
+      ? 'min-h-[3.15rem] flex-col justify-center gap-0.5 rounded-lg px-0 py-1.5 text-[10px]'
+      : 'min-h-[42px] gap-2.5 rounded-xl px-2.5 text-[13px]',
     active
       ? 'font-medium text-role-foreground'
       : sidebarInactiveOnSkin(ink, 'hover:bg-role-soft/50', fillHover),
-    !expanded && 'justify-center px-0',
+    !expanded && !stacked && 'justify-center px-0',
+  );
+}
+
+/** The word under the icon on the pinned-closed rail. Two lines, then it clips. */
+export function SidebarRailLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="relative z-10 line-clamp-2 w-full break-words text-center text-[10px] font-medium leading-[1.1]">
+      {children}
+    </span>
+  );
+}
+
+/** Count chip parked in the corner — a stacked cell has no room for a meta row. */
+export function SidebarRailBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="mono absolute right-0.5 top-0.5 z-10 min-w-[0.95rem] rounded-full bg-role px-1 py-px text-center text-[9px] font-medium tabular-nums text-white">
+      {count > 99 ? '99+' : count}
+    </span>
   );
 }
 
@@ -140,6 +167,7 @@ function SidebarNavTriggerFace({
   hoverKey,
   layoutIdPrefix,
   reduceMotion,
+  stacked = false,
 }: {
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   iconTone?: string;
@@ -154,6 +182,7 @@ function SidebarNavTriggerFace({
   hoverKey: string;
   layoutIdPrefix: string;
   reduceMotion: boolean | null;
+  stacked?: boolean;
 }) {
   return (
     <>
@@ -174,11 +203,14 @@ function SidebarNavTriggerFace({
       ) : null}
       <Icon
         className={cn(
-          'relative z-10 h-4 w-4 shrink-0',
+          'relative z-10 shrink-0',
+          stacked ? 'h-[1.15rem] w-[1.15rem]' : 'h-4 w-4',
           sectionActive ? 'text-role-foreground' : iconTone,
         )}
         strokeWidth={1.75}
       />
+      {stacked ? <SidebarRailLabel>{label}</SidebarRailLabel> : null}
+      {stacked ? <SidebarRailBadge count={badge ?? 0} /> : null}
       <span
         className={cn(
           'relative z-10 min-w-0 flex-1 truncate text-left',
@@ -218,6 +250,7 @@ export function SidebarNavDisclosure({
   onNavigate,
   flyoutAside,
   panel,
+  stacked = false,
 }: {
   id: string;
   label: string;
@@ -233,6 +266,8 @@ export function SidebarNavDisclosure({
   ariaLabel?: string;
   onNavigate?: () => void;
   flyoutAside?: ReactNode;
+  /** Pinned-closed rail: icon over a short label. */
+  stacked?: boolean;
   panel: (ctx: {
     showRail: boolean;
     ink: SidebarInk;
@@ -243,6 +278,7 @@ export function SidebarNavDisclosure({
 }) {
   const osReduce = useReducedMotion();
   const reduceMotion = Boolean(osReduce);
+  const { sidebar } = useShellAppearance();
   const panelId = useId();
   const [open, setOpen] = useState(sectionActive);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
@@ -277,6 +313,7 @@ export function SidebarNavDisclosure({
     active: sectionActive,
     expanded: sidebarExpanded,
     fillHover: !hoverFollow,
+    stacked,
   });
 
   const triggerFace = (pillsReduced: boolean, glass: boolean) => (
@@ -294,6 +331,7 @@ export function SidebarNavDisclosure({
       hoverKey={hoverKey}
       layoutIdPrefix={layoutIdPrefix}
       reduceMotion={pillsReduced}
+      stacked={stacked}
     />
   );
 
@@ -317,11 +355,15 @@ export function SidebarNavDisclosure({
             {triggerFace(sidebarExpanded ? true : reduceMotion, !sidebarExpanded)}
           </button>
         </PopoverTrigger>
+        {/* The flyout is portalled out of the rail, so the skin vars have to be
+            re-applied here or it paints plain `bg-panel` beside a themed rail. */}
         <PopoverContent
           side="right"
           align="start"
           sideOffset={12}
-          className="w-[16.25rem] rounded-2xl border-border/50 bg-panel p-2 shadow-[0_20px_56px_-28px_oklch(var(--shadow-ink)/0.32)]"
+          className="shell-sidebar-skin w-[16.25rem] overflow-hidden rounded-2xl border-border/50 p-2 shadow-[0_20px_56px_-28px_oklch(var(--shadow-ink)/0.32)]"
+          data-ink={sidebar.ink}
+          style={surfaceCssVars(sidebar, 'sidebar')}
         >
           <div className="mb-1.5 flex items-center justify-between px-1.5 pt-0.5">
             <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -331,7 +373,7 @@ export function SidebarNavDisclosure({
           </div>
           {panel({
             showRail: false,
-            ink: 'dark',
+            ink: sidebar.ink,
             open: true,
             onNavigate: () => {
               setFlyoutOpen(false);
@@ -518,6 +560,7 @@ export function SidebarNavGroup({
   onNavigate,
   ink = 'dark',
   hoverFollow,
+  stacked = false,
 }: {
   id: string;
   label: string;
@@ -530,6 +573,7 @@ export function SidebarNavGroup({
   onNavigate?: () => void;
   ink?: SidebarInk;
   hoverFollow?: SidebarHoverFollow;
+  stacked?: boolean;
 }) {
   const sectionActive = isSidebarGroupActive(pathname, items);
 
@@ -546,6 +590,7 @@ export function SidebarNavGroup({
       hoverFollow={hoverFollow}
       hoverKey={`group:${id}`}
       onNavigate={onNavigate}
+      stacked={stacked}
       panel={({ showRail, ink: panelInk, onNavigate: panelNav, hoverFollow: panelHover, open }) => (
         <SidebarGroupPanel
           pathname={pathname}

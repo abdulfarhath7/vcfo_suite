@@ -63,7 +63,9 @@ export function AppShell({
     ? user.role === "client"
       ? "lg:pl-[15.5rem]"
       : "lg:pl-56"
-    : "lg:pl-14";
+    : sidebarMode === "closed"
+      ? "lg:pl-16"
+      : "lg:pl-14";
 
   return (
     <ShellNavProvider>
