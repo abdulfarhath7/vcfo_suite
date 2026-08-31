@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Clock, Lock } from 'lucide-react';
+import { Check, Clock } from 'lucide-react';
 import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
 import { cn } from '@/lib/utils';
 
@@ -9,18 +9,22 @@ type JourneyNodeProps = {
   stepNumber?: number;
   selected?: boolean;
   size?: 'sm' | 'md';
-  /** Intern/lead rail: upcoming steps stay numbered, never a lock glyph. */
-  showLock?: boolean;
   className?: string;
 };
 
-/** Shared journey node language — blue current, teal-green done, amber icon waiting, slate lock. */
+/**
+ * Shared journey node language — blue current, teal-green done, amber clock
+ * waiting, dashed slate upcoming.
+ *
+ * Upcoming steps show their step number, never a padlock: the sequential gate
+ * is unchanged, but the UI states it in words ("This opens after X is
+ * complete") rather than with a locked-out glyph.
+ */
 export function JourneyNode({
   kind,
   stepNumber,
   selected = false,
   size = 'md',
-  showLock = true,
   className,
 }: JourneyNodeProps) {
   const dim = size === 'sm' ? 'h-6 w-6 text-[10px]' : 'h-8 w-8 text-[11px]';
@@ -80,11 +84,7 @@ export function JourneyNode({
         className,
       )}
     >
-      {showLock ? (
-        <Lock className={size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3'} aria-hidden />
-      ) : (
-        (stepNumber ?? <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />)
-      )}
+      {stepNumber ?? <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />}
     </span>
   );
 }

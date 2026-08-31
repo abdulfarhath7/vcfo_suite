@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import type { ChecklistItem, StatusCode } from '@/data/checklist';
 import { ChecklistLockedHint } from '@/components/incorporation/ChecklistJourneyRail';
 import { JourneyNode } from '@/components/incorporation/JourneyNode';
@@ -56,7 +56,9 @@ function statusCopy(gate: ChecklistStepGate): string {
   if (gate.kind === 'done') return 'Ready';
   if (gate.kind === 'active') return 'In progress';
   if (gate.kind === 'waiting') return gate.message ?? 'Waiting';
-  return 'Locked';
+  // Not "Locked": the gate is unchanged, but a step that has not come round yet
+  // reads as upcoming. `gate.message` still says what it opens after.
+  return 'Upcoming';
 }
 
 function compactPhaseLabel(phaseId: string, title: string): string {
@@ -202,7 +204,7 @@ export function ChecklistClientFlow({
           Progress
         </p>
         <p className="mt-2 text-[15px] font-semibold tabular-nums tracking-tight text-foreground">
-          <motion.span
+          <m.span
             key={readyCount}
             initial={{ opacity: 0.35, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -210,11 +212,11 @@ export function ChecklistClientFlow({
             className="inline-block"
           >
             {readyCount}
-          </motion.span>
+          </m.span>
           <span className="font-medium text-muted-foreground"> / {items.length}</span>
         </p>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-primary-light ring-1 ring-primary/20">
-          <motion.div
+          <m.div
             className="h-full rounded-full bg-gradient-to-r from-primary to-primary-dark"
             initial={false}
             animate={{ width: `${items.length ? (readyCount / items.length) * 100 : 0}%` }}
@@ -239,7 +241,7 @@ export function ChecklistClientFlow({
               aria-hidden
               className="relative mt-1 w-[2px] min-h-[1.25rem] flex-1 overflow-hidden rounded-full bg-border/80"
             >
-              <motion.span
+              <m.span
                 className="absolute inset-x-0 top-0 w-full origin-top rounded-full bg-success"
                 initial={false}
                 animate={{ scaleY: done ? 1 : 0 }}
@@ -250,7 +252,7 @@ export function ChecklistClientFlow({
           ) : null;
 
           const card = (
-            <motion.span
+            <m.span
               layout
               initial={false}
               className={cn(
@@ -275,7 +277,7 @@ export function ChecklistClientFlow({
               >
                 {item.title}
               </span>
-              <motion.span
+              <m.span
                 key={`${item.id}-${gate.kind}-${selected ? 'sel' : 'idle'}`}
                 initial={{ opacity: 0, y: 3 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -289,8 +291,8 @@ export function ChecklistClientFlow({
                 )}
               >
                 {statusCopy(gate)}
-              </motion.span>
-            </motion.span>
+              </m.span>
+            </m.span>
           );
 
           const rowInner = (
@@ -332,7 +334,7 @@ export function ChecklistClientFlow({
                   </button>
                 </ChecklistLockedHint>
               ) : (
-                <motion.button
+                <m.button
                   type="button"
                   id={`flow-node-${item.id}`}
                   onClick={() => onSelect(item.id)}
@@ -348,7 +350,7 @@ export function ChecklistClientFlow({
                   )}
                 >
                   {rowInner}
-                </motion.button>
+                </m.button>
               )}
             </li>
           );

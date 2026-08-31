@@ -6,7 +6,7 @@ import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
 import { Plus, AlertCircle } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { itemsByBucket } from '@/data/checklist';
-import { StatusBadgeWithTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
+import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
 import { CountdownChip } from '@/components/common/CountdownChip';
 import { ItemDetailSlideOver } from '../ItemDetailSlideOver';
 import { SlideOver } from '@/components/common/SlideOver';
@@ -71,7 +71,7 @@ export function FemaSection() {
 
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-raised/30 p-3">
         <span className="text-sm font-medium text-foreground">FCGPR filing</span>
-        <StatusBadgeWithTimeline status={itState.status} item={item} />
+        <ChecklistStatusBadge status={itState.status} />
         <CountdownChip rule={item.deadline} incorporationDate={selectedClient.incorporationDate} />
         <div className="ml-auto">
           <ItemDetailSlideOver item={item} />

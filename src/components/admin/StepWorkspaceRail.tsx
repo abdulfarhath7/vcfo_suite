@@ -1,6 +1,5 @@
 'use client';
 
-import { ChecklistInlineTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
 import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
 import { ChecklistReviewActions } from '@/components/admin/ChecklistReviewActions';
 import { RequestManagerApproval } from '@/components/admin/RequestManagerApproval';
@@ -44,7 +43,6 @@ export type StepWorkspaceRailProps = {
   stepGate?: ChecklistStepGate;
   theme?: 'light' | 'dark';
   showLegacyChecklist?: boolean;
-  hideTimeline?: boolean;
   /** Intern/lead: hide StatusDot + Completed / In progress words. */
   hideStatus?: boolean;
   totalsPct?: number;
@@ -53,10 +51,8 @@ export type StepWorkspaceRailProps = {
 };
 
 function nextActionCopy(
-  item: ChecklistItem,
   itemState: ChecklistItemStateSlice | undefined,
   stepGate: ChecklistStepGate | undefined,
-  hideTimeline?: boolean,
 ): string | null {
   if (stepGate?.kind === 'waiting' && stepGate.message) return stepGate.message;
   if (isAwaitingReview(itemState)) {
@@ -64,9 +60,6 @@ function nextActionCopy(
   }
   if (isReviewAccepted(itemState)) {
     return 'Approved. Deliver to the client when the files are ready.';
-  }
-  if (!hideTimeline && item.expectedTimeline) {
-    return `Typical turnaround ${item.expectedTimeline}.`;
   }
   return null;
 }
@@ -149,14 +142,12 @@ export function StepWorkspaceRail({
   stepGate,
   theme = 'light',
   showLegacyChecklist = false,
-  hideTimeline = false,
   hideStatus = false,
   totalsPct = 0,
   onMarkAll,
   className,
 }: StepWorkspaceRailProps) {
-  const next = nextActionCopy(item, itemState, stepGate, hideTimeline);
-  const help = [item.description, item.notes].filter(Boolean).join(' ');
+  const next = nextActionCopy(itemState, stepGate);
 
   return (
     <aside
@@ -182,9 +173,6 @@ export function StepWorkspaceRail({
           ) : null}
           <div className={cn('flex flex-wrap items-center gap-2', !hideStatus && 'mt-2')}>
             <ResponsibleRoleBadge role={item.responsibleRole} />
-            {!hideTimeline && (
-              <ChecklistInlineTimeline item={item} className="text-muted-foreground" />
-            )}
           </div>
         </section>
 
@@ -233,15 +221,6 @@ export function StepWorkspaceRail({
         ) : null}
 
         <AttachmentSummary item={item} responses={responses} />
-
-        {help ? (
-          <section>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Help
-            </p>
-            <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">{help}</p>
-          </section>
-        ) : null}
 
         <RecentActivity activity={activity} />
       </div>

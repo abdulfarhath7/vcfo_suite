@@ -2,7 +2,7 @@
 
 import type { ChecklistItem } from '@/data/checklist';
 import type { StatusCode } from '@/data/checklist';
-import { StatusBadgeWithTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
+import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
 import { JourneyNode } from '@/components/incorporation/JourneyNode';
 import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -19,7 +19,7 @@ import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
 import { gateDisplayStatus } from '@/lib/checklist-step-gate';
 import { toastInfo } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Circle, Lock, MoreVertical } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, MoreVertical } from 'lucide-react';
 import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { MotionActivePill } from '@/components/shell/MotionActivePill';
 
@@ -39,7 +39,7 @@ export function ChecklistLockedHint({
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-3">
         <div className="flex gap-2.5">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           <p className="text-sm leading-relaxed text-foreground">{message}</p>
         </div>
       </PopoverContent>
@@ -63,7 +63,6 @@ interface ChecklistJourneyRailProps {
   /** Intern/lead: every row opens; no lock glyphs, muted rows, or “opens after”. */
   allowLockedOpen?: boolean;
   /** Intern/lead: no expected-timeline / working-days SLA. */
-  hideTimeline?: boolean;
   /** Intern/lead: no StatusBadge / StatusPill (Completed, In progress, etc.). */
   hideStatus?: boolean;
   /** Kebab → Attachments required (intern step rail). */
@@ -125,7 +124,6 @@ export function ChecklistJourneyRail({
   selectedId,
   onSelect,
   allowLockedOpen = false,
-  hideTimeline = false,
   hideStatus = false,
   showAttachmentMenu = false,
   className,
@@ -163,7 +161,6 @@ export function ChecklistJourneyRail({
               stepNumber={stepNumber}
               selected={selected}
               size="sm"
-              showLock={!allowLockedOpen}
             />
           );
 
@@ -184,10 +181,8 @@ export function ChecklistJourneyRail({
               </div>
               {!visuallyLocked && (
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 empty:hidden">
-                  <StatusBadgeWithTimeline
+                  <ChecklistStatusBadge
                     status={displayStatus}
-                    item={item}
-                    hideTimeline={hideTimeline}
                     hideStatus={hideStatus}
                   />
                 </div>

@@ -2,10 +2,9 @@
 
 import { m as motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { STATUS_LABEL, copyMentionsWorkingDaysSla } from '@/data/checklist';
+import { STATUS_LABEL } from '@/data/checklist';
 import { MilestoneResponseForm } from '@/views/incorporation/MilestoneResponseForm';
 import { Phase1StepPanel } from '@/components/incorporation/Phase1StepPanel';
-import { ChecklistInlineTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
 import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
 import { ChecklistReviewActions } from '@/components/admin/ChecklistReviewActions';
 import { RequestManagerApproval } from '@/components/admin/RequestManagerApproval';
@@ -48,7 +47,7 @@ export function StepDetailContentView(props: any) {
     onDone,
     contentReady,
     hideDocumentsTab,
-    hideTimeline,
+    hideDeadline,
     hideStatus,
     hideWorkspaceRail,
     progress,
@@ -79,9 +78,7 @@ export function StepDetailContentView(props: any) {
     theme,
   } = props;
 
-  const notesForView =
-    item.notes && (!hideTimeline || !copyMentionsWorkingDaysSla(item.notes)) ? item.notes : null;
-  const showDeadline = Boolean(item.deadline) && !hideTimeline;
+  const showDeadline = Boolean(item.deadline) && !hideDeadline;
 
   const justCompletedBanner = (
     <AnimatePresence>
@@ -342,15 +339,20 @@ export function StepDetailContentView(props: any) {
         </TabsContent>
       </Tabs>
 
-      {notesForView || showDeadline ? (
+      {showDeadline ? (
         <div className="mt-6">
           <GoldDivider className="mb-3" />
-          <Eyebrow className={cn('mb-2', isLight && 'text-text-tertiary')}>Step notes</Eyebrow>
-          {notesForView && (
-            <p className={cn('text-[12px] leading-relaxed', isLight ? 'text-text-secondary' : 'text-paper-muted')}>
-              {notesForView}
-            </p>
-          )}
+          <Mono
+            className={cn(
+              'text-[10px] uppercase tracking-[0.18em] block',
+              isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+            )}
+          >
+            Deadline · {item.deadline.kind.replace(/-/g, ' ')}
+            {'days' in item.deadline && ` · ${item.deadline.days}d`}
+            {'weeks' in item.deadline &&
+              ` · ${Array.isArray(item.deadline.weeks) ? item.deadline.weeks.join('–') : item.deadline.weeks}w`}
+          </Mono>
           {showDeadline && (
             <Mono
               className={cn(
@@ -420,7 +422,6 @@ export function StepDetailContentView(props: any) {
               stepGate={stepGate}
               theme={theme}
               showLegacyChecklist={showLegacyChecklist}
-              hideTimeline={hideTimeline}
               hideStatus={hideStatus}
               totalsPct={totals.pct}
               onMarkAll={showLegacyChecklist ? markAll : undefined}
@@ -445,12 +446,6 @@ export function StepDetailContentView(props: any) {
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <ResponsibleRoleBadge role={item.responsibleRole} />
         </div>
-        {item.description && (
-          <p className="text-[13px] leading-relaxed pt-1 text-paper-muted">{item.description}</p>
-        )}
-        {item.notes && (
-          <p className="text-[12px] leading-relaxed pt-1 text-paper-subtle">{item.notes}</p>
-        )}
         <div className="flex items-center gap-3 pt-1">
           {!hideStatus && (
             <>
@@ -459,9 +454,6 @@ export function StepDetailContentView(props: any) {
                 {STATUS_LABEL[status]}
               </span>
             </>
-          )}
-          {!hideTimeline && (
-            <ChecklistInlineTimeline item={item} className="normal-case tracking-normal text-paper-subtle" />
           )}
           {showLegacyChecklist && (
             <>

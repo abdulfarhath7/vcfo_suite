@@ -18,7 +18,6 @@ import {
 
   FileText,
 
-  Lock,
 
   Sparkles,
 

@@ -3,7 +3,7 @@
 import type { ChecklistItem } from '@/data/checklist';
 import type { StatusCode } from '@/data/checklist';
 import { teamMembers } from '@/data/mockData';
-import { StatusBadgeWithTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
+import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
 import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
 import { FormPill } from '@/components/common/FormPill';
 import { CountdownChip } from '@/components/common/CountdownChip';
@@ -92,7 +92,7 @@ export function ChecklistMilestoneCard({
       </div>
 
       <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-        <StatusBadgeWithTimeline status={itemState.status} item={item} />
+        <ChecklistStatusBadge status={itemState.status} />
         <ResponsibleRoleBadge role={item.responsibleRole} />
         {workflowLabel && (
           <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-text-secondary">

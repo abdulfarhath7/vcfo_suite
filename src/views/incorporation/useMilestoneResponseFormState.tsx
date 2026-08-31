@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
-  Lock,
   Unlock,
   Upload,
 } from 'lucide-react';

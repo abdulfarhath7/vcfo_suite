@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ChecklistItem, StatusCode, STATUS_LABEL } from '@/data/checklist';
 import { computeDueDate, formatDate } from '@/lib/deadlines';
-import { StatusBadgeWithTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
+import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
 import { RegistrationWorkflowControls } from '@/components/incorporation/RegistrationWorkflowControls';
 import { FormPill } from '@/components/common/FormPill';
 import { CountdownChip } from '@/components/common/CountdownChip';
@@ -106,7 +106,7 @@ export function ItemDetailSlideOver({
             <Block label="Status" variant={variant}>
               {readOnly ? (
                 <div className="mt-1">
-                  <StatusBadgeWithTimeline status={state.status} item={item} />
+                  <ChecklistStatusBadge status={state.status} />
                 </div>
               ) : (
                 <select

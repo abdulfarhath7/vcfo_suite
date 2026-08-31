@@ -9,7 +9,6 @@ import { AccentKpi } from '@/components/admin/AccentKpi';
 import { PhaseTimeline, type Phase } from '@/components/admin/PhaseTimeline';
 import { SEO } from '@/components/SEO';
 import { STATUS_LABEL, type Bucket, type StatusCode, type ChecklistItem } from '@/data/checklist';
-import { ChecklistInlineTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
 import {
   COMPANY_TYPE_LABEL,
   type Engagement,
@@ -37,7 +36,6 @@ import {
   Loader2,
   Building2,
   MapPin,
-  Lock,
 } from 'lucide-react';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { cn } from '@/lib/utils';
@@ -331,11 +329,7 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
                             )}
                           >
                             <Mono className="text-[10px] text-paper-subtle w-8 tabular-nums">{String(i + 1).padStart(2, '0')}</Mono>
-                            {gate.kind === 'locked' ? (
-                              <Lock className="h-3.5 w-3.5 text-paper-subtle" aria-hidden />
-                            ) : (
-                              <StatusDot tone={tone.dot} size={8} pulse={status === 'in-progress' || gate.kind === 'active'} />
-                            )}
+                            <StatusDot tone={tone.dot} size={8} pulse={status === 'in-progress' || gate.kind === 'active'} />
                             <div className="flex-1 min-w-0">
                               <div className={cn('text-[13px] truncate', gate.canOpen ? 'text-paper group-hover:text-blue-600 transition-colors' : 'text-paper-muted')}>{item.title}</div>
                               {gate.kind === 'waiting' && gate.message && (
@@ -357,19 +351,14 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
                               )}
                             </div>
                             <span className="inline-flex shrink-0 items-center gap-1">
-                              {gate.kind !== 'locked' && (
-                                <span className={cn('text-[10.5px] mono uppercase tracking-[0.16em]', tone.cls)}>
-                                  {STATUS_LABEL[status]}
-                                </span>
-                              )}
-                              {gate.kind !== 'locked' && (
-                                <ChecklistInlineTimeline item={item} className="text-paper-subtle" />
-                              )}
+                              <span className={cn('text-[10.5px] mono uppercase tracking-[0.16em]', tone.cls)}>
+                                {STATUS_LABEL[status]}
+                              </span>
                             </span>
                             {gate.canOpen ? (
                               <ChevronRight className="w-3.5 h-3.5 text-paper-subtle group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
                             ) : (
-                              <Lock className="w-3.5 h-3.5 text-paper-subtle" aria-hidden />
+                              <span className="w-3.5 shrink-0" aria-hidden />
                             )}
                           </motion.li>
                         );

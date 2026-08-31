@@ -44,7 +44,7 @@ export interface StepDetailContentProps {
   /** Hide read-only Documents checklist tab (intern portal — uploads live in MilestoneResponseForm). */
   hideDocumentsTab?: boolean;
   /** Hide expected-timeline / working-days SLA copy (intern portal). */
-  hideTimeline?: boolean;
+  hideDeadline?: boolean;
   /** Intern/lead: no Completed / In progress status words. */
   hideStatus?: boolean;
   /** Intern/lead: footer actions live on the form; skip the staff workspace rail. */
@@ -107,7 +107,7 @@ function StepDetailContentInner({
   contentReady = true,
   hideLegacyChecklist = false,
   hideDocumentsTab = false,
-  hideTimeline = false,
+  hideDeadline = false,
   hideStatus = false,
   hideWorkspaceRail = false,
 }: StepDetailContentProps) {
@@ -250,7 +250,7 @@ function StepDetailContentInner({
     contentReady,
     hideLegacyChecklist,
     hideDocumentsTab,
-    hideTimeline,
+    hideDeadline,
     hideStatus,
     hideWorkspaceRail,
     progress,

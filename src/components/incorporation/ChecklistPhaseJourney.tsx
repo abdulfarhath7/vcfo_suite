@@ -8,7 +8,7 @@ import { ChecklistClientWizard } from '@/components/incorporation/ChecklistClien
 import { ChecklistJourneyRail } from '@/components/incorporation/ChecklistJourneyRail';
 import { ChecklistStepCanvas } from '@/components/incorporation/ChecklistStepCanvas';
 import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
-import { StatusBadgeWithTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
+import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
 import {
   checklistGateViewerFrom,
   gateActiveCatalog,
@@ -162,17 +162,9 @@ export function ChecklistPhaseJourney({
           >
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <ResponsibleRoleBadge role={selected.item.responsibleRole} />
-              <StatusBadgeWithTimeline status={selected.status} item={selected.item} />
+              <ChecklistStatusBadge status={selected.status} />
             </div>
             <h3 className="serif text-xl font-semibold text-foreground">{selected.item.title}</h3>
-            {selected.item.description && (
-              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                {selected.item.description}
-              </p>
-            )}
-            {selected.item.notes && (
-              <p className="mt-2 text-xs text-muted-foreground">{selected.item.notes}</p>
-            )}
             <ChecklistStepCanvas
               item={selected.item}
               gate={selected.gate}

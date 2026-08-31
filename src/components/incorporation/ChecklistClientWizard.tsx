@@ -1,10 +1,10 @@
 'use client';
 
-import { Lock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { ChecklistItem, StatusCode } from '@/data/checklist';
-import { StatusBadgeWithTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
+import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
 import { ChecklistClientFlow } from '@/components/incorporation/ChecklistClientFlow';
 import { ChecklistStepCanvas } from '@/components/incorporation/ChecklistStepCanvas';
 import { PhaseCelebration } from '@/components/incorporation/PhaseCelebration';
@@ -198,17 +198,11 @@ export function ChecklistClientWizard({
               </span>
             ) : null}
             <ResponsibleRoleBadge role={selected.item.responsibleRole} />
-            <StatusBadgeWithTimeline
+            <ChecklistStatusBadge
               status={gateDisplayStatus(selected.status, selected.gate)}
-              item={selected.item}
             />
           </div>
           <h3 className="serif text-xl font-semibold text-foreground">{selected.item.title}</h3>
-          {selected.item.description ? (
-            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              {selected.item.description}
-            </p>
-          ) : null}
           <ChecklistStepCanvas
             item={selected.item}
             gate={selected.gate}
@@ -231,13 +225,12 @@ export function ChecklistClientWizard({
           <GeometricEmpty variant="waiting" />
           <h3 className="mt-3 text-sm font-semibold text-foreground">Waiting on your project lead</h3>
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
-            {current?.gate.message ??
-              'Your lead is reviewing or preparing the next step. We will notify you when it is your turn.'}
+            {current?.gate.message ?? null}
           </p>
         </section>
       ) : (
         <section className="surface flex items-start gap-3 p-4 sm:p-5">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           <div>
             <h3 className="text-sm font-semibold text-foreground">This step is not open yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">

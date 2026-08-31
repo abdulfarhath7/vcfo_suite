@@ -6,7 +6,7 @@ import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { Eyebrow, ProgressRing, Surface } from '@/components/noir';
-import { StatusPillWithTimeline } from '@/components/incorporation/ChecklistExpectedTimeline';
+import { ChecklistStatusPill } from '@/components/incorporation/ChecklistStatusBadge';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import {
   checklist,
@@ -31,7 +31,7 @@ import {
   engagementRouteParamFromParams,
   resolveEngagementFromRouteParam,
 } from '@/lib/slug';
-import { ChevronRight, Lock } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import {
   InternEngagementOverview,
@@ -217,6 +217,7 @@ export default function EngagementDetail() {
             ) : null}
             <MilestoneResponseRowSummary item={it} responses={responses} variant="admin" hideStatus />
             {it.id === 'pre-2' ? (
+              // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- propagation guard, not an interaction: keeps clicks on the nested link from firing the row button. A role here would add a stray tab stop.
               <div
                 className="mt-2"
                 onClick={(e) => e.stopPropagation()}
@@ -253,17 +254,13 @@ export default function EngagementDetail() {
           )}
           <MilestoneResponseRowSummary item={it} responses={responses} variant="admin" />
         </div>
-        {gate.kind === 'locked' ? (
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Lock className="h-3.5 w-3.5" aria-hidden />
-          </span>
-        ) : (
-          <StatusPillWithTimeline status={displayStatus} item={it} />
-        )}
+        {/* Upcoming steps show their real status, not a padlock — the gate is
+            unchanged, it just is not drawn as a lock-out. */}
+        <ChecklistStatusPill status={displayStatus} />
         {gate.canOpen ? (
           <ChevronRight className="w-3.5 h-3.5 text-text-tertiary" />
         ) : (
-          <Lock className="w-3.5 h-3.5 text-text-tertiary" aria-hidden />
+          <span className="w-3.5 shrink-0" aria-hidden />
         )}
       </button>
     );

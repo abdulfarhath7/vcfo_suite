@@ -253,7 +253,6 @@ export default function EngagementStepDetail() {
           theme="light"
           contentReady={!checklistLoading}
           hideDocumentsTab={isIntern}
-          hideTimeline={isIntern}
           hideStatus={isIntern}
           hideWorkspaceRail={isIntern}
         />
@@ -278,7 +277,6 @@ export default function EngagementStepDetail() {
                   items={group.items}
                   selectedId={item.id}
                   allowLockedOpen
-                  hideTimeline
                   hideStatus
                   showAttachmentMenu
                   onSelect={openStep}
@@ -291,7 +289,6 @@ export default function EngagementStepDetail() {
             items={internPhaseRailItems}
             selectedId={item.id}
             allowLockedOpen
-            hideTimeline
             hideStatus
             showAttachmentMenu
             onSelect={openStep}
