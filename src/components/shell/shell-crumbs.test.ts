@@ -24,7 +24,7 @@ describe('shellBreadcrumb', () => {
     expect(shellBreadcrumb('/app/manager/dashboard').segments).toEqual([
       { label: 'Home', href: null },
     ]);
-    expect(shellBreadcrumb('/app/client/inbox').segments).toEqual([
+    expect(shellBreadcrumb('/app/client/overview').segments).toEqual([
       { label: 'Home', href: null },
     ]);
   });
@@ -33,7 +33,7 @@ describe('shellBreadcrumb', () => {
     expect(hrefs('/app/intern/clients')[0]).toBe('/app/intern/today');
     expect(hrefs('/app/manager/projects')[0]).toBe('/app/manager/dashboard');
     expect(hrefs('/app/admin/people')[0]).toBe('/app/admin/dashboard');
-    expect(hrefs('/app/client/incorporation')[0]).toBe('/app/client/inbox');
+    expect(hrefs('/app/client/incorporation')[0]).toBe('/app/client/overview');
   });
 
   it('nests announcements and notifications under Updates with a real announcements href', () => {
@@ -75,7 +75,7 @@ describe('shellBreadcrumb', () => {
       'Board Resolution',
     ]);
     expect(hrefs('/app/client/board-resolution')).toEqual([
-      '/app/client/inbox',
+      '/app/client/overview',
       '/app/client/incorporation',
       '/app/client/incorporation',
       null,

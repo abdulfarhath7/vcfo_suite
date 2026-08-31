@@ -44,7 +44,8 @@ describe('shouldShowShellBack', () => {
     expect(shouldShowShellBack('/app/manager/dashboard')).toBe(false);
     expect(shouldShowShellBack('/app/admin/dashboard')).toBe(false);
     expect(shouldShowShellBack('/app/super/dashboard')).toBe(false);
-    expect(shouldShowShellBack('/app/client/inbox')).toBe(false);
+    expect(shouldShowShellBack('/app/client/overview')).toBe(false);
+    expect(shouldShowShellBack('/app/client/inbox')).toBe(true);
     expect(shouldShowShellBack('/app/admin/projects')).toBe(true);
     expect(shouldShowShellBack('/app/manager/notifications')).toBe(true);
     expect(shouldShowShellBack('/app/client/notifications')).toBe(true);
@@ -92,7 +93,7 @@ describe('shellBackFallbackPath', () => {
   it('returns role home from settings', () => {
     expect(shellBackFallbackPath('/app/intern/settings')).toBe('/app/intern/today');
     expect(shellBackFallbackPath('/app/manager/settings')).toBe('/app/manager/dashboard');
-    expect(shellBackFallbackPath('/app/client/settings')).toBe('/app/client/inbox');
+    expect(shellBackFallbackPath('/app/client/settings')).toBe('/app/client/overview');
     expect(shellBackFallbackPath('/app/super/settings')).toBe('/app/super/dashboard');
   });
 

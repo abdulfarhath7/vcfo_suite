@@ -8,6 +8,7 @@ import { useApp } from '@/context/AppContext';
 import {
   LayoutDashboard,
   Briefcase,
+  Building2,
   Inbox,
   UserSquare2,
   FolderClosed,
@@ -143,7 +144,8 @@ const firmAdminItems: NavEntry[] = [
 ];
 
 const clientItems: NavEntry[] = [
-  { to: '/app/client/inbox', label: 'Inbox', icon: Inbox, iconTone: TONE.home },
+  { to: '/app/client/overview', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
+  { to: '/app/client/inbox', label: 'Inbox', icon: Inbox, iconTone: TONE.work },
   updatesGroup('/app/client'),
   { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
   { to: '/app/client/compliances', label: 'Compliances', icon: CalendarCheck, iconTone: TONE.calendar },
@@ -154,12 +156,13 @@ const clientItems: NavEntry[] = [
 
 const superAdminItems: NavEntry[] = [
   { to: '/app/super/dashboard', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
+  { to: '/app/super/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
   updatesGroup('/app/super'),
-  { to: '/app/admin/dashboard', label: 'Firm', icon: Briefcase, iconTone: TONE.work },
+  { to: '/app/admin/dashboard', label: 'Firm', icon: Building2, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   { to: '/app/admin/audit-log', label: 'Firm log', icon: HistoryIcon, iconTone: TONE.audit },
-  { to: '/app/client/inbox', label: 'Portal', icon: Inbox, iconTone: TONE.home },
+  { to: '/app/client/overview', label: 'Portal', icon: Inbox, iconTone: TONE.home },
   { to: '/app/client/audit', label: 'Client log', icon: ScrollText, iconTone: TONE.audit },
 ];
 

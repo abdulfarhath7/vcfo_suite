@@ -12,7 +12,7 @@ export function roleHomePath(role: Role): string {
     case 'intern':
       return '/app/intern/today';
     case 'client':
-      return '/app/client/inbox';
+      return '/app/client/overview';
   }
 }
 
@@ -60,6 +60,29 @@ export function roleSettingsPath(role: Role): string {
       return '/app/intern/settings';
     case 'client':
       return '/app/client/settings';
+  }
+}
+
+/**
+ * The role a `/app/<segment>/…` pathname belongs to.
+ *
+ * Lets shell chrome resolve role-scoped links from the URL rather than from the
+ * app context, so a component can be rendered (and tested) outside a provider.
+ */
+export function roleFromAppPathname(pathname: string): Role | null {
+  switch (pathname.split('/').filter(Boolean)[1]) {
+    case 'super':
+      return 'super_admin';
+    case 'admin':
+      return 'admin';
+    case 'manager':
+      return 'manager';
+    case 'intern':
+      return 'intern';
+    case 'client':
+      return 'client';
+    default:
+      return null;
   }
 }
 

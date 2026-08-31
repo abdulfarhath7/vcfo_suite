@@ -49,14 +49,14 @@ export function AppShell({
     return <AuthBootScreen label="Opening your workspace…" />;
   }
 
+  /* Client used to cap at 1200px, which left a visible gutter beside every
+     client page on a normal laptop. It now matches the lead dashboard. */
   const mainMaxWidth =
     user.role === "super_admin" || user.role === "admin" || user.role === "manager"
       ? "max-w-[1480px]"
-      : user.role === "client"
-        ? "max-w-[1200px]"
-        : internProjectOpen
-          ? "max-w-none"
-          : "max-w-[1400px]";
+      : internProjectOpen
+        ? "max-w-none"
+        : "max-w-[1400px]";
 
   /* Flush to the sidebar: exact width, no screen inset */
   const desktopPad = navExpanded

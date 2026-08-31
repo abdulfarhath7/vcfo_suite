@@ -2577,3 +2577,94 @@ html[data-reduce-motion="true"] .discrete-panel {
   width: 8px;
   z-index: 2;
 }
+
+/* =====================================================================
+   CLIENT MISSION CONTROL — /app/client/overview
+   Deliberately shares the lead dashboard's language: `.lead-hero` for the
+   hero, `.surface` for cards, `.lead-metric` for the KPI row. Only the
+   pieces below have no lead-side equivalent. Every colour is a token, so a
+   rebrand reskins this surface by editing :root alone.
+   ===================================================================== */
+
+/* Progress + ball-in-court bars. */
+.client-bar-track {
+  position: relative;
+  overflow: hidden;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: oklch(var(--raised));
+  border: 1px solid oklch(var(--border) / 0.7);
+}
+.client-bar-fill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  border-radius: 999px;
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .client-bar-fill { transition: none; }
+}
+
+/* Entity ID card — a screenshot-able trust artifact, not a status surface. */
+.client-idcard {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid oklch(var(--primary) / 0.22);
+  background:
+    linear-gradient(135deg, oklch(var(--primary) / 0.10), transparent 46%),
+    radial-gradient(90% 130% at 100% 100%, oklch(var(--phase-registration) / 0.10), transparent 60%),
+    oklch(var(--panel));
+  box-shadow:
+    0 1px 2px oklch(var(--shadow-ink) / 0.05),
+    0 12px 32px -20px oklch(var(--shadow-ink) / 0.34);
+}
+.client-idcard::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    oklch(var(--phase-pre)),
+    oklch(var(--phase-filing)),
+    oklch(var(--phase-post)),
+    oklch(var(--phase-registration))
+  );
+}
+
+/* Vertical journey rail spine. */
+.client-rail-line {
+  position: absolute;
+  left: 0.9375rem; /* centre of a 30px node */
+  top: 1.5rem;
+  bottom: 0.25rem;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    oklch(var(--border)),
+    oklch(var(--border)) 70%,
+    transparent
+  );
+}
+
+/* Deliverable tile — file affordance without shouting. */
+.client-doc-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid oklch(var(--border));
+  background: oklch(var(--panel));
+  padding: 0.625rem 0.75rem;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+@media (hover: hover) {
+  .client-doc-tile:hover {
+    border-color: oklch(var(--primary) / 0.35);
+    background: oklch(var(--primary-light) / 0.55);
+  }
+}

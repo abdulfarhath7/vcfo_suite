@@ -51,8 +51,10 @@ export const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
   '/app/admin/analytics',
   '/app/admin/audit-log',
   '/app/super/dashboard',
+  '/app/super/projects',
   '/app/super/announcements',
   '/app/super/notifications',
+  '/app/client/overview',
   '/app/client/inbox',
   '/app/client/announcements',
   '/app/client/notifications',
@@ -76,7 +78,7 @@ const ROLE_HOME: Record<string, string> = {
   manager: '/app/manager/dashboard',
   admin: '/app/admin/dashboard',
   super: '/app/super/dashboard',
-  client: '/app/client/inbox',
+  client: '/app/client/overview',
 };
 
 function appRoleSegment(pathname: string): string | undefined {

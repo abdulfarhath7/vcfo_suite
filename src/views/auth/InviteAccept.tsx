@@ -25,7 +25,7 @@ export default function InviteAccept() {
     e.preventDefault();
     if (!name) return;
     const u = acceptInvite(token, name);
-    if (u) router.push('/app/client/inbox');
+    if (u) router.push('/app/client/overview');
   };
 
   if (!inv || !eng) {
@@ -123,6 +123,7 @@ export default function InviteAccept() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="mt-1.5 h-11 text-[13px] bg-background border-input focus-visible:ring-ring"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
                 autoFocus
                 placeholder="e.g. Sarah Chen"
                 required

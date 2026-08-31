@@ -53,6 +53,7 @@ const PAGE_LABEL: Record<string, string> = {
   'audit-log': 'Audit Log',
   audit: 'Activity audit',
   dashboard: 'Home',
+  overview: 'Home',
   projects: 'Projects',
   people: 'People',
   approvals: 'Approvals',
@@ -68,6 +69,7 @@ const PAGE_LABEL: Record<string, string> = {
 const PAGE_ICON: Record<string, ShellCrumbIcon> = {
   today: 'layout',
   dashboard: 'layout',
+  overview: 'layout',
   tasks: 'briefcase',
   clients: 'users',
   engagements: 'users',
