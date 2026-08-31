@@ -1,5 +1,5 @@
-import SuperDashboardPage from "@/views/super/SuperDashboard";
+import SuperOverview from '@/views/super/SuperOverview';
 
 export default function Page() {
-  return <SuperDashboardPage />;
+  return <SuperOverview />;
 }
