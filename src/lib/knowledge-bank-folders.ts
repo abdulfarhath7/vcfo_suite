@@ -44,6 +44,7 @@ export function normalizeKnowledgeBankFolderName(raw: string): string | null {
   const name = raw.trim().replace(/\s+/g, ' ');
   if (!name) return null;
   if (name.length > KNOWLEDGE_BANK_FOLDER_NAME_MAX) return null;
+  // eslint-disable-next-line no-control-regex -- control characters are what this rejects
   if (/[/\\]/.test(name) || /[\u0000-\u001f]/.test(name)) return null;
   return name;
 }

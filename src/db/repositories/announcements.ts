@@ -173,7 +173,7 @@ export async function createAnnouncementSource(
   } catch (err) {
     const message = err instanceof Error ? err.message : '';
     if (message.includes('announcement_sources_feed_url_uidx') || message.includes('duplicate')) {
-      throw new Error('feed_already_added');
+      throw new Error('feed_already_added', { cause: err });
     }
     throw err;
   }

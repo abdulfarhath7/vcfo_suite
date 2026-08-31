@@ -329,6 +329,7 @@ export default function AccountSettings({ path }: Props) {
                         className="h-9"
                         maxLength={120}
                         required
+                        // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
                         autoFocus
                       />
                     </SettingsRow>
@@ -485,6 +486,7 @@ export default function AccountSettings({ path }: Props) {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         className="h-9"
+                        // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
                         autoFocus
                       />
                     </SettingsRow>
@@ -654,7 +656,7 @@ function IdentityCard({
     }
   }
 
-  async function useOutlookPhoto() {
+  async function applyOutlookPhoto() {
     setBusy('outlook');
     try {
       const res = await fetch('/api/account/avatar/outlook', { method: 'POST' });
@@ -750,7 +752,7 @@ function IdentityCard({
             title={
               outlookConnected ? undefined : 'Connect Outlook below to use your Microsoft photo'
             }
-            onClick={() => void useOutlookPhoto()}
+            onClick={() => void applyOutlookPhoto()}
           >
             {busy === 'outlook' ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />

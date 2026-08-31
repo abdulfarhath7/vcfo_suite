@@ -171,12 +171,15 @@ export function getStepGate(
   gates: Record<string, ChecklistStepGate>,
   itemId: string,
 ): ChecklistStepGate {
+  // Fail closed. An id missing from the map means the gate was never computed
+  // for it, which is not evidence the step is open. UI-only defence in depth —
+  // the server still decides through `sequentialLockMessage`.
   return (
     gates[itemId] ?? {
-      kind: 'active',
-      canOpen: true,
-      canEdit: true,
-      message: null,
+      kind: 'locked',
+      canOpen: false,
+      canEdit: false,
+      message: 'This opens after the previous step is complete.',
     }
   );
 }
