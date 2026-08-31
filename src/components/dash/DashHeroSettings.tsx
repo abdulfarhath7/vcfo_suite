@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { SlidersHorizontal } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
-import { useApp } from '@/context/AppContext';
-import { roleSettingsPath } from '@/lib/auth-routes';
+import { usePathname } from 'next/navigation';
+import { roleFromAppPathname, roleSettingsPath } from '@/lib/auth-routes';
 import {
   HERO_SOLIDS,
   MOTION_STYLES,
@@ -13,14 +13,22 @@ import {
   type MotionStyle,
 } from '@/lib/shell-appearance';
 import { useShellAppearance } from '@/lib/use-shell-appearance';
-import { cn } from '@/lib/utils';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { SurfacePicker } from '@/views/settings/AppearanceSettings';
 
-export function LeadHeroSettings() {
-  const { user } = useApp();
+/**
+ * The greeting card's settings popover — hero skin, sidebar skin, animations.
+ * Lives in the dash kit because every dashboard's hero carries it; the settings
+ * link resolves per role, so it works the same for a lead, an admin, a super
+ * admin or a client.
+ */
+
+export function DashHeroSettings() {
   const { prefs, patchHero, patchSidebar, update } = useShellAppearance();
-  const settingsHref = `${roleSettingsPath(user?.role ?? 'intern')}#appearance`;
+  // Resolved from the URL, not the app context: the hero renders in every role
+  // shell, and this keeps it independent of any provider above it.
+  const pathname = usePathname();
+  const settingsHref = `${roleSettingsPath(roleFromAppPathname(pathname ?? '') ?? 'intern')}#appearance`;
 
   return (
     <Popover>

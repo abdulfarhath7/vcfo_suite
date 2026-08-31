@@ -36,7 +36,7 @@ export default function AdminOverview() {
 
       <div className="flex flex-col gap-3">
         <DashHero
-          kicker={`Portfolio pulse · ${engagements.length} projects`}
+          subtitle={`Portfolio pulse · ${engagements.length} projects`}
           title="Overview"
           ring={{ value: pct, total: 100, caption: '% complete' }}
           stats={[

@@ -29,16 +29,6 @@ async function fetchManagers(): Promise<ManagerOption[]> {
 
 export default function FirmDashboard() {
   const { user, engagements, getStateForEngagement } = useApp();
-  const today = useMemo(
-    () =>
-      new Date().toLocaleDateString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-    [],
-  );
   const greet = internGreeting(internGreetingHour(new Date()));
   const first = internFirstName(user?.name ?? '');
 
@@ -110,8 +100,7 @@ export default function FirmDashboard() {
 
       <div className="flex flex-col gap-3">
         <DashHero
-          kicker={today}
-          title={first ? `${greet}, ${first}` : 'Firm home'}
+          title={first ? `Good ${greet}, ${first}` : 'Firm home'}
           ring={{ value: pulse.good, total: pulse.total, caption: 'on track' }}
           stats={[
             { label: 'projects', value: pulse.total, href: '/app/admin/projects' },

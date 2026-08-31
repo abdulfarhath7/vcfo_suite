@@ -2,7 +2,6 @@
 
 import { useApp } from '@/context/AppContext';
 import { useMemo } from 'react';
-import { useClientLocaleDate } from '@/hooks/use-client-locale-date';
 import { useComplianceFilings } from '@/hooks/use-compliance-filings';
 import { AdminDashboardView } from '@/views/admin/DashboardSections';
 import { checklist, type Bucket } from '@/data/checklist';
@@ -20,12 +19,6 @@ const PROCESS_KEYS = [
 export default function AdminDashboard() {
   const { user, engagements, tasks, teamMembers, getStateForEngagement } = useApp();
   const allFilings = useComplianceFilings(engagements, getStateForEngagement);
-  const headerDateLabel = useClientLocaleDate({
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
-
   const blockers = engagements.filter((e) => e.health !== 'on-track').length;
 
   const pendingClientActions = useMemo(
@@ -136,7 +129,6 @@ export default function AdminDashboard() {
       engagements={engagements}
       tasks={tasks}
       teamMembers={teamMembers}
-      headerDateLabel={headerDateLabel}
       blockers={blockers}
       pendingClientActions={pendingClientActions}
       overdueTasks={overdueTasks}

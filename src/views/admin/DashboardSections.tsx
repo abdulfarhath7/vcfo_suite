@@ -25,7 +25,6 @@ export type AdminDashboardViewProps = {
   engagements: Engagement[];
   tasks: TaskInstance[];
   teamMembers: Array<{ id: string; name: string }>;
-  headerDateLabel: string;
   blockers: number;
   pendingClientActions: number;
   overdueTasks: number;
@@ -49,7 +48,6 @@ export function AdminDashboardView({
   userId,
   engagements,
   teamMembers,
-  headerDateLabel,
   blockers,
   pendingClientActions,
   overdueTasks,
@@ -105,7 +103,6 @@ export function AdminDashboardView({
 
       <div className="flex flex-col gap-3">
         <DashHero
-          kicker={headerDateLabel}
           title="Dashboard"
           ring={{ value: completionRate, total: 100, caption: '% complete' }}
           stats={heroStats}
