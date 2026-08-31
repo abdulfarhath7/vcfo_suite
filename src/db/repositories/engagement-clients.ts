@@ -27,6 +27,50 @@ function generateClientId(): string {
   return `c${crypto.randomUUID().replace(/-/g, '').slice(0, 10)}`;
 }
 
+/**
+ * A client replaced off their last project keeps their profile row but leaves
+ * the active roster: People > Removed clients is the only place they show up.
+ * Still on another engagement (member row or primary pointer) = untouched.
+ */
+async function markClientRemovedIfOrphaned(input: {
+  userId: string;
+  reason: string;
+}): Promise<boolean> {
+  const [stillMember] = await db
+    .select({ id: engagementClients.id })
+    .from(engagementClients)
+    .where(eq(engagementClients.userId, input.userId))
+    .limit(1);
+  if (stillMember) return false;
+
+  const [stillPrimary] = await db
+    .select({ id: engagements.id })
+    .from(engagements)
+    .where(eq(engagements.clientUserId, input.userId))
+    .limit(1);
+  if (stillPrimary) return false;
+
+  const updated = await db
+    .update(profiles)
+    .set({
+      status: 'removed',
+      removedAt: new Date(),
+      removedReason: input.reason,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(profiles.id, input.userId), eq(profiles.role, 'client')))
+    .returning({ id: profiles.id });
+  return updated.length > 0;
+}
+
+/** A previously removed client rejoining a project returns to the active roster. */
+async function reactivateRemovedClient(profileId: string): Promise<void> {
+  await db
+    .update(profiles)
+    .set({ status: 'active', removedAt: null, removedReason: null, updatedAt: new Date() })
+    .where(eq(profiles.id, profileId));
+}
+
 /** Engagement DB ids the user may access as a client collaborator. */
 export async function listClientMemberEngagementIds(userId: string): Promise<string[]> {
   const rows = await db
@@ -158,6 +202,9 @@ export async function inviteEngagementClient(
       throw new Error('email_not_a_client');
     }
     userId = existing.id;
+    if (existing.status === 'removed') {
+      await reactivateRemovedClient(existing.id);
+    }
     // Ensure they share org client id when joining this project.
     if (!existing.clientId && orgClientId) {
       await db
@@ -254,6 +301,8 @@ export interface SubstituteEngagementClientResult {
   becamePrimary: boolean;
   /** True when the actor replaced themselves and no longer has access. */
   actorLostAccess: boolean;
+  /** True when the outgoing client left their last project and moved to Removed clients. */
+  replacedRemoved: boolean;
   companyName: string;
 }
 
@@ -380,6 +429,9 @@ export async function substituteEngagementClient(
       throw new Error('already_a_member');
     }
     newUserId = existing.id;
+    if (existing.status === 'removed') {
+      await reactivateRemovedClient(existing.id);
+    }
     if (!existing.clientId && orgClientId) {
       await db
         .update(profiles)
@@ -471,6 +523,11 @@ export async function substituteEngagementClient(
     }
   });
 
+  const replacedRemoved = await markClientRemovedIfOrphaned({
+    userId: replaceUserId,
+    reason: `Replaced by ${email} on ${eng.companyName}`,
+  });
+
   await recordAuditEvent(ctx, {
     engagementId: appEngagementId(access.dbId),
     action: 'client.substitute',
@@ -485,6 +542,7 @@ export async function substituteEngagementClient(
       createdNewUser,
       memberRole: wasPrimary ? 'owner' : inheritedRole,
       becamePrimary: wasPrimary,
+      replacedRemoved,
     },
   });
 
@@ -500,6 +558,7 @@ export async function substituteEngagementClient(
     memberRole: wasPrimary ? 'owner' : inheritedRole,
     becamePrimary: wasPrimary,
     actorLostAccess: ctx.role === 'client' && ctx.userId === replaceUserId,
+    replacedRemoved,
     companyName: eng.companyName,
   };
 }

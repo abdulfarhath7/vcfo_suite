@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useApp } from "@/context/AppContext";
 import type { Engagement } from "@/data/engagements";
 import { CreateProjectFormView } from '@/components/admin/CreateProjectFormSections';
+import { ChangeClientDialog } from '@/components/admin/ChangeClientDialog';
 import { toastError, toastSuccess, toastEmailDispatch, errorMessage } from "@/lib/toast-errors";
 import {
   companyNameSchema,
@@ -32,6 +33,7 @@ import {
   type CreateProjectState,
 } from '@/components/admin/create-project-form-utils';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
+import { normalizeToE164 } from '@/lib/notify/phone';
 import { prunedAnswers, type QuestionnaireAnswers } from '@/data/compliance-questionnaire';
 import {
   addEngagementLeadInDb,
@@ -60,6 +62,8 @@ function stateFromEngagement(eng: Engagement): CreateProjectState {
     subsidiaryLegalName: eng.subsidiaryLegalName ?? '',
     subsidiaryRegisteredAddress: eng.subsidiaryRegisteredAddress ?? '',
     clientContact: eng.clientDisplayName ?? '',
+    clientPhone: '',
+    clientWhatsappConsent: false,
     clientEmail: eng.clientEmail ?? '',
     clientPassword: DEFAULT_CLIENT_TEMP_PASSWORD,
     internIds:
@@ -88,6 +92,8 @@ function initialCreateProjectState(internIds: string[]): CreateProjectState {
     subsidiaryLegalName: '',
     subsidiaryRegisteredAddress: '',
     clientContact: '',
+    clientPhone: '',
+    clientWhatsappConsent: false,
     clientEmail: '',
     clientPassword: DEFAULT_CLIENT_TEMP_PASSWORD,
     internIds,
@@ -120,6 +126,7 @@ export function CreateProjectForm({
 }: CreateProjectFormProps) {
   const { createProjectWithClient, updateEngagement, internOptions, internsLoading, teamMembers, user } = useApp();
   const isEdit = Boolean(editEngagement);
+  const [changeClientOpen, setChangeClientOpen] = useState(false);
   const owners = internOptions.length ? internOptions : teamMembers;
   const defaultInternId = owners[0]?.id ?? '';
   const isFirmAdmin = isFirmWideAdmin(user?.role);
@@ -166,6 +173,8 @@ export function CreateProjectForm({
     subsidiaryLegalName,
     subsidiaryRegisteredAddress,
     clientContact,
+    clientPhone,
+    clientWhatsappConsent,
     clientEmail,
     clientPassword,
     internIds,
@@ -338,6 +347,10 @@ export function CreateProjectForm({
     dispatch({ type: 'patch', patch: { subsidiaryRegisteredAddress: value } });
   const setClientContact = (value: string) =>
     dispatch({ type: 'patch', patch: { clientContact: value } });
+  const setClientPhone = (value: string) =>
+    dispatch({ type: 'patch', patch: { clientPhone: value } });
+  const setClientWhatsappConsent = (value: boolean) =>
+    dispatch({ type: 'patch', patch: { clientWhatsappConsent: value } });
   const setClientEmail = (value: string) => dispatch({ type: 'patch', patch: { clientEmail: value } });
   const setClientPassword = (value: string) =>
     dispatch({ type: 'patch', patch: { clientPassword: value } });
@@ -452,6 +465,12 @@ export function CreateProjectForm({
         clientEmail: email,
         clientPassword,
         clientName: clientContact.trim() || undefined,
+        // Normalised here so the API only ever sees E.164; an unparseable
+        // number is dropped rather than guessed at.
+        ...(normalizeToE164(clientPhone)
+          ? { clientPhoneE164: normalizeToE164(clientPhone) as string }
+          : {}),
+        clientWhatsappConsent: clientWhatsappConsent && Boolean(normalizeToE164(clientPhone)),
         internIds: cleanInternIds,
         internId: cleanInternIds[0],
         managerIds: cleanManagerIds.length ? cleanManagerIds : undefined,
@@ -550,6 +569,10 @@ export function CreateProjectForm({
     setSubsidiaryRegisteredAddress,
     clientContact,
     setClientContact,
+    clientPhone,
+    setClientPhone,
+    clientWhatsappConsent,
+    setClientWhatsappConsent,
     clientEmail,
     setClientEmail,
     clientPassword,
@@ -579,6 +602,24 @@ export function CreateProjectForm({
     canSubmit,
     editMode: isEdit,
     existingClientEmail: existingClient?.email ?? editEngagement?.clientEmail ?? '',
+    onChangeClientEmail: () => setChangeClientOpen(true),
+    canChangeClientEmail: isEdit && (isFirmAdmin || isManager),
+    changeClientNeedsApproval: !isFirmAdmin,
   };
-  return <CreateProjectFormView {...viewProps} />;
+  return (
+    <>
+      <CreateProjectFormView {...viewProps} />
+      {isEdit && editEngagement ? (
+        <ChangeClientDialog
+          engagement={editEngagement}
+          open={changeClientOpen}
+          onOpenChange={setChangeClientOpen}
+          mode={isFirmAdmin ? 'direct' : 'request'}
+          onDone={() => {
+            void clientsQuery.refetch();
+          }}
+        />
+      ) : null}
+    </>
+  );
 }

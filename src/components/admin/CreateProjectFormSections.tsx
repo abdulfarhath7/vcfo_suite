@@ -124,6 +124,12 @@ export type CreateProjectFormViewProps = {
   editMode?: boolean;
   /** Current portal sign-in, shown read-only while editing. */
   existingClientEmail?: string;
+  /** Opens the change-client dialog from the edit form. */
+  onChangeClientEmail?: () => void;
+  /** False hides the change action (no client on the project yet, or no rights). */
+  canChangeClientEmail?: boolean;
+  /** Managers file a request instead of applying it — the button says so. */
+  changeClientNeedsApproval?: boolean;
 };
 
 const SECTION_TABS: Array<{ id: FormFlowSection; label: string; icon: typeof Building2 }> = [
@@ -234,6 +240,9 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     saveDraft,
     editMode,
     existingClientEmail,
+    onChangeClientEmail,
+    canChangeClientEmail,
+    changeClientNeedsApproval,
   } = props;
 
   const needsSubsidiary = stageRequiresSubsidiary(stage);
@@ -819,13 +828,25 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                       >
                         Portal sign-in email
                       </Label>
-                      <Input
-                        id="edit-client-email"
-                        value={existingClientEmail || '—'}
-                        disabled
-                        readOnly
-                        className="mt-2 h-11 px-3.5 text-[14px]"
-                      />
+                      <div className="mt-2 flex items-center gap-2">
+                        <Input
+                          id="edit-client-email"
+                          value={existingClientEmail || '—'}
+                          disabled
+                          readOnly
+                          className="h-11 flex-1 px-3.5 text-[14px]"
+                        />
+                        {canChangeClientEmail && onChangeClientEmail ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 shrink-0"
+                            onClick={onChangeClientEmail}
+                          >
+                            {changeClientNeedsApproval ? 'Request change' : 'Change email'}
+                          </Button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 ) : (

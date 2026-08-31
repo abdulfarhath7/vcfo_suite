@@ -10,6 +10,7 @@ import { resolvePortalUrl, sendWelcomeEmail } from '@/lib/email/welcome-email';
 import { getEngagementById } from '@/db/repositories/engagements';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import { emptyEmailDispatch, type EmailDispatchResult } from '@/lib/email/email-dispatch';
+import { sendClientEmailChangedEmail } from '@/lib/email/client-email-changed';
 import { clientPasswordSchema, emailSchema } from '@/lib/api/schemas';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -74,6 +75,24 @@ export async function POST(request: Request, context: RouteContext) {
       };
     }
 
+    // The outgoing address always hears about it, new account or not.
+    const noticeResult = await sendClientEmailChangedEmail({
+      previousEmail: result.replacedEmail,
+      previousName: result.replacedName,
+      newEmail: result.email,
+      companyName: result.companyName,
+      actorName: guard.ctx.name,
+      actorEmail: guard.ctx.email,
+    }).catch(() => null);
+    const previousClientNotice: EmailDispatchResult = {
+      attempted: 1,
+      sent: noticeResult?.ok ? [result.replacedEmail] : [],
+      skipped: noticeResult?.skipped ? [result.replacedEmail] : [],
+      failed: !noticeResult || (!noticeResult.ok && !noticeResult.skipped)
+        ? [result.replacedEmail]
+        : [],
+    };
+
     let clients: Awaited<ReturnType<typeof listEngagementClients>> = [];
     if (!result.actorLostAccess) {
       clients = await listEngagementClients(guard.ctx, id);
@@ -92,9 +111,11 @@ export async function POST(request: Request, context: RouteContext) {
         memberRole: result.memberRole,
         becamePrimary: result.becamePrimary,
         actorLostAccess: result.actorLostAccess,
+        replacedRemoved: result.replacedRemoved,
       },
       clients,
       email,
+      previousClientNotice,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'substitute_failed';

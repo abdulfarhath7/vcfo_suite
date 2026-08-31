@@ -38,6 +38,7 @@ import {
   MoreHorizontal,
   Plus,
   Trash2,
+  UserMinus,
   Users,
   UserSquare2,
 } from 'lucide-react';
@@ -66,6 +67,17 @@ type StaffRow = {
   internId?: string | null;
   clientId?: string | null;
   reportsToManagerId?: string | null;
+  status?: string;
+};
+
+type RemovedClientRow = {
+  id: string;
+  name: string;
+  email: string;
+  clientId: string | null;
+  phone: string | null;
+  removedAt: string | null;
+  removedReason: string | null;
 };
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -172,6 +184,17 @@ export default function FirmPeople() {
     enabled: canCreate,
   });
 
+  const removedClientsQuery = useQuery({
+    queryKey: ['admin-removed-clients'],
+    queryFn: async () => {
+      const data = await fetchJson<{ clients: RemovedClientRow[] }>(
+        '/api/admin/clients/removed',
+      );
+      return data.clients;
+    },
+    enabled: canCreate,
+  });
+
   const [form, dispatch] = useReducer(formReducer, {
     name: '',
     email: '',
@@ -225,6 +248,7 @@ export default function FirmPeople() {
       await queryClient.invalidateQueries({ queryKey: ['admin-managers'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-interns'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-removed-clients'] });
     } catch (err) {
       toastError(errorMessage(err));
     } finally {
@@ -248,6 +272,7 @@ export default function FirmPeople() {
       await queryClient.invalidateQueries({ queryKey: ['admin-managers'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-interns'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-removed-clients'] });
       if (selectedManagerId === person.id) {
         router.replace(`${staffBase}/people`);
       }
@@ -287,6 +312,7 @@ export default function FirmPeople() {
       await queryClient.invalidateQueries({ queryKey: ['admin-managers'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-interns'] });
       await queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-removed-clients'] });
     } catch (err) {
       toastError(errorMessage(err));
     } finally {
@@ -310,7 +336,7 @@ export default function FirmPeople() {
         reportsToManagerId: m.reportsToManagerId ?? user?.id ?? null,
       }));
   const clients: StaffRow[] = isAdmin
-    ? people.filter((p) => p.role === 'client')
+    ? people.filter((p) => p.role === 'client' && p.status !== 'removed')
     : (clientsQuery.data ?? []).map((c) => ({
         id: c.id,
         name: c.name,
@@ -318,6 +344,8 @@ export default function FirmPeople() {
         role: 'client' as const,
         clientId: c.clientId,
       }));
+
+  const removedClients: RemovedClientRow[] = removedClientsQuery.data ?? [];
 
   const portfolio = useMemo(() => {
     const active = engagements.filter((e) => e.stage !== 'Operational Readiness');
@@ -962,6 +990,33 @@ export default function FirmPeople() {
                 person={m}
                 canManage={isAdmin}
               />
+            ))
+          )}
+        </Surface>
+
+        <Surface className="divide-y divide-border lg:col-span-2">
+          <div className="px-4 py-3">
+            <Eyebrow>Removed clients</Eyebrow>
+          </div>
+          {removedClients.length === 0 ? (
+            <EmptyStateIllustrated
+              icon={UserMinus}
+              title="No removed clients"
+              className="m-4 py-8"
+            />
+          ) : (
+            removedClients.map((c) => (
+              <div key={c.id} className="px-4 py-3">
+                <div className="text-[13px] font-medium">{c.name}</div>
+                <div className="font-mono text-[11px] text-muted-foreground">{c.email}</div>
+                {c.phone ? (
+                  <div className="font-mono text-[11px] text-muted-foreground">{c.phone}</div>
+                ) : null}
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  {c.removedReason ?? 'Removed from their last project'}
+                  {c.removedAt ? ` · ${new Date(c.removedAt).toLocaleDateString()}` : ''}
+                </div>
+              </div>
             ))
           )}
         </Surface>

@@ -14,6 +14,7 @@ import {
 } from '@/db/repositories/engagement-managers-membership';
 import { listManagerOptions } from '@/db/repositories/profiles';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { sendClientEmailChangedEmail } from '@/lib/email/client-email-changed';
 import { clientPasswordSchema, emailSchema } from '@/lib/api/schemas';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
 
@@ -144,6 +145,16 @@ export async function applyChangeRequest(
     fullName: data.fullName,
     password: data.password,
   });
+
+  // The outgoing address hears about it on the approval path too.
+  await sendClientEmailChangedEmail({
+    previousEmail: result.replacedEmail,
+    previousName: result.replacedName,
+    newEmail: result.email,
+    companyName: engagement.companyName,
+    actorName: adminCtx.name,
+    actorEmail: adminCtx.email,
+  }).catch(() => null);
 
   await recordAuditEvent(adminCtx, {
     engagementId: request.engagementId,

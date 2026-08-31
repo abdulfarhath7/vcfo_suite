@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import type { Engagement } from '@/data/engagements';
 import {
@@ -57,6 +57,7 @@ export function ChangeClientDialog({
   const [reason, setReason] = useState('');
   const [showValidation, setShowValidation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
   const clientsQuery = useQuery({
     queryKey: ['engagement-clients', engagement.id],
@@ -114,9 +115,15 @@ export function ChangeClientDialog({
 
       if (mode === 'direct') {
         const result = await substituteClientInDb(engagement.id, payload);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['engagement-clients', engagement.id] }),
+          queryClient.invalidateQueries({ queryKey: ['admin-clients'] }),
+          queryClient.invalidateQueries({ queryKey: ['admin-removed-clients'] }),
+          queryClient.invalidateQueries({ queryKey: ['admin-people'] }),
+        ]);
         toastSuccess(
           'Client changed',
-          `${engagement.companyName} is now with ${result.substituted.email}.`,
+          `${engagement.companyName} is now with ${result.substituted.email}. ${result.substituted.replacedEmail} has been emailed about the change.`,
         );
       } else {
         await createChangeRequestInDb({

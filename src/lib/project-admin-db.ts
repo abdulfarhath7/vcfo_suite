@@ -123,7 +123,15 @@ export async function listEngagementClientsFromDb(
 export async function substituteClientInDb(
   appId: string,
   input: { replaceUserId: string; email: string; fullName?: string; password: string },
-): Promise<{ substituted: { email: string; name: string | null; createdNewUser: boolean } }> {
+): Promise<{
+  substituted: {
+    email: string;
+    name: string | null;
+    createdNewUser: boolean;
+    replacedEmail: string;
+    replacedRemoved: boolean;
+  };
+}> {
   return apiFetch(engagementPath(appId, '/clients/substitute'), {
     method: 'POST',
     body: JSON.stringify(input),
