@@ -1,6 +1,6 @@
 import 'server-only';
 import bcrypt from 'bcryptjs';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   profiles,
@@ -160,6 +160,10 @@ export interface CreateClientProfileInput {
   password: string;
   fullName?: string;
   clientId?: string;
+  /** WhatsApp destination in E.164. */
+  phoneE164?: string;
+  /** Explicit consent ticked on the create form — stamps whatsapp_opt_in_at. */
+  whatsappConsent?: boolean;
 }
 
 export interface CreateClientProfileResult {
@@ -198,6 +202,8 @@ export async function createClientProfile(
 
   const passwordHash = await bcrypt.hash(input.password, 10);
 
+  const phoneE164 = input.phoneE164?.trim() || null;
+
   const [row] = await db
     .insert(profiles)
     .values({
@@ -207,6 +213,9 @@ export async function createClientProfile(
       role: 'client',
       status: 'active',
       clientId,
+      phoneE164,
+      // Consent is only real when a number came with it.
+      whatsappOptInAt: input.whatsappConsent && phoneE164 ? new Date() : null,
     })
     .returning({
       id: profiles.id,
@@ -498,6 +507,9 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
   name: string;
   email: string;
   phone: string | null;
+  phoneE164: string | null;
+  whatsappOptIn: boolean;
+  whatsappStatus: string;
   role: string;
   avatarUrl: string | null;
 }> {
@@ -507,6 +519,10 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
       name: profiles.name,
       email: profiles.email,
       phone: profiles.phone,
+      phoneE164: profiles.phoneE164,
+      whatsappOptInAt: profiles.whatsappOptInAt,
+      whatsappOptOutAt: profiles.whatsappOptOutAt,
+      whatsappStatus: profiles.whatsappStatus,
       role: profiles.role,
       avatarObjectKey: profiles.avatarObjectKey,
       updatedAt: profiles.updatedAt,
@@ -521,6 +537,9 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
     name: row.name?.trim() || row.email.split('@')[0] || 'User',
     email: row.email,
     phone: row.phone,
+    phoneE164: row.phoneE164,
+    whatsappOptIn: Boolean(row.whatsappOptInAt && !row.whatsappOptOutAt),
+    whatsappStatus: row.whatsappStatus,
     role: row.role,
     avatarUrl: row.avatarObjectKey ? ownAvatarSrc(row.updatedAt) : null,
   };
@@ -565,6 +584,10 @@ export async function updateOwnProfile(
   input: {
     name: string;
     phone?: string | null;
+    /** WhatsApp destination. Normalised to E.164 by the caller; null clears it. */
+    phoneE164?: string | null;
+    /** Explicit consent toggle. true stamps opt-in, false stamps withdrawal. */
+    whatsappOptIn?: boolean;
     email?: string;
     currentPassword?: string;
   },
@@ -577,6 +600,8 @@ export async function updateOwnProfile(
       id: profiles.id,
       email: profiles.email,
       passwordHash: profiles.passwordHash,
+      phoneE164: profiles.phoneE164,
+      whatsappOptInAt: profiles.whatsappOptInAt,
     })
     .from(profiles)
     .where(eq(profiles.id, ctx.userId))
@@ -588,6 +613,34 @@ export async function updateOwnProfile(
   if (!name) throw new Error('name_required');
 
   const phone = input.phone?.trim() ? input.phone.trim() : null;
+
+  /**
+   * Consent bookkeeping (DPDP): opting in stamps opt-in and clears any prior
+   * withdrawal; withdrawing stamps opt-out and leaves the original opt-in
+   * timestamp in place as evidence of what was consented to and when.
+   */
+  const whatsappPatch: {
+    phoneE164?: string | null;
+    whatsappOptInAt?: Date | null;
+    whatsappOptOutAt?: Date | null;
+    whatsappStatus?: 'unknown' | 'verified' | 'failed';
+  } = {};
+
+  if (input.phoneE164 !== undefined) {
+    const nextPhone = input.phoneE164?.trim() ? input.phoneE164.trim() : null;
+    whatsappPatch.phoneE164 = nextPhone;
+    // A changed number is unproven again — clear a previous `failed` verdict.
+    if (nextPhone !== row.phoneE164) whatsappPatch.whatsappStatus = 'unknown';
+  }
+
+  if (input.whatsappOptIn !== undefined) {
+    if (input.whatsappOptIn) {
+      whatsappPatch.whatsappOptInAt = row.whatsappOptInAt ?? new Date();
+      whatsappPatch.whatsappOptOutAt = null;
+    } else {
+      whatsappPatch.whatsappOptOutAt = new Date();
+    }
+  }
   const nextEmail = input.email?.trim().toLowerCase();
   const emailChanging = Boolean(nextEmail && nextEmail !== row.email);
 
@@ -609,6 +662,7 @@ export async function updateOwnProfile(
     .set({
       name,
       phone,
+      ...whatsappPatch,
       ...(emailChanging ? { email: nextEmail } : {}),
       updatedAt: new Date(),
     })
@@ -735,7 +789,7 @@ export async function listStaffContactsByIds(
   }));
 }
 
-/** Admin or manager: list client portal accounts. */
+/** Admin or manager: list active client portal accounts (removed ones excluded). */
 export async function listClientAccounts(
   ctx: AuthContext,
 ): Promise<{ id: string; name: string; email: string; clientId: string | null }[]> {
@@ -750,7 +804,7 @@ export async function listClientAccounts(
       clientId: profiles.clientId,
     })
     .from(profiles)
-    .where(eq(profiles.role, 'client'))
+    .where(and(eq(profiles.role, 'client'), ne(profiles.status, 'removed')))
     .orderBy(asc(profiles.name));
   return rows.map((r) => ({
     id: r.id,
@@ -760,3 +814,140 @@ export async function listClientAccounts(
   }));
 }
 
+export type RemovedClientRow = {
+  id: string;
+  name: string;
+  email: string;
+  clientId: string | null;
+  phone: string | null;
+  removedAt: string | null;
+  removedReason: string | null;
+};
+
+/**
+ * Admin or manager: clients taken off their last project. They keep their
+ * record — People > Removed clients is where the history stays readable.
+ */
+export async function listRemovedClients(ctx: AuthContext): Promise<RemovedClientRow[]> {
+  if (ctx.role !== 'admin' && ctx.role !== 'super_admin' && ctx.role !== 'manager') {
+    throw new Error('Not permitted');
+  }
+  const rows = await db
+    .select({
+      id: profiles.id,
+      name: profiles.name,
+      email: profiles.email,
+      clientId: profiles.clientId,
+      phone: profiles.phoneE164,
+      removedAt: profiles.removedAt,
+      removedReason: profiles.removedReason,
+    })
+    .from(profiles)
+    .where(and(eq(profiles.role, 'client'), eq(profiles.status, 'removed')))
+    .orderBy(desc(profiles.removedAt));
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name?.trim() || r.email,
+    email: r.email,
+    clientId: r.clientId,
+    phone: r.phone,
+    removedAt: r.removedAt ? r.removedAt.toISOString() : null,
+    removedReason: r.removedReason,
+  }));
+}
+
+
+/**
+ * SYSTEM WRITER — Twilio inbound webhook (documented deviation).
+ *
+ * The webhook is unauthenticated (signature-verified only), so there is no
+ * AuthContext to scope by. Narrow on purpose: a single-row update keyed by the
+ * E.164 number Twilio reports, writing nothing but the opt-out timestamp.
+ * Inbound message bodies are never persisted.
+ *
+ * Returns the number of profiles marked (0 when the number is unknown to us).
+ */
+export async function systemRecordWhatsAppOptOut(
+  phoneE164: string,
+): Promise<number> {
+  const phone = phoneE164.trim();
+  if (!phone) return 0;
+
+  try {
+    const rows = await db
+      .update(profiles)
+      .set({ whatsappOptOutAt: new Date(), updatedAt: new Date() })
+      .where(eq(profiles.phoneE164, phone))
+      .returning({ id: profiles.id });
+    return rows.length;
+  } catch (err) {
+    console.error('[profiles] whatsapp opt-out failed', err);
+    return 0;
+  }
+}
+
+/**
+ * SYSTEM WRITER — Twilio status webhook (documented deviation).
+ * Marks reachability so staff can see a dead number without guessing.
+ */
+export async function systemMarkWhatsAppStatus(
+  phoneE164: string,
+  status: 'unknown' | 'verified' | 'failed',
+): Promise<void> {
+  const phone = phoneE164.trim();
+  if (!phone) return;
+
+  try {
+    await db
+      .update(profiles)
+      .set({ whatsappStatus: status, updatedAt: new Date() })
+      .where(eq(profiles.phoneE164, phone));
+  } catch (err) {
+    console.error('[profiles] whatsapp status update failed', err);
+  }
+}
+
+/**
+ * SYSTEM READER — background WhatsApp job (documented deviation).
+ *
+ * The Inngest job runs after the request that queued it has already returned,
+ * so there is no session. Consent is re-read here rather than trusted from the
+ * queued payload: a person who opts out between queue and send must not be
+ * messaged.
+ */
+export async function systemGetNotifyRecipient(profileId: string): Promise<{
+  profileId: string;
+  name: string;
+  email: string;
+  phoneE164: string | null;
+  whatsappOptInAt: Date | null;
+  whatsappOptOutAt: Date | null;
+} | null> {
+  const id = profileId.trim();
+  if (!id || !isUuid(id)) return null;
+
+  const [row] = await db
+    .select({
+      id: profiles.id,
+      name: profiles.name,
+      email: profiles.email,
+      phoneE164: profiles.phoneE164,
+      whatsappOptInAt: profiles.whatsappOptInAt,
+      whatsappOptOutAt: profiles.whatsappOptOutAt,
+      status: profiles.status,
+    })
+    .from(profiles)
+    .where(eq(profiles.id, id))
+    .limit(1);
+
+  if (!row || row.status !== 'active') return null;
+
+  return {
+    profileId: row.id,
+    name: row.name?.trim() || row.email,
+    email: row.email,
+    phoneE164: row.phoneE164,
+    whatsappOptInAt: row.whatsappOptInAt,
+    whatsappOptOutAt: row.whatsappOptOutAt,
+  };
+}

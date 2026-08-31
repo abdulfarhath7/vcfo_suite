@@ -20,6 +20,7 @@ import {
   emailsStaffViaResend,
   inAppIncludesActor,
   opensClientOutgoingDraft,
+  sendsFromActorMailbox,
   staffEmailTargetsForEvent,
   type EngagementProcessEvent,
 } from '@/lib/email/engagement-event-fanout';
@@ -31,9 +32,13 @@ import {
   type SendResendResult,
 } from '@/lib/email/send-resend';
 import type { NotificationKind } from '@/lib/checklist-notifications';
+import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
+import { firstNameOf } from '@/lib/notify/templates';
+import type { NotifyEvent } from '@/lib/notify/types';
 import {
   adminProjectStepPath,
   clientBoardResolutionPath,
+  clientIncorporationPath,
   internBoardResolutionPath,
   internEngagementStepPath,
 } from '@/lib/project-step-path';
@@ -82,9 +87,35 @@ function emailKind(event: EngagementProcessEvent): ProgressEmailKind | null {
       return 'docs_shared';
     case 'board_resolution_shared':
       return 'board_resolution_shared';
+    case 'client_fill_requested':
+      return 'client_fill_requested';
+    case 'client_fill_approved':
+      return 'client_fill_approved';
+    case 'client_fill_declined':
+      return 'client_fill_declined';
     case 'request_created':
       return null;
   }
+}
+
+/** Certificate of Incorporation step — accepting it is the `coi_issued` nudge. */
+const COI_ITEM_ID = 'pre-12';
+
+/**
+ * Which process events also earn a WhatsApp nudge.
+ *
+ * Returns null for everything else — WhatsApp is a small, chosen subset, not a
+ * mirror of the email fan-out. Email is unaffected either way.
+ */
+function whatsappEventFor(input: NotifyInput): NotifyEvent | null {
+  if (input.event === 'delivered') {
+    // `inAppOnly` marks a re-deliver; only the first Deliver nudges.
+    return input.inAppOnly ? null : 'document_delivered';
+  }
+  if (input.event === 'review_accepted' && input.itemId.trim() === COI_ITEM_ID) {
+    return 'coi_issued';
+  }
+  return null;
 }
 
 function notificationKind(event: EngagementProcessEvent): NotificationKind {
@@ -106,6 +137,12 @@ function notificationKind(event: EngagementProcessEvent): NotificationKind {
       return 'docs.share';
     case 'board_resolution_shared':
       return 'checklist.deliver';
+    case 'client_fill_requested':
+      return 'checklist.submit';
+    case 'client_fill_declined':
+      return 'checklist.review';
+    case 'client_fill_approved':
+      return 'request.created';
     case 'request_created':
       return 'request.created';
   }
@@ -146,7 +183,11 @@ function replyToForStaff(
   actorUserId?: string,
 ): string | undefined {
   const actor = findPartyByUserId(recipients, actorUserId);
-  if (event === 'lead_requested_review') {
+  if (
+    event === 'lead_requested_review' ||
+    event === 'client_fill_requested' ||
+    event === 'client_fill_declined'
+  ) {
     if (actor && !isClientParty(recipients, actor)) return formatReplyTo(actor);
     return formatReplyTo(recipients.lead ?? recipients.leads[0] ?? null);
   }
@@ -269,7 +310,9 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     const clientHref =
       input.event === 'board_resolution_shared'
         ? clientBoardResolutionPath()
-        : '/app/client/incorporation';
+        : input.event === 'client_fill_approved'
+          ? clientIncorporationPath(input.itemId)
+          : '/app/client/incorporation';
     const leadHref =
       input.event === 'board_resolution_shared'
         ? internBoardResolutionPath(project)
@@ -425,6 +468,26 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
           href: leadHref,
         });
       }
+    } else if (input.event === 'client_fill_requested') {
+      pushNotifToManagers(
+        'Client fill request',
+        `${company}: approve before we ask the client to fill ${title}.`,
+      );
+    } else if (input.event === 'client_fill_approved') {
+      pushNotifToClients('Please fill this step', `${title} is waiting for your details.`);
+      pushNotifToLeads(
+        'Client fill request approved',
+        `${company}: the client was asked to fill ${title}.`,
+      );
+      pushNotifToManagers(
+        'Client fill request approved',
+        `${company}: the client was asked to fill ${title}.`,
+      );
+    } else if (input.event === 'client_fill_declined') {
+      const declineBody = input.note?.trim()
+        ? `${title}: ${input.note.trim()}`
+        : `${title} was not sent to the client.`;
+      pushNotifToLeads('Client fill request declined', declineBody);
     } else if (input.event === 'request_created') {
       pushNotifToClients('Document requested', `Please upload: ${title}.`);
       pushNotifToLeads(
@@ -465,7 +528,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     let skippedResendBecauseOutlook = false;
     if (
       !input.inAppOnly &&
-      input.event === 'lead_requested_review' &&
+      sendsFromActorMailbox(input.event) &&
       input.outlookCtx &&
       progressKind
     ) {
@@ -501,6 +564,75 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
           const message = err instanceof Error ? err.message : 'outlook_send_failed';
           if (message !== 'outlook_not_connected' && message !== 'outlook_not_configured') {
             console.error('[notify] outlook lead→manager failed', message);
+          }
+        }
+      }
+    }
+
+    // Manager approved the lead's ask: the client hears it from the manager's
+    // own mailbox when Outlook is connected, else Resend with the manager on
+    // Reply-To. Leads and admins are CC'd so the ask is visible to the team.
+    if (!input.inAppOnly && input.event === 'client_fill_approved' && progressKind) {
+      const parties = clientParties(recipients);
+      const to = parties.map((p) => p.email.trim()).filter(Boolean);
+      if (to.length === 0) {
+        console.warn('[notify] client fill approval has no client email', recipients.slug);
+      } else {
+        const actor = findPartyByUserId(recipients, input.actorUserId);
+        const cc = approvalCcEmails(recipients, {
+          excludeEmails: actor?.email ? [actor.email] : [],
+        });
+        const copy = buildProgressEmail({
+          kind: progressKind,
+          companyName: company,
+          itemId: input.itemId,
+          note: input.note,
+          portalHref: absolute(clientHref),
+          audience: 'client',
+          title: input.requestLabel,
+        });
+
+        let sentViaOutlook = false;
+        if (input.outlookCtx) {
+          try {
+            await sendMailViaOutlook(input.outlookCtx, {
+              to,
+              ...(cc.length > 0 ? { cc } : {}),
+              subject: copy.subject,
+              html: copy.html,
+              text: copy.text,
+            });
+            for (const addr of to) {
+              email.attempted += 1;
+              email.sent.push(addr);
+            }
+            pushEmailSubject(email, copy.subject);
+            sentViaOutlook = true;
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'outlook_send_failed';
+            if (message !== 'outlook_not_connected' && message !== 'outlook_not_configured') {
+              console.error('[notify] outlook manager→client fill request failed', message);
+            }
+          }
+        }
+
+        if (!sentViaOutlook) {
+          for (const addr of to) {
+            queue.push({
+              to: addr,
+              subject: copy.subject,
+              run: () =>
+                sendResendEmail({
+                  to: addr,
+                  cc,
+                  from: fromForCompany(recipients),
+                  replyTo: actor ? formatReplyTo(actor) : undefined,
+                  subject: copy.subject,
+                  html: copy.html,
+                  text: copy.text,
+                  purpose: 'progress.client_fill_approved.client',
+                }),
+            });
           }
         }
       }
@@ -578,6 +710,24 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     email.skipped = [...new Set(email.skipped)];
     email.failed = [...new Set(email.failed)];
     email.subjects = [...new Set(email.subjects ?? [])];
+
+    // WhatsApp last, on the background path, so a Twilio timeout can never
+    // slow this request or change anything above. Never throws.
+    const whatsappEvent = whatsappEventFor(input);
+    if (whatsappEvent) {
+      await queueWhatsAppSends(
+        clientParties(recipients).map((party) => ({
+          engagementId: recipients.appId,
+          recipientProfileId: party.userId,
+          event: whatsappEvent,
+          variables: {
+            firstName: firstNameOf(party.name),
+            companyName: company,
+            stepTitle: title,
+          },
+        })),
+      );
+    }
   } catch (err) {
     console.error('[notify] engagement event failed', input.event, err);
   }

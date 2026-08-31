@@ -99,6 +99,10 @@ export type CreateProjectState = {
   subsidiaryLegalName: string;
   subsidiaryRegisteredAddress: string;
   clientContact: string;
+  /** Client mobile for WhatsApp nudges. Raw input; normalised to E.164 on submit. */
+  clientPhone: string;
+  /** Explicit WhatsApp consent. Never pre-ticked. */
+  clientWhatsappConsent: boolean;
   clientEmail: string;
   clientPassword: string;
   /** Project leads; first is primary. */
@@ -134,6 +138,8 @@ export function createProjectReducer(state: CreateProjectState, action: CreatePr
         subsidiaryLegalName: '',
         subsidiaryRegisteredAddress: '',
         clientContact: '',
+        clientPhone: '',
+        clientWhatsappConsent: false,
         clientEmail: '',
         clientPassword: DEFAULT_CLIENT_TEMP_PASSWORD,
         internIds: action.internIds,
@@ -178,6 +184,10 @@ export function saveCreateProjectDraft(state: CreateProjectState): void {
     subsidiaryLegalName: state.subsidiaryLegalName,
     subsidiaryRegisteredAddress: state.subsidiaryRegisteredAddress,
     clientContact: state.clientContact,
+    clientPhone: state.clientPhone,
+    // Consent is deliberately NOT persisted: a resumed draft must never come
+    // back with the box already ticked. The admin re-affirms it each time.
+    clientWhatsappConsent: false,
     clientEmail: state.clientEmail,
     clientPassword: state.clientPassword,
     internIds: state.internIds,
@@ -223,6 +233,9 @@ export function loadCreateProjectDraft(): CreateProjectDraftPayload | null {
           ? parsed.subsidiaryRegisteredAddress
           : '',
       clientContact: typeof parsed.clientContact === 'string' ? parsed.clientContact : '',
+      clientPhone: typeof parsed.clientPhone === 'string' ? parsed.clientPhone : '',
+      // Always restored un-ticked — see saveCreateProjectDraft.
+      clientWhatsappConsent: false,
       clientEmail: typeof parsed.clientEmail === 'string' ? parsed.clientEmail : '',
       clientPassword:
         typeof parsed.clientPassword === 'string' && parsed.clientPassword

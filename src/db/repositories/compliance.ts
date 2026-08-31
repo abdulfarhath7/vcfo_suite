@@ -509,3 +509,103 @@ export async function regenerateComplianceForEngagement(
     instances.map((i) => instanceToUpsert(i, ownerUuid)),
   );
 }
+
+/**
+ * SYSTEM READER — WhatsApp compliance nudges (Inngest cron).
+ *
+ * Unscoped like `systemGenerateComplianceInstances`: the daily job has no
+ * session. Returns only what a template variable needs — obligation name,
+ * company name, due date. No filing numbers, no evidence, no owner details.
+ *
+ * Windows are exact IST civil-day matches, so each instance enters a window
+ * once:
+ *   monthly   → 5 days before due
+ *   quarterly → 7 days before due
+ *   overdue   → the day after due, any frequency
+ * Filed instances are excluded.
+ */
+export async function systemListComplianceNudges(today: Date): Promise<
+  Array<{
+    kind: 'compliance_due_monthly' | 'compliance_due_quarterly' | 'compliance_overdue';
+    instanceId: string;
+    engagementDbId: string;
+    companyName: string;
+    obligationName: string;
+    dueDate: string;
+  }>
+> {
+  const { ymdInIst, parseIstNoon } = await import('@/lib/intern-work');
+
+  const shift = (days: number): string => {
+    const base = parseIstNoon(ymdInIst(today));
+    base.setDate(base.getDate() + days);
+    return ymdInIst(base);
+  };
+
+  const dueInFive = shift(5);
+  const dueInSeven = shift(7);
+  const dueYesterday = shift(-1);
+
+  try {
+    const rows = await db
+      .select({
+        instanceId: complianceInstances.id,
+        engagementDbId: complianceInstances.engagementId,
+        dueDate: complianceInstances.dueDate,
+        status: complianceInstances.status,
+        companyName: engagements.companyName,
+        deletedAt: engagements.deletedAt,
+        obligationName: complianceObligations.particular,
+        frequency: complianceObligations.frequency,
+      })
+      .from(complianceInstances)
+      .innerJoin(engagements, eq(engagements.id, complianceInstances.engagementId))
+      .innerJoin(
+        complianceObligations,
+        eq(complianceObligations.id, complianceInstances.obligationId),
+      )
+      .where(
+        inArray(complianceInstances.dueDate, [dueInFive, dueInSeven, dueYesterday]),
+      );
+
+    const out: Array<{
+      kind: 'compliance_due_monthly' | 'compliance_due_quarterly' | 'compliance_overdue';
+      instanceId: string;
+      engagementDbId: string;
+      companyName: string;
+      obligationName: string;
+      dueDate: string;
+    }> = [];
+
+    for (const row of rows) {
+      // Soft-deleted projects are hidden everywhere else — do not message them.
+      if (row.deletedAt) continue;
+      if (row.status === 'filed') continue;
+
+      const base = {
+        instanceId: row.instanceId,
+        engagementDbId: row.engagementDbId,
+        companyName: row.companyName,
+        obligationName: row.obligationName,
+        dueDate: row.dueDate,
+      };
+
+      if (row.dueDate === dueYesterday) {
+        out.push({ kind: 'compliance_overdue', ...base });
+        continue;
+      }
+      if (row.dueDate === dueInFive && row.frequency === 'monthly') {
+        out.push({ kind: 'compliance_due_monthly', ...base });
+        continue;
+      }
+      if (row.dueDate === dueInSeven && row.frequency === 'quarterly') {
+        out.push({ kind: 'compliance_due_quarterly', ...base });
+      }
+    }
+
+    return out;
+  } catch (err) {
+    console.error('[compliance] nudge scan failed', err);
+    return [];
+  }
+}

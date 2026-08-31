@@ -33,7 +33,10 @@ export type EngagementProcessEvent =
   | 'unlocked'
   | 'docs_shared'
   | 'board_resolution_shared'
-  | 'request_created';
+  | 'request_created'
+  | 'client_fill_requested'
+  | 'client_fill_approved'
+  | 'client_fill_declined';
 
 export type StaffEmailTarget = {
   email: string;
@@ -123,8 +126,15 @@ export function emailsStaffViaResend(event: EngagementProcessEvent): boolean {
   return (
     event === 'client_submitted' ||
     event === 'client_uploaded' ||
-    event === 'lead_requested_review'
+    event === 'lead_requested_review' ||
+    event === 'client_fill_requested' ||
+    event === 'client_fill_declined'
   );
+}
+
+/** Lead → manager approval asks: Graph from the lead's own mailbox when connected. */
+export function sendsFromActorMailbox(event: EngagementProcessEvent): boolean {
+  return event === 'lead_requested_review' || event === 'client_fill_requested';
 }
 
 /** Lead/manager → client: in-app compose + Graph Mail.Send. */
@@ -173,13 +183,16 @@ export function staffEmailTargetsForEvent(
     targets.push({ email: addr, href, label });
   };
 
-  if (event !== 'lead_requested_review') {
+  if (event !== 'lead_requested_review' && event !== 'client_fill_requested') {
     for (const lead of collectLeadParties(recipients)) {
       push(lead, hrefs.leadHref, 'lead');
     }
   }
-  for (const manager of collectManagerParties(recipients)) {
-    push(manager, hrefs.managerHref, 'manager');
+  // A declined request is the lead's news, not the manager's own.
+  if (event !== 'client_fill_declined') {
+    for (const manager of collectManagerParties(recipients)) {
+      push(manager, hrefs.managerHref, 'manager');
+    }
   }
 
   return targets;

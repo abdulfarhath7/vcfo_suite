@@ -104,6 +104,14 @@ export const createProjectBodySchema = z
     clientEmail: emailSchema,
     clientPassword: clientPasswordSchema,
     clientName: z.string().trim().max(120).optional(),
+    /** WhatsApp destination in E.164 (+919876543210). Optional — email is the record. */
+    clientPhoneE164: z
+      .string()
+      .trim()
+      .regex(/^\+[1-9]\d{7,14}$/, 'invalid_phone_e164')
+      .optional(),
+    /** Explicit, un-ticked-by-default WhatsApp consent. DPDP evidence. */
+    clientWhatsappConsent: z.boolean().optional(),
     /** Primary lead (legacy). Prefer internIds. */
     internId: internIdSchema.optional(),
     /** One or more project leads; first becomes primary. */

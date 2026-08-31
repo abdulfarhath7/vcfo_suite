@@ -1,9 +1,11 @@
 'use client';
 
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Phone } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { FieldError } from '@/components/admin/create-project-form-shared';
+import { normalizeToE164 } from '@/lib/notify/phone';
 import { cn } from '@/lib/utils';
 
 const fieldLabelClass =
@@ -15,6 +17,10 @@ export function CreateProjectClientFields(props: Record<string, unknown>) {
   const {
     clientContact,
     setClientContact,
+    clientPhone,
+    setClientPhone,
+    clientWhatsappConsent,
+    setClientWhatsappConsent,
     clientEmail,
     setClientEmail,
     clientPassword,
@@ -26,6 +32,10 @@ export function CreateProjectClientFields(props: Record<string, unknown>) {
   } = props as {
     clientContact: string;
     setClientContact: (v: string) => void;
+    clientPhone: string;
+    setClientPhone: (v: string) => void;
+    clientWhatsappConsent: boolean;
+    setClientWhatsappConsent: (v: boolean) => void;
     clientEmail: string;
     setClientEmail: (v: string) => void;
     clientPassword: string;
@@ -35,6 +45,10 @@ export function CreateProjectClientFields(props: Record<string, unknown>) {
     fieldError: (k: string) => string | undefined;
     pwStrength: 'weak' | 'fair' | 'strong' | null;
   };
+
+  const normalizedPhone = normalizeToE164(clientPhone);
+  const phoneEntered = Boolean(clientPhone.trim());
+  const phoneUnparseable = phoneEntered && !normalizedPhone;
 
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -52,6 +66,53 @@ export function CreateProjectClientFields(props: Record<string, unknown>) {
           maxLength={120}
         />
       </div>
+      <div className="sm:col-span-2">
+        <Label htmlFor="create-client-phone" className={fieldLabelClass}>
+          <Phone className="h-3.5 w-3.5" aria-hidden />
+          Client mobile <span className="font-normal">(optional)</span>
+        </Label>
+        <Input
+          id="create-client-phone"
+          type="tel"
+          inputMode="tel"
+          value={clientPhone}
+          onChange={(e) => setClientPhone(e.target.value)}
+          placeholder="+91 98765 43210"
+          className={cn(
+            fieldControlClass,
+            phoneUnparseable && 'border-danger focus-visible:ring-danger/30',
+          )}
+          maxLength={24}
+          aria-describedby="create-client-whatsapp-consent"
+        />
+        {phoneUnparseable ? (
+          <FieldError
+            id="create-client-phone-error"
+            message="Enter a mobile with country code, e.g. +91 98765 43210"
+          />
+        ) : null}
+
+        <label
+          htmlFor="create-client-whatsapp"
+          className="mt-3 flex cursor-pointer items-start gap-2.5"
+        >
+          <Checkbox
+            id="create-client-whatsapp"
+            checked={clientWhatsappConsent}
+            onCheckedChange={(v) => setClientWhatsappConsent(v === true)}
+            disabled={!normalizedPhone}
+            className="mt-0.5"
+          />
+          <span
+            id="create-client-whatsapp-consent"
+            className="text-[12.5px] leading-snug text-muted-foreground"
+          >
+            The client agrees to receive WhatsApp updates about this engagement on
+            this number. They can reply STOP at any time to withdraw.
+          </span>
+        </label>
+      </div>
+
       <div>
         <Label htmlFor="create-client-email" className={fieldLabelClass}>
           <Mail className="h-3.5 w-3.5" aria-hidden />

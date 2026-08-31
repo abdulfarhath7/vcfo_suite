@@ -47,6 +47,7 @@ import { extractItemResponses } from '@/lib/checklist-responses';
 import { shouldShowStatutoryFormLabels } from '@/lib/checklist-field-access';
 import { ProjectDetailTeamPanel } from '@/views/admin/ProjectDetailTeamPanel';
 import { ProjectDetailActivityPanel } from '@/views/admin/ProjectDetailActivityPanel';
+import { ProjectDetailNotificationsPanel } from '@/views/admin/ProjectDetailNotificationsPanel';
 import { ProjectDetailResendDialog } from '@/views/admin/ProjectDetailResendDialog';
 import type { useRouter } from 'next/navigation';
 import type { ChecklistItemState } from '@/context/AppContext';
@@ -458,6 +459,7 @@ export function ProjectDetailView(props: ProjectDetailViewProps) {
           </Surface>
 
           <ProjectDetailTeamPanel intern={intern} leads={leads} />
+          <ProjectDetailNotificationsPanel engagementId={eng.id} />
           <ProjectDetailActivityPanel activity={eActivity} />
         </div>
       </div>

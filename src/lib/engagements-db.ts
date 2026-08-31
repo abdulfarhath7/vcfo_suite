@@ -352,6 +352,10 @@ export interface CreateProjectInput {
   clientEmail: string;
   clientPassword: string;
   clientName?: string;
+  /** WhatsApp destination in E.164 (+919876543210). Optional. */
+  clientPhoneE164?: string;
+  /** Explicit WhatsApp consent ticked on the create form. */
+  clientWhatsappConsent?: boolean;
   /** Primary lead (legacy). Prefer internIds. */
   internId?: string;
   /** One or more project leads; first becomes primary. */
@@ -478,6 +482,23 @@ export async function reviewChecklistItemInDb(
     engagementPath(appEngagementId, '/checklist/review'),
     { itemId, action, note: note ?? null },
     'Review did not return checklist state.',
+  );
+}
+
+/**
+ * Lead asks the client to fill a step (`request`), or a manager approves /
+ * declines that ask. The client only hears about an approved request.
+ */
+export async function setClientFillRequestInDb(
+  appEngagementId: string,
+  itemId: string,
+  action: 'request' | 'approve' | 'decline',
+  note?: string,
+): Promise<EngagementChecklistState> {
+  return checklistMutation(
+    engagementPath(appEngagementId, '/checklist/client-fill'),
+    { itemId, action, ...(note?.trim() ? { note: note.trim() } : {}) },
+    'Client fill request did not return checklist state.',
   );
 }
 

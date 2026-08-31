@@ -16,7 +16,10 @@ export type ProgressEmailKind =
   | 'delivered'
   | 'unlocked'
   | 'docs_shared'
-  | 'board_resolution_shared';
+  | 'board_resolution_shared'
+  | 'client_fill_requested'
+  | 'client_fill_approved'
+  | 'client_fill_declined';
 
 export type ProgressEmailCopy = {
   subject: string;
@@ -145,6 +148,70 @@ export function buildProgressEmail(input: {
         'Action required',
       ),
       text: `The project lead requested manager approval on “${step}” for ${company}.\n\nOpen: ${href}`,
+    };
+  }
+
+  if (input.kind === 'client_fill_requested') {
+    return {
+      subject: `${company}: approval needed to ask the client for “${step}”`,
+      html: wrap(
+        'Approval needed before we ask the client',
+        emailParagraph(
+          `The project lead wants to ask <strong>${escapeHtml(company)}</strong> to fill <strong>${escapeHtml(step)}</strong>.`,
+        ) +
+          (note ? emailCallout(escapeHtml(note)) : '') +
+          emailParagraph(
+            'Nothing has gone to the client yet. Approve it and the request is sent from your mailbox.',
+          ),
+        'Approve or decline',
+        href,
+        'Action required',
+      ),
+      text: `The project lead wants to ask ${company} to fill “${step}”.${
+        note ? `\n\nNote: ${note}` : ''
+      }\n\nNothing has gone to the client yet. Approve it and the request is sent from your mailbox.\n\nOpen: ${href}`,
+    };
+  }
+
+  if (input.kind === 'client_fill_approved') {
+    return {
+      subject: `${company}: please fill “${step}”`,
+      html: wrap(
+        `Please fill ${step}`,
+        emailParagraph(
+          `We need <strong>${escapeHtml(step)}</strong> completed for <strong>${escapeHtml(company)}</strong>.`,
+        ) +
+          (note ? emailCallout(escapeHtml(note)) : '') +
+          emailParagraph(
+            'Open the link below, fill in the details, and submit. Your engagement team is notified the moment you do.',
+          ),
+        `Fill ${step}`,
+        href,
+        'Action required',
+      ),
+      text: `We need “${step}” completed for ${company}.${
+        note ? `\n\nNote: ${note}` : ''
+      }\n\nFill it in and submit here: ${href}`,
+    };
+  }
+
+  if (input.kind === 'client_fill_declined') {
+    return {
+      subject: `${company}: request to ask the client for “${step}” was declined`,
+      html: wrap(
+        'Request declined',
+        emailParagraph(
+          `Your request to ask <strong>${escapeHtml(company)}</strong> for <strong>${escapeHtml(step)}</strong> was declined by the project manager.`,
+        ) +
+          (note ? emailCallout(escapeHtml(note)) : '') +
+          emailParagraph('Nothing was sent to the client.'),
+        'Open workspace',
+        href,
+        'Team update',
+      ),
+      text: `Your request to ask ${company} for “${step}” was declined by the project manager.${
+        note ? `\n\nReason: ${note}` : ''
+      }\n\nNothing was sent to the client.\n\nOpen: ${href}`,
     };
   }
 

@@ -13,7 +13,46 @@ export type EngagementParty = {
   userId: string;
   email: string;
   name: string;
+  /**
+   * WhatsApp reachability. Additive and optional — every existing consumer
+   * (email fan-out, CC merge, staff targeting) ignores these.
+   */
+  phoneE164?: string | null;
+  whatsappOptInAt?: Date | null;
+  whatsappOptOutAt?: Date | null;
 };
+
+/** Columns every party lookup selects, so WhatsApp fields travel with the email. */
+const partyColumns = {
+  id: profiles.id,
+  email: profiles.email,
+  name: profiles.name,
+  phoneE164: profiles.phoneE164,
+  whatsappOptInAt: profiles.whatsappOptInAt,
+  whatsappOptOutAt: profiles.whatsappOptOutAt,
+} as const;
+
+type PartyRow = {
+  id: string;
+  email: string | null;
+  name: string | null;
+  phoneE164: string | null;
+  whatsappOptInAt: Date | null;
+  whatsappOptOutAt: Date | null;
+};
+
+function toParty(row: PartyRow): EngagementParty | null {
+  const email = row.email?.trim();
+  if (!email) return null;
+  return {
+    userId: row.id,
+    email,
+    name: row.name?.trim() || email,
+    phoneE164: row.phoneE164,
+    whatsappOptInAt: row.whatsappOptInAt,
+    whatsappOptOutAt: row.whatsappOptOutAt,
+  };
+}
 
 export type EngagementRecipients = {
   dbId: string;
@@ -40,16 +79,12 @@ export type EngagementRecipients = {
 async function profileById(id: string | null | undefined): Promise<EngagementParty | null> {
   if (!id?.trim() || !isUuid(id.trim())) return null;
   const [row] = await db
-    .select({ id: profiles.id, email: profiles.email, name: profiles.name })
+    .select(partyColumns)
     .from(profiles)
     .where(eq(profiles.id, id.trim()))
     .limit(1);
-  if (!row?.email?.trim()) return null;
-  return {
-    userId: row.id,
-    email: row.email.trim(),
-    name: row.name?.trim() || row.email.trim(),
-  };
+  if (!row) return null;
+  return toParty(row);
 }
 
 async function profileByInternKey(internKey: string | null | undefined): Promise<EngagementParty | null> {
@@ -62,21 +97,12 @@ async function profileByInternKey(internKey: string | null | undefined): Promise
     : eq(profiles.internId, key);
 
   const [row] = await db
-    .select({
-      id: profiles.id,
-      email: profiles.email,
-      name: profiles.name,
-      internId: profiles.internId,
-    })
+    .select({ ...partyColumns, internId: profiles.internId })
     .from(profiles)
     .where(and(eq(profiles.role, 'intern'), match))
     .limit(1);
-  if (!row?.email?.trim()) return null;
-  return {
-    userId: row.id,
-    email: row.email.trim(),
-    name: row.name?.trim() || row.email.trim(),
-  };
+  if (!row) return null;
+  return toParty(row);
 }
 
 async function loadEngagementRow(appOrDbEngagementId: string) {
@@ -105,22 +131,14 @@ export async function resolveEngagementRecipients(
   if (!row) return null;
 
   const memberRows = await db
-    .select({
-      userId: engagementClients.userId,
-      email: profiles.email,
-      name: profiles.name,
-    })
+    .select(partyColumns)
     .from(engagementClients)
     .innerJoin(profiles, eq(profiles.id, engagementClients.userId))
     .where(eq(engagementClients.engagementId, row.id));
 
   const clients: EngagementParty[] = memberRows
-    .filter((m) => m.email?.trim())
-    .map((m) => ({
-      userId: m.userId,
-      email: m.email.trim(),
-      name: m.name?.trim() || m.email.trim(),
-    }));
+    .map(toParty)
+    .filter((p): p is EngagementParty => Boolean(p));
 
   const [primary, lead] = await Promise.all([
     profileById(row.clientUserId),
@@ -180,7 +198,7 @@ export async function resolveEngagementRecipients(
     managers.find((m) => m.userId === row.managerId) ?? managers[0] ?? null;
 
   const adminRows = await db
-    .select({ id: profiles.id, email: profiles.email, name: profiles.name })
+    .select(partyColumns)
     .from(profiles)
     .where(
       and(
@@ -190,14 +208,10 @@ export async function resolveEngagementRecipients(
     );
   const admins: EngagementParty[] = [];
   for (const a of adminRows) {
-    const email = a.email?.trim();
-    if (!email) continue;
-    if (admins.some((x) => x.userId === a.id)) continue;
-    admins.push({
-      userId: a.id,
-      email,
-      name: a.name?.trim() || email,
-    });
+    const party = toParty(a);
+    if (!party) continue;
+    if (admins.some((x) => x.userId === party.userId)) continue;
+    admins.push(party);
   }
 
   const client = primary ?? clients[0] ?? null;

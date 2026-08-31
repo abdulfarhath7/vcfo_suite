@@ -57,6 +57,12 @@ export const healthEnum = pgEnum('engagement_health', [
   'at-risk',
   'overdue',
 ]);
+/** Per-profile WhatsApp reachability. `failed` is set by the Twilio status webhook. */
+export const whatsappStatusEnum = pgEnum('whatsapp_status', [
+  'unknown',
+  'verified',
+  'failed',
+]);
 
 /**
  * Identity + role. In the original this joined Supabase auth.users.
@@ -71,8 +77,20 @@ export const profiles = pgTable('profiles', {
   passwordHash: text('password_hash'),
   name: text('name'),
   role: roleEnum('role').notNull().default('client'),
+  /** @deprecated Free-form display number. Not read by WhatsApp — see phoneE164. */
   phone: text('phone'),
+  /** WhatsApp destination in E.164 (+919876543210). Null = never provided. */
+  phoneE164: text('phone_e164'),
+  /** Set when the person ticks the WhatsApp consent box. DPDP evidence. */
+  whatsappOptInAt: timestamp('whatsapp_opt_in_at', { withTimezone: true }),
+  /** Set on STOP (inbound webhook) or withdrawal from the profile surface. */
+  whatsappOptOutAt: timestamp('whatsapp_opt_out_at', { withTimezone: true }),
+  whatsappStatus: whatsappStatusEnum('whatsapp_status').notNull().default('unknown'),
   status: text('status').notNull().default('active'),
+  /** Set when a client is replaced off their last project. People > Removed clients reads this. */
+  removedAt: timestamp('removed_at', { withTimezone: true }),
+  /** Human-readable trail: who replaced them, on which project. */
+  removedReason: text('removed_reason'),
   // Scoping keys (mirror the original RLS helper functions).
   internId: text('intern_id'),
   clientId: text('client_id'),
@@ -693,6 +711,50 @@ export const notifications = pgTable(
   (t) => ({
     userIdx: index('notifications_user_idx').on(t.userId),
     userDismissedIdx: index('notifications_user_dismissed_idx').on(t.userId, t.dismissedAt),
+  }),
+);
+
+/**
+ * One row per outbound notification attempt, per channel, per recipient.
+ *
+ * Written for SENDS AND SKIPS alike — a `skipped` row with a `skip_reason` is
+ * how staff can tell "the client has no number" apart from "we never tried".
+ *
+ * `event_type`, `channel` and `status` are text, NOT pgEnum, on purpose:
+ * adding a seventh event must stay a single-file change in
+ * `src/lib/notify/types.ts` plus a template SID, with no migration.
+ */
+export const notificationDeliveries = pgTable(
+  'notification_deliveries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    engagementId: uuid('engagement_id').references(() => engagements.id, {
+      onDelete: 'cascade',
+    }),
+    recipientProfileId: uuid('recipient_profile_id').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    /** NotifyEvent — see src/lib/notify/types.ts. */
+    eventType: text('event_type').notNull(),
+    /** email | whatsapp */
+    channel: text('channel').notNull(),
+    /** The phone or email actually used (empty when skipped before resolution). */
+    toAddress: text('to_address'),
+    templateSid: text('template_sid'),
+    providerMessageId: text('provider_message_id'),
+    /** queued | sent | delivered | read | failed | skipped */
+    status: text('status').notNull().default('queued'),
+    /** no_phone | no_consent | opted_out | no_template | disabled */
+    skipReason: text('skip_reason'),
+    errorCode: text('error_code'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    engIdx: index('notification_deliveries_engagement_idx').on(t.engagementId),
+    recipientIdx: index('notification_deliveries_recipient_idx').on(t.recipientProfileId),
+    // Status webhooks arrive keyed only by the provider id.
+    providerIdx: index('notification_deliveries_provider_idx').on(t.providerMessageId),
   }),
 );
 

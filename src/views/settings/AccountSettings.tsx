@@ -10,6 +10,8 @@ import { SEO } from '@/components/SEO';
 import { AccentButton } from '@/components/noir/AccentButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { normalizeToE164 } from '@/lib/notify/phone';
 import { Button } from '@/components/ui/button';
 import { UserFace } from '@/components/common/UserFace';
 import { useApp } from '@/context/AppContext';
@@ -27,6 +29,9 @@ type ProfileData = {
   name: string;
   email: string;
   phone: string;
+  /** WhatsApp destination in E.164. Empty when never provided. */
+  phoneE164: string;
+  whatsappOptIn: boolean;
   role: string;
   avatarUrl: string | null;
 };
@@ -43,6 +48,8 @@ export default function AccountSettings({ path }: Props) {
   const [draftName, setDraftName] = useState('');
   const [draftEmail, setDraftEmail] = useState('');
   const [draftPhone, setDraftPhone] = useState('');
+  const [draftWhatsapp, setDraftWhatsapp] = useState('');
+  const [draftWhatsappOptIn, setDraftWhatsappOptIn] = useState(false);
   const [emailPassword, setEmailPassword] = useState('');
   const [outlookConnected, setOutlookConnected] = useState(false);
 
@@ -66,6 +73,8 @@ export default function AccountSettings({ path }: Props) {
           name: string;
           email: string;
           phone: string | null;
+          phoneE164?: string | null;
+          whatsappOptIn?: boolean;
           role: string;
           avatarUrl?: string | null;
         };
@@ -73,6 +82,8 @@ export default function AccountSettings({ path }: Props) {
           name: p.name,
           email: p.email,
           phone: p.phone ?? '',
+          phoneE164: p.phoneE164 ?? '',
+          whatsappOptIn: Boolean(p.whatsappOptIn),
           role: p.role,
           avatarUrl: p.avatarUrl ?? null,
         };
@@ -80,6 +91,8 @@ export default function AccountSettings({ path }: Props) {
         setDraftName(next.name);
         setDraftEmail(next.email);
         setDraftPhone(next.phone);
+        setDraftWhatsapp(next.phoneE164);
+        setDraftWhatsappOptIn(next.whatsappOptIn);
       } catch (err) {
         if (!cancelled) toastError(errorMessage(err, 'Could not load profile.'));
       } finally {
@@ -96,6 +109,8 @@ export default function AccountSettings({ path }: Props) {
     setDraftName(profile.name);
     setDraftEmail(profile.email);
     setDraftPhone(profile.phone);
+    setDraftWhatsapp(profile.phoneE164);
+    setDraftWhatsappOptIn(profile.whatsappOptIn);
     setEmailPassword('');
     setEditingProfile(true);
   }
@@ -105,6 +120,8 @@ export default function AccountSettings({ path }: Props) {
     setDraftName(profile.name);
     setDraftEmail(profile.email);
     setDraftPhone(profile.phone);
+    setDraftWhatsapp(profile.phoneE164);
+    setDraftWhatsappOptIn(profile.whatsappOptIn);
     setEmailPassword('');
     setEditingProfile(false);
   }
@@ -125,6 +142,10 @@ export default function AccountSettings({ path }: Props) {
         body: JSON.stringify({
           name: draftName.trim(),
           phone: draftPhone.trim() || null,
+          // Normalised client-side so the API only ever sees E.164.
+          phoneE164: normalizeToE164(draftWhatsapp),
+          // Consent only counts with a usable number behind it.
+          whatsappOptIn: draftWhatsappOptIn && Boolean(normalizeToE164(draftWhatsapp)),
           email: draftEmail.trim().toLowerCase(),
           ...(emailChanged ? { currentPassword: emailPassword } : {}),
         }),
@@ -140,6 +161,9 @@ export default function AccountSettings({ path }: Props) {
         name: body.profile.name as string,
         email: body.profile.email as string,
         phone: (body.profile.phone as string | null) ?? '',
+        phoneE164: normalizeToE164(draftWhatsapp) ?? '',
+        whatsappOptIn:
+          draftWhatsappOptIn && Boolean(normalizeToE164(draftWhatsapp)),
         role: profile.role,
         avatarUrl: profile.avatarUrl,
       };
@@ -198,6 +222,8 @@ export default function AccountSettings({ path }: Props) {
     name: user?.name ?? '',
     email: user?.email ?? '',
     phone: '',
+    phoneE164: '',
+    whatsappOptIn: false,
     role: user?.role ?? '',
     avatarUrl: user?.imageUrl ?? null,
   };
@@ -333,6 +359,42 @@ export default function AccountSettings({ path }: Props) {
                         maxLength={32}
                         placeholder="+91 …"
                       />
+                    </SettingsRow>
+                    <SettingsRow label="WhatsApp" hint="Optional">
+                      <Label htmlFor="profile-whatsapp" className="sr-only">
+                        WhatsApp number
+                      </Label>
+                      <Input
+                        id="profile-whatsapp"
+                        type="tel"
+                        inputMode="tel"
+                        value={draftWhatsapp}
+                        onChange={(e) => setDraftWhatsapp(e.target.value)}
+                        className="h-9"
+                        maxLength={24}
+                        placeholder="+91 98765 43210"
+                      />
+                      {draftWhatsapp.trim() && !normalizeToE164(draftWhatsapp) ? (
+                        <p role="alert" className="mt-1 text-[11px] text-danger">
+                          Include the country code, e.g. +91 98765 43210
+                        </p>
+                      ) : null}
+                      <label
+                        htmlFor="profile-whatsapp-consent"
+                        className="mt-2 flex cursor-pointer items-start gap-2.5"
+                      >
+                        <Checkbox
+                          id="profile-whatsapp-consent"
+                          checked={draftWhatsappOptIn}
+                          onCheckedChange={(v) => setDraftWhatsappOptIn(v === true)}
+                          disabled={!normalizeToE164(draftWhatsapp)}
+                          className="mt-0.5"
+                        />
+                        <span className="text-[12px] leading-snug text-muted-foreground">
+                          Send me WhatsApp updates about my engagement on this number.
+                          Untick to withdraw, or reply STOP on WhatsApp at any time.
+                        </span>
+                      </label>
                     </SettingsRow>
                     {emailChanging ? (
                       <SettingsRow

@@ -8,6 +8,12 @@ import { emailSchema } from '@/lib/api/schemas';
 const patchSchema = z.object({
   name: z.string().trim().min(1, 'name_required').max(120),
   phone: z.string().trim().max(32).optional().nullable(),
+  /** WhatsApp destination in E.164. Null clears it. */
+  phoneE164: z
+    .union([z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'invalid_phone_e164'), z.null()])
+    .optional(),
+  /** true = give consent, false = withdraw it. Omitted leaves consent untouched. */
+  whatsappOptIn: z.boolean().optional(),
   email: emailSchema.optional(),
   currentPassword: z.string().min(1).max(128).optional(),
 });

@@ -5,6 +5,7 @@ import {
   emailsStaffViaResend,
   inAppIncludesActor,
   opensClientOutgoingDraft,
+  sendsFromActorMailbox,
   staffEmailTargetsForEvent,
   type FanoutRecipients,
 } from './engagement-event-fanout';
@@ -81,6 +82,24 @@ describe('staffEmailTargetsForEvent', () => {
       { email: 'manager@vcfo.local', href: hrefs.managerHref, label: 'manager' },
     ]);
   });
+
+  it('emails only managers when a lead asks to send a step to the client', () => {
+    const targets = staffEmailTargetsForEvent('client_fill_requested', recipients(), hrefs);
+    expect(targets).toEqual([
+      { email: 'manager@vcfo.local', href: hrefs.managerHref, label: 'manager' },
+    ]);
+  });
+
+  it('emails only leads when the manager declines that ask', () => {
+    const targets = staffEmailTargetsForEvent('client_fill_declined', recipients(), hrefs);
+    expect(targets).toEqual([
+      { email: 'intern@vcfo.local', href: hrefs.leadHref, label: 'lead' },
+    ]);
+  });
+
+  it('sends nothing to staff on approval — that mail goes to the client', () => {
+    expect(staffEmailTargetsForEvent('client_fill_approved', recipients(), hrefs)).toEqual([]);
+  });
 });
 
 describe('collectManagerParties', () => {
@@ -134,6 +153,19 @@ describe('channel rules', () => {
     expect(opensClientOutgoingDraft('board_resolution_shared')).toBe(true);
     expect(emailsStaffViaResend('review_accepted')).toBe(false);
     expect(emailsStaffViaResend('board_resolution_shared')).toBe(false);
+  });
+
+  it('routes client-fill mail: staff Resend for ask/decline, direct send on approval', () => {
+    expect(emailsStaffViaResend('client_fill_requested')).toBe(true);
+    expect(emailsStaffViaResend('client_fill_declined')).toBe(true);
+    expect(emailsStaffViaResend('client_fill_approved')).toBe(false);
+    expect(opensClientOutgoingDraft('client_fill_approved')).toBe(false);
+  });
+
+  it('sends the lead→manager ask from the lead mailbox', () => {
+    expect(sendsFromActorMailbox('client_fill_requested')).toBe(true);
+    expect(sendsFromActorMailbox('lead_requested_review')).toBe(true);
+    expect(sendsFromActorMailbox('client_submitted')).toBe(false);
   });
 
   it('writes a Received row for the acting lead on deliver and board-resolution share', () => {
