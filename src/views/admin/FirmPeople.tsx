@@ -683,6 +683,7 @@ export default function FirmPeople() {
                 value={emailDraft}
                 onChange={(e) => setEmailDraft(e.target.value)}
                 className="mt-1.5 h-10 font-mono text-[13px]"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
                 autoFocus
               />
             </div>

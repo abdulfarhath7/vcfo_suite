@@ -127,6 +127,7 @@ export function ComposeRecipientPicker({
               ) : null}
               <input
                 id="mail-to-search"
+                role="combobox"
                 ref={searchRef}
                 value={query}
                 onChange={(e) => {
@@ -186,12 +187,14 @@ export function ComposeRecipientPicker({
                   return (
                     <label
                       key={person.userId}
+                      htmlFor={`mail-to-person-${person.userId}`}
                       className={cn(
                         'flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/40',
                         checked && 'bg-primary-light/40',
                       )}
                     >
                       <Checkbox
+                        id={`mail-to-person-${person.userId}`}
                         checked={checked}
                         onCheckedChange={() => handleToggle(person.userId)}
                       />

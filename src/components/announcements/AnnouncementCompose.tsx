@@ -76,6 +76,7 @@ export function AnnouncementComposeForm({
   };
 
   const form = (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the handlers below are propagation guards, not interactions: they stop events reaching the popup host
     <form
       aria-labelledby={headingId}
       onSubmit={(event) => {

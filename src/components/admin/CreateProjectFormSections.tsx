@@ -402,6 +402,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                 aria-describedby={
                   fieldError('companyName') ? 'create-company-name-error' : undefined
                 }
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
                 autoFocus
                 maxLength={120}
               />

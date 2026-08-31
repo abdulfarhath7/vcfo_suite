@@ -562,6 +562,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
                 placeholder="e.g. GST"
                 maxLength={80}
                 disabled={creatingFolder}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
                 autoFocus
               />
             </div>

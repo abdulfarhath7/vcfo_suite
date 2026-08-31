@@ -249,7 +249,6 @@ export function CommandPalette() {
             className="h-9 min-w-0 flex-1 bg-transparent py-0 text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
             placeholder="Search"
             aria-label="Search"
-            aria-expanded={false}
             aria-keyshortcuts="Meta+K Control+K"
             value=""
             onChange={(e) => {
@@ -387,6 +386,7 @@ export function CommandPalette() {
           )}
           {user?.role === "client" && (
             <CommandGroup heading="Client portal">
+              <CommandItem className={itemClass} onSelect={() => go("/app/client/overview")}><LayoutDashboard className="w-4 h-4 mr-2" />Home</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/inbox")}><Inbox className="w-4 h-4 mr-2" />Inbox</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/announcements")}><Megaphone className="w-4 h-4 mr-2" />Announcements</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/notifications")}><Bell className="w-4 h-4 mr-2" />Notification history</CommandItem>

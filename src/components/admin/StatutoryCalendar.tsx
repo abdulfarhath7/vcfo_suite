@@ -129,7 +129,7 @@ function StatutoryDayTile({
       data-cal-iso={cell.iso}
       tabIndex={focused ? 0 : -1}
       aria-current={isToday ? 'date' : undefined}
-      aria-pressed={selected}
+      aria-selected={selected}
       aria-label={`${weekday} ${cell.day} ${monthLabel}${items.length ? `, ${deadlineLabel(items.length)}` : ''}`}
       onClick={() => onSelect(cell.iso)}
       className="stat-cal-cell"
