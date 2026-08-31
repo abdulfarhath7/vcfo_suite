@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VCFO Suite — the build journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #16130f;
+    --muted: #5c564c;
+    --paper: #fff7ec;
+    --card: #fffdf8;
+    --line: #eadcc8;
+    --blue: #2563eb;
+    --blue-s: #dbe7ff;
+    --teal: #0f766e;
+    --teal-s: #d5f4ef;
+    --coral: #e23d2a;
+    --coral-s: #ffd8d1;
+    --gold: #e8a317;
+    --gold-s: #ffe9b8;
+    --violet: #6d28d9;
+    --violet-s: #ead9ff;
+    --green: #15803d;
+    --green-s: #d8f5e2;
+    --pink: #c02673;
+    --pink-s: #ffd6ea;
+    --sky: #0369a1;
+    --sky-s: #d3efff;
+    --slate: #3f3a34;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #e8ddd0;
+    color: var(--ink);
+    font: 500 15px/1.35 Outfit, system-ui, sans-serif;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  h1, h2, h3, .display { font-family: "Bricolage Grotesque", Outfit, sans-serif; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
+  .toolbar {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; gap: 10px; align-items: center; justify-content: space-between;
+    padding: 10px 18px; background: #16130f; color: #fff7ec;
+  }
+  .toolbar b { font-family: "Bricolage Grotesque", sans-serif; }
+  .toolbar button, .toolbar a {
+    appearance: none; border: 0; cursor: pointer; text-decoration: none;
+    background: var(--gold); color: #16130f; font-weight: 700;
+    padding: 8px 14px; border-radius: 999px; font-size: 13px;
+  }
+  .toolbar a.ghost { background: transparent; color: #fff7ec; border: 2px solid #4b443c; }
+  .stack { padding: 18px 18px 48px; display: flex; flex-direction: column; gap: 18px; align-items: center; }
+  .sheet {
+    width: 1120px; min-height: 792px;
+    background: var(--paper);
+    border-radius: 22px;
+    padding: 28px 32px 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 18px 40px rgba(40, 24, 8, 0.12);
+  }
+  .sheet::before {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: 14px;
+    background: linear-gradient(180deg, var(--stripe, var(--blue)), var(--stripe2, var(--coral)));
+  }
+  .kicker {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700; margin-bottom: 8px;
+  }
+  .sheet h2 { font-size: 34px; line-height: 0.95; margin-bottom: 14px; max-width: 20ch; }
+  .sheet h2 em { font-style: normal; color: var(--accent, var(--blue)); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .grid { display: grid; gap: 10px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .g5 { grid-template-columns: repeat(5, 1fr); }
+  .g6 { grid-template-columns: repeat(6, 1fr); }
+  .card {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 12px 14px;
+  }
+  .who { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .tiny { font-size: 12.5px; color: var(--muted); }
+  .arr {
+    width: 28px; flex: 0 0 28px; align-self: center;
+    height: 4px; background: var(--ink); position: relative; margin: 0 2px;
+  }
+  .arr::after {
+    content: ""; position: absolute; right: -1px; top: -5px;
+    border: 7px solid transparent; border-left-color: var(--ink);
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 999px; padding: 6px 10px;
+    font-size: 12.5px; font-weight: 650; border: 2px solid transparent;
+  }
+  .pill {
+    border-radius: 14px; padding: 10px 12px; font-weight: 700; font-size: 13.5px; line-height: 1.25;
+  }
+  .pill small { display: block; font-weight: 500; font-size: 11.5px; opacity: 0.82; margin-top: 3px; }
+  .c-blue { background: var(--blue-s); color: #163a8a; }
+  .c-teal { background: var(--teal-s); color: #0b4f49; }
+  .c-coral { background: var(--coral-s); color: #8b1c12; }
+  .c-gold { background: var(--gold-s); color: #7a4d00; }
+  .c-violet { background: var(--violet-s); color: #4c1d95; }
+  .c-green { background: var(--green-s); color: #14532d; }
+  .c-pink { background: var(--pink-s); color: #9d174d; }
+  .c-sky { background: var(--sky-s); color: #075985; }
+  .c-ink { background: var(--ink); color: #fff7ec; }
+  .c-white { background: #fff; border-color: var(--line); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: 0 0 10px; }
+  .stamp {
+    position: absolute; right: 28px; top: 24px;
+    width: 92px; height: 92px; border-radius: 50%;
+    display: grid; place-items: center; text-align: center;
+    font-family: "Bricolage Grotesque", sans-serif; font-weight: 800;
+    font-size: 12px; line-height: 1.1; transform: rotate(12deg);
+    border: 4px solid currentColor; opacity: 0.9;
+  }
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .orbit { display: grid; grid-template-columns: 1fr 160px 1fr; gap: 12px; align-items: center; }
+  .hub {
+    aspect-ratio: 1; border-radius: 50%;
+    display: grid; place-items: center; text-align: center;
+    font-family: "Bricolage Grotesque", sans-serif; font-weight: 800;
+    font-size: 18px; line-height: 1.05; padding: 16px;
+  }
+  .note { font-size: 13px; color: var(--muted); max-width: 68ch; margin: 0 0 12px; }
+  svg.flowsvg { width: 100%; height: auto; display: block; }
+  .tag { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+  footer.pg {
+    position: absolute; left: 32px; right: 32px; bottom: 14px;
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--muted); font-weight: 600;
+  }
+  .cover {
+    background:
+      radial-gradient(900px 420px at 90% -10%, #ffd8b0 0%, transparent 55%),
+      radial-gradient(700px 380px at -10% 110%, #cfe4ff 0%, transparent 50%),
+      var(--paper);
+  }
+  .cover h1 { font-size: 72px; line-height: 0.88; max-width: 11ch; }
+
+  /* ---------- journal-specific ---------- */
+  .stat {
+    border-radius: 18px; padding: 16px 14px 14px; text-align: center;
+    border: 2px solid transparent;
+  }
+  .stat b { display: block; font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 44px; line-height: 0.9; letter-spacing: -0.04em; }
+  .stat span { display: block; font-size: 12px; font-weight: 700; margin-top: 6px; }
+  .stat small { display: block; font-size: 11px; font-weight: 500; opacity: 0.75; margin-top: 3px; line-height: 1.2; }
+
+  .daybar {
+    display: flex; align-items: flex-end; gap: 6px; height: 190px;
+    padding: 0 4px 0 4px; margin-top: 6px;
+  }
+  .daybar .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 5px; height: 100%; }
+  .daybar .bar { width: 100%; border-radius: 8px 8px 4px 4px; position: relative; }
+  .daybar .bar b {
+    position: absolute; top: -17px; left: 0; right: 0; text-align: center;
+    font-family: "Bricolage Grotesque", sans-serif; font-size: 12px; font-weight: 800;
+  }
+  .daybar .lbl { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+  .daybar .col.ghost .bar { border: 2px dashed var(--line); background: transparent !important; }
+
+  .actband { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+  .actband .act { border-radius: 14px; padding: 10px 12px; font-size: 12.5px; font-weight: 650; }
+  .actband .act b { display: block; font-family: "Bricolage Grotesque", sans-serif; font-size: 15px; margin-bottom: 3px; }
+
+  .dayhead { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+  .datebadge {
+    flex: 0 0 auto; width: 108px; border-radius: 18px; padding: 10px 8px; text-align: center;
+    font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; line-height: 1;
+  }
+  .datebadge b { display: block; font-size: 40px; letter-spacing: -0.04em; }
+  .datebadge span { display: block; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 4px; }
+  .dayhead h2 { margin: 0; font-size: 31px; max-width: 24ch; }
+  .dayhead .sub { font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 5px; }
+
+  .items { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; align-content: start; }
+  .items.one { grid-template-columns: 1fr; }
+  .items.three { grid-template-columns: 1fr 1fr 1fr; }
+  .item {
+    display: flex; gap: 8px; align-items: flex-start;
+    border-radius: 12px; padding: 8px 10px;
+    font-size: 12.5px; font-weight: 640; line-height: 1.25;
+  }
+  .item .dot { margin-top: 4px; }
+  .item i { font-style: normal; display: block; font-weight: 500; font-size: 11.5px; opacity: 0.8; margin-top: 2px; }
+  .i-new { background: var(--blue-s); color: #163a8a; }
+  .i-fix { background: var(--coral-s); color: #8b1c12; }
+  .i-look { background: var(--violet-s); color: #4c1d95; }
+  .i-plumb { background: var(--teal-s); color: #0b4f49; }
+  .i-think { background: var(--gold-s); color: #7a4d00; }
+  .i-block { background: #ffe4de; color: #8b1c12; border: 2px dashed #e23d2a; }
+
+  .sectionlabel {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 12px 0 6px;
+  }
+  .quotebox {
+    border-left: 6px solid var(--gold); background: #fffaf0;
+    border-radius: 0 14px 14px 0; padding: 10px 14px;
+    font-size: 12.5px; line-height: 1.4; color: var(--slate);
+  }
+  .quotebox b { font-family: "Bricolage Grotesque", sans-serif; }
+  .ba { display: grid; grid-template-columns: 1fr 46px 1fr; align-items: center; gap: 10px; }
+  .ba .side { border-radius: 18px; padding: 14px; }
+  .ba .side h3 { font-size: 17px; margin-bottom: 8px; }
+  .bigarrow { display: grid; place-items: center; font-size: 30px; font-weight: 800; color: var(--ink); }
+  table.matrix { width: 100%; border-collapse: separate; border-spacing: 4px; }
+  table.matrix th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 4px; }
+  table.matrix th.rowh { text-align: left; }
+  table.matrix td { text-align: center; border-radius: 10px; padding: 7px 4px; font-size: 12px; font-weight: 700; }
+  table.matrix td.name { text-align: left; font-weight: 700; font-size: 12.5px; background: var(--card); border: 2px solid var(--line); }
+  .yes { background: var(--green-s); color: #14532d; }
+  .some { background: var(--gold-s); color: #7a4d00; }
+  .no { background: #f0eae1; color: #8d8578; }
+  .gl { display: grid; grid-template-columns: 168px 1fr; gap: 6px 10px; align-items: baseline; }
+  .gl dt { font-weight: 800; font-size: 12.5px; }
+  .gl dd { margin: 0; font-size: 12.5px; color: var(--slate); }
+  @media print {
+    .toolbar { display: none !important; }
+    body { background: white; }
+    .stack { padding: 0; gap: 0; }
+    .sheet {
+      width: 297mm; min-height: 210mm; height: 210mm;
+      border-radius: 0; box-shadow: none; page-break-after: always;
+      padding: 12mm 14mm 14mm;
+    }
+    .sheet:last-child { page-break-after: auto; }
+    footer.pg { bottom: 8mm; left: 14mm; right: 14mm; }
+  }
+  @page { size: A4 landscape; margin: 0; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <b>VCFO Suite · build journal · 6 – 28 August 2026</b>
+  <span>
+    <a class="ghost" href="whats-built-today.html">Picture guide →</a>
+    <button type="button" onclick="window.print()">Save as PDF</button>
+  </span>
+</div>
+<div class="stack">
+
+<!-- 1 COVER -->
+<section class="sheet cover" style="--stripe:#e8a317;--stripe2:#2563eb;">
+  <div class="kicker"><span>A diary, not a manual</span><span>VCFO Suite</span></div>
+  <h1 class="display">How it<br>got built.</h1>
+  <p class="note" style="font-size:20px;color:var(--ink);max-width:30ch;margin-top:18px;">Twenty-three days, day by day. What went in, what broke, what it cost to decide.</p>
+  <div class="row" style="margin-top:26px;">
+    <div class="pill c-gold">6 Aug · think</div>
+    <div class="pill c-coral">7 Aug · change the foundation</div>
+    <div class="pill c-blue">8–13 Aug · build the product</div>
+    <div class="pill c-teal">14–28 Aug · make it usable</div>
+  </div>
+  <div class="grid g4" style="margin-top:34px;">
+    <div class="stat c-white" style="border-color:var(--line);"><b>206</b><span>saved changes</span><small>each one a finished piece of work</small></div>
+    <div class="stat c-white" style="border-color:var(--line);"><b>101k</b><span>lines of code</span><small>written, replaced or removed</small></div>
+    <div class="stat c-white" style="border-color:var(--line);"><b>5</b><span>kinds of user</span><small>each with a different screen</small></div>
+    <div class="stat c-white" style="border-color:var(--line);"><b>0</b><span>rupees of cloud bill</span><small>runs on an office machine today</small></div>
+  </div>
+  <div class="stamp" style="color:#2563eb;">Aug<br>2026</div>
+  <footer class="pg"><span>Build journal</span><span>1</span></footer>
+</section>
+
+<!-- 2 HOW TO READ -->
+<section class="sheet" style="--stripe:#6d28d9;--accent:#6d28d9;">
+  <div class="kicker"><span>How to read this</span><span>02</span></div>
+  <h2>Five colours. That is the <em>whole key</em>.</h2>
+  <p class="note">Every day in this book is a row of coloured boxes. The colour tells you what kind of work it was. Nothing else needs decoding.</p>
+  <div class="grid g5" style="margin-top:4px;">
+    <div class="card" style="background:var(--blue-s);border-color:#b9d0ff;">
+      <div class="who" style="color:#163a8a;">Blue</div>
+      <div style="font-weight:800;font-size:16px;color:#163a8a;">New thing</div>
+      <div class="tiny" style="color:#2c4c94;margin-top:6px;">Something the app could not do before. A screen, a button, a rule.</div>
+    </div>
+    <div class="card" style="background:var(--coral-s);border-color:#ffb7ab;">
+      <div class="who" style="color:#8b1c12;">Coral</div>
+      <div style="font-weight:800;font-size:16px;color:#8b1c12;">Broken → fixed</div>
+      <div class="tiny" style="color:#98362a;margin-top:6px;">Something misbehaved for a real person, and got repaired.</div>
+    </div>
+    <div class="card" style="background:var(--violet-s);border-color:#d5b8ff;">
+      <div class="who" style="color:#4c1d95;">Violet</div>
+      <div style="font-weight:800;font-size:16px;color:#4c1d95;">Look &amp; feel</div>
+      <div class="tiny" style="color:#5b3399;margin-top:6px;">Colour, spacing, wording. Does not change what the app does.</div>
+    </div>
+    <div class="card" style="background:var(--teal-s);border-color:#a5e3da;">
+      <div class="who" style="color:#0b4f49;">Teal</div>
+      <div style="font-weight:800;font-size:16px;color:#0b4f49;">Plumbing</div>
+      <div class="tiny" style="color:#1c6961;margin-top:6px;">Invisible. Storage, speed, safety, the wiring under the floor.</div>
+    </div>
+    <div class="card" style="background:var(--gold-s);border-color:#ffd88a;">
+      <div class="who" style="color:#7a4d00;">Gold</div>
+      <div style="font-weight:800;font-size:16px;color:#7a4d00;">Decision or blocker</div>
+      <div class="tiny" style="color:#8a5c10;margin-top:6px;">A choice with a cost, or a wall that stopped work that day.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">Two words that appear a lot</div>
+  <div class="grid g2">
+    <div class="card">
+      <div style="font-weight:800;font-size:16px;">“Saved change” <span class="tiny" style="font-weight:500;">(engineers say: commit)</span></div>
+      <div class="tiny" style="margin-top:6px;">One finished, named, undoable piece of work. Like a numbered draft of a contract — you can always go back to any earlier draft. This book counts 206 of them.</div>
+    </div>
+    <div class="card">
+      <div style="font-weight:800;font-size:16px;">“Role”</div>
+      <div class="tiny" style="margin-top:6px;">Who someone is inside the app — client, project lead, project manager, firm admin, super admin. The role decides which screens exist for them and which data they may ever see.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">Two documents, one pack</div>
+  <div class="ba" style="margin-top:2px;">
+    <div class="side c-gold">
+      <h3>This book — the journal</h3>
+      <div class="tiny" style="color:#7a4d00;">How it was built. Day by day. Decisions, blockers, and the cost of each turn.</div>
+    </div>
+    <div class="bigarrow">+</div>
+    <div class="side c-blue">
+      <h3>The picture guide</h3>
+      <div class="tiny" style="color:#163a8a;">What it looks like now. Every screen, every role, drawn. Read that one to understand the product.</div>
+    </div>
+  </div>
+  <footer class="pg"><span>The key</span><span>2</span></footer>
+</section>
+
+<!-- 3 NUMBERS -->
+<section class="sheet" style="--stripe:#0f766e;--accent:#0f766e;">
+  <div class="kicker"><span>Read this in thirty seconds</span><span>03</span></div>
+  <h2>What twenty-three days <em>actually produced</em>.</h2>
+  <div class="grid g4" style="margin-top:4px;">
+    <div class="stat c-blue"><b>206</b><span>saved changes</span><small>8 – 28 August</small></div>
+    <div class="stat c-teal"><b>77</b><span>server actions</span><small>every distinct thing the app can be asked to do</small></div>
+    <div class="stat c-violet"><b>27</b><span>data tables</span><small>the filing cabinets — projects, people, files, filings</small></div>
+    <div class="stat c-gold"><b>85</b><span>automatic test files</span><small>they re-check the rules every time code changes</small></div>
+  </div>
+  <div class="grid g4" style="margin-top:10px;">
+    <div class="stat c-coral"><b>76</b><span>full screens</span><small>the pages a person actually lands on</small></div>
+    <div class="stat c-pink"><b>233</b><span>reusable parts</span><small>buttons, cards, tables built once and used everywhere</small></div>
+    <div class="stat c-sky"><b>23</b><span>access gates</span><small>every read/write passes one, no exceptions</small></div>
+    <div class="stat c-green"><b>34</b><span>incorporation steps</span><small>the checklist that runs a company setup</small></div>
+  </div>
+
+  <div class="sectionlabel">Put next to something familiar</div>
+  <div class="grid g3">
+    <div class="card"><div style="font-weight:800;">101,000 lines of code</div><div class="tiny" style="margin-top:5px;">Roughly a 1,300-page book — except every sentence has to be true, or the app breaks.</div></div>
+    <div class="card"><div style="font-weight:800;">Peak day: 42 saved changes</div><div class="tiny" style="margin-top:5px;">12 August. Then 34 on 24 August, 25 on 28 August.</div></div>
+    <div class="card"><div style="font-weight:800;">Zero cloud spend so far</div><div class="tiny" style="margin-top:5px;">Deliberate. Everything runs on an office machine over office WiFi until the product is proven.</div></div>
+  </div>
+
+  <div class="sectionlabel">The one sentence version</div>
+  <div class="quotebox" style="font-size:15px;">
+    <b>A firm that sets up Indian companies now has one workspace</b> where the client uploads, the lead prepares, the manager approves, the papers are generated, the emails go out on their own, and the yearly filing calendar builds itself — and it is running on a machine in the office, not on a cloud bill.
+  </div>
+  <footer class="pg"><span>By the numbers</span><span>3</span></footer>
+</section>
+
+<!-- 4 THE CHART -->
+<section class="sheet" style="--stripe:#e23d2a;--accent:#e23d2a;">
+  <div class="kicker"><span>The shape of the month</span><span>04</span></div>
+  <h2>Two thinking days. Then <em>three big pushes</em>.</h2>
+  <p class="note">Each bar is one calendar day, and its height is how many finished pieces of work were saved that day. The two dashed bars at the start are the days spent reading, auditing and deciding — no code, and the most important days in the book.</p>
+
+  <div class="daybar">
+    <div class="col ghost"><div class="bar" style="height:14px;"><b>—</b></div><div class="lbl">6</div></div>
+    <div class="col ghost"><div class="bar" style="height:14px;"><b>—</b></div><div class="lbl">7</div></div>
+    <div class="col"><div class="bar" style="height:14px;background:var(--blue);"><b>4</b></div><div class="lbl">8</div></div>
+    <div class="col"><div class="bar" style="height:29px;background:var(--blue);"><b>8</b></div><div class="lbl">9</div></div>
+    <div class="col"><div class="bar" style="height:29px;background:var(--blue);"><b>8</b></div><div class="lbl">10</div></div>
+    <div class="col"><div class="bar" style="height:29px;background:var(--blue);"><b>8</b></div><div class="lbl">11</div></div>
+    <div class="col"><div class="bar" style="height:150px;background:var(--blue);"><b>42</b></div><div class="lbl">12</div></div>
+    <div class="col"><div class="bar" style="height:29px;background:var(--blue);"><b>8</b></div><div class="lbl">13</div></div>
+    <div class="col"><div class="bar" style="height:11px;background:var(--teal);"><b>3</b></div><div class="lbl">14</div></div>
+    <div class="col"><div class="bar" style="height:25px;background:var(--violet);"><b>7</b></div><div class="lbl">15</div></div>
+    <div class="col"><div class="bar" style="height:14px;background:var(--teal);"><b>4</b></div><div class="lbl">16</div></div>
+    <div class="col"><div class="bar" style="height:25px;background:var(--teal);"><b>7</b></div><div class="lbl">17</div></div>
+    <div class="col"><div class="bar" style="height:7px;background:var(--teal);"><b>2</b></div><div class="lbl">18</div></div>
+    <div class="col"><div class="bar" style="height:86px;background:var(--teal);"><b>24</b></div><div class="lbl">19</div></div>
+    <div class="col"><div class="bar" style="height:29px;background:var(--teal);"><b>8</b></div><div class="lbl">22</div></div>
+    <div class="col"><div class="bar" style="height:121px;background:var(--teal);"><b>34</b></div><div class="lbl">24</div></div>
+    <div class="col"><div class="bar" style="height:50px;background:var(--teal);"><b>14</b></div><div class="lbl">25</div></div>
+    <div class="col"><div class="bar" style="height:89px;background:var(--gold);"><b>25</b></div><div class="lbl">28</div></div>
+  </div>
+  <div class="tiny" style="text-align:right;margin-top:2px;">August 2026 · weekend gaps are real days off</div>
+
+  <div class="actband">
+    <div class="act c-gold"><b>Act 1 · 6–7 Aug</b>Read everything. Find the holes. Decide to change the foundation before writing a single new screen.</div>
+    <div class="act c-blue"><b>Act 2 · 8–13 Aug</b>Rebuild the foundation and put the whole product on it. Backend, five dashboards, documents, email, calendar.</div>
+    <div class="act c-teal"><b>Act 3 · 14–25 Aug</b>Make it usable by real people. Repaint, real mailbox, one-screen dashboards, calendar, vault, dozens of repairs.</div>
+    <div class="act c-violet"><b>Act 4 · 28 Aug</b>Firm-grade controls. Project editing, delete with approval, questionnaire at intake, every dashboard rebuilt.</div>
+  </div>
+  <footer class="pg"><span>The month</span><span>4</span></footer>
+</section>
+
+<!-- 5 THE BIG DECISION -->
+<section class="sheet" style="--stripe:#e8a317;--accent:#e8a317;">
+  <div class="kicker"><span>The decision everything else hangs from</span><span>05</span></div>
+  <h2>Rent someone else's box, or <em>own the whole thing</em>.</h2>
+  <p class="note">The original app was built on a rented service that bundled the database, the login and the file storage together. Convenient to start, but it decides your pricing, your limits and where your clients' documents sit. On 7 August that bundle was taken apart and each piece replaced with something the firm controls.</p>
+
+  <div class="ba" style="margin-top:6px;">
+    <div class="side" style="background:#f5efe6;border:2px dashed #cbbfae;">
+      <h3 style="color:var(--slate);">Before · one rented bundle</h3>
+      <div class="grid" style="gap:7px;">
+        <div class="pill" style="background:#eae2d6;color:#4b443c;">Database <small>theirs, priced their way</small></div>
+        <div class="pill" style="background:#eae2d6;color:#4b443c;">Login &amp; passwords <small>theirs</small></div>
+        <div class="pill" style="background:#eae2d6;color:#4b443c;">Client documents <small>on their storage</small></div>
+        <div class="pill" style="background:#eae2d6;color:#4b443c;">Security rules <small>written in their language, hard to test</small></div>
+      </div>
+      <div class="tiny" style="margin-top:9px;color:#6b6357;">One supplier holds the data, the identity and the bill. Moving later would be a rewrite.</div>
+    </div>
+    <div class="bigarrow">→</div>
+    <div class="side" style="background:#fff;border:2px solid var(--line);">
+      <h3 style="color:var(--blue);">After · four replaceable parts</h3>
+      <div class="grid" style="gap:7px;">
+        <div class="pill c-blue">PostgreSQL <small>the standard business database — runs on a laptop, a server, or Amazon, unchanged</small></div>
+        <div class="pill c-teal">S3-style file storage <small>documents; local copy in the office today, Amazon later, same code</small></div>
+        <div class="pill c-violet">Auth.js <small>login and sessions, owned in our own code</small></div>
+        <div class="pill c-gold">One access gate <small>every request checks who you are before touching data</small></div>
+      </div>
+      <div class="tiny" style="margin-top:9px;">Any one part can be swapped without touching the rest. That is the whole point.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">What it bought</div>
+  <div class="grid g4">
+    <div class="card"><div style="font-weight:800;font-size:14px;">Choice of where data lives</div><div class="tiny" style="margin-top:4px;">Office machine now, Indian cloud region later. A configuration change, not a rebuild.</div></div>
+    <div class="card"><div style="font-weight:800;font-size:14px;">No day-one cloud bill</div><div class="tiny" style="margin-top:4px;">The same code runs on office WiFi. Pilot first, pay later.</div></div>
+    <div class="card"><div style="font-weight:800;font-size:14px;">Rules we can test</div><div class="tiny" style="margin-top:4px;">Access rules now live in ordinary code, so automated tests can prove them.</div></div>
+    <div class="card"><div style="font-weight:800;font-size:14px;">One place to look</div><div class="tiny" style="margin-top:4px;">All data access funnels through 23 gates. Audit means reading 23 files, not the whole app.</div></div>
+  </div>
+
+  <div class="sectionlabel">What it cost</div>
+  <div class="row">
+    <div class="chip i-block">Two days of rebuild before any new feature</div>
+    <div class="chip i-block">Login broke and had to be repaired</div>
+    <div class="chip i-block">Database setup broke and had to be repaired</div>
+    <div class="chip i-block">Every screen had to be re-pointed at the new data path</div>
+  </div>
+  <footer class="pg"><span>The foundation swap</span><span>5</span></footer>
+</section>
+
+<!-- 6 · 6 AUG -->
+<section class="sheet" style="--stripe:#e8a317;--accent:#e8a317;">
+  <div class="kicker"><span>Act 1 · thinking days</span><span>06</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-gold"><b>06</b><span>Aug</span></div>
+    <div>
+      <h2>Read the whole thing before touching it.</h2>
+      <div class="sub">No code today. Audit, requirements, and one uncomfortable conclusion.</div>
+    </div>
+  </div>
+  <div class="items">
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Walked the existing app end to end<i>What exists, what it claims to do, what it actually does</i></div></div>
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Mapped the real-world process it has to match<i>Who asks whom for what, and in which order</i></div></div>
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Collected the full requirement list for the product<i>Not just today's screens — what it must do to be sellable</i></div></div>
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Read the entire codebase line by line<i>Enough to change it safely rather than guess</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Found several security weaknesses<i>Places where client information was more exposed than it should be</i></div></div>
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Listed speed and code-size improvements<i>Duplicated work the app was doing on every screen</i></div></div>
+    <div class="item i-block"><span class="dot" style="background:var(--coral);"></span><div>Verdict: the foundation will not scale<i>Fine for a demo, wrong for many firms and many clients</i></div></div>
+    <div class="item i-block"><span class="dot" style="background:var(--coral);"></span><div>Blocker: continue on it, or change it now?<i>Changing costs days. Not changing costs months, later.</i></div></div>
+  </div>
+
+  <div class="sectionlabel">The other decision made today</div>
+  <div class="ba">
+    <div class="side c-coral">
+      <h3>The obvious path</h3>
+      <div class="tiny" style="color:#8b1c12;">Put it on Amazon's cloud from day one. Start paying a monthly bill for a product nobody has used yet.</div>
+    </div>
+    <div class="bigarrow">→</div>
+    <div class="side c-green">
+      <h3>The chosen path</h3>
+      <div class="tiny" style="color:#14532d;">Run it on a machine in the office, reachable by anyone on the office WiFi. Same product, no bill, and the cloud move stays a one-day job for later.</div>
+    </div>
+  </div>
+  <footer class="pg"><span>6 August</span><span>6</span></footer>
+</section>
+
+<!-- 7 · 7 AUG -->
+<section class="sheet" style="--stripe:#e23d2a;--accent:#e23d2a;">
+  <div class="kicker"><span>Act 1 · thinking days</span><span>07</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-coral"><b>07</b><span>Aug</span></div>
+    <div>
+      <h2>Foundation swapped. Name changed.</h2>
+      <div class="sub">The decision from yesterday, executed. Then the first two walls.</div>
+    </div>
+  </div>
+  <div class="items">
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Decided: leave the rented bundle<i>Replace it with parts the firm owns</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Chose S3-style storage for documents<i>The industry standard for files; works locally and on Amazon</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Chose PostgreSQL for records<i>Projects, people, steps, filings — everything with a shape</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Chose Auth.js for login<i>Passwords and sessions handled in our own code</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Rewired the codebase onto the new parts<i>Every screen re-pointed at the new data path</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Login broke — then was repaired the same day<i>First casualty of the swap, first thing back up</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>First pass on the interface<i>Cleaned up the screens inherited from the old build</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Moodboard and colour direction agreed<i>So the whole app can be repainted from one place later</i></div></div>
+    <div class="item i-block"><span class="dot" style="background:var(--coral);"></span><div>Blocker: database setup errors<i>Creating the tables on the new database kept failing</i></div></div>
+    <div class="item i-block"><span class="dot" style="background:var(--coral);"></span><div>Blocker: screens could not fetch their data<i>The front of the app and the back were not agreeing yet</i></div></div>
+    <div class="item i-block"><span class="dot" style="background:var(--coral);"></span><div>Blocker: buttons felt slow<i>Noticeable delay on click — a real usability problem, queued for repair</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Renamed <b style="font-weight:800;">SBC Track → VCFO Suite</b><i>New name, new architecture, new document explaining both</i></div></div>
+  </div>
+  <div class="quotebox" style="margin-top:12px;">
+    <b>Why the rename matters:</b> “Track” described a checklist. “Suite” describes what it became — intake, documents, approvals, mail, filings and a compliance calendar in one place.
+  </div>
+  <footer class="pg"><span>7 August</span><span>7</span></footer>
+</section>
+
+<!-- 8 · 8 AUG -->
+<section class="sheet" style="--stripe:#2563eb;--accent:#2563eb;">
+  <div class="kicker"><span>Act 2 · build the product</span><span>08</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-blue"><b>08</b><span>Aug</span></div>
+    <div>
+      <h2>A real vulnerability, found and closed.</h2>
+      <div class="sub">Plus: the backend exists, four dashboards exist, and the app runs on office WiFi.</div>
+    </div>
+  </div>
+
+  <div class="ba" style="margin-bottom:12px;">
+    <div class="side c-coral">
+      <h3>The problem</h3>
+      <div class="tiny" style="color:#8b1c12;">User information was being kept <b>in the browser itself</b>. That means it sat on the individual laptop, survived after logout, could be read by anyone with that machine, and was lost the moment someone cleared their browser or switched devices.</div>
+    </div>
+    <div class="bigarrow">→</div>
+    <div class="side c-green">
+      <h3>The fix</h3>
+      <div class="tiny" style="color:#14532d;">All of it moved into the database on the server. The browser now holds nothing but a session. Clear your browser, change laptop, work continues exactly where you left it — and the data is under one access gate.</div>
+    </div>
+  </div>
+
+  <div class="items three">
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Database setup repaired<i>A tool called Drizzle now creates and versions every table</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Whole backend written<i>The server-side half of the app that the screens talk to</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Local database + file storage in a box<i>One command starts both on any machine</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Firm admin dashboard, complete<i>Every project, every person, in one console</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Project lead dashboard, complete<i>The person who does the actual filing work</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Project manager dashboard, reworked<i>Approves the lead's work, talks to the client</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Client portal reskinned<i>The outside-facing screen the customer sees</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Yesterday's colour theme applied app-wide<i>One repaint, every screen</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Email sending started<i>Groundwork for automatic mail on every event</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Architecture + migration guides written<i>So the next person can pick this up</i></div></div>
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Reviewed everything with Pranay<i>Feedback captured, changes queued</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Ran it on the office WiFi</b><i>Published on port 3000 on SBC_GLOBAL — every device on that network could open it</i></div></div>
+  </div>
+  <footer class="pg"><span>8 August</span><span>8</span></footer>
+</section>
+
+<!-- 9 · 9 AUG -->
+<section class="sheet" style="--stripe:#0369a1;--accent:#0369a1;">
+  <div class="kicker"><span>Act 2 · build the product</span><span>09</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-sky"><b>09</b><span>Aug</span></div>
+    <div>
+      <h2>The cost problem nobody sees until the bill arrives.</h2>
+      <div class="sub">Files are the product's main cargo. Files are also what a cloud charges for.</div>
+    </div>
+  </div>
+
+  <p class="note">This app moves documents constantly — identity papers, incorporation forms, signed resolutions, bank letters. On a cloud, you pay to store them and you pay again every time someone opens one. So the day went to a single question: can we make each file smaller, once, without ever making it harder to read or less safe?</p>
+
+  <svg class="flowsvg" viewBox="0 0 1040 132" style="margin:2px 0 10px;">
+    <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#16130f"/></marker></defs>
+    <rect x="8" y="30" width="196" height="72" rx="16" fill="#ffe9b8"/>
+    <text x="106" y="60" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Client uploads a file</text>
+    <text x="106" y="80" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">once, at the start</text>
+    <line x1="204" y1="66" x2="256" y2="66" stroke="#16130f" stroke-width="3" marker-end="url(#ar)"/>
+    <rect x="264" y="30" width="220" height="72" rx="16" fill="#d5f4ef"/>
+    <text x="374" y="55" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Is it sensitive ID?</text>
+    <text x="374" y="74" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">PAN, Aadhaar, passport</text>
+    <text x="374" y="91" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#0b4f49">if yes → leave it alone</text>
+    <line x1="484" y1="66" x2="536" y2="66" stroke="#16130f" stroke-width="3" marker-end="url(#ar)"/>
+    <rect x="544" y="30" width="220" height="72" rx="16" fill="#dbe7ff"/>
+    <text x="654" y="55" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Shrink it once</text>
+    <text x="654" y="74" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">on first upload only</text>
+    <text x="654" y="91" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#163a8a">never again after that</text>
+    <line x1="764" y1="66" x2="816" y2="66" stroke="#16130f" stroke-width="3" marker-end="url(#ar)"/>
+    <rect x="824" y="30" width="208" height="72" rx="16" fill="#d8f5e2"/>
+    <text x="928" y="60" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Store &amp; serve</text>
+    <text x="928" y="80" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">smaller = cheaper forever</text>
+  </svg>
+
+  <div class="items">
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Researched file-shrinking methods<i>Which ones keep the document perfectly readable</i></div></div>
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Found approaches that shrink and protect together<i>Small enough to be cheap, scrambled enough to be safe at rest</i></div></div>
+    <div class="item i-block"><span class="dot" style="background:var(--coral);"></span><div>Blocker: shrinking makes uploads feel slow<i>The user waits while the machine works</i></div></div>
+    <div class="item i-block"><span class="dot" style="background:var(--coral);"></span><div>Blocker: <i>when</i> to shrink — and what to never touch<i>Identity documents must stay untouched originals</i></div></div>
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Answer chosen: once, at first upload, never again<i>The user pays the wait one time; the firm saves every month after</i></div></div>
+    <div class="item i-think"><span class="dot" style="background:var(--gold);"></span><div>Day spent on design, not code<i>Deliberately — the wrong answer here is expensive to undo</i></div></div>
+  </div>
+  <div class="quotebox" style="margin-top:10px;">
+    <b>Status:</b> designed and decided, not yet switched on. It becomes worth building the day the app moves to a cloud bill — which is exactly why it was designed before that day, not after.
+  </div>
+  <footer class="pg"><span>9 August</span><span>9</span></footer>
+</section>
+
+<!-- 10 · 10 AUG -->
+<section class="sheet" style="--stripe:#6d28d9;--accent:#6d28d9;">
+  <div class="kicker"><span>Act 2 · build the product</span><span>10</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-violet"><b>10</b><span>Aug</span></div>
+    <div>
+      <h2>A seat above everyone, and mail on every move.</h2>
+      <div class="sub">Super admin arrives. So does the compliance calendar.</div>
+    </div>
+  </div>
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>New role: <b style="font-weight:800;">Super Admin</b><i>Bird's-eye view over every firm and every client, with full create/edit/remove rights on both sides</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Email on every document upload<i>The right people hear about it without anyone remembering to tell them</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Email on every approval<i>Same for sign-offs — the client is never left guessing</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Compliance calendar</b> — first version<i>The yearly filing deadlines a company has to meet, on a calendar instead of in someone's head</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Projects list and project detail screens<i>Open a company, see its whole state</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Create a project — and the client login appears by itself<i>No separate account-creation chore</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>People directory<i>Everyone in the firm, their role, who they report to</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Identity review with field unlock<i>The lead checks ID documents, then re-opens exactly the fields the client must correct</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Documents now stored in real file storage<i>Not in the database, not on someone's laptop</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Removed unnecessary pages and dead code<i>Fewer screens, less to load, less to maintain</i></div></div>
+    <div class="item i-block"><span class="dot" style="background:var(--coral);"></span><div>Blocker: email needs a real company domain<i>Mail from a personal address gets treated as spam</i></div></div>
+    <div class="item i-block"><span class="dot" style="background:var(--coral);"></span><div>Requested: <b style="font-weight:800;">vcfosuite.com</b> + a shared inbox<i>Something like info@ or updates@ so replies land somewhere the firm reads</i></div></div>
+  </div>
+  <footer class="pg"><span>10 August</span><span>10</span></footer>
+</section>
+
+<!-- 11 · 11–12 AUG -->
+<section class="sheet" style="--stripe:#c02673;--accent:#c02673;">
+  <div class="kicker"><span>Act 2 · the sprint</span><span>11</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-pink"><b>11<span style="font-size:20px;">–</span>12</b><span>Aug</span></div>
+    <div>
+      <h2>Two days. Seventy-two pieces of work.</h2>
+      <div class="sub">The heaviest stretch of the build. Everything below shipped inside 48 hours.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">Big things</div>
+  <div class="items three">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Super Admin console<i>Manage client-side and firm-side from one seat</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Compliance calendar built properly<i>Every filing, structured, with a real calendar interface</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>In-app notifications<i>A bell that fills up as work happens around you</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Many leads and many managers per client<i>Real teams, not one name per project</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Board resolution written by the app<i>Draft, review, finalise, then upload the signed copy</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Incorporation papers generated<i>Real Word documents, filled from the project's own answers</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Knowledge bank<i>The firm's own reference library, in the app</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Tasks, document requests, invitations<i>The daily working machinery</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Decision: move mail to Amazon's mail service<i>One supplier, one bill, instead of scattered invoices</i></div></div>
+  </div>
+
+  <div class="sectionlabel">Smaller things that make it feel finished</div>
+  <div class="items three">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Project creation split into three sections<i>Entity details → team → client. One long form became three short ones</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Subsidiary questions for already-incorporated clients<i>Ask only when it applies</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Profile page on every dashboard<i>Name, email, phone, photo — yours to edit</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Change your own password<i>Without asking anyone</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Assign a project to a lead<i>Manager or admin can hand work out</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Swap one lead or manager for another<i>People leave, projects continue</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Email when you are added to or removed from a project<i>Nobody discovers their new client by accident</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Filter mail by what it was about<i>Sent and received, sorted by reason</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Every outgoing email got a firm-branded layout<i>Welcome, progress, review — all one look</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Side menu redesigned<i>New colours, new icons, plain professional headings</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Removed repeated information on every page<i>Say it once</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Deleted duplicate code<i>Same job written twice in two places — one copy removed, screens got faster</i></div></div>
+  </div>
+
+  <div class="sectionlabel">Walls hit</div>
+  <div class="row">
+    <div class="chip i-block">Emails not reaching everyone who should get them</div>
+    <div class="chip i-block">Incorporation screens spread over too many files — confusing to work in</div>
+    <div class="chip i-block">Login shows the wrong error message when something fails</div>
+  </div>
+  <footer class="pg"><span>11–12 August</span><span>11</span></footer>
+</section>
+
+<!-- 12 · 13 AUG -->
+<section class="sheet" style="--stripe:#15803d;--accent:#15803d;">
+  <div class="kicker"><span>Act 2 · build the product</span><span>12</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-green"><b>13</b><span>Aug</span></div>
+    <div>
+      <h2>Settings, records, and a privacy meeting.</h2>
+      <div class="sub">Plus the first Amazon groundwork — written, not switched on.</div>
+    </div>
+  </div>
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Account settings for every role<i>Client, lead, manager and admin all get their own</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Audit log</b><i>A permanent record of who did what and when. Nobody can quietly change history</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Analytics screens<i>How many projects, at which stage, moving how fast</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Amazon mail service wired in behind a switch<i>Flip one setting to change mail provider — no code change</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Cloud deployment runbook written<i>Step-by-step, so the AWS move is a checklist not an adventure</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Cloud infrastructure files started<i>The server setup described as code, so it can be rebuilt identically</i></div></div>
+  </div>
+
+  <div class="sectionlabel" style="margin-top:14px;">Meeting outcome · India's data protection law (DPDP)</div>
+  <p class="note" style="margin-bottom:8px;">Seven obligations that now sit on the product roadmap. This is the list the firm will be measured against.</p>
+  <div class="grid g4" style="gap:8px;">
+    <div class="card" style="background:var(--gold-s);border-color:#ffd88a;"><div class="tiny" style="color:#7a4d00;font-weight:700;">1 · Know your data</div><div class="tiny" style="color:#7a4d00;margin-top:4px;">A written inventory of every piece of personal information: what, why, where, who can reach it.</div></div>
+    <div class="card" style="background:var(--gold-s);border-color:#ffd88a;"><div class="tiny" style="color:#7a4d00;font-weight:700;">2 · Ask permission</div><div class="tiny" style="color:#7a4d00;margin-top:4px;">Privacy notice, consent, and screens where a person can exercise their rights.</div></div>
+    <div class="card" style="background:var(--gold-s);border-color:#ffd88a;"><div class="tiny" style="color:#7a4d00;font-weight:700;">3 · Do not keep it forever</div><div class="tiny" style="color:#7a4d00;margin-top:4px;">Automatic retention limits and real deletion.</div></div>
+    <div class="card" style="background:var(--gold-s);border-color:#ffd88a;"><div class="tiny" style="color:#7a4d00;font-weight:700;">4 · Lock it down</div><div class="tiny" style="color:#7a4d00;margin-top:4px;">Strong access control on anything personal.</div></div>
+    <div class="card" style="background:var(--gold-s);border-color:#ffd88a;"><div class="tiny" style="color:#7a4d00;font-weight:700;">5 · Watch your suppliers</div><div class="tiny" style="color:#7a4d00;margin-top:4px;">Track every outside service that receives user data.</div></div>
+    <div class="card" style="background:var(--gold-s);border-color:#ffd88a;"><div class="tiny" style="color:#7a4d00;font-weight:700;">6 · Plan for the bad day</div><div class="tiny" style="color:#7a4d00;margin-top:4px;">A breach process and a grievance channel, defined before you need them.</div></div>
+    <div class="card" style="background:var(--gold-s);border-color:#ffd88a;"><div class="tiny" style="color:#7a4d00;font-weight:700;">7 · Check yourself</div><div class="tiny" style="color:#7a4d00;margin-top:4px;">Regular audits, not a one-time certificate.</div></div>
+    <div class="card" style="background:var(--card);"><div class="tiny" style="font-weight:700;">Where this stands</div><div class="tiny" style="margin-top:4px;">Points 4 and 7 are largely built. See the DPDP scorecard later in this book.</div></div>
+  </div>
+  <footer class="pg"><span>13 August</span><span>12</span></footer>
+</section>
+
+<!-- 13 · 14 AUG -->
+<section class="sheet" style="--stripe:#0f766e;--accent:#0f766e;">
+  <div class="kicker"><span>Act 3 · make it usable</span><span>13</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-teal"><b>14</b><span>Aug</span></div>
+    <div>
+      <h2>A safety net under the rules.</h2>
+      <div class="sub">Quiet day. The kind that stops loud days later.</div>
+    </div>
+  </div>
+  <div class="items">
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div><b style="font-weight:800;">Automatic tests over the incorporation rules</b><i>Machine-checked examples of every checklist rule. If someone later breaks “a director must have a DIN before this step”, the tests shout before a client ever sees it</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Demo-data cleanup command<i>One command wipes practice companies without touching real ones — so training and demos never pollute live records</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Loose ends from the sprint wired up<i>The last connections left dangling after two very fast days</i></div></div>
+  </div>
+  <div class="quotebox" style="margin-top:14px;">
+    <b>Why a three-item day matters:</b> the 34-step incorporation checklist encodes real law — what must exist before what. Tests turn those rules from “we remember it works” into “the machine proves it still works, on every future change.” It is the cheapest insurance in the project.
+  </div>
+  <footer class="pg"><span>14 August</span><span>13</span></footer>
+</section>
+
+<!-- 14 · 15 AUG -->
+<section class="sheet" style="--stripe:#2563eb;--accent:#2563eb;">
+  <div class="kicker"><span>Act 3 · make it usable</span><span>14</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-blue"><b>15</b><span>Aug</span></div>
+    <div>
+      <h2>The whole product repainted in a day.</h2>
+      <div class="sub">Seven changes, one colour. This is what building it properly bought.</div>
+    </div>
+  </div>
+
+  <p class="note">The app was warm orange. It became cool blue — everywhere, including outgoing emails — in a single day. That is only possible because colours were defined once in a central place and every screen refers back to it, instead of each screen naming its own colour.</p>
+
+  <div class="ba" style="margin:6px 0 12px;">
+    <div class="side" style="background:#fff3e6;border:2px solid #f2d5b4;">
+      <h3 style="color:#9a5b12;">If colours were scattered</h3>
+      <div class="tiny" style="color:#9a5b12;">Hunt through 300+ files. Miss a dozen. Discover them weeks later, one embarrassing screen at a time.</div>
+    </div>
+    <div class="bigarrow">→</div>
+    <div class="side c-blue">
+      <h3>How it actually went</h3>
+      <div class="tiny" style="color:#163a8a;">Change the central definitions. Everything downstream follows. Seven tidy passes, done by evening.</div>
+    </div>
+  </div>
+
+  <div class="items three">
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Central colour definitions switched to cool blue<i>The one place that decides every other place</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Buttons, inputs and cards restyled<i>The shared parts used on every screen</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Page backgrounds and panels restyled<i>The surfaces behind the content</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Public landing page retargeted<i>The site a stranger sees first</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Login screen retargeted<i>The first thing a user sees, every day</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Navigation and top bar restyled<i>The frame around every page</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Email templates restyled to match<i>So mail from the app looks like the app</i></div></div>
+  </div>
+  <footer class="pg"><span>15 August</span><span>14</span></footer>
+</section>
+
+<!-- 15 · 16 AUG -->
+<section class="sheet" style="--stripe:#0369a1;--accent:#0369a1;">
+  <div class="kicker"><span>Act 3 · make it usable</span><span>15</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-sky"><b>16</b><span>Aug</span></div>
+    <div>
+      <h2>Mail from a real mailbox. Steps that hold the line.</h2>
+      <div class="sub">Four changes, two of them structural.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">1 · Client mail now comes from a person, not a robot</div>
+  <svg class="flowsvg" viewBox="0 0 1040 108" style="margin-bottom:8px;">
+    <defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#16130f"/></marker></defs>
+    <rect x="8" y="18" width="200" height="70" rx="16" fill="#d5f4ef"/>
+    <text x="108" y="46" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Lead writes to client</text>
+    <text x="108" y="66" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">from inside the app</text>
+    <line x1="208" y1="53" x2="256" y2="53" stroke="#16130f" stroke-width="3" marker-end="url(#ar2)"/>
+    <rect x="264" y="18" width="250" height="70" rx="16" fill="#dbe7ff"/>
+    <text x="389" y="46" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Sends via their Outlook</text>
+    <text x="389" y="66" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">their real work mailbox</text>
+    <line x1="514" y1="53" x2="562" y2="53" stroke="#16130f" stroke-width="3" marker-end="url(#ar2)"/>
+    <rect x="570" y="18" width="250" height="70" rx="16" fill="#d8f5e2"/>
+    <text x="695" y="46" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Client sees a colleague</text>
+    <text x="695" y="66" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">reply lands in that inbox</text>
+    <rect x="838" y="18" width="194" height="70" rx="16" fill="#ffe9b8"/>
+    <text x="935" y="42" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="13">System mail stays</text>
+    <text x="935" y="60" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">on the company address</text>
+    <text x="935" y="77" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#7a4d00">alerts, receipts, welcomes</text>
+  </svg>
+
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Outlook mailbox connected for lead-to-client mail<i>Human mail from a human address; automatic mail stays on the company address</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Steps now unlock in order</b><i>You cannot jump ahead. Saving a rough draft does not unlock the next step — only finished, approved work does</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>A rejection re-locks everything after it<i>If step 12 is sent back, steps 13 onward close again — no work built on a wrong answer</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Client progress folded into one journey flowchart<i>Two screens saying the same thing became one picture; old links redirect there</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Checklist step titles shortened<i>They now fit on a card without wrapping</i></div></div>
+  </div>
+  <footer class="pg"><span>16 August</span><span>15</span></footer>
+</section>
+
+<!-- 16 · 17 AUG -->
+<section class="sheet" style="--stripe:#15803d;--accent:#15803d;">
+  <div class="kicker"><span>Act 3 · make it usable</span><span>16</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-green"><b>17</b><span>Aug</span></div>
+    <div>
+      <h2>Nobody misses a message any more.</h2>
+      <div class="sub">Email reaches every responsible person, not just the first one on the list.</div>
+    </div>
+  </div>
+
+  <div class="quotebox" style="margin-bottom:12px;">
+    <b>The problem being solved:</b> mail was going to one manager. If that person was on leave, the request sat still and the client waited. Now it reaches <b>every</b> manager on the project.
+  </div>
+
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Lead asks for approval → all project managers are emailed<i>Not one. All of them</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Client submits or uploads → all project managers are emailed<i>Same rule on the client side</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div><b style="font-weight:800;">Lead's step workspace rebuilt in two columns</b><i>Form on one side, status and uploads on the other. The screen a lead lives in all day now fits on one screen without scrolling</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Client list moved into the side rail<i>Companies expand in place instead of costing a page load</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Admin project screens repainted blue<i>Continuing the 15 August repaint</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Remaining screens repainted blue<i>Repaint complete</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div><b style="font-weight:800;">Cloud architecture pack written</b><i>A diagram set showing exactly which cloud services the app would use and where the money goes — for the finance conversation, not the engineering one</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Decisions recorded for the next developer<i>Written down so nobody re-learns them the hard way</i></div></div>
+  </div>
+  <footer class="pg"><span>17 August</span><span>16</span></footer>
+</section>
+
+<!-- 17 · 18–19 AUG -->
+<section class="sheet" style="--stripe:#6d28d9;--accent:#6d28d9;">
+  <div class="kicker"><span>Act 3 · the second sprint</span><span>17</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-violet"><b>18<span style="font-size:20px;">–</span>19</b><span>Aug</span></div>
+    <div>
+      <h2>The lead's whole day, redesigned around them.</h2>
+      <div class="sub">26 pieces of work. Almost all of it aimed at the person doing the filings.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">Their working day</div>
+  <div class="items three">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Tasks folded into <b style="font-weight:800;">Today</b><i>One screen: this week's work, grouped by company. The separate tasks page redirects here</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Live Indian-time clock on Today<i>Deadlines are IST deadlines; the screen says so</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Drafts save themselves</b><i>Type, walk away, come back — nothing lost. Submit is a separate, deliberate act</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Autosave stopped emailing the manager<i>Every keystroke-save was read as “please review”. Managers were being spammed. Fixed</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Leads can open locked steps to read ahead<i>Clients still see the gate; the lead can prepare</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Project overview became four phase cards<i>Name → incorporate → after-incorporation → registrations, at a glance</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Step workspace compacted with section tabs<i>Long forms split into tabs; Next walks them in order</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Weekly queue by company restored<i>It had silently degraded into a flat list</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Red error banner removed in favour of a quiet toast<i>A whole red page for one field was punishment, not feedback</i></div></div>
+  </div>
+
+  <div class="sectionlabel">Mail and notifications</div>
+  <div class="items three">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Staff can compose mail inside the app<i>With a searchable directory of colleagues and clients</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Connect your Outlook mailbox from Settings<i>Self-service, no admin involved</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Firm email templates<i>Standard letters ready to send, not retyped each time</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>“To” filters: team or client<i>Two chips instead of a long people list</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Board resolution share sends an email<i>Only the final release notifies — drafts stay quiet</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Delete notifications, with undo and clear-all<i>The bell is now maintainable instead of infinite</i></div></div>
+  </div>
+
+  <div class="sectionlabel">Frame and plumbing</div>
+  <div class="items three">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Back button beside the page title<i>Predictable, always in the same place</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>“Keep open” side menu<i>It stops collapsing on you mid-task</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Smooth sliding highlight on menus<i>You can see where you moved from and to</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Secure tunnel access enabled<i>Lets someone outside the office try the app for a demo, safely</i></div></div>
+  </div>
+  <footer class="pg"><span>18–19 August</span><span>17</span></footer>
+</section>
+
+<!-- 18 · 22 AUG -->
+<section class="sheet" style="--stripe:#c02673;--accent:#c02673;">
+  <div class="kicker"><span>Act 3 · make it usable</span><span>18</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-pink"><b>22</b><span>Aug</span></div>
+    <div>
+      <h2>“What do I do right now?”</h2>
+      <div class="sub">Today stopped being a list of companies and became an answer.</div>
+    </div>
+  </div>
+
+  <div class="ba" style="margin-bottom:12px;">
+    <div class="side" style="background:#f5efe6;border:2px dashed #cbbfae;">
+      <h3 style="color:var(--slate);">Before</h3>
+      <div class="tiny" style="color:#6b6357;">A grid of company cards. Accurate, complete — and useless at 9am, because it never said which of the forty things mattered first.</div>
+    </div>
+    <div class="bigarrow">→</div>
+    <div class="side c-pink">
+      <h3>After</h3>
+      <div class="tiny" style="color:#9d174d;">A banner with the day's headline, a focus panel with what is next, a strip of this week, and a work timeline — all reading from one shared, ranked queue.</div>
+    </div>
+  </div>
+
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Today rebuilt as a real dashboard</b><i>Headline, focus, week strip and My work, all from one ranked queue</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Announcements board</b><i>Firm-wide news and circulars — deliberately separate from the personal notification bell, so a company message is not lost among task pings</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Document vault for leads</b><i>Every file from your assigned companies in one place, instead of hunting through the manager's vault</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Profile photos<i>Upload one, or pull it from Outlook. Initials made colleagues hard to tell apart</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Personal appearance settings that stick<i>Banner style, menu behaviour, reduced motion — remembered per person</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Official SBC mark in the top bar<i>The firm's real logo, not a product wordmark</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Menu reordered by how often things are used<i>Today, My work and Clients first</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Full written briefing pack for the codebase<i>Product, roles, features, screens, design rules, domain knowledge — so a new developer starts on day one, not week three</i></div></div>
+  </div>
+  <footer class="pg"><span>22 August</span><span>18</span></footer>
+</section>
+
+<!-- 19 · 24 AUG part 1 -->
+<section class="sheet" style="--stripe:#0f766e;--accent:#0f766e;">
+  <div class="kicker"><span>Act 3 · the third sprint</span><span>19</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-teal"><b>24</b><span>Aug</span></div>
+    <div>
+      <h2>Thirty-four changes. Finding things, and being told things.</h2>
+      <div class="sub">Part one of two: navigation, announcements, notifications.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">Never be lost — the navigation rebuild</div>
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">A trail across the top</b><i>Home › section › page, every crumb clickable. You can always see where you are and climb back out</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Search everything from one box</b><i>Type in the top bar, results drop underneath. Ctrl+K (Cmd+K on Mac) jumps straight to it</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Menu grouped into <b style="font-weight:800;">Docs</b> and <b style="font-weight:800;">Updates</b><i>Vault + Knowledge Bank under Docs; announcements + notifications under Updates</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Every group opens the same way<i>Three different expand behaviours became one</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Back arrow on every nested page<i>Except true home, where there is nowhere to go back to</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Page titles that just repeated the trail were deleted<i>The trail already said it. Saying it twice in bigger letters is noise</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Gap under the top bar tightened<i>Content sat 20px too low on every page</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Requests page removed<i>Its contents already appeared on My work and on the company page. Old links redirect</i></div></div>
+  </div>
+
+  <div class="sectionlabel">Being told things, without being interrupted badly</div>
+  <div class="items three">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>New announcements pop up live on any screen<i>Then shrink into the megaphone icon when closed</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Write an announcement from the panel itself<i>No separate admin trip</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Announcements show the author's name and unread marks<i>Plus filters</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Notifications pop live and shrink into the bell<i>One at a time, never a stack</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>The notification panel stays open when you click a row<i>It used to close, so reading three meant opening it three times</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Clearing only clears the bell — history is kept<i>The full record stays on the notifications page forever</i></div></div>
+  </div>
+  <footer class="pg"><span>24 August · part 1</span><span>19</span></footer>
+</section>
+
+<!-- 20 · 24 AUG part 2 -->
+<section class="sheet" style="--stripe:#0369a1;--accent:#0369a1;">
+  <div class="kicker"><span>Act 3 · the third sprint</span><span>20</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-sky"><b>24</b><span>Aug</span></div>
+    <div>
+      <h2>The calendar, the week strip, and who may read what.</h2>
+      <div class="sub">Part two of two.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">Statutory calendar</div>
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>One calendar view, no tabs<i>Filter chips, a real company picker, tinted dates that jump you to that day's agenda</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div><b style="font-weight:800;">Each law got its own distinct colour</b><i>GST sat next to Labour, FEMA next to RERA — close enough that stacked stripes read as one colour. Now every category is a clearly different hue</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Today is now the bright circle on the mini calendar<i>Deadline days were the bright ones, so “today” was invisible</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Filing tracker split onto its own page<i>The calendar shows deadlines; the tracker shows what has been filed</i></div></div>
+  </div>
+
+  <div class="sectionlabel">The week strip and work timeline — five repairs to one idea</div>
+  <div class="items three">
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>This week now maps real Indian calendar days<i>It could show an empty week while work was overdue</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Overdue work pins to today<i>Instead of disappearing into the past</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Click a day → the queue filters to it<i>With a coloured count on each cell</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Busy days scroll instead of overflowing<i>A packed Tuesday used to spill out of its box</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Tests lock the week behaviour in place<i>So “This week” can never silently go empty again</i></div></div>
+  </div>
+
+  <div class="sectionlabel">Who may read what</div>
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Audit history scoped by role</b><i>A lead sees their own actions plus people on shared companies. A manager sees only their assigned clients. Only the firm admin sees everything</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Co-leads finally see their shared companies<i>Only the first-named lead's clients were appearing. A second lead saw an empty screen while holding real work</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Demo data stopped unlinking itself<i>Refreshing practice data quietly detached the demo company from the demo lead</i></div></div>
+  </div>
+  <footer class="pg"><span>24 August · part 2</span><span>20</span></footer>
+</section>
+
+<!-- 21 · 25 AUG -->
+<section class="sheet" style="--stripe:#e8a317;--accent:#e8a317;">
+  <div class="kicker"><span>Act 3 · make it usable</span><span>21</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-gold"><b>25</b><span>Aug</span></div>
+    <div>
+      <h2>Four new things, and six things that were crashing.</h2>
+      <div class="sub">The day the app got hardened against its own missing data.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">New</div>
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Work timeline shows duration, not just deadlines</b><i>Each item now stretches from the day it started to the day it is due, so you can see what is long-running versus what is a quick job</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Personal to-do lists that managers can see</b><i>A lead's own notes now persist on the server, so a manager can review the real state of work without a status meeting</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Folders inside the knowledge bank</b><i>The firm library was one flat pile. Now it nests, like a real drive</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Search the vault by file name</b><i>Every lead upload is indexed and findable</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>“My managers” card on Today<i>Who you report to, who manages each project, and a compose box already addressed to them</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Every day with a deadline is now tinted<i>Some were being missed</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>“Select all” now also clears all<i>It only ever ticked. Untick was impossible</i></div></div>
+  </div>
+
+  <div class="sectionlabel">Crashes fixed — one pattern, six places</div>
+  <div class="quotebox" style="margin-bottom:8px;">
+    <b>What was happening:</b> screens assumed the information they asked for would always arrive in the expected shape. When it arrived empty, or wrapped differently, the screen did not degrade — it went blank. A <b>blank Project Lead dashboard</b> was the worst case.
+  </div>
+  <div class="items three">
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Today no longer blanks on an empty to-do reply</div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Lead dashboard survives an unassigned project</div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Library reads its new reply shape correctly</div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Vault search survives files with no name</div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Search terms carry into the search box</div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div><b style="font-weight:800;">Super Admin stopped being locked out</b><i>The highest role was refused on the library and documents screens</i></div></div>
+  </div>
+  <footer class="pg"><span>25 August</span><span>21</span></footer>
+</section>
+
+<!-- 22 · 28 AUG part 1 -->
+<section class="sheet" style="--stripe:#e23d2a;--accent:#e23d2a;">
+  <div class="kicker"><span>Act 4 · firm-grade controls</span><span>22</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-coral"><b>28</b><span>Aug</span></div>
+    <div>
+      <h2>Managers can act. Admins stay in control.</h2>
+      <div class="sub">Part one of two: project administration — the biggest governance change in the build.</div>
+    </div>
+  </div>
+
+  <p class="note">Until today, a project could not be edited after creation, could not be deleted, and carried one manager and one lead. Today it became a properly governed record — with a rule about who may do what, and a paper trail for the rest.</p>
+
+  <div class="ba" style="margin:4px 0 12px;">
+    <div class="side c-teal">
+      <h3>A manager may do directly</h3>
+      <div class="row" style="gap:6px;">
+        <span class="chip c-white">Edit project details</span>
+        <span class="chip c-white">Update entity information</span>
+        <span class="chip c-white">Adjust the delivery team</span>
+        <span class="chip c-white">Update the questionnaire</span>
+      </div>
+      <div class="tiny" style="margin-top:8px;color:#0b4f49;">Low-risk. Reversible. No approval needed.</div>
+    </div>
+    <div class="bigarrow">→</div>
+    <div class="side c-coral">
+      <h3>A manager must request</h3>
+      <div class="row" style="gap:6px;">
+        <span class="chip c-white">Delete a project</span>
+        <span class="chip c-white">Change the client</span>
+        <span class="chip c-white">Reassign the manager</span>
+      </div>
+      <div class="tiny" style="margin-top:8px;color:#8b1c12;">The request carries the exact proposed change. The admin approves that exact change — the decision can never differ from what was reviewed. If it fails to apply, the request re-opens instead of falsely reporting success.</div>
+    </div>
+  </div>
+
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Delete is a recycle bin, not a shredder</b><i>A deleted project disappears from every screen at once, but its documents, checklist history and audit trail survive intact — and a firm admin can restore it</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Approvals queue for pending requests<i>Visible to both the requesting manager and the deciding admin</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Actions menu on every project card<i>Edit, change client, delete. Options a manager can only request are shown and labelled, not hidden — so the path stays obvious</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Two admins deciding at once produce one winner<i>No double-execution, no contradictory outcome</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Several managers and several leads per project</b><i>Assigned at creation. A manager creating a project always includes themselves</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">Compliance questionnaire at intake</b><i>Seven lettered sections from the firm's own questionnaire, with its real conditional logic — answer No and the follow-up questions disappear, and any stale answers behind them are cleared so they never reach the record</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Create form rebuilt as one card with four tabs<i>Replaced a long scrolling accordion. Next moves you along; the questionnaire never blocks you from creating the project</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Edit reuses that same form<i>Everything captured at creation is editable later, in the identical screen — instead of a small dialog reaching a handful of fields</i></div></div>
+  </div>
+  <footer class="pg"><span>28 August · part 1</span><span>22</span></footer>
+</section>
+
+<!-- 23 · 28 AUG part 2 -->
+<section class="sheet" style="--stripe:#2563eb;--accent:#2563eb;">
+  <div class="kicker"><span>Act 4 · firm-grade controls</span><span>23</span></div>
+  <div class="dayhead">
+    <div class="datebadge c-blue"><b>28</b><span>Aug</span></div>
+    <div>
+      <h2>Every dashboard rebuilt. Everything got faster.</h2>
+      <div class="sub">Part two of two: calendar, dashboards, speed, theme.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">The statutory calendar, rebuilt</div>
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Month's deadlines as a grouped list, with a compact month navigator beside it<i>The old year-heatmap read as a wall of tiles nobody could parse</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">One identical calendar for every role</b><i>Admin and manager used to carry an extra header, statistics row and tabs that leads never had. All three removed</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Managers and leads see only deadlines for their own clients<i>Admins keep the full master calendar</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Full-screen month grid with a filter rail<i>Hides the app frame entirely; hover the left edge to slide the menu back in. Your choice is remembered</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>The mini calendar was marking nothing<i>It was reading a source that is empty this month. Now it reads the same catalogue as the page it opens</i></div></div>
+  </div>
+
+  <div class="sectionlabel">Speed — three changes with no visible feature</div>
+  <div class="items three">
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div><b style="font-weight:800;">Check-then-fetch polling</b><i>Live popups were re-downloading whole lists every few seconds. Now they check a tiny marker and download only when something actually changed</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div><b style="font-weight:800;">Lists stopped hauling whole records</b><i>A dashboard needs a status and two dates, not every answer and note on all 34 steps. The database now sends only the needed fields</i></div></div>
+    <div class="item i-plumb"><span class="dot" style="background:var(--teal);"></span><div>Mail composer loads only when opened<i>It was loading on every page whether or not anyone wrote an email</i></div></div>
+  </div>
+
+  <div class="sectionlabel">Look and finish</div>
+  <div class="items">
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div><b style="font-weight:800;">All four remaining dashboards rebuilt in the lead dashboard's language</b><i>Firm admin, manager, super admin and overview each had their own headers and tiles. Now they share one kit and report numbers as rings, donuts, bars and chips — every metric, link and empty state preserved</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Dark mode retinted from grey to deep navy<i>Dark surfaces were neutral grey while the menu was blue — they never agreed. Contrast levels were held exactly as they were</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Invisible text in dark mode fixed<i>Some headings and panels were hard-coded to light colours and never flipped. The incorporation tracker title was invisible on the dark background</i></div></div>
+    <div class="item i-new"><span class="dot" style="background:var(--blue);"></span><div>Logo now adapts to light and dark — including in email<i>One version vanished on dark screens, the other on white email backgrounds</i></div></div>
+    <div class="item i-fix"><span class="dot" style="background:var(--coral);"></span><div>Long status labels stopped overflowing project cards<i>Shorter wording, same stored data</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>One shared selector control everywhere<i>Filters, view switches and yes/no rows each painted their own “selected” look, some of which read as unselected</i></div></div>
+    <div class="item i-look"><span class="dot" style="background:var(--violet);"></span><div>Explanatory helper text stripped app-wide<i>Text that only restated what the button already said</i></div></div>
+  </div>
+  <footer class="pg"><span>28 August · part 2</span><span>23</span></footer>
+</section>
+
+<!-- 24 · WHAT EXISTS 1 -->
+<section class="sheet" style="--stripe:#0f766e;--accent:#0f766e;">
+  <div class="kicker"><span>Where it stands today</span><span>24</span></div>
+  <h2>What actually exists, <em>part one</em>.</h2>
+  <div class="grid g2" style="gap:10px;">
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--blue);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">The 34-step incorporation run</b></div>
+      <div class="tiny" style="margin-top:6px;">Four chapters — name approval, incorporation, after the certificate, then registrations. Steps unlock in order; a rejection re-locks everything after it. Each step has its own validation rules, checked automatically.</div>
+      <div class="row" style="margin-top:8px;gap:5px;"><span class="chip c-blue">Client fills</span><span class="chip c-teal">Lead prepares</span><span class="chip c-gold">Manager approves</span></div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--pink);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">Documents the app writes itself</b></div>
+      <div class="tiny" style="margin-top:6px;">Board resolutions and incorporation paperwork, generated as real Word files from the project's own answers. Draft first, release deliberately, then upload the signed copy back.</div>
+      <div class="row" style="margin-top:8px;gap:5px;"><span class="chip c-pink">Board resolution</span><span class="chip c-pink">DIR-2</span><span class="chip c-pink">Incorporation pack</span></div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--violet);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">Statutory compliance calendar</b></div>
+      <div class="tiny" style="margin-top:6px;">Once a company exists, its yearly filing deadlines appear on a calendar by themselves. One identical view for every role; managers and leads see only their own clients. Full-screen month grid, colour-coded by law, with a separate filing tracker.</div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--sky);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">Mail, two ways</b></div>
+      <div class="tiny" style="margin-top:6px;">Person-to-client mail goes out from the sender's real Outlook mailbox, so replies come back to them. System mail — welcomes, approvals, uploads, team changes — goes from the company address. Firm templates included.</div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--gold);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">Notifications and announcements</b></div>
+      <div class="tiny" style="margin-top:6px;">Two separate streams on purpose: a personal bell for things that concern you, and a firm-wide announcements board for circulars. Both pop up live. History is never deleted, only dismissed from the bell.</div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--green);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">Two document libraries</b></div>
+      <div class="tiny" style="margin-top:6px;"><b>Vault</b> — client files, per company, searchable by name. <b>Knowledge bank</b> — the firm's own reference library, with nested folders. Everything lives in proper file storage, never on someone's laptop.</div>
+    </div>
+  </div>
+  <footer class="pg"><span>The product today</span><span>24</span></footer>
+</section>
+
+<!-- 25 · WHAT EXISTS 2 -->
+<section class="sheet" style="--stripe:#6d28d9;--accent:#6d28d9;">
+  <div class="kicker"><span>Where it stands today</span><span>25</span></div>
+  <h2>What actually exists, <em>part two</em>.</h2>
+  <div class="grid g2" style="gap:10px;">
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--coral);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">Project administration</b></div>
+      <div class="tiny" style="margin-top:6px;">Create with a full compliance questionnaire, edit anything later in the same form, assign several managers and several leads, delete into a recycle bin, restore. Risky changes go through an approval queue carrying the exact proposed change.</div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--blue);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">People and access</b></div>
+      <div class="tiny" style="margin-top:6px;">Directory of everyone, reporting lines, invitations, welcome emails, profile pages with photos, password changes. A client's login is created automatically when their project is.</div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--teal);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">The lead's working day</b></div>
+      <div class="tiny" style="margin-top:6px;">A Today screen that answers “what now” — headline, focus panel, clickable week strip, a work timeline showing how long each item runs, personal to-do lists a manager can review, and a card naming your managers with a pre-addressed compose box.</div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--pink);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">Audit trail</b></div>
+      <div class="tiny" style="margin-top:6px;">Every meaningful action recorded permanently, and scoped: leads see their own plus shared companies, managers see their assigned clients, admins see the firm. Clients get their own view of their project's history.</div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--gold);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">Five dashboards, one language</b></div>
+      <div class="tiny" style="margin-top:6px;">Client, lead, manager, firm admin and super admin. All five now share the same visual kit — numbers arrive as rings, donuts, bars and chips rather than rows of text.</div>
+    </div>
+    <div class="card">
+      <div class="row" style="gap:6px;align-items:center;"><span class="dot" style="background:var(--slate);"></span><b style="font-family:'Bricolage Grotesque';font-size:17px;">The frame around everything</b></div>
+      <div class="tiny" style="margin-top:6px;">A clickable trail from Home to where you are, one search box covering the whole app with a keyboard shortcut, grouped menus that all behave alike, light and dark themes, and personal appearance settings that persist.</div>
+    </div>
+  </div>
+  <div class="sectionlabel">And underneath all of it</div>
+  <div class="row">
+    <span class="chip c-teal">27 data tables</span>
+    <span class="chip c-teal">77 server actions</span>
+    <span class="chip c-teal">23 access gates</span>
+    <span class="chip c-teal">85 automatic test files</span>
+    <span class="chip c-teal">Scheduled background jobs</span>
+    <span class="chip c-teal">Runs on an office machine or on Amazon, unchanged</span>
+  </div>
+  <footer class="pg"><span>The product today</span><span>25</span></footer>
+</section>
+
+<!-- 26 · ROLES -->
+<section class="sheet" style="--stripe:#c02673;--accent:#c02673;">
+  <div class="kicker"><span>Who sees what</span><span>26</span></div>
+  <h2>Five seats. <em>Nobody sees everything</em> except one.</h2>
+  <p class="note">Access is not a setting someone can forget to tick. It is enforced in one place that every single request must pass through — so a lead cannot reach another lead's client even by typing the address directly.</p>
+  <table class="matrix">
+    <tr>
+      <th class="rowh" style="width:210px;">Can they…</th>
+      <th>Client</th><th>Project lead</th><th>Project manager</th><th>Firm admin</th><th>Super admin</th>
+    </tr>
+    <tr>
+      <td class="name">See their own project</td>
+      <td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td class="name">See other people's projects</td>
+      <td class="no">No</td><td class="some">Assigned only</td><td class="some">Assigned only</td><td class="yes">All</td><td class="yes">All</td>
+    </tr>
+    <tr>
+      <td class="name">Do the filing work</td>
+      <td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td class="name">Approve a step</td>
+      <td class="no">No</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td class="name">Create a project</td>
+      <td class="no">No</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td class="name">Delete a project</td>
+      <td class="no">No</td><td class="no">No</td><td class="some">By request</td><td class="yes">Yes</td><td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td class="name">Change the client on a project</td>
+      <td class="no">No</td><td class="no">No</td><td class="some">By request</td><td class="yes">Yes</td><td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td class="name">Manage firm staff</td>
+      <td class="no">No</td><td class="no">No</td><td class="some">Own team</td><td class="yes">Yes</td><td class="yes">Yes</td>
+    </tr>
+    <tr>
+      <td class="name">See the full audit history</td>
+      <td class="some">Own project</td><td class="some">Own + shared</td><td class="some">Assigned clients</td><td class="yes">Firm-wide</td><td class="yes">Everything</td>
+    </tr>
+    <tr>
+      <td class="name">See the master filing calendar</td>
+      <td class="some">Own company</td><td class="some">Own clients</td><td class="some">Own clients</td><td class="yes">All</td><td class="yes">All</td>
+    </tr>
+  </table>
+  <div class="legend">
+    <span class="chip yes">Yes — full access</span>
+    <span class="chip some">Limited — scoped or needs approval</span>
+    <span class="chip no">No — cannot, at all</span>
+  </div>
+  <footer class="pg"><span>Access</span><span>26</span></footer>
+</section>
+
+<!-- 27 · ARCHITECTURE -->
+<section class="sheet" style="--stripe:#2563eb;--accent:#2563eb;">
+  <div class="kicker"><span>How it is put together</span><span>27</span></div>
+  <h2>Every request walks the <em>same corridor</em>.</h2>
+  <p class="note">There is exactly one path from a screen to the data, and it passes a gate that checks identity and role. No screen and no page may reach the database directly — that rule is the security design, and it is why the access table on the previous page can be trusted.</p>
+
+  <svg class="flowsvg" viewBox="0 0 1040 300" style="margin-top:4px;">
+    <defs>
+      <marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#16130f"/></marker>
+    </defs>
+
+    <rect x="10" y="16" width="200" height="86" rx="18" fill="#ffd8d1"/>
+    <text x="110" y="48" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="15">Browser</text>
+    <text x="110" y="68" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">the screens people use</text>
+    <text x="110" y="85" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#8b1c12">holds no client data</text>
+
+    <line x1="210" y1="59" x2="262" y2="59" stroke="#16130f" stroke-width="3" marker-end="url(#a3)"/>
+
+    <rect x="270" y="16" width="210" height="86" rx="18" fill="#dbe7ff"/>
+    <text x="375" y="48" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="15">The app</text>
+    <text x="375" y="68" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">77 server actions</text>
+    <text x="375" y="85" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#163a8a">checks you are signed in</text>
+
+    <line x1="480" y1="59" x2="532" y2="59" stroke="#16130f" stroke-width="3" marker-end="url(#a3)"/>
+
+    <rect x="540" y="8" width="230" height="102" rx="18" fill="#16130f"/>
+    <text x="655" y="42" text-anchor="middle" font-family="Bricolage Grotesque, Outfit" font-weight="800" font-size="17" fill="#fff7ec">THE GATE</text>
+    <text x="655" y="64" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#e3d6c4">23 access checks</text>
+    <text x="655" y="81" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#e3d6c4">who are you · what is your role</text>
+    <text x="655" y="98" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#ffd88a">nothing passes around it</text>
+
+    <line x1="770" y1="59" x2="822" y2="59" stroke="#16130f" stroke-width="3" marker-end="url(#a3)"/>
+
+    <rect x="830" y="8" width="200" height="46" rx="14" fill="#d5f4ef"/>
+    <text x="930" y="30" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="13.5">PostgreSQL</text>
+    <text x="930" y="45" text-anchor="middle" font-family="Outfit" font-size="11" fill="#5c564c">projects · people · steps</text>
+
+    <rect x="830" y="62" width="200" height="46" rx="14" fill="#ead9ff"/>
+    <text x="930" y="84" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="13.5">File storage</text>
+    <text x="930" y="99" text-anchor="middle" font-family="Outfit" font-size="11" fill="#5c564c">every client document</text>
+
+    <line x1="655" y1="110" x2="655" y2="152" stroke="#16130f" stroke-width="3" marker-end="url(#a3)"/>
+
+    <rect x="270" y="160" width="210" height="80" rx="18" fill="#ffe9b8"/>
+    <text x="375" y="190" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Email out</text>
+    <text x="375" y="209" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">Outlook for person-to-client</text>
+    <text x="375" y="226" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">company address for system mail</text>
+
+    <rect x="540" y="160" width="230" height="80" rx="18" fill="#d8f5e2"/>
+    <text x="655" y="190" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Scheduled jobs</text>
+    <text x="655" y="209" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">build the filing calendar</text>
+    <text x="655" y="226" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">run without anyone clicking</text>
+
+    <rect x="830" y="160" width="200" height="80" rx="18" fill="#d3efff"/>
+    <text x="930" y="190" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="14">Audit record</text>
+    <text x="930" y="209" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">who did what, when</text>
+    <text x="930" y="226" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#075985">written, never edited</text>
+
+    <rect x="10" y="160" width="200" height="80" rx="18" fill="#fff" stroke="#eadcc8" stroke-width="2"/>
+    <text x="110" y="186" text-anchor="middle" font-family="Outfit" font-weight="700" font-size="13.5">Runs where you put it</text>
+    <text x="110" y="205" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">office machine today</text>
+    <text x="110" y="222" text-anchor="middle" font-family="Outfit" font-size="11.5" fill="#5c564c">Amazon later, same code</text>
+
+    <text x="520" y="278" text-anchor="middle" font-family="Outfit" font-size="12.5" fill="#5c564c">Change where it runs by changing settings — not by rewriting the app. That was the point of August 7th.</text>
+  </svg>
+  <footer class="pg"><span>Architecture</span><span>27</span></footer>
+</section>
+
+<!-- 28 · DPDP -->
+<section class="sheet" style="--stripe:#15803d;--accent:#15803d;">
+  <div class="kicker"><span>Privacy law readiness</span><span>28</span></div>
+  <h2>The seven DPDP duties — <em>honestly scored</em>.</h2>
+  <p class="note">From the 13 August meeting. This is where the product genuinely stands, not where we would like it to stand.</p>
+  <div class="grid" style="gap:8px;">
+    <div class="card" style="display:grid;grid-template-columns:200px 1fr 132px;gap:12px;align-items:center;">
+      <div><b style="font-size:14px;">1 · Data inventory</b><div class="tiny">What we hold, why, where, who reads it</div></div>
+      <div class="tiny">The data structure is fully defined in code and 27 named tables, so the raw material exists. The written, human-readable inventory document does not yet.</div>
+      <div class="chip some" style="justify-content:center;">Partly done</div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:200px 1fr 132px;gap:12px;align-items:center;">
+      <div><b style="font-size:14px;">2 · Notice, consent, rights</b><div class="tiny">Tell people, ask people, let them act</div></div>
+      <div class="tiny">Not built. Needs a privacy notice, a consent moment at sign-up, and screens where a person can request their data or its deletion.</div>
+      <div class="chip no" style="justify-content:center;">Not started</div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:200px 1fr 132px;gap:12px;align-items:center;">
+      <div><b style="font-size:14px;">3 · Retention &amp; deletion</b><div class="tiny">Do not keep it forever</div></div>
+      <div class="tiny">Projects now delete into a restorable recycle bin, which is the foundation. Automatic time-based expiry and true permanent erasure are still to come.</div>
+      <div class="chip some" style="justify-content:center;">Foundation laid</div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:200px 1fr 132px;gap:12px;align-items:center;">
+      <div><b style="font-size:14px;">4 · Security &amp; access control</b><div class="tiny">Lock down anything personal</div></div>
+      <div class="tiny">The strongest area. Browser-side storage of user data was removed on 8 August. Every request passes one of 23 access gates. Roles are enforced server-side, not in the screen.</div>
+      <div class="chip yes" style="justify-content:center;">Largely done</div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:200px 1fr 132px;gap:12px;align-items:center;">
+      <div><b style="font-size:14px;">5 · Third-party processors</b><div class="tiny">Track who else touches the data</div></div>
+      <div class="tiny">The list is short and deliberate: an email service and, later, Amazon hosting. Deciding to leave the previous bundled supplier removed one processor entirely. Formal register still to write.</div>
+      <div class="chip some" style="justify-content:center;">Short list, no register</div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:200px 1fr 132px;gap:12px;align-items:center;">
+      <div><b style="font-size:14px;">6 · Breach &amp; grievance process</b><div class="tiny">Plan for the bad day</div></div>
+      <div class="tiny">Not built. Needs a named contact, a defined response sequence, and a complaint channel inside the product.</div>
+      <div class="chip no" style="justify-content:center;">Not started</div>
+    </div>
+    <div class="card" style="display:grid;grid-template-columns:200px 1fr 132px;gap:12px;align-items:center;">
+      <div><b style="font-size:14px;">7 · Audit &amp; monitoring</b><div class="tiny">Check yourself, regularly</div></div>
+      <div class="tiny">A permanent audit trail records every meaningful action and is visible per role. Scheduled review of that trail is a process to establish, not code to write.</div>
+      <div class="chip yes" style="justify-content:center;">Largely done</div>
+    </div>
+  </div>
+  <footer class="pg"><span>DPDP scorecard</span><span>28</span></footer>
+</section>
+
+<!-- 29 · WHAT'S LEFT -->
+<section class="sheet" style="--stripe:#e8a317;--accent:#e8a317;">
+  <div class="kicker"><span>Open items</span><span>29</span></div>
+  <h2>What is <em>not</em> done — stated plainly.</h2>
+  <p class="note">A build journal that only lists wins is a sales deck. These are the real open items as of 28 August.</p>
+
+  <div class="sectionlabel">Waiting on someone else</div>
+  <div class="grid g3">
+    <div class="card" style="background:#fff3ef;border-color:#ffb7ab;">
+      <b style="font-size:14px;color:#8b1c12;">A company domain and shared inbox</b>
+      <div class="tiny" style="margin-top:5px;color:#8b1c12;">Automatic email needs a proper company address to send from, or it gets filtered as spam. Requested on 10 August. Everything else about email is built and waiting.</div>
+    </div>
+    <div class="card" style="background:#fff3ef;border-color:#ffb7ab;">
+      <b style="font-size:14px;color:#8b1c12;">A decision on the cloud move</b>
+      <div class="tiny" style="margin-top:5px;color:#8b1c12;">The runbook, the architecture pack and the provider switch are written. It becomes a configuration exercise the day the firm says go.</div>
+    </div>
+    <div class="card" style="background:#fff3ef;border-color:#ffb7ab;">
+      <b style="font-size:14px;color:#8b1c12;">Logo and brand assets</b>
+      <div class="tiny" style="margin-top:5px;color:#8b1c12;">Currently using the firm's existing mark. Flagged on 8 August as work for a design team.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel">Built, but deliberately limited for the pilot</div>
+  <div class="grid g3">
+    <div class="card"><b style="font-size:14px;">Password reset by email</b><div class="tiny" style="margin-top:5px;">Today a user asks their manager to reset it. The self-service email link is intentionally not enabled until mail runs from a company domain.</div></div>
+    <div class="card"><b style="font-size:14px;">The compliance digest email</b><div class="tiny" style="margin-top:5px;">The scheduled job that builds the filing calendar runs; its summary currently writes to a log rather than sending mail. Same reason.</div></div>
+    <div class="card"><b style="font-size:14px;">File compression</b><div class="tiny" style="margin-top:5px;">Designed on 9 August, including the rule to never compress identity documents. Worth switching on when storage becomes a monthly bill.</div></div>
+  </div>
+
+  <div class="sectionlabel">Engineering work still queued</div>
+  <div class="grid g3">
+    <div class="card"><b style="font-size:14px;">Automated cross-tenant tests</b><div class="tiny" style="margin-top:5px;">The rule that one firm's data can never reach another's is enforced in code and verified by hand. It should also be proven by an automatic test for every gate.</div></div>
+    <div class="card"><b style="font-size:14px;">Cloud infrastructure files</b><div class="tiny" style="margin-top:5px;">Started on 13 August, deliberately unfinished — no point completing them before the deployment decision.</div></div>
+    <div class="card"><b style="font-size:14px;">The DPDP gaps</b><div class="tiny" style="margin-top:5px;">Consent and rights screens, retention timers, and a breach process. See the scorecard on the previous page.</div></div>
+  </div>
+  <footer class="pg"><span>Open items</span><span>29</span></footer>
+</section>
+
+<!-- 30 · GLOSSARY -->
+<section class="sheet" style="--stripe:#3f3a34;--accent:#3f3a34;">
+  <div class="kicker"><span>Words used in this book</span><span>30</span></div>
+  <h2>Every technical word, <em>in one sentence</em>.</h2>
+  <div class="grid g2" style="gap:0 26px;">
+    <dl class="gl">
+      <dt>Saved change / commit</dt><dd>One finished, named, undoable piece of work. This build has 206.</dd>
+      <dt>Codebase</dt><dd>All the written instructions that make up the app.</dd>
+      <dt>Database</dt><dd>The organised store for records — projects, people, steps, filings.</dd>
+      <dt>PostgreSQL</dt><dd>The specific database chosen. An industry standard; runs anywhere.</dd>
+      <dt>Table</dt><dd>One filing cabinet inside the database. This app has 27.</dd>
+      <dt>Migration</dt><dd>A controlled, versioned change to the database's structure.</dd>
+      <dt>Drizzle</dt><dd>The tool that keeps the database structure and the code in step.</dd>
+      <dt>File storage / S3</dt><dd>Where documents live. Separate from the database on purpose.</dd>
+      <dt>Server action / endpoint</dt><dd>One specific thing the app can be asked to do. This app has 77.</dd>
+      <dt>Backend</dt><dd>The half of the app that runs on the server, not in the browser.</dd>
+      <dt>Frontend</dt><dd>The half a person sees and clicks.</dd>
+      <dt>The gate / access check</dt><dd>The single place that decides whether you may see or change something. 23 of them.</dd>
+    </dl>
+    <dl class="gl">
+      <dt>Authentication</dt><dd>Proving who you are — logging in.</dd>
+      <dt>Auth.js</dt><dd>The chosen login and session tool, running in our own code.</dd>
+      <dt>Role</dt><dd>Which of the five kinds of user you are. It decides what exists for you.</dd>
+      <dt>Browser storage</dt><dd>Data kept on the individual laptop by the browser. Removed on 8 August.</dd>
+      <dt>Local server</dt><dd>A machine in the office running the app for everyone on the office WiFi.</dd>
+      <dt>AWS</dt><dd>Amazon's cloud. The eventual home. Not used yet, by choice.</dd>
+      <dt>Deploy</dt><dd>Put a version of the app somewhere people can use it.</dd>
+      <dt>Automatic test</dt><dd>A machine-checked example proving a rule still works after a change.</dd>
+      <dt>Scheduled job</dt><dd>Work the app does on a timer with nobody clicking — e.g. building the filing calendar.</dd>
+      <dt>Audit trail</dt><dd>A permanent, unalterable record of who did what and when.</dd>
+      <dt>PII</dt><dd>Personally identifiable information — PAN, Aadhaar, passport and the like.</dd>
+      <dt>DPDP</dt><dd>India's Digital Personal Data Protection law. Seven duties; see the scorecard.</dd>
+    </dl>
+  </div>
+  <footer class="pg"><span>Glossary</span><span>30</span></footer>
+</section>
+
+<!-- 31 · CLOSE -->
+<section class="sheet cover" style="--stripe:#2563eb;--stripe2:#15803d;">
+  <div class="kicker"><span>Twenty-three days later</span><span>31</span></div>
+  <h2 style="font-size:52px;max-width:20ch;">Built enough to <em>pilot</em>.<br>Not everything. On purpose.</h2>
+  <div class="grid g3" style="margin-top:22px;">
+    <div class="card" style="background:var(--green-s);border-color:#a8e6bf;">
+      <div class="who" style="color:#14532d;">What is real</div>
+      <div class="tiny" style="color:#14532d;">Five roles, 34 incorporation steps, generated documents, two mail paths, a statutory calendar, two libraries, an audit trail and a governed project record. Running on office WiFi.</div>
+    </div>
+    <div class="card" style="background:var(--gold-s);border-color:#ffd88a;">
+      <div class="who" style="color:#7a4d00;">What is waiting</div>
+      <div class="tiny" style="color:#7a4d00;">A company domain, a decision on the cloud move, and the privacy screens DPDP requires. None of them are engineering unknowns — they are decisions and a domain.</div>
+    </div>
+    <div class="card" style="background:var(--blue-s);border-color:#b9d0ff;">
+      <div class="who" style="color:#163a8a;">What was bought on 7 August</div>
+      <div class="tiny" style="color:#163a8a;">The right to change any single part later without rebuilding the rest — the storage, the mail service, the machine it runs on. That decision cost two days and keeps paying.</div>
+    </div>
+  </div>
+
+  <div class="sectionlabel" style="margin-top:22px;">Where to go next</div>
+  <div class="row">
+    <a class="pill c-ink" style="text-decoration:none;" href="whats-built-today.html">Picture guide → every screen, drawn</a>
+    <a class="pill c-blue" style="text-decoration:none;" href="architecture/vcfo-aws-architecture.html">Architecture pack → where the cloud money would go</a>
+  </div>
+  <div class="stamp" style="color:#15803d;">Pilot<br>ready</div>
+  <footer class="pg"><span>VCFO Suite · build journal · August 2026</span><span>31</span></footer>
+</section>
+
+</div>
+</body>
+</html>
