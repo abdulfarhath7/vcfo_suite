@@ -55,7 +55,6 @@ export const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
   '/app/super/announcements',
   '/app/super/notifications',
   '/app/client/overview',
-  '/app/client/inbox',
   '/app/client/announcements',
   '/app/client/notifications',
   '/app/client/incorporation',
@@ -146,10 +145,24 @@ export function shellBackFallbackPath(pathname: string): string {
 
 export type ShellBackAction = { kind: 'history' } | { kind: 'href'; href: string };
 
+/**
+ * A step workspace always walks UP to the phase list, never back through the
+ * steps you happened to visit. Going step → step → step and pressing back three
+ * times to escape is not a way out; the parent is.
+ */
+function isStepWorkspacePath(parts: string[]): boolean {
+  return parts.length >= 2 && parts[parts.length - 2] === 'step';
+}
+
 export function resolveShellBackAction(
   pathname: string,
   historyLength: number,
 ): ShellBackAction {
+  const path = normalizeShellPathname(pathname);
+  const parts = path.split('/').filter(Boolean);
+  if (isStepWorkspacePath(parts)) {
+    return { kind: 'href', href: shellBackFallbackPath(path) };
+  }
   if (historyLength > 1) return { kind: 'history' };
-  return { kind: 'href', href: shellBackFallbackPath(pathname) };
+  return { kind: 'href', href: shellBackFallbackPath(path) };
 }

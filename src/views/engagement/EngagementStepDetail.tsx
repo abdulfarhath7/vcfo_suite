@@ -6,6 +6,7 @@ import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackButton } from '@/components/shell/PageBackButton';
+import { ClientChangeRequestButton } from '@/components/client/ClientChangeRequestButton';
 import { SEO } from '@/components/SEO';
 import { StepDetailContent } from '@/components/admin/StepDetailContent';
 import { RedirectTo } from '@/components/routing/RedirectTo';
@@ -23,8 +24,11 @@ import {
 import {
   adminProjectPath,
   adminProjectStepPath,
+  clientIncorporationPath,
+  clientIncorporationStepPath,
   internEngagementPath,
   internEngagementStepPath,
+  isClientIncorporationStepPathname,
   isInternEngagementPathname,
 } from '@/lib/project-step-path';
 import {
@@ -48,6 +52,7 @@ import {
 } from '@/lib/checklist-step-gate';
 import type { BoardResolutionProgressSnapshot } from '@/lib/client-progress-board';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { findEngagementForClientUser } from '@/lib/checklist-state-key';
 
 function journeyRailItems(
   steps: readonly ChecklistItem[],
@@ -71,7 +76,12 @@ function journeyRailItems(
   });
 }
 
-/** Shared checklist step detail for admin projects and intern engagements. */
+/**
+ * Shared checklist step detail for admin projects, intern engagements, and the
+ * client portal. One component, three routes — the client opens exactly the
+ * screen the project lead opens, minus the firm-side controls, which
+ * `viewer="client"` removes inside `StepDetailContent`.
+ */
 export default function EngagementStepDetail() {
   const params = useParams();
   const pathname = usePathname();
@@ -88,30 +98,42 @@ export default function EngagementStepDetail() {
   } = useApp();
   const [checklistRefreshing, setChecklistRefreshing] = useState(false);
 
+  const isClientRoute = isClientIncorporationStepPathname(pathname);
   const isInternRoute = isInternEngagementPathname(pathname);
   const isIntern = user?.role === 'intern' || isInternRoute;
   const engagementParam = engagementRouteParamFromParams(params);
   const stepParam = params.stepId as string;
   const staffRole = user?.role === 'admin' || user?.role === 'manager' ? user.role : 'manager';
 
-  const projectPath = isInternRoute
-    ? internEngagementPath
-    : (p: Parameters<typeof adminProjectPath>[0]) => adminProjectPath(p, staffRole);
-  const stepPath = isInternRoute
-    ? internEngagementStepPath
-    : (
-        p: Parameters<typeof adminProjectStepPath>[0],
-        step: Parameters<typeof adminProjectStepPath>[1],
-      ) => adminProjectStepPath(p, step, staffRole);
-  const listRedirect = isInternRoute
-    ? '/app/intern/clients'
-    : staffRole === 'admin'
-      ? '/app/admin/projects'
-      : '/app/manager/projects';
+  const projectPath = isClientRoute
+    ? () => clientIncorporationPath()
+    : isInternRoute
+      ? internEngagementPath
+      : (p: Parameters<typeof adminProjectPath>[0]) => adminProjectPath(p, staffRole);
+  const stepPath = isClientRoute
+    ? (_p: unknown, step: string | ChecklistItem) => clientIncorporationStepPath(step)
+    : isInternRoute
+      ? internEngagementStepPath
+      : (
+          p: Parameters<typeof adminProjectStepPath>[0],
+          step: Parameters<typeof adminProjectStepPath>[1],
+        ) => adminProjectStepPath(p, step, staffRole);
+  const listRedirect = isClientRoute
+    ? clientIncorporationPath()
+    : isInternRoute
+      ? '/app/intern/clients'
+      : staffRole === 'admin'
+        ? '/app/admin/projects'
+        : '/app/manager/projects';
 
+  // The client route carries no `{id}`: a client has exactly one engagement, and
+  // resolving it from the session is also what keeps the surface scoped.
   const eng = useMemo(
-    () => resolveEngagementFromRouteParam(engagements, engagementParam),
-    [engagements, engagementParam],
+    () =>
+      isClientRoute
+        ? (user ? findEngagementForClientUser(engagements, user) : undefined)
+        : resolveEngagementFromRouteParam(engagements, engagementParam),
+    [engagements, engagementParam, isClientRoute, user],
   );
   const item = useMemo(
     () => resolveChecklistItemFromStepParam(stepParam),
@@ -164,14 +186,17 @@ export default function EngagementStepDetail() {
   }, [item, checklistState]);
 
   const { snapshot: brSnapshot } = useBoardResolutionProgress(eng?.id);
-  const viewer = checklistGateViewerFrom('admin', isInternRoute ? 'intern' : user?.role);
+  const viewer = checklistGateViewerFrom(
+    isClientRoute ? 'client' : 'admin',
+    isInternRoute ? 'intern' : user?.role,
+  );
   const gates = useMemo(
     () => gateActiveCatalog(checklistState, viewer),
     [checklistState, viewer],
   );
   const stepGate = item ? getStepGate(gates, item.id) : undefined;
 
-  if (eng && !isInternRoute && eng.slug && engagementParam !== eng.slug) {
+  if (eng && !isInternRoute && !isClientRoute && eng.slug && engagementParam !== eng.slug) {
     redirect(stepPath(eng, stepParam));
   }
 
@@ -227,7 +252,8 @@ export default function EngagementStepDetail() {
     if (next) router.push(stepPath(eng, next));
   };
 
-  const internWorkspace = isIntern;
+  // The client gets the lead's workspace layout, not the staff rail layout.
+  const internWorkspace = isIntern || isClientRoute;
 
   const stepTitleRow = (
     <div className="mb-4 flex min-w-0 items-center gap-1.5">
@@ -252,11 +278,24 @@ export default function EngagementStepDetail() {
           onCompleted={task ? handleCompleted : undefined}
           theme="light"
           contentReady={!checklistLoading}
-          hideDocumentsTab={isIntern}
-          hideStatus={isIntern}
-          hideWorkspaceRail={isIntern}
+          hideDocumentsTab={internWorkspace}
+          hideStatus={internWorkspace}
+          hideWorkspaceRail={internWorkspace}
+          viewer={isClientRoute ? 'client' : 'staff'}
         />
       )}
+
+      {/* The client reads their file and asks the firm to change it — the one
+          action they have on a step, since they never edit it themselves. */}
+      {isClientRoute && stepGate?.kind !== 'locked' ? (
+        <div className="mt-3 flex justify-end">
+          <ClientChangeRequestButton
+            engagementId={eng.id}
+            stepId={item.id}
+            stepTitle={item.title}
+          />
+        </div>
+      ) : null}
     </>
   );
 

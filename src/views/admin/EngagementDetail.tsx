@@ -20,6 +20,7 @@ import {
   getRegistrationPhaseStep,
 } from '@/data/checklist';
 import { MilestoneResponseRowSummary } from '@/views/incorporation/MilestoneResponseRowSummary';
+import { ChecklistPhaseStepRow } from '@/components/incorporation/ChecklistPhaseStepRow';
 import { extractItemResponses } from '@/lib/checklist-responses';
 import {
   adminProjectStepPath,
@@ -32,7 +33,6 @@ import {
   resolveEngagementFromRouteParam,
 } from '@/lib/slug';
 import { ChevronRight } from 'lucide-react';
-import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import {
   InternEngagementOverview,
   InternOverviewSyncNotice,
@@ -43,7 +43,6 @@ import {
   InternPhaseEntryCards,
   InternPhaseTabs,
   InternRegistrationGroupedRows,
-  InternStepDoneMark,
 } from '@/components/incorporation/InternOverviewProgress';
 import {
   internOverviewCurrentItemInPhase,
@@ -61,7 +60,6 @@ import {
 } from '@/lib/checklist-step-gate';
 import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
 import { PageBackButton } from '@/components/shell/PageBackButton';
-import { cn } from '@/lib/utils';
 
 const ALL_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
 const INTERN_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'statutory'];
@@ -192,43 +190,15 @@ export default function EngagementDetail() {
     };
 
     if (isIntern) {
-      const waiting = gate.kind === 'waiting';
-      const internOwned = gate.kind === 'active';
       return (
-        <button
+        <ChecklistPhaseStepRow
           key={it.id}
-          type="button"
-          onClick={openStep}
-          className={cn(
-            'grid min-h-11 w-full grid-cols-[28px_1fr_auto] items-center gap-3 border-b border-border px-4 py-3.5 text-left transition-colors last:border-0',
-            waiting && 'bg-warning-light/80 hover:bg-warning-light',
-            internOwned && 'bg-primary-light/80 hover:bg-primary-light',
-            !waiting && !internOwned && 'hover:bg-raised/40',
-            'group',
-          )}
-        >
-          <InternStepDoneMark done={gate.kind === 'done'} />
-          <div className="min-w-0">
-            <div className={cn('text-[13px]', internOwned ? 'font-medium text-primary' : 'text-ink')}>
-              {it.title}
-            </div>
-            {waiting && gate.message ? (
-              <div className="mt-0.5 text-[11px] text-warning-text">{gate.message}</div>
-            ) : null}
-            <MilestoneResponseRowSummary item={it} responses={responses} variant="admin" hideStatus />
-            {it.id === 'pre-2' ? (
-              // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- propagation guard, not an interaction: keeps clicks on the nested link from firing the row button. A role here would add a stray tab stop.
-              <div
-                className="mt-2"
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
-              >
-                <BoardResolutionStepLink engagement={eng} />
-              </div>
-            ) : null}
-          </div>
-          <ChevronRight className="h-3.5 w-3.5 text-text-tertiary transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
-        </button>
+          item={it}
+          gate={gate}
+          responses={responses}
+          engagement={eng}
+          onOpen={openStep}
+        />
       );
     }
 

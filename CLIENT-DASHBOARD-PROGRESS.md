@@ -253,3 +253,64 @@ Verified: `typecheck` clean, 91 files / 805 tests pass, and the browser pass
 re-run — client incorporation rail (steps 2–5 now read `2 · Upcoming` rather
 than a padlock), client overview journey, and the admin project detail
 (status dot + `NOT STARTED` on every row). No console errors.
+
+---
+
+## Owner direction (2026-08-31, follow-up 3): client opens the lead's step UI
+
+> "when clicked on any of these the same UI should open when opened in lead
+> dashboard for client — everything should be same"
+
+The client drill-in is now the same component the project lead uses, at both
+levels, rather than the separate client wizard.
+
+**L2 — phase step list.** `ChecklistPhaseStepRow`
+(`src/components/incorporation/ChecklistPhaseStepRow.tsx`) was extracted out of
+`EngagementDetail`'s intern branch and is now rendered by both surfaces: same
+done mark, same blue "your turn" / amber "waiting" row tints, same
+`MilestoneResponseRowSummary`, same chevron. Phase 4 uses
+`InternRegistrationGroupedRows` on both sides too. The client's `?phase=` view
+no longer renders `ChecklistPhaseJourney`.
+
+**L3 — step workspace.** New route
+`app/app/client/incorporation/step/[stepId]/page.tsx` renders
+`EngagementStepDetail` — the same component behind the lead's
+`/app/intern/engagements/{id}/step/{stepId}`. It now recognises three surfaces
+(admin project / intern engagement / client portal) via
+`isClientIncorporationStepPathname`. On the client route it resolves the
+engagement from the session instead of an `{id}` param (a client has exactly
+one), runs the gate with the `client` viewer, and routes back into
+`/app/client/incorporation`.
+
+**What differs, on purpose.** `StepDetailContent` takes a new
+`viewer: 'staff' | 'client'`. With `client` it renders the identical workspace
+minus every firm-side control:
+
+| Control | Lead | Client |
+|---|---|---|
+| `MilestoneResponseForm` variant | `admin` | `client` |
+| Per-field lock/unlock (`showFieldUnlock`) | yes | no |
+| `ChecklistReviewActions` (accept / reject) | yes | no |
+| `RequestManagerApproval` | yes | no |
+| `RequestClientFill` ("ask the client to fill") | yes | no |
+| `InternStepActionBar` | yes | no |
+| Footer | Request manager approval / Request client to fill | Save now / Submit for review |
+
+Everything else — title row, section tabs, the form itself, the phase rail with
+its numbered steps, Next — is the same screen.
+
+**Gate unchanged, and verified.** A client that types a locked step URL is
+redirected to their current open step:
+`/step/board-resolution-draft` and `/step/mca-name-approval` both landed on
+`/step/name-application`. The server check in `patchChecklistItem` is untouched.
+
+**`?step=` deep links.** Changing L2 would otherwise have made the "please fill
+this step" email land on a phase list. `?step=` now forwards to the step
+workspace; the step route re-checks the gate. Verified: `?step=pre-1` and the
+overview's "Open this step" CTA both land on
+`/app/client/incorporation/step/name-application`.
+
+Verified: `typecheck` clean, 91 files / 805 tests pass, eslint clean on the
+touched files (one pre-existing `refs during render` warning in
+`StepDetailContent` is not from this change). Browser pass: client phase list,
+client step workspace, and the lead's same step captured side by side.

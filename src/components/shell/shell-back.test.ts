@@ -45,7 +45,7 @@ describe('shouldShowShellBack', () => {
     expect(shouldShowShellBack('/app/admin/dashboard')).toBe(false);
     expect(shouldShowShellBack('/app/super/dashboard')).toBe(false);
     expect(shouldShowShellBack('/app/client/overview')).toBe(false);
-    expect(shouldShowShellBack('/app/client/inbox')).toBe(true);
+    expect(shouldShowShellBack('/app/client/documents')).toBe(true);
     expect(shouldShowShellBack('/app/admin/projects')).toBe(true);
     expect(shouldShowShellBack('/app/manager/notifications')).toBe(true);
     expect(shouldShowShellBack('/app/client/notifications')).toBe(true);
@@ -115,6 +115,33 @@ describe('resolveShellBackAction', () => {
     expect(resolveShellBackAction('/app/intern/engagements/pexpo-inc', 1)).toEqual({
       kind: 'href',
       href: '/app/intern/clients',
+    });
+  });
+});
+
+describe('resolveShellBackAction — step workspaces', () => {
+  it('walks up to the phase list from a lead step, even with history to burn', () => {
+    expect(
+      resolveShellBackAction('/app/intern/engagements/pexpo-inc/step/name-application', 9),
+    ).toEqual({ kind: 'href', href: '/app/intern/engagements/pexpo-inc' });
+  });
+
+  it('walks up to the phase list from a client step', () => {
+    expect(resolveShellBackAction('/app/client/incorporation/step/name-application', 9)).toEqual({
+      kind: 'href',
+      href: '/app/client/incorporation',
+    });
+  });
+
+  it('walks up from an admin project step too', () => {
+    expect(
+      resolveShellBackAction('/app/admin/projects/acme-india/step/name-application', 5),
+    ).toEqual({ kind: 'href', href: '/app/admin/projects/acme-india' });
+  });
+
+  it('still prefers history off a step route', () => {
+    expect(resolveShellBackAction('/app/intern/engagements/pexpo-inc', 3)).toEqual({
+      kind: 'history',
     });
   });
 });

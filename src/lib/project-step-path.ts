@@ -101,11 +101,26 @@ export function clientBoardResolutionPath(): string {
 }
 
 /**
- * Client incorporation checklist. The portal is one page, so a specific step is
- * addressed with `?step=` — the wizard opens that step when it is unlocked.
+ * Client incorporation checklist. `?step=` still works as a deep link from
+ * email — the phase list opens the phase that owns that step.
  */
 export function clientIncorporationPath(itemId?: string): string {
   const base = '/app/client/incorporation';
   const id = itemId?.trim();
   return id ? `${base}?step=${encodeURIComponent(id)}` : base;
+}
+
+/**
+ * Client checklist step workspace. Mirrors `internEngagementStepPath` so the
+ * client and the lead open the same screen for the same step; the client has
+ * exactly one engagement, so there is no `{id}` segment to carry.
+ */
+export function clientIncorporationStepPath(step: string | ChecklistItem): string {
+  const stepSlug = typeof step === 'string' ? stepSlugForItemId(step) : step.slug;
+  return `/app/client/incorporation/step/${stepSlug}`;
+}
+
+/** True for the client checklist step workspace (`/app/client/incorporation/step/…`). */
+export function isClientIncorporationStepPathname(pathname: string): boolean {
+  return /^\/app\/client\/incorporation\/step(?:\/|$)/.test(pathname);
 }

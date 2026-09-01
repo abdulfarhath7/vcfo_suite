@@ -49,6 +49,13 @@ export interface StepDetailContentProps {
   hideStatus?: boolean;
   /** Intern/lead: footer actions live on the form; skip the staff workspace rail. */
   hideWorkspaceRail?: boolean;
+  /**
+   * Who is looking. `client` renders the same workspace with every firm-side
+   * control removed — no review accept/reject, no manager-approval request, no
+   * "ask the client to fill this", no per-field unlock — and puts the response
+   * form in its client variant.
+   */
+  viewer?: 'staff' | 'client';
 }
 
 const STATUS_TONE: Record<
@@ -110,6 +117,7 @@ function StepDetailContentInner({
   hideDeadline = false,
   hideStatus = false,
   hideWorkspaceRail = false,
+  viewer = 'staff',
 }: StepDetailContentProps) {
   const { updateTask, getStateForEngagement, engagements, user } = useApp();
   const [ui, dispatchUi] = useReducer(
@@ -125,7 +133,10 @@ function StepDetailContentInner({
 
   const isLight = theme === 'light';
   const scopeId = engagementId ?? clientId;
-  const hasClientFields = Boolean(scopeId && hasResponseFormFields(item, 'admin'));
+  const isClientViewer = viewer === 'client';
+  const hasClientFields = Boolean(
+    scopeId && hasResponseFormFields(item, isClientViewer ? 'client' : 'admin'),
+  );
   const showLegacyChecklist = !hideLegacyChecklist && !hasClientFields;
 
   const { progress, tab, justCompleted } = ui;
@@ -195,7 +206,10 @@ function StepDetailContentInner({
   const itemState = checklistState[item.id];
   const { snapshot: brSnapshot } = useBoardResolutionProgress(engagementId);
   const stepGate = getStepGate(
-    gateActiveCatalog(checklistState, checklistGateViewerFrom('admin', user?.role)),
+    gateActiveCatalog(
+      checklistState,
+      checklistGateViewerFrom(isClientViewer ? 'client' : 'admin', user?.role),
+    ),
     item.id,
   );
   const status = gateDisplayStatus(
@@ -253,6 +267,7 @@ function StepDetailContentInner({
     hideDeadline,
     hideStatus,
     hideWorkspaceRail,
+    isClientViewer,
     progress,
     setProgress,
     tab,

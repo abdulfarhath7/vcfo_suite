@@ -48,6 +48,7 @@ export function StepDetailContentView(props: any) {
     contentReady,
     hideDocumentsTab,
     hideDeadline,
+    isClientViewer,
     hideStatus,
     hideWorkspaceRail,
     progress,
@@ -109,12 +110,12 @@ export function StepDetailContentView(props: any) {
         item={item}
         engagement={engagement}
         responses={responses}
-        variant="admin"
+        variant={isClientViewer ? 'client' : 'admin'}
         className={isLight ? undefined : 'mb-6'}
       />
     ) : null;
 
-  const internActionBar = hideWorkspaceRail ? (
+  const internActionBar = hideWorkspaceRail && !isClientViewer ? (
     <InternStepActionBar
       engagementId={engagementId}
       item={item}
@@ -141,8 +142,8 @@ export function StepDetailContentView(props: any) {
         clientId={scopeId}
         engagementId={engagementId}
         responses={responses}
-        variant="admin"
-        showFieldUnlock={!hideWorkspaceRail}
+        variant={isClientViewer ? 'client' : 'admin'}
+        showFieldUnlock={!hideWorkspaceRail && !isClientViewer}
         open={contentReady}
         readOnly={formReadOnly ?? !stepGate?.canEdit}
         compactChrome={isLight}
@@ -394,21 +395,23 @@ export function StepDetailContentView(props: any) {
             <div className="min-w-0 space-y-3">
               {phase1Panel}
               {responseForm}
-              <div className="lg:hidden empty:hidden">
-                <RequestManagerApproval
-                  engagementId={engagementId}
-                  itemId={item.id}
-                  itemState={itemState}
-                  emphasis="primary"
-                />
-                <RequestClientFill
-                  engagementId={engagementId}
-                  itemId={item.id}
-                  itemState={itemState}
-                  emphasis="primary"
-                  className="mt-2"
-                />
-              </div>
+              {isClientViewer ? null : (
+                <div className="lg:hidden empty:hidden">
+                  <RequestManagerApproval
+                    engagementId={engagementId}
+                    itemId={item.id}
+                    itemState={itemState}
+                    emphasis="primary"
+                  />
+                  <RequestClientFill
+                    engagementId={engagementId}
+                    itemId={item.id}
+                    itemState={itemState}
+                    emphasis="primary"
+                    className="mt-2"
+                  />
+                </div>
+              )}
               {legacyChecklist}
             </div>
             <StepWorkspaceRail
@@ -482,22 +485,26 @@ export function StepDetailContentView(props: any) {
         {phase1Panel}
         {hasClientFields && scopeId && (
           <div className="mb-6 space-y-4">
-            <ChecklistReviewActions
-              engagementId={engagementId}
-              itemId={item.id}
-              itemState={itemState}
-              theme={theme}
-            />
-            <RequestManagerApproval
-              engagementId={engagementId}
-              itemId={item.id}
-              itemState={itemState}
-            />
-            <RequestClientFill
-              engagementId={engagementId}
-              itemId={item.id}
-              itemState={itemState}
-            />
+            {isClientViewer ? null : (
+              <>
+                <ChecklistReviewActions
+                  engagementId={engagementId}
+                  itemId={item.id}
+                  itemState={itemState}
+                  theme={theme}
+                />
+                <RequestManagerApproval
+                  engagementId={engagementId}
+                  itemId={item.id}
+                  itemState={itemState}
+                />
+                <RequestClientFill
+                  engagementId={engagementId}
+                  itemId={item.id}
+                  itemState={itemState}
+                />
+              </>
+            )}
             {stepGate?.kind === 'waiting' && stepGate.message && (
               <div className="rounded-lg border border-warning/30 bg-warning-light/60 px-3 py-2.5 text-sm text-warning-text">
                 {stepGate.message}

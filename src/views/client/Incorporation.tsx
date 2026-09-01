@@ -1,31 +1,30 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Building2, ChevronLeft } from "lucide-react";
+import { useCallback, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Building2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { PageTransition } from "@/components/shell/PageTransition";
 import { PageBackButton } from "@/components/shell/PageBackButton";
 import { SEO } from "@/components/SEO";
-import { ChecklistPhaseJourney } from "@/components/incorporation/ChecklistPhaseJourney";
 import { InternPhaseEntryCards } from "@/components/incorporation/InternOverviewProgress";
+import { EmptyStateIllustrated, ProgressRing } from "@/components/noir";
 import { ClientBoardResolutionCard } from "@/components/client/ClientBoardResolutionCard";
 import { initialsFromName, type AuthUser } from "@/lib/auth";
 import type { Client } from "@/data/mockData";
 import type { Engagement } from "@/data/engagements";
 import { getActiveCatalogItems } from "@/data/checklist";
+import { clientIncorporationStepPath } from "@/lib/project-step-path";
 import {
   gateActiveCatalog,
   isChecklistStepSequentiallyComplete,
 } from "@/lib/checklist-step-gate";
 import {
-  internOverviewPhaseTitle,
+  internOverviewCurrentItemInPhase,
   internOverviewPhases,
 } from "@/lib/intern-overview-progress";
 import { formatDate } from "@/lib/deadlines";
 import { HexgridLoader } from "@/components/common/HexgridLoader";
-import { ProgressRing, EmptyStateIllustrated } from "@/components/noir";
 import { findEngagementForClientUser } from "@/lib/checklist-state-key";
 
 const INCORPORATION_HREF = "/app/client/incorporation";
@@ -83,6 +82,7 @@ export default function ClientIncorporation() {
   } = useApp();
 
   const params = useSearchParams();
+  const router = useRouter();
   const resolved = useMemo(
     () => resolveClientForPortal(user, clients, engagements),
     [user, clients, engagements],
@@ -107,19 +107,40 @@ export default function ClientIncorporation() {
   );
   const gates = useMemo(() => gateActiveCatalog(state, "client"), [state]);
 
-  // `?phase=` is the drill-in. A `?step=` link from an email opens the phase
-  // that owns that step, so the wizard can still select it.
-  const requestedPhase = params.get("phase");
-  const requestedStep = params.get("step");
-  const activePhase = useMemo(() => {
-    if (requestedPhase) {
-      return phases.find((phase) => phase.id === requestedPhase) ?? null;
+  /**
+   * A phase row opens that phase's live step, not a list of its steps — the
+   * same jump `internPhaseHref` makes on the lead's project page.
+   */
+  const phaseHref = useCallback(
+    (phaseId: string): string | null => {
+      const phase = phases.find((entry) => entry.id === phaseId);
+      if (!phase) return null;
+      const item = internOverviewCurrentItemInPhase(phase.items, gates);
+      return item ? clientIncorporationStepPath(item) : null;
+    },
+    [phases, gates],
+  );
+
+  // `?step=` comes from a "please fill this step" email, and `?phase=` from an
+  // older phase link. Both resolve to the step workspace; the step route
+  // re-checks the gate and bounces a locked one back here.
+  const requestedStepParam = params.get("step");
+  const requestedPhaseParam = params.get("phase");
+  useEffect(() => {
+    if (requestedStepParam) {
+      const item = getActiveCatalogItems().find(
+        (row) => row.id === requestedStepParam || row.slug === requestedStepParam,
+      );
+      if (item) {
+        router.replace(clientIncorporationStepPath(item));
+        return;
+      }
     }
-    if (requestedStep) {
-      return phases.find((phase) => phase.items.some((item) => item.id === requestedStep)) ?? null;
+    if (requestedPhaseParam) {
+      const href = phaseHref(requestedPhaseParam);
+      router.replace(href ?? INCORPORATION_HREF);
     }
-    return null;
-  }, [phases, requestedPhase, requestedStep]);
+  }, [requestedStepParam, requestedPhaseParam, phaseHref, router]);
 
   if (!resolved || !engagement) {
     if (engagementsLoading) {
@@ -173,40 +194,10 @@ export default function ClientIncorporation() {
         </div>
       </header>
 
-      {activePhase ? (
-        <div className="flex flex-col gap-3">
-          <Link
-            href={INCORPORATION_HREF}
-            className="inline-flex w-fit items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
-            {internOverviewPhaseTitle(activePhase.id, activePhase.title)}
-          </Link>
-
-          <ChecklistPhaseJourney
-            phases={[
-              {
-                id: activePhase.id,
-                title: activePhase.title,
-                itemIds: activePhase.items.map((item) => item.id),
-                items: activePhase.items,
-              },
-            ]}
-            variant="client"
-            readOnly
-            clientEditable
-          />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <ClientBoardResolutionCard engagement={engagement} />
-          <InternPhaseEntryCards
-            phases={phases}
-            gates={gates}
-            hrefForPhase={(phaseId) => `${INCORPORATION_HREF}?phase=${phaseId}`}
-          />
-        </div>
-      )}
+      <div className="flex flex-col gap-3">
+        <ClientBoardResolutionCard engagement={engagement} />
+        <InternPhaseEntryCards phases={phases} gates={gates} hrefForPhase={phaseHref} />
+      </div>
     </PageTransition>
   );
 }

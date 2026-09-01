@@ -42,7 +42,10 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
     unlockedFields,
   } = p;
 
-  const internNavFooter = sectionTabs;
+  // The sectioned layout's footer exists to save / submit / advance the form.
+  // A client never writes to a step, so they get no footer at all — its primary
+  // button was the last remaining way for them to submit.
+  const internNavFooter = sectionTabs && !isClient;
 
   return (
     <>
