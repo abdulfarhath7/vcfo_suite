@@ -93,6 +93,12 @@ function emailKind(event: EngagementProcessEvent): ProgressEmailKind | null {
       return 'client_fill_approved';
     case 'client_fill_declined':
       return 'client_fill_declined';
+    case 'step_awaiting_client_approval':
+      return 'step_awaiting_client_approval';
+    case 'phase_approved':
+      return 'phase_approved';
+    case 'client_change_requested':
+      return 'client_change_requested';
     case 'request_created':
       return null;
   }
@@ -115,6 +121,14 @@ function whatsappEventFor(input: NotifyInput): NotifyEvent | null {
   if (input.event === 'review_accepted' && input.itemId.trim() === COI_ITEM_ID) {
     return 'coi_issued';
   }
+  // TODO(whatsapp): `step_awaiting_client_approval`, `phase_approved` and
+  // `client_change_requested` are each specified to nudge on WhatsApp too.
+  // Wiring them means adding three entries to `NOTIFY_EVENTS`, three variable
+  // builders in `src/lib/notify/templates.ts`, and three
+  // `WHATSAPP_TEMPLATE_*` SIDs — all inside `src/lib/notify/**`, which is
+  // currently off-limits by owner instruction. Email is unaffected: it is
+  // already complete for all three, and by the existing rule neither channel
+  // is downgraded when the other is missing.
   return null;
 }
 
@@ -143,6 +157,12 @@ function notificationKind(event: EngagementProcessEvent): NotificationKind {
       return 'checklist.review';
     case 'client_fill_approved':
       return 'request.created';
+    case 'step_awaiting_client_approval':
+      return 'request.created';
+    case 'phase_approved':
+      return 'checklist.review';
+    case 'client_change_requested':
+      return 'checklist.review';
     case 'request_created':
       return 'request.created';
   }
@@ -310,7 +330,8 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     const clientHref =
       input.event === 'board_resolution_shared'
         ? clientBoardResolutionPath()
-        : input.event === 'client_fill_approved'
+        : input.event === 'client_fill_approved' ||
+            input.event === 'step_awaiting_client_approval'
           ? clientIncorporationPath(input.itemId)
           : '/app/client/incorporation';
     const leadHref =
@@ -572,7 +593,12 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     // Manager approved the lead's ask: the client hears it from the manager's
     // own mailbox when Outlook is connected, else Resend with the manager on
     // Reply-To. Leads and admins are CC'd so the ask is visible to the team.
-    if (!input.inAppOnly && input.event === 'client_fill_approved' && progressKind) {
+    if (
+      !input.inAppOnly &&
+      (input.event === 'client_fill_approved' ||
+        input.event === 'step_awaiting_client_approval') &&
+      progressKind
+    ) {
       const parties = clientParties(recipients);
       const to = parties.map((p) => p.email.trim()).filter(Boolean);
       if (to.length === 0) {
@@ -630,7 +656,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
                   subject: copy.subject,
                   html: copy.html,
                   text: copy.text,
-                  purpose: 'progress.client_fill_approved.client',
+                  purpose: `progress.${input.event}.client`,
                 }),
             });
           }

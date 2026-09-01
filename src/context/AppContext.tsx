@@ -97,6 +97,13 @@ export interface AppContextValue {
   internOptions: InternOption[];
   internsLoading: boolean;
   engagementsLoading: boolean;
+  /**
+   * The engagements query has actually resolved (success or error). Distinct
+   * from `engagementsLoading`: that query is `enabled: Boolean(user)`, so while
+   * the session hydrates it reports `isLoading === false` with an empty list —
+   * which made "no engagement" look true before anything had been fetched.
+   */
+  engagementsSettled: boolean;
   acceptInvite: (token: string, name: string) => AuthUser | null;
   updateTask: (taskId: string, patch: Partial<TaskInstance>) => void;
   uploadDoc: (requestId: string, fileName: string) => void;

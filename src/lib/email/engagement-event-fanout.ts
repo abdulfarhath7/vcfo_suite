@@ -36,7 +36,11 @@ export type EngagementProcessEvent =
   | 'request_created'
   | 'client_fill_requested'
   | 'client_fill_approved'
-  | 'client_fill_declined';
+  | 'client_fill_declined'
+  /* Three-party step approval. */
+  | 'step_awaiting_client_approval'
+  | 'phase_approved'
+  | 'client_change_requested';
 
 export type StaffEmailTarget = {
   email: string;
@@ -128,7 +132,11 @@ export function emailsStaffViaResend(event: EngagementProcessEvent): boolean {
     event === 'client_uploaded' ||
     event === 'lead_requested_review' ||
     event === 'client_fill_requested' ||
-    event === 'client_fill_declined'
+    event === 'client_fill_declined' ||
+    // Both land on the lead AND the managers, so they go out over Resend
+    // rather than a single actor's mailbox.
+    event === 'phase_approved' ||
+    event === 'client_change_requested'
   );
 }
 
@@ -188,6 +196,8 @@ export function staffEmailTargetsForEvent(
       push(lead, hrefs.leadHref, 'lead');
     }
   }
+  // `phase_approved` and `client_change_requested` fall through to both loops:
+  // the lead did the work and the manager approved it, so both need the news.
   // A declined request is the lead's news, not the manager's own.
   if (event !== 'client_fill_declined') {
     for (const manager of collectManagerParties(recipients)) {

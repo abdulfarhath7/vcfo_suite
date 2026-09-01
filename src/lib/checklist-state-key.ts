@@ -34,6 +34,40 @@ export interface ClientFillRequest {
 /** Who put the item into reviewing — client KYC vs lead→manager request. */
 export type ChecklistReviewSource = 'client_submission' | 'lead_manager_request';
 
+/**
+ * Three-party approval on a step: lead → manager → client.
+ *
+ * `none` is a step nobody has sent for approval. A manager REJECT is absent on
+ * purpose — it stays on the existing reject/unlock path, which already reopens
+ * the step and re-locks the ones after it.
+ */
+export type StepApprovalState =
+  | 'none'
+  | 'pending_manager'
+  | 'pending_client'
+  | 'client_approved'
+  | 'change_requested';
+
+export interface StepApproval {
+  state: StepApprovalState;
+  managerApprovedAt?: string;
+  managerApprovedBy?: string;
+  managerApprovedByName?: string;
+  clientApprovedAt?: string;
+  clientApprovedBy?: string;
+  clientApprovedByName?: string;
+  changeRequestedAt?: string;
+  changeRequestedBy?: string;
+  changeRequestedByName?: string;
+  /** The client's own words, carried into the lead and manager email. */
+  changeNote?: string;
+  /**
+   * Set on whichever step closed its phase, so the one phase-approved email
+   * cannot go out twice. See `phaseCompletionAlreadyNotified`.
+   */
+  phaseCompletionNotifiedAt?: string;
+}
+
 const ITEM_META_KEYS = new Set([
   'status',
   'assigneeId',
@@ -53,6 +87,7 @@ const ITEM_META_KEYS = new Set([
   'incorpDraftsSharedAt',
   'workflowStage',
   'clientFillRequest',
+  'approval',
 ]);
 
 export interface ChecklistItemStateSlice {
@@ -84,6 +119,8 @@ export interface ChecklistItemStateSlice {
   workflowStage?: RegistrationWorkflowStage;
   /** Lead → manager → client "please fill this step" request. */
   clientFillRequest?: ClientFillRequest;
+  /** Lead → manager → client sign-off. See `checklist-step-approval.ts`. */
+  approval?: StepApproval;
 }
 
 /** Narrow one jsonb blob to a ClientFillRequest, or undefined when it is not one. */
@@ -111,6 +148,38 @@ export function normalizeClientFillRequest(raw: unknown): ClientFillRequest | un
     decisionNote: str(obj.decisionNote),
     sentToClientAt: str(obj.sentToClientAt),
     fulfilledAt: str(obj.fulfilledAt),
+  };
+}
+
+/** Narrow one jsonb blob to a StepApproval, or undefined when it is not one. */
+export function normalizeStepApproval(raw: unknown): StepApproval | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const obj = raw as Record<string, unknown>;
+  const state = obj.state;
+  if (
+    state !== 'none' &&
+    state !== 'pending_manager' &&
+    state !== 'pending_client' &&
+    state !== 'client_approved' &&
+    state !== 'change_requested'
+  ) {
+    return undefined;
+  }
+  const str = (value: unknown): string | undefined =>
+    typeof value === 'string' && value.trim() ? value : undefined;
+  return {
+    state,
+    managerApprovedAt: str(obj.managerApprovedAt),
+    managerApprovedBy: str(obj.managerApprovedBy),
+    managerApprovedByName: str(obj.managerApprovedByName),
+    clientApprovedAt: str(obj.clientApprovedAt),
+    clientApprovedBy: str(obj.clientApprovedBy),
+    clientApprovedByName: str(obj.clientApprovedByName),
+    changeRequestedAt: str(obj.changeRequestedAt),
+    changeRequestedBy: str(obj.changeRequestedBy),
+    changeRequestedByName: str(obj.changeRequestedByName),
+    changeNote: str(obj.changeNote),
+    phaseCompletionNotifiedAt: str(obj.phaseCompletionNotifiedAt),
   };
 }
 
@@ -214,6 +283,7 @@ export function normalizeChecklistItemSlice(
   );
 
   const clientFillRequest = normalizeClientFillRequest(obj.clientFillRequest);
+  const approval = normalizeStepApproval(obj.approval);
 
   return {
     status,
@@ -243,6 +313,7 @@ export function normalizeChecklistItemSlice(
       typeof obj.incorpDraftsSharedAt === 'string' ? obj.incorpDraftsSharedAt : undefined,
     ...(workflowStage ? { workflowStage } : {}),
     ...(clientFillRequest ? { clientFillRequest } : {}),
+    ...(approval ? { approval } : {}),
     ...(Object.keys(responses).length ? { responses } : {}),
   };
 }

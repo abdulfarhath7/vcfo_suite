@@ -7,6 +7,8 @@ import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackButton } from '@/components/shell/PageBackButton';
 import { ClientChangeRequestButton } from '@/components/client/ClientChangeRequestButton';
+import { ClientStepApproveButton } from '@/components/client/ClientStepApproveButton';
+import { stepApprovalLabel } from '@/lib/checklist-step-approval';
 import { SEO } from '@/components/SEO';
 import { StepDetailContent } from '@/components/admin/StepDetailContent';
 import { RedirectTo } from '@/components/routing/RedirectTo';
@@ -15,7 +17,8 @@ import {
   getActiveCatalogItems,
   type ChecklistItem,
 } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
+import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
+import { filterFieldsByViewer } from '@/lib/checklist-field-access';
 import { getStepAttachmentRequirements } from '@/lib/checklist-step-attachments';
 import {
   internOverviewPhaseForItem,
@@ -94,6 +97,7 @@ export default function EngagementStepDetail() {
     getStateForEngagement,
     refreshEngagementChecklist,
     engagementsLoading,
+    engagementsSettled,
     user,
   } = useApp();
   const [checklistRefreshing, setChecklistRefreshing] = useState(false);
@@ -204,11 +208,35 @@ export default function EngagementStepDetail() {
     redirect(stepPath(eng, item));
   }
 
-  if (!eng) return <RedirectTo href={listRedirect} />;
+  // Wait for the engagement list before deciding there is no engagement: on a
+  // cold load this guard fired first and bounced a hard refresh back to the
+  // checklist, which looked exactly like a step being locked.
+  //
+  // `engagementsLoading` alone is not enough. The engagements query is
+  // `enabled: Boolean(user)`, so while the session is still hydrating the query
+  // is idle and `isLoading` is FALSE with an empty list — which is how the
+  // redirect kept firing intermittently. `engagementsSettled` is true only once
+  // the query has actually resolved, so a genuinely engagement-less caller
+  // still redirects rather than spinning.
+  if (!eng) {
+    // `user` can be momentarily null across a soft navigation between step
+    // routes; on the client route `eng` is derived from it, so redirecting on
+    // that tick bounced the reader out of a step they were allowed to read.
+    if (!engagementsSettled || !user) {
+      return (
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <HexgridLoader />
+        </div>
+      );
+    }
+    return <RedirectTo href={listRedirect} />;
+  }
   if (!item) return <RedirectTo href={projectPath(eng)} />;
 
   const checklistLoading = engagementsLoading || checklistRefreshing;
-  if (!isInternRoute && !checklistLoading && stepGate?.kind === 'locked') {
+  // Staff project routes still redirect off a locked step. The client does not:
+  // they may read any step in any order — the gate governs actions, not access.
+  if (!isInternRoute && !isClientRoute && !checklistLoading && stepGate?.kind === 'locked') {
     const current = catalog.find((row) => {
       const kind = gates[row.id]?.kind;
       return kind === 'active' || kind === 'waiting';
@@ -231,6 +259,15 @@ export default function EngagementStepDetail() {
       }
     }
   };
+
+  const clientVisibleFields = isClientRoute
+    ? filterFieldsByViewer(getClientResponseFields(item), 'client')
+    : [];
+  const clientHasContent = clientVisibleFields.some((field) =>
+    String(responses?.[field.id] ?? '').trim().length > 0,
+  );
+  /** Client, cannot act, nothing filled to read → the calm banner, not a wall. */
+  const clientNothingYet = isClientRoute && !stepGate?.canEdit && !clientHasContent;
 
   const railItems = journeyRailItems(bucketSteps, gates, checklistState, brSnapshot);
   const internPhaseRailItems = internPhase
@@ -255,6 +292,8 @@ export default function EngagementStepDetail() {
   // The client gets the lead's workspace layout, not the staff rail layout.
   const internWorkspace = isIntern || isClientRoute;
 
+  const approvalLabel = isClientRoute ? stepApprovalLabel(checklistState[item.id]) : null;
+
   const stepTitleRow = (
     <div className="mb-4 flex min-w-0 items-center gap-1.5">
       <PageBackButton className="-ml-1.5" />
@@ -266,7 +305,7 @@ export default function EngagementStepDetail() {
 
   const stepForm = (
     <>
-      {stepGate?.kind === 'locked' && !isInternRoute ? (
+      {stepGate?.kind === 'locked' && !isInternRoute && !isClientRoute ? (
         <Surface className="p-6 text-sm text-muted-foreground">{stepGate.message}</Surface>
       ) : (
         <StepDetailContent
@@ -282,23 +321,38 @@ export default function EngagementStepDetail() {
           hideStatus={internWorkspace}
           hideWorkspaceRail={internWorkspace}
           viewer={isClientRoute ? 'client' : 'staff'}
+          clientNothingYet={clientNothingYet}
         />
       )}
 
-      {/* The client reads their file and asks the firm to change it — the one
-          action they have on a step, since they never edit it themselves. */}
-      {isClientRoute && stepGate?.kind !== 'locked' ? (
-        <div className="mt-3 flex justify-end">
+      {/* The client's two actions on a step, at STEP level — never per tab.
+          They never edit the step itself, so this is the whole of what they
+          can do: sign it off, or say what should change. */}
+      {isClientRoute && !clientNothingYet ? (
+        <div className="mt-3 flex items-center justify-end gap-2">
+          {approvalLabel ? (
+            <span className="mr-auto text-[12px] text-muted-foreground">{approvalLabel}</span>
+          ) : null}
           <ClientChangeRequestButton
             engagementId={eng.id}
             stepId={item.id}
             stepTitle={item.title}
+          />
+          <ClientStepApproveButton
+            engagementId={eng.id}
+            stepId={item.id}
+            itemState={checklistState[item.id]}
           />
         </div>
       ) : null}
     </>
   );
 
+  /**
+   * Every rail row opens, for the lead and for the client alike. Nothing is
+   * locked for VIEWING: the sequential gate now governs actions only, and the
+   * rail's node icons carry progress (tick done / blue current / dim upcoming).
+   */
   const internPhaseRail = internWorkspace && internPhase ? (
     <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
       <Surface className="p-3">

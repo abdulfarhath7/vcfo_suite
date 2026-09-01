@@ -19,7 +19,10 @@ export type ProgressEmailKind =
   | 'board_resolution_shared'
   | 'client_fill_requested'
   | 'client_fill_approved'
-  | 'client_fill_declined';
+  | 'client_fill_declined'
+  | 'step_awaiting_client_approval'
+  | 'phase_approved'
+  | 'client_change_requested';
 
 export type ProgressEmailCopy = {
   subject: string;
@@ -192,6 +195,69 @@ export function buildProgressEmail(input: {
       text: `We need “${step}” completed for ${company}.${
         note ? `\n\nNote: ${note}` : ''
       }\n\nFill it in and submit here: ${href}`,
+    };
+  }
+
+  if (input.kind === 'step_awaiting_client_approval') {
+    return {
+      subject: `${company}: please approve “${step}”`,
+      html: wrap(
+        `Please approve ${step}`,
+        emailParagraph(
+          `Your engagement team has finished <strong>${escapeHtml(step)}</strong> for <strong>${escapeHtml(company)}</strong> and a project manager has reviewed it.`,
+        ) +
+          (note ? emailCallout(escapeHtml(note)) : '') +
+          emailParagraph(
+            'Open the step to read it through. Approve it if it looks right, or ask for a change and tell us what to fix.',
+          ),
+        `Review ${step}`,
+        href,
+        'Action required',
+      ),
+      text: `Your engagement team has finished “${step}” for ${company} and a project manager has reviewed it.${
+        note ? `\n\nNote: ${note}` : ''
+      }\n\nApprove it, or ask for a change: ${href}`,
+    };
+  }
+
+  if (input.kind === 'phase_approved') {
+    // `title` carries the phase name here — the whole phase is the subject,
+    // not the step that happened to close it.
+    const phase = input.title?.trim() || step;
+    return {
+      subject: `${company}: client approved ${phase}`,
+      html: wrap(
+        `${phase} approved`,
+        emailParagraph(
+          `<strong>${escapeHtml(company)}</strong> has approved every step in <strong>${escapeHtml(phase)}</strong>.`,
+        ) + emailParagraph('Nothing is outstanding with the client on this phase.'),
+        'Open workspace',
+        href,
+        'Team update',
+      ),
+      text: `${company} has approved every step in ${phase}.\n\nNothing is outstanding with the client on this phase.\n\nOpen: ${href}`,
+    };
+  }
+
+  if (input.kind === 'client_change_requested') {
+    return {
+      subject: `${company}: change requested on “${step}”`,
+      html: wrap(
+        'Client asked for a change',
+        emailParagraph(
+          `<strong>${escapeHtml(company)}</strong> asked for a change on <strong>${escapeHtml(step)}</strong>.`,
+        ) +
+          (note ? emailCallout(escapeHtml(note)) : '') +
+          emailParagraph(
+            'The step has reopened for editing, and the steps after it are locked again until it is resubmitted.',
+          ),
+        'Open the step',
+        href,
+        'Action required',
+      ),
+      text: `${company} asked for a change on “${step}”.${
+        note ? `\n\nIn their words: ${note}` : ''
+      }\n\nThe step has reopened for editing, and the steps after it are locked again until it is resubmitted.\n\nOpen: ${href}`,
     };
   }
 

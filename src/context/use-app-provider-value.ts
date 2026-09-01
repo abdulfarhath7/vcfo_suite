@@ -508,6 +508,7 @@ export function useAppProviderValue(): AppContextValue {
   const teamMembers = internOptions;
   const internsLoading = internsQuery.isLoading;
   const engagementsLoading = engagementsQuery.isLoading;
+  const engagementsSettled = engagementsQuery.isSuccess || engagementsQuery.isError;
   const engagementIndexKey = (engagementsQuery.data?.engagements ?? []).map((e) => e.id).join(',');
 
   const checklistIndexQuery = useQuery({
@@ -1112,7 +1113,7 @@ export function useAppProviderValue(): AppContextValue {
     suppressChecklistNotification, teamMembers,
     createProjectWithClient: createProjectWithClientFn, updateEngagement: updateEngagementFn,
     inviteClient, acceptInvite, updateTask, uploadDoc, approveDoc, createRequest,
-    internOptions, internsLoading, engagementsLoading,
+    internOptions, internsLoading, engagementsLoading, engagementsSettled,
     sidebarCollapsed, sidebarMode, setSidebarMode, toggleSidebar, setSidebarCollapsed: collapseSidebarTo,
     commandOpen, setCommandOpen,
     role: (user?.role as Role) || 'admin',
@@ -1409,6 +1410,7 @@ export function useAppProviderValue(): AppContextValue {
     internOptions,
     internsLoading,
     engagementsLoading,
+    engagementsSettled,
     setCommandOpen,
     setSelectedClient,
     setEngagements,

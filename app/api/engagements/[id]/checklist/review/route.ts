@@ -42,7 +42,23 @@ export async function POST(request: Request, context: RouteContext) {
       actorUserId: guard.ctx.userId,
       outlookCtx: guard.ctx,
     });
-    return NextResponse.json({ checklistState, email });
+
+    // Accepting also hands the step to the client, so they are told it is their
+    // turn. Separate from `review_accepted`, which is the team's own record of
+    // the decision. A failure here must not fail the review that already
+    // committed, so it is reported alongside rather than thrown.
+    let clientApprovalEmail: Awaited<ReturnType<typeof notifyEngagementEvent>> | null = null;
+    if (body.data.action === 'accept') {
+      clientApprovalEmail = await notifyEngagementEvent({
+        engagementId: id,
+        itemId: body.data.itemId,
+        event: 'step_awaiting_client_approval',
+        actorUserId: guard.ctx.userId,
+        outlookCtx: guard.ctx,
+      }).catch(() => null);
+    }
+
+    return NextResponse.json({ checklistState, email, clientApprovalEmail });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'review_failed';
     const status =
