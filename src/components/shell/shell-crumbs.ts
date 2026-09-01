@@ -320,6 +320,27 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     ]);
   }
 
+  // `/app/client/incorporation/step/{slug}` — resolve the real step so the trail
+  // shows its title. Without this the generic segment labeller title-cased the
+  // slug, so `…/step/name-application` (which is "Client Details") read
+  // "Name Application" in the breadcrumb while the page rendered Client Details.
+  if (parts[1] === 'client' && page === 'incorporation' && parts[3] === 'step' && parts[4]) {
+    const item = resolveChecklistItemFromStepParam(parts[4]);
+    if (item) {
+      const phase = internOverviewPhaseForItem(item.id);
+      return trail(path, 'briefcase', [
+        { label: 'Incorporation', href: '/app/client/incorporation' },
+        {
+          label: phase?.title ?? 'Incorporation',
+          href: phase
+            ? `/app/client/incorporation?phase=${encodeURIComponent(phase.id)}`
+            : '/app/client/incorporation',
+        },
+        { label: item.title, href: null },
+      ]);
+    }
+  }
+
   if (parts[1] === 'client' && page === 'board-resolution') {
     const draft = resolveChecklistItemFromStepParam('board-resolution-draft');
     const phase = draft ? internOverviewPhaseForItem(draft.id) : null;

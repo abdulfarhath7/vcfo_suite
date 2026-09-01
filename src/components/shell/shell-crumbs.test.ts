@@ -255,3 +255,32 @@ describe('resolveShellCrumbCurrent', () => {
     ).toBe('DemoCo');
   });
 });
+
+describe('client incorporation step trail', () => {
+  it('names the resolved step, not the URL slug', () => {
+    // `name-application` is pre-1 "Client Details"; the step titled
+    // "Name Application" is pre-4 (`name-application-filing`). Labelling the
+    // crumb from the slug made the trail contradict the page.
+    expect(labels('/app/client/incorporation/step/name-application')).toEqual([
+      'Home',
+      'Incorporation',
+      'SPICe+ Part A',
+      'Client Details',
+    ]);
+    expect(labels('/app/client/incorporation/step/name-application-filing')).toEqual([
+      'Home',
+      'Incorporation',
+      'SPICe+ Part A',
+      'Name Application',
+    ]);
+  });
+
+  it('links the phase crumb back to that phase', () => {
+    expect(hrefs('/app/client/incorporation/step/board-resolution-draft')).toEqual([
+      '/app/client/overview',
+      '/app/client/incorporation',
+      '/app/client/incorporation?phase=pre-inc-phase-1',
+      null,
+    ]);
+  });
+});

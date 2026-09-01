@@ -377,7 +377,7 @@ export function InternSectionHeadingNav({
                 aria-selected={selected}
                 onClick={() => onSelect(index)}
                 className={cn(
-                  'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-3 text-[13.5px] font-medium transition-colors',
+                  'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-4 text-[13.5px] font-medium transition-colors',
                   selected ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                 )}
               >

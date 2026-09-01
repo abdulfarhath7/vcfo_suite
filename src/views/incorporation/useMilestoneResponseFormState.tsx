@@ -1065,82 +1065,93 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       getMilestoneFormFieldLayout(field) === 'full' && 'milestone-form-field-full',
     );
 
-  const renderReadOnlyField = (field: ChecklistField, options?: { showUnlock?: boolean }) => {
+  /**
+   * The value half of a read-only field, shared by the staff layout and the
+   * client record view. `empty` differs: staff keep the existing italic
+   * "Not provided yet"; the client record shows a muted em dash.
+   */
+  const readOnlyValueNode = (field: ChecklistField, empty: 'text' | 'dash') => {
     const value = (displayValues[field.id] ?? '').trim();
-    return (
-      <div key={field.id} className={fieldShellClass(field, 'space-y-1.5')}>
-        <div className="flex items-center justify-between gap-3">
-          <p className="flex-1 text-xs font-medium leading-snug text-muted-foreground">
-            {field.label}
-          </p>
-          <FieldUnlockControl
-            field={field}
-            showUnlock={options?.showUnlock}
-            isUnlocked={isFieldUnlockedForAdmin(field.id)}
-            onToggle={() => toggleFieldUnlock(field.id)}
+    const emptyLabel = empty === 'dash' ? '—' : 'Not provided yet';
+    const emptyClass =
+      empty === 'dash' ? 'text-muted-foreground' : 'text-muted-foreground italic';
+
+    if (field.type === 'file') {
+      if (!value) return <p className={cn('text-sm', emptyClass)}>{emptyLabel}</p>;
+      if (engagementId && isIncorpDraftUrlField(field.id)) {
+        const target = incorpDocTargetFromDraftField(field.id)!;
+        return (
+          <IncorporationDraftDocLink
+            engagementId={engagementId}
+            checklistItemId="pre-7"
+            doc={target.doc}
+            director={target.audience}
+            storagePath={value}
+            label={field.label}
+            showDocxPreview={false}
+            docxPreviewPlaceholder="Word preview is in the Generate incorporation drafts panel at the top of this step — click Generate first."
           />
-        </div>
-        {field.type === 'file' ? (
-          value ? (
-            engagementId && isIncorpDraftUrlField(field.id) ? (
-              (() => {
-                const target = incorpDocTargetFromDraftField(field.id)!;
-                return (
-                  <IncorporationDraftDocLink
-                    engagementId={engagementId}
-                    checklistItemId="pre-7"
-                    doc={target.doc}
-                    director={target.audience}
-                    storagePath={value}
-                    label={field.label}
-                    showDocxPreview={false}
-                    docxPreviewPlaceholder="Word preview is in the Generate incorporation drafts panel at the top of this step — click Generate first."
-                  />
-                );
-              })()
-            ) : (
-              <MilestoneFileDisplay storagePath={value} label={field.label} />
-            )
-          ) : (
-            <p className="text-sm italic text-muted-foreground">
-              Not provided yet
-            </p>
-          )
-        ) : field.type === 'select' && field.options ? (
-          <p
-            className={cn(
-              'text-sm leading-relaxed',
-              value ? 'text-foreground' : 'text-muted-foreground italic',
-            )}
-          >
-            {value
-              ? field.id === 'directorCount'
-                ? `${value} directors`
-                : (field.options.find((o) => o.value === value)?.label ?? value)
-              : 'Not provided yet'}
-          </p>
-        ) : field.type === 'date' ? (
-          <p
-            className={cn(
-              'text-sm leading-relaxed',
-              value ? 'text-foreground' : 'text-muted-foreground italic',
-            )}
-          >
-            {value ? formatPre1DateDisplay(value) ?? value : 'Not provided yet'}
-          </p>
-        ) : (
-          <p
-            className={cn(
-              'text-sm leading-relaxed whitespace-pre-wrap',
-              value ? 'text-foreground' : 'text-muted-foreground italic',
-            )}
-          >
-            {value || 'Not provided yet'}
-          </p>
+        );
+      }
+      return <MilestoneFileDisplay storagePath={value} label={field.label} />;
+    }
+
+    if (field.type === 'select' && field.options) {
+      return (
+        <p className={cn('text-sm leading-relaxed', value ? 'text-foreground' : emptyClass)}>
+          {value
+            ? field.id === 'directorCount'
+              ? `${value} directors`
+              : (field.options.find((o) => o.value === value)?.label ?? value)
+            : emptyLabel}
+        </p>
+      );
+    }
+
+    if (field.type === 'date') {
+      return (
+        <p className={cn('text-sm leading-relaxed', value ? 'text-foreground' : emptyClass)}>
+          {value ? (formatPre1DateDisplay(value) ?? value) : emptyLabel}
+        </p>
+      );
+    }
+
+    return (
+      <p
+        className={cn(
+          'text-sm leading-relaxed whitespace-pre-wrap',
+          value ? 'text-foreground' : emptyClass,
         )}
-      </div>
+      >
+        {value || emptyLabel}
+      </p>
     );
   };
+
+  const renderReadOnlyField = (field: ChecklistField, options?: { showUnlock?: boolean }) => (
+    <div key={field.id} className={fieldShellClass(field, 'space-y-1.5')}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex-1 text-xs font-medium leading-snug text-muted-foreground">
+          {field.label}
+        </p>
+        <FieldUnlockControl
+          field={field}
+          showUnlock={options?.showUnlock}
+          isUnlocked={isFieldUnlockedForAdmin(field.id)}
+          onToggle={() => toggleFieldUnlock(field.id)}
+        />
+      </div>
+      {readOnlyValueNode(field, 'text')}
+    </div>
+  );
+
+  /** Client record view: one definition row — muted label column, value column. */
+  const renderRecordRow = (field: ChecklistField) => (
+    <div key={field.id} className="milestone-record-row">
+      <dt className="milestone-record-label">{field.label}</dt>
+      <dd className="milestone-record-value">{readOnlyValueNode(field, 'dash')}</dd>
+    </div>
+  );
 
   const renderEditableField = (
     field: ChecklistField,
@@ -1420,7 +1431,19 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       : sectionGroups;
 
   const renderedFieldGroups = groupsForRender.map((group, gi) => {
-    const fieldsBlock = (
+    const fieldIsReadOnly = (fieldId: string) =>
+      readOnly || formReadOnly || isFieldLockedForClient(fieldId);
+    /**
+     * The client reads a finished step as a record, not a form: a two-column
+     * definition list on hairline dividers. Only when the whole group is
+     * read-only — a client still filling their own step gets the working form
+     * untouched, and staff always do.
+     */
+    const recordLayout = isClient && group.fields.every((field) => fieldIsReadOnly(field.id));
+
+    const fieldsBlock = recordLayout ? (
+      <dl className="milestone-record">{group.fields.map(renderRecordRow)}</dl>
+    ) : (
       <div
         className={cn(
           'milestone-form-grid',
@@ -1428,7 +1451,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         )}
       >
         {group.fields.map((field) => {
-          if (readOnly || formReadOnly || isFieldLockedForClient(field.id)) {
+          if (fieldIsReadOnly(field.id)) {
             return renderReadOnlyField(field, { showUnlock });
           }
           return renderEditableField(field, { showUnlock });
@@ -1442,7 +1465,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
           key={group.section}
           role="tabpanel"
           aria-labelledby={`intern-section-tab-${selectedSectionIndex}`}
-          className="space-y-3"
+          className={cn('space-y-3', recordLayout && 'milestone-record-panel')}
         >
           {fieldsBlock}
         </div>
@@ -1468,11 +1491,20 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     }
 
     return (
-      <div key={group.section ?? `ungrouped-${gi}`} className="space-y-3">
+      <div
+        key={group.section ?? `ungrouped-${gi}`}
+        className={cn('space-y-3', recordLayout && 'milestone-record-panel')}
+      >
         {group.section && !(compactChrome && group.section === item.title) && (
-            <p className="text-base font-semibold text-foreground">
-              {group.section}
-            </p>
+          <p
+            className={
+              recordLayout
+                ? 'text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink'
+                : 'text-base font-semibold text-foreground'
+            }
+          >
+            {group.section}
+          </p>
         )}
         {fieldsBlock}
       </div>

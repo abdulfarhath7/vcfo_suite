@@ -17,8 +17,9 @@ import { cn } from '@/lib/utils';
  * renders the SAME row rather than a lookalike: same done mark, same tinted
  * "your turn" / "waiting" states, same response summary, same chevron.
  *
- * The gate is only reflected here, never decided: `onOpen` is not called for a
- * step the viewer may not open, and the step screen re-checks anyway.
+ * Every row opens. Nothing here is locked for viewing — the done mark and the
+ * phase rail carry progress, and the sequential gate governs what the viewer may
+ * DO on the step, not whether they may read it.
  */
 export function ChecklistPhaseStepRow({
   item,
@@ -57,9 +58,6 @@ export function ChecklistPhaseStepRow({
         </div>
         {waiting && gate.message ? (
           <div className="mt-0.5 text-[11px] text-warning-text">{gate.message}</div>
-        ) : null}
-        {gate.kind === 'locked' && gate.message ? (
-          <div className="mt-0.5 text-[11px] text-muted-foreground">{gate.message}</div>
         ) : null}
         <MilestoneResponseRowSummary
           item={item}

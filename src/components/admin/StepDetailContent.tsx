@@ -56,6 +56,13 @@ export interface StepDetailContentProps {
    * form in its client variant.
    */
   viewer?: 'staff' | 'client';
+  /**
+   * Client viewing a step that has nothing for them yet. The step is fully
+   * readable — this only swaps the body for one calm line instead of an empty
+   * form, and it is also what keeps unreleased firm-side content (board
+   * resolution drafts included) off the page.
+   */
+  clientNothingYet?: boolean;
 }
 
 const STATUS_TONE: Record<
@@ -118,6 +125,7 @@ function StepDetailContentInner({
   hideStatus = false,
   hideWorkspaceRail = false,
   viewer = 'staff',
+  clientNothingYet = false,
 }: StepDetailContentProps) {
   const { updateTask, getStateForEngagement, engagements, user } = useApp();
   const [ui, dispatchUi] = useReducer(
@@ -268,6 +276,7 @@ function StepDetailContentInner({
     hideStatus,
     hideWorkspaceRail,
     isClientViewer,
+    clientNothingYet,
     progress,
     setProgress,
     tab,

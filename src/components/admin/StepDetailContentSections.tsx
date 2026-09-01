@@ -9,6 +9,7 @@ import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRole
 import { ChecklistReviewActions } from '@/components/admin/ChecklistReviewActions';
 import { RequestManagerApproval } from '@/components/admin/RequestManagerApproval';
 import { RequestClientFill } from '@/components/admin/RequestClientFill';
+import { ClientStepFieldPreview } from '@/components/client/ClientStepFieldPreview';
 import { InternStepActionBar } from '@/components/admin/InternStepActionBar';
 import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { StepWorkspaceRail } from '@/components/admin/StepWorkspaceRail';
@@ -49,6 +50,7 @@ export function StepDetailContentView(props: any) {
     hideDocumentsTab,
     hideDeadline,
     isClientViewer,
+    clientNothingYet,
     hideStatus,
     hideWorkspaceRail,
     progress,
@@ -126,8 +128,10 @@ export function StepDetailContentView(props: any) {
     />
   ) : null;
 
+  // `BoardResolutionStepLink` is an intern-only CTA into the BR editor and it
+  // states the draft's status. It must never reach a client.
   const internBoardResolutionAction =
-    hideWorkspaceRail && item.id === 'pre-2' && engagement ? (
+    hideWorkspaceRail && !isClientViewer && item.id === 'pre-2' && engagement ? (
       <BoardResolutionStepLink engagement={engagement} />
     ) : null;
 
@@ -383,13 +387,24 @@ export function StepDetailContentView(props: any) {
       <div className="flex min-h-0 flex-col">
         {justCompletedBanner}
         {hideWorkspaceRail ? (
-          <div className="min-w-0 space-y-4">
-            {item.id !== 'pre-7' ? phase1Panel : null}
-            {responseForm}
-            {item.id === 'pre-7' ? phase1Panel : null}
-            {legacyChecklist}
-            {internPageFooter}
-          </div>
+          clientNothingYet ? (
+            /* Readable, not locked. Rather than one "nothing here" line, show
+               what the step will capture so the client can see what is coming —
+               values only where they are entitled to them. */
+            <ClientStepFieldPreview
+              item={item}
+              responses={responses}
+              itemState={itemState}
+            />
+          ) : (
+            <div className="min-w-0 space-y-4">
+              {item.id !== 'pre-7' ? phase1Panel : null}
+              {responseForm}
+              {item.id === 'pre-7' ? phase1Panel : null}
+              {legacyChecklist}
+              {internPageFooter}
+            </div>
+          )
         ) : (
           <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18.5rem)] lg:items-start lg:gap-5">
             <div className="min-w-0 space-y-3">
