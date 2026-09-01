@@ -14,6 +14,8 @@ import {
   FolderClosed,
   FolderOpen,
   CalendarCheck,
+  CalendarDays,
+  FileSpreadsheet,
   BarChart3,
   Landmark,
   Users,
@@ -116,6 +118,20 @@ function docsGroup(base: string, vaultIcon: Item['icon'] = FolderClosed): NavGro
   };
 }
 
+/** Compliances → Calendar + Filings, the same disclosure shape as Updates. */
+function compliancesGroup(base: string): NavGroupDef {
+  return {
+    id: `compliances:${base}`,
+    label: 'Compliances',
+    icon: CalendarCheck,
+    iconTone: TONE.calendar,
+    items: [
+      { to: `${base}/compliances/calendar`, label: 'Calendar', icon: CalendarDays, iconTone: TONE.calendar },
+      { to: `${base}/compliances/filings`, label: 'Filings', icon: FileSpreadsheet, iconTone: TONE.files },
+    ],
+  };
+}
+
 function updatesGroup(base: string): NavGroupDef {
   return {
     id: `updates:${base}`,
@@ -147,7 +163,7 @@ const clientItems: NavEntry[] = [
   { to: '/app/client/overview', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
   updatesGroup('/app/client'),
   { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
-  { to: '/app/client/compliances', label: 'Compliances', icon: CalendarCheck, iconTone: TONE.calendar },
+  compliancesGroup('/app/client'),
   { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
   { to: '/app/client/team', label: 'Team', icon: Users, iconTone: TONE.people },
   { to: '/app/client/audit', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },

@@ -1,8 +1,9 @@
+import { redirect } from 'next/navigation';
 import { pageMetadata } from "@/lib/page-metadata";
-import ClientCompliances from "@/views/client/Compliances";
 
-export const metadata = pageMetadata("Compliances", "GST, tax, and payroll obligations");
+export const metadata = pageMetadata("Compliances", "Compliance calendar and filings");
 
+/** Compliances is a group now — the calendar is its landing child. */
 export default function Page() {
-  return <ClientCompliances />;
+  redirect('/app/client/compliances/calendar');
 }

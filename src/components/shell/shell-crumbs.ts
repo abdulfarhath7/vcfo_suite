@@ -49,6 +49,8 @@ const PAGE_LABEL: Record<string, string> = {
   compliance: 'Compliance calendar',
   tracker: 'Filing tracker',
   compliances: 'Compliances',
+  calendar: 'Calendar',
+  filings: 'Filings',
   analytics: 'Analytics',
   'audit-log': 'Audit Log',
   audit: 'Activity audit',
