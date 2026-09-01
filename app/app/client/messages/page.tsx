@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-/** Messaging is not shipped yet — send clients to their action inbox. */
+/** Messaging is not shipped yet. */
 export default function Page() {
-  redirect('/app/client/inbox');
+  redirect('/app/client/overview');
 }

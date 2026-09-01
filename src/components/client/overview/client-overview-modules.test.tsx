@@ -128,7 +128,7 @@ describe('ClientOverviewHero', () => {
 
     expect(screen.getByRole('link', { name: /Awaiting you/ })).toHaveAttribute(
       'href',
-      '/app/client/inbox',
+      '/app/client/incorporation',
     );
     expect(screen.getByRole('link', { name: /Documents/ })).toHaveAttribute(
       'href',

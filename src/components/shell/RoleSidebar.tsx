@@ -145,7 +145,6 @@ const firmAdminItems: NavEntry[] = [
 
 const clientItems: NavEntry[] = [
   { to: '/app/client/overview', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/client/inbox', label: 'Inbox', icon: Inbox, iconTone: TONE.work },
   updatesGroup('/app/client'),
   { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
   { to: '/app/client/compliances', label: 'Compliances', icon: CalendarCheck, iconTone: TONE.calendar },

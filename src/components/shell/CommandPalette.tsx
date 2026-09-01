@@ -13,7 +13,6 @@ import {
 import { useApp } from "@/context/AppContext";
 import {
   Briefcase,
-  Inbox,
   LayoutDashboard,
   Plus,
   FolderClosed,
@@ -387,7 +386,6 @@ export function CommandPalette() {
           {user?.role === "client" && (
             <CommandGroup heading="Client portal">
               <CommandItem className={itemClass} onSelect={() => go("/app/client/overview")}><LayoutDashboard className="w-4 h-4 mr-2" />Home</CommandItem>
-              <CommandItem className={itemClass} onSelect={() => go("/app/client/inbox")}><Inbox className="w-4 h-4 mr-2" />Inbox</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/announcements")}><Megaphone className="w-4 h-4 mr-2" />Announcements</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/notifications")}><Bell className="w-4 h-4 mr-2" />Notification history</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/incorporation")}>Incorporation</CommandItem>

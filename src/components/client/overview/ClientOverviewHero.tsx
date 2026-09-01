@@ -56,7 +56,7 @@ export function ClientOverviewHero({ overview }: { overview: ClientOverview }) {
         {
           label: 'Awaiting you',
           value: ballInCourt.waitingOnClient,
-          href: '/app/client/inbox',
+          href: '/app/client/incorporation',
           hot: ballInCourt.waitingOnClient > 0,
         },
         {
