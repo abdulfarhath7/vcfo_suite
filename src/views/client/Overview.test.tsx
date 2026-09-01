@@ -128,7 +128,11 @@ describe('client Overview', () => {
     expect(screen.getByRole('heading', { name: 'Acme India Private Limited' })).toBeInTheDocument();
     expect(screen.getByText('We need this from you')).toBeInTheDocument();
     expect(container.querySelector('.client-idcard')).toBeNull();
-    expect(screen.getByText(/Your filing calendar starts the day/)).toBeInTheDocument();
+    // "Whose turn it is" restates the hero pre-COI, so it is not rendered yet.
+    expect(screen.queryByText('Whose turn it is')).toBeNull();
+    expect(
+      screen.getByText(/Your compliance calendar begins once your Certificate of Incorporation is issued\./),
+    ).toBeInTheDocument();
   });
 
   it('post-COI: raises the entity ID card and the compliance runway above progress', () => {

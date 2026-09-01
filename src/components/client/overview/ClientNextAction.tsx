@@ -1,15 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertCircle, ArrowRight, CheckCheck, Clock, Zap } from 'lucide-react';
+import { ArrowRight, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ClientOverviewNextAction } from '@/lib/client-overview';
 
 /**
  * Module 2 — "what do you need from me right now".
  *
- * The lead dashboard's action-queue language: `.surface`, a solid icon chip,
- * an extra-bold uppercase heading, and a coloured left rail carrying the state.
+ * The focal point of the page, so it leads with the step title rather than a
+ * label about the step. A coloured left rail carries the state; there is no
+ * eyebrow and no icon tile competing with the title.
  * The card never performs the step; it deep-links into the gated flowchart at
  * `?step=`, which re-checks the sequential gate before opening anything.
  */
@@ -22,15 +23,10 @@ export function ClientNextAction({
     return (
       <section className="surface relative overflow-hidden">
         <span className="absolute inset-y-0 left-0 w-1 bg-success" aria-hidden />
-        <div className="flex min-w-0 items-center gap-2.5 px-4 pl-5 pt-3">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-success text-white">
-            <CheckCheck className="h-3.5 w-3.5" aria-hidden />
-          </span>
-          <h2 className="min-w-0 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
+        <div className="px-4 pb-4 pl-5 pt-4">
+          <p className="text-[12.5px] font-semibold text-muted-foreground">
             Nothing needed from you
-          </h2>
-        </div>
-        <div className="px-4 pb-3.5 pl-5 pt-2">
+          </p>
           <p className="serif text-[1.25rem] leading-tight tracking-tight text-ink">
             You&rsquo;re all set — we&rsquo;re working on it
           </p>
@@ -47,34 +43,19 @@ export function ClientNextAction({
         className={cn('absolute inset-y-0 left-0 w-1', correction ? 'bg-danger' : 'bg-primary')}
         aria-hidden
       />
-      <div className="flex min-w-0 items-center gap-2.5 px-4 pl-5 pt-3">
-        <span
-          className={cn(
-            'grid h-7 w-7 shrink-0 place-items-center rounded-lg text-white',
-            correction ? 'bg-danger' : 'bg-primary',
-          )}
-        >
-          {correction ? (
-            <AlertCircle className="h-3.5 w-3.5" aria-hidden />
-          ) : (
-            <Zap className="h-3.5 w-3.5" aria-hidden />
-          )}
-        </span>
-        <h2
-          className={cn(
-            'min-w-0 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em]',
-            correction ? 'text-danger-text' : 'text-ink',
-          )}
-        >
-          {correction ? 'Corrections needed' : 'We need this from you'}
-        </h2>
-      </div>
-
-      <div className="flex flex-col gap-3 px-4 pb-3.5 pl-5 pt-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 px-4 pb-4 pl-5 pt-4 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
-          <p className="serif text-[1.25rem] leading-tight tracking-tight text-ink">
-            {nextAction.title}
+          <p
+            className={cn(
+              'text-[12.5px] font-semibold',
+              correction ? 'text-danger-text' : 'text-muted-foreground',
+            )}
+          >
+            {correction ? 'Corrections needed' : 'We need this from you'}
           </p>
+          <h2 className="serif mt-0.5 text-[1.35rem] leading-tight tracking-tight text-ink">
+            {nextAction.title}
+          </h2>
           <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
             {correction
               ? (nextAction.correctionNote ??

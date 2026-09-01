@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'framer-motion';
 
 import { buildProgress, type ClientOverview } from '@/lib/client-overview';
@@ -111,7 +111,9 @@ describe('ClientOverviewHero', () => {
     expect(
       screen.getByRole('heading', { name: 'Acme India Private Limited' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/We are getting Acme India Private Limited started\./)).toBeInTheDocument();
+    expect(
+      screen.getByText('Incorporation not started — the first step is yours.'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Foreign parent')).toBeInTheDocument();
   });
 
@@ -119,7 +121,7 @@ describe('ClientOverviewHero', () => {
     draw(<ClientOverviewHero overview={postCoi} />);
 
     expect(
-      screen.getByText(/COI issued — now in SPICe\+ Part A \(0 of 5 steps\)/),
+      screen.getByText('Certificate of Incorporation issued — now in SPICe+ Part A.'),
     ).toBeInTheDocument();
   });
 
@@ -138,10 +140,9 @@ describe('ClientOverviewHero', () => {
       'href',
       '/app/client/compliances',
     );
-    expect(screen.getByRole('link', { name: /Complete/ })).toHaveAttribute(
-      'href',
-      '/app/client/incorporation',
-    );
+    // "Complete" is deliberately absent from the strip: the ring owns the
+    // percentage, and printing it twice was the redundancy this pass removed.
+    expect(screen.queryByRole('link', { name: /^Complete/ })).toBeNull();
     // The first upcoming filing's due date, formatted en-IN ("20 Sep"/"20 Sept").
     expect(screen.getByText(/^20 Sept?$/)).toBeInTheDocument();
   });
@@ -186,16 +187,62 @@ describe('ClientNextAction', () => {
 
 describe('ClientPhaseBars', () => {
   it('renders the four phases with real counts', () => {
-    draw(<ClientPhaseBars progress={preCoi.progress} />);
+    draw(
+      <ClientPhaseBars
+        progress={preCoi.progress}
+        milestones={preCoi.milestones}
+        incorporated={false}
+      />,
+    );
 
-    // Each phase is named twice: on its bar, and in the colour key below it.
-    expect(screen.getAllByText('SPICe+ Part A')).toHaveLength(2);
-    expect(screen.getAllByText('Registration')).toHaveLength(2);
+    // Named once. The colour-key legend repeated all four names under bars that
+    // already carry them — decoration this pass removed.
+    expect(screen.getAllByText('SPICe+ Part A')).toHaveLength(1);
+    expect(screen.getAllByText('Registration')).toHaveLength(1);
     expect(screen.getByRole('img', { name: 'SPICe+ Part A: 0% complete' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'See every step' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Open checklist' })).toHaveAttribute(
       'href',
       '/app/client/incorporation',
     );
+  });
+
+  it('frames the path aspirationally pre-COI and factually post-COI', () => {
+    const { rerender } = draw(
+      <ClientPhaseBars
+        progress={preCoi.progress}
+        milestones={preCoi.milestones}
+        incorporated={false}
+      />,
+    );
+    expect(
+      screen.getByText('Your path to an incorporated India entity'),
+    ).toBeInTheDocument();
+
+    rerender(
+      <LazyMotion features={domAnimation}>
+        <ClientPhaseBars
+          progress={preCoi.progress}
+          milestones={preCoi.milestones}
+          incorporated
+        />
+      </LazyMotion>,
+    );
+    expect(screen.getByText('Where we are')).toBeInTheDocument();
+  });
+
+  it('reveals the milestone track in the same card instead of a second one', () => {
+    draw(
+      <ClientPhaseBars
+        progress={preCoi.progress}
+        milestones={preCoi.milestones}
+        incorporated={false}
+      />,
+    );
+
+    // Collapsed: the journey is not a separate card competing with the bars.
+    expect(screen.queryByText('Company details')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /See every step/ }));
+    expect(screen.getByText('Company details')).toBeInTheDocument();
   });
 });
 
@@ -230,7 +277,9 @@ describe('ClientJourneyTrack', () => {
 describe('ClientComplianceRunway', () => {
   it('explains the empty runway before incorporation instead of drawing a fake series', () => {
     draw(<ClientComplianceRunway upcoming={[]} incorporated={false} />);
-    expect(screen.getByText(/Your filing calendar starts the day/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Your compliance calendar begins once your Certificate of Incorporation is issued\./),
+    ).toBeInTheDocument();
   });
 
   it('groups real filings by authority and lists what is coming up', () => {
@@ -247,7 +296,9 @@ describe('ClientComplianceRunway', () => {
 describe('ClientDeliverables', () => {
   it('offers an honest empty state when nothing has been issued', () => {
     draw(<ClientDeliverables documents={preCoi.documents} />);
-    expect(screen.getByText('No certificates issued yet')).toBeInTheDocument();
+    expect(
+      screen.getByText('Your certificates will appear here as they are issued.'),
+    ).toBeInTheDocument();
   });
 
   it('lists issued certificates and totals them in the donut', () => {
@@ -298,6 +349,33 @@ describe('ClientTeamCard', () => {
 });
 
 describe('ClientActivityFeed', () => {
+  it('collapses a run of identical events into one row with a count', () => {
+    const repeated = Array.from({ length: 3 }, (_, i) => ({
+      id: `r${i}`,
+      at: '2026-04-02T10:00:00.000Z',
+      label: 'Client asked for a change on Client Details',
+    }));
+    draw(<ClientActivityFeed activity={[...repeated, { id: 'x', at: '2026-04-01T10:00:00.000Z', label: 'Board resolution finalized' }]} />);
+
+    expect(screen.getAllByText(/Client asked for a change/)).toHaveLength(1);
+    expect(screen.getByText('×3')).toBeInTheDocument();
+    expect(screen.getByText('Board resolution finalized')).toBeInTheDocument();
+  });
+
+  it('only merges neighbours, not every repeat in the list', () => {
+    draw(
+      <ClientActivityFeed
+        activity={[
+          { id: 'a', at: '2026-04-03T10:00:00.000Z', label: 'Same' },
+          { id: 'b', at: '2026-04-02T10:00:00.000Z', label: 'Different' },
+          { id: 'c', at: '2026-04-01T10:00:00.000Z', label: 'Same' },
+        ]}
+      />,
+    );
+    expect(screen.getAllByText('Same')).toHaveLength(2);
+    expect(screen.queryByText(/×/)).toBeNull();
+  });
+
   it('shows recent scoped audit lines', () => {
     draw(<ClientActivityFeed activity={postCoi.activity} />);
     expect(screen.getByText('Certificate of Incorporation delivered')).toBeInTheDocument();
@@ -305,6 +383,6 @@ describe('ClientActivityFeed', () => {
 
   it('explains the empty feed', () => {
     draw(<ClientActivityFeed activity={[]} />);
-    expect(screen.getByText(/Nothing recorded yet/)).toBeInTheDocument();
+    expect(screen.getByText('Nothing yet.')).toBeInTheDocument();
   });
 });

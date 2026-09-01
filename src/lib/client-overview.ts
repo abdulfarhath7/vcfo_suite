@@ -494,14 +494,21 @@ export function latestCompletedPhase(
 
 /** One-line state for the hero — the "where are we" answer in five seconds. */
 export function heroStateLine(overview: ClientOverview): string {
-  const { progress, incorporated, engagement } = overview;
+  const { progress, incorporated, nextAction } = overview;
   if (incorporated) {
     const open = progress.byPhase.find((p) => p.pct < 100);
-    if (!open) return 'Every milestone complete — we are on ongoing compliance now.';
-    return `COI issued — now in ${open.label} (${open.done} of ${open.total} steps).`;
+    if (!open) return 'Every milestone complete — now on ongoing compliance.';
+    return `Certificate of Incorporation issued — now in ${open.label}.`;
   }
+  // Pre-COI, say where things stand and whose move it is. "We are getting X
+  // started" was filler: it restated the company name and told the client
+  // nothing they could act on.
   if (progress.overallPct === 0) {
-    return `We are getting ${engagement.companyName} started.`;
+    return nextAction
+      ? 'Incorporation not started — the first step is yours.'
+      : 'Incorporation not started.';
   }
-  return `Incorporation ${progress.overallPct}% complete.`;
+  return nextAction
+    ? `Incorporation in progress — the next step is yours.`
+    : 'Incorporation in progress — with your VCFO team.';
 }

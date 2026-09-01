@@ -35,7 +35,7 @@ export function ClientEntityCard({
     <section className="client-idcard px-4 pb-4 pt-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
+          <p className="text-[12.5px] font-semibold text-muted-foreground">
             Registered entity
           </p>
           <h2 className="serif mt-1.5 break-words text-[1.3rem] leading-tight tracking-tight text-ink">
@@ -66,7 +66,7 @@ export function ClientEntityCard({
 
       {engagement.registeredOffice && (
         <div className="mt-4 border-t border-border/70 pt-3">
-          <dt className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground">
+          <dt className="text-[11px] font-medium text-muted-foreground">
             Registered office
           </dt>
           <dd className="mt-1.5 whitespace-pre-line text-[12.5px] font-semibold leading-relaxed text-ink">
@@ -81,7 +81,7 @@ export function ClientEntityCard({
 function IdField({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground">
+      <dt className="text-[11px] font-medium text-muted-foreground">
         {label}
       </dt>
       <dd className="mt-1">

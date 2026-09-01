@@ -27,11 +27,11 @@ const CHIP: Record<ClientCardTone, string> = {
 /**
  * One section shell for the whole client dashboard.
  *
- * Deliberately identical in structure to the lead dashboard's cards
- * (`LeadSideRail`, `LeadPhaseProgress`, `LeadManagersCard`): `.surface`, a
- * solid 28px icon chip, and an extra-bold uppercase ink heading. Keeping the
- * two surfaces on one idiom is why this is a shared component rather than a
- * header repeated in twelve files.
+ * `.surface` with a sentence-case heading. Both the title and the icon are
+ * optional: a card whose content names itself gets neither, which is how the
+ * client home stops repeating each label twice and stops wearing an icon tile
+ * on every header. Keeping this shared is why the change is one edit, not
+ * twelve.
  */
 export function ClientCard({
   title,
@@ -42,8 +42,10 @@ export function ClientCard({
   className,
   bodyClassName,
 }: {
-  title: string;
-  icon: LucideIcon;
+  /** Omit when the content names itself — a card should not explain what it is. */
+  title?: string;
+  /** Opt-in. Icons earn their place by aiding scanning, not as card ornament. */
+  icon?: LucideIcon;
   tone?: ClientCardTone;
   /** Right-aligned link or control in the header row. */
   action?: ReactNode;
@@ -53,18 +55,22 @@ export function ClientCard({
 }) {
   return (
     <section className={cn('surface h-fit min-w-0 overflow-hidden', className)}>
-      <div className="flex min-w-0 items-center gap-2.5 px-4 pt-3">
-        <span
-          className={cn('grid h-7 w-7 shrink-0 place-items-center rounded-lg', CHIP[tone])}
-        >
-          <Icon className="h-3.5 w-3.5" aria-hidden />
-        </span>
-        <h2 className="min-w-0 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
-          {title}
-        </h2>
-        {action ? <div className="ml-auto shrink-0">{action}</div> : null}
-      </div>
-      <div className={cn('px-4 pb-3.5 pt-2.5', bodyClassName)}>{children}</div>
+      {title || action ? (
+        <div className="flex min-w-0 items-center gap-2 px-4 pt-3.5">
+          {Icon ? (
+            <span
+              className={cn('grid h-6 w-6 shrink-0 place-items-center rounded-md', CHIP[tone])}
+            >
+              <Icon className="h-3 w-3" aria-hidden />
+            </span>
+          ) : null}
+          {title ? (
+            <h2 className="min-w-0 truncate text-[13px] font-semibold text-ink">{title}</h2>
+          ) : null}
+          {action ? <div className="ml-auto shrink-0">{action}</div> : null}
+        </div>
+      ) : null}
+      <div className={cn('px-4 pb-4 pt-2.5', bodyClassName)}>{children}</div>
     </section>
   );
 }

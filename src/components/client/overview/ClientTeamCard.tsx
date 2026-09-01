@@ -1,6 +1,6 @@
 'use client';
 
-import { Mail, Users } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { AccentButton } from '@/components/noir';
 import { ClientCard } from '@/components/client/overview/ClientCard';
 import type { ClientOverviewTeamMember } from '@/lib/client-overview';
@@ -37,7 +37,7 @@ export function ClientTeamCard({
   const href = `mailto:${mailTo}?${cc ? `cc=${encodeURIComponent(cc)}&` : ''}subject=${subject}&body=${body}`;
 
   return (
-    <ClientCard title="Your team" icon={Users} tone="primary">
+    <ClientCard title="Your team">
       {team.length === 0 ? (
         <p className="text-[12.5px] leading-relaxed text-muted-foreground">
           Your project manager and lead are being assigned. Reach us at{' '}

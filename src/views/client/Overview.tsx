@@ -9,7 +9,6 @@ import { ClientOverviewHero } from '@/components/client/overview/ClientOverviewH
 import { ClientNextAction } from '@/components/client/overview/ClientNextAction';
 import { ClientPhaseBars } from '@/components/client/overview/ClientPhaseBars';
 import { ClientBallInCourt } from '@/components/client/overview/ClientBallInCourt';
-import { ClientJourneyTrack } from '@/components/client/overview/ClientJourneyTrack';
 import { ClientComplianceRunway } from '@/components/client/overview/ClientComplianceRunway';
 import { ClientDeliverables } from '@/components/client/overview/ClientDeliverables';
 import { ClientEntityCard } from '@/components/client/overview/ClientEntityCard';
@@ -111,16 +110,31 @@ export default function ClientOverview() {
             {/* Post-COI the entity identity earns the top of the column. */}
             {entityCard}
 
-            <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-              <ClientPhaseBars progress={progress} />
-              <ClientBallInCourt
-                waitingOnClient={overview.ballInCourt.waitingOnClient}
-                waitingOnFirm={overview.ballInCourt.waitingOnFirm}
+            {/* Progress is ONE card: bars, expanding to the milestone track.
+                "Whose turn it is" only earns its place post-COI, where work
+                genuinely ping-pongs; pre-COI it restates the hero and the
+                next-action card. */}
+            {incorporated ? (
+              <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+                <ClientPhaseBars
+                  progress={progress}
+                  milestones={overview.milestones}
+                  incorporated={incorporated}
+                />
+                <ClientBallInCourt
+                  waitingOnClient={overview.ballInCourt.waitingOnClient}
+                  waitingOnFirm={overview.ballInCourt.waitingOnFirm}
+                />
+              </div>
+            ) : (
+              <ClientPhaseBars
+                progress={progress}
+                milestones={overview.milestones}
+                incorporated={incorporated}
               />
-            </div>
+            )}
 
             <ClientDeliverables documents={documents} />
-            <ClientJourneyTrack milestones={overview.milestones} />
           </div>
 
           <div className="flex min-w-0 flex-col gap-3">

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { m, useReducedMotion } from 'framer-motion';
-import { CalendarClock } from 'lucide-react';
 import { Mono } from '@/components/noir';
 import { ClientCard } from '@/components/client/overview/ClientCard';
 import {
@@ -37,8 +36,6 @@ export function ClientComplianceRunway({
   return (
     <ClientCard
       title="Compliance runway"
-      icon={CalendarClock}
-      tone="violet"
       action={
         <Link
           href="/app/client/compliances"
@@ -49,10 +46,10 @@ export function ClientComplianceRunway({
       }
     >
       {upcoming.length === 0 ? (
-        <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+        <p className="text-[12.5px] text-muted-foreground">
           {incorporated
-            ? 'No filings fall due in the next 90 days. Your calendar rebuilds automatically as each registration goes live.'
-            : 'Your filing calendar starts the day your Certificate of Incorporation is issued. Nothing is due yet.'}
+            ? 'Nothing due in the next 90 days.'
+            : 'Your compliance calendar begins once your Certificate of Incorporation is issued.'}
         </p>
       ) : (
         <>
@@ -85,7 +82,7 @@ export function ClientComplianceRunway({
           </ul>
 
           <div className="mt-3.5 border-t border-border pt-3">
-            <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.1em] text-muted-foreground">
+            <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
               Coming up · next 90 days
             </p>
             <ul className="space-y-2">

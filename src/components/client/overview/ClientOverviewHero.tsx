@@ -48,11 +48,7 @@ export function ClientOverviewHero({ overview }: { overview: ClientOverview }) {
         display: `${progress.overallPct}%`,
       }}
       stats={[
-        {
-          label: 'Complete',
-          value: `${progress.overallPct}%`,
-          href: '/app/client/incorporation',
-        },
+        // The ring already owns the percentage — the strip carries what it does not.
         {
           label: 'Awaiting you',
           value: ballInCourt.waitingOnClient,

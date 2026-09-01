@@ -5,7 +5,6 @@ import { m, useReducedMotion } from 'framer-motion';
 import { FileBadge, FileText, IdCard, ScrollText, type LucideIcon } from 'lucide-react';
 import { Mono } from '@/components/noir';
 import { ClientCard } from '@/components/client/overview/ClientCard';
-import { GeometricEmpty } from '@/components/illustrations/GeometricEmpty';
 import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
 import type { ClientOverviewDocuments } from '@/lib/client-overview';
 import { formatClientDate } from '@/components/client/overview/client-overview-format';
@@ -31,8 +30,6 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
   return (
     <ClientCard
       title="Your documents"
-      icon={FileText}
-      tone="cyan"
       action={
         <Link
           href="/app/client/documents"
@@ -42,19 +39,16 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
         </Link>
       }
     >
+      {/* Nothing issued: ONE calm line, and no donut. A ring reading "1 document"
+          over a list saying there are none made the two fight each other. */}
+      {deliverables.length === 0 ? (
+        <p className="text-[12.5px] text-muted-foreground">
+          Your certificates will appear here as they are issued.
+        </p>
+      ) : (
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="min-w-0">
-          {deliverables.length === 0 ? (
-            <div className="flex flex-col items-center rounded-[var(--radius)] border border-dashed border-primary/20 bg-primary-light/30 px-6 py-7 text-center">
-              <GeometricEmpty variant="waiting" />
-              <p className="serif mt-2 text-[1.05rem] text-ink">No certificates issued yet</p>
-              <p className="prose-narrow mt-1.5 text-[12px] text-muted-foreground">
-                Your Certificate of Incorporation, PAN, TAN, and registration
-                certificates will land here as they are issued.
-              </p>
-            </div>
-          ) : (
-            <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid gap-2 sm:grid-cols-2">
               {deliverables.map((doc, index) => {
                 const Icon = KIND_ICON[doc.kind] ?? FileText;
                 return (
@@ -88,13 +82,13 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
                     </div>
                   </m.li>
                 );
-              })}
-            </ul>
-          )}
+            })}
+          </ul>
         </div>
 
         <DocStatusDonut counts={counts} reduceMotion={Boolean(reduceMotion)} />
       </div>
+      )}
     </ClientCard>
   );
 }

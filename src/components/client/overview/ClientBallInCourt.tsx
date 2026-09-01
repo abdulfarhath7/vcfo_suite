@@ -1,6 +1,5 @@
 'use client';
 
-import { ArrowLeftRight } from 'lucide-react';
 import { ClientCard } from '@/components/client/overview/ClientCard';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +21,7 @@ export function ClientBallInCourt({
   const firmPct = total === 0 ? 0 : 100 - clientPct;
 
   return (
-    <ClientCard title="Whose turn it is" icon={ArrowLeftRight} tone="teal">
+    <ClientCard title="Whose turn it is">
       {total === 0 ? (
         <p className="text-[12.5px] leading-relaxed text-muted-foreground">
           Nothing is open on either side right now. We will start the next
@@ -83,7 +82,7 @@ function Split({
 }) {
   return (
     <div className="min-w-0">
-      <dt className="flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-muted-foreground">
+      <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
         <span className={cn('h-2 w-2 shrink-0 rounded-sm', swatch)} aria-hidden />
         <span className="truncate">{label}</span>
       </dt>

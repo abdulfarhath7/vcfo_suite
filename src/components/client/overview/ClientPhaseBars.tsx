@@ -1,32 +1,49 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { TrendingUp } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { ClientCard } from '@/components/client/overview/ClientCard';
-import type { ClientOverviewProgress } from '@/lib/client-overview';
+import { ClientJourneyTrack } from '@/components/client/overview/ClientJourneyTrack';
+import type {
+  ClientOverviewMilestone,
+  ClientOverviewProgress,
+} from '@/lib/client-overview';
 import { PHASE_FILL, phaseTone } from '@/components/client/overview/client-overview-format';
 import { cn } from '@/lib/utils';
 
 /**
- * Module 4 — the four incorporation phases as horizontal bars.
+ * Progress — ONE card, progressively disclosed.
  *
- * Same bar language as the lead dashboard's `LeadPhaseProgress`: quiet
- * `--phase-*` fills on a raised track, with the colour key spelled out below.
+ * Phase bars summarise; expanding reveals the milestone track that used to be a
+ * second card ("Your journey"). Two cards drawing the same dataset was the
+ * redundancy this pass removed.
+ *
+ * The bars are shaped even at zero, so pre-COI the card reads as a journey
+ * ahead rather than as four empty rows. Same bar language as the lead
+ * dashboard's `LeadPhaseProgress`: quiet `--phase-*` fills on a raised track.
  */
-export function ClientPhaseBars({ progress }: { progress: ClientOverviewProgress }) {
+export function ClientPhaseBars({
+  progress,
+  milestones,
+  incorporated,
+}: {
+  progress: ClientOverviewProgress;
+  milestones: ClientOverviewMilestone[];
+  incorporated: boolean;
+}) {
   const currentIndex = progress.byPhase.findIndex((phase) => phase.pct < 100);
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <ClientCard
-      title="Where we are"
-      icon={TrendingUp}
-      tone="success"
+      title={incorporated ? 'Where we are' : 'Your path to an incorporated India entity'}
       action={
         <Link
           href="/app/client/incorporation"
           className="text-[11.5px] font-bold text-primary hover:underline"
         >
-          See every step
+          Open checklist
         </Link>
       }
     >
@@ -83,18 +100,24 @@ export function ClientPhaseBars({ progress }: { progress: ClientOverviewProgress
         })}
       </ol>
 
-      <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] font-bold">
-        {progress.byPhase.map((phase) => (
-          <span key={phase.id} className="inline-flex items-center gap-1.5">
-            <i
-              className="h-2 w-2 shrink-0 rounded-sm"
-              style={{ background: PHASE_FILL[phase.colorKey] }}
-              aria-hidden
-            />
-            <span className={phaseTone(phase.colorKey).label}>{phase.label}</span>
-          </span>
-        ))}
-      </div>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((open) => !open)}
+        className="mt-3 inline-flex items-center gap-1 text-[11.5px] font-bold text-primary hover:underline"
+      >
+        {expanded ? 'Hide milestones' : 'See every step'}
+        <ChevronDown
+          className={cn('h-3.5 w-3.5 transition-transform', expanded && 'rotate-180')}
+          aria-hidden
+        />
+      </button>
+
+      {expanded ? (
+        <div className="mt-3 border-t border-border pt-3">
+          <ClientJourneyTrack milestones={milestones} />
+        </div>
+      ) : null}
     </ClientCard>
   );
 }
