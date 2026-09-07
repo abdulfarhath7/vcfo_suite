@@ -249,12 +249,22 @@ export function StatutoryCalendar({
   engagements,
   trackerHref,
   showBack,
+  companyId: controlledCompanyId,
+  onCompanyChange,
 }: {
   engagements: Engagement[];
   /** Intern-only: filing tracker lives on its own route, not page tabs. */
   trackerHref?: string;
   /** Place the shell back chevron beside the section title (intern calendar). */
   showBack?: boolean;
+  /**
+   * Controlled company selection (`'all'` or an engagement id). When set, the
+   * picker inside this grid drives the caller too — the shared compliance
+   * views use it so one picker narrows the statutory grid and the register
+   * together. Omit to keep the picker self-contained.
+   */
+  companyId?: string;
+  onCompanyChange?: (id: string) => void;
 }) {
   const todayIso = isoFromDate(new Date());
   const monthHeadingId = useId();
@@ -307,7 +317,12 @@ export function StatutoryCalendar({
     writeCalendarViewPrefs({ mode: nextMode });
   };
   const [monthDir, setMonthDir] = useState<1 | -1>(1);
-  const [companyId, setCompanyId] = useState<string>('all');
+  const [ownCompanyId, setOwnCompanyId] = useState<string>('all');
+  const companyId = controlledCompanyId ?? ownCompanyId;
+  const setCompanyId = (id: string) => {
+    if (controlledCompanyId === undefined) setOwnCompanyId(id);
+    onCompanyChange?.(id);
+  };
   const [scope, setScope] = useState<Scope>('all');
   const [mutedActs, setMutedActs] = useState<Set<StatutoryAct>>(() => new Set());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);

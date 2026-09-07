@@ -232,7 +232,19 @@ export interface FilingsMatrixRow {
   key: string;
   compliance: string;
   particular: string;
+  /** Set only when the matrix is built per company (firm-scope "All companies"). */
+  engagementId?: string;
+  companyName?: string;
   cells: FilingsMatrixCell[];
+}
+
+export interface FilingsMatrixOptions {
+  /**
+   * Key rows by company as well as obligation. A firm-scope register holds the
+   * same obligation for many companies; without this their cells would
+   * overwrite each other in one row.
+   */
+  perCompany?: boolean;
 }
 
 /**
@@ -246,18 +258,23 @@ export function buildMatrix(
   /** Maps a row to the period column it belongs in. */
   periodKeyOf: (row: FilingRow) => string | null,
   now = new Date(),
+  options: FilingsMatrixOptions = {},
 ): FilingsMatrixRow[] {
   const byObligation = new Map<string, FilingsMatrixRow>();
   const columnIndex = new Map(periodKeys.map((key, index) => [key, index]));
+  const perCompany = options.perCompany === true;
 
   for (const row of rows) {
-    const key = `${row.compliance}::${row.particular}`;
+    const key = perCompany
+      ? `${row.engagementId}::${row.compliance}::${row.particular}`
+      : `${row.compliance}::${row.particular}`;
     let entry = byObligation.get(key);
     if (!entry) {
       entry = {
         key,
         compliance: row.compliance,
         particular: row.particular,
+        ...(perCompany ? { engagementId: row.engagementId, companyName: row.companyName } : {}),
         cells: periodKeys.map(() => ({ dueDate: null, filedOn: null, status: null })),
       };
       byObligation.set(key, entry);
@@ -274,7 +291,9 @@ export function buildMatrix(
 
   return [...byObligation.values()].sort(
     (a, b) =>
-      a.compliance.localeCompare(b.compliance) || a.particular.localeCompare(b.particular),
+      (a.companyName ?? '').localeCompare(b.companyName ?? '') ||
+      a.compliance.localeCompare(b.compliance) ||
+      a.particular.localeCompare(b.particular),
   );
 }
 

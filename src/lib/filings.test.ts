@@ -167,6 +167,23 @@ describe('buildMatrix', () => {
     // Nothing due in June: an honest blank, not a zero.
     expect(gstr3b.cells[2]).toEqual({ dueDate: null, filedOn: null, status: null });
   });
+
+  it('keeps one row per company per obligation in the firm scope', () => {
+    const months = financialYearMonths(2026).map((m) => m.key);
+    const rows = [
+      row({ id: '1', dueDate: '2026-04-20', engagementId: 'e1', companyName: 'Acme' }),
+      row({ id: '2', dueDate: '2026-04-20', engagementId: 'e2', companyName: 'Zeta', filedOn: '2026-04-19' }),
+    ];
+    // Default: the client register — one company, one row.
+    expect(buildMatrix(rows, months, (r) => monthKeyOf(r.dueDate), NOW)).toHaveLength(1);
+
+    const perCompany = buildMatrix(rows, months, (r) => monthKeyOf(r.dueDate), NOW, {
+      perCompany: true,
+    });
+    expect(perCompany.map((m) => m.companyName)).toEqual(['Acme', 'Zeta']);
+    expect(perCompany[0]?.cells[0]?.status).toBe('overdue');
+    expect(perCompany[1]?.cells[0]?.status).toBe('filed');
+  });
 });
 
 describe('url params', () => {

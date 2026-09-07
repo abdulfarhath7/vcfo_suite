@@ -8,6 +8,7 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
 import { ComplianceCalendar } from '@/components/admin/ComplianceCalendar';
+import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { FilingStatusPill } from '@/components/compliances/FilingStatusPill';
 import {
   PreIncorporationNotice,
@@ -28,6 +29,13 @@ import {
   type FilingRow,
 } from '@/lib/filings';
 import type { ComplianceFiling } from '@/data/compliance';
+import {
+  ALL_COMPANIES,
+  normaliseCompanyParam,
+  rowsForCompany,
+  type ComplianceAudience,
+  type ComplianceStaffScope,
+} from '@/views/compliances/staff-scope';
 
 /**
  * COMPLIANCE CALENDAR — the radar, for every role.
@@ -37,6 +45,14 @@ import type { ComplianceFiling } from '@/data/compliance';
  * shape it already speaks. Scope comes from `getFilings` via `AuthContext`, so
  * this same view serves the client and the firm.
  *
+ * `audience` decides the chrome, never the data:
+ * - `'client'` (default): one engagement, no picker — unchanged.
+ * - `'staff'`: the firm's statutory month grid (`StatutoryCalendar`, with its
+ *   `CompanyPicker`, act legend and All / Overdue scope) sits above the register
+ *   calendar, and the one picker narrows both. The pre-incorporation notice and
+ *   the portfolio one-liner come from `StatutoryCalendar` itself, off the
+ *   engagement list the caller already holds.
+ *
  * `preIncorporation` is set by the caller (from `isIncorporated`, never a rule
  * of this view's own) when the company has no Certificate of Incorporation
  * yet. The view then shows the normal calendar layout in its genuine empty
@@ -45,19 +61,33 @@ import type { ComplianceFiling } from '@/data/compliance';
 export function ComplianceCalendarView({
   basePath,
   preIncorporation,
+  audience = 'client',
+  staff,
 }: {
   basePath: string;
   preIncorporation?: PreIncorporationScope;
+  audience?: ComplianceAudience;
+  /** Required with `audience="staff"`: the scoped roster and its pre-COI ids. */
+  staff?: ComplianceStaffScope;
 }) {
   const params = useSearchParams();
   const now = useMemo(() => new Date(), []);
+  const isStaff = audience === 'staff' && Boolean(staff);
+  const engagements = useMemo(() => staff?.engagements ?? [], [staff?.engagements]);
 
   const dateParam = parseIsoDate(params.get('date'));
   const [month, setMonth] = useState<Date>(() => dateParam ?? now);
+  const [companyId, setCompanyId] = useState<string>(() =>
+    normaliseCompanyParam(params.get('company'), engagements),
+  );
 
   const fyStartYear = financialYearForDate(month).startYear;
   const query = useFilings({ fyStartYear });
-  const rows = query.data?.rows ?? [];
+  const scopedRows = useMemo(() => query.data?.rows ?? [], [query.data?.rows]);
+  const rows = useMemo(
+    () => (isStaff ? rowsForCompany(scopedRows, companyId) : scopedRows),
+    [isStaff, scopedRows, companyId],
+  );
 
   const monthKey = monthKeyForDate(month);
   const summary = useMemo(() => summarise(rows, monthKey, now), [rows, monthKey, now]);
@@ -88,8 +118,10 @@ export function ComplianceCalendarView({
   );
 
   const hasAny = rows.length > 0;
-  // Pre-COI the layout stays — the honest empty calendar is the design.
-  const showLayout = hasAny || Boolean(preIncorporation);
+  // Pre-COI the layout stays — the honest empty calendar is the design. A
+  // portfolio always keeps its layout too: an empty month is a real answer.
+  const showLayout = hasAny || Boolean(preIncorporation) || isStaff;
+  const companyQuery = isStaff && companyId !== ALL_COMPANIES ? `&company=${companyId}` : '';
 
   return (
     <PageTransition>
@@ -99,19 +131,27 @@ export function ComplianceCalendarView({
         path={`${basePath}/calendar`}
       />
 
-      <div className="flex flex-col gap-3">
+      <div className={isStaff ? 'stat-cal-intern flex flex-col gap-3' : 'flex flex-col gap-3'}>
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h1 className="serif min-w-0 flex-1 text-[22px] leading-tight tracking-tight text-foreground">
             Compliance calendar
           </h1>
           <Link
-            href={`${basePath}/filings`}
+            href={`${basePath}/filings${companyQuery ? `?${companyQuery.slice(1)}` : ''}`}
             className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1 text-[11px] font-bold text-primary hover:bg-primary-light"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden />
             Open filings
           </Link>
         </div>
+
+        {isStaff ? (
+          <StatutoryCalendar
+            engagements={engagements}
+            companyId={companyId}
+            onCompanyChange={setCompanyId}
+          />
+        ) : null}
 
         {preIncorporation ? <PreIncorporationNotice scope={preIncorporation} /> : null}
 
@@ -134,7 +174,7 @@ export function ComplianceCalendarView({
               <SummaryStat value={summary.overdue} label="overdue" hot={summary.overdue > 0} />
               <SummaryStat value={summary.filed} label="filed" />
               <Link
-                href={`${basePath}/filings?cadence=monthly&period=${monthKey}&fy=${fyStartYear}`}
+                href={`${basePath}/filings?cadence=monthly&period=${monthKey}&fy=${fyStartYear}${companyQuery}`}
                 className="ml-auto text-[11.5px] font-bold text-primary hover:underline"
               >
                 View this month&rsquo;s filings
@@ -163,7 +203,14 @@ export function ComplianceCalendarView({
                 ) : (
                   <ul className="space-y-2.5">
                     {monthRows.map((row) => (
-                      <MonthRow key={row.id} row={row} now={now} basePath={basePath} />
+                      <MonthRow
+                        key={row.id}
+                        row={row}
+                        now={now}
+                        basePath={basePath}
+                        companyQuery={companyQuery}
+                        showCompany={isStaff && companyId === ALL_COMPANIES}
+                      />
                     ))}
                   </ul>
                 )}
@@ -203,10 +250,15 @@ function MonthRow({
   row,
   now,
   basePath,
+  companyQuery = '',
+  showCompany = false,
 }: {
   row: FilingRow;
   now: Date;
   basePath: string;
+  companyQuery?: string;
+  /** Firm scope on "All companies": say whose filing this is. */
+  showCompany?: boolean;
 }) {
   const monthKey = monthKeyOf(row.dueDate);
   return (
@@ -216,12 +268,13 @@ function MonthRow({
       </span>
       <span className="min-w-0 flex-1">
         <Link
-          href={`${basePath}/filings?cadence=monthly&period=${monthKey}`}
+          href={`${basePath}/filings?cadence=monthly&period=${monthKey}${companyQuery}`}
           className="block truncate text-[12.5px] font-semibold text-ink hover:text-primary"
         >
           {row.particular}
         </Link>
         <span className="text-[11px] text-muted-foreground">
+          {showCompany ? `${row.companyName} · ` : ''}
           {row.compliance} · {formatFilingDate(row.dueDate)}
         </span>
       </span>

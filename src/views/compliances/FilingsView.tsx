@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarDays, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
@@ -9,13 +9,17 @@ import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
 import { DashDataTable, type DashColumn } from '@/components/dash/DashDataTable';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
+import { CompanyPicker } from '@/components/admin/CompanyPicker';
+import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
 import { FilingStatusPill } from '@/components/compliances/FilingStatusPill';
 import {
   PreIncorporationNotice,
+  PreIncorporationPortfolioNote,
   type PreIncorporationScope,
 } from '@/components/compliances/PreIncorporationNotice';
 import { useFilings } from '@/lib/use-filings';
 import {
+  FILING_STATUS_LABEL,
   buildMatrix,
   filingStatus,
   financialYearForDate,
@@ -37,6 +41,22 @@ import {
   type FilingsCadence,
 } from '@/lib/filings';
 import { cn } from '@/lib/utils';
+import {
+  ALL_COMPANIES,
+  FILING_STATUS_FILTERS,
+  isFilingStatusFilter,
+  normaliseCompanyParam,
+  pickedCompany,
+  rowsForCompany,
+  rowsForStatus,
+  type ComplianceAudience,
+  type ComplianceStaffScope,
+  type FilingStatusFilter,
+} from '@/views/compliances/staff-scope';
+
+/** Which extra register columns a scope needs; the client register has neither. */
+type RegisterColumnsMode = { company: boolean; authority: boolean };
+const CLIENT_COLUMNS: RegisterColumnsMode = { company: false, authority: false };
 
 /**
  * FILINGS — the compliance register, for every role.
@@ -53,23 +73,41 @@ import { cn } from '@/lib/utils';
  * `preIncorporation` is set by the caller (from `isIncorporated`) when the
  * company has no Certificate of Incorporation yet. The tabs and sheets render
  * exactly as they do post-COI, in their genuine empty state, under one notice.
+ *
+ * `audience="staff"` is the firm scope: the same register with the company
+ * picker (`?company=`), the status filter (`?status=`), a Company column on
+ * "All companies" and the authority chip — everything the old filing tracker
+ * had, on the real register rows. The pre-COI notice appears when the picker
+ * narrows to a company in `staff.preIncorporationIds`; on "All companies" the
+ * portfolio keeps its real rows and prints at most the one-line count.
  */
 export function FilingsView({
   basePath,
   preIncorporation,
+  audience = 'client',
+  staff,
 }: {
   basePath: string;
   preIncorporation?: PreIncorporationScope;
+  audience?: ComplianceAudience;
+  /** Required with `audience="staff"`: the scoped roster and its pre-COI ids. */
+  staff?: ComplianceStaffScope;
 }) {
   const router = useRouter();
   const params = useSearchParams();
   const now = useMemo(() => new Date(), []);
+  const isStaff = audience === 'staff' && Boolean(staff);
+  const engagements = useMemo(() => staff?.engagements ?? [], [staff?.engagements]);
 
   const cadenceParam = params.get('cadence');
   const cadence: FilingsCadence = isFilingsCadence(cadenceParam) ? cadenceParam : 'monthly';
   const fyFromUrl = parseFyParam(params.get('fy'));
   const periodParam = parseMonthParam(params.get('period'));
   const fullYear = params.get('view') === 'year';
+  const companyId = isStaff ? normaliseCompanyParam(params.get('company'), engagements) : ALL_COMPANIES;
+  const statusParam = params.get('status');
+  const statusFilter: FilingStatusFilter =
+    isStaff && isFilingStatusFilter(statusParam) ? statusParam : 'all';
 
   const currentFy = financialYearForDate(now);
   // A `?period=` month decides the FY it belongs to, so a calendar cross-link
@@ -84,7 +122,17 @@ export function FilingsView({
   const months = useMemo(() => financialYearMonths(fyStartYear), [fyStartYear]);
   const quarters = useMemo(() => financialYearQuarters(fyStartYear), [fyStartYear]);
   const fyRows = useMemo(() => rowsInFinancialYear(allRows, fyStartYear), [allRows, fyStartYear]);
-  const cadenceRows = useMemo(() => rowsForCadence(fyRows, cadence), [fyRows, cadence]);
+  const companyRows = useMemo(() => rowsForCompany(fyRows, companyId), [fyRows, companyId]);
+  const cadenceRows = useMemo(
+    () => rowsForStatus(rowsForCadence(companyRows, cadence), statusFilter, now),
+    [companyRows, cadence, statusFilter, now],
+  );
+
+  const picked = isStaff ? pickedCompany(engagements, companyId) : null;
+  const pickedPreIncorporation = picked && staff?.preIncorporationIds.has(picked.id) ? picked : null;
+  const columnsMode: RegisterColumnsMode = isStaff
+    ? { company: companyId === ALL_COMPANIES, authority: true }
+    : CLIENT_COLUMNS;
 
   const setParams = (next: Record<string, string | null>) => {
     const search = new URLSearchParams(params.toString());
@@ -100,6 +148,21 @@ export function FilingsView({
     const next = months[monthIndex + delta];
     if (next) setParams({ period: next.key, fy: String(fyStartYear) });
   };
+
+  const cadencePicker = (
+    <SegmentedPicker
+      value={cadence}
+      options={[
+        { value: 'monthly', label: 'Monthly' },
+        { value: 'quarterly', label: 'Quarterly' },
+        { value: 'annual', label: 'Annual' },
+      ]}
+      onChange={(next) => setParams({ cadence: next })}
+      ariaLabel="Filing cadence"
+      size="sm"
+      className="max-w-sm"
+    />
+  );
 
   return (
     <PageTransition>
@@ -118,22 +181,48 @@ export function FilingsView({
           }
           fyStartYear={fyStartYear}
           currentFyStartYear={currentFy.startYear}
+          calendarQuery={picked ? `?company=${picked.id}` : ''}
+          picker={
+            isStaff ? (
+              <CompanyPicker
+                engagements={engagements}
+                value={companyId}
+                allHint="Whole portfolio"
+                onChange={(id) =>
+                  setParams({ company: id === ALL_COMPANIES ? null : id })
+                }
+              />
+            ) : null
+          }
         />
 
         {preIncorporation ? <PreIncorporationNotice scope={preIncorporation} /> : null}
+        {pickedPreIncorporation ? (
+          <PreIncorporationNotice
+            scope={{ audience: 'staff', companyName: pickedPreIncorporation.companyName }}
+          />
+        ) : isStaff && !picked ? (
+          <PreIncorporationPortfolioNote count={staff?.preIncorporationIds.size ?? 0} />
+        ) : null}
 
-        <SegmentedPicker
-          value={cadence}
-          options={[
-            { value: 'monthly', label: 'Monthly' },
-            { value: 'quarterly', label: 'Quarterly' },
-            { value: 'annual', label: 'Annual' },
-          ]}
-          onChange={(next) => setParams({ cadence: next })}
-          ariaLabel="Filing cadence"
-          size="sm"
-          className="max-w-sm"
-        />
+        {isStaff ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {cadencePicker}
+            <SegmentedPicker
+              value={statusFilter}
+              options={FILING_STATUS_FILTERS.map((status) => ({
+                value: status,
+                label: status === 'all' ? 'All' : FILING_STATUS_LABEL[status],
+              }))}
+              onChange={(next) => setParams({ status: next === 'all' ? null : next })}
+              ariaLabel="Filter by status"
+              size="sm"
+              className="ml-auto inline-grid"
+            />
+          </div>
+        ) : (
+          cadencePicker
+        )}
 
         {query.isPending ? (
           <FilingsSkeleton />
@@ -151,15 +240,16 @@ export function FilingsView({
             fullYear={fullYear}
             now={now}
             basePath={basePath}
+            columnsMode={columnsMode}
             onToggleFullYear={() => setParams({ view: fullYear ? null : 'year' })}
             onStepMonth={stepMonth}
             canStepBack={monthIndex > 0}
             canStepForward={monthIndex >= 0 && monthIndex < months.length - 1}
           />
         ) : cadence === 'quarterly' ? (
-          <QuarterlyTab rows={cadenceRows} quarters={quarters} now={now} />
+          <QuarterlyTab rows={cadenceRows} quarters={quarters} now={now} columnsMode={columnsMode} />
         ) : (
-          <AnnualTab rows={cadenceRows} now={now} basePath={basePath} />
+          <AnnualTab rows={cadenceRows} now={now} basePath={basePath} columnsMode={columnsMode} />
         )}
       </div>
     </PageTransition>
@@ -176,12 +266,18 @@ function FilingsHeader({
   fyStartYear,
   currentFyStartYear,
   onFyChange,
+  calendarQuery = '',
+  picker = null,
 }: {
   basePath: string;
   fyLabel: string;
   fyStartYear: number;
   currentFyStartYear: number;
   onFyChange: (startYear: number) => void;
+  /** Carries the narrowed company across to the calendar. */
+  calendarQuery?: string;
+  /** Firm scope only: the `CompanyPicker`. */
+  picker?: ReactNode;
 }) {
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -208,8 +304,9 @@ function FilingsHeader({
           <ChevronRight className="h-3.5 w-3.5" aria-hidden />
         </button>
       </div>
+      {picker}
       <Link
-        href={`${basePath}/calendar`}
+        href={`${basePath}/calendar${calendarQuery}`}
         className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1 text-[11px] font-bold text-primary hover:bg-primary-light"
       >
         <CalendarDays className="h-3.5 w-3.5" aria-hidden />
@@ -229,9 +326,10 @@ const EMPTY_REGISTER =
 function registerColumns(
   now: Date,
   basePath: string,
-  options?: { numbered?: boolean },
+  options?: { numbered?: boolean; mode?: RegisterColumnsMode },
 ): DashColumn<FilingRow>[] {
   const columns: DashColumn<FilingRow>[] = [];
+  const mode = options?.mode ?? CLIENT_COLUMNS;
   if (options?.numbered) {
     columns.push({
       key: 'sl',
@@ -241,12 +339,28 @@ function registerColumns(
       render: () => null,
     });
   }
+  if (mode.company) {
+    columns.push({
+      key: 'company',
+      header: 'Company',
+      width: 'minmax(0,1.2fr)',
+      render: (row) => <span className="truncate text-ink">{row.companyName}</span>,
+    });
+  }
   columns.push(
     {
       key: 'compliance',
       header: 'Compliance',
       width: 'minmax(0,0.9fr)',
-      render: (row) => <span className="text-ink">{row.compliance}</span>,
+      render: (row) =>
+        mode.authority ? (
+          <span className="flex min-w-0 flex-col items-start gap-0.5">
+            <span className="text-ink">{row.compliance}</span>
+            <AuthorityChip authority={row.authority} />
+          </span>
+        ) : (
+          <span className="text-ink">{row.compliance}</span>
+        ),
     },
     {
       key: 'particular',
@@ -298,20 +412,36 @@ function registerColumns(
   return columns;
 }
 
+/** The tracker's authority chip — `TONE_BADGE` keyed by authority, nothing new. */
+function AuthorityChip({ authority }: { authority: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+        TONE_BADGE[toneForKey(authority)],
+      )}
+    >
+      {authority}
+    </span>
+  );
+}
+
 function RegisterTable({
   rows,
   now,
   basePath,
   numbered,
+  mode = CLIENT_COLUMNS,
 }: {
   rows: FilingRow[];
   now: Date;
   basePath: string;
   numbered?: boolean;
+  mode?: RegisterColumnsMode;
 }) {
   const ordered = sortByDueDate(rows);
   const slNo = new Map(ordered.map((row, index) => [row.id, index + 1]));
-  const columns = registerColumns(now, basePath, { numbered }).map((column) =>
+  const columns = registerColumns(now, basePath, { numbered, mode }).map((column) =>
     column.key === 'sl'
       ? { ...column, render: (row: FilingRow) => <span>{slNo.get(row.id)}</span> }
       : column,
@@ -329,6 +459,7 @@ function RegisterTable({
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-semibold text-ink">{row.particular}</p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
+              {mode.company ? `${row.companyName} · ` : ''}
               {row.compliance} · due {formatFilingDate(row.dueDate)}
               {row.filedOn ? ` · filed ${formatFilingDate(row.filedOn)}` : ''}
             </p>
@@ -347,6 +478,7 @@ function MonthlyTab({
   fullYear,
   now,
   basePath,
+  columnsMode = CLIENT_COLUMNS,
   onToggleFullYear,
   onStepMonth,
   canStepBack,
@@ -358,6 +490,7 @@ function MonthlyTab({
   fullYear: boolean;
   now: Date;
   basePath: string;
+  columnsMode?: RegisterColumnsMode;
   onToggleFullYear: () => void;
   onStepMonth: (delta: number) => void;
   canStepBack: boolean;
@@ -365,8 +498,11 @@ function MonthlyTab({
 }) {
   const monthRows = useMemo(() => rowsInMonth(rows, monthKey), [rows, monthKey]);
   const matrix = useMemo(
-    () => buildMatrix(rows, months.map((m) => m.key), (row) => monthKeyOf(row.dueDate), now),
-    [rows, months, now],
+    () =>
+      buildMatrix(rows, months.map((m) => m.key), (row) => monthKeyOf(row.dueDate), now, {
+        perCompany: columnsMode.company,
+      }),
+    [rows, months, now, columnsMode.company],
   );
   const currentMonthKey = monthKeyOf(now.toISOString());
 
@@ -420,7 +556,7 @@ function MonthlyTab({
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />
             </button>
           </div>
-          <RegisterTable rows={monthRows} now={now} basePath={basePath} />
+          <RegisterTable rows={monthRows} now={now} basePath={basePath} mode={columnsMode} />
         </>
       )}
     </DashSection>
@@ -431,10 +567,12 @@ function QuarterlyTab({
   rows,
   quarters,
   now,
+  columnsMode = CLIENT_COLUMNS,
 }: {
   rows: FilingRow[];
   quarters: ReturnType<typeof financialYearQuarters>;
   now: Date;
+  columnsMode?: RegisterColumnsMode;
 }) {
   const startYear = Number.parseInt(quarters[0]?.key.slice(0, 4) ?? '0', 10);
   const matrix = useMemo(
@@ -447,8 +585,9 @@ function QuarterlyTab({
           return key ? (quarterForMonthKey(key, startYear)?.key ?? null) : null;
         },
         now,
+        { perCompany: columnsMode.company },
       ),
-    [rows, quarters, startYear, now],
+    [rows, quarters, startYear, now, columnsMode.company],
   );
   const currentQuarter = quarterForMonthKey(monthKeyOf(now.toISOString()) ?? '', startYear);
 
@@ -477,10 +616,12 @@ function AnnualTab({
   rows,
   now,
   basePath,
+  columnsMode = CLIENT_COLUMNS,
 }: {
   rows: FilingRow[];
   now: Date;
   basePath: string;
+  columnsMode?: RegisterColumnsMode;
 }) {
   return (
     <DashSection
@@ -489,7 +630,7 @@ function AnnualTab({
       tone="violet"
       bodyClassName="px-0 pb-0 pt-0"
     >
-      <RegisterTable rows={rows} now={now} basePath={basePath} numbered />
+      <RegisterTable rows={rows} now={now} basePath={basePath} numbered mode={columnsMode} />
     </DashSection>
   );
 }
@@ -549,6 +690,7 @@ function PeriodMatrix({
               <th scope="row" className="px-3.5 py-3 text-left font-semibold text-ink">
                 <span className="block">{row.particular}</span>
                 <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
+                  {row.companyName ? `${row.companyName} · ` : ''}
                   {row.compliance}
                 </span>
               </th>
