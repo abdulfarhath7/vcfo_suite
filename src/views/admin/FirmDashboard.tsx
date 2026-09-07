@@ -31,6 +31,14 @@ export default function FirmDashboard() {
   const { user, engagements, getStateForEngagement } = useApp();
   const greet = internGreeting(internGreetingHour(new Date()));
   const first = internFirstName(user?.name ?? '');
+  /**
+   * A super admin reaches this page through the rail's "Firm" jump, having
+   * already been greeted on their own Overview. A second greeting card here
+   * reads as someone else's home, so the firm view opens straight on the work.
+   * Its numbers are not lost: the Portfolio health donut in the right rail
+   * carries the same on-track / stuck / awaiting-PM counts and the total.
+   */
+  const showGreeting = user?.role !== 'super_admin';
 
   const managersQuery = useQuery({
     queryKey: ['admin-managers'],
@@ -99,21 +107,23 @@ export default function FirmDashboard() {
       <SEO title="Admin home — VCFO Suite" description="Firm-wide portfolio pulse." path="/app/admin/dashboard" />
 
       <div className="flex flex-col gap-3">
-        <DashHero
-          title={first ? `Good ${greet}, ${first}` : 'Firm home'}
-          ring={{ value: pulse.good, total: pulse.total, caption: 'on track' }}
-          stats={[
-            { label: 'projects', value: pulse.total, href: '/app/admin/projects' },
-            {
-              label: 'need attention',
-              value: pulse.pending + pendingApprovals,
-              href: '/app/admin/approvals',
-              hot: pulse.pending + pendingApprovals > 0,
-            },
-            { label: 'awaiting approval', value: pendingApprovals, href: '/app/admin/approvals' },
-            { label: 'on track', value: pulse.good },
-          ]}
-        />
+        {showGreeting ? (
+          <DashHero
+            title={first ? `Good ${greet}, ${first}` : 'Firm home'}
+            ring={{ value: pulse.good, total: pulse.total, caption: 'on track' }}
+            stats={[
+              { label: 'projects', value: pulse.total, href: '/app/admin/projects' },
+              {
+                label: 'need attention',
+                value: pulse.pending + pendingApprovals,
+                href: '/app/admin/approvals',
+                hot: pulse.pending + pendingApprovals > 0,
+              },
+              { label: 'awaiting approval', value: pendingApprovals, href: '/app/admin/approvals' },
+              { label: 'on track', value: pulse.good },
+            ]}
+          />
+        ) : null}
 
         <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
           <div className="flex min-w-0 flex-col gap-3">
