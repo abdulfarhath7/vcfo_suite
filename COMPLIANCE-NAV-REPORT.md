@@ -61,7 +61,7 @@ against `views/compliances/ComplianceCalendarView.tsx` / `FilingsView.tsx`.
 | Register month mini-calendar (`ComplianceCalendar`) | tracker left column | already on the Calendar page | unchanged; the staff Calendar page carries it. |
 | "GCC project" (company) column | tracker table | none | `FilingsView` staff mode adds a Company column to the register table, mobile rows, and the period matrices (matrix rows keyed per company on "All companies" so obligations of two companies never merge). |
 | Authority chip | tracker table | none | staff mode Company column carries the `TONE_BADGE` authority chip inline. |
-| "Delivery owner" + "Risk" columns | tracker table, from `computeAllFilings` (in-memory generator: `ownerId = engagement.internId`, `penaltyRisk` is a generator constant) | none | **Owner** is real (the engagement lead) and is shown in staff mode beside the company. **Risk** is a mock constant from the in-memory store, not a register field — not carried (rule 5, fabricate nothing). Recorded as the one deliberate drop. |
+| "Delivery owner" + "Risk" columns | tracker table, from `computeAllFilings` (in-memory generator: `ownerId = engagement.internId`, `penaltyRisk` is a generator constant) | none | **Not carried.** `useApp().teamMembers` is the empty seed array in `src/data/mockData.ts`, so the owner cell never rendered a name; risk is a generator constant, not a register field (rule 5, fabricate nothing). Recorded as the one deliberate drop. |
 | Pre-COI notice, one company narrowed | tracker + statutory | client-only `PreIncorporationNotice` | staff mode: `PreIncorporationNotice({ audience: 'staff', companyName })` when the picked company fails `isIncorporated`. |
 | Pre-COI portfolio one-liner | tracker + statutory | none | staff mode: `PreIncorporationPortfolioNote(count)` on "All companies", count read off the engagement list in hand (no query). |
 | Back chevron beside the title (`PageBackCluster`) | staff pages | none (client parity) | Not carried: the shared views use the top-bar trail; the staff pages get the same header as the client. |
@@ -120,3 +120,48 @@ The hard `/app/manager` fallback goes away.
 | Incorporation truth | `isIncorporated` | `src/lib/compliance/incorporation-state.ts` |
 | Panel / table | `DashSection`, `DashDataTable` | `src/components/dash/` |
 | Register read | `useFilings` → `/api/filings` → `getFilings(ctx)` | `src/lib/use-filings.ts`, `src/db/repositories/filings.ts` |
+
+## 7. Acceptance QA (Phase 5)
+
+Gate after the final commit: `npm run typecheck` — only the pre-existing
+`drizzle.config.ts` error; `npm run test` — 102 files / 904 tests green (baseline
+was 100 / 892; the new ones are `staff-scope.test.ts`, `StaffCompliancePages.test.tsx`,
+a `buildMatrix` per-company case, and the nav-group / crumbs / back cases);
+`npx eslint .` — 0 errors, 528 warnings (the same count as the baseline).
+`grep -rn "from '@/db" src/views src/components` returns nothing new.
+
+Real-browser run (playwright, dev server on :3000, demo seed) — 140 / 140
+checks passed across the five roles. Script and screenshots live in the
+session scratchpad (`qa-nav.js`, `qa-results.json`, `qa-<role>-*.png`).
+
+| Check | client (`client-kestrel@`, pre-COI) | admin (`admin-nadia@`) | manager (`pm-anita@`) | intern / Project Lead (`lead-divya@`) | super (`super@`) |
+|---|---|---|---|---|---|
+| Sidebar "Compliances" disclosure on the role home | pass | pass | pass | pass | pass (`/app/super/dashboard`) |
+| Expanding reveals Calendar + Filings | pass (`/app/client/compliances/*`) | pass (`/app/admin/…`) | pass (`/app/manager/…`) | pass (`/app/intern/…`) | pass (`/app/admin/…`, firm scope) |
+| Both children route to a working page | pass | pass | pass | pass | pass |
+| Active pill on the child (`aria-current="page"`) | pass | pass | pass | pass | pass |
+| Breadcrumb Home › Compliances › Calendar / Filings | pass | pass | pass | pass | pass |
+| ⌘K finds "Compliance calendar" and "Filings" and navigates | pass | pass | pass | pass | pass |
+| Pre-COI, per-engagement notice | client copy on both pages | staff copy when narrowed to Kestrel on both pages | same | same | same |
+| Pre-COI, portfolio one-liner on "All companies" | n/a (no picker) | "6 engagements begin compliance after incorporation." | pass | pass | pass |
+| Company picker | absent (correct) | present on both pages | present | present | present |
+| Statutory portfolio grid (legend, All/Overdue, full screen) | absent (correct) | present | present | present | present |
+| Status filter (All / Due soon / Upcoming / Overdue / Filed) + `?status=` | absent (correct) | pass | pass | pass | pass |
+| Cadence filter (Monthly / Quarterly / Annual) | pass | pass | pass | pass | pass |
+| Company column + authority chip on "All companies" | n/a | pass (annual sheet, 21 rows) | pass | pass | pass |
+| Legacy `/compliance` → `…/compliances/calendar`, `/compliance/tracker` → `…/compliances/filings` | n/a | pass | pass | pass | pass (via `/app/admin`) |
+| `…/compliances` index → calendar | pass | pass | pass | pass | pass |
+| No page errors in the browser console | pass | pass | pass | pass | pass |
+
+Observations recorded, not changed:
+
+- The monthly sheet on "All companies" for FY 2026-27 is empty in the demo
+  DB because every generated instance in that year is quarterly, annual or
+  half-yearly (18 / 21 / 7). The quarterly and annual sheets carry the rows.
+  That is the register's real content, the same the client sees.
+- The statutory grid narrowed to a pre-COI company still lists the master
+  deadlines that apply to its legal form (pre-existing `deadlineAppliesTo`
+  behaviour) under the staff notice; the register beneath it is honestly empty.
+- Super admin reads the firm scope through `getFilings` /
+  `listScopedEngagementIds`, so the `listComplianceInstances` `super_admin`
+  branch bug noted in DESIGN-SYSTEM-INVENTORY.md is not on this path.

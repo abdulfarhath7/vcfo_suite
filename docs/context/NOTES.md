@@ -801,3 +801,22 @@ Append here whenever something costs more than a minute to figure out.
   obligations anchor on `'2000-01-01'` when there is no incorporation date, so
   a pre-COI company can show a couple of "generated" rows there while the
   DB-backed `/api/filings` register (what the client sees) has none. Owner call.
+
+## Compliances nav (2026-09-07)
+
+- The shared compliance views (`src/views/compliances/*`) are the only
+  compliance surface for every role. `audience="staff"` (via
+  `StaffCompliancePages`) adds the picker / statutory grid / status filter;
+  the client path passes nothing and is unchanged. Do not resurrect
+  `views/admin/Compliance.tsx` — every capability it had lives in staff mode.
+- Where each shell's Compliances pages live is decided once in
+  `src/components/shell/compliance-nav.ts` (`compliancesBasePath`,
+  `complianceLeaves`). Super admin points at `/app/admin` — there is no
+  `/app/super/compliances`. `SidebarComplianceMini` uses the same helper.
+- Staff filings state is in the URL: `?company=<engagement id>` and
+  `?status=upcoming|due-soon|overdue|filed` alongside `cadence` / `period` /
+  `fy` / `view`. The calendar carries `company` across its links.
+- `buildMatrix(..., { perCompany: true })` keys rows by engagement; without it
+  two companies' identical obligations merge into one row.
+- Staff month sheets can be honestly empty: the demo FY 2026-27 register has
+  no monthly-frequency instances at all (quarterly / annual / half-yearly only).
