@@ -1,10 +1,6 @@
-import AdminCompliance from "@/views/admin/Compliance";
+import { redirect } from 'next/navigation';
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Compliance", "Compliance calendar");
-
-
+/** Legacy route — the compliance calendar now lives under the Compliances group. */
 export default function Page() {
-  return <AdminCompliance />;
+  redirect('/app/admin/compliances/calendar');
 }

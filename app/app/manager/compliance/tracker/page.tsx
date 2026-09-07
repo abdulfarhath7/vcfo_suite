@@ -1,8 +1,6 @@
-import { pageMetadata } from "@/lib/page-metadata";
-import Compliance from "@/views/admin/Compliance";
+import { redirect } from 'next/navigation';
 
-export const metadata = pageMetadata("Filing tracker", "Client filing status");
-
+/** Legacy route — the filing tracker is now Compliances → Filings. */
 export default function Page() {
-  return <Compliance initialView="tracker" />;
+  redirect('/app/manager/compliances/filings');
 }
