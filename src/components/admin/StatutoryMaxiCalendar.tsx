@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useApp } from '@/context/AppContext';
 import { CheckCheck, ChevronLeft, ChevronRight, Minimize2 } from 'lucide-react';
 import {
   ACT_META,
@@ -82,6 +84,9 @@ export function StatutoryMaxiCalendar({
 
   /** Overlay slides right to reveal the app sidebar when the pointer hits the left edge. */
   const [navPeek, setNavPeek] = useState(false);
+  const { user } = useApp();
+  // Slide exactly the expanded sidebar's width (RoleSidebar: client 15.5rem, staff 14rem).
+  const peekLeft = user?.role === 'client' ? '15.5rem' : '14rem';
 
   useEffect(() => {
     if (!navPeek) return;
@@ -107,9 +112,15 @@ export function StatutoryMaxiCalendar({
     };
   }, [onMinimize]);
 
-  return (
+  // Portal to <body>: the page wrapper animates with a transform, which would
+  // scope this `position: fixed` overlay to the content column and leave the
+  // sidebar rail showing beside it. On the body it covers the whole viewport;
+  // the left-edge hotzone slides it aside to reveal (and hover-expand) the nav.
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <div
       className={cn('stat-max', navPeek && 'is-nav-peek')}
+      style={navPeek ? { left: peekLeft } : undefined}
       role="dialog"
       aria-modal="true"
       aria-label="Statutory calendar, maximized"
@@ -258,6 +269,7 @@ export function StatutoryMaxiCalendar({
           })}
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }
