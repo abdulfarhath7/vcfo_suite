@@ -27,6 +27,7 @@ import {
   type ChecklistStepGateKind,
 } from '@/lib/checklist-step-gate';
 import { isAwaitingReview, isReviewRejected } from '@/lib/checklist-item-review';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/project-stuck';
 import { phaseKeyFromId, type PhaseColorKey } from '@/lib/phase-colors';
 import { stageDisplayLabel, type Stage } from '@/components/admin/create-project-form-utils';
@@ -392,7 +393,7 @@ export function summarizeEngagement(
     leadName: input.leadName,
     managerId: input.managerId,
     managerName: input.managerName,
-    incorporated: Boolean(input.incorporationDate?.trim()),
+    incorporated: isIncorporated(input, input.state),
     createdAt: input.createdAt.toISOString(),
     updatedAt: input.updatedAt.toISOString(),
     progress: { done, total, pct: pct(done, total) },
