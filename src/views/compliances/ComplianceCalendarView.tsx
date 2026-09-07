@@ -9,6 +9,10 @@ import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
 import { ComplianceCalendar } from '@/components/admin/ComplianceCalendar';
 import { FilingStatusPill } from '@/components/compliances/FilingStatusPill';
+import {
+  PreIncorporationNotice,
+  type PreIncorporationScope,
+} from '@/components/compliances/PreIncorporationNotice';
 import { useFilings } from '@/lib/use-filings';
 import {
   filingStatus,
@@ -32,8 +36,19 @@ import type { ComplianceFiling } from '@/data/compliance';
  * second calendar; the register rows are mapped onto the `ComplianceFiling`
  * shape it already speaks. Scope comes from `getFilings` via `AuthContext`, so
  * this same view serves the client and the firm.
+ *
+ * `preIncorporation` is set by the caller (from `isIncorporated`, never a rule
+ * of this view's own) when the company has no Certificate of Incorporation
+ * yet. The view then shows the normal calendar layout in its genuine empty
+ * state under one notice — nothing is generated or invented to fill it.
  */
-export function ComplianceCalendarView({ basePath }: { basePath: string }) {
+export function ComplianceCalendarView({
+  basePath,
+  preIncorporation,
+}: {
+  basePath: string;
+  preIncorporation?: PreIncorporationScope;
+}) {
   const params = useSearchParams();
   const now = useMemo(() => new Date(), []);
 
@@ -73,6 +88,8 @@ export function ComplianceCalendarView({ basePath }: { basePath: string }) {
   );
 
   const hasAny = rows.length > 0;
+  // Pre-COI the layout stays — the honest empty calendar is the design.
+  const showLayout = hasAny || Boolean(preIncorporation);
 
   return (
     <PageTransition>
@@ -96,11 +113,13 @@ export function ComplianceCalendarView({ basePath }: { basePath: string }) {
           </Link>
         </div>
 
+        {preIncorporation ? <PreIncorporationNotice scope={preIncorporation} /> : null}
+
         {query.isPending ? (
           <div className="surface p-4" aria-busy="true" aria-label="Loading calendar">
             <div className="h-64 animate-pulse rounded-md bg-muted/40" />
           </div>
-        ) : !hasAny ? (
+        ) : !showLayout ? (
           <DashSection icon={CalendarDays} title="Compliance calendar" tone="primary">
             <p className="text-[12.5px] leading-relaxed text-muted-foreground">
               Your filing calendar starts the day your Certificate of Incorporation is

@@ -10,6 +10,10 @@ import { DashSection } from '@/components/dash/DashSection';
 import { DashDataTable, type DashColumn } from '@/components/dash/DashDataTable';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { FilingStatusPill } from '@/components/compliances/FilingStatusPill';
+import {
+  PreIncorporationNotice,
+  type PreIncorporationScope,
+} from '@/components/compliances/PreIncorporationNotice';
 import { useFilings } from '@/lib/use-filings';
 import {
   buildMatrix,
@@ -45,8 +49,18 @@ import { cn } from '@/lib/utils';
  * Canonical pieces only: `DashSection` headers, `DashDataTable` rows,
  * `FilingStatusPill` (which is `TONE_BADGE`). No table, pill or panel variant
  * is invented here.
+ *
+ * `preIncorporation` is set by the caller (from `isIncorporated`) when the
+ * company has no Certificate of Incorporation yet. The tabs and sheets render
+ * exactly as they do post-COI, in their genuine empty state, under one notice.
  */
-export function FilingsView({ basePath }: { basePath: string }) {
+export function FilingsView({
+  basePath,
+  preIncorporation,
+}: {
+  basePath: string;
+  preIncorporation?: PreIncorporationScope;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const now = useMemo(() => new Date(), []);
@@ -105,6 +119,8 @@ export function FilingsView({ basePath }: { basePath: string }) {
           fyStartYear={fyStartYear}
           currentFyStartYear={currentFy.startYear}
         />
+
+        {preIncorporation ? <PreIncorporationNotice scope={preIncorporation} /> : null}
 
         <SegmentedPicker
           value={cadence}
