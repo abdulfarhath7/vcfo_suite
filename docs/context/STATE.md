@@ -21,6 +21,7 @@ Last updated: 2026-08-10 (multi-client projects + super_admin + client audit).
 | POST create project + client | `/api/engagements` POST |
 | Change password (authenticated) | `/api/account/password` |
 | Four-role model | extended — `super_admin` / `admin` / `manager` / `intern` / `client` |
+| Compliance visible pre-COI | done — `isIncorporated` helper + `PreIncorporationNotice`; client Calendar/Filings, staff tracker/statutory (single company), super project rail; portfolio views keep real rows |
 
 ## Intentionally deferred / pilot limits
 
@@ -40,7 +41,7 @@ npm run dev   # or npm run build && npm run start:lan
 
 Demo logins:
 - `super@vcfo.local` / `super123` (Super Admin — bird's-eye)
-- `admin@vcfo.local` / `admin123` (Firm Admin)
+- `admin@vcfo.local` / `admin123` (Firm Admin) — absent from the current local DB (2026-09-07); use `admin-nadia@demo.vcfo.local` / `demo1234` from `db:seed-demo`
 - `manager@vcfo.local` / `manager123` (Project Manager)
 - `intern@vcfo.local` / `intern123` (Project Lead)
 - `client@vcfo.local` / `client123` (Client)

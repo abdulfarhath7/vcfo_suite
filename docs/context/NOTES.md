@@ -775,3 +775,29 @@ Append here whenever something costs more than a minute to figure out.
 - Migration `0014` was hand-trimmed: drizzle-kit emitted a large drift backlog for
   tables that already exist in the database. Only `engagement_change_requests`
   remains in the SQL; the snapshot is intact so future diffs are correct.
+
+## Compliance visible pre-incorporation (2026-09-07)
+
+- `isIncorporated(engagement, checklistState?)` in
+  `src/lib/compliance/incorporation-state.ts` is the ONLY source of "COI
+  recorded": `engagements.incorporation_date` first, Pre-12 terminal (via
+  `isChecklistStepSequentiallyComplete`) as the fallback. The super summary's
+  `incorporated` flag now goes through it too. Do not hand-roll the check.
+- `PreIncorporationNotice` (`src/components/compliances/`) owns the client /
+  staff copy and composes `ui/alert` + `IconChip` + the login info tint. Callers
+  decide *whether* from `isIncorporated`. The shared Calendar / Filings views
+  take `preIncorporation` and keep their normal layout in its genuine empty
+  state — nothing is seeded to fill the space.
+- Client route shells are server components, so
+  `src/views/client/ClientCompliancePages.tsx` is where the client's engagement
+  is resolved and the scope derived. A super admin in the client portal has no
+  pinned engagement (`enterAs.client` TODO) → portfolio behaviour, no notice.
+- Staff per-engagement compliance = filing tracker / statutory calendar with one
+  company picked (P2 staff routes for the shared module are still unbuilt).
+  Portfolio views keep real rows + a one-line pre-COI count off the engagement
+  list already in hand.
+- Pre-existing caveat, NOT changed: the staff filing tracker uses
+  `computeAllFilings` (in-memory `generate-instances`), whose `fixed_annual`
+  obligations anchor on `'2000-01-01'` when there is no incorporation date, so
+  a pre-COI company can show a couple of "generated" rows there while the
+  DB-backed `/api/filings` register (what the client sees) has none. Owner call.

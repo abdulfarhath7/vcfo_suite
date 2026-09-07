@@ -40,7 +40,7 @@ export function PreIncorporationNotice({
     <Alert
       role="status"
       className={cn(
-        'flex items-center gap-3 rounded-xl border-info/20 border-l-[3px] border-l-info bg-info-light px-4 py-3 text-foreground',
+        'flex items-center gap-3 border-info/20 border-l-[3px] border-l-info bg-info-light px-4 py-3 text-foreground',
         className,
       )}
     >
