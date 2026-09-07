@@ -99,8 +99,7 @@ export default function SuperOverview() {
             {
               label: 'filings due',
               value: kpis.overdueFilings + kpis.filingsDueSoon,
-              // TODO(owner): moves to /app/super/compliance in P2.
-              href: '/app/admin/compliance',
+              href: '/app/admin/compliances/calendar',
               hot: kpis.overdueFilings > 0,
             },
           ]}

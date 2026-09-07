@@ -1,10 +1,12 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
 import { CalendarDays } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
 import { toneForKey, TONE_BADGE } from '@/components/common/IconChip';
+import { useStaffBasePath } from '@/hooks/use-staff-base-path';
+import { staffProjectBaseFromPathname } from '@/lib/project-step-path';
 import type { AdminDashboardViewProps } from '@/views/admin/DashboardSections';
 
 /** Status dot color for a filing — overdue reads red, in-progress amber,
@@ -20,13 +22,16 @@ export function AdminDashboardFilingsPanel({
   dueSoon,
 }: Pick<AdminDashboardViewProps, 'engagements' | 'dueSoon'>) {
   const router = useRouter();
+  const pathname = usePathname();
+  const staffBase = useStaffBasePath();
+  const calendarHref = `${staffProjectBaseFromPathname(pathname, staffBase)}/compliances/calendar`;
 
   return (
     <DashSection
       icon={CalendarDays}
       tone="cyan"
       title="Upcoming filings"
-      href="/app/manager/compliance"
+      href={calendarHref}
       hrefLabel="Calendar"
     >
       {dueSoon.length === 0 ? (
@@ -46,7 +51,7 @@ export function AdminDashboardFilingsPanel({
               initial={{ opacity: 0, x: -4 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.03 * i }}
-              onClick={() => router.push('/app/manager/compliance')}
+              onClick={() => router.push(calendarHref)}
               className="group flex w-full min-w-0 items-center gap-2.5 border-t border-border py-2.5 text-left first:border-0 first:pt-0 last:pb-0"
             >
               <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-raised">

@@ -57,6 +57,7 @@ describe('shellBreadcrumb', () => {
     expect(labels('/app/intern/vault')).toEqual(['Home', 'Docs', 'Vault']);
     expect(hrefs('/app/intern/vault')).toEqual(['/app/intern/today', '/app/intern/vault', null]);
     expect(shellCrumbParent('knowledge-bank')).toBe('Docs');
+    expect(shellCrumbParent('compliances')).toBe('Compliances');
     expect(shellBreadcrumb('/app/manager/knowledge-bank')).toMatchObject({
       icon: 'folder',
       segments: [
@@ -180,25 +181,29 @@ describe('shellBreadcrumb', () => {
     expect(labels('/app/admin/projects/new')).toEqual(['Home', 'Projects', 'New project']);
   });
 
-  it('expands nested compliance tracker under the calendar', () => {
-    expect(labels('/app/intern/compliance/tracker')).toEqual([
-      'Home',
-      'Compliance calendar',
-      'Filing tracker',
-    ]);
-    expect(hrefs('/app/intern/compliance/tracker')).toEqual([
+  it('nests Calendar and Filings under Compliances for every shell', () => {
+    expect(labels('/app/intern/compliances/filings')).toEqual(['Home', 'Compliances', 'Filings']);
+    expect(hrefs('/app/intern/compliances/filings')).toEqual([
       '/app/intern/today',
-      '/app/intern/compliance',
+      '/app/intern/compliances/calendar',
       null,
     ]);
+    expect(labels('/app/admin/compliances/calendar')).toEqual(['Home', 'Compliances', 'Calendar']);
+    expect(hrefs('/app/admin/compliances/calendar')).toEqual([
+      '/app/admin/dashboard',
+      '/app/admin/compliances/calendar',
+      null,
+    ]);
+    expect(labels('/app/manager/compliances/filings')).toEqual(['Home', 'Compliances', 'Filings']);
+    expect(labels('/app/client/compliances/calendar')).toEqual(['Home', 'Compliances', 'Calendar']);
+    expect(shellBreadcrumb('/app/client/compliances/filings').icon).toBe('calendar');
   });
 });
 
 describe('pageTitleRepeatsTrail', () => {
   it('treats route names that match the last crumb as redundant', () => {
-    expect(pageTitleRepeatsTrail('Compliance calendar', '/app/intern/compliance')).toBe(true);
-    expect(pageTitleRepeatsTrail('compliance calendar', '/app/intern/compliance')).toBe(true);
-    expect(pageTitleRepeatsTrail('Filing tracker', '/app/intern/compliance/tracker')).toBe(true);
+    expect(pageTitleRepeatsTrail('Calendar', '/app/intern/compliances/calendar')).toBe(true);
+    expect(pageTitleRepeatsTrail('filings', '/app/manager/compliances/filings')).toBe(true);
     expect(pageTitleRepeatsTrail('Vault', '/app/intern/vault')).toBe(true);
     expect(pageTitleRepeatsTrail('Knowledge Bank', '/app/manager/knowledge-bank')).toBe(true);
     expect(pageTitleRepeatsTrail('Announcements', '/app/intern/announcements')).toBe(true);
@@ -211,7 +216,8 @@ describe('pageTitleRepeatsTrail', () => {
   });
 
   it('keeps titles that add information beyond the trail leaf', () => {
-    expect(pageTitleRepeatsTrail('Statutory calendar', '/app/intern/compliance')).toBe(false);
+    expect(pageTitleRepeatsTrail('Statutory calendar', '/app/intern/compliances/calendar')).toBe(false);
+    expect(pageTitleRepeatsTrail('Compliance calendar', '/app/admin/compliances/calendar')).toBe(false);
     expect(pageTitleRepeatsTrail('GCC Setup Projects', '/app/manager/projects')).toBe(false);
     expect(pageTitleRepeatsTrail('Project leads', '/app/manager/team')).toBe(false);
     expect(pageTitleRepeatsTrail("Bird's-eye overview", '/app/super/dashboard')).toBe(false);

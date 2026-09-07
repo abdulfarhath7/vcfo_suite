@@ -22,6 +22,7 @@ import {
   ClipboardCheck,
   History,
   CalendarCheck,
+  FileSpreadsheet,
   Mail,
   Megaphone,
   Archive,
@@ -332,6 +333,8 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/projects/new")}><Plus className="w-4 h-4 mr-2" />New project</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/super/announcements")}><Megaphone className="w-4 h-4 mr-2" />Announcements</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/super/notifications")}><Bell className="w-4 h-4 mr-2" />Notification history</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/admin/compliances/calendar")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/admin/compliances/filings")}><FileSpreadsheet className="w-4 h-4 mr-2" />Filings</CommandItem>
             </CommandGroup>
           )}
           {user?.role === "admin" && (
@@ -342,7 +345,8 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/people")}><Users className="w-4 h-4 mr-2" />People</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/mail")}><Mail className="w-4 h-4 mr-2" />Send email</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/approvals")}><ClipboardCheck className="w-4 h-4 mr-2" />Approvals</CommandItem>
-              <CommandItem className={itemClass} onSelect={() => go("/app/admin/compliance")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/admin/compliances/calendar")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/admin/compliances/filings")}><FileSpreadsheet className="w-4 h-4 mr-2" />Filings</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/vault")}><FolderClosed className="w-4 h-4 mr-2" />Document vault</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/knowledge-bank")}><BookOpen className="w-4 h-4 mr-2" />Knowledge Bank</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/analytics")}><BarChart3 className="w-4 h-4 mr-2" />Analytics</CommandItem>
@@ -359,7 +363,8 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/manager/approvals")}><ClipboardCheck className="w-4 h-4 mr-2" />Approvals</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/manager/people")}><Users className="w-4 h-4 mr-2" />People</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/manager/mail")}><Mail className="w-4 h-4 mr-2" />Send email</CommandItem>
-              <CommandItem className={itemClass} onSelect={() => go("/app/manager/compliance")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/manager/compliances/calendar")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/manager/compliances/filings")}><FileSpreadsheet className="w-4 h-4 mr-2" />Filings</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/manager/vault")}><FolderClosed className="w-4 h-4 mr-2" />Document vault</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/manager/knowledge-bank")}><BookOpen className="w-4 h-4 mr-2" />Knowledge Bank</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/manager/analytics")}><BarChart3 className="w-4 h-4 mr-2" />Analytics</CommandItem>
@@ -377,8 +382,8 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/notifications")}><Bell className="w-4 h-4 mr-2" />Notification history</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/mail")}><Mail className="w-4 h-4 mr-2" />Send email</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/analytics")}><BarChart3 className="w-4 h-4 mr-2" />Analytics</CommandItem>
-              <CommandItem className={itemClass} onSelect={() => go("/app/intern/compliance")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
-              <CommandItem className={itemClass} onSelect={() => go("/app/intern/compliance/tracker")}><CalendarCheck className="w-4 h-4 mr-2" />Filing tracker</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/intern/compliances/calendar")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/intern/compliances/filings")}><FileSpreadsheet className="w-4 h-4 mr-2" />Filings</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/audit-log")}><History className="w-4 h-4 mr-2" />Audit log</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/knowledge-bank")}><BookOpen className="w-4 h-4 mr-2" />Knowledge Bank</CommandItem>
             </CommandGroup>
@@ -389,7 +394,8 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/client/announcements")}><Megaphone className="w-4 h-4 mr-2" />Announcements</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/notifications")}><Bell className="w-4 h-4 mr-2" />Notification history</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/incorporation")}>Incorporation</CommandItem>
-              <CommandItem className={itemClass} onSelect={() => go("/app/client/compliances")}><CalendarCheck className="w-4 h-4 mr-2" />Compliances</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/client/compliances/calendar")}><CalendarCheck className="w-4 h-4 mr-2" />Compliance calendar</CommandItem>
+              <CommandItem className={itemClass} onSelect={() => go("/app/client/compliances/filings")}><FileSpreadsheet className="w-4 h-4 mr-2" />Filings</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/documents")}><FolderClosed className="w-4 h-4 mr-2" />Documents</CommandItem>
             </CommandGroup>
           )}

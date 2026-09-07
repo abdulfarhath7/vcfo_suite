@@ -21,7 +21,7 @@ describe('shouldShowShellBack', () => {
     expect(shouldShowShellBack('/app/intern/clients')).toBe(true);
     expect(shouldShowShellBack('/app/intern/clients/')).toBe(true);
     expect(shouldShowShellBack('/app/intern/vault')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/compliance')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/compliances/calendar')).toBe(true);
     expect(shouldShowShellBack('/app/intern/knowledge-bank')).toBe(true);
     expect(shouldShowShellBack('/app/intern/mail')).toBe(true);
     expect(shouldShowShellBack('/app/intern/analytics')).toBe(true);
@@ -37,7 +37,7 @@ describe('shouldShowShellBack', () => {
     expect(shouldShowShellBack('/app/intern/engagements/pexpo-inc/board-resolution')).toBe(
       true,
     );
-    expect(shouldShowShellBack('/app/intern/compliance/tracker')).toBe(true);
+    expect(shouldShowShellBack('/app/intern/compliances/filings')).toBe(true);
   });
 
   it('hides on other-role homes only; other primary pages get a back control', () => {
@@ -95,6 +95,13 @@ describe('shellBackFallbackPath', () => {
     expect(shellBackFallbackPath('/app/manager/settings')).toBe('/app/manager/dashboard');
     expect(shellBackFallbackPath('/app/client/settings')).toBe('/app/client/overview');
     expect(shellBackFallbackPath('/app/super/settings')).toBe('/app/super/dashboard');
+  });
+
+  it('walks up to home from the Compliances children, never the redirecting group index', () => {
+    expect(shellBackFallbackPath('/app/intern/compliances/calendar')).toBe('/app/intern/today');
+    expect(shellBackFallbackPath('/app/manager/compliances/filings')).toBe('/app/manager/dashboard');
+    expect(shellBackFallbackPath('/app/admin/compliances/filings')).toBe('/app/admin/dashboard');
+    expect(shellBackFallbackPath('/app/client/compliances/calendar')).toBe('/app/client/overview');
   });
 
   it('returns incorporation from the client board-resolution page', () => {

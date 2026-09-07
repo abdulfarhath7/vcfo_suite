@@ -105,7 +105,7 @@ export function LeadSideRail({
           {nextFilings.map((f) => (
             <Link
               key={f.id}
-              href="/app/intern/compliance"
+              href="/app/intern/compliances/calendar"
               className="mt-2.5 flex min-w-0 items-center gap-2.5"
             >
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-raised text-[11px] font-extrabold tabular-nums text-ink">

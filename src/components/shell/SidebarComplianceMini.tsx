@@ -4,15 +4,8 @@ import Link from 'next/link';
 import { memo, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { STATUTORY_DEADLINES } from '@/data/statutory-calendar-fy2627';
+import { complianceCalendarPath } from '@/components/shell/compliance-nav';
 import { cn } from '@/lib/utils';
-
-function complianceHref(role: string | undefined, staffBase: string): string {
-  if (role === 'admin') return '/app/admin/compliance';
-  if (role === 'manager') return `${staffBase}/compliance`;
-  if (role === 'intern') return '/app/intern/compliance';
-  if (role === 'client') return '/app/client/compliances';
-  return '/app/manager/compliance';
-}
 
 /** Compact month grid. Today is the bright cell; due days are round marks. */
 export const SidebarComplianceMini = memo(function SidebarComplianceMini({
@@ -44,7 +37,8 @@ export const SidebarComplianceMini = memo(function SidebarComplianceMini({
 
   if (!user || !expanded) return null;
 
-  const href = complianceHref(user.role, staffBase);
+  // Same target as the Compliances → Calendar leaf in this shell's group.
+  const href = complianceCalendarPath(user.role, staffBase);
   const cells: Array<number | null> = [];
   for (let i = 0; i < startWeekday; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);

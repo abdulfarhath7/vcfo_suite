@@ -46,8 +46,6 @@ const PAGE_LABEL: Record<string, string> = {
   announcements: 'Announcements',
   notifications: 'Notifications',
   mail: 'Send email',
-  compliance: 'Compliance calendar',
-  tracker: 'Filing tracker',
   compliances: 'Compliances',
   calendar: 'Calendar',
   filings: 'Filings',
@@ -85,7 +83,6 @@ const PAGE_ICON: Record<string, ShellCrumbIcon> = {
   mail: 'mail',
   inbox: 'inbox',
   projects: 'briefcase',
-  compliance: 'calendar',
   compliances: 'calendar',
   analytics: 'chart',
   approvals: 'clipboard',
@@ -123,10 +120,11 @@ function roleBase(parts: string[]): string {
   return '/app';
 }
 
-/** Parent group for Docs / Updates sidebar disclosures. */
+/** Parent group for Docs / Updates / Compliances sidebar disclosures. */
 export function shellCrumbParent(segment: string | undefined): string | null {
   if (segment === 'vault' || segment === 'knowledge-bank') return 'Docs';
   if (segment === 'announcements' || segment === 'notifications') return 'Updates';
+  if (segment === 'compliances') return 'Compliances';
   if (segment === 'engagements') return 'Clients';
   return null;
 }
@@ -365,6 +363,14 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     return trail(path, pageIcon(page, group), [
       { label: 'Updates', href: `${base}/announcements` },
       { label: pageLabel(page), href: `${base}/${page}` },
+    ]);
+  }
+  // Compliances is a nested group: `{base}/compliances/{calendar|filings}`.
+  // The parent links to its landing child (the calendar), as Docs → Vault does.
+  if (group === 'Compliances') {
+    return trail(path, 'calendar', [
+      { label: 'Compliances', href: `${base}/compliances/calendar` },
+      { label: pageLabel(nested ?? 'calendar'), href: `${base}/compliances/${nested ?? 'calendar'}` },
     ]);
   }
 

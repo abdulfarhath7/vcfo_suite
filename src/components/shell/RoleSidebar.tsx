@@ -14,8 +14,6 @@ import {
   FolderClosed,
   FolderOpen,
   CalendarCheck,
-  CalendarDays,
-  FileSpreadsheet,
   BarChart3,
   Landmark,
   Users,
@@ -41,6 +39,8 @@ import { useShellNav } from '@/components/shell/shell-nav-context';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { SidebarComplianceMini } from '@/components/shell/SidebarComplianceMini';
+import { complianceLeaves } from '@/components/shell/compliance-nav';
+import { TONE } from '@/components/shell/nav-tones';
 import { InternClientsNav, INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
 import {
   SidebarNavCountBadge,
@@ -89,22 +89,6 @@ function isNavGroup(entry: NavEntry): entry is NavGroupDef {
   return 'items' in entry;
 }
 
-/* Functional icon color map: overview = role accent, work = blue,
-   approvals/queues = muted gold, people = sky, calendar = teal-green,
-   files = teal, knowledge = sky, analytics = sky, audit = neutral. */
-const TONE = {
-  home: 'text-role',
-  work: 'text-primary',
-  queue: 'text-warning',
-  people: 'text-info',
-  calendar: 'text-success',
-  files: 'text-phase-filing-text',
-  knowledge: 'text-info',
-  news: 'text-accent-violet',
-  analytics: 'text-info',
-  audit: 'text-text-tertiary',
-};
-
 function docsGroup(base: string, vaultIcon: Item['icon'] = FolderClosed): NavGroupDef {
   return {
     id: `docs:${base}`,
@@ -118,17 +102,14 @@ function docsGroup(base: string, vaultIcon: Item['icon'] = FolderClosed): NavGro
   };
 }
 
-/** Compliances → Calendar + Filings, the same disclosure shape as Updates. */
+/** Compliances → Calendar + Filings, the same disclosure shape as Updates — every role. */
 function compliancesGroup(base: string): NavGroupDef {
   return {
     id: `compliances:${base}`,
     label: 'Compliances',
     icon: CalendarCheck,
     iconTone: TONE.calendar,
-    items: [
-      { to: `${base}/compliances/calendar`, label: 'Calendar', icon: CalendarDays, iconTone: TONE.calendar },
-      { to: `${base}/compliances/filings`, label: 'Filings', icon: FileSpreadsheet, iconTone: TONE.files },
-    ],
+    items: complianceLeaves(base),
   };
 }
 
@@ -151,7 +132,7 @@ const firmAdminItems: NavEntry[] = [
   { to: '/app/admin/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   { to: '/app/admin/approvals', label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
-  { to: '/app/admin/compliance', label: 'Compliance', icon: CalendarCheck, iconTone: TONE.calendar },
+  compliancesGroup('/app/admin'),
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/admin'),
   NAV_TOOLS_BREAK,
@@ -175,6 +156,8 @@ const superAdminItems: NavEntry[] = [
   updatesGroup('/app/super'),
   { to: '/app/admin/dashboard', label: 'Firm', icon: Building2, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
+  // Firm scope, like Firm / People / Email above — super has no compliance routes of its own.
+  compliancesGroup('/app/admin'),
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   { to: '/app/admin/audit-log', label: 'Firm log', icon: HistoryIcon, iconTone: TONE.audit },
   { to: '/app/client/overview', label: 'Portal', icon: Inbox, iconTone: TONE.home },
@@ -231,7 +214,7 @@ export function SidebarNavBody({
       { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
       { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
       { to: `${staffBase}/team`, label: 'Leads', icon: UserSquare2, iconTone: TONE.people },
-      { to: `${staffBase}/compliance`, label: 'Compliance', icon: CalendarCheck, iconTone: TONE.calendar },
+      compliancesGroup(staffBase),
       { to: `${staffBase}/mail`, label: 'Email', icon: Mail, iconTone: TONE.work },
       docsGroup(staffBase),
       NAV_TOOLS_BREAK,
@@ -249,7 +232,7 @@ export function SidebarNavBody({
       { to: '/app/intern/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
       docsGroup('/app/intern', Archive),
       updatesGroup('/app/intern'),
-      { to: '/app/intern/compliance', label: 'Compliance', icon: CalendarCheck, iconTone: TONE.calendar },
+      compliancesGroup('/app/intern'),
       NAV_TOOLS_BREAK,
       { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
       { to: '/app/intern/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },

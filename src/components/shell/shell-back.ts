@@ -21,7 +21,8 @@ export const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
   INTERN_CLIENTS_HREF,
   '/app/intern/vault',
   '/app/intern/mail',
-  '/app/intern/compliance',
+  '/app/intern/compliances/calendar',
+  '/app/intern/compliances/filings',
   '/app/intern/knowledge-bank',
   '/app/intern/analytics',
   '/app/intern/audit-log',
@@ -33,7 +34,8 @@ export const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
   '/app/manager/people',
   '/app/manager/mail',
   '/app/manager/team',
-  '/app/manager/compliance',
+  '/app/manager/compliances/calendar',
+  '/app/manager/compliances/filings',
   '/app/manager/vault',
   '/app/manager/knowledge-bank',
   '/app/manager/analytics',
@@ -45,7 +47,8 @@ export const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
   '/app/admin/people',
   '/app/admin/mail',
   '/app/admin/approvals',
-  '/app/admin/compliance',
+  '/app/admin/compliances/calendar',
+  '/app/admin/compliances/filings',
   '/app/admin/vault',
   '/app/admin/knowledge-bank',
   '/app/admin/analytics',
@@ -134,6 +137,11 @@ export function shellBackFallbackPath(pathname: string): string {
   }
 
   if (parts.length <= 2) return home;
+
+  /* A sidebar destination is a top-level place even when its URL is nested
+     (Compliances → Calendar / Filings): up from there is home, not the group
+     index that would only redirect back. */
+  if (SHELL_PRIMARY_PATHS.has(path)) return home;
 
   /* `/step/:stepId` is one nested level (engagement / project), not two. */
   const drop = parts.length >= 2 && parts[parts.length - 2] === 'step' ? 2 : 1;

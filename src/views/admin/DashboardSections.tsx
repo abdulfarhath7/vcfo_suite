@@ -70,7 +70,7 @@ export function AdminDashboardView({
     {
       label: 'due in 2 days',
       value: dueInTwoDays,
-      href: `${projectBase}/compliance`,
+      href: `${projectBase}/compliances/calendar`,
       hot: dueInTwoDays > 0,
     },
     { label: 'approvals to send', value: approvalsToSend, href: `${projectBase}/approvals` },

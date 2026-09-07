@@ -332,7 +332,7 @@ export function internWorkHref(opts: {
   engagement: Pick<Engagement, 'id' | 'slug'>;
   catalogId?: string;
 }): string {
-  if (opts.source === 'filing') return '/app/intern/compliance';
+  if (opts.source === 'filing') return '/app/intern/compliances/calendar';
   if (opts.source === 'request') return internEngagementPath(opts.engagement);
   const item = opts.catalogId ? getItem(opts.catalogId) : undefined;
   if (item) return internEngagementStepPath(opts.engagement, item);
