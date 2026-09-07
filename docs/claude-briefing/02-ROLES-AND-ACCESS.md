@@ -13,9 +13,9 @@ The word **intern** is a **code name only**. Never show “intern” in UI copy.
 | Firm Admin | `/app/admin/dashboard` | `/app/admin` |
 | Project Manager | `/app/manager/dashboard` | `/app/manager` |
 | Project Lead | `/app/intern/today` | `/app/intern` |
-| Client | `/app/client/inbox` | `/app/client` |
+| Client | `/app/client/overview` | `/app/client` |
 
-Cross-role URLs bounce via middleware. Super Admin is the exception (may enter every segment). Use `staffBase` / `adminProjectPath` — never hardcode `/app/manager` in shared staff UI.
+Cross-role URLs bounce via `proxy.ts`. Super Admin is the exception (may enter every segment). Use `staffBase` / `adminProjectPath` — never hardcode `/app/manager` in shared staff UI.
 
 ## What each role is for
 

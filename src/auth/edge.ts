@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import { authConfigBase } from '@/auth/config.base';
 
 /**
- * The Edge-runtime `auth()` wrapper — for middleware ONLY.
+ * The lightweight `auth()` wrapper — for proxy.ts (route guard) ONLY.
  *
  * It can read and verify the session JWT but cannot sign anyone in, because it
  * has no providers. Server components, route handlers and server actions must

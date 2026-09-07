@@ -33,7 +33,7 @@ Code role **`intern`** = UI label **Project Lead**. Never show “intern” to u
 | `admin` | Admin | `/app/admin/dashboard` | Firm-wide. Assigns PM on create. People, all projects, approvals, vault, KB, analytics, audit. |
 | `manager` | Project Manager | `/app/manager/dashboard` | Owned engagements (+ `engagement_managers`). Approvals, leads who report to them, mail. Create project as self. |
 | `intern` | Project Lead | `/app/intern/today` | Assigned engagements. Today queue, clients, step workspace. KB read-all + own upload. **No sequential lock on nav.** Spec: no audit read. |
-| `client` | Client | `/app/client/inbox` | Own engagement(s). Gated catalog. Invite/substitute teammates. Shared docs only. **No BR drafts** until finalized. No KB. |
+| `client` | Client | `/app/client/overview` | Own engagement(s). Gated catalog. Invite/substitute teammates. Shared docs only. **No BR drafts** until finalized. No KB. |
 
 Admin and manager **share views** via `/app/admin/*` vs `/app/manager/*` (`useStaffBasePath`). Intern and client are **different products** (density + gating).
 

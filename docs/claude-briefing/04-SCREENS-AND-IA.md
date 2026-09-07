@@ -128,7 +128,7 @@ Client should feel: “what do you need from me, and what happens next?”
 ### Client
 | Route | Purpose |
 |---|---|
-| `/app/client/inbox` | Actions due |
+| `/app/client/overview` | Actions due |
 | `/app/client/incorporation` | Gated catalog |
 | `/app/client/compliances` | Filings |
 | `/app/client/documents` | Shared files |

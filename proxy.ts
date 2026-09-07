@@ -1,6 +1,6 @@
-// MUST be '@/auth/edge', not '@/auth/config'. This file runs in the Edge
-// runtime; the Node config imports bcrypt and the pg pool, which fails here
-// with "Failed to load external module node:util/types".
+// MUST be '@/auth/edge', not '@/auth/config'. The edge wrapper has no
+// providers and no database access, which is all a request-path guard needs.
+// '@/auth/config' would pull bcrypt and the pg pool into every guarded request.
 import { auth } from '@/auth/edge';
 import { NextResponse } from 'next/server';
 
@@ -17,7 +17,7 @@ const roleHome: Record<string, string> = {
   admin: '/app/admin/dashboard',
   manager: '/app/manager/dashboard',
   intern: '/app/intern/today',
-  client: '/app/client/inbox',
+  client: '/app/client/overview',
 };
 
 const roleSegment: Record<string, string> = {
