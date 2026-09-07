@@ -5,6 +5,7 @@ import { Activity, CalendarClock, ExternalLink, Scale, Users } from 'lucide-reac
 import { DashDonut, DashLegendRow, DashSection } from '@/components/dash/DashSection';
 import { CHART_STATUS } from '@/components/charts';
 import { TONE_BADGE } from '@/components/common/IconChip';
+import { PreIncorporationNotice } from '@/components/compliances/PreIncorporationNotice';
 import {
   FILING_TONE,
   formatSuperAgo,
@@ -99,6 +100,14 @@ function FilingsPanel({ detail }: { detail: SuperEngagementDetail }) {
       title="Compliance"
       meta={detail.filings.length === 0 ? undefined : `${detail.filings.length} in window`}
     >
+      {/* Inspection only: the same per-engagement state the client sees, read off
+          `summary.incorporated` (which is `isIncorporated`). Nothing is mutated. */}
+      {!detail.summary.incorporated ? (
+        <PreIncorporationNotice
+          scope={{ audience: 'staff', companyName: detail.summary.companyName }}
+          className="mb-2.5"
+        />
+      ) : null}
       {filings.length === 0 ? (
         <p className="py-3 text-center text-[12.5px] text-muted-foreground">
           No filings in the next 90 days.

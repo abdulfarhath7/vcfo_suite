@@ -16,6 +16,11 @@ import { CalendarCheck } from 'lucide-react';
 import { IconChip, toneForKey, TONE_BADGE } from '@/components/common/IconChip';
 import { cn } from '@/lib/utils';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
+import {
+  PreIncorporationNotice,
+  PreIncorporationPortfolioNote,
+} from '@/components/compliances/PreIncorporationNotice';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
 
 const statusMap: Record<ComplianceFiling['status'], { label: string; cls: string }> = {
   'upcoming':    { label: 'Due soon',    cls: 'bg-info-light text-info-text' },
@@ -50,6 +55,25 @@ export default function Compliance({
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+
+  /**
+   * Pre-COI companies, off the engagement list already in hand — no query.
+   * One company picked → the per-engagement notice; the whole portfolio keeps
+   * its real instances and gets at most a one-line count.
+   */
+  const preIncorporationIds = useMemo(
+    () =>
+      new Set(
+        engagements
+          .filter((e) => !isIncorporated(e, getStateForEngagement(e)))
+          .map((e) => e.id),
+      ),
+    [engagements, getStateForEngagement],
+  );
+  const pickedCompany =
+    clientFilter === 'all' ? null : engagements.find((e) => e.id === clientFilter) ?? null;
+  const pickedPreIncorporation =
+    pickedCompany && preIncorporationIds.has(pickedCompany.id) ? pickedCompany : null;
 
   const filteredFilings = useMemo(() => {
     return allFilings.filter(
@@ -111,6 +135,19 @@ export default function Compliance({
             className="ml-auto inline-grid"
           />
         </div>
+
+        {pickedPreIncorporation ? (
+          <div className="border-b border-border px-4 py-3">
+            <PreIncorporationNotice
+              scope={{ audience: 'staff', companyName: pickedPreIncorporation.companyName }}
+            />
+          </div>
+        ) : clientFilter === 'all' ? (
+          <PreIncorporationPortfolioNote
+            count={preIncorporationIds.size}
+            className="border-b border-border px-4 py-2"
+          />
+        ) : null}
 
         <div className="grid lg:grid-cols-[minmax(280px,320px)_1fr]">
           <ComplianceCalendar

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { FilingsView } from "@/views/compliances/FilingsView";
+import { ClientFilingsPage } from "@/views/client/ClientCompliancePages";
 import { pageMetadata } from "@/lib/page-metadata";
 
 export const metadata = pageMetadata("Filings", "Statutory filing register");
@@ -8,7 +8,7 @@ export const metadata = pageMetadata("Filings", "Statutory filing register");
 export default function Page() {
   return (
     <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading filings…</div>}>
-      <FilingsView basePath="/app/client/compliances" />
+      <ClientFilingsPage />
     </Suspense>
   );
 }

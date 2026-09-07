@@ -19,6 +19,11 @@ import {
   type StatutoryDeadline,
 } from '@/data/statutory-calendar-fy2627';
 import { CompanyPicker } from '@/components/admin/CompanyPicker';
+import {
+  PreIncorporationNotice,
+  PreIncorporationPortfolioNote,
+} from '@/components/compliances/PreIncorporationNotice';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { PageBackCluster } from '@/components/shell/PageBackButton';
 import {
   buildStatutoryMonthGrid,
@@ -259,7 +264,7 @@ export function StatutoryCalendar({
   const reduceMotion = Boolean(osReduce) || prefReduce;
   const [viewMonth, setViewMonth] = useState(() => clampToFy(new Date()));
   const [mode, setMode] = useState<StatutoryCalendarMode>('minimized');
-  const { sidebarMode, setSidebarMode, user } = useApp();
+  const { sidebarMode, setSidebarMode, user, getStateForEngagement } = useApp();
   /** Admin and super see the full master calendar; leads and managers only the
       deadlines that apply to a client in their own scoped portfolio. */
   const firmWide = isFirmWideAdmin(user?.role);
@@ -317,6 +322,15 @@ export function StatutoryCalendar({
   }, []);
 
   const company = companyId === 'all' ? null : engagements.find((e) => e.id === companyId) ?? null;
+
+  /** Pre-COI companies, read off the list in hand — the count needs no query. */
+  const preIncorporationCount = useMemo(
+    () => engagements.filter((e) => !isIncorporated(e, getStateForEngagement(e))).length,
+    [engagements, getStateForEngagement],
+  );
+  const companyPreIncorporation = Boolean(
+    company && !isIncorporated(company, getStateForEngagement(company)),
+  );
 
   /** Company + scope, but before category mutes — legend counts must not vanish. */
   const scoped = useMemo(() => {
@@ -495,6 +509,15 @@ export function StatutoryCalendar({
           </button>
         </div>
       </div>
+
+      {company && companyPreIncorporation ? (
+        <PreIncorporationNotice
+          scope={{ audience: 'staff', companyName: company.companyName }}
+          className="mb-3"
+        />
+      ) : !company ? (
+        <PreIncorporationPortfolioNote count={preIncorporationCount} className="px-1 pb-3" />
+      ) : null}
 
       <div className="stat-cal-stage">
         <section className="surface stat-cal-list overflow-hidden">
