@@ -805,10 +805,13 @@ Append here whenever something costs more than a minute to figure out.
 ## Compliances nav (2026-09-07)
 
 - The shared compliance views (`src/views/compliances/*`) are the only
-  compliance surface for every role. `audience="staff"` (via
-  `StaffCompliancePages`) adds the picker / statutory grid / status filter;
-  the client path passes nothing and is unchanged. Do not resurrect
-  `views/admin/Compliance.tsx` — every capability it had lives in staff mode.
+  compliance surface for every role, rendered by ONE wrapper
+  (`CompliancePages.tsx`) and one `ComplianceScope`. Chrome is identical in
+  every shell (statutory grid, full screen, register calendar, cadence +
+  status filters); the picker / Company column show only when the roster has
+  more than one company (`soleCompany`). `scope.audience` picks notice
+  wording and nothing else. Do not add role branches to the views, and do not
+  resurrect `views/admin/Compliance.tsx` or `views/client/Compliances.tsx`.
 - Where each shell's Compliances pages live is decided once in
   `src/components/shell/compliance-nav.ts` (`compliancesBasePath`,
   `complianceLeaves`). Super admin points at `/app/admin` — there is no

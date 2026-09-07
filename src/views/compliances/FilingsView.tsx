@@ -15,7 +15,6 @@ import { FilingStatusPill } from '@/components/compliances/FilingStatusPill';
 import {
   PreIncorporationNotice,
   PreIncorporationPortfolioNote,
-  type PreIncorporationScope,
 } from '@/components/compliances/PreIncorporationNotice';
 import { useFilings } from '@/lib/use-filings';
 import {
@@ -49,65 +48,56 @@ import {
   pickedCompany,
   rowsForCompany,
   rowsForStatus,
-  type ComplianceAudience,
-  type ComplianceStaffScope,
+  soleCompany,
+  type ComplianceScope,
   type FilingStatusFilter,
-} from '@/views/compliances/staff-scope';
+} from '@/views/compliances/compliance-scope';
 
-/** Which extra register columns a scope needs; the client register has neither. */
-type RegisterColumnsMode = { company: boolean; authority: boolean };
-const CLIENT_COLUMNS: RegisterColumnsMode = { company: false, authority: false };
+/** The register shows a Company column only while more than one company is on the sheet. */
+type RegisterColumnsMode = { company: boolean };
+const ONE_COMPANY: RegisterColumnsMode = { company: false };
 
 /**
- * FILINGS — the compliance register, for every role.
+ * FILINGS — the compliance register, one view for every role.
  *
- * One scope-parameterized module: the caller passes only its shell's base path
- * so links stay inside that role's routes. WHAT it shows is decided by
+ * The caller passes its shell's base path (so links stay inside that role's
+ * routes) and the `scope` it already holds. WHAT it shows is decided by
  * `getFilings`, which scopes by `AuthContext` — the client's register and the
- * super admin's are this component reading the same rows.
+ * super admin's are this component reading the same rows. Every shell gets
+ * the same chrome: FY stepper, cadence and status filters (`?cadence=`,
+ * `?status=`), the monthly / quarterly / annual sheets, the authority chip.
+ * The company picker (`?company=`) and the Company column appear whenever
+ * there is more than one company in scope; a sole company is implicit.
  *
  * Canonical pieces only: `DashSection` headers, `DashDataTable` rows,
  * `FilingStatusPill` (which is `TONE_BADGE`). No table, pill or panel variant
  * is invented here.
  *
- * `preIncorporation` is set by the caller (from `isIncorporated`) when the
- * company has no Certificate of Incorporation yet. The tabs and sheets render
- * exactly as they do post-COI, in their genuine empty state, under one notice.
- *
- * `audience="staff"` is the firm scope: the same register with the company
- * picker (`?company=`), the status filter (`?status=`), a Company column on
- * "All companies" and the authority chip — everything the old filing tracker
- * had, on the real register rows. The pre-COI notice appears when the picker
- * narrows to a company in `staff.preIncorporationIds`; on "All companies" the
+ * The pre-COI notice appears for a company in `scope.preIncorporationIds`
+ * (derived by the caller from `isIncorporated`); on "All companies" the
  * portfolio keeps its real rows and prints at most the one-line count.
  */
 export function FilingsView({
   basePath,
-  preIncorporation,
-  audience = 'client',
-  staff,
+  scope,
 }: {
   basePath: string;
-  preIncorporation?: PreIncorporationScope;
-  audience?: ComplianceAudience;
-  /** Required with `audience="staff"`: the scoped roster and its pre-COI ids. */
-  staff?: ComplianceStaffScope;
+  scope: ComplianceScope;
 }) {
   const router = useRouter();
   const params = useSearchParams();
   const now = useMemo(() => new Date(), []);
-  const isStaff = audience === 'staff' && Boolean(staff);
-  const engagements = useMemo(() => staff?.engagements ?? [], [staff?.engagements]);
+  const { engagements } = scope;
+  const sole = soleCompany(engagements);
 
   const cadenceParam = params.get('cadence');
   const cadence: FilingsCadence = isFilingsCadence(cadenceParam) ? cadenceParam : 'monthly';
   const fyFromUrl = parseFyParam(params.get('fy'));
   const periodParam = parseMonthParam(params.get('period'));
   const fullYear = params.get('view') === 'year';
-  const companyId = isStaff ? normaliseCompanyParam(params.get('company'), engagements) : ALL_COMPANIES;
+  const companyId = sole ? sole.id : normaliseCompanyParam(params.get('company'), engagements);
   const statusParam = params.get('status');
-  const statusFilter: FilingStatusFilter =
-    isStaff && isFilingStatusFilter(statusParam) ? statusParam : 'all';
+  const statusFilter: FilingStatusFilter = isFilingStatusFilter(statusParam) ? statusParam : 'all';
 
   const currentFy = financialYearForDate(now);
   // A `?period=` month decides the FY it belongs to, so a calendar cross-link
@@ -128,11 +118,9 @@ export function FilingsView({
     [companyRows, cadence, statusFilter, now],
   );
 
-  const picked = isStaff ? pickedCompany(engagements, companyId) : null;
-  const pickedPreIncorporation = picked && staff?.preIncorporationIds.has(picked.id) ? picked : null;
-  const columnsMode: RegisterColumnsMode = isStaff
-    ? { company: companyId === ALL_COMPANIES, authority: true }
-    : CLIENT_COLUMNS;
+  const picked = pickedCompany(engagements, companyId);
+  const pickedPreIncorporation = picked && scope.preIncorporationIds.has(picked.id) ? picked : null;
+  const columnsMode: RegisterColumnsMode = { company: companyId === ALL_COMPANIES };
 
   const setParams = (next: Record<string, string | null>) => {
     const search = new URLSearchParams(params.toString());
@@ -148,21 +136,6 @@ export function FilingsView({
     const next = months[monthIndex + delta];
     if (next) setParams({ period: next.key, fy: String(fyStartYear) });
   };
-
-  const cadencePicker = (
-    <SegmentedPicker
-      value={cadence}
-      options={[
-        { value: 'monthly', label: 'Monthly' },
-        { value: 'quarterly', label: 'Quarterly' },
-        { value: 'annual', label: 'Annual' },
-      ]}
-      onChange={(next) => setParams({ cadence: next })}
-      ariaLabel="Filing cadence"
-      size="sm"
-      className="max-w-sm"
-    />
-  );
 
   return (
     <PageTransition>
@@ -181,9 +154,9 @@ export function FilingsView({
           }
           fyStartYear={fyStartYear}
           currentFyStartYear={currentFy.startYear}
-          calendarQuery={picked ? `?company=${picked.id}` : ''}
+          calendarQuery={picked && !sole ? `?company=${picked.id}` : ''}
           picker={
-            isStaff ? (
+            sole ? null : (
               <CompanyPicker
                 engagements={engagements}
                 value={companyId}
@@ -192,37 +165,43 @@ export function FilingsView({
                   setParams({ company: id === ALL_COMPANIES ? null : id })
                 }
               />
-            ) : null
+            )
           }
         />
 
-        {preIncorporation ? <PreIncorporationNotice scope={preIncorporation} /> : null}
         {pickedPreIncorporation ? (
           <PreIncorporationNotice
-            scope={{ audience: 'staff', companyName: pickedPreIncorporation.companyName }}
+            scope={{ audience: scope.audience, companyName: pickedPreIncorporation.companyName }}
           />
-        ) : isStaff && !picked ? (
-          <PreIncorporationPortfolioNote count={staff?.preIncorporationIds.size ?? 0} />
+        ) : !picked ? (
+          <PreIncorporationPortfolioNote count={scope.preIncorporationIds.size} />
         ) : null}
 
-        {isStaff ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {cadencePicker}
-            <SegmentedPicker
-              value={statusFilter}
-              options={FILING_STATUS_FILTERS.map((status) => ({
-                value: status,
-                label: status === 'all' ? 'All' : FILING_STATUS_LABEL[status],
-              }))}
-              onChange={(next) => setParams({ status: next === 'all' ? null : next })}
-              ariaLabel="Filter by status"
-              size="sm"
-              className="ml-auto inline-grid"
-            />
-          </div>
-        ) : (
-          cadencePicker
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedPicker
+            value={cadence}
+            options={[
+              { value: 'monthly', label: 'Monthly' },
+              { value: 'quarterly', label: 'Quarterly' },
+              { value: 'annual', label: 'Annual' },
+            ]}
+            onChange={(next) => setParams({ cadence: next })}
+            ariaLabel="Filing cadence"
+            size="sm"
+            className="max-w-sm"
+          />
+          <SegmentedPicker
+            value={statusFilter}
+            options={FILING_STATUS_FILTERS.map((status) => ({
+              value: status,
+              label: status === 'all' ? 'All' : FILING_STATUS_LABEL[status],
+            }))}
+            onChange={(next) => setParams({ status: next === 'all' ? null : next })}
+            ariaLabel="Filter by status"
+            size="sm"
+            className="ml-auto inline-grid"
+          />
+        </div>
 
         {query.isPending ? (
           <FilingsSkeleton />
@@ -276,7 +255,7 @@ function FilingsHeader({
   onFyChange: (startYear: number) => void;
   /** Carries the narrowed company across to the calendar. */
   calendarQuery?: string;
-  /** Firm scope only: the `CompanyPicker`. */
+  /** The `CompanyPicker`, when there is more than one company to pick. */
   picker?: ReactNode;
 }) {
   return (
@@ -329,7 +308,7 @@ function registerColumns(
   options?: { numbered?: boolean; mode?: RegisterColumnsMode },
 ): DashColumn<FilingRow>[] {
   const columns: DashColumn<FilingRow>[] = [];
-  const mode = options?.mode ?? CLIENT_COLUMNS;
+  const mode = options?.mode ?? ONE_COMPANY;
   if (options?.numbered) {
     columns.push({
       key: 'sl',
@@ -352,15 +331,12 @@ function registerColumns(
       key: 'compliance',
       header: 'Compliance',
       width: 'minmax(0,0.9fr)',
-      render: (row) =>
-        mode.authority ? (
-          <span className="flex min-w-0 flex-col items-start gap-0.5">
-            <span className="text-ink">{row.compliance}</span>
-            <AuthorityChip authority={row.authority} />
-          </span>
-        ) : (
+      render: (row) => (
+        <span className="flex min-w-0 flex-col items-start gap-0.5">
           <span className="text-ink">{row.compliance}</span>
-        ),
+          <AuthorityChip authority={row.authority} />
+        </span>
+      ),
     },
     {
       key: 'particular',
@@ -431,7 +407,7 @@ function RegisterTable({
   now,
   basePath,
   numbered,
-  mode = CLIENT_COLUMNS,
+  mode = ONE_COMPANY,
 }: {
   rows: FilingRow[];
   now: Date;
@@ -478,7 +454,7 @@ function MonthlyTab({
   fullYear,
   now,
   basePath,
-  columnsMode = CLIENT_COLUMNS,
+  columnsMode,
   onToggleFullYear,
   onStepMonth,
   canStepBack,
@@ -490,7 +466,7 @@ function MonthlyTab({
   fullYear: boolean;
   now: Date;
   basePath: string;
-  columnsMode?: RegisterColumnsMode;
+  columnsMode: RegisterColumnsMode;
   onToggleFullYear: () => void;
   onStepMonth: (delta: number) => void;
   canStepBack: boolean;
@@ -567,12 +543,12 @@ function QuarterlyTab({
   rows,
   quarters,
   now,
-  columnsMode = CLIENT_COLUMNS,
+  columnsMode,
 }: {
   rows: FilingRow[];
   quarters: ReturnType<typeof financialYearQuarters>;
   now: Date;
-  columnsMode?: RegisterColumnsMode;
+  columnsMode: RegisterColumnsMode;
 }) {
   const startYear = Number.parseInt(quarters[0]?.key.slice(0, 4) ?? '0', 10);
   const matrix = useMemo(
@@ -616,12 +592,12 @@ function AnnualTab({
   rows,
   now,
   basePath,
-  columnsMode = CLIENT_COLUMNS,
+  columnsMode,
 }: {
   rows: FilingRow[];
   now: Date;
   basePath: string;
-  columnsMode?: RegisterColumnsMode;
+  columnsMode: RegisterColumnsMode;
 }) {
   return (
     <DashSection

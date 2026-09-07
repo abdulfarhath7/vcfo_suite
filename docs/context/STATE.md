@@ -22,7 +22,7 @@ Last updated: 2026-09-07 (nested Compliances nav group across all roles).
 | Change password (authenticated) | `/api/account/password` |
 | Four-role model | extended — `super_admin` / `admin` / `manager` / `intern` / `client` |
 | Compliance visible pre-COI | done — `isIncorporated` helper + `PreIncorporationNotice`; client Calendar/Filings, staff tracker/statutory (single company), super project rail; portfolio views keep real rows |
-| Compliances nav group for every role | done (2026-09-07) — `compliancesGroup(base)` in all five shells; staff pages `/app/{admin,manager,intern}/compliances/{calendar,filings}` render the shared views with `audience="staff"` (picker, statutory grid, status filter); legacy `/compliance` + `/compliance/tracker` redirect; `views/admin/Compliance.tsx` retired. See `COMPLIANCE-NAV-REPORT.md` |
+| Compliances nav group for every role | done (2026-09-07) — `compliancesGroup(base)` in all five shells; staff pages `/app/{admin,manager,intern}/compliances/{calendar,filings}` render the same shared views as the client through one wrapper (`CompliancePages`); chrome identical in every shell, picker only with >1 company; legacy `/compliance` + `/compliance/tracker` redirect; `views/admin/Compliance.tsx` retired. See `COMPLIANCE-NAV-REPORT.md` |
 
 ## Intentionally deferred / pilot limits
 

@@ -22,6 +22,7 @@ import { CompanyPicker } from '@/components/admin/CompanyPicker';
 import {
   PreIncorporationNotice,
   PreIncorporationPortfolioNote,
+  type PreIncorporationScope,
 } from '@/components/compliances/PreIncorporationNotice';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { PageBackCluster } from '@/components/shell/PageBackButton';
@@ -251,6 +252,7 @@ export function StatutoryCalendar({
   showBack,
   companyId: controlledCompanyId,
   onCompanyChange,
+  audience = 'staff',
 }: {
   engagements: Engagement[];
   /** Intern-only: filing tracker lives on its own route, not page tabs. */
@@ -265,6 +267,8 @@ export function StatutoryCalendar({
    */
   companyId?: string;
   onCompanyChange?: (id: string) => void;
+  /** Wording of the pre-COI notice for a narrowed company. */
+  audience?: PreIncorporationScope['audience'];
 }) {
   const todayIso = isoFromDate(new Date());
   const monthHeadingId = useId();
@@ -337,6 +341,8 @@ export function StatutoryCalendar({
   }, []);
 
   const company = companyId === 'all' ? null : engagements.find((e) => e.id === companyId) ?? null;
+  /** A picker needs a choice; a single-company scope is simply that company. */
+  const showPicker = engagements.length > 1;
 
   /** Pre-COI companies, read off the list in hand — the count needs no query. */
   const preIncorporationCount = useMemo(
@@ -497,14 +503,16 @@ export function StatutoryCalendar({
           </span>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <CompanyPicker
-            engagements={engagements}
-            value={companyId}
-            onChange={(id) => {
-              setCompanyId(id);
-              setSelectedDay(null);
-            }}
-          />
+          {showPicker ? (
+            <CompanyPicker
+              engagements={engagements}
+              value={companyId}
+              onChange={(id) => {
+                setCompanyId(id);
+                setSelectedDay(null);
+              }}
+            />
+          ) : null}
           {trackerHref ? (
             <Link
               href={trackerHref}
@@ -527,7 +535,7 @@ export function StatutoryCalendar({
 
       {company && companyPreIncorporation ? (
         <PreIncorporationNotice
-          scope={{ audience: 'staff', companyName: company.companyName }}
+          scope={{ audience, companyName: company.companyName }}
           className="mb-3"
         />
       ) : !company ? (

@@ -10,10 +10,6 @@ import { DashSection } from '@/components/dash/DashSection';
 import { ComplianceCalendar } from '@/components/admin/ComplianceCalendar';
 import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { FilingStatusPill } from '@/components/compliances/FilingStatusPill';
-import {
-  PreIncorporationNotice,
-  type PreIncorporationScope,
-} from '@/components/compliances/PreIncorporationNotice';
 import { useFilings } from '@/lib/use-filings';
 import {
   filingStatus,
@@ -33,61 +29,51 @@ import {
   ALL_COMPANIES,
   normaliseCompanyParam,
   rowsForCompany,
-  type ComplianceAudience,
-  type ComplianceStaffScope,
-} from '@/views/compliances/staff-scope';
+  soleCompany,
+  type ComplianceScope,
+} from '@/views/compliances/compliance-scope';
 
 /**
- * COMPLIANCE CALENDAR — the radar, for every role.
+ * COMPLIANCE CALENDAR — the radar, one view for every role.
  *
- * Reuses the existing `ComplianceCalendar` component rather than building a
- * second calendar; the register rows are mapped onto the `ComplianceFiling`
- * shape it already speaks. Scope comes from `getFilings` via `AuthContext`, so
- * this same view serves the client and the firm.
+ * The firm's statutory month grid (`StatutoryCalendar`: act legend, All /
+ * Overdue scope, keyboard grid, full-screen mode) sits above the register
+ * calendar, and one company selection narrows both. Every shell renders this
+ * exact layout; WHAT it shows is decided by `getFilings` through
+ * `AuthContext` and by the roster in `scope` — a client's own company, a
+ * lead's assignments, the whole firm. Nothing is keyed off the role.
  *
- * `audience` decides the chrome, never the data:
- * - `'client'` (default): one engagement, no picker — unchanged.
- * - `'staff'`: the firm's statutory month grid (`StatutoryCalendar`, with its
- *   `CompanyPicker`, act legend and All / Overdue scope) sits above the register
- *   calendar, and the one picker narrows both. The pre-incorporation notice and
- *   the portfolio one-liner come from `StatutoryCalendar` itself, off the
- *   engagement list the caller already holds.
+ * The register rows are mapped onto the `ComplianceFiling` shape the existing
+ * `ComplianceCalendar` already speaks; map, do not fork.
  *
- * `preIncorporation` is set by the caller (from `isIncorporated`, never a rule
- * of this view's own) when the company has no Certificate of Incorporation
- * yet. The view then shows the normal calendar layout in its genuine empty
- * state under one notice — nothing is generated or invented to fill it.
+ * Pre-incorporation is `StatutoryCalendar`'s notice, read off `scope`
+ * (derived by the caller from `isIncorporated`, never a rule of this view's
+ * own). The layout stays in its genuine empty state under it — nothing is
+ * generated or invented to fill a calendar.
  */
 export function ComplianceCalendarView({
   basePath,
-  preIncorporation,
-  audience = 'client',
-  staff,
+  scope,
 }: {
   basePath: string;
-  preIncorporation?: PreIncorporationScope;
-  audience?: ComplianceAudience;
-  /** Required with `audience="staff"`: the scoped roster and its pre-COI ids. */
-  staff?: ComplianceStaffScope;
+  scope: ComplianceScope;
 }) {
   const params = useSearchParams();
   const now = useMemo(() => new Date(), []);
-  const isStaff = audience === 'staff' && Boolean(staff);
-  const engagements = useMemo(() => staff?.engagements ?? [], [staff?.engagements]);
+  const { engagements } = scope;
+  const sole = soleCompany(engagements);
 
   const dateParam = parseIsoDate(params.get('date'));
   const [month, setMonth] = useState<Date>(() => dateParam ?? now);
-  const [companyId, setCompanyId] = useState<string>(() =>
+  const [pickedId, setPickedId] = useState<string>(() =>
     normaliseCompanyParam(params.get('company'), engagements),
   );
+  const companyId = sole ? sole.id : pickedId;
 
   const fyStartYear = financialYearForDate(month).startYear;
   const query = useFilings({ fyStartYear });
   const scopedRows = useMemo(() => query.data?.rows ?? [], [query.data?.rows]);
-  const rows = useMemo(
-    () => (isStaff ? rowsForCompany(scopedRows, companyId) : scopedRows),
-    [isStaff, scopedRows, companyId],
-  );
+  const rows = useMemo(() => rowsForCompany(scopedRows, companyId), [scopedRows, companyId]);
 
   const monthKey = monthKeyForDate(month);
   const summary = useMemo(() => summarise(rows, monthKey, now), [rows, monthKey, now]);
@@ -96,7 +82,6 @@ export function ComplianceCalendarView({
     [rows, monthKey],
   );
 
-  // The calendar component plots `ComplianceFiling`; map, do not fork.
   const calendarFilings: ComplianceFiling[] = useMemo(
     () =>
       rows.map((row) => ({
@@ -117,11 +102,9 @@ export function ComplianceCalendarView({
     [rows, now],
   );
 
-  const hasAny = rows.length > 0;
-  // Pre-COI the layout stays — the honest empty calendar is the design. A
-  // portfolio always keeps its layout too: an empty month is a real answer.
-  const showLayout = hasAny || Boolean(preIncorporation) || isStaff;
-  const companyQuery = isStaff && companyId !== ALL_COMPANIES ? `&company=${companyId}` : '';
+  // Only a real choice travels in the URL; a sole company is implicit.
+  const companyQuery = !sole && companyId !== ALL_COMPANIES ? `&company=${companyId}` : '';
+  const showCompany = companyId === ALL_COMPANIES;
 
   return (
     <PageTransition>
@@ -131,7 +114,7 @@ export function ComplianceCalendarView({
         path={`${basePath}/calendar`}
       />
 
-      <div className={isStaff ? 'stat-cal-intern flex flex-col gap-3' : 'flex flex-col gap-3'}>
+      <div className="stat-cal-intern flex flex-col gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h1 className="serif min-w-0 flex-1 text-[22px] leading-tight tracking-tight text-foreground">
             Compliance calendar
@@ -145,27 +128,17 @@ export function ComplianceCalendarView({
           </Link>
         </div>
 
-        {isStaff ? (
-          <StatutoryCalendar
-            engagements={engagements}
-            companyId={companyId}
-            onCompanyChange={setCompanyId}
-          />
-        ) : null}
-
-        {preIncorporation ? <PreIncorporationNotice scope={preIncorporation} /> : null}
+        <StatutoryCalendar
+          engagements={engagements}
+          companyId={companyId}
+          onCompanyChange={setPickedId}
+          audience={scope.audience}
+        />
 
         {query.isPending ? (
           <div className="surface p-4" aria-busy="true" aria-label="Loading calendar">
             <div className="h-64 animate-pulse rounded-md bg-muted/40" />
           </div>
-        ) : !showLayout ? (
-          <DashSection icon={CalendarDays} title="Compliance calendar" tone="primary">
-            <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-              Your filing calendar starts the day your Certificate of Incorporation is
-              issued. Nothing is due yet.
-            </p>
-          </DashSection>
         ) : (
           <>
             {/* The emotional read first: what this month costs you. */}
@@ -209,7 +182,7 @@ export function ComplianceCalendarView({
                         now={now}
                         basePath={basePath}
                         companyQuery={companyQuery}
-                        showCompany={isStaff && companyId === ALL_COMPANIES}
+                        showCompany={showCompany}
                       />
                     ))}
                   </ul>
@@ -250,15 +223,15 @@ function MonthRow({
   row,
   now,
   basePath,
-  companyQuery = '',
-  showCompany = false,
+  companyQuery,
+  showCompany,
 }: {
   row: FilingRow;
   now: Date;
   basePath: string;
-  companyQuery?: string;
-  /** Firm scope on "All companies": say whose filing this is. */
-  showCompany?: boolean;
+  companyQuery: string;
+  /** "All companies": say whose filing this is. */
+  showCompany: boolean;
 }) {
   const monthKey = monthKeyOf(row.dueDate);
   return (

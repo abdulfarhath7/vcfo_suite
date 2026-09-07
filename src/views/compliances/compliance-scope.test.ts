@@ -9,7 +9,8 @@ import {
   preIncorporationIdsOf,
   rowsForCompany,
   rowsForStatus,
-} from '@/views/compliances/staff-scope';
+  soleCompany,
+} from '@/views/compliances/compliance-scope';
 
 const NOW = new Date('2026-09-01T00:00:00Z');
 
@@ -76,6 +77,14 @@ describe('company narrowing', () => {
     expect(normaliseCompanyParam(null, roster)).toBe(ALL_COMPANIES);
     expect(pickedCompany(roster, 'e1')?.id).toBe('e1');
     expect(pickedCompany(roster, ALL_COMPANIES)).toBeNull();
+  });
+});
+
+describe('soleCompany', () => {
+  it('is the one engagement in scope, or null once there is a choice', () => {
+    expect(soleCompany([engagement({ id: 'only' })])?.id).toBe('only');
+    expect(soleCompany([engagement({ id: 'a' }), engagement({ id: 'b' })])).toBeNull();
+    expect(soleCompany([])).toBeNull();
   });
 });
 

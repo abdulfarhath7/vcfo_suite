@@ -165,3 +165,30 @@ Observations recorded, not changed:
 - Super admin reads the firm scope through `getFilings` /
   `listScopedEngagementIds`, so the `listComplianceInstances` `super_admin`
   branch bug noted in DESIGN-SYSTEM-INVENTORY.md is not on this path.
+
+## 8. Follow-up — one view, no audience branching (2026-09-07)
+
+Owner asked that the client's Calendar and Filings be the same surface as
+every other dashboard (statutory grid, full-screen mode, filters), with one
+code path for all. Done:
+
+- `audience` no longer switches chrome. Both views take one `scope`
+  (`ComplianceScope`: roster + pre-COI ids + notice wording) and render the
+  same layout in every shell: statutory grid with legend / All-Overdue scope /
+  full screen, register summary + month calendar, FY stepper, cadence and
+  status filters, authority chip.
+- The company picker and the Company column appear whenever the roster holds
+  more than one company (`soleCompany`). A client with one engagement is
+  simply that company — no picker, same everything else. A manager with one
+  project behaves the same way.
+- One wrapper for all shells: `src/views/compliances/CompliancePages.tsx`
+  (`ComplianceCalendarPage`, `FilingsPage`). `ClientCompliancePages`,
+  `StaffCompliancePages` and the orphaned `views/client/Compliances.tsx`
+  (a second, unused client implementation) are deleted.
+- The only role-keyed input left is the notice wording
+  (`scope.audience`), derived in the wrapper from `user.role === 'client'`.
+
+Re-verified: typecheck (pre-existing error only), 101 files / 902 tests,
+eslint 0 errors, browser QA 147 / 147 — the client now passes the same
+statutory-grid, full-screen and status-filter checks the staff shells do, and
+`Escape` closes full screen.

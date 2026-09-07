@@ -1,18 +1,14 @@
 import { Suspense } from "react";
-import { ClientComplianceCalendarPage } from "@/views/client/ClientCompliancePages";
+import { ComplianceCalendarPage } from "@/views/compliances/CompliancePages";
 import { pageMetadata } from "@/lib/page-metadata";
 
 export const metadata = pageMetadata("Calendar", "Compliance calendar");
 
-/**
- * Client shell. The view is scope-parameterized — `AuthContext` decides the
- * rows; the wrapper derives the pre-incorporation state for the client's own
- * engagement.
- */
+/** Route shell only. The shared view is identical in every shell; `AuthContext` decides the rows. */
 export default function Page() {
   return (
     <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading calendar…</div>}>
-      <ClientComplianceCalendarPage />
+      <ComplianceCalendarPage basePath="/app/client/compliances" />
     </Suspense>
   );
 }

@@ -4,28 +4,37 @@ import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { filingStatus, type FilingRow, type FilingStatus } from '@/lib/filings';
 
 /**
- * STAFF (FIRM-SCOPE) AUDIENCE for the shared compliance module.
+ * COMPLIANCE SCOPE for the shared compliance module.
  *
- * The shared Calendar / Filings views are built once and rendered by scope.
- * `audience: 'client'` (the default) is one engagement with no picker;
- * `audience: 'staff'` is the portfolio the caller's `AuthContext` already
- * scoped, plus the company picker, the statutory grid and the status filter
- * that the firm's old tracker had.
+ * The Calendar / Filings views are built once and rendered identically in
+ * every shell — same statutory grid, full-screen mode, register calendar,
+ * cadence and status filters. The only inputs that differ are the data scope
+ * (the engagement roster the caller's `AuthContext` already filtered: a
+ * client's own company, a lead's assignments, the firm) and the audience
+ * wording of the pre-incorporation notice.
  *
- * Everything here is derived from lists already in hand — the engagement
- * roster from `useApp()` and the register rows from `/api/filings` — so no
- * new query and no second access rule. `isIncorporated` stays the only source
- * of the pre-COI flag.
+ * Everything here is derived from lists already in hand — the roster from
+ * `useApp()` and the register rows from `/api/filings` — so no new query and
+ * no second access rule. `isIncorporated` stays the only source of the
+ * pre-COI flag. The company picker appears whenever there is more than one
+ * company to pick; a single-company scope is simply that company.
  */
 
 export type ComplianceAudience = 'client' | 'staff';
 
 export const ALL_COMPANIES = 'all';
 
-export interface ComplianceStaffScope {
+export interface ComplianceScope {
+  /** Wording of the pre-COI notice; nothing else keys off this. */
+  audience: ComplianceAudience;
   engagements: Engagement[];
   /** Ids of the engagements that fail `isIncorporated` — derived once by the caller. */
   preIncorporationIds: ReadonlySet<string>;
+}
+
+/** One company in scope means no picker and no "All companies" state. */
+export function soleCompany(engagements: readonly Engagement[]): Engagement | null {
+  return engagements.length === 1 ? engagements[0]! : null;
 }
 
 export type FilingStatusFilter = 'all' | FilingStatus;
