@@ -28,6 +28,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.665.0",
     "@aws-sdk/client-sesv2": "^3.1108.0",
+    "@aws-sdk/client-socialmessaging": "^3.1127.0",
     "@aws-sdk/s3-request-presigner": "^3.665.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.11",
