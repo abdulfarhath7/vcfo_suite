@@ -5,11 +5,14 @@ import {
 } from '@/lib/notify/types';
 
 /**
- * Event → Twilio Content Template SID + ordered content variables.
+ * Event → template reference + ordered variables, for both providers.
  *
- * Twilio's Content API takes `contentVariables` as a JSON object keyed by
- * position ("1", "2", ...). The order below must match the order of the
- * placeholders in the approved template body for that event.
+ * `orderedVariables` is the single source of truth for what each message says
+ * and in what order. The two providers only differ in serialisation:
+ *   - Twilio Content API: `contentVariables`, a JSON object keyed by position
+ *   - Meta Cloud API (AWS EUM): a `components` array of typed parameters
+ * Both are built from the same ordered values, so a template body can never
+ * drift between transports.
  *
  * No body text lives in this file. If a template is not configured for an
  * event, the send is skipped with `no_template` — never substituted with a
@@ -22,6 +25,38 @@ export function templateEnvKey(event: NotifyEvent): string {
 }
 
 export type TemplateSidMap = Partial<Record<NotifyEvent, string>>;
+
+/**
+ * `welcome` → WHATSAPP_TEMPLATE_NAME_WELCOME.
+ *
+ * Deliberately NOT the same key as the Twilio SID: a deployment keeping Twilio
+ * as a fallback has both configured at once, and one key cannot hold a Content
+ * SID and a Meta template name.
+ */
+export function templateNameEnvKey(event: NotifyEvent): string {
+  return `WHATSAPP_TEMPLATE_NAME_${event.toUpperCase()}`;
+}
+
+export type TemplateNameMap = Record<NotifyEvent, string>;
+
+/**
+ * Approved Meta template names, one per event.
+ *
+ * Defaults to the event name itself — the templates are approved in WhatsApp
+ * Manager under exactly these names — so the EUM path needs no per-event env
+ * at all. Set an override only when a WABA template had to be named
+ * differently. A blank override falls back to the default rather than
+ * disabling the event, because an empty string is a typo, not an intention.
+ */
+export function readTemplateNames(
+  env: NodeJS.ProcessEnv = process.env,
+): TemplateNameMap {
+  const out = {} as TemplateNameMap;
+  for (const event of NOTIFY_EVENTS) {
+    out[event] = env[templateNameEnvKey(event)]?.trim() || event;
+  }
+  return out;
+}
 
 /** Read one SID per chosen event. Absent/blank values stay undefined. */
 export function readTemplateSids(
@@ -74,6 +109,38 @@ function orderedVariables(
  */
 function sanitizeVariable(value: string): string {
   return value.replace(/\s+/g, ' ').trim().slice(0, 120);
+}
+
+/** One typed text parameter in a Meta template component. */
+export type MetaTemplateParameter = { type: 'text'; text: string };
+
+export type MetaTemplateComponent = {
+  type: 'body';
+  parameters: MetaTemplateParameter[];
+};
+
+/**
+ * `components` array for the Meta Cloud API template payload (AWS EUM path).
+ *
+ * Same ordered values as `buildContentVariables`, different shape. An event
+ * with no variables yields an empty array rather than a body component with
+ * no parameters, which Meta rejects.
+ */
+export function buildTemplateComponents(
+  event: NotifyEvent,
+  vars: NotifyVariables,
+): MetaTemplateComponent[] {
+  const ordered = orderedVariables(event, vars);
+  if (ordered.length === 0) return [];
+  return [
+    {
+      type: 'body',
+      parameters: ordered.map((value) => ({
+        type: 'text',
+        text: sanitizeVariable(value),
+      })),
+    },
+  ];
 }
 
 /** JSON string for Twilio's `contentVariables`, keyed by 1-based position. */

@@ -4,7 +4,7 @@ import {
   resolveWhatsAppProvider,
   sendWhatsAppTemplate,
 } from '@/lib/notify/send-whatsapp';
-import type { WhatsAppConfig } from '@/lib/notify/channels';
+import { readWhatsAppConfig, type WhatsAppConfig } from '@/lib/notify/channels';
 import type { NotifyRecipient } from '@/lib/notify/types';
 
 /**
@@ -14,15 +14,18 @@ import type { NotifyRecipient } from '@/lib/notify/types';
  * or the network.
  */
 
+/**
+ * Built from the real reader on an empty env, so a new config field cannot
+ * drift out of the fixtures — only the Twilio credentials are filled in.
+ */
 function config(patch: Partial<WhatsAppConfig> = {}): WhatsAppConfig {
   return {
+    ...readWhatsAppConfig({} as NodeJS.ProcessEnv),
     enabled: true,
     accountSid: 'AC-test',
     authToken: 'token',
     from: 'whatsapp:+14155238886',
-    messagingServiceSid: '',
     statusCallbackUrl: 'https://example.test/api/webhooks/twilio/status',
-    inboundCallbackUrl: '',
     templateSids: { welcome: 'HX-welcome' },
     ...patch,
   };

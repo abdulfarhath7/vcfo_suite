@@ -4,7 +4,12 @@ import {
   type NotifyRecipient,
   type SkipReason,
 } from '@/lib/notify/types';
-import { readTemplateSids, type TemplateSidMap } from '@/lib/notify/templates';
+import {
+  readTemplateNames,
+  readTemplateSids,
+  type TemplateNameMap,
+  type TemplateSidMap,
+} from '@/lib/notify/templates';
 import { isValidE164 } from '@/lib/notify/phone';
 
 /**
@@ -33,8 +38,42 @@ export {
  * skip or failure must not touch the email path.
  */
 
+/**
+ * `aws_eum` bills the Meta message fee on the AWS invoice alongside SES, RDS
+ * and S3; `twilio` is the legacy fallback and stays selectable indefinitely.
+ */
+export type WhatsAppProvider = 'aws_eum' | 'twilio';
+
+/**
+ * Defaults to `twilio`. The EUM path needs a registered origination phone
+ * number id, so defaulting to it before the WABA is linked would turn every
+ * send into a `disabled` skip. Flip the default with the number id.
+ */
+export function resolveWhatsAppProvider(
+  env: NodeJS.ProcessEnv = process.env,
+): WhatsAppProvider {
+  const raw = (env.WHATSAPP_PROVIDER ?? 'twilio').trim().toLowerCase();
+  return raw === 'aws_eum' ? 'aws_eum' : 'twilio';
+}
+
+/** AWS End User Messaging (Social) settings. Credentials come from the instance role. */
+export type EumConfig = {
+  /** Falls back to AWS_REGION. Must be a region where EUM Social is available. */
+  region: string;
+  /** `phone-number-id-…` from the EUM console. Without it, nothing can send. */
+  phoneNumberId: string;
+  /** Approved template language, e.g. `en`. */
+  templateLanguage: string;
+  /** Pinned Meta Cloud API version, e.g. `v21.0`. */
+  metaApiVersion: string;
+  /** Approved template name per event; defaults to the event name. */
+  templateNames: TemplateNameMap;
+};
+
 export type WhatsAppConfig = {
   enabled: boolean;
+  /** Which transport `sendWhatsAppTemplate` dispatches to. */
+  provider: WhatsAppProvider;
   accountSid: string;
   authToken: string;
   /** `whatsapp:+1555...` sender, used when no messaging service is set. */
@@ -52,7 +91,22 @@ export type WhatsAppConfig = {
    * branch adds Meta template names beside them.
    */
   templateSids: TemplateSidMap;
+  eum: EumConfig;
 };
+
+/**
+ * The template reference for this provider + event, or '' when none resolves.
+ * Twilio needs a configured Content SID; EUM defaults to the event name.
+ */
+export function templateRefFor(
+  config: WhatsAppConfig,
+  event: NotifyEvent,
+): string {
+  if (config.provider === 'aws_eum') {
+    return config.eum.templateNames[event]?.trim() ?? '';
+  }
+  return config.templateSids[event]?.trim() ?? '';
+}
 
 export type ChannelDecision =
   /**
@@ -63,9 +117,20 @@ export type ChannelDecision =
   | { send: true; toPhone: string; templateRef: string }
   | { send: false; skipReason: SkipReason };
 
-/** Credentials present and the kill switch on. */
+/**
+ * Kill switch on and the selected provider actually able to send.
+ *
+ * EUM needs no credentials here — it authenticates through the App Runner /
+ * ECS instance role, exactly like `sendViaSes` — so the only hard requirement
+ * is the registered origination phone number id.
+ */
 export function isWhatsAppConfigured(config: WhatsAppConfig): boolean {
   if (!config.enabled) return false;
+
+  if (config.provider === 'aws_eum') {
+    return Boolean(config.eum.phoneNumberId.trim());
+  }
+
   if (!config.accountSid.trim() || !config.authToken.trim()) return false;
   // One of the two sender forms must be set.
   return Boolean(config.messagingServiceSid.trim() || config.from.trim());
@@ -95,7 +160,7 @@ export function resolveWhatsAppChannel(input: {
     return { send: false, skipReason: 'no_template' };
   }
 
-  const templateRef = config.templateSids[event as NotifyEvent]?.trim();
+  const templateRef = templateRefFor(config, event as NotifyEvent);
   if (!templateRef) {
     return { send: false, skipReason: 'no_template' };
   }
@@ -122,6 +187,7 @@ export function readWhatsAppConfig(
 ): WhatsAppConfig {
   return {
     enabled: (env.WHATSAPP_ENABLED ?? '').trim().toLowerCase() === 'true',
+    provider: resolveWhatsAppProvider(env),
     accountSid: env.TWILIO_ACCOUNT_SID?.trim() ?? '',
     authToken: env.TWILIO_AUTH_TOKEN?.trim() ?? '',
     from: env.TWILIO_WHATSAPP_FROM?.trim() ?? '',
@@ -129,5 +195,12 @@ export function readWhatsAppConfig(
     statusCallbackUrl: env.TWILIO_STATUS_CALLBACK_URL?.trim() ?? '',
     inboundCallbackUrl: env.TWILIO_INBOUND_CALLBACK_URL?.trim() ?? '',
     templateSids: readTemplateSids(env),
+    eum: {
+      region: env.SOCIAL_MESSAGING_REGION?.trim() || env.AWS_REGION?.trim() || '',
+      phoneNumberId: env.EUM_PHONE_NUMBER_ID?.trim() ?? '',
+      templateLanguage: env.WHATSAPP_TEMPLATE_LANG?.trim() || 'en',
+      metaApiVersion: env.META_API_VERSION?.trim() || 'v21.0',
+      templateNames: readTemplateNames(env),
+    },
   };
 }
