@@ -22,6 +22,8 @@ export {
   normalizeToE164,
   stripWhatsAppPrefix,
   withWhatsAppPrefix,
+  toMetaPhone,
+  fromMetaPhone,
   isOptOutKeyword,
 } from '@/lib/notify/phone';
 

@@ -72,6 +72,18 @@ export function toMetaPhone(value: string | null | undefined): string {
 }
 
 /**
+ * Meta reports numbers as bare digits (`919876543210`); profiles store E.164
+ * (`+919876543210`). Convert on the way in from an EUM webhook so the lookup
+ * matches, and return '' rather than a half-formed number when it cannot.
+ */
+export function fromMetaPhone(value: string | null | undefined): string {
+  const digits = toMetaPhone(value);
+  if (!digits) return '';
+  const candidate = `+${digits}`;
+  return isValidE164(candidate) ? candidate : '';
+}
+
+/**
  * Inbound opt-out keywords. Twilio handles some of these itself on its own
  * numbers, but a self-managed sender must honour them too — and we record the
  * timestamp regardless so the send guards stop sending.
