@@ -9,7 +9,7 @@ import { isValidE164 } from '@/lib/notify/phone';
 
 /**
  * Phone helpers live in `@/lib/notify/phone` so client components can import
- * them without pulling in `readWhatsAppConfig` and the Twilio credentials it
+ * them without pulling in `readWhatsAppConfig` and the provider credentials it
  * reads. Re-exported here for server callers already importing this module.
  */
 export {
@@ -23,10 +23,11 @@ export {
 /**
  * Channel resolution for one recipient + one event.
  *
- * PURE — no db, no Twilio, no env reads. Config is passed in so the guards can
- * be exercised directly. `resolveWhatsAppChannel` never throws and never
- * returns a partial result: either it is a send with a template SID and a
- * phone, or it is a skip with a reason that goes straight onto the delivery row.
+ * PURE — no db, no provider SDK, no env reads. Config is passed in so the
+ * guards can be exercised directly. `resolveWhatsAppChannel` never throws and
+ * never returns a partial result: either it is a send with a template
+ * reference and a phone, or it is a skip with a reason that goes straight onto
+ * the delivery row. The same guards serve every transport.
  *
  * Email is resolved separately and is never gated by any of this — a WhatsApp
  * skip or failure must not touch the email path.
@@ -46,11 +47,20 @@ export type WhatsAppConfig = {
    * differs from the status path — so it cannot reuse `statusCallbackUrl`.
    */
   inboundCallbackUrl: string;
+  /**
+   * Event → template reference. Twilio Content Template SIDs today; the EUM
+   * branch adds Meta template names beside them.
+   */
   templateSids: TemplateSidMap;
 };
 
 export type ChannelDecision =
-  | { send: true; toPhone: string; templateSid: string }
+  /**
+   * `templateRef` is provider-neutral: a Twilio Content Template SID, or an
+   * approved Meta template name for AWS End User Messaging. The guards do not
+   * care which — they only care that one is configured for the event.
+   */
+  | { send: true; toPhone: string; templateRef: string }
   | { send: false; skipReason: SkipReason };
 
 /** Credentials present and the kill switch on. */
@@ -85,8 +95,8 @@ export function resolveWhatsAppChannel(input: {
     return { send: false, skipReason: 'no_template' };
   }
 
-  const templateSid = config.templateSids[event as NotifyEvent]?.trim();
-  if (!templateSid) {
+  const templateRef = config.templateSids[event as NotifyEvent]?.trim();
+  if (!templateRef) {
     return { send: false, skipReason: 'no_template' };
   }
 
@@ -103,7 +113,7 @@ export function resolveWhatsAppChannel(input: {
     return { send: false, skipReason: 'opted_out' };
   }
 
-  return { send: true, toPhone: phone, templateSid };
+  return { send: true, toPhone: phone, templateRef };
 }
 
 /** Server-side only — never import this from a client component. */

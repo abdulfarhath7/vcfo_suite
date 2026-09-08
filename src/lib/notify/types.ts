@@ -1,9 +1,14 @@
 /**
  * Outbound notification channel types.
  *
+ * TRANSPORT-AGNOSTIC ON PURPOSE. WhatsApp ships over two interchangeable
+ * providers (AWS End User Messaging and Twilio, chosen by `WHATSAPP_PROVIDER`)
+ * and nothing in this file may name either of them.
+ *
  * WhatsApp is a *nudge* channel that runs alongside email — email stays the
- * system of record. Every message body is a pre-approved Twilio Content
- * Template referenced by SID; nothing here ever builds a free-form body.
+ * system of record. Every message body is a pre-approved template referenced
+ * by the provider's own identifier (a Twilio Content SID or a Meta template
+ * name); nothing here ever builds a free-form body.
  *
  * ADDING AN EVENT: append to `NOTIFY_EVENTS`, add the variable builder in
  * `templates.ts`, and set `WHATSAPP_TEMPLATE_<UPPER_SNAKE>` in the env. No
@@ -45,7 +50,8 @@ export type SkipReason =
 
 /**
  * WhatsApp delivery status ownership on the profile.
- * `failed` is set by the status webhook on a hard bounce so staff can see it.
+ * `failed` is set by the provider's status webhook on a hard bounce so staff
+ * can see it.
  */
 export type WhatsAppStatus = 'unknown' | 'verified' | 'failed';
 

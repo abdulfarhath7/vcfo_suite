@@ -8,7 +8,9 @@ import { isNotifyEvent, type NotifyEvent, type NotifyVariables } from '@/lib/not
  * Background WhatsApp dispatch.
  *
  * Queued by the notification fan-out AFTER email has already been handled, so
- * a Twilio timeout can never slow a user request or downgrade email.
+ * a provider timeout can never slow a user request or downgrade email. Which
+ * transport runs is resolved inside `sendWhatsAppTemplate` at send time, so
+ * this job is provider-neutral.
  *
  * Retries: Inngest retries when the step throws. Transient failures throw (up
  * to 3 attempts, exponential backoff); hard failures — invalid number,
@@ -85,7 +87,9 @@ export const whatsappSend = inngest.createFunction(
         eventType: data.event,
         channel: 'whatsapp',
         toAddress: 'toPhone' in result ? (result.toPhone ?? null) : null,
-        templateSid: 'templateSid' in result ? (result.templateSid ?? null) : null,
+        // Provider-neutral reference (Twilio SID or Meta template name); the
+        // column is text and has never meant "Twilio" specifically.
+        templateSid: 'templateRef' in result ? (result.templateRef ?? null) : null,
         providerMessageId: result.ok ? result.providerMessageId : null,
         status: result.status,
         skipReason: result.status === 'skipped' ? result.skipReason : null,
