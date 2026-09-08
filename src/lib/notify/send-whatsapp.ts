@@ -5,6 +5,7 @@ import type {
   SendWhatsAppDeps,
   WhatsAppSendResult,
 } from '@/lib/notify/send-whatsapp-shared';
+import { sendViaEum } from '@/lib/notify/send-whatsapp-eum';
 import { sendViaTwilio } from '@/lib/notify/send-whatsapp-twilio';
 import type { NotifyEvent, NotifyRecipient, NotifyVariables } from '@/lib/notify/types';
 
@@ -33,9 +34,11 @@ export type {
   WhatsAppSendResult,
   SendWhatsAppDeps,
   TwilioMessageCreate,
+  EumSendMessage,
 } from '@/lib/notify/send-whatsapp-shared';
 export { resolveWhatsAppProvider } from '@/lib/notify/send-whatsapp-shared';
 export { isRetryableTwilioCode } from '@/lib/notify/send-whatsapp-twilio';
+export { isRetryableWhatsAppError, isRetryableEumCode } from '@/lib/notify/whatsapp-retry';
 
 /**
  * Send one pre-approved template to one recipient.
@@ -72,7 +75,7 @@ export async function sendWhatsAppTemplate(input: {
     deps: input.deps,
   };
 
-  return sendViaTwilio(shared);
+  return config.provider === 'aws_eum' ? sendViaEum(shared) : sendViaTwilio(shared);
 }
 
 /**

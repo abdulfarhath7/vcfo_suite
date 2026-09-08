@@ -51,6 +51,16 @@ export type WhatsAppSendResult =
       toPhone?: string;
     };
 
+/**
+ * `SendWhatsAppMessageCommand`'s input, narrowed to what this feature sends.
+ * Declared structurally so a unit test can stub it without the AWS SDK.
+ */
+export type EumSendMessage = (params: {
+  originationPhoneNumberId: string;
+  metaApiVersion: string;
+  message: Uint8Array;
+}) => Promise<{ messageId?: string }>;
+
 /** Twilio's `messages.create`, narrowed to what this feature sends. */
 export type TwilioMessageCreate = (params: {
   to: string;
@@ -70,4 +80,6 @@ export type SendWhatsAppDeps = {
   config?: WhatsAppConfig;
   /** Twilio path only. */
   createClient?: (config: WhatsAppConfig) => Promise<TwilioMessageCreate>;
+  /** AWS EUM path only. */
+  createEumClient?: (config: WhatsAppConfig) => Promise<EumSendMessage>;
 };

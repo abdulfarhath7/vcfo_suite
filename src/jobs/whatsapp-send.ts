@@ -1,7 +1,9 @@
 import { inngest } from './client';
 import { systemGetNotifyRecipient } from '@/db/repositories/profiles';
 import { systemRecordDelivery } from '@/db/repositories/notification-deliveries';
-import { sendWhatsAppTemplate, isRetryableTwilioCode } from '@/lib/notify/send-whatsapp';
+import { sendWhatsAppTemplate } from '@/lib/notify/send-whatsapp';
+import { resolveWhatsAppProvider } from '@/lib/notify/channels';
+import { isRetryableWhatsAppError } from '@/lib/notify/whatsapp-retry';
 import { isNotifyEvent, type NotifyEvent, type NotifyVariables } from '@/lib/notify/types';
 
 /**
@@ -97,7 +99,10 @@ export const whatsappSend = inngest.createFunction(
       }),
     );
 
-    if (result.status === 'failed' && isRetryableTwilioCode(result.errorCode)) {
+    if (
+      result.status === 'failed' &&
+      isRetryableWhatsAppError(resolveWhatsAppProvider(), result.errorCode)
+    ) {
       // Throwing hands the retry decision to Inngest's backoff.
       throw new Error(`whatsapp_send_retryable:${result.errorCode ?? 'unknown'}`);
     }

@@ -62,6 +62,16 @@ export function withWhatsAppPrefix(value: string): string {
 }
 
 /**
+ * Meta's Cloud API wants bare digits with the country code and NO leading '+'
+ * and no `whatsapp:` prefix (e.g. 919876543210). Sending Twilio's prefixed or
+ * plus-prefixed form to Meta is rejected, so the EUM transport formats here
+ * rather than reusing `withWhatsAppPrefix`.
+ */
+export function toMetaPhone(value: string | null | undefined): string {
+  return stripWhatsAppPrefix(value).replace(/\D/g, '');
+}
+
+/**
  * Inbound opt-out keywords. Twilio handles some of these itself on its own
  * numbers, but a self-managed sender must honour them too — and we record the
  * timestamp regardless so the send guards stop sending.
