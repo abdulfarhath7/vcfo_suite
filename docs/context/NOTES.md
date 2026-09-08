@@ -823,3 +823,50 @@ Append here whenever something costs more than a minute to figure out.
   two companies' identical obligations merge into one row.
 - Staff month sheets can be honestly empty: the demo FY 2026-27 register has
   no monthly-frequency instances at all (quarterly / annual / half-yearly only).
+
+## WhatsApp — two transports (2026-09-08)
+
+- `WHATSAPP_PROVIDER` selects the transport exactly like `EMAIL_PROVIDER`:
+  `aws_eum` (AWS End User Messaging Social, the AWS invoice) or `twilio`
+  (legacy fallback, kept working). `sendWhatsAppTemplate` is a dispatcher;
+  the transports are `send-whatsapp-eum.ts` and `send-whatsapp-twilio.ts`,
+  with the shared result/deps types in `send-whatsapp-shared.ts`.
+- **The guards run once, in the dispatcher.** `resolveWhatsAppChannel` is pure
+  and returns a provider-neutral `templateRef` — a Twilio Content SID or a Meta
+  template name. Both land in the text `template_sid` column. Guard order is
+  load-bearing: `disabled → no_template → no_phone → no_consent → opted_out`.
+- **Meta wants bare digits.** `toMetaPhone` strips `+` and the `whatsapp:`
+  prefix for the EUM payload; `fromMetaPhone` adds the `+` back when a webhook
+  reports a number, because profiles are keyed by E.164. Never send Twilio's
+  `withWhatsAppPrefix` form to Meta.
+- **EUM template names default to the event name**, so the EUM path needs no
+  per-event env at all — approve the six templates in WhatsApp Manager under
+  `welcome`, `coi_issued`, … Overrides use `WHATSAPP_TEMPLATE_NAME_<EVENT>`,
+  deliberately NOT the Twilio `WHATSAPP_TEMPLATE_<EVENT>` SID keys, because a
+  deployment keeping Twilio as a fallback has both configured at once.
+- **EUM needs no credentials in config** — it authenticates through the App
+  Runner / ECS instance role like `sendViaSes`, so `isWhatsAppConfigured` on
+  that path checks only `EUM_PHONE_NUMBER_ID`.
+- **Retries:** `isRetryableWhatsAppError(provider, code)` picks each provider's
+  own set. Unknown codes stay retryable on both — a misclassified outage costs
+  three attempts, a misclassified permanent error silently drops a real notice.
+  EUM classifies on the SDK exception name (`ValidationException`, …) and on
+  Meta's numeric codes; the two vocabularies do not overlap, so a Twilio code
+  means nothing on the EUM path.
+- **The SNS webhook is the authentication.** `/api/webhooks/aws-eum` is public;
+  `aws-sns-verify.ts` rebuilds the canonical string per message type, refuses
+  any signing certificate that is not HTTPS on `sns.<region>.amazonaws.com`,
+  and verifies RSA-SHA1/SHA256 per `SignatureVersion`. Set
+  `AWS_EUM_SNS_TOPIC_ARN` to pin the topic: a valid signature proves the
+  message came from SNS, not from *our* topic.
+- The SNS `Message` holds `whatsAppWebhookEntry` as a JSON string *inside* the
+  JSON body — parse twice. `eum-events.ts` is pure and tolerates both nesting
+  forms; an unparseable event is acknowledged with 200, never a 500 (SNS would
+  just retry a payload that can never parse).
+- **Outbound-only still.** The parser returns the sender and an opt-out verdict
+  and nothing else — no inbound body crosses that boundary, is logged, or is
+  stored.
+- `@aws-sdk/client-socialmessaging` had to be installed with
+  `--legacy-peer-deps`: the repo has a pre-existing
+  `eslint-plugin-jsx-a11y` / `eslint@10` peer conflict that blocks any plain
+  `npm install`.

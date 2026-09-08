@@ -1,6 +1,6 @@
 # STATE — verified build state
 
-Last updated: 2026-09-07 (nested Compliances nav group across all roles).
+Last updated: 2026-09-08 (AWS End User Messaging WhatsApp transport).
 
 ## Done across phases
 
@@ -22,6 +22,7 @@ Last updated: 2026-09-07 (nested Compliances nav group across all roles).
 | Change password (authenticated) | `/api/account/password` |
 | Four-role model | extended — `super_admin` / `admin` / `manager` / `intern` / `client` |
 | Compliance visible pre-COI | done — `isIncorporated` helper + `PreIncorporationNotice`; client Calendar/Filings, staff tracker/statutory (single company), super project rail; portfolio views keep real rows |
+| WhatsApp notifications | done — outbound-only nudge channel beside email, six utility templates, consent + kill switch. **Two transports** behind `WHATSAPP_PROVIDER`: `aws_eum` (AWS End User Messaging, bills on the AWS invoice) and `twilio` (legacy fallback). Ships defaulting to `twilio`; inert until `WHATSAPP_ENABLED=true` and the out-of-band setup in `AWS-EUM-WHATSAPP-PLAN.md` §6 is done |
 | Compliances nav group for every role | done (2026-09-07) — `compliancesGroup(base)` in all five shells; staff pages `/app/{admin,manager,intern}/compliances/{calendar,filings}` render the same shared views as the client through one wrapper (`CompliancePages`); chrome identical in every shell, picker only with >1 company; legacy `/compliance` + `/compliance/tracker` redirect; `views/admin/Compliance.tsx` retired. See `COMPLIANCE-NAV-REPORT.md` |
 
 ## Intentionally deferred / pilot limits

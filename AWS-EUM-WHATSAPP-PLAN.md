@@ -149,3 +149,58 @@ Each ends with `npm run typecheck && npm run test && npm run lint` and a commit.
 | 4 | `sendViaEum`, provider-aware retry map, dispatcher wiring, transport tests. |
 | 5 | `app/api/webhooks/aws-eum/route.ts` + SNS signature verification + tests. |
 | 6 | `.env.example`, `CLAUDE.md`, `docs/context` notes. |
+
+---
+
+## 8. Build record (all steps complete)
+
+| Step | Commit | Content |
+|---|---|---|
+| 1 | `7a7c80a` | This plan; SDK installed and command shape verified. |
+| 2 | `1205b81` | Twilio transport extracted behind a dispatcher. No behaviour change. |
+| 3 | `5a27885` | EUM config branch, `buildTemplateComponents`, provider-aware `isWhatsAppConfigured`. |
+| 4 | `f7766e4` | `sendViaEum`, `isRetryableWhatsAppError`, dispatcher + job wiring. |
+| 5 | `3d9d696` | `/api/webhooks/aws-eum` with real SNS signature verification. |
+| 6 | this | `.env.example`, `CLAUDE.md`, `docs/context/{STATE,NOTES}.md`. |
+
+### What landed
+
+```
+src/lib/notify/
+  channels.ts               provider + EUM config branch, templateRefFor, guards (unchanged order)
+  templates.ts              + readTemplateNames, buildTemplateComponents
+  phone.ts                  + toMetaPhone, fromMetaPhone
+  send-whatsapp.ts          dispatcher (was the Twilio transport)
+  send-whatsapp-shared.ts   NEW  result/deps types, mirrors send-email-shared.ts
+  send-whatsapp-twilio.ts   NEW  the old body, verbatim
+  send-whatsapp-eum.ts      NEW  SendWhatsAppMessageCommand
+  whatsapp-retry.ts         NEW  provider-aware retry decision
+  aws-sns-verify.ts         NEW  SNS canonical string + RSA verification
+  eum-events.ts             NEW  pure parser for the nested SNS payload
+app/api/webhooks/aws-eum/route.ts   NEW
+src/jobs/whatsapp-send.ts   one line: provider-aware retryable check
+```
+
+Seven test files, 60 tests, added alongside. The notify layer had none before.
+
+### Acceptance criteria
+
+| Criterion | Status |
+|---|---|
+| `typecheck && test && lint` green | Yes. Only the pre-existing `drizzle.config.ts` error; 108 files / 963 tests; 0 lint errors, 528 pre-existing warnings. |
+| `WHATSAPP_PROVIDER=twilio` byte-for-byte unchanged | Yes. The transport body moved verbatim; the dispatcher adds only the guard call that was already there. Covered by `send-whatsapp.test.ts`. |
+| `WHATSAPP_PROVIDER=aws_eum` sends all six events, records `queued` with the wamid | Yes, over an injected client — `send-whatsapp-eum.test.ts` asserts the exact Cloud API payload, and `templates.test.ts` proves both providers serialise the same ordered variables for all six events. Not yet exercised against real AWS: that needs §6. |
+| SNS webhook advances delivered / read / failed | Yes — `aws-eum-route.test.ts`. |
+| `WHATSAPP_ENABLED=false` records `skipped/disabled`, no provider call, either provider | Yes — one test per provider. |
+| No new `db` import outside the repository layer | Yes. The route calls the two existing documented system writers; no repository was changed. |
+| Email untouched and passing | Yes. No file under `src/lib/email/` was modified. |
+
+### Still to do (owner)
+
+The six out-of-band items in §6. Until the WABA number is registered and
+`EUM_PHONE_NUMBER_ID` is set, the EUM path records `skipped/disabled` and makes
+no AWS call — which is why `WHATSAPP_PROVIDER` ships as `twilio`.
+
+Also worth deciding: whether `SOCIAL_MESSAGING_REGION` should match
+`SES_REGION` (not required, simpler if it does), and whether to retire Twilio
+once EUM is proven, or keep it indefinitely as this build assumes.

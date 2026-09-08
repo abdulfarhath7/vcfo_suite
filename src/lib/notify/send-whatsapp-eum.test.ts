@@ -148,6 +148,21 @@ describe('sendViaEum through the dispatcher', () => {
     expect(result).toEqual({ ok: false, status: 'skipped', skipReason: 'opted_out' });
   });
 
+  it('makes no AWS call at all when the kill switch is off', async () => {
+    const result = await sendWhatsAppTemplate({
+      recipient,
+      event: 'welcome',
+      variables: {},
+      deps: {
+        config: config({ enabled: false }),
+        createEumClient: async () => async () => {
+          throw new Error('must not be called');
+        },
+      },
+    });
+    expect(result).toEqual({ ok: false, status: 'skipped', skipReason: 'disabled' });
+  });
+
   it('skips instead of calling AWS when no origination number is registered', async () => {
     const base = config();
     const result = await sendWhatsAppTemplate({

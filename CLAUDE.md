@@ -111,6 +111,22 @@ the versions in `package.json`; only bump when a peer-dep genuinely requires it.
 - See `infra/` and `MIGRATION.md`. It's a deployment + env-var change, not a
   rewrite, because of the seam.
 
+## Outbound messaging (already built)
+
+Email and WhatsApp both run behind a provider switch, and both are additive —
+never make one depend on the other:
+
+- **Email:** `EMAIL_PROVIDER=resend|ses`, dispatcher `src/lib/email/send-email.ts`.
+- **WhatsApp:** `WHATSAPP_PROVIDER=aws_eum|twilio`, dispatcher
+  `src/lib/notify/send-whatsapp.ts`. `aws_eum` is AWS End User Messaging
+  (Social), chosen so the Meta message fee lands on the same AWS invoice as
+  SES/RDS/S3; `twilio` is the legacy fallback and stays selectable. WhatsApp is
+  an outbound-only *nudge* channel — email stays the system of record, and a
+  WhatsApp skip or failure must never touch, slow or downgrade the email path.
+
+Setup, the six templates, and the out-of-band AWS/Meta checklist are in
+`AWS-EUM-WHATSAPP-PLAN.md`; the gotchas are in `docs/context/NOTES.md`.
+
 ## Things NOT to do
 - Don't reintroduce Supabase.
 - Don't add Kubernetes/microservices/Lambda-everything. App Runner + RDS + S3.
