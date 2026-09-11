@@ -51,10 +51,15 @@ User is doing full manual QA — automated test runs were skipped during this bu
 
 ## Stage 2 — AWS (later)
 
-- [ ] Follow `docs/context/AWS-DEPLOY.md` (billing alarm → RDS → S3 → container → env swap → migrate)
-- [ ] Add `Dockerfile` + finish `infra/app.tf` / VPC wiring when ready for IaC
-- [ ] Keep Resend on first AWS deploy; SES flip via `EMAIL_PROVIDER=ses` when ready (adapter already in tree)
-- [ ] Finish remaining `infra/*.tf` + remote state backend
+- [x] Follow `docs/context/AWS-DEPLOY.md` (billing alarm → RDS → S3 → container → env swap → migrate) — 2026-09-11
+- [x] Add `Dockerfile` + finish `infra/app.tf` (App Runner, default VPC, option B posture)
+- [x] SES from day one (`EMAIL_PROVIDER=ses`, From `noreply@sbctrack.in`) — Resend not used on AWS
+- [x] Finish `infra/*.tf` + remote state backend (S3 native lock)
+- [ ] Publish the 3 SES DKIM CNAMEs at sbctrack.in DNS; request SES production access
+- [ ] Activate `project` cost allocation tag (Billing > Cost allocation tags) so the budget filter works
+- [ ] Change / purge seeded demo passwords on RDS before real users
+- [ ] Custom domain on App Runner; then update `site_url` in `infra/terraform.tfvars`
+- [ ] Later: private RDS + VPC connector + NAT (option A) when the pilot outgrows public RDS
 
 ## Invariants
 

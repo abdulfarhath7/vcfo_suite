@@ -105,6 +105,8 @@ warnIfAuthUrlPinnedToQuickTunnel();
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Docker image copies `.next/standalone` + `.next/static` + `public` only.
+  output: 'standalone',
   // Dev-only; ignored by `next start`. Required for office-WiFi / phone testing.
   allowedDevOrigins: lanAllowedDevOrigins(),
   turbopack: {

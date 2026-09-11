@@ -870,3 +870,29 @@ Append here whenever something costs more than a minute to figure out.
   `--legacy-peer-deps`: the repo has a pre-existing
   `eslint-plugin-jsx-a11y` / `eslint@10` peer conflict that blocks any plain
   `npm install`.
+
+## AWS deploy gotchas (2026-09-11)
+
+- **`aws login` sessions are invisible to Terraform.** The CLI's browser login
+  writes a `login_session` the Go SDK cannot read. `eval "$(aws configure
+  export-credentials --profile vcfo --format env)"` immediately before every
+  terraform command; the exported token expires in ~20 min, so a long apply
+  started on a stale export dies mid-run (leaves `errored.tfstate` + a held
+  S3 lock — `terraform force-unlock <id>` with the id from the `.tflock` object).
+- **App Runner injects `HOSTNAME=<instance>`**, overriding the Dockerfile ENV.
+  Next standalone binds to it and the health check never reaches port 3000
+  (`CREATE_FAILED`). The CMD forces `HOSTNAME=0.0.0.0` at exec time. A
+  `CREATE_FAILED` service cannot be redeployed — delete + recreate, and the
+  service URL changes.
+- **`pg` >= 8.16 treats `sslmode=require` as verify-full.** RDS chains to
+  Amazon's private CA, so without `NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem`
+  every connection fails "self-signed certificate in certificate chain" — an
+  explicit `ssl: { rejectUnauthorized: false }` does NOT override the URL.
+  Applies to laptop `db:migrate` too.
+- `npm ci` needs `legacy-peer-deps=true` (`.npmrc`) — eslint 10 vs
+  eslint-plugin-jsx-a11y peer range. `drizzle-kit` had to move 0.18.1 → 0.31.x:
+  the old one had no `defineConfig`, which only `next build` typechecks.
+- `terraform -exclude` does not exist in 1.13; bootstrap order uses `-target`
+  for everything except the App Runner service (needs an image first).
+- `NEXT_PUBLIC_SITE_URL` is baked at build; server-side links read runtime
+  `SITE_URL` first (`src/lib/site-url.ts`), so one image serves any hostname.

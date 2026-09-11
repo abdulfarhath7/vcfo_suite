@@ -14,8 +14,15 @@ export function resolveSiteUrl(
 }
 
 function getSiteUrl(): string {
+  // NEXT_PUBLIC_* is inlined at `next build`, so a container image built before
+  // the public hostname exists (App Runner assigns it on first deploy) would
+  // bake in localhost. SITE_URL is read at runtime on the server and wins.
+  const fromEnv =
+    typeof window === 'undefined'
+      ? process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL
+      : process.env.NEXT_PUBLIC_SITE_URL;
   return resolveSiteUrl(
-    process.env.NEXT_PUBLIC_SITE_URL,
+    fromEnv,
     typeof window === 'undefined' ? undefined : window.location.origin,
   );
 }

@@ -31,13 +31,11 @@ This is a **paid-plan pilot**, not “forever free.” Set a billing alarm on da
 
 | Piece | Status |
 |---|---|
-| `infra/database.tf` | RDS Postgres stub (needs VPC/SG) |
-| `infra/storage.tf` | S3 + KMS + public block + versioning |
-| `infra/app.tf` | **Stub only** — ECR/App Runner not written |
-| `Dockerfile` | **Missing** — add before container deploy |
+| `infra/*.tf` | Complete for one environment: default VPC + SG, RDS (public, TLS forced), S3 + KMS, Secrets Manager, ECR, IAM, App Runner, SES identity, Budget. Runbook in `infra/README.md`. |
+| `Dockerfile` | Multi-stage, `output: 'standalone'`, RDS CA bundle baked in |
 | App ↔ DB / S3 / Auth | Ready via env (see §4) |
 
-Until Terraform is finished, you can provision the same pieces in the **console** or CLI. Terraform is preferred once VPC is designed.
+Deployed 2026-09-11 (option B network posture). Every later deploy = push `:latest` to ECR.
 
 ---
 
@@ -98,7 +96,7 @@ postgresql://vcfo:PASSWORD@HOST:5432/vcfo?sslmode=require
 - [ ] Build → push to ECR
 - [ ] Create **App Runner** service from that image (or Lightsail)
 - [ ] Attach instance role with S3 (+ Secrets read) — prefer role over long-lived access keys
-- [ ] Map custom domain when ready (Route53 or Cloudflare CNAME)
+- [x] Map custom domain — `app.sbctrack.in` via `var.app_domain` (GoDaddy CNAME; apex not possible without ALIAS)
 
 ### 3.5 Secrets
 
@@ -117,7 +115,7 @@ Copy from `.env.example`. Production values:
 
 | Variable | Local | AWS |
 |---|---|---|
-| `DATABASE_URL` | docker Postgres | RDS URL + `?sslmode=require` |
+| `DATABASE_URL` | docker Postgres | RDS URL + `?sslmode=require` (from Secrets Manager `vcfo-suite/DATABASE_URL`; process must trust `certs/rds-global-bundle.pem` via `NODE_EXTRA_CA_CERTS` — the Dockerfile does) |
 | `AUTH_SECRET` | random | **new** random (`openssl rand -base64 32`) |
 | `AUTH_URL` | `http://localhost:3000` | `https://app.yourdomain.com` |
 | `AUTH_TRUST_HOST` | `true` | `true` |
@@ -147,9 +145,10 @@ Code already expects this swap:
 2. [ ] Set production env on the service (§4)
 3. [ ] From a trusted machine with `DATABASE_URL` pointing at RDS:
    ```bash
-   npm run db:migrate
-   # optional demo users:
-   npm run db:seed
+   export DATABASE_URL="$(aws secretsmanager get-secret-value --profile vcfo --secret-id vcfo-suite/DATABASE_URL --query SecretString --output text)"
+   NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate
+   # optional demo users (weak passwords — change or purge before real users):
+   NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:seed
    ```
 4. [ ] Open `AUTH_URL` → login as seeded admin
 5. [ ] Smoke test:
@@ -179,7 +178,7 @@ Until then, console provisioning is acceptable for one pilot environment.
 
 ## 7. Domain + HTTPS
 
-- [ ] App Runner custom domain **or** Cloudflare proxy to the service URL
+- [x] App Runner custom domain `app.sbctrack.in` (Terraform `aws_apprunner_custom_domain_association`, ACM cert auto-issued)
 - [ ] `AUTH_URL` and `NEXT_PUBLIC_SITE_URL` must match the browser URL exactly (scheme + host)
 - [ ] After domain change, re-login (cookies / Auth.js)
 

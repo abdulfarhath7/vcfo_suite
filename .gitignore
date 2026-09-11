@@ -12,3 +12,12 @@ test-results/
 .DS_Store
 src/db/migrations/meta/_journal.json.bak
 .turbo/
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfvars
+infra/.terraform.lock.hcl.bak
+infra/tfplan*
+infra/errored.tfstate
