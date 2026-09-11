@@ -149,6 +149,9 @@ Code already expects this swap:
    NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate
    # optional demo users (weak passwords — change or purge before real users):
    NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:seed
+   # compliance calendar stays empty until the generator runs; Inngest cron is
+   # not wired on App Runner yet, so run it by hand after creating engagements:
+   NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run compliance:generate
    ```
 4. [ ] Open `AUTH_URL` → login as seeded admin
 5. [ ] Smoke test:
