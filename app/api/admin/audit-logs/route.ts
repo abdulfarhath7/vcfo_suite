@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdminOrManager } from '@/lib/api/require-manager';
+import { requireAdminOrManager } from '@/auth/guards';
 import { listAuditEvents } from '@/db/repositories/audit-events';
 
 export async function GET(request: Request) {

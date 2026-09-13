@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { documentIdParamSchema } from '@/lib/api/schemas';
 import { getDocumentById } from '@/db/repositories/documents';
 import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution-storage';
@@ -36,7 +36,7 @@ function storageBucketAndPath(objectKey: string): { bucket: StorageBucket; path:
  * Short-lived download URL for a documents-table row the caller can access.
  */
 export async function GET(_request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern', 'client']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern', 'client');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

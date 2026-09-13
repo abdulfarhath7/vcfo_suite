@@ -5,14 +5,14 @@ import {
 } from '@/lib/api/board-resolution-access';
 import { boardResolutionAuthErrorResponse } from '@/lib/api/board-resolution-errors';
 import { sanitizeBoardResolutionDocxBuffer } from '@/lib/board-resolution-docx';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution-storage';
 import { downloadBoardResolutionDocx } from '@/storage/board-resolution';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern', 'client']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern', 'client');
   if (auth.ok === false) {
     return NextResponse.json(boardResolutionAuthErrorResponse(auth.error, auth.status), {
       status: auth.status,

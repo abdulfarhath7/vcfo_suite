@@ -10,7 +10,7 @@ import {
 } from '@/lib/api/incorporation-docs-generate';
 import { incorpDocsErrorJson } from '@/lib/api/incorporation-docs-errors';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { INCORP_DOC_KINDS } from '@/lib/incorporation-docs/types';
 import {
@@ -31,7 +31,7 @@ function incorpDocsErrorResponse(err: IncorpDocsError) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

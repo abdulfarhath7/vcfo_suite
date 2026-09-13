@@ -3,7 +3,7 @@ import {
   assertEngagementBoardResolutionAccess,
   fetchBoardResolutionForApi,
 } from '@/lib/api/board-resolution-access';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import {
   contentTypeForSignedBoardResolutionPath,
   downloadFilenameForSignedBoardResolution,
@@ -13,7 +13,7 @@ import { downloadSignedBoardResolution } from '@/storage/board-resolution';
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern', 'client']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern', 'client');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

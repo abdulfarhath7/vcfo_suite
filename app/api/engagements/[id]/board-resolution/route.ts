@@ -5,7 +5,7 @@ import {
   fetchBoardResolutionForApi,
 } from '@/lib/api/board-resolution-access';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import {
   repairBoardResolutionStorage,
   saveBoardResolutionDraft,
@@ -22,7 +22,7 @@ const putBodySchema = z.object({
 
 /** GET /api/engagements/:id/board-resolution */
 export async function GET(_request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern', 'client']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern', 'client');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -50,7 +50,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
 /** PUT /api/engagements/:id/board-resolution — draft save / finalized repair. */
 export async function PUT(request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

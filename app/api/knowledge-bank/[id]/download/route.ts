@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { knowledgeBankIdParamSchema } from '@/lib/api/schemas';
 import {
   getKnowledgeBankFile,
@@ -10,7 +10,7 @@ import { bucketKey, signedDownloadUrl } from '@/storage/s3';
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

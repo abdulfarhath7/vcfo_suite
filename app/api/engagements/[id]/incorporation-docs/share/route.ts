@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { assertEngagementBoardResolutionAccess } from '@/lib/api/board-resolution-access';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
@@ -41,7 +41,7 @@ const shareAllSchema = z.object({
 const shareBodySchema = z.union([shareAllSchema, shareOneSchema]);
 
 export async function POST(request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

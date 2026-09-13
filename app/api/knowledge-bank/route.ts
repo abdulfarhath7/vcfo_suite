@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { knowledgeBankRegisterBodySchema } from '@/lib/api/schemas';
 import { parseJsonBody } from '@/lib/api/validate';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
@@ -21,7 +21,7 @@ function knowledgeBankErrorStatus(message: string): number {
 }
 
 export async function GET(request: Request) {
-  const auth = await requireRole(['admin', 'manager', 'intern']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireRole(['admin', 'manager', 'intern']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

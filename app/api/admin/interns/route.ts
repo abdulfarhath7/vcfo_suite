@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { requireAdminOrManager } from '@/lib/api/require-manager';
+import { requireAdminOrManager } from '@/auth/guards';
 import { createInternBodySchema } from '@/lib/api/schemas';
 import { checkInternCreateRateLimit } from '@/lib/api/rate-limit';
 import { recordAuditEvent } from '@/db/repositories/audit-events';

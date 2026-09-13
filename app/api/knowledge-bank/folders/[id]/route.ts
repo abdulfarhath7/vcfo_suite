@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdminOrManager } from '@/lib/api/require-manager';
+import { requireAdminOrManager } from '@/auth/guards';
 import { knowledgeBankIdParamSchema } from '@/lib/api/schemas';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import {

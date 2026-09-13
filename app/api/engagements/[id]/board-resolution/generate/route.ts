@@ -8,7 +8,7 @@ import {
 } from '@/lib/api/board-resolution-errors';
 import { generateAndStoreBoardResolution } from '@/lib/api/board-resolution-generate';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import {
   checklistStateFromRow,
@@ -29,7 +29,7 @@ const generateBodySchema = z.object({
 });
 
 export async function POST(request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern');
   if (auth.ok === false) {
     return NextResponse.json(boardResolutionAuthErrorResponse(auth.error, auth.status), {
       status: auth.status,

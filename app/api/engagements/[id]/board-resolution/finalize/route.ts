@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import {
   assertEngagementBoardResolutionAccess,
 } from '@/lib/api/board-resolution-access';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import {
   finalizeBoardResolution,
@@ -19,7 +19,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 /** POST /api/engagements/:id/board-resolution/finalize — release draft to client. */
 export async function POST(_request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern', 'super_admin']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern', 'super_admin');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

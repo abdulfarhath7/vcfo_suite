@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { assertEngagementProgressCcAccess } from '@/lib/api/engagement-progress-cc-access';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { progressCcPatchBodySchema } from '@/lib/api/schemas';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { hasDefaultProgressCcConfigured } from '@/lib/email/merge-cc';
@@ -22,7 +22,7 @@ function normalizeProgressCcRow(value: unknown): string[] {
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -50,7 +50,7 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { assertEngagementBoardResolutionAccess } from '@/lib/api/board-resolution-access';
-import { requireRole } from '@/lib/api/require-role';
+import { requireAnyRole } from '@/auth/guards';
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
 import { normalizeChecklistItemSlice } from '@/lib/checklist-state-key';
@@ -37,7 +37,7 @@ function parseDocParam(value: string | null): IncorpDocKind | null {
 }
 
 export async function GET(request: Request, context: RouteContext) {
-  const auth = await requireRole(['admin', 'manager', 'intern', 'client']);
+  const auth = await requireAnyRole('admin', 'manager', 'intern', 'client');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
