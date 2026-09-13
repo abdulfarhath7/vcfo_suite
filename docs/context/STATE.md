@@ -1,6 +1,6 @@
 # STATE — verified build state
 
-Last updated: 2026-09-11 (first AWS deploy).
+Last updated: 2026-09-13 (dead-code sweep).
 
 ## Done across phases
 
@@ -25,7 +25,8 @@ Last updated: 2026-09-11 (first AWS deploy).
 | WhatsApp notifications | done — outbound-only nudge channel beside email, six utility templates, consent + kill switch. **Two transports** behind `WHATSAPP_PROVIDER`: `aws_eum` (AWS End User Messaging, bills on the AWS invoice) and `twilio` (legacy fallback). Ships defaulting to `twilio`; inert until `WHATSAPP_ENABLED=true` and the out-of-band setup in `AWS-EUM-WHATSAPP-PLAN.md` §6 is done |
 | **AWS Stage 2 — deployed** | done (2026-09-11) — `https://ebuwqhvnuy.ap-south-1.awsapprunner.com`, account 600627321277, ap-south-1. Terraform in `infra/` (remote state `vcfo-suite-tfstate-600627321277`): RDS `vcfo-suite-db` (public + `rds.force_ssl`, option B), S3 `vcfo-suite-documents-600627321277`, ECR `vcfo-suite`, App Runner `vcfo-suite` (auto-deploy on `:latest`), Secrets Manager `vcfo-suite/{DATABASE_URL,AUTH_SECRET}`, SES identity `sbctrack.in` (DKIM CNAMEs pending at DNS; account in SES sandbox), Budget $25. Migrated (18) + seeded demo users. Login verified via curl. Runbook `infra/README.md` |
 | Staff project detail = client incorporation view | done (2026-09-12) — admin + manager `/projects/{slug}` renders the client's four phase cards (`InternPhaseEntryCards`, `client` gate viewer); step workspace opens read-only for staff (`readOnly` prop on `StepDetailContent`, no locked-step bounce). Old `ProjectDetailSections` (tabs/KPIs/resend/activity) removed. Super Admin untouched |
-| Compliances nav group for every role | done (2026-09-07) — `compliancesGroup(base)` in all five shells; staff pages `/app/{admin,manager,intern}/compliances/{calendar,filings}` render the same shared views as the client through one wrapper (`CompliancePages`); chrome identical in every shell, picker only with >1 company; legacy `/compliance` + `/compliance/tracker` redirect; `views/admin/Compliance.tsx` retired. See `COMPLIANCE-NAV-REPORT.md` |
+| Compliances nav group for every role | done (2026-09-07) — `compliancesGroup(base)` in all five shells; staff pages `/app/{admin,manager,intern}/compliances/{calendar,filings}` render the same shared views as the client through one wrapper (`CompliancePages`); chrome identical in every shell, picker only with >1 company; legacy `/compliance` + `/compliance/tracker` redirect; `views/admin/Compliance.tsx` retired. See `docs/archive/COMPLIANCE-NAV-REPORT.md` |
+| **Dead-code sweep** | done (2026-09-13) — knip + eslint pass: ~100 unreachable files removed (unused shadcn primitives, old onboarding wizard, legacy incorporation sections, keep-alive `_registry` files), 22 unused npm deps dropped, Supabase-era shims deleted (`src/lib/supabase/*` → `src/hooks/use-poll-refresh` etc., `require-role` / `require-manager` → `@/auth/guards`, `send-resend` barrel → `send-email`, `mapSupabaseError` → private `mapApiError`), no-op localStorage stubs (`src/lib/storage.ts`, `regenerateComplianceForEngagement`) and `mockData` seeds removed, ~180 dead exports/types deleted or un-exported, `GoldButton` alias migrated to `AccentButton`. Session reports moved to `docs/archive/`. `*.tsbuildinfo` untracked. `saxes` / `@xmldom/xmldom` now declared. Baseline after: typecheck 0 errors, 960 tests, knip clean (only `server-only-stub` vitest alias) |
 
 ## Intentionally deferred / pilot limits
 

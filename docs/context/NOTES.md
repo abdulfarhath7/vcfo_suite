@@ -896,3 +896,12 @@ Append here whenever something costs more than a minute to figure out.
   for everything except the App Runner service (needs an image first).
 - `NEXT_PUBLIC_SITE_URL` is baked at build; server-side links read runtime
   `SITE_URL` first (`src/lib/site-url.ts`), so one image serves any hostname.
+
+## Dead-code hygiene (2026-09-13)
+
+- `npx knip --reporter compact` is the reference dead-code scan. Expected residue: `src/test/server-only-stub.ts` (vitest alias, not an import). Anything else it reports is new dead code.
+- Never add keep-alive "registry" files that import unused modules to silence tooling; they hid ~60 dead files.
+- `src/lib/storage.ts` (localStorage `read`/`persist` no-op stubs) is gone. Persisted state goes through repositories + TanStack Query only.
+- Auth guards: import from `@/auth/guards` directly (`requireAnyRole('admin', 'manager')`, `requireRole('client')`). The `@/lib/api/require-role` / `require-manager` shims were deleted.
+- Email: import `sendEmail` / `SendEmailResult` from `@/lib/email/send-email`. `sendResendEmail`, `SendResendResult`, `resolveResendDevRedirect` no longer exist.
+- Upload limit constant is `MAX_UPLOAD_BYTES` (`@/lib/upload-limits`).
