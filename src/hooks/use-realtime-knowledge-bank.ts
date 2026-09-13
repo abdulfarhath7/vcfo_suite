@@ -3,15 +3,12 @@
 import { useCallback } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import type { AuthUser } from '@/lib/auth';
-import { usePollRefresh } from '@/lib/supabase/use-poll-refresh';
+import { usePollRefresh } from '@/hooks/use-poll-refresh';
 
 /**
- * Invalidate the knowledge bank list when files may have been added or removed.
- *
- * Was a Supabase Realtime subscription on `knowledge_bank_files`; now a
- * visibility-aware poll. The role check is kept because clients have no access
- * to the knowledge bank at all (see src/db/repositories/knowledge-bank.ts) —
- * polling for them would be pure wasted requests that always 403.
+ * Invalidate the knowledge bank list on a visibility-aware poll. Clients have
+ * no knowledge-bank access (see src/db/repositories/knowledge-bank.ts), so the
+ * poll only runs for staff roles.
  */
 export interface UseRealtimeKnowledgeBankOptions {
   user: AuthUser | null;

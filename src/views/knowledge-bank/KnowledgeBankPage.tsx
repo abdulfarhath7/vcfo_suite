@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { KnowledgeBankPageView } from '@/views/knowledge-bank/KnowledgeBankPageSections';
 import { useApp } from "@/context/AppContext";
-import { useRealtimeKnowledgeBank } from "@/lib/supabase/use-realtime-knowledge-bank";
+import { useRealtimeKnowledgeBank } from "@/hooks/use-realtime-knowledge-bank";
 import {
   removeKnowledgeBankStorageObject,
   uploadKnowledgeBankFile,

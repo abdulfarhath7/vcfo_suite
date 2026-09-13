@@ -3,22 +3,10 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Polling replacement for Supabase Realtime postgres_changes subscriptions.
- *
- * The original opened a WebSocket channel per table and relied on RLS to decide
- * what each subscriber was allowed to see. We have no realtime server, and the
- * equivalent scoping now lives in the repository layer, so the honest
- * substitute is a poll: ask the API again on an interval.
- *
- * Two behaviours keep this cheap:
- *   - it pauses while the tab is hidden, and
- *   - it fires once immediately on becoming visible again, so a user returning
- *     to the tab sees fresh data without waiting out the interval.
- *
- * This is genuinely weaker than realtime — two people editing the same record
- * can be up to `intervalMs` out of date with each other. If that becomes a
- * problem the upgrade path is SSE or a websocket on our own server, not
- * Supabase.
+ * Visibility-aware poll: ask the API again on an interval. Pauses while the
+ * tab is hidden and fires once immediately when it becomes visible again.
+ * Two people editing the same record can be up to `intervalMs` apart; the
+ * upgrade path is SSE or a websocket on our own server.
  */
 export interface UsePollRefreshOptions {
   enabled: boolean;

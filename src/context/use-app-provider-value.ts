@@ -64,7 +64,6 @@ import { mergeChecklistIndexIntoState } from '@/lib/checklist-index';
 import { toastError, toastSuccess, errorMessage, toastEmailDispatch, EMAIL_DISPATCH_NOTIFICATIONS_EVENT } from '@/lib/toast-errors';
 import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
 import { debouncedPersist, read } from '@/lib/storage';
-import { useRealtimeEngagements } from '@/lib/supabase/use-realtime-engagements';
 import {
   type AppNotification,
   type NotificationKind,
@@ -596,12 +595,6 @@ export function useAppProviderValue(): AppContextValue {
     );
   }, [engagementsQuery.isError, engagementsQuery.error]);
 
-  const refetchEngagementsFromRealtime = useCallback(() => {
-    void engagementsQuery.refetch();
-    if (user?.role === 'client') {
-      void clientEngagementQuery.refetch();
-    }
-  }, [engagementsQuery, clientEngagementQuery, user?.role]);
 
   const hydrateFromSession = useCallback(async () => {
     try {
@@ -744,24 +737,6 @@ export function useAppProviderValue(): AppContextValue {
     [user, ingestChecklistNotificationDrafts],
   );
 
-  useRealtimeEngagements({
-    user,
-    engagements,
-    checklistByEngagement: dbChecklistState,
-    enabled: Boolean(user && engagementsQuery.isSuccess),
-    onStateChange: ({ engagements: nextEngagements, checklistByEngagement }) => {
-      for (const eng of nextEngagements) {
-        const nextCs = checklistByEngagement[eng.id];
-        if (nextCs) {
-          handleChecklistStateDiff(eng, dbChecklistRef.current[eng.id], nextCs);
-        }
-      }
-      setEngagements(nextEngagements);
-      setDbChecklistState(checklistByEngagement);
-    },
-    onRefetch: refetchEngagementsFromRealtime,
-    queryClient,
-  });
 
   const signIn = useCallback<AppContextValue['signIn']>(async (email, password) => {
     const normalizedEmail = email.trim().toLowerCase();

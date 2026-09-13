@@ -84,7 +84,7 @@ import {
 } from '@/lib/slug';
 
 import { toastError, toastSuccess } from '@/lib/toast-errors';
-import { useRealtimeBoardResolution } from '@/lib/supabase/use-realtime-board-resolution';
+import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import {
   formatBoardResolutionErrorDisplay,
   type BoardResolutionApiErrorBody,

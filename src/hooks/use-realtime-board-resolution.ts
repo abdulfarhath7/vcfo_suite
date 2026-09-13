@@ -1,15 +1,9 @@
 'use client';
 
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
-import { usePollRefresh } from '@/lib/supabase/use-poll-refresh';
+import { usePollRefresh } from '@/hooks/use-poll-refresh';
 
-/**
- * Refetch the board resolution when it may have changed elsewhere.
- *
- * Was a Supabase Realtime subscription on `engagement_board_resolutions`
- * filtered by engagement_id; now a visibility-aware poll (see usePollRefresh).
- * The `supabase` option is gone — callers no longer hold a client.
- */
+/** Refetch the board resolution when it may have changed elsewhere (visibility-aware poll). */
 export interface UseRealtimeBoardResolutionOptions {
   appEngagementId: string | undefined;
   enabled?: boolean;

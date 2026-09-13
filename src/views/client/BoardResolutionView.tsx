@@ -23,7 +23,7 @@ import { maxUploadSizeLabel } from '@/lib/upload-limits';
 import {
   fetchBoardResolutionInDb,
 } from '@/lib/engagements-db';
-import { useRealtimeBoardResolution } from '@/lib/supabase/use-realtime-board-resolution';
+import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 
 export default function BoardResolutionView() {
