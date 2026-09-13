@@ -6,8 +6,6 @@ import { buttonVariants } from "@/components/ui/button-variants";
 
 const AlertDialog = AlertDialogPrimitive.Root;
 
-const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
-
 const AlertDialogPortal = AlertDialogPrimitive.Portal;
 
 function AlertDialogOverlay({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay> & { ref?: React.Ref<React.ElementRef<typeof AlertDialogPrimitive.Overlay>> }) {
@@ -81,9 +79,6 @@ function AlertDialogCancel({ ref, className, ...props }: React.ComponentPropsWit
 
 export {
   AlertDialog,
-  AlertDialogPortal,
-  AlertDialogOverlay,
-  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogFooter,
