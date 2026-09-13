@@ -56,7 +56,7 @@ export function sidebarHoverAttrs(itemId: string) {
   return { 'data-sidebar-hover': itemId } as const;
 }
 
-export function sidebarHoverGlassClass(ink: 'light' | 'dark') {
+function sidebarHoverGlassClass(ink: 'light' | 'dark') {
   return cn(
     /* Tint/ring only. Item-sized blur is tempting but layoutId re-samples it every frame. */
     'sidebar-hover-glass pointer-events-none absolute inset-0 z-[1] rounded-[inherit]',
@@ -66,16 +66,8 @@ export function sidebarHoverGlassClass(ink: 'light' | 'dark') {
   );
 }
 
-/** @deprecated Prefer data-sidebar-hover + useSidebarHoverFollow nav props. */
-export function sidebarHoverHandlers(follow: SidebarHoverFollow, itemId: string) {
-  return {
-    onMouseEnter: () => follow.onEnter(itemId),
-    onFocus: () => follow.onEnter(itemId),
-  };
-}
-
 /** Frosted hover glass. Stays mounted on the last item so opacity can fade out. */
-export function MotionHoverPill({
+function MotionHoverPill({
   layoutId,
   className,
   reduced,

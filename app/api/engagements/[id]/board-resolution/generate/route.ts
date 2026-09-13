@@ -70,7 +70,7 @@ export async function POST(request: Request, context: RouteContext) {
     if (parsedBody.data.forceTemplateRefresh) forceTemplateRefresh = true;
   }
 
-  let existingDoc = null;
+  let existingDoc: Awaited<ReturnType<typeof getBoardResolutionByEngagementId>>;
   try {
     existingDoc = await getBoardResolutionByEngagementId(auth.ctx, access.dbId);
   } catch (err) {

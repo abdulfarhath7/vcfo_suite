@@ -2,9 +2,7 @@
 
 import Link from 'next/link';
 import { CheckCircle2, Clock, FileText, Upload } from 'lucide-react';
-import type { ChecklistItem } from '@/data/checklist';
 import { getItem } from '@/data/checklist';
-import type { Engagement } from '@/data/engagements';
 import {
   computeMcaNameApprovalExpiryDate,
   extractItemResponses,
@@ -33,7 +31,7 @@ import {
 import type { Phase1StepPanelRoutesProps } from '@/components/incorporation/Phase1StepPanelSections';
 
 export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
-  const { item, engagement, responses, className, isClient, isIntern, brStatus, deliveredToClient, itemState, incorpDraftLabelOptions, getStateForEngagement } = props;
+  const { engagement, className, isClient, isIntern, brStatus } = props;
     if (!engagement) return null;
 
     // Intern CTA lives in the form-card footer (`aboveFooterActions`), not above the fields.
@@ -101,7 +99,7 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
 }
 
 export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
-  const { item, engagement, responses, className, isClient, isIntern, brStatus, deliveredToClient, itemState, incorpDraftLabelOptions, getStateForEngagement } = props;
+  const { className, isClient, brStatus } = props;
     if (isClient) {
       return (
         <div className={className}>
@@ -161,7 +159,7 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
 }
 
 export function Phase1Pre4Panel(props: Phase1StepPanelRoutesProps) {
-  const { item, engagement, responses, className, isClient, isIntern, brStatus, deliveredToClient, itemState, incorpDraftLabelOptions, getStateForEngagement } = props;
+  const { responses, className, isClient, brStatus, deliveredToClient } = props;
     const ack = responses.nameApplicationAcknowledgementUrl?.trim();
     const notes = responses.nameApplicationFilingNotes?.trim();
 
@@ -205,7 +203,7 @@ export function Phase1Pre4Panel(props: Phase1StepPanelRoutesProps) {
 }
 
 export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
-  const { item, engagement, responses, className, isClient, isIntern, brStatus, deliveredToClient, itemState, incorpDraftLabelOptions, getStateForEngagement } = props;
+  const { responses, className, isClient, deliveredToClient } = props;
     const approvedName = responses.approvedCompanyName?.trim();
     const approvalDate = responses.nameApprovalDate?.trim();
     const expiryDate =
@@ -267,7 +265,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
 }
 
 export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
-  const { item, engagement, responses, className, isClient, isIntern, brStatus, deliveredToClient, itemState, incorpDraftLabelOptions, getStateForEngagement } = props;
+  const { engagement, responses, className, isClient, deliveredToClient, incorpDraftLabelOptions } = props;
     const nrDsc = responses.nrDirectorDscSuccessMessageUrl?.trim();
     const residentDsc = responses.residentDirectorDscSuccessMessageUrl?.trim();
     const hasDsc = Boolean(nrDsc || residentDsc);
@@ -365,7 +363,7 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
 }
 
 export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
-  const { item, engagement, responses, className, isClient, isIntern, brStatus, deliveredToClient, itemState, incorpDraftLabelOptions, getStateForEngagement } = props;
+  const { engagement, className, isClient, itemState, incorpDraftLabelOptions, getStateForEngagement } = props;
     const pre7Item = getItem('pre-7');
     const pre7State = engagement ? getStateForEngagement(engagement)['pre-7'] : undefined;
     const pre7Responses = pre7Item

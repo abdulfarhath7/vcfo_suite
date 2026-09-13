@@ -27,7 +27,7 @@ export function notifyChecklistStepLocked(message: string | null) {
   toastInfo(message ?? 'This opens after the previous step is complete.');
 }
 
-export function ChecklistLockedHint({
+function ChecklistLockedHint({
   message,
   children,
 }: {

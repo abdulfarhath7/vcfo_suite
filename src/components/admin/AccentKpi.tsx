@@ -6,7 +6,7 @@ import { KpiNumber } from '@/components/noir/KpiNumber';
 import { cardHover, pressScale } from '@/lib/motion';
 
 /** Legacy decorative names map to semantic design tokens. */
-export type AccentTone =
+type AccentTone =
   | 'success'
   | 'info'
   | 'warning'

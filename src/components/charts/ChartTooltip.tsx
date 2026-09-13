@@ -2,7 +2,7 @@
 
 import { CHART_CHROME } from '@/components/charts/chart-theme';
 
-export interface ChartTooltipEntry {
+interface ChartTooltipEntry {
   name?: string | number;
   value?: string | number;
   color?: string;

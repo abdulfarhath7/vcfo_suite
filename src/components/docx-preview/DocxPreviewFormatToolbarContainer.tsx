@@ -14,7 +14,7 @@ const EMPTY_FORMAT_STATE: PreviewFormatSelectionState = {
   boldActive: false,
 };
 
-export type DocxPreviewFormatHandle = {
+type DocxPreviewFormatHandle = {
   getFormatSelectionState: () => PreviewFormatSelectionState;
   toggleBold: () => boolean;
   setParagraphAlignment: (align: BoardResolutionParagraphAlignment) => boolean;

@@ -228,7 +228,7 @@ export function statutoryCellWash(acts: readonly StatutoryAct[]): string | null 
 export type StatutoryStatus = 'overdue' | 'due-soon' | 'upcoming';
 
 /** Days from today inside which a deadline reads as "Due soon". */
-export const DUE_SOON_DAYS = 7;
+const DUE_SOON_DAYS = 7;
 
 const MS_PER_DAY = 86_400_000;
 
@@ -289,7 +289,7 @@ export type StatutoryCalendarViewPrefs = {
   mode: StatutoryCalendarMode;
 };
 
-export const DEFAULT_CALENDAR_VIEW_PREFS: StatutoryCalendarViewPrefs = {
+const DEFAULT_CALENDAR_VIEW_PREFS: StatutoryCalendarViewPrefs = {
   mode: 'minimized',
 };
 

@@ -6,7 +6,6 @@ import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import { MilestoneResponseFormView } from './MilestoneResponseFormSections';
 import { useMilestoneResponseFormState } from './useMilestoneResponseFormState';
 
-export { Pre1SectionCard, FormErrorSummary } from '@/views/incorporation/MilestoneResponseFormParts';
 import '@/views/incorporation/milestone-response-form-utils';
 
 interface MilestoneResponseFormProps {

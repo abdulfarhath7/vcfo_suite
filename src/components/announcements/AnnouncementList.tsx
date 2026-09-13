@@ -1,7 +1,6 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import {
   ANNOUNCEMENT_KIND_LABEL,
@@ -154,47 +153,3 @@ export function AnnouncementRow({
   );
 }
 
-export function AnnouncementBody({
-  item,
-  compact,
-  unread,
-}: {
-  item: Announcement;
-  compact?: boolean;
-  unread?: boolean;
-}) {
-  return <AnnouncementRow item={item} compact={compact} unread={unread} showSource={!compact} className="px-0 py-1" />;
-}
-
-export function AnnouncementCompactList({
-  items,
-  href,
-}: {
-  items: Announcement[];
-  href: string;
-}) {
-  if (items.length === 0) {
-    return (
-      <p className="text-[12.5px] text-muted-foreground">
-        No announcements yet.{' '}
-        <Link href={href} className="font-semibold text-primary hover:underline">
-          Open the board
-        </Link>
-      </p>
-    );
-  }
-  return (
-    <div>
-      <div className="divide-y divide-border">
-        {items.map((item) => (
-          <Link key={item.id} href={href} className="block min-w-0 hover:bg-raised/40">
-            <AnnouncementRow item={item} compact className="px-0 py-2" />
-          </Link>
-        ))}
-      </div>
-      <Link href={href} className="mt-3 inline-block px-0.5 text-[12px] font-semibold text-primary hover:underline">
-        View all announcements
-      </Link>
-    </div>
-  );
-}

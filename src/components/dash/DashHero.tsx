@@ -27,7 +27,7 @@ import { ClientLocaleNowLabel } from '@/hooks/use-client-locale-date';
  * preference follows them across every dashboard rather than applying to one.
  */
 
-export function DashHeroRing({
+function DashHeroRing({
   value,
   total,
   caption,

@@ -12,7 +12,7 @@ import {
   Undo2,
   Zap,
 } from 'lucide-react';
-import { internKindChipLabel, internToneBadge, internToneText, KIND_TONE } from '@/components/intern/intern-tones';
+import { internKindChipLabel, internToneBadge, KIND_TONE } from '@/components/intern/intern-tones';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { InternWorkDenseLayout } from '@/components/intern/InternWorkDenseLayout';
 import { LeadCompanyPill } from '@/components/intern/LeadCompanyChip';
@@ -32,7 +32,7 @@ const KIND_ICON = {
   done: CheckCircle2,
 } as const;
 
-export function InternWorkKindChip({
+function InternWorkKindChip({
   kind,
   label,
   className,
@@ -50,17 +50,6 @@ export function InternWorkKindChip({
       )}
     >
       {label ?? internKindChipLabel(kind)}
-    </span>
-  );
-}
-
-export function InternWorkWhy({ item, className }: { item: InternWorkItem; className?: string }) {
-  const tone = KIND_TONE[item.kind] ?? 'info';
-  const Icon = KIND_ICON[item.kind] ?? Zap;
-  return (
-    <span className={cn('inline-flex min-w-0 max-w-full items-center gap-1.5 text-[11.5px] font-extrabold', internToneText(tone), className)}>
-      <Icon className="h-3 w-3 shrink-0" strokeWidth={2.4} />
-      <span className="min-w-0 truncate">{item.why}</span>
     </span>
   );
 }

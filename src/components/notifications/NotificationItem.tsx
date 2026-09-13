@@ -16,7 +16,7 @@ function statusDotClass(kind: AppNotification["kind"]): string | null {
   return null;
 }
 
-export function notificationMetaLine(item: AppNotification, now?: Date): string {
+function notificationMetaLine(item: AppNotification, now?: Date): string {
   const isOutbound =
     item.kind === "email.sent" ||
     item.kind === "email.skipped" ||

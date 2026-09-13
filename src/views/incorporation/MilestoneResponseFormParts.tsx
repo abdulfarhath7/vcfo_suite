@@ -1,11 +1,10 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, m, useReducedMotion, type Variants } from 'framer-motion';
 import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Loader2, Lock, Unlock, Upload } from 'lucide-react';
 import { ease } from '@/lib/motion';
 import type { ChecklistField } from '@/data/checklist';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import { getMilestoneDocumentSignedUrl } from '@/lib/milestone-document-storage';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ import { cn } from '@/lib/utils';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 import { type SectionPendingItem } from '@/lib/milestone-section-completion';
 import {
-  EMPTY_PENDING_ITEMS,
   isImageStoragePath,
 } from '@/views/incorporation/milestone-response-form-utils';
 import {
@@ -27,7 +25,6 @@ export function Pre1SectionCard({
   title,
   children,
   complete,
-  pendingItems = EMPTY_PENDING_ITEMS,
   defaultOpen = true,
 }: {
   index: number;
@@ -88,7 +85,7 @@ const unlockIconVariants: Record<'lock' | 'unlock', Variants> = {
 
 const FIELD_UNLOCK_SLOT_CLASS = 'h-7 w-7 shrink-0 flex items-center justify-center';
 
-export function FieldUnlockIconButton({
+function FieldUnlockIconButton({
   isUnlocked,
   onClick,
   ariaLabel,

@@ -2,7 +2,6 @@
 
 import { AlertCircle, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import type { MilestoneResponseFormViewModel } from '@/views/incorporation/useMilestoneResponseFormState';
 
 export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewModel) {

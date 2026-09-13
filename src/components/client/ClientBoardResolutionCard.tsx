@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import type { Engagement } from '@/data/engagements';

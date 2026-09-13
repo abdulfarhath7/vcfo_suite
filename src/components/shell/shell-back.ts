@@ -13,7 +13,7 @@ export function normalizeShellPathname(pathname: string): string {
  * Keep in sync with `RoleSidebar` item `to` values. Settings lives in chrome
  * (Profile / footer), not this list — nested back should show there.
  */
-export const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
+const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
   '/app/intern/today',
   '/app/intern/tasks',
   '/app/intern/announcements',

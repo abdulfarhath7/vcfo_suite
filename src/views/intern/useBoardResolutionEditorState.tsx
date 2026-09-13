@@ -4,57 +4,26 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useParams, useRouter } from 'next/navigation';
-
-import {
-
-  AlertTriangle,
-
-  ArrowLeft,
-
-  Download,
-
-  FileText,
+import { useParams } from 'next/navigation';
 
 
-  Sparkles,
 
-} from 'lucide-react';
+
+
 
 import { useApp } from '@/context/AppContext';
 
-import { PageTransition } from '@/components/shell/PageTransition';
 
-import { SEO } from '@/components/SEO';
 
-import { BoardResolutionDocPreview, type BoardResolutionDocPreviewHandle } from '@/components/board-resolution/BoardResolutionDocPreview';
-import { DocxPreviewFormatToolbarContainer } from '@/components/docx-preview/DocxPreviewFormatToolbarContainer';
+import { type BoardResolutionDocPreviewHandle } from '@/components/board-resolution/BoardResolutionDocPreview';
 
-import { HexgridLoader } from '@/components/common/HexgridLoader';
 
-import { Eyebrow, GoldButton } from '@/components/noir';
 
-import { Button } from '@/components/ui/button';
 
-import {
 
-  AlertDialog,
 
-  AlertDialogAction,
 
-  AlertDialogCancel,
 
-  AlertDialogContent,
-
-  AlertDialogDescription,
-
-  AlertDialogFooter,
-
-  AlertDialogHeader,
-
-  AlertDialogTitle,
-
-} from '@/components/ui/alert-dialog';
 
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
@@ -134,30 +103,11 @@ function previewBlobVersionFromDoc(doc: BoardResolutionDoc | null): string | nul
   return v?.trim() ? v.trim() : null;
 }
 
-type FormatToolbarProps = {
-  disabled: boolean;
-  previewRef: React.RefObject<BoardResolutionDocPreviewHandle | null>;
-  onFormatChange: () => void;
-};
-
-function FormatToolbar({ disabled, previewRef, onFormatChange }: FormatToolbarProps) {
-  return (
-    <DocxPreviewFormatToolbarContainer
-      disabled={disabled}
-      previewRef={previewRef}
-      className="mb-3"
-      onFormatChange={onFormatChange}
-    />
-  );
-}
-
-
-export function useBoardResolutionEditorState(props: Record<string, unknown>) {
+export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
 
 
   const params = useParams();
 
-  const router = useRouter();
 
   const routeParam = engagementRouteParamFromParams(params);
 

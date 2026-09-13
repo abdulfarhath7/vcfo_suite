@@ -9,10 +9,6 @@ function isSameMonth(iso: string, month: Date): boolean {
   return d.getFullYear() === month.getFullYear() && d.getMonth() === month.getMonth();
 }
 
-export function isFilingInMonth(iso: string, month: Date): boolean {
-  return isSameMonth(iso, month);
-}
-
 export function yearRange(filings: ComplianceFiling[]): number[] {
   const years = filings.map((f) => parseIsoDate(f.nextDue).getFullYear());
   const min = Math.min(...years, new Date().getFullYear());

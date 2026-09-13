@@ -3,7 +3,7 @@ import {
   assertEngagementBoardResolutionAccess,
   fetchBoardResolutionForApi,
 } from '@/lib/api/board-resolution-access';
-import { requireRole } from '@/lib/api/require-role';
+import { requireRole } from '@/auth/guards';
 import {
   contentTypeForSignedBoardResolutionPath,
   validateSignedBoardResolutionFile,

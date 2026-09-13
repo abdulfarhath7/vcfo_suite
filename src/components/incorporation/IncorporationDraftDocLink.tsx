@@ -6,5 +6,4 @@
  */
 export {
   IncorporationDocInlinePreview as IncorporationDraftDocLink,
-  type IncorporationDocInlinePreviewProps as IncorporationDraftDocLinkProps,
 } from '@/components/incorporation/IncorporationDocInlinePreview';

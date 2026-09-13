@@ -20,7 +20,7 @@ import { filingStatus, type FilingRow, type FilingStatus } from '@/lib/filings';
  * company to pick; a single-company scope is simply that company.
  */
 
-export type ComplianceAudience = 'client' | 'staff';
+type ComplianceAudience = 'client' | 'staff';
 
 export const ALL_COMPANIES = 'all';
 

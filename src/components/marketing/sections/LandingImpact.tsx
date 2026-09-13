@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import FadeContent from '@/components/marketing/react-bits/FadeContent';
 import CountUp from '@/components/marketing/react-bits/CountUp';
-import ShinyText from '@/components/marketing/react-bits/ShinyText';
 import SpotlightCard from '@/components/marketing/react-bits/SpotlightCard';
 import TiltCard from '@/components/marketing/react-bits/TiltCard';
 import { Eyebrow } from '@/components/noir';

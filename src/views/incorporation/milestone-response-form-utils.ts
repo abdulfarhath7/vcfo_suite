@@ -13,46 +13,11 @@ import { validatePre9Responses } from '@/lib/checklist-pre9-validation';
 import { validatePre10Responses } from '@/lib/checklist-pre10-validation';
 import { validatePre11Responses } from '@/lib/checklist-pre11-validation';
 import { validatePre12Responses } from '@/lib/checklist-pre12-validation';
-import { type SectionPendingItem } from '@/lib/milestone-section-completion';
-import type { SetStateAction } from 'react';
 
 export type StaffSaveStatus = 'idle' | 'saved' | 'error';
 export const AUTO_SAVE_DEBOUNCE_MS = 600;
 
 export type AutoSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
-
-export type MilestoneFormState = {
-  draft: ChecklistItemResponses;
-  saving: boolean;
-  autoSaveStatus: AutoSaveStatus;
-  staffSaveStatus: StaffSaveStatus;
-  uploadingField: string | null;
-  fieldErrors: Record<string, string>;
-  fieldWarnings: Record<string, string>;
-  submitting: boolean;
-  delivering: boolean;
-  peakEndMoment: 'submit' | null;
-  optimisticUnlock: Record<string, boolean>;
-};
-
-export type MilestoneFormAction = {
-  type: 'patch';
-  key: keyof MilestoneFormState;
-  value: SetStateAction<MilestoneFormState[keyof MilestoneFormState]>;
-};
-
-export function milestoneFormReducer(
-  state: MilestoneFormState,
-  action: MilestoneFormAction,
-): MilestoneFormState {
-  const prev = state[action.key];
-  const next =
-    typeof action.value === 'function'
-      ? (action.value as (current: typeof prev) => typeof prev)(prev)
-      : action.value;
-  if (Object.is(prev, next)) return state;
-  return { ...state, [action.key]: next };
-}
 
 export function staffSaveStatusLabel(
   status: StaffSaveStatus,
@@ -99,7 +64,6 @@ export function internAutoSaveHint(autoSaveStatus: AutoSaveStatus): string | nul
   return null;
 }
 
-export const EMPTY_PENDING_ITEMS: SectionPendingItem[] = [];
 
 export function getChangedPartial(
   fields: ChecklistField[],

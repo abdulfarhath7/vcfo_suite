@@ -4,15 +4,11 @@
 
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useParams, useRouter } from 'next/navigation';
 
 import {
 
   AlertTriangle,
-
-  ArrowLeft,
 
   Download,
 
@@ -23,11 +19,8 @@ import {
 
 } from 'lucide-react';
 
-import { useApp } from '@/context/AppContext';
 
-import { PageTransition } from '@/components/shell/PageTransition';
 
-import { SEO } from '@/components/SEO';
 
 import { BoardResolutionDocPreview, type BoardResolutionDocPreviewHandle } from '@/components/board-resolution/BoardResolutionDocPreview';
 import { DocxPreviewFormatToolbarContainer } from '@/components/docx-preview/DocxPreviewFormatToolbarContainer';
@@ -38,57 +31,29 @@ import { AccentButton } from '@/components/noir';
 
 import { Button } from '@/components/ui/button';
 
+
+
+
+
+
+
+import { type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution';
+
+
+
+
+
+
+
+import { internBoardResolutionPath } from '@/lib/project-step-path';
+
+
+
+
+
+
+import { toastError } from '@/lib/toast-errors';
 import {
-
-  AlertDialog,
-
-  AlertDialogAction,
-
-  AlertDialogCancel,
-
-  AlertDialogContent,
-
-  AlertDialogDescription,
-
-  AlertDialogFooter,
-
-  AlertDialogHeader,
-
-  AlertDialogTitle,
-
-} from '@/components/ui/alert-dialog';
-
-import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
-
-import { buildBoardResolutionMergeFields, extractBoardResolutionInlineOverrides, type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution';
-
-import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution-storage';
-
-import {
-
-  fetchBoardResolutionInDb,
-
-  finalizeBoardResolutionInDb,
-
-  saveBoardResolutionDraftInDb,
-
-} from '@/lib/engagements-db';
-
-import { internBoardResolutionPath, internEngagementStepPath } from '@/lib/project-step-path';
-
-import {
-
-  engagementRouteParamFromParams,
-
-  resolveEngagementFromRouteParam,
-
-} from '@/lib/slug';
-
-import { toastError, toastSuccess } from '@/lib/toast-errors';
-import { useRealtimeBoardResolution } from '@/lib/supabase/use-realtime-board-resolution';
-import {
-  formatBoardResolutionErrorDisplay,
   type BoardResolutionApiErrorBody,
   type BoardResolutionErrorDisplay,
 } from '@/lib/api/board-resolution-errors';
@@ -96,47 +61,6 @@ import type { BoardResolutionPreviewError } from '@/lib/board-resolution-preview
 import type { Engagement } from '@/data/engagements';
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
-
-const AUTOSAVE_DEBOUNCE_MS = 5000;
-
-function showBoardResolutionFailure(
-  err: unknown,
-  fallbackTitle: string,
-  setGenerateError?: (body: BoardResolutionApiErrorBody | null) => void,
-) {
-  const body =
-    typeof err === 'object' && err !== null && 'error' in err
-      ? (err as BoardResolutionApiErrorBody)
-      : {
-          ok: false as const,
-          error: err instanceof Error ? err.message : 'Try again in a moment.',
-        };
-  if (setGenerateError && body.ok === false) {
-    setGenerateError(body);
-  }
-  const display = formatBoardResolutionErrorDisplay(body, fallbackTitle);
-  toastError(display.title, display.description);
-}
-
-function saveStatusLabel(status: SaveStatus): string | null {
-  switch (status) {
-    case 'pending':
-      return 'Unsaved changes';
-    case 'saving':
-      return 'Saving…';
-    case 'saved':
-      return 'All changes saved';
-    case 'error':
-      return 'Save failed';
-    default:
-      return null;
-  }
-}
-
-function previewBlobVersionFromDoc(doc: BoardResolutionDoc | null): string | null {
-  const v = doc?.updatedAt ?? doc?.storagePath ?? null;
-  return v?.trim() ? v.trim() : null;
-}
 
 type FormatToolbarProps = {
   disabled: boolean;

@@ -9,7 +9,7 @@ export interface StepProgress {
   docs: string[];
 }
 
-export type StepDetailTab = 'forms' | 'docs' | 'activity';
+type StepDetailTab = 'forms' | 'docs' | 'activity';
 
 export type StepDetailUiState = {
   progress: StepProgress;

@@ -20,7 +20,7 @@ export type IconChipTone =
   | 'cyan'
   | 'lime';
 
-export type IconChipSize = 'sm' | 'md' | 'lg';
+type IconChipSize = 'sm' | 'md' | 'lg';
 
 const TONE: Record<IconChipTone, { shell: string; icon: string }> = {
   primary: { shell: 'bg-primary-light', icon: 'text-primary-dark' },

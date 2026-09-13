@@ -253,8 +253,3 @@ export function CreateProjectStartingPhasePicker({ stage, onChange }: PhasePicke
     </div>
   );
 }
-
-/** @deprecated Use CreateProjectFormFlow / CreateProjectStartingPhasePicker */
-export function CreateProjectPhasePath(props: { stage: Stage; onChange: (stage: Stage) => void }) {
-  return <CreateProjectStartingPhasePicker {...props} />;
-}

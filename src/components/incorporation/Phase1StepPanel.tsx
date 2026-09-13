@@ -1,52 +1,28 @@
 ﻿'use client';
 
-import Link from 'next/link';
-import { CheckCircle2, Clock, FileText, Upload } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import type { ChecklistItem } from '@/data/checklist';
 import { getItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
 import {
-  computeMcaNameApprovalExpiryDate,
   extractItemResponses,
   type ChecklistItemResponses,
 } from '@/lib/checklist-responses';
-import { formatPre1DateDisplay } from '@/lib/checklist-pre1-validation';
 import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
 import { isDeliveredToClient } from '@/lib/checklist-state-key';
-import { clientBoardResolutionPath, isInternEngagementPathname } from '@/lib/project-step-path';
-import {
-  incorpDraftDocLinksFromResponses,
-  incorpDraftDocSlotsFromResponses,
-  type IncorpDraftDocLink,
-} from '@/lib/incorporation-docs/client';
-import {
-  filterClientVisibleIncorpDrafts,
-  hasAnyClientVisibleIncorpDraft,
-} from '@/lib/incorporation-docs/share';
-import { draftUrlFieldFor } from '@/lib/incorporation-docs/types';
-import type { IncorpDocKind } from '@/lib/incorporation-docs/types';
-import { cn } from '@/lib/utils';
-import { IncorporationDocsGeneratePanel } from '@/components/incorporation/IncorporationDocsGeneratePanel';
-import { IncorporationDocsBulkShareBar } from '@/components/incorporation/IncorporationDocsBulkShareBar';
-import {
-  IncorporationDraftDocsGenerateList,
-  IncorporationDraftDocsPreviewList,
-} from '@/components/incorporation/IncorporationDocInlinePreview';
-import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
-import {
-  buildPre7OtherAttachmentLinks,
-  hasPre7OtherAttachments,
-} from '@/lib/checklist-pre7-other-attachments';
-import { buildPre7NonIncorpDraftDocLinks } from '@/components/incorporation/phase1-step-panel-utils';
-import {
-  PanelShell,
-  Pre7OtherAttachmentsList,
-  DraftDocLinksList,
-  Pre8DeliveredDraftDocsPanel,
-} from '@/components/incorporation/Phase1StepPanelParts';
+import { isInternEngagementPathname } from '@/lib/project-step-path';
+
+
+
+
+
+
+
+
+
+
 import { Phase1StepPanelRoutes } from '@/components/incorporation/Phase1StepPanelSections';
 
 interface Phase1StepPanelProps {

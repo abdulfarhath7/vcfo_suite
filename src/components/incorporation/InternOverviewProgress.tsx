@@ -30,7 +30,6 @@ import { MotionActivePill } from '@/components/shell/MotionActivePill';
 import { InternPhaseTickTrack } from '@/components/incorporation/InternPhaseTickTrack';
 import styles from './intern-engagement-overview.module.css';
 
-export { InternStepDoneMark } from '@/components/incorporation/InternStepDoneMark';
 
 export function InternNowStrip({
   now,

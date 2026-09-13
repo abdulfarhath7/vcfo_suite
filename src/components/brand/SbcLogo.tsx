@@ -2,14 +2,12 @@ import { cn } from '@/lib/utils';
 
 /** Official lockup, black mark — light UI (`html` without `.dark`). */
 export const SBC_LOCKUP_LIGHT_SRC = '/sbc-logo-light.png';
-export const SBC_LOCKUP_LIGHT_SIZE = { width: 971, height: 288 } as const;
+const SBC_LOCKUP_LIGHT_SIZE = { width: 971, height: 288 } as const;
 /** Official lockup, white mark — dark UI (`html.dark`). */
 export const SBC_LOCKUP_DARK_SRC = '/sbc-logo-dark.png';
-export const SBC_LOCKUP_DARK_SIZE = { width: 1020, height: 301 } as const;
-export const SBC_LOCKUP_SRC = SBC_LOCKUP_LIGHT_SRC;
-export const SBC_LOCKUP_SIZE = SBC_LOCKUP_LIGHT_SIZE;
-export const SBC_MARK_SRC = '/sbc-logo-mark.png';
-export const SBC_MARK_SIZE = { width: 118, height: 140 } as const;
+const SBC_LOCKUP_DARK_SIZE = { width: 1020, height: 301 } as const;
+const SBC_MARK_SRC = '/sbc-logo-mark.png';
+const SBC_MARK_SIZE = { width: 118, height: 140 } as const;
 export const SBC_LOGO_LABEL = 'SBC — Local connect. Global outlook.';
 
 export function sbcLockupSrc(theme: 'light' | 'dark'): string {

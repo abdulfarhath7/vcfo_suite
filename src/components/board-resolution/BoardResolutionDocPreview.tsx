@@ -44,8 +44,6 @@ export type BoardResolutionDocPreviewHandle = {
   isReady: () => boolean;
 };
 
-export type { BoardResolutionDocPreviewMeta };
-
 export type BoardResolutionDocPreviewProps = {
   engagementId: string;
   downloadUrl?: string;
@@ -107,7 +105,6 @@ export function BoardResolutionDocPreview({
 
 function BoardResolutionDocPreviewInner({
   ref,
-  engagementId,
   downloadUrl,
   refreshKey,
   className,

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
 import { initialsFromName } from '@/lib/auth';
 

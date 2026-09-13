@@ -323,6 +323,3 @@ export function AnnouncementLivePopup() {
     document.body,
   );
 }
-
-/** @deprecated Live popup replaced the once-per-IST-day dialog. */
-export const DailyAnnouncementsDialog = AnnouncementLivePopup;

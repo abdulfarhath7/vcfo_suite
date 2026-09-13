@@ -2,17 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, m as motion, useReducedMotion, type Variants } from 'framer-motion';
 import {
   AlertCircle,
-  Check,
   CheckCircle2,
   Clock,
   Loader2,
-  Unlock,
   Upload,
 } from 'lucide-react';
-import { ease } from '@/lib/motion';
 import { useApp } from '@/context/AppContext';
 import { checklist, type ChecklistField, type ChecklistItem } from '@/data/checklist';
 import {
@@ -45,8 +41,6 @@ import {
   isPre1SubmittedForPre6,
   validatePre6Responses,
 } from '@/lib/checklist-pre6-validation';
-import { applyPre6PrefillFromPre1 } from '@/lib/pre6-prefill-from-pre1';
-import { mergeRegisteredOfficeIntoPre6 } from '@/lib/registered-office-responses';
 import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
 import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
 import { validatePre9Responses } from '@/lib/checklist-pre9-validation';
@@ -70,8 +64,6 @@ import {
   checklistStateKeyForEngagement,
 } from '@/lib/checklist-state-key';
 import {
-  fileNameFromStoragePath,
-  getMilestoneDocumentSignedUrl,
   uploadMilestoneDocument,
 } from '@/lib/milestone-document-storage';
 import { maxUploadSizeLabel } from '@/lib/upload-limits';
@@ -88,14 +80,11 @@ import {
 } from '@/components/ui/select';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
-import { StepIndicator, TrustBadge } from '@/components/noir';
 import {
   getSectionPendingItems,
   isSectionFieldsComplete,
-  type SectionPendingItem,
 } from '@/lib/milestone-section-completion';
 import { cn } from '@/lib/utils';
-import { ChevronDown } from 'lucide-react';
 import {
   incorpDocTargetFromDraftField,
   isIncorpDraftUrlField,
@@ -105,7 +94,7 @@ import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDi
 import { internEngagementPath, internEngagementStepPath } from '@/lib/project-step-path';
 import { internFormNextTarget } from '@/lib/intern-overview-progress';
 import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, mergeSavedFileFieldsIntoDraft, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
-import { FormErrorSummary, Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
+import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 
 const DIRECTOR_HAS_DSC_RE = /^director(\d)HasDsc$/;
 const PHASE2_STRUCTURED_STEP_IDS = new Set([
@@ -144,7 +133,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     variant = 'client',
     readOnly = false,
     showFieldUnlock = false,
-    open = true,
     className,
     compactChrome = false,
     extraFooterActions,

@@ -169,8 +169,3 @@ export function CreateProjectClientFields(props: Record<string, unknown>) {
     </div>
   );
 }
-
-/** @deprecated Prefer CreateProjectClientFields — kept for import compatibility. */
-export function CreateProjectFormClientSection(props: Record<string, unknown>) {
-  return <CreateProjectClientFields {...props} />;
-}

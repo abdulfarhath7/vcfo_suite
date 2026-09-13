@@ -174,7 +174,7 @@ const StackedInternWorkBadge = memo(function StackedInternWorkBadge() {
   return <SidebarRailBadge count={kpis.action.total} />;
 });
 
-export function SidebarNavBody({
+function SidebarNavBody({
   expanded,
   onNavigate,
   layoutIdPrefix = 'sidebar',

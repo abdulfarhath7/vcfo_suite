@@ -11,24 +11,6 @@ export const STAGE_LABEL: Record<Stage, string> = {
   'Operational Readiness': 'Compliance',
 };
 
-export const PHASES: Array<{ value: Stage; label: string; hint: string }> = [
-  {
-    value: 'Pre-Incorporation',
-    label: STAGE_LABEL['Pre-Incorporation'],
-    hint: 'Name reservation, DSC, MoA / AoA, SPICe+',
-  },
-  {
-    value: 'Post-Incorporation',
-    label: STAGE_LABEL['Post-Incorporation'],
-    hint: 'PAN, TAN, bank, GST, INC-20A',
-  },
-  {
-    value: 'Operational Readiness',
-    label: STAGE_LABEL['Operational Readiness'],
-    hint: 'FEMA / FCGPR, PF/ESI, ongoing ROC',
-  },
-];
-
 /** Short display name for any stage string — falls back to the raw value. */
 export function stageDisplayLabel(stage: string | null | undefined): string {
   if (!stage) return '';
@@ -40,17 +22,6 @@ export const PHASE_ORDER: Stage[] = [
   'Post-Incorporation',
   'Operational Readiness',
 ];
-
-export function stagePhaseState(
-  stage: Stage,
-  phase: Stage,
-): 'done' | 'current' | 'upcoming' {
-  const startIdx = PHASE_ORDER.indexOf(stage);
-  const idx = PHASE_ORDER.indexOf(phase);
-  if (idx < startIdx) return 'done';
-  if (idx === startIdx) return 'current';
-  return 'upcoming';
-}
 
 /** Registration / Compliance start needs India subsidiary legal details. */
 export function stageRequiresSubsidiary(stage: Stage): boolean {
@@ -67,16 +38,6 @@ export const ENTITY_LEGAL_FORMS: Array<{ value: EntityLegalForm; label: string; 
   { value: 'llp', label: ENTITY_LEGAL_FORM_LABEL.llp, hint: 'Limited Liability Partnership' },
   { value: 'partnership', label: ENTITY_LEGAL_FORM_LABEL.partnership, hint: 'Registered partnership firm' },
   { value: 'proprietorship', label: ENTITY_LEGAL_FORM_LABEL.proprietorship, hint: 'Sole proprietorship' },
-];
-
-export const HEALTH_OPTIONS: Array<{
-  value: 'on-track' | 'at-risk' | 'overdue';
-  label: string;
-  hint: string;
-}> = [
-  { value: 'on-track', label: 'On track', hint: 'Milestones on schedule' },
-  { value: 'at-risk', label: 'Needs review', hint: 'Emerging blockers or slip' },
-  { value: 'overdue', label: 'Past due', hint: 'Critical steps behind plan' },
 ];
 
 export function passwordStrength(pw: string): 'weak' | 'fair' | 'strong' | null {

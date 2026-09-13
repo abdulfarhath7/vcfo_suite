@@ -1,7 +1,6 @@
 export { NoirCard } from './NoirCard';
 export { Surface } from './Surface';
 export { GoldDivider } from './GoldDivider';
-export { KpiNumber } from './KpiNumber';
 export { StatusDot } from './StatusDot';
 export { AccentButton } from './AccentButton';
 export { Eyebrow } from './Eyebrow';

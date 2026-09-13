@@ -1,112 +1,31 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, m as motion, useReducedMotion, type Variants } from 'framer-motion';
+import { m as motion } from 'framer-motion';
 import {
-  AlertCircle,
-  Check,
   CheckCircle2,
-  Clock,
-  Loader2,
-  Upload,
 } from 'lucide-react';
-import { ease } from '@/lib/motion';
-import { useApp } from '@/context/AppContext';
-import { checklist, type ChecklistField, type ChecklistItem } from '@/data/checklist';
-import {
-  computeMcaNameApprovalExpiryDate,
-  extractItemResponses,
-  getClientResponseFields,
-  INTERN_DELIVERY_STEP_IDS,
-  validateInternDelivery,
-  type ChecklistItemResponses,
-} from '@/lib/checklist-responses';
-import { filterFieldsByViewer, isMilestoneFormReadOnly } from '@/lib/checklist-field-access';
-import { isDeliveredToClient } from '@/lib/checklist-state-key';
-import {
-  applyPre1EngagementDefaults,
-  countWords,
-  directorFieldsToClear,
-  formatPre1DateDisplay,
-  getPre1VisibleFields,
-  parseDirectorCount,
-  PRE1_DEFAULT_DIRECTOR_COUNT,
-  validatePre1Responses,
-} from '@/lib/checklist-pre1-validation';
-import {
-  getPre6DirectorNameOptions,
-  getPre6DirectorSlotsFromPre1,
-  getPre6VisibleFields,
-  isPre1SubmittedForPre6,
-  validatePre6Responses,
-} from '@/lib/checklist-pre6-validation';
-import { applyPre6PrefillFromPre1 } from '@/lib/pre6-prefill-from-pre1';
-import { mergeRegisteredOfficeIntoPre6 } from '@/lib/registered-office-responses';
-import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
-import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
-import { validatePre9Responses } from '@/lib/checklist-pre9-validation';
-import { validatePre10Responses } from '@/lib/checklist-pre10-validation';
-import { validatePre11Responses } from '@/lib/checklist-pre11-validation';
-import { validatePre12Responses } from '@/lib/checklist-pre12-validation';
-import {
-  filterResponsesToEditableFields,
-  isClientSubmissionLocked,
-  isFieldEditableForClient,
-} from '@/lib/checklist-item-lock';
-import {
-  canClientResubmit,
-  getClientReviewBanner,
-  isReviewAccepted,
-} from '@/lib/checklist-item-review';
-import {
-  findEngagementForClientUser,
-  engagementScopeIds,
-  checklistStateKeyForEngagement,
-} from '@/lib/checklist-state-key';
-import {
-  fileNameFromStoragePath,
-  getMilestoneDocumentSignedUrl,
-  uploadMilestoneDocument,
-} from '@/lib/milestone-document-storage';
-import { maxUploadSizeLabel } from '@/lib/upload-limits';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
-import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
-import { StepIndicator, TrustBadge } from '@/components/noir';
-import {
-  getSectionPendingItems,
-  isSectionFieldsComplete,
-  type SectionPendingItem,
-} from '@/lib/milestone-section-completion';
-import { cn } from '@/lib/utils';
-import { ChevronDown } from 'lucide-react';
-import {
-  incorpDocTargetFromDraftField,
-  isIncorpDraftUrlField,
-} from '@/lib/incorporation-docs/client';
-import { IncorporationDraftDocLink } from '@/components/incorporation/IncorporationDraftDocLink';
-import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 
-const DIRECTOR_HAS_DSC_RE = /^director(\d)HasDsc$/;
-const PHASE2_STRUCTURED_STEP_IDS = new Set([
-  'pre-6',
-  'pre-7',
-  'pre-8',
-  'pre-9',
-  'pre-10',
-  'pre-11',
-  'pre-12',
-]);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { StepIndicator, TrustBadge } from '@/components/noir';
+
+
+
+
+
 
 
 import {
@@ -119,14 +38,11 @@ import type { MilestoneResponseFormViewModel } from '@/views/incorporation/useMi
 
 export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
   const {
-    autoSaveStatus,
-    canEdit,
     className,
     compactChrome,
     cn,
     completedStructuredSections,
     fieldErrors,
-    formReadOnly,
     isClient,
     isPhase2StructuredStep,
     isPre1,
@@ -140,14 +56,12 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     renderedFieldGroups,
     reviewBanner,
     reviewBannerIcon,
-    saving,
     sectionCompleteFlags,
     sectionTabs,
     selectedSectionIndex,
     setSelectedSectionIndex,
     showStaffSaveFooter,
     structuredSectionLabels,
-    submitting,
     visibleFields,
   } = p;
 

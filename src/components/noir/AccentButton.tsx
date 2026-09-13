@@ -32,11 +32,11 @@ export function AccentButton({
   className,
   variant = "solid",
   size = "md",
-  onDrag,
-  onDragStart,
-  onDragEnd,
-  onAnimationStart,
-  onAnimationEnd,
+  onDrag: _onDrag,
+  onDragStart: _onDragStart,
+  onDragEnd: _onDragEnd,
+  onAnimationStart: _onAnimationStart,
+  onAnimationEnd: _onAnimationEnd,
   ...props
 }: AccentButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
   const reduceMotion = useReducedMotion();

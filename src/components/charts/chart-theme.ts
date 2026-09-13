@@ -52,7 +52,7 @@ export const CHART_STATUS: Record<
 };
 
 /** Journey phase fills — the same tokens `LeadPhaseProgress` paints its bars with. */
-export const CHART_PHASE: Record<PhaseColorKey, ChartColor> = {
+const CHART_PHASE: Record<PhaseColorKey, ChartColor> = {
   pre: token('phase-pre'),
   filing: token('phase-filing'),
   post: token('phase-post'),
@@ -65,34 +65,8 @@ export function chartPhaseColor(phaseId: string, bucket?: string): ChartColor {
   return CHART_PHASE[phaseKeyFromId(phaseId, bucket)];
 }
 
-/**
- * Categorical scale for series that are not statuses — six hues, matching the
- * `CATEGORICAL_TONES` order in `IconChip` so a category chipped sky in a list
- * is also sky in a chart. Six is the cap: donuts must stay at or under six
- * slices (§10), and a legend past six stops being readable.
- */
-export const CHART_SERIES: ChartColor[] = [
-  token('accent-sky'),
-  token('accent-violet'),
-  token('accent-emerald'),
-  token('accent-amber'),
-  token('accent-rose'),
-  token('accent-teal'),
-];
-
-export function chartSeriesColor(index: number): ChartColor {
-  return CHART_SERIES[index % CHART_SERIES.length]!;
-}
-
-/** Stable hue for an arbitrary key (a manager name, an authority code). */
-export function chartColorForKey(key: string): ChartColor {
-  let hash = 0;
-  for (let i = 0; i < key.length; i += 1) hash = (hash * 31 + key.charCodeAt(i)) | 0;
-  return chartSeriesColor(Math.abs(hash));
-}
-
 /** Type scale — matches the dashboard's 10.5/11/11.5px label rhythm. */
-export const CHART_FONT_SIZE = 11;
+const CHART_FONT_SIZE = 11;
 
 /** Default axis props. Spread these; never restyle an axis inline. */
 export const chartAxisProps = {
@@ -117,10 +91,3 @@ export const chartBarProps = {
   maxBarSize: 44,
 } as const;
 
-/** Default line geometry. */
-export const chartLineProps = {
-  type: 'monotone' as const,
-  strokeWidth: 2,
-  dot: false,
-  activeDot: { r: 4, strokeWidth: 2, stroke: CHART_CHROME.surface },
-};
