@@ -9,7 +9,7 @@ import {
   extractPreviewDocumentText,
   getPreviewFormatState,
   setActiveMergeFieldHighlight,
-  setPreviewAlignment,
+  setPreviewParagraphAlignment,
   togglePreviewBold,
   unwrapMergeFieldHighlights,
 } from '@/lib/board-resolution-preview-editable';
@@ -129,7 +129,7 @@ describe('applyMergeFieldHighlights', () => {
     expect(getPreviewFormatState(root).bold).toBe(true);
   });
 
-  it('setPreviewAlignment records explicit paragraph alignment', () => {
+  it('setPreviewParagraphAlignment records explicit paragraph alignment', () => {
     const root = document.createElement('div');
     root.innerHTML = '<div class="docx-wrapper br-editable-document"><p>Title</p></div>';
     document.body.appendChild(root);
@@ -142,7 +142,7 @@ describe('applyMergeFieldHighlights', () => {
     range.selectNodeContents(paragraph.firstChild);
     document.getSelection()?.addRange(range);
 
-    expect(setPreviewAlignment(root, 'center')).toBe(true);
+    expect(setPreviewParagraphAlignment(root, 'center')).toBe(true);
     expect(paragraph.style.textAlign).toBe('center');
     expect(getPreviewFormatState(root).alignment).toBe('center');
   });

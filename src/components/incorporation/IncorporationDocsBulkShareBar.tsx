@@ -3,7 +3,7 @@
 import { CheckCircle2, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { GoldButton } from '@/components/noir';
+import { AccentButton } from '@/components/noir';
 import { useApp } from '@/context/AppContext';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import type { IncorpDraftLabelOptions } from '@/lib/incorporation-docs/paths';
@@ -111,7 +111,7 @@ export function IncorporationDocsBulkShareBar({
             Shared with client
           </span>
         ) : (
-          <GoldButton
+          <AccentButton
             type="button"
             size="sm"
             disabled={sharing || !allGenerated}
@@ -128,7 +128,7 @@ export function IncorporationDocsBulkShareBar({
                 Share with client
               </>
             )}
-          </GoldButton>
+          </AccentButton>
         )}
       </div>
       {!shareComplete && (

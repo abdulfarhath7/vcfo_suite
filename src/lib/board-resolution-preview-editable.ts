@@ -370,8 +370,6 @@ export function getPreviewFormatState(root: HTMLElement): PreviewFormatState {
   };
 }
 
-/** @deprecated Use setPreviewParagraphAlignment */
-export const setPreviewAlignment = setPreviewParagraphAlignment;
 
 interface FullDocumentEditHandlers {
   onDocumentChange: (content: string) => void;

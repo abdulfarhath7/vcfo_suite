@@ -19,7 +19,7 @@ import { draftUrlFieldFor } from '@/lib/incorporation-docs/types';
 import { formatIncorpDocsErrorDisplay } from '@/lib/api/incorporation-docs-errors';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
-import { GoldButton } from '@/components/noir';
+import { AccentButton } from '@/components/noir';
 import {
   IncorporationDocsBulkShareBar,
   useIncorpDocFlushRegistry,
@@ -235,7 +235,7 @@ export function IncorporationDocsGeneratePanel({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <GoldButton
+        <AccentButton
           type="button"
           size="sm"
           disabled={state === 'loading'}
@@ -249,7 +249,7 @@ export function IncorporationDocsGeneratePanel({
           ) : (
             'Generate all drafts'
           )}
-        </GoldButton>
+        </AccentButton>
         <span className="text-[10px] text-text-tertiary">{statusSummary}</span>
       </div>
 

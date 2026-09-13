@@ -13,7 +13,7 @@ import { ClientStepFieldPreview } from '@/components/client/ClientStepFieldPrevi
 import { InternStepActionBar } from '@/components/admin/InternStepActionBar';
 import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { StepWorkspaceRail } from '@/components/admin/StepWorkspaceRail';
-import { Eyebrow, Mono, GoldDivider, StatusDot, GoldButton } from '@/components/noir';
+import { Eyebrow, Mono, GoldDivider, StatusDot, AccentButton } from '@/components/noir';
 import {
   CheckCircle2,
   Circle,
@@ -536,13 +536,13 @@ export function StepDetailContentView(props: any) {
           {showLegacyChecklist ? `${totals.pct}% of requirements met` : ''}
         </Mono>
         <div className="flex items-center gap-2">
-          <GoldButton variant="ghost" size="sm" onClick={onDone}>
+          <AccentButton variant="ghost" size="sm" onClick={onDone}>
             Done
-          </GoldButton>
+          </AccentButton>
           {showLegacyChecklist && (
-            <GoldButton size="sm" onClick={markAll} disabled={totals.pct === 100}>
+            <AccentButton size="sm" onClick={markAll} disabled={totals.pct === 100}>
               Mark all complete
-            </GoldButton>
+            </AccentButton>
           )}
         </div>
       </footer>

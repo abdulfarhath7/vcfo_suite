@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { GoldButton } from '@/components/noir';
+import { AccentButton } from '@/components/noir';
 import { useApp } from '@/context/AppContext';
 import {
   getInternReviewLabel,
@@ -136,7 +136,7 @@ export function ChecklistReviewActions({
             </>
           ) : (
             <>
-              <GoldButton
+              <AccentButton
                 variant="ghost"
                 size="sm"
                 disabled={busy !== null}
@@ -144,15 +144,15 @@ export function ChecklistReviewActions({
                 className="text-danger hover:text-danger"
               >
                 Reject
-              </GoldButton>
-              <GoldButton
+              </AccentButton>
+              <AccentButton
                 size="sm"
                 disabled={busy !== null}
                 onClick={() => void runReview('accept')}
                 className="bg-success text-success-foreground hover:bg-success/90 hover:brightness-100 active:brightness-95"
               >
                 {busy === 'accept' ? 'Accepting…' : 'Accept'}
-              </GoldButton>
+              </AccentButton>
             </>
           )}
         </div>

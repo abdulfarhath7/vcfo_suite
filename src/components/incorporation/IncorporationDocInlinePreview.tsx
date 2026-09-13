@@ -3,7 +3,7 @@
 import { Download, Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
-import { GoldButton } from '@/components/noir';
+import { AccentButton } from '@/components/noir';
 import { useApp } from '@/context/AppContext';
 import {
   DocxPreviewFormatToolbarContainer,
@@ -326,7 +326,7 @@ export function IncorporationDocInlinePreview({
       ) : null}
       {showDocActions && showDocxPreview && editable && activeStoragePath.trim() ? (
         <footer className="flex flex-wrap items-center gap-2 border-t border-hairline bg-raised/30 px-4 py-3">
-          <GoldButton
+          <AccentButton
             type="button"
             size="sm"
             disabled={!previewReady || saveStatus === 'saving'}
@@ -340,7 +340,7 @@ export function IncorporationDocInlinePreview({
             ) : (
               'Save changes'
             )}
-          </GoldButton>
+          </AccentButton>
           <a
             href={apiDownloadUrl}
             download={fileName || undefined}
@@ -534,7 +534,7 @@ function IncorporationDocGenerateRow({
           onFlushRegister={onFlushRegister}
         />
         <div className="flex justify-end px-1">
-          <GoldButton
+          <AccentButton
             type="button"
             size="sm"
             variant="outline"
@@ -549,7 +549,7 @@ function IncorporationDocGenerateRow({
             ) : (
               'Re-generate'
             )}
-          </GoldButton>
+          </AccentButton>
         </div>
       </div>
     );
@@ -565,7 +565,7 @@ function IncorporationDocGenerateRow({
     >
       <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-hairline px-4 py-2.5">
         <h4 className="text-[12px] font-medium leading-snug text-ink">{label}</h4>
-        <GoldButton
+        <AccentButton
           type="button"
           size="sm"
           disabled={generating}
@@ -579,7 +579,7 @@ function IncorporationDocGenerateRow({
           ) : (
             'Generate'
           )}
-        </GoldButton>
+        </AccentButton>
       </header>
       <div className="space-y-2 px-4 py-3">
         {error ? (

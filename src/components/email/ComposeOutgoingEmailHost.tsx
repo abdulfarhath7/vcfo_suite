@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { GoldButton } from '@/components/noir';
+import { AccentButton } from '@/components/noir';
 import { useApp } from '@/context/AppContext';
 import type { OutgoingEmailDraft } from '@/lib/email/email-dispatch';
 import { COMPOSE_OUTGOING_EMAIL_EVENT, toastError, toastEmailDispatch } from '@/lib/toast-errors';
@@ -212,7 +212,7 @@ export function ComposeOutgoingEmailHost() {
 
         <DialogFooter className="gap-2">
           {!connected && configured ? (
-            <GoldButton
+            <AccentButton
               type="button"
               variant="outline"
               onClick={() => {
@@ -220,12 +220,12 @@ export function ComposeOutgoingEmailHost() {
               }}
             >
               Connect Outlook
-            </GoldButton>
+            </AccentButton>
           ) : null}
-          <GoldButton type="button" variant="ghost" onClick={close} disabled={sending}>
+          <AccentButton type="button" variant="ghost" onClick={close} disabled={sending}>
             Cancel
-          </GoldButton>
-          <GoldButton type="button" onClick={() => void send()} disabled={sending || !connected}>
+          </AccentButton>
+          <AccentButton type="button" onClick={() => void send()} disabled={sending || !connected}>
             {sending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -234,7 +234,7 @@ export function ComposeOutgoingEmailHost() {
             ) : (
               'Send'
             )}
-          </GoldButton>
+          </AccentButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

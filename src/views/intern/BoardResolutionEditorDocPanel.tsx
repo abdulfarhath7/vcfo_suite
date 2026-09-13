@@ -34,7 +34,7 @@ import { DocxPreviewFormatToolbarContainer } from '@/components/docx-preview/Doc
 
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 
-import { Eyebrow, GoldButton } from '@/components/noir';
+import { AccentButton } from '@/components/noir';
 
 import { Button } from '@/components/ui/button';
 
@@ -413,7 +413,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                 </p>
 
-                <GoldButton
+                <AccentButton
 
                   type="button"
 
@@ -429,7 +429,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                   {busy === 'generate' ? 'Generating…' : 'Generate Word document from Pre-1'}
 
-                </GoldButton>
+                </AccentButton>
 
               </div>
 
@@ -438,14 +438,14 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
             <div className="flex flex-wrap gap-2 mt-5">
 
               {!isFinalized && hasDocx && (
-                <GoldButton
+                <AccentButton
                   type="button"
                   size="sm"
                   disabled={!previewReady || busy !== null || saveStatus === 'saving'}
                   onClick={() => void handleManualSave()}
                 >
                   {saveStatus === 'saving' ? 'Saving…' : 'Save changes'}
-                </GoldButton>
+                </AccentButton>
               )}
 
               <Button

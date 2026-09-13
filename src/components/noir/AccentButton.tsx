@@ -66,5 +66,3 @@ export function AccentButton({
   );
 }
 
-/** @deprecated Use AccentButton — kept for gradual migration */
-export const GoldButton = AccentButton;
