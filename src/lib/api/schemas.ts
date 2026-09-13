@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SUPABASE_MAX_UPLOAD_BYTES } from '@/lib/upload-limits';
+import { MAX_UPLOAD_BYTES } from '@/lib/upload-limits';
 import {
   engagementHealthSchema,
   engagementStageSchema,
@@ -199,7 +199,7 @@ export const knowledgeBankRegisterBodySchema = z.object({
     .number()
     .int()
     .positive()
-    .max(SUPABASE_MAX_UPLOAD_BYTES, 'file_too_large'),
+    .max(MAX_UPLOAD_BYTES, 'file_too_large'),
   folderId: z.uuid('invalid_folder_id').nullable().optional(),
 });
 
@@ -230,7 +230,7 @@ export const createDocumentBodySchema = z.object({
     .number()
     .int()
     .nonnegative()
-    .max(SUPABASE_MAX_UPLOAD_BYTES, 'file_too_large')
+    .max(MAX_UPLOAD_BYTES, 'file_too_large')
     .optional()
     .nullable(),
   stepId: z.string().trim().max(128).optional().nullable(),

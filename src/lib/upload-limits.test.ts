@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   ALL_DOCUMENT_MIME_TYPES,
-  ENGAGEMENT_DOCUMENTS_BUCKET_MIME_TYPES,
   EXTENSION_TO_MIME,
-  KNOWLEDGE_BANK_BUCKET_MIME_TYPES,
-  MILESTONE_BUCKET_MIME_TYPES,
   resolveUploadContentType,
   resolveUploadExtension,
-  storageUploadErrorMessage,
   validateUploadFileType,
   KNOWLEDGE_BANK_EXTENSIONS,
   KNOWLEDGE_BANK_MIME_TYPES,
@@ -25,14 +21,7 @@ function mockFile(name: string, type: string, size = 1024): File {
 }
 
 describe('upload MIME allowlists', () => {
-  it('includes docx and legacy Office MIME types in bucket lists', () => {
-    expect(KNOWLEDGE_BANK_BUCKET_MIME_TYPES).toContain(EXTENSION_TO_MIME.docx);
-    expect(KNOWLEDGE_BANK_BUCKET_MIME_TYPES).toContain(EXTENSION_TO_MIME.doc);
-    expect(KNOWLEDGE_BANK_BUCKET_MIME_TYPES).toContain(EXTENSION_TO_MIME.xlsx);
-    expect(KNOWLEDGE_BANK_BUCKET_MIME_TYPES).toContain(EXTENSION_TO_MIME.pptx);
-    expect(MILESTONE_BUCKET_MIME_TYPES).toContain(EXTENSION_TO_MIME.docx);
-    expect(MILESTONE_BUCKET_MIME_TYPES).toContain(EXTENSION_TO_MIME.doc);
-    expect(ENGAGEMENT_DOCUMENTS_BUCKET_MIME_TYPES).toContain(EXTENSION_TO_MIME.docx);
+  it('lists nine document MIME types', () => {
     expect(ALL_DOCUMENT_MIME_TYPES).toHaveLength(9);
   });
 
@@ -90,25 +79,3 @@ describe('upload MIME allowlists', () => {
   });
 });
 
-describe('storageUploadErrorMessage', () => {
-  it('includes bucket and contentType in the message', () => {
-    const msg = storageUploadErrorMessage(
-      'milestone-documents',
-      EXTENSION_TO_MIME.docx,
-      'mime type application/vnd.openxmlformats-officedocument.wordprocessingml.document is not supported',
-    );
-    expect(msg).toContain('[bucket=milestone-documents');
-    expect(msg).toContain(`contentType=${EXTENSION_TO_MIME.docx}`);
-    expect(msg).toContain('storage_document_mime_types migration');
-  });
-
-  it('hints to apply knowledge_bank migration when bucket is missing', () => {
-    const msg = storageUploadErrorMessage(
-      'knowledge-bank',
-      EXTENSION_TO_MIME.pdf,
-      'Bucket not found',
-    );
-    expect(msg).toContain('knowledge_bank Supabase migration');
-    expect(msg).toContain('knowledge-bank');
-  });
-});

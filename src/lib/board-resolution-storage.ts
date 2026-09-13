@@ -4,7 +4,7 @@ import {
   maxUploadSizeError,
   SIGNED_BOARD_RESOLUTION_EXTENSIONS,
   SIGNED_BOARD_RESOLUTION_MIME_TYPES,
-  SUPABASE_MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_BYTES,
   validateUploadFileType,
 } from '@/lib/upload-limits';
 
@@ -43,7 +43,7 @@ export function signedBoardResolutionStoragePath(
 }
 
 export function validateSignedBoardResolutionFile(file: File): string | null {
-  if (file.size > SUPABASE_MAX_UPLOAD_BYTES) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return maxUploadSizeError();
   }
   return validateUploadFileType(

@@ -1,11 +1,7 @@
 /**
- * Shared upload size limits aligned with Supabase Storage.
+ * Shared upload size limits and MIME allowlists for S3-backed document storage.
  *
- * Default: 50 MiB (52_428_800 bytes) — Supabase global cap unless the project
- * raises bucket `file_size_limit` in Dashboard (paid plans up to 5GB).
- *
- * Override via `NEXT_PUBLIC_MAX_UPLOAD_MB` (1–5120).
- * After changing env or bucket limits, run storage migration and `npm run dev:clean`.
+ * Default: 50 MiB. Override via `NEXT_PUBLIC_MAX_UPLOAD_MB` (1–5120).
  */
 
 const DEFAULT_MAX_UPLOAD_MB = 50;
@@ -20,14 +16,14 @@ function parseMaxUploadMb(): number {
 }
 
 /** Configured max upload size in megabytes (decimal MB label for users). */
-const SUPABASE_MAX_UPLOAD_MB = parseMaxUploadMb();
+const MAX_UPLOAD_MB = parseMaxUploadMb();
 
 /** Max upload size in bytes (MB × 1024²). */
-export const SUPABASE_MAX_UPLOAD_BYTES = SUPABASE_MAX_UPLOAD_MB * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 /** Human label for UI copy, e.g. "50 MB". */
 export function maxUploadSizeLabel(): string {
-  return `${SUPABASE_MAX_UPLOAD_MB} MB`;
+  return `${MAX_UPLOAD_MB} MB`;
 }
 
 /** Validation error when a file exceeds the limit. */
@@ -35,8 +31,6 @@ export function maxUploadSizeError(): string {
   return `File must be ${maxUploadSizeLabel()} or smaller.`;
 }
 
-/** @deprecated Use SUPABASE_MAX_UPLOAD_BYTES */
-export const SIGNED_BOARD_RESOLUTION_MAX_BYTES = SUPABASE_MAX_UPLOAD_BYTES;
 
 export function formatUploadFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -45,7 +39,7 @@ export function formatUploadFileSize(bytes: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// MIME allowlists — keep in sync with supabase/migrations/*storage*.sql buckets
+// MIME allowlists
 // ---------------------------------------------------------------------------
 
 /** Canonical MIME for each supported file extension. */
@@ -115,18 +109,6 @@ export const SIGNED_BOARD_RESOLUTION_MIME_TYPES = new Set<string>([
 /** Extensions allowed for signed board resolution client uploads. */
 export const SIGNED_BOARD_RESOLUTION_EXTENSIONS = new Set<string>(['pdf', 'docx']);
 
-/** Supabase Storage bucket `allowed_mime_types` for knowledge-bank. */
-export const KNOWLEDGE_BANK_BUCKET_MIME_TYPES = [...KNOWLEDGE_BANK_MIME_TYPES];
-
-/** Supabase Storage bucket `allowed_mime_types` for milestone-documents. */
-export const MILESTONE_BUCKET_MIME_TYPES = [...MILESTONE_DOCUMENT_MIME_TYPES];
-
-/** Supabase Storage bucket `allowed_mime_types` for engagement-documents. */
-export const ENGAGEMENT_DOCUMENTS_BUCKET_MIME_TYPES = [
-  EXTENSION_TO_MIME.docx,
-  EXTENSION_TO_MIME.pdf,
-  EXTENSION_TO_MIME.doc,
-];
 
 /** Browser/OS sometimes report generic octet-stream for Office files on Windows. */
 const UNKNOWN_UPLOAD_MIME_TYPES = new Set(['', 'application/octet-stream', 'binary/octet-stream']);
@@ -158,7 +140,7 @@ export function resolveUploadExtension(
   return null;
 }
 
-/** Resolve the Content-Type to send to Supabase Storage (never generic octet-stream when ext is known). */
+/** Resolve the upload Content-Type (never generic octet-stream when ext is known). */
 export function resolveUploadContentType(
   file: Pick<File, 'name' | 'type'>,
   allowedExtensions: ReadonlySet<string>,
@@ -169,28 +151,6 @@ export function resolveUploadContentType(
   }
   if (file.type && !UNKNOWN_UPLOAD_MIME_TYPES.has(file.type)) return file.type;
   return 'application/octet-stream';
-}
-
-/** True when Supabase Storage reports the target bucket does not exist. */
-function isStorageBucketMissingError(errorMessage: string): boolean {
-  const normalized = errorMessage.toLowerCase();
-  return normalized.includes('bucket not found') || normalized.includes('bucket does not exist');
-}
-
-/** Turn a Supabase Storage upload error into a debug-friendly message (bucket + content-type). */
-export function storageUploadErrorMessage(
-  bucket: string,
-  contentType: string,
-  errorMessage: string,
-): string {
-  console.error('[storage] upload failed', { bucket, contentType, error: errorMessage });
-  let hint = '';
-  if (isStorageBucketMissingError(errorMessage)) {
-    hint = ` Apply the knowledge_bank Supabase migration (creates the "${bucket}" bucket) or create the bucket in the Supabase dashboard.`;
-  } else if (errorMessage.includes('mime type') && errorMessage.includes('not supported')) {
-    hint = ' Ensure the storage_document_mime_types migration is applied in Supabase.';
-  }
-  return `${errorMessage} [bucket=${bucket}, contentType=${contentType}]${hint}`;
 }
 
 /** Validate file size + extension/MIME against an allowlist. Returns error message or null. */

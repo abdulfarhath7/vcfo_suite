@@ -3,7 +3,7 @@ import {
   maxUploadSizeError,
   MILESTONE_DOCUMENT_EXTENSIONS,
   MILESTONE_DOCUMENT_MIME_TYPES,
-  SUPABASE_MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_BYTES,
   validateUploadFileType,
 } from '@/lib/upload-limits';
 
@@ -47,7 +47,7 @@ export function milestoneDocumentObjectPath(
 }
 
 export function validateMilestoneUploadFile(file: File): string | null {
-  if (file.size > SUPABASE_MAX_UPLOAD_BYTES) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return maxUploadSizeError();
   }
   return validateUploadFileType(

@@ -3,7 +3,7 @@ import {
   KNOWLEDGE_BANK_EXTENSIONS,
   KNOWLEDGE_BANK_MIME_TYPES,
   maxUploadSizeError,
-  SUPABASE_MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_BYTES,
   validateUploadFileType,
 } from '@/lib/upload-limits';
 
@@ -38,7 +38,7 @@ export function knowledgeBankObjectPath(fileId: string, fileName: string): strin
 }
 
 export function validateKnowledgeBankUploadFile(file: File): string | null {
-  if (file.size > SUPABASE_MAX_UPLOAD_BYTES) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return maxUploadSizeError();
   }
   return validateUploadFileType(
