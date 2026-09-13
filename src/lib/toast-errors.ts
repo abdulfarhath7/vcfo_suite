@@ -18,7 +18,7 @@ const WARNING_DURATION_MS = 5500;
 const NETWORK_MESSAGE =
   'No internet connection. Check your network and try again.';
 
-export interface ApiErrorLike {
+interface ApiErrorLike {
   message?: string;
   code?: string;
   details?: string;
@@ -51,8 +51,6 @@ export class AppApiError extends Error {
 const CODE_MESSAGES: Record<string, string> = {
   '42703': 'Database setup incomplete — contact support.',
   '42P01': 'Database setup incomplete — contact support.',
-  PGRST116: 'Not found or you do not have access.',
-  PGRST204: 'Database setup incomplete — contact support.',
   '23505': 'That record already exists.',
   '23503': 'This item is linked to other data and cannot be removed.',
   '42501': 'You do not have permission for this action.',
@@ -80,8 +78,7 @@ function looksLikeDatabaseMessage(message: string): boolean {
     lower.includes('duplicate key') ||
     lower.includes('23505') ||
     lower.includes('violates foreign key') ||
-    lower.includes('permission denied') ||
-    lower.includes('pgrst')
+    lower.includes('permission denied')
   );
 }
 
@@ -132,13 +129,12 @@ function isNetworkError(err: unknown): boolean {
     message === 'failed to fetch' ||
     message.includes('networkerror') ||
     message.includes('network request failed') ||
-    message.includes('failed to send a request to the edge function') ||
     message.includes('err_internet_disconnected') ||
     message.includes('err_network_changed')
   );
 }
 
-export function mapSupabaseError(
+function mapApiError(
   code: string | undefined,
   rawMessage: string,
 ): string {
@@ -167,9 +163,6 @@ export function mapSupabaseError(
   if (lower.includes('jwt') || lower.includes('session') || lower.includes('not authenticated')) {
     return 'Session expired — sign in again.';
   }
-  if (lower.includes('edge function returned a non-2xx')) {
-    return 'The server could not complete this request. Try again or contact support.';
-  }
 
   return rawMessage;
 }
@@ -181,69 +174,7 @@ export function errorMessage(err: unknown, fallback = 'Try again in a moment.'):
   const raw = readMessage(err);
   if (!raw) return fallback;
 
-  return mapSupabaseError(readCode(err), raw);
-}
-
-export function fromPostgrestError(error: ApiErrorLike, fallback = 'Request failed.'): AppApiError {
-  const raw = error.message?.trim() || fallback;
-  const code = error.code?.trim();
-  const kind =
-    code === '42501'
-      ? 'auth'
-      : code === '42703' || code === '42P01' || code === 'PGRST204' || looksLikeDatabaseMessage(raw)
-        ? 'database'
-        : 'server';
-
-  return new AppApiError(mapSupabaseError(code, raw), {
-    code,
-    kind,
-    cause: error,
-  });
-}
-
-export async function fromFunctionInvokeError(
-  error: unknown,
-  data: unknown,
-  fallback = 'Failed to create project.',
-): Promise<AppApiError> {
-  if (typeof data === 'object' && data !== null && 'error' in data) {
-    const bodyError = (data as { error?: string }).error;
-    if (bodyError?.trim()) {
-      return new AppApiError(mapSupabaseError(undefined, bodyError.trim()), {
-        kind: looksLikeDatabaseMessage(bodyError) ? 'database' : 'server',
-        cause: error,
-      });
-    }
-  }
-
-  if (typeof error === 'object' && error !== null && 'context' in error) {
-    const response = (error as { context?: Response }).context;
-    if (response && typeof response.json === 'function') {
-      try {
-        const body = (await response.clone().json()) as { error?: string; message?: string };
-        const bodyError = body.error?.trim() || body.message?.trim();
-        if (bodyError) {
-          return new AppApiError(mapSupabaseError(undefined, bodyError), {
-            kind: looksLikeDatabaseMessage(bodyError) ? 'database' : 'server',
-            cause: error,
-          });
-        }
-      } catch {
-        // Ignore malformed JSON bodies.
-      }
-    }
-  }
-
-  if (isNetworkError(error)) {
-    return new AppApiError(NETWORK_MESSAGE, { kind: 'network', cause: error });
-  }
-
-  const raw = readMessage(error) ?? fallback;
-  return new AppApiError(mapSupabaseError(readCode(error), raw), {
-    code: readCode(error),
-    kind: 'server',
-    cause: error,
-  });
+  return mapApiError(readCode(err), raw);
 }
 
 function toastMessage(title: string, description?: string): string {
@@ -268,7 +199,7 @@ export function toastSuccess(
   });
 }
 
-export function toastWarning(title: string, description?: string, options?: { id?: string }) {
+function toastWarning(title: string, description?: string, options?: { id?: string }) {
   toast(toastMessage(title, description), {
     duration: WARNING_DURATION_MS,
     icon: warningToastIcon(),

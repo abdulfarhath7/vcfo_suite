@@ -466,7 +466,7 @@ export default function AuditLog() {
       if (!res.ok || !body.ok) {
         const msg =
           body.error === 'audit_table_missing'
-            ? 'audit_events table missing — run supabase/migrations/20260529120000_audit_events.sql in Supabase SQL Editor, then reload.'
+            ? 'Audit log table is missing — run the database migrations (npm run db:migrate), then reload.'
             : `Could not load audit log (${body.error ?? res.status}${body.detail ? ': ' + body.detail : ''})`;
         dispatch({ type: 'patch', patch: { globalError: msg, globalEvents: [] } });
         return;
@@ -504,7 +504,7 @@ export default function AuditLog() {
       if (!res.ok || !body.ok) {
         const msg =
           body.error === 'audit_table_missing'
-            ? 'Audit log table is not deployed yet. Apply the latest Supabase migration.'
+            ? 'Audit log table is not deployed yet. Run the database migrations (npm run db:migrate).'
             : body.detail ?? body.error ?? 'Could not load project audit log.';
         dispatch({ type: 'patch', patch: { projectError: msg, projectEvents: [] } });
         return;
