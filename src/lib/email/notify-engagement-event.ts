@@ -44,7 +44,7 @@ import {
 } from '@/lib/project-step-path';
 import { siteUrl } from '@/lib/site-url';
 
-export type { EmailDispatchResult, EngagementProcessEvent };
+export type { EmailDispatchResult };
 
 type NotifyInput = {
   engagementId: string;

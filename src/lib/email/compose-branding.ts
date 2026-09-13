@@ -4,8 +4,7 @@ import {
   renderEmailDocument,
 } from '@/lib/email/email-layout';
 
-export const EMAIL_BRANDING = ['sbc', 'plain'] as const;
-export type EmailBranding = (typeof EMAIL_BRANDING)[number];
+export type EmailBranding = 'sbc' | 'plain';
 
 export function isEmailBranding(value: string | null | undefined): value is EmailBranding {
   return value === 'sbc' || value === 'plain';

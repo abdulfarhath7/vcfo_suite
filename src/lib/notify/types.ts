@@ -49,13 +49,6 @@ export type SkipReason =
   | 'disabled';
 
 /**
- * WhatsApp delivery status ownership on the profile.
- * `failed` is set by the provider's status webhook on a hard bounce so staff
- * can see it.
- */
-export type WhatsAppStatus = 'unknown' | 'verified' | 'failed';
-
-/**
  * The slice of a person the WhatsApp guards need.
  * Deliberately narrow so `channels.ts` stays a pure function.
  */

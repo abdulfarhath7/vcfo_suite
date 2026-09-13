@@ -11,8 +11,6 @@ export const REGISTERED_OFFICE_FIELD_IDS = [
   'registeredOfficeUtilityBillCopyUrl',
 ] as const;
 
-export type RegisteredOfficeFieldId = (typeof REGISTERED_OFFICE_FIELD_IDS)[number];
-
 export const PRE6_REGISTERED_OFFICE_SECTION = 'Registered Office Details';
 
 /** Prefer Pre-6 values; fall back to legacy Pre-8 storage for the same field ids. */

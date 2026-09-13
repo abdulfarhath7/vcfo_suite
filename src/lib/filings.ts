@@ -13,8 +13,6 @@
 
 export type FilingsCadence = 'monthly' | 'quarterly' | 'annual';
 
-export const FILINGS_CADENCES: FilingsCadence[] = ['monthly', 'quarterly', 'annual'];
-
 export function isFilingsCadence(value: string | null | undefined): value is FilingsCadence {
   return value === 'monthly' || value === 'quarterly' || value === 'annual';
 }
@@ -61,11 +59,6 @@ export function financialYearForDate(date: Date): FinancialYear {
 
 export function financialYearLabel(startYear: number): string {
   return `FY ${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
-}
-
-export function financialYearForIso(iso: string): FinancialYear | null {
-  const date = parseIsoDate(iso);
-  return date ? financialYearForDate(date) : null;
 }
 
 /** `YYYY-MM` for a date, in UTC so a timezone never shifts the month. */
@@ -139,7 +132,7 @@ export function quarterForMonthKey(monthKey: string, startYear: number): Filings
 // ---------------------------------------------------------------------------
 
 /** Days before the due date that an unfiled obligation reads as "due soon". */
-export const DUE_SOON_DAYS = 14;
+const DUE_SOON_DAYS = 14;
 
 /**
  * Display status. `filedOn` wins outright; everything else is a function of the
@@ -222,7 +215,7 @@ export function rowsInFinancialYear(rows: FilingRow[], startYear: number): Filin
   });
 }
 
-export interface FilingsMatrixCell {
+interface FilingsMatrixCell {
   dueDate: string | null;
   filedOn: string | null;
   status: FilingStatus | null;

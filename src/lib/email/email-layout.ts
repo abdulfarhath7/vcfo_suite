@@ -13,7 +13,7 @@ export function escapeHtml(value: string): string {
     .replaceAll('"', '&quot;');
 }
 
-export type EmailDocumentBrand = 'vcfo' | 'sbc';
+type EmailDocumentBrand = 'vcfo' | 'sbc';
 
 /** Black mark — light email / compose letterhead (`public/sbc-logo-light.png`). */
 export const SBC_EMAIL_LOGO_LIGHT_PATH = '/sbc-logo-light.png';
@@ -21,7 +21,7 @@ export const SBC_EMAIL_LOGO_LIGHT_PATH = '/sbc-logo-light.png';
 export const SBC_EMAIL_LOGO_DARK_PATH = '/sbc-logo-dark.png';
 
 /** Display size in the letterhead (intrinsic 971×288). */
-export const SBC_EMAIL_LOGO_DISPLAY = { width: 189, height: 56 } as const;
+const SBC_EMAIL_LOGO_DISPLAY = { width: 189, height: 56 } as const;
 
 /** Absolute URL for Resend / Graph HTML. Same `siteUrl()` host as portal links — no CID / extra Resend attachment. */
 export function sbcEmailLogoUrl(tone: 'light' | 'dark' = 'light'): string {

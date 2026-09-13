@@ -1,4 +1,4 @@
-import { addDays, addWeeks, differenceInDays, format } from 'date-fns';
+import { addDays, addWeeks, format } from 'date-fns';
 
 export type DeadlineRule =
   | { kind: 'days-from-incorporation'; days: number }
@@ -19,11 +19,6 @@ export function computeDueDate(rule: DeadlineRule, incorporationDate: Date | nul
     default:
       return null;
   }
-}
-
-export function daysLeft(due: Date | null): number | null {
-  if (!due) return null;
-  return differenceInDays(due, new Date());
 }
 
 export function formatTimeline(rule: DeadlineRule): string {

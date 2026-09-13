@@ -18,12 +18,6 @@ import type { BoardResolutionDoc } from '@/lib/board-resolution';
 /** Client progress board traffic-light status (maps to green / yellow / red in UI). */
 export type ClientProgressTone = 'completed' | 'in-progress' | 'not-started';
 
-export const CLIENT_PROGRESS_TONE_LABEL: Record<ClientProgressTone, string> = {
-  completed: 'Completed',
-  'in-progress': 'In progress',
-  'not-started': 'Not started',
-};
-
 export const CLIENT_PROGRESS_PHASE_TITLES: Record<string, string> = {
   'pre-inc-phase-1': 'Phase 1 — Name Application',
   'pre-inc-phase-2': 'Phase 2 — Incorporation',
@@ -208,7 +202,7 @@ export function derivePreIncStepTone(
   }
 }
 
-export interface ClientProgressStepView {
+interface ClientProgressStepView {
   itemId: string;
   stepNumber: number;
   title: string;

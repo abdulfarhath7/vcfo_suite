@@ -35,7 +35,7 @@ export type ClientOverviewState = Record<string, ChecklistItemStateSlice | undef
 
 export type ClientLegalForm = 'company' | 'llp' | 'partnership' | 'proprietorship';
 
-export type ClientOverviewPhaseId =
+type ClientOverviewPhaseId =
   | 'pre-inc-phase-1'
   | 'pre-inc-phase-2'
   | 'post-inc-phase-3'
@@ -199,7 +199,7 @@ function isOverviewPhaseId(id: string): id is ClientOverviewPhaseId {
  * certificates and constitution documents. Board-resolution drafts are absent
  * on purpose: the client must never see a BR before it is finalized.
  */
-export const CLIENT_DELIVERABLE_FIELDS: ReadonlyArray<{
+const CLIENT_DELIVERABLE_FIELDS: ReadonlyArray<{
   fieldId: string;
   stepId: string;
   name: string;
@@ -234,7 +234,7 @@ export const CLIENT_DELIVERABLE_FIELDS: ReadonlyArray<{
  * recognises, in catalog order. The interactive flowchart on Incorporation
  * stays the place to see all 46 steps; this is the at-a-glance track.
  */
-export const CLIENT_JOURNEY_MILESTONES: ReadonlyArray<{ stepId: string; label: string }> = [
+const CLIENT_JOURNEY_MILESTONES: ReadonlyArray<{ stepId: string; label: string }> = [
   { stepId: 'pre-1', label: 'Company details' },
   { stepId: 'pre-5', label: 'Name approval (MCA)' },
   { stepId: 'pre-12', label: 'Certificate of Incorporation' },

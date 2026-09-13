@@ -7,13 +7,6 @@ import type { Transition, Variants } from 'framer-motion';
 
 export const ease = [0.22, 1, 0.36, 1] as const;
 
-/** macOS minimize — slow start, then a hard suck into the dock. */
-export const genieEase = [0.42, 0, 0.9, 0.12] as const;
-export const genieTransition: Transition = {
-  duration: 0.72,
-  ease: genieEase,
-};
-
 /** Shared-element pills (sidebar active / hover). Small nodes — a little overshoot is cheap. */
 export const springSnappy: Transition = {
   type: 'spring',
@@ -28,14 +21,8 @@ export const springGentle: Transition = {
   damping: 28,
 };
 
-export const springBounce: Transition = {
-  type: 'spring',
-  stiffness: 380,
-  damping: 18,
-};
-
 /** Cheap compositor tween — prefer over springs for full-page / hover lift. */
-export const tweenShort: Transition = {
+const tweenShort: Transition = {
   duration: 0.2,
   ease,
 };

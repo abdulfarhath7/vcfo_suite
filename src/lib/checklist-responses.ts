@@ -13,7 +13,6 @@ import {
   getPre6DirectorNameOptions,
   getPre6VisibleFields,
   PRE6_CLIENT_RESPONSE_FIELDS,
-  PRE6_UTILITY_BILL_OPTIONS,
 } from '@/lib/checklist-pre6-validation';
 import { resolveDirectorDisplayName } from '@/lib/person-name';
 

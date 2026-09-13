@@ -25,7 +25,7 @@ export interface InternWelcomeEmailParams {
   temporaryPassword: string;
 }
 
-export function buildInternWelcomeEmail(params: InternWelcomeEmailParams): {
+function buildInternWelcomeEmail(params: InternWelcomeEmailParams): {
   subject: string;
   html: string;
   text: string;

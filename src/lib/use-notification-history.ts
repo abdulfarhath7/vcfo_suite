@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import type { AppNotification } from '@/lib/checklist-notifications';
 
-export function notificationHistoryQueryKey(userId: string) {
+function notificationHistoryQueryKey(userId: string) {
   return ['notifications', userId, 'history'] as const;
 }
 

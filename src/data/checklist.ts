@@ -44,12 +44,12 @@ export const BUCKET_LABEL: Record<Bucket, string> = {
   statutory: 'Registration',
 };
 
-export type ChecklistFieldType = 'text' | 'textarea' | 'select' | 'file' | 'date';
+type ChecklistFieldType = 'text' | 'textarea' | 'select' | 'file' | 'date';
 
 /** Who owns completing this milestone (shown in UI). */
 export type ChecklistResponsibleRole = 'client' | 'intern';
 
-export interface ChecklistFieldOption {
+interface ChecklistFieldOption {
   value: string;
   label: string;
 }

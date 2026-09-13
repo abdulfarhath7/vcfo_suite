@@ -35,7 +35,7 @@ import { stageDisplayLabel, type Stage } from '@/components/admin/create-project
 export type SuperOverviewState = Record<string, ChecklistItemStateSlice | undefined>;
 
 /** Short phase labels — the same four the lead dashboard's phase bars print. */
-export const SUPER_PHASE_LABEL: Record<string, string> = {
+const SUPER_PHASE_LABEL: Record<string, string> = {
   'pre-inc-phase-1': 'Part A',
   'pre-inc-phase-2': 'Part B',
   'post-inc-phase-3': 'Post-inc',
@@ -54,7 +54,7 @@ export const SUPER_PHASE_LABEL: Record<string, string> = {
  */
 export type SuperStateKey = 'complete' | 'overdue' | 'review' | 'with-client' | 'with-firm';
 
-export const SUPER_STATE_LABEL: Record<SuperStateKey, string> = {
+const SUPER_STATE_LABEL: Record<SuperStateKey, string> = {
   complete: 'Complete',
   overdue: 'Overdue',
   review: 'PM review',
@@ -62,7 +62,7 @@ export const SUPER_STATE_LABEL: Record<SuperStateKey, string> = {
   'with-firm': 'With firm',
 };
 
-export interface SuperPhaseProgress {
+interface SuperPhaseProgress {
   id: string;
   label: string;
   colorKey: PhaseColorKey;
@@ -78,7 +78,7 @@ export interface SuperPhaseProgress {
 }
 
 /** Portfolio-wide step counts, by what the gate says about each step. */
-export interface SuperGateCounts {
+interface SuperGateCounts {
   done: number;
   active: number;
   waiting: number;
@@ -158,7 +158,7 @@ export interface SuperPerson {
   href: string;
 }
 
-export interface SuperOverviewKpis {
+interface SuperOverviewKpis {
   engagements: number;
   needsAttention: number;
   approvalsPending: number;
@@ -213,10 +213,10 @@ export interface SuperOverview {
 const STAGE_ORDER: Stage[] = ['Pre-Incorporation', 'Post-Incorporation', 'Operational Readiness'];
 
 /** Attention list length on the Overview — the rest live on the L1 list. */
-export const SUPER_ATTENTION_LIMIT = 6;
+const SUPER_ATTENTION_LIMIT = 6;
 
 /** Top-N people in the workload chart; six keeps the categorical scale honest. */
-export const SUPER_WORKLOAD_LIMIT = 6;
+const SUPER_WORKLOAD_LIMIT = 6;
 
 /** Compliance runway window, in days. */
 export const SUPER_FILING_HORIZON_DAYS = 90;
@@ -540,7 +540,7 @@ export function buildFilingBuckets(
   return buckets;
 }
 
-export function buildKpis(
+function buildKpis(
   summaries: SuperEngagementSummary[],
   filings: SuperFiling[],
   people: SuperPerson[],
@@ -626,8 +626,6 @@ export function buildSuperOverview(params: {
 }
 
 /** Re-exported so views never reach into `project-stuck` for the label map. */
-export { STUCK_LABEL, isReviewRejected };
-export type { StuckReason };
 
 /* ------------------------------------------------------------------ *
  * L2 — one engagement, in full.
@@ -689,7 +687,7 @@ export interface SuperEngagementDetail {
 }
 
 /** Staff step workspace for one checklist item. */
-export function superStepHref(slugOrId: string, stepSlug: string): string {
+function superStepHref(slugOrId: string, stepSlug: string): string {
   return `/app/admin/projects/${slugOrId}/step/${stepSlug}`;
 }
 

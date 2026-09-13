@@ -23,20 +23,20 @@ import { engagementDbId } from '@/lib/legacy-engagement-ids';
  * manager files the request, and again at approval time — the row sat in the
  * database in between, and the executor must never trust stored JSON.
  */
-export const deleteProjectPayloadSchema = z.object({});
+const deleteProjectPayloadSchema = z.object({});
 
-export const changeManagerPayloadSchema = z.object({
+const changeManagerPayloadSchema = z.object({
   managerId: z.string().uuid().nullable(),
 });
 
-export const changeClientPayloadSchema = z.object({
+const changeClientPayloadSchema = z.object({
   replaceUserId: z.string().uuid(),
   email: emailSchema,
   fullName: z.string().trim().max(120).optional(),
   password: clientPasswordSchema,
 });
 
-export const CHANGE_REQUEST_PAYLOAD_SCHEMA: Record<ChangeRequestKind, z.ZodTypeAny> = {
+const CHANGE_REQUEST_PAYLOAD_SCHEMA: Record<ChangeRequestKind, z.ZodTypeAny> = {
   delete_project: deleteProjectPayloadSchema,
   change_manager: changeManagerPayloadSchema,
   change_client: changeClientPayloadSchema,

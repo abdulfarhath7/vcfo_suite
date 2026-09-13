@@ -56,7 +56,7 @@ export const EXTENSION_TO_MIME = {
   txt: 'text/plain',
 } as const;
 
-export type UploadExtension = keyof typeof EXTENSION_TO_MIME;
+type UploadExtension = keyof typeof EXTENSION_TO_MIME;
 
 /** All document/image MIME types used by VCFO Suite storage buckets. */
 export const ALL_DOCUMENT_MIME_TYPES = [
@@ -70,8 +70,6 @@ export const ALL_DOCUMENT_MIME_TYPES = [
   EXTENSION_TO_MIME.webp,
   EXTENSION_TO_MIME.txt,
 ] as const;
-
-export type DocumentMimeType = (typeof ALL_DOCUMENT_MIME_TYPES)[number];
 
 /** MIME types allowed in the knowledge-bank bucket. */
 export const KNOWLEDGE_BANK_MIME_TYPES = new Set<string>(ALL_DOCUMENT_MIME_TYPES);

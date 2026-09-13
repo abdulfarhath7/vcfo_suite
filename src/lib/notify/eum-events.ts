@@ -17,7 +17,7 @@ import type { DeliveryStatus } from '@/lib/notify/types';
  * logged, or persisted anywhere.
  */
 
-export type EumStatusEvent = {
+type EumStatusEvent = {
   /** Meta's message id — the same wamid stored as `providerMessageId`. */
   wamid: string;
   status: DeliveryStatus;
@@ -27,7 +27,7 @@ export type EumStatusEvent = {
   errorCode: string | null;
 };
 
-export type EumInboundEvent = {
+type EumInboundEvent = {
   /** Sender in Meta's bare-digit form. */
   from: string;
   /** The body is NOT carried; only the opt-out verdict crosses this boundary. */

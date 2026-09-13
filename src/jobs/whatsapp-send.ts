@@ -30,7 +30,7 @@ function reviveDate(value: Date | string | null): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-export type WhatsAppSendEventData = {
+type WhatsAppSendEventData = {
   engagementId: string | null;
   recipientProfileId: string;
   event: NotifyEvent;

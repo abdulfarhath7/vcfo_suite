@@ -6,7 +6,7 @@ import {
   type StaffBasePath,
 } from '@/lib/auth-routes';
 
-export { staffBasePathForRole, type StaffBasePath };
+export type { StaffBasePath };
 
 export function useStaffBasePath(): StaffBasePath {
   const { user } = useApp();

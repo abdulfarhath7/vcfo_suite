@@ -9,7 +9,6 @@ import { sendViaResend } from '@/lib/email/send-via-resend';
 import { sendViaSes } from '@/lib/email/send-via-ses';
 
 export type {
-  EmailProvider,
   SendEmailInput,
   SendEmailResult,
 } from '@/lib/email/send-email-shared';
@@ -18,7 +17,6 @@ export {
   formatReplyTo,
   formatFromWithSender,
   companyFromAddress,
-  sanitizeEmailLocalPart,
 } from '@/lib/email/send-email-shared';
 
 /**

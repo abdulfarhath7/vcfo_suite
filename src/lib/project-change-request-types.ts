@@ -15,15 +15,8 @@ export const CHANGE_REQUEST_KIND_LABEL: Record<ChangeRequestKind, string> = {
 
 export type ChangeRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
-export const CHANGE_REQUEST_STATUS_LABEL: Record<ChangeRequestStatus, string> = {
-  pending: 'Awaiting approval',
-  approved: 'Approved',
-  rejected: 'Rejected',
-  cancelled: 'Withdrawn',
-};
-
 /** One before → after line the admin sees before deciding. */
-export type ChangeRequestPreviewField = {
+type ChangeRequestPreviewField = {
   label: string;
   from: string;
   to: string;
@@ -33,14 +26,6 @@ export type ChangeRequestPreview = {
   companyName?: string;
   fields?: ChangeRequestPreviewField[];
 };
-
-export function isChangeRequestKind(value: string): value is ChangeRequestKind {
-  return (CHANGE_REQUEST_KINDS as readonly string[]).includes(value);
-}
-
-export function isChangeRequestStatus(value: string): value is ChangeRequestStatus {
-  return ['pending', 'approved', 'rejected', 'cancelled'].includes(value);
-}
 
 /** Empty string reads better than "—" inside a diff cell the admin scans. */
 export function changeRequestDiffValue(value: string | null | undefined): string {

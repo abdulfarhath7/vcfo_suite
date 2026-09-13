@@ -36,7 +36,7 @@ export interface SendEmailResult {
 }
 
 
-export function parseQuotedEnv(raw: string | undefined): string {
+function parseQuotedEnv(raw: string | undefined): string {
   const t = raw?.trim() ?? '';
   if (
     (t.startsWith('"') && t.endsWith('"')) ||
@@ -149,7 +149,7 @@ export function resolveFromEmail(override?: string): string | undefined {
 }
 
 /** Domain of the verified From (e.g. sbctrack.in). */
-export function resolveFromEmailDomain(override?: string): string | undefined {
+function resolveFromEmailDomain(override?: string): string | undefined {
   const addr = extractEmailAddress(resolveFromEmail(override) ?? '');
   const at = addr.lastIndexOf('@');
   if (at <= 0) return undefined;
@@ -186,7 +186,7 @@ export function companyFromAddress(input: {
 }
 
 /** Explicit test redirect — do not infer from progress CC. */
-export function resolveEmailDevRedirect(): string | null {
+function resolveEmailDevRedirect(): string | null {
   const explicit =
     parseQuotedEnv(process.env.EMAIL_DEV_REDIRECT_TO) ||
     parseQuotedEnv(process.env.RESEND_DEV_REDIRECT_TO);
@@ -232,14 +232,6 @@ export function formatFromWithSender(
   if (senderName.toLowerCase() === brand.toLowerCase()) return quoteFromHeader(base);
 
   return quoteFromHeader(`${senderName} via ${brand} <${address}>`);
-}
-
-/** Optional default Reply-To from env. */
-export function defaultReplyToFromEnv(): string | undefined {
-  const raw =
-    parseQuotedEnv(process.env.EMAIL_REPLY_TO) ||
-    parseQuotedEnv(process.env.RESEND_REPLY_TO);
-  return raw || undefined;
 }
 
 export function applyDevRedirect(input: {

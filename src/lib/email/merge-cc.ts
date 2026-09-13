@@ -24,7 +24,7 @@ function parseCommaSeparatedEmails(raw: string | undefined): string[] {
 }
 
 /** Default CC from environment (deduped, lowercased). */
-export function getDefaultProgressCcFromEnv(): string[] {
+function getDefaultProgressCcFromEnv(): string[] {
   return [...new Set(parseCommaSeparatedEmails(progressCcEnvRaw()))];
 }
 

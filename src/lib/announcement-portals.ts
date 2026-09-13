@@ -33,11 +33,6 @@ export type VcfoPortalGroup = {
   tasks: VcfoPortalTask[];
 };
 
-export type CatalogCircularLink = {
-  label: string;
-  url: string;
-};
-
 export type CatalogFeedCandidate = {
   name: string;
   feedUrl: string;
@@ -171,17 +166,6 @@ function circularLabel(task: VcfoPortalTask, url: string): string {
     return 'RBI FEMA notification';
   }
   return `${task.head} — ${task.task}`;
-}
-
-export function uniqueCatalogCirculars(): CatalogCircularLink[] {
-  const seen = new Set<string>();
-  const out: CatalogCircularLink[] = [];
-  for (const task of VCFO_PORTAL_TASKS) {
-    if (!task.circularUrl || seen.has(task.circularUrl)) continue;
-    seen.add(task.circularUrl);
-    out.push({ label: circularLabel(task, task.circularUrl), url: task.circularUrl });
-  }
-  return out;
 }
 
 /**

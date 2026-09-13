@@ -139,15 +139,6 @@ export async function substituteClientInDb(
   });
 }
 
-export type EngagementLeadRow = { internId: string; name: string | null; email: string | null };
-
-export async function listEngagementLeadsFromDb(appId: string): Promise<EngagementLeadRow[]> {
-  const data = await apiFetch<{ leads: EngagementLeadRow[] }>(engagementPath(appId, '/leads'), {
-    fallbackError: 'Could not load the delivery team.',
-  });
-  return data.leads ?? [];
-}
-
 export async function addEngagementLeadInDb(appId: string, internId: string): Promise<void> {
   await apiFetch(engagementPath(appId, '/leads'), {
     method: 'POST',

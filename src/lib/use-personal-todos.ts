@@ -15,7 +15,7 @@ import {
   type PersonalTodoDto,
 } from '@/lib/personal-todos';
 
-export const PERSONAL_TODOS_QUERY_KEY = ['personal-todos'] as const;
+const PERSONAL_TODOS_QUERY_KEY = ['personal-todos'] as const;
 
 async function readJson<T>(res: Response): Promise<T> {
   const data = (await res.json()) as T & { error?: string };
@@ -25,7 +25,7 @@ async function readJson<T>(res: Response): Promise<T> {
   return data;
 }
 
-export async function fetchPersonalTodos(): Promise<PersonalTodoDto[]> {
+async function fetchPersonalTodos(): Promise<PersonalTodoDto[]> {
   const data: unknown = await readJson(await fetch('/api/todos'));
   // TanStack Query v5 throws if queryFn returns undefined; a wrapped `{ todos }`
   // object is also not iterable and would crash TeamTodosPanel / Today.

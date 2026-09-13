@@ -1,5 +1,4 @@
 import {
-  getBoardResolutionTemplateFingerprint,
   getBoardResolutionTemplateInfo,
   type BoardResolutionTemplateInfo,
 } from '@/lib/board-resolution-docx';
@@ -7,10 +6,6 @@ import type { BoardResolutionDoc } from '@/lib/board-resolution';
 
 export function boardResolutionTemplateInfo(): BoardResolutionTemplateInfo {
   return getBoardResolutionTemplateInfo();
-}
-
-export function boardResolutionTemplateFingerprint(): string {
-  return getBoardResolutionTemplateFingerprint();
 }
 
 /** Parse Postgres / RPC ISO timestamps (incl. sub-millisecond fractions). */

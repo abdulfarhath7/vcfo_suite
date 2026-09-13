@@ -4,7 +4,6 @@ import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import {
   directorField,
   directorOccupationLabel,
-  formatDob,
   nationalityFromAddress,
   pickString,
 } from '@/lib/incorporation-docs/shared';

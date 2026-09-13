@@ -12,7 +12,7 @@
  * the same table.
  */
 
-export type QuestionKind = 'boolean' | 'number' | 'picklist';
+type QuestionKind = 'boolean' | 'number' | 'picklist';
 
 export type QuestionAnswer = boolean | number | string | null;
 

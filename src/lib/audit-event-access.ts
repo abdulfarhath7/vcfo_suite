@@ -17,7 +17,7 @@ export type AuditEventAccessRow = {
   engagementId: string | null;
 };
 
-export function isFirmWideAuditReader(role: string | undefined): boolean {
+function isFirmWideAuditReader(role: string | undefined): boolean {
   return role === 'super_admin' || role === 'admin';
 }
 

@@ -10,7 +10,7 @@ import {
   uploadTimestampFromStoragePath,
 } from '@/lib/milestone-document-storage';
 
-export type VaultDocumentSource = 'milestone' | 'index';
+type VaultDocumentSource = 'milestone' | 'index';
 
 export interface VaultDocument {
   id: string;
@@ -31,13 +31,13 @@ export interface VaultDocument {
 }
 
 /** Indexed files that are not tied to a checklist step. */
-export const INDEXED_MILESTONE_ID = '_indexed';
+const INDEXED_MILESTONE_ID = '_indexed';
 
 export type VaultPhaseKey = 'pre-inc' | 'post-inc' | 'fema' | 'statutory';
 
-export const VAULT_PHASE_ORDER: VaultPhaseKey[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
+const VAULT_PHASE_ORDER: VaultPhaseKey[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
 
-export const VAULT_PHASE_LABEL: Record<VaultPhaseKey, string> = {
+const VAULT_PHASE_LABEL: Record<VaultPhaseKey, string> = {
   'pre-inc': 'Pre-incorporation',
   'post-inc': 'Post-incorporation',
   fema: 'FEMA',
@@ -53,7 +53,7 @@ export function vaultPhaseForItem(item: Pick<ChecklistItem, 'bucket' | 'title'>)
   return 'statutory';
 }
 
-export function vaultPhaseForDocument(doc: VaultDocument): VaultPhaseKey {
+function vaultPhaseForDocument(doc: VaultDocument): VaultPhaseKey {
   const item = getItem(doc.milestoneId);
   if (item) return vaultPhaseForItem(item);
   const label = doc.bucket.trim().toLowerCase();
@@ -71,7 +71,7 @@ export function checklistItemForFieldId(fieldId: string): ChecklistItem | undefi
   );
 }
 
-export function engagementForVaultId(
+function engagementForVaultId(
   engagements: Engagement[],
   engagementId: string,
 ): Engagement | undefined {
@@ -92,12 +92,12 @@ export interface IndexedDocumentRow {
   companyName?: string | null;
 }
 
-export interface VaultSectionGroup {
+interface VaultSectionGroup {
   section: string;
   docs: VaultDocument[];
 }
 
-export interface VaultMilestoneGroup {
+interface VaultMilestoneGroup {
   milestoneId: string;
   milestoneTitle: string;
   bucket: string;
@@ -105,7 +105,7 @@ export interface VaultMilestoneGroup {
   docCount: number;
 }
 
-export interface VaultPhaseGroup {
+interface VaultPhaseGroup {
   phaseKey: VaultPhaseKey;
   phaseLabel: string;
   milestones: VaultMilestoneGroup[];
@@ -420,7 +420,7 @@ export function vaultSearchHits(docs: VaultDocument[], query: string): VaultSear
     }));
 }
 
-export function vaultDocMatchesQuery(doc: VaultDocument, query: string): boolean {
+function vaultDocMatchesQuery(doc: VaultDocument, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return (

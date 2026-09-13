@@ -11,7 +11,7 @@ import {
 } from '@/lib/project-step-path';
 import type { Engagement } from '@/data/engagements';
 
-export const NOTIFICATION_KINDS = [
+const NOTIFICATION_KINDS = [
   'checklist.deliver',
   'checklist.submit',
   'checklist.review',

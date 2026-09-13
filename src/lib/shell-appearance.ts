@@ -1,4 +1,4 @@
-export const SHELL_APPEARANCE_KEY = 'vcfo.shell.appearance';
+const SHELL_APPEARANCE_KEY = 'vcfo.shell.appearance';
 export const SHELL_APPEARANCE_EVENT = 'vcfo-appearance';
 
 export type SurfaceKind = 'solid' | 'gradient' | 'preset' | 'custom';

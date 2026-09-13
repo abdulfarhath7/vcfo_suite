@@ -1,10 +1,5 @@
 import type { Engagement } from '@/data/engagements';
-import {
-  APP_ID_TO_DB_ID,
-  engagementDbId,
-  LEGACY_ENGAGEMENT_IDS,
-} from '@/lib/legacy-engagement-ids';
-import { isEngagementRouteParam, isUuid } from '@/lib/slug';
+import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import {
   type ChecklistItemStateSlice,
   normalizeEngagementChecklistState,
@@ -43,56 +38,7 @@ import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
  * This module must stay client-safe: no `@/db/*`, no `@/storage/*`.
  */
 
-export interface EngagementRow {
-  id: string;
-  slug: string;
-  company_name: string;
-  company_type: 'domestic' | 'foreign';
-  entity_legal_form?: 'company' | 'llp' | 'partnership' | 'proprietorship';
-  incorporation_date?: string | null;
-  parent_entity_name: string | null;
-  parent_entity_address: string | null;
-  parent_entity_registration_number: string | null;
-  client_id: string;
-  client_user_id: string | null;
-  intern_id: string;
-  admin_id: string | null;
-  client_name: string | null;
-  stage: string;
-  health: string;
-  created_at: string;
-  checklist_state?: Record<string, ChecklistItemStateSlice> | null;
-}
-
 export type EngagementChecklistState = Record<string, ChecklistItemStateSlice>;
-
-export function rowToEngagement(
-  row: EngagementRow,
-  client?: { email: string; name: string | null } | null,
-): Engagement {
-  const id = LEGACY_ENGAGEMENT_IDS[row.id] ?? row.id;
-  return {
-    id,
-    slug: row.slug,
-    clientId: row.client_id,
-    companyName: row.company_name,
-    companyType: row.company_type ?? 'domestic',
-    entityLegalForm: row.entity_legal_form ?? 'company',
-    incorporationDate: row.incorporation_date?.slice(0, 10) ?? null,
-    parentEntityName: row.parent_entity_name?.trim() || null,
-    parentEntityAddress: row.parent_entity_address?.trim() || null,
-    parentEntityRegistrationNumber:
-      row.parent_entity_registration_number?.trim() || null,
-    internId: row.intern_id,
-    adminId: row.admin_id ?? 'admin',
-    createdAt: row.created_at.slice(0, 10),
-    stage: row.stage as Engagement['stage'],
-    health: row.health as Engagement['health'],
-    clientUserId: row.client_user_id,
-    clientEmail: client?.email ?? null,
-    clientDisplayName: row.client_name?.trim() || client?.name?.trim() || null,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Errors — thrown shapes preserved so existing catch blocks keep matching.
@@ -253,35 +199,6 @@ export async function fetchChecklistIndex(): Promise<Record<string, EngagementCh
   return data.byEngagement ?? {};
 }
 
-export async function fetchEngagementBySlug(slug: string): Promise<Engagement | null> {
-  if (!isEngagementRouteParam(slug)) return null;
-  const data = await apiFetch<{ engagement: Engagement | null }>(
-    `/api/engagements/by-slug/${encodeURIComponent(slug)}`,
-    { fallbackError: 'Could not load project.' },
-  );
-  return data.engagement ?? null;
-}
-
-export async function fetchEngagementById(appOrDbId: string): Promise<Engagement | null> {
-  if (!isEngagementRouteParam(appOrDbId)) return null;
-  const dbId = engagementDbId(appOrDbId);
-  if (!isUuid(dbId) && !APP_ID_TO_DB_ID[appOrDbId]) return null;
-
-  const data = await apiFetch<{ engagement: Engagement | null }>(engagementPath(appOrDbId), {
-    fallbackError: 'Could not load project.',
-  });
-  return data.engagement ?? null;
-}
-
-export async function fetchEngagementChecklistState(
-  appOrDbId: string,
-): Promise<EngagementChecklistState | null> {
-  if (!isEngagementRouteParam(appOrDbId)) return null;
-  const dbId = engagementDbId(appOrDbId);
-  if (!isUuid(dbId) && !APP_ID_TO_DB_ID[appOrDbId]) return null;
-  return fetchChecklistState(appOrDbId);
-}
-
 export async function fetchChecklistState(
   appOrDbEngagementId: string,
 ): Promise<EngagementChecklistState> {
@@ -292,23 +209,6 @@ export async function fetchChecklistState(
   const raw = data.checklistState;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   return normalizeEngagementChecklistState(raw as Record<string, unknown>);
-}
-
-/** Checklist slices keyed by engagement app id (legacy e1 or uuid). */
-export function checklistStateByEngagementFromRows(
-  rows: EngagementRow[],
-): Record<string, EngagementChecklistState> {
-  const out: Record<string, EngagementChecklistState> = {};
-  for (const row of rows) {
-    const appId = LEGACY_ENGAGEMENT_IDS[row.id] ?? row.id;
-    const raw = row.checklist_state;
-    const state =
-      !raw || typeof raw !== 'object' || Array.isArray(raw)
-        ? {}
-        : normalizeEngagementChecklistState(raw as Record<string, unknown>);
-    if (Object.keys(state).length) out[appId] = state;
-  }
-  return out;
 }
 
 /**
@@ -558,32 +458,6 @@ export async function saveBoardResolutionDraftInDb(
   );
 }
 
-/** Replace .docx storage for a finalized board resolution without changing client-visible status. */
-export async function repairBoardResolutionStorageInDb(
-  appEngagementId: string,
-  content: string,
-  storagePath: string,
-  templateFingerprint?: string | null,
-): Promise<BoardResolutionDoc> {
-  const path = storagePath.trim();
-  if (!path) {
-    throw new BoardResolutionSaveError('storage_path required for repair.');
-  }
-  return boardResolutionMutation(
-    engagementPath(appEngagementId, '/board-resolution'),
-    {
-      method: 'PUT',
-      body: JSON.stringify({
-        content,
-        storagePath: path,
-        templateFingerprint: templateFingerprint?.trim() || null,
-        repairFinalizedStorage: true,
-      }),
-    },
-    'Repair did not return board resolution.',
-  );
-}
-
 export async function finalizeBoardResolutionInDb(
   appEngagementId: string,
 ): Promise<BoardResolutionDoc> {
@@ -594,18 +468,3 @@ export async function finalizeBoardResolutionInDb(
   );
 }
 
-export async function setSignedBoardResolutionInDb(
-  appEngagementId: string,
-  signedStoragePath: string,
-): Promise<BoardResolutionDoc> {
-  return boardResolutionMutation(
-    engagementPath(appEngagementId, '/board-resolution/signed'),
-    {
-      method: 'POST',
-      body: JSON.stringify({ signedStoragePath: signedStoragePath.trim() }),
-    },
-    'Signed upload did not return board resolution.',
-  );
-}
-
-export { engagementDbId };

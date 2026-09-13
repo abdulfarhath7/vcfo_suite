@@ -7,13 +7,13 @@ export const REGISTRATION_WORKFLOW_STAGES: readonly RegistrationWorkflowStage[] 
   'approval',
 ] as const;
 
-export const REGISTRATION_WORKFLOW_LABEL: Record<RegistrationWorkflowStage, string> = {
+const REGISTRATION_WORKFLOW_LABEL: Record<RegistrationWorkflowStage, string> = {
   collection: 'Collection',
   filing: 'Filing',
   approval: 'Approval',
 };
 
-export const REGISTRATION_WORKFLOW_OWNER: Record<RegistrationWorkflowStage, string> = {
+const REGISTRATION_WORKFLOW_OWNER: Record<RegistrationWorkflowStage, string> = {
   collection: 'Client',
   filing: 'VCFO',
   approval: 'Department',

@@ -3,7 +3,6 @@ import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import { stripDirectorSalutation } from '@/lib/board-resolution';
 import {
   directorField,
-  pickString,
   resolveProposedCompanyName,
   type IncorpMergeInput,
 } from '@/lib/incorporation-docs/shared';

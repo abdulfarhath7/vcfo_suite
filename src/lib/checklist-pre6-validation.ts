@@ -11,13 +11,13 @@ import {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-export const PRE6_GENDER_OPTIONS = [
+const PRE6_GENDER_OPTIONS = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
   { value: 'other', label: 'Other' },
 ] as const;
 
-export const PRE6_QUALIFICATION_OPTIONS = [
+const PRE6_QUALIFICATION_OPTIONS = [
   { value: 'primary-education', label: 'Primary Education' },
   { value: 'secondary-education', label: 'Secondary Education' },
   { value: 'vocational-qualification', label: 'Vocational Qualification' },
@@ -47,7 +47,7 @@ export const PRE6_UTILITY_BILL_OPTIONS = [
   { value: 'bank-statement', label: 'Bank Statement' },
 ] as const;
 
-export const PRE6_YES_NO_OPTIONS = [
+const PRE6_YES_NO_OPTIONS = [
   { value: 'yes', label: 'Yes' },
   { value: 'no', label: 'No' },
 ] as const;
@@ -73,9 +73,9 @@ const PRE6_HAS_OTHER_COMPANY_INTEREST_SUFFIX = 'HasOtherCompanyInterest';
 const PRE6_OTHER_COMPANY_INTEREST_COUNT_SUFFIX = 'OtherCompanyInterestCount';
 const PRE6_NOTARY_APOSTILLE_METHOD_SUFFIX = 'NotaryApostilleMethod';
 
-export const PRE6_MAX_OTHER_COMPANY_INTERESTS = 5;
+const PRE6_MAX_OTHER_COMPANY_INTERESTS = 5;
 
-export const PRE6_NOTARY_APOSTILLE_OPTIONS = [
+const PRE6_NOTARY_APOSTILLE_OPTIONS = [
   {
     value: 'self',
     label:
@@ -116,10 +116,6 @@ function isPre6OtherCompanyInterestCountFieldId(fieldId: string): boolean {
   return fieldId.endsWith(PRE6_OTHER_COMPANY_INTEREST_COUNT_SUFFIX);
 }
 
-function isPre6HasOtherCompanyInterestFieldId(fieldId: string): boolean {
-  return fieldId.endsWith(PRE6_HAS_OTHER_COMPANY_INTEREST_SUFFIX);
-}
-
 function parsePre6OtherCompanyInterestEntrySuffix(
   suffix: string,
 ): { index: number; part: string } | null {
@@ -146,7 +142,7 @@ export function getPre6OtherCompanyInterestCount(
   return Math.min(n, PRE6_MAX_OTHER_COMPANY_INTERESTS);
 }
 
-export function pre6DirectorHasOtherCompanyInterest(
+function pre6DirectorHasOtherCompanyInterest(
   pre6Responses: ChecklistItemResponses,
   prefix: string,
 ): boolean {
@@ -155,14 +151,14 @@ export function pre6DirectorHasOtherCompanyInterest(
   );
 }
 
-export function shouldShowPre6OtherCompanyInterestCount(
+function shouldShowPre6OtherCompanyInterestCount(
   pre6Responses: ChecklistItemResponses,
   prefix: string,
 ): boolean {
   return pre6DirectorHasOtherCompanyInterest(pre6Responses, prefix);
 }
 
-export function shouldShowPre6OtherCompanyInterestEntry(
+function shouldShowPre6OtherCompanyInterestEntry(
   pre6Responses: ChecklistItemResponses,
   prefix: string,
   index: number,
@@ -214,7 +210,7 @@ export function shouldShowPre6DscExpiryDate(
   return pre6DirectorHasValidDsc(pre6Responses, prefix);
 }
 
-export type Pre6DirectorKind = 'non-resident' | 'resident';
+type Pre6DirectorKind = 'non-resident' | 'resident';
 
 export interface Pre6KycSlot {
   /** Proposed director index from Phase 1 Step 1 (1–4). */
@@ -242,12 +238,6 @@ export function pre6NrFieldPrefix(slotIndex: number): string {
 /** First resident slot keeps legacy `residentDirector*` keys. */
 function pre6ResidentFieldPrefix(slotIndex: number): string {
   return slotIndex <= 1 ? 'residentDirector' : `residentDirector${slotIndex}`;
-}
-
-function pre6FieldPrefix(kind: Pre6DirectorKind, slotIndex: number): string {
-  return kind === 'non-resident'
-    ? pre6NrFieldPrefix(slotIndex)
-    : pre6ResidentFieldPrefix(slotIndex);
 }
 
 /** Whether a stored field id belongs to a given prefix (avoids nrDirector matching nrDirector2). */
@@ -726,7 +716,6 @@ export function getPre6VisibleFields(
 
   const visiblePrefixes = slots.map((s) => s.prefix);
   const sectionByPrefix = new Map(slots.map((s) => [s.prefix, s.sectionTitle]));
-  const slotByPrefix = new Map(slots.map((s) => [s.prefix, s]));
 
   const resolvePrefix = (fieldId: string): string | undefined => {
     for (const prefix of visiblePrefixes) {

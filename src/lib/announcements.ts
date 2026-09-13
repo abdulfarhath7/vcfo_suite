@@ -28,7 +28,7 @@ export const ANNOUNCEMENT_KIND_LABEL: Record<AnnouncementKind, string> = {
   general: 'General',
 };
 
-export function isAnnouncementKind(value: string | null | undefined): value is AnnouncementKind {
+function isAnnouncementKind(value: string | null | undefined): value is AnnouncementKind {
   return ANNOUNCEMENT_KINDS.includes(value as AnnouncementKind);
 }
 
@@ -74,11 +74,10 @@ export function announcementAttribution(item: {
   return `From ${authorDisplayLabel(item.authorName)}`;
 }
 
-export const ANNOUNCEMENT_LIST_FILTERS = ['all', 'important', 'general'] as const;
-export type AnnouncementListFilter = (typeof ANNOUNCEMENT_LIST_FILTERS)[number];
+export type AnnouncementListFilter = 'all' | 'important' | 'general';
 
 /** No `important` kind exists — deadline + compliance are the urgency equivalents. */
-export const ANNOUNCEMENT_IMPORTANT_KINDS: readonly AnnouncementKind[] = ['deadline', 'compliance'];
+const ANNOUNCEMENT_IMPORTANT_KINDS: readonly AnnouncementKind[] = ['deadline', 'compliance'];
 
 export function announcementMatchesFilter(
   kind: AnnouncementKind,
@@ -116,11 +115,11 @@ export interface AnnouncementSource {
   createdAt: string;
 }
 
-export const ANNOUNCEMENT_READ_PREFIX = 'vcfo.announcements.read.';
+const ANNOUNCEMENT_READ_PREFIX = 'vcfo.announcements.read.';
 export const ANNOUNCEMENT_READ_EVENT = 'vcfo-announcements-read';
-export const ANNOUNCEMENT_DAILY_PREFIX = 'vcfo.announcements.daily.';
-export const ANNOUNCEMENT_POPUP_PREFIX = 'vcfo.announcements.popup.';
-export const ANNOUNCEMENT_POPUP_EVENT = 'vcfo-announcements-popup';
+const ANNOUNCEMENT_DAILY_PREFIX = 'vcfo.announcements.daily.';
+const ANNOUNCEMENT_POPUP_PREFIX = 'vcfo.announcements.popup.';
+const ANNOUNCEMENT_POPUP_EVENT = 'vcfo-announcements-popup';
 export const ANNOUNCEMENT_GENIE_LAND_EVENT = 'vcfo-announcements-genie-land';
 export const ANNOUNCEMENT_SHOW_EVENT = 'vcfo-announcements-show';
 export const ANNOUNCEMENT_BELL_SELECTOR = '[data-announcements-bell]';
@@ -130,7 +129,7 @@ export type { GenieBox } from '@/lib/genie-dock';
 export { measureGenieDock } from '@/lib/genie-dock';
 export const ANNOUNCEMENT_FIRST_VISIT_POPUP_CAP = 3;
 export const ANNOUNCEMENT_LIVE_POPUP_CAP = 8;
-export const ANNOUNCEMENT_IST = 'Asia/Kolkata';
+const ANNOUNCEMENT_IST = 'Asia/Kolkata';
 
 export function announcementYmdIst(date: Date = new Date()): string {
   return date.toLocaleDateString('en-CA', { timeZone: ANNOUNCEMENT_IST });
@@ -138,27 +137,6 @@ export function announcementYmdIst(date: Date = new Date()): string {
 
 export function dailyAnnouncementStorageKey(userId: string, ymd: string): string {
   return `${ANNOUNCEMENT_DAILY_PREFIX}${userId}.${ymd}`;
-}
-
-export function hasDailyAnnouncementSeen(userId: string, ymd: string): boolean {
-  if (typeof window === 'undefined' || !userId) return false;
-  try {
-    return window.localStorage.getItem(dailyAnnouncementStorageKey(userId, ymd)) != null;
-  } catch {
-    return false;
-  }
-}
-
-export function writeDailyAnnouncementSeen(userId: string, ymd: string, ids: Iterable<string>): void {
-  if (typeof window === 'undefined' || !userId) return;
-  try {
-    window.localStorage.setItem(
-      dailyAnnouncementStorageKey(userId, ymd),
-      JSON.stringify({ ids: [...ids], seenAt: new Date().toISOString() }),
-    );
-  } catch {
-    /* ignore */
-  }
 }
 
 export function announcementsForDailyPopup(
@@ -201,7 +179,7 @@ export function readAnnouncementPopupIds(userId: string): Set<string> | null {
   }
 }
 
-export function writeAnnouncementPopupIds(userId: string, ids: Iterable<string>): void {
+function writeAnnouncementPopupIds(userId: string, ids: Iterable<string>): void {
   if (typeof window === 'undefined' || !userId) return;
   try {
     window.localStorage.setItem(announcementPopupStorageKey(userId), JSON.stringify([...new Set(ids)]));
@@ -300,11 +278,6 @@ export function writeAnnouncementReadIds(userId: string, ids: Iterable<string>):
   }
 }
 
-export function countUnreadAnnouncements(userId: string, ids: string[]): number {
-  const read = readAnnouncementIds(userId);
-  return ids.filter((id) => !read.has(id)).length;
-}
-
 export function canWriteAnnouncements(role: Role | string | undefined): boolean {
   return isAdminOrManager(role);
 }
@@ -360,7 +333,7 @@ export const OFFICIAL_FEED_HOSTS = [
   'ccilindia-lei.co.in',
 ] as const;
 
-export const OFFICIAL_FEED_HOST_SET = new Set<string>(OFFICIAL_FEED_HOSTS);
+const OFFICIAL_FEED_HOST_SET = new Set<string>(OFFICIAL_FEED_HOSTS);
 
 const TRACKING_QUERY_PARAMS = new Set([
   'gclid',
@@ -376,7 +349,7 @@ const TRACKING_QUERY_PARAMS = new Set([
   '_ga',
 ]);
 
-export function isTrackingQueryParam(key: string): boolean {
+function isTrackingQueryParam(key: string): boolean {
   const k = key.trim().toLowerCase();
   if (!k) return false;
   if (k.startsWith('utm_') || k.startsWith('gad_')) return true;
@@ -396,7 +369,7 @@ function stripTrackingParams(url: URL): void {
   }
 }
 
-export function normalizeHostname(hostname: string): string {
+function normalizeHostname(hostname: string): string {
   return hostname.trim().toLowerCase().replace(/\.$/, '').replace(/^www\./, '');
 }
 

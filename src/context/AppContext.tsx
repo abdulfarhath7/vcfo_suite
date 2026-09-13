@@ -51,12 +51,12 @@ export interface ChecklistItemState {
   clientFillRequest?: ClientFillRequest;
 }
 
-export type ChecklistItemPatch = Partial<ChecklistItemState> & {
+type ChecklistItemPatch = Partial<ChecklistItemState> & {
   /** Lead → manager approval mail retry; not persisted on the item. */
   resendManagerEmail?: boolean;
 };
 
-export interface UpdateItemOptions {
+interface UpdateItemOptions {
   /** When true, only `responses` is applied (client portal). */
   clientResponsesOnly?: boolean;
 }
@@ -171,7 +171,6 @@ export interface AppContextValue {
   ) => void;
 }
 
-export { AppContext } from '@/context/app-context-store';
 export { AppProvider } from '@/context/AppProvider';
 
 import { AppContext as AppContextStore } from '@/context/app-context-store';

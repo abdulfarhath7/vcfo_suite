@@ -5,8 +5,8 @@ import {
 } from '@/lib/checklist-notifications';
 import { isPersistedNotificationId } from '@/lib/notification-dismiss';
 
-export const NOTIFICATION_POPUP_PREFIX = 'vcfo.notifications.popup.';
-export const NOTIFICATION_POPUP_EVENT = 'vcfo-notifications-popup';
+const NOTIFICATION_POPUP_PREFIX = 'vcfo.notifications.popup.';
+const NOTIFICATION_POPUP_EVENT = 'vcfo-notifications-popup';
 export const NOTIFICATION_GENIE_LAND_EVENT = 'vcfo-notifications-genie-land';
 export const NOTIFICATION_SHOW_EVENT = 'vcfo-notifications-show';
 export const NOTIFICATION_BELL_SELECTOR = '[data-notifications-bell]';
@@ -55,7 +55,7 @@ export function readNotificationPopupIds(userId: string): Set<string> | null {
   }
 }
 
-export function writeNotificationPopupIds(userId: string, ids: Iterable<string>): void {
+function writeNotificationPopupIds(userId: string, ids: Iterable<string>): void {
   if (typeof window === 'undefined' || !userId) return;
   try {
     window.localStorage.setItem(notificationPopupStorageKey(userId), JSON.stringify([...new Set(ids)]));

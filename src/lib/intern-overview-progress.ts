@@ -97,10 +97,8 @@ export const INTERN_OVERVIEW_PHASE_TAB_IDS = [
   'registration-phase-4',
 ] as const;
 
-export type InternOverviewPhaseTabId = (typeof INTERN_OVERVIEW_PHASE_TAB_IDS)[number];
-
 /** Per-project last intern overview tab: `vcfo.intern.engagementPhaseTab.{engagementId}`. */
-export const INTERN_ENGAGEMENT_PHASE_TAB_STORAGE_PREFIX = 'vcfo.intern.engagementPhaseTab.';
+const INTERN_ENGAGEMENT_PHASE_TAB_STORAGE_PREFIX = 'vcfo.intern.engagementPhaseTab.';
 
 export function internEngagementPhaseTabStorageKey(engagementId: string): string {
   return `${INTERN_ENGAGEMENT_PHASE_TAB_STORAGE_PREFIX}${engagementId}`;
@@ -175,7 +173,7 @@ export function internFormNextLabel(target: InternFormNextTarget): 'Next' | 'Sub
 }
 
 /** Sub-headers inside the intern Registration card (catalog order within each group). */
-export const INTERN_REGISTRATION_HEADING_ORDER = [
+const INTERN_REGISTRATION_HEADING_ORDER = [
   'General',
   'Customs',
   'Foreign Trade',

@@ -16,7 +16,7 @@ export const NOTIFICATION_INBOX_LIMIT = 80;
 export const NOTIFICATION_HISTORY_LIMIT = 500;
 
 /** Same calendar as intern work / announcements. */
-export const NOTIFICATION_TZ = 'Asia/Kolkata';
+const NOTIFICATION_TZ = 'Asia/Kolkata';
 
 export type NotificationClearScope = 'all' | 'today' | 'week';
 

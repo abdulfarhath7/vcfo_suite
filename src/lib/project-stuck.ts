@@ -23,8 +23,6 @@ export const STUCK_LABEL: Record<StuckReason, string> = {
 
 const PRIMARY_BUCKETS = new Set(['pre-inc', 'post-inc']);
 
-export const PRIMARY_BUCKETS_SET = PRIMARY_BUCKETS;
-
 export function deriveStuckReason(
   engagement: Engagement,
   checklistState: Record<string, ChecklistItemStateSlice>,

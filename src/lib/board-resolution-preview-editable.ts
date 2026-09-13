@@ -53,7 +53,7 @@ function wrapMatchesInTextNode(textNode: Text, value: string, fieldKey: string):
 
   const fragment = document.createDocumentFragment();
   let lastIndex = 0;
-  let index = 0;
+  let index: number;
 
   while ((index = text.indexOf(value, lastIndex)) !== -1) {
     if (index > lastIndex) {

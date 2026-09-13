@@ -7,7 +7,7 @@ export const ENTITY_LEGAL_FORM_LABEL: Record<EntityLegalForm, string> = {
   proprietorship: 'Proprietorship',
 };
 
-export type ComplianceTriggerType =
+type ComplianceTriggerType =
   | 'fy_end'
   | 'gst_registration'
   | 'tds_liability'
@@ -28,7 +28,7 @@ export type DueRule =
   | { kind: 'days-after-event'; days: number }
   | { kind: 'monthly-from-anchor' };
 
-export type ComplianceFrequency =
+type ComplianceFrequency =
   | 'monthly'
   | 'quarterly'
   | 'half-yearly'
@@ -37,7 +37,7 @@ export type ComplianceFrequency =
 
 export type ComplianceStatus = 'upcoming' | 'in-progress' | 'filed' | 'overdue';
 
-export type PenaltyRisk = 'low' | 'medium' | 'high';
+type PenaltyRisk = 'low' | 'medium' | 'high';
 
 export interface EntityApplicability {
   company: boolean;

@@ -28,7 +28,7 @@ export async function ingestAnnouncementSource(
   }
 }
 
-export async function ingestAllAnnouncementFeeds(): Promise<{
+async function ingestAllAnnouncementFeeds(): Promise<{
   sources: number;
   catalogTried: number;
   results: { id: string | null; name: string; inserted: number; error?: string }[];

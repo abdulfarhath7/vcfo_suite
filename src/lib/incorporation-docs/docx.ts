@@ -1,6 +1,5 @@
 ﻿import 'server-only';
 
-import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
@@ -16,34 +15,29 @@ import { assertIncorpDocxWordXmlValid } from '@/lib/incorporation-docs/docx-vali
 import {
   ACCEPTANCE_LETTER_MERGE_FIELD_KEYS,
   buildAcceptanceLetterMergeFields,
-  type AcceptanceLetterMergeFields,
 } from '@/lib/incorporation-docs/acceptance-letter';
 import {
   AUTHORISATION_LETTER_MERGE_FIELD_KEYS,
   buildAuthorisationLetterMergeFields,
-  type AuthorisationLetterMergeFields,
 } from '@/lib/incorporation-docs/authorisation-letter';
-import { buildAoaMergeFields, AOA_MERGE_FIELD_KEYS, type AoaMergeFields } from '@/lib/incorporation-docs/aoa';
-import { buildDir2MergeFields, DIR2_MERGE_FIELD_KEYS, type Dir2MergeFields } from '@/lib/incorporation-docs/dir2';
-import { buildDir8MergeFields, DIR8_MERGE_FIELD_KEYS, type Dir8MergeFields } from '@/lib/incorporation-docs/dir8';
-import { buildInc9MergeFields, INC9_MERGE_FIELD_KEYS, type Inc9MergeFields } from '@/lib/incorporation-docs/inc9';
+import { buildAoaMergeFields, AOA_MERGE_FIELD_KEYS } from '@/lib/incorporation-docs/aoa';
+import { buildDir2MergeFields, DIR2_MERGE_FIELD_KEYS } from '@/lib/incorporation-docs/dir2';
+import { buildDir8MergeFields, DIR8_MERGE_FIELD_KEYS } from '@/lib/incorporation-docs/dir8';
+import { buildInc9MergeFields, INC9_MERGE_FIELD_KEYS } from '@/lib/incorporation-docs/inc9';
 import {
   buildMoaMergeFields,
   MOA_MERGE_FIELD_KEYS,
-  type MoaMergeFields,
   type MoaMergeInput,
 } from '@/lib/incorporation-docs/moa';
 import {
   buildPanUndertakingMergeFields,
   PAN_UNDERTAKING_MERGE_FIELD_KEYS,
-  type PanUndertakingMergeFields,
 } from '@/lib/incorporation-docs/pan-undertaking';
 import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
   buildSubscriptionSheetMergeFields,
   subscriptionSheetVariantForDoc,
   SUBSCRIPTION_SHEET_MERGE_FIELD_KEYS,
-  type SubscriptionSheetMergeFields,
 } from '@/lib/incorporation-docs/subscription-sheet';
 import { INCORP_DOC_DEFINITIONS, type IncorpDocKind } from '@/lib/incorporation-docs/types';
 
@@ -105,20 +99,6 @@ function renderDocx(templateRelative: string, keys: readonly string[], data: Rec
   return sanitized;
 }
 
-export function incorpTemplatePath(doc: IncorpDocKind): string {
-  return path.join(process.cwd(), INCORP_DOC_DEFINITIONS[doc].templateRelative);
-}
-
-export function getIncorpTemplateFingerprint(doc: IncorpDocKind): string {
-  const templatePath = incorpTemplatePath(doc);
-  if (!fs.existsSync(templatePath)) {
-    throw new Error(
-      `Template missing at ${templatePath}. Run the prepare script for ${INCORP_DOC_DEFINITIONS[doc].label}.`,
-    );
-  }
-  return crypto.createHash('sha256').update(fs.readFileSync(templatePath)).digest('hex');
-}
-
 export function renderDir2DocxBuffer(input: IncorpMergeInput): Buffer {
   const fields = buildDir2MergeFields(input);
   return renderDocx(
@@ -128,7 +108,7 @@ export function renderDir2DocxBuffer(input: IncorpMergeInput): Buffer {
   );
 }
 
-export function renderDir8DocxBuffer(input: IncorpMergeInput): Buffer {
+function renderDir8DocxBuffer(input: IncorpMergeInput): Buffer {
   const fields = buildDir8MergeFields(input);
   return renderDocx(
     INCORP_DOC_DEFINITIONS['dir-8'].templateRelative,
@@ -155,7 +135,7 @@ export function renderPanUndertakingDocxBuffer(input: IncorpMergeInput): Buffer 
   );
 }
 
-export function renderMoaDocxBuffer(input: MoaMergeInput): Buffer {
+function renderMoaDocxBuffer(input: MoaMergeInput): Buffer {
   const fields = buildMoaMergeFields(input);
   return renderDocx(
     INCORP_DOC_DEFINITIONS.moa.templateRelative,
@@ -164,7 +144,7 @@ export function renderMoaDocxBuffer(input: MoaMergeInput): Buffer {
   );
 }
 
-export function renderAoaDocxBuffer(input: IncorpMergeInput): Buffer {
+function renderAoaDocxBuffer(input: IncorpMergeInput): Buffer {
   const fields = buildAoaMergeFields(input);
   return renderDocx(
     INCORP_DOC_DEFINITIONS.aoa.templateRelative,
@@ -173,7 +153,7 @@ export function renderAoaDocxBuffer(input: IncorpMergeInput): Buffer {
   );
 }
 
-export function renderAuthorisationLetterDocxBuffer(input: IncorpMergeInput): Buffer {
+function renderAuthorisationLetterDocxBuffer(input: IncorpMergeInput): Buffer {
   const fields = buildAuthorisationLetterMergeFields(input);
   return renderDocx(
     INCORP_DOC_DEFINITIONS['authorisation-letter'].templateRelative,
@@ -182,7 +162,7 @@ export function renderAuthorisationLetterDocxBuffer(input: IncorpMergeInput): Bu
   );
 }
 
-export function renderAcceptanceLetterDocxBuffer(input: IncorpMergeInput): Buffer {
+function renderAcceptanceLetterDocxBuffer(input: IncorpMergeInput): Buffer {
   const fields = buildAcceptanceLetterMergeFields(input);
   return renderDocx(
     INCORP_DOC_DEFINITIONS['acceptance-letter'].templateRelative,
@@ -191,7 +171,7 @@ export function renderAcceptanceLetterDocxBuffer(input: IncorpMergeInput): Buffe
   );
 }
 
-export function renderSubscriptionSheetDocxBuffer(
+function renderSubscriptionSheetDocxBuffer(
   doc: 'moa-subscription-sheet' | 'aoa-subscription-sheet',
   input: IncorpMergeInput,
 ): Buffer {
@@ -252,15 +232,3 @@ export function renderIncorpDocxBuffer(doc: IncorpDocKind, input: IncorpMergeInp
       throw new Error(`Unknown incorporation document: ${doc satisfies never}`);
   }
 }
-
-export type {
-  Dir2MergeFields,
-  Dir8MergeFields,
-  Inc9MergeFields,
-  MoaMergeFields,
-  AoaMergeFields,
-  PanUndertakingMergeFields,
-  AuthorisationLetterMergeFields,
-  AcceptanceLetterMergeFields,
-  SubscriptionSheetMergeFields,
-};

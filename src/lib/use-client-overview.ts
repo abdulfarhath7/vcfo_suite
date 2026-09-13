@@ -8,7 +8,7 @@ import type { ClientOverview } from '@/lib/client-overview';
  * goes through `/api/client/overview`, which runs the repository under the
  * caller's `AuthContext`.
  */
-export const CLIENT_OVERVIEW_QUERY_KEY = ['client-overview'] as const;
+const CLIENT_OVERVIEW_QUERY_KEY = ['client-overview'] as const;
 
 export type ClientOverviewQueryResult = {
   overview: ClientOverview | null;

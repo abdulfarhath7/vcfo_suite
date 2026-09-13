@@ -1,7 +1,6 @@
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
-  DEFAULT_PARENT_JURISDICTION,
   DEFAULT_PARENT_STATE,
   resolveCertificationPlace,
 } from '@/lib/board-resolution';

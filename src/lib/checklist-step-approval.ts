@@ -34,22 +34,8 @@ export function isAwaitingClientApproval(slice?: ChecklistItemStateSlice | null)
   return approvalStateOf(slice) === 'pending_client';
 }
 
-export function isClientApproved(slice?: ChecklistItemStateSlice | null): boolean {
+function isClientApproved(slice?: ChecklistItemStateSlice | null): boolean {
   return approvalStateOf(slice) === 'client_approved';
-}
-
-/**
- * States that mean the step is still moving between the three parties. A phase
- * cannot be called approved while any of its steps sits in one of these.
- */
-const IN_FLIGHT: ReadonlySet<StepApprovalState> = new Set<StepApprovalState>([
-  'pending_manager',
-  'pending_client',
-  'change_requested',
-]);
-
-export function isApprovalInFlight(slice?: ChecklistItemStateSlice | null): boolean {
-  return IN_FLIGHT.has(approvalStateOf(slice));
 }
 
 /** Short label for the canonical status pill. Null when the step is untouched. */
@@ -200,7 +186,7 @@ export function phaseForStep(itemId: string): ChecklistPhaseRef | null {
  * `responsibleRole: 'client'`, which is only 5 of the 47), say so and this is
  * the one function to change.
  */
-export function approvalTrackedSteps(
+function approvalTrackedSteps(
   phase: ChecklistPhaseRef,
   state: EngagementChecklistState,
 ): ChecklistItem[] {
@@ -230,7 +216,7 @@ export function isPhaseFullyClientApproved(
  * and skip. Kept in `checklist_state` rather than a new table, per the same
  * rule that put the approval sub-state there.
  */
-export function phaseCompletionAlreadyNotified(
+function phaseCompletionAlreadyNotified(
   phase: ChecklistPhaseRef,
   state: EngagementChecklistState,
 ): boolean {

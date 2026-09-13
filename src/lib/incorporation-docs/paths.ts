@@ -143,6 +143,3 @@ export function incorpDraftDocSlotsFromResponses(
   }
   return slots;
 }
-
-/** @deprecated Use audience — alias for migration. */
-export type IncorpDraftDocSlotLegacy = IncorpDraftDocSlot & { director: IncorpDocAudience };

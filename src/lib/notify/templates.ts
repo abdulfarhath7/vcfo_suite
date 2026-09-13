@@ -112,7 +112,7 @@ function sanitizeVariable(value: string): string {
 }
 
 /** One typed text parameter in a Meta template component. */
-export type MetaTemplateParameter = { type: 'text'; text: string };
+type MetaTemplateParameter = { type: 'text'; text: string };
 
 export type MetaTemplateComponent = {
   type: 'body';

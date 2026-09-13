@@ -6,7 +6,7 @@ export const PRE7_OTHER_ATTACHMENT_FIELD_IDS = [
   'otherAttachment3Url',
 ] as const;
 
-export type Pre7OtherAttachmentFieldId = (typeof PRE7_OTHER_ATTACHMENT_FIELD_IDS)[number];
+type Pre7OtherAttachmentFieldId = (typeof PRE7_OTHER_ATTACHMENT_FIELD_IDS)[number];
 
 const PRE7_OTHER_ATTACHMENT_LABELS: Record<Pre7OtherAttachmentFieldId, string> = {
   otherAttachment1Url: 'Other attachment 1',

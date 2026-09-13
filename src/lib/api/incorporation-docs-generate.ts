@@ -21,12 +21,8 @@ import {
 } from '@/db/repositories/engagements';
 
 export {
-  INCORP_DOCS_ERROR_CODES,
   IncorpDocsError,
   toIncorpDocsError,
-  toIncorpDocsPatchError,
-  validateIncorpDocsGeneration,
-  type IncorpDocsErrorCode,
 } from '@/lib/api/incorporation-docs-errors';
 
 import {

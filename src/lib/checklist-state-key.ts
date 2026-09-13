@@ -13,7 +13,7 @@ import {
 export type ChecklistReviewStatus = 'reviewing' | 'accepted' | 'rejected';
 
 /** Lead asks the client to fill a step; a manager has to approve before the client hears about it. */
-export type ClientFillRequestStatus = 'pending_manager' | 'approved' | 'declined';
+type ClientFillRequestStatus = 'pending_manager' | 'approved' | 'declined';
 
 export interface ClientFillRequest {
   status: ClientFillRequestStatus;
@@ -32,7 +32,7 @@ export interface ClientFillRequest {
   fulfilledAt?: string;
 }
 /** Who put the item into reviewing — client KYC vs lead→manager request. */
-export type ChecklistReviewSource = 'client_submission' | 'lead_manager_request';
+type ChecklistReviewSource = 'client_submission' | 'lead_manager_request';
 
 /**
  * Three-party approval on a step: lead → manager → client.
@@ -124,7 +124,7 @@ export interface ChecklistItemStateSlice {
 }
 
 /** Narrow one jsonb blob to a ClientFillRequest, or undefined when it is not one. */
-export function normalizeClientFillRequest(raw: unknown): ClientFillRequest | undefined {
+function normalizeClientFillRequest(raw: unknown): ClientFillRequest | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const obj = raw as Record<string, unknown>;
   const status = obj.status;
@@ -152,7 +152,7 @@ export function normalizeClientFillRequest(raw: unknown): ClientFillRequest | un
 }
 
 /** Narrow one jsonb blob to a StepApproval, or undefined when it is not one. */
-export function normalizeStepApproval(raw: unknown): StepApproval | undefined {
+function normalizeStepApproval(raw: unknown): StepApproval | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const obj = raw as Record<string, unknown>;
   const state = obj.state;

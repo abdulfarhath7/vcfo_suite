@@ -16,21 +16,6 @@ export function roleHomePath(role: Role): string {
   }
 }
 
-/** In-app Outlook compose (staff only). */
-export function roleMailPath(role: Role): string | null {
-  switch (role) {
-    case 'super_admin':
-    case 'admin':
-      return '/app/admin/mail';
-    case 'manager':
-      return '/app/manager/mail';
-    case 'intern':
-      return '/app/intern/mail';
-    case 'client':
-      return null;
-  }
-}
-
 /** Per-user notification history (dismissed + current). */
 export function roleNotificationsPath(role: Role): string {
   switch (role) {
@@ -84,11 +69,6 @@ export function roleFromAppPathname(pathname: string): Role | null {
     default:
       return null;
   }
-}
-
-/** Role segment index pages — same as role home. */
-export function roleIndexPath(role: Role): string {
-  return roleHomePath(role);
 }
 
 /** Shell base path for firm admin vs project manager. */

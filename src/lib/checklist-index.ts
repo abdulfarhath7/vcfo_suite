@@ -2,7 +2,7 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { normalizeEngagementChecklistState } from '@/lib/checklist-state-key';
 
 /** Dates the compliance calendar reads from checklist responses. */
-export const CHECKLIST_INDEX_TRIGGER_FIELDS = [
+const CHECKLIST_INDEX_TRIGGER_FIELDS = [
   'dateOfIncorporation',
   'gstRegistrationDate',
   'pfRegistrationDate',

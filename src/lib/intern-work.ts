@@ -6,7 +6,6 @@ import { addDays, differenceInDays, differenceInHours } from 'date-fns';
 import { checklist, getItem, type ChecklistItem } from '@/data/checklist';
 import type { ComplianceFiling } from '@/data/compliance';
 import type { DocRequest, Engagement } from '@/data/engagements';
-import type { AppNotification } from '@/lib/checklist-notifications';
 import {
   getReviewStatus,
   isReviewAccepted,
@@ -15,7 +14,6 @@ import {
 import { computeDueDate } from '@/lib/deadlines';
 import {
   internOverviewCurrentItemInPhase,
-  internOverviewPhaseForItem,
   internOverviewPhases,
   internPhaseProgressPercent,
   internPhaseStepCounts,
@@ -44,15 +42,14 @@ export type InternChipTone =
   | 'pink'
   | 'cyan';
 
-export const IST = 'Asia/Kolkata';
+const IST = 'Asia/Kolkata';
 export const INTERN_TASKS_PATH = '/app/intern/tasks';
-export const INTERN_FOCUS_STORAGE_PREFIX = 'vcfo.intern.focus.';
-export const INTERN_QUEUE_EXPANDED_STORAGE_PREFIX = 'vcfo.intern.queue.expanded.';
+const INTERN_FOCUS_STORAGE_PREFIX = 'vcfo.intern.focus.';
+const INTERN_QUEUE_EXPANDED_STORAGE_PREFIX = 'vcfo.intern.queue.expanded.';
 export const INTERN_WORK_VIEW_KEY = 'vcfo.intern.workView';
-export const INTERN_HERO_MOOD_KEY = 'vcfo.intern.heroMood';
 
-export type InternWorkSource = 'step' | 'filing' | 'request';
-export type InternWorkKind =
+type InternWorkSource = 'step' | 'filing' | 'request';
+type InternWorkKind =
   | 'rejected'
   | 'review'
   | 'deliver'
@@ -79,7 +76,6 @@ export type InternWorkKindFilter = 'all' | 'steps' | 'filings';
 export type InternWorkView = 'list' | 'board' | 'tl';
 export type InternWorkBoardColumn = 'action' | 'progress' | 'waiting' | 'done';
 export type InternWorkCtaAction = 'open' | 'nudge-manager' | 'remind-client';
-export type InternHeroMood = 'off' | 'snow' | 'stars' | 'petals' | 'fireflies';
 
 export interface InternWorkItem {
   id: string;
@@ -175,7 +171,7 @@ export function istWeekdayMon0(date: Date): number {
 }
 
 /** Monday of the IST week containing `now`. */
-export function istMondayYmd(now: Date): string {
+function istMondayYmd(now: Date): string {
   const today = ymdInIst(now);
   const offset = istWeekdayMon0(now);
   return ymdInIst(addDays(parseIstNoon(today), -offset));
@@ -186,7 +182,7 @@ export function istWeekYmds(now: Date, days = 7): string[] {
   return Array.from({ length: days }, (_, i) => ymdInIst(addDays(monday, i)));
 }
 
-export function isYmdThisIstWeek(ymd: string, now: Date): boolean {
+function isYmdThisIstWeek(ymd: string, now: Date): boolean {
   const day = ymdFromIsoInIst(ymd);
   return Boolean(day && istWeekYmds(now, 7).includes(day));
 }
@@ -217,7 +213,7 @@ export function formatIstWeekdayDay(ymd: string): { weekday: string; day: number
   return { weekday, day, label: `${weekday} ${day}` };
 }
 
-export function formatIstDayMonth(ymd: string): string {
+function formatIstDayMonth(ymd: string): string {
   return parseIstNoon(ymd).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
@@ -286,7 +282,7 @@ export function internWorkItemsForDay(
   return sortInternWork(items.filter((item) => internWeekAnchorYmd(item, todayYmd, week) === ymd));
 }
 
-export function catalogShortLabel(item: ChecklistItem): string {
+function catalogShortLabel(item: ChecklistItem): string {
   const m = /^(pre|post)-(\d+)$/i.exec(item.id);
   if (m?.[1] === 'pre') return `Pre-${m[2]}`;
   if (m?.[1] === 'post') return `Post-${m[2]}`;
@@ -327,7 +323,7 @@ export function formatDueLabel(dueAt: string | undefined, now: Date): string {
   return formatIstDayMonth(ymd);
 }
 
-export function internWorkHref(opts: {
+function internWorkHref(opts: {
   source: InternWorkSource;
   engagement: Pick<Engagement, 'id' | 'slug'>;
   catalogId?: string;
@@ -439,7 +435,7 @@ export function internWorkCta(item: InternWorkItem) {
   return ctaForKind(item.kind);
 }
 
-export function internWorkBoardColumn(item: InternWorkItem, now = new Date()): InternWorkBoardColumn {
+function internWorkBoardColumn(item: InternWorkItem, now = new Date()): InternWorkBoardColumn {
   switch (item.kind) {
     case 'rejected':
     case 'review':
@@ -916,7 +912,7 @@ export function internWeekChipsForDay(
   return [...open.slice(0, openTake), ...done.slice(0, limit - openTake)];
 }
 
-export interface InternPhaseBar {
+interface InternPhaseBar {
   id: string;
   title: string;
   done: number;
@@ -973,33 +969,6 @@ export function internCompanyPhaseProgress(
     stuck,
     phases,
   };
-}
-
-export interface InternHeroHighlight {
-  text: string;
-  tone: 'blue' | 'teal' | 'red';
-}
-
-export function internHeroHighlights(notifications: AppNotification[], now: Date, limit = 3): InternHeroHighlight[] {
-  const cutoff = now.getTime() - 36 * 60 * 60 * 1000;
-  const recent = notifications
-    .filter((n) => new Date(n.createdAt).getTime() >= cutoff)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .slice(0, limit);
-
-  return recent.map((n) => {
-    const tone: InternHeroHighlight['tone'] =
-      n.kind === 'checklist.review' && /reject/i.test(`${n.title} ${n.body}`)
-        ? 'red'
-        : n.kind === 'checklist.submit' || n.kind === 'request.uploaded'
-          ? 'blue'
-          : n.kind === 'checklist.review' || n.kind === 'checklist.deliver'
-            ? 'teal'
-            : /due|overdue/i.test(`${n.title} ${n.body}`)
-              ? 'red'
-              : 'blue';
-    return { text: n.title, tone };
-  });
 }
 
 export function internWorkPath(filters: InternWorkFilters & { view?: InternWorkView } = {}): string {
@@ -1060,11 +1029,11 @@ export function parseInternWorkDay(value: string | null | undefined): string | n
   return IST_YMD_RE.test(value.trim()) ? value.trim().slice(0, 10) : null;
 }
 
-export function internTimelineWindow(now: Date): string[] {
+function internTimelineWindow(now: Date): string[] {
   return istWeekYmds(now, 14);
 }
 
-export interface InternTimelineDayColumn {
+interface InternTimelineDayColumn {
   ymd: string;
   items: InternWorkItem[];
 }
@@ -1146,7 +1115,7 @@ export const TIMELINE_PRIORITY_TONE: Record<InternTimelinePriority, InternChipTo
   done: 'success',
 };
 
-export interface InternTimelineGanttRow {
+interface InternTimelineGanttRow {
   item: InternWorkItem;
   /** Inclusive column in the 14-day window. */
   startIdx: number;
@@ -1219,11 +1188,11 @@ export function internWaitingItems(items: InternWorkItem[]): InternWorkItem[] {
   );
 }
 
-export function internFocusStorageKey(userId: string): string {
+function internFocusStorageKey(userId: string): string {
   return `${INTERN_FOCUS_STORAGE_PREFIX}${userId}`;
 }
 
-export function internQueueExpandedStorageKey(userId: string): string {
+function internQueueExpandedStorageKey(userId: string): string {
   return `${INTERN_QUEUE_EXPANDED_STORAGE_PREFIX}${userId}`;
 }
 
@@ -1355,9 +1324,4 @@ export function writeInternFocus(userId: string, entries: InternFocusEntry[]): v
   } catch {
     /* quota / private mode */
   }
-}
-
-export function internOverviewPhaseLabelForItem(catalogId: string | undefined): string | null {
-  if (!catalogId) return null;
-  return internOverviewPhaseForItem(catalogId)?.title ?? null;
 }

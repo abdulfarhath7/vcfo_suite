@@ -31,14 +31,6 @@ export function hasResponseFormFields(
   return getVisibleResponseFields(item, variant).length > 0;
 }
 
-/** Statutory form labels in lists — hide when MilestoneResponseForm owns the step. */
-export function shouldShowStatutoryFormLabels(
-  item: ChecklistItem,
-  variant: 'admin' | 'client',
-): boolean {
-  return item.forms.length > 0 && !hasResponseFormFields(item, variant);
-}
-
 export function isInternDeliveryStep(itemId: string): boolean {
   return INTERN_DELIVERY_STEP_IDS.has(itemId);
 }

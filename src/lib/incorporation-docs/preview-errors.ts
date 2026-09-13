@@ -1,4 +1,4 @@
-export type IncorpDocPreviewErrorKind =
+type IncorpDocPreviewErrorKind =
   | 'corrupt_xml'
   | 'not_found'
   | 'forbidden'

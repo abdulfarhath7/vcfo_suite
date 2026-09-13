@@ -43,28 +43,6 @@ export function formatEmailRecipients(emails: string[]): string {
   return `${unique[0]} and ${unique.length - 1} others`;
 }
 
-/** Merge several dispatch results (e.g. client + lead sends). */
-export function mergeEmailDispatch(
-  ...parts: Array<EmailDispatchResult | null | undefined>
-): EmailDispatchResult {
-  const out = emptyEmailDispatch();
-  for (const part of parts) {
-    if (!part) continue;
-    out.attempted += part.attempted;
-    out.sent.push(...part.sent);
-    out.skipped.push(...part.skipped);
-    out.failed.push(...part.failed);
-    out.subjects!.push(...(part.subjects ?? []));
-    if (!out.error && part.error) out.error = part.error;
-    if (!out.outgoingDraft && part.outgoingDraft) out.outgoingDraft = part.outgoingDraft;
-  }
-  out.sent = [...new Set(out.sent)];
-  out.skipped = [...new Set(out.skipped)];
-  out.failed = [...new Set(out.failed)];
-  out.subjects = [...new Set((out.subjects ?? []).map((s) => s.trim()).filter(Boolean))];
-  return out;
-}
-
 export function pushEmailSubject(
   email: EmailDispatchResult,
   subject: string | null | undefined,

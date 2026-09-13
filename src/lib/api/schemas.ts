@@ -214,11 +214,6 @@ export const knowledgeBankCreateFolderBodySchema = z.object({
   parentId: z.uuid('invalid_parent_id').nullable().optional(),
 });
 
-/** Signed board resolution path after direct Storage upload (client role). */
-export const signedBoardResolutionRegisterBodySchema = z.object({
-  storagePath: z.string().trim().min(3).max(512),
-});
-
 /** Register a documents-table index row (optional metadata for S3 objects). */
 export const createDocumentBodySchema = z.object({
   engagementId: z.string().trim().min(1).max(128),

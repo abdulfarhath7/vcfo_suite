@@ -5,8 +5,8 @@
  * not used — empty the folder first. Interns cannot delete folders or files.
  */
 
-export const KNOWLEDGE_BANK_MAX_FOLDER_DEPTH = 12;
-export const KNOWLEDGE_BANK_FOLDER_NAME_MAX = 80;
+const KNOWLEDGE_BANK_MAX_FOLDER_DEPTH = 12;
+const KNOWLEDGE_BANK_FOLDER_NAME_MAX = 80;
 
 export type KnowledgeBankFolderRecord = {
   id: string;

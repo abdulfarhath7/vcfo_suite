@@ -1,7 +1,7 @@
-import { ROLE_UI_LABEL, type Role } from '@/lib/auth';
+import type { Role } from '@/lib/auth';
 
 export type DirectoryKind = 'firm' | 'client';
-export type DirectoryStatus = 'active' | 'inactive';
+type DirectoryStatus = 'active' | 'inactive';
 
 export type DirectoryProject = {
   id: string;
@@ -28,14 +28,6 @@ export type DirectoryPerson = {
 export type DirectoryKindFilter = 'all' | DirectoryKind;
 export type DirectoryRoleFilter = 'all' | Role;
 export type DirectoryStatusFilter = 'all' | DirectoryStatus;
-
-export function directoryKindLabel(kind: DirectoryKind): string {
-  return kind === 'firm' ? 'Firm' : 'Client';
-}
-
-export function directoryRoleLabel(role: Role): string {
-  return ROLE_UI_LABEL[role] ?? role;
-}
 
 export function kindForRole(role: Role): DirectoryKind {
   return role === 'client' ? 'client' : 'firm';

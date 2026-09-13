@@ -1,4 +1,4 @@
-export type BoardResolutionPreviewErrorKind =
+type BoardResolutionPreviewErrorKind =
   | 'corrupt_xml'
   | 'not_found'
   | 'forbidden'

@@ -7,7 +7,7 @@ export type LeadManagerRequestPatchHint = {
   reviewStatus?: unknown;
 };
 
-export function isAwaitingLeadManagerRequest(
+function isAwaitingLeadManagerRequest(
   slice: ChecklistItemStateSlice | null | undefined,
 ): boolean {
   return (

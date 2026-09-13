@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { ChecklistItem } from '@/data/checklist';
 import { getItem } from '@/data/checklist';
 import {
   boardResolutionProgressFromDoc,

@@ -8,9 +8,7 @@ import {
   KNOWLEDGE_BANK_EXTENSIONS,
   KNOWLEDGE_BANK_MIME_TYPES,
   MILESTONE_DOCUMENT_EXTENSIONS,
-  MILESTONE_DOCUMENT_MIME_TYPES,
   SIGNED_BOARD_RESOLUTION_EXTENSIONS,
-  SIGNED_BOARD_RESOLUTION_MIME_TYPES,
 } from '@/lib/upload-limits';
 import { validateKnowledgeBankUploadFile } from '@/lib/knowledge-bank-storage';
 import { validateMilestoneUploadFile } from '@/lib/milestone-document-storage';

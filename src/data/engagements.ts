@@ -132,7 +132,3 @@ export function seedTasksFor(engagementId: string, stage: Engagement['stage']): 
     };
   });
 }
-
-export const seedRequests: DocRequest[] = [];
-
-export const seedActivity: ActivityEvent[] = [];

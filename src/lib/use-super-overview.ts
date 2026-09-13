@@ -8,7 +8,7 @@ import type { SuperEngagementDetail, SuperOverview } from '@/lib/super-overview'
  * hook goes through `/api/super/overview`, which runs the repository under the
  * caller's `AuthContext`.
  */
-export const SUPER_OVERVIEW_QUERY_KEY = ['super-overview'] as const;
+const SUPER_OVERVIEW_QUERY_KEY = ['super-overview'] as const;
 
 async function fetchSuperOverview(): Promise<SuperOverview> {
   const res = await fetch('/api/super/overview');
@@ -35,7 +35,7 @@ export function useSuperOverview() {
  * L2 — one engagement.
  * ------------------------------------------------------------------ */
 
-export const SUPER_PROJECT_QUERY_KEY = ['super-project'] as const;
+const SUPER_PROJECT_QUERY_KEY = ['super-project'] as const;
 
 export type SuperProjectQueryResult = {
   detail: SuperEngagementDetail | null;

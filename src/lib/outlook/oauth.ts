@@ -1,21 +1,21 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { siteUrl } from '@/lib/site-url';
 
-export const OUTLOOK_SCOPES = ['offline_access', 'User.Read', 'Mail.Send'].join(' ');
+const OUTLOOK_SCOPES = ['offline_access', 'User.Read', 'Mail.Send'].join(' ');
 
-export function azureTenant(): string {
+function azureTenant(): string {
   return process.env.AZURE_AD_TENANT_ID?.trim() || 'common';
 }
 
-export function azureClientId(): string | undefined {
+function azureClientId(): string | undefined {
   return process.env.AZURE_AD_CLIENT_ID?.trim() || undefined;
 }
 
-export function azureClientSecret(): string | undefined {
+function azureClientSecret(): string | undefined {
   return process.env.AZURE_AD_CLIENT_SECRET?.trim() || undefined;
 }
 
-export function outlookRedirectUri(): string {
+function outlookRedirectUri(): string {
   return `${siteUrl()}/api/outlook/callback`;
 }
 

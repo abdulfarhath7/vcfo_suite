@@ -157,9 +157,6 @@ export function collectIncorpDocsMissingFields(input: {
   for (const doc of docs) {
     const docAudienceSet = new Set(audiencesForDoc(doc));
     if (isCompanyIncorpDoc(doc)) {
-      const docAudiences = audiencesFilter?.length
-        ? audiencesFilter.filter((a) => a === 'company' && docAudienceSet.has(a))
-        : audiencesForDoc(doc);
       if (docAudienceSet.has('company')) {
         missing.push(...collectCompanyDocMissing(doc, { engagement, pre1, pre5, pre6 }));
       }

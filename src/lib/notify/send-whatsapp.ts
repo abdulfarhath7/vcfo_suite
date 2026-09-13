@@ -30,15 +30,11 @@ import type { NotifyEvent, NotifyRecipient, NotifyVariables } from '@/lib/notify
  */
 
 export type {
-  WhatsAppProvider,
   WhatsAppSendResult,
   SendWhatsAppDeps,
-  TwilioMessageCreate,
-  EumSendMessage,
 } from '@/lib/notify/send-whatsapp-shared';
 export { resolveWhatsAppProvider } from '@/lib/notify/send-whatsapp-shared';
 export { isRetryableTwilioCode } from '@/lib/notify/send-whatsapp-twilio';
-export { isRetryableWhatsAppError, isRetryableEumCode } from '@/lib/notify/whatsapp-retry';
 
 /**
  * Send one pre-approved template to one recipient.

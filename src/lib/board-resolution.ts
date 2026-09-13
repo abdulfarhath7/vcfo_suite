@@ -8,7 +8,7 @@ import {
 } from '@/lib/checklist-pre1-validation';
 import { resolveDirectorDisplayName, resolveSignatoryDisplayName } from '@/lib/person-name';
 
-export type BoardResolutionStatus = 'draft' | 'finalized';
+type BoardResolutionStatus = 'draft' | 'finalized';
 
 export interface BoardResolutionDoc {
   content: string;
@@ -24,7 +24,7 @@ export interface BoardResolutionDoc {
   signedUploadedBy?: string | null;
 }
 
-export const DEFAULT_PARENT_JURISDICTION = 'the United States of America';
+const DEFAULT_PARENT_JURISDICTION = 'the United States of America';
 export const DEFAULT_PARENT_STATE = 'Utah';
 const DEFAULT_CERTIFICATION_PLACE = 'USA';
 
@@ -117,27 +117,6 @@ export const BOARD_RESOLUTION_MERGE_FIELD_KEYS = [
   'CERTIFICATION_DATE',
   'CERTIFICATION_PLACE',
 ] as const satisfies readonly (keyof BoardResolutionMergeFields)[];
-
-export const BOARD_RESOLUTION_MERGE_FIELD_LABELS: Record<
-  keyof BoardResolutionMergeFields,
-  string
-> = {
-  PARENT_ENTITY_NAME: 'Parent entity',
-  PARENT_ENTITY_ADDRESS: 'Parent entity address',
-  RESOLUTION_EFFECTIVE_DATE: 'Resolution date',
-  PARENT_JURISDICTION: 'Parent jurisdiction',
-  PARENT_STATE: 'Parent state',
-  PROPOSED_NAME_1: 'Proposed company name',
-  NIC_CODES: 'NIC codes',
-  AUTHORISED_CAPITAL: 'Authorised capital',
-  PAID_UP_CAPITAL: 'Paid-up capital',
-  INDIAN_DIRECTOR_LINE: 'Indian resident director',
-  SECOND_DIRECTOR_LINE: 'Other directors',
-  SIGNATORY_NAME: 'Signatory name',
-  SIGNATORY_DESIGNATION: 'Signatory designation',
-  CERTIFICATION_DATE: 'Certification date',
-  CERTIFICATION_PLACE: 'Certification place (below date)',
-};
 
 function pickString(...values: (string | null | undefined)[]): string {
   for (const v of values) {

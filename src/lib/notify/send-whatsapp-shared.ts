@@ -8,7 +8,6 @@ import type { SkipReason } from '@/lib/notify/types';
  */
 export {
   resolveWhatsAppProvider,
-  type WhatsAppProvider,
 } from '@/lib/notify/channels';
 
 /**

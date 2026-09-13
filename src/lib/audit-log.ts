@@ -13,7 +13,7 @@ import { getItem } from '@/data/checklist';
  * Keep it that way: no `@/db/*` or `@/storage/*` imports here.
  */
 
-export type AuditAction =
+type AuditAction =
   | 'engagement.create'
   | 'engagement.update'
   | 'engagement.progress_cc_update'

@@ -20,9 +20,6 @@ import {
  * Must stay client-safe: no `@/db/*`, no `@/storage/*` imports.
  */
 
-/** Historic bucket name, now the S3 key prefix for these objects. */
-export const KNOWLEDGE_BANK_BUCKET = 'knowledge-bank';
-
 const UNSUPPORTED_MESSAGE =
   'Use PDF, Word (.doc/.docx), Excel, PowerPoint, plain text, JPEG, PNG, or WebP.';
 
@@ -77,30 +74,6 @@ export async function uploadKnowledgeBankFile(
     throw new Error('Upload succeeded but path/fileId was missing');
   }
   return { path: data.path, fileId: data.fileId };
-}
-
-export async function getKnowledgeBankSignedUrl(
-  storagePath: string,
-  expiresInSeconds = 3600,
-): Promise<string | null> {
-  const trimmed = storagePath.trim();
-  if (!trimmed) return null;
-
-  try {
-    const res = await fetch(
-      `/api/knowledge-bank/object?path=${encodeURIComponent(trimmed)}` +
-        `&expiresIn=${expiresInSeconds}`,
-    );
-    if (!res.ok) {
-      console.warn('[knowledge-bank] signed url failed', res.status);
-      return null;
-    }
-    const data = (await res.json()) as { url?: string };
-    return data.url ?? null;
-  } catch (error) {
-    console.warn('[knowledge-bank] signed url failed', error);
-    return null;
-  }
 }
 
 /**

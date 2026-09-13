@@ -108,11 +108,6 @@ export async function requireAdmin(): Promise<GuardResult> {
   return { ok: true, ctx };
 }
 
-/** Project Manager only. */
-export async function requireManager(): Promise<GuardResult> {
-  return requireRole('manager');
-}
-
 /** Firm Admin, Super Admin, or Project Manager. */
 export async function requireAdminOrManager(): Promise<GuardResult> {
   return requireAnyRole('super_admin', 'admin', 'manager');

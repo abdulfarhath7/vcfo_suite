@@ -25,7 +25,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
  */
 const forcePathStyle = process.env.S3_FORCE_PATH_STYLE === 'true';
 
-export const s3 = new S3Client({
+const s3 = new S3Client({
   region: process.env.S3_REGION || 'us-east-1',
   endpoint: process.env.S3_ENDPOINT || undefined, // undefined => real AWS S3
   forcePathStyle,
@@ -84,19 +84,6 @@ export async function signedDownloadUrl(
   );
 }
 
-/** Short-lived upload URL for direct browser->storage uploads. */
-export async function signedUploadUrl(
-  key: string,
-  contentType: string,
-  expiresInSeconds = 300,
-): Promise<string> {
-  return getSignedUrl(
-    s3,
-    new PutObjectCommand({ Bucket: BUCKET, Key: key, ContentType: contentType }),
-    { expiresIn: expiresInSeconds },
-  );
-}
-
 export async function deleteObject(key: string): Promise<void> {
   await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
@@ -120,17 +107,4 @@ export type StorageBucket =
 export function bucketKey(bucket: StorageBucket, storagePath: string): string {
   const clean = storagePath.replace(/^\/+/, '');
   return `${bucket}/${clean}`;
-}
-
-/**
- * Build a tenant-scoped object key. ALWAYS namespace by engagement so a bug
- * can't cross tenants and lifecycle rules can target per-engagement prefixes.
- */
-export function engagementObjectKey(
-  engagementId: string,
-  category: string,
-  fileName: string,
-): string {
-  const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-  return `engagements/${engagementId}/${category}/${Date.now()}-${safe}`;
 }

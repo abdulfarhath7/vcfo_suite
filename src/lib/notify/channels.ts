@@ -18,11 +18,8 @@ import { isValidE164 } from '@/lib/notify/phone';
  * reads. Re-exported here for server callers already importing this module.
  */
 export {
-  isValidE164,
-  normalizeToE164,
   stripWhatsAppPrefix,
   withWhatsAppPrefix,
-  toMetaPhone,
   fromMetaPhone,
   isOptOutKeyword,
 } from '@/lib/notify/phone';
@@ -59,7 +56,7 @@ export function resolveWhatsAppProvider(
 }
 
 /** AWS End User Messaging (Social) settings. Credentials come from the instance role. */
-export type EumConfig = {
+type EumConfig = {
   /** Falls back to AWS_REGION. Must be a region where EUM Social is available. */
   region: string;
   /** `phone-number-id-…` from the EUM console. Without it, nothing can send. */

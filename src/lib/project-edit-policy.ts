@@ -23,7 +23,7 @@ export type ProjectEditAction =
 /** How an actor may perform an action. */
 export type ProjectEditAccess = 'direct' | 'request' | 'denied';
 
-export const PROJECT_EDIT_ACTION_LABEL: Record<ProjectEditAction, string> = {
+const PROJECT_EDIT_ACTION_LABEL: Record<ProjectEditAction, string> = {
   edit_details: 'Edit project details',
   change_leads: 'Change delivery team',
   change_manager: 'Change project manager',
@@ -83,7 +83,7 @@ export function requiresApproval(
 }
 
 /** Engagement fields a manager may PATCH directly on their own project. */
-export const MANAGER_EDITABLE_FIELDS = [
+const MANAGER_EDITABLE_FIELDS = [
   'companyName',
   'companyType',
   'entityLegalForm',
