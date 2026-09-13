@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { engagementClients, engagements, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -561,48 +561,4 @@ export async function substituteEngagementClient(
     replacedRemoved,
     companyName: eng.companyName,
   };
-}
-
-/** Backfill membership rows from engagements.client_user_id (idempotent). */
-export async function backfillEngagementClientsFromPrimary(): Promise<number> {
-  const rows = await db
-    .select({ id: engagements.id, clientUserId: engagements.clientUserId })
-    .from(engagements);
-  let n = 0;
-  for (const row of rows) {
-    if (!row.clientUserId) continue;
-    await ensureEngagementClientMember({
-      engagementDbId: row.id,
-      userId: row.clientUserId,
-      memberRole: 'owner',
-    });
-    n += 1;
-  }
-  return n;
-}
-
-export async function listClientUserIdsForEngagement(engagementDbId: string): Promise<string[]> {
-  const members = await db
-    .select({ userId: engagementClients.userId })
-    .from(engagementClients)
-    .where(eq(engagementClients.engagementId, engagementDbId));
-  if (members.length > 0) return members.map((m) => m.userId);
-
-  const [eng] = await db
-    .select({ clientUserId: engagements.clientUserId })
-    .from(engagements)
-    .where(eq(engagements.id, engagementDbId))
-    .limit(1);
-  return eng?.clientUserId ? [eng.clientUserId] : [];
-}
-
-export async function filterEngagementIdsForUsers(
-  userIds: string[],
-): Promise<string[]> {
-  if (userIds.length === 0) return [];
-  const rows = await db
-    .select({ engagementId: engagementClients.engagementId })
-    .from(engagementClients)
-    .where(inArray(engagementClients.userId, userIds));
-  return [...new Set(rows.map((r) => r.engagementId))];
 }

@@ -29,7 +29,7 @@ import { listManagerMemberEngagementIds } from '@/db/repositories/engagement-man
  *   client: via own engagement; list only shared_with_client = true
  */
 
-export type DocumentRow = typeof documents.$inferSelect;
+type DocumentRow = typeof documents.$inferSelect;
 
 export interface DocumentDto {
   id: string;
@@ -238,34 +238,4 @@ export async function createDocument(
     .returning();
 
   return mapRow(row);
-}
-
-/**
- * Delete a document row. Admin or owning manager. Returns the object key so
- * the caller can remove the S3 object, or null if nothing was deleted.
- */
-export async function deleteDocument(
-  ctx: AuthContext,
-  id: string,
-): Promise<string | null> {
-  if (ctx.role !== 'admin' && ctx.role !== 'manager') {
-    throw new Error('Only admins or managers may delete documents');
-  }
-
-  const [existing] = await db
-    .select()
-    .from(documents)
-    .where(eq(documents.id, id))
-    .limit(1);
-  if (!existing) return null;
-
-  const access = await assertEngagementAccess(ctx, existing.engagementId);
-  if (!access.ok) return null;
-
-  const [row] = await db
-    .delete(documents)
-    .where(eq(documents.id, id))
-    .returning({ objectKey: documents.objectKey });
-
-  return row?.objectKey ?? null;
 }

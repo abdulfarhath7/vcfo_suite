@@ -77,7 +77,7 @@ function appEngagementId(dbId: string | null): string {
   return LEGACY_ENGAGEMENT_IDS[dbId] ?? dbId;
 }
 
-export function toAppTask(row: Row): TaskInstance {
+function toAppTask(row: Row): TaskInstance {
   return {
     id: row.id,
     engagementId: appEngagementId(row.engagementId),

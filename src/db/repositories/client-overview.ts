@@ -56,7 +56,7 @@ import {
 const ACTIVITY_LIMIT = 12;
 
 /** Compliance runway window (§8: "next ~90 days of filings"). */
-export const COMPLIANCE_RUNWAY_DAYS = 90;
+const COMPLIANCE_RUNWAY_DAYS = 90;
 
 function legalFormOf(row: EngagementDbRow): ClientLegalForm {
   const value = row.entityLegalForm?.trim().toLowerCase();

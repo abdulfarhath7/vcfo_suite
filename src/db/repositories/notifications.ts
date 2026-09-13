@@ -59,7 +59,7 @@ function encodePayload(n: Omit<AppNotification, 'id' | 'read' | 'createdAt' | 'd
   } satisfies StoredPayload);
 }
 
-export function toAppNotification(row: Row): AppNotification {
+function toAppNotification(row: Row): AppNotification {
   const payload = parsePayload(row.description);
   return {
     id: row.id,

@@ -10,9 +10,6 @@ import {
   canNestKnowledgeBankFolder,
   canReadKnowledgeBank,
   isKnowledgeBankFolderEmpty,
-  knowledgeBankChildFolders,
-  knowledgeBankFilesInFolder,
-  knowledgeBankFolderAncestors,
   knowledgeBankFolderPath,
   knowledgeBankSiblingNameTaken,
   normalizeKnowledgeBankFolderName,
@@ -64,14 +61,6 @@ export interface KnowledgeBankLibraryDto {
   files: KnowledgeBankFileDto[];
   folders: KnowledgeBankFolderDto[];
   tree: KnowledgeBankFolderNode[];
-}
-
-export interface KnowledgeBankFolderChildrenDto {
-  folderId: string | null;
-  folder: KnowledgeBankFolderDto | null;
-  ancestors: KnowledgeBankFolderDto[];
-  folders: KnowledgeBankFolderDto[];
-  files: KnowledgeBankFileDto[];
 }
 
 type FileRow = typeof knowledgeBankFiles.$inferSelect;
@@ -152,44 +141,6 @@ export async function listKnowledgeBankLibrary(
 
   const files = rows.map((r) => mapFile(r.file, r.uploader, folders));
   return { files, folders, tree: buildKnowledgeBankTree(folders) };
-}
-
-export async function listKnowledgeBankFolderChildren(
-  ctx: AuthContext,
-  folderId: string | null,
-): Promise<KnowledgeBankFolderChildrenDto | null> {
-  if (!canReadKnowledgeBank(ctx.role)) {
-    return { folderId, folder: null, ancestors: [], folders: [], files: [] };
-  }
-
-  const library = await listKnowledgeBankLibrary(ctx);
-  if (folderId) {
-    const folder = library.folders.find((row) => row.id === folderId) ?? null;
-    if (!folder) return null;
-    return {
-      folderId,
-      folder,
-      ancestors: knowledgeBankFolderAncestors(folderId, library.folders),
-      folders: knowledgeBankChildFolders(folderId, library.folders),
-      files: knowledgeBankFilesInFolder(folderId, library.files),
-    };
-  }
-
-  return {
-    folderId: null,
-    folder: null,
-    ancestors: [],
-    folders: knowledgeBankChildFolders(null, library.folders),
-    files: knowledgeBankFilesInFolder(null, library.files),
-  };
-}
-
-export async function listKnowledgeBankFiles(
-  ctx: AuthContext,
-  limit = 200,
-): Promise<KnowledgeBankFileDto[]> {
-  const library = await listKnowledgeBankLibrary(ctx, limit);
-  return library.files;
 }
 
 export async function getKnowledgeBankFile(

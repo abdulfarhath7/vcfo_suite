@@ -38,7 +38,7 @@ function appEngagementId(dbId: string): string {
   return LEGACY_ENGAGEMENT_IDS[dbId] ?? dbId;
 }
 
-export function toAppDocRequest(row: Row): DocRequest {
+function toAppDocRequest(row: Row): DocRequest {
   return {
     id: row.id,
     engagementId: appEngagementId(row.engagementId),

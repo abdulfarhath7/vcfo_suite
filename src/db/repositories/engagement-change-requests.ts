@@ -14,15 +14,10 @@ import type {
 
 export type ChangeRequestRow = typeof engagementChangeRequests.$inferSelect;
 
-export {
-  CHANGE_REQUEST_KINDS,
-  CHANGE_REQUEST_KIND_LABEL,
-  isChangeRequestKind,
-} from '@/lib/project-change-request-types';
+export { CHANGE_REQUEST_KINDS } from '@/lib/project-change-request-types';
 export type {
   ChangeRequestKind,
   ChangeRequestPreview,
-  ChangeRequestPreviewField,
   ChangeRequestStatus,
 } from '@/lib/project-change-request-types';
 
@@ -200,12 +195,6 @@ export async function reopenChangeRequest(id: string): Promise<void> {
       updatedAt: new Date(),
     })
     .where(eq(engagementChangeRequests.id, id));
-}
-
-/** Pending count for the admin nav badge. */
-export async function countPendingChangeRequests(ctx: AuthContext): Promise<number> {
-  const rows = await listChangeRequests(ctx, { statuses: ['pending'] });
-  return rows.length;
 }
 
 /** Superseded siblings — cancelling them keeps the queue honest after a decision. */

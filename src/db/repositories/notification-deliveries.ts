@@ -78,19 +78,6 @@ function toRowValues(input: RecordDeliveryInput, dbEngagementId: string | null) 
 }
 
 /**
- * Record one attempt (send OR skip) from a request path that has a session.
- * Never throws — a delivery-log failure must not fail the mutation that
- * triggered the notification.
- */
-export async function createDelivery(
-  ctx: AuthContext,
-  input: RecordDeliveryInput,
-): Promise<NotificationDeliveryRow | null> {
-  if (ctx.role === 'client') return null;
-  return systemRecordDelivery(input);
-}
-
-/**
  * SYSTEM WRITER — background jobs. See the header note.
  * Never throws; returns null when the row could not be written.
  */

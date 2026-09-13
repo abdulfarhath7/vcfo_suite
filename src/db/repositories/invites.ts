@@ -24,7 +24,7 @@ function appEngagementId(dbId: string | null): string {
   return LEGACY_ENGAGEMENT_IDS[dbId] ?? dbId;
 }
 
-export function toAppInvite(row: Row): Invite {
+function toAppInvite(row: Row): Invite {
   return {
     token: row.token,
     engagementId: appEngagementId(row.engagementId),
@@ -53,21 +53,6 @@ export async function listInvites(ctx: AuthContext): Promise<Invite[]> {
           .orderBy(desc(invites.createdAt));
 
   return rows.map(toAppInvite);
-}
-
-export async function getInviteByToken(
-  ctx: AuthContext,
-  token: string,
-): Promise<Invite | null> {
-  const [row] = await db.select().from(invites).where(eq(invites.token, token)).limit(1);
-  if (!row) return null;
-  if (row.engagementId) {
-    const access = await assertEngagementAccess(ctx, row.engagementId);
-    if (!access.ok) return null;
-  } else if (ctx.role !== 'admin' && ctx.role !== 'manager') {
-    return null;
-  }
-  return toAppInvite(row);
 }
 
 export async function createInvite(

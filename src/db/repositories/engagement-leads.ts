@@ -18,12 +18,6 @@ export type EngagementLeadMember = {
   createdAt: string;
 };
 
-export {
-  ensureEngagementLead,
-  listLeadIdsByEngagementIds,
-  listLeadMemberEngagementIds,
-} from '@/db/repositories/engagement-leads-membership';
-
 export async function listEngagementLeads(
   ctx: AuthContext,
   appOrDbEngagementId: string,

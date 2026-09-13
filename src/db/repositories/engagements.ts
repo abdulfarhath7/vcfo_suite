@@ -107,7 +107,7 @@ export function managerOwnsEngagement(userId: string) {
 }
 
 /** True when a loaded row is owned by this manager (legacy-aware). */
-export function rowOwnedByManager(
+function rowOwnedByManager(
   row: Pick<EngagementDbRow, 'managerId' | 'adminId'>,
   userId: string,
 ): boolean {
@@ -208,7 +208,7 @@ export async function getEngagementBySlug(ctx: AuthContext, slug: string) {
 }
 
 /** Admin or manager may create. Callers must have passed requireAdminOrManager(). */
-export async function createEngagement(
+async function createEngagement(
   ctx: AuthContext,
   input: typeof engagements.$inferInsert,
 ) {
@@ -247,7 +247,7 @@ export async function createEngagement(
  * engagements_guard_client_update trigger enforced column-level limits —
  * reproduce that guard here or in the calling route).
  */
-export async function updateChecklistState(
+async function updateChecklistState(
   ctx: AuthContext,
   id: string,
   nextState: Record<string, unknown>,

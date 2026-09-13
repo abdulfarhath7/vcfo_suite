@@ -30,7 +30,7 @@ import { getActiveCatalogItems } from '@/data/checklist';
 /** How a change request reads in the lead's queue. */
 const TITLE_PREFIX = 'Client change request';
 
-export const CLIENT_CHANGE_REQUEST_MAX_NOTE = 2000;
+const CLIENT_CHANGE_REQUEST_MAX_NOTE = 2000;
 
 export interface ClientChangeRequestInput {
   engagementId: string;

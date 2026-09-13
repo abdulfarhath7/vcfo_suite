@@ -36,7 +36,7 @@ function formatRelativeAt(createdAt: Date): string {
   return createdAt.toISOString().slice(0, 10);
 }
 
-export function toAppActivity(
+function toAppActivity(
   row: Row,
   actorName: string | null,
 ): ActivityEvent {
