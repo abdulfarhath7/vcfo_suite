@@ -105,6 +105,12 @@ export default function EngagementStepDetail() {
   const isClientRoute = isClientIncorporationStepPathname(pathname);
   const isInternRoute = isInternEngagementPathname(pathname);
   const isIntern = user?.role === 'intern' || isInternRoute;
+  /**
+   * Everyone but the lead reads. The client always did; admin and manager now
+   * open the same read-only workspace the client sees — firm-side actions live
+   * on Approvals, not on the step.
+   */
+  const readOnlyView = isClientRoute || !isIntern;
   const engagementParam = engagementRouteParamFromParams(params);
   const stepParam = params.stepId as string;
   const staffRole = user?.role === 'admin' || user?.role === 'manager' ? user.role : 'manager';
@@ -190,10 +196,7 @@ export default function EngagementStepDetail() {
   }, [item, checklistState]);
 
   const { snapshot: brSnapshot } = useBoardResolutionProgress(eng?.id);
-  const viewer = checklistGateViewerFrom(
-    isClientRoute ? 'client' : 'admin',
-    isInternRoute ? 'intern' : user?.role,
-  );
+  const viewer = checklistGateViewerFrom(readOnlyView ? 'client' : 'admin', 'intern');
   const gates = useMemo(
     () => gateActiveCatalog(checklistState, viewer),
     [checklistState, viewer],
@@ -234,15 +237,8 @@ export default function EngagementStepDetail() {
   if (!item) return <RedirectTo href={projectPath(eng)} />;
 
   const checklistLoading = engagementsLoading || checklistRefreshing;
-  // Staff project routes still redirect off a locked step. The client does not:
-  // they may read any step in any order — the gate governs actions, not access.
-  if (!isInternRoute && !isClientRoute && !checklistLoading && stepGate?.kind === 'locked') {
-    const current = catalog.find((row) => {
-      const kind = gates[row.id]?.kind;
-      return kind === 'active' || kind === 'waiting';
-    });
-    redirect(current ? stepPath(eng, current) : projectPath(eng));
-  }
+  // Nobody is bounced off a locked step: readers may open any step in any
+  // order — the gate governs actions, not access.
 
   const handleCompleted = (completedId: string) => {
     const completed = eTasks.find((t) => t.id === completedId);
@@ -260,14 +256,14 @@ export default function EngagementStepDetail() {
     }
   };
 
-  const clientVisibleFields = isClientRoute
+  const clientVisibleFields = readOnlyView
     ? filterFieldsByViewer(getClientResponseFields(item), 'client')
     : [];
   const clientHasContent = clientVisibleFields.some((field) =>
     String(responses?.[field.id] ?? '').trim().length > 0,
   );
   /** Client, cannot act, nothing filled to read → the calm banner, not a wall. */
-  const clientNothingYet = isClientRoute && !stepGate?.canEdit && !clientHasContent;
+  const clientNothingYet = readOnlyView && !stepGate?.canEdit && !clientHasContent;
 
   const railItems = journeyRailItems(bucketSteps, gates, checklistState, brSnapshot);
   const internPhaseRailItems = internPhase
@@ -289,8 +285,8 @@ export default function EngagementStepDetail() {
     if (next) router.push(stepPath(eng, next));
   };
 
-  // The client gets the lead's workspace layout, not the staff rail layout.
-  const internWorkspace = isIntern || isClientRoute;
+  // Readers get the lead's workspace layout, not the old staff rail layout.
+  const internWorkspace = isIntern || readOnlyView;
 
   const approvalLabel = isClientRoute ? stepApprovalLabel(checklistState[item.id]) : null;
 
@@ -305,25 +301,22 @@ export default function EngagementStepDetail() {
 
   const stepForm = (
     <>
-      {stepGate?.kind === 'locked' && !isInternRoute && !isClientRoute ? (
-        <Surface className="p-6 text-sm text-muted-foreground">{stepGate.message}</Surface>
-      ) : (
-        <StepDetailContent
-          item={item}
-          task={task}
-          engagementId={eng.id}
-          responses={responses}
-          activity={eActivity}
-          onCompleted={task ? handleCompleted : undefined}
-          theme="light"
-          contentReady={!checklistLoading}
-          hideDocumentsTab={internWorkspace}
-          hideStatus={internWorkspace}
-          hideWorkspaceRail={internWorkspace}
-          viewer={isClientRoute ? 'client' : 'staff'}
-          clientNothingYet={clientNothingYet}
-        />
-      )}
+      <StepDetailContent
+        item={item}
+        task={task}
+        engagementId={eng.id}
+        responses={responses}
+        activity={eActivity}
+        onCompleted={task ? handleCompleted : undefined}
+        theme="light"
+        contentReady={!checklistLoading}
+        hideDocumentsTab={internWorkspace}
+        hideStatus={internWorkspace}
+        hideWorkspaceRail={internWorkspace}
+        viewer={readOnlyView ? 'client' : 'staff'}
+        readOnly={readOnlyView && !isClientRoute}
+        clientNothingYet={clientNothingYet}
+      />
 
       {/* The client's two actions on a step, at STEP level — never per tab.
           They never edit the step itself, so this is the whole of what they

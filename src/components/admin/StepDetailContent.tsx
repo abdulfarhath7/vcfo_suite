@@ -57,6 +57,12 @@ export interface StepDetailContentProps {
    */
   viewer?: 'staff' | 'client';
   /**
+   * Hard read-only, regardless of what the gate would allow the viewer to
+   * edit. Staff opening a step as a client-shaped reader: the response form is
+   * locked and the legacy checklist toggles are inert.
+   */
+  readOnly?: boolean;
+  /**
    * Client viewing a step that has nothing for them yet. The step is fully
    * readable — this only swaps the body for one calm line instead of an empty
    * form, and it is also what keeps unreleased firm-side content (board
@@ -125,6 +131,7 @@ function StepDetailContentInner({
   hideStatus = false,
   hideWorkspaceRail = false,
   viewer = 'staff',
+  readOnly = false,
   clientNothingYet = false,
 }: StepDetailContentProps) {
   const { updateTask, getStateForEngagement, engagements, user } = useApp();
@@ -171,6 +178,7 @@ function StepDetailContentInner({
   }, [item, progress, showLegacyChecklist, hideDocumentsTab]);
 
   const applyProgressUpdate = (nextProgress: StepProgress) => {
+    if (readOnly) return;
     dispatchUi({ type: 'set_progress', progress: nextProgress });
     if (!task || !showLegacyChecklist) return;
 
@@ -276,6 +284,7 @@ function StepDetailContentInner({
     hideStatus,
     hideWorkspaceRail,
     isClientViewer,
+    formReadOnly: readOnly ? true : undefined,
     clientNothingYet,
     progress,
     setProgress,

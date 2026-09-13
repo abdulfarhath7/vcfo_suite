@@ -1,129 +1,81 @@
 "use client";
 
-import { useParams, useRouter, redirect } from 'next/navigation';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useParams, redirect } from 'next/navigation';
 import { RedirectTo } from '@/components/routing/RedirectTo';
-import { useEffect, useMemo, useState } from 'react';
-import { m as motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageHeader } from '@/components/admin/PageHeader';
-import { PhaseTimeline, Phase } from '@/components/admin/PhaseTimeline';
-import { AccentKpi } from '@/components/admin/AccentKpi';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
-import { checklist, BUCKET_LABEL, Bucket, getActiveCatalogItems } from '@/data/checklist';
-import { COMPANY_TYPE_LABEL } from '@/data/engagements';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Surface, GoldButton, Eyebrow, Mono, StatusDot, GoldDivider } from '@/components/noir';
-import { ChevronLeft, ListChecks, AlertTriangle, FolderCheck, FileText, Upload, CheckCircle2, Users, Activity, ChevronRight, Mail, Loader2, Building2, MapPin } from 'lucide-react';
+import { InternPhaseEntryCards } from '@/components/incorporation/InternOverviewProgress';
+import { ProgressRing } from '@/components/noir';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { toastError, toastEmailDispatch } from '@/lib/toast-errors';
-import { requestResendWelcomeEmail } from '@/lib/email/request-resend-welcome-email';
-import { cn } from '@/lib/utils';
-import { fadeUp, staggerKids } from '@/lib/motion';
-import { MilestoneResponseRowSummary } from '@/views/incorporation/MilestoneResponseRowSummary';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import { shouldShowStatutoryFormLabels } from '@/lib/checklist-field-access';
+import { getActiveCatalogItems } from '@/data/checklist';
 import { adminProjectPath, adminProjectStepPath } from '@/lib/project-step-path';
-import { ProjectDetailView } from '@/views/admin/ProjectDetailSections';
+import {
+  gateActiveCatalog,
+  isChecklistStepSequentiallyComplete,
+} from '@/lib/checklist-step-gate';
+import {
+  internOverviewCurrentItemInPhase,
+  internOverviewPhases,
+} from '@/lib/intern-overview-progress';
+import { formatDate } from '@/lib/deadlines';
 import { resolveEngagementFromRouteParam } from '@/lib/slug';
-import { isAdminOrManager } from '@/lib/auth';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 
-const BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
-
+/**
+ * STAFF PROJECT DETAIL (admin + manager) — the client's incorporation page,
+ * not a lookalike.
+ *
+ * Opening a project from the Projects list lands here: the same header and the
+ * same four phase rows (SPICe+ Part A / Part B / Post-incorporation /
+ * Registration) the client sees on `/app/client/incorporation`, built from the
+ * same `InternPhaseEntryCards`. Gates run with the `client` viewer, so nothing
+ * on this surface (or the step workspace it opens) is editable — staff read
+ * the project exactly as the client does. Firm-side actions live elsewhere
+ * (Approvals, Email, People).
+ */
 export default function ProjectDetail() {
   const params = useParams();
   const slugParam = params.slug as string;
   const {
     engagements,
-    tasks,
-    teamMembers,
-    internOptions,
-    requests,
-    activity,
-    user,
+    engagementsLoading,
     getStateForEngagement,
     refreshEngagementChecklist,
-    engagementsLoading,
   } = useApp();
-  const owners = internOptions.length ? internOptions : teamMembers;
-  const [resendOpen, setResendOpen] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [checklistRefreshing, setChecklistRefreshing] = useState(false);
-  const router = useRouter();
   const staffBase = useStaffBasePath();
 
   const eng = useMemo(
     () => resolveEngagementFromRouteParam(engagements, slugParam),
     [engagements, slugParam],
   );
+  const phases = useMemo(() => internOverviewPhases(), []);
 
   useEffect(() => {
     if (!eng?.id) return;
-    let cancelled = false;
-    setChecklistRefreshing(true);
-    void refreshEngagementChecklist(eng.id).finally(() => {
-      if (!cancelled) setChecklistRefreshing(false);
-    });
-    return () => {
-      cancelled = true;
-    };
+    void refreshEngagementChecklist(eng.id);
   }, [eng?.id, refreshEngagementChecklist]);
 
-  const eTasks = useMemo(() => tasks.filter((t) => t.engagementId === eng?.id), [tasks, eng?.id]);
-  const eRequests = useMemo(() => requests.filter((r) => r.engagementId === eng?.id), [requests, eng?.id]);
-  const eActivity = useMemo(() => activity.filter((a) => a.engagementId === eng?.id).slice(0, 8), [activity, eng?.id]);
-
-  const phasesForTab = useMemo(() => {
-    if (!eng) return null;
-    const result: Array<{
-      key: typeof BUCKETS[number];
-      bucket: typeof BUCKETS[number];
-      label: string;
-      percent: number;
-      status: Phase['status'];
-      total: number;
-      done: number;
-    }> = [];
-    for (const b of BUCKETS) {
-      const keysSet = new Set<string>();
-      for (const c of checklist) {
-        if (c.bucket === b) keysSet.add(c.id);
-      }
-      let done = 0;
-      let total = 0;
-      for (const t of eTasks) {
-        if (keysSet.has(t.checklistKey)) {
-          total += 1;
-          if (t.status === 'completed') done += 1;
-        }
-      }
-      const pct = total ? Math.round((done / total) * 100) : 0;
-      const status: Phase['status'] = pct === 100 ? 'completed' : pct > 0 ? 'in-progress' : 'not-started';
-      result.push({ key: b, bucket: b, label: BUCKET_LABEL[b], percent: pct, status, total, done });
-    }
-    return result;
-  }, [eng, eTasks]);
-
-  const defaultPhase = phasesForTab?.find((p) => p.status === 'in-progress')?.bucket ?? BUCKETS[0];
-  const [tab, setTab] = useState<Bucket>(defaultPhase);
-
-  const checklistState = useMemo(
+  const state = useMemo(
     () => (eng ? getStateForEngagement(eng) : {}),
-    [getStateForEngagement, eng],
+    [eng, getStateForEngagement],
   );
+  // Client viewer on purpose: read-only gating, identical to the client portal.
+  const gates = useMemo(() => gateActiveCatalog(state, 'client'), [state]);
 
-  const checklistLoading = engagementsLoading || checklistRefreshing;
+  /** A phase row opens that phase's live step — the same jump the client makes. */
+  const phaseHref = useCallback(
+    (phaseId: string): string | null => {
+      if (!eng) return null;
+      const phase = phases.find((entry) => entry.id === phaseId);
+      if (!phase) return null;
+      const item = internOverviewCurrentItemInPhase(phase.items, gates);
+      return item ? adminProjectStepPath(eng, item, staffBase) : null;
+    },
+    [eng, phases, gates, staffBase],
+  );
 
   if (!eng && engagementsLoading) {
     return (
@@ -139,93 +91,42 @@ export default function ProjectDetail() {
 
   if (!eng) return <RedirectTo href={`${staffBase}/projects`} />;
 
-  const intern = owners.find((t) => t.id === eng.internId) ?? teamMembers.find((t) => t.id === eng.internId);
-  const leadIds =
-    eng.leadIds && eng.leadIds.length > 0
-      ? eng.leadIds
-      : eng.internId?.trim()
-        ? [eng.internId]
-        : [];
-  const leads = leadIds
-    .map((id) => {
-      const m = owners.find((t) => t.id === id) ?? teamMembers.find((t) => t.id === id);
-      return m ? { id: m.id, name: m.name } : null;
-    })
-    .filter((x): x is { id: string; name: string } => Boolean(x));
-  const canResendWelcome =
-    isAdminOrManager(user?.role) && Boolean(eng.clientUserId && eng.clientEmail);
+  const catalog = getActiveCatalogItems();
+  const totalSteps = catalog.length;
+  const totalDone = catalog.filter((item) =>
+    isChecklistStepSequentiallyComplete(state[item.id]?.status ?? 'not-started', state[item.id]),
+  ).length;
+  const incorporationDate = eng.incorporationDate;
 
-  const handleResendWelcome = async () => {
-    setResending(true);
-    try {
-      const result = await requestResendWelcomeEmail(eng.id);
-      const to = eng.clientEmail ?? '';
-      toastEmailDispatch(
-        result.ok
-          ? { attempted: 1, sent: [to], skipped: [], failed: [] }
-          : result.skipped
-            ? { attempted: 1, sent: [], skipped: [to], failed: [] }
-            : { attempted: 1, sent: [], skipped: [], failed: [to] },
-        {
-          engagementId: eng.id,
-          companyName: eng.companyName,
-          href: '#',
-        },
-      );
-      if (result.ok) setResendOpen(false);
-    } catch (err) {
-      toastError(
-        "Welcome email didn't send",
-        err instanceof Error ? err.message : 'Try again in a moment.',
-      );
-    } finally {
-      setResending(false);
-    }
-  };
+  return (
+    <PageTransition>
+      <SEO
+        title={`${eng.companyName} — VCFO Suite`}
+        description="Pre- and post-incorporation milestones for this India entity setup."
+        path={adminProjectPath(eng, staffBase)}
+      />
 
-  const phases = phasesForTab!;
+      <header className="mb-4 sm:mb-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="mb-1 flex min-w-0 items-center gap-1.5">
+              <PageBackButton className="-ml-1.5" />
+              <h1 className="serif min-w-0 text-2xl tracking-tight text-foreground sm:text-3xl">
+                {eng.companyName}
+              </h1>
+            </div>
+            <p className="font-mono text-[11px] tabular-nums text-text-tertiary">
+              {totalDone}/{totalSteps}
+              {incorporationDate ? ` · ${formatDate(new Date(incorporationDate))}` : ''}
+            </p>
+          </div>
+          <ProgressRing value={Math.round((totalDone / totalSteps) * 100) || 0} size={52} />
+        </div>
+      </header>
 
-  const overall = Math.round(phases.reduce((s, p) => s + p.percent, 0) / phases.length);
-  const active = phases.find((p) => p.status === 'in-progress')?.label ?? 'All phases complete';
-  const blockers = eTasks.filter((t) => t.status === 'awaiting-client').length;
-  const pendingDocs = eRequests.filter((r) => r.status === 'pending').length;
-
-  const tasksByBucket = (b: Bucket) => {
-    const catalog = getActiveCatalogItems();
-    const meta =
-      b === 'fema'
-        ? checklist.filter((c) => c.bucket === b)
-        : catalog.filter((c) => c.bucket === b);
-    return meta.map((item) => {
-      const t = eTasks.find((x) => x.checklistKey === item.id);
-      return { item, task: t };
-    });
-  };
-
-  const viewProps = {
-    eng,
-    router,
-    intern,
-    leads,
-    phases,
-    overall,
-    active,
-    blockers,
-    pendingDocs,
-    tab,
-    setTab,
-    checklistState,
-    checklistLoading,
-    eTasks,
-    eRequests,
-    eActivity,
-    tasksByBucket,
-    resendOpen,
-    setResendOpen,
-    resending,
-    handleResendWelcome,
-    canResendWelcome,
-    user,
-  };
-  return <ProjectDetailView {...viewProps} />;
+      <div className="flex flex-col gap-3">
+        <InternPhaseEntryCards phases={phases} gates={gates} hrefForPhase={phaseHref} />
+      </div>
+    </PageTransition>
+  );
 }
