@@ -52,14 +52,3 @@ export function computeAllFilings(
   return out.sort((a, b) => a.nextDue.localeCompare(b.nextDue));
 }
 
-/**
- * Client no-op: server-side regeneration happens via the nightly Inngest job
- * (and optionally a future authenticated API that calls
- * `regenerateComplianceForEngagement` in the compliance repository).
- */
-export function regenerateComplianceForEngagement(
-  _engagement: Engagement,
-  _checklistState: Record<string, ChecklistItemStateSlice>,
-): void {
-  // intentionally empty — do not write localStorage
-}

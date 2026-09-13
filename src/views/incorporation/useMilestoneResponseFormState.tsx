@@ -74,7 +74,6 @@ import {
   getMilestoneDocumentSignedUrl,
   uploadMilestoneDocument,
 } from '@/lib/milestone-document-storage';
-import { regenerateComplianceForEngagement } from '@/lib/compliance/compliance-store';
 import { maxUploadSizeLabel } from '@/lib/upload-limits';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -108,7 +107,6 @@ import { internFormNextTarget } from '@/lib/intern-overview-progress';
 import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, mergeSavedFileFieldsIntoDraft, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { FormErrorSummary, Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 
-const COMPLIANCE_TRIGGER_ITEMS = new Set(['pre-12', 'reg-1', 'reg-2', 'reg-3', 'reg-4']);
 const DIRECTOR_HAS_DSC_RE = /^director(\d)HasDsc$/;
 const PHASE2_STRUCTURED_STEP_IDS = new Set([
   'pre-6',
@@ -1024,19 +1022,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       );
       if (item.id === 'pre-12' && deliveryDraft.dateOfIncorporation?.trim() && engagement) {
         const incDate = deliveryDraft.dateOfIncorporation.trim();
-        const fullState = {
-          ...getStateForEngagement(engagement),
-          [item.id]: { ...itemState, responses: deliveryDraft, status: 'completed' as const },
-        };
-        const updatedEngagement = { ...engagement, incorporationDate: incDate };
-        regenerateComplianceForEngagement(updatedEngagement, fullState);
         void updateEngagement(engagement.id, { incorporationDate: incDate }).catch(() => undefined);
-      } else if (COMPLIANCE_TRIGGER_ITEMS.has(item.id) && engagement) {
-        const fullState = {
-          ...getStateForEngagement(engagement),
-          [item.id]: { ...itemState, responses: deliveryDraft, status: 'completed' as const },
-        };
-        regenerateComplianceForEngagement(engagement, fullState);
       }
     } catch (err) {
       toastError('Could not deliver', errorMessage(err, 'Try again or contact your manager.'));
