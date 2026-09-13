@@ -1,6 +1,6 @@
 import { dueItemsForStage, formatEngagementDueContext, type DueLine } from './due-summary';
 import { getProgressCcRecipients } from './merge-cc';
-import { formatReplyTo, formatFromWithSender, sendResendEmail, type SendResendResult } from './send-resend';
+import { formatReplyTo, formatFromWithSender, sendEmail, type SendEmailResult } from '@/lib/email/send-email';
 import { loginUrl } from '@/lib/site-url';
 import {
   emailCallout,
@@ -28,7 +28,6 @@ export interface WelcomeEmailParams {
   engagementProgressCc?: string[];
 }
 
-export type SendEmailResult = SendResendResult;
 
 function buildDueListHtml(lines: DueLine[]): string {
   if (!lines.length) {
@@ -150,7 +149,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<Send
     excludeTo: params.clientEmail,
   });
 
-  return sendResendEmail({
+  return sendEmail({
     purpose: 'welcome',
     to: params.clientEmail,
     cc: cc.length > 0 ? cc : undefined,

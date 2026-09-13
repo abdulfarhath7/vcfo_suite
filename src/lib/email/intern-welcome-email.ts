@@ -3,9 +3,9 @@ import { loginUrl, resetPasswordUrl } from '@/lib/site-url';
 import {
   formatReplyTo,
   formatFromWithSender,
-  sendResendEmail,
-  type SendResendResult,
-} from './send-resend';
+  sendEmail,
+  type SendEmailResult,
+} from '@/lib/email/send-email';
 import {
   emailMetaTable,
   emailParagraph,
@@ -13,7 +13,6 @@ import {
   renderEmailDocument,
 } from '@/lib/email/email-layout';
 
-export type SendEmailResult = SendResendResult;
 
 export interface InternWelcomeEmailParams {
   internEmail: string;
@@ -78,7 +77,7 @@ export async function sendInternWelcomeEmail(
 ): Promise<SendEmailResult> {
   const { subject, html, text } = buildInternWelcomeEmail(params);
 
-  return sendResendEmail({
+  return sendEmail({
     purpose: 'intern-welcome',
     to: params.internEmail,
     from: formatFromWithSender({ name: params.managerName }),

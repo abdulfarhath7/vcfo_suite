@@ -12,18 +12,11 @@ export type {
   EmailProvider,
   SendEmailInput,
   SendEmailResult,
-  SendResendEmailInput,
-  SendResendResult,
 } from '@/lib/email/send-email-shared';
 
 export {
   formatReplyTo,
   formatFromWithSender,
-  defaultReplyToFromEnv,
-  resolveEmailDevRedirect,
-  resolveResendDevRedirect,
-  resolveEmailProvider,
-  resolveFromEmail,
   companyFromAddress,
   sanitizeEmailLocalPart,
 } from '@/lib/email/send-email-shared';
@@ -42,9 +35,3 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   return sendViaResend(input);
 }
 
-/** @deprecated Prefer sendEmail — identical dispatcher kept for existing call sites. */
-export async function sendResendEmail(
-  input: SendEmailInput,
-): Promise<SendEmailResult> {
-  return sendEmail(input);
-}

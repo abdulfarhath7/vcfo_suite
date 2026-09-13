@@ -28,9 +28,9 @@ import { buildDocumentRequestEmail, buildProgressEmail, type ProgressEmailKind }
 import {
   companyFromAddress,
   formatReplyTo,
-  sendResendEmail,
-  type SendResendResult,
-} from '@/lib/email/send-resend';
+  sendEmail,
+  type SendEmailResult,
+} from '@/lib/email/send-email';
 import type { NotificationKind } from '@/lib/checklist-notifications';
 import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
 import { firstNameOf } from '@/lib/notify/templates';
@@ -283,7 +283,7 @@ function buildOutgoingClientDraft(
 function recordSend(
   out: EmailDispatchResult,
   to: string,
-  result: SendResendResult,
+  result: SendEmailResult,
   subject?: string,
 ) {
   out.attempted += 1;
@@ -530,7 +530,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     const queue: Array<{
       to: string;
       subject: string;
-      run: () => Promise<SendResendResult>;
+      run: () => Promise<SendEmailResult>;
     }> = [];
 
     // Client → staff: Resend From company_name@sbctrack.in
@@ -648,7 +648,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
               to: addr,
               subject: copy.subject,
               run: () =>
-                sendResendEmail({
+                sendEmail({
                   to: addr,
                   cc,
                   from: fromForCompany(recipients),
@@ -692,7 +692,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
             to,
             subject: copy.subject,
             run: () =>
-              sendResendEmail({
+              sendEmail({
                 to,
                 cc: [],
                 from: fromForCompany(recipients),
@@ -722,7 +722,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
           return {
             to: job.to,
             subject: job.subject,
-            result: { ok: false, error: 'send_failed' } satisfies SendResendResult,
+            result: { ok: false, error: 'send_failed' } satisfies SendEmailResult,
           };
         }
       }),

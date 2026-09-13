@@ -9,9 +9,9 @@ import {
 import {
   formatFromWithSender,
   formatReplyTo,
-  sendResendEmail,
+  sendEmail,
   type SendEmailResult,
-} from '@/lib/email/send-resend';
+} from '@/lib/email/send-email';
 import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import {
   emptyEmailDispatch,
@@ -150,7 +150,7 @@ export async function notifyTeamAssignment(input: {
         });
 
   try {
-    const result = await sendResendEmail({
+    const result = await sendEmail({
       purpose: `team.${input.action}.${input.role === 'project lead' ? 'lead' : 'manager'}`,
       to: input.party.email,
       from: formatFromWithSender({ name: input.actor.name }),

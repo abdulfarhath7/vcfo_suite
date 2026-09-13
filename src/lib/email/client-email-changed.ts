@@ -1,9 +1,9 @@
 import {
   formatFromWithSender,
   formatReplyTo,
-  sendResendEmail,
-  type SendResendResult,
-} from '@/lib/email/send-resend';
+  sendEmail,
+  type SendEmailResult,
+} from '@/lib/email/send-email';
 import {
   emailCallout,
   emailMetaTable,
@@ -83,9 +83,9 @@ ${params.actorEmail}
  */
 export async function sendClientEmailChangedEmail(
   params: ClientEmailChangedParams,
-): Promise<SendResendResult> {
+): Promise<SendEmailResult> {
   const { subject, html, text } = buildClientEmailChangedEmail(params);
-  return sendResendEmail({
+  return sendEmail({
     purpose: 'client-email-changed',
     to: params.previousEmail,
     from: formatFromWithSender({ name: params.actorName }),

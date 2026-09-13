@@ -22,8 +22,6 @@ export interface SendEmailInput {
   purpose?: string;
 }
 
-/** @deprecated Prefer SendEmailInput — kept for existing imports. */
-export type SendResendEmailInput = SendEmailInput;
 
 export interface SendEmailResult {
   ok: boolean;
@@ -37,8 +35,6 @@ export interface SendEmailResult {
   providerMessageId?: string;
 }
 
-/** @deprecated Prefer SendEmailResult */
-export type SendResendResult = SendEmailResult;
 
 export function parseQuotedEnv(raw: string | undefined): string {
   const t = raw?.trim() ?? '';
@@ -197,10 +193,6 @@ export function resolveEmailDevRedirect(): string | null {
   return explicit ? explicit.toLowerCase() : null;
 }
 
-/** @deprecated Prefer resolveEmailDevRedirect */
-export function resolveResendDevRedirect(): string | null {
-  return resolveEmailDevRedirect();
-}
 
 /** Format `Name <email>` for Reply-To. */
 export function formatReplyTo(
