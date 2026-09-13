@@ -20,7 +20,6 @@ import { StepDetailContentView } from '@/components/admin/StepDetailContentSecti
 import {
   EMPTY_STEP_ACTIVITY,
   computeLegacyStepTotals,
-  saveStepProgress,
   stepDetailUiReducer,
   type StepProgress,
 } from '@/components/admin/step-detail-progress';
@@ -181,8 +180,6 @@ function StepDetailContentInner({
     if (readOnly) return;
     dispatchUi({ type: 'set_progress', progress: nextProgress });
     if (!task || !showLegacyChecklist) return;
-
-    saveStepProgress(task.id, nextProgress);
 
     const { done, total } = computeLegacyStepTotals(item, nextProgress, hideDocumentsTab);
     if (total > 0 && done === total && task.status !== 'completed') {

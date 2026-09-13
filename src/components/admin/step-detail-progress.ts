@@ -1,7 +1,6 @@
 import type { ActivityEvent } from '@/data/engagements';
 import type { ChecklistItem } from '@/data/checklist';
 import type { TaskInstance } from '@/data/engagements';
-import { persist, read } from '@/lib/storage';
 
 export const EMPTY_STEP_ACTIVITY: ActivityEvent[] = [];
 
@@ -27,31 +26,6 @@ export type StepDetailUiAction =
   | { type: 'set_tab'; tab: StepDetailTab }
   | { type: 'set_just_completed'; value: boolean };
 
-function progressKey(taskId: string) {
-  return `vcfo.stepProgress:${taskId}`;
-}
-
-export function loadStepProgress(taskId: string): StepProgress {
-  return read(progressKey(taskId), { forms: [], docs: [] });
-}
-
-export function saveStepProgress(taskId: string, progress: StepProgress) {
-  persist(progressKey(taskId), progress);
-}
-
-export function clearAllStepProgress(): void {
-  try {
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k?.startsWith('vcfo.stepProgress:')) keysToRemove.push(k);
-    }
-    for (const k of keysToRemove) localStorage.removeItem(k);
-  } catch {
-    // localStorage may be unavailable in SSR — safe to swallow
-  }
-}
-
 function defaultTab(item: ChecklistItem, hideDocumentsTab: boolean): StepDetailTab {
   if (item.forms.length) return 'forms';
   return hideDocumentsTab ? 'activity' : 'docs';
@@ -64,14 +38,13 @@ export function stepDetailUiReducer(
   switch (action.type) {
     case 'sync_task': {
       const { task, item, hideDocumentsTab } = action;
-      const loaded = loadStepProgress(task.id);
       const progress =
         task.status === 'completed'
           ? {
               forms: [...item.forms],
               docs: hideDocumentsTab ? [] : [...item.infoRequired],
             }
-          : loaded;
+          : { forms: [], docs: [] };
       return {
         progress,
         tab: defaultTab(item, hideDocumentsTab),

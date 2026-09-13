@@ -11,7 +11,7 @@ import { InternPhaseEntryCards } from "@/components/incorporation/InternOverview
 import { EmptyStateIllustrated, ProgressRing } from "@/components/noir";
 import { ClientBoardResolutionCard } from "@/components/client/ClientBoardResolutionCard";
 import { initialsFromName, type AuthUser } from "@/lib/auth";
-import type { Client } from "@/data/mockData";
+import type { Client } from "@/data/client";
 import type { Engagement } from "@/data/engagements";
 import { getActiveCatalogItems } from "@/data/checklist";
 import { clientIncorporationStepPath } from "@/lib/project-step-path";

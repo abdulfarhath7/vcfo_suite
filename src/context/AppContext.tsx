@@ -1,7 +1,7 @@
 "use client";
 
 import { use, type SetStateAction } from 'react';
-import { Client, teamMembers } from '@/data/mockData';
+import type { Client } from '@/data/client';
 import { StatusCode } from '@/data/checklist';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import type { ClientFillRequest } from '@/lib/checklist-state-key';
@@ -89,7 +89,7 @@ export interface AppContextValue {
   restoreNotifications: (items: AppNotification[]) => void;
   /** Suppress duplicate realtime notification after a local checklist mutation. */
   suppressChecklistNotification: (engagementId: string, itemId: string, kind: NotificationKind) => void;
-  teamMembers: typeof teamMembers;
+  teamMembers: InternOption[];
 
   createProjectWithClient: (input: CreateProjectInput) => Promise<CreateProjectResult>;
   updateEngagement: (id: string, patch: UpdateEngagementInput) => Promise<Engagement | null>;

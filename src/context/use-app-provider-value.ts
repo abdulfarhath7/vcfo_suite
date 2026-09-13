@@ -14,7 +14,7 @@ import {
   type SetStateAction,
 } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Client, clients as seedClients } from '@/data/mockData';
+import type { Client } from '@/data/client';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import type { AppContextValue, ChecklistItemState } from '@/context/AppContext';
 import { applySidebarCollapsed } from '@/components/shell/intern-sidebar';
@@ -38,7 +38,6 @@ import {
 } from '@/lib/auth';
 import { ownAvatarSrc } from '@/lib/account-avatar';
 import { getSession, signIn as authJsSignIn, signOut as authJsSignOut, useSession } from 'next-auth/react';
-import { clearAllStepProgress } from '@/components/admin/step-detail-progress';
 import {
   fetchEngagements,
   fetchChecklistIndex,
@@ -63,7 +62,6 @@ import {
 import { mergeChecklistIndexIntoState } from '@/lib/checklist-index';
 import { toastError, toastSuccess, errorMessage, toastEmailDispatch, EMAIL_DISPATCH_NOTIFICATIONS_EVENT } from '@/lib/toast-errors';
 import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
-import { debouncedPersist, read } from '@/lib/storage';
 import {
   type AppNotification,
   type NotificationKind,
@@ -149,7 +147,7 @@ function createInitialAppProviderState(): AppProviderState {
   return {
     user: null,
     authLoading: true,
-    clients: read('vcfo.clients', seedClients),
+    clients: [],
     engagements: seedEngagements,
     tasks: [],
     requests: [],
@@ -246,7 +244,6 @@ export function useAppProviderValue(): AppContextValue {
     dispatch({ type: 'patch', key: 'selectedClient', value });
   }, [dispatch]);
 
-  useEffect(() => debouncedPersist('vcfo.clients', clients), [clients]);
 
   const notifySuppressRef = useRef<Map<string, number> | null>(null);
   if (!notifySuppressRef.current) {
@@ -790,13 +787,12 @@ export function useAppProviderValue(): AppContextValue {
     setUser(null);
     setNotifications([]);
     setEngagements([]);
-    setClients(seedClients);
+    setClients([]);
     setTasks([]);
     setRequests([]);
     setInvites([]);
     setActivity([]);
     setDbChecklistState({});
-    clearAllStepProgress();
   }, [
     queryClient,
     setUser,
