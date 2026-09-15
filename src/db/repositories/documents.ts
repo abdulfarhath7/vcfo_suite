@@ -1,10 +1,12 @@
 import 'server-only';
 
-import { and, desc, eq, inArray, or } from 'drizzle-orm';
+import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { documents, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
+import { normalizeChecklistItemSlice } from '@/lib/checklist-state-key';
+import { checklistViewerForRole, isStepReleasedTo } from '@/lib/checklist-visibility';
 import { appEngagementId, engagementDbId } from '@/lib/legacy-engagement-ids';
 import {
   assertEngagementAccess,
@@ -27,6 +29,10 @@ import { listManagerMemberEngagementIds } from '@/db/repositories/engagement-man
  *   manager: via owned engagements (manager_id / legacy admin_id)
  *   intern: via assigned engagement
  *   client: via own engagement; list only shared_with_client = true
+ *
+ * On top of the row scope, a file attached to a checklist step follows that
+ * step's release (`checklist-visibility.ts`): the lead's uploads stay theirs
+ * until they ask for approval, and the client's until the manager accepts.
  */
 
 type DocumentRow = typeof documents.$inferSelect;
@@ -75,19 +81,40 @@ const joinedSelect = {
   companyName: engagements.companyName,
   slug: engagements.slug,
   stage: engagements.stage,
+  /** Only the owning step's slice — never the whole `checklist_state` blob. */
+  stepSlice: sql<unknown>`${engagements.checklistState} -> ${documents.stepId}`,
 };
 
-function mapJoined(row: {
+type JoinedRow = {
   doc: DocumentRow;
   companyName: string;
   slug: string | null;
   stage: string;
-}): DocumentDto {
-  return mapRow(row.doc, {
-    companyName: row.companyName,
-    slug: row.slug,
-    stage: row.stage,
-  });
+  stepSlice: unknown;
+};
+
+/** A step-attached file is readable once its step is released to this viewer. */
+function stepReleasedForViewer(
+  ctx: Pick<AuthContext, 'role'>,
+  stepId: string | null,
+  stepSlice: unknown,
+): boolean {
+  if (!stepId) return true;
+  const viewer = checklistViewerForRole(ctx.role);
+  if (viewer === 'lead') return true;
+  return isStepReleasedTo(viewer, normalizeChecklistItemSlice(stepSlice, stepId));
+}
+
+function mapJoinedRows(ctx: Pick<AuthContext, 'role'>, rows: JoinedRow[]): DocumentDto[] {
+  return rows
+    .filter((row) => stepReleasedForViewer(ctx, row.doc.stepId, row.stepSlice))
+    .map((row) =>
+      mapRow(row.doc, {
+        companyName: row.companyName,
+        slug: row.slug,
+        stage: row.stage,
+      }),
+    );
 }
 
 function clientEngagementScope(ctx: AuthContext) {
@@ -122,7 +149,7 @@ export async function listDocuments(
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
       .where(where)
       .orderBy(desc(documents.createdAt));
-    return rows.map(mapJoined);
+    return mapJoinedRows(ctx, rows);
   }
 
   if (isFirmWideAdmin(ctx.role)) {
@@ -131,7 +158,7 @@ export async function listDocuments(
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
       .orderBy(desc(documents.createdAt));
-    return rows.map(mapJoined);
+    return mapJoinedRows(ctx, rows);
   }
 
   if (ctx.role === 'manager') {
@@ -145,7 +172,7 @@ export async function listDocuments(
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
       .where(roleScope)
       .orderBy(desc(documents.createdAt));
-    return rows.map(mapJoined);
+    return mapJoinedRows(ctx, rows);
   }
 
   if (ctx.role === 'intern') {
@@ -161,7 +188,7 @@ export async function listDocuments(
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
       .where(scope)
       .orderBy(desc(documents.createdAt));
-    return rows.map(mapJoined);
+    return mapJoinedRows(ctx, rows);
   }
 
   const rows = await db
@@ -170,7 +197,7 @@ export async function listDocuments(
     .innerJoin(engagements, eq(engagements.id, documents.engagementId))
     .where(and(eq(documents.sharedWithClient, true), clientEngagementScope(ctx)))
     .orderBy(desc(documents.createdAt));
-  return rows.map(mapJoined);
+  return mapJoinedRows(ctx, rows);
 }
 
 /** Single index row, scoped by engagement access (clients: shared rows only). */
@@ -184,6 +211,10 @@ export async function getDocumentById(
   const access = await assertEngagementAccess(ctx, row.engagementId);
   if (!access.ok) return null;
   if (ctx.role === 'client' && !row.sharedWithClient) return null;
+  const state = access.row.checklistState as Record<string, unknown> | null;
+  if (!stepReleasedForViewer(ctx, row.stepId, row.stepId ? state?.[row.stepId] : undefined)) {
+    return null;
+  }
 
   return mapRow(row);
 }

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { createClientChangeRequest } from '@/db/repositories/client-change-requests';
-import { clientRequestStepChange } from '@/db/repositories/engagements';
+import {
+  checklistStateForViewer,
+  clientRequestStepChange,
+} from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 
 /**
@@ -61,7 +64,7 @@ export async function POST(request: Request) {
         stepId.trim(),
         note,
       );
-      checklistState = reopened.checklistState;
+      checklistState = checklistStateForViewer(guard.ctx, reopened.checklistState);
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       if (message !== 'step_not_with_client') throw err;

@@ -26,6 +26,10 @@ import {
   type ChecklistPhaseRef,
 } from '@/lib/checklist-step-approval';
 import { slimChecklistIndexState } from '@/lib/checklist-index';
+import {
+  checklistViewerForRole,
+  redactChecklistStateForViewer,
+} from '@/lib/checklist-visibility';
 import { responseFieldIdsForItem } from '@/lib/checklist-responses';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
@@ -182,9 +186,22 @@ export async function listChecklistIndex(
       out[appId] = {};
       continue;
     }
-    out[appId] = slimChecklistIndexState(raw);
+    out[appId] = checklistStateForViewer(ctx, slimChecklistIndexState(raw));
   }
   return out;
+}
+
+/**
+ * What this caller may read of a checklist state: the lead's unreleased drafts
+ * are stripped for the firm, and anything the manager has not accepted is
+ * stripped for the client. Every route that hands `checklist_state` to the
+ * browser goes through here; server-side flows keep the full row.
+ */
+export function checklistStateForViewer(
+  ctx: Pick<AuthContext, 'role'>,
+  state: EngagementChecklistState,
+): EngagementChecklistState {
+  return redactChecklistStateForViewer(checklistViewerForRole(ctx.role), state);
 }
 
 export async function getEngagementById(ctx: AuthContext, id: string) {
@@ -409,13 +426,18 @@ export function checklistStateFromRow(row: EngagementDbRow): EngagementChecklist
   return normalizeEngagementChecklistState(raw as Record<string, unknown>);
 }
 
-/** Merge one checklist item into checklist_state and persist. */
+/**
+ * Merge one checklist item into checklist_state and persist.
+ *
+ * The base is always the persisted row, never a copy the browser sends back:
+ * a viewer's copy is redacted for their role (see `checklistStateForViewer`),
+ * and a stale copy would overwrite whatever another party wrote meanwhile.
+ */
 export async function patchChecklistItem(
   ctx: AuthContext,
   appEngagementId: string,
   itemId: string,
   patch: Partial<ChecklistItemStateSlice>,
-  current?: EngagementChecklistState,
 ): Promise<EngagementChecklistState> {
   const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
   if (!existing) throw new Error('Engagement not found or not permitted');
@@ -428,7 +450,7 @@ export async function patchChecklistItem(
     }
   }
 
-  const base = current ?? persisted;
+  const base = persisted;
   const next: EngagementChecklistState = {
     ...base,
     [itemId]: {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { unlockChecklistFields } from '@/db/repositories/engagements';
+import { checklistStateForViewer, unlockChecklistFields } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -38,7 +38,10 @@ export async function POST(request: Request, context: RouteContext) {
       event: 'unlocked',
       actorUserId: guard.ctx.userId,
     });
-    return NextResponse.json({ checklistState, email });
+    return NextResponse.json({
+      checklistState: checklistStateForViewer(guard.ctx, checklistState),
+      email,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unlock_failed';
     const status =

@@ -1148,11 +1148,7 @@ export function useAppProviderValue(): AppContextValue {
       setDbChecklistState((prev) => ({ ...prev, [engagementId]: optimistic }));
 
       try {
-        const saved = await patchChecklistItemInDb(engagementId,
-          itemId,
-          patch,
-          previous,
-        );
+        const saved = await patchChecklistItemInDb(engagementId, itemId, patch);
         setDbChecklistState((prev) => ({ ...prev, [engagementId]: saved }));
         if (patch.deliveredToClientAt?.trim()) {
           suppressChecklistNotification(engagementId, itemId, 'checklist.deliver');

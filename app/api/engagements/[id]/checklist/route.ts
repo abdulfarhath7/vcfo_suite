@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import {
+  checklistStateForViewer,
   checklistStateFromRow,
   getEngagementById,
   patchChecklistItem,
@@ -18,6 +19,8 @@ type RouteContext = { params: Promise<{ id: string }> };
 const patchBodySchema = z.object({
   itemId: z.string().trim().min(1),
   patch: z.record(z.string(), z.unknown()),
+  // Older bundles still send their copy of the state; the server merges onto
+  // the persisted row only, so it is accepted and ignored.
   current: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -34,7 +37,9 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 
-  return NextResponse.json({ checklistState: checklistStateFromRow(row) });
+  return NextResponse.json({
+    checklistState: checklistStateForViewer(guard.ctx, checklistStateFromRow(row)),
+  });
 }
 
 /**
@@ -87,13 +92,7 @@ export async function POST(request: Request, context: RouteContext) {
       patch = safe;
     }
 
-    const checklistState = await patchChecklistItem(
-      guard.ctx,
-      id,
-      body.data.itemId,
-      patch,
-      body.data.current as Record<string, ChecklistItemStateSlice> | undefined,
-    );
+    const checklistState = await patchChecklistItem(guard.ctx, id, body.data.itemId, patch);
 
     const nextSlice = checklistState[body.data.itemId];
     const deliverRequested = Boolean(patch.deliveredToClientAt?.trim());
@@ -128,7 +127,10 @@ export async function POST(request: Request, context: RouteContext) {
             })
           : emptyEmailDispatch();
 
-    return NextResponse.json({ checklistState, email });
+    return NextResponse.json({
+      checklistState: checklistStateForViewer(guard.ctx, checklistState),
+      email,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'save_failed';
     const status = message.includes('not found') || message.includes('not permitted') ? 404 : 400;

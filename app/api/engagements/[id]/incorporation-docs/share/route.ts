@@ -94,7 +94,7 @@ export async function POST(request: Request, context: RouteContext) {
       incorpDraftsSharedAt: sharedAt,
     };
 
-    await patchChecklistItem(auth.ctx, engagement.id, 'pre-7', patch, checklistState);
+    await patchChecklistItem(auth.ctx, engagement.id, 'pre-7', patch);
 
     await recordAuditEvent(auth.ctx, {
       engagementId: engagement.id,
@@ -152,7 +152,7 @@ export async function POST(request: Request, context: RouteContext) {
     sharedIncorpDraftDocs,
   };
 
-  await patchChecklistItem(auth.ctx, engagement.id, 'pre-7', patch, checklistState);
+  await patchChecklistItem(auth.ctx, engagement.id, 'pre-7', patch);
 
   await recordAuditEvent(auth.ctx, {
     engagementId: engagement.id,

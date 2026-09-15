@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
-import { clientApproveStep } from '@/db/repositories/engagements';
+import { checklistStateForViewer, clientApproveStep } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 
 type RouteContext = { params: Promise<{ stepId: string }> };
@@ -61,7 +61,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     return NextResponse.json({
-      checklistState,
+      checklistState: checklistStateForViewer(guard.ctx, checklistState),
       phaseApproved: phaseCompleted ? { id: phaseCompleted.id, title: phaseCompleted.title } : null,
       email,
     });

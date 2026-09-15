@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import {
+  checklistStateForViewer,
   decideClientFillRequest,
   requestClientFill,
 } from '@/db/repositories/engagements';
@@ -54,7 +55,11 @@ export async function POST(request: Request, context: RouteContext) {
         actorUserId: guard.ctx.userId,
         outlookCtx: guard.ctx,
       });
-      return NextResponse.json({ checklistState, request: fillRequest, email });
+      return NextResponse.json({
+        checklistState: checklistStateForViewer(guard.ctx, checklistState),
+        request: fillRequest,
+        email,
+      });
     }
 
     const decision = action === 'approve' ? 'approve' : 'decline';
@@ -74,7 +79,11 @@ export async function POST(request: Request, context: RouteContext) {
       actorUserId: guard.ctx.userId,
       outlookCtx: guard.ctx,
     });
-    return NextResponse.json({ checklistState, request: fillRequest, email });
+    return NextResponse.json({
+      checklistState: checklistStateForViewer(guard.ctx, checklistState),
+      request: fillRequest,
+      email,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'client_fill_failed';
     const friendly: Record<string, string> = {

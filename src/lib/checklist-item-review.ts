@@ -28,6 +28,11 @@ export function isReviewRejected(slice: SliceLike): boolean {
   return getReviewStatus(slice) === 'rejected';
 }
 
+/** A lead's request for manager approval that nobody has decided on yet. */
+export function isLeadRequestPending(slice: SliceLike): boolean {
+  return slice?.reviewSource === 'lead_manager_request' && slice.reviewStatus === 'reviewing';
+}
+
 export function canClientResubmit(slice: SliceLike): boolean {
   if (!isReviewRejected(slice)) return false;
   const unlocked = getSubmissionMeta(slice).unlockedFields ?? [];

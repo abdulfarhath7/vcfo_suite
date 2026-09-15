@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
-import { assertEngagementAccess } from '@/db/repositories/engagements';
+import { assertEngagementAccess, checklistStateFromRow } from '@/db/repositories/engagements';
+import { checklistViewerForRole, isStepReleasedTo } from '@/lib/checklist-visibility';
 import {
   isMilestoneStoragePath,
   MILESTONE_DOCUMENTS_BUCKET,
 } from '@/lib/milestone-document-storage';
+import { checklistItemForFieldId } from '@/lib/vault-documents';
 import { bucketKey, signedDownloadUrl } from '@/storage/s3';
 
 /**
  * GET /api/milestone-documents/signed-url?path=&expiresIn=
  * Short-lived download URL for a milestone document the caller can access.
+ * The path is `{engagementId}/{fieldId}/{ts}-{name}`; the field names the step,
+ * and the step's release (`checklist-visibility.ts`) decides whether anyone but
+ * the lead may fetch it yet.
  */
 export async function GET(request: Request) {
   const guard = await requireAuth();
@@ -39,6 +44,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 });
     }
     return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+  }
+
+  const viewer = checklistViewerForRole(guard.ctx.role);
+  if (viewer !== 'lead') {
+    // `{engagementId}/{fieldId}/{ts}-{name}` today; older objects may carry an
+    // extra segment, so any middle segment that names a field counts.
+    const item = path
+      .split('/')
+      .slice(1, -1)
+      .map((segment) => checklistItemForFieldId(segment))
+      .find(Boolean);
+    if (item && !isStepReleasedTo(viewer, checklistStateFromRow(access.row)[item.id])) {
+      return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+    }
   }
 
   try {

@@ -349,11 +349,12 @@ export async function patchChecklistItemInDb(
   appEngagementId: string,
   itemId: string,
   patch: Partial<ChecklistItemStateSlice>,
-  current?: EngagementChecklistState,
 ): Promise<EngagementChecklistState> {
+  // Only the patch travels: the server merges onto the persisted row, and the
+  // browser's copy is redacted for its role, so sending it back would be wrong.
   return checklistMutation(
     engagementPath(appEngagementId, '/checklist'),
-    { itemId, patch, current },
+    { itemId, patch },
     'Could not save checklist answers.',
   );
 }

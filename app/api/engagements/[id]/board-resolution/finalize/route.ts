@@ -60,7 +60,6 @@ export async function POST(_request: Request, context: RouteContext) {
                 pre2?.responses?.boardResolutionSharedAt?.trim() || sharedDate,
             },
           },
-          checklistState,
         );
       } catch (err) {
         console.error('[board-resolution] could not mark pre-2 delivered after finalize', err);

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { reviewChecklistItem } from '@/db/repositories/engagements';
+import { checklistStateForViewer, reviewChecklistItem } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -58,7 +58,11 @@ export async function POST(request: Request, context: RouteContext) {
       }).catch(() => null);
     }
 
-    return NextResponse.json({ checklistState, email, clientApprovalEmail });
+    return NextResponse.json({
+      checklistState: checklistStateForViewer(guard.ctx, checklistState),
+      email,
+      clientApprovalEmail,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'review_failed';
     const status =
