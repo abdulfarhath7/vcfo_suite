@@ -51,3 +51,23 @@ variable "app_domain" {
   type        = string
   default     = ""
 }
+
+# Microsoft Graph (lead → client Mail.Send from the lead's Outlook). All three
+# must be set together; leave empty to deploy without the Outlook connect flow.
+# Azure app "VCFO Suite Outlook": redirect https://<app_domain>/api/outlook/callback.
+variable "azure_ad_client_id" {
+  description = "Azure app registration Application (client) ID."
+  type        = string
+  default     = ""
+}
+variable "azure_ad_tenant_id" {
+  description = "Azure Directory (tenant) ID, or \"common\" for multi-tenant."
+  type        = string
+  default     = ""
+}
+variable "azure_ad_client_secret" {
+  description = "Azure client secret VALUE (not the secret ID). Stored in Secrets Manager; pass via TF_VAR_azure_ad_client_secret or the gitignored tfvars."
+  type        = string
+  default     = ""
+  sensitive   = true
+}

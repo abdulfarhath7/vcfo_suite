@@ -128,6 +128,8 @@ Copy from `.env.example`. Production values:
 | `RESEND_API_KEY` | empty = console | production key |
 | `RESEND_FROM_EMAIL` | resend.dev OK for tests | `Name <info@sbctrack.in>` |
 | `RESEND_DEV_REDIRECT_TO` | optional locally | **must be unset** |
+| `AZURE_AD_CLIENT_ID` / `AZURE_AD_TENANT_ID` | Azure app values | same (tfvars `azure_ad_*` → App Runner env) |
+| `AZURE_AD_CLIENT_SECRET` | Azure secret value | Secrets Manager `vcfo-suite/AZURE_AD_CLIENT_SECRET` (tfvars `azure_ad_client_secret`, gitignored) |
 | `NEXT_PUBLIC_ENABLE_DEMO_AUTH` | off | **must be unset / not `true`** |
 | `NEXT_PUBLIC_MAX_UPLOAD_MB` | `50` | same unless you raise intentionally |
 

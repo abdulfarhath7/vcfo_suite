@@ -75,3 +75,23 @@ resource "aws_secretsmanager_secret_version" "auth_secret" {
   secret_id     = aws_secretsmanager_secret.auth_secret.id
   secret_string = random_password.auth_secret.result
 }
+
+# Azure client secret for the Outlook Graph connect flow. Only created when the
+# three azure_ad_* vars are set (see variables.tf). Rotating it in Azure means
+# updating the var and re-applying; existing user connections keep working
+# because refresh tokens are exchanged with the new secret.
+locals {
+  outlook_enabled = var.azure_ad_client_id != "" && var.azure_ad_tenant_id != "" && var.azure_ad_client_secret != ""
+}
+
+resource "aws_secretsmanager_secret" "azure_ad_client_secret" {
+  count                   = local.outlook_enabled ? 1 : 0
+  name                    = "${var.project}/AZURE_AD_CLIENT_SECRET"
+  recovery_window_in_days = 7
+}
+
+resource "aws_secretsmanager_secret_version" "azure_ad_client_secret" {
+  count         = local.outlook_enabled ? 1 : 0
+  secret_id     = aws_secretsmanager_secret.azure_ad_client_secret[0].id
+  secret_string = var.azure_ad_client_secret
+}

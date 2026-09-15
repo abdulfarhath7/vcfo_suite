@@ -93,10 +93,13 @@ data "aws_iam_policy_document" "app" {
   statement {
     sid     = "RuntimeSecrets"
     actions = ["secretsmanager:GetSecretValue"]
-    resources = [
-      aws_secretsmanager_secret.database_url.arn,
-      aws_secretsmanager_secret.auth_secret.arn,
-    ]
+    resources = concat(
+      [
+        aws_secretsmanager_secret.database_url.arn,
+        aws_secretsmanager_secret.auth_secret.arn,
+      ],
+      aws_secretsmanager_secret.azure_ad_client_secret[*].arn,
+    )
   }
 }
 
@@ -135,6 +138,11 @@ locals {
       AUTH_URL             = var.site_url
       NEXT_PUBLIC_SITE_URL = var.site_url
     },
+    # Outlook Graph connect flow (secret comes via runtime_environment_secrets).
+    local.outlook_enabled ? {
+      AZURE_AD_CLIENT_ID = var.azure_ad_client_id
+      AZURE_AD_TENANT_ID = var.azure_ad_tenant_id
+    } : {},
   )
 }
 
@@ -155,10 +163,15 @@ resource "aws_apprunner_service" "app" {
       image_configuration {
         port                          = "3000"
         runtime_environment_variables = local.app_env
-        runtime_environment_secrets = {
-          DATABASE_URL = aws_secretsmanager_secret.database_url.arn
-          AUTH_SECRET  = aws_secretsmanager_secret.auth_secret.arn
-        }
+        runtime_environment_secrets = merge(
+          {
+            DATABASE_URL = aws_secretsmanager_secret.database_url.arn
+            AUTH_SECRET  = aws_secretsmanager_secret.auth_secret.arn
+          },
+          local.outlook_enabled ? {
+            AZURE_AD_CLIENT_SECRET = aws_secretsmanager_secret.azure_ad_client_secret[0].arn
+          } : {},
+        )
       }
     }
   }

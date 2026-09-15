@@ -77,6 +77,16 @@ output `custom_domain_dns` lists the CNAMEs to add at the registrar (app host
 record, so the apex cannot point at App Runner — use a subdomain
 (`app.sbctrack.in`, live 2026-09-11).
 
+## Outlook connect (Microsoft Graph)
+
+Azure app registration "VCFO Suite Outlook" needs redirect
+`https://app.sbctrack.in/api/outlook/callback` and delegated `Mail.Send`,
+`User.Read`, `offline_access`. Set `azure_ad_client_id`, `azure_ad_tenant_id`,
+`azure_ad_client_secret` in `terraform.tfvars` (gitignored) and apply — the
+secret lands in Secrets Manager `vcfo-suite/AZURE_AD_CLIENT_SECRET`, the ids in
+App Runner env. Leave all three empty to deploy without the feature. When the
+Azure secret expires (max 24 months), paste the new value and re-apply.
+
 ## Not here yet
 
 - Private RDS + VPC connector + NAT (when the pilot outgrows option B)
