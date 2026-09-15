@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { ChecklistField } from '@/data/checklist';
 import {
+  getChangedPartial,
   getMilestoneFormFieldLayout,
   groupFieldsBySection,
   internNamedSectionGroups,
   internSectionFooterAction,
   internSectionFooterLabel,
   internShowSaveButton,
+  overlayTouchedFields,
 } from '@/views/incorporation/milestone-response-form-utils';
 
 function field(partial: Partial<ChecklistField> & Pick<ChecklistField, 'id' | 'type'>): ChecklistField {
@@ -99,5 +101,39 @@ describe('internShowSaveButton', () => {
     expect(internShowSaveButton('pending')).toBe(true);
     expect(internShowSaveButton('saving')).toBe(true);
     expect(internShowSaveButton('error')).toBe(true);
+  });
+});
+
+describe('overlayTouchedFields', () => {
+  const saved = { summary: 'from server', letter: 'e1/letter/1-a.pdf', notes: '' };
+
+  it('returns the saved answers untouched when nothing was edited', () => {
+    expect(overlayTouchedFields(saved, null, new Set())).toBe(saved);
+    expect(overlayTouchedFields(saved, { summary: '' }, new Set())).toBe(saved);
+  });
+
+  it('lets late-arriving saved answers fill fields the user never touched', () => {
+    // Snapshot taken before the full checklist loaded: every field empty.
+    const snapshot = { summary: '', letter: '', notes: 'typed early' };
+    const draft = overlayTouchedFields(saved, snapshot, new Set(['notes']));
+    expect(draft).toEqual({ summary: 'from server', letter: 'e1/letter/1-a.pdf', notes: 'typed early' });
+    // …and the autosave diff carries only that field — no empty strings that
+    // would wipe the server's answers.
+    const fields = [
+      field({ id: 'summary', type: 'textarea' }),
+      field({ id: 'letter', type: 'file' }),
+      field({ id: 'notes', type: 'textarea' }),
+    ];
+    expect(getChangedPartial(fields, draft, saved)).toEqual({ notes: 'typed early' });
+  });
+
+  it('keeps a touched field at its edited value, including a cleared file', () => {
+    const draft = overlayTouchedFields(
+      saved,
+      { summary: 'from server', letter: '', notes: '' },
+      new Set(['letter']),
+    );
+    expect(draft.letter).toBe('');
+    expect(draft.summary).toBe('from server');
   });
 });

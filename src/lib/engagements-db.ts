@@ -115,6 +115,7 @@ async function checklistMutation(
   path: string,
   body: unknown,
   fallback: string,
+  init?: Pick<RequestInit, 'keepalive'>,
 ): Promise<EngagementChecklistState> {
   let payload: { checklistState?: unknown; email?: EmailDispatchResult };
   try {
@@ -122,6 +123,7 @@ async function checklistMutation(
       method: 'POST',
       body: JSON.stringify(body),
       fallbackError: fallback,
+      ...init,
     });
   } catch (err) {
     if (err instanceof AppApiError) {
@@ -349,6 +351,7 @@ export async function patchChecklistItemInDb(
   appEngagementId: string,
   itemId: string,
   patch: Partial<ChecklistItemStateSlice>,
+  options?: { keepalive?: boolean },
 ): Promise<EngagementChecklistState> {
   // Only the patch travels: the server merges onto the persisted row, and the
   // browser's copy is redacted for its role, so sending it back would be wrong.
@@ -356,6 +359,7 @@ export async function patchChecklistItemInDb(
     engagementPath(appEngagementId, '/checklist'),
     { itemId, patch },
     'Could not save checklist answers.',
+    options?.keepalive ? { keepalive: true } : undefined,
   );
 }
 

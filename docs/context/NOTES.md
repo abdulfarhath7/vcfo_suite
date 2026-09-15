@@ -396,6 +396,31 @@ Append here whenever something costs more than a minute to figure out.
   shorts stay in one cell (~50%), not stretched. Phone stacks to one column.
   Infer via `getMilestoneFormFieldLayout`; optional `ChecklistField.layout` override.
 
+## Intern form autosave (what keeps a half-filled step alive)
+
+- `useMilestoneResponseFormState`: `allFields` is memoised on `item`. It used to be
+  rebuilt every render, which re-created `flushPendingAutoSave` → `clearDebounce`
+  → the unmount-flush effect's deps, so that effect's cleanup ran on **every render**:
+  it cleared the 600ms debounce before it fired and flushed against refs that had
+  not yet synced. One edit + refresh = lost; slow typing = duplicate POSTs of
+  partial words. Do not key that effect on callbacks again.
+- The flush effect is keyed on `autoSaveEnabled` only and reads the latest flush
+  through a ref. It fires on unmount, `visibilitychange → hidden` (tab switch) and
+  `pagehide` (refresh / close, with `fetch keepalive` via `updateItem(…, { keepalive })`
+  → `patchChecklistItemInDb`). It flushes only if `userEditedRef` is set — otherwise a
+  remount posted pre-1 engagement defaults back as answers.
+- Draft = `saved ⊕ touched` (`DraftEdits { values, touched }`, `overlayTouchedFields`).
+  The step page renders before the full checklist loads (the slim index has no
+  answers), so a full snapshot taken then showed empty fields and the next autosave
+  diff sent `''` for every server-held field — a wipe. Untouched fields always follow
+  `saved`; the diff only ever carries touched fields. `mergeSavedFileFieldsIntoDraft`
+  is gone; late file paths arrive through the same rule.
+- `engagementsSettled` (AppContext) is true only once the fetched list is **applied**
+  to `engagements` state (`appliedEngagementsData === engagementsQuery.data`), not on
+  the query's success render. Step / project pages redirect on "settled + no
+  engagement", and that one-render gap bounced roughly 1 in 3 hard refreshes of a
+  step page to the clients list.
+
 ## Intern Today + My work
 
 - Today (`/app/intern/today`) is one greeting hero (greeting + inline stats + today’s

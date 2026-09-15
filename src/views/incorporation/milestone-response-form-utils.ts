@@ -178,21 +178,24 @@ export function computeMilestoneDraftFromSaved(
   return { ...saved };
 }
 
-export function mergeSavedFileFieldsIntoDraft(
-  prev: ChecklistItemResponses,
-  saved: ChecklistItemResponses,
-  fileFields: ChecklistField[],
+/**
+ * The effective draft: saved answers with only the user's touched fields laid
+ * over. A late-arriving `saved` (the step page renders before the full
+ * checklist loads) fills every field the user has not edited — including
+ * files uploaded through another panel — instead of being masked by a
+ * snapshot of empty strings.
+ */
+export function overlayTouchedFields(
+  baseline: ChecklistItemResponses,
+  override: ChecklistItemResponses | null,
+  touched: ReadonlySet<string>,
 ): ChecklistItemResponses {
-  let next = prev;
-  for (const field of fileFields) {
-    const savedVal = (saved[field.id] ?? '').trim();
-    const draftVal = (prev[field.id] ?? '').trim();
-    if (savedVal && savedVal !== draftVal) {
-      if (next === prev) next = { ...prev };
-      next[field.id] = savedVal;
-    }
+  if (!override || touched.size === 0) return baseline;
+  const out: ChecklistItemResponses = { ...baseline };
+  for (const key of touched) {
+    if (key in override) out[key] = override[key];
   }
-  return next;
+  return out;
 }
 
 export function runStepValidation(

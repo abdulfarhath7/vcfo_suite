@@ -59,6 +59,8 @@ type ChecklistItemPatch = Partial<ChecklistItemState> & {
 interface UpdateItemOptions {
   /** When true, only `responses` is applied (client portal). */
   clientResponsesOnly?: boolean;
+  /** Let the request outlive the page (unload / tab close flush of a draft). */
+  keepalive?: boolean;
 }
 
 interface SignInResult {

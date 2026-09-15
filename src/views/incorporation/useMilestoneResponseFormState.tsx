@@ -93,10 +93,17 @@ import { IncorporationDraftDocLink } from '@/components/incorporation/Incorporat
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 import { internEngagementPath, internEngagementStepPath } from '@/lib/project-step-path';
 import { internFormNextTarget } from '@/lib/intern-overview-progress';
-import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, mergeSavedFileFieldsIntoDraft, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
+import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 
 const DIRECTOR_HAS_DSC_RE = /^director(\d)HasDsc$/;
+/** The user's edits this session: full values plus which fields they touched. */
+interface DraftEdits {
+  values: ChecklistItemResponses;
+  touched: ReadonlySet<string>;
+}
+const NO_FIELDS: ReadonlySet<string> = new Set();
+
 const PHASE2_STRUCTURED_STEP_IDS = new Set([
   'pre-6',
   'pre-7',
@@ -149,7 +156,10 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     engagements,
     updateEngagement,
   } = useApp();
-  const allFields = getClientResponseFields(item);
+  // `getClientResponseFields` builds a fresh array per call. Memoise it, or
+  // every callback keyed on `fields` (flush, debounce) is re-created each
+  // render and the autosave timer is torn down before it can fire.
+  const allFields = useMemo(() => getClientResponseFields(item), [item]);
   const fields = useMemo(
     () => filterFieldsByViewer(allFields, variant),
     [allFields, variant],
@@ -199,17 +209,23 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     return extractItemResponses(pre8Item, pre8State);
   }, [pre8Item, pre8State]);
 
-  const [draftOverride, setDraftOverride] = useState<ChecklistItemResponses | null>(null);
+  /**
+   * The draft is the saved answers with the user's edits laid over them —
+   * only the fields they actually touched. The step page renders before the
+   * full checklist has loaded (the slim index carries no answers), so a
+   * snapshot taken then would show, and on the next autosave send back,
+   * empty strings for every field the server already holds. Untouched
+   * fields therefore always follow `saved`; touched ones stick until saved.
+   */
+  const [draftEdits, setDraftEdits] = useState<DraftEdits | null>(null);
   const baselineDraft = useMemo(
     () => computeMilestoneDraftFromSaved(item.id, saved, engagement, pre1Responses, pre8Responses),
     [item.id, saved, engagement, pre1Responses, pre8Responses],
   );
-  const draft = useMemo(() => {
-    const base = draftOverride ?? baselineDraft;
-    if (!draftOverride) return base;
-    const fileFields = fields.filter((field) => field.type === 'file');
-    return mergeSavedFileFieldsIntoDraft(base, saved, fileFields);
-  }, [draftOverride, baselineDraft, saved, fields]);
+  const draft = useMemo(
+    () => overlayTouchedFields(baselineDraft, draftEdits?.values ?? null, draftEdits?.touched ?? NO_FIELDS),
+    [draftEdits, baselineDraft],
+  );
 
   const pre1Draft = useMemo(
     () =>
@@ -332,12 +348,29 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     (variant === 'client' || (internWorkspace && internActor));
   const scopeId = engagement ? checklistStateKeyForEngagement(engagement) : clientId;
 
-  const flushPendingAutoSave = useCallback(() => {
-    const partial = getChangedPartial(fields, draftRef.current, savedRef.current);
-    const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
-    if (Object.keys(editablePartial).length === 0) return;
-    void updateItem(scopeId, item.id, { responses: editablePartial }, { clientResponsesOnly: true });
-  }, [fields, isClient, item.id, itemState, scopeId, updateItem]);
+  const flushPendingAutoSave = useCallback(
+    (options?: { keepalive?: boolean }) => {
+      // Nothing typed in this form instance → nothing to flush. Without this a
+      // remount (the scope key settling on load) posted the pre-1 engagement
+      // defaults back as if the lead had answered them.
+      if (!userEditedRef.current) return;
+      const partial = getChangedPartial(fields, draftRef.current, savedRef.current);
+      const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+      if (Object.keys(editablePartial).length === 0) return;
+      void updateItem(
+        scopeId,
+        item.id,
+        { responses: editablePartial },
+        { clientResponsesOnly: true, keepalive: options?.keepalive },
+      ).catch(() => undefined);
+    },
+    [fields, isClient, item.id, itemState, scopeId, updateItem],
+  );
+  // Latest flush for listeners that must not re-subscribe on every render.
+  const flushPendingAutoSaveRef = useRef(flushPendingAutoSave);
+  useEffect(() => {
+    flushPendingAutoSaveRef.current = flushPendingAutoSave;
+  });
 
   const clearDebounce = useCallback(
     (options?: { flush?: boolean }) => {
@@ -427,9 +460,16 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   });
 
   const setDraft = useCallback((updater: ChecklistItemResponses | ((prev: ChecklistItemResponses) => ChecklistItemResponses)) => {
-    setDraftOverride((prev) => {
-      const current = prev ?? baselineDraft;
-      return typeof updater === 'function' ? updater(current) : updater;
+    setDraftEdits((prev) => {
+      // Update from the effective draft (saved ⊕ touched), not the raw
+      // snapshot, so cascades that read sibling fields see current values.
+      const touched = new Set(prev?.touched ?? NO_FIELDS);
+      const current = overlayTouchedFields(baselineDraft, prev?.values ?? null, touched);
+      const next = typeof updater === 'function' ? updater(current) : updater;
+      for (const key of Object.keys(next)) {
+        if ((next[key] ?? '') !== (current[key] ?? '')) touched.add(key);
+      }
+      return { values: next, touched };
     });
   }, [baselineDraft]);
 
@@ -467,12 +507,44 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     [autoSaveEnabled, clearDebounce, fields, isClient, itemState, performSave],
   );
 
+  /**
+   * Nothing typed is allowed to die with the page. Keyed on `autoSaveEnabled`
+   * only — an earlier version re-ran this on every render (its callback
+   * dependencies changed each time), which cleared the debounce timer
+   * before it could fire and flushed against not-yet-synced refs, so a
+   * single edit followed by a refresh was lost.
+   *
+   *  - unmount (navigating to another step / page): flush at once
+   *  - tab hidden (switching browser tabs): flush at once, page stays alive
+   *  - pagehide (refresh / close): flush with `keepalive` so the request
+   *    outlives the document
+   */
   useEffect(() => {
     if (!autoSaveEnabled) return;
-    return () => {
-      clearDebounce({ flush: true });
+    const dropTimer = () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
     };
-  }, [autoSaveEnabled, clearDebounce]);
+    const onVisibility = () => {
+      if (document.visibilityState !== 'hidden') return;
+      dropTimer();
+      flushPendingAutoSaveRef.current();
+    };
+    const onPageHide = () => {
+      dropTimer();
+      flushPendingAutoSaveRef.current({ keepalive: true });
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', onPageHide);
+      dropTimer();
+      flushPendingAutoSaveRef.current();
+    };
+  }, [autoSaveEnabled]);
 
   const isPre1 = item.id === 'pre-1';
   const isPre6 = item.id === 'pre-6';

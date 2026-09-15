@@ -11,6 +11,7 @@ import {
   useReducer,
   useCallback,
   useRef,
+  useState,
   type SetStateAction,
 } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -504,7 +505,17 @@ export function useAppProviderValue(): AppContextValue {
   const teamMembers = internOptions;
   const internsLoading = internsQuery.isLoading;
   const engagementsLoading = engagementsQuery.isLoading;
-  const engagementsSettled = engagementsQuery.isSuccess || engagementsQuery.isError;
+  /**
+   * "Settled" means the fetched list is IN `engagements`, not merely fetched.
+   * The query flips to success one render before the effect below copies its
+   * rows into state; a guard reading `isSuccess` + an empty list on that
+   * render redirected a hard refresh of a step page to the clients list.
+   */
+  const [appliedEngagementsData, setAppliedEngagementsData] =
+    useState<typeof engagementsQuery.data>(undefined);
+  const engagementsSettled =
+    engagementsQuery.isError ||
+    (engagementsQuery.isSuccess && appliedEngagementsData === engagementsQuery.data);
   const engagementIndexKey = (engagementsQuery.data?.engagements ?? []).map((e) => e.id).join(',');
 
   const checklistIndexQuery = useQuery({
@@ -518,6 +529,7 @@ export function useAppProviderValue(): AppContextValue {
     const next = engagementsQuery.data?.engagements;
     if (!next) return;
     setEngagements((prev) => preferUnchangedList(prev, next));
+    setAppliedEngagementsData(engagementsQuery.data);
   }, [engagementsQuery.data, setEngagements]);
 
   useEffect(() => {
@@ -1148,7 +1160,9 @@ export function useAppProviderValue(): AppContextValue {
       setDbChecklistState((prev) => ({ ...prev, [engagementId]: optimistic }));
 
       try {
-        const saved = await patchChecklistItemInDb(engagementId, itemId, patch);
+        const saved = await patchChecklistItemInDb(engagementId, itemId, patch, {
+          keepalive: options?.keepalive,
+        });
         setDbChecklistState((prev) => ({ ...prev, [engagementId]: saved }));
         if (patch.deliveredToClientAt?.trim()) {
           suppressChecklistNotification(engagementId, itemId, 'checklist.deliver');
