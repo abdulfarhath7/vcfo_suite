@@ -27,16 +27,23 @@ export const PART_A_SECTION = {
 
 export type PartASection = (typeof PART_A_SECTION)[keyof typeof PART_A_SECTION];
 
-/** Tab order. Sections absent from a company's list are skipped, not renumbered. */
+/**
+ * Tab order — the MCA SPICe+ Part A sequence: main division of industrial
+ * activity (NIC code) with its description, then the proposed name(s). Type /
+ * class / category of company precede those on the portal but are project
+ * settings here, not Part A answers. The parent-entity block sits together
+ * ahead of Signatory KYC because the KYC belongs to the signatory it names.
+ * Sections absent from a company's list are skipped, not renumbered.
+ */
 const PART_A_SECTION_ORDER: readonly PartASection[] = [
+  PART_A_SECTION.businessDescription,
+  PART_A_SECTION.proposedNames,
   PART_A_SECTION.foreignEntity,
   PART_A_SECTION.foreignEntityProof,
   PART_A_SECTION.authorizedSignatory,
   PART_A_SECTION.signatoryKyc,
-  PART_A_SECTION.proposedNames,
   PART_A_SECTION.companyMail,
   PART_A_SECTION.companyMobile,
-  PART_A_SECTION.businessDescription,
   PART_A_SECTION.proposedDirectors,
   PART_A_SECTION.shareCapital,
 ];

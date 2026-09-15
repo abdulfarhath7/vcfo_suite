@@ -29,14 +29,11 @@ describe('fieldsForOwnership', () => {
     }
   });
 
-  it('leaves a dependent company and every other step untouched', () => {
+  it('keeps every dependent-company field (reordered, never dropped) and other steps untouched', () => {
     const all = getClientResponseFields(pre1);
-    expect(fieldsForOwnership('pre-1', all, 'subsidiary').map((f) => f.id)).toEqual(
-      all.map((f) => f.id),
-    );
-    expect(fieldsForOwnership('pre-1', all, undefined).map((f) => f.id)).toEqual(
-      all.map((f) => f.id),
-    );
+    const ids = new Set(all.map((f) => f.id));
+    expect(new Set(fieldsForOwnership('pre-1', all, 'subsidiary').map((f) => f.id))).toEqual(ids);
+    expect(new Set(fieldsForOwnership('pre-1', all, undefined).map((f) => f.id))).toEqual(ids);
     const pre6 = getClientResponseFields(getItem('pre-6')!);
     expect(fieldsForOwnership('pre-6', pre6, 'independent')).toBe(pre6);
   });
@@ -131,5 +128,21 @@ describe('partAsectionsFor', () => {
       last = rank;
     }
     expect(fields[fields.length - 1]?.id).toBe('stepRemarks');
+  });
+});
+
+describe('Part A tab order (MCA portal)', () => {
+  it('leads with the NIC code / business description, then proposed names; Submit is last', () => {
+    const dependent = partAsectionsFor('subsidiary');
+    expect(dependent.slice(0, 2)).toEqual(['Business Description', 'Proposed Company Names']);
+    expect(dependent.indexOf('Authorized Signatory')).toBeLessThan(dependent.indexOf('Signatory KYC'));
+    expect(dependent[dependent.length - 1]).toBe('Share Capital Details');
+    const independent = partAsectionsFor('independent');
+    expect(independent.slice(0, 2)).toEqual(['Business Description', 'Proposed Company Names']);
+    // NIC sits directly under the business description inside that section.
+    const fields = partAFieldsFor(getClientResponseFields(pre1), 'subsidiary');
+    const ids = fields.map((f) => f.id);
+    expect(ids.indexOf('nicCode')).toBe(ids.indexOf('businessDescription') + 1);
+    expect(ids.indexOf('nicBusinessType')).toBe(ids.indexOf('nicCode') + 1);
   });
 });
