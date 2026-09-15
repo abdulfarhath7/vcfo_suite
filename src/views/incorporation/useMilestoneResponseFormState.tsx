@@ -31,6 +31,7 @@ import {
   parseDirectorCount,
   PRE1_DEFAULT_DIRECTOR_COUNT,
   validatePre1Responses,
+  type Pre1ValidationOptions,
 } from '@/lib/checklist-pre1-validation';
 import {
   getPre6DirectorNameOptions,
@@ -165,7 +166,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     return undefined;
   }, [engagementId, clientId, engagements, user, variant]);
   const ownershipType = engagement?.ownershipType;
-  const independent = ownershipType === 'independent';
   // `getClientResponseFields` builds a fresh array per call. Memoise it, or
   // every callback keyed on `fields` (flush, debounce) is re-created each
   // render and the autosave timer is torn down before it can fire.
@@ -176,6 +176,11 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const fields = useMemo(
     () => filterFieldsByViewer(allFields, variant),
     [allFields, variant],
+  );
+  /** Part A validates only what this company's Part A shows (see `part-a-sections.ts`). */
+  const pre1Validation = useMemo<Pre1ValidationOptions>(
+    () => ({ visibleFieldIds: new Set(allFields.map((field) => field.id)) }),
+    [allFields],
   );
 
   const itemState = useMemo(
@@ -578,7 +583,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const completionValues = isPre1 ? pre1Draft : draft;
 
   const liveValidationErrors = useMemo(() => {
-    if (isPre1) return validatePre1Responses(pre1Draft, { independent }).errors;
+    if (isPre1) return validatePre1Responses(pre1Draft, pre1Validation).errors;
     if (isPre6) {
       if (!pre1SubmittedForPre6) return {};
       return validatePre6Responses(draft, pre1Responses).errors;
@@ -590,7 +595,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (item.id === 'pre-11') return validatePre11Responses(draft).errors;
     if (item.id === 'pre-12') return validatePre12Responses(draft).errors;
     return {};
-  }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, independent]);
+  }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, pre1Validation]);
 
   const getSectionPending = useCallback(
     (groupFields: ChecklistField[]) =>
@@ -904,7 +909,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       draft,
       pre1Responses,
       pre1SubmittedForPre6,
-      { independent },
+      pre1Validation,
     );
     setFieldErrors(errors);
     setFieldWarnings(warnings);
@@ -974,7 +979,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       submitDraft,
       pre1Responses,
       pre1SubmittedForPre6,
-      { independent },
+      pre1Validation,
     );
     const delivery = isInternDeliveryStep
       ? validateInternDelivery(item.id, submitDraft)
@@ -1029,7 +1034,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       draft,
       pre1Responses,
       pre1SubmittedForPre6,
-      { independent },
+      pre1Validation,
     );
     setFieldErrors(errors);
     setFieldWarnings(warnings);

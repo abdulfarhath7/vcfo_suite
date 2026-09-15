@@ -5,7 +5,10 @@ import { applyPre1EngagementDefaults } from '@/lib/checklist-pre1-validation';
 import { applyPre6PrefillFromPre1 } from '@/lib/pre6-prefill-from-pre1';
 import { mergeRegisteredOfficeIntoPre6 } from '@/lib/registered-office-responses';
 import type { Engagement } from '@/data/engagements';
-import { validatePre1Responses } from '@/lib/checklist-pre1-validation';
+import {
+  validatePre1Responses,
+  type Pre1ValidationOptions,
+} from '@/lib/checklist-pre1-validation';
 import { validatePre6Responses } from '@/lib/checklist-pre6-validation';
 import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
 import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
@@ -206,7 +209,7 @@ export function runStepValidation(
   draft: ChecklistItemResponses,
   pre1ResponsesForPre6: ChecklistItemResponses,
   pre1SubmittedForPre6: boolean,
-  options?: { independent?: boolean },
+  options?: Pre1ValidationOptions,
 ): { ok: boolean; errors: Record<string, string>; warnings: Record<string, string> } {
   if (isPre1) return validatePre1Responses(pre1Draft, options);
   if (isPre6) {

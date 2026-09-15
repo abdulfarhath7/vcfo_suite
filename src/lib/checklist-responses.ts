@@ -1,6 +1,7 @@
 import { addDays, format } from 'date-fns';
 import { checklist, type ChecklistField, type ChecklistItem } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
+import { PART_A_STEP_ID, partAFieldsFor } from '@/lib/part-a-sections';
 import {
   getPre1VisibleFields,
   parseDirectorCount,
@@ -1943,36 +1944,16 @@ export function formatResponseSummary(
 }
 
 /**
- * Pre-1 sections that only make sense when a parent entity is incorporating
- * the company: who the parent is, its proof, its authorised signatory and
- * their KYC — plus the date the parent's board resolved to incorporate. An
- * independent (standalone) company has none of these, so they are neither
- * shown nor required for it.
+ * The step's fields for this company. Part A is the only step with an
+ * ownership-dependent section list; the decision lives in `part-a-sections.ts`.
  */
-const PARENT_ENTITY_PRE1_SECTIONS = new Set([
-  'Foreign Entity',
-  'Foreign Entity Proof',
-  'Authorized Signatory',
-  'Signatory KYC',
-]);
-const PARENT_ENTITY_PRE1_FIELD_IDS = new Set(['boardResolutionDate']);
-
-export function isParentEntityField(itemId: string, field: ChecklistField): boolean {
-  if (itemId !== 'pre-1') return false;
-  return (
-    (field.section !== undefined && PARENT_ENTITY_PRE1_SECTIONS.has(field.section)) ||
-    PARENT_ENTITY_PRE1_FIELD_IDS.has(field.id)
-  );
-}
-
-/** The step's fields for this company: parent-entity fields drop out for an independent one. */
 export function fieldsForOwnership(
   itemId: string,
   fields: ChecklistField[],
   ownershipType: OwnershipType | undefined,
 ): ChecklistField[] {
-  if (ownershipType !== 'independent' || itemId !== 'pre-1') return fields;
-  return fields.filter((field) => !isParentEntityField(itemId, field));
+  if (itemId !== PART_A_STEP_ID) return fields;
+  return partAFieldsFor(fields, ownershipType);
 }
 
 /** Steps where project lead fills data and delivers to the client portal. */

@@ -212,30 +212,23 @@ export interface Pre1ValidationResult {
   warnings: Record<string, string>;
 }
 
-/** Parent-entity requirements an independent company never has to meet. */
-const PRE1_PARENT_ENTITY_REQUIRED_IDS: ReadonlySet<string> = new Set([
-  'parentEntityName',
-  'parentEntityRegistrationNumber',
-  'parentEntityAddress',
-  'signatoryFirstName',
-  'signatoryLastName',
-  'signatoryDesignation',
-  'signatoryGender',
-  'boardResolutionDate',
-  'certificateOfIncorporationUrl',
-  'passportUrl',
-  'drivingLicenseUrl',
-  'utilityBillUrl',
-]);
+export interface Pre1ValidationOptions {
+  /**
+   * Ids of the fields this company's Part A actually shows (from
+   * `partAFieldsFor`). Required-field checks run only on these, so a section
+   * that is not rendered can never block the step. Omit to validate every field.
+   */
+  visibleFieldIds?: ReadonlySet<string>;
+}
 
 export function validatePre1Responses(
   responses: ChecklistItemResponses,
-  options?: { independent?: boolean },
+  options?: Pre1ValidationOptions,
 ): Pre1ValidationResult {
   const errors: Record<string, string> = {};
   const warnings: Record<string, string> = {};
-  const applies = (id: string) =>
-    !options?.independent || !PRE1_PARENT_ENTITY_REQUIRED_IDS.has(id);
+  const visible = options?.visibleFieldIds;
+  const applies = (id: string) => !visible || visible.has(id);
 
   for (const id of PRE1_BASE_REQUIRED_TEXT_IDS) {
     if (applies(id) && !(responses[id] ?? '').trim()) {
