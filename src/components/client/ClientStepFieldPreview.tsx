@@ -1,7 +1,12 @@
 'use client';
 
 import type { ChecklistItem } from '@/data/checklist';
-import { getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { OwnershipType } from '@/data/engagements';
+import {
+  fieldsForOwnership,
+  getClientResponseFields,
+  type ChecklistItemResponses,
+} from '@/lib/checklist-responses';
 import { isDeliveredToClient } from '@/lib/checklist-state-key';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 
@@ -34,16 +39,19 @@ export function ClientStepFieldPreview({
   responses,
   itemState,
   intro = 'Your team prepares this step. Here is what it captures.',
+  ownershipType,
 }: {
   item: ChecklistItem;
   responses?: ChecklistItemResponses;
   itemState?: ChecklistItemStateSlice;
   /** First line of the card; defaults to the client's wording. */
   intro?: string;
+  /** Independent companies never see the parent-entity sections. */
+  ownershipType?: OwnershipType;
 }) {
   const released = isDeliveredToClient(itemState);
 
-  const fields = getClientResponseFields(item).filter(
+  const fields = fieldsForOwnership(item.id, getClientResponseFields(item), ownershipType).filter(
     (field) => !isInternalNote(field.id, field.label),
   );
   if (fields.length === 0) return null;

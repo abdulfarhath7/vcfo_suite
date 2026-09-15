@@ -55,6 +55,9 @@ export const subsidiaryRegisteredAddressSchema = z
 /** India-incorporated vs overseas parent / FEMA track. */
 export const companyTypeSchema = z.enum(['domestic', 'foreign']);
 
+/** Dependent (has a parent entity) vs independent (standalone, no parent asked). */
+export const ownershipTypeSchema = z.enum(['subsidiary', 'independent']);
+
 /** Indian legal form for compliance applicability. */
 export const entityLegalFormSchema = z.enum(['company', 'llp', 'partnership', 'proprietorship']);
 
@@ -98,9 +101,11 @@ export const createProjectBodySchema = z
   .object({
     companyName: companyNameSchema,
     companyType: companyTypeSchema,
+    ownershipType: ownershipTypeSchema.default('subsidiary'),
     entityLegalForm: entityLegalFormSchema.default('company'),
-    parentEntityName: parentEntityNameSchema,
-    parentEntityAddress: parentEntityAddressSchema,
+    /** Required for a dependent company; may be empty for an independent one. */
+    parentEntityName: z.string().trim().max(240).default(''),
+    parentEntityAddress: z.string().trim().max(2000).default(''),
     clientEmail: emailSchema,
     clientPassword: clientPasswordSchema,
     clientName: z.string().trim().max(120).optional(),
@@ -135,8 +140,25 @@ export const createProjectBodySchema = z
     { message: 'intern_required', path: ['internId'] },
   )
   .superRefine((d, ctx) => {
+    const independent = d.ownershipType === 'independent';
+    if (!independent) {
+      if (!d.parentEntityName.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'parent_entity_name_required',
+          path: ['parentEntityName'],
+        });
+      }
+      if (!d.parentEntityAddress.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'parent_entity_address_required',
+          path: ['parentEntityAddress'],
+        });
+      }
+    }
     const stage = d.stage ?? 'Pre-Incorporation';
-    if (stage === 'Pre-Incorporation') return;
+    if (stage === 'Pre-Incorporation' || independent) return;
     const name = d.subsidiaryLegalName?.trim() ?? '';
     const address = d.subsidiaryRegisteredAddress?.trim() ?? '';
     if (!name) {

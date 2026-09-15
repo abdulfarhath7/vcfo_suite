@@ -212,14 +212,33 @@ export interface Pre1ValidationResult {
   warnings: Record<string, string>;
 }
 
+/** Parent-entity requirements an independent company never has to meet. */
+const PRE1_PARENT_ENTITY_REQUIRED_IDS: ReadonlySet<string> = new Set([
+  'parentEntityName',
+  'parentEntityRegistrationNumber',
+  'parentEntityAddress',
+  'signatoryFirstName',
+  'signatoryLastName',
+  'signatoryDesignation',
+  'signatoryGender',
+  'boardResolutionDate',
+  'certificateOfIncorporationUrl',
+  'passportUrl',
+  'drivingLicenseUrl',
+  'utilityBillUrl',
+]);
+
 export function validatePre1Responses(
   responses: ChecklistItemResponses,
+  options?: { independent?: boolean },
 ): Pre1ValidationResult {
   const errors: Record<string, string> = {};
   const warnings: Record<string, string> = {};
+  const applies = (id: string) =>
+    !options?.independent || !PRE1_PARENT_ENTITY_REQUIRED_IDS.has(id);
 
   for (const id of PRE1_BASE_REQUIRED_TEXT_IDS) {
-    if (!(responses[id] ?? '').trim()) {
+    if (applies(id) && !(responses[id] ?? '').trim()) {
       errors[id] = 'This field is required.';
     }
   }
@@ -270,7 +289,7 @@ export function validatePre1Responses(
   }
 
   for (const id of PRE1_REQUIRED_FILE_IDS) {
-    if (!(responses[id] ?? '').trim()) {
+    if (applies(id) && !(responses[id] ?? '').trim()) {
       errors[id] = 'Please upload a document.';
     }
   }

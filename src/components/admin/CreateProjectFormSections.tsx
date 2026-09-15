@@ -11,6 +11,7 @@ import {
   Layers,
   Globe2,
   MapPin,
+  Network,
   KeyRound,
   Loader2,
   Plus,
@@ -44,11 +45,12 @@ import {
 import { CreateProjectClientFields } from '@/components/admin/CreateProjectFormClientSection';
 import {
   COMPANY_TYPES,
+  OWNERSHIP_TYPES,
   ENTITY_LEGAL_FORMS,
   stageRequiresSubsidiary,
   type Stage,
 } from '@/components/admin/create-project-form-utils';
-import type { CompanyType, EntityLegalForm } from '@/data/engagements';
+import type { CompanyType, EntityLegalForm, OwnershipType } from '@/data/engagements';
 
 type CreateProjectOwnerOption = {
   id: string;
@@ -78,6 +80,8 @@ export type CreateProjectFormViewProps = {
   submitting: boolean;
   companyName: string;
   setCompanyName: (value: string) => void;
+  ownershipType: OwnershipType;
+  setOwnershipType: (value: OwnershipType) => void;
   companyType: CompanyType;
   setCompanyType: (value: CompanyType) => void;
   entityLegalForm: EntityLegalForm;
@@ -208,6 +212,8 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     submitting,
     companyName,
     setCompanyName,
+    ownershipType,
+    setOwnershipType,
     companyType,
     setCompanyType,
     entityLegalForm,
@@ -245,10 +251,10 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     changeClientNeedsApproval,
   } = props;
 
-  const needsSubsidiary = stageRequiresSubsidiary(stage);
+  const independent = ownershipType === 'independent';
+  const needsSubsidiary = stageRequiresSubsidiary(stage, ownershipType);
   const entityDone = Boolean(
-    parentEntityName.trim() &&
-      parentEntityAddress.trim() &&
+    (independent || (parentEntityName.trim() && parentEntityAddress.trim())) &&
       companyType &&
       (!needsSubsidiary ||
         (subsidiaryLegalName.trim() && subsidiaryRegisteredAddress.trim())),
@@ -437,8 +443,30 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
           <div className="p-5 sm:p-7 lg:p-8">
             {activeSection === 'entity' ? (
               <div id="create-section-entity" className="space-y-5">
+              <div>
+                <span
+                  id="create-ownership-type-label"
+                  className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                >
+                  <Network className="h-3.5 w-3.5" aria-hidden />
+                  Company type <span className="font-normal text-danger">*</span>
+                </span>
+                <SegmentedPicker
+                  value={ownershipType}
+                  options={OWNERSHIP_TYPES.map((opt) => ({ value: opt.value, label: opt.label }))}
+                  onChange={setOwnershipType}
+                  labelledBy="create-ownership-type-label"
+                  className="mt-2 max-w-xs"
+                />
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                  {OWNERSHIP_TYPES.find((opt) => opt.value === ownershipType)?.hint}
+                  {independent ? ' — no parent or subsidiary details are asked.' : '.'}
+                </p>
+              </div>
+
               <CreateProjectStartingPhasePicker stage={stage} onChange={setStage} />
 
+              {independent ? null : (
               <div className="space-y-5 rounded-xl border border-border/80 bg-muted/25 p-4 sm:p-5">
                 <p className="text-[13px] font-medium text-foreground">Parent company details</p>
                 <div>
@@ -498,6 +526,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   />
                 </div>
               </div>
+              )}
 
               {needsSubsidiary ? (
                 <div className="space-y-5 rounded-xl border border-primary/20 bg-primary-light/50 p-4 sm:p-5">
@@ -564,13 +593,14 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                 </div>
               ) : null}
 
+              {independent ? null : (
               <div>
                 <span
                   id="create-company-type-label"
                   className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
                 >
                   <Globe2 className="h-3.5 w-3.5" aria-hidden />
-                  Entity origin <span className="font-normal text-danger">*</span>
+                  Parent entity origin <span className="font-normal text-danger">*</span>
                 </span>
                 <SegmentedPicker
                   value={companyType}
@@ -581,6 +611,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                 />
                 <FieldError id="create-company-type-error" message={fieldError('companyType')} />
               </div>
+              )}
 
               <div>
                 <span

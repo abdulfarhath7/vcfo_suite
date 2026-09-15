@@ -252,6 +252,26 @@ Append here whenever something costs more than a minute to figure out.
   now lives as a Create-project-style flowchart on Incorporation. Old `/progress`
   URLs redirect there. Staff progress CC is unrelated to intern overview.
 
+## Company type: Dependent vs Independent
+
+- `engagements.ownership_type` (`subsidiary` default | `independent`), migration 0018.
+  Domain `OwnershipType` in `src/data/engagements.ts`; API `ownershipTypeSchema`.
+- Create project: **Company type** is the first control in Entity details, above
+  “Where should work start?”. Independent hides Parent company details, Subsidiary
+  details (any stage) and the Parent entity origin picker (origin forced `domestic`,
+  so FEMA/TP calendar rows never apply). `createProjectBodySchema` requires parent
+  fields only for `subsidiary`; PATCH accepts `null` to clear them.
+- Checklist for independent: pre-1 loses the parent-entity sections (Foreign Entity,
+  Foreign Entity Proof, Authorized Signatory, Signatory KYC) and `boardResolutionDate`
+  — `fieldsForOwnership` / `isParentEntityField` in `checklist-responses.ts`, applied
+  in the form hook (`allFields`), `ClientStepFieldPreview`, rail attachments, and
+  `validatePre1Responses(…, { independent })`. pre-2 / pre-3 (parent board
+  resolution) are seeded `not-applicable` at creation (`PARENT_ENTITY_ONLY_STEP_IDS`).
+- Gate: an N/A step reads `done` wherever it sits (was `locked` until the sequence
+  reached it); `deriveChecklistDisplayStatus` returns `not-applicable` for every bucket.
+- Editing an existing project to Independent clears parent fields but does not
+  retro-mark pre-2/3 N/A — do that by hand if it matters.
+
 ## Step visibility (who reads what)
 
 - Policy is pure in `src/lib/checklist-visibility.ts` and applied **server-side** in

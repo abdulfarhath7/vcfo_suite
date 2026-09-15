@@ -1,6 +1,8 @@
 import type { ChecklistItem } from '@/data/checklist';
+import type { OwnershipType } from '@/data/engagements';
 import { filterFieldsByViewer } from '@/lib/checklist-field-access';
 import {
+  fieldsForOwnership,
   getClientResponseFields,
   type ChecklistItemResponses,
 } from '@/lib/checklist-responses';
@@ -17,8 +19,12 @@ export type StepAttachmentRequirement = {
 export function getStepAttachmentRequirements(
   item: ChecklistItem,
   responses?: ChecklistItemResponses,
+  ownershipType?: OwnershipType,
 ): StepAttachmentRequirement[] {
-  return filterFieldsByViewer(getClientResponseFields(item), 'admin')
+  return filterFieldsByViewer(
+    fieldsForOwnership(item.id, getClientResponseFields(item), ownershipType),
+    'admin',
+  )
     .filter((field) => field.type === 'file')
     .map((field) => {
       const path = responses?.[field.id]?.trim() ?? '';

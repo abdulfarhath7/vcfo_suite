@@ -31,6 +31,9 @@ export function deriveChecklistDisplayStatus(
   boardResolution?: BoardResolutionProgressSnapshot,
 ): StatusCode {
   if (slice?.status === 'overdue') return 'overdue';
+  // An independent company's board-resolution steps are N/A from day one;
+  // the pre-inc tone derivations below never look at that status.
+  if (slice?.status === 'not-applicable') return 'not-applicable';
 
   if (item.bucket === 'pre-inc') {
     const checklistState = slice ? { [itemId]: slice } : {};

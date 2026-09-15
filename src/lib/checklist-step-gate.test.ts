@@ -181,6 +181,18 @@ describe('gateChecklistSteps', () => {
     expect(client.b.message).toBe('Waiting on your project lead…');
   });
 
+  it('shows an N/A step as done even before the sequence reaches it', () => {
+    const state: Record<string, ChecklistItemStateSlice> = {
+      b: { status: 'not-applicable' },
+      c: { status: 'not-applicable' },
+    };
+    const gates = gateChecklistSteps({ items: seq, state, viewer: 'client' });
+    expect(gates.a.kind).toBe('active');
+    expect(gates.b.kind).toBe('done');
+    expect(gates.c.kind).toBe('done');
+    expect(gates.d.kind).toBe('locked');
+  });
+
   it('skips N/A steps in the sequence', () => {
     const state: Record<string, ChecklistItemStateSlice> = {
       a: { status: 'completed' },

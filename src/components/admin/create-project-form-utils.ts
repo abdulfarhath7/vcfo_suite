@@ -1,4 +1,4 @@
-import type { CompanyType, EntityLegalForm } from '@/data/engagements';
+import type { CompanyType, EntityLegalForm, OwnershipType } from '@/data/engagements';
 import type { QuestionnaireAnswers } from '@/data/compliance-questionnaire';
 import { ENTITY_LEGAL_FORM_LABEL } from '@/lib/compliance/types';
 
@@ -23,10 +23,21 @@ export const PHASE_ORDER: Stage[] = [
   'Operational Readiness',
 ];
 
-/** Registration / Compliance start needs India subsidiary legal details. */
-export function stageRequiresSubsidiary(stage: Stage): boolean {
+/** Registration / Compliance start needs India subsidiary legal details — for a dependent company. */
+export function stageRequiresSubsidiary(stage: Stage, ownershipType: OwnershipType = 'subsidiary'): boolean {
+  if (ownershipType === 'independent') return false;
   return stage === 'Post-Incorporation' || stage === 'Operational Readiness';
 }
+
+/**
+ * Asked first: does a parent entity stand behind this company? Independent
+ * skips every parent / subsidiary question here and the parent-entity
+ * sections of the incorporation checklist.
+ */
+export const OWNERSHIP_TYPES: Array<{ value: OwnershipType; label: string; hint: string }> = [
+  { value: 'subsidiary', label: 'Dependent', hint: 'Subsidiary of a parent entity' },
+  { value: 'independent', label: 'Independent', hint: 'Standalone — no parent entity' },
+];
 
 export const COMPANY_TYPES: Array<{ value: CompanyType; label: string; hint: string }> = [
   { value: 'domestic', label: 'Domestic', hint: 'India-incorporated entity' },
@@ -53,6 +64,7 @@ export function passwordStrength(pw: string): 'weak' | 'fair' | 'strong' | null 
 
 export type CreateProjectState = {
   companyName: string;
+  ownershipType: OwnershipType;
   companyType: CompanyType;
   entityLegalForm: EntityLegalForm;
   parentEntityName: string;
@@ -92,6 +104,7 @@ export function createProjectReducer(state: CreateProjectState, action: CreatePr
     case 'reset':
       return {
         companyName: '',
+        ownershipType: 'subsidiary',
         companyType: 'domestic',
         entityLegalForm: 'company',
         parentEntityName: '',
@@ -138,6 +151,7 @@ export function saveCreateProjectDraft(state: CreateProjectState): void {
   if (typeof window === 'undefined') return;
   const payload: CreateProjectDraftPayload = {
     companyName: state.companyName,
+    ownershipType: state.ownershipType,
     companyType: state.companyType,
     entityLegalForm: state.entityLegalForm,
     parentEntityName: state.parentEntityName,
@@ -177,6 +191,7 @@ export function loadCreateProjectDraft(): CreateProjectDraftPayload | null {
     const managerIds = asIdList(parsed.managerIds ?? parsed.managerId);
     return {
       companyName: typeof parsed.companyName === 'string' ? parsed.companyName : '',
+      ownershipType: parsed.ownershipType === 'independent' ? 'independent' : 'subsidiary',
       companyType: parsed.companyType === 'foreign' ? 'foreign' : 'domestic',
       entityLegalForm:
         parsed.entityLegalForm === 'llp' ||

@@ -14,6 +14,7 @@ import { checklist, type ChecklistField, type ChecklistItem } from '@/data/check
 import {
   computeMcaNameApprovalExpiryDate,
   extractItemResponses,
+  fieldsForOwnership,
   getClientResponseFields,
   appendStepRemarksToVisible,
   INTERN_DELIVERY_STEP_IDS,
@@ -154,14 +155,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     user,
     engagements,
   } = useApp();
-  // `getClientResponseFields` builds a fresh array per call. Memoise it, or
-  // every callback keyed on `fields` (flush, debounce) is re-created each
-  // render and the autosave timer is torn down before it can fire.
-  const allFields = useMemo(() => getClientResponseFields(item), [item]);
-  const fields = useMemo(
-    () => filterFieldsByViewer(allFields, variant),
-    [allFields, variant],
-  );
   const engagement = useMemo(() => {
     const scope = engagementId ?? clientId;
     const byScope = engagements.find((e) => e.id === scope || e.clientId === scope);
@@ -171,6 +164,19 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     }
     return undefined;
   }, [engagementId, clientId, engagements, user, variant]);
+  const ownershipType = engagement?.ownershipType;
+  const independent = ownershipType === 'independent';
+  // `getClientResponseFields` builds a fresh array per call. Memoise it, or
+  // every callback keyed on `fields` (flush, debounce) is re-created each
+  // render and the autosave timer is torn down before it can fire.
+  const allFields = useMemo(
+    () => fieldsForOwnership(item.id, getClientResponseFields(item), ownershipType),
+    [item, ownershipType],
+  );
+  const fields = useMemo(
+    () => filterFieldsByViewer(allFields, variant),
+    [allFields, variant],
+  );
 
   const itemState = useMemo(
     () => (engagement ? getStateForEngagement(engagement) : getState(clientId))[item.id],
@@ -572,7 +578,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const completionValues = isPre1 ? pre1Draft : draft;
 
   const liveValidationErrors = useMemo(() => {
-    if (isPre1) return validatePre1Responses(pre1Draft).errors;
+    if (isPre1) return validatePre1Responses(pre1Draft, { independent }).errors;
     if (isPre6) {
       if (!pre1SubmittedForPre6) return {};
       return validatePre6Responses(draft, pre1Responses).errors;
@@ -584,7 +590,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (item.id === 'pre-11') return validatePre11Responses(draft).errors;
     if (item.id === 'pre-12') return validatePre12Responses(draft).errors;
     return {};
-  }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6]);
+  }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, independent]);
 
   const getSectionPending = useCallback(
     (groupFields: ChecklistField[]) =>
@@ -898,6 +904,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       draft,
       pre1Responses,
       pre1SubmittedForPre6,
+      { independent },
     );
     setFieldErrors(errors);
     setFieldWarnings(warnings);
@@ -967,6 +974,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       submitDraft,
       pre1Responses,
       pre1SubmittedForPre6,
+      { independent },
     );
     const delivery = isInternDeliveryStep
       ? validateInternDelivery(item.id, submitDraft)
@@ -1021,6 +1029,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       draft,
       pre1Responses,
       pre1SubmittedForPre6,
+      { independent },
     );
     setFieldErrors(errors);
     setFieldWarnings(warnings);

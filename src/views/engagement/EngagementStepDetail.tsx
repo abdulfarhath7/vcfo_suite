@@ -17,6 +17,7 @@ import {
   getActiveCatalogItems,
   type ChecklistItem,
 } from '@/data/checklist';
+import type { OwnershipType } from '@/data/engagements';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
 import { filterFieldsByViewer, hasResponseFormFields } from '@/lib/checklist-field-access';
 import { isStepReleasedToClient, isStepReleasedToFirm } from '@/lib/checklist-visibility';
@@ -63,6 +64,7 @@ function journeyRailItems(
   gates: Record<string, ChecklistStepGate>,
   checklistState: Record<string, ChecklistItemStateSlice | undefined>,
   brSnapshot: BoardResolutionProgressSnapshot | null | undefined,
+  ownershipType: OwnershipType | undefined,
 ): JourneyRailItem[] {
   return steps.map((step, index) => {
     const gate = getStepGate(gates, step.id);
@@ -75,7 +77,11 @@ function journeyRailItems(
         gate,
       ),
       stepNumber: index + 1,
-      attachments: getStepAttachmentRequirements(step, extractItemResponses(step, slice)),
+      attachments: getStepAttachmentRequirements(
+        step,
+        extractItemResponses(step, slice),
+        ownershipType,
+      ),
     };
   });
 }
@@ -285,9 +291,9 @@ export default function EngagementStepDetail() {
     ? 'Your project lead is still preparing this step. Their answers appear here once they ask for your approval.'
     : undefined;
 
-  const railItems = journeyRailItems(bucketSteps, gates, checklistState, brSnapshot);
+  const railItems = journeyRailItems(bucketSteps, gates, checklistState, brSnapshot, eng.ownershipType);
   const internPhaseRailItems = internPhase
-    ? journeyRailItems(internPhase.items, gates, checklistState, brSnapshot)
+    ? journeyRailItems(internPhase.items, gates, checklistState, brSnapshot, eng.ownershipType)
     : [];
   const internPhaseRailGroups = (() => {
     if (!internPhase || internPhase.id !== 'registration-phase-4') return [];

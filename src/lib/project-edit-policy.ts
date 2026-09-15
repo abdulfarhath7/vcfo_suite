@@ -86,6 +86,7 @@ export function requiresApproval(
 const MANAGER_EDITABLE_FIELDS = [
   'companyName',
   'companyType',
+  'ownershipType',
   'entityLegalForm',
   'parentEntityName',
   'parentEntityAddress',

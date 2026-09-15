@@ -1,0 +1,1 @@
+ALTER TABLE "engagements" ADD COLUMN "ownership_type" text DEFAULT 'subsidiary' NOT NULL;

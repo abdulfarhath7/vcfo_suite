@@ -206,8 +206,9 @@ export function runStepValidation(
   draft: ChecklistItemResponses,
   pre1ResponsesForPre6: ChecklistItemResponses,
   pre1SubmittedForPre6: boolean,
+  options?: { independent?: boolean },
 ): { ok: boolean; errors: Record<string, string>; warnings: Record<string, string> } {
-  if (isPre1) return validatePre1Responses(pre1Draft);
+  if (isPre1) return validatePre1Responses(pre1Draft, options);
   if (isPre6) {
     if (!pre1SubmittedForPre6) {
       return {

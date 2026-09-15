@@ -122,7 +122,10 @@ export function gateChecklistSteps(params: {
 
   const out: Record<string, ChecklistStepGate> = {};
   items.forEach((item, index) => {
-    if (complete[index] && (currentIndex < 0 || index < currentIndex)) {
+    // N/A is settled wherever it sits in the sequence (an independent
+    // company's board-resolution steps, say) — never "opens after".
+    const notApplicable = state[item.id]?.status === 'not-applicable';
+    if (complete[index] && (notApplicable || currentIndex < 0 || index < currentIndex)) {
       out[item.id] = {
         kind: 'done',
         canOpen: true,

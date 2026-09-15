@@ -3,7 +3,12 @@ import { and, desc, eq, getTableColumns, inArray, isNotNull, isNull, or, sql } f
 import { db } from '@/db/client';
 import { engagements, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import type { Engagement } from '@/data/engagements';
+import {
+  coerceOwnershipType,
+  PARENT_ENTITY_ONLY_STEP_IDS,
+  type Engagement,
+  type OwnershipType,
+} from '@/data/engagements';
 import {
   type ChecklistItemStateSlice,
   type ClientFillRequest,
@@ -333,6 +338,7 @@ export function toAppEngagement(
     clientId: row.clientId,
     companyName: row.companyName,
     companyType: row.companyType as Engagement['companyType'],
+    ownershipType: coerceOwnershipType(row.ownershipType),
     entityLegalForm: (row.entityLegalForm ?? 'company') as Engagement['entityLegalForm'],
     incorporationDate: row.incorporationDate ?? null,
     parentEntityName: row.parentEntityName,
@@ -697,7 +703,10 @@ export async function getClientProfileForEngagement(
 export interface CreateProjectWithClientInput {
   companyName: string;
   companyType: string;
+  /** Missing = subsidiary (the historical default). */
+  ownershipType?: OwnershipType;
   entityLegalForm?: string;
+  /** Empty for an independent company. */
   parentEntityName: string;
   parentEntityAddress: string;
   clientEmail: string;
@@ -806,7 +815,8 @@ export async function createProjectWithClient(
   const stage = input.stage ?? 'Pre-Incorporation';
   const health = input.health ?? 'on-track';
   const needsSubsidiary =
-    stage === 'Post-Incorporation' || stage === 'Operational Readiness';
+    (stage === 'Post-Incorporation' || stage === 'Operational Readiness') &&
+    coerceOwnershipType(input.ownershipType) !== 'independent';
   const subsidiaryLegalName = input.subsidiaryLegalName?.trim() || null;
   const subsidiaryRegisteredAddress = input.subsidiaryRegisteredAddress?.trim() || null;
   if (needsSubsidiary) {
@@ -818,16 +828,26 @@ export async function createProjectWithClient(
     }
   }
 
+  const ownershipType = coerceOwnershipType(input.ownershipType);
+  const independent = ownershipType === 'independent';
+  if (!independent) {
+    if (!input.parentEntityName.trim()) throw new Error('parent_entity_name_required');
+    if (!input.parentEntityAddress.trim()) throw new Error('parent_entity_address_required');
+  }
+
   try {
     const row = await createEngagement(ctx, {
       slug,
       companyName: input.companyName.trim(),
-      companyType: input.companyType,
+      // A standalone company has no overseas parent, whatever the form sent.
+      companyType: independent ? 'domestic' : input.companyType,
+      ownershipType,
       entityLegalForm: input.entityLegalForm ?? 'company',
-      parentEntityName: input.parentEntityName.trim(),
-      parentEntityAddress: input.parentEntityAddress.trim(),
-      subsidiaryLegalName: needsSubsidiary ? subsidiaryLegalName : null,
-      subsidiaryRegisteredAddress: needsSubsidiary ? subsidiaryRegisteredAddress : null,
+      parentEntityName: independent ? null : input.parentEntityName.trim(),
+      parentEntityAddress: independent ? null : input.parentEntityAddress.trim(),
+      subsidiaryLegalName: needsSubsidiary && !independent ? subsidiaryLegalName : null,
+      subsidiaryRegisteredAddress:
+        needsSubsidiary && !independent ? subsidiaryRegisteredAddress : null,
       clientId: client.clientId,
       clientUserId: client.userId,
       internId: primaryLeadId,
@@ -836,7 +856,13 @@ export async function createProjectWithClient(
       clientName,
       stage,
       health,
-      checklistState: {},
+      // No parent board → no board resolution to draft or sign. Marking the
+      // two steps N/A up front keeps the sequential gate flowing past them.
+      checklistState: independent
+        ? Object.fromEntries(
+            PARENT_ENTITY_ONLY_STEP_IDS.map((id) => [id, { status: 'not-applicable' }]),
+          )
+        : {},
       complianceQuestionnaire: input.complianceQuestionnaire ?? {},
     });
 

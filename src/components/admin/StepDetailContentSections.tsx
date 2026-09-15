@@ -421,6 +421,7 @@ export function StepDetailContentView(props: any) {
                 responses={responses}
                 itemState={itemState}
                 intro={nothingYetIntro}
+                ownershipType={engagement?.ownershipType}
               />
             </div>
           ) : (

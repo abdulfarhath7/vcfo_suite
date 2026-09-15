@@ -2,12 +2,30 @@ import { checklist, StatusCode } from './checklist';
 import type { EntityLegalForm } from '@/lib/compliance/types';
 
 export type CompanyType = 'domestic' | 'foreign';
+/**
+ * subsidiary = a parent entity (Indian or overseas) is incorporating this
+ * company, so parent details, its board resolution and signatory KYC apply;
+ * independent = a standalone company with no parent — none of that is asked.
+ */
+export type OwnershipType = 'subsidiary' | 'independent';
 export type { EntityLegalForm };
 
 export const COMPANY_TYPE_LABEL: Record<CompanyType, string> = {
   domestic: 'Domestic',
   foreign: 'Foreign',
 };
+
+export const OWNERSHIP_TYPE_LABEL: Record<OwnershipType, string> = {
+  subsidiary: 'Dependent',
+  independent: 'Independent',
+};
+
+export function coerceOwnershipType(value: unknown): OwnershipType {
+  return value === 'independent' ? 'independent' : 'subsidiary';
+}
+
+/** Steps that only exist for a parent entity's board (see pre-1 boardResolutionDate). */
+export const PARENT_ENTITY_ONLY_STEP_IDS = ['pre-2', 'pre-3'] as const;
 
 export interface Engagement {
   id: string;
@@ -17,6 +35,8 @@ export interface Engagement {
   companyName: string;
   /** domestic = India-incorporated; foreign = overseas parent / FEMA track */
   companyType: CompanyType;
+  /** Dependent (has a parent entity) or Independent (standalone). Missing = subsidiary. */
+  ownershipType?: OwnershipType;
   /** Indian legal form for compliance calendar filtering */
   entityLegalForm?: EntityLegalForm;
   /** Synced from checklist pre-12 */

@@ -55,6 +55,7 @@ type ManagerOption = { id: string; name: string; email: string };
 function stateFromEngagement(eng: Engagement): CreateProjectState {
   return {
     companyName: eng.companyName ?? '',
+    ownershipType: eng.ownershipType ?? 'subsidiary',
     companyType: (eng.companyType ?? 'domestic') as CreateProjectState['companyType'],
     entityLegalForm: (eng.entityLegalForm ?? 'company') as CreateProjectState['entityLegalForm'],
     parentEntityName: eng.parentEntityName ?? '',
@@ -85,6 +86,7 @@ function stateFromEngagement(eng: Engagement): CreateProjectState {
 function initialCreateProjectState(internIds: string[]): CreateProjectState {
   const base: CreateProjectState = {
     companyName: '',
+    ownershipType: 'subsidiary',
     companyType: 'domestic',
     entityLegalForm: 'company',
     parentEntityName: '',
@@ -166,6 +168,7 @@ export function CreateProjectForm({
 
   const {
     companyName,
+    ownershipType,
     companyType,
     entityLegalForm,
     parentEntityName,
@@ -218,9 +221,12 @@ export function CreateProjectForm({
   const companyValid = companyNameSchema.safeParse(companyName).success;
   const companyTypeValid = companyTypeSchema.safeParse(companyType).success;
   const entityLegalFormValid = entityLegalFormSchema.safeParse(entityLegalForm).success;
-  const parentEntityNameValid = parentEntityNameSchema.safeParse(parentEntityName).success;
-  const parentEntityAddressValid = parentEntityAddressSchema.safeParse(parentEntityAddress).success;
-  const needsSubsidiary = stageRequiresSubsidiary(stage);
+  const independent = ownershipType === 'independent';
+  const parentEntityNameValid =
+    independent || parentEntityNameSchema.safeParse(parentEntityName).success;
+  const parentEntityAddressValid =
+    independent || parentEntityAddressSchema.safeParse(parentEntityAddress).success;
+  const needsSubsidiary = stageRequiresSubsidiary(stage, ownershipType);
   const subsidiaryNameValid = !needsSubsidiary
     ? true
     : subsidiaryLegalNameSchema.safeParse(subsidiaryLegalName).success;
@@ -251,16 +257,20 @@ export function CreateProjectForm({
     () => ({
       companyName: !companyName.trim() ? 'Enter the project or GCC entity name for this setup.' : '',
       companyType: !companyTypeValid ? 'Select whether the company is domestic or foreign.' : '',
-      parentEntityName: !parentEntityName.trim()
-        ? 'Enter the parent entity’s full legal name as on incorporation documents.'
-        : !parentEntityNameValid
-          ? 'Legal name must be 240 characters or fewer.'
-          : '',
-      parentEntityAddress: !parentEntityAddress.trim()
-        ? 'Enter the parent entity’s full registered address.'
-        : !parentEntityAddressValid
-          ? 'Address must be 2,000 characters or fewer.'
-          : '',
+      parentEntityName: independent
+        ? ''
+        : !parentEntityName.trim()
+          ? 'Enter the parent entity’s full legal name as on incorporation documents.'
+          : !parentEntityNameValid
+            ? 'Legal name must be 240 characters or fewer.'
+            : '',
+      parentEntityAddress: independent
+        ? ''
+        : !parentEntityAddress.trim()
+          ? 'Enter the parent entity’s full registered address.'
+          : !parentEntityAddressValid
+            ? 'Address must be 2,000 characters or fewer.'
+            : '',
       subsidiaryLegalName: needsSubsidiary
         ? !subsidiaryLegalName.trim()
           ? 'Enter the subsidiary company’s full legal name.'
@@ -307,6 +317,7 @@ export function CreateProjectForm({
       isEdit,
       companyName,
       companyTypeValid,
+      independent,
       parentEntityName,
       parentEntityNameValid,
       parentEntityAddress,
@@ -335,6 +346,12 @@ export function CreateProjectForm({
   const setCompanyName = (value: string) => dispatch({ type: 'patch', patch: { companyName: value } });
   const setCompanyType = (value: typeof companyType) =>
     dispatch({ type: 'patch', patch: { companyType: value } });
+  // A standalone company has no overseas parent: origin snaps to domestic.
+  const setOwnershipType = (value: typeof ownershipType) =>
+    dispatch({
+      type: 'patch',
+      patch: { ownershipType: value, ...(value === 'independent' ? { companyType: 'domestic' } : {}) },
+    });
   const setEntityLegalForm = (value: typeof entityLegalForm) =>
     dispatch({ type: 'patch', patch: { entityLegalForm: value } });
   const setParentEntityName = (value: string) =>
@@ -398,15 +415,16 @@ export function CreateProjectForm({
       );
 
       if (isEdit && editEngagement) {
-        const needsSub = stageRequiresSubsidiary(stage);
+        const needsSub = stageRequiresSubsidiary(stage, ownershipType);
         const managerChanged =
           isFirmAdmin && (editEngagement.managerId ?? '') !== (uniqueNonEmptyIds(managerIds)[0] ?? '');
         const updated = await updateEngagement(editEngagement.id, {
           companyName: name,
-          companyType,
+          ownershipType,
+          companyType: independent ? 'domestic' : companyType,
           entityLegalForm,
-          parentEntityName: parentEntityName.trim(),
-          parentEntityAddress: parentEntityAddress.trim(),
+          parentEntityName: independent ? null : parentEntityName.trim(),
+          parentEntityAddress: independent ? null : parentEntityAddress.trim(),
           subsidiaryLegalName: needsSub ? subsidiaryLegalName.trim() : null,
           subsidiaryRegisteredAddress: needsSub ? subsidiaryRegisteredAddress.trim() : null,
           clientName: clientContact.trim() || null,
@@ -454,10 +472,11 @@ export function CreateProjectForm({
       );
       const result = await createProjectWithClient({
         companyName: name,
-        companyType,
+        ownershipType,
+        companyType: independent ? 'domestic' : companyType,
         entityLegalForm,
-        parentEntityName: parentEntityName.trim(),
-        parentEntityAddress: parentEntityAddress.trim(),
+        parentEntityName: independent ? '' : parentEntityName.trim(),
+        parentEntityAddress: independent ? '' : parentEntityAddress.trim(),
         subsidiaryLegalName: needsSubsidiary ? subsidiaryLegalName.trim() : undefined,
         subsidiaryRegisteredAddress: needsSubsidiary
           ? subsidiaryRegisteredAddress.trim()
@@ -555,6 +574,8 @@ export function CreateProjectForm({
     submitting,
     companyName,
     setCompanyName,
+    ownershipType,
+    setOwnershipType,
     companyType,
     setCompanyType,
     entityLegalForm,

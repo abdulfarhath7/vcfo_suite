@@ -248,6 +248,7 @@ export async function fetchInternOptions(): Promise<InternOption[] | null> {
 export interface CreateProjectInput {
   companyName: string;
   companyType: 'domestic' | 'foreign';
+  ownershipType?: 'subsidiary' | 'independent';
   entityLegalForm?: 'company' | 'llp' | 'partnership' | 'proprietorship';
   parentEntityName: string;
   parentEntityAddress: string;
@@ -315,6 +316,7 @@ export async function createProjectWithClient(
 export interface UpdateEngagementInput {
   companyName?: string;
   companyType?: Engagement['companyType'];
+  ownershipType?: Engagement['ownershipType'];
   /** Delivery lead scoping id — null clears the assignment. */
   internId?: string | null;
   /** Project manager profile UUID — null clears (admin only). */
@@ -323,8 +325,9 @@ export interface UpdateEngagementInput {
   health?: Engagement['health'];
   incorporationDate?: string | null;
   entityLegalForm?: Engagement['entityLegalForm'];
-  parentEntityName?: string;
-  parentEntityAddress?: string;
+  /** null clears them (the company became independent). */
+  parentEntityName?: string | null;
+  parentEntityAddress?: string | null;
   parentEntityRegistrationNumber?: string | null;
   subsidiaryLegalName?: string | null;
   subsidiaryRegisteredAddress?: string | null;

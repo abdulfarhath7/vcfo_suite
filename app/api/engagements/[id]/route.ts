@@ -10,6 +10,7 @@ import {
 import {
   companyNameSchema,
   companyTypeSchema,
+  ownershipTypeSchema,
   entityLegalFormSchema,
   parentEntityAddressSchema,
   parentEntityNameSchema,
@@ -51,6 +52,7 @@ const nullableText = (max: number) =>
 const patchBodySchema = z.object({
   companyName: companyNameSchema.optional(),
   companyType: companyTypeSchema.optional(),
+  ownershipType: ownershipTypeSchema.optional(),
   /** Pass null to unassign the delivery lead. */
   internId: z.union([internIdSchema, z.null()]).optional(),
   /** Pass null to unassign the project manager (admin only). */
@@ -59,8 +61,9 @@ const patchBodySchema = z.object({
   health: engagementHealthSchema.optional(),
   incorporationDate: z.string().trim().nullable().optional(),
   entityLegalForm: entityLegalFormSchema.optional(),
-  parentEntityName: parentEntityNameSchema.optional(),
-  parentEntityAddress: parentEntityAddressSchema.optional(),
+  /** null clears them — the company was made independent. */
+  parentEntityName: z.union([parentEntityNameSchema, z.null()]).optional(),
+  parentEntityAddress: z.union([parentEntityAddressSchema, z.null()]).optional(),
   parentEntityRegistrationNumber: nullableText(120),
   subsidiaryLegalName: z.union([subsidiaryLegalNameSchema, z.null()]).optional(),
   subsidiaryRegisteredAddress: z.union([subsidiaryRegisteredAddressSchema, z.null()]).optional(),
@@ -142,6 +145,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       patch.incorporationDate = body.data.incorporationDate;
     }
     if (body.data.companyType !== undefined) patch.companyType = body.data.companyType;
+    if (body.data.ownershipType !== undefined) patch.ownershipType = body.data.ownershipType;
     if (body.data.parentEntityName !== undefined) {
       patch.parentEntityName = body.data.parentEntityName;
     }
