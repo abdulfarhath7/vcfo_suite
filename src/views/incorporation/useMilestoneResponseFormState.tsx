@@ -1440,12 +1440,14 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     const fieldIsReadOnly = (fieldId: string) =>
       readOnly || formReadOnly || isFieldLockedForClient(fieldId);
     /**
-     * The client reads a finished step as a record, not a form: a two-column
-     * definition list on hairline dividers. Only when the whole group is
-     * read-only — a client still filling their own step gets the working form
-     * untouched, and staff always do.
+     * Anyone who only READS a step gets the same record the client gets: a
+     * two-column definition list on hairline dividers — the client always, a
+     * manager or admin reviewing the lead's answers (`formReadOnly`) too.
+     * Only when the whole group is read-only; the lead's working form is
+     * untouched.
      */
-    const recordLayout = isClient && group.fields.every((field) => fieldIsReadOnly(field.id));
+    const recordLayout =
+      (isClient || formReadOnly) && group.fields.every((field) => fieldIsReadOnly(field.id));
 
     const fieldsBlock = recordLayout ? (
       <dl className="milestone-record">{group.fields.map(renderRecordRow)}</dl>
