@@ -1408,7 +1408,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               value={draft[field.id] ?? ''}
               onChange={(v) => setField(field.id, v)}
               onBlur={() => autoSaveEnabled && scheduleAutoSave(true)}
-              placeholder={field.placeholder ?? 'Pick a date'}
               className={cn(error && 'border-danger')}
             />
           )

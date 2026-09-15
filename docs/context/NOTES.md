@@ -90,6 +90,12 @@ Append here whenever something costs more than a minute to figure out.
   client build can release a step on the lead’s say-so. The `event: 'delivered'`
   notify path is unreachable from routes now (kept for the WhatsApp template map).
 
+- **react-day-picker v10 marks the `<td>` selected, not the day button.**
+  `aria-selected:` utilities on `day_button` never match, and the `ghost`
+  button variant's `text-primary` paints the selected day blue-on-blue. Use a
+  parent selector on the button (`[[aria-selected=true]_&]:text-primary-foreground`),
+  as `NoirDatePicker` does.
+
 ## Stubs
 
 - Stub files `throw` on import by design, so a missing port shows up as a runtime crash
