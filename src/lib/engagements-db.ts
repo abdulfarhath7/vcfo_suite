@@ -10,6 +10,7 @@ import {
 } from '@/lib/board-resolution';
 import { AppApiError, toastEmailDispatch } from '@/lib/toast-errors';
 import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
+import type { EngagementSchedule } from '@/lib/schedule-windows';
 
 /**
  * ENGAGEMENTS — CLIENT-SIDE DATA ACCESS.
@@ -477,3 +478,45 @@ export async function finalizeBoardResolutionInDb(
   );
 }
 
+// ---------------------------------------------------------------------------
+// Manager date windows
+// ---------------------------------------------------------------------------
+
+export type ScheduleWindowInput = { from: string; to: string } | null;
+
+/** Set or clear (null) the incorporation window or one step's window. Manager / admin only. */
+export async function setEngagementWindowInDb(
+  appEngagementId: string,
+  target: { kind: 'incorporation' } | { kind: 'step'; itemId: string },
+  window: ScheduleWindowInput,
+): Promise<EngagementSchedule> {
+  const payload = await apiFetch<{ schedule: EngagementSchedule }>(
+    engagementPath(appEngagementId, '/schedule'),
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        target: target.kind,
+        ...(target.kind === 'step' ? { itemId: target.itemId } : {}),
+        from: window?.from ?? null,
+        to: window?.to ?? null,
+      }),
+      fallbackError: 'Could not save the date window.',
+    },
+  );
+  return payload.schedule;
+}
+
+/** Set or clear (null) the working window on one compliance instance. */
+export async function setFilingWindowInDb(
+  instanceId: string,
+  window: ScheduleWindowInput,
+): Promise<{ id: string; windowFrom: string | null; windowTo: string | null }> {
+  const payload = await apiFetch<{
+    row: { id: string; windowFrom: string | null; windowTo: string | null };
+  }>(`/api/filings/${encodeURIComponent(instanceId)}/window`, {
+    method: 'POST',
+    body: JSON.stringify({ from: window?.from ?? null, to: window?.to ?? null }),
+    fallbackError: 'Could not save the date window.',
+  });
+  return payload.row;
+}

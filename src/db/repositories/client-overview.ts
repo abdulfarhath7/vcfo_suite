@@ -13,6 +13,7 @@ import {
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { listAuditEvents } from '@/db/repositories/audit-events';
 import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
 import {
   buildBallInCourt,
   buildDeliverables,
@@ -229,7 +230,7 @@ export async function getClientOverview(
     identifiers,
     incorporated: Boolean(identifiers.cin || incorporationDate),
     progress,
-    nextAction: buildNextAction(state),
+    nextAction: buildNextAction(state, normalizeEngagementSchedule(row.schedule)),
     ballInCourt: buildBallInCourt(state),
     documents: {
       deliverables,

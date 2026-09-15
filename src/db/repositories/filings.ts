@@ -88,6 +88,9 @@ export async function getFilings(
       periodLabel: complianceInstances.periodLabel,
       fyLabel: complianceInstances.fyLabel,
       status: complianceInstances.status,
+      obligationId: complianceInstances.obligationId,
+      windowFrom: complianceInstances.windowFrom,
+      windowTo: complianceInstances.windowTo,
       companyName: engagements.companyName,
       compliance: complianceObligations.complianceArea,
       particular: complianceObligations.particular,
@@ -120,6 +123,9 @@ export async function getFilings(
       periodLabel: row.periodLabel ?? null,
       fyLabel: row.fyLabel ?? null,
       rawStatus: row.status,
+      obligationId: row.obligationId,
+      windowFrom: row.windowFrom ?? null,
+      windowTo: row.windowTo ?? null,
     };
   });
 

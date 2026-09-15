@@ -54,6 +54,8 @@ export interface JourneyRailItem {
   stepNumber: number;
   phaseId?: string;
   attachments?: StepAttachmentRequirement[];
+  /** Manager-set window (`formatWindow`), shown as quiet mono metadata. */
+  windowLabel?: string;
 }
 
 interface ChecklistJourneyRailProps {
@@ -136,7 +138,7 @@ export function ChecklistJourneyRail({
       <LayoutGroup id="intern-journey-rail">
       <ol className="list-none space-y-0">
         {items.map((row, index) => {
-          const { item, gate, status, stepNumber, attachments = [] } = row;
+          const { item, gate, status, stepNumber, attachments = [], windowLabel } = row;
           const selected = selectedId === item.id;
           const next = items[index + 1];
           const isLast = index === items.length - 1;
@@ -190,6 +192,11 @@ export function ChecklistJourneyRail({
               {gate.kind === 'waiting' && gate.message && (
                 <p className="mt-1 text-[11px] text-muted-foreground">{gate.message}</p>
               )}
+              {windowLabel ? (
+                <p className="mt-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                  {windowLabel}
+                </p>
+              ) : null}
             </div>
           );
 

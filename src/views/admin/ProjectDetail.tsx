@@ -23,6 +23,11 @@ import {
 import { formatDate } from '@/lib/deadlines';
 import { resolveEngagementFromRouteParam } from '@/lib/slug';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
+import { useQueryClient } from '@tanstack/react-query';
+import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowControl';
+import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
+import { setEngagementWindowInDb } from '@/lib/engagements-db';
+import { canSetScheduleWindows } from '@/lib/schedule-windows';
 
 /**
  * STAFF PROJECT DETAIL (admin + manager) — the client's incorporation page,
@@ -44,8 +49,10 @@ export default function ProjectDetail() {
     engagementsLoading,
     getStateForEngagement,
     refreshEngagementChecklist,
+    user,
   } = useApp();
   const staffBase = useStaffBasePath();
+  const queryClient = useQueryClient();
 
   const eng = useMemo(
     () => resolveEngagementFromRouteParam(engagements, slugParam),
@@ -119,13 +126,31 @@ export default function ProjectDetail() {
               {totalDone}/{totalSteps}
               {incorporationDate ? ` · ${formatDate(new Date(incorporationDate))}` : ''}
             </p>
+            {/* One window for SPICe+ Part A + Part B together. Managers and
+                admins set it here; leads and clients read it on the phase rows. */}
+            {canSetScheduleWindows(user?.role) ? (
+              <ScheduleWindowControl
+                value={eng.schedule?.incorporation}
+                label="Incorporation"
+                className="mt-2"
+                onSave={async (window) => {
+                  await setEngagementWindowInDb(eng.id, { kind: 'incorporation' }, window);
+                  await queryClient.invalidateQueries({ queryKey: ['engagements'] });
+                }}
+              />
+            ) : null}
           </div>
           <ProgressRing value={Math.round((totalDone / totalSteps) * 100) || 0} size={52} />
         </div>
       </header>
 
       <div className="flex flex-col gap-3">
-        <InternPhaseEntryCards phases={phases} gates={gates} hrefForPhase={phaseHref} />
+        <InternPhaseEntryCards
+          phases={phases}
+          gates={gates}
+          hrefForPhase={phaseHref}
+          metaForPhase={phaseWindowMeta(eng.schedule)}
+        />
       </div>
     </PageTransition>
   );

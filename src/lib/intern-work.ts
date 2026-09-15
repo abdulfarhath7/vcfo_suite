@@ -5,6 +5,7 @@
 import { addDays, differenceInDays, differenceInHours } from 'date-fns';
 import { checklist, getItem, type ChecklistItem } from '@/data/checklist';
 import type { ComplianceFiling } from '@/data/compliance';
+import { formatWindow, windowForStep } from '@/lib/schedule-windows';
 import type { DocRequest, Engagement } from '@/data/engagements';
 import {
   getReviewStatus,
@@ -96,6 +97,8 @@ export interface InternWorkItem {
   filingId?: string;
   requestId?: string;
   catalogLabel?: string;
+  /** Manager-set window, as quiet mono metadata (`formatWindow`). Absent when unset. */
+  windowLabel?: string;
 }
 
 export interface InternWorkKpis {
@@ -477,6 +480,8 @@ export function buildInternWorkItems(opts: {
   getChecklistState: (engagement: Engagement) => Record<string, ChecklistItemStateSlice>;
   internId: string;
   filings?: ComplianceFiling[];
+  /** Manager-set compliance windows keyed by the client-side filing id. */
+  filingWindows?: Record<string, { from: string; to: string }>;
   requests?: DocRequest[];
   now?: Date;
 }): InternWorkItem[] {
@@ -512,8 +517,12 @@ export function buildInternWorkItems(opts: {
         if (!doneYmd || !weekYmds.has(doneYmd)) continue;
       }
 
+      // A manager-set window replaces the statutory rule as the step's due
+      // date. The queue already dropped locked steps, so a window on a future
+      // step never badges it overdue.
+      const window = windowForStep(engagement.schedule, def.id);
       const dueDate = computeDueDate(def.deadline, incorporation);
-      const dueAt = dueDate ? ymdInIst(dueDate) : undefined;
+      const dueAt = window?.to ?? (dueDate ? ymdInIst(dueDate) : undefined);
       const startedAt = slice?.clientSubmittedAt || slice?.reviewedAt || engagement.createdAt;
       const overdue = q.isOverdue || (Boolean(dueAt) && dueAt < todayYmd && kind !== 'done');
       const age =
@@ -543,6 +552,7 @@ export function buildInternWorkItems(opts: {
         }),
         catalogId: def.id,
         catalogLabel: catalogShortLabel(def),
+        ...(window ? { windowLabel: formatWindow(window) } : {}),
       });
     }
   }
@@ -585,6 +595,9 @@ export function buildInternWorkItems(opts: {
         now,
       }),
       filingId: filing.id,
+      ...(opts.filingWindows?.[filing.id]
+        ? { windowLabel: formatWindow(opts.filingWindows[filing.id]!) }
+        : {}),
     });
   }
 

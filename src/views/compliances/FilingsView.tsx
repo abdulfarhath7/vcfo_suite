@@ -17,6 +17,11 @@ import {
   PreIncorporationPortfolioNote,
 } from '@/components/compliances/PreIncorporationNotice';
 import { useFilings } from '@/lib/use-filings';
+import { useQueryClient } from '@tanstack/react-query';
+import { useApp } from '@/context/AppContext';
+import { ScheduleWindowControl, ScheduleWindowMeta } from '@/components/schedule/ScheduleWindowControl';
+import { setFilingWindowInDb } from '@/lib/engagements-db';
+import { canSetScheduleWindows } from '@/lib/schedule-windows';
 import {
   FILING_STATUS_LABEL,
   buildMatrix,
@@ -305,7 +310,12 @@ const EMPTY_REGISTER =
 function registerColumns(
   now: Date,
   basePath: string,
-  options?: { numbered?: boolean; mode?: RegisterColumnsMode },
+  options?: {
+    numbered?: boolean;
+    mode?: RegisterColumnsMode;
+    /** The manager's date window cell — a control for writers, quiet dates for readers. */
+    window?: (row: FilingRow) => ReactNode;
+  },
 ): DashColumn<FilingRow>[] {
   const columns: DashColumn<FilingRow>[] = [];
   const mode = options?.mode ?? ONE_COMPANY;
@@ -378,6 +388,13 @@ function registerColumns(
       ),
     },
     {
+      key: 'window',
+      header: 'Window',
+      width: 'minmax(0,1fr)',
+      mono: true,
+      render: (row) => options?.window?.(row) ?? null,
+    },
+    {
       key: 'status',
       header: 'Status',
       width: 'auto',
@@ -415,9 +432,26 @@ function RegisterTable({
   numbered?: boolean;
   mode?: RegisterColumnsMode;
 }) {
+  const { user } = useApp();
+  const queryClient = useQueryClient();
+  const mayWrite = canSetScheduleWindows(user?.role);
+  const windowCell = (row: FilingRow): ReactNode => {
+    const value = row.windowFrom && row.windowTo ? { from: row.windowFrom, to: row.windowTo } : null;
+    if (!mayWrite) return <ScheduleWindowMeta value={value} />;
+    return (
+      <ScheduleWindowControl
+        value={value}
+        label={row.particular}
+        onSave={async (window) => {
+          await setFilingWindowInDb(row.id, window);
+          await queryClient.invalidateQueries({ queryKey: ['filings'] });
+        }}
+      />
+    );
+  };
   const ordered = sortByDueDate(rows);
   const slNo = new Map(ordered.map((row, index) => [row.id, index + 1]));
-  const columns = registerColumns(now, basePath, { numbered, mode }).map((column) =>
+  const columns = registerColumns(now, basePath, { numbered, mode, window: windowCell }).map((column) =>
     column.key === 'sl'
       ? { ...column, render: (row: FilingRow) => <span>{slNo.get(row.id)}</span> }
       : column,
@@ -439,6 +473,7 @@ function RegisterTable({
               {row.compliance} · due {formatFilingDate(row.dueDate)}
               {row.filedOn ? ` · filed ${formatFilingDate(row.filedOn)}` : ''}
             </p>
+            <div className="mt-1">{windowCell(row)}</div>
           </div>
           <FilingStatusPill status={filingStatus(row, now)} />
         </div>

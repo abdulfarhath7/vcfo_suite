@@ -108,10 +108,13 @@ export function InternPhaseEntryCards({
   phases,
   gates,
   hrefForPhase,
+  metaForPhase,
 }: {
   phases: readonly InternOverviewPhase[];
   gates: Record<string, ChecklistStepGate>;
   hrefForPhase: (phaseId: string) => string | null;
+  /** Quiet metadata under the title — the manager's date window, when set. */
+  metaForPhase?: (phaseId: string) => ReactNode;
 }) {
   if (phases.length === 0) return null;
 
@@ -142,6 +145,7 @@ export function InternPhaseEntryCards({
               <span className={styles.rowCopy}>
                 <span className={styles.phaseTitle}>{title}</span>
                 {subtitle ? <span className={styles.phaseSubtitle}>{subtitle}</span> : null}
+                {metaForPhase?.(phase.id) ?? null}
               </span>
             </span>
             <span className={styles.rowProgress}>

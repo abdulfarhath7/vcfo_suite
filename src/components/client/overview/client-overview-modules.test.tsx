@@ -38,7 +38,7 @@ const preCoi: ClientOverview = {
     title: 'Client Details',
     href: '/app/client/incorporation?step=pre-1',
     description: 'Share your parent entity details and director KYC.',
-    dueLabel: '2–3 working days',
+    windowLabel: '12 Sep – 19 Sep 2026',
     needsCorrection: false,
   },
   ballInCourt: { waitingOnClient: 1, waitingOnFirm: 0 },

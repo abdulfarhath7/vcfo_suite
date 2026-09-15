@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
+import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { Eyebrow, ProgressRing, Surface } from '@/components/noir';
@@ -306,6 +307,7 @@ export default function EngagementDetail() {
               phases={internPhases}
               gates={gates}
               hrefForPhase={internPhaseHref}
+              metaForPhase={phaseWindowMeta(eng.schedule)}
             />
           )}
         </InternEngagementOverview>

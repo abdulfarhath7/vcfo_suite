@@ -63,10 +63,10 @@ export function ClientNextAction({
               : (nextAction.description ??
                 'Open the step to fill in the details we need to move forward.')}
           </p>
-          {nextAction.dueLabel && !correction && (
-            <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
+          {nextAction.windowLabel && !correction && (
+            <p className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">
               <Clock className="h-3 w-3" aria-hidden />
-              Typically takes {nextAction.dueLabel}
+              {nextAction.windowLabel}
             </p>
           )}
         </div>

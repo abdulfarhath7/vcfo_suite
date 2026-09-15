@@ -71,7 +71,19 @@ export function InternWorkDenseRow({
           {item.title}
         </Link>
       }
-      subtitle={showCompany ? item.companyName : undefined}
+      subtitle={
+        showCompany || item.windowLabel ? (
+          <>
+            {showCompany ? item.companyName : null}
+            {showCompany && item.windowLabel ? ' · ' : null}
+            {item.windowLabel ? (
+              <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                {item.windowLabel}
+              </span>
+            ) : null}
+          </>
+        ) : undefined
+      }
       status={<InternWorkKindChip kind={item.kind} />}
       age={
         item.ageLabel ? (

@@ -8,6 +8,7 @@ import { PageTransition } from "@/components/shell/PageTransition";
 import { PageBackButton } from "@/components/shell/PageBackButton";
 import { SEO } from "@/components/SEO";
 import { InternPhaseEntryCards } from "@/components/incorporation/InternOverviewProgress";
+import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
 import { EmptyStateIllustrated, ProgressRing } from "@/components/noir";
 import { ClientBoardResolutionCard } from "@/components/client/ClientBoardResolutionCard";
 import { initialsFromName, type AuthUser } from "@/lib/auth";
@@ -196,7 +197,12 @@ export default function ClientIncorporation() {
 
       <div className="flex flex-col gap-3">
         <ClientBoardResolutionCard engagement={engagement} />
-        <InternPhaseEntryCards phases={phases} gates={gates} hrefForPhase={phaseHref} />
+        <InternPhaseEntryCards
+          phases={phases}
+          gates={gates}
+          hrefForPhase={phaseHref}
+          metaForPhase={phaseWindowMeta(engagement.schedule)}
+        />
       </div>
     </PageTransition>
   );

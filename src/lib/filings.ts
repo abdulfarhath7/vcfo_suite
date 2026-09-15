@@ -38,6 +38,11 @@ export interface FilingRow {
   fyLabel: string | null;
   /** Raw stored status; the display status is derived by `filingStatus`. */
   rawStatus: string;
+  /** `compliance_obligations.id` — joins a register row to the client-side filing id. */
+  obligationId: string;
+  /** Manager-set working window (ISO dates), or null when unset. */
+  windowFrom: string | null;
+  windowTo: string | null;
 }
 
 // ---------------------------------------------------------------------------

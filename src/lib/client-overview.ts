@@ -17,11 +17,11 @@ import {
   coerceStatusCode,
   getIncorporationPhases,
   getActiveCatalogItems,
-  getChecklistStepTimelineLabel,
   type ChecklistItem,
 } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { formatWindow, windowForStep, type EngagementSchedule } from '@/lib/schedule-windows';
 import {
   gateActiveCatalog,
   getStepGate,
@@ -94,7 +94,11 @@ export interface ClientOverviewNextAction {
   title: string;
   href: string;
   description?: string;
-  dueLabel?: string;
+  /**
+   * The manager's date window for this step (`formatWindow`), when one is
+   * set. Replaces the playbook working-days SLA, which is no longer shown.
+   */
+  windowLabel?: string;
   /** True when the lead sent this step back for corrections. */
   needsCorrection: boolean;
   correctionNote?: string;
@@ -370,7 +374,10 @@ export function buildProgress(state: ClientOverviewState): ClientOverviewProgres
  * The one thing we need from the client right now, straight off the gate.
  * `undefined` means the ball is with the firm — the UI says so calmly.
  */
-export function buildNextAction(state: ClientOverviewState): ClientOverviewNextAction | undefined {
+export function buildNextAction(
+  state: ClientOverviewState,
+  schedule?: EngagementSchedule | null,
+): ClientOverviewNextAction | undefined {
   const items = getActiveCatalogItems();
   const gates = gateActiveCatalog(state, 'client');
 
@@ -379,12 +386,13 @@ export function buildNextAction(state: ClientOverviewState): ClientOverviewNextA
     if (gate.kind !== 'active') continue;
     const slice = state[item.id];
     const rejected = isReviewRejected(slice);
+    const window = windowForStep(schedule, item.id);
     return {
       stepId: item.id,
       title: item.title,
       href: clientStepHref(item.id),
       description: item.description,
-      dueLabel: getChecklistStepTimelineLabel(item),
+      ...(window ? { windowLabel: formatWindow(window) } : {}),
       needsCorrection: rejected,
       correctionNote: rejected ? slice?.rejectionNote?.trim() || undefined : undefined,
     };

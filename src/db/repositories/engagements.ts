@@ -40,6 +40,7 @@ import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-i
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { sequentialLockMessage } from '@/lib/checklist-step-gate';
+import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
 import { resolveCreateProjectManagerAssignment } from '@/lib/create-project-scope';
 import {
   ensureEngagementClientMember,
@@ -339,6 +340,7 @@ export function toAppEngagement(
     companyName: row.companyName,
     companyType: row.companyType as Engagement['companyType'],
     ownershipType: coerceOwnershipType(row.ownershipType),
+    schedule: normalizeEngagementSchedule(row.schedule),
     entityLegalForm: (row.entityLegalForm ?? 'company') as Engagement['entityLegalForm'],
     incorporationDate: row.incorporationDate ?? null,
     parentEntityName: row.parentEntityName,

@@ -142,6 +142,12 @@ export const engagements = pgTable(
     checklistState: jsonb('checklist_state').notNull().default({}),
     /** Compliance questionnaire answers captured at project creation. */
     complianceQuestionnaire: jsonb('compliance_questionnaire').notNull().default({}),
+    /**
+     * Manager-set date windows: `{ incorporation?: Window, steps?: { [itemId]: Window } }`
+     * (`src/lib/schedule-windows.ts`). Its own column rather than a key inside
+     * `checklist_state`, whose normaliser treats every top-level key as a step.
+     */
+    schedule: jsonb('schedule'),
     // SQL type is text[], not jsonb — merge-cc.ts treats it as a string array.
     progressCcEmails: text('progress_cc_emails').array().notNull().default([]),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -586,6 +592,12 @@ export const complianceInstances = pgTable(
     // v2 evidence
     filedNote: text('filed_note'),
     evidenceUrl: text('evidence_url'),
+    // Manager-set working window for this instance. Deliberately absent from
+    // the regeneration upsert's SET clause, so the Inngest job never clears it.
+    windowFrom: date('window_from'),
+    windowTo: date('window_to'),
+    windowSetBy: uuid('window_set_by'),
+    windowSetAt: timestamp('window_set_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

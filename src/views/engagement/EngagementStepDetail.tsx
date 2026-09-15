@@ -18,6 +18,16 @@ import {
   type ChecklistItem,
 } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
+import { useQueryClient } from '@tanstack/react-query';
+import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowControl';
+import { setEngagementWindowInDb } from '@/lib/engagements-db';
+import {
+  canSetScheduleWindows,
+  formatWindow,
+  isIncorporationWindowStep,
+  windowForStep,
+  type EngagementSchedule,
+} from '@/lib/schedule-windows';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
 import { filterFieldsByViewer, hasResponseFormFields } from '@/lib/checklist-field-access';
 import { isStepReleasedToClient, isStepReleasedToFirm } from '@/lib/checklist-visibility';
@@ -65,11 +75,14 @@ function journeyRailItems(
   checklistState: Record<string, ChecklistItemStateSlice | undefined>,
   brSnapshot: BoardResolutionProgressSnapshot | null | undefined,
   ownershipType: OwnershipType | undefined,
+  schedule: EngagementSchedule | undefined,
 ): JourneyRailItem[] {
   return steps.map((step, index) => {
     const gate = getStepGate(gates, step.id);
     const slice = checklistState[step.id];
+    const window = windowForStep(schedule, step.id);
     return {
+      ...(window ? { windowLabel: formatWindow(window) } : {}),
       item: step,
       gate,
       status: gateDisplayStatus(
@@ -108,6 +121,7 @@ export default function EngagementStepDetail() {
     user,
   } = useApp();
   const [checklistRefreshing, setChecklistRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
   const isClientRoute = isClientIncorporationStepPathname(pathname);
   const isInternRoute = isInternEngagementPathname(pathname);
@@ -291,10 +305,42 @@ export default function EngagementStepDetail() {
     ? 'Your project lead is still preparing this step. Their answers appear here once they ask for your approval.'
     : undefined;
 
-  const railItems = journeyRailItems(bucketSteps, gates, checklistState, brSnapshot, eng.ownershipType);
+  const railItems = journeyRailItems(
+    bucketSteps,
+    gates,
+    checklistState,
+    brSnapshot,
+    eng.ownershipType,
+    eng.schedule,
+  );
   const internPhaseRailItems = internPhase
-    ? journeyRailItems(internPhase.items, gates, checklistState, brSnapshot, eng.ownershipType)
+    ? journeyRailItems(
+        internPhase.items,
+        gates,
+        checklistState,
+        brSnapshot,
+        eng.ownershipType,
+        eng.schedule,
+      )
     : [];
+  /**
+   * A manager or admin sets this step's window here (registrations and any
+   * step outside SPICe+ Part A / B — those share the one incorporation window
+   * set on the project page). Leads and clients see the dates on the rail.
+   */
+  const stepWindowControl =
+    !isClientRoute && !isIntern && canSetScheduleWindows(user?.role) && !isIncorporationWindowStep(item.id) ? (
+      <div className="mb-3">
+        <ScheduleWindowControl
+          value={eng.schedule?.steps?.[item.id]}
+          label={item.title}
+          onSave={async (window) => {
+            await setEngagementWindowInDb(eng.id, { kind: 'step', itemId: item.id }, window);
+            await queryClient.invalidateQueries({ queryKey: ['engagements'] });
+          }}
+        />
+      </div>
+    ) : null;
   const internPhaseRailGroups = (() => {
     if (!internPhase || internPhase.id !== 'registration-phase-4') return [];
     const byId = new Map(internPhaseRailItems.map((row) => [row.item.id, row]));
@@ -327,6 +373,7 @@ export default function EngagementStepDetail() {
 
   const stepForm = (
     <>
+      {stepWindowControl}
       <StepDetailContent
         item={item}
         task={task}

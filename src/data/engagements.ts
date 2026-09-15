@@ -1,5 +1,6 @@
 import { checklist, StatusCode } from './checklist';
 import type { EntityLegalForm } from '@/lib/compliance/types';
+import type { EngagementSchedule } from '@/lib/schedule-windows';
 
 export type CompanyType = 'domestic' | 'foreign';
 /**
@@ -37,6 +38,8 @@ export interface Engagement {
   companyType: CompanyType;
   /** Dependent (has a parent entity) or Independent (standalone). Missing = subsidiary. */
   ownershipType?: OwnershipType;
+  /** Manager-set date windows (incorporation + per step). See `schedule-windows.ts`. */
+  schedule?: EngagementSchedule;
   /** Indian legal form for compliance calendar filtering */
   entityLegalForm?: EntityLegalForm;
   /** Synced from checklist pre-12 */
