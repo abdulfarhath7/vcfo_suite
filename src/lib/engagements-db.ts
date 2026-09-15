@@ -250,8 +250,9 @@ export interface CreateProjectInput {
   companyType: 'domestic' | 'foreign';
   ownershipType?: 'subsidiary' | 'independent';
   entityLegalForm?: 'company' | 'llp' | 'partnership' | 'proprietorship';
-  parentEntityName: string;
-  parentEntityAddress: string;
+  /** Optional seed — the parent entity is captured in SPICe+ Part A. */
+  parentEntityName?: string;
+  parentEntityAddress?: string;
   clientEmail: string;
   clientPassword: string;
   clientName?: string;

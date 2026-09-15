@@ -67,8 +67,6 @@ export type CreateProjectState = {
   ownershipType: OwnershipType;
   companyType: CompanyType;
   entityLegalForm: EntityLegalForm;
-  parentEntityName: string;
-  parentEntityAddress: string;
   subsidiaryLegalName: string;
   subsidiaryRegisteredAddress: string;
   clientContact: string;
@@ -107,8 +105,6 @@ export function createProjectReducer(state: CreateProjectState, action: CreatePr
         ownershipType: 'subsidiary',
         companyType: 'domestic',
         entityLegalForm: 'company',
-        parentEntityName: '',
-        parentEntityAddress: '',
         subsidiaryLegalName: '',
         subsidiaryRegisteredAddress: '',
         clientContact: '',
@@ -154,8 +150,6 @@ export function saveCreateProjectDraft(state: CreateProjectState): void {
     ownershipType: state.ownershipType,
     companyType: state.companyType,
     entityLegalForm: state.entityLegalForm,
-    parentEntityName: state.parentEntityName,
-    parentEntityAddress: state.parentEntityAddress,
     subsidiaryLegalName: state.subsidiaryLegalName,
     subsidiaryRegisteredAddress: state.subsidiaryRegisteredAddress,
     clientContact: state.clientContact,
@@ -199,9 +193,6 @@ export function loadCreateProjectDraft(): CreateProjectDraftPayload | null {
         parsed.entityLegalForm === 'proprietorship'
           ? parsed.entityLegalForm
           : 'company',
-      parentEntityName: typeof parsed.parentEntityName === 'string' ? parsed.parentEntityName : '',
-      parentEntityAddress:
-        typeof parsed.parentEntityAddress === 'string' ? parsed.parentEntityAddress : '',
       subsidiaryLegalName:
         typeof parsed.subsidiaryLegalName === 'string' ? parsed.subsidiaryLegalName : '',
       subsidiaryRegisteredAddress:

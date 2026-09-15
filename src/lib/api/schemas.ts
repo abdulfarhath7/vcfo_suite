@@ -103,7 +103,11 @@ export const createProjectBodySchema = z
     companyType: companyTypeSchema,
     ownershipType: ownershipTypeSchema.default('subsidiary'),
     entityLegalForm: entityLegalFormSchema.default('company'),
-    /** Required for a dependent company; may be empty for an independent one. */
+    /**
+     * Optional. The parent entity is captured in SPICe+ Part A (dependent
+     * companies only), not at project creation; these stay for API callers that
+     * already know them.
+     */
     parentEntityName: z.string().trim().max(240).default(''),
     parentEntityAddress: z.string().trim().max(2000).default(''),
     clientEmail: emailSchema,
@@ -141,22 +145,6 @@ export const createProjectBodySchema = z
   )
   .superRefine((d, ctx) => {
     const independent = d.ownershipType === 'independent';
-    if (!independent) {
-      if (!d.parentEntityName.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'parent_entity_name_required',
-          path: ['parentEntityName'],
-        });
-      }
-      if (!d.parentEntityAddress.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'parent_entity_address_required',
-          path: ['parentEntityAddress'],
-        });
-      }
-    }
     const stage = d.stage ?? 'Pre-Incorporation';
     if (stage === 'Pre-Incorporation' || independent) return;
     const name = d.subsidiaryLegalName?.trim() ?? '';

@@ -75,12 +75,14 @@ describe('createProjectBodySchema ownership', () => {
     managerId: '00000000-0000-4000-8000-000000000000',
   };
 
-  it('defaults to a dependent company and then requires parent details', () => {
+  it('defaults to a dependent company without demanding parent details at creation', () => {
+    // The parent entity is captured in SPICe+ Part A, not on the project form.
     const result = createProjectBodySchema.safeParse(base);
-    expect(result.success).toBe(false);
-    const paths = result.success ? [] : result.error.issues.map((i) => i.path.join('.'));
-    expect(paths).toContain('parentEntityName');
-    expect(paths).toContain('parentEntityAddress');
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ownershipType).toBe('subsidiary');
+      expect(result.data.parentEntityName).toBe('');
+    }
   });
 
   it('lets an independent company skip parent and subsidiary details at any stage', () => {

@@ -62,8 +62,6 @@ type CreateProjectOwnerOption = {
 type CreateProjectFieldErrorKey =
   | 'companyName'
   | 'companyType'
-  | 'parentEntityName'
-  | 'parentEntityAddress'
   | 'subsidiaryLegalName'
   | 'subsidiaryRegisteredAddress'
   | 'clientEmail'
@@ -86,10 +84,6 @@ export type CreateProjectFormViewProps = {
   setCompanyType: (value: CompanyType) => void;
   entityLegalForm: EntityLegalForm;
   setEntityLegalForm: (value: EntityLegalForm) => void;
-  parentEntityName: string;
-  setParentEntityName: (value: string) => void;
-  parentEntityAddress: string;
-  setParentEntityAddress: (value: string) => void;
   subsidiaryLegalName: string;
   setSubsidiaryLegalName: (value: string) => void;
   subsidiaryRegisteredAddress: string;
@@ -218,10 +212,6 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     setCompanyType,
     entityLegalForm,
     setEntityLegalForm,
-    parentEntityName,
-    setParentEntityName,
-    parentEntityAddress,
-    setParentEntityAddress,
     subsidiaryLegalName,
     setSubsidiaryLegalName,
     subsidiaryRegisteredAddress,
@@ -254,8 +244,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
   const independent = ownershipType === 'independent';
   const needsSubsidiary = stageRequiresSubsidiary(stage, ownershipType);
   const entityDone = Boolean(
-    (independent || (parentEntityName.trim() && parentEntityAddress.trim())) &&
-      companyType &&
+    companyType &&
       (!needsSubsidiary ||
         (subsidiaryLegalName.trim() && subsidiaryRegisteredAddress.trim())),
   );
@@ -330,8 +319,6 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
   const entityErr =
     fieldError('companyName') ||
     fieldError('companyType') ||
-    fieldError('parentEntityName') ||
-    fieldError('parentEntityAddress') ||
     fieldError('subsidiaryLegalName') ||
     fieldError('subsidiaryRegisteredAddress');
   const clientErr = fieldError('clientEmail') || fieldError('clientPassword');
@@ -465,68 +452,6 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               </div>
 
               <CreateProjectStartingPhasePicker stage={stage} onChange={setStage} />
-
-              {independent ? null : (
-              <div className="space-y-5 rounded-xl border border-border/80 bg-muted/25 p-4 sm:p-5">
-                <p className="text-[13px] font-medium text-foreground">Parent company details</p>
-                <div>
-                  <Label
-                    htmlFor="create-parent-entity-name"
-                    className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
-                  >
-                    <Building2 className="h-3.5 w-3.5" aria-hidden />
-                    Parent entity legal name <span className="font-normal text-danger">*</span>
-                  </Label>
-                  <Input
-                    id="create-parent-entity-name"
-                    value={parentEntityName}
-                    onChange={(e) => setParentEntityName(e.target.value)}
-                    placeholder="e.g. ABC Holdings Limited"
-                    className={cn(
-                      'mt-2 h-11 text-[14px]',
-                      fieldError('parentEntityName') && 'border-danger focus-visible:ring-danger/30',
-                    )}
-                    aria-invalid={!!fieldError('parentEntityName')}
-                    maxLength={240}
-                  />
-                  <FieldError
-                    id="create-parent-entity-name-error"
-                    message={fieldError('parentEntityName')}
-                  />
-                </div>
-
-                <div>
-                  <Label
-                    htmlFor="create-parent-entity-address"
-                    className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
-                  >
-                    <MapPin className="h-3.5 w-3.5" aria-hidden />
-                    Parent entity registered address{' '}
-                    <span className="font-normal text-danger">*</span>
-                  </Label>
-                  <Textarea
-                    id="create-parent-entity-address"
-                    value={parentEntityAddress}
-                    onChange={(e) => setParentEntityAddress(e.target.value)}
-                    placeholder={
-                      'e.g. 100 Market Street, Suite 400\nSan Francisco, CA 94105\nUnited States of America'
-                    }
-                    className={cn(
-                      'mt-2 min-h-[100px] resize-y text-[14px]',
-                      fieldError('parentEntityAddress') &&
-                        'border-danger focus-visible:ring-danger/30',
-                    )}
-                    aria-invalid={!!fieldError('parentEntityAddress')}
-                    maxLength={2000}
-                    rows={3}
-                  />
-                  <FieldError
-                    id="create-parent-entity-address-error"
-                    message={fieldError('parentEntityAddress')}
-                  />
-                </div>
-              </div>
-              )}
 
               {needsSubsidiary ? (
                 <div className="space-y-5 rounded-xl border border-primary/20 bg-primary-light/50 p-4 sm:p-5">

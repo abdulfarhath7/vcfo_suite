@@ -13,8 +13,6 @@ import {
   clientPasswordSchema,
   companyTypeSchema,
   entityLegalFormSchema,
-  parentEntityNameSchema,
-  parentEntityAddressSchema,
   subsidiaryLegalNameSchema,
   subsidiaryRegisteredAddressSchema,
 } from "@/lib/api/schemas";
@@ -58,8 +56,6 @@ function stateFromEngagement(eng: Engagement): CreateProjectState {
     ownershipType: eng.ownershipType ?? 'subsidiary',
     companyType: (eng.companyType ?? 'domestic') as CreateProjectState['companyType'],
     entityLegalForm: (eng.entityLegalForm ?? 'company') as CreateProjectState['entityLegalForm'],
-    parentEntityName: eng.parentEntityName ?? '',
-    parentEntityAddress: eng.parentEntityAddress ?? '',
     subsidiaryLegalName: eng.subsidiaryLegalName ?? '',
     subsidiaryRegisteredAddress: eng.subsidiaryRegisteredAddress ?? '',
     clientContact: eng.clientDisplayName ?? '',
@@ -89,8 +85,6 @@ function initialCreateProjectState(internIds: string[]): CreateProjectState {
     ownershipType: 'subsidiary',
     companyType: 'domestic',
     entityLegalForm: 'company',
-    parentEntityName: '',
-    parentEntityAddress: '',
     subsidiaryLegalName: '',
     subsidiaryRegisteredAddress: '',
     clientContact: '',
@@ -171,8 +165,6 @@ export function CreateProjectForm({
     ownershipType,
     companyType,
     entityLegalForm,
-    parentEntityName,
-    parentEntityAddress,
     subsidiaryLegalName,
     subsidiaryRegisteredAddress,
     clientContact,
@@ -222,10 +214,6 @@ export function CreateProjectForm({
   const companyTypeValid = companyTypeSchema.safeParse(companyType).success;
   const entityLegalFormValid = entityLegalFormSchema.safeParse(entityLegalForm).success;
   const independent = ownershipType === 'independent';
-  const parentEntityNameValid =
-    independent || parentEntityNameSchema.safeParse(parentEntityName).success;
-  const parentEntityAddressValid =
-    independent || parentEntityAddressSchema.safeParse(parentEntityAddress).success;
   const needsSubsidiary = stageRequiresSubsidiary(stage, ownershipType);
   const subsidiaryNameValid = !needsSubsidiary
     ? true
@@ -241,8 +229,6 @@ export function CreateProjectForm({
     companyValid &&
     companyTypeValid &&
     entityLegalFormValid &&
-    parentEntityNameValid &&
-    parentEntityAddressValid &&
     subsidiaryNameValid &&
     subsidiaryAddressValid &&
     emailValid &&
@@ -257,20 +243,6 @@ export function CreateProjectForm({
     () => ({
       companyName: !companyName.trim() ? 'Enter the project or GCC entity name for this setup.' : '',
       companyType: !companyTypeValid ? 'Select whether the company is domestic or foreign.' : '',
-      parentEntityName: independent
-        ? ''
-        : !parentEntityName.trim()
-          ? 'Enter the parent entity’s full legal name as on incorporation documents.'
-          : !parentEntityNameValid
-            ? 'Legal name must be 240 characters or fewer.'
-            : '',
-      parentEntityAddress: independent
-        ? ''
-        : !parentEntityAddress.trim()
-          ? 'Enter the parent entity’s full registered address.'
-          : !parentEntityAddressValid
-            ? 'Address must be 2,000 characters or fewer.'
-            : '',
       subsidiaryLegalName: needsSubsidiary
         ? !subsidiaryLegalName.trim()
           ? 'Enter the subsidiary company’s full legal name.'
@@ -317,11 +289,6 @@ export function CreateProjectForm({
       isEdit,
       companyName,
       companyTypeValid,
-      independent,
-      parentEntityName,
-      parentEntityNameValid,
-      parentEntityAddress,
-      parentEntityAddressValid,
       needsSubsidiary,
       subsidiaryLegalName,
       subsidiaryNameValid,
@@ -354,10 +321,6 @@ export function CreateProjectForm({
     });
   const setEntityLegalForm = (value: typeof entityLegalForm) =>
     dispatch({ type: 'patch', patch: { entityLegalForm: value } });
-  const setParentEntityName = (value: string) =>
-    dispatch({ type: 'patch', patch: { parentEntityName: value } });
-  const setParentEntityAddress = (value: string) =>
-    dispatch({ type: 'patch', patch: { parentEntityAddress: value } });
   const setSubsidiaryLegalName = (value: string) =>
     dispatch({ type: 'patch', patch: { subsidiaryLegalName: value } });
   const setSubsidiaryRegisteredAddress = (value: string) =>
@@ -423,8 +386,6 @@ export function CreateProjectForm({
           ownershipType,
           companyType: independent ? 'domestic' : companyType,
           entityLegalForm,
-          parentEntityName: independent ? null : parentEntityName.trim(),
-          parentEntityAddress: independent ? null : parentEntityAddress.trim(),
           subsidiaryLegalName: needsSub ? subsidiaryLegalName.trim() : null,
           subsidiaryRegisteredAddress: needsSub ? subsidiaryRegisteredAddress.trim() : null,
           clientName: clientContact.trim() || null,
@@ -475,8 +436,6 @@ export function CreateProjectForm({
         ownershipType,
         companyType: independent ? 'domestic' : companyType,
         entityLegalForm,
-        parentEntityName: independent ? '' : parentEntityName.trim(),
-        parentEntityAddress: independent ? '' : parentEntityAddress.trim(),
         subsidiaryLegalName: needsSubsidiary ? subsidiaryLegalName.trim() : undefined,
         subsidiaryRegisteredAddress: needsSubsidiary
           ? subsidiaryRegisteredAddress.trim()
@@ -580,10 +539,6 @@ export function CreateProjectForm({
     setCompanyType,
     entityLegalForm,
     setEntityLegalForm,
-    parentEntityName,
-    setParentEntityName,
-    parentEntityAddress,
-    setParentEntityAddress,
     subsidiaryLegalName,
     setSubsidiaryLegalName,
     subsidiaryRegisteredAddress,

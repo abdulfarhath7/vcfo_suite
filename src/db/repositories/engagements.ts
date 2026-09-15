@@ -706,9 +706,9 @@ export interface CreateProjectWithClientInput {
   /** Missing = subsidiary (the historical default). */
   ownershipType?: OwnershipType;
   entityLegalForm?: string;
-  /** Empty for an independent company. */
-  parentEntityName: string;
-  parentEntityAddress: string;
+  /** Optional seed; Part A is the capture point. Ignored for an independent company. */
+  parentEntityName?: string;
+  parentEntityAddress?: string;
   clientEmail: string;
   clientPassword: string;
   clientName?: string;
@@ -830,10 +830,6 @@ export async function createProjectWithClient(
 
   const ownershipType = coerceOwnershipType(input.ownershipType);
   const independent = ownershipType === 'independent';
-  if (!independent) {
-    if (!input.parentEntityName.trim()) throw new Error('parent_entity_name_required');
-    if (!input.parentEntityAddress.trim()) throw new Error('parent_entity_address_required');
-  }
 
   try {
     const row = await createEngagement(ctx, {
@@ -843,8 +839,10 @@ export async function createProjectWithClient(
       companyType: independent ? 'domestic' : input.companyType,
       ownershipType,
       entityLegalForm: input.entityLegalForm ?? 'company',
-      parentEntityName: independent ? null : input.parentEntityName.trim(),
-      parentEntityAddress: independent ? null : input.parentEntityAddress.trim(),
+      // Captured in SPICe+ Part A for a dependent company; a caller may still
+      // seed them here. Never stored as empty strings.
+      parentEntityName: independent ? null : input.parentEntityName?.trim() || null,
+      parentEntityAddress: independent ? null : input.parentEntityAddress?.trim() || null,
       subsidiaryLegalName: needsSubsidiary && !independent ? subsidiaryLegalName : null,
       subsidiaryRegisteredAddress:
         needsSubsidiary && !independent ? subsidiaryRegisteredAddress : null,
