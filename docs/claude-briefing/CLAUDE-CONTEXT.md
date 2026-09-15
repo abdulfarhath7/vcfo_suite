@@ -43,11 +43,13 @@ Org: Super → Admin → Managers → Leads (`reports_to_manager_id`). Many clie
 
 ## 3. Core workflow (do not casually redesign the semantics)
 
-**Create project** (admin/PM form, not the legacy OnboardingWizard): company, domestic/foreign, legal form, parent/subsidiary if starting late, client email + temp password, leads, managers, stage. Welcome email.
+**Create project** (admin/PM form, not the legacy OnboardingWizard): company name, **Company type: Dependent / Independent** (`engagements.ownership_type`, asked first), starting phase, legal form, parent entity origin (domestic/foreign — Dependent only), subsidiary legal name/address if starting at Registration/Compliance (Dependent only), client email + temp password, leads, managers. Welcome email. **The parent entity itself (name, registration no., address, trademark, proof) is NOT captured here** — it is Part A step 1's Foreign Entity sections, Dependent companies only. Independent companies never see parent, signatory or board-resolution questions; Pre-2 / Pre-3 are seeded `not-applicable` at creation.
+
+**Manager date windows** (`src/lib/schedule-windows.ts`): one incorporation window covering Part A + Part B (`engagements.schedule.incorporation`), one per registration step (`schedule.steps[itemId]`), one per compliance instance (`compliance_instances.window_from/to`). Manager / admin / super admin write (repository-enforced); lead and client read them as quiet mono dates on phase rows, the journey rail, Today rows and the client's next-action card. Windows **replaced** the playbook working-days SLA copy — a step shows a window when set and nothing otherwise. A window's end date is the step's due date for the lead's Today; overdue still badges only the current step. The compliance job never overwrites a window (columns are outside its upsert SET).
 
 **Sequential gate (client):** step N opens only when previous **active catalog** item is terminal (`completed` / `not-applicable` / submit / deliver). **Draft save does not unlock.** Reject/unlock re-locks later steps. Copy: “This opens after {title} is complete.” Never “access denied.” Overdue badge only on current step.
 
-**Intern:** can open any step. Autosave ~600ms `{ responses }` only — **must not email**. Request manager approval / Submit / Email manager again → managers only. Manager Accept → Outlook compose **to client**, CC admin + lead. Client submit/upload → Resend to lead + managers From `{company}@sbctrack.in` (Reply-To = client). First **Deliver** opens Graph compose; re-deliver is in-app toast + bell only.
+**Intern:** can open any step. Autosave ~600ms `{ responses }` only — **must not email**. Request manager approval / Submit / Email manager again → managers only. Manager Accept → Outlook compose **to client**, CC admin + lead, and **is the delivery** (there is no lead "Deliver to client" any more; Accept stamps `deliveredToClientAt`). Client submit/upload → Resend to lead + managers From `{company}@sbctrack.in` (Reply-To = client). Lead drafts are invisible to every other role until approval is requested; the client sees a lead's step only after the manager accepts (`src/lib/checklist-visibility.ts`, applied server-side).
 
 **Board resolution (Pre-2):** generate from Pre-1 → intern editor → **finalize** is the only release (status `finalized`, unlocks Pre-3 signed upload, notify). Re-send compose does not duplicate in-app rows.
 
@@ -61,6 +63,8 @@ Source: `src/data/checklist.ts`. Intern phase titles: SPICe+ Part A / Part B / P
 
 **Part A — Name (client/lead):**  
 1 Client Details (client) → 2 Draft Board Resolution (lead, finalize) → 3 Signed BR (client) → 4 Name Application (lead) → 5 Name Approval (lead)
+
+Step 1's section tabs follow the MCA SPICe+ Part A order and are defined once in `src/lib/part-a-sections.ts` (`partAsectionsFor(ownershipType)`): **Business Description** (free text, then the required **5-digit NIC-2008 code**, then the auto-filled read-only **Business type** from `src/data/nic-2008.json`) → Proposed Company Names → *Dependent only:* Foreign Entity → Foreign Entity Proof → Authorized Signatory → Signatory KYC → Company Mail ID → Company Mobile Number → Proposed Directors → Share Capital Details → Submit (last visible tab). Responses are keyed by field id, never tab index. Independent companies also skip the board-resolution date, and Pre-2 / Pre-3 are N/A for them.
 
 **Part B — Incorporation:**  
 6 Director KYC (client) → 7 KYC Review & DSC (lead, DIR-2/8/INC-9 generate) → 8 Document Execution (client) → 9 SPICe+ Confirmation (client) → 10 SPICe+ Filing (lead) → 11 MCA Remarks (lead) → 12 Certificate of Incorporation (lead)
@@ -79,7 +83,7 @@ Also: compliance calendar (separate from checklist; Inngest generate; digest ema
 
 **Public:** `/` landing, `/roles`, `/contact`, `/login`, `/invite/[token]`.
 
-**Intern nav:** Today (week queue **by company**, IST clock, tick+title rows; no Tasks — that URL redirects here) · Clients (nested companies) · Send email · Requests · Compliance · KB · Analytics · Audit.
+**Intern nav:** Today (week queue **by company**, IST clock, tick+title rows; no Tasks — that URL redirects here) · Clients (nested companies) · Send email · Requests · **Compliances (only while the lead has ≥1 incorporated engagement — `isIncorporated`: COI date, or started at Registration/Compliance, or Pre-12 terminal; otherwise the group is hidden and its routes redirect to Today)** · KB · Analytics · Audit.
 
 Intern overview: company H1 + CC chips; **four phase rows** with tick tracks (not a 4-column stepper). Step page: H1 full width, form + **phase-scoped** journey rail on the right, sticky footer actions, underline section tabs, last tab = Submit. Hide working-days SLA and status chips.
 

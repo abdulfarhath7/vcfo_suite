@@ -272,6 +272,41 @@ Append here whenever something costs more than a minute to figure out.
 - Editing an existing project to Independent clears parent fields but does not
   retro-mark pre-2/3 N/A — do that by hand if it matters.
 
+## Part A (pre-1), NIC code, manager windows, lead compliance gate (CR 2026-09-15)
+
+- **Part A sections** live in one helper: `src/lib/part-a-sections.ts` — `PART_A_SECTION_ORDER`
+  (MCA order), `partAsectionsFor(ownershipType)`, `partAFieldsFor(fields, ownershipType)`,
+  `isParentEntityField`. `fieldsForOwnership` in `checklist-responses.ts` delegates to it for
+  pre-1 only. The form hook, client preview, rail attachments and completeness all read the
+  returned field list; `validatePre1Responses(responses, { visibleFieldIds })` requires only
+  what is rendered. Never hard-code a tab list or count.
+- Parent entity (name / reg no. / address / trademark / proof) is captured in Part A only
+  (Dependent). The create/edit project form no longer asks it; `createProjectBodySchema`
+  treats `parentEntityName/Address` as optional seeds. Generators still read
+  `resolveParentEntity*` (Part A first, engagement row fallback).
+- **NIC**: `nicCode` (5 digits, required, `PRE1_BASE_REQUIRED_TEXT_IDS`), `nicBusinessType`
+  auto-filled in `setField` from `src/lib/nic-2008.ts` (1,302 sub-classes, official MSME PDF
+  parse — `src/data/nic-2008.json` is `[code, subclass, class]`). Unknown code = warning, not
+  error. `nicBusinessType` renders read-only (like pre-5 expiry) and is stored in responses.
+- **Windows**: `src/lib/schedule-windows.ts` (`windowForStep`, `applyScheduleWindow`,
+  `formatWindow`, `canSetScheduleWindows`). Repo `src/db/repositories/schedule.ts`
+  (`setEngagementWindow`, `setComplianceInstanceWindow`; manager/admin/super only, throws
+  otherwise). Routes `POST /api/engagements/:id/schedule`, `POST /api/filings/:id/window`.
+  `engagements.schedule` jsonb (own column — `normalizeEngagementChecklistState` would treat a
+  `schedule` key as a step) + `compliance_instances.window_*` (migration 0019; outside the
+  regeneration upsert SET clause). UI: `ScheduleWindowControl` (writers) /
+  `ScheduleWindowMeta` (readers); incorporation window on staff project page, step windows on
+  non-Part-A/B staff step pages, compliance windows in the Filings register Window column.
+  Today filings join DB windows by `${engagementId}:${obligationId}:${dueDate}:${periodLabel}`
+  (= the client-side filing id). After a save, invalidate `['engagements']` / `['filings']`.
+  SLA "Typically takes N working days" (client next-action) is gone; the window shows instead.
+- **Lead compliance gate**: `isIncorporated` now also true when `stage !== 'Pre-Incorporation'`.
+  `complianceEngagementsForRole('intern', …)` filters to incorporated engagements — used by the
+  sidebar (Compliances group hidden when empty), `useInternPortfolio` (filings on Today), and
+  `CompliancePages` (redirect to `/app/intern/today` when the lead has none). Other roles untouched.
+- Cross-tenant repository tests for the schedule accessor remain in the deferred bucket
+  (DB-backed tests are run manually — see STATE.md).
+
 ## Step visibility (who reads what)
 
 - Policy is pure in `src/lib/checklist-visibility.ts` and applied **server-side** in
