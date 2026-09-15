@@ -229,6 +229,9 @@ Append here whenever something costs more than a minute to figure out.
 
 - Steps unlock only after the previous **active catalog** item is terminal-complete
   (`completed` / `not-applicable` / client submit / deliver). Save-draft does not unlock.
+  A lead's **Request manager approval / Submit** (`lead_manager_request` + `reviewing`)
+  does not either: the step reads `waiting` (“Waiting on your manager…” for the lead,
+  “Waiting on your approval…” for staff) until the manager accepts. Green tick = accepted.
 - Rejected or unlocked-for-correction steps re-lock everything after them.
 - Helper: `src/lib/checklist-step-gate.ts`. Server save path: `patchChecklistItem`.
 - Copy: “This opens after {title} is complete.” / “Waiting on the client…” — never “access denied”.
@@ -236,6 +239,37 @@ Append here whenever something costs more than a minute to figure out.
 - Client **Progress** nav (`/app/client/progress`) was removed; the gated catalog
   now lives as a Create-project-style flowchart on Incorporation. Old `/progress`
   URLs redirect there. Staff progress CC is unrelated to intern overview.
+
+## Step visibility (who reads what)
+
+- Policy is pure in `src/lib/checklist-visibility.ts` and applied **server-side** in
+  every route that returns `checklist_state` (`checklistStateForViewer(ctx, state)` in
+  the engagements repository, incl. `/api/checklist-index`). Do not add a route that
+  returns the raw blob. Viewers: `lead` (intern, full) · `firm` (admin / manager /
+  super_admin) · `client`.
+- **Lead → firm** (`isStepReleasedToFirm`): a plain save is the lead's private draft —
+  the manager sees no answers, no uploads, no tick — until Request approval / Submit,
+  Deliver to client, a client submission, an accept, or completed / N/A.
+  A pending `clientFillRequest` alone does not release (the manager still sees the
+  request itself and can decide it from the step page).
+- **Firm → client** (`isStepReleasedToClient`): a `lead_manager_request` is the client's
+  only once `reviewStatus === 'accepted'`. Under review, rejected, or after the client's
+  own change request it is redacted to `{ status, approval, clientFillRequest, … }` —
+  review trail, lock and `clientSubmittedAt` stripped, a lingering `completed` becomes
+  `in-progress` — so the gate reads it as not done. `change_requested` is not a release;
+  `pending_client` / `client_approved` are. Redaction is idempotent (test-covered).
+- Files follow the owning step: `listDocuments` / `getDocumentById` drop index rows on
+  unreleased steps (`checklist_state -> step_id` in SQL, not the whole blob), and
+  `/api/milestone-documents/signed-url` 403s by matching a path segment to a field.
+- `patchChecklistItem` merges onto the **persisted** row only. The browser's `current`
+  copy is accepted and ignored — it is redacted for that role and writing it back would
+  wipe another party's data. `patchChecklistItemInDb` no longer sends it.
+- Step page: manager on an unreleased step gets the `ClientStepFieldPreview` card with
+  the "Your project lead is still preparing this step…" intro plus the review panel;
+  client gets the same card until accepted, with only the approval status line
+  ("Change requested") and no Approve / Request-a-change buttons.
+- Still bypasses the manager on purpose: intern **Deliver to client** and the
+  incorporation-drafts **share** (explicit lead → client releases).
 
 ## Intern engagement overview
 
