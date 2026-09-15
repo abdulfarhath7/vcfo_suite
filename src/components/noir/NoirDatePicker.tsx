@@ -32,6 +32,16 @@ function formatDisplayDate(value: string): string | null {
   });
 }
 
+/**
+ * react-day-picker's dropdown caption defaults to "100 years back … end of THIS
+ * year", so an expiry / validity date next year was unreachable — the year
+ * menu and the › arrow both stopped at December. Span a window that covers
+ * every date this app records: birth dates, old incorporations, and expiries
+ * a few years out.
+ */
+const CALENDAR_START = new Date(1940, 0, 1);
+const CALENDAR_END = new Date(new Date().getFullYear() + 30, 11, 31);
+
 const noirCalendarClassNames = {
   month_caption: 'flex h-9 w-full items-center justify-center px-9 relative',
   dropdowns: 'flex w-full items-center justify-center gap-2 text-sm',
@@ -132,6 +142,8 @@ export function NoirDatePicker({
           mode="single"
           captionLayout="dropdown"
           navLayout="after"
+          startMonth={CALENDAR_START}
+          endMonth={CALENDAR_END}
           defaultMonth={selected}
           selected={selected}
           onSelect={(date) => {
