@@ -714,8 +714,8 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
           Enter MCA-approved company identifiers and upload the certificate of incorporation,
           Permanent Account Number (PAN) card, and Tax Deduction and Collection Account Number
           (TAN) card. Confirm whether the Certificate of Incorporation signature is verified by
-          MCA. Use{' '}
-          <strong>Deliver to client</strong> when ready.
+          MCA. <strong>Submit</strong> when ready — your manager&apos;s approval delivers it to the
+          client.
         </p>
       </PanelShell>
     </div>

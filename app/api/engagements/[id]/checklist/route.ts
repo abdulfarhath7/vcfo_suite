@@ -13,6 +13,7 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 import { emptyEmailDispatch } from '@/lib/email/email-dispatch';
 import { leadManagerRequestNotifyPlan } from '@/lib/email/lead-manager-request-notify';
+import { leadWritablePatch } from '@/lib/checklist-item-review';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -46,7 +47,10 @@ export async function GET(_request: Request, context: RouteContext) {
  * POST /api/engagements/:id/checklist — merge one checklist item patch.
  * Used by staff autosave / lead request-approval / general updateItem.
  * Clients may only patch responses / notes / status — not review or lock fields.
+ * A lead may draft and ask for approval, but never release: the fields that
+ * accept, complete or deliver a step are the manager's (`reviewChecklistItem`).
  */
+
 export async function POST(request: Request, context: RouteContext) {
   const guard = await requireAuth();
   if (guard.ok === false) {
@@ -91,13 +95,13 @@ export async function POST(request: Request, context: RouteContext) {
       } = patch;
       patch = safe;
     }
+    if (guard.ctx.role === 'intern') {
+      patch = leadWritablePatch(patch);
+    }
 
     const checklistState = await patchChecklistItem(guard.ctx, id, body.data.itemId, patch);
 
     const nextSlice = checklistState[body.data.itemId];
-    const deliverRequested = Boolean(patch.deliveredToClientAt?.trim());
-    const newlyDelivered =
-      !prevSlice?.deliveredToClientAt?.trim() && Boolean(nextSlice?.deliveredToClientAt?.trim());
     // Autosave is responses-only and must not fan out. Request / Submit /
     // Email manager again send reviewSource or resendManagerEmail.
     const leadNotify = leadManagerRequestNotifyPlan({
@@ -107,25 +111,16 @@ export async function POST(request: Request, context: RouteContext) {
       patch: { resendManagerEmail: retryManagerEmail, ...patch },
     });
 
-    const email =
-      leadNotify.notify
-        ? await notifyEngagementEvent({
-            engagementId: id,
-            itemId: body.data.itemId,
-            event: 'lead_requested_review',
-            actorUserId: guard.ctx.userId,
-            skipInAppNotifications: leadNotify.skipInAppNotifications,
-            outlookCtx: guard.ctx,
-          })
-        : deliverRequested
-          ? await notifyEngagementEvent({
-              engagementId: id,
-              itemId: body.data.itemId,
-              event: 'delivered',
-              actorUserId: guard.ctx.userId,
-              inAppOnly: !newlyDelivered,
-            })
-          : emptyEmailDispatch();
+    const email = leadNotify.notify
+      ? await notifyEngagementEvent({
+          engagementId: id,
+          itemId: body.data.itemId,
+          event: 'lead_requested_review',
+          actorUserId: guard.ctx.userId,
+          skipInAppNotifications: leadNotify.skipInAppNotifications,
+          outlookCtx: guard.ctx,
+        })
+      : emptyEmailDispatch();
 
     return NextResponse.json({
       checklistState: checklistStateForViewer(guard.ctx, checklistState),

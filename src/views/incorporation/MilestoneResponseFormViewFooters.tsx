@@ -11,10 +11,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
     canEdit,
     clientResubmit,
     cn,
-    deliveredToClient,
-    delivering,
     formReadOnly,
-    handleDeliverToClient,
     handleInternSectionNext,
     handleInternSubmit,
     handleRetryAutoSave,
@@ -26,7 +23,6 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
     internFooterAction,
     internSectionNextLabel,
     isClient,
-    isInternDeliveryStep,
     isPhase2StructuredStep,
     isPre1,
     reviewAccepted,
@@ -210,22 +206,6 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                           {saving || autoSaveStatus === 'saving' ? 'Saving…' : 'Save'}
                         </Button>
                       )}
-                      {isInternDeliveryStep && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => void handleDeliverToClient()}
-                          disabled={delivering || saving || submitting}
-                          className="cursor-pointer"
-                        >
-                          {delivering
-                            ? 'Updating…'
-                            : deliveredToClient
-                              ? 'Update client portal'
-                              : 'Deliver to client'}
-                        </Button>
-                      )}
                     </>
                   )}
                   <Button
@@ -281,22 +261,6 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                   >
                     {saving ? 'Saving…' : 'Save changes'}
                   </Button>
-                  {isInternDeliveryStep && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void handleDeliverToClient()}
-                      disabled={delivering || saving}
-                      className="cursor-pointer"
-                    >
-                      {delivering
-                        ? 'Updating…'
-                        : deliveredToClient
-                          ? 'Update client portal'
-                          : 'Deliver to client'}
-                    </Button>
-                  )}
                 </>
               )}
             </div>

@@ -185,8 +185,11 @@ export function diffChecklistForNotifications(
       });
     }
 
+    // A manager accepting the LEAD's step is the delivery above, not a verdict
+    // on anything the client sent — one toast, not two.
     if (
       ctx.viewerRole === 'client' &&
+      nextItem.reviewSource !== 'lead_manager_request' &&
       prevItem?.reviewStatus !== nextItem.reviewStatus &&
       (nextItem.reviewStatus === 'accepted' || nextItem.reviewStatus === 'rejected') &&
       nextItem.reviewedBy !== ctx.viewerUserId

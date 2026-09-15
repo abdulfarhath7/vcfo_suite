@@ -1,5 +1,5 @@
 import type { ChecklistField, ChecklistItem, ChecklistResponsibleRole } from '@/data/checklist';
-import { getClientResponseFields, INTERN_DELIVERY_STEP_IDS } from '@/lib/checklist-responses';
+import { getClientResponseFields } from '@/lib/checklist-responses';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 
 export const RESPONSIBLE_ROLE_LABEL: Record<ChecklistResponsibleRole, string> = {
@@ -29,10 +29,6 @@ export function hasResponseFormFields(
   variant: 'admin' | 'client',
 ): boolean {
   return getVisibleResponseFields(item, variant).length > 0;
-}
-
-export function isInternDeliveryStep(itemId: string): boolean {
-  return INTERN_DELIVERY_STEP_IDS.has(itemId);
 }
 
 /**

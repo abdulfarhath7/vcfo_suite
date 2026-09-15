@@ -530,8 +530,13 @@ export async function reviewChecklistItem(
     // approve. Reject is deliberately untouched — it stays on the reject/unlock
     // path that already reopens this step and re-locks the ones after it.
     const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
-    const previous = existing ? checklistStateFromRow(existing)[itemId]?.approval : undefined;
-    return patchChecklistItem(ctx, appEngagementId, itemId, {
+    const previousSlice = existing ? checklistStateFromRow(existing)[itemId] : undefined;
+    const previous = previousSlice?.approval;
+    // A lead's request is delivered BY this accept — there is no separate
+    // "Deliver to client" any more — so the delivery stamp lands here, and
+    // pre-12's date of incorporation reaches the engagement the same way.
+    const leadRequest = previousSlice?.reviewSource === 'lead_manager_request';
+    const next = await patchChecklistItem(ctx, appEngagementId, itemId, {
       reviewStatus: 'accepted',
       reviewedAt: now,
       reviewedBy: ctx.userId,
@@ -539,6 +544,7 @@ export async function reviewChecklistItem(
       status: 'completed',
       completedOn: now.slice(0, 10),
       locked: true,
+      ...(leadRequest ? { deliveredToClientAt: now } : {}),
       approval: buildManagerApproval({
         approvedBy: ctx.userId,
         approvedByName: ctx.name,
@@ -546,6 +552,16 @@ export async function reviewChecklistItem(
         previous,
       }),
     });
+    const incorporationDate = next[itemId]?.responses?.dateOfIncorporation?.trim();
+    if (
+      itemId === 'pre-12' &&
+      existing &&
+      incorporationDate &&
+      existing.incorporationDate !== incorporationDate
+    ) {
+      await updateEngagement(ctx, existing.id, { incorporationDate });
+    }
+    return next;
   }
   return patchChecklistItem(ctx, appEngagementId, itemId, {
     reviewStatus: 'rejected',

@@ -115,6 +115,33 @@ export function internLeadManagerRequestPatch(
   };
 }
 
+/**
+ * What a lead's patch may carry. A lead drafts and asks for approval; the
+ * fields that accept, complete or deliver a step are the manager's
+ * (`reviewChecklistItem`) and are dropped here so no client build — old or
+ * hand-rolled — can release a step to the client on the lead's say-so.
+ */
+export function leadWritablePatch(
+  patch: Partial<ChecklistItemStateSlice>,
+): Partial<ChecklistItemStateSlice> {
+  const {
+    deliveredToClientAt: _delivered,
+    completedOn: _completedOn,
+    reviewedAt: _reviewedAt,
+    reviewedBy: _reviewedBy,
+    approval: _approval,
+    reviewStatus,
+    status,
+    ...safe
+  } = patch;
+  return {
+    ...safe,
+    // `reviewing` is the request itself; accepted / rejected are decisions.
+    ...(reviewStatus === 'reviewing' ? { reviewStatus } : {}),
+    ...(status && status !== 'completed' && status !== 'not-applicable' ? { status } : {}),
+  };
+}
+
 export function getInternReviewLabel(slice: SliceLike): string | null {
   const status = getReviewStatus(slice);
   if (status === 'reviewing') return 'Awaiting manager / admin approval';

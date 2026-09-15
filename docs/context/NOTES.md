@@ -77,12 +77,18 @@ Append here whenever something costs more than a minute to figure out.
 - In-app rows for those events are inserted with `createNotificationsForUsers`
   (server). Client checklist diffs toast + invalidate the bell but do not
   re-persist those kinds (avoids duplicates).
-- Intern deliver / Update client portal: no in-page “Delivered to client”
-  card (that was `peakEndMoment === 'deliver'`). Success is a green toast with
-  stable id `delivered-to-client:{scope}:{item}` plus a Received bell row via
-  `notifyEngagementEvent({ event: 'delivered' })`. First deliver still opens
-  Graph compose; re-deliver is `inAppOnly` so it does not reopen compose or
-  email. Autosave never sends `deliveredToClientAt` and must not fan out.
+- **No lead “Deliver to client” any more** (2026-09-15). The intern footer only has
+  Save / Request manager approval / Submit; `handleDeliverToClient` is gone. The
+  manager’s Accept of a `lead_manager_request` is the delivery: `reviewChecklistItem`
+  stamps `deliveredToClientAt` (so `isDeliveredToClient`, intern-work `done`, client
+  toasts all read it) and, for pre-12, copies `responses.dateOfIncorporation` onto
+  `engagements.incorporation_date`. `validateInternDelivery` (pre-4 / pre-5 required
+  uploads) now runs inside the intern **Submit** for `INTERN_DELIVERY_STEP_IDS`.
+  Server gate: `POST /checklist` runs an intern patch through `leadWritablePatch`
+  (drops `deliveredToClientAt`, `completedOn`, `reviewedAt/By`, `approval`, any
+  `reviewStatus` but `reviewing`, and `status` completed / not-applicable), so no
+  client build can release a step on the lead’s say-so. The `event: 'delivered'`
+  notify path is unreachable from routes now (kept for the WhatsApp template map).
 
 ## Stubs
 
@@ -268,8 +274,9 @@ Append here whenever something costs more than a minute to figure out.
   the "Your project lead is still preparing this step…" intro plus the review panel;
   client gets the same card until accepted, with only the approval status line
   ("Change requested") and no Approve / Request-a-change buttons.
-- Still bypasses the manager on purpose: intern **Deliver to client** and the
-  incorporation-drafts **share** (explicit lead → client releases).
+- Still bypasses the manager on purpose: the incorporation-drafts **share** (pre-7 →
+  client downloads) and board-resolution **finalize / Send to client** (pre-2).
+  Everything else a lead fills reaches the client only through Accept.
 
 ## Intern engagement overview
 

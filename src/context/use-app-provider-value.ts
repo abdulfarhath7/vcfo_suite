@@ -1164,18 +1164,6 @@ export function useAppProviderValue(): AppContextValue {
           keepalive: options?.keepalive,
         });
         setDbChecklistState((prev) => ({ ...prev, [engagementId]: saved }));
-        if (patch.deliveredToClientAt?.trim()) {
-          suppressChecklistNotification(engagementId, itemId, 'checklist.deliver');
-          pushActivity({
-            actor: user?.name || 'VCFO Team',
-            verb: 'delivered',
-            target: checklistItemLabel(itemId),
-            engagementId,
-          });
-          if (user?.id) {
-            void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
-          }
-        }
         if (patch.reviewSource === 'lead_manager_request') {
           suppressChecklistNotification(engagementId, itemId, 'checklist.submit');
         }

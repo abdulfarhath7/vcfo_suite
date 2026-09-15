@@ -21,7 +21,6 @@ import {
   type ChecklistItemResponses,
 } from '@/lib/checklist-responses';
 import { filterFieldsByViewer, isMilestoneFormReadOnly } from '@/lib/checklist-field-access';
-import { isDeliveredToClient } from '@/lib/checklist-state-key';
 import {
   applyPre1EngagementDefaults,
   countWords,
@@ -154,7 +153,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     setUnlockedFields,
     user,
     engagements,
-    updateEngagement,
   } = useApp();
   // `getClientResponseFields` builds a fresh array per call. Memoise it, or
   // every callback keyed on `fields` (flush, debounce) is re-created each
@@ -260,7 +258,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [fieldWarnings, setFieldWarnings] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [delivering, setDelivering] = useState(false);
   const [peakEndMoment, setPeakEndMoment] = useState<'submit' | null>(null);
 
   const isClient = variant === 'client';
@@ -269,8 +266,13 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const clientResubmit = canClientResubmit(itemState);
   const reviewAccepted = isReviewAccepted(itemState);
   const unlockedFields = itemState?.unlockedFields ?? [];
+  /**
+   * Steps the lead used to push to the client with a "Deliver to client"
+   * button. That path is gone: the lead submits for approval like any other
+   * step and the manager's Accept is what delivers. Only the stricter
+   * required-field check that button ran survives, on Submit.
+   */
   const isInternDeliveryStep = INTERN_DELIVERY_STEP_IDS.has(item.id);
-  const deliveredToClient = isDeliveredToClient(itemState);
   const formReadOnly = isMilestoneFormReadOnly({
     readOnly,
     variant,
@@ -951,15 +953,27 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     pendingAfterFlightRef.current = null;
     await waitForSaveIdle();
 
-    const { ok, errors, warnings } = runStepValidation(
+    const submitDraft = isPre1 ? pre1Draft : { ...draft };
+    if (item.id === 'pre-5' && submitDraft.nameApprovalDate?.trim()) {
+      submitDraft.nameApprovalExpiryDate =
+        submitDraft.nameApprovalExpiryDate?.trim() ||
+        computeMcaNameApprovalExpiryDate(submitDraft.nameApprovalDate);
+    }
+    const stepValidation = runStepValidation(
       item.id,
       isPre1,
       isPre6,
       pre1Draft,
-      draft,
+      submitDraft,
       pre1Responses,
       pre1SubmittedForPre6,
     );
+    const delivery = isInternDeliveryStep
+      ? validateInternDelivery(item.id, submitDraft)
+      : { ok: true, errors: {} };
+    const ok = stepValidation.ok && delivery.ok;
+    const errors = { ...stepValidation.errors, ...delivery.errors };
+    const { warnings } = stepValidation;
     setFieldErrors(errors);
     setFieldWarnings(warnings);
     if (!ok) {
@@ -978,14 +992,14 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
     setSubmitting(true);
     try {
-      const submitDraft = isPre1 ? pre1Draft : draft;
       await updateItem(scopeId, item.id, {
         responses: submitDraft,
         ...internLeadManagerRequestPatch(itemState),
       });
+      if (submitDraft !== draft) setDraft(submitDraft);
       toastSuccess(
-        'Submitted for review',
-        'The manager can review this step in Approvals.',
+        'Submitted for approval',
+        'Your manager reviews it in Approvals; the client sees this step once they accept.',
         { id: `intern-submit:${scopeId}:${item.id}` },
       );
       navigateInternAfterLastTab();
@@ -1035,59 +1049,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       toastError('Could not submit', errorMessage(err, 'Try again or contact your project lead.'));
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleDeliverToClient = async () => {
-    clearDebounce();
-
-    const deliveryDraft = { ...draft };
-    if (item.id === 'pre-5' && deliveryDraft.nameApprovalDate?.trim()) {
-      deliveryDraft.nameApprovalExpiryDate =
-        deliveryDraft.nameApprovalExpiryDate?.trim() ||
-        computeMcaNameApprovalExpiryDate(deliveryDraft.nameApprovalDate);
-    }
-
-    const { ok, errors } = validateInternDelivery(item.id, deliveryDraft);
-    setFieldErrors(errors);
-    if (!ok) {
-      toastError(
-        'Complete required fields',
-        'Fill in all required details and upload documents before delivering to the client.',
-      );
-      return;
-    }
-
-    setDelivering(true);
-    try {
-      await updateItem(
-        scopeId,
-        item.id,
-        { responses: deliveryDraft },
-        { clientResponsesOnly: true },
-      );
-      await updateItem(scopeId, item.id, {
-        status: 'completed',
-        completedOn: new Date().toISOString(),
-        deliveredToClientAt: new Date().toISOString(),
-      });
-      setDraft(deliveryDraft);
-      const wasDelivered = isDeliveredToClient(itemState);
-      toastSuccess(
-        wasDelivered ? 'Client portal updated' : 'Delivered to client',
-        wasDelivered
-          ? 'The client will see your latest answers in their portal.'
-          : 'The client can now view this step in their portal.',
-        { id: `delivered-to-client:${scopeId}:${item.id}` },
-      );
-      if (item.id === 'pre-12' && deliveryDraft.dateOfIncorporation?.trim() && engagement) {
-        const incDate = deliveryDraft.dateOfIncorporation.trim();
-        void updateEngagement(engagement.id, { incorporationDate: incDate }).catch(() => undefined);
-      }
-    } catch (err) {
-      toastError('Could not deliver', errorMessage(err, 'Try again or contact your manager.'));
-    } finally {
-      setDelivering(false);
     }
   };
 
@@ -1576,12 +1537,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     clientResubmit,
     cn,
     completedStructuredSections,
-    deliveredToClient,
-    delivering,
     fieldErrors,
     formReadOnly,
     extraFooterActions,
-    handleDeliverToClient,
     handleInternSectionNext,
     handleInternSubmit,
     handleRetryAutoSave,
@@ -1594,7 +1552,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     internSectionNav,
     internSectionNextLabel,
     isClient,
-    isInternDeliveryStep,
     isPhase2StructuredStep,
     isPre1,
     isPre6,

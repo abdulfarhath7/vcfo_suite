@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isInternDeliveryStep, isMilestoneFormReadOnly } from './checklist-field-access';
+import { isMilestoneFormReadOnly } from './checklist-field-access';
 
 describe('isMilestoneFormReadOnly', () => {
   it('locks client view after intern delivery', () => {
@@ -44,12 +44,5 @@ describe('isMilestoneFormReadOnly', () => {
         itemState: { reviewStatus: 'accepted', status: 'completed' },
       }),
     ).toBe(false);
-  });
-});
-
-describe('isInternDeliveryStep', () => {
-  it('includes pre-5', () => {
-    expect(isInternDeliveryStep('pre-5')).toBe(true);
-    expect(isInternDeliveryStep('pre-1')).toBe(false);
   });
 });

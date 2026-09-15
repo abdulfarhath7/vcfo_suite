@@ -2,8 +2,6 @@ import { approvalStateOf } from '@/lib/checklist-step-approval';
 import type { EngagementChecklistState } from '@/lib/checklist-index';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 
-export { isLeadRequestPending } from '@/lib/checklist-item-review';
-
 /**
  * Who may read what on a checklist step.
  *
