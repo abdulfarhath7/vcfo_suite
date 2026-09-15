@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ComplianceCalendarView } from '@/views/compliances/ComplianceCalendarView';
 import { FilingsView } from '@/views/compliances/FilingsView';
+import { RedirectTo } from '@/components/routing/RedirectTo';
+import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
 import {
   preIncorporationIdsOf,
   type ComplianceScope,
@@ -24,8 +26,19 @@ import {
  * client, intern, manager and admin each stay inside their own segment. The
  * audience only picks the wording of the pre-incorporation notice.
  */
-function useComplianceScope(): { settled: boolean; scope: ComplianceScope } {
-  const { user, engagements, engagementsSettled, getStateForEngagement } = useApp();
+function useComplianceScope(): {
+  settled: boolean;
+  scope: ComplianceScope;
+  /** A lead with no incorporated engagement has nothing here — send them to Today. */
+  leadHasNothing: boolean;
+} {
+  const { user, engagements: roster, engagementsSettled, getStateForEngagement } = useApp();
+  // Lead-only: compliances exist for incorporated engagements. Other roles
+  // keep the whole roster and see the pre-COI notice instead.
+  const engagements = useMemo(
+    () => complianceEngagementsForRole(user?.role, roster, getStateForEngagement),
+    [user?.role, roster, getStateForEngagement],
+  );
   const preIncorporationIds = useMemo(
     () => preIncorporationIdsOf(engagements, getStateForEngagement),
     [engagements, getStateForEngagement],
@@ -35,8 +48,11 @@ function useComplianceScope(): { settled: boolean; scope: ComplianceScope } {
     () => ({ audience, engagements, preIncorporationIds }),
     [audience, engagements, preIncorporationIds],
   );
-  return { settled: engagementsSettled, scope };
+  const leadHasNothing = engagementsSettled && user?.role === 'intern' && engagements.length === 0;
+  return { settled: engagementsSettled, scope, leadHasNothing };
 }
+
+const LEAD_HOME = '/app/intern/today';
 
 /** The same skeleton the views show while the register loads. */
 function Settling({ label }: { label: string }) {
@@ -48,13 +64,15 @@ function Settling({ label }: { label: string }) {
 }
 
 export function ComplianceCalendarPage({ basePath }: { basePath: string }) {
-  const { settled, scope } = useComplianceScope();
+  const { settled, scope, leadHasNothing } = useComplianceScope();
   if (!settled) return <Settling label="Loading calendar" />;
+  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
   return <ComplianceCalendarView basePath={basePath} scope={scope} />;
 }
 
 export function FilingsPage({ basePath }: { basePath: string }) {
-  const { settled, scope } = useComplianceScope();
+  const { settled, scope, leadHasNothing } = useComplianceScope();
   if (!settled) return <Settling label="Loading filings" />;
+  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
   return <FilingsView basePath={basePath} scope={scope} />;
 }

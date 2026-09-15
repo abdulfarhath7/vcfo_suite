@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
 import {
   CERTIFICATE_OF_INCORPORATION_STEP_ID,
   isIncorporated,
@@ -71,5 +72,32 @@ describe('isIncorporated', () => {
     expect(
       isIncorporated({ incorporationDate: null }, { 'pre-11': { status: 'completed' } }),
     ).toBe(false);
+  });
+});
+
+describe('isIncorporated — start stage', () => {
+  it('treats an engagement that started at Registration or Compliance as incorporated', () => {
+    expect(isIncorporated({ incorporationDate: null, stage: 'Post-Incorporation' }, {})).toBe(true);
+    expect(isIncorporated({ incorporationDate: null, stage: 'Operational Readiness' }, {})).toBe(true);
+    expect(isIncorporated({ incorporationDate: null, stage: 'Pre-Incorporation' }, {})).toBe(false);
+  });
+});
+
+describe('complianceEngagementsForRole', () => {
+  const rows = [
+    { id: 'pre', incorporationDate: null, stage: 'Pre-Incorporation' },
+    { id: 'post', incorporationDate: '2026-09-10', stage: 'Pre-Incorporation' },
+    { id: 'reg', incorporationDate: null, stage: 'Post-Incorporation' },
+  ];
+  const noState = () => ({});
+
+  it('keeps only incorporated engagements for a lead', () => {
+    expect(complianceEngagementsForRole('intern', rows, noState).map((r) => r.id)).toEqual(['post', 'reg']);
+  });
+
+  it('leaves every other role untouched', () => {
+    for (const role of ['manager', 'admin', 'super_admin', 'client']) {
+      expect(complianceEngagementsForRole(role, rows, noState).map((r) => r.id)).toEqual(['pre', 'post', 'reg']);
+    }
   });
 });

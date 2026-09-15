@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type TransitionEvent } from 'react';
 import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
+import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
 import {
   LayoutDashboard,
   Briefcase,
@@ -193,7 +194,7 @@ function SidebarNavBody({
   /** Pinned closed: icon over a short label. Hover-peek stays icon-only. */
   stacked?: boolean;
 }) {
-  const { user } = useApp();
+  const { user, engagements, getStateForEngagement } = useApp();
   const pathname = usePathname();
   const staffBase = useStaffBasePath();
   const osReduce = useReducedMotion();
@@ -224,6 +225,14 @@ function SidebarNavBody({
     [staffBase],
   );
 
+  // A lead sees Compliances only once at least one of their engagements is
+  // incorporated; the pages themselves redirect to Today until then.
+  const leadHasCompliances = useMemo(
+    () =>
+      user?.role === 'intern' &&
+      complianceEngagementsForRole('intern', engagements, getStateForEngagement).length > 0,
+    [user?.role, engagements, getStateForEngagement],
+  );
   const internItems = useMemo<NavEntry[]>(
     () => [
       { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
@@ -232,12 +241,12 @@ function SidebarNavBody({
       { to: '/app/intern/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
       docsGroup('/app/intern', Archive),
       updatesGroup('/app/intern'),
-      compliancesGroup('/app/intern'),
+      ...(leadHasCompliances ? [compliancesGroup('/app/intern')] : []),
       NAV_TOOLS_BREAK,
       { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
       { to: '/app/intern/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
     ],
-    [],
+    [leadHasCompliances],
   );
 
   if (!user) return null;

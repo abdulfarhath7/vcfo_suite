@@ -11,6 +11,7 @@ import {
 import type { BoardResolutionProgressSnapshot } from '@/lib/client-progress-board';
 import { useComplianceFilings } from '@/hooks/use-compliance-filings';
 import { useFilings } from '@/lib/use-filings';
+import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
 import { buildInternWorkItems, internAssignedToEngagement, internWorkKpis } from '@/lib/intern-work';
 
 /** Intern-scoped engagements, checklist queue, and progress from AppContext. */
@@ -70,7 +71,14 @@ export function useInternPortfolio() {
 
   const focusActions = useMemo(() => prioritizeInternActions(queue), [queue]);
 
-  const filings = useComplianceFilings(myEngagements, getStateForEngagement);
+  // Compliances exist for the lead only once a company is incorporated
+  // (`isIncorporated`, incl. Registration / Compliance starts). Incorporation
+  // steps for the others still flow through `myEngagements` below.
+  const incorporatedEngagements = useMemo(
+    () => complianceEngagementsForRole('intern', myEngagements, getStateForEngagement),
+    [myEngagements, getStateForEngagement],
+  );
+  const filings = useComplianceFilings(incorporatedEngagements, getStateForEngagement);
   // Manager-set compliance windows live on the DB register rows; the Today
   // filings are computed client-side, so join them by the shared instance key.
   const register = useFilings();
