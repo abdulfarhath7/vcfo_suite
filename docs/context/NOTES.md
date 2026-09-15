@@ -586,6 +586,12 @@ Append here whenever something costs more than a minute to figure out.
   (`src/lib/email/compose-branding.ts`), hosting `public/sbc-logo-light.png`
   via `siteUrl()` (no CID / Resend attachment). Process-email compose that already
   sends `html` is unchanged. Default untemplated send stays `plain`.
+- Staff compose To also takes typed addresses outside the directory
+  (`src/lib/email/recipient-input.ts`): Enter / comma / Tab / blur / paste
+  turn text into chips, a typed directory address selects that person
+  instead, Backspace on empty text drops the last chip. `?to=` with an
+  unknown address becomes a chip too. Server (`/api/outlook/send`) already
+  accepted any address — only the UI was directory-bound.
 - Directory now returns inactive people too; To defaults to **Active**. Team
   filter uses `profiles.reports_to_manager_id`.
 

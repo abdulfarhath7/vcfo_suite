@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { AtSign, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import {
@@ -23,6 +23,7 @@ import {
   uniqueDirectoryProjects,
   type DirectoryPerson,
 } from '@/lib/email/directory-filter';
+import { isEmailAddress, resolveTypedRecipients } from '@/lib/email/recipient-input';
 import { cn } from '@/lib/utils';
 
 /** Keep the To row compact; extras behind +N. */
@@ -45,7 +46,16 @@ type Props = {
   onToggle: (userId: string) => void;
   /** Add/remove To chips without toggling one id at a time (Client auto-fill). */
   onApplyAutoFill: (removeIds: string[], addIds: string[]) => void;
+  /** Addresses typed in that belong to nobody in the directory. */
+  customEmails: string[];
+  onAddCustomEmails: (emails: string[]) => void;
+  onRemoveCustomEmail: (email: string) => void;
 };
+
+/** A To chip: a directory person, or a typed address. */
+type Recipient =
+  | { key: string; kind: 'person'; person: DirectoryPerson }
+  | { key: string; kind: 'email'; email: string };
 
 export function ComposeRecipientPicker({
   people,
@@ -53,6 +63,9 @@ export function ComposeRecipientPicker({
   selected,
   onToggle,
   onApplyAutoFill,
+  customEmails,
+  onAddCustomEmails,
+  onRemoveCustomEmail,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -72,18 +85,51 @@ export function ComposeRecipientPicker({
       }),
     [people, query, managerId, clientId],
   );
-  const selectedPeople = useMemo(
-    () => people.filter((p) => selected.has(p.userId)),
-    [people, selected],
+  const recipients = useMemo<Recipient[]>(
+    () => [
+      ...people
+        .filter((p) => selected.has(p.userId))
+        .map((person): Recipient => ({ key: `person:${person.userId}`, kind: 'person', person })),
+      ...customEmails.map((email): Recipient => ({ key: `email:${email}`, kind: 'email', email })),
+    ],
+    [people, selected, customEmails],
   );
-  const shownChips = selectedPeople.slice(0, VISIBLE_CHIPS);
-  const overflowChips = selectedPeople.slice(VISIBLE_CHIPS);
+  const shownChips = recipients.slice(0, VISIBLE_CHIPS);
+  const overflowChips = recipients.slice(VISIBLE_CHIPS);
+  const trimmedQuery = query.trim();
+  const typedIsAddress = isEmailAddress(trimmedQuery);
+  const typedMatchesDirectory = people.some(
+    (p) => p.email.trim().toLowerCase() === trimmedQuery.toLowerCase(),
+  );
+  const typedAlreadyAdded = customEmails.includes(trimmedQuery.toLowerCase());
+  /** Show "Send to …" when the text is an address nobody in the directory owns. */
+  const offerTyped = typedIsAddress && !typedMatchesDirectory && !typedAlreadyAdded;
 
   function handleToggle(userId: string) {
     if (selected.has(userId)) {
       autoFilledRef.current = autoFilledRef.current.filter((id) => id !== userId);
     }
     onToggle(userId);
+  }
+
+  function removeRecipient(recipient: Recipient) {
+    if (recipient.kind === 'person') handleToggle(recipient.person.userId);
+    else onRemoveCustomEmail(recipient.email);
+  }
+
+  /**
+   * Turn what was typed into chips. A directory address selects that person;
+   * anything else that is an address becomes a plain chip. Returns false when
+   * nothing usable was typed so the caller can leave the text alone.
+   */
+  function commitTyped(text: string): boolean {
+    const resolved = resolveTypedRecipients(people, text);
+    for (const id of resolved.personIds) if (!selected.has(id)) onToggle(id);
+    const fresh = resolved.emails.filter((email) => !customEmails.includes(email));
+    if (fresh.length > 0) onAddCustomEmails(fresh);
+    if (resolved.personIds.length === 0 && resolved.emails.length === 0) return false;
+    setQuery(resolved.invalid.join(' '));
+    return true;
   }
 
   function handleClientChange(nextClientId: string) {
@@ -107,23 +153,23 @@ export function ComposeRecipientPicker({
             <div
               className={cn(FIELD, 'flex-1', open && 'border-primary ring-2 ring-ring/40')}
             >
-              {shownChips.map((person) => (
+              {shownChips.map((recipient) => (
                 <button
-                  key={person.userId}
+                  key={recipient.key}
                   type="button"
                   className={cn(
                     CHIP,
-                    selectedPeople.length === 1 && overflowChips.length === 0 && 'max-w-[calc(100%-7rem)]',
+                    recipients.length === 1 && overflowChips.length === 0 && 'max-w-[calc(100%-7rem)]',
                   )}
-                  title={`Remove ${person.name}`}
-                  onClick={() => handleToggle(person.userId)}
+                  title={`Remove ${recipientLabel(recipient)}`}
+                  onClick={() => removeRecipient(recipient)}
                 >
-                  <span className="truncate font-mono text-[12.5px]">{person.email}</span>
+                  <span className="truncate font-mono text-[12.5px]">{recipientEmail(recipient)}</span>
                   <X className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
                 </button>
               ))}
               {overflowChips.length > 0 ? (
-                <OverflowChips people={overflowChips} onRemove={handleToggle} />
+                <OverflowChips recipients={overflowChips} onRemove={removeRecipient} />
               ) : null}
               <input
                 id="mail-to-search"
@@ -135,14 +181,33 @@ export function ComposeRecipientPicker({
                   setOpen(true);
                 }}
                 onFocus={() => setOpen(true)}
-                placeholder={selectedPeople.length === 0 ? 'Search names…' : 'Add more…'}
+                onBlur={() => {
+                  // Leaving the field with a full address typed keeps it.
+                  if (typedIsAddress) commitTyped(query);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',' || (e.key === 'Tab' && typedIsAddress)) {
+                    if (!trimmedQuery) return;
+                    if (commitTyped(query)) e.preventDefault();
+                    else if (e.key === 'Enter' || e.key === ',') e.preventDefault();
+                  } else if (e.key === 'Backspace' && !query && recipients.length > 0) {
+                    removeRecipient(recipients[recipients.length - 1]);
+                  }
+                }}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData('text');
+                  if (/[@]/.test(pasted) && /[,;\s]/.test(pasted.trim()) && commitTyped(pasted)) {
+                    e.preventDefault();
+                  }
+                }}
+                placeholder={recipients.length === 0 ? 'Search names or type an email…' : 'Add more…'}
                 aria-expanded={open}
                 aria-haspopup="listbox"
                 aria-controls="mail-to-people"
                 autoComplete="off"
                 className={cn(
                   'h-8 bg-transparent px-1 text-sm text-foreground outline-none placeholder:text-muted-foreground',
-                  selectedPeople.length === 0 ? 'min-w-[7rem] flex-1' : 'w-[6.5rem] shrink-0',
+                  recipients.length === 0 ? 'min-w-[7rem] flex-1' : 'w-[6.5rem] shrink-0',
                 )}
               />
             </div>
@@ -177,10 +242,36 @@ export function ComposeRecipientPicker({
               aria-multiselectable="true"
               aria-label="People"
             >
+              {offerTyped ? (
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-muted/40"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => commitTyped(query)}
+                >
+                  <AtSign className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium text-foreground">
+                      Send to {trimmedQuery.toLowerCase()}
+                    </span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      Not in the directory — press Enter to add
+                    </span>
+                  </span>
+                </button>
+              ) : null}
               {loading ? (
                 <p className="px-2 py-3 text-[13px] text-muted-foreground">Loading people…</p>
               ) : visible.length === 0 ? (
-                <p className="px-2 py-3 text-[13px] text-muted-foreground">No one matches.</p>
+                offerTyped ? null : (
+                  <p className="px-2 py-3 text-[13px] text-muted-foreground">
+                    {trimmedQuery.includes('@')
+                      ? 'No one matches — finish typing the address to send outside the directory.'
+                      : 'No one matches. Type a full email address to send outside the directory.'}
+                  </p>
+                )
               ) : (
                 visible.map((person) => {
                   const checked = selected.has(person.userId);
@@ -272,12 +363,20 @@ function RowFilter({
   );
 }
 
+function recipientEmail(recipient: Recipient): string {
+  return recipient.kind === 'person' ? recipient.person.email : recipient.email;
+}
+
+function recipientLabel(recipient: Recipient): string {
+  return recipient.kind === 'person' ? recipient.person.name : recipient.email;
+}
+
 function OverflowChips({
-  people,
+  recipients,
   onRemove,
 }: {
-  people: DirectoryPerson[];
-  onRemove: (userId: string) => void;
+  recipients: Recipient[];
+  onRemove: (recipient: Recipient) => void;
 }) {
   return (
     <Popover>
@@ -285,23 +384,26 @@ function OverflowChips({
         <button
           type="button"
           className={cn(CHIP, 'max-w-none tabular-nums hover:bg-raised')}
-          aria-label={`${people.length} more recipients`}
+          aria-label={`${recipients.length} more recipients`}
         >
-          +{people.length}
+          +{recipients.length}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-2">
         <ul className="flex flex-col gap-1">
-          {people.map((person) => (
-            <li key={person.userId} className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1">
-              <span className="min-w-0 flex-1 truncate font-mono text-[12px]" title={person.email}>
-                {person.email}
+          {recipients.map((recipient) => (
+            <li key={recipient.key} className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1">
+              <span
+                className="min-w-0 flex-1 truncate font-mono text-[12px]"
+                title={recipientEmail(recipient)}
+              >
+                {recipientEmail(recipient)}
               </span>
               <button
                 type="button"
                 className="shrink-0 text-muted-foreground hover:text-foreground"
-                aria-label={`Remove ${person.name}`}
-                onClick={() => onRemove(person.userId)}
+                aria-label={`Remove ${recipientLabel(recipient)}`}
+                onClick={() => onRemove(recipient)}
               >
                 <X className="h-3 w-3" />
               </button>

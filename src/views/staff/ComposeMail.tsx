@@ -22,6 +22,7 @@ import {
   matchDirectoryPersonByToParam,
   type DirectoryPerson,
 } from '@/lib/email/directory-filter';
+import { isEmailAddress } from '@/lib/email/recipient-input';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 
 type Props = {
@@ -40,6 +41,8 @@ export default function ComposeMail({ path }: Props) {
   const [loadingStatus, setLoadingStatus] = useState(true);
 
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  /** Typed addresses outside the directory (a CA, a bank, a prospect). */
+  const [customEmails, setCustomEmails] = useState<string[]>([]);
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -88,6 +91,7 @@ export default function ComposeMail({ path }: Props) {
               : null;
           const selectedId = matchDirectoryPersonByToParam(list, to);
           if (selectedId) setSelected(new Set([selectedId]));
+          else if (to && isEmailAddress(to)) setCustomEmails([to.trim().toLowerCase()]);
         }
       } catch (err) {
         if (!cancelled) toastError('Could not load people', errorMessage(err));
@@ -121,9 +125,9 @@ export default function ComposeMail({ path }: Props) {
   }
 
   async function send() {
-    const to = selectedPeople.map((p) => p.email);
+    const to = [...selectedPeople.map((p) => p.email), ...customEmails];
     if (to.length === 0) {
-      toastError('Pick a recipient', 'Select at least one person in To.');
+      toastError('Pick a recipient', 'Choose someone in To, or type an email address.');
       return;
     }
     if (!subject.trim()) {
@@ -159,6 +163,7 @@ export default function ComposeMail({ path }: Props) {
       setSubject('');
       setBody('');
       setSelected(new Set());
+      setCustomEmails([]);
       setAppliedTemplate(null);
     } catch (err) {
       toastError("Email didn't send", errorMessage(err));
@@ -224,6 +229,13 @@ export default function ComposeMail({ path }: Props) {
                   return next;
                 });
               }}
+              customEmails={customEmails}
+              onAddCustomEmails={(emails) =>
+                setCustomEmails((prev) => [...prev, ...emails.filter((e) => !prev.includes(e))])
+              }
+              onRemoveCustomEmail={(email) =>
+                setCustomEmails((prev) => prev.filter((e) => e !== email))
+              }
             />
           </div>
 
