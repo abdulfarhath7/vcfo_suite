@@ -33,10 +33,13 @@ export function ClientStepFieldPreview({
   item,
   responses,
   itemState,
+  intro = 'Your team prepares this step. Here is what it captures.',
 }: {
   item: ChecklistItem;
   responses?: ChecklistItemResponses;
   itemState?: ChecklistItemStateSlice;
+  /** First line of the card; defaults to the client's wording. */
+  intro?: string;
 }) {
   const released = isDeliveredToClient(itemState);
 
@@ -48,9 +51,7 @@ export function ClientStepFieldPreview({
   return (
     // `.surface` so an unstarted step sits in the same card a filled one does.
     <div className="surface milestone-record-panel">
-      <p className="mb-3 text-[12.5px] text-muted-foreground">
-        Your team prepares this step. Here is what it captures.
-      </p>
+      <p className="mb-3 text-[12.5px] text-muted-foreground">{intro}</p>
       <dl className="milestone-record">
         {fields.map((field) => {
           const firmOwned = field.filledBy === 'intern';

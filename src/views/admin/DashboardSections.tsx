@@ -16,6 +16,7 @@ import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import type { TaskInstance } from '@/data/engagements';
 import type { Engagement } from '@/data/engagements';
 import { AdminDashboardFilingsPanel } from '@/views/admin/DashboardSecondaryRow';
+import { DashboardApprovalsPanel } from '@/views/admin/DashboardApprovalsPanel';
 import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
 import { Briefcase, Clock, Plus, Inbox } from 'lucide-react';
@@ -222,6 +223,7 @@ export function AdminDashboardView({
           </div>
 
           <div className="flex min-w-0 flex-col gap-3">
+            <DashboardApprovalsPanel />
             <AdminDashboardFilingsPanel engagements={engagements} dueSoon={dueSoon} />
           </div>
         </div>

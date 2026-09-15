@@ -51,6 +51,7 @@ export function StepDetailContentView(props: any) {
     hideDeadline,
     isClientViewer,
     clientNothingYet,
+    nothingYetIntro,
     hideStatus,
     hideWorkspaceRail,
     progress,
@@ -117,7 +118,27 @@ export function StepDetailContentView(props: any) {
       />
     ) : null;
 
-  const internActionBar = hideWorkspaceRail && !isClientViewer ? (
+  /**
+   * Admin / manager reading a lead's step: the form is locked, the lead's own
+   * Save / Request controls stay off, and the decision pair (Accept / Reject,
+   * Approve-and-send / Decline) sits above the filled fields.
+   */
+  const staffReview = Boolean(formReadOnly) && !isClientViewer;
+
+  const staffReviewPanel =
+    staffReview && engagementId ? (
+      <div className="space-y-3 empty:hidden">
+        <ChecklistReviewActions
+          engagementId={engagementId}
+          itemId={item.id}
+          itemState={itemState}
+          theme={theme}
+        />
+        <RequestClientFill engagementId={engagementId} itemId={item.id} itemState={itemState} />
+      </div>
+    ) : null;
+
+  const internActionBar = hideWorkspaceRail && !isClientViewer && !staffReview ? (
     <InternStepActionBar
       engagementId={engagementId}
       item={item}
@@ -131,7 +152,7 @@ export function StepDetailContentView(props: any) {
   // `BoardResolutionStepLink` is an intern-only CTA into the BR editor and it
   // states the draft's status. It must never reach a client.
   const internBoardResolutionAction =
-    hideWorkspaceRail && !isClientViewer && item.id === 'pre-2' && engagement ? (
+    hideWorkspaceRail && !isClientViewer && !staffReview && item.id === 'pre-2' && engagement ? (
       <BoardResolutionStepLink engagement={engagement} />
     ) : null;
 
@@ -389,15 +410,22 @@ export function StepDetailContentView(props: any) {
         {hideWorkspaceRail ? (
           clientNothingYet ? (
             /* Readable, not locked. Rather than one "nothing here" line, show
-               what the step will capture so the client can see what is coming —
-               values only where they are entitled to them. */
-            <ClientStepFieldPreview
-              item={item}
-              responses={responses}
-              itemState={itemState}
-            />
+               what the step will capture so the reader can see what is coming —
+               values only where they are entitled to them. A manager keeps the
+               decision pair above it: a pending "ask the client to fill" request
+               is theirs to approve even while the lead is still drafting. */
+            <div className="min-w-0 space-y-4">
+              {staffReviewPanel}
+              <ClientStepFieldPreview
+                item={item}
+                responses={responses}
+                itemState={itemState}
+                intro={nothingYetIntro}
+              />
+            </div>
           ) : (
             <div className="min-w-0 space-y-4">
+              {staffReviewPanel}
               {item.id !== 'pre-7' ? phase1Panel : null}
               {responseForm}
               {item.id === 'pre-7' ? phase1Panel : null}

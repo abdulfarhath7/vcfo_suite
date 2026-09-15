@@ -6,7 +6,7 @@ import {
   type StatusCode,
 } from '@/data/checklist';
 import { isClientSubmissionLocked } from '@/lib/checklist-item-lock';
-import { isReviewRejected } from '@/lib/checklist-item-review';
+import { isLeadRequestPending, isReviewRejected } from '@/lib/checklist-item-review';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 
 export type ChecklistStepGateKind = 'done' | 'active' | 'waiting' | 'locked';
@@ -24,6 +24,8 @@ export interface ChecklistStepGate {
 
 const WAITING_CLIENT = 'Waiting on the client…';
 const WAITING_LEAD = 'Waiting on your project lead…';
+const WAITING_MANAGER = 'Waiting on your manager…';
+const WAITING_YOUR_APPROVAL = 'Waiting on your approval…';
 
 export function checklistGateViewerFrom(
   variant: 'admin' | 'client',
@@ -57,6 +59,13 @@ function waitingMessage(item: ChecklistItem): string {
   return ownerParty(item) === 'client' ? WAITING_CLIENT : WAITING_LEAD;
 }
 
+/** A lead request sits with the manager: nobody else's turn, whoever is looking. */
+function pendingApprovalMessage(viewer: ChecklistGateViewer): string {
+  if (viewer === 'intern') return WAITING_MANAGER;
+  if (viewer === 'staff') return WAITING_YOUR_APPROVAL;
+  return WAITING_LEAD;
+}
+
 function lockedMessage(title: string): string {
   return `This opens after ${title} is complete.`;
 }
@@ -64,7 +73,8 @@ function lockedMessage(title: string): string {
 /**
  * Terminal complete for sequencing: N/A, delivered, approved/marked complete,
  * or client submit — not a save draft. Rejected / unlocked-for-correction
- * re-opens the step so later items re-lock.
+ * re-opens the step so later items re-lock. A lead's request for approval is
+ * not complete either: the tick, and the next step, wait for the manager.
  */
 export function isChecklistStepSequentiallyComplete(
   status: StatusCode,
@@ -72,6 +82,7 @@ export function isChecklistStepSequentiallyComplete(
 ): boolean {
   if (status === 'not-applicable') return true;
   if (isReviewRejected(slice)) return false;
+  if (isLeadRequestPending(slice)) return false;
 
   const reopened = (slice?.unlockedFields?.length ?? 0) > 0;
   if (reopened) return false;
@@ -87,6 +98,9 @@ export function gateDisplayStatus(
   gate: ChecklistStepGate | undefined,
 ): StatusCode {
   if (gate?.kind === 'locked' && status === 'overdue') return 'not-started';
+  // A re-requested step keeps `completed` from its earlier accept; while the
+  // manager decides again it is not done, and the badge must not say so.
+  if (gate?.kind === 'waiting' && status === 'completed') return 'in-progress';
   return status;
 }
 
@@ -119,6 +133,15 @@ export function gateChecklistSteps(params: {
     }
 
     if (currentIndex < 0 || index === currentIndex) {
+      if (isLeadRequestPending(state[item.id])) {
+        out[item.id] = {
+          kind: 'waiting',
+          canOpen: true,
+          canEdit: false,
+          message: pendingApprovalMessage(viewer),
+        };
+        return;
+      }
       const owns = viewerOwnsStep(item, viewer);
       if (owns) {
         out[item.id] = {

@@ -1,69 +1,21 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { Surface, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
 import { ClipboardCheck } from 'lucide-react';
-import { isAwaitingReview } from '@/lib/checklist-item-review';
-import { isClientFillPending } from '@/lib/checklist-client-fill';
-import { primaryPhaseItems } from '@/lib/project-stuck';
+import { pendingApprovalKind, usePendingApprovals } from '@/hooks/use-pending-approvals';
 import { checklistItemLabel } from '@/lib/audit-log';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { adminProjectStepPath } from '@/lib/project-step-path';
 import { ProjectChangeRequestsPanel } from '@/views/admin/ProjectChangeRequestsPanel';
 
 export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' }) {
-  const { engagements, getStateForEngagement, user } = useApp();
   const router = useRouter();
   const staffBase = useStaffBasePath();
-
-  const rows = useMemo(() => {
-    const out: {
-      engagementId: string;
-      companyName: string;
-      itemId: string;
-      slug?: string;
-      reviewSource?: string;
-      /** Lead is asking to send this step to the client — approve before it goes out. */
-      clientFill?: { requestedByName?: string; note?: string };
-    }[] = [];
-    for (const eng of engagements) {
-      if (eng.stage === 'Operational Readiness') continue;
-      if (scope === 'manager' && user?.role === 'manager' && eng.managerId && eng.managerId !== user.id) {
-        continue;
-      }
-      const state = getStateForEngagement(eng);
-      for (const item of primaryPhaseItems()) {
-        const slice = state[item.id];
-        if (isAwaitingReview(slice)) {
-          out.push({
-            engagementId: eng.id,
-            companyName: eng.companyName,
-            itemId: item.id,
-            slug: eng.slug,
-            reviewSource: slice?.reviewSource,
-          });
-        }
-        if (isClientFillPending(slice?.clientFillRequest)) {
-          out.push({
-            engagementId: eng.id,
-            companyName: eng.companyName,
-            itemId: item.id,
-            slug: eng.slug,
-            clientFill: {
-              requestedByName: slice?.clientFillRequest?.requestedByName,
-              note: slice?.clientFillRequest?.note,
-            },
-          });
-        }
-      }
-    }
-    return out;
-  }, [engagements, getStateForEngagement, scope, user]);
+  const rows = usePendingApprovals(scope);
 
   const path = scope === 'firm' ? '/app/admin/approvals' : `${staffBase}/approvals`;
 
@@ -103,14 +55,7 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
               <div className="min-w-0">
                 <div className="text-[13px] font-medium truncate">{row.companyName}</div>
                 <div className="text-[11px] text-muted-foreground">
-                  {checklistItemLabel(row.itemId)}
-                  {row.clientFill
-                    ? ` · Send to client${
-                        row.clientFill.requestedByName ? ` · ${row.clientFill.requestedByName}` : ''
-                      }`
-                    : row.reviewSource === 'lead_manager_request'
-                      ? ' · Lead request'
-                      : ' · Client submit'}
+                  {checklistItemLabel(row.itemId)} · {pendingApprovalKind(row)}
                 </div>
                 {row.clientFill?.note ? (
                   <div className="mt-1 text-[11px] text-muted-foreground">{row.clientFill.note}</div>
@@ -123,7 +68,7 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
                   router.push(adminProjectStepPath({ id: row.engagementId, slug: row.slug }, row.itemId, staffBase))
                 }
               >
-                Open
+                Review
               </button>
             </div>
           ))

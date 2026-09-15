@@ -62,12 +62,15 @@ export interface StepDetailContentProps {
    */
   readOnly?: boolean;
   /**
-   * Client viewing a step that has nothing for them yet. The step is fully
-   * readable — this only swaps the body for one calm line instead of an empty
-   * form, and it is also what keeps unreleased firm-side content (board
-   * resolution drafts included) off the page.
+   * The reader has nothing on this step yet — the client before the manager
+   * accepts it, a manager or admin before the lead asks for approval. The step
+   * is fully readable — this only swaps the body for the calm "what this step
+   * captures" card instead of an empty form, and it is also what keeps
+   * unreleased firm-side content (board resolution drafts included) off the page.
    */
   clientNothingYet?: boolean;
+  /** Replaces the card's first line, e.g. for a manager waiting on the lead. */
+  nothingYetIntro?: string;
 }
 
 const STATUS_TONE: Record<
@@ -132,6 +135,7 @@ function StepDetailContentInner({
   viewer = 'staff',
   readOnly = false,
   clientNothingYet = false,
+  nothingYetIntro,
 }: StepDetailContentProps) {
   const { updateTask, getStateForEngagement, engagements, user } = useApp();
   const [ui, dispatchUi] = useReducer(
@@ -283,6 +287,7 @@ function StepDetailContentInner({
     isClientViewer,
     formReadOnly: readOnly ? true : undefined,
     clientNothingYet,
+    nothingYetIntro,
     progress,
     setProgress,
     tab,

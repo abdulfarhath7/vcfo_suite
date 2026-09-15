@@ -18,7 +18,8 @@ import {
   type ChecklistItem,
 } from '@/data/checklist';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
-import { filterFieldsByViewer } from '@/lib/checklist-field-access';
+import { filterFieldsByViewer, hasResponseFormFields } from '@/lib/checklist-field-access';
+import { isStepReleasedToClient, isStepReleasedToFirm } from '@/lib/checklist-visibility';
 import { getStepAttachmentRequirements } from '@/lib/checklist-step-attachments';
 import {
   internOverviewPhaseForItem,
@@ -106,9 +107,9 @@ export default function EngagementStepDetail() {
   const isInternRoute = isInternEngagementPathname(pathname);
   const isIntern = user?.role === 'intern' || isInternRoute;
   /**
-   * Everyone but the lead reads. The client always did; admin and manager now
-   * open the same read-only workspace the client sees — firm-side actions live
-   * on Approvals, not on the step.
+   * Everyone but the lead reads. The client always did; admin and manager open
+   * the same layout with the lead's filled fields locked, plus the Accept /
+   * Reject pair when the step is waiting on their decision.
    */
   const readOnlyView = isClientRoute || !isIntern;
   const engagementParam = engagementRouteParamFromParams(params);
@@ -196,7 +197,10 @@ export default function EngagementStepDetail() {
   }, [item, checklistState]);
 
   const { snapshot: brSnapshot } = useBoardResolutionProgress(eng?.id);
-  const viewer = checklistGateViewerFrom(readOnlyView ? 'client' : 'admin', 'intern');
+  const viewer = checklistGateViewerFrom(
+    isClientRoute ? 'client' : 'admin',
+    isIntern ? 'intern' : user?.role,
+  );
   const gates = useMemo(
     () => gateActiveCatalog(checklistState, viewer),
     [checklistState, viewer],
@@ -256,14 +260,30 @@ export default function EngagementStepDetail() {
     }
   };
 
-  const clientVisibleFields = readOnlyView
+  const clientVisibleFields = isClientRoute
     ? filterFieldsByViewer(getClientResponseFields(item), 'client')
     : [];
   const clientHasContent = clientVisibleFields.some((field) =>
     String(responses?.[field.id] ?? '').trim().length > 0,
   );
-  /** Client, cannot act, nothing filled to read → the calm banner, not a wall. */
-  const clientNothingYet = readOnlyView && !stepGate?.canEdit && !clientHasContent;
+  /**
+   * The step is not this reader's yet → the calm "what this step captures"
+   * card, not a form of dashes. For the client that is until the manager
+   * accepts it (the API already strips the answers); for a manager or admin,
+   * until the lead asks for their approval. A released step with nothing to
+   * show still renders as the record so the client's Approve stays reachable.
+   */
+  const stepSlice = checklistState[item.id];
+  const clientNothingYet =
+    isClientRoute && !isStepReleasedToClient(stepSlice) && !clientHasContent;
+  const staffAwaitingLead =
+    readOnlyView &&
+    !isClientRoute &&
+    hasResponseFormFields(item, 'admin') &&
+    !isStepReleasedToFirm(stepSlice);
+  const nothingYetIntro = staffAwaitingLead
+    ? 'Your project lead is still preparing this step. Their answers appear here once they ask for your approval.'
+    : undefined;
 
   const railItems = journeyRailItems(bucketSteps, gates, checklistState, brSnapshot);
   const internPhaseRailItems = internPhase
@@ -313,29 +333,36 @@ export default function EngagementStepDetail() {
         hideDocumentsTab={internWorkspace}
         hideStatus={internWorkspace}
         hideWorkspaceRail={internWorkspace}
-        viewer={readOnlyView ? 'client' : 'staff'}
+        viewer={isClientRoute ? 'client' : 'staff'}
         readOnly={readOnlyView && !isClientRoute}
-        clientNothingYet={clientNothingYet}
+        clientNothingYet={clientNothingYet || staffAwaitingLead}
+        nothingYetIntro={nothingYetIntro}
       />
 
       {/* The client's two actions on a step, at STEP level — never per tab.
           They never edit the step itself, so this is the whole of what they
           can do: sign it off, or say what should change. */}
-      {isClientRoute && !clientNothingYet ? (
+      {isClientRoute && (approvalLabel || !clientNothingYet) ? (
         <div className="mt-3 flex items-center justify-end gap-2">
           {approvalLabel ? (
             <span className="mr-auto text-[12px] text-muted-foreground">{approvalLabel}</span>
           ) : null}
-          <ClientChangeRequestButton
-            engagementId={eng.id}
-            stepId={item.id}
-            stepTitle={item.title}
-          />
-          <ClientStepApproveButton
-            engagementId={eng.id}
-            stepId={item.id}
-            itemState={checklistState[item.id]}
-          />
+          {/* While the firm holds the step (a change the client asked for is
+              being made) only the status line remains — nothing to act on. */}
+          {!clientNothingYet ? (
+            <>
+              <ClientChangeRequestButton
+                engagementId={eng.id}
+                stepId={item.id}
+                stepTitle={item.title}
+              />
+              <ClientStepApproveButton
+                engagementId={eng.id}
+                stepId={item.id}
+                itemState={checklistState[item.id]}
+              />
+            </>
+          ) : null}
         </div>
       ) : null}
     </>

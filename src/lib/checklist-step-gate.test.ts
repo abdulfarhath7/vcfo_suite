@@ -60,6 +60,37 @@ describe('isChecklistStepSequentiallyComplete', () => {
     ).toBe(true);
   });
 
+  it('does not treat a lead request awaiting the manager as complete', () => {
+    expect(
+      isChecklistStepSequentiallyComplete('in-progress', {
+        status: 'in-progress',
+        clientSubmittedAt: '2026-08-01T00:00:00.000Z',
+        locked: true,
+        reviewSource: 'lead_manager_request',
+        reviewStatus: 'reviewing',
+      }),
+    ).toBe(false);
+    // A re-request after an accept keeps `completed`; still not done.
+    expect(
+      isChecklistStepSequentiallyComplete('completed', {
+        status: 'completed',
+        clientSubmittedAt: '2026-08-01T00:00:00.000Z',
+        locked: true,
+        reviewSource: 'lead_manager_request',
+        reviewStatus: 'reviewing',
+      }),
+    ).toBe(false);
+    expect(
+      isChecklistStepSequentiallyComplete('completed', {
+        status: 'completed',
+        clientSubmittedAt: '2026-08-01T00:00:00.000Z',
+        locked: true,
+        reviewSource: 'lead_manager_request',
+        reviewStatus: 'accepted',
+      }),
+    ).toBe(true);
+  });
+
   it('re-opens a rejected submission', () => {
     expect(
       isChecklistStepSequentiallyComplete('completed', {
@@ -125,6 +156,29 @@ describe('gateChecklistSteps', () => {
     expect(client.b.kind).toBe('waiting');
     expect(client.b.message).toBe('Waiting on your project lead…');
     expect(staff.c.kind).toBe('locked');
+  });
+
+  it('parks a pending lead request as waiting for everyone, with the right message', () => {
+    const state: Record<string, ChecklistItemStateSlice> = {
+      a: { status: 'completed' },
+      b: {
+        status: 'in-progress',
+        clientSubmittedAt: '2026-08-01T00:00:00.000Z',
+        locked: true,
+        reviewSource: 'lead_manager_request',
+        reviewStatus: 'reviewing',
+      },
+    };
+    const staff = gateChecklistSteps({ items: seq, state, viewer: 'staff' });
+    const intern = gateChecklistSteps({ items: seq, state, viewer: 'intern' });
+    const client = gateChecklistSteps({ items: seq, state, viewer: 'client' });
+    expect(staff.b.kind).toBe('waiting');
+    expect(staff.b.message).toBe('Waiting on your approval…');
+    expect(staff.c.kind).toBe('locked');
+    expect(intern.b.kind).toBe('waiting');
+    expect(intern.b.message).toBe('Waiting on your manager…');
+    expect(client.b.kind).toBe('waiting');
+    expect(client.b.message).toBe('Waiting on your project lead…');
   });
 
   it('skips N/A steps in the sequence', () => {

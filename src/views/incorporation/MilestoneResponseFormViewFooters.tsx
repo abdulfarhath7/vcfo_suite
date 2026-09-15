@@ -43,8 +43,10 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
 
   // The sectioned layout's footer exists to save / submit / advance the form.
   // A client never writes to a step, so they get no footer at all — its primary
-  // button was the last remaining way for them to submit.
-  const internNavFooter = sectionTabs && !isClient;
+  // button was the last remaining way for them to submit. A manager or admin
+  // reading the lead's answers (`formReadOnly`) gets none either: their only
+  // actions are Accept / Reject above the form.
+  const internNavFooter = sectionTabs && !isClient && !formReadOnly;
 
   return (
     <>
