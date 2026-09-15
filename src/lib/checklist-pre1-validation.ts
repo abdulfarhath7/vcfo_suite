@@ -1,5 +1,6 @@
 import type { ChecklistField } from '@/data/checklist';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import { isNicCodeFormat, nicBusinessType } from '@/lib/nic-2008';
 
 const INDIA_PVT_SUFFIX = /india\s+private\s+limited\s*$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -95,6 +96,7 @@ const PRE1_BASE_REQUIRED_TEXT_IDS = [
   'companyMobileCountryCode',
   'companyMobileNumber',
   'businessDescription',
+  'nicCode',
   'directorCount',
   'authorisedShareCapital',
   'paidUpShareCapital',
@@ -300,6 +302,13 @@ export function validatePre1Responses(
   const words = countWords(responses.businessDescription ?? '');
   if (words > 100) {
     errors.businessDescription = `Description must be 100 words or fewer (${words} entered).`;
+  }
+
+  const nicCode = (responses.nicCode ?? '').trim();
+  if (nicCode && !isNicCodeFormat(nicCode)) {
+    errors.nicCode = 'Enter the 5-digit NIC-2008 code (digits only).';
+  } else if (nicCode && !nicBusinessType(nicCode)) {
+    warnings.nicCode = 'No NIC-2008 sub-class has this code — check it against the SPICe+ list.';
   }
 
   for (const id of ['proposedName1', 'proposedName2'] as const) {

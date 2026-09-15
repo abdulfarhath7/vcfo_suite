@@ -21,6 +21,7 @@ import {
   validateInternDelivery,
   type ChecklistItemResponses,
 } from '@/lib/checklist-responses';
+import { nicBusinessType } from '@/lib/nic-2008';
 import { filterFieldsByViewer, isMilestoneFormReadOnly } from '@/lib/checklist-field-access';
 import {
   applyPre1EngagementDefaults,
@@ -775,6 +776,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       if (item.id === 'pre-5' && fieldId === 'nameApprovalDate') {
         next.nameApprovalExpiryDate = computeMcaNameApprovalExpiryDate(value);
       }
+      if (item.id === 'pre-1' && fieldId === 'nicCode') {
+        next.nicBusinessType = nicBusinessType(value)?.description ?? '';
+      }
       return next;
     });
     setFieldErrors((prev) => {
@@ -1425,6 +1429,16 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               className={cn(error && 'border-danger')}
             />
           )
+        ) : item.id === 'pre-1' && field.id === 'nicBusinessType' ? (
+          /* Derived from the NIC code above — read, never typed. */
+          <p
+            className={cn(
+              'text-sm leading-relaxed',
+              draft[field.id]?.trim() ? 'text-foreground' : 'text-muted-foreground italic',
+            )}
+          >
+            {draft[field.id]?.trim() || 'Enter a valid 5-digit NIC code above to fill this in'}
+          </p>
         ) : (
           <Input
             id={`${item.id}-${field.id}`}
@@ -1433,6 +1447,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             onBlur={() => autoSaveEnabled && scheduleAutoSave(true)}
             placeholder={field.placeholder}
             className={cn('milestone-form-input', error && 'border-danger')}
+            {...(field.id === 'nicCode'
+              ? { inputMode: 'numeric' as const, maxLength: 5, pattern: '[0-9]*' }
+              : {})}
           />
         )}
 

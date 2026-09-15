@@ -50,6 +50,7 @@ describe('validatePre1Responses for an independent company', () => {
     companyMobileCountryCode: '+91',
     companyMobileNumber: '9876543210',
     businessDescription: 'Software',
+    nicCode: '62011',
     directorCount: '2',
     director1FirstName: 'A',
     director1LastName: 'B',

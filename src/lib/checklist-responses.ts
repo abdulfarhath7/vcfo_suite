@@ -190,6 +190,26 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       required: true,
     },
     {
+      id: 'nicCode',
+      label: 'NIC code',
+      type: 'text',
+      section: 'Business Description',
+      placeholder: 'e.g. 62011',
+      helperText: '5-digit NIC-2008 code filed with SPICe+ (main division of industrial activity).',
+      required: true,
+      layout: 'short',
+    },
+    {
+      // Derived from `nicCode` — filled in by the form, never typed. Stored so
+      // the record, the lead's review and any later document read one value.
+      id: 'nicBusinessType',
+      label: 'Business type',
+      type: 'text',
+      section: 'Business Description',
+      helperText: 'Filled in from the NIC code.',
+      layout: 'full',
+    },
+    {
       id: 'directorCount',
       label: 'Number of proposed directors',
       type: 'select',
