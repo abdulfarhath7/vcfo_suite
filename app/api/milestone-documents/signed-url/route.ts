@@ -50,10 +50,11 @@ export async function GET(request: Request) {
   if (viewer !== 'lead') {
     // `{engagementId}/{fieldId}/{ts}-{name}` today; older objects may carry an
     // extra segment, so any middle segment that names a field counts.
+    // A repeat-entry upload's id is `group.entry.field`; the group names the step.
     const item = path
       .split('/')
       .slice(1, -1)
-      .map((segment) => checklistItemForFieldId(segment))
+      .map((segment) => checklistItemForFieldId(segment.split('.')[0] ?? segment))
       .find(Boolean);
     if (item && !isStepReleasedTo(viewer, checklistStateFromRow(access.row)[item.id])) {
       return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });

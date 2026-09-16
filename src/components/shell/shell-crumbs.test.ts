@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getPreIncPhases } from '@/data/checklist';
 import {
   pageTitleRepeatsTrail,
   resolveShellCrumbCurrent,
@@ -109,7 +110,7 @@ describe('shellBreadcrumb', () => {
       '/app/intern/today',
       '/app/intern/clients',
       '/app/intern/engagements/democo',
-      '/app/intern/engagements/democo/step/kyc-review-and-dsc-creation',
+      `/app/intern/engagements/democo/step/${getPreIncPhases()[1]!.items[0]!.slug}`,
       null,
     ]);
     expect(crumb.segments[2]?.engagementKey).toBe('democo');

@@ -13,6 +13,9 @@ import {
   getPre6DirectorNameOptions,
   getPre6VisibleFields,
   PRE6_CLIENT_RESPONSE_FIELDS,
+  PRE6_OCCUPATION_OPTIONS,
+  PRE6_QUALIFICATION_OPTIONS,
+  PRE6_UTILITY_BILL_OPTIONS,
 } from '@/lib/checklist-pre6-validation';
 
 /** MCA name approval is valid for 20 calendar days from the approval date. */
@@ -664,6 +667,116 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       section: 'Signed Documents',
       accept: '.pdf,image/*',
       required: true,
+    },
+  ],
+  'pre-15': [
+    {
+      id: 'directors',
+      label: 'Proposed directors',
+      type: 'repeat',
+      section: 'Directors',
+      entryLabel: 'Director',
+      minEntries: 2,
+      maxEntries: 15,
+      helperText:
+        'At least two directors, at least one of them resident in India. The KYC captured here feeds DIR-2, DIR-8, INC-9 and the DSC application.',
+      required: true,
+      entryFields: [
+        // Identity — carried over unchanged from SPICe+ Part A.
+        { id: 'firstName', label: 'First Name (as per PAN / passport)', type: 'text', required: true },
+        { id: 'middleName', label: 'Middle Name', type: 'text' },
+        { id: 'lastName', label: 'Last Name', type: 'text', required: true },
+        { id: 'gender', label: 'Gender', type: 'segmented', options: [...PRE1_GENDER_OPTIONS], required: true },
+        {
+          id: 'indiaResident',
+          label: 'Resident of India?',
+          type: 'segmented',
+          options: [...PRE1_INDIA_RESIDENT_OPTIONS],
+          required: true,
+        },
+        { id: 'din', label: 'Director Identification Number (DIN), if any', type: 'text' },
+        { id: 'hasDsc', label: 'Has a valid DSC token?', type: 'segmented', options: [...PRE1_INDIA_RESIDENT_OPTIONS] },
+        {
+          id: 'dscExpiryDate',
+          label: 'DSC token expiry date',
+          type: 'date',
+          required: true,
+          showWhen: { field: 'hasDsc', value: 'yes' },
+        },
+        {
+          id: 'dscAvailabilitySlots',
+          label: 'Two 30-minute slots for the DSC video verification',
+          type: 'text',
+          showWhen: { field: 'hasDsc', value: 'no' },
+        },
+        // KYC — the Director KYC step folded into each entry.
+        { id: 'dob', label: 'Date of birth', type: 'date', required: true },
+        { id: 'fatherName', label: "Father's name", type: 'text', required: true },
+        {
+          id: 'highestEducationalQualification',
+          label: 'Highest educational qualification',
+          type: 'select',
+          options: [...PRE6_QUALIFICATION_OPTIONS],
+          required: true,
+        },
+        {
+          id: 'occupationType',
+          label: 'Occupation type',
+          type: 'select',
+          options: [...PRE6_OCCUPATION_OPTIONS],
+          required: true,
+        },
+        { id: 'mobileNumber', label: 'Mobile number incl. country code', type: 'text', required: true },
+        { id: 'personalMailId', label: 'Personal e-mail', type: 'text', required: true },
+        { id: 'officialMailId', label: 'Official e-mail', type: 'text' },
+        // Resident: Aadhaar + PAN. Non-resident: passport (+ driving licence).
+        { id: 'aadhaarNumber', label: 'Aadhaar number', type: 'text', required: true, showWhen: { field: 'indiaResident', value: 'yes' } },
+        { id: 'aadhaarCopyUrl', label: 'Copy of Aadhaar card', type: 'file', required: true, showWhen: { field: 'indiaResident', value: 'yes' } },
+        { id: 'panNumber', label: 'PAN', type: 'text', required: true, showWhen: { field: 'indiaResident', value: 'yes' } },
+        { id: 'panCopyUrl', label: 'Copy of PAN card', type: 'file', required: true, showWhen: { field: 'indiaResident', value: 'yes' } },
+        { id: 'passportNumber', label: 'Passport number', type: 'text', required: true, showWhen: { field: 'indiaResident', value: 'no' } },
+        { id: 'passportCopyUrl', label: 'Copy of passport', type: 'file', required: true, showWhen: { field: 'indiaResident', value: 'no' } },
+        { id: 'drivingLicenceNumber', label: 'Driving licence number', type: 'text', showWhen: { field: 'indiaResident', value: 'no' } },
+        { id: 'drivingLicenceCopyUrl', label: 'Copy of driving licence', type: 'file', showWhen: { field: 'indiaResident', value: 'no' } },
+        {
+          id: 'notaryApostilleMethod',
+          label: 'How will notary and apostille be completed?',
+          type: 'segmented',
+          options: [
+            { value: 'self', label: 'Self' },
+            { value: 'consultant', label: 'Consultant' },
+          ],
+          required: true,
+          showWhen: { field: 'indiaResident', value: 'no' },
+        },
+        // Address proof.
+        {
+          id: 'utilityBillType',
+          label: 'Utility bill type',
+          type: 'select',
+          options: [...PRE6_UTILITY_BILL_OPTIONS],
+          required: true,
+        },
+        { id: 'utilityBillNumber', label: 'Utility bill number', type: 'text', required: true },
+        { id: 'utilityBillAddress', label: 'Address as per utility bill', type: 'textarea', required: true },
+        { id: 'utilityBillCopyUrl', label: 'Copy of utility bill', type: 'file', required: true },
+        { id: 'recentPhotographUrl', label: 'Recent passport-size photograph', type: 'file', required: true },
+        // Existing interests (INC-9 / DIR-8 disclosure).
+        {
+          id: 'hasOtherCompanyInterest',
+          label: 'Existing interest in any other company or LLP?',
+          type: 'segmented',
+          options: [...PRE1_INDIA_RESIDENT_OPTIONS],
+          required: true,
+        },
+        {
+          id: 'otherCompanyInterestDetails',
+          label: 'Other companies / LLPs — name, CIN/LLPIN, designation, shareholding, dates',
+          type: 'textarea',
+          required: true,
+          showWhen: { field: 'hasOtherCompanyInterest', value: 'yes' },
+        },
+      ],
     },
   ],
   'pre-9': [

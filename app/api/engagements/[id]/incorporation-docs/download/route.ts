@@ -20,6 +20,7 @@ import {
   type IncorpDocKind,
 } from '@/lib/incorporation-docs/types';
 import { checklistStateFromRow } from '@/db/repositories/engagements';
+import { directorResponsesFromState } from '@/lib/proposed-directors';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -100,9 +101,7 @@ export async function GET(request: Request, context: RouteContext) {
   const pre7Item = checklist.find((c) => c.id === 'pre-7');
   const pre7 = pre7Item ? extractItemResponses(pre7Item, pre7State) : {};
 
-  const pre6Item = checklist.find((c) => c.id === 'pre-6');
-  const pre6State = normalizeChecklistItemSlice(checklistState['pre-6'], 'pre-6');
-  const pre6 = pre6Item ? extractItemResponses(pre6Item, pre6State) : {};
+  const { pre6 } = directorResponsesFromState(checklistState);
 
   const storagePath = (pre7[fieldId] ?? '').trim();
   if (!storagePath) {

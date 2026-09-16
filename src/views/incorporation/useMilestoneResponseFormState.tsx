@@ -22,6 +22,17 @@ import {
   type ChecklistItemResponses,
 } from '@/lib/checklist-responses';
 import { nicBusinessType } from '@/lib/nic-2008';
+import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
+import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
+import {
+  addRepeatEntry,
+  applyShowWhen,
+  expandRepeatEntry,
+  isRepeatField,
+  removeRepeatEntry,
+  repeatEntries,
+} from '@/lib/checklist-repeat';
+import { validatePre15Responses } from '@/lib/checklist-part-b-validation';
 import { filterFieldsByViewer, isMilestoneFormReadOnly } from '@/lib/checklist-field-access';
 import {
   applyPre1EngagementDefaults,
@@ -104,6 +115,7 @@ const NO_FIELDS: ReadonlySet<string> = new Set();
 
 const PHASE2_STRUCTURED_STEP_IDS = new Set([
   'pre-6',
+  'pre-15',
   'pre-7',
   'pre-8',
   'pre-9',
@@ -243,7 +255,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     else if (item.id === 'pre-6') {
       if (!pre1SubmittedForPre6) visible = [];
       else visible = getPre6VisibleFields(fields, draft, pre1Responses);
-    } else visible = fields;
+    } else visible = applyShowWhen(fields, draft);
     return appendStepRemarksToVisible(visible, fields);
   }, [item.id, fields, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6]);
   const pre6DirectorSlots = useMemo(
@@ -582,6 +594,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (item.id === 'pre-10') return validatePre10Responses(draft).errors;
     if (item.id === 'pre-11') return validatePre11Responses(draft).errors;
     if (item.id === 'pre-12') return validatePre12Responses(draft).errors;
+    if (item.id === 'pre-15') return validatePre15Responses(draft).errors;
     return {};
   }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, pre1Validation]);
 
@@ -1078,7 +1091,37 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       return <MilestoneFileDisplay storagePath={value} label={field.label} />;
     }
 
-    if (field.type === 'select' && field.options) {
+    if (isRepeatField(field)) {
+      const entries = repeatEntries(displayValues, field);
+      if (entries.length === 0) {
+        return (
+          <p className={cn('text-sm', emptyClass)}>
+            {field.emptyLabel ?? emptyLabel}
+          </p>
+        );
+      }
+      return (
+        <div className="space-y-3">
+          {entries.map((entry) => (
+            <div key={entry.id} className="rounded-lg border border-border/70 px-3 py-2">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                {field.entryLabel ?? 'Entry'} {entry.index}
+              </p>
+              <dl className="milestone-record">
+                {applyShowWhen(expandRepeatEntry(field, entry.id), displayValues).map((sub) => (
+                  <div key={sub.id} className="milestone-record-row">
+                    <dt className="milestone-record-label">{sub.label}</dt>
+                    <dd className="milestone-record-value">{readOnlyValueNode(sub, empty)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if ((field.type === 'select' || field.type === 'segmented') && field.options) {
       return (
         <p className={cn('text-sm leading-relaxed', value ? 'text-foreground' : emptyClass)}>
           {value ? (field.options.find((o) => o.value === value)?.label ?? value) : emptyLabel}
@@ -1162,7 +1205,39 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
           </div>
         </div>
 
-        {field.type === 'textarea' ? (
+        {isRepeatField(field) ? (
+          <RepeatGroupEditor
+            group={field}
+            responses={draft}
+            renderField={(sub) => renderEditableField(sub)}
+            onAdd={() => {
+              userEditedRef.current = true;
+              setDraft((prev) => ({ ...prev, ...addRepeatEntry(prev, field).patch }));
+              if (autoSaveEnabled) scheduleAutoSave(false);
+            }}
+            onRemove={(entryId) => {
+              userEditedRef.current = true;
+              setDraft((prev) => ({ ...prev, ...removeRepeatEntry(prev, field, entryId) }));
+              setFieldErrors((prev) => {
+                const next = { ...prev };
+                for (const key of Object.keys(next)) {
+                  if (key.startsWith(`${field.id}.${entryId}.`)) delete next[key];
+                }
+                return next;
+              });
+              if (autoSaveEnabled) scheduleAutoSave(false);
+            }}
+          />
+        ) : field.type === 'segmented' && field.options ? (
+          <SegmentedPicker
+            value={draft[field.id]?.trim() ? draft[field.id]! : null}
+            options={field.options.map((opt) => ({ value: opt.value, label: opt.label }))}
+            onChange={(next) => setField(field.id, next)}
+            ariaLabel={field.label}
+            size="sm"
+            className={cn('max-w-md', error && 'ring-1 ring-danger/40 rounded-lg')}
+          />
+        ) : field.type === 'textarea' ? (
           <>
             <Textarea
               id={`${item.id}-${field.id}`}

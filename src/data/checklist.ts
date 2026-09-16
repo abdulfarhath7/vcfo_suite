@@ -44,7 +44,14 @@ export const BUCKET_LABEL: Record<Bucket, string> = {
   statutory: 'Registration',
 };
 
-type ChecklistFieldType = 'text' | 'textarea' | 'select' | 'file' | 'date';
+/**
+ * `segmented` = a `select` rendered as the app's option pills (SegmentedPicker).
+ * `repeat` = an add/remove list of entries; `entryFields` is the per-entry
+ * template (ids relative to the entry), stored as
+ * `responses[id] = "entryId,entryId"` + `responses[`${id}.${entryId}.${fieldId}`]`.
+ * See `src/lib/checklist-repeat.ts`.
+ */
+type ChecklistFieldType = 'text' | 'textarea' | 'select' | 'file' | 'date' | 'segmented' | 'repeat';
 
 /** Who owns completing this milestone (shown in UI). */
 export type ChecklistResponsibleRole = 'client' | 'intern';
@@ -74,6 +81,16 @@ export interface ChecklistField {
   filledBy?: ChecklistResponsibleRole;
   /** Desktop density: short fields pair in a 2-col grid. Omit to infer from type. */
   layout?: 'short' | 'full';
+  /** `repeat` only — the per-entry template; ids are relative to the entry. */
+  entryFields?: ChecklistField[];
+  /** `repeat` only — noun for one entry ("Director"), used in headings and the add button. */
+  entryLabel?: string;
+  /** `repeat` only — copy shown when the list is empty and empty is allowed. */
+  emptyLabel?: string;
+  /** `repeat` only — fewest entries the step accepts (0 = the list may be empty). */
+  minEntries?: number;
+  /** `repeat` only — most entries the step accepts. */
+  maxEntries?: number;
 }
 
 export interface ChecklistItem {
@@ -239,6 +256,20 @@ const preInc: ChecklistItem[] = [
       'Collect complete KYC details and supporting files before filing incorporation forms. Send email to each director for DSC creation time slots when they do not have a valid DSC token.',
   },
   {
+    id: 'pre-15',
+    slug: 'proposed-directors',
+    bucket: 'pre-inc',
+    order: 15,
+    title: 'Proposed Directors',
+    responsibleRole: 'client',
+    description:
+      'One entry per proposed director: name, residency, DIN and DSC status, plus the KYC the incorporation forms need (identity, address, contact, photograph).',
+    forms: ['Spice Part B', 'DIR-2', 'DIR-8', 'INC-9'],
+    infoRequired: ['Director details', 'Director KYC documents'],
+    deadline: { kind: 'estimated-weeks', weeks: [5, 6] },
+    expectedTimeline: '4–5 working days',
+  },
+  {
     id: 'pre-7',
     slug: 'kyc-review-and-dsc-creation',
     bucket: 'pre-inc',
@@ -364,7 +395,7 @@ const PRE_INC_PHASES: ChecklistPhaseGroup[] = [
     id: 'pre-inc-phase-2',
     title: 'Phase 2 — Incorporation',
     subtitle: 'Steps 1–6',
-    itemIds: ['pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
+    itemIds: ['pre-15', 'pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
   },
 ];
 

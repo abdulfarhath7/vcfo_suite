@@ -3,13 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
+import { directorResponsesFromState } from '@/lib/proposed-directors';
 import type { ChecklistItem } from '@/data/checklist';
-import { getItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import {
-  extractItemResponses,
-  type ChecklistItemResponses,
-} from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
 import { isDeliveredToClient } from '@/lib/checklist-state-key';
 import { isInternEngagementPathname } from '@/lib/project-step-path';
@@ -63,9 +60,7 @@ export function Phase1StepPanel({
   const deliveredToClient = isDeliveredToClient(itemState);
   const pre6Responses = useMemo(() => {
     if (!engagement) return {} as ChecklistItemResponses;
-    const pre6Item = getItem('pre-6');
-    const pre6State = getStateForEngagement(engagement)['pre-6'];
-    return extractItemResponses(pre6Item, pre6State);
+    return directorResponsesFromState(getStateForEngagement(engagement)).pre6;
   }, [engagement, getStateForEngagement]);
   const incorpDraftLabelOptions = useMemo(
     () => ({ pre6: pre6Responses }),

@@ -17,7 +17,7 @@ const PRE6_GENDER_OPTIONS = [
   { value: 'other', label: 'Other' },
 ] as const;
 
-const PRE6_QUALIFICATION_OPTIONS = [
+export const PRE6_QUALIFICATION_OPTIONS = [
   { value: 'primary-education', label: 'Primary Education' },
   { value: 'secondary-education', label: 'Secondary Education' },
   { value: 'vocational-qualification', label: 'Vocational Qualification' },
@@ -236,7 +236,7 @@ export function pre6NrFieldPrefix(slotIndex: number): string {
 }
 
 /** First resident slot keeps legacy `residentDirector*` keys. */
-function pre6ResidentFieldPrefix(slotIndex: number): string {
+export function pre6ResidentFieldPrefix(slotIndex: number): string {
   return slotIndex <= 1 ? 'residentDirector' : `residentDirector${slotIndex}`;
 }
 

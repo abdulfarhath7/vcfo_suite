@@ -1,6 +1,7 @@
 import type { ChecklistItem } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
 import { filterFieldsByViewer } from '@/lib/checklist-field-access';
+import { applyShowWhen, expandRepeatFields, repeatFieldLabel } from '@/lib/checklist-repeat';
 import {
   fieldsForOwnership,
   getClientResponseFields,
@@ -21,16 +22,18 @@ export function getStepAttachmentRequirements(
   responses?: ChecklistItemResponses,
   ownershipType?: OwnershipType,
 ): StepAttachmentRequirement[] {
-  return filterFieldsByViewer(
+  const fields = filterFieldsByViewer(
     fieldsForOwnership(item.id, getClientResponseFields(item), ownershipType),
     'admin',
-  )
+  );
+  // Repeat entries contribute their own file fields, labelled per entry.
+  return applyShowWhen(expandRepeatFields(fields, responses ?? {}), responses ?? {})
     .filter((field) => field.type === 'file')
     .map((field) => {
       const path = responses?.[field.id]?.trim() ?? '';
       return {
         fieldId: field.id,
-        label: field.label,
+        label: repeatFieldLabel(fields, responses ?? {}, field.id) ?? field.label,
         uploaded: Boolean(path),
         fileName: path ? fileNameFromStoragePath(path) : undefined,
       };

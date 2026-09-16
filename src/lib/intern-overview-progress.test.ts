@@ -43,9 +43,9 @@ function completeThrough(itemId: string): Record<string, ChecklistItemStateSlice
 
 describe('intern overview progress', () => {
   it('uses honest phase counts, not a fake overall percent', () => {
-    const gates = gateActiveCatalog(completeThrough('pre-7'), 'staff');
     const partA = getPreIncPhases()[0]!;
     const partB = getPreIncPhases()[1]!;
+    const gates = gateActiveCatalog(completeThrough(partB.items[0]!.id), 'staff');
     expect(internPhaseStepCounts(partA.items, gates)).toEqual({ done: 5, total: 5 });
     expect(internPhaseStepCounts(partB.items, gates)).toEqual({ done: 0, total: partB.items.length });
     expect(internPhaseProgressLabel(3, 7)).toBe('3 of 7 complete');

@@ -4,6 +4,7 @@ import type { Engagement } from '@/data/engagements';
 import { checklist } from '@/data/checklist';
 import { extractItemResponses, type ChecklistItemResponses } from '@/lib/checklist-responses';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { directorResponsesFromState } from '@/lib/proposed-directors';
 import { patchIncorpDocxBuffer, renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
 import { downloadIncorpDocx, uploadIncorpDocx } from '@/lib/incorporation-docs/storage';
@@ -64,12 +65,11 @@ function pre7ResponsesFromState(
   return out;
 }
 
+/** Director KYC in the legacy `pre-6` shape, from `pre-15` entries or the stored legacy step. */
 function pre6ResponsesFromState(
   checklistState: EngagementChecklistState | null | undefined,
 ): ChecklistItemResponses {
-  const pre6Item = checklist.find((c) => c.id === 'pre-6');
-  const pre6State = checklistState?.['pre-6'] as ChecklistItemStateSlice | undefined;
-  return pre6Item ? extractItemResponses(pre6Item, pre6State) : {};
+  return directorResponsesFromState(checklistState).pre6;
 }
 
 export async function generateAndStoreIncorpDocs(

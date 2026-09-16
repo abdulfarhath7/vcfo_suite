@@ -2,6 +2,7 @@ import { checklist, getItem, type ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
+import { repeatFieldLabel } from '@/lib/checklist-repeat';
 import { internRegistrationHeadingForTitle } from '@/lib/intern-overview-progress';
 import { appEngagementId, engagementIdAliases } from '@/lib/legacy-engagement-ids';
 import {
@@ -301,11 +302,14 @@ export function collectVaultDocuments(
         addPath(field.id, storagePath, field.label, field.section ?? item.title);
       }
 
-      // Lead uploads stored as a path on a non-file key still belong in the vault.
+      // Lead uploads stored as a path on a non-file key still belong in the
+      // vault — including repeat-entry uploads ("Copy of passport · Director 2").
       for (const [fieldId, value] of Object.entries(responses)) {
         if (used.has(fieldId) || !isMilestoneStoragePath(value)) continue;
         const field = fieldById.get(fieldId);
-        addPath(fieldId, value.trim(), field?.label ?? fieldId, field?.section ?? item.title);
+        const label = field?.label ?? repeatFieldLabel(fields, responses, fieldId) ?? fieldId;
+        const groupSection = fieldById.get(fieldId.split('.')[0] ?? '')?.section;
+        addPath(fieldId, value.trim(), label, field?.section ?? groupSection ?? item.title);
       }
     }
   }

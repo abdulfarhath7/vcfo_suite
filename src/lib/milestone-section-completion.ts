@@ -25,6 +25,17 @@ export function getSectionPendingItems(
   const seen = new Set<string>();
 
   for (const field of sectionFields) {
+    // A repeat group is pending when the group itself or any of its entries
+    // has an error; required entry fields surface through the validator.
+    if (field.type === 'repeat') {
+      const prefix = `${field.id}.`;
+      const hit = Object.keys(validationErrors).find((key) => key === field.id || key.startsWith(prefix));
+      if (hit && !seen.has(field.id)) {
+        pending.push({ fieldId: field.id, label: field.label });
+        seen.add(field.id);
+      }
+      continue;
+    }
     const error = validationErrors[field.id];
     if (error) {
       if (!seen.has(field.id)) {

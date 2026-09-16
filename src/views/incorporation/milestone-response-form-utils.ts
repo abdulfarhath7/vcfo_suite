@@ -9,6 +9,8 @@ import {
   validatePre1Responses,
   type Pre1ValidationOptions,
 } from '@/lib/checklist-pre1-validation';
+import { validatePre15Responses } from '@/lib/checklist-part-b-validation';
+import { expandRepeatFieldsForDiff } from '@/lib/checklist-repeat';
 import { validatePre6Responses } from '@/lib/checklist-pre6-validation';
 import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
 import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
@@ -74,7 +76,9 @@ export function getChangedPartial(
   baseline: ChecklistItemResponses,
 ): ChecklistItemResponses {
   const partial: ChecklistItemResponses = {};
-  for (const f of fields) {
+  // Repeat groups diff over every entry either side knows, so an added entry
+  // is sent and a removed one is cleared.
+  for (const f of expandRepeatFieldsForDiff(fields, from, baseline)) {
     const next = from[f.id] ?? '';
     const prev = baseline[f.id] ?? '';
     if (next !== prev) partial[f.id] = next;
@@ -142,7 +146,7 @@ function hasLongHelperText(field: ChecklistField): boolean {
  */
 export function getMilestoneFormFieldLayout(field: ChecklistField): MilestoneFormFieldLayout {
   if (field.layout === 'short' || field.layout === 'full') return field.layout;
-  if (field.type === 'textarea' || field.type === 'file') return 'full';
+  if (field.type === 'textarea' || field.type === 'file' || field.type === 'repeat') return 'full';
   if (hasLongHelperText(field)) return 'full';
   if (field.type === 'text' && ADDRESS_FIELD_RE.test(`${field.id} ${field.label}`)) {
     return 'full';
@@ -231,5 +235,6 @@ export function runStepValidation(
   if (itemId === 'pre-10') return validatePre10Responses(draft);
   if (itemId === 'pre-11') return validatePre11Responses(draft);
   if (itemId === 'pre-12') return validatePre12Responses(draft);
+  if (itemId === 'pre-15') return validatePre15Responses(draft);
   return { ok: true, errors: {}, warnings: {} };
 }

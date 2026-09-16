@@ -1,8 +1,7 @@
 import 'server-only';
 
-import { checklist } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import { extractItemResponses } from '@/lib/checklist-responses';
+import { directorResponsesFromState } from '@/lib/proposed-directors';
 import type { BoardResolutionMergeFields } from '@/lib/board-resolution';
 import {
   BoardResolutionError,
@@ -39,9 +38,10 @@ export async function generateAndStoreBoardResolution(
     allowFinalizedRepair?: boolean;
   },
 ): Promise<{ content: string; storagePath: string; templateFingerprint: string | null }> {
-  const pre1Item = checklist.find((c) => c.id === 'pre-1');
   const pre1State = checklistState?.['pre-1'] as ChecklistItemStateSlice | undefined;
-  const pre1 = pre1Item ? extractItemResponses(pre1Item, pre1State) : {};
+  // Part A answers with the proposed directors overlaid from `pre-15`
+  // (legacy slots on `pre-1` for older engagements).
+  const { pre1 } = directorResponsesFromState(checklistState);
 
   const forceTemplateRefresh = options?.forceTemplateRefresh === true;
   const editedContent = forceTemplateRefresh ? undefined : options?.content?.trim();

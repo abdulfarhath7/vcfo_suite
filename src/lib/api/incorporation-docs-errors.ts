@@ -3,6 +3,11 @@ import { checklist } from '@/data/checklist';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import { extractItemResponses } from '@/lib/checklist-responses';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import {
+  directorResponsesFromState,
+  PROPOSED_DIRECTORS_STEP_ID,
+  readProposedDirectors,
+} from '@/lib/proposed-directors';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
 import { collectAcceptanceLetterMissingFields } from '@/lib/incorporation-docs/acceptance-letter';
 import { collectAuthorisationLetterMissingFields } from '@/lib/incorporation-docs/authorisation-letter';
@@ -84,15 +89,18 @@ const DIRECTOR_LABEL: Record<IncorpDirectorKind, string> = {
   resident: 'Resident director',
 };
 
-function pre6Slice(checklistState: EngagementChecklistState | null | undefined) {
-  const pre6Item = checklist.find((c) => c.id === 'pre-6');
-  const pre6State = checklistState?.['pre-6'] as ChecklistItemStateSlice | undefined;
-  return pre6Item ? extractItemResponses(pre6Item, pre6State) : {};
-}
-
-function pre6Accepted(checklistState: EngagementChecklistState | null | undefined): boolean {
-  const slice = checklistState?.['pre-6'] as ChecklistItemStateSlice | undefined;
-  return slice?.reviewStatus === 'accepted';
+/**
+ * Director KYC now lives on `pre-15` Proposed directors (per entry); older
+ * engagements still hold it on the legacy `pre-6` step. The accept that
+ * unlocks generation is whichever of the two holds the directors.
+ */
+function directorsAccepted(checklistState: EngagementChecklistState | null | undefined): boolean {
+  const pre15 = checklistState?.[PROPOSED_DIRECTORS_STEP_ID] as ChecklistItemStateSlice | undefined;
+  if (pre15 && readProposedDirectors(checklistState).length > 0 && pre15.reviewStatus === 'accepted') {
+    return true;
+  }
+  const legacy = checklistState?.['pre-6'] as ChecklistItemStateSlice | undefined;
+  return legacy?.reviewStatus === 'accepted';
 }
 
 function pushMissing(missing: string[], label: string, value: string | undefined) {
@@ -245,20 +253,16 @@ export function validateIncorpDocsGeneration(input: {
   pre1: ChecklistItemResponses;
   pre5: ChecklistItemResponses;
 } {
-  const pre6 = pre6Slice(input.checklistState);
-
-  if (!pre6Accepted(input.checklistState)) {
+  if (!directorsAccepted(input.checklistState)) {
     throw new IncorpDocsError(
-      'Client KYC (Pre-6) must be submitted and accepted before generating incorporation drafts.',
+      'Proposed directors must be submitted and accepted before generating incorporation drafts.',
       INCORP_DOCS_ERROR_CODES.PRE6_NOT_ACCEPTED,
     );
   }
 
-  const pre1Item = checklist.find((c) => c.id === 'pre-1');
+  const { pre1, pre6 } = directorResponsesFromState(input.checklistState);
   const pre5Item = checklist.find((c) => c.id === 'pre-5');
-  const pre1State = input.checklistState?.['pre-1'] as ChecklistItemStateSlice | undefined;
   const pre5State = input.checklistState?.['pre-5'] as ChecklistItemStateSlice | undefined;
-  const pre1 = pre1Item ? extractItemResponses(pre1Item, pre1State) : {};
   const pre5 = pre5Item ? extractItemResponses(pre5Item, pre5State) : {};
 
   const missingFields = collectIncorpDocsMissingFields({

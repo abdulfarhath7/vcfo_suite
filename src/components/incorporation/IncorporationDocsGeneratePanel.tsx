@@ -4,9 +4,9 @@ import { FileText, Loader2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
 import { useApp } from '@/context/AppContext';
-import { checklist } from '@/data/checklist';
+import { directorResponsesFromState } from '@/lib/proposed-directors';
 import type { Engagement } from '@/data/engagements';
-import { extractItemResponses, type ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import {
   INCORP_DOC_DEFINITIONS,
   incorpDocRowKey,
@@ -115,11 +115,11 @@ export function IncorporationDocsGeneratePanel({
     useApp();
   const { register: onFlushRegister, flushAll: flushAllPreviews } = useIncorpDocFlushRegistry();
   const pre7State = getStateForEngagement(engagement)['pre-7'];
-  const pre6Responses = useMemo(() => {
-    const pre6Item = checklist.find((c) => c.id === 'pre-6');
-    const pre6State = getStateForEngagement(engagement)['pre-6'];
-    return pre6Item ? extractItemResponses(pre6Item, pre6State) : {};
-  }, [engagement, getStateForEngagement]);
+  // Director names for the draft labels — from `pre-15` entries, legacy `pre-6` otherwise.
+  const pre6Responses = useMemo(
+    () => directorResponsesFromState(getStateForEngagement(engagement)).pre6,
+    [engagement, getStateForEngagement],
+  );
   const labelOptions = useMemo(() => ({ pre6: pre6Responses }), [pre6Responses]);
   const [state, setState] = useState<GenerateState>('idle');
   const [recentPaths, setRecentPaths] = useState<IncorpDocPaths | null>(null);
