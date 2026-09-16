@@ -32,7 +32,18 @@ import {
   removeRepeatEntry,
   repeatEntries,
 } from '@/lib/checklist-repeat';
-import { validatePre15Responses } from '@/lib/checklist-part-b-validation';
+import {
+  shareClassTotal,
+  validatePre13Responses,
+  validatePre14Responses,
+  validatePre15Responses,
+} from '@/lib/checklist-part-b-validation';
+import {
+  REGISTERED_OFFICE_FIELD_IDS,
+  REGISTERED_OFFICE_SOURCE_FIELD_ID,
+  REGISTERED_OFFICE_SOURCE_LABEL,
+  resolveRegisteredOfficeResponses,
+} from '@/lib/registered-office-responses';
 import { filterFieldsByViewer, isMilestoneFormReadOnly } from '@/lib/checklist-field-access';
 import {
   applyPre1EngagementDefaults,
@@ -103,7 +114,7 @@ import { IncorporationDraftDocLink } from '@/components/incorporation/Incorporat
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 import { internEngagementPath, internEngagementStepPath } from '@/lib/project-step-path';
 import { internFormNextTarget } from '@/lib/intern-overview-progress';
-import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
+import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 
 /** The user's edits this session: full values plus which fields they touched. */
@@ -115,6 +126,8 @@ const NO_FIELDS: ReadonlySet<string> = new Set();
 
 const PHASE2_STRUCTURED_STEP_IDS = new Set([
   'pre-6',
+  'pre-13',
+  'pre-14',
   'pre-15',
   'pre-7',
   'pre-8',
@@ -150,6 +163,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     variant = 'client',
     readOnly = false,
     showFieldUnlock = false,
+    open: contentReady = true,
     className,
     compactChrome = false,
     extraFooterActions,
@@ -226,6 +240,12 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (!pre8Item) return {};
     return extractItemResponses(pre8Item, pre8State);
   }, [pre8Item, pre8State]);
+  /** Legacy Director KYC answers — the registered office used to live there. */
+  const pre6Responses = useMemo(() => {
+    const pre6Item = checklist.find((c) => c.id === 'pre-6');
+    if (!engagement || !pre6Item) return {};
+    return extractItemResponses(pre6Item, getStateForEngagement(engagement)['pre-6']);
+  }, [engagement, getStateForEngagement]);
 
   /**
    * The draft is the saved answers with the user's edits laid over them —
@@ -360,6 +380,44 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     canEdit &&
     (variant === 'client' || (internWorkspace && internActor));
   const scopeId = engagement ? checklistStateKeyForEngagement(engagement) : clientId;
+
+  /**
+   * Registered office (pre-14) — pre-fill on first open, writing the values
+   * into THIS step's responses so a later change upstream never silently
+   * rewrites what was confirmed here. Sources, in order: the subsidiary
+   * address captured at project setup (Registration / Compliance starts),
+   * then the legacy Director KYC step on older engagements. The filler can
+   * edit every seeded field; provenance is shown as quiet metadata.
+   */
+  const registeredOfficeSeededRef = useRef(false);
+  useEffect(() => {
+    // `contentReady` = the full checklist has loaded; seeding off the slim
+    // index copy would overwrite an address the server already holds.
+    if (item.id !== 'pre-14' || !contentReady || !autoSaveEnabled || !engagement || registeredOfficeSeededRef.current) return;
+    if (savedRef.current.registeredOfficeCompleteAddress?.trim() || savedRef.current[REGISTERED_OFFICE_SOURCE_FIELD_ID]) {
+      registeredOfficeSeededRef.current = true;
+      return;
+    }
+    const seed: ChecklistItemResponses = {};
+    const fromSetup = (engagement.subsidiaryRegisteredAddress ?? '').trim();
+    if (fromSetup) {
+      seed.registeredOfficeCompleteAddress = fromSetup;
+      seed[REGISTERED_OFFICE_SOURCE_FIELD_ID] = 'project-setup';
+    } else {
+      const legacy = resolveRegisteredOfficeResponses(pre6Responses, pre8Responses);
+      if (legacy.registeredOfficeCompleteAddress?.trim()) {
+        for (const id of REGISTERED_OFFICE_FIELD_IDS) if (legacy[id]) seed[id] = legacy[id]!;
+        seed[REGISTERED_OFFICE_SOURCE_FIELD_ID] = 'director-kyc';
+      }
+    }
+    registeredOfficeSeededRef.current = true;
+    if (Object.keys(seed).length === 0) return;
+    void updateItem(scopeId, item.id, { responses: seed }, { clientResponsesOnly: true }).catch(() => undefined);
+  }, [item.id, contentReady, autoSaveEnabled, engagement, pre6Responses, pre8Responses, scopeId, updateItem]);
+  const provenanceNote =
+    item.id === 'pre-14'
+      ? (REGISTERED_OFFICE_SOURCE_LABEL[saved[REGISTERED_OFFICE_SOURCE_FIELD_ID] ?? ''] ?? null)
+      : null;
 
   const flushPendingAutoSave = useCallback(
     (options?: { keepalive?: boolean }) => {
@@ -594,6 +652,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (item.id === 'pre-10') return validatePre10Responses(draft).errors;
     if (item.id === 'pre-11') return validatePre11Responses(draft).errors;
     if (item.id === 'pre-12') return validatePre12Responses(draft).errors;
+    if (item.id === 'pre-13') return validatePre13Responses(draft).errors;
+    if (item.id === 'pre-14') return validatePre14Responses(draft).errors;
     if (item.id === 'pre-15') return validatePre15Responses(draft).errors;
     return {};
   }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, pre1Validation]);
@@ -774,6 +834,16 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       }
       if (item.id === 'pre-1' && fieldId === 'nicCode') {
         next.nicBusinessType = nicBusinessType(value)?.description ?? '';
+      }
+      if (item.id === 'pre-13') {
+        for (const cls of ['equity', 'preference'] as const) {
+          if (fieldId === `${cls}Quantity` || fieldId === `${cls}NominalValue` || fieldId === `${cls}Shares`) {
+            next[`${cls}Total`] =
+              next[`${cls}Shares`] === 'yes'
+                ? shareClassTotal(next[`${cls}Quantity`], next[`${cls}NominalValue`])
+                : '';
+          }
+        }
       }
       return next;
     });
@@ -1430,15 +1500,15 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               className={cn(error && 'border-danger')}
             />
           )
-        ) : item.id === 'pre-1' && field.id === 'nicBusinessType' ? (
-          /* Derived from the NIC code above — read, never typed. */
+        ) : derivedDisplayPlaceholder(item.id, field.id) ? (
+          /* Derived from sibling answers — read, never typed. */
           <p
             className={cn(
               'text-sm leading-relaxed',
               draft[field.id]?.trim() ? 'text-foreground' : 'text-muted-foreground italic',
             )}
           >
-            {draft[field.id]?.trim() || 'Enter a valid 5-digit NIC code above to fill this in'}
+            {draft[field.id]?.trim() || derivedDisplayPlaceholder(item.id, field.id)}
           </p>
         ) : (
           <Input
@@ -1561,6 +1631,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
           : null;
 
   return {
+    provenanceNote,
     aboveFooterActions,
     autoSaveEnabled,
     autoSaveStatus,

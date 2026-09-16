@@ -3,6 +3,7 @@ import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import { getClientResponseFields } from '@/lib/checklist-responses';
 import { isValidPre1Date, isValidPre1Gender } from '@/lib/checklist-pre1-validation';
 import {
+  applyShowWhen,
   isRepeatField,
   missingRequiredEntryFields,
   repeatEntries,
@@ -66,4 +67,54 @@ export function validatePre15Responses(responses: ChecklistItemResponses): StepV
     errors[group.id] = 'At least one proposed director must be a resident of India.';
   }
   return result(errors);
+}
+
+/** Required visible fields (honouring `showWhen`) that are still empty. */
+function requiredFieldErrors(itemId: string, responses: ChecklistItemResponses): Record<string, string> {
+  const item = getItem(itemId);
+  if (!item) return {};
+  const errors: Record<string, string> = {};
+  for (const field of applyShowWhen(getClientResponseFields(item), responses)) {
+    if (!field.required || field.type === 'repeat') continue;
+    if (!(responses[field.id] ?? '').trim()) {
+      errors[field.id] = field.type === 'file' ? 'Please upload a document.' : 'This field is required.';
+    }
+  }
+  return errors;
+}
+
+const POSITIVE_INT_RE = /^\d+$/;
+const POSITIVE_NUMBER_RE = /^\d+(\.\d{1,2})?$/;
+
+/** Shares × nominal value, or '' when either side is missing / invalid. */
+export function shareClassTotal(quantity: string | undefined, nominal: string | undefined): string {
+  const q = (quantity ?? '').replace(/,/g, '').trim();
+  const n = (nominal ?? '').replace(/,/g, '').trim();
+  if (!POSITIVE_INT_RE.test(q) || !POSITIVE_NUMBER_RE.test(n)) return '';
+  const total = Number(q) * Number(n);
+  if (!Number.isFinite(total) || total <= 0) return '';
+  return total.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+/** pre-13 Capital structure: at least one class; each chosen class has a positive quantity and nominal value. */
+export function validatePre13Responses(responses: ChecklistItemResponses): StepValidationResult {
+  const errors = requiredFieldErrors('pre-13', responses);
+  const equity = (responses.equityShares ?? '').trim();
+  const preference = (responses.preferenceShares ?? '').trim();
+  if (equity !== 'yes' && preference !== 'yes' && equity && preference) {
+    errors.equityShares = 'Select at least one share class — equity or preference.';
+  }
+  for (const cls of ['equity', 'preference'] as const) {
+    if ((responses[`${cls}Shares`] ?? '').trim() !== 'yes') continue;
+    const q = (responses[`${cls}Quantity`] ?? '').replace(/,/g, '').trim();
+    const n = (responses[`${cls}NominalValue`] ?? '').replace(/,/g, '').trim();
+    if (q && (!POSITIVE_INT_RE.test(q) || Number(q) <= 0)) errors[`${cls}Quantity`] = 'Enter a whole number of shares.';
+    if (n && (!POSITIVE_NUMBER_RE.test(n) || Number(n) <= 0)) errors[`${cls}NominalValue`] = 'Enter the nominal value per share, e.g. 10.';
+  }
+  return result(errors);
+}
+
+/** pre-14 Registered office: address, NOC and utility-bill proof. */
+export function validatePre14Responses(responses: ChecklistItemResponses): StepValidationResult {
+  return result(requiredFieldErrors('pre-14', responses));
 }

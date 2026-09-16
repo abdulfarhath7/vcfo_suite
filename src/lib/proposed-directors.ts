@@ -8,6 +8,7 @@ import { isRepeatField, repeatEntries, type RepeatEntry, type RepeatField } from
 import { parseDirectorCount } from '@/lib/checklist-pre1-validation';
 import { pre6NrFieldPrefix, pre6ResidentFieldPrefix } from '@/lib/checklist-pre6-validation';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { resolveRegisteredOfficeResponses } from '@/lib/registered-office-responses';
 
 /**
  * PROPOSED DIRECTORS — one read-side accessor for every consumer.
@@ -26,6 +27,7 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
  * every generator unchanged.
  */
 export const PROPOSED_DIRECTORS_STEP_ID = 'pre-15';
+export const REGISTERED_OFFICE_STEP_ID = 'pre-14';
 export const PROPOSED_DIRECTORS_GROUP_ID = 'directors';
 
 export type StepStateMap = Record<string, ChecklistItemStateSlice | undefined> | null | undefined;
@@ -188,13 +190,18 @@ export function directorResponsesFromState(state: StepStateMap): {
   pre6: ChecklistItemResponses;
 } {
   const pre1 = responsesFor(state, 'pre-1');
-  const pre6 = responsesFor(state, 'pre-6');
+  // The registered office moved to pre-14; the MOA reads it off the pre-6 map.
+  const registeredOffice = resolveRegisteredOfficeResponses(
+    responsesFor(state, 'pre-6'),
+    responsesFor(state, 'pre-8'),
+    responsesFor(state, REGISTERED_OFFICE_STEP_ID),
+  );
+  const pre6 = { ...responsesFor(state, 'pre-6'), ...registeredOffice };
   const group = proposedDirectorsGroup();
   const entries = group ? repeatEntries(responsesFor(state, PROPOSED_DIRECTORS_STEP_ID), group) : [];
   if (entries.length === 0) return { pre1, pre6 };
   return {
     pre1: { ...pre1, ...directorsAsPre1Responses(entries) },
-    // Registered-office keys still ride on the legacy map until pre-14 lands.
     pre6: { ...pre6, ...directorsAsPre6Responses(entries) },
   };
 }

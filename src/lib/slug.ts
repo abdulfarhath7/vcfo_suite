@@ -45,6 +45,8 @@ function normalizeRouteToken(value: string): string {
 
 const STEP_ALIASES: Record<string, string> = {
   'pre-6': 'director-kyc-details',
+  'pre-13': 'capital-structure',
+  'pre-14': 'registered-office-address',
   'pre-15': 'proposed-directors',
   'director-kyc-detail': 'director-kyc-details',
   'director-kyc': 'director-kyc-details',

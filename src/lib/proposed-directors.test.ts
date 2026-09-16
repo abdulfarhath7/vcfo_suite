@@ -89,3 +89,49 @@ describe('validatePre15Responses', () => {
     expect(missing.errors['directors.e2.aadhaarCopyUrl']).toBeUndefined();
   });
 });
+
+describe('Part B step validators — capital structure and registered office', async () => {
+  const { validatePre13Responses, validatePre14Responses, shareClassTotal } = await import(
+    '@/lib/checklist-part-b-validation'
+  );
+
+  it('derives the class total from shares × nominal value', () => {
+    expect(shareClassTotal('10000', '10')).toBe('1,00,000');
+    expect(shareClassTotal('1,000', '12.5')).toBe('12,500');
+    expect(shareClassTotal('abc', '10')).toBe('');
+    expect(shareClassTotal('10', '')).toBe('');
+  });
+
+  it('needs at least one share class, then a whole share count and a nominal value', () => {
+    expect(validatePre13Responses({}).errors.equityShares).toBe('This field is required.');
+    expect(validatePre13Responses({ equityShares: 'no', preferenceShares: 'no' }).errors.equityShares).toMatch(/at least one/);
+    const partial = validatePre13Responses({ equityShares: 'yes', preferenceShares: 'no' });
+    expect(partial.errors.equityQuantity).toBe('This field is required.');
+    expect(partial.errors.preferenceQuantity).toBeUndefined();
+    const bad = validatePre13Responses({ equityShares: 'yes', preferenceShares: 'no', equityQuantity: '10.5', equityNominalValue: '-1' });
+    expect(bad.errors.equityQuantity).toMatch(/whole number/);
+    expect(bad.errors.equityNominalValue).toMatch(/nominal/);
+    expect(validatePre13Responses({ equityShares: 'yes', preferenceShares: 'no', equityQuantity: '10000', equityNominalValue: '10' }).ok).toBe(true);
+  });
+
+  it('registered office needs the address, the NOC and the utility-bill proof', () => {
+    const errors = validatePre14Responses({ registeredOfficeCompleteAddress: '1 MG Road' }).errors;
+    expect(errors.registeredOfficeNocUrl).toMatch(/upload/);
+    expect(errors.registeredOfficeUtilityBillType).toBe('This field is required.');
+    expect(
+      validatePre14Responses({
+        registeredOfficeCompleteAddress: '1 MG Road', registeredOfficeNocUrl: 'e/noc/1-n.pdf',
+        registeredOfficeUtilityBillType: 'electricity', registeredOfficeUtilityBillNumber: '77', registeredOfficeUtilityBillCopyUrl: 'e/ub/1-u.pdf',
+      }).ok,
+    ).toBe(true);
+  });
+
+  it('the generators read the registered office from pre-14 first', () => {
+    const state = {
+      'pre-6': { status: 'completed' as const, responses: { registeredOfficeCompleteAddress: 'Old KYC address' } },
+      'pre-14': { status: 'completed' as const, responses: { registeredOfficeCompleteAddress: 'New pre-14 address' } },
+    };
+    expect(directorResponsesFromState(state).pre6.registeredOfficeCompleteAddress).toBe('New pre-14 address');
+    expect(directorResponsesFromState({ 'pre-6': state['pre-6'] }).pre6.registeredOfficeCompleteAddress).toBe('Old KYC address');
+  });
+});

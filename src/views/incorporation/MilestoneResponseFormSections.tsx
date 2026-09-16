@@ -48,6 +48,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     isPre1,
     isPre6,
     internSectionNav,
+    provenanceNote,
     item,
     peakEndMoment,
     pre1SubmittedForPre6,
@@ -127,6 +128,10 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           <p className="font-medium">Phase 1 Step 1 required first</p>
         </output>
       )}
+
+      {provenanceNote ? (
+        <p className="font-mono text-[11px] text-muted-foreground">{provenanceNote} — edit anything that changed.</p>
+      ) : null}
 
       {isPre6 && pre1SubmittedForPre6 && pre6DirectorSlots.length === 0 && (
         <output

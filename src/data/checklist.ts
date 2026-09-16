@@ -256,6 +256,34 @@ const preInc: ChecklistItem[] = [
       'Collect complete KYC details and supporting files before filing incorporation forms. Send email to each director for DSC creation time slots when they do not have a valid DSC token.',
   },
   {
+    id: 'pre-13',
+    slug: 'capital-structure',
+    bucket: 'pre-inc',
+    order: 13,
+    title: 'Capital Structure',
+    responsibleRole: 'client',
+    description:
+      'Share classes the company issues at incorporation — equity and/or preference — with the number of shares and the nominal value per share. The total for each class is worked out for you.',
+    forms: ['Spice Part B'],
+    infoRequired: ['Share classes', 'Number of shares', 'Nominal value per share'],
+    deadline: { kind: 'estimated-weeks', weeks: [5, 6] },
+    expectedTimeline: '1 working day',
+  },
+  {
+    id: 'pre-14',
+    slug: 'registered-office-address',
+    bucket: 'pre-inc',
+    order: 14,
+    title: 'Registered Office Address',
+    responsibleRole: 'client',
+    description:
+      'The proposed registered office, with the owner’s NOC and a utility bill as proof of address (INC-22 / AGILE-PRO-S). Pre-filled from project setup where that address is already known; correct it here if it changed.',
+    forms: ['Spice Part B', 'INC-22'],
+    infoRequired: ['Registered office address', 'NOC from owner', 'Utility bill'],
+    deadline: { kind: 'estimated-weeks', weeks: [5, 6] },
+    expectedTimeline: '1 working day',
+  },
+  {
     id: 'pre-15',
     slug: 'proposed-directors',
     bucket: 'pre-inc',
@@ -395,7 +423,7 @@ const PRE_INC_PHASES: ChecklistPhaseGroup[] = [
     id: 'pre-inc-phase-2',
     title: 'Phase 2 — Incorporation',
     subtitle: 'Steps 1–6',
-    itemIds: ['pre-15', 'pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
+    itemIds: ['pre-13', 'pre-14', 'pre-15', 'pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
   },
 ];
 

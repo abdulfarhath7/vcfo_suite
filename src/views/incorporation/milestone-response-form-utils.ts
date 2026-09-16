@@ -9,7 +9,11 @@ import {
   validatePre1Responses,
   type Pre1ValidationOptions,
 } from '@/lib/checklist-pre1-validation';
-import { validatePre15Responses } from '@/lib/checklist-part-b-validation';
+import {
+  validatePre13Responses,
+  validatePre14Responses,
+  validatePre15Responses,
+} from '@/lib/checklist-part-b-validation';
 import { expandRepeatFieldsForDiff } from '@/lib/checklist-repeat';
 import { validatePre6Responses } from '@/lib/checklist-pre6-validation';
 import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
@@ -235,6 +239,24 @@ export function runStepValidation(
   if (itemId === 'pre-10') return validatePre10Responses(draft);
   if (itemId === 'pre-11') return validatePre11Responses(draft);
   if (itemId === 'pre-12') return validatePre12Responses(draft);
+  if (itemId === 'pre-13') return validatePre13Responses(draft);
+  if (itemId === 'pre-14') return validatePre14Responses(draft);
   if (itemId === 'pre-15') return validatePre15Responses(draft);
   return { ok: true, errors: {}, warnings: {} };
+}
+
+/**
+ * Fields the form fills in from other answers and shows read-only — never
+ * typed. The placeholder is what the row says until its inputs are complete.
+ */
+const DERIVED_DISPLAY_FIELDS: Record<string, Record<string, string>> = {
+  'pre-1': { nicBusinessType: 'Enter a valid 5-digit NIC code above to fill this in' },
+  'pre-13': {
+    equityTotal: 'Enter the number of shares and the nominal value to work this out',
+    preferenceTotal: 'Enter the number of shares and the nominal value to work this out',
+  },
+};
+
+export function derivedDisplayPlaceholder(itemId: string, fieldId: string): string | null {
+  return DERIVED_DISPLAY_FIELDS[itemId]?.[fieldId] ?? null;
 }
