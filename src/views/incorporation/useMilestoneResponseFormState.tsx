@@ -1510,15 +1510,16 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             />
           )
         ) : derivedDisplayPlaceholder(item.id, field.id) ? (
-          /* Derived from sibling answers — read, never typed. */
-          <p
-            className={cn(
-              'text-sm leading-relaxed',
-              draft[field.id]?.trim() ? 'text-foreground' : 'text-muted-foreground italic',
-            )}
-          >
-            {draft[field.id]?.trim() || derivedDisplayPlaceholder(item.id, field.id)}
-          </p>
+          /* Derived from sibling answers — looks like a field, never typed. */
+          <Input
+            id={`${item.id}-${field.id}`}
+            value={draft[field.id] ?? ''}
+            readOnly
+            tabIndex={-1}
+            aria-readonly="true"
+            placeholder={derivedDisplayPlaceholder(item.id, field.id) ?? undefined}
+            className="milestone-form-input cursor-default bg-muted/40 text-foreground focus-visible:ring-0"
+          />
         ) : (
           <Input
             id={`${item.id}-${field.id}`}
