@@ -4,9 +4,7 @@ import type { OwnershipType } from '@/data/engagements';
 import { PART_A_STEP_ID, partAFieldsFor } from '@/lib/part-a-sections';
 import {
   getPre1VisibleFields,
-  parseDirectorCount,
   parsePre1BoardResolutionDate,
-  pre1GenderLabel,
   PRE1_GENDER_OPTIONS,
   PRE1_INDIA_RESIDENT_OPTIONS,
   PRE1_MOBILE_COUNTRY_OPTIONS,
@@ -16,7 +14,6 @@ import {
   getPre6VisibleFields,
   PRE6_CLIENT_RESPONSE_FIELDS,
 } from '@/lib/checklist-pre6-validation';
-import { resolveDirectorDisplayName } from '@/lib/person-name';
 
 /** MCA name approval is valid for 20 calendar days from the approval date. */
 export const MCA_NAME_APPROVAL_VALIDITY_DAYS = 20;
@@ -208,268 +205,6 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       section: 'Business Description',
       helperText: 'Filled in from the NIC code.',
       layout: 'full',
-    },
-    {
-      id: 'directorCount',
-      label: 'Number of proposed directors',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [
-        { value: '2', label: '2' },
-        { value: '3', label: '3' },
-        { value: '4', label: '4' },
-      ],
-      helperText:
-        'Minimum 2 directors; at least one must be a resident of India. DIN is optional if already allotted.',
-      required: true,
-    },
-    {
-      id: 'director1FirstName',
-      label: 'Director 1 — First name',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: true,
-    },
-    {
-      id: 'director1MiddleName',
-      label: 'Director 1 — Middle name (optional)',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: false,
-    },
-    {
-      id: 'director1LastName',
-      label: 'Director 1 — Last name',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: true,
-    },
-    {
-      id: 'director1Gender',
-      label: 'Director 1 — Gender',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_GENDER_OPTIONS],
-      required: true,
-    },
-    {
-      id: 'director1IndiaResident',
-      label: 'Director 1 — Resident of India',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_INDIA_RESIDENT_OPTIONS],
-      required: true,
-    },
-    {
-      id: 'director1Din',
-      label: 'Director 1 — DIN (optional)',
-      type: 'text',
-      section: 'Proposed Directors',
-      placeholder: 'e.g. 01234567',
-      required: false,
-    },
-    {
-      id: 'director1HasDsc',
-      label: 'Director 1 — Do you have a DSC (Digital Signature Certificate)?',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_INDIA_RESIDENT_OPTIONS],
-      required: false,
-    },
-    {
-      id: 'director1DscExpiryDate',
-      label: 'Director 1 — DSC expiry date',
-      type: 'date',
-      section: 'Proposed Directors',
-      placeholder: 'YYYY-MM-DD',
-      required: true,
-      showWhen: { field: 'director1HasDsc', value: 'yes' },
-    },
-    {
-      id: 'director2FirstName',
-      label: 'Director 2 — First name',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: true,
-    },
-    {
-      id: 'director2MiddleName',
-      label: 'Director 2 — Middle name (optional)',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: false,
-    },
-    {
-      id: 'director2LastName',
-      label: 'Director 2 — Last name',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: true,
-    },
-    {
-      id: 'director2Gender',
-      label: 'Director 2 — Gender',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_GENDER_OPTIONS],
-      required: true,
-    },
-    {
-      id: 'director2IndiaResident',
-      label: 'Director 2 — Resident of India',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_INDIA_RESIDENT_OPTIONS],
-      required: true,
-    },
-    {
-      id: 'director2Din',
-      label: 'Director 2 — DIN (optional)',
-      type: 'text',
-      section: 'Proposed Directors',
-      placeholder: 'e.g. 01234567',
-      required: false,
-    },
-    {
-      id: 'director2HasDsc',
-      label: 'Director 2 — Do you have a DSC (Digital Signature Certificate)?',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_INDIA_RESIDENT_OPTIONS],
-      required: false,
-    },
-    {
-      id: 'director2DscExpiryDate',
-      label: 'Director 2 — DSC expiry date',
-      type: 'date',
-      section: 'Proposed Directors',
-      placeholder: 'YYYY-MM-DD',
-      required: true,
-      showWhen: { field: 'director2HasDsc', value: 'yes' },
-    },
-    {
-      id: 'director3FirstName',
-      label: 'Director 3 — First name',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: true,
-    },
-    {
-      id: 'director3MiddleName',
-      label: 'Director 3 — Middle name (optional)',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: false,
-    },
-    {
-      id: 'director3LastName',
-      label: 'Director 3 — Last name',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: true,
-    },
-    {
-      id: 'director3Gender',
-      label: 'Director 3 — Gender',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_GENDER_OPTIONS],
-      required: true,
-    },
-    {
-      id: 'director3IndiaResident',
-      label: 'Director 3 — Resident of India',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_INDIA_RESIDENT_OPTIONS],
-      required: true,
-    },
-    {
-      id: 'director3Din',
-      label: 'Director 3 — DIN (optional)',
-      type: 'text',
-      section: 'Proposed Directors',
-      placeholder: 'e.g. 01234567',
-      required: false,
-    },
-    {
-      id: 'director3HasDsc',
-      label: 'Director 3 — Do you have a DSC (Digital Signature Certificate)?',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_INDIA_RESIDENT_OPTIONS],
-      required: false,
-    },
-    {
-      id: 'director3DscExpiryDate',
-      label: 'Director 3 — DSC expiry date',
-      type: 'date',
-      section: 'Proposed Directors',
-      placeholder: 'YYYY-MM-DD',
-      required: true,
-      showWhen: { field: 'director3HasDsc', value: 'yes' },
-    },
-    {
-      id: 'director4FirstName',
-      label: 'Director 4 — First name',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: true,
-    },
-    {
-      id: 'director4MiddleName',
-      label: 'Director 4 — Middle name (optional)',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: false,
-    },
-    {
-      id: 'director4LastName',
-      label: 'Director 4 — Last name',
-      type: 'text',
-      section: 'Proposed Directors',
-      required: true,
-    },
-    {
-      id: 'director4Gender',
-      label: 'Director 4 — Gender',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_GENDER_OPTIONS],
-      required: true,
-    },
-    {
-      id: 'director4IndiaResident',
-      label: 'Director 4 — Resident of India',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_INDIA_RESIDENT_OPTIONS],
-      required: true,
-    },
-    {
-      id: 'director4Din',
-      label: 'Director 4 — DIN (optional)',
-      type: 'text',
-      section: 'Proposed Directors',
-      placeholder: 'e.g. 01234567',
-      required: false,
-    },
-    {
-      id: 'director4HasDsc',
-      label: 'Director 4 — Do you have a DSC (Digital Signature Certificate)?',
-      type: 'select',
-      section: 'Proposed Directors',
-      options: [...PRE1_INDIA_RESIDENT_OPTIONS],
-      required: false,
-    },
-    {
-      id: 'director4DscExpiryDate',
-      label: 'Director 4 — DSC expiry date',
-      type: 'date',
-      section: 'Proposed Directors',
-      placeholder: 'YYYY-MM-DD',
-      required: true,
-      showWhen: { field: 'director4HasDsc', value: 'yes' },
     },
     {
       id: 'authorisedShareCapital',
@@ -889,14 +624,6 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       type: 'file',
       section: 'Signed Documents',
       accept: '.pdf,image/*',
-    },
-    {
-      id: 'certificateOfIncorporationSignedUrl',
-      label: 'Certificate of Incorporation',
-      type: 'file',
-      section: 'Signed Documents',
-      accept: '.pdf,image/*',
-      required: true,
     },
     {
       id: 'authorisationLetterSignedUrl',
@@ -1781,22 +1508,9 @@ export function formatResponseSummary(
 
   switch (item.id) {
     case 'pre-1': {
-      const count = parseDirectorCount(r);
-      const directors = [1, 2, 3, 4]
-        .filter((n) => n <= count)
-        .map((n) => {
-          const name = resolveDirectorDisplayName(r, n);
-          const gender = pre1GenderLabel(r[`director${n}Gender`]);
-          const resident = r[`director${n}IndiaResident`] === 'yes' ? 'IN res.' : undefined;
-          if (!name && !gender && !resident) return null;
-          return [name, gender, resident].filter(Boolean).join(' · ');
-        })
-        .filter((entry): entry is string => Boolean(entry));
-      summary = joinSummaryParts([
-        r.parentEntityName?.trim(),
-        r.proposedName1?.trim(),
-        directors.length ? `Dirs: ${directors.join(', ')}` : undefined,
-      ]);
+      // Proposed directors moved to Part B (`pre-15`); Part A summarises the
+      // parent and the first proposed name only.
+      summary = joinSummaryParts([r.parentEntityName?.trim(), r.proposedName1?.trim()]);
       break;
     }
     case 'pre-2':

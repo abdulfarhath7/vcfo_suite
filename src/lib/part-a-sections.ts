@@ -21,7 +21,6 @@ export const PART_A_SECTION = {
   companyMail: 'Company Mail ID',
   companyMobile: 'Company Mobile Number',
   businessDescription: 'Business Description',
-  proposedDirectors: 'Proposed Directors',
   shareCapital: 'Share Capital Details',
 } as const;
 
@@ -44,7 +43,6 @@ const PART_A_SECTION_ORDER: readonly PartASection[] = [
   PART_A_SECTION.signatoryKyc,
   PART_A_SECTION.companyMail,
   PART_A_SECTION.companyMobile,
-  PART_A_SECTION.proposedDirectors,
   PART_A_SECTION.shareCapital,
 ];
 

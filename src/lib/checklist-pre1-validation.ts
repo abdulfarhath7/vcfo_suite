@@ -97,7 +97,6 @@ const PRE1_BASE_REQUIRED_TEXT_IDS = [
   'companyMobileNumber',
   'businessDescription',
   'nicCode',
-  'directorCount',
   'authorisedShareCapital',
   'paidUpShareCapital',
   'nominalValuePerEquityShare',
@@ -140,6 +139,11 @@ const PRE1_REQUIRED_FILE_IDS = [
   'utilityBillUrl',
 ] as const;
 
+/**
+ * LEGACY — proposed directors moved to Part B `pre-15` (2026-09-16). These read
+ * the old Part A slots (`director{n}*`) for engagements that still hold them;
+ * see `src/lib/proposed-directors.ts`.
+ */
 export function parseDirectorCount(responses: ChecklistItemResponses): number {
   const raw = (responses.directorCount ?? String(PRE1_DEFAULT_DIRECTOR_COUNT)).trim();
   const n = Number.parseInt(raw, 10);
@@ -147,39 +151,13 @@ export function parseDirectorCount(responses: ChecklistItemResponses): number {
   return PRE1_DEFAULT_DIRECTOR_COUNT;
 }
 
-export function directorFieldsToClear(count: number): string[] {
-  const ids: string[] = [];
-  for (let i = count + 1; i <= PRE1_MAX_DIRECTORS; i += 1) {
-    ids.push(
-      `director${i}FirstName`,
-      `director${i}MiddleName`,
-      `director${i}LastName`,
-      `director${i}Gender`,
-      `director${i}IndiaResident`,
-      `director${i}Din`,
-      `director${i}HasDsc`,
-      `director${i}DscExpiryDate`,
-    );
-  }
-  return ids;
-}
-
 export function getPre1VisibleFields(
   fields: ChecklistField[],
   responses: ChecklistItemResponses,
 ): ChecklistField[] {
-  const count = parseDirectorCount(responses);
   return fields.filter((field) => {
     if (field.id === PRE1_PARENT_TRADEMARK_URL_ID) {
       return (responses[PRE1_PARENT_HAS_TRADEMARK_ID] ?? '').trim() === 'yes';
-    }
-
-    const match = /^director(\d)(FirstName|MiddleName|LastName|Gender|IndiaResident|Din|HasDsc|DscExpiryDate)$/.exec(
-      field.id,
-    );
-    if (match) {
-      const directorIndex = Number.parseInt(match[1], 10);
-      if (directorIndex > count) return false;
     }
 
     if (field.showWhen) {
@@ -194,18 +172,6 @@ export function countWords(text: string): number {
   const trimmed = text.trim();
   if (!trimmed) return 0;
   return trimmed.split(/\s+/).filter(Boolean).length;
-}
-
-function hasIndiaResidentDirector(
-  responses: ChecklistItemResponses,
-  directorCount: number,
-): boolean {
-  for (let n = 1; n <= directorCount; n += 1) {
-    if ((responses[`director${n}IndiaResident`] ?? '').trim() === 'yes') {
-      return true;
-    }
-  }
-  return false;
 }
 
 export interface Pre1ValidationResult {
@@ -240,47 +206,6 @@ export function validatePre1Responses(
 
   if ((responses.signatoryGender ?? '').trim() && !isValidPre1Gender(responses.signatoryGender)) {
     errors.signatoryGender = 'Select a valid gender.';
-  }
-
-  const directorCount = parseDirectorCount(responses);
-  for (let n = 1; n <= directorCount; n += 1) {
-    const firstNameId = `director${n}FirstName`;
-    const lastNameId = `director${n}LastName`;
-    const genderId = `director${n}Gender`;
-    const residentId = `director${n}IndiaResident`;
-    if (!(responses[firstNameId] ?? '').trim()) {
-      errors[firstNameId] = 'This field is required.';
-    }
-    if (!(responses[lastNameId] ?? '').trim()) {
-      errors[lastNameId] = 'This field is required.';
-    }
-    if (!(responses[genderId] ?? '').trim()) {
-      errors[genderId] = 'This field is required.';
-    } else if (!isValidPre1Gender(responses[genderId])) {
-      errors[genderId] = 'Select a valid gender.';
-    }
-    if (!(responses[residentId] ?? '').trim()) {
-      errors[residentId] = 'Please indicate whether this director is a resident of India.';
-    }
-
-    const hasDsc = (responses[`director${n}HasDsc`] ?? '').trim();
-    const dscExpiryId = `director${n}DscExpiryDate`;
-    if (hasDsc === 'yes') {
-      const expiry = (responses[dscExpiryId] ?? '').trim();
-      if (!expiry) {
-        errors[dscExpiryId] = 'This field is required.';
-      } else if (!isValidPre1Date(expiry)) {
-        errors[dscExpiryId] = 'Enter a valid date.';
-      }
-    }
-  }
-
-  if (
-    directorCount >= PRE1_MIN_DIRECTORS &&
-    !hasIndiaResidentDirector(responses, directorCount)
-  ) {
-    errors.directorCount =
-      'At least one proposed director must be a resident of India.';
   }
 
   for (const id of PRE1_REQUIRED_FILE_IDS) {

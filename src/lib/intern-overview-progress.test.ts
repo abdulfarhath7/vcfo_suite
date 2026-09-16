@@ -43,11 +43,11 @@ function completeThrough(itemId: string): Record<string, ChecklistItemStateSlice
 
 describe('intern overview progress', () => {
   it('uses honest phase counts, not a fake overall percent', () => {
-    const gates = gateActiveCatalog(completeThrough('pre-6'), 'staff');
+    const gates = gateActiveCatalog(completeThrough('pre-7'), 'staff');
     const partA = getPreIncPhases()[0]!;
     const partB = getPreIncPhases()[1]!;
     expect(internPhaseStepCounts(partA.items, gates)).toEqual({ done: 5, total: 5 });
-    expect(internPhaseStepCounts(partB.items, gates)).toEqual({ done: 0, total: 7 });
+    expect(internPhaseStepCounts(partB.items, gates)).toEqual({ done: 0, total: partB.items.length });
     expect(internPhaseProgressLabel(3, 7)).toBe('3 of 7 complete');
     expect(internPhaseProgressLabel(5, 5)).toBe('5 of 5 complete');
     expect(internPhaseProgressLabel(0, 7)).toBe('0 of 7 complete');
@@ -84,7 +84,7 @@ describe('intern overview progress', () => {
     });
     expect(internOverviewPhases().map((phase) => phase.items.length)).toEqual([
       5,
-      7,
+      getPreIncPhases()[1]!.items.length,
       post.items.length,
       internRegistrationCardItems(registration.items).length,
     ]);
@@ -100,11 +100,11 @@ describe('intern overview progress', () => {
     expect(internOverviewCurrentItemInPhase(partA.items, emptyGates)?.id).toBe(partA.items[0]!.id);
     expect(internOverviewCurrentItemInPhase([], emptyGates)).toBeNull();
 
-    const afterPartA = gateActiveCatalog(completeThrough('pre-6'), 'staff');
+    const afterPartA = gateActiveCatalog(completeThrough(partB.items[0]!.id), 'staff');
     expect(internOverviewCurrentItemInPhase(partA.items, afterPartA)?.id).toBe(
       partA.items[partA.items.length - 1]!.id,
     );
-    expect(internOverviewCurrentItemInPhase(partB.items, afterPartA)?.id).toBe('pre-6');
+    expect(internOverviewCurrentItemInPhase(partB.items, afterPartA)?.id).toBe(partB.items[0]!.id);
     expect(internOverviewCurrentItemInPhase(post.items, afterPartA)?.id).toBe(post.items[0]!.id);
 
     const midPartB = gateActiveCatalog(completeThrough('pre-8'), 'staff');
@@ -112,13 +112,16 @@ describe('intern overview progress', () => {
   });
 
   it('treats a client-owned current gate as waiting', () => {
-    const gates = gateActiveCatalog(completeThrough('pre-6'), 'staff');
+    // Part B opens on the first client-attributed step; the lead sees it as waiting.
+    const partB = getPreIncPhases()[1]!;
+    const firstClientStep = partB.items.find((item) => item.responsibleRole === 'client')!;
+    const gates = gateActiveCatalog(completeThrough(firstClientStep.id), 'staff');
     const now = internOverviewNow(gates);
     expect(now).toMatchObject({
       phaseTitle: 'SPICe+ Part B',
-      stepNumber: 1,
-      stepTotal: 7,
-      stepTitle: 'Director KYC',
+      stepNumber: partB.items.indexOf(firstClientStep) + 1,
+      stepTotal: partB.items.length,
+      stepTitle: firstClientStep.title,
       waiting: true,
     });
   });
@@ -222,14 +225,16 @@ describe('internOverviewPhaseForItem', () => {
     ]);
     expect(internOverviewPhaseForItem('pre-1')?.id).toBe('pre-inc-phase-1');
     expect(internOverviewPhaseForItem('pre-5')?.id).toBe('pre-inc-phase-1');
-    expect(internOverviewPhaseForItem('pre-6')?.id).toBe('pre-inc-phase-2');
+    // Director KYC left Part B (2026-09-16): a legacy id belongs to no phase.
+    expect(internOverviewPhaseForItem('pre-6')).toBeNull();
+    expect(internOverviewPhaseForItem('pre-7')?.id).toBe('pre-inc-phase-2');
     expect(internOverviewPhaseForItem('pre-12')?.id).toBe('pre-inc-phase-2');
     expect(internOverviewPhaseForItem('post-1')?.id).toBe('post-inc-phase-3');
     expect(internOverviewPhaseForItem('reg-1')?.id).toBe('registration-phase-4');
     expect(internOverviewPhaseForItem('pre-1')?.items.map((item) => item.id)).toEqual(
       getPreIncPhases()[0]!.items.map((item) => item.id),
     );
-    expect(internOverviewPhaseForItem('pre-6')?.items.map((item) => item.id)).toEqual(
+    expect(internOverviewPhaseForItem('pre-7')?.items.map((item) => item.id)).toEqual(
       getPreIncPhases()[1]!.items.map((item) => item.id),
     );
     expect(internOverviewPhaseForItem('pre-1')?.items.some((item) => item.id === 'pre-6')).toBe(

@@ -96,20 +96,20 @@ describe('shellBreadcrumb', () => {
 
   it('expands intern step routes to company, intern phase, and step title', () => {
     const crumb = shellBreadcrumb(
-      '/app/intern/engagements/democo/step/director-kyc-details',
+      '/app/intern/engagements/democo/step/kyc-review-and-dsc-creation',
     );
     expect(crumb.segments.map((seg) => seg.label)).toEqual([
       'Home',
       'Clients',
       'Democo',
       'SPICe+ Part B',
-      'Director KYC',
+      'KYC Review & DSC',
     ]);
     expect(crumb.segments.map((seg) => seg.href)).toEqual([
       '/app/intern/today',
       '/app/intern/clients',
       '/app/intern/engagements/democo',
-      '/app/intern/engagements/democo/step/director-kyc-details',
+      '/app/intern/engagements/democo/step/kyc-review-and-dsc-creation',
       null,
     ]);
     expect(crumb.segments[2]?.engagementKey).toBe('democo');
@@ -150,14 +150,14 @@ describe('shellBreadcrumb', () => {
   });
 
   it('expands staff project steps the same way without intern-only headings', () => {
-    expect(labels('/app/manager/projects/pexpo-inc/step/director-kyc-details')).toEqual([
+    expect(labels('/app/manager/projects/pexpo-inc/step/kyc-review-and-dsc-creation')).toEqual([
       'Home',
       'Projects',
       'Pexpo Inc',
       'SPICe+ Part B',
-      'Director KYC',
+      'KYC Review & DSC',
     ]);
-    expect(hrefs('/app/manager/projects/pexpo-inc/step/director-kyc-details')[2]).toBe(
+    expect(hrefs('/app/manager/projects/pexpo-inc/step/kyc-review-and-dsc-creation')[2]).toBe(
       '/app/manager/projects/pexpo-inc',
     );
     expect(labels('/app/manager/projects/pexpo-inc/step/gst-registration')).toEqual([
@@ -235,7 +235,7 @@ describe('resolveShellCrumbCurrent', () => {
       ]),
     ).toBe('Acme Holdings Pvt Ltd');
     const step = shellBreadcrumb(
-      '/app/intern/engagements/acme-holdings/step/director-kyc-details',
+      '/app/intern/engagements/acme-holdings/step/kyc-review-and-dsc-creation',
     );
     const resolved = resolveShellCrumbSegments(step, [
       { id: 'e1', slug: 'acme-holdings', companyName: 'Acme Holdings Pvt Ltd' },
@@ -245,7 +245,7 @@ describe('resolveShellCrumbCurrent', () => {
       'Clients',
       'Acme Holdings Pvt Ltd',
       'SPICe+ Part B',
-      'Director KYC',
+      'KYC Review & DSC',
     ]);
   });
 

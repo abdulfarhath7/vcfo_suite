@@ -114,36 +114,6 @@ describe('pre1GenderLabel', () => {
   });
 });
 
-describe('getPre1VisibleFields director count', () => {
-  const pre1Fields = CLIENT_RESPONSE_FIELDS['pre-1'];
-
-  it('shows director3 fields when directorCount is 3', () => {
-    const visible = getPre1VisibleFields(pre1Fields, { directorCount: '3' });
-    const ids = visible.map((f) => f.id);
-    expect(ids).toContain('director3FirstName');
-    expect(ids).toContain('director3LastName');
-    expect(ids).not.toContain('director4FirstName');
-  });
-});
-
-describe('getPre1VisibleFields director DSC', () => {
-  const pre1Fields = CLIENT_RESPONSE_FIELDS['pre-1'];
-
-  it('shows DSC expiry date only when director has DSC', () => {
-    const visible = getPre1VisibleFields(pre1Fields, {
-      directorCount: '2',
-      director1HasDsc: 'yes',
-      director2HasDsc: 'no',
-    });
-    const ids = visible.map((f) => f.id);
-    expect(ids).toContain('director1HasDsc');
-    expect(ids).toContain('director1DscExpiryDate');
-    expect(ids).toContain('director2HasDsc');
-    expect(ids).not.toContain('director2DscExpiryDate');
-    expect(ids).not.toContain('director3HasDsc');
-  });
-});
-
 describe('getPre1VisibleFields parent entity trademark', () => {
   const pre1Fields = CLIENT_RESPONSE_FIELDS['pre-1'];
 
@@ -176,77 +146,6 @@ describe('getPre1VisibleFields parent entity trademark', () => {
     const idsUnset = visibleUnset.map((f) => f.id);
     expect(idsUnset).toContain('parentEntityHasTrademark');
     expect(idsUnset).not.toContain('parentEntityTrademarkUrl');
-  });
-});
-
-describe('validatePre1Responses director DSC expiry', () => {
-  it('requires expiry date when director has DSC', () => {
-    const { ok, errors } = validatePre1Responses({
-      directorCount: '2',
-      director1FirstName: 'A',
-      director1LastName: 'One',
-      director1Gender: 'male',
-      director1IndiaResident: 'yes',
-      director1HasDsc: 'yes',
-      director2FirstName: 'B',
-      director2LastName: 'Two',
-      director2Gender: 'female',
-      director2IndiaResident: 'no',
-    });
-    expect(ok).toBe(false);
-    expect(errors.director1DscExpiryDate).toMatch(/required/i);
-  });
-
-  it('flags invalid DSC expiry date format', () => {
-    const { ok, errors } = validatePre1Responses({
-      directorCount: '2',
-      director1FirstName: 'A',
-      director1LastName: 'One',
-      director1Gender: 'male',
-      director1IndiaResident: 'yes',
-      director1HasDsc: 'yes',
-      director1DscExpiryDate: 'May 26, 2026',
-      director2FirstName: 'B',
-      director2LastName: 'Two',
-      director2Gender: 'female',
-      director2IndiaResident: 'no',
-    });
-    expect(ok).toBe(false);
-    expect(errors.director1DscExpiryDate).toMatch(/valid date/i);
-  });
-
-  it('does not require expiry when director has no DSC', () => {
-    const { errors } = validatePre1Responses({
-      directorCount: '2',
-      director1FirstName: 'A',
-      director1LastName: 'One',
-      director1Gender: 'male',
-      director1IndiaResident: 'yes',
-      director1HasDsc: 'no',
-      director2FirstName: 'B',
-      director2LastName: 'Two',
-      director2Gender: 'female',
-      director2IndiaResident: 'no',
-    });
-    expect(errors.director1DscExpiryDate).toBeUndefined();
-  });
-});
-
-describe('validatePre1Responses gender', () => {
-  it('flags invalid director gender', () => {
-    const { ok, errors } = validatePre1Responses({
-      directorCount: '2',
-      director1FirstName: 'A',
-      director1LastName: 'One',
-      director1Gender: 'invalid',
-      director1IndiaResident: 'yes',
-      director2FirstName: 'B',
-      director2LastName: 'Two',
-      director2Gender: 'male',
-      director2IndiaResident: 'no',
-    });
-    expect(ok).toBe(false);
-    expect(errors.director1Gender).toMatch(/valid gender/i);
   });
 });
 

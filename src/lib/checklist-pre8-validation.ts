@@ -13,7 +13,6 @@ const PRE8_REQUIRED_FILE_IDS = [
   'residentDirectorDir8SignedUrl',
   'nrDirectorInc9SignedUrl',
   'residentDirectorInc9SignedUrl',
-  'certificateOfIncorporationSignedUrl',
   'authorisationLetterSignedUrl',
   'acceptanceLetterSignedUrl',
   'boardResolutionSignedForIncorpUrl',

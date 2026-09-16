@@ -24,7 +24,7 @@ describe('fieldsForOwnership', () => {
     ]) {
       expect(gone.has(id), id).toBe(true);
     }
-    for (const id of ['proposedName1', 'director1FirstName', 'authorisedShareCapital', 'businessDescription']) {
+    for (const id of ['proposedName1', 'authorisedShareCapital', 'businessDescription']) {
       expect(independent.some((f) => f.id === id), id).toBe(true);
     }
   });

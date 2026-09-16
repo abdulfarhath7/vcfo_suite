@@ -213,6 +213,11 @@ const preInc: ChecklistItem[] = [
       'MCA name approval typically arrives within 4 to 5 working days from the date of filing. Your Project Lead will share the approved name and approval letter here.',
   },
   {
+    // LEGACY (removed from SPICe+ Part B 2026-09-16 — director KYC now lives on
+    // each entry of `pre-15` Proposed directors, the registered office on
+    // `pre-14`). Kept in the catalog, like `reg-2`, so saved responses, vault
+    // labels and audit rows for older engagements still resolve. Not in any
+    // phase's `itemIds`, so it never renders or gates.
     id: 'pre-6',
     slug: 'director-kyc-details',
     bucket: 'pre-inc',
@@ -358,8 +363,8 @@ const PRE_INC_PHASES: ChecklistPhaseGroup[] = [
   {
     id: 'pre-inc-phase-2',
     title: 'Phase 2 — Incorporation',
-    subtitle: 'Steps 1–8',
-    itemIds: ['pre-6', 'pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
+    subtitle: 'Steps 1–6',
+    itemIds: ['pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
   },
 ];
 

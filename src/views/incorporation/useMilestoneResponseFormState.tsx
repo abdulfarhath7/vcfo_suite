@@ -26,11 +26,8 @@ import { filterFieldsByViewer, isMilestoneFormReadOnly } from '@/lib/checklist-f
 import {
   applyPre1EngagementDefaults,
   countWords,
-  directorFieldsToClear,
   formatPre1DateDisplay,
   getPre1VisibleFields,
-  parseDirectorCount,
-  PRE1_DEFAULT_DIRECTOR_COUNT,
   validatePre1Responses,
   type Pre1ValidationOptions,
 } from '@/lib/checklist-pre1-validation';
@@ -98,7 +95,6 @@ import { internFormNextTarget } from '@/lib/intern-overview-progress';
 import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 
-const DIRECTOR_HAS_DSC_RE = /^director(\d)HasDsc$/;
 /** The user's edits this session: full values plus which fields they touched. */
 interface DraftEdits {
   values: ChecklistItemResponses;
@@ -238,16 +234,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   );
 
   const pre1Draft = useMemo(
-    () =>
-      item.id === 'pre-1'
-        ? applyPre1EngagementDefaults(
-            {
-              ...draft,
-              directorCount: draft.directorCount || String(PRE1_DEFAULT_DIRECTOR_COUNT),
-            },
-            engagement,
-          )
-        : draft,
+    () => (item.id === 'pre-1' ? applyPre1EngagementDefaults(draft, engagement) : draft),
     [item.id, draft, engagement],
   );
   const visibleFields = useMemo(() => {
@@ -745,10 +732,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     userEditedRef.current = true;
     setDraft((prev) => {
       const next: ChecklistItemResponses = { ...prev, [fieldId]: value };
-      const hasDscMatch = DIRECTOR_HAS_DSC_RE.exec(fieldId);
-      if (hasDscMatch && value !== 'yes') {
-        next[`director${hasDscMatch[1]}DscExpiryDate`] = '';
-      }
       if (item.id === 'pre-6' && fieldId.endsWith('HasValidDsc')) {
         const prefix = fieldId.slice(0, -'HasValidDsc'.length);
         if (value !== 'yes') next[`${prefix}DscExpiryDate`] = '';
@@ -784,10 +767,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     setFieldErrors((prev) => {
       const next = { ...prev };
       delete next[fieldId];
-      const hasDscMatch = DIRECTOR_HAS_DSC_RE.exec(fieldId);
-      if (hasDscMatch && value !== 'yes') {
-        delete next[`director${hasDscMatch[1]}DscExpiryDate`];
-      }
       if (item.id === 'pre-6' && fieldId.endsWith('HasValidDsc')) {
         const prefix = fieldId.slice(0, -'HasValidDsc'.length);
         if (value !== 'yes') delete next[`${prefix}DscExpiryDate`];
@@ -814,28 +793,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       }
       if (fieldId === 'parentEntityHasTrademark' && value !== 'yes') {
         delete next.parentEntityTrademarkUrl;
-      }
-      return next;
-    });
-    if (autoSaveEnabled) scheduleAutoSave(false);
-  };
-
-  const setDirectorCount = (value: string) => {
-    userEditedRef.current = true;
-    const count = parseDirectorCount({ directorCount: value });
-    const clearedIds = directorFieldsToClear(count);
-    setDraft((prev) => {
-      const next: ChecklistItemResponses = { ...prev, directorCount: value };
-      for (const id of clearedIds) {
-        next[id] = '';
-      }
-      return next;
-    });
-    setFieldErrors((prev) => {
-      const next = { ...prev };
-      delete next.directorCount;
-      for (const id of clearedIds) {
-        delete next[id];
       }
       return next;
     });
@@ -1124,11 +1081,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (field.type === 'select' && field.options) {
       return (
         <p className={cn('text-sm leading-relaxed', value ? 'text-foreground' : emptyClass)}>
-          {value
-            ? field.id === 'directorCount'
-              ? `${value} directors`
-              : (field.options.find((o) => o.value === value)?.label ?? value)
-            : emptyLabel}
+          {value ? (field.options.find((o) => o.value === value)?.label ?? value) : emptyLabel}
         </p>
       );
     }
@@ -1233,33 +1186,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               </p>
             )}
           </>
-        ) : isPre1 && field.id === 'directorCount' && field.options ? (
-          <div
-            role="radiogroup"
-            aria-label={field.label}
-            className="inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-border bg-raised/60 p-1"
-          >
-            {field.options.map((opt) => {
-              const selected = pre1Draft.directorCount === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setDirectorCount(opt.value)}
-                  className={cn(
-                    'milestone-segment-option',
-                    selected
-                      ? 'bg-panel text-foreground shadow-sm ring-1 ring-border'
-                      : 'text-slate-600 hover:bg-white/70 hover:text-foreground',
-                  )}
-                >
-                  {opt.label} directors
-                </button>
-              );
-            })}
-          </div>
         ) : isPre1 && field.id.endsWith('Gender') && field.options ? (
           <div
             role="radiogroup"

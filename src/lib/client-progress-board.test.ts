@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getItem } from '@/data/checklist';
+import { getActiveCatalogItems, getItem, getPreIncPhases } from '@/data/checklist';
 import {
   boardResolutionProgressFromDoc,
   buildClientProgressPhases,
@@ -133,14 +133,14 @@ describe('derivePreIncStepTone', () => {
 });
 
 describe('buildClientProgressPhases', () => {
-  it('returns four phases with forty-six steps total', () => {
+  it('returns four phases covering every active catalog step', () => {
     const phases = buildClientProgressPhases({}, noneBr);
     expect(phases).toHaveLength(4);
     expect(phases[0]!.steps).toHaveLength(5);
-    expect(phases[1]!.steps).toHaveLength(7);
+    expect(phases[1]!.steps).toHaveLength(getPreIncPhases()[1]!.items.length);
     expect(phases[2]!.steps).toHaveLength(11);
     expect(phases[3]!.steps).toHaveLength(23);
-    expect(phases.reduce((n, p) => n + p.totalCount, 0)).toBe(46);
+    expect(phases.reduce((n, p) => n + p.totalCount, 0)).toBe(getActiveCatalogItems().length);
   });
 
   it('uses phase titles and checklist step ids', () => {
