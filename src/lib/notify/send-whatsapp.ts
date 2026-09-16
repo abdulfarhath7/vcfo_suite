@@ -6,35 +6,25 @@ import type {
   WhatsAppSendResult,
 } from '@/lib/notify/send-whatsapp-shared';
 import { sendViaEum } from '@/lib/notify/send-whatsapp-eum';
-import { sendViaTwilio } from '@/lib/notify/send-whatsapp-twilio';
 import type { NotifyEvent, NotifyRecipient, NotifyVariables } from '@/lib/notify/types';
 
 /**
- * WhatsApp transport dispatcher.
+ * WhatsApp dispatcher — one transport, AWS End User Messaging (Social).
  *
- * - `WHATSAPP_PROVIDER=twilio` (default) → Twilio Content Templates
- * - `WHATSAPP_PROVIDER=aws_eum` → AWS End User Messaging (Social)
+ * Same shape as the email dispatcher (`send-email.ts`): the guards run here,
+ * once, and the transport only ever receives a resolved phone number and an
+ * approved Meta template name.
  *
- * Exactly the shape of the email dispatcher (`send-email.ts` → `sendViaSes` /
- * `sendViaResend`), and for the same reason: one bill, one switch, no call-site
- * churn.
- *
- * Contract, unchanged by the switch: this NEVER throws and NEVER blocks email.
- * Every outcome — queued, skipped or failed — comes back as a value the caller
- * writes to `notification_deliveries`. Missing credentials mirror the email
+ * Contract: this NEVER throws and NEVER blocks email. Every outcome — queued,
+ * skipped or failed — comes back as a value the caller writes to
+ * `notification_deliveries`. A missing origination number mirrors the email
  * dispatcher's console-skip so local dev and CI never send.
- *
- * The guards run here, once, for both providers: `resolveWhatsAppChannel` is
- * pure and returns a provider-neutral `templateRef`, so a transport only ever
- * receives a resolved phone number and template reference.
  */
 
 export type {
   WhatsAppSendResult,
   SendWhatsAppDeps,
 } from '@/lib/notify/send-whatsapp-shared';
-export { resolveWhatsAppProvider } from '@/lib/notify/send-whatsapp-shared';
-export { isRetryableTwilioCode } from '@/lib/notify/send-whatsapp-twilio';
 
 /**
  * Send one pre-approved template to one recipient.
@@ -71,7 +61,7 @@ export async function sendWhatsAppTemplate(input: {
     deps: input.deps,
   };
 
-  return config.provider === 'aws_eum' ? sendViaEum(shared) : sendViaTwilio(shared);
+  return sendViaEum(shared);
 }
 
 /**
@@ -80,8 +70,6 @@ export async function sendWhatsAppTemplate(input: {
  * Fire-and-forget by design: this is called from request handlers AFTER email
  * has been dispatched, and it never throws. A queue failure is logged and the
  * request continues — email remains the system of record.
- *
- * Provider-neutral: which transport runs is decided in the job, at send time.
  */
 export async function queueWhatsAppSend(input: {
   engagementId: string | null;

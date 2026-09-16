@@ -3,7 +3,6 @@ import {
   isWhatsAppConfigured,
   readWhatsAppConfig,
   resolveWhatsAppChannel,
-  resolveWhatsAppProvider,
   templateRefFor,
   type WhatsAppConfig,
 } from '@/lib/notify/channels';
@@ -17,17 +16,14 @@ import type { NotifyRecipient } from '@/lib/notify/types';
 
 /**
  * Built from the real reader on an empty env, so a new config field cannot
- * drift out of the fixtures — only the Twilio credentials are filled in.
+ * drift out of the fixtures — only the origination number id is filled in.
  */
 function config(patch: Partial<WhatsAppConfig> = {}): WhatsAppConfig {
+  const base = readWhatsAppConfig({} as NodeJS.ProcessEnv);
   return {
-    ...readWhatsAppConfig({} as NodeJS.ProcessEnv),
+    ...base,
     enabled: true,
-    accountSid: 'AC-test',
-    authToken: 'token',
-    from: 'whatsapp:+14155238886',
-    statusCallbackUrl: '',
-    templateSids: { welcome: 'HX-welcome' },
+    eum: { ...base.eum, phoneNumberId: 'phone-number-id-01234567890123456789012345678901' },
     ...patch,
   };
 }
@@ -45,72 +41,34 @@ function recipient(patch: Partial<NotifyRecipient> = {}): NotifyRecipient {
 }
 
 describe('isWhatsAppConfigured', () => {
-  it('needs the kill switch on and credentials with one sender form', () => {
+  it('needs only the kill switch on and a registered number id', () => {
     expect(isWhatsAppConfigured(config())).toBe(true);
     expect(isWhatsAppConfigured(config({ enabled: false }))).toBe(false);
-    expect(isWhatsAppConfigured(config({ accountSid: '' }))).toBe(false);
-    expect(isWhatsAppConfigured(config({ authToken: '' }))).toBe(false);
-    expect(isWhatsAppConfigured(config({ from: '', messagingServiceSid: '' }))).toBe(false);
     expect(
-      isWhatsAppConfigured(config({ from: '', messagingServiceSid: 'MG-1' })),
-    ).toBe(true);
+      isWhatsAppConfigured({ ...config(), eum: { ...config().eum, phoneNumberId: '' } }),
+    ).toBe(false);
   });
 });
 
-/** The EUM branch: no credentials in config, only a registered number id. */
-function eumConfig(patch: Partial<WhatsAppConfig> = {}): WhatsAppConfig {
-  const base = config(patch);
-  return {
-    ...base,
-    provider: 'aws_eum',
-    eum: { ...base.eum, phoneNumberId: 'phone-number-id-01234567890123456789012345678901' },
-    ...patch,
-  };
-}
-
-describe('provider switch', () => {
-  it('needs only a registered number id on the EUM path, and credentials on Twilio', () => {
-    expect(isWhatsAppConfigured(eumConfig())).toBe(true);
-    // EUM authenticates through the instance role, so blank Twilio creds are fine.
-    expect(isWhatsAppConfigured(eumConfig({ accountSid: '', authToken: '', from: '' }))).toBe(
-      true,
-    );
-    expect(
-      isWhatsAppConfigured({
-        ...eumConfig(),
-        eum: { ...eumConfig().eum, phoneNumberId: '' },
-      }),
-    ).toBe(false);
-    expect(isWhatsAppConfigured(eumConfig({ enabled: false }))).toBe(false);
-  });
-
-  it('resolves the template reference from the selected provider', () => {
-    // Twilio needs a configured SID; EUM defaults to the event name.
-    expect(templateRefFor(config(), 'welcome')).toBe('HX-welcome');
-    expect(templateRefFor(config(), 'coi_issued')).toBe('');
-    expect(templateRefFor(eumConfig(), 'welcome')).toBe('welcome');
-    expect(templateRefFor(eumConfig(), 'coi_issued')).toBe('coi_issued');
-  });
-
-  it('sends every event on EUM without per-event template env', () => {
-    expect(
-      resolveWhatsAppChannel({ recipient: recipient(), event: 'coi_issued', config: eumConfig() }),
-    ).toEqual({ send: true, toPhone: '+919876543210', templateRef: 'coi_issued' });
-  });
-
-  it('reads the provider off the env, defaulting to twilio', () => {
-    expect(resolveWhatsAppProvider({} as NodeJS.ProcessEnv)).toBe('twilio');
-    expect(
-      resolveWhatsAppProvider({ WHATSAPP_PROVIDER: ' AWS_EUM ' } as unknown as NodeJS.ProcessEnv),
-    ).toBe('aws_eum');
+describe('templateRefFor', () => {
+  it('defaults every event to its own name and honours an override', () => {
+    expect(templateRefFor(config(), 'welcome')).toBe('welcome');
+    expect(templateRefFor(config(), 'coi_issued')).toBe('coi_issued');
+    const overridden = config({
+      eum: { ...config().eum, templateNames: { ...config().eum.templateNames, welcome: 'vcfo_welcome' } },
+    });
+    expect(templateRefFor(overridden, 'welcome')).toBe('vcfo_welcome');
   });
 });
 
 describe('resolveWhatsAppChannel', () => {
-  it('returns a provider-neutral template reference on a send', () => {
+  it('sends every event without per-event template env', () => {
     expect(
       resolveWhatsAppChannel({ recipient: recipient(), event: 'welcome', config: config() }),
-    ).toEqual({ send: true, toPhone: '+919876543210', templateRef: 'HX-welcome' });
+    ).toEqual({ send: true, toPhone: '+919876543210', templateRef: 'welcome' });
+    expect(
+      resolveWhatsAppChannel({ recipient: recipient(), event: 'coi_issued', config: config() }),
+    ).toEqual({ send: true, toPhone: '+919876543210', templateRef: 'coi_issued' });
   });
 
   it('keeps the guard order disabled → no_template → no_phone → no_consent → opted_out', () => {
@@ -127,7 +85,7 @@ describe('resolveWhatsAppChannel', () => {
     expect(
       resolveWhatsAppChannel({
         recipient: recipient({ phoneE164: null }),
-        event: 'coi_issued',
+        event: 'nope',
         config: config(),
       }),
     ).toEqual({ send: false, skipReason: 'no_template' });
@@ -166,9 +124,8 @@ describe('resolveWhatsAppChannel', () => {
 });
 
 describe('readWhatsAppConfig', () => {
-  it('defaults the EUM branch without any EUM env set', () => {
+  it('defaults the EUM settings without any EUM env set', () => {
     const cfg = readWhatsAppConfig({} as NodeJS.ProcessEnv);
-    expect(cfg.provider).toBe('twilio');
     expect(cfg.eum.templateLanguage).toBe('en');
     expect(cfg.eum.metaApiVersion).toBe('v21.0');
     expect(cfg.eum.phoneNumberId).toBe('');

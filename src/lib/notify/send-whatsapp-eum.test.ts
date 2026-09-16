@@ -20,7 +20,6 @@ function config(patch: Partial<WhatsAppConfig> = {}): WhatsAppConfig {
   return {
     ...base,
     enabled: true,
-    provider: 'aws_eum',
     eum: { ...base.eum, phoneNumberId: PHONE_NUMBER_ID, region: 'ap-south-1' },
     ...patch,
   };
@@ -241,11 +240,9 @@ describe('isRetryableEumCode', () => {
 });
 
 describe('isRetryableWhatsAppError', () => {
-  it('uses the code set belonging to each provider', () => {
-    // A Twilio hard-failure code is meaningless to EUM and vice versa.
-    expect(isRetryableWhatsAppError('twilio', '21211')).toBe(false);
-    expect(isRetryableWhatsAppError('aws_eum', '21211')).toBe(true);
-    expect(isRetryableWhatsAppError('aws_eum', 'ValidationException')).toBe(false);
-    expect(isRetryableWhatsAppError('twilio', 'ValidationException')).toBe(true);
+  it('is the EUM classifier the job keys off', () => {
+    expect(isRetryableWhatsAppError('ValidationException')).toBe(false);
+    expect(isRetryableWhatsAppError('ThrottledRequestException')).toBe(true);
+    expect(isRetryableWhatsAppError(undefined)).toBe(true);
   });
 });

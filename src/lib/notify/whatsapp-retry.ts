@@ -1,14 +1,10 @@
-import { isRetryableTwilioCode } from '@/lib/notify/send-whatsapp-twilio';
-import type { WhatsAppProvider } from '@/lib/notify/channels';
-
 /**
  * Should the Inngest job throw (letting Inngest back off and retry) or accept
  * a failure and stop?
  *
- * The bias is deliberate and matches the Twilio path that came first: an
- * UNRECOGNISED code is retryable. A transient outage that we fail to classify
- * costs three attempts; a permanent error that we wrongly treat as permanent
- * silently drops a real notification.
+ * The bias is deliberate: an UNRECOGNISED code is retryable. A transient
+ * outage that we fail to classify costs three attempts; a permanent error
+ * that we wrongly treat as permanent silently drops a real notification.
  *
  * The inverse — retrying something that can never succeed — is what the
  * non-retryable sets below exist to prevent: an invalid number, a rejected
@@ -69,10 +65,7 @@ export function isRetryableEumCode(code: string | undefined): boolean {
   return !EUM_NON_RETRYABLE.has(key);
 }
 
-/** Provider-aware retry decision for the Inngest job. */
-export function isRetryableWhatsAppError(
-  provider: WhatsAppProvider,
-  code: string | undefined,
-): boolean {
-  return provider === 'aws_eum' ? isRetryableEumCode(code) : isRetryableTwilioCode(code);
+/** The retry decision the Inngest job keys off. */
+export function isRetryableWhatsAppError(code: string | undefined): boolean {
+  return isRetryableEumCode(code);
 }

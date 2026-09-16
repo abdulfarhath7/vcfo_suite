@@ -1,32 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  isRetryableTwilioCode,
-  resolveWhatsAppProvider,
-  sendWhatsAppTemplate,
-} from '@/lib/notify/send-whatsapp';
+import { sendWhatsAppTemplate } from '@/lib/notify/send-whatsapp';
 import { readWhatsAppConfig, type WhatsAppConfig } from '@/lib/notify/channels';
 import type { NotifyRecipient } from '@/lib/notify/types';
 
 /**
- * The dispatcher's contract: it never throws, it runs the guards once for
- * every provider, and it hands a resolved phone + template reference to the
- * transport. The Twilio client is injected, so nothing here needs credentials
- * or the network.
+ * The dispatcher's contract: it never throws, it runs the guards once, and it
+ * hands a resolved phone + template name to the EUM transport. The EUM client
+ * is injected, so nothing here needs credentials or the network.
  */
 
 /**
  * Built from the real reader on an empty env, so a new config field cannot
- * drift out of the fixtures — only the Twilio credentials are filled in.
+ * drift out of the fixtures — only the origination number id is filled in.
  */
 function config(patch: Partial<WhatsAppConfig> = {}): WhatsAppConfig {
+  const base = readWhatsAppConfig({} as NodeJS.ProcessEnv);
   return {
-    ...readWhatsAppConfig({} as NodeJS.ProcessEnv),
+    ...base,
     enabled: true,
-    accountSid: 'AC-test',
-    authToken: 'token',
-    from: 'whatsapp:+14155238886',
-    statusCallbackUrl: 'https://example.test/api/webhooks/twilio/status',
-    templateSids: { welcome: 'HX-welcome' },
+    eum: { ...base.eum, phoneNumberId: 'phone-number-id-01234567890123456789012345678901' },
     ...patch,
   };
 }
@@ -46,32 +38,18 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
-describe('resolveWhatsAppProvider', () => {
-  it('defaults to twilio until an EUM number is registered', () => {
-    expect(resolveWhatsAppProvider({} as NodeJS.ProcessEnv)).toBe('twilio');
-    expect(
-      resolveWhatsAppProvider({ WHATSAPP_PROVIDER: 'aws_eum' } as unknown as NodeJS.ProcessEnv),
-    ).toBe('aws_eum');
-    expect(
-      resolveWhatsAppProvider({ WHATSAPP_PROVIDER: 'nonsense' } as unknown as NodeJS.ProcessEnv),
-    ).toBe('twilio');
-  });
-});
-
-describe('sendWhatsAppTemplate — Twilio path', () => {
-  it('sends the approved template with positional variables and reports queued', async () => {
-    const calls: unknown[] = [];
+describe('sendWhatsAppTemplate', () => {
+  it('dispatches to EUM with the resolved phone and template name', async () => {
+    const calls: Array<{ originationPhoneNumberId: string; message: Uint8Array }> = [];
     const result = await sendWhatsAppTemplate({
       recipient,
       event: 'welcome',
-      // Call sites apply `firstNameOf` before queueing; the transport passes
-      // whatever it is handed straight through.
       variables: { firstName: 'Asha', companyName: 'Kestrel Robotics India Pvt Ltd' },
       deps: {
         config: config(),
-        createClient: async () => async (params) => {
+        createEumClient: async () => async (params) => {
           calls.push(params);
-          return { sid: 'SM123' };
+          return { messageId: 'wamid.1' };
         },
       },
     });
@@ -79,36 +57,19 @@ describe('sendWhatsAppTemplate — Twilio path', () => {
     expect(result).toEqual({
       ok: true,
       status: 'queued',
-      providerMessageId: 'SM123',
-      templateRef: 'HX-welcome',
+      providerMessageId: 'wamid.1',
+      templateRef: 'welcome',
       toPhone: '+919876543210',
     });
-    expect(calls[0]).toEqual({
-      to: 'whatsapp:+919876543210',
-      contentSid: 'HX-welcome',
-      // Positional keys matching the approved template body.
-      contentVariables: '{"1":"Asha","2":"Kestrel Robotics India Pvt Ltd"}',
-      from: 'whatsapp:+14155238886',
-      statusCallback: 'https://example.test/api/webhooks/twilio/status',
-    });
-  });
-
-  it('prefers a messaging service over a from number', async () => {
-    let sent: { from?: string; messagingServiceSid?: string } | null = null;
-    await sendWhatsAppTemplate({
-      recipient,
-      event: 'welcome',
-      variables: {},
-      deps: {
-        config: config({ messagingServiceSid: 'MG-1' }),
-        createClient: async () => async (params) => {
-          sent = params;
-          return { sid: 'SM1' };
-        },
-      },
-    });
-    expect(sent!.messagingServiceSid).toBe('MG-1');
-    expect(sent!.from).toBeUndefined();
+    expect(calls[0]?.originationPhoneNumberId).toBe(
+      'phone-number-id-01234567890123456789012345678901',
+    );
+    const payload = JSON.parse(new TextDecoder().decode(calls[0]!.message)) as {
+      to: string;
+      template: { name: string };
+    };
+    expect(payload.to).toBe('919876543210');
+    expect(payload.template.name).toBe('welcome');
   });
 
   it('returns a skip rather than throwing when a guard fails', async () => {
@@ -118,7 +79,7 @@ describe('sendWhatsAppTemplate — Twilio path', () => {
       variables: {},
       deps: {
         config: config(),
-        createClient: async () => async () => {
+        createEumClient: async () => async () => {
           throw new Error('must not be called');
         },
       },
@@ -131,7 +92,12 @@ describe('sendWhatsAppTemplate — Twilio path', () => {
       recipient,
       event: 'welcome',
       variables: {},
-      deps: { config: config({ enabled: false }) },
+      deps: {
+        config: config({ enabled: false }),
+        createEumClient: async () => async () => {
+          throw new Error('must not be called');
+        },
+      },
     });
     expect(result).toEqual({ ok: false, status: 'skipped', skipReason: 'disabled' });
   });
@@ -143,27 +109,17 @@ describe('sendWhatsAppTemplate — Twilio path', () => {
       variables: {},
       deps: {
         config: config(),
-        createClient: async () => async () => {
-          throw Object.assign(new Error('invalid To number'), { code: 21211 });
+        createEumClient: async () => async () => {
+          throw Object.assign(new Error('bad parameter'), { name: 'ValidationException' });
         },
       },
     });
     expect(result).toMatchObject({
       ok: false,
       status: 'failed',
-      errorCode: '21211',
-      templateRef: 'HX-welcome',
+      errorCode: 'ValidationException',
+      templateRef: 'welcome',
       toPhone: '+919876543210',
     });
-  });
-});
-
-describe('isRetryableTwilioCode', () => {
-  it('stops on hard failures and retries the rest', () => {
-    expect(isRetryableTwilioCode('21211')).toBe(false);
-    expect(isRetryableTwilioCode('21610')).toBe(false);
-    expect(isRetryableTwilioCode('63016')).toBe(false);
-    expect(isRetryableTwilioCode('20429')).toBe(true);
-    expect(isRetryableTwilioCode(undefined)).toBe(true);
   });
 });
