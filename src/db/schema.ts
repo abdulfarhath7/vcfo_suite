@@ -57,7 +57,7 @@ export const healthEnum = pgEnum('engagement_health', [
   'at-risk',
   'overdue',
 ]);
-/** Per-profile WhatsApp reachability. `failed` is set by the Twilio status webhook. */
+/** Per-profile WhatsApp reachability. `failed` is set by the EUM SNS delivery webhook. */
 export const whatsappStatusEnum = pgEnum('whatsapp_status', [
   'unknown',
   'verified',

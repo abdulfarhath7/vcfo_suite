@@ -858,11 +858,11 @@ export async function listRemovedClients(ctx: AuthContext): Promise<RemovedClien
 
 
 /**
- * SYSTEM WRITER — Twilio inbound webhook (documented deviation).
+ * SYSTEM WRITER — EUM SNS inbound-message webhook (documented deviation).
  *
- * The webhook is unauthenticated (signature-verified only), so there is no
+ * The webhook is unauthenticated (SNS-signature-verified only), so there is no
  * AuthContext to scope by. Narrow on purpose: a single-row update keyed by the
- * E.164 number Twilio reports, writing nothing but the opt-out timestamp.
+ * E.164 number Meta reports, writing nothing but the opt-out timestamp.
  * Inbound message bodies are never persisted.
  *
  * Returns the number of profiles marked (0 when the number is unknown to us).
@@ -887,7 +887,7 @@ export async function systemRecordWhatsAppOptOut(
 }
 
 /**
- * SYSTEM WRITER — Twilio status webhook (documented deviation).
+ * SYSTEM WRITER — EUM SNS delivery-status webhook (documented deviation).
  * Marks reachability so staff can see a dead number without guessing.
  */
 export async function systemMarkWhatsAppStatus(

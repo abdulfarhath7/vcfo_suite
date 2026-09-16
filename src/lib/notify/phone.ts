@@ -4,15 +4,15 @@
  * These are imported by CLIENT components (the create-project form, account
  * settings) to normalise input before it is sent to the API. Keeping them out
  * of `channels.ts` means no client bundle ever imports the module that reads
- * Twilio credentials, so the "no secrets in the client bundle" rule holds
- * structurally rather than by accident.
+ * the messaging configuration, so the "no secrets in the client bundle" rule
+ * holds structurally rather than by accident.
  *
  * Nothing here touches the environment or the network.
  */
 
 /**
  * E.164: leading +, country code 1-9, 8-15 digits total.
- * Deliberately strict — Twilio charges for an invalid-number attempt.
+ * Deliberately strict — an invalid-number attempt still costs a message fee.
  */
 const E164 = /^\+[1-9]\d{7,14}$/;
 
@@ -51,24 +51,13 @@ export function normalizeToE164(
   return null;
 }
 
-/** `whatsapp:+91...` ↔ `+91...` — Twilio uses the prefixed form on the wire. */
-export function stripWhatsAppPrefix(value: string | null | undefined): string {
-  return (value ?? '').trim().replace(/^whatsapp:/i, '');
-}
-
-export function withWhatsAppPrefix(value: string): string {
-  const bare = stripWhatsAppPrefix(value);
-  return bare ? `whatsapp:${bare}` : '';
-}
-
 /**
  * Meta's Cloud API wants bare digits with the country code and NO leading '+'
- * and no `whatsapp:` prefix (e.g. 919876543210). Sending Twilio's prefixed or
- * plus-prefixed form to Meta is rejected, so the EUM transport formats here
- * rather than reusing `withWhatsAppPrefix`.
+ * (e.g. 919876543210); a plus-prefixed number is rejected, so the EUM
+ * transport formats here.
  */
 export function toMetaPhone(value: string | null | undefined): string {
-  return stripWhatsAppPrefix(value).replace(/\D/g, '');
+  return (value ?? '').replace(/\D/g, '');
 }
 
 /**
@@ -84,9 +73,8 @@ export function fromMetaPhone(value: string | null | undefined): string {
 }
 
 /**
- * Inbound opt-out keywords. Twilio handles some of these itself on its own
- * numbers, but a self-managed sender must honour them too — and we record the
- * timestamp regardless so the send guards stop sending.
+ * Inbound opt-out keywords. A self-managed sender must honour them itself —
+ * the timestamp is recorded so the send guards stop sending.
  */
 const OPT_OUT_KEYWORDS = new Set([
   'stop',

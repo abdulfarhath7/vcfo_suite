@@ -737,7 +737,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     email.failed = [...new Set(email.failed)];
     email.subjects = [...new Set(email.subjects ?? [])];
 
-    // WhatsApp last, on the background path, so a Twilio timeout can never
+    // WhatsApp last, on the background path, so a WhatsApp send can never
     // slow this request or change anything above. Never throws.
     const whatsappEvent = whatsappEventFor(input);
     if (whatsappEvent) {

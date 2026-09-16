@@ -17,8 +17,8 @@ import type { NotifyEvent, NotifyVariables } from '@/lib/notify/types';
  * the AWS per-message fee land on the same invoice as SES, RDS and S3. That
  * consolidated bill is the whole reason this transport exists.
  *
- * Contract, identical to the Twilio transport: NEVER throws. Every outcome
- * comes back as a value the caller writes to `notification_deliveries`.
+ * Contract: NEVER throws. Every outcome comes back as a value the caller
+ * writes to `notification_deliveries`.
  *
  * Credentials come from the App Runner / ECS instance role via the standard
  * AWS chain — the same way `sendViaSes` authenticates. No static keys, and the
@@ -37,7 +37,7 @@ function buildMessagePayload(input: {
   const components = buildTemplateComponents(input.event, input.variables);
   return {
     messaging_product: 'whatsapp',
-    // Meta wants bare digits: no '+', no 'whatsapp:' prefix.
+    // Meta wants bare digits: no '+'.
     to: toMetaPhone(input.toPhone),
     type: 'template',
     template: {

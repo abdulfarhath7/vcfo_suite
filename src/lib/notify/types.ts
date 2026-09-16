@@ -1,18 +1,17 @@
 /**
  * Outbound notification channel types.
  *
- * TRANSPORT-AGNOSTIC ON PURPOSE. WhatsApp ships over two interchangeable
- * providers (AWS End User Messaging and Twilio, chosen by `WHATSAPP_PROVIDER`)
- * and nothing in this file may name either of them.
+ * TRANSPORT-AGNOSTIC ON PURPOSE. WhatsApp ships over AWS End User Messaging
+ * (Social) and nothing in this file may name the transport.
  *
  * WhatsApp is a *nudge* channel that runs alongside email — email stays the
  * system of record. Every message body is a pre-approved template referenced
- * by the provider's own identifier (a Twilio Content SID or a Meta template
- * name); nothing here ever builds a free-form body.
+ * by its Meta template name; nothing here ever builds a free-form body.
  *
- * ADDING AN EVENT: append to `NOTIFY_EVENTS`, add the variable builder in
- * `templates.ts`, and set `WHATSAPP_TEMPLATE_<UPPER_SNAKE>` in the env. No
- * other file changes (the DB columns are text, not enums, on purpose).
+ * ADDING AN EVENT: append to `NOTIFY_EVENTS` and add the variable builder in
+ * `templates.ts`; the template name defaults to the event name (override
+ * with `WHATSAPP_TEMPLATE_NAME_<UPPER_SNAKE>`). No other file changes (the
+ * DB columns are text, not enums, on purpose).
  */
 
 /** Chosen events. All Meta category "utility", all outbound-only. */

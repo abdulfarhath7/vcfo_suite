@@ -15,8 +15,8 @@ import { parseEumWebhookEvents } from '@/lib/notify/eum-events';
 /**
  * AWS End User Messaging (Social) delivery events, via Amazon SNS.
  *
- * The EUM counterpart of the Twilio status + inbound webhooks, collapsed into
- * one route because SNS delivers both on the same topic.
+ * Delivery status and inbound messages arrive on one route because SNS
+ * delivers both on the same topic.
  *
  * Unauthenticated by construction, so the SNS signature IS the authentication:
  * every request is verified against the AWS signing certificate before

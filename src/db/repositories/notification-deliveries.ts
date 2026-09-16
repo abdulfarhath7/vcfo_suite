@@ -28,7 +28,7 @@ import type {
  * `systemRecordDelivery` and `systemUpdateDeliveryByProviderId` take no
  * AuthContext. They exist because their callers have no session:
  *   - the Inngest WhatsApp job (background, post-response)
- *   - the Twilio status webhook (unauthenticated, signature-verified only)
+ *   - the EUM SNS delivery webhook (unauthenticated, SNS-signature-verified only)
  * Both are narrow single-row writes keyed by an id we already hold. They live
  * here, beside their AuthContext siblings, so the deviation stays visible.
  * Every UI read goes through the scoped functions.
@@ -98,7 +98,7 @@ export async function systemRecordDelivery(
 }
 
 /**
- * SYSTEM WRITER — Twilio status webhook. See the header note.
+ * SYSTEM WRITER — EUM SNS delivery webhook. See the header note.
  * Keyed by the opaque provider message id; no engagement scope is available
  * or needed. Never throws.
  */
