@@ -957,35 +957,32 @@ Append here whenever something costs more than a minute to figure out.
 - Staff month sheets can be honestly empty: the demo FY 2026-27 register has
   no monthly-frequency instances at all (quarterly / annual / half-yearly only).
 
-## WhatsApp — two transports (2026-09-08)
+## WhatsApp — AWS EUM only (2026-09-08, collapsed 2026-09-16)
 
-- `WHATSAPP_PROVIDER` selects the transport exactly like `EMAIL_PROVIDER`:
-  `aws_eum` (AWS End User Messaging Social, the AWS invoice) or `twilio`
-  (legacy fallback, kept working). `sendWhatsAppTemplate` is a dispatcher;
-  the transports are `send-whatsapp-eum.ts` and `send-whatsapp-twilio.ts`,
-  with the shared result/deps types in `send-whatsapp-shared.ts`.
+- One transport: `sendWhatsAppTemplate` (dispatcher, runs the guards) →
+  `sendViaEum` in `send-whatsapp-eum.ts`, shared result/deps types in
+  `send-whatsapp-shared.ts`. The Twilio transport, its two webhooks, the
+  `WHATSAPP_PROVIDER` switch and the `twilio` dependency were removed on
+  2026-09-16 (`docs/AWS-EUM-GO-ALL-IN-CONTEXT.md`). Do not reintroduce a
+  provider field "just in case".
 - **The guards run once, in the dispatcher.** `resolveWhatsAppChannel` is pure
-  and returns a provider-neutral `templateRef` — a Twilio Content SID or a Meta
-  template name. Both land in the text `template_sid` column. Guard order is
+  and returns the approved Meta template name as `templateRef`; it lands in
+  the text `template_sid` column (name kept, option A). Guard order is
   load-bearing: `disabled → no_template → no_phone → no_consent → opted_out`.
-- **Meta wants bare digits.** `toMetaPhone` strips `+` and the `whatsapp:`
-  prefix for the EUM payload; `fromMetaPhone` adds the `+` back when a webhook
-  reports a number, because profiles are keyed by E.164. Never send Twilio's
-  `withWhatsAppPrefix` form to Meta.
-- **EUM template names default to the event name**, so the EUM path needs no
+- **Meta wants bare digits.** `toMetaPhone` strips `+` for the EUM payload;
+  `fromMetaPhone` adds the `+` back when a webhook reports a number, because
+  profiles are keyed by E.164.
+- **EUM template names default to the event name**, so the path needs no
   per-event env at all — approve the six templates in WhatsApp Manager under
-  `welcome`, `coi_issued`, … Overrides use `WHATSAPP_TEMPLATE_NAME_<EVENT>`,
-  deliberately NOT the Twilio `WHATSAPP_TEMPLATE_<EVENT>` SID keys, because a
-  deployment keeping Twilio as a fallback has both configured at once.
+  `welcome`, `coi_issued`, … Overrides use `WHATSAPP_TEMPLATE_NAME_<EVENT>`.
 - **EUM needs no credentials in config** — it authenticates through the App
-  Runner / ECS instance role like `sendViaSes`, so `isWhatsAppConfigured` on
-  that path checks only `EUM_PHONE_NUMBER_ID`.
-- **Retries:** `isRetryableWhatsAppError(provider, code)` picks each provider's
-  own set. Unknown codes stay retryable on both — a misclassified outage costs
-  three attempts, a misclassified permanent error silently drops a real notice.
-  EUM classifies on the SDK exception name (`ValidationException`, …) and on
-  Meta's numeric codes; the two vocabularies do not overlap, so a Twilio code
-  means nothing on the EUM path.
+  Runner / ECS instance role like `sendViaSes`, so `isWhatsAppConfigured`
+  checks only `WHATSAPP_ENABLED` and `EUM_PHONE_NUMBER_ID`.
+- **Retries:** `isRetryableWhatsAppError(code)` is the EUM classifier. Unknown
+  codes stay retryable — a misclassified outage costs three attempts, a
+  misclassified permanent error silently drops a real notice. Classifies on
+  the SDK exception name (`ValidationException`, …) and on Meta's numeric
+  codes.
 - **The SNS webhook is the authentication.** `/api/webhooks/aws-eum` is public;
   `aws-sns-verify.ts` rebuilds the canonical string per message type, refuses
   any signing certificate that is not HTTPS on `sns.<region>.amazonaws.com`,

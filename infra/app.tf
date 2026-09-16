@@ -131,7 +131,6 @@ locals {
       EMAIL_FROM                = var.email_from
       NEXT_PUBLIC_MAX_UPLOAD_MB = "50"
       WHATSAPP_ENABLED          = "false"
-      WHATSAPP_PROVIDER         = "aws_eum"
     },
     var.site_url == "" ? {} : {
       SITE_URL             = var.site_url

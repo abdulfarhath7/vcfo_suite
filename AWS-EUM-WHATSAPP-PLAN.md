@@ -1,5 +1,9 @@
 # AWS EUM WhatsApp — build plan
 
+> **2026-09-16:** the Twilio fallback described below was removed
+> (`docs/AWS-EUM-GO-ALL-IN-CONTEXT.md`). EUM is the only transport; there is no
+> `WHATSAPP_PROVIDER`. §6 (out-of-band AWS/Meta setup) still applies as written.
+
 Step 1 deliverable for `docs/AWS-EUM-WHATSAPP-CONTEXT.md`: add AWS End User
 Messaging (Social) as a second WhatsApp transport behind a `WHATSAPP_PROVIDER`
 switch, mirroring how email already switches between `resend` and `ses`.
