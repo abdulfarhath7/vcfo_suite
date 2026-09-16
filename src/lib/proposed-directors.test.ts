@@ -135,3 +135,60 @@ describe('Part B step validators — capital structure and registered office', a
     expect(directorResponsesFromState({ 'pre-6': state['pre-6'] }).pre6.registeredOfficeCompleteAddress).toBe('Old KYC address');
   });
 });
+
+describe('validatePre16Responses — subscriber details', async () => {
+  const { validatePre16Responses } = await import('@/lib/checklist-part-b-validation');
+  const { addRepeatEntry, resolveFieldLabels, expandRepeatEntry } = await import('@/lib/checklist-repeat');
+  const { getItem } = await import('@/data/checklist');
+  const { getClientResponseFields } = await import('@/lib/checklist-responses');
+  const group = getClientResponseFields(getItem('pre-16')!).find((f) => f.id === 'subscribers')!;
+  const sub = (values: Record<string, string>) => {
+    const { patch, entryId } = addRepeatEntry({}, group as never);
+    const responses = { ...patch };
+    for (const [k, v] of Object.entries(values)) responses[`subscribers.${entryId}.${k}`] = v;
+    return { responses, entryId };
+  };
+
+  it('accepts an empty list — "No subscribers to add" is a terminal path', () => {
+    expect(validatePre16Responses({}).ok).toBe(true);
+    expect(validatePre16Responses({ subscribers: '' }).ok).toBe(true);
+  });
+
+  it('an individual needs a name, a share count and a value', () => {
+    const { responses, entryId } = sub({ type: 'individual' });
+    const errors = validatePre16Responses(responses).errors;
+    expect(errors[`subscribers.${entryId}.name`]).toBe('This field is required.');
+    expect(errors[`subscribers.${entryId}.shares`]).toBe('This field is required.');
+    expect(errors[`subscribers.${entryId}.entityType`]).toBeUndefined();
+    expect(errors[`subscribers.${entryId}.cin`]).toBeUndefined();
+    expect(validatePre16Responses(sub({ type: 'individual', name: 'Asha Rao', shares: '100', shareValue: '1000' }).responses).ok).toBe(true);
+  });
+
+  it('a body corporate needs a CIN and address; an LLP needs an LLPIN; both need the authorised person', () => {
+    const bc = sub({ type: 'non-individual', entityType: 'body-corporate', name: 'Acme Ltd', shares: '10', shareValue: '100', cin: 'bad' });
+    const bcErrors = validatePre16Responses(bc.responses).errors;
+    expect(bcErrors[`subscribers.${bc.entryId}.cin`]).toMatch(/21 characters/);
+    expect(bcErrors[`subscribers.${bc.entryId}.address`]).toBe('This field is required.');
+    expect(bcErrors[`subscribers.${bc.entryId}.authorisedPerson`]).toBe('This field is required.');
+    expect(bcErrors[`subscribers.${bc.entryId}.llpin`]).toBeUndefined();
+
+    const llp = sub({ type: 'non-individual', entityType: 'llp', name: 'Acme LLP', shares: '10', shareValue: '100', llpin: '12', authorisedPerson: 'R Iyer' });
+    expect(validatePre16Responses(llp.responses).errors[`subscribers.${llp.entryId}.llpin`]).toMatch(/AAB-1234/);
+    expect(validatePre16Responses({ ...llp.responses, [`subscribers.${llp.entryId}.llpin`]: 'aab-1234' }).ok).toBe(true);
+  });
+
+  it('shares must be a whole number and the value a positive amount', () => {
+    const { responses, entryId } = sub({ type: 'individual', name: 'A', shares: '1.5', shareValue: '0' });
+    const errors = validatePre16Responses(responses).errors;
+    expect(errors[`subscribers.${entryId}.shares`]).toMatch(/whole number/);
+    expect(errors[`subscribers.${entryId}.shareValue`]).toMatch(/INR/);
+  });
+
+  it('the name field is relabelled by entity type', () => {
+    const { responses, entryId } = sub({ type: 'non-individual', entityType: 'llp' });
+    const fields = resolveFieldLabels(expandRepeatEntry(group as never, entryId), responses);
+    expect(fields.find((f) => f.id === `subscribers.${entryId}.name`)?.label).toBe('Name of the LLP');
+    const plain = resolveFieldLabels(expandRepeatEntry(group as never, entryId), { ...responses, [`subscribers.${entryId}.entityType`]: '' });
+    expect(plain.find((f) => f.id === `subscribers.${entryId}.name`)?.label).toBe('Full name');
+  });
+});

@@ -31,12 +31,14 @@ import {
   isRepeatField,
   removeRepeatEntry,
   repeatEntries,
+  resolveFieldLabels,
 } from '@/lib/checklist-repeat';
 import {
   shareClassTotal,
   validatePre13Responses,
   validatePre14Responses,
   validatePre15Responses,
+  validatePre16Responses,
 } from '@/lib/checklist-part-b-validation';
 import {
   REGISTERED_OFFICE_FIELD_IDS,
@@ -129,6 +131,7 @@ const PHASE2_STRUCTURED_STEP_IDS = new Set([
   'pre-13',
   'pre-14',
   'pre-15',
+  'pre-16',
   'pre-7',
   'pre-8',
   'pre-9',
@@ -275,7 +278,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     else if (item.id === 'pre-6') {
       if (!pre1SubmittedForPre6) visible = [];
       else visible = getPre6VisibleFields(fields, draft, pre1Responses);
-    } else visible = applyShowWhen(fields, draft);
+    } else visible = resolveFieldLabels(applyShowWhen(fields, draft), draft);
     return appendStepRemarksToVisible(visible, fields);
   }, [item.id, fields, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6]);
   const pre6DirectorSlots = useMemo(
@@ -655,6 +658,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (item.id === 'pre-13') return validatePre13Responses(draft).errors;
     if (item.id === 'pre-14') return validatePre14Responses(draft).errors;
     if (item.id === 'pre-15') return validatePre15Responses(draft).errors;
+    if (item.id === 'pre-16') return validatePre16Responses(draft).errors;
     return {};
   }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, pre1Validation]);
 
@@ -834,6 +838,11 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       }
       if (item.id === 'pre-1' && fieldId === 'nicCode') {
         next.nicBusinessType = nicBusinessType(value)?.description ?? '';
+      }
+      if (item.id === 'pre-16' && fieldId.endsWith('.type') && value === 'individual') {
+        // Back to an individual: the entity-only answers no longer apply.
+        const base = fieldId.slice(0, -'.type'.length);
+        for (const key of ['entityType', 'cin', 'address', 'llpin', 'authorisedPerson']) next[`${base}.${key}`] = '';
       }
       if (item.id === 'pre-13') {
         for (const cls of ['equity', 'preference'] as const) {
@@ -1178,7 +1187,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
                 {field.entryLabel ?? 'Entry'} {entry.index}
               </p>
               <dl className="milestone-record">
-                {applyShowWhen(expandRepeatEntry(field, entry.id), displayValues).map((sub) => (
+                {resolveFieldLabels(applyShowWhen(expandRepeatEntry(field, entry.id), displayValues), displayValues).map((sub) => (
                   <div key={sub.id} className="milestone-record-row">
                     <dt className="milestone-record-label">{sub.label}</dt>
                     <dd className="milestone-record-value">{readOnlyValueNode(sub, empty)}</dd>

@@ -118,3 +118,30 @@ export function validatePre13Responses(responses: ChecklistItemResponses): StepV
 export function validatePre14Responses(responses: ChecklistItemResponses): StepValidationResult {
   return result(requiredFieldErrors('pre-14', responses));
 }
+
+const CIN_RE = /^[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}$/;
+const LLPIN_RE = /^[A-Z]{3}-?\d{4}$/;
+
+/** pre-16 Subscriber details: zero subscribers is a valid submit; each added one must be complete and well-formed. */
+export function validatePre16Responses(responses: ChecklistItemResponses): StepValidationResult {
+  const group = groupOf('pre-16', 'subscribers');
+  if (!group) return result({});
+  const errors = validateRepeatEntries(responses, group, (entry) => {
+    const e = missingRequiredEntryFields(group, entry);
+    const v = entry.values;
+    if (v.entityType === 'body-corporate' && v.cin?.trim() && !CIN_RE.test(v.cin.trim().toUpperCase())) {
+      e.cin = 'A CIN is 21 characters, e.g. U72900KA2026PTC123456.';
+    }
+    if (v.entityType === 'llp' && v.llpin?.trim() && !LLPIN_RE.test(v.llpin.trim().toUpperCase())) {
+      e.llpin = 'An LLPIN looks like AAB-1234.';
+    }
+    if (v.shares?.trim() && (!POSITIVE_INT_RE.test(v.shares.replace(/,/g, '').trim()) || Number(v.shares.replace(/,/g, '')) <= 0)) {
+      e.shares = 'Enter a whole number of shares.';
+    }
+    if (v.shareValue?.trim() && (!POSITIVE_NUMBER_RE.test(v.shareValue.replace(/,/g, '').trim()) || Number(v.shareValue.replace(/,/g, '')) <= 0)) {
+      e.shareValue = 'Enter the value in INR, e.g. 100000.';
+    }
+    return e;
+  });
+  return result(errors);
+}

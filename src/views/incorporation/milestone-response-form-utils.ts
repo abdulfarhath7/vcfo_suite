@@ -13,6 +13,7 @@ import {
   validatePre13Responses,
   validatePre14Responses,
   validatePre15Responses,
+  validatePre16Responses,
 } from '@/lib/checklist-part-b-validation';
 import { expandRepeatFieldsForDiff } from '@/lib/checklist-repeat';
 import { validatePre6Responses } from '@/lib/checklist-pre6-validation';
@@ -242,6 +243,7 @@ export function runStepValidation(
   if (itemId === 'pre-13') return validatePre13Responses(draft);
   if (itemId === 'pre-14') return validatePre14Responses(draft);
   if (itemId === 'pre-15') return validatePre15Responses(draft);
+  if (itemId === 'pre-16') return validatePre16Responses(draft);
   return { ok: true, errors: {}, warnings: {} };
 }
 

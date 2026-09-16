@@ -48,6 +48,7 @@ const STEP_ALIASES: Record<string, string> = {
   'pre-13': 'capital-structure',
   'pre-14': 'registered-office-address',
   'pre-15': 'proposed-directors',
+  'pre-16': 'subscriber-details',
   'director-kyc-detail': 'director-kyc-details',
   'director-kyc': 'director-kyc-details',
 };

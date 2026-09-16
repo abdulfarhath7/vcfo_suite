@@ -59,7 +59,24 @@ export function expandRepeatEntry(group: RepeatField, entryId: string): Checklis
     ...(field.showWhen
       ? { showWhen: { ...field.showWhen, field: repeatFieldId(group.id, entryId, field.showWhen.field) } }
       : {}),
+    ...(field.labelWhen
+      ? {
+          labelWhen: field.labelWhen.map((rule) => ({
+            ...rule,
+            field: repeatFieldId(group.id, entryId, rule.field),
+          })),
+        }
+      : {}),
   }));
+}
+
+/** Apply `labelWhen` — the field's label for the current sibling values. */
+export function resolveFieldLabels(fields: ChecklistField[], responses: ChecklistItemResponses): ChecklistField[] {
+  return fields.map((field) => {
+    if (!field.labelWhen) return field;
+    const hit = field.labelWhen.find((rule) => (responses[rule.field] ?? '').trim() === rule.value);
+    return hit ? { ...field, label: hit.label } : field;
+  });
 }
 
 /** Every concrete field for the entries present in `responses` (the group field itself stays). */

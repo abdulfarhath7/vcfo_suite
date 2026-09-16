@@ -77,6 +77,8 @@ export interface ChecklistField {
   required?: boolean;
   /** Show this field only when another field equals a value (e.g. pre-1 conditional fields). */
   showWhen?: { field: string; value: string };
+  /** Relabel by a sibling's value — one field, two names (e.g. a subscriber's name by type). */
+  labelWhen?: Array<{ field: string; value: string; label: string }>;
   /** Who fills this field; defaults to the step's responsibleRole */
   filledBy?: ChecklistResponsibleRole;
   /** Desktop density: short fields pair in a 2-col grid. Omit to infer from type. */
@@ -298,6 +300,20 @@ const preInc: ChecklistItem[] = [
     expectedTimeline: '4–5 working days',
   },
   {
+    id: 'pre-16',
+    slug: 'subscriber-details',
+    bucket: 'pre-inc',
+    order: 16,
+    title: 'Subscriber Details',
+    responsibleRole: 'client',
+    description:
+      'Subscribers to the memorandum other than the directors — individuals, bodies corporate or LLPs — with the shares each takes. Optional: submit with none if the proposed directors subscribe the initial shares themselves.',
+    forms: ['Spice Part B', 'INC-33', 'INC-34', 'INC-35'],
+    infoRequired: ['Subscribers (optional)', 'INC-35 nominee'],
+    deadline: { kind: 'estimated-weeks', weeks: [5, 6] },
+    expectedTimeline: '1 working day',
+  },
+  {
     id: 'pre-7',
     slug: 'kyc-review-and-dsc-creation',
     bucket: 'pre-inc',
@@ -423,7 +439,7 @@ const PRE_INC_PHASES: ChecklistPhaseGroup[] = [
     id: 'pre-inc-phase-2',
     title: 'Phase 2 — Incorporation',
     subtitle: 'Steps 1–6',
-    itemIds: ['pre-13', 'pre-14', 'pre-15', 'pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
+    itemIds: ['pre-13', 'pre-14', 'pre-15', 'pre-16', 'pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
   },
 ];
 

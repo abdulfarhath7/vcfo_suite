@@ -8,6 +8,7 @@ import {
   applyShowWhen,
   expandRepeatEntry,
   repeatEntries,
+  resolveFieldLabels,
   type RepeatField,
 } from '@/lib/checklist-repeat';
 import { Button } from '@/components/ui/button';
@@ -65,7 +66,9 @@ export function RepeatGroupEditor({
             ) : null}
           </div>
           <div className="milestone-form-grid">
-            {applyShowWhen(expandRepeatEntry(group, entry.id), responses).map((field) => renderField(field))}
+            {resolveFieldLabels(applyShowWhen(expandRepeatEntry(group, entry.id), responses), responses).map((field) =>
+              renderField(field),
+            )}
           </div>
         </section>
       ))}
