@@ -18,6 +18,7 @@ const PRE8_REQUIRED_FILE_IDS = [
   'boardResolutionSignedForIncorpUrl',
   'moaSubscriptionSheetSignedUrl',
   'aoaSubscriptionSheetSignedUrl',
+  'agileProSSignedUrl',
 ] as const;
 
 export interface Pre8ValidationResult {

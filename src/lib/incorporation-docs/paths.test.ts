@@ -48,7 +48,7 @@ describe('incorpDraftDocLabel', () => {
   });
 
   it('labels company-level drafts without director suffix', () => {
-    expect(incorpDraftDocLabel('moa', 'company')).toBe('MOA draft');
+    expect(incorpDraftDocLabel('moa', 'company')).toBe('INC-33 — MOA draft');
   });
 });
 

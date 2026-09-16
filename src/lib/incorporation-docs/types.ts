@@ -101,7 +101,7 @@ export const INCORP_DOC_DEFINITIONS: Record<IncorpDocKind, IncorpDocDefinition> 
   },
   moa: {
     kind: 'moa',
-    label: 'MOA',
+    label: 'INC-33 — MOA',
     templateRelative: 'public/templates/moa.docx',
     directors: 'company-only',
     draftUrlField: { company: 'moaDraftUrl' },
@@ -109,7 +109,7 @@ export const INCORP_DOC_DEFINITIONS: Record<IncorpDocKind, IncorpDocDefinition> 
   },
   aoa: {
     kind: 'aoa',
-    label: 'AOA',
+    label: 'INC-34 — AOA',
     templateRelative: 'public/templates/aoa.docx',
     directors: 'company-only',
     draftUrlField: { company: 'aoaDraftUrl' },
@@ -133,7 +133,7 @@ export const INCORP_DOC_DEFINITIONS: Record<IncorpDocKind, IncorpDocDefinition> 
   },
   'moa-subscription-sheet': {
     kind: 'moa-subscription-sheet',
-    label: 'MOA Subscription Sheet',
+    label: 'INC-33 — MOA Subscription Sheet',
     templateRelative: 'public/templates/moa-aoa-subscription-sheet-foreign.docx',
     directors: 'company-only',
     draftUrlField: { company: 'moaSubscriptionSheetDraftUrl' },
@@ -141,7 +141,7 @@ export const INCORP_DOC_DEFINITIONS: Record<IncorpDocKind, IncorpDocDefinition> 
   },
   'aoa-subscription-sheet': {
     kind: 'aoa-subscription-sheet',
-    label: 'AOA Subscription Sheet',
+    label: 'INC-34 — AOA Subscription Sheet',
     templateRelative: 'public/templates/moa-aoa-subscription-sheet-foreign.docx',
     directors: 'company-only',
     draftUrlField: { company: 'aoaSubscriptionSheetDraftUrl' },

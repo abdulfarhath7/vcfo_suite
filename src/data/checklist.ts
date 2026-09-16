@@ -343,11 +343,11 @@ const preInc: ChecklistItem[] = [
     responsibleRole: 'client',
     description:
       'Client uploads apostilled/notarized and signed incorporation documents for directors and foreign entity records.',
-    forms: ['Executed DIR-2', 'Executed DIR-8', 'Executed INC-9'],
+    forms: ['Executed DIR-2', 'Executed DIR-8', 'Executed INC-9', 'INC-33', 'INC-34', 'INC-35'],
     infoRequired: [
       'Signed/apostilled KYC and incorporation documents for each director',
       'Signed certificate and authorisation set from foreign entity',
-      'Signed board resolution, MOA subscription sheet, AOA subscription sheet',
+      'Signed board resolution, INC-33 MOA subscription sheet, INC-34 AOA subscription sheet, INC-35 AGILE-PRO-S',
     ],
     deadline: { kind: 'estimated-weeks', weeks: [7, 9] },
     expectedTimeline: '7–10 working days',

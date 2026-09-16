@@ -438,7 +438,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'moaDraftUrl',
-      label: 'Memorandum of Association (MOA) draft',
+      label: 'INC-33 — MOA (Memorandum of Association) draft',
       type: 'file',
       section: 'Draft Incorporation Docs',
       filledBy: 'intern',
@@ -447,7 +447,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'aoaDraftUrl',
-      label: 'Articles of Association (AOA) draft',
+      label: 'INC-34 — AOA (Articles of Association) draft',
       type: 'file',
       section: 'Draft Incorporation Docs',
       filledBy: 'intern',
@@ -483,7 +483,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'moaSubscriptionSheetDraftUrl',
-      label: 'Memorandum of Association (MOA) Subscription Sheets draft',
+      label: 'INC-33 — MOA (Memorandum of Association) Subscription Sheet draft',
       type: 'file',
       section: 'Draft Incorporation Docs',
       filledBy: 'intern',
@@ -492,7 +492,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'aoaSubscriptionSheetDraftUrl',
-      label: 'Articles of Association (AOA) Subscription Sheets draft',
+      label: 'INC-34 — AOA (Articles of Association) Subscription Sheet draft',
       type: 'file',
       section: 'Draft Incorporation Docs',
       filledBy: 'intern',
@@ -654,7 +654,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'moaSubscriptionSheetSignedUrl',
-      label: 'Memorandum of Association (MOA) Subscription Sheet',
+      label: 'INC-33 — MOA (Memorandum of Association) Subscription Sheet',
       type: 'file',
       section: 'Signed Documents',
       accept: '.pdf,image/*',
@@ -662,11 +662,20 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'aoaSubscriptionSheetSignedUrl',
-      label: 'Articles of Association (AOA) Subscription Sheet',
+      label: 'INC-34 — AOA (Articles of Association) Subscription Sheet',
       type: 'file',
       section: 'Signed Documents',
       accept: '.pdf,image/*',
       required: true,
+    },
+    {
+      id: 'agileProSSignedUrl',
+      label: 'INC-35 — AGILE-PRO-S (signed)',
+      type: 'file',
+      section: 'Signed Documents',
+      accept: '.pdf,image/*',
+      required: true,
+      helperText: 'GSTIN, EPFO, ESIC, profession tax, bank account and shops & establishment registrations, signed by the director.',
     },
   ],
   'pre-13': [
