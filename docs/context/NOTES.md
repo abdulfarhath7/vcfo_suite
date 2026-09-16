@@ -1038,3 +1038,15 @@ Append here whenever something costs more than a minute to figure out.
 - Auth guards: import from `@/auth/guards` directly (`requireAnyRole('admin', 'manager')`, `requireRole('client')`). The `@/lib/api/require-role` / `require-manager` shims were deleted.
 - Email: import `sendEmail` / `SendEmailResult` from `@/lib/email/send-email`. `sendResendEmail`, `SendResendResult`, `resolveResendDevRedirect` no longer exist.
 - Upload limit constant is `MAX_UPLOAD_BYTES` (`@/lib/upload-limits`).
+
+## SPICe+ Part B restructure (2026-09-16)
+
+- Repeating lists (`type: 'repeat'`) live inside the step's flat `responses`, not a new column: `responses[groupId]` is the comma-joined ordered entry-id list and each answer is `responses["group.entryId.field"]`. Entry ids are `e` + 8 hex. Removing an entry writes `''` to its keys (the patch merge keeps unknown keys, so a delete must be an explicit blank). Never key anything by entry index — ids survive reorders and removals.
+- `showWhen` / `labelWhen` inside an entry template name the *sibling* relative id; `expandRepeatEntry` re-points them to the concrete dotted id. Call `applyShowWhen` then `resolveFieldLabels` on the expanded fields wherever they render (editor, read-only record, repeat cards, attachments).
+- Repeat-group errors: min/max on the group id, per-field on the dotted id. Section completion treats a group as pending when any error key equals the group id or starts with `${groupId}.`.
+- `pre-6` Director KYC stays in the `checklist` array (labels, vault, old responses) but is in no phase — same pattern as `reg-2`. Do not delete it; `readProposedDirectors` needs it to rebuild pre-restructure engagements.
+- Generators still consume the legacy `pre1` / `pre6` shapes. Do not pass raw step responses to them — go through `directorResponsesFromState(state)`, which overlays `pre-15` entries (as `director{n}*` and `residentDirector*` / `nrDirector*` slots) and `pre-14` registered office. `directorsAccepted` in `incorporation-docs-errors.ts` is the acceptance gate (pre-15 accepted with entries, else legacy pre-6 accepted).
+- `pre-14` seeds once from `engagement.subsidiaryRegisteredAddress` (else legacy pre-6 / pre-8) via `updateItem(..., { clientResponsesOnly: true })`, gated on the form being open (`contentReady`) so a partial checklist load cannot wipe a saved address.
+- `pre-16` submits validly with zero subscribers — "No subscribers to add" is a real terminal path, not a missing-field state. `minEntries: 0` + `emptyLabel`.
+- Pre-8 file labels carry MCA form numbers (INC-33 MOA, INC-34 AOA, INC-35 AGILE-PRO-S) but the field ids did not change; stored uploads and `PRE8_REQUIRED_FILE_IDS` keep resolving.
+
