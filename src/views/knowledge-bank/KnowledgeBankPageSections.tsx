@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { AccentButton, EmptyStateIllustrated, Mono, NoirCard, Surface } from '@/components/noir';
 import { TONE_BADGE, type IconChipTone } from '@/components/common/IconChip';
@@ -325,45 +326,27 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
         path={basePath}
       />
 
-      <PageHeader
-        accent="sky"
-        icon={BookOpen}
-        title="Knowledge Bank"
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="min-h-11"
-              onClick={() => setFolderOpen(true)}
-            >
-              <FolderPlus className="mr-1.5 h-3.5 w-3.5" />
-              New folder
-            </Button>
-            <AccentButton size="sm" className="min-h-11" onClick={() => setUploadOpen(true)}>
-              <Upload className="mr-1.5 h-3.5 w-3.5" />
-              Upload document
-            </AccentButton>
-          </div>
-        }
-      />
+      {/* The top bar already names this page; back chevron and actions live
+          in the library card so the header row does not repeat them. */}
+      <PageHeader accent="sky" icon={BookOpen} title="Knowledge Bank" hideBack />
 
       <Surface className="mb-4 overflow-hidden">
-        <nav
-          aria-label="Folder path"
-          className="flex flex-wrap items-center gap-1 border-b border-border px-4 py-2.5 text-[13px]"
-        >
-          <button
-            type="button"
-            onClick={() => openFolder(null)}
-            className={cn(
-              'rounded-md px-1.5 py-0.5 text-primary hover:bg-primary-light',
-              !currentFolderId && 'font-medium text-ink',
-            )}
+        <div className="flex flex-col gap-2 border-b border-border px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <nav
+            aria-label="Folder path"
+            className="flex min-w-0 flex-wrap items-center gap-1 text-[13px]"
           >
-            Knowledge Bank
-          </button>
+            <PageBackButton className="-ml-1.5 mr-0.5" />
+            <button
+              type="button"
+              onClick={() => openFolder(null)}
+              className={cn(
+                'rounded-md px-1.5 py-0.5 text-primary hover:bg-primary-light',
+                !currentFolderId && 'font-medium text-ink',
+              )}
+            >
+              Knowledge Bank
+            </button>
           {ancestors.map((folder, index) => (
             <span key={folder.id} className="inline-flex min-w-0 items-center gap-1">
               <ChevronRight className="h-3.5 w-3.5 shrink-0 text-text-tertiary" aria-hidden />
@@ -380,7 +363,24 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
               </button>
             </span>
           ))}
-        </nav>
+          </nav>
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-9"
+              onClick={() => setFolderOpen(true)}
+            >
+              <FolderPlus className="mr-1.5 h-3.5 w-3.5" />
+              New folder
+            </Button>
+            <AccentButton size="sm" className="min-h-9" onClick={() => setUploadOpen(true)}>
+              <Upload className="mr-1.5 h-3.5 w-3.5" />
+              Upload document
+            </AccentButton>
+          </div>
+        </div>
         <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-role" aria-hidden />

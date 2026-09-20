@@ -7,6 +7,7 @@ import { m } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
+import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
 import { toneForKey, TONE_BADGE } from '@/components/common/IconChip';
@@ -369,17 +370,16 @@ function DocumentVaultPageContent() {
         path={vaultPath}
       />
 
-      <PageHeader
-        accent="teal"
-        icon={Vault}
-        title="Vault"
-      />
+      {/* The top bar already names this page; the back chevron sits in the
+          stats card so the header row does not spend a line on it alone. */}
+      <PageHeader accent="teal" icon={Vault} title="Vault" hideBack />
 
       {entityGroups.length > 0 && (
         <Surface className="mb-5 overflow-hidden">
           <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div className="flex items-center gap-5 sm:gap-8">
               <div className="flex items-center gap-2.5">
+                <PageBackButton className="-ml-1.5" />
                 <div className="flex h-9 w-9 items-center justify-center rounded-md role-accent-bg">
                   <Vault className="h-4 w-4 text-role" aria-hidden />
                 </div>
@@ -467,11 +467,9 @@ function DocumentVaultPageContent() {
                 </div>
               ) : selectedEntity ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  {/* The rail on the left already names the selected client. */}
                   <div className="min-w-0">
-                    <h2 className="serif text-[24px] leading-tight tracking-tight text-ink">
-                      {selectedEntity.companyName}
-                    </h2>
-                    <p className="mt-1 text-[12px] text-text-tertiary">
+                    <p className="text-[12px] text-text-tertiary">
                       <Mono>{selectedEntity.docCount}</Mono>
                       {' document'}
                       {selectedEntity.docCount === 1 ? '' : 's'}

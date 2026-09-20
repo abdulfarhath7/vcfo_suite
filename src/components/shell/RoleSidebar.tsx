@@ -488,22 +488,6 @@ function SidebarNavSectionBreak({
           ink === 'light' ? 'bg-white/28' : 'bg-primary/22',
         )}
       />
-      {expanded ? (
-        <span
-          className={cn(
-            'shrink-0 font-mono text-[8.5px] uppercase tracking-[0.14em]',
-            ink === 'light' ? 'text-white/50' : 'text-primary/55',
-          )}
-        >
-          Insights
-        </span>
-      ) : null}
-      <span
-        className={cn(
-          'h-px flex-1 rounded-full',
-          ink === 'light' ? 'bg-white/28' : 'bg-primary/22',
-        )}
-      />
     </div>
   );
 }
