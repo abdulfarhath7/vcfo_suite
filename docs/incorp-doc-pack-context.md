@@ -140,6 +140,7 @@ Then stop for answers to §6 Q1–Q4.
 - DIR-8: replace the four scalar `PRIOR_DIR_*` tags with a table-row loop over `entry.otherInterests`; an empty list renders one `NA` row. Extend `renderDocx` to accept array data for declared loop keys only — do not loosen `nullGetter` globally. Re-tag `public/templates/dir-8.docx` with the prepare helper and add a render test that opens the output XML and counts rows.
 - Add optional pre-6 field `{prefix}OtherCompanyInterest{i}Cin` (format-validated CIN or LLPIN, not a registry lookup) next to the existing five. Same `showWhen` as its siblings.
 - "son of" is hardcoded in several templates. Derive `S/o` / `D/o` from `entry.gender`; unknown gender keeps `S/o` so existing output is unchanged.
+- DIR-2 `DIRECTOR_MEMBERSHIP` ← new optional pre-15 entry field `csMembershipOrCopNumber` (text, no format check); empty renders `'NIL'`. See §9 item 1.
 - Signing details: two lead-only pre-7 fields, `incorpDocsSigningDate` (date, default today at generation time) and `incorpDocsSigningPlace` (text). All builders take date and place from one helper in `shared.ts`. When both are empty the output is exactly today's (`new Date()`, `'India'` / `'Foreign'`). Non-resident place behaviour per §6 Q3.
 - Commit: `feat(incorp-docs): DIN, directorships, DIR-8 table and signing details from captured data`
 
@@ -246,3 +247,35 @@ board-resolution semantics, any real personal data in a fixture, or evidence tha
 the Part B restructure has already landed. Stop and report instead of working
 around it. Do not start Phase 6 without an explicit yes.
 ```
+
+---
+
+## 9. Workbook cross-check (Incorporation_Excel (2), 2026-09-22)
+
+Sheet → doc kind map (Phase 0 must confirm nothing else is in the workbook):
+MASTER DATA → inputs · DIR-2 ×2 → `dir-2` · DIR-8 ×2 → `dir-8` · INC-9 ×2 → `inc-9`
+· ID & Addr Decl ×2 → `id-address-declaration` (Phase 4) · Deposit Decl ×2 →
+`deposit-declaration` (Phase 4) · MBP-1 ×2 → Phase 6 · Specimen Signatures → Phase 6.
+The workbook has no MOA/AOA, subscription sheets, PAN undertaking or letters — the
+app is ahead there; do not remove anything.
+
+Corrections to earlier assumptions:
+1. DIR-2 in the workbook carries **CS Membership No. / COP No.** (real value on one
+   director, NIL on the other). `dir2.ts` hardcodes `DIRECTOR_MEMBERSHIP: 'NIL'`.
+   Phase 3 adds one optional `pre-15` entry field `csMembershipOrCopNumber` (text,
+   no format check) and reads it; empty → `'NIL'`. Add this to §6 as Q7 only if the
+   CA says it is never used — default is to add the field.
+2. DIR-2 "No. of Directorships" in the workbook is a **count** (0 / 1), which is
+   what §6 Q2 already covers. Keep the default (count all other-interest entries).
+3. The workbook's ID & Addr Decl and Deposit Decl are **per director, all
+   directors** (both have a DIN). That does not settle §6 Q1 — still ask.
+4. Do not copy template text from the workbook cells. Beyond the MBP-1 row offset
+   already noted in G7, Deposit Decl Dir2 has a blank address and ID & Addr Decl
+   Dir2 renders Dir1's address. Phase 4 body text in this file is the source; the
+   workbook is only evidence of which documents exist.
+5. Workbook signing block = Date of Signing + Place of Signing (Hyderabad), shared
+   by every sheet. This matches Phase 3's two lead-only `pre-7` fields; no
+   per-director place is needed for the domestic case (§6 Q3 default holds).
+6. Master sheet inputs the app does not read, confirmed as not gaps (already in §2):
+   Aadhaar, company email/phone, bank name, no. of equity shares, shares subscribed,
+   city/state/PIN split. Do not add fields for them.
