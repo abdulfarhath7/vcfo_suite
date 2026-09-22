@@ -60,6 +60,20 @@ function shiftSessionQueue(userId: string): Announcement[] {
   return next;
 }
 
+/**
+ * "Skip all": drop everything behind the card on screen. The front item stays so
+ * it can still play its park animation; the normal shift after landing empties the queue.
+ * Skipped ids were already recorded as popped when they were queued, so a later poll
+ * does not bring them back.
+ */
+function keepOnlyFront(userId: string): Announcement[] {
+  const prev = sessionPopupQueue.get(userId) ?? [];
+  for (const row of prev.slice(1)) sessionManualIds.delete(row.id);
+  const next = prev.slice(0, 1);
+  sessionPopupQueue.set(userId, next);
+  return next;
+}
+
 function readBellBox(): GenieBox {
   const el =
     document.querySelector<HTMLElement>(ANNOUNCEMENT_BELL_TARGET_SELECTOR) ??
@@ -72,13 +86,18 @@ function readBellBox(): GenieBox {
 function AnnouncementGenieCard({
   item,
   replay,
+  remaining,
   reduceMotion,
   onParked,
+  onSkipAll,
 }: {
   item: Announcement;
   replay: boolean;
+  /** Cards still waiting behind this one. */
+  remaining: number;
   reduceMotion: boolean;
   onParked: () => void;
+  onSkipAll: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
@@ -155,16 +174,22 @@ function AnnouncementGenieCard({
     animation.onfinish = () => finish();
   }, [finish, reduceMotion]);
 
+  const skipAll = useCallback(() => {
+    if (started.current) return;
+    onSkipAll();
+    park();
+  }, [onSkipAll, park]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        park();
-      }
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      if (event.shiftKey && remaining > 0) skipAll();
+      else park();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [park]);
+  }, [park, remaining, skipAll]);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[100] grid place-items-center p-4">
@@ -233,6 +258,21 @@ function AnnouncementGenieCard({
               </a>
             ) : null}
           </div>
+          {remaining > 0 ? (
+            <div className="flex items-center justify-between gap-3 border-t border-border/70 bg-raised/40 px-5 py-2.5">
+              <p className="text-[12px] text-muted-foreground">
+                {remaining} more announcement{remaining === 1 ? '' : 's'} waiting
+              </p>
+              <button
+                type="button"
+                className="rounded-md px-2 py-1 text-[12px] font-medium text-primary transition-colors hover:bg-primary-light"
+                title="Skip all (Shift+Esc)"
+                onClick={skipAll}
+              >
+                Skip all
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -309,6 +349,12 @@ export function AnnouncementLivePopup() {
     );
   }, [reduceMotion, user?.id]);
 
+  const userId = user?.id;
+  const onSkipAll = useCallback(() => {
+    if (!userId) return;
+    setQueue(keepOnlyFront(userId));
+  }, [userId]);
+
   const current = !gap ? queue[0] : undefined;
   if (!mounted || typeof document === 'undefined' || !current) return null;
 
@@ -317,8 +363,10 @@ export function AnnouncementLivePopup() {
       key={`${current.id}-${showNonce}`}
       item={current}
       replay={sessionManualIds.has(current.id)}
+      remaining={Math.max(0, queue.length - 1)}
       reduceMotion={reduceMotion}
       onParked={onParked}
+      onSkipAll={onSkipAll}
     />,
     document.body,
   );
