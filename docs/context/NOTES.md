@@ -1047,3 +1047,22 @@ Append here whenever something costs more than a minute to figure out.
 - `pre-16` submits validly with zero subscribers — "No subscribers to add" is a real terminal path, not a missing-field state. `minEntries: 0` + `emptyLabel`.
 - Pre-8 file labels carry MCA form numbers (INC-33 MOA, INC-34 AOA, INC-35 AGILE-PRO-S) but the field ids did not change; stored uploads and `PRE8_REQUIRED_FILE_IDS` keep resolving.
 
+
+## Document pack (2026-09-22)
+
+- Section tabs have no ids. The pack links to a tab by `sectionSlug(field.section)`
+  (`src/lib/doc-pack/section-slug.ts`) and the step page reads `?tab=<slug>` in
+  `useMilestoneResponseFormState`; an unknown slug leaves the first tab. Part A's
+  tab set varies with `ownershipType`, so never store a tab index.
+- Pack item keys are `{docId}:{audience}` — the same `doc:audience` row keys Pre-7
+  uses for `sharedIncorpDraftDocs`, so `incorpDocRowKey` maps both ways. URL-encode
+  the colon in links (`docPackItemUrl`).
+- The generators render only the first non-resident and first resident director.
+  `evaluateDocPack` lists the rest in `summary.skippedDirectors`; do not invent items
+  for them. Widening is `docs/incorp-doc-pack-context.md`'s job.
+- `src/lib/api/doc-pack.ts` imports the auth guard, so any test importing it must
+  mock `@/auth/guards` and `@/db/repositories/doc-pack` (next-auth pulls `next/server`).
+- `src/views/intern/useBoardResolutionEditorState.tsx` has a blank line after
+  every line; keep that format when editing or the diff doubles in size.
+- Pre-7 keeps writing `*DraftUrl` paths (its validator requires them). The pack
+  reads them and serves the attached file when present; it never writes them.
