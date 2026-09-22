@@ -172,4 +172,11 @@ Not a resolver bug and not a fallback. Step routes are keyed by **slug**, and `p
 7. **Generate has a validation gate** the pack does not: directors must be accepted (`pre-15.reviewStatus === 'accepted'`). The pack evaluator should treat "directors not yet accepted" as a required input, otherwise "ready" in the pack could still 422 on generate.
 8. **Intern route segment is `[id]`**, not `[slug]` as §6 of the context writes; the value is still the engagement slug.
 9. **Inline edits are not visible to a fresh generate.** The pack generates on demand from state (rule 7), so any inline edits made in the Pre-7 preview (stored as a patched object at a new S3 key) would not appear in a pack download. This is a product decision to flag, not a bug.
-10. `docs/incorp-doc-pack-context.md` (2026-09-20) still describes the Part B restructure as "paused at Phase 0". It landed; that file's §3 needs rewriting before it is executed.
+10. `docs/incorp-doc-pack-context.md` (2026-09-20) described the Part B restructure as "paused at Phase 0". Its §3 was rewritten on 2026-09-22 (`docs: update incorp doc pack context after Part B restructure`).
+
+Owner decisions on these points are recorded in `docs/DOC-PACK-CONTEXT.md` §12.
+
+## 13. Debt logged, not fixed
+
+- **Orphaned Pre-7 S3 objects.** Every generate and every inline edit writes a new timestamped object under `milestone-documents/{engagementUuid}/{draftUrlField}/` and repoints the response key; the previous object is never deleted (`src/lib/api/incorporation-docs-generate.ts:146,173`). Storage grows by one docx per regenerate. A cleanup would need a repository-level "delete previous path on repoint" or a periodic sweep of keys not referenced from any `checklist_state`. Out of scope for the document pack.
+- **BR draft download by staff.** `app/api/engagements/[id]/board-resolution/download/route.ts` serves a draft to any staff role. The pack must not rely on that route; it checks `status === 'finalized'` itself and never serves a draft.
