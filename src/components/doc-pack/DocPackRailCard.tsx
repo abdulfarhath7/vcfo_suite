@@ -50,11 +50,10 @@ export function DocPackRailCard({
 
   return (
     <Surface
-      className={cn('relative overflow-hidden border-primary/40 p-4', className)}
+      className={cn('border-primary/40 p-4', className)}
       aria-labelledby="doc-pack-rail-title"
       role="region"
     >
-      <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" aria-hidden />
       <div className="flex items-baseline justify-between gap-2">
         <h3 id="doc-pack-rail-title" className="text-[14px] font-semibold text-foreground">
           Pre-incorporation documents
