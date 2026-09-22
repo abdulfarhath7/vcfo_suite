@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "vCFO MCA Recorder (internal)",
+  "version": "0.1.0",
+  "description": "Passively records the structure of MCA V3 pages (fields, labels, steps, clicks, XHR shapes) with values redacted. Internal tool for building the vCFO assist extension.",
+  "permissions": ["storage", "webRequest", "downloads", "tabs"],
+  "host_permissions": ["*://*.mca.gov.in/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["*://*.mca.gov.in/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "action": { "default_popup": "popup.html", "default_title": "MCA Recorder" }
+}
