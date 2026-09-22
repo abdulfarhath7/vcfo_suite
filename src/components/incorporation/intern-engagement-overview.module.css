@@ -121,6 +121,41 @@
   border-bottom: none;
 }
 
+/* A row link plus an optional sibling link (never nested inside the row). */
+.rowWrap {
+  position: relative;
+}
+
+.rowWrap:last-child .row {
+  border-bottom: none;
+}
+
+.rowWithTrailing {
+  padding-right: 9.75rem;
+}
+
+.rowTrailing {
+  position: absolute;
+  top: 50%;
+  right: 3.25rem;
+  transform: translateY(-50%);
+}
+
+@media (max-width: 640px) {
+  .rowWithTrailing {
+    padding-right: 1.5rem;
+    padding-bottom: 3.25rem;
+  }
+
+  .rowTrailing {
+    top: auto;
+    right: auto;
+    bottom: 1rem;
+    left: 3.75rem;
+    transform: none;
+  }
+}
+
 .rowCurrent {
   box-shadow: inset 2px 0 0 oklch(var(--brand));
 }

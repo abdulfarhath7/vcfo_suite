@@ -9,6 +9,9 @@ import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { InternPhaseEntryCards } from '@/components/incorporation/InternOverviewProgress';
 import { ProgressRing } from '@/components/noir';
+import { DocPackPhasePill } from '@/components/doc-pack/DocPackPhasePill';
+import { useDocPack } from '@/hooks/use-doc-pack';
+import { docPackPagePath } from '@/lib/doc-pack/paths';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { getActiveCatalogItems } from '@/data/checklist';
 import { adminProjectPath, adminProjectStepPath } from '@/lib/project-step-path';
@@ -59,6 +62,15 @@ export default function ProjectDetail() {
     [engagements, slugParam],
   );
   const phases = useMemo(() => internOverviewPhases(), []);
+  const docPack = useDocPack(eng?.id);
+  const docPackPill = useCallback(
+    (phaseId: string) => {
+      const part = phaseId === 'pre-inc-phase-1' ? 'part-a' : phaseId === 'pre-inc-phase-2' ? 'part-b' : null;
+      if (!part || !eng) return null;
+      return <DocPackPhasePill summary={docPack.data} href={docPackPagePath(eng, staffBase, part)} />;
+    },
+    [docPack.data, eng, staffBase],
+  );
 
   useEffect(() => {
     if (!eng?.id) return;
@@ -150,6 +162,7 @@ export default function ProjectDetail() {
           gates={gates}
           hrefForPhase={phaseHref}
           metaForPhase={phaseWindowMeta(eng.schedule)}
+          trailingForPhase={docPackPill}
         />
       </div>
     </PageTransition>

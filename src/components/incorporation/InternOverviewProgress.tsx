@@ -109,12 +109,15 @@ export function InternPhaseEntryCards({
   gates,
   hrefForPhase,
   metaForPhase,
+  trailingForPhase,
 }: {
   phases: readonly InternOverviewPhase[];
   gates: Record<string, ChecklistStepGate>;
   hrefForPhase: (phaseId: string) => string | null;
   /** Quiet metadata under the title — the manager's date window, when set. */
   metaForPhase?: (phaseId: string) => ReactNode;
+  /** A link beside the chevron (the document pack pill). Rendered outside the row link. */
+  trailingForPhase?: (phaseId: string) => ReactNode;
 }) {
   if (phases.length === 0) return null;
 
@@ -130,13 +133,14 @@ export function InternPhaseEntryCards({
         const subtitle = internPhaseCardSubtitle(phase.id);
         const { done: doneCount, total } = internPhaseStepCounts(phase.items, gates);
         const allDone = total > 0 && doneCount === total;
+        const trailing = trailingForPhase?.(phase.id) ?? null;
         return (
+          <div key={phase.id} className={styles.rowWrap}>
           <Link
-            key={phase.id}
             href={href}
             aria-label={`${title}, ${internPhaseProgressLabel(doneCount, total)}`}
             aria-current={current ? 'step' : undefined}
-            className={cn(styles.row, current && styles.rowCurrent)}
+            className={cn(styles.row, current && styles.rowCurrent, trailing && styles.rowWithTrailing)}
           >
             <span className={styles.rowLead}>
               <span className={styles.rowMark}>
@@ -165,6 +169,8 @@ export function InternPhaseEntryCards({
               <ChevronRight className="h-4 w-4" aria-hidden />
             </span>
           </Link>
+          {trailing ? <span className={styles.rowTrailing}>{trailing}</span> : null}
+          </div>
         );
       })}
     </nav>

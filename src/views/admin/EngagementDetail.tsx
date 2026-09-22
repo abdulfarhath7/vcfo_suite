@@ -7,6 +7,9 @@ import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { Eyebrow, ProgressRing, Surface } from '@/components/noir';
+import { DocPackPhasePill } from '@/components/doc-pack/DocPackPhasePill';
+import { useDocPack } from '@/hooks/use-doc-pack';
+import { docPackPagePath } from '@/lib/doc-pack/paths';
 import { ChecklistStatusPill } from '@/components/incorporation/ChecklistStatusBadge';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import {
@@ -110,6 +113,7 @@ export default function EngagementDetail() {
     () => resolveEngagementFromRouteParam(engagements, routeParam),
     [engagements, routeParam],
   );
+  const docPack = useDocPack(eng?.id);
 
   useEffect(() => {
     if (!eng?.id) return;
@@ -237,6 +241,12 @@ export default function EngagementDetail() {
     );
   };
 
+  const docPackPill = (phaseId: string) => {
+    const part = phaseId === 'pre-inc-phase-1' ? 'part-a' : phaseId === 'pre-inc-phase-2' ? 'part-b' : null;
+    if (!part || !isIntern) return null;
+    return <DocPackPhasePill summary={docPack.data} href={docPackPagePath(eng, 'intern', part)} />;
+  };
+
   const internPhaseHref = (phaseId: string): string | null => {
     const phase = internPhases.find((group) => group.id === phaseId);
     if (!phase) return null;
@@ -312,6 +322,7 @@ export default function EngagementDetail() {
               gates={gates}
               hrefForPhase={internPhaseHref}
               metaForPhase={phaseWindowMeta(eng.schedule)}
+              trailingForPhase={docPackPill}
             />
           )}
         </InternEngagementOverview>

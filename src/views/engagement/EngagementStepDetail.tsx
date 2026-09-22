@@ -56,6 +56,10 @@ import {
   type JourneyRailItem,
 } from '@/components/incorporation/ChecklistJourneyRail';
 import { Surface } from '@/components/noir';
+import { DocPackHeaderButton } from '@/components/doc-pack/DocPackHeaderButton';
+import { DocPackRailCard } from '@/components/doc-pack/DocPackRailCard';
+import { useDocPack } from '@/hooks/use-doc-pack';
+import { docPackPagePath, docPackStepPath, type DocPackShell } from '@/lib/doc-pack/paths';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
 import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
 import {
@@ -187,6 +191,12 @@ export default function EngagementStepDetail() {
     () => (item ? internOverviewPhaseForItem(item.id) : null),
     [item],
   );
+  // The document pack is a staff surface for the two SPICe+ phases only.
+  const docPackVisible =
+    !isClientRoute &&
+    (internPhase?.id === 'pre-inc-phase-1' || internPhase?.id === 'pre-inc-phase-2');
+  const docPack = useDocPack(docPackVisible ? eng?.id : null);
+  const docPackShell: DocPackShell = isInternRoute ? 'intern' : staffRole;
   const bucketSteps = useMemo(() => {
     if (!item) return [];
     const fromCatalog = catalog.filter((c) => c.bucket === item.bucket);
@@ -362,14 +372,34 @@ export default function EngagementStepDetail() {
 
   const approvalLabel = isClientRoute ? stepApprovalLabel(checklistState[item.id]) : null;
 
+  const docPackHref = docPackVisible
+    ? docPackPagePath(eng, docPackShell, internPhase?.id === 'pre-inc-phase-1' ? 'part-a' : 'part-b')
+    : null;
+
   const stepTitleRow = (
     <div className="mb-4 flex min-w-0 items-center gap-1.5">
       <PageBackButton className="-ml-1.5" />
       <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-foreground">
         {item.title}
       </h1>
+      {/* Narrow screens lose the rail (and its card); this stands in, never both. */}
+      {docPackHref ? (
+        <DocPackHeaderButton summary={docPack.data} packHref={docPackHref} className="ml-auto lg:hidden" />
+      ) : null}
     </div>
   );
+
+  const docPackRailCard = docPackHref ? (
+    <DocPackRailCard
+      className="mt-4"
+      summary={docPack.data}
+      loading={docPack.isPending}
+      error={docPack.isError}
+      packHref={docPackHref}
+      currentStepId={item.id}
+      hrefForMissing={(input) => docPackStepPath(eng, docPackShell, input.stepId, input.tabId)}
+    />
+  ) : null;
 
   const stepForm = (
     <>
@@ -461,6 +491,7 @@ export default function EngagementStepDetail() {
           />
         )}
       </Surface>
+      {docPackRailCard}
     </aside>
   ) : null;
 
