@@ -265,12 +265,11 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
 }
 
 export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
-  const { engagement, responses, className, isClient, deliveredToClient, incorpDraftLabelOptions } = props;
+  const { engagement, responses, className, isClient, deliveredToClient } = props;
     const nrDsc = responses.nrDirectorDscSuccessMessageUrl?.trim();
     const residentDsc = responses.residentDirectorDscSuccessMessageUrl?.trim();
     const hasDsc = Boolean(nrDsc || residentDsc);
     const draftDocs = buildPre7NonIncorpDraftDocLinks(responses);
-    const coreDraftDocs = incorpDraftDocLinksFromResponses(responses, incorpDraftLabelOptions);
     const hasDraftDocs = draftDocs.length > 0;
     const kycStatus = responses.kycReviewStatus?.trim();
     const kycNotes = responses.kycReviewNotes?.trim();
@@ -349,14 +348,6 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
         {engagement && !isClient && (
           <IncorporationDocsGeneratePanel engagement={engagement} responses={responses} />
         )}
-        <PanelShell title="KYC Review & DSC">
-          {coreDraftDocs.length > 0 && (
-            <p className="text-success-text">
-              {coreDraftDocs.length} core draft document{coreDraftDocs.length === 1 ? '' : 's'}{' '}
-              on file — preview or rebuild in the panel above, then share when edits are saved.
-            </p>
-          )}
-        </PanelShell>
         <Pre7OtherAttachmentsList responses={responses} />
       </div>
     );
