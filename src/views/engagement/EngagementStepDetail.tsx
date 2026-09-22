@@ -58,6 +58,7 @@ import {
 import { Surface } from '@/components/noir';
 import { DocPackHeaderButton } from '@/components/doc-pack/DocPackHeaderButton';
 import { DocPackRailCard } from '@/components/doc-pack/DocPackRailCard';
+import { DocSourceStrip } from '@/components/doc-pack/DocSourceStrip';
 import { useDocPack } from '@/hooks/use-doc-pack';
 import { docPackPagePath, docPackStepPath, type DocPackShell } from '@/lib/doc-pack/paths';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
@@ -404,6 +405,9 @@ export default function EngagementStepDetail() {
   const stepForm = (
     <>
       {stepWindowControl}
+      {docPackHref && docPack.data ? (
+        <DocSourceStrip summary={docPack.data} stepId={item.id} packHref={docPackHref} />
+      ) : null}
       <StepDetailContent
         item={item}
         task={task}
