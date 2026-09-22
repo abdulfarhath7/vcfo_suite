@@ -300,6 +300,8 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
       } else {
         segs.push({ label: titleCase(parts[5]), href: null });
       }
+    } else if (nested !== 'new' && after === 'documents') {
+      segs.push({ label: 'Pre-incorporation documents', href: null });
     } else if (nested !== 'new' && after === 'board-resolution') {
       const draft = resolveChecklistItemFromStepParam('board-resolution-draft');
       if (draft) {

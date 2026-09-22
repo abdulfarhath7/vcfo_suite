@@ -4,6 +4,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useQueryClient } from '@tanstack/react-query';
+
 import { useParams } from 'next/navigation';
 
 
@@ -135,6 +137,9 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
   const [loading, setLoading] = useState(true);
 
   const [busy, setBusy] = useState<'finalize' | 'generate' | 'apply-template' | null>(null);
+
+  const queryClient = useQueryClient();
+
 
   const [doc, setDoc] = useState<BoardResolutionDoc | null>(null);
 
@@ -779,6 +784,10 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
 
       setDoc(saved);
 
+      // The document pack lists the BR as waiting until this moment.
+
+      void queryClient.invalidateQueries({ queryKey: ['doc-pack', eng.id] });
+
       reloadPreviewFromDoc(saved);
 
       setFinalizeOpen(false);
@@ -813,6 +822,7 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
 
   }, [
     eng,
+    queryClient,
     flushPendingAutosave,
     doc,
     pendingContent,

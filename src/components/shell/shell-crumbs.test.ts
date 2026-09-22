@@ -139,6 +139,22 @@ describe('shellBreadcrumb', () => {
     );
   });
 
+  it('names the document pack under the company for lead and staff shells', () => {
+    expect(labels('/app/intern/engagements/pexpo-inc/documents')).toEqual([
+      'Home',
+      'Clients',
+      'Pexpo Inc',
+      'Pre-incorporation documents',
+    ]);
+    expect(labels('/app/manager/projects/pexpo-inc/documents')).toEqual([
+      'Home',
+      'Projects',
+      'Pexpo Inc',
+      'Pre-incorporation documents',
+    ]);
+    expect(hrefs('/app/intern/engagements/pexpo-inc/documents').at(-1)).toBeNull();
+  });
+
   it('includes intern Registration sub-headers', () => {
     expect(labels('/app/intern/engagements/pexpo-inc/step/gst-registration')).toEqual([
       'Home',

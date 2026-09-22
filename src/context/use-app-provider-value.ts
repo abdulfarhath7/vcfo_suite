@@ -1164,6 +1164,8 @@ export function useAppProviderValue(): AppContextValue {
           keepalive: options?.keepalive,
         });
         setDbChecklistState((prev) => ({ ...prev, [engagementId]: saved }));
+        // The document pack reads the same answers; let its card refresh.
+        void queryClient.invalidateQueries({ queryKey: ['doc-pack', engagementId] });
         if (patch.reviewSource === 'lead_manager_request') {
           suppressChecklistNotification(engagementId, itemId, 'checklist.submit');
         }

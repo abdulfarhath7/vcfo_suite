@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { sectionSlug } from '@/lib/doc-pack/section-slug';
+import { STEP_TAB_PARAM } from '@/lib/doc-pack/paths';
 import {
   AlertCircle,
   CheckCircle2,
@@ -699,6 +701,15 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   useEffect(() => {
     setSelectedSectionIndex(0);
   }, [item.id]);
+  // `?tab=<section slug>` (document pack deep links) selects that tab once the
+  // section list is known; an unknown slug leaves the step on its first tab.
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams?.get(STEP_TAB_PARAM) ?? null;
+  useEffect(() => {
+    if (!requestedTab) return;
+    const index = structuredSectionLabels.findIndex((label) => sectionSlug(label) === requestedTab);
+    if (index >= 0) setSelectedSectionIndex(index);
+  }, [item.id, requestedTab, structuredSectionLabels]);
   useEffect(() => {
     if (structuredSectionLabels.length === 0) return;
     if (selectedSectionIndex >= structuredSectionLabels.length) {
