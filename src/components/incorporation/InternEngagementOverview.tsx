@@ -9,19 +9,28 @@ import styles from './intern-engagement-overview.module.css';
 /** Intern project overview chrome — company name + CC, then phase list. */
 export function InternEngagementOverview({
   companyName,
+  clientEmail,
   engagementId,
   children,
 }: {
   companyName: string;
+  /** Portal client's login email; absent on legacy rows without a linked client user. */
+  clientEmail?: string | null;
   engagementId: string;
   children: ReactNode;
 }) {
+  const email = clientEmail?.trim();
   return (
     <div className={styles.page}>
       <header className={cn('surface', styles.header)}>
         <div className={styles.titleCluster}>
           <PageBackButton className="-ml-1.5" />
           <h1 className={cn('serif', styles.title)}>{companyName}</h1>
+          {email ? (
+            <a href={`mailto:${email}`} className={styles.email} title={`Email ${companyName}`}>
+              {email}
+            </a>
+          ) : null}
         </div>
         <ProgressEmailCcSection
           engagementId={engagementId}

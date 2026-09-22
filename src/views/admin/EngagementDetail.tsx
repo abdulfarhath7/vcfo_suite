@@ -285,7 +285,11 @@ export default function EngagementDetail() {
       />
 
       {isIntern ? (
-        <InternEngagementOverview companyName={eng.companyName} engagementId={eng.id}>
+        <InternEngagementOverview
+          companyName={eng.companyName}
+          clientEmail={eng.clientEmail}
+          engagementId={eng.id}
+        >
           {INTERN_YOU_ARE_HERE_ENABLED && internNow ? (
             <InternNowStrip
               now={internNow}
@@ -322,6 +326,15 @@ export default function EngagementDetail() {
               <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
                 <PageBackButton className="-ml-1.5" />
                 <h1 className="serif min-w-0 text-[32px] tracking-tight text-foreground">{eng.companyName}</h1>
+                {eng.clientEmail?.trim() ? (
+                  <a
+                    href={`mailto:${eng.clientEmail.trim()}`}
+                    className="ml-2 min-w-0 self-end truncate pb-1.5 text-[13px] text-muted-foreground hover:text-primary hover:underline"
+                    title={`Email ${eng.companyName}`}
+                  >
+                    {eng.clientEmail.trim()}
+                  </a>
+                ) : null}
               </div>
               <div className="mt-1 text-[12.5px] text-muted-foreground">
                 Delivery owner · {intern?.name ?? 'Unassigned'}

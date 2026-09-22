@@ -28,10 +28,32 @@
 .title {
   margin: 0;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   font-size: 1.75rem;
   line-height: 1.12;
   color: oklch(var(--foreground));
+}
+
+/* Client login email, inline after the company name. */
+.email {
+  min-width: 0;
+  margin-left: 0.75rem;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: oklch(var(--muted-foreground));
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  align-self: flex-end;
+  padding-bottom: 0.3rem;
+}
+
+.email:hover,
+.email:focus-visible {
+  color: oklch(var(--primary));
+  text-decoration: underline;
+  outline: none;
 }
 
 .cc {
