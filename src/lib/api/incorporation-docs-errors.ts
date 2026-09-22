@@ -94,7 +94,7 @@ const DIRECTOR_LABEL: Record<IncorpDirectorKind, string> = {
  * engagements still hold it on the legacy `pre-6` step. The accept that
  * unlocks generation is whichever of the two holds the directors.
  */
-function directorsAccepted(checklistState: EngagementChecklistState | null | undefined): boolean {
+export function directorsAccepted(checklistState: EngagementChecklistState | null | undefined): boolean {
   const pre15 = checklistState?.[PROPOSED_DIRECTORS_STEP_ID] as ChecklistItemStateSlice | undefined;
   if (pre15 && readProposedDirectors(checklistState).length > 0 && pre15.reviewStatus === 'accepted') {
     return true;
