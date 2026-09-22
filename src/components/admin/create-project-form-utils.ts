@@ -30,6 +30,15 @@ export function stageRequiresSubsidiary(stage: Stage, ownershipType: OwnershipTy
 }
 
 /**
+ * A dependent company that starts at Registration or Compliance never fills
+ * SPICe+ Part A, where the parent entity is normally captured — so the form
+ * asks for it at creation, beside the subsidiary details.
+ */
+export function stageRequiresParentEntity(stage: Stage, ownershipType: OwnershipType = 'subsidiary'): boolean {
+  return stageRequiresSubsidiary(stage, ownershipType);
+}
+
+/**
  * Asked first: does a parent entity stand behind this company? Independent
  * skips every parent / subsidiary question here and the parent-entity
  * sections of the incorporation checklist.
@@ -69,6 +78,9 @@ export type CreateProjectState = {
   entityLegalForm: EntityLegalForm;
   subsidiaryLegalName: string;
   subsidiaryRegisteredAddress: string;
+  /** Parent entity, asked only when the starting phase skips SPICe+ Part A. */
+  parentEntityName: string;
+  parentEntityAddress: string;
   clientContact: string;
   /** Client mobile for WhatsApp nudges. Raw input; normalised to E.164 on submit. */
   clientPhone: string;
@@ -107,6 +119,8 @@ export function createProjectReducer(state: CreateProjectState, action: CreatePr
         entityLegalForm: 'company',
         subsidiaryLegalName: '',
         subsidiaryRegisteredAddress: '',
+        parentEntityName: '',
+        parentEntityAddress: '',
         clientContact: '',
         clientPhone: '',
         clientWhatsappConsent: false,
@@ -152,6 +166,8 @@ export function saveCreateProjectDraft(state: CreateProjectState): void {
     entityLegalForm: state.entityLegalForm,
     subsidiaryLegalName: state.subsidiaryLegalName,
     subsidiaryRegisteredAddress: state.subsidiaryRegisteredAddress,
+    parentEntityName: state.parentEntityName,
+    parentEntityAddress: state.parentEntityAddress,
     clientContact: state.clientContact,
     clientPhone: state.clientPhone,
     // Consent is deliberately NOT persisted: a resumed draft must never come
@@ -199,6 +215,9 @@ export function loadCreateProjectDraft(): CreateProjectDraftPayload | null {
         typeof parsed.subsidiaryRegisteredAddress === 'string'
           ? parsed.subsidiaryRegisteredAddress
           : '',
+      parentEntityName: typeof parsed.parentEntityName === 'string' ? parsed.parentEntityName : '',
+      parentEntityAddress:
+        typeof parsed.parentEntityAddress === 'string' ? parsed.parentEntityAddress : '',
       clientContact: typeof parsed.clientContact === 'string' ? parsed.clientContact : '',
       clientPhone: typeof parsed.clientPhone === 'string' ? parsed.clientPhone : '',
       // Always restored un-ticked — see saveCreateProjectDraft.

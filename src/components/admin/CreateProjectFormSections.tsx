@@ -47,6 +47,7 @@ import {
   COMPANY_TYPES,
   OWNERSHIP_TYPES,
   ENTITY_LEGAL_FORMS,
+  stageRequiresParentEntity,
   stageRequiresSubsidiary,
   type Stage,
 } from '@/components/admin/create-project-form-utils';
@@ -64,6 +65,8 @@ type CreateProjectFieldErrorKey =
   | 'companyType'
   | 'subsidiaryLegalName'
   | 'subsidiaryRegisteredAddress'
+  | 'parentEntityName'
+  | 'parentEntityAddress'
   | 'clientEmail'
   | 'clientPassword'
   | 'managerId'
@@ -88,6 +91,10 @@ export type CreateProjectFormViewProps = {
   setSubsidiaryLegalName: (value: string) => void;
   subsidiaryRegisteredAddress: string;
   setSubsidiaryRegisteredAddress: (value: string) => void;
+  parentEntityName: string;
+  setParentEntityName: (value: string) => void;
+  parentEntityAddress: string;
+  setParentEntityAddress: (value: string) => void;
   clientContact: string;
   setClientContact: (value: string) => void;
   clientEmail: string;
@@ -216,6 +223,10 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     setSubsidiaryLegalName,
     subsidiaryRegisteredAddress,
     setSubsidiaryRegisteredAddress,
+    parentEntityName,
+    setParentEntityName,
+    parentEntityAddress,
+    setParentEntityAddress,
     internIds,
     setInternIds,
     managerIds,
@@ -243,10 +254,12 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
 
   const independent = ownershipType === 'independent';
   const needsSubsidiary = stageRequiresSubsidiary(stage, ownershipType);
+  const needsParent = stageRequiresParentEntity(stage, ownershipType);
   const entityDone = Boolean(
     companyType &&
       (!needsSubsidiary ||
-        (subsidiaryLegalName.trim() && subsidiaryRegisteredAddress.trim())),
+        (subsidiaryLegalName.trim() && subsidiaryRegisteredAddress.trim())) &&
+      (!needsParent || (parentEntityName.trim() && parentEntityAddress.trim())),
   );
   const teamDone = Boolean(
     internIds.some((id) => id.trim()) &&
@@ -320,7 +333,9 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     fieldError('companyName') ||
     fieldError('companyType') ||
     fieldError('subsidiaryLegalName') ||
-    fieldError('subsidiaryRegisteredAddress');
+    fieldError('subsidiaryRegisteredAddress') ||
+    fieldError('parentEntityName') ||
+    fieldError('parentEntityAddress');
   const clientErr = fieldError('clientEmail') || fieldError('clientPassword');
 
   // Jump to the first section with a validation error.
@@ -452,6 +467,71 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               </div>
 
               <CreateProjectStartingPhasePicker stage={stage} onChange={setStage} />
+
+              {needsParent ? (
+                <div className="space-y-5 rounded-xl border border-primary/20 bg-primary-light/50 p-4 sm:p-5">
+                  <div>
+                    <p className="text-[13px] font-medium text-foreground">Parent entity details</p>
+                    <p className="mt-1 text-[11.5px] text-muted-foreground">
+                      Asked here because a project starting at this phase skips SPICe+ Part A,
+                      where the parent entity is normally captured.
+                    </p>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="create-parent-entity-name"
+                      className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                    >
+                      <Building2 className="h-3.5 w-3.5" aria-hidden />
+                      Parent entity legal name <span className="font-normal text-danger">*</span>
+                    </Label>
+                    <Input
+                      id="create-parent-entity-name"
+                      value={parentEntityName}
+                      onChange={(e) => setParentEntityName(e.target.value)}
+                      placeholder="e.g. ABC Holdings Inc."
+                      className={cn(
+                        'mt-2 h-11 text-[14px]',
+                        fieldError('parentEntityName') && 'border-danger focus-visible:ring-danger/30',
+                      )}
+                      aria-invalid={!!fieldError('parentEntityName')}
+                      maxLength={240}
+                    />
+                    <FieldError
+                      id="create-parent-entity-name-error"
+                      message={fieldError('parentEntityName')}
+                    />
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="create-parent-entity-address"
+                      className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                    >
+                      <MapPin className="h-3.5 w-3.5" aria-hidden />
+                      Parent entity registered address{' '}
+                      <span className="font-normal text-danger">*</span>
+                    </Label>
+                    <Textarea
+                      id="create-parent-entity-address"
+                      value={parentEntityAddress}
+                      onChange={(e) => setParentEntityAddress(e.target.value)}
+                      placeholder={'e.g. 100 Main Street\nSalt Lake City, Utah 84101\nUnited States of America'}
+                      className={cn(
+                        'mt-2 min-h-[100px] resize-y text-[14px]',
+                        fieldError('parentEntityAddress') &&
+                          'border-danger focus-visible:ring-danger/30',
+                      )}
+                      aria-invalid={!!fieldError('parentEntityAddress')}
+                      maxLength={2000}
+                      rows={3}
+                    />
+                    <FieldError
+                      id="create-parent-entity-address-error"
+                      message={fieldError('parentEntityAddress')}
+                    />
+                  </div>
+                </div>
+              ) : null}
 
               {needsSubsidiary ? (
                 <div className="space-y-5 rounded-xl border border-primary/20 bg-primary-light/50 p-4 sm:p-5">

@@ -147,6 +147,22 @@ export const createProjectBodySchema = z
     const independent = d.ownershipType === 'independent';
     const stage = d.stage ?? 'Pre-Incorporation';
     if (stage === 'Pre-Incorporation' || independent) return;
+    // Starting past Part A means the parent entity is never captured on the
+    // checklist, so it is required here, beside the subsidiary details.
+    if (!d.parentEntityName.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'parent_entity_name_required',
+        path: ['parentEntityName'],
+      });
+    }
+    if (!d.parentEntityAddress.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'parent_entity_address_required',
+        path: ['parentEntityAddress'],
+      });
+    }
     const name = d.subsidiaryLegalName?.trim() ?? '';
     const address = d.subsidiaryRegisteredAddress?.trim() ?? '';
     if (!name) {

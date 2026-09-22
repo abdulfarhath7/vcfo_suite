@@ -15,6 +15,8 @@ import {
   entityLegalFormSchema,
   subsidiaryLegalNameSchema,
   subsidiaryRegisteredAddressSchema,
+  parentEntityNameSchema,
+  parentEntityAddressSchema,
 } from "@/lib/api/schemas";
 import {
   createProjectReducer,
@@ -24,6 +26,7 @@ import {
   saveCreateProjectDraft,
   clearCreateProjectDraft,
   stageRequiresSubsidiary,
+  stageRequiresParentEntity,
   uniqueNonEmptyIds,
   reconcileSelectedIds,
   sameIdList,
@@ -58,6 +61,8 @@ function stateFromEngagement(eng: Engagement): CreateProjectState {
     entityLegalForm: (eng.entityLegalForm ?? 'company') as CreateProjectState['entityLegalForm'],
     subsidiaryLegalName: eng.subsidiaryLegalName ?? '',
     subsidiaryRegisteredAddress: eng.subsidiaryRegisteredAddress ?? '',
+    parentEntityName: eng.parentEntityName ?? '',
+    parentEntityAddress: eng.parentEntityAddress ?? '',
     clientContact: eng.clientDisplayName ?? '',
     clientPhone: '',
     clientWhatsappConsent: false,
@@ -87,6 +92,8 @@ function initialCreateProjectState(internIds: string[]): CreateProjectState {
     entityLegalForm: 'company',
     subsidiaryLegalName: '',
     subsidiaryRegisteredAddress: '',
+    parentEntityName: '',
+    parentEntityAddress: '',
     clientContact: '',
     clientPhone: '',
     clientWhatsappConsent: false,
@@ -167,6 +174,8 @@ export function CreateProjectForm({
     entityLegalForm,
     subsidiaryLegalName,
     subsidiaryRegisteredAddress,
+    parentEntityName,
+    parentEntityAddress,
     clientContact,
     clientPhone,
     clientWhatsappConsent,
@@ -221,6 +230,13 @@ export function CreateProjectForm({
   const subsidiaryAddressValid = !needsSubsidiary
     ? true
     : subsidiaryRegisteredAddressSchema.safeParse(subsidiaryRegisteredAddress).success;
+  const needsParent = stageRequiresParentEntity(stage, ownershipType);
+  const parentNameValid = !needsParent
+    ? true
+    : parentEntityNameSchema.safeParse(parentEntityName).success;
+  const parentAddressValid = !needsParent
+    ? true
+    : parentEntityAddressSchema.safeParse(parentEntityAddress).success;
   const leadsValid = internIds.some((id) => owners.some((o) => o.id === id));
   const managersValid = isFirmAdmin
     ? managerIds.some((id) => (managersQuery.data ?? []).some((m) => m.id === id))
@@ -231,6 +247,8 @@ export function CreateProjectForm({
     entityLegalFormValid &&
     subsidiaryNameValid &&
     subsidiaryAddressValid &&
+    parentNameValid &&
+    parentAddressValid &&
     emailValid &&
     passwordValid &&
     leadsValid &&
@@ -254,6 +272,20 @@ export function CreateProjectForm({
         ? !subsidiaryRegisteredAddress.trim()
           ? 'Enter the subsidiary company’s registered address.'
           : !subsidiaryAddressValid
+            ? 'Address must be 2,000 characters or fewer.'
+            : ''
+        : '',
+      parentEntityName: needsParent
+        ? !parentEntityName.trim()
+          ? 'Enter the parent entity’s full legal name.'
+          : !parentNameValid
+            ? 'Legal name must be 240 characters or fewer.'
+            : ''
+        : '',
+      parentEntityAddress: needsParent
+        ? !parentEntityAddress.trim()
+          ? 'Enter the parent entity’s registered address.'
+          : !parentAddressValid
             ? 'Address must be 2,000 characters or fewer.'
             : ''
         : '',
@@ -294,6 +326,11 @@ export function CreateProjectForm({
       subsidiaryNameValid,
       subsidiaryRegisteredAddress,
       subsidiaryAddressValid,
+      needsParent,
+      parentEntityName,
+      parentNameValid,
+      parentEntityAddress,
+      parentAddressValid,
       clientEmail,
       emailValid,
       clientPassword,
@@ -325,6 +362,10 @@ export function CreateProjectForm({
     dispatch({ type: 'patch', patch: { subsidiaryLegalName: value } });
   const setSubsidiaryRegisteredAddress = (value: string) =>
     dispatch({ type: 'patch', patch: { subsidiaryRegisteredAddress: value } });
+  const setParentEntityName = (value: string) =>
+    dispatch({ type: 'patch', patch: { parentEntityName: value } });
+  const setParentEntityAddress = (value: string) =>
+    dispatch({ type: 'patch', patch: { parentEntityAddress: value } });
   const setClientContact = (value: string) =>
     dispatch({ type: 'patch', patch: { clientContact: value } });
   const setClientPhone = (value: string) =>
@@ -388,6 +429,14 @@ export function CreateProjectForm({
           entityLegalForm,
           subsidiaryLegalName: needsSub ? subsidiaryLegalName.trim() : null,
           subsidiaryRegisteredAddress: needsSub ? subsidiaryRegisteredAddress.trim() : null,
+          // Pre-Incorporation projects capture the parent in SPICe+ Part A;
+          // only send it when this form is the place it is asked.
+          ...(needsParent
+            ? {
+                parentEntityName: parentEntityName.trim(),
+                parentEntityAddress: parentEntityAddress.trim(),
+              }
+            : {}),
           clientName: clientContact.trim() || null,
           stage,
           ...(cleanInternIds[0] ? { internId: cleanInternIds[0] } : {}),
@@ -440,6 +489,12 @@ export function CreateProjectForm({
         subsidiaryRegisteredAddress: needsSubsidiary
           ? subsidiaryRegisteredAddress.trim()
           : undefined,
+        ...(needsParent
+          ? {
+              parentEntityName: parentEntityName.trim(),
+              parentEntityAddress: parentEntityAddress.trim(),
+            }
+          : {}),
         clientEmail: email,
         clientPassword,
         clientName: clientContact.trim() || undefined,
@@ -543,6 +598,10 @@ export function CreateProjectForm({
     setSubsidiaryLegalName,
     subsidiaryRegisteredAddress,
     setSubsidiaryRegisteredAddress,
+    parentEntityName,
+    setParentEntityName,
+    parentEntityAddress,
+    setParentEntityAddress,
     clientContact,
     setClientContact,
     clientPhone,

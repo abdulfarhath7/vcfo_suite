@@ -118,3 +118,31 @@ describe('create-project error copy', () => {
     );
   });
 });
+
+describe('createProjectBodySchema — parent entity past Part A', () => {
+  const pastPartA = {
+    ...validBody,
+    parentEntityName: '',
+    parentEntityAddress: '',
+    stage: 'Post-Incorporation' as const,
+    subsidiaryLegalName: 'Acme India Private Limited',
+    subsidiaryRegisteredAddress: '1 MG Road, Bengaluru',
+  };
+
+  it('requires the parent entity for a dependent company starting at Registration or Compliance', () => {
+    const parsed = createProjectBodySchema.safeParse(pastPartA);
+    expect(parsed.success).toBe(false);
+    const messages = parsed.success ? [] : parsed.error.issues.map((i) => i.message);
+    expect(messages).toContain('parent_entity_name_required');
+    expect(messages).toContain('parent_entity_address_required');
+  });
+
+  it('does not ask an independent company or a Pre-Incorporation project', () => {
+    expect(
+      createProjectBodySchema.safeParse({ ...pastPartA, ownershipType: 'independent' }).success,
+    ).toBe(true);
+    expect(
+      createProjectBodySchema.safeParse({ ...pastPartA, stage: 'Pre-Incorporation' }).success,
+    ).toBe(true);
+  });
+});
