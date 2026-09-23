@@ -128,6 +128,8 @@ describe('per-director drafts', () => {
       'dir-8:resident-2',
       'inc-9:resident',
       'inc-9:resident-2',
+      'deposit-declaration:resident',
+      'deposit-declaration:resident-2',
     ]);
     expect(audiencesForDoc('pan-undertaking', ['resident', 'resident-2'])).toEqual([]);
   });

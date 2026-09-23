@@ -130,7 +130,7 @@ export function incorpDraftDocLinksFromResponses(
   const links: IncorpDraftDocLink[] = [];
   const directors = incorpDirectorAudiences(responses, options);
   for (const doc of Object.keys(INCORP_DOC_DEFINITIONS) as IncorpDocKind[]) {
-    for (const audience of audiencesForDoc(doc, directors)) {
+    for (const audience of audiencesForDoc(doc, directors, options?.pre6, { ignoreAppliesTo: true })) {
       const fieldId = draftUrlFieldFor(doc, audience);
       if (!fieldId) continue;
       const path = responses[fieldId]?.trim();

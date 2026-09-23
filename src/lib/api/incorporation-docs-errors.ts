@@ -186,6 +186,21 @@ export function collectIncorpDocsMissingFields(input: {
     for (const director of docDirectors) {
       const label = directorErrorLabel(director);
 
+      if (doc === 'id-address-declaration' || doc === 'deposit-declaration') {
+        pushMissing(missing, `${label} — full name (Pre-6)`, directorField(pre6, director, 'FullName'));
+        pushMissing(
+          missing,
+          `${label} — father's name (Pre-6)`,
+          directorField(pre6, director, 'FatherName'),
+        );
+        pushMissing(
+          missing,
+          `${label} — utility bill address (Pre-6)`,
+          directorField(pre6, director, 'UtilityBillAddress'),
+        );
+        continue;
+      }
+
       if (doc === 'pan-undertaking') {
         pushMissing(missing, `${label} — full name (Pre-6)`, directorField(pre6, director, 'FullName'));
         pushMissing(

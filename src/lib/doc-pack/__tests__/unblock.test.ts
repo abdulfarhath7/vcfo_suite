@@ -32,10 +32,14 @@ describe('fastestUnblock', () => {
   });
 
   it('falls back to the input that appears most when none fully releases a document', () => {
-    const state = fullState([NR, director('e2', 'yes', 'Beta', { panNumber: '', fatherName: '' })]);
+    const state = fullState([
+      NR,
+      director('e2', 'yes', 'Beta', { panNumber: '', fatherName: '', utilityBillAddress: '' }),
+    ]);
     const hint = fastestUnblock(evaluateDocPack({ state, brRow: FINALIZED_BR }));
     expect(hint?.releases).toBe(0);
-    expect(hint?.appearsIn).toBe(3);
+    // DIR-2, DIR-8, INC-9 and the deposit declaration all need the father's name and address.
+    expect(hint?.appearsIn).toBe(4);
   });
 });
 

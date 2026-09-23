@@ -39,6 +39,10 @@ import {
 } from '@/lib/incorporation-docs/pan-undertaking';
 import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
+  buildDeclarationMergeFields,
+  DECLARATION_MERGE_FIELD_KEYS,
+} from '@/lib/incorporation-docs/declarations';
+import {
   buildSubscriptionSheetMergeFields,
   subscriptionSheetVariantForDoc,
   SUBSCRIPTION_SHEET_MERGE_FIELD_KEYS,
@@ -221,6 +225,18 @@ function renderSubscriptionSheetDocxBuffer(
   );
 }
 
+function renderDeclarationDocxBuffer(
+  doc: 'id-address-declaration' | 'deposit-declaration',
+  input: IncorpMergeInput,
+): Buffer {
+  const fields = buildDeclarationMergeFields(input);
+  return renderDocx(
+    INCORP_DOC_DEFINITIONS[doc].templateRelative,
+    DECLARATION_MERGE_FIELD_KEYS,
+    fieldsToDocxData(DECLARATION_MERGE_FIELD_KEYS, fields),
+  );
+}
+
 /** Surgically patch paragraph text in an existing incorporation .docx (preserves layout). */
 export function patchIncorpDocxBuffer(existingDocx: Buffer, content: string): Buffer {
   const sanitizedDocx = sanitizeIncorpDocxBuffer(existingDocx);
@@ -265,6 +281,9 @@ export function renderIncorpDocxBuffer(doc: IncorpDocKind, input: IncorpMergeInp
       return renderSubscriptionSheetDocxBuffer(doc, input);
     case 'aoa-subscription-sheet':
       return renderSubscriptionSheetDocxBuffer(doc, input);
+    case 'id-address-declaration':
+    case 'deposit-declaration':
+      return renderDeclarationDocxBuffer(doc, input);
     default:
       throw new Error(`Unknown incorporation document: ${doc satisfies never}`);
   }

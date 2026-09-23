@@ -94,6 +94,34 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     generate: { kind: 'incorp', doc: 'pan-undertaking' },
   },
   {
+    id: 'id-address-declaration',
+    part: 'part-b',
+    label: 'ID & address declaration (Rule 16(1)(m))',
+    sourceStepIds: ['pre-5', DIRECTOR_STEP],
+    expandsPer: 'director',
+    // Owner answer Q1: only directors who already hold a DIN.
+    appliesTo: (director) => Boolean(director.director.values.din?.trim()),
+    requiredInputs: (_ctx, director) => [
+      companyName,
+      ...(director ? directorInputs(director, ['fullName', 'fatherName', 'address']) : []),
+    ],
+    releaseGate: 'directors-accepted',
+    generate: { kind: 'incorp', doc: 'id-address-declaration' },
+  },
+  {
+    id: 'deposit-declaration',
+    part: 'part-b',
+    label: 'Deposit declaration',
+    sourceStepIds: ['pre-5', DIRECTOR_STEP],
+    expandsPer: 'director',
+    requiredInputs: (_ctx, director) => [
+      companyName,
+      ...(director ? directorInputs(director, ['fullName', 'fatherName', 'address']) : []),
+    ],
+    releaseGate: 'directors-accepted',
+    generate: { kind: 'incorp', doc: 'deposit-declaration' },
+  },
+  {
     id: 'moa',
     part: 'part-b',
     label: 'Memorandum of association',

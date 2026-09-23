@@ -22,7 +22,9 @@ export type IncorpDocKind =
   | 'authorisation-letter'
   | 'acceptance-letter'
   | 'moa-subscription-sheet'
-  | 'aoa-subscription-sheet';
+  | 'aoa-subscription-sheet'
+  | 'id-address-declaration'
+  | 'deposit-declaration';
 
 export const INCORP_DOC_KINDS = [
   'dir-2',
@@ -35,6 +37,8 @@ export const INCORP_DOC_KINDS = [
   'acceptance-letter',
   'moa-subscription-sheet',
   'aoa-subscription-sheet',
+  'id-address-declaration',
+  'deposit-declaration',
 ] as const satisfies readonly IncorpDocKind[];
 
 /** Checklist response id holding a draft's storage path (`nrDirectorDir2DraftUrl`, `moaDraftUrl` …). */
@@ -59,6 +63,11 @@ export interface IncorpDocDefinition {
   appliesToDirector?: (pre6: ChecklistItemResponses, audience: IncorpDirectorAudience) => boolean;
   /** Optional on pre-7 / pre-8: never required for "all generated" or the validators. */
   optional?: boolean;
+}
+
+/** Owner answer Q1 — kept here so the definitions stay free of generator imports. */
+function holdsDin(pre6: ChecklistItemResponses, audience: IncorpDirectorAudience): boolean {
+  return Boolean((pre6[`${directorFieldPrefix(audience)}Din`] ?? '').trim());
 }
 
 function directorFilename(stem: string) {
@@ -158,6 +167,25 @@ export const INCORP_DOC_DEFINITIONS: Record<IncorpDocKind, IncorpDocDefinition> 
     companyDraftField: 'aoaSubscriptionSheetDraftUrl',
     downloadFilename: () => 'aoa-subscription-sheet.docx',
   },
+  'id-address-declaration': {
+    kind: 'id-address-declaration',
+    label: 'ID & Address Declaration',
+    templateRelative: 'public/templates/id-address-declaration.docx',
+    directors: ['non-resident', 'resident'],
+    docSuffix: 'IdAddressDeclaration',
+    downloadFilename: directorFilename('id-address-declaration'),
+    appliesToDirector: holdsDin,
+    optional: true,
+  },
+  'deposit-declaration': {
+    kind: 'deposit-declaration',
+    label: 'Deposit Declaration',
+    templateRelative: 'public/templates/deposit-declaration.docx',
+    directors: ['non-resident', 'resident'],
+    docSuffix: 'DepositDeclaration',
+    downloadFilename: directorFilename('deposit-declaration'),
+    optional: true,
+  },
 };
 
 /**
@@ -168,16 +196,16 @@ export function audiencesForDoc(
   doc: IncorpDocKind,
   directors: readonly IncorpDirectorAudience[] = LEGACY_DIRECTOR_AUDIENCES,
   pre6?: ChecklistItemResponses,
+  options?: { ignoreAppliesTo?: boolean },
 ): IncorpDocAudience[] {
   const def = INCORP_DOC_DEFINITIONS[doc];
   if (def.directors === 'company-only') return ['company'];
   const kinds: readonly IncorpDirectorKind[] =
     def.directors === 'non-resident-only' ? ['non-resident'] : def.directors;
-  return directors.filter(
-    (a) =>
-      kinds.includes(directorAudienceKind(a)) &&
-      (!def.appliesToDirector || !pre6 || def.appliesToDirector(pre6, a)),
-  );
+  // Without director data a conditional doc is not laid out; stored drafts still list via ignoreAppliesTo.
+  const applies = (a: IncorpDirectorAudience) =>
+    !def.appliesToDirector || options?.ignoreAppliesTo || (pre6 ? def.appliesToDirector(pre6, a) : false);
+  return directors.filter((a) => kinds.includes(directorAudienceKind(a)) && applies(a));
 }
 
 /** Pre-7 response id for a draft, or null when `doc` is not written for `audience`. */

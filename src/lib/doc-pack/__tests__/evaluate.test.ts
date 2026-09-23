@@ -56,8 +56,10 @@ describe('evaluateDocPack', () => {
     const d2 = summary.items.filter((i) => i.directorIndex === 2);
     expect(d1.length).toBeGreaterThan(0);
     expect(d1.every((i) => i.status === 'ready')).toBe(true);
-    expect(d2.map((i) => i.docId).sort()).toEqual(['dir-2', 'dir-8', 'inc-9']);
-    for (const item of d2) {
+    expect(d2.map((i) => i.docId).sort()).toEqual(['deposit-declaration', 'dir-2', 'dir-8', 'inc-9']);
+    // The deposit declaration does not print a PAN.
+    expect(d2.find((i) => i.docId === 'deposit-declaration')?.status).toBe('ready');
+    for (const item of d2.filter((i) => i.docId !== 'deposit-declaration')) {
       expect(item.status).toBe('needs-inputs');
       expect(item.missing).toEqual([
         { key: 'director.2.pan', label: 'PAN', stepId: 'pre-15', tabId: 'directors', directorIndex: 2 },
@@ -79,7 +81,12 @@ describe('evaluateDocPack', () => {
     const third = director('e3', 'yes', 'Gamma');
     const summary = evaluateDocPack({ state: fullState([NR, RESIDENT, third]), brRow: FINALIZED_BR });
     const items = summary.items.filter((i) => i.directorIndex === 3);
-    expect(items.map((i) => i.key).sort()).toEqual(['dir-2:resident-2', 'dir-8:resident-2', 'inc-9:resident-2']);
+    expect(items.map((i) => i.key).sort()).toEqual([
+      'deposit-declaration:resident-2',
+      'dir-2:resident-2',
+      'dir-8:resident-2',
+      'inc-9:resident-2',
+    ]);
     expect(summary.skippedDirectors).toEqual([]);
   });
 

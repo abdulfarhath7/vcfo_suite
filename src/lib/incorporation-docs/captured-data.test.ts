@@ -36,11 +36,13 @@ function documentText(buffer: Buffer): string {
   return xml.replace(/<[^>]+>/g, '');
 }
 
+function tableRows(buffer: Buffer): string[] {
+  const xml: string = new PizZip(buffer).file('word/document.xml')!.asText();
+  return xml.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) ?? [];
+}
+
 function tableRowsContaining(buffer: Buffer, text: string): number {
-  const xml = new PizZip(buffer).file('word/document.xml')!.asText();
-  return (xml.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) ?? []).filter((row) =>
-    row.replace(/<[^>]+>/g, '').includes(text),
-  ).length;
+  return tableRows(buffer).filter((row) => row.replace(/<[^>]+>/g, '').includes(text)).length;
 }
 
 describe('DIR-2 reads captured director data', () => {
@@ -109,8 +111,7 @@ describe('DIR-8 prior directorship table', () => {
   it('no interests → a single NA row, as before', () => {
     const pre6 = pre6For(director('e1', 'no', 'Alpha'), director('e2', 'yes', 'Beta'));
     const buffer = renderDir8DocxBuffer({ pre6, director: 'resident' });
-    const xml = new PizZip(buffer).file('word/document.xml')!.asText();
-    const naRows = (xml.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) ?? []).filter(
+    const naRows = tableRows(buffer).filter(
       (row) => (row.replace(/<[^>]+>/g, '').match(/NA/g) ?? []).length === 4,
     );
     expect(naRows).toHaveLength(1);
