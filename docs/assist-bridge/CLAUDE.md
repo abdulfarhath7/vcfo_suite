@@ -22,6 +22,7 @@ your concern.
 | `src/lib/api/assist-profile.ts` | Any new table or migration |
 | `app/api/engagements/[id]/assist-profile/route.ts` | Any checklist step, gate, email or board-resolution change |
 | A "Copy for Assist" control on Pre-4 and Pre-10 | Any write path — this feature only reads |
+| | Any CORS header, OPTIONS handler, or token route — see `docs/06-no-cors.md` |
 
 ## Hard rules
 
@@ -41,6 +42,9 @@ your concern.
 6. **Omission, not invention.** A field Suite does not hold is left out of the profile
    and listed in `missing`. Never a placeholder, never a guess.
 7. **`mcaLogin.userId` is always empty.** Suite never emits an MCA credential.
+8. **No CORS, no token, no cookie changes.** The extension calls this route from
+   inside a Suite tab, so it is same-origin. `docs/06-no-cors.md` explains why, and
+   what not to add.
 
 ## How to work
 

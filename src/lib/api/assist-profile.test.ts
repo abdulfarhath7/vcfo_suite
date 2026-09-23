@@ -109,7 +109,13 @@ describe('GET /api/engagements/[id]/assist-profile', () => {
     expect((await route.GET(req(), params())).status).toBe(404);
   });
 
-  it('exposes no write method', () => {
+  it('exposes no write method and no OPTIONS handler', () => {
     expect(Object.keys(route).sort()).toEqual(['GET']);
+  });
+
+  it('sends no CORS headers: the extension calls it same-origin from a Suite tab (docs/06-no-cors.md)', async () => {
+    const res = await route.GET(req(), params());
+    const cors = [...res.headers.keys()].filter((h) => h.toLowerCase().startsWith('access-control-'));
+    expect(cors).toEqual([]);
   });
 });

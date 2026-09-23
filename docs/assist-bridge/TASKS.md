@@ -63,3 +63,13 @@ Append-only. One entry per phase. Newest at the bottom.
   "By hand" and "End to end" remain for the human.
 - Verification: `npm run typecheck && npm run test` pass (136 files, 1151 tests);
   `npm run build` passes and lists `ƒ /api/engagements/[id]/assist-profile`.
+
+## 2026-09-23 — Revised pack: no CORS (docs/06-no-cors.md)
+- Built: nothing new in the route — it was already an ordinary staff-scoped GET with the
+  session cookie. Added the revised `CLAUDE.md` (rule 8) and `docs/06-no-cors.md`, and a
+  route test asserting no `Access-Control-*` header and no `OPTIONS` export. P1–P3 from
+  the earlier entries stand; `docs/00–05` are unchanged in the revised pack.
+- Files: `docs/assist-bridge/{CLAUDE.md,docs/06-no-cors.md}`, `src/lib/api/assist-profile.test.ts`
+- Left out: no CORS headers, OPTIONS handler, token route, extension-origin env var or
+  cookie `SameSite` change — by design.
+- Verification: `npm run typecheck && npm run test` pass (136 files, 1152 tests)
