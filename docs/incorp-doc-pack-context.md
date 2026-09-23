@@ -279,3 +279,25 @@ Corrections to earlier assumptions:
 6. Master sheet inputs the app does not read, confirmed as not gaps (already in §2):
    Aadhaar, company email/phone, bank name, no. of equity shares, shares subscribed,
    city/state/PIN split. Do not add fields for them.
+
+---
+
+## 10. Phase 0 findings and owner answers (2026-09-23)
+
+Findings at HEAD `f4d7eb8`:
+
+- `src/lib/proposed-directors.ts` already exists with the §3 shape; Phase 1 extends it, it does not add it.
+- `validatePre7Responses` and `validatePre8Responses` hard-require both the `nrDirector*` and the `residentDirector*` slots, so a company with two resident directors and no non-resident cannot pass pre-7 or pre-8 today. Phases 1 and 2 make the required set follow the director list.
+- "All generated" (`allIncorpDraftSlotsGenerated`) is every slot from `incorpDraftDocSlotsFromResponses` — the static kinds × the two legacy audiences. The share route refuses to share until it is true.
+- The single-file download route authorises `admin | manager | intern | client` through `assertEngagementBoardResolutionAccess`, limits a client to `sharedIncorpDraftDocs`, and writes **no** audit event. The zip route copies that exactly.
+- `renderDocx` cannot loop today: `fieldsToDocxData` stringifies every value and `nullGetter` echoes unknown tags as literal text. Phase 3 adds array data for declared loop keys only.
+
+Rule for "all generated" and the validators (Phase 0 item 3): the required slot set is derived from the director entries. Slots that did not exist in the legacy set (entries 3+, the two new declarations) are required only while pre-7 has not been shared (`incorpDraftsSharedAt` unset) and is not accepted; after that they are optional extras, so no live engagement reopens.
+
+Owner answers:
+
+1. **Q1:** ID and address declaration only for directors who hold a DIN.
+2. **Q2:** DIR-2 "No. of directorships" counts all other-interest entries.
+3. **Q3:** unchanged — non-resident place stays `'Foreign'` unless the pre-7 signing place is filled.
+4. **Q4:** Phase 6 skipped for now.
+5. **DIR-8 source:** additive structured fields on the `pre-15` director entry for up to three other interests (`otherInterest{i}Company`, `Cin`, `Designation`, `From`, `To`, shown when `hasOtherCompanyInterest = yes`). The free-text `otherCompanyInterestDetails` stays. Legacy engagements read the `pre-6` `OtherCompanyInterest{i}*` fields.
