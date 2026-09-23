@@ -1,7 +1,8 @@
 import type { IncorpDirectorAudience, IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
   directorField,
-  documentPlaceForDirector,
+  signingDate,
+  signingPlace,
   formatDocumentDate,
   pickString,
   resolveProposedCompanyName,
@@ -26,13 +27,13 @@ export function buildInc9MergeFields(
 ): Inc9MergeFields {
   const { engagement, pre1 = {}, pre5 = {}, pre6 = {}, director, overrides = {} } = input;
   const d = director as IncorpDirectorAudience;
-  const now = new Date();
+  const now = signingDate(input);
 
   const fields: Inc9MergeFields = {
     PROPOSED_COMPANY_NAME: resolveProposedCompanyName(pre5, pre1, engagement),
     DIRECTOR_FULL_NAME: pickString(directorField(pre6, d, 'FullName'), '[Director name]'),
     DOCUMENT_DATE: formatDocumentDate(now),
-    DOCUMENT_PLACE: documentPlaceForDirector(d),
+    DOCUMENT_PLACE: signingPlace(input, d),
   };
 
   return { ...fields, ...overrides };

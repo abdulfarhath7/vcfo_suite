@@ -7,6 +7,7 @@ import {
   nationalityFromAddress,
   pickString,
 } from '@/lib/incorporation-docs/shared';
+import { signingDate } from '@/lib/incorporation-docs/shared';
 import {
   paidUpEquityShareCountFromPre1,
 } from '@/lib/incorporation-docs/moa';
@@ -83,7 +84,7 @@ export function buildSubscriptionSheetMergeFields(
   },
 ): SubscriptionSheetMergeFields {
   const { engagement, pre1 = {}, pre6 = {}, variant = 'foreign', overrides = {} } = input;
-  const now = new Date();
+  const now = signingDate(input);
   const subscriberDirector = variant === 'resident' ? 'resident' : 'non-resident';
 
   const subscriberName = pickString(

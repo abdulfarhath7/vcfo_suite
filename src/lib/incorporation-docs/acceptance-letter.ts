@@ -1,4 +1,5 @@
 import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
+import { signingDate } from '@/lib/incorporation-docs/shared';
 import {
   directorField,
   formatDocumentDate,
@@ -41,7 +42,7 @@ export function buildAcceptanceLetterMergeFields(
   input: IncorpMergeInput & { overrides?: Partial<AcceptanceLetterMergeFields> },
 ): AcceptanceLetterMergeFields {
   const { engagement, pre1 = {}, pre5 = {}, pre6 = {}, overrides = {} } = input;
-  const now = new Date();
+  const now = signingDate(input);
   const docDate = formatDocumentDate(now);
   const parentName = resolveParentEntityName(pre1, engagement);
   const parentAddress = resolveParentEntityAddress(pre1, engagement);

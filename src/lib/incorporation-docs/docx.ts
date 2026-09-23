@@ -22,7 +22,11 @@ import {
 } from '@/lib/incorporation-docs/authorisation-letter';
 import { buildAoaMergeFields, AOA_MERGE_FIELD_KEYS } from '@/lib/incorporation-docs/aoa';
 import { buildDir2MergeFields, DIR2_MERGE_FIELD_KEYS } from '@/lib/incorporation-docs/dir2';
-import { buildDir8MergeFields, DIR8_MERGE_FIELD_KEYS } from '@/lib/incorporation-docs/dir8';
+import {
+  buildDir8MergeFields,
+  DIR8_LOOP_KEYS,
+  DIR8_MERGE_FIELD_KEYS,
+} from '@/lib/incorporation-docs/dir8';
 import { buildInc9MergeFields, INC9_MERGE_FIELD_KEYS } from '@/lib/incorporation-docs/inc9';
 import {
   buildMoaMergeFields,
@@ -73,7 +77,37 @@ function fieldsToDocxData<T extends object>(
   return data;
 }
 
-function renderDocx(templateRelative: string, keys: readonly string[], data: Record<string, string>): Buffer {
+/**
+ * Row-loop data for declared loop keys only: an array of string maps, each
+ * value sanitised like a scalar. Everything else stays a string, so the
+ * key-based `nullGetter` behaves exactly as before.
+ */
+function loopRowsToDocxData<T extends object>(
+  loopKeys: readonly (keyof T & string)[],
+  fields: T,
+): Record<string, Record<string, string>[]> {
+  const data: Record<string, Record<string, string>[]> = {};
+  for (const key of loopKeys) {
+    const rows = (fields as Record<string, unknown>)[key];
+    data[key] = Array.isArray(rows)
+      ? rows.map((row) =>
+          Object.fromEntries(
+            Object.entries(row as Record<string, unknown>).map(([k, v]) => [
+              k,
+              sanitizeMergeValueForDocx(String(v ?? '')),
+            ]),
+          ),
+        )
+      : [];
+  }
+  return data;
+}
+
+function renderDocx(
+  templateRelative: string,
+  keys: readonly string[],
+  data: Record<string, string | Record<string, string>[]>,
+): Buffer {
   const templatePath = path.join(process.cwd(), templateRelative);
   if (!fs.existsSync(templatePath)) {
     throw new Error(`Template missing at ${templatePath}.`);
@@ -108,12 +142,15 @@ export function renderDir2DocxBuffer(input: IncorpMergeInput): Buffer {
   );
 }
 
-function renderDir8DocxBuffer(input: IncorpMergeInput): Buffer {
+export function renderDir8DocxBuffer(input: IncorpMergeInput): Buffer {
   const fields = buildDir8MergeFields(input);
   return renderDocx(
     INCORP_DOC_DEFINITIONS['dir-8'].templateRelative,
-    DIR8_MERGE_FIELD_KEYS,
-    fieldsToDocxData(DIR8_MERGE_FIELD_KEYS, fields),
+    [...DIR8_MERGE_FIELD_KEYS, ...DIR8_LOOP_KEYS],
+    {
+      ...fieldsToDocxData(DIR8_MERGE_FIELD_KEYS, fields),
+      ...loopRowsToDocxData(DIR8_LOOP_KEYS, fields),
+    },
   );
 }
 

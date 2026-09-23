@@ -5,6 +5,7 @@ import {
   PRE6_UTILITY_BILL_OPTIONS,
 } from '@/lib/checklist-pre6-validation';
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
+import { otherInterestsFromPre6, type OtherCompanyInterest } from '@/lib/other-company-interests';
 import {
   directorAudienceKind,
   directorFieldPrefix,
@@ -23,7 +24,52 @@ export interface IncorpMergeInput {
   pre1?: ChecklistItemResponses;
   pre5?: ChecklistItemResponses;
   pre6?: ChecklistItemResponses;
+  /** Pre-7 answers — the lead's signing date and place (`incorpDocsSigning*`). */
+  pre7?: ChecklistItemResponses;
   director: IncorpDocAudience;
+}
+
+/** Pre-7 ids for the signing block every generated draft shares. */
+export const INCORP_SIGNING_DATE_FIELD = 'incorpDocsSigningDate';
+export const INCORP_SIGNING_PLACE_FIELD = 'incorpDocsSigningPlace';
+
+/** The lead's signing date (ISO `YYYY-MM-DD` on pre-7), else today — exactly as before. */
+export function signingDate(input: Pick<IncorpMergeInput, 'pre7'>): Date {
+  const raw = (input.pre7?.[INCORP_SIGNING_DATE_FIELD] ?? '').trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (match) {
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+  return new Date();
+}
+
+/**
+ * Place of signing. Non-resident directors keep "Foreign" (owner answer Q3);
+ * resident directors take the lead's pre-7 place, else "India" as before.
+ */
+export function signingPlace(input: Pick<IncorpMergeInput, 'pre7'>, director: IncorpDirectorAudience): string {
+  if (!isResidentAudience(director)) return documentPlaceForDirector(director);
+  return pickString(input.pre7?.[INCORP_SIGNING_PLACE_FIELD], documentPlaceForDirector(director));
+}
+
+/** "son of" unless the director is recorded as female; unknown keeps today's wording. */
+export function relationOf(
+  pre6: ChecklistItemResponses,
+  director: IncorpDirectorAudience,
+  capitalised = false,
+): string {
+  const female = directorField(pre6, director, 'Gender').toLowerCase() === 'female';
+  const text = female ? 'daughter of' : 'son of';
+  return capitalised ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+/** A director's other company interests (DIR-8 table, DIR-2 count). */
+export function directorOtherInterests(
+  pre6: ChecklistItemResponses,
+  director: IncorpDirectorAudience,
+): OtherCompanyInterest[] {
+  return otherInterestsFromPre6(pre6, directorFieldPrefix(director));
 }
 
 export function pickString(...values: (string | null | undefined)[]): string {

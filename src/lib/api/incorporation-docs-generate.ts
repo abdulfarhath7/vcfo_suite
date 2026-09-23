@@ -166,6 +166,7 @@ export async function generateAndStoreIncorpDocs(
           pre1,
           pre5,
           pre6,
+          pre7: pre7Stored,
           director: audience,
         });
       } catch (err) {

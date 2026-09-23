@@ -4,7 +4,9 @@ import {
   directorField,
   directorNationalityLabel,
   directorOccupationLabel,
-  documentPlaceForDirector,
+  directorOtherInterests,
+  signingDate,
+  signingPlace,
   formatDocumentDate,
   formatDob,
   identityProofForDirector,
@@ -53,18 +55,23 @@ export const DIR2_MERGE_FIELD_KEYS = [
   'RESIDENCE_PROOF',
 ] as const satisfies readonly (keyof Dir2MergeFields)[];
 
+function otherDirectorshipsCount(pre6: Parameters<typeof directorOtherInterests>[0], d: IncorpDirectorAudience): string {
+  const count = directorOtherInterests(pre6, d).length;
+  return count > 0 ? String(count) : 'NIL';
+}
+
 export function buildDir2MergeFields(
   input: IncorpMergeInput & { overrides?: Partial<Dir2MergeFields> },
 ): Dir2MergeFields {
   const { engagement, pre1 = {}, pre5 = {}, pre6 = {}, director, overrides = {} } = input;
   const d = director as IncorpDirectorAudience;
-  const now = new Date();
+  const now = signingDate(input);
   const isResident = directorAudienceKind(d) === 'resident';
 
   const fields: Dir2MergeFields = {
     PROPOSED_COMPANY_NAME: resolveProposedCompanyName(pre5, pre1, engagement),
     DIRECTOR_FULL_NAME: pickString(directorField(pre6, d, 'FullName'), '[Director name]'),
-    DIRECTOR_DIN: '-',
+    DIRECTOR_DIN: pickString(directorField(pre6, d, 'Din'), '-'),
     FATHERS_NAME: pickString(directorField(pre6, d, 'FatherName'), "[Father's name]"),
     DIRECTOR_ADDRESS: pickString(directorField(pre6, d, 'UtilityBillAddress'), '[Address]'),
     DIRECTOR_EMAIL: pickString(
@@ -79,10 +86,11 @@ export function buildDir2MergeFields(
     DIRECTOR_OCCUPATION: directorOccupationLabel(pre6, d),
     DIRECTOR_DOB: formatDob(directorField(pre6, d, 'Dob')),
     DIRECTOR_NATIONALITY: directorNationalityLabel(d),
-    DIRECTOR_OTHER_DIRECTORSHIPS: 'NIL',
-    DIRECTOR_MEMBERSHIP: 'NIL',
+    // Owner answer Q2: every other-interest entry counts.
+    DIRECTOR_OTHER_DIRECTORSHIPS: otherDirectorshipsCount(pre6, d),
+    DIRECTOR_MEMBERSHIP: pickString(directorField(pre6, d, 'CsMembershipOrCopNumber'), 'NIL'),
     DOCUMENT_DATE: formatDocumentDate(now),
-    DOCUMENT_PLACE: documentPlaceForDirector(d),
+    DOCUMENT_PLACE: signingPlace(input, d),
     IDENTITY_PROOF: identityProofForDirector(d),
     RESIDENCE_PROOF: residenceProofForDirector(pre6, d),
   };

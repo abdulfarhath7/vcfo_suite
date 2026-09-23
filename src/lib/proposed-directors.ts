@@ -9,6 +9,7 @@ import { parseDirectorCount } from '@/lib/checklist-pre1-validation';
 import { pre6NrFieldPrefix, pre6ResidentFieldPrefix } from '@/lib/checklist-pre6-validation';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { resolveRegisteredOfficeResponses } from '@/lib/registered-office-responses';
+import { PRE15_INTEREST_PARTS, PRE15_MAX_OTHER_INTERESTS } from '@/lib/other-company-interests';
 import {
   audienceForDirectorFieldId,
   directorAudienceKey,
@@ -148,6 +149,16 @@ const PRE6_SUFFIX: Record<string, string> = {
   dscExpiryDate: 'DscExpiryDate',
   dscAvailabilitySlots: 'DscAvailabilitySlots',
   hasOtherCompanyInterest: 'HasOtherCompanyInterest',
+  din: 'Din',
+  csMembershipOrCopNumber: 'CsMembershipOrCopNumber',
+  ...Object.fromEntries(
+    Array.from({ length: PRE15_MAX_OTHER_INTERESTS }, (_, n) =>
+      Object.entries(PRE15_INTEREST_PARTS).map(([part, legacy]) => [
+        `otherInterest${n + 1}${part}`,
+        `OtherCompanyInterest${n + 1}${legacy}`,
+      ]),
+    ).flat(),
+  ),
 };
 
 /** The directors in the legacy `pre-6` key shape the docx generators read. */
@@ -207,7 +218,11 @@ export function directorResponsesFromState(state: StepStateMap): {
   const pre6 = { ...responsesFor(state, 'pre-6'), ...registeredOffice };
   const group = proposedDirectorsGroup();
   const entries = group ? repeatEntries(responsesFor(state, PROPOSED_DIRECTORS_STEP_ID), group) : [];
-  if (entries.length === 0) return { pre1, pre6 };
+  if (entries.length === 0) {
+    // Legacy: the DIN lives on Part A, not on the KYC step — fill only what pre-6 lacks.
+    const legacy = directorsAsPre6Responses(legacyDirectors(pre1, responsesFor(state, 'pre-6')));
+    return { pre1, pre6: { ...legacy, ...pre6 } };
+  }
   // Stale legacy KYC keys must not bleed into a director the entries define.
   const nonDirectorPre6 = Object.fromEntries(
     Object.entries(pre6).filter(([key]) => audienceForDirectorFieldId(key) === null),

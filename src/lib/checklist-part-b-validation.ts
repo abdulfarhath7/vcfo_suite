@@ -11,6 +11,7 @@ import {
   type RepeatField,
 } from '@/lib/checklist-repeat';
 import { hasIndiaResidentDirector, PROPOSED_DIRECTORS_GROUP_ID } from '@/lib/proposed-directors';
+import { isValidCinOrLlpin, PRE15_MAX_OTHER_INTERESTS } from '@/lib/other-company-interests';
 
 /**
  * Validators for the restructured SPICe+ Part B steps. Each takes the step's
@@ -59,6 +60,18 @@ export function validatePre15Responses(responses: ChecklistItemResponses): StepV
     }
     if (v.aadhaarNumber?.trim() && !/^\d{12}$/.test(v.aadhaarNumber.replace(/\s/g, ''))) {
       e.aadhaarNumber = 'Aadhaar is 12 digits.';
+    }
+    if (v.hasOtherCompanyInterest === 'yes') {
+      for (let i = 1; i <= PRE15_MAX_OTHER_INTERESTS; i += 1) {
+        const cin = v[`otherInterest${i}Cin`]?.trim();
+        if (cin && !isValidCinOrLlpin(cin)) {
+          e[`otherInterest${i}Cin`] = 'Enter a 21-character CIN or an LLPIN like AAA-0000.';
+        }
+        for (const part of ['From', 'To'] as const) {
+          const date = v[`otherInterest${i}${part}`]?.trim();
+          if (date && !isValidPre1Date(date)) e[`otherInterest${i}${part}`] = 'Enter a valid date.';
+        }
+      }
     }
     return e;
   });

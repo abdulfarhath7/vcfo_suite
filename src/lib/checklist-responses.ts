@@ -3,6 +3,7 @@ import { checklist, type ChecklistField, type ChecklistItem } from '@/data/check
 import type { OwnershipType } from '@/data/engagements';
 import { PART_A_STEP_ID, partAFieldsFor } from '@/lib/part-a-sections';
 import { expandDirectorSlotFields, withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
+import { PRE15_MAX_OTHER_INTERESTS } from '@/lib/other-company-interests';
 import {
   getPre1VisibleFields,
   parsePre1BoardResolutionDate,
@@ -29,6 +30,21 @@ export function computeMcaNameApprovalExpiryDate(approvalDate: string): string {
 }
 
 /** Structured client-input fields keyed by checklist item id (pre/post incorporation). */
+/** `otherInterest{i}Company` … for one `pre-15` director entry (see `other-company-interests.ts`). */
+function pre15OtherInterestFields(): ChecklistField[] {
+  const showWhen = { field: 'hasOtherCompanyInterest', value: 'yes' };
+  return Array.from({ length: PRE15_MAX_OTHER_INTERESTS }, (_, n) => {
+    const i = n + 1;
+    return [
+      { id: `otherInterest${i}Company`, label: `Interest ${i} — company or LLP name`, type: 'text', showWhen },
+      { id: `otherInterest${i}Cin`, label: `Interest ${i} — CIN / LLPIN`, type: 'text', showWhen },
+      { id: `otherInterest${i}Designation`, label: `Interest ${i} — designation`, type: 'text', showWhen },
+      { id: `otherInterest${i}From`, label: `Interest ${i} — from`, type: 'date', showWhen },
+      { id: `otherInterest${i}To`, label: `Interest ${i} — to (if ended)`, type: 'date', showWhen },
+    ] satisfies ChecklistField[];
+  }).flat();
+}
+
 export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   'pre-1': [
     {
@@ -374,6 +390,21 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       filledBy: 'intern',
       accept: '.pdf,image/*',
       required: true,
+    },
+    {
+      id: 'incorpDocsSigningDate',
+      label: 'Date of signing (printed on the drafts; blank = the day they are generated)',
+      type: 'date',
+      section: 'Draft Incorporation Docs',
+      filledBy: 'intern',
+    },
+    {
+      id: 'incorpDocsSigningPlace',
+      label: 'Place of signing for resident directors (blank = India)',
+      type: 'text',
+      section: 'Draft Incorporation Docs',
+      filledBy: 'intern',
+      placeholder: 'e.g. Hyderabad',
     },
     {
       id: 'nrDirectorDir2DraftUrl',
@@ -903,6 +934,13 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           type: 'textarea',
           required: true,
           showWhen: { field: 'hasOtherCompanyInterest', value: 'yes' },
+        },
+        // Structured copies for the DIR-8 table and the DIR-2 count (up to three).
+        ...pre15OtherInterestFields(),
+        {
+          id: 'csMembershipOrCopNumber',
+          label: 'CS membership no. / COP no., if any (printed on DIR-2)',
+          type: 'text',
         },
       ],
     },

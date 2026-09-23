@@ -2,7 +2,9 @@ import type { IncorpDirectorAudience, IncorpMergeInput } from '@/lib/incorporati
 import { directorAudienceKind } from '@/lib/incorporation-docs/audiences';
 import {
   directorField,
-  documentPlaceForDirector,
+  relationOf,
+  signingDate,
+  signingPlace,
   formatDocumentDate,
   nationalityFromAddress,
   pickString,
@@ -10,6 +12,7 @@ import {
 
 export interface PanUndertakingMergeFields {
   DIRECTOR_FULL_NAME: string;
+  RELATION_OF: string;
   FATHERS_NAME: string;
   DIRECTOR_NATIONALITY: string;
   PASSPORT_NUMBER: string;
@@ -19,6 +22,7 @@ export interface PanUndertakingMergeFields {
 
 export const PAN_UNDERTAKING_MERGE_FIELD_KEYS = [
   'DIRECTOR_FULL_NAME',
+  'RELATION_OF',
   'FATHERS_NAME',
   'DIRECTOR_NATIONALITY',
   'PASSPORT_NUMBER',
@@ -35,7 +39,7 @@ export function buildPanUndertakingMergeFields(
     input.director !== 'company' && directorAudienceKind(input.director) === 'non-resident'
       ? input.director
       : 'non-resident';
-  const now = new Date();
+  const now = signingDate(input);
   const address = directorField(pre6, d, 'UtilityBillAddress');
 
   const fields: PanUndertakingMergeFields = {
@@ -43,6 +47,7 @@ export function buildPanUndertakingMergeFields(
       directorField(pre6, d, 'FullName'),
       '[Director name]',
     ),
+    RELATION_OF: relationOf(pre6, d, true),
     FATHERS_NAME: pickString(
       directorField(pre6, d, 'FatherName'),
       "[Father's name]",
@@ -53,7 +58,7 @@ export function buildPanUndertakingMergeFields(
       '[Passport number]',
     ),
     DOCUMENT_DATE: formatDocumentDate(now),
-    DOCUMENT_PLACE: documentPlaceForDirector(d),
+    DOCUMENT_PLACE: signingPlace(input, d),
   };
 
   return { ...fields, ...overrides };

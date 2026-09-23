@@ -7,6 +7,7 @@ import {
   PRE6_REGISTERED_OFFICE_SECTION,
   REGISTERED_OFFICE_FIELD_IDS,
 } from '@/lib/registered-office-responses';
+import { isValidCinOrLlpin } from '@/lib/other-company-interests';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -95,7 +96,7 @@ const PRE6_NOTARY_APOSTILLE_VALUES: Set<string> = new Set(
 const PRE6_YES_NO_VALUES: Set<string> = new Set(PRE6_YES_NO_OPTIONS.map((o) => o.value));
 
 const PRE6_OTHER_COMPANY_INTEREST_ENTRY_RE =
-  /^OtherCompanyInterest(\d+)(Name|Shareholding|Designation|StartDate|EndDate)$/;
+  /^OtherCompanyInterest(\d+)(Name|Cin|Shareholding|Designation|StartDate|EndDate)$/;
 
 /** Shown on every director DSC slots field (nrDirector*, residentDirector*, numbered slots). */
 export const PRE6_DSC_AVAILABILITY_SLOTS_LABEL =
@@ -181,7 +182,7 @@ export function clearPre6OtherCompanyInterestFields(
   }
   for (let i = 1; i <= PRE6_MAX_OTHER_COMPANY_INTERESTS; i += 1) {
     if (i <= keepCount) continue;
-    for (const part of ['Name', 'Shareholding', 'Designation', 'StartDate', 'EndDate'] as const) {
+    for (const part of ['Name', 'Cin', 'Shareholding', 'Designation', 'StartDate', 'EndDate'] as const) {
       delete next[`${prefix}OtherCompanyInterest${i}${part}`];
     }
   }
@@ -359,6 +360,12 @@ function buildOtherCompanyInterestTemplates(): FieldTemplate[] {
       {
         suffix: `OtherCompanyInterest${i}Name`,
         label: `Entry ${i} — Name of the Company or LLP`,
+        type: 'text',
+        required: false,
+      },
+      {
+        suffix: `OtherCompanyInterest${i}Cin`,
+        label: `Entry ${i} — CIN / LLPIN`,
         type: 'text',
         required: false,
       },
@@ -952,6 +959,11 @@ export function validatePre6Responses(
               if (!(responses[fieldId] ?? '').trim()) {
                 errors[fieldId] = `${label} is required for entry ${i}.`;
               }
+            }
+            const cinId = `${slot.prefix}OtherCompanyInterest${i}Cin`;
+            const cinVal = (responses[cinId] ?? '').trim();
+            if (cinVal && !isValidCinOrLlpin(cinVal)) {
+              errors[cinId] = 'Enter a 21-character CIN or an LLPIN like AAA-0000.';
             }
             const endId = `${slot.prefix}OtherCompanyInterest${i}EndDate`;
             const endVal = (responses[endId] ?? '').trim();
