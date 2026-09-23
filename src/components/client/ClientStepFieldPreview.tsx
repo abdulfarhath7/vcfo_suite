@@ -9,6 +9,7 @@ import {
 } from '@/lib/checklist-responses';
 import { isDeliveredToClient } from '@/lib/checklist-state-key';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
 
 /**
  * What a step will capture, shown to the client before it is their turn.
@@ -51,7 +52,11 @@ export function ClientStepFieldPreview({
 }) {
   const released = isDeliveredToClient(itemState);
 
-  const fields = fieldsForOwnership(item.id, getClientResponseFields(item), ownershipType).filter(
+  const fields = withoutUnusedDirectorSlots(
+    item.id,
+    fieldsForOwnership(item.id, getClientResponseFields(item), ownershipType),
+    responses,
+  ).filter(
     (field) => !isInternalNote(field.id, field.label),
   );
   if (fields.length === 0) return null;

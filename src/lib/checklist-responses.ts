@@ -2,7 +2,7 @@ import { addDays, format } from 'date-fns';
 import { checklist, type ChecklistField, type ChecklistItem } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
 import { PART_A_STEP_ID, partAFieldsFor } from '@/lib/part-a-sections';
-import { expandDirectorSlotFields } from '@/lib/incorp-director-slots';
+import { expandDirectorSlotFields, withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
 import {
   getPre1VisibleFields,
   parsePre1BoardResolutionDate,
@@ -525,7 +525,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       accept: '.pdf,image/*',
     },
   ]),
-  'pre-8': [
+  'pre-8': expandDirectorSlotFields([
     {
       id: 'nrDirectorPassportSignedUrl',
       label: 'Passport - Non-resident Director (self-signed)',
@@ -678,7 +678,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       required: true,
       helperText: 'GSTIN, EPFO, ESIC, profession tax, bank account and shops & establishment registrations, signed by the director.',
     },
-  ],
+  ]),
   'pre-13': [
     {
       id: 'equityShares',
@@ -1818,8 +1818,8 @@ export function formatResponseSummary(
   responses?: ChecklistItemResponses,
   context?: { pre1Responses?: ChecklistItemResponses },
 ): ResponseSummaryResult {
-  const allFields = getClientResponseFields(item);
   const r = responses ?? {};
+  const allFields = withoutUnusedDirectorSlots(item.id, getClientResponseFields(item), r);
   const pre1 = context?.pre1Responses ?? {};
   const fields = appendStepRemarksToVisible(
     item.id === 'pre-1'

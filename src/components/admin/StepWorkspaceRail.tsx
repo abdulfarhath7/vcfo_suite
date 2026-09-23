@@ -19,6 +19,7 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
 import { fileNameFromStoragePath } from '@/lib/milestone-document-storage';
 import { cn } from '@/lib/utils';
+import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
 
 const STATUS_TONE_DOT: Record<
   StatusCode,
@@ -71,7 +72,11 @@ function AttachmentSummary({
   item: ChecklistItem;
   responses?: ChecklistItemResponses;
 }) {
-  const files = filterFieldsByViewer(getClientResponseFields(item), 'admin').filter(
+  const files = withoutUnusedDirectorSlots(
+    item.id,
+    filterFieldsByViewer(getClientResponseFields(item), 'admin'),
+    responses,
+  ).filter(
     (field) => field.type === 'file',
   );
   if (files.length === 0) return null;

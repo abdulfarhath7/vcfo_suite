@@ -8,6 +8,7 @@ import {
   type ChecklistItemResponses,
 } from '@/lib/checklist-responses';
 import { fileNameFromStoragePath } from '@/lib/milestone-document-storage';
+import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
 
 export type StepAttachmentRequirement = {
   fieldId: string;
@@ -22,9 +23,10 @@ export function getStepAttachmentRequirements(
   responses?: ChecklistItemResponses,
   ownershipType?: OwnershipType,
 ): StepAttachmentRequirement[] {
-  const fields = filterFieldsByViewer(
-    fieldsForOwnership(item.id, getClientResponseFields(item), ownershipType),
-    'admin',
+  const fields = withoutUnusedDirectorSlots(
+    item.id,
+    filterFieldsByViewer(fieldsForOwnership(item.id, getClientResponseFields(item), ownershipType), 'admin'),
+    responses,
   );
   // Repeat entries contribute their own file fields, labelled per entry.
   return applyShowWhen(expandRepeatFields(fields, responses ?? {}), responses ?? {})

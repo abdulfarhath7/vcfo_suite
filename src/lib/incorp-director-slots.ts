@@ -21,6 +21,9 @@ import {
  * Slot-1 ids are untouched, so every stored response keeps resolving.
  */
 
+/** Steps whose director fields are expanded by `expandDirectorSlotFields`. */
+export const DIRECTOR_SLOT_STEP_IDS: ReadonlySet<string> = new Set(['pre-7', 'pre-8']);
+
 export interface DirectorSlotContext {
   /** Director audiences on file (`directorAudiencesFromPre6`). Absent → the two legacy slots. */
   directors?: readonly IncorpDirectorAudience[];
@@ -102,4 +105,28 @@ export function requiredIdsForDirectors(
     }
   }
   return out;
+}
+
+/**
+ * For read-only lists without director context (summaries, attachment rails,
+ * field previews): drop slot 2…N fields unless that director already has a
+ * value on this step. Slot-1 and company fields are always kept.
+ */
+export function withoutUnusedDirectorSlots(
+  itemId: string,
+  fields: ChecklistField[],
+  responses: Record<string, string | undefined> | undefined,
+): ChecklistField[] {
+  // Pre-6 owns its own `nrDirector2…` KYC slots and visibility rules.
+  if (!DIRECTOR_SLOT_STEP_IDS.has(itemId)) return fields;
+  const used = new Set<IncorpDirectorAudience>();
+  for (const [id, value] of Object.entries(responses ?? {})) {
+    if (!value?.trim()) continue;
+    const audience = audienceForDirectorFieldId(id);
+    if (audience) used.add(audience);
+  }
+  return fields.filter((field) => {
+    const audience = audienceForDirectorFieldId(field.id);
+    return !audience || isLegacyDirectorAudience(audience) || used.has(audience);
+  });
 }
