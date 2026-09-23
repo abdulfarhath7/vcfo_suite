@@ -15,6 +15,11 @@ export function buildIncorpDocDownloadUrl(
   return `/api/engagements/${encodeURIComponent(engagementId)}/incorporation-docs/download?${params.toString()}`;
 }
 
+/** Every draft the viewer may see, as one zip (client: shared rows only). */
+export function buildIncorpDraftsZipUrl(engagementId: string): string {
+  return `/api/engagements/${encodeURIComponent(engagementId)}/incorporation-docs/download-all`;
+}
+
 export function isIncorpDraftUrlField(fieldId: string): fieldId is IncorpDraftUrlField {
   return incorpDocTargetFromDraftField(fieldId) !== null;
 }

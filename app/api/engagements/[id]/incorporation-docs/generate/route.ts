@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { assertEngagementBoardResolutionAccess } from '@/lib/api/board-resolution-access';
 import {
+  generateAllIncorpDocsBestEffort,
   generateAndStoreIncorpDocs,
   IncorpDocsError,
   parseIncorpDocKinds,
@@ -28,6 +29,8 @@ const generateBodySchema = z.object({
     .min(1)
     .optional(),
   content: z.string().min(1).optional(),
+  /** Generate every applicable draft on its own and report failures per row. */
+  bestEffort: z.boolean().optional(),
 });
 
 function incorpDocsErrorResponse(err: IncorpDocsError) {
@@ -56,6 +59,7 @@ export async function POST(request: Request, context: RouteContext) {
   let docs = [...INCORP_DOC_KINDS];
   let directors: IncorpDocAudience[] | undefined;
   let editedContent: string | undefined;
+  let bestEffort = false;
 
   const contentType = request.headers.get('content-type') ?? '';
   if (contentType.includes('application/json')) {
@@ -75,6 +79,7 @@ export async function POST(request: Request, context: RouteContext) {
     if (parsedBody.data.content?.trim()) {
       editedContent = parsedBody.data.content.trim();
     }
+    bestEffort = parsedBody.data.bestEffort === true && !editedContent;
   }
 
   if (editedContent) {
@@ -91,12 +96,13 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   try {
-    const { paths, responsePatch } = await generateAndStoreIncorpDocs(
-      auth.ctx,
-      engagement,
-      checklistState,
-      { docs, directors, content: editedContent },
-    );
+    const { paths, responsePatch, failures } = bestEffort
+      ? await generateAllIncorpDocsBestEffort(auth.ctx, engagement, checklistState, docs)
+      : await generateAndStoreIncorpDocs(auth.ctx, engagement, checklistState, {
+          docs,
+          directors,
+          content: editedContent,
+        });
 
     await recordAuditEvent(auth.ctx, {
       engagementId: engagement.id,
@@ -106,13 +112,18 @@ export async function POST(request: Request, context: RouteContext) {
         : 'Generated incorporation draft document(s)',
       actorEmail: auth.ctx.email,
       actorName: auth.ctx.name,
-      metadata: { docs, directors: directors ?? 'all' },
+      metadata: {
+        docs,
+        directors: directors ?? 'all',
+        ...(bestEffort ? { bestEffort: true, failed: failures.map((f) => `${f.doc}:${f.audience}`) } : {}),
+      },
     });
 
     return NextResponse.json({
       ok: true,
       paths,
       responsePatch,
+      failures,
       downloadBase: `/api/engagements/${engagement.id}/incorporation-docs/download`,
     });
   } catch (err) {

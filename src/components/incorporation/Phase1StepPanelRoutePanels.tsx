@@ -18,6 +18,7 @@ import {
 } from '@/lib/incorporation-docs/share';
 import { cn } from '@/lib/utils';
 import { IncorporationDocsGeneratePanel } from '@/components/incorporation/IncorporationDocsGeneratePanel';
+import { IncorporationDraftsZipLink } from '@/components/incorporation/IncorporationDraftsZipLink';
 import { IncorporationDocsBulkShareBar } from '@/components/incorporation/IncorporationDocsBulkShareBar';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 import { hasPre7OtherAttachments } from '@/lib/checklist-pre7-other-attachments';
@@ -395,6 +396,9 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
                     engagementId={engagement?.id}
                     showIncorpDocxPreview={false}
                   />
+                  {engagement?.id && clientVisibleDrafts.length > 1 && (
+                    <IncorporationDraftsZipLink engagementId={engagement.id} className="mt-2" />
+                  )}
                 </div>
               </>
             ) : pre7Delivered && !hasCoreDrafts ? (

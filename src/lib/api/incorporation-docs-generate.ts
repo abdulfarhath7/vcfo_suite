@@ -28,6 +28,7 @@ export {
 } from '@/lib/api/incorporation-docs-errors';
 
 import {
+  directorsAccepted,
   INCORP_DOCS_ERROR_CODES,
   IncorpDocsError,
   toIncorpDocsError,
@@ -47,9 +48,70 @@ export function parseIncorpDocKinds(docs: string[] | undefined): IncorpDocKind[]
   return docs as IncorpDocKind[];
 }
 
+export interface IncorpDocsRowFailure {
+  doc: IncorpDocKind;
+  audience: IncorpDocAudience;
+  error: string;
+  code: string;
+  missingFields?: string[];
+}
+
 export interface GenerateIncorpDocsResult {
   paths: Partial<Record<IncorpDocKind, Partial<Record<IncorpDocAudience, string>>>>;
   responsePatch: Record<string, string>;
+  /** Best-effort runs only: rows that could not be generated, each with its own reason. */
+  failures: IncorpDocsRowFailure[];
+}
+
+/**
+ * "Generate all" — every applicable {doc, audience} on its own, so one
+ * director's missing field does not block everyone else's drafts. The
+ * directors-accepted gate still applies to the whole run.
+ */
+export async function generateAllIncorpDocsBestEffort(
+  ctx: AuthContext,
+  engagement: Engagement,
+  checklistState: EngagementChecklistState | null | undefined,
+  docs: IncorpDocKind[] = [...INCORP_DOC_KINDS],
+): Promise<GenerateIncorpDocsResult> {
+  if (!directorsAccepted(checklistState)) {
+    // Same error the strict path raises.
+    validateIncorpDocsGeneration({ engagement, checklistState, docs });
+  }
+  const pre6 = pre6ResponsesFromState(checklistState);
+  const directorAudiences = directorAudiencesFromPre6(pre6);
+  const paths: GenerateIncorpDocsResult['paths'] = {};
+  const responsePatch: Record<string, string> = {};
+  const failures: IncorpDocsRowFailure[] = [];
+
+  for (const doc of docs) {
+    for (const audience of audiencesForDoc(doc, directorAudiences, pre6)) {
+      try {
+        const result = await generateAndStoreIncorpDocs(ctx, engagement, checklistState, {
+          docs: [doc],
+          directors: [audience],
+          skipPatch: true,
+        });
+        for (const [field, path] of Object.entries(result.responsePatch)) responsePatch[field] = path;
+        const stored = result.paths[doc]?.[audience];
+        if (stored) (paths[doc] ??= {})[audience] = stored;
+      } catch (err) {
+        const mapped = toIncorpDocsError(err);
+        failures.push({
+          doc,
+          audience,
+          error: mapped.message,
+          code: mapped.code,
+          ...(mapped.missingFields?.length ? { missingFields: mapped.missingFields } : {}),
+        });
+      }
+    }
+  }
+
+  if (Object.keys(responsePatch).length > 0) {
+    await patchChecklistItem(ctx, engagement.id, 'pre-7', { responses: responsePatch });
+  }
+  return { paths, responsePatch, failures };
 }
 
 function pre7ResponsesFromState(
@@ -82,6 +144,8 @@ export async function generateAndStoreIncorpDocs(
     directors?: IncorpDocAudience[];
     /** Preview edit content — patches the stored docx when a path already exists. */
     content?: string;
+    /** The caller writes the pre-7 patch itself (best-effort batches). */
+    skipPatch?: boolean;
   },
 ): Promise<GenerateIncorpDocsResult> {
   const editedContent = options.content?.trim();
@@ -188,11 +252,11 @@ export async function generateAndStoreIncorpDocs(
     }
   }
 
-  if (Object.keys(responsePatch).length > 0 && !isPatchOnly) {
+  if (Object.keys(responsePatch).length > 0 && !isPatchOnly && !options.skipPatch) {
     await patchChecklistItem(ctx, engagement.id, 'pre-7', { responses: responsePatch });
   }
 
-  return { paths, responsePatch };
+  return { paths, responsePatch, failures: [] };
 }
 
 /** @deprecated Use generateAndStoreIncorpDocs — kept for dir-2 route compatibility */

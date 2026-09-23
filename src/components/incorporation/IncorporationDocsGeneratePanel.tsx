@@ -10,6 +10,8 @@ import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import {
   INCORP_DOC_DEFINITIONS,
   incorpDocRowKey,
+  incorpDraftDocLabel,
+  type IncorpDocAudience,
   incorpDraftDocSlotsFromResponses,
   responsePatchFromPaths,
   type IncorpDocKind,
@@ -26,6 +28,7 @@ import {
   useIncorpDocFlushRegistry,
 } from '@/components/incorporation/IncorporationDocsBulkShareBar';
 import { IncorporationDraftDocsGenerateList } from '@/components/incorporation/IncorporationDocInlinePreview';
+import { IncorporationDraftsZipLink } from '@/components/incorporation/IncorporationDraftsZipLink';
 
 interface IncorporationDocsGeneratePanelProps {
   engagement: Engagement;
@@ -42,6 +45,7 @@ type GenerateApiResponse = {
   missingFields?: string[];
   paths?: IncorpDocPaths;
   responsePatch?: Record<string, string>;
+  failures?: { doc: IncorpDocKind; audience: IncorpDocAudience; error: string }[];
 };
 
 /** Director forms summarised in the header, in this order. */
@@ -131,10 +135,11 @@ export function IncorporationDocsGeneratePanel({
     async (docs?: IncorpDocKind[]) => {
       setState('loading');
       try {
+        // No doc list = Generate all: each draft on its own, failures reported per row.
         const res = await fetch(`/api/engagements/${engagement.id}/incorporation-docs/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(docs?.length ? { docs } : {}),
+          body: JSON.stringify(docs?.length ? { docs } : { bestEffort: true }),
         });
         const body = (await res.json()) as GenerateApiResponse;
         if (!res.ok || body.ok === false) {
@@ -167,10 +172,22 @@ export function IncorporationDocsGeneratePanel({
 
         await refreshEngagementChecklist(engagement.id);
 
-        const label = docs?.length
-          ? docs.map((d) => INCORP_DOC_DEFINITIONS[d].label).join(', ')
-          : 'All incorporation drafts';
-        toastSuccess(`${label} generated`, 'Draft documents saved to Pre-7 — share with client when all drafts are ready.');
+        const failures = body.failures ?? [];
+        const generatedCount = Object.keys(responsePatch).length;
+        if (failures.length > 0) {
+          const rows = failures
+            .map((f) => `${incorpDraftDocLabel(f.doc, f.audience, labelOptions)}: ${f.error}`)
+            .join('\n');
+          toastError(
+            `${generatedCount} generated, ${failures.length} could not be`,
+            rows,
+          );
+        } else {
+          const label = docs?.length
+            ? docs.map((d) => INCORP_DOC_DEFINITIONS[d].label).join(', ')
+            : 'All incorporation drafts';
+          toastSuccess(`${label} generated`, 'Draft documents saved to Pre-7 — share with client when all drafts are ready.');
+        }
       } catch (err) {
         toastError(
           'Could not generate documents',
@@ -180,7 +197,7 @@ export function IncorporationDocsGeneratePanel({
         setState('idle');
       }
     },
-    [addUnlockedKeys, engagement.id, mergeEngagementChecklistResponses, refreshEngagementChecklist],
+    [addUnlockedKeys, engagement.id, labelOptions, mergeEngagementChecklistResponses, refreshEngagementChecklist],
   );
 
   const handleUnlockKey = useCallback((key: string) => {
@@ -225,6 +242,9 @@ export function IncorporationDocsGeneratePanel({
             'Generate all drafts'
           )}
         </AccentButton>
+        {docSlots.some((slot) => slot.path.trim()) && (
+          <IncorporationDraftsZipLink engagementId={engagement.id} />
+        )}
         <span className="text-[10px] text-text-tertiary">{statusSummary}</span>
       </div>
 
