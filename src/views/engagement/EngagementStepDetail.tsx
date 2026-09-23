@@ -59,6 +59,8 @@ import { Surface } from '@/components/noir';
 import { DocPackHeaderButton } from '@/components/doc-pack/DocPackHeaderButton';
 import { DocPackRailCard } from '@/components/doc-pack/DocPackRailCard';
 import { DocSourceStrip } from '@/components/doc-pack/DocSourceStrip';
+import { CopyForAssist } from '@/components/assist-profile/CopyForAssist';
+import { ASSIST_PROFILE_STEP_IDS } from '@/lib/assist-profile/paths';
 import { useDocPack } from '@/hooks/use-doc-pack';
 import { docPackPagePath, docPackStepPath, type DocPackShell } from '@/lib/doc-pack/paths';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
@@ -407,6 +409,13 @@ export default function EngagementStepDetail() {
       {stepWindowControl}
       {docPackHref && docPack.data ? (
         <DocSourceStrip summary={docPack.data} stepId={item.id} packHref={docPackHref} />
+      ) : null}
+      {/* Staff shell only: the client never sees the Assist profile. */}
+      {!isClientRoute && ASSIST_PROFILE_STEP_IDS.has(item.id) ? (
+        <CopyForAssist
+          engagementId={eng.id}
+          hrefForMissing={(input) => docPackStepPath(eng, docPackShell, input.stepId, input.tabId)}
+        />
       ) : null}
       <StepDetailContent
         item={item}
