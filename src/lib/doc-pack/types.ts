@@ -3,7 +3,7 @@ import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
 import type { BoardResolutionDoc } from '@/lib/board-resolution';
 import type { IncorpDocAudience, IncorpDocKind } from '@/lib/incorporation-docs/types';
-import type { IncorpDirectorKind } from '@/lib/incorporation-docs/shared';
+import type { IncorpDirectorAudience } from '@/lib/incorporation-docs/shared';
 import type { ProposedDirector } from '@/lib/proposed-directors';
 
 /**
@@ -29,7 +29,7 @@ export type GeneratorRef =
 /** A director the generators can render: first non-resident and first resident entry. */
 export interface DocPackDirector {
   director: ProposedDirector;
-  audience: IncorpDirectorKind;
+  audience: IncorpDirectorAudience;
   /** `pre-15` for repeat entries, `pre-6` when rebuilt from the legacy KYC step. */
   stepId: string;
   displayName: string;

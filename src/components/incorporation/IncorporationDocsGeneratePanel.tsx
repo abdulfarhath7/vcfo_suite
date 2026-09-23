@@ -16,6 +16,7 @@ import {
   type IncorpDocPaths,
 } from '@/lib/incorporation-docs/client';
 import { draftUrlFieldFor } from '@/lib/incorporation-docs/types';
+import { isIncorpSlotSetFrozen } from '@/lib/incorporation-docs/share';
 import { formatIncorpDocsErrorDisplay } from '@/lib/api/incorporation-docs-errors';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
@@ -43,47 +44,16 @@ type GenerateApiResponse = {
   responsePatch?: Record<string, string>;
 };
 
-const DOC_STATUS: {
-  doc: IncorpDocKind;
-  label: string;
-  fields: { director: 'non-resident' | 'resident'; field: keyof ChecklistItemResponses }[];
-}[] = [
-  {
-    doc: 'dir-2',
-    label: 'DIR-2',
-    fields: [
-      { director: 'non-resident', field: 'nrDirectorDir2DraftUrl' },
-      { director: 'resident', field: 'residentDirectorDir2DraftUrl' },
-    ],
-  },
-  {
-    doc: 'dir-8',
-    label: 'DIR-8',
-    fields: [
-      { director: 'non-resident', field: 'nrDirectorDir8DraftUrl' },
-      { director: 'resident', field: 'residentDirectorDir8DraftUrl' },
-    ],
-  },
-  {
-    doc: 'inc-9',
-    label: 'INC-9',
-    fields: [
-      { director: 'non-resident', field: 'nrDirectorInc9DraftUrl' },
-      { director: 'resident', field: 'residentDirectorInc9DraftUrl' },
-    ],
-  },
-  {
-    doc: 'pan-undertaking',
-    label: 'PAN Undertaking',
-    fields: [{ director: 'non-resident', field: 'nrDirectorPanUndertakingDraftUrl' }],
-  },
-];
+/** Director forms summarised in the header, in this order. */
+const STATUS_DOCS: IncorpDocKind[] = ['dir-2', 'dir-8', 'inc-9', 'pan-undertaking'];
 
 function unlockRowKeysFromPatch(patch: Record<string, string>): string[] {
   const keys: string[] = [];
+  // The patch's own draft fields name their audiences, so later directors unlock too.
+  const slots = incorpDraftDocSlotsFromResponses(patch);
   for (const [fieldId, path] of Object.entries(patch)) {
     if (!path.trim()) continue;
-    for (const slot of incorpDraftDocSlotsFromResponses({})) {
+    for (const slot of slots) {
       if (draftUrlFieldFor(slot.doc, slot.audience) === fieldId) {
         keys.push(incorpDocRowKey(slot.doc, slot.audience));
       }
@@ -120,7 +90,10 @@ export function IncorporationDocsGeneratePanel({
     () => directorResponsesFromState(getStateForEngagement(engagement)).pre6,
     [engagement, getStateForEngagement],
   );
-  const labelOptions = useMemo(() => ({ pre6: pre6Responses }), [pre6Responses]);
+  const labelOptions = useMemo(
+    () => ({ pre6: pre6Responses, frozen: isIncorpSlotSetFrozen(pre7State) }),
+    [pre6Responses, pre7State],
+  );
   const [state, setState] = useState<GenerateState>('idle');
   const [recentPaths, setRecentPaths] = useState<IncorpDocPaths | null>(null);
   const [slotPaths, setSlotPaths] = useState<Record<string, string>>({});
@@ -137,11 +110,13 @@ export function IncorporationDocsGeneratePanel({
   );
 
   const statusSummary = useMemo(() => {
-    return DOC_STATUS.map(({ label, fields }) => {
-      const saved = fields.filter((f) => (mergedResponses[f.field] ?? '').trim()).length;
-      return `${label}: ${saved}/${fields.length}`;
+    return STATUS_DOCS.flatMap((doc) => {
+      const docSlotsForKind = docSlots.filter((s) => s.doc === doc);
+      if (docSlotsForKind.length === 0) return [];
+      const saved = docSlotsForKind.filter((s) => s.path.trim()).length;
+      return [`${INCORP_DOC_DEFINITIONS[doc].label}: ${saved}/${docSlotsForKind.length}`];
     }).join(' · ');
-  }, [mergedResponses]);
+  }, [docSlots]);
 
   const addUnlockedKeys = useCallback((keys: string[]) => {
     if (keys.length === 0) return;
@@ -275,6 +250,7 @@ export function IncorporationDocsGeneratePanel({
           onUnlockKey={handleUnlockKey}
           onSlotPathChange={handleSlotPathChange}
           onFlushRegister={onFlushRegister}
+          groupByDirector
         />
       </div>
     </div>

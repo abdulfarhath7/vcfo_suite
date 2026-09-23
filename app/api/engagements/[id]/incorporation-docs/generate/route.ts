@@ -13,6 +13,7 @@ import { parseJsonBody } from '@/lib/api/parse-body';
 import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { INCORP_DOC_KINDS } from '@/lib/incorporation-docs/types';
+import { isIncorpDocAudience, type IncorpDocAudience } from '@/lib/incorporation-docs/audiences';
 import {
   checklistStateFromRow,
   toAppEngagement,
@@ -22,7 +23,10 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 const generateBodySchema = z.object({
   docs: z.array(z.enum(INCORP_DOC_KINDS)).min(1).optional(),
-  directors: z.array(z.enum(['non-resident', 'resident', 'company'])).min(1).optional(),
+  directors: z
+    .array(z.string().refine(isIncorpDocAudience, 'Unknown director audience'))
+    .min(1)
+    .optional(),
   content: z.string().min(1).optional(),
 });
 
@@ -50,7 +54,7 @@ export async function POST(request: Request, context: RouteContext) {
   const checklistState = checklistStateFromRow(access.row);
 
   let docs = [...INCORP_DOC_KINDS];
-  let directors: ('non-resident' | 'resident' | 'company')[] | undefined;
+  let directors: IncorpDocAudience[] | undefined;
   let editedContent: string | undefined;
 
   const contentType = request.headers.get('content-type') ?? '';
@@ -66,7 +70,7 @@ export async function POST(request: Request, context: RouteContext) {
       docs = parseIncorpDocKinds(parsedBody.data.docs);
     }
     if (parsedBody.data.directors?.length) {
-      directors = parsedBody.data.directors;
+      directors = parsedBody.data.directors.filter(isIncorpDocAudience);
     }
     if (parsedBody.data.content?.trim()) {
       editedContent = parsedBody.data.content.trim();

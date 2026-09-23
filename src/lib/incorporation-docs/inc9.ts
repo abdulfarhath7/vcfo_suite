@@ -1,4 +1,4 @@
-import type { IncorpDirectorKind, IncorpMergeInput } from '@/lib/incorporation-docs/shared';
+import type { IncorpDirectorAudience, IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
   directorField,
   documentPlaceForDirector,
@@ -25,7 +25,7 @@ export function buildInc9MergeFields(
   input: IncorpMergeInput & { overrides?: Partial<Inc9MergeFields> },
 ): Inc9MergeFields {
   const { engagement, pre1 = {}, pre5 = {}, pre6 = {}, director, overrides = {} } = input;
-  const d = director as IncorpDirectorKind;
+  const d = director as IncorpDirectorAudience;
   const now = new Date();
 
   const fields: Inc9MergeFields = {

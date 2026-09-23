@@ -22,6 +22,7 @@ import {
 import { draftUrlFieldFor } from '@/lib/incorporation-docs/types';
 import type { IncorpDraftDocLink } from '@/lib/incorporation-docs/paths';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
+import { directorAudienceLabel, sortDirectorAudiences } from '@/lib/incorporation-docs/audiences';
 import type { IncorpDocKind } from '@/lib/incorporation-docs/types';
 import { fileNameFromStoragePath } from '@/lib/milestone-document-storage';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
@@ -604,7 +605,26 @@ export type IncorporationDraftDocsGenerateListProps = {
   onUnlockKey: (key: string) => void;
   onSlotPathChange?: (key: string, path: string) => void;
   onFlushRegister?: IncorpDocFlushRegistrar;
+  /** Group rows under one heading per director, company documents last. */
+  groupByDirector?: boolean;
 };
+
+type SlotGroup = { key: string; heading: string | null; slots: IncorpDraftDocSlot[] };
+
+function groupSlots(slots: IncorpDraftDocSlot[], byDirector: boolean): SlotGroup[] {
+  if (!byDirector) return [{ key: 'all', heading: null, slots }];
+  const directorAudiences = sortDirectorAudiences(
+    slots.flatMap((s) => (s.audience === 'company' ? [] : [s.audience])),
+  );
+  const groups: SlotGroup[] = directorAudiences.map((audience) => ({
+    key: audience,
+    heading: directorAudienceLabel(audience),
+    slots: slots.filter((s) => s.audience === audience),
+  }));
+  const company = slots.filter((s) => s.audience === 'company');
+  if (company.length > 0) groups.push({ key: 'company', heading: 'Company documents', slots: company });
+  return groups;
+}
 
 /** Per-document Generate rows — preview only after explicit Generate in this session. */
 export function IncorporationDraftDocsGenerateList({
@@ -617,6 +637,7 @@ export function IncorporationDraftDocsGenerateList({
   onUnlockKey,
   onSlotPathChange,
   onFlushRegister,
+  groupByDirector = false,
 }: IncorporationDraftDocsGenerateListProps) {
   const visibleSlots = useMemo(
     () =>
@@ -630,28 +651,41 @@ export function IncorporationDraftDocsGenerateList({
     [showEmptySlots, slots, unlockedKeys],
   );
 
+  const groups = useMemo(() => groupSlots(visibleSlots, groupByDirector), [visibleSlots, groupByDirector]);
+
   if (visibleSlots.length === 0) return null;
+
+  const renderRow = (slot: IncorpDraftDocSlot) => {
+    const key = incorpDocRowKey(slot.doc, slot.audience);
+    return (
+      <IncorporationDocGenerateRow
+        key={key}
+        engagementId={engagementId}
+        checklistItemId={checklistItemId}
+        doc={slot.doc}
+        director={slot.audience}
+        label={slot.label}
+        storagePath={slot.path}
+        previewUnlocked={unlockedKeys.has(key)}
+        onPreviewUnlock={() => onUnlockKey(key)}
+        onStoragePathChange={(path) => onSlotPathChange?.(key, path)}
+        onFlushRegister={onFlushRegister}
+      />
+    );
+  };
 
   return (
     <div className={cn('space-y-4', className)}>
-      {visibleSlots.map((slot) => {
-        const key = incorpDocRowKey(slot.doc, slot.audience);
-        return (
-          <IncorporationDocGenerateRow
-            key={key}
-            engagementId={engagementId}
-            checklistItemId={checklistItemId}
-            doc={slot.doc}
-            director={slot.audience}
-            label={slot.label}
-            storagePath={slot.path}
-            previewUnlocked={unlockedKeys.has(key)}
-            onPreviewUnlock={() => onUnlockKey(key)}
-            onStoragePathChange={(path) => onSlotPathChange?.(key, path)}
-            onFlushRegister={onFlushRegister}
-          />
-        );
-      })}
+      {groups.map((group) =>
+        group.heading ? (
+          <section key={group.key} className="space-y-3" aria-label={group.heading}>
+            <p className="text-[11px] font-medium text-text-secondary">{group.heading}</p>
+            {group.slots.map(renderRow)}
+          </section>
+        ) : (
+          group.slots.map(renderRow)
+        ),
+      )}
     </div>
   );
 }

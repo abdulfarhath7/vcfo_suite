@@ -67,6 +67,10 @@ import {
   validatePre6Responses,
 } from '@/lib/checklist-pre6-validation';
 import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
+import { fieldsForDirectorAudiences, type DirectorSlotContext } from '@/lib/incorp-director-slots';
+import { directorAudiencesFromPre6 } from '@/lib/incorporation-docs/audiences';
+import { isIncorpSlotSetFrozen } from '@/lib/incorporation-docs/share';
+import { directorResponsesFromState } from '@/lib/proposed-directors';
 import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
 import { validatePre9Responses } from '@/lib/checklist-pre9-validation';
 import { validatePre10Responses } from '@/lib/checklist-pre10-validation';
@@ -251,6 +255,16 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (!engagement || !pre6Item) return {};
     return extractItemResponses(pre6Item, getStateForEngagement(engagement)['pre-6']);
   }, [engagement, getStateForEngagement]);
+  /** Pre-7 / pre-8 per-director fields follow the directors on file (`incorp-director-slots.ts`). */
+  const directorSlots = useMemo<DirectorSlotContext | undefined>(() => {
+    if (item.id !== 'pre-7' && item.id !== 'pre-8') return undefined;
+    const state = engagement ? getStateForEngagement(engagement) : getState(clientId);
+    return {
+      directors: directorAudiencesFromPre6(directorResponsesFromState(state).pre6),
+      frozen:
+        item.id === 'pre-7' ? isIncorpSlotSetFrozen(itemState) : itemState?.reviewStatus === 'accepted',
+    };
+  }, [item.id, engagement, getStateForEngagement, getState, clientId, itemState]);
 
   /**
    * The draft is the saved answers with the user's edits laid over them —
@@ -281,8 +295,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       if (!pre1SubmittedForPre6) visible = [];
       else visible = getPre6VisibleFields(fields, draft, pre1Responses);
     } else visible = resolveFieldLabels(applyShowWhen(fields, draft), draft);
+    if (directorSlots) visible = fieldsForDirectorAudiences(visible, directorSlots);
     return appendStepRemarksToVisible(visible, fields);
-  }, [item.id, fields, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6]);
+  }, [item.id, fields, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, directorSlots]);
   const pre6DirectorSlots = useMemo(
     () => (item.id === 'pre-6' ? getPre6DirectorSlotsFromPre1(pre1Responses) : []),
     [item.id, pre1Responses],
@@ -651,8 +666,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       if (!pre1SubmittedForPre6) return {};
       return validatePre6Responses(draft, pre1Responses).errors;
     }
-    if (item.id === 'pre-7') return validatePre7Responses(draft).errors;
-    if (item.id === 'pre-8') return validatePre8Responses(draft).errors;
+    if (item.id === 'pre-7') return validatePre7Responses(draft, directorSlots).errors;
+    if (item.id === 'pre-8') return validatePre8Responses(draft, directorSlots).errors;
     if (item.id === 'pre-9') return validatePre9Responses(draft).errors;
     if (item.id === 'pre-10') return validatePre10Responses(draft).errors;
     if (item.id === 'pre-11') return validatePre11Responses(draft).errors;
@@ -662,7 +677,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (item.id === 'pre-15') return validatePre15Responses(draft).errors;
     if (item.id === 'pre-16') return validatePre16Responses(draft).errors;
     return {};
-  }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, pre1Validation]);
+  }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, pre1Validation, directorSlots]);
 
   const getSectionPending = useCallback(
     (groupFields: ChecklistField[]) =>
@@ -974,6 +989,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       pre1Responses,
       pre1SubmittedForPre6,
       pre1Validation,
+      directorSlots,
     );
     setFieldErrors(errors);
     setFieldWarnings(warnings);
@@ -1044,6 +1060,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       pre1Responses,
       pre1SubmittedForPre6,
       pre1Validation,
+      directorSlots,
     );
     const delivery = isInternDeliveryStep
       ? validateInternDelivery(item.id, submitDraft)
@@ -1099,6 +1116,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       pre1Responses,
       pre1SubmittedForPre6,
       pre1Validation,
+      directorSlots,
     );
     setFieldErrors(errors);
     setFieldWarnings(warnings);

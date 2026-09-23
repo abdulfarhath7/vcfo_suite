@@ -2,6 +2,7 @@ import { addDays, format } from 'date-fns';
 import { checklist, type ChecklistField, type ChecklistItem } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
 import { PART_A_STEP_ID, partAFieldsFor } from '@/lib/part-a-sections';
+import { expandDirectorSlotFields } from '@/lib/incorp-director-slots';
 import {
   getPre1VisibleFields,
   parsePre1BoardResolutionDate,
@@ -334,7 +335,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
   ],
   'pre-6': PRE6_CLIENT_RESPONSE_FIELDS,
-  'pre-7': [
+  'pre-7': expandDirectorSlotFields([
     {
       id: 'kycReviewStatus',
       label: 'Know Your Customer (KYC) review status',
@@ -523,7 +524,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       filledBy: 'intern',
       accept: '.pdf,image/*',
     },
-  ],
+  ]),
   'pre-8': [
     {
       id: 'nrDirectorPassportSignedUrl',

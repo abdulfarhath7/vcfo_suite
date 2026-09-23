@@ -1,24 +1,10 @@
-import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
-import type { IncorpDocKind, IncorpDraftUrlField } from '@/lib/incorporation-docs/types';
-
-const DRAFT_FIELD_TARGETS: Record<
-  IncorpDraftUrlField,
-  { doc: IncorpDocKind; audience: IncorpDocAudience }
-> = {
-  nrDirectorDir2DraftUrl: { doc: 'dir-2', audience: 'non-resident' },
-  residentDirectorDir2DraftUrl: { doc: 'dir-2', audience: 'resident' },
-  nrDirectorDir8DraftUrl: { doc: 'dir-8', audience: 'non-resident' },
-  residentDirectorDir8DraftUrl: { doc: 'dir-8', audience: 'resident' },
-  nrDirectorInc9DraftUrl: { doc: 'inc-9', audience: 'non-resident' },
-  residentDirectorInc9DraftUrl: { doc: 'inc-9', audience: 'resident' },
-  nrDirectorPanUndertakingDraftUrl: { doc: 'pan-undertaking', audience: 'non-resident' },
-  moaDraftUrl: { doc: 'moa', audience: 'company' },
-  aoaDraftUrl: { doc: 'aoa', audience: 'company' },
-  authorisationLetterDraftUrl: { doc: 'authorisation-letter', audience: 'company' },
-  acceptanceLetterDraftUrl: { doc: 'acceptance-letter', audience: 'company' },
-  moaSubscriptionSheetDraftUrl: { doc: 'moa-subscription-sheet', audience: 'company' },
-  aoaSubscriptionSheetDraftUrl: { doc: 'aoa-subscription-sheet', audience: 'company' },
-};
+import { audienceForDirectorFieldId, type IncorpDocAudience } from '@/lib/incorporation-docs/audiences';
+import {
+  draftFieldIdFor,
+  INCORP_DOC_KINDS,
+  type IncorpDocKind,
+  type IncorpDraftUrlField,
+} from '@/lib/incorporation-docs/types';
 
 export function buildIncorpDocDownloadUrl(
   engagementId: string,
@@ -30,12 +16,16 @@ export function buildIncorpDocDownloadUrl(
 }
 
 export function isIncorpDraftUrlField(fieldId: string): fieldId is IncorpDraftUrlField {
-  return fieldId in DRAFT_FIELD_TARGETS;
+  return incorpDocTargetFromDraftField(fieldId) !== null;
 }
 
+/** The draft a pre-7 response id holds — `residentDirector2Dir8DraftUrl` → dir-8 / resident-2. */
 export function incorpDocTargetFromDraftField(
   fieldId: string,
 ): { doc: IncorpDocKind; audience: IncorpDocAudience } | null {
-  if (!isIncorpDraftUrlField(fieldId)) return null;
-  return DRAFT_FIELD_TARGETS[fieldId];
+  const audience: IncorpDocAudience = audienceForDirectorFieldId(fieldId) ?? 'company';
+  for (const doc of INCORP_DOC_KINDS) {
+    if (draftFieldIdFor(doc, audience) === fieldId) return { doc, audience };
+  }
+  return null;
 }

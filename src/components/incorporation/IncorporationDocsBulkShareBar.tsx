@@ -51,7 +51,7 @@ export function IncorporationDocsBulkShareBar({
   const totalSlots = incorpDraftSlotCount(slots);
   const generatedCount = generatedIncorpDraftRowKeys(slots).length;
   const allGenerated = allIncorpDraftSlotsGenerated(slots);
-  const shareComplete = isBulkIncorpShareComplete(responses, pre7State);
+  const shareComplete = isBulkIncorpShareComplete(responses, pre7State, labelOptions);
   const sharedAt = pre7State?.incorpDraftsSharedAt?.trim();
 
   const shareAllWithClient = useCallback(async () => {

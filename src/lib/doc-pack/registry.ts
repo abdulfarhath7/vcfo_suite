@@ -1,3 +1,4 @@
+import { directorAudienceKind } from '@/lib/incorporation-docs/audiences';
 import { PROPOSED_DIRECTORS_STEP_ID } from '@/lib/proposed-directors';
 import {
   anyDirectorName,
@@ -84,7 +85,7 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     label: 'PAN undertaking',
     sourceStepIds: ['pre-5', DIRECTOR_STEP],
     expandsPer: 'director',
-    appliesTo: (director) => director.audience === 'non-resident',
+    appliesTo: (director) => directorAudienceKind(director.audience) === 'non-resident',
     requiredInputs: (_ctx, director) => [
       companyName,
       ...(director ? directorInputs(director, ['fullName', 'fatherName', 'passport', 'address']) : []),

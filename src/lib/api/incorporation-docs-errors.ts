@@ -14,7 +14,13 @@ import { collectAuthorisationLetterMissingFields } from '@/lib/incorporation-doc
 import { collectAoaMissingFields } from '@/lib/incorporation-docs/aoa';
 import { collectMoaMissingFields } from '@/lib/incorporation-docs/moa';
 import { collectSubscriptionSheetMissingFields } from '@/lib/incorporation-docs/subscription-sheet';
-import type { IncorpDocAudience, IncorpDirectorKind } from '@/lib/incorporation-docs/shared';
+import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
+import {
+  directorAudienceKind,
+  directorAudienceLabel,
+  directorAudiencesFromPre6,
+  type IncorpDirectorAudience,
+} from '@/lib/incorporation-docs/audiences';
 import {
   directorField,
   pickString,
@@ -84,10 +90,11 @@ export function incorpDocsErrorJson(err: IncorpDocsError): IncorpDocsApiErrorBod
   };
 }
 
-const DIRECTOR_LABEL: Record<IncorpDirectorKind, string> = {
-  'non-resident': 'Non-resident director',
-  resident: 'Resident director',
-};
+/** "Resident director", "Resident director 2" — sentence case for error copy. */
+function directorErrorLabel(audience: IncorpDirectorAudience): string {
+  const label = directorAudienceLabel(audience);
+  return label.charAt(0) + label.slice(1).replace('Director', 'director');
+}
 
 /**
  * Director KYC now lives on `pre-15` Proposed directors (per entry); older
@@ -162,8 +169,9 @@ export function collectIncorpDocsMissingFields(input: {
     }
   }
 
+  const directorAudiences = directorAudiencesFromPre6(pre6);
   for (const doc of docs) {
-    const docAudienceSet = new Set(audiencesForDoc(doc));
+    const docAudienceSet = new Set<IncorpDocAudience>(audiencesForDoc(doc, directorAudiences, pre6));
     if (isCompanyIncorpDoc(doc)) {
       if (docAudienceSet.has('company')) {
         missing.push(...collectCompanyDocMissing(doc, { engagement, pre1, pre5, pre6 }));
@@ -171,14 +179,12 @@ export function collectIncorpDocsMissingFields(input: {
       continue;
     }
 
-    const docDirectors = audiencesFilter?.length
-      ? audiencesFilter.filter(
-          (a): a is IncorpDirectorKind => a !== 'company' && docAudienceSet.has(a),
-        )
-      : (audiencesForDoc(doc).filter((a) => a !== 'company') as IncorpDirectorKind[]);
+    const docDirectors = (audiencesFilter?.length ? audiencesFilter : [...docAudienceSet]).filter(
+      (a): a is IncorpDirectorAudience => a !== 'company' && docAudienceSet.has(a),
+    );
 
     for (const director of docDirectors) {
-      const label = DIRECTOR_LABEL[director];
+      const label = directorErrorLabel(director);
 
       if (doc === 'pan-undertaking') {
         pushMissing(missing, `${label} — full name (Pre-6)`, directorField(pre6, director, 'FullName'));
@@ -229,7 +235,7 @@ export function collectIncorpDocsMissingFields(input: {
         directorField(pre6, director, 'MobileNumber'),
       );
 
-      if (director === 'resident') {
+      if (directorAudienceKind(director) === 'resident') {
         pushMissing(missing, `${label} — PAN (Pre-6)`, directorField(pre6, director, 'PanNumber'));
         pushMissing(
           missing,

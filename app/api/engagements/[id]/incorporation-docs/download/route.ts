@@ -13,6 +13,7 @@ import {
   repairIncorpDocxAtPath,
 } from '@/lib/incorporation-docs/storage';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
+import { isIncorpDocAudience } from '@/lib/incorporation-docs/audiences';
 import {
   draftUrlFieldFor,
   INCORP_DOC_DEFINITIONS,
@@ -24,12 +25,11 @@ import { directorResponsesFromState } from '@/lib/proposed-directors';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-const VALID_AUDIENCES = new Set<IncorpDocAudience>(['non-resident', 'resident', 'company']);
 const VALID_DOCS = new Set<string>(INCORP_DOC_KINDS);
 
 function parseDirectorParam(value: string | null): IncorpDocAudience | null {
-  if (!value || !VALID_AUDIENCES.has(value as IncorpDocAudience)) return null;
-  return value as IncorpDocAudience;
+  if (!value || !isIncorpDocAudience(value)) return null;
+  return value;
 }
 
 function parseDocParam(value: string | null): IncorpDocKind | null {
@@ -57,7 +57,7 @@ export async function GET(request: Request, context: RouteContext) {
 
   if (!director) {
     return NextResponse.json(
-      { ok: false, error: 'Query param director=non-resident|resident|company is required.' },
+      { ok: false, error: 'Query param director=non-resident|resident|<kind>-<n>|company is required.' },
       { status: 400 },
     );
   }

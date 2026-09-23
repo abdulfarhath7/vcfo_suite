@@ -75,12 +75,20 @@ describe('evaluateDocPack', () => {
     expect(pan[0]?.key).toBe('pan-undertaking:non-resident');
   });
 
-  it('a third director is reported as skipped, not invented', () => {
+  it('a second resident director gets their own forms under resident-2', () => {
     const third = director('e3', 'yes', 'Gamma');
+    const summary = evaluateDocPack({ state: fullState([NR, RESIDENT, third]), brRow: FINALIZED_BR });
+    const items = summary.items.filter((i) => i.directorIndex === 3);
+    expect(items.map((i) => i.key).sort()).toEqual(['dir-2:resident-2', 'dir-8:resident-2', 'inc-9:resident-2']);
+    expect(summary.skippedDirectors).toEqual([]);
+  });
+
+  it('a director without a residency is reported as skipped, not invented', () => {
+    const third = director('e3', '', 'Gamma');
     const summary = evaluateDocPack({ state: fullState([NR, RESIDENT, third]), brRow: FINALIZED_BR });
     expect(summary.items.filter((i) => i.directorIndex === 3)).toHaveLength(0);
     expect(summary.skippedDirectors).toEqual([
-      expect.objectContaining({ index: 3, displayName: 'Gamma Director' }),
+      expect.objectContaining({ index: 3, displayName: 'Gamma Director', reason: 'Resident status not set' }),
     ]);
   });
 

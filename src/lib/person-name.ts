@@ -47,7 +47,14 @@ export function resolvePre6DirectorDisplayName(
   responses: ChecklistItemResponses,
   director: Pre6DirectorKind,
 ): string {
-  const prefix = PRE6_DIRECTOR_PREFIX[director];
+  return resolvePre6DisplayNameForPrefix(responses, PRE6_DIRECTOR_PREFIX[director]);
+}
+
+/** Same as `resolvePre6DirectorDisplayName` for any KYC slot prefix (`residentDirector2` …). */
+export function resolvePre6DisplayNameForPrefix(
+  responses: ChecklistItemResponses,
+  prefix: string,
+): string {
   const fromParts = formatDisplayName(
     responses[`${prefix}FirstName`],
     responses[`${prefix}MiddleName`],

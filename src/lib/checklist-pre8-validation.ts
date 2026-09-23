@@ -1,4 +1,5 @@
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import { requiredIdsForDirectors, type DirectorSlotContext } from '@/lib/incorp-director-slots';
 
 const PRE8_REQUIRED_FILE_IDS = [
   'nrDirectorPassportSignedUrl',
@@ -27,11 +28,15 @@ export interface Pre8ValidationResult {
   warnings: Record<string, string>;
 }
 
-export function validatePre8Responses(responses: ChecklistItemResponses): Pre8ValidationResult {
+/** `slots` names the directors on file; without it the two legacy slots are required, as before. */
+export function validatePre8Responses(
+  responses: ChecklistItemResponses,
+  slots?: DirectorSlotContext,
+): Pre8ValidationResult {
   const errors: Record<string, string> = {};
   const warnings: Record<string, string> = {};
 
-  for (const id of PRE8_REQUIRED_FILE_IDS) {
+  for (const id of requiredIdsForDirectors(PRE8_REQUIRED_FILE_IDS, slots)) {
     if (!(responses[id] ?? '').trim()) {
       errors[id] = 'Please upload a document.';
     }

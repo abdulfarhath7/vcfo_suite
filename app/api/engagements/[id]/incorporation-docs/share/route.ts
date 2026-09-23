@@ -11,11 +11,13 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { normalizeChecklistItemSlice } from '@/lib/checklist-state-key';
 import {
   allIncorpDraftSlotsGenerated,
+  isIncorpSlotSetFrozen,
   generatedIncorpDraftRowKeys,
   isIncorpDraftRowKey,
 } from '@/lib/incorporation-docs/share';
 import { incorpDocRowKey } from '@/lib/incorporation-docs/paths';
 import { incorpDraftDocSlotsFromResponses } from '@/lib/incorporation-docs/paths';
+import { directorResponsesFromState } from '@/lib/proposed-directors';
 import { draftUrlFieldFor, INCORP_DOC_KINDS } from '@/lib/incorporation-docs/types';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
 import type { IncorpDocKind } from '@/lib/incorporation-docs/types';
@@ -74,13 +76,17 @@ export async function POST(request: Request, context: RouteContext) {
   const sharedAt = new Date().toISOString();
 
   if ('all' in parsedBody.data) {
-    const slots = incorpDraftDocSlotsFromResponses(pre7Responses);
+    const slots = incorpDraftDocSlotsFromResponses(pre7Responses, {
+      pre6: directorResponsesFromState(checklistState).pre6,
+      frozen: isIncorpSlotSetFrozen(pre7State),
+    });
     if (!allIncorpDraftSlotsGenerated(slots)) {
-      const missing = slots.filter((s) => !s.path.trim()).length;
+      const required = slots.filter((s) => !s.optional);
+      const missing = required.filter((s) => !s.path.trim()).length;
       return NextResponse.json(
         {
           ok: false,
-          error: `Generate all ${slots.length} incorporation drafts before sharing with the client.`,
+          error: `Generate all ${required.length} incorporation drafts before sharing with the client.`,
           code: 'incomplete',
           missingCount: missing,
         },

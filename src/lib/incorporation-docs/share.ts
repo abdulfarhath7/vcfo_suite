@@ -6,8 +6,12 @@ import {
   incorpDraftDocSlotsFromResponses,
   type IncorpDraftLabelOptions,
 } from '@/lib/incorporation-docs/paths';
-import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
-import { INCORP_DOC_KINDS, type IncorpDocKind } from '@/lib/incorporation-docs/types';
+import { isIncorpDocAudience, type IncorpDocAudience } from '@/lib/incorporation-docs/audiences';
+import {
+  directorSignedFieldIdFor,
+  INCORP_DOC_KINDS,
+  type IncorpDocKind,
+} from '@/lib/incorporation-docs/types';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 
 /** Row keys (`doc:audience`) released to the client portal (Pre-8 downloads). */
@@ -23,8 +27,7 @@ function sharedIncorpDraftRowKeys(
 export function isIncorpDraftRowKey(value: string): boolean {
   const [doc, audience] = value.split(':');
   const validDocs = new Set<string>(INCORP_DOC_KINDS);
-  const validAudiences = new Set(['non-resident', 'resident', 'company']);
-  return validDocs.has(doc) && validAudiences.has(audience);
+  return validDocs.has(doc) && isIncorpDocAudience(audience ?? '');
 }
 
 /** All incorporation draft slots (director forms + company documents). */
@@ -32,8 +35,10 @@ export function incorpDraftSlotCount(slots: IncorpDraftDocSlot[]): number {
   return slots.length;
 }
 
+/** Every required slot holds a draft; optional slots never hold the share back. */
 export function allIncorpDraftSlotsGenerated(slots: IncorpDraftDocSlot[]): boolean {
-  return slots.length > 0 && slots.every((slot) => slot.path.trim().length > 0);
+  const required = slots.filter((slot) => !slot.optional);
+  return required.length > 0 && required.every((slot) => slot.path.trim().length > 0);
 }
 
 export function generatedIncorpDraftRowKeys(slots: IncorpDraftDocSlot[]): string[] {
@@ -68,10 +73,14 @@ export function isBulkIncorpShareComplete(
   responses: ChecklistItemResponses,
   slice?: Pick<
     ChecklistItemStateSlice,
-    'sharedIncorpDraftDocs' | 'incorpDraftsSharedAt'
+    'sharedIncorpDraftDocs' | 'incorpDraftsSharedAt' | 'reviewStatus'
   >,
+  labelOptions?: IncorpDraftLabelOptions,
 ): boolean {
-  const slots = incorpDraftDocSlotsFromResponses(responses);
+  const slots = incorpDraftDocSlotsFromResponses(responses, {
+    ...labelOptions,
+    frozen: labelOptions?.frozen ?? isIncorpSlotSetFrozen(slice),
+  });
   return allIncorpDraftSlotsGenerated(slots) && areAllGeneratedIncorpDraftsShared(slots, slice);
 }
 
@@ -93,15 +102,19 @@ export function hasAnyClientVisibleIncorpDraft(
   return filterClientVisibleIncorpDrafts(responses, pre7State, labelOptions).length > 0;
 }
 
-/** Pre-8 signed upload field for each incorporation draft slot. */
+/**
+ * Pre-7 was shared with the client or accepted: the slot set is frozen, and
+ * slots added since (later directors, new doc kinds) become optional.
+ */
+export function isIncorpSlotSetFrozen(
+  slice?: Pick<ChecklistItemStateSlice, 'incorpDraftsSharedAt' | 'reviewStatus'> | null,
+): boolean {
+  if (!slice) return false;
+  return Boolean(slice.incorpDraftsSharedAt?.trim()) || slice.reviewStatus === 'accepted';
+}
+
+/** Pre-8 signed upload field for each company draft; director drafts derive theirs from the prefix. */
 const INCORP_DRAFT_TO_SIGNED_FIELD: Record<string, string> = {
-  'dir-2:non-resident': 'nrDirectorDir2SignedUrl',
-  'dir-2:resident': 'residentDirectorDir2SignedUrl',
-  'dir-8:non-resident': 'nrDirectorDir8SignedUrl',
-  'dir-8:resident': 'residentDirectorDir8SignedUrl',
-  'inc-9:non-resident': 'nrDirectorInc9SignedUrl',
-  'inc-9:resident': 'residentDirectorInc9SignedUrl',
-  'pan-undertaking:non-resident': 'nrDirectorPanUndertakingSignedUrl',
   'authorisation-letter:company': 'authorisationLetterSignedUrl',
   'acceptance-letter:company': 'acceptanceLetterSignedUrl',
   'moa-subscription-sheet:company': 'moaSubscriptionSheetSignedUrl',
@@ -112,5 +125,6 @@ export function signedUploadFieldForIncorpDraft(
   doc: IncorpDocKind,
   audience: IncorpDocAudience,
 ): string | undefined {
+  if (audience !== 'company') return directorSignedFieldIdFor(doc, audience) ?? undefined;
   return INCORP_DRAFT_TO_SIGNED_FIELD[incorpDocRowKey(doc, audience)];
 }

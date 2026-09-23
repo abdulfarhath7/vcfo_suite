@@ -7,6 +7,7 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { directorResponsesFromState } from '@/lib/proposed-directors';
 import { patchIncorpDocxBuffer, renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
+import { directorAudiencesFromPre6 } from '@/lib/incorporation-docs/audiences';
 import { downloadIncorpDocx, uploadIncorpDocx } from '@/lib/incorporation-docs/storage';
 import {
   audiencesForDoc,
@@ -100,12 +101,14 @@ export async function generateAndStoreIncorpDocs(
   const paths: GenerateIncorpDocsResult['paths'] = {};
   const responsePatch: Record<string, string> = {};
 
+  const directorAudiences = directorAudiencesFromPre6(pre6ForLabels);
   for (const doc of options.docs) {
     const def = INCORP_DOC_DEFINITIONS[doc];
-    const docAudienceSet = new Set(audiencesForDoc(doc));
+    const applicable = audiencesForDoc(doc, directorAudiences, pre6ForLabels);
+    const docAudienceSet = new Set<IncorpDocAudience>(applicable);
     const docAudiences = options.directors?.length
       ? options.directors.filter((a) => docAudienceSet.has(a))
-      : audiencesForDoc(doc);
+      : applicable;
 
     if (docAudiences.length === 0) continue;
 

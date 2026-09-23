@@ -1,4 +1,5 @@
-import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
+import type { IncorpDirectorAudience, IncorpMergeInput } from '@/lib/incorporation-docs/shared';
+import { directorAudienceKind } from '@/lib/incorporation-docs/audiences';
 import {
   directorField,
   documentPlaceForDirector,
@@ -29,25 +30,30 @@ export function buildPanUndertakingMergeFields(
   input: IncorpMergeInput & { overrides?: Partial<PanUndertakingMergeFields> },
 ): PanUndertakingMergeFields {
   const { pre6 = {}, overrides = {} } = input;
+  // Written for a non-resident director; company / resident callers get the first one.
+  const d: IncorpDirectorAudience =
+    input.director !== 'company' && directorAudienceKind(input.director) === 'non-resident'
+      ? input.director
+      : 'non-resident';
   const now = new Date();
-  const address = directorField(pre6, 'non-resident', 'UtilityBillAddress');
+  const address = directorField(pre6, d, 'UtilityBillAddress');
 
   const fields: PanUndertakingMergeFields = {
     DIRECTOR_FULL_NAME: pickString(
-      directorField(pre6, 'non-resident', 'FullName'),
+      directorField(pre6, d, 'FullName'),
       '[Director name]',
     ),
     FATHERS_NAME: pickString(
-      directorField(pre6, 'non-resident', 'FatherName'),
+      directorField(pre6, d, 'FatherName'),
       "[Father's name]",
     ),
     DIRECTOR_NATIONALITY: nationalityFromAddress(address),
     PASSPORT_NUMBER: pickString(
-      directorField(pre6, 'non-resident', 'PassportNumber'),
+      directorField(pre6, d, 'PassportNumber'),
       '[Passport number]',
     ),
     DOCUMENT_DATE: formatDocumentDate(now),
-    DOCUMENT_PLACE: documentPlaceForDirector('non-resident'),
+    DOCUMENT_PLACE: documentPlaceForDirector(d),
   };
 
   return { ...fields, ...overrides };

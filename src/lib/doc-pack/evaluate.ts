@@ -7,6 +7,7 @@ import { draftUrlFieldFor, type IncorpDocAudience } from '@/lib/incorporation-do
 import { incorpDocRowKey } from '@/lib/incorporation-docs/paths';
 import {
   displayName,
+  directorEntriesFromDirectors,
   directorResponsesFromState,
   PROPOSED_DIRECTORS_STEP_ID,
   readProposedDirectors,
@@ -34,8 +35,7 @@ export interface EvaluateDocPackInput {
 }
 
 const LEGACY_DIRECTOR_ID = /^legacy-/;
-const SKIP_UNSUPPORTED =
-  'Documents are generated for the first non-resident and first resident director only';
+const SKIP_UNSUPPORTED = 'More directors of this residency than documents are generated for';
 const SKIP_NO_RESIDENCY = 'Resident status not set';
 
 function responsesFor(state: EvaluateDocPackInput['state'], itemId: string): ChecklistItemResponses {
@@ -44,28 +44,25 @@ function responsesFor(state: EvaluateDocPackInput['state'], itemId: string): Che
 }
 
 /**
- * The generators render two audiences. The first non-resident entry becomes
- * `non-resident`, the first resident entry `resident`; anything else is
+ * Every director with a residency becomes an audience (`resident`,
+ * `resident-2` …, see `directorEntriesFromDirectors`); anything else is
  * reported, not silently dropped.
  */
 export function renderableDirectors(directors: ProposedDirector[]): {
   directors: DocPackDirector[];
   skipped: DocPackSkippedDirector[];
 } {
+  const entries = directorEntriesFromDirectors(directors);
+  const byId = new Map(entries.map((e) => [e.director.id, e]));
   const out: DocPackDirector[] = [];
   const skipped: DocPackSkippedDirector[] = [];
-  let seenNr = false;
-  let seenResident = false;
   for (const director of directors) {
     const name = displayName(director.values) || `Director ${director.index}`;
     const resident = (director.values.indiaResident ?? '').trim();
     const stepId = LEGACY_DIRECTOR_ID.test(director.id) ? 'pre-6' : PROPOSED_DIRECTORS_STEP_ID;
-    if (resident === 'no' && !seenNr) {
-      seenNr = true;
-      out.push({ director, audience: 'non-resident', stepId, displayName: name });
-    } else if (resident === 'yes' && !seenResident) {
-      seenResident = true;
-      out.push({ director, audience: 'resident', stepId, displayName: name });
+    const entry = byId.get(director.id);
+    if (entry) {
+      out.push({ director, audience: entry.key, stepId, displayName: name });
     } else {
       skipped.push({
         index: director.index,

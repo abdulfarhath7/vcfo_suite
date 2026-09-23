@@ -1,4 +1,5 @@
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import { requiredIdsForDirectors, type DirectorSlotContext } from '@/lib/incorp-director-slots';
 
 const PRE7_STATUS_OPTIONS = new Set(['approved', 'corrections-requested']);
 
@@ -27,7 +28,11 @@ export interface Pre7ValidationResult {
   warnings: Record<string, string>;
 }
 
-export function validatePre7Responses(responses: ChecklistItemResponses): Pre7ValidationResult {
+/** `slots` names the directors on file; without it the two legacy slots are required, as before. */
+export function validatePre7Responses(
+  responses: ChecklistItemResponses,
+  slots?: DirectorSlotContext,
+): Pre7ValidationResult {
   const errors: Record<string, string> = {};
   const warnings: Record<string, string> = {};
 
@@ -44,7 +49,7 @@ export function validatePre7Responses(responses: ChecklistItemResponses): Pre7Va
     errors.kycReviewStatus = 'Select a valid review status.';
   }
 
-  for (const id of PRE7_REQUIRED_FILE_IDS) {
+  for (const id of requiredIdsForDirectors(PRE7_REQUIRED_FILE_IDS, slots)) {
     if (!(responses[id] ?? '').trim()) {
       errors[id] = 'Please upload a document.';
     }

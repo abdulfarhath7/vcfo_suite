@@ -1,3 +1,4 @@
+import { directorAudienceKind } from '@/lib/incorporation-docs/audiences';
 import { PART_A_SECTION } from '@/lib/part-a-sections';
 import { resolveSignatoryDisplayName } from '@/lib/person-name';
 import { resolveRegisteredOfficeResponses } from '@/lib/registered-office-responses';
@@ -130,7 +131,7 @@ export const nonResidentDirectorExists: RequiredInput = {
   label: 'A non-resident director',
   stepId: PROPOSED_DIRECTORS_STEP_ID,
   tabId: DIRECTORS_TAB,
-  isPresent: (ctx) => ctx.directors.some((d) => d.audience === 'non-resident'),
+  isPresent: (ctx) => ctx.directors.some((d) => directorAudienceKind(d.audience) === 'non-resident'),
 };
 
 type DirectorFieldSpec = {
@@ -182,7 +183,7 @@ export function directorInputs(
 /** DIR-2 / DIR-8 / INC-9 need the same KYC set; residents also need PAN and bill type. */
 export function directorFormInputs(director: DocPackDirector): RequiredInput[] {
   const base = directorInputs(director, ['fullName', 'fatherName', 'dob', 'address', 'email', 'mobile']);
-  return director.audience === 'resident'
+  return directorAudienceKind(director.audience) === 'resident'
     ? [...base, ...directorInputs(director, ['pan', 'utilityBillType'])]
     : base;
 }

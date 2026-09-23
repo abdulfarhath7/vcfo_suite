@@ -1,4 +1,5 @@
-import type { IncorpDirectorKind, IncorpMergeInput } from '@/lib/incorporation-docs/shared';
+import type { IncorpDirectorAudience, IncorpMergeInput } from '@/lib/incorporation-docs/shared';
+import { directorAudienceKind } from '@/lib/incorporation-docs/audiences';
 import {
   directorField,
   directorNationalityLabel,
@@ -56,9 +57,9 @@ export function buildDir2MergeFields(
   input: IncorpMergeInput & { overrides?: Partial<Dir2MergeFields> },
 ): Dir2MergeFields {
   const { engagement, pre1 = {}, pre5 = {}, pre6 = {}, director, overrides = {} } = input;
-  const d = director as IncorpDirectorKind;
+  const d = director as IncorpDirectorAudience;
   const now = new Date();
-  const isResident = d === 'resident';
+  const isResident = directorAudienceKind(d) === 'resident';
 
   const fields: Dir2MergeFields = {
     PROPOSED_COMPANY_NAME: resolveProposedCompanyName(pre5, pre1, engagement),

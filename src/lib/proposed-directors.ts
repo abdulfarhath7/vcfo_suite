@@ -9,6 +9,14 @@ import { parseDirectorCount } from '@/lib/checklist-pre1-validation';
 import { pre6NrFieldPrefix, pre6ResidentFieldPrefix } from '@/lib/checklist-pre6-validation';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { resolveRegisteredOfficeResponses } from '@/lib/registered-office-responses';
+import {
+  audienceForDirectorFieldId,
+  directorAudienceKey,
+  directorFieldPrefix,
+  MAX_DIRECTOR_SLOTS_PER_KIND,
+  type IncorpDirectorAudience,
+  type IncorpDirectorKind,
+} from '@/lib/incorporation-docs/audiences';
 
 /**
  * PROPOSED DIRECTORS — one read-side accessor for every consumer.
@@ -200,10 +208,56 @@ export function directorResponsesFromState(state: StepStateMap): {
   const group = proposedDirectorsGroup();
   const entries = group ? repeatEntries(responsesFor(state, PROPOSED_DIRECTORS_STEP_ID), group) : [];
   if (entries.length === 0) return { pre1, pre6 };
+  // Stale legacy KYC keys must not bleed into a director the entries define.
+  const nonDirectorPre6 = Object.fromEntries(
+    Object.entries(pre6).filter(([key]) => audienceForDirectorFieldId(key) === null),
+  );
   return {
     pre1: { ...pre1, ...directorsAsPre1Responses(entries) },
-    pre6: { ...pre6, ...directorsAsPre6Responses(entries) },
+    pre6: { ...nonDirectorPre6, ...directorsAsPre6Responses(entries) },
   };
+}
+
+/**
+ * One director as the incorporation documents see them: the audience key the
+ * drafts are stored under and the `pre-6`-shaped field prefix they read.
+ * Slot numbering matches `directorsAsPre6Responses` exactly.
+ */
+export interface DirectorEntry {
+  key: IncorpDirectorAudience;
+  kind: IncorpDirectorKind;
+  /** 1-based position within `kind`. */
+  slot: number;
+  fieldPrefix: string;
+  displayName: string;
+  director: ProposedDirector;
+}
+
+/** Directors with a residency set, keyed for document generation. Beyond the slot ceiling are dropped. */
+export function directorEntriesFromDirectors(directors: ProposedDirector[]): DirectorEntry[] {
+  const out: DirectorEntry[] = [];
+  const slots: Record<IncorpDirectorKind, number> = { 'non-resident': 0, resident: 0 };
+  for (const director of directors) {
+    const resident = (director.values.indiaResident ?? '').trim();
+    if (resident !== 'yes' && resident !== 'no') continue;
+    const kind: IncorpDirectorKind = resident === 'yes' ? 'resident' : 'non-resident';
+    const slot = ++slots[kind];
+    if (slot > MAX_DIRECTOR_SLOTS_PER_KIND) continue;
+    const key = directorAudienceKey(kind, slot);
+    out.push({
+      key,
+      kind,
+      slot,
+      fieldPrefix: directorFieldPrefix(key),
+      displayName: displayName(director.values) || `Director ${director.index}`,
+      director,
+    });
+  }
+  return out;
+}
+
+export function resolveDirectorEntries(state: StepStateMap): DirectorEntry[] {
+  return directorEntriesFromDirectors(readProposedDirectors(state));
 }
 
 export function hasIndiaResidentDirector(directors: ProposedDirector[]): boolean {

@@ -18,6 +18,7 @@ import {
 import { expandRepeatFieldsForDiff } from '@/lib/checklist-repeat';
 import { validatePre6Responses } from '@/lib/checklist-pre6-validation';
 import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
+import type { DirectorSlotContext } from '@/lib/incorp-director-slots';
 import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
 import { validatePre9Responses } from '@/lib/checklist-pre9-validation';
 import { validatePre10Responses } from '@/lib/checklist-pre10-validation';
@@ -219,6 +220,7 @@ export function runStepValidation(
   pre1ResponsesForPre6: ChecklistItemResponses,
   pre1SubmittedForPre6: boolean,
   options?: Pre1ValidationOptions,
+  directorSlots?: DirectorSlotContext,
 ): { ok: boolean; errors: Record<string, string>; warnings: Record<string, string> } {
   if (isPre1) return validatePre1Responses(pre1Draft, options);
   if (isPre6) {
@@ -234,8 +236,8 @@ export function runStepValidation(
     }
     return validatePre6Responses(draft, pre1ResponsesForPre6);
   }
-  if (itemId === 'pre-7') return validatePre7Responses(draft);
-  if (itemId === 'pre-8') return validatePre8Responses(draft);
+  if (itemId === 'pre-7') return validatePre7Responses(draft, directorSlots);
+  if (itemId === 'pre-8') return validatePre8Responses(draft, directorSlots);
   if (itemId === 'pre-9') return validatePre9Responses(draft);
   if (itemId === 'pre-10') return validatePre10Responses(draft);
   if (itemId === 'pre-11') return validatePre11Responses(draft);

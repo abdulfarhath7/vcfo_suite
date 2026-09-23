@@ -5,7 +5,8 @@ import { repeatFieldId } from '@/lib/checklist-repeat';
 /** Obviously fake directors only — the repo is public. */
 export interface FixtureDirector {
   id: string;
-  resident: 'yes' | 'no';
+  /** Empty = residency not set yet. */
+  resident: 'yes' | 'no' | '';
   values?: Record<string, string>;
 }
 
@@ -20,7 +21,7 @@ const COMMON = {
 
 export function director(
   id: string,
-  resident: 'yes' | 'no',
+  resident: 'yes' | 'no' | '',
   first: string,
   overrides: Record<string, string> = {},
 ): FixtureDirector {

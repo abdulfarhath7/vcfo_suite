@@ -4,12 +4,16 @@ import {
   PRE6_OCCUPATION_OPTIONS,
   PRE6_UTILITY_BILL_OPTIONS,
 } from '@/lib/checklist-pre6-validation';
-import { resolvePre6DirectorDisplayName } from '@/lib/person-name';
+import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
+import {
+  directorAudienceKind,
+  directorFieldPrefix,
+  type IncorpDirectorAudience,
+  type IncorpDirectorKind,
+  type IncorpDocAudience,
+} from '@/lib/incorporation-docs/audiences';
 
-export type IncorpDirectorKind = 'non-resident' | 'resident';
-
-/** Director-specific or company-level incorporation draft audience. */
-export type IncorpDocAudience = IncorpDirectorKind | 'company';
+export type { IncorpDirectorAudience, IncorpDirectorKind, IncorpDocAudience };
 
 export interface IncorpMergeInput {
   engagement?: Pick<
@@ -21,11 +25,6 @@ export interface IncorpMergeInput {
   pre6?: ChecklistItemResponses;
   director: IncorpDocAudience;
 }
-
-const DIRECTOR_PREFIX: Record<IncorpDirectorKind, string> = {
-  'non-resident': 'nrDirector',
-  resident: 'residentDirector',
-};
 
 export function pickString(...values: (string | null | undefined)[]): string {
   for (const v of values) {
@@ -81,30 +80,34 @@ export function resolveProposedCompanyName(
 
 export function directorField(
   pre6: ChecklistItemResponses,
-  director: IncorpDirectorKind | IncorpDocAudience,
+  director: IncorpDocAudience,
   suffix: string,
 ): string {
   if (director === 'company') return '';
+  const prefix = directorFieldPrefix(director);
   if (suffix === 'FullName') {
-    return resolvePre6DirectorDisplayName(pre6, director);
+    return resolvePre6DisplayNameForPrefix(pre6, prefix);
   }
-  const prefix = DIRECTOR_PREFIX[director];
   return (pre6[`${prefix}${suffix}`] ?? '').trim();
 }
 
-export function documentPlaceForDirector(director: IncorpDirectorKind): string {
-  return director === 'resident' ? 'India' : 'Foreign';
+function isResidentAudience(director: IncorpDirectorAudience): boolean {
+  return directorAudienceKind(director) === 'resident';
 }
 
-export function identityProofForDirector(director: IncorpDirectorKind): string {
-  return director === 'resident' ? 'Copy of Aadhaar Card' : 'Copy of Passport';
+export function documentPlaceForDirector(director: IncorpDirectorAudience): string {
+  return isResidentAudience(director) ? 'India' : 'Foreign';
+}
+
+export function identityProofForDirector(director: IncorpDirectorAudience): string {
+  return isResidentAudience(director) ? 'Copy of Aadhaar Card' : 'Copy of Passport';
 }
 
 export function residenceProofForDirector(
   pre6: ChecklistItemResponses,
-  director: IncorpDirectorKind,
+  director: IncorpDirectorAudience,
 ): string {
-  if (director === 'resident') {
+  if (isResidentAudience(director)) {
     const utilityType = labelForOption(
       PRE6_UTILITY_BILL_OPTIONS,
       directorField(pre6, director, 'UtilityBillType'),
@@ -116,15 +119,15 @@ export function residenceProofForDirector(
 
 export function directorOccupationLabel(
   pre6: ChecklistItemResponses,
-  director: IncorpDirectorKind,
+  director: IncorpDirectorAudience,
 ): string {
   const occupationRaw = directorField(pre6, director, 'OccupationType');
   const occupationLabel = labelForOption(PRE6_OCCUPATION_OPTIONS, occupationRaw);
   return occupationLabel || 'Director';
 }
 
-export function directorNationalityLabel(director: IncorpDirectorKind): string {
-  return director === 'resident' ? 'India' : 'Foreign';
+export function directorNationalityLabel(director: IncorpDirectorAudience): string {
+  return isResidentAudience(director) ? 'India' : 'Foreign';
 }
 
 /** Extract trailing country token from a comma-separated address (e.g. "…, USA"). */
