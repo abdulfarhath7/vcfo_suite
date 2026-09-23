@@ -146,6 +146,7 @@ Everything here lives in `engagements.checklist_state` jsonb. **No new tables.**
 - **Deleted Director KYC responses stay in `checklist_state`.** Orphan keys are harmless; deleting them is irreversible and there is no recovery if the owner reverses this decision.
 - Completeness is computed from the **visible step list**, never a fixed count — the same rule established for Part A sections. Removing Director KYC and adding four steps changes the count; anything hardcoded breaks silently.
 - Phase 0 must report whether any docx generator (DIR-2, DIR-8, INC-9, MOA/AOA) reads Director KYC or Part A proposed-directors responses. If yes, repoint it at the accessor in the same phase that moves the data.
+- Generators already read directors through `src/lib/proposed-directors.ts`; Phase 2 swaps its source.
 
 ---
 

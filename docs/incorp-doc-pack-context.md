@@ -298,6 +298,8 @@ Owner answers:
 
 1. **Q1:** ID and address declaration only for directors who hold a DIN.
 2. **Q2:** DIR-2 "No. of directorships" counts all other-interest entries.
-3. **Q3:** unchanged — non-resident place stays `'Foreign'` unless the pre-7 signing place is filled.
+3. **Q3:** unchanged — a non-resident director's place stays `'Foreign'`; the pre-7 signing place applies to resident directors.
 4. **Q4:** Phase 6 skipped for now.
 5. **DIR-8 source:** additive structured fields on the `pre-15` director entry for up to three other interests (`otherInterest{i}Company`, `Cin`, `Designation`, `From`, `To`, shown when `hasOtherCompanyInterest = yes`). The free-text `otherCompanyInterestDetails` stays. Legacy engagements read the `pre-6` `OtherCompanyInterest{i}*` fields.
+
+Built 2026-09-23: Phases 1–5 and 7 (`8f556eb`, `ae7eefb`, `49166fa`, `317c067`, `2aa746a` + docs). Phase 6 not started.
