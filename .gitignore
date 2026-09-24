@@ -23,3 +23,6 @@ infra/tfplan*
 infra/errored.tfstate
 *.tsbuildinfo
 docs/mca-recordings/
+
+# Source workbooks with client PII (PAN, Aadhaar, DIN) — never commit
+*.xlsx
