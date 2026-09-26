@@ -321,20 +321,21 @@ const preInc: ChecklistItem[] = [
     title: 'KYC Review & DSC',
     responsibleRole: 'intern',
     description:
-      'Intern reviews submitted KYC data, initiates DSC with eMudhra, and shares draft incorporation documents with the client.',
-    forms: ['DSC workflow', 'DIR-2', 'DIR-8', 'INC-9'],
+      'Intern reviews submitted KYC data and initiates DSC with eMudhra. The incorporation documents are generated on the document pack page.',
+    forms: ['DSC workflow'],
     infoRequired: [
       'KYC review notes and correction requests (if any)',
       'DSC success proof for each director (attachment)',
-      'Draft DIR-2, DIR-8, INC-9 for each director',
-      'PAN Undertaking (non-resident director, where applicable)',
-      'Draft authorisation letter, acceptance letter, and board resolution',
-      'Draft MOA and AOA subscription sheets',
+      'Signing date and place, and the subscription-sheet witness',
     ],
     deadline: { kind: 'estimated-weeks', weeks: [6, 7] },
     expectedTimeline: '2–3 working days',
   },
   {
+    // LEGACY (removed from SPICe+ Part B 2026-09-26). Kept in the catalog, like
+    // `pre-6`, so signed uploads, vault labels and audit rows on older
+    // engagements still resolve. Not in any phase's `itemIds`, so it never
+    // renders or gates.
     id: 'pre-8',
     slug: 'execution-of-incorporation-documents',
     bucket: 'pre-inc',
@@ -439,7 +440,7 @@ const PRE_INC_PHASES: ChecklistPhaseGroup[] = [
     id: 'pre-inc-phase-2',
     title: 'Phase 2 — Incorporation',
     subtitle: 'Steps 1–6',
-    itemIds: ['pre-13', 'pre-14', 'pre-15', 'pre-16', 'pre-7', 'pre-8', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
+    itemIds: ['pre-13', 'pre-14', 'pre-15', 'pre-16', 'pre-7', 'pre-9', 'pre-10', 'pre-11', 'pre-12'],
   },
 ];
 

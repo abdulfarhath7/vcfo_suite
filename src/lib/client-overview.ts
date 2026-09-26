@@ -17,6 +17,7 @@ import {
   coerceStatusCode,
   getIncorporationPhases,
   getActiveCatalogItems,
+  getItem,
   type ChecklistItem,
 } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
@@ -420,11 +421,11 @@ export function buildBallInCourt(state: ClientOverviewState): {
 }
 
 export function buildDeliverables(state: ClientOverviewState): ClientOverviewDeliverable[] {
-  const byId = new Map(getActiveCatalogItems().map((item) => [item.id, item]));
   const out: ClientOverviewDeliverable[] = [];
 
   for (const entry of CLIENT_DELIVERABLE_FIELDS) {
-    const item = byId.get(entry.stepId);
+    // Full catalog: the signed MOA / AOA live on the legacy `pre-8` step.
+    const item = getItem(entry.stepId);
     if (!item) continue;
     const slice = state[entry.stepId];
     const storagePath = responsesFor(item, state)[entry.fieldId]?.trim();

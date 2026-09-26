@@ -4,22 +4,10 @@ import { requiredIdsForDirectors, type DirectorSlotContext } from '@/lib/incorp-
 const PRE7_STATUS_OPTIONS = new Set(['approved', 'corrections-requested']);
 
 const PRE7_REQUIRED_TEXT_IDS = ['kycReviewStatus', 'kycReviewNotes'] as const;
+/** DSC proof per director. The draft documents moved to the document pack (no upload here). */
 const PRE7_REQUIRED_FILE_IDS = [
   'nrDirectorDscSuccessMessageUrl',
   'residentDirectorDscSuccessMessageUrl',
-  'nrDirectorDir2DraftUrl',
-  'residentDirectorDir2DraftUrl',
-  'nrDirectorDir8DraftUrl',
-  'residentDirectorDir8DraftUrl',
-  'nrDirectorInc9DraftUrl',
-  'residentDirectorInc9DraftUrl',
-  'moaDraftUrl',
-  'aoaDraftUrl',
-  'authorisationLetterDraftUrl',
-  'acceptanceLetterDraftUrl',
-  'boardResolutionDraftForIncorpUrl',
-  'moaSubscriptionSheetDraftUrl',
-  'aoaSubscriptionSheetDraftUrl',
 ] as const;
 
 export interface Pre7ValidationResult {

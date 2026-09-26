@@ -17,12 +17,10 @@ import {
   hasAnyClientVisibleIncorpDraft,
 } from '@/lib/incorporation-docs/share';
 import { cn } from '@/lib/utils';
-import { IncorporationDocsGeneratePanel } from '@/components/incorporation/IncorporationDocsGeneratePanel';
 import { IncorporationDraftsZipLink } from '@/components/incorporation/IncorporationDraftsZipLink';
 import { IncorporationDocsBulkShareBar } from '@/components/incorporation/IncorporationDocsBulkShareBar';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 import { hasPre7OtherAttachments } from '@/lib/checklist-pre7-other-attachments';
-import { buildPre7NonIncorpDraftDocLinks } from '@/components/incorporation/phase1-step-panel-utils';
 import {
   PanelShell,
   Pre7OtherAttachmentsList,
@@ -266,17 +264,15 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
 }
 
 export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
-  const { engagement, responses, className, isClient, deliveredToClient } = props;
+  const { responses, className, isClient, deliveredToClient } = props;
     const nrDsc = responses.nrDirectorDscSuccessMessageUrl?.trim();
     const residentDsc = responses.residentDirectorDscSuccessMessageUrl?.trim();
     const hasDsc = Boolean(nrDsc || residentDsc);
-    const draftDocs = buildPre7NonIncorpDraftDocLinks(responses);
-    const hasDraftDocs = draftDocs.length > 0;
     const kycStatus = responses.kycReviewStatus?.trim();
     const kycNotes = responses.kycReviewNotes?.trim();
     const hasOtherAttachments = hasPre7OtherAttachments(responses);
     const hasDeliveredContent =
-      deliveredToClient && (hasDsc || hasDraftDocs || hasOtherAttachments);
+      deliveredToClient && (hasDsc || hasOtherAttachments);
 
     if (isClient) {
       return (
@@ -286,7 +282,7 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
               <>
                 <p className="flex items-center gap-1.5 text-success-text">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  Your engagement team has completed KYC review and shared DSC proof and draft documents.
+                  Your engagement team has completed KYC review and shared DSC proof.
                 </p>
                 {kycStatus && (
                   <div>
@@ -320,35 +316,22 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
                     )}
                   </div>
                 )}
-                {hasDraftDocs && (
-                  <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wide text-text-tertiary">
-                      Draft incorporation documents
-                    </p>
-                    <DraftDocLinksList
-                      docs={draftDocs}
-                      engagementId={engagement?.id}
-                      showIncorpDocxPreview={false}
-                    />
-                  </div>
-                )}
                 {hasOtherAttachments && (
                   <Pre7OtherAttachmentsList responses={responses} />
                 )}
               </>
             ) : (
-              <p>Draft incorporation documents appear here when delivered.</p>
+              <p>KYC review and DSC proof appear here when delivered.</p>
             )}
           </PanelShell>
         </div>
       );
     }
 
+    // The incorporation documents are listed, previewed and downloaded on the
+    // document pack page, not on this step.
     return (
       <div className={cn('space-y-3', className)}>
-        {engagement && !isClient && (
-          <IncorporationDocsGeneratePanel engagement={engagement} responses={responses} />
-        )}
         <Pre7OtherAttachmentsList responses={responses} />
       </div>
     );

@@ -107,8 +107,8 @@ describe('intern overview progress', () => {
     expect(internOverviewCurrentItemInPhase(partB.items, afterPartA)?.id).toBe(partB.items[0]!.id);
     expect(internOverviewCurrentItemInPhase(post.items, afterPartA)?.id).toBe(post.items[0]!.id);
 
-    const midPartB = gateActiveCatalog(completeThrough('pre-8'), 'staff');
-    expect(internOverviewCurrentItemInPhase(partB.items, midPartB)?.id).toBe('pre-8');
+    const midPartB = gateActiveCatalog(completeThrough('pre-9'), 'staff');
+    expect(internOverviewCurrentItemInPhase(partB.items, midPartB)?.id).toBe('pre-9');
   });
 
   it('treats a client-owned current gate as waiting', () => {

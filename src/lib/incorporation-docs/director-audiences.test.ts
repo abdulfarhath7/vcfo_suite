@@ -173,24 +173,22 @@ describe('pre-7 fields and validator follow the directors', () => {
 
   it('without director context the legacy two slots are required, as before', () => {
     const errors = validatePre7Responses({}).errors;
-    expect(errors.nrDirectorDir2DraftUrl).toBeDefined();
-    expect(errors.residentDirectorDir2DraftUrl).toBeDefined();
-    expect(errors.residentDirector2Dir2DraftUrl).toBeUndefined();
+    expect(errors.nrDirectorDscSuccessMessageUrl).toBeDefined();
+    expect(errors.residentDirectorDscSuccessMessageUrl).toBeDefined();
+    expect(errors.residentDirector2DscSuccessMessageUrl).toBeUndefined();
   });
 
   it('2 residents: no NR requirement, resident-2 required', () => {
     const errors = validatePre7Responses({}, { directors: ['resident', 'resident-2'] }).errors;
-    expect(errors.nrDirectorDir2DraftUrl).toBeUndefined();
     expect(errors.nrDirectorDscSuccessMessageUrl).toBeUndefined();
-    expect(errors.residentDirector2Dir2DraftUrl).toBeDefined();
     expect(errors.residentDirector2DscSuccessMessageUrl).toBeDefined();
   });
 
   it('frozen: resident-2 becomes optional', () => {
     const slots = { directors: ['resident', 'resident-2'] as const, frozen: true };
-    expect(validatePre7Responses({}, slots).errors.residentDirector2Dir2DraftUrl).toBeUndefined();
+    expect(validatePre7Responses({}, slots).errors.residentDirector2DscSuccessMessageUrl).toBeUndefined();
     const visible = fieldsForDirectorAudiences(fields, slots);
-    const r2 = visible.find((f) => f.id === 'residentDirector2Dir2DraftUrl');
+    const r2 = visible.find((f) => f.id === 'residentDirector2DscSuccessMessageUrl');
     expect(r2?.required).toBe(false);
   });
 
@@ -199,7 +197,7 @@ describe('pre-7 fields and validator follow the directors', () => {
     expect(visible.map((f) => f.id)).toEqual(
       fields.filter((f) => !/^(nrDirector|residentDirector)\d/.test(f.id)).map((f) => f.id),
     );
-    const label = fields.find((f) => f.id === 'residentDirector2Dir2DraftUrl')?.label;
-    expect(label).toBe('DIR-2 draft - Resident Director 2');
+    const label = fields.find((f) => f.id === 'residentDirector2DscSuccessMessageUrl')?.label;
+    expect(label).toBe('Digital Signature Certificate (DSC) success message - Resident Director 2');
   });
 });
