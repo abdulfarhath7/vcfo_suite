@@ -16,8 +16,6 @@ import { incorpDocDownloadFilename } from '@/lib/incorporation-docs/paths';
 import { downloadIncorpDocx } from '@/lib/incorporation-docs/storage';
 import { directorResponsesFromState } from '@/lib/proposed-directors';
 import { slugifyCompanyName } from '@/lib/slug';
-import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
 import { downloadBoardResolutionDocx } from '@/storage/board-resolution';
 
 /**
@@ -133,7 +131,7 @@ export async function renderDocPackItem(
   }
 
   // Same validation the generate route applies, so "ready" never renders a placeholder.
-  const { pre1, pre5, pre6: pre6Validated } = validateIncorpDocsGeneration({
+  const { pre1, pre5, pre6: pre6Validated, pre7, pre13, pre16 } = validateIncorpDocsGeneration({
     engagement,
     checklistState,
     docs: [doc],
@@ -144,15 +142,12 @@ export async function renderDocPackItem(
     pre1,
     pre5,
     pre6: pre6Validated,
-    pre7: pre7Responses(checklistState),
+    pre7,
+    pre13,
+    pre16,
     director: item.audience,
   });
   return { buffer, filename };
-}
-
-function pre7Responses(checklistState: Parameters<typeof validateIncorpDocsGeneration>[0]['checklistState']) {
-  const item = checklist.find((c) => c.id === 'pre-7');
-  return item ? extractItemResponses(item, checklistState?.['pre-7']) : {};
 }
 
 export function docPackZipFilename(engagement: { companyName: string; slug?: string }, now = new Date()): string {

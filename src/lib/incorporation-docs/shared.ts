@@ -7,6 +7,11 @@ import {
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
 import { otherInterestsFromPre6, type OtherCompanyInterest } from '@/lib/other-company-interests';
 import {
+  DIRECTOR_IDENTITY_PROOF_OPTIONS,
+  DIRECTOR_RESIDENCE_PROOF_OPTIONS,
+  proofDocumentName,
+} from '@/lib/director-proofs';
+import {
   directorAudienceKind,
   directorFieldPrefix,
   type IncorpDirectorAudience,
@@ -17,15 +22,20 @@ import {
 export type { IncorpDirectorAudience, IncorpDirectorKind, IncorpDocAudience };
 
 export interface IncorpMergeInput {
-  engagement?: Pick<
+  engagement?: (Pick<
     Engagement,
     'companyName' | 'parentEntityName' | 'parentEntityAddress' | 'parentEntityRegistrationNumber'
-  > | null;
+  > &
+    Partial<Pick<Engagement, 'ownershipType'>>) | null;
   pre1?: ChecklistItemResponses;
   pre5?: ChecklistItemResponses;
   pre6?: ChecklistItemResponses;
-  /** Pre-7 answers — the lead's signing date and place (`incorpDocsSigning*`). */
+  /** Pre-7 answers — the lead's signing date and place (`incorpDocsSigning*`), subscription witness. */
   pre7?: ChecklistItemResponses;
+  /** Capital structure — equity shares issued at incorporation. */
+  pre13?: ChecklistItemResponses;
+  /** Subscriber details — who takes the shares, and how many. */
+  pre16?: ChecklistItemResponses;
   director: IncorpDocAudience;
 }
 
@@ -45,11 +55,17 @@ export function signingDate(input: Pick<IncorpMergeInput, 'pre7'>): Date {
 }
 
 /**
- * Place of signing. Non-resident directors keep "Foreign" (owner answer Q3);
- * resident directors take the lead's pre-7 place, else "India" as before.
+ * Place of signing. A non-resident director's own `pre-15` answer
+ * (`signingPlace`, "City, Country"), else "Foreign" as before (owner answer
+ * Q3); resident directors take the lead's pre-7 place, else "India".
  */
-export function signingPlace(input: Pick<IncorpMergeInput, 'pre7'>, director: IncorpDirectorAudience): string {
-  if (!isResidentAudience(director)) return documentPlaceForDirector(director);
+export function signingPlace(
+  input: Pick<IncorpMergeInput, 'pre6' | 'pre7'>,
+  director: IncorpDirectorAudience,
+): string {
+  if (!isResidentAudience(director)) {
+    return pickString(directorField(input.pre6 ?? {}, director, 'SigningPlace'), documentPlaceForDirector(director));
+  }
   return pickString(input.pre7?.[INCORP_SIGNING_PLACE_FIELD], documentPlaceForDirector(director));
 }
 
@@ -145,10 +161,23 @@ export function documentPlaceForDirector(director: IncorpDirectorAudience): stri
   return isResidentAudience(director) ? 'India' : 'Foreign';
 }
 
-export function identityProofForDirector(director: IncorpDirectorAudience): string {
+/** The confirmed `pre-15` identity proof, else Aadhaar (resident) / passport (non-resident). */
+export function identityProofForDirector(
+  pre6: ChecklistItemResponses,
+  director: IncorpDirectorAudience,
+): string {
+  const confirmed = proofDocumentName(
+    DIRECTOR_IDENTITY_PROOF_OPTIONS,
+    directorField(pre6, director, 'IdentityProofType'),
+  );
+  if (confirmed) return `Copy of ${confirmed}`;
   return isResidentAudience(director) ? 'Copy of Aadhaar Card' : 'Copy of Passport';
 }
 
+/**
+ * Residents: their utility-bill type. Non-residents: the `pre-15` residence
+ * proof ("other" names its own document), else the driving licence as before.
+ */
 export function residenceProofForDirector(
   pre6: ChecklistItemResponses,
   director: IncorpDirectorAudience,
@@ -160,7 +189,12 @@ export function residenceProofForDirector(
     );
     return utilityType ? `Copy of ${utilityType}` : 'Copy of Utility Bill';
   }
-  return 'Copy of Driving License';
+  const type = directorField(pre6, director, 'ResidenceProofType');
+  const document =
+    type === 'other'
+      ? directorField(pre6, director, 'ResidenceProofOther')
+      : proofDocumentName(DIRECTOR_RESIDENCE_PROOF_OPTIONS, type);
+  return document ? `Copy of ${document}` : 'Copy of Driving License';
 }
 
 export function directorOccupationLabel(
@@ -172,8 +206,29 @@ export function directorOccupationLabel(
   return occupationLabel || 'Director';
 }
 
-export function directorNationalityLabel(director: IncorpDirectorAudience): string {
-  return isResidentAudience(director) ? 'India' : 'Foreign';
+/** The `pre-15` nationality, else "India" (resident) / "Foreign" (non-resident) as before. */
+export function directorNationalityLabel(
+  pre6: ChecklistItemResponses,
+  director: IncorpDirectorAudience,
+): string {
+  return pickString(
+    directorField(pre6, director, 'Nationality'),
+    isResidentAudience(director) ? 'India' : 'Foreign',
+  );
+}
+
+/**
+ * Nationality for documents that historically read it off the address
+ * (PAN undertaking, subscription sheet): the answer first, then the address.
+ */
+export function directorNationalityOrAddressCountry(
+  pre6: ChecklistItemResponses,
+  director: IncorpDirectorAudience,
+): string {
+  return pickString(
+    directorField(pre6, director, 'Nationality'),
+    nationalityFromAddress(directorField(pre6, director, 'UtilityBillAddress')),
+  );
 }
 
 /** Extract trailing country token from a comma-separated address (e.g. "…, USA"). */

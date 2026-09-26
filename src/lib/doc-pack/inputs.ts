@@ -10,6 +10,14 @@ import {
 import { resolveProposedCompanyName } from '@/lib/incorporation-docs/shared';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
 import type { DocPackContext, DocPackDirector, RequiredInput } from '@/lib/doc-pack/types';
+import { parentCountryAnswer } from '@/lib/parent-jurisdiction';
+import { REGISTERED_OFFICE_STATE_FIELD_ID } from '@/lib/registered-office-responses';
+import {
+  planSubscription,
+  SUBSCRIBER_DETAILS_STEP_ID,
+  SUBSCRIPTION_WITNESS_FIELDS,
+} from '@/lib/incorporation-docs/subscription-sheet';
+import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 
 /**
  * Required inputs mirror what the generators' missing-field collectors demand
@@ -24,6 +32,8 @@ const isPlaceholder = (value: string): boolean => !value || value.startsWith('['
 const NAME_APPROVAL_TAB = sectionSlug('Name Approval');
 const REGISTERED_OFFICE_TAB = sectionSlug('Registered office');
 const DIRECTORS_TAB = sectionSlug('Directors');
+const DRAFT_DOCS_TAB = sectionSlug('Draft Incorporation Docs');
+const SUBSCRIBERS_TAB = sectionSlug('Subscribers');
 
 export const companyName: RequiredInput = {
   key: 'company.name',
@@ -48,6 +58,19 @@ export const registeredOfficeAddress: RequiredInput = {
         ctx.responses.pre8,
         ctx.responses.pre14,
       ).registeredOfficeCompleteAddress,
+    ),
+};
+
+export const registeredOfficeState: RequiredInput = {
+  key: 'company.registeredOfficeState',
+  label: 'State of the registered office',
+  stepId: 'pre-14',
+  tabId: REGISTERED_OFFICE_TAB,
+  isPresent: (ctx) =>
+    filled(
+      resolveRegisteredOfficeResponses(ctx.responses.pre6, ctx.responses.pre8, ctx.responses.pre14)[
+        REGISTERED_OFFICE_STATE_FIELD_ID
+      ],
     ),
 };
 
@@ -97,6 +120,35 @@ export const parentEntityAddress: RequiredInput = {
   isPresent: (ctx) =>
     !isPlaceholder(resolveParentEntityAddress(ctx.responses.pre1, ctx.engagement ?? null)),
 };
+
+/**
+ * The parent's country of incorporation. The state / province is optional
+ * (not every country has one), so it is never a missing input.
+ */
+export const parentEntityCountry: RequiredInput = {
+  key: 'parent.country',
+  label: 'Parent entity country of incorporation',
+  stepId: 'pre-1',
+  tabId: sectionSlug(PART_A_SECTION.foreignEntity),
+  isPresent: (ctx) => filled(parentCountryAnswer(ctx.responses.pre1)),
+};
+
+function witnessInput(key: keyof typeof SUBSCRIPTION_WITNESS_FIELDS, label: string): RequiredInput {
+  return {
+    key: `witness.${key}`,
+    label,
+    stepId: 'pre-7',
+    tabId: DRAFT_DOCS_TAB,
+    isPresent: (ctx) => filled(ctx.responses.pre7[SUBSCRIPTION_WITNESS_FIELDS[key]]),
+  };
+}
+
+/** The subscription sheets' "Signed before me" witness (membership number is optional). */
+export const subscriptionWitnessInputs: RequiredInput[] = [
+  witnessInput('name', 'Witness to the subscribers — name'),
+  witnessInput('address', 'Witness to the subscribers — address'),
+  witnessInput('occupation', 'Witness to the subscribers — occupation'),
+];
 
 export const signatoryName: RequiredInput = {
   key: 'signatory.name',
@@ -151,6 +203,9 @@ const DIRECTOR_FIELDS = {
   pan: { key: 'pan', label: 'PAN', values: ['panNumber'] },
   utilityBillType: { key: 'utilityBillType', label: 'Utility bill type', values: ['utilityBillType'] },
   passport: { key: 'passport', label: 'Passport number', values: ['passportNumber'] },
+  nationality: { key: 'nationality', label: 'Nationality', values: ['nationality'] },
+  signingPlace: { key: 'signingPlace', label: 'Place of signing', values: ['signingPlace'] },
+  residenceProofType: { key: 'residenceProofType', label: 'Proof of residence', values: ['residenceProofType'] },
 } satisfies Record<string, DirectorFieldSpec>;
 
 export type DirectorFieldKey = keyof typeof DIRECTOR_FIELDS;
@@ -180,12 +235,45 @@ export function directorInputs(
   return fields.map((f) => directorInput(director, DIRECTOR_FIELDS[f]));
 }
 
+/**
+ * Answers `pre-15` asks a non-resident that the documents print instead of
+ * a default. Legacy `pre-6` directors never had the questions, so their
+ * documents keep the historical wording rather than block on a field that
+ * does not exist on their step.
+ */
+function askedOnPre15(director: DocPackDirector): boolean {
+  return director.stepId === PROPOSED_DIRECTORS_STEP_ID && directorAudienceKind(director.audience) === 'non-resident';
+}
+
+/** Place of signing — every director draft prints it. */
+export function directorSigningInputs(director: DocPackDirector): RequiredInput[] {
+  return askedOnPre15(director) ? directorInputs(director, ['signingPlace']) : [];
+}
+
+/** Nationality — DIR-2 and the PAN undertaking print it. */
+export function directorNationalityInputs(director: DocPackDirector): RequiredInput[] {
+  return askedOnPre15(director) ? directorInputs(director, ['nationality']) : [];
+}
+
+/** DIR-2's proof of residence; "other" also needs the document's name. */
+export function directorResidenceProofInputs(director: DocPackDirector): RequiredInput[] {
+  if (!askedOnPre15(director)) return [];
+  const v = director.director.values;
+  return [
+    directorInput(director, DIRECTOR_FIELDS.residenceProofType, () =>
+      filled(v.residenceProofType) && (v.residenceProofType !== 'other' || filled(v.residenceProofOther)),
+    ),
+  ];
+}
+
 /** DIR-2 / DIR-8 / INC-9 need the same KYC set; residents also need PAN and bill type. */
 export function directorFormInputs(director: DocPackDirector): RequiredInput[] {
   const base = directorInputs(director, ['fullName', 'fatherName', 'dob', 'address', 'email', 'mobile']);
-  return directorAudienceKind(director.audience) === 'resident'
-    ? [...base, ...directorInputs(director, ['pan', 'utilityBillType'])]
-    : base;
+  const kyc =
+    directorAudienceKind(director.audience) === 'resident'
+      ? [...base, ...directorInputs(director, ['pan', 'utilityBillType'])]
+      : base;
+  return [...kyc, ...directorSigningInputs(director)];
 }
 
 /** The authorisation letter accepts the NR passport or the parent's registration number. */
@@ -199,4 +287,56 @@ export function passportOrParentRegistration(director: DocPackDirector): Require
 
 export function firstNonResident(ctx: DocPackContext): DocPackDirector | undefined {
   return ctx.directors.find((d) => d.audience === 'non-resident');
+}
+
+function mergeInputFor(ctx: DocPackContext): IncorpMergeInput {
+  return {
+    engagement: (ctx.engagement ?? null) as IncorpMergeInput['engagement'],
+    pre1: ctx.responses.pre1,
+    pre5: ctx.responses.pre5,
+    pre6: ctx.responses.pre6,
+    pre7: ctx.responses.pre7,
+    pre13: ctx.responses.pre13,
+    pre16: ctx.responses.pre16,
+    director: 'company',
+  };
+}
+
+/** The pack's view of who subscribes (same decision the sheet renders with). */
+export function subscriptionPlan(ctx: DocPackContext) {
+  return planSubscription(mergeInputFor(ctx));
+}
+
+export const subscribersListed: RequiredInput = {
+  key: 'subscribers.any',
+  label: 'Subscribers to the memorandum and the shares each takes',
+  stepId: SUBSCRIBER_DETAILS_STEP_ID,
+  tabId: SUBSCRIBERS_TAB,
+  isPresent: (ctx) => subscriptionPlan(ctx).individuals.length > 0,
+};
+
+/** One `pre-16` entry: it must name a proposed director and take a whole number of shares. */
+export function subscriberEntryInputs(
+  entryIndex: number,
+  name: string,
+  isDirector: boolean,
+  shares: number,
+): RequiredInput[] {
+  const who = name ? `Subscriber ${entryIndex} (${name})` : `Subscriber ${entryIndex}`;
+  return [
+    {
+      key: `subscriber.${entryIndex}.director`,
+      label: `${who} — a proposed director (their KYC fills the sheet)`,
+      stepId: SUBSCRIBER_DETAILS_STEP_ID,
+      tabId: SUBSCRIBERS_TAB,
+      isPresent: () => isDirector,
+    },
+    {
+      key: `subscriber.${entryIndex}.shares`,
+      label: `${who} — number of shares`,
+      stepId: SUBSCRIBER_DETAILS_STEP_ID,
+      tabId: SUBSCRIBERS_TAB,
+      isPresent: () => shares > 0,
+    },
+  ];
 }

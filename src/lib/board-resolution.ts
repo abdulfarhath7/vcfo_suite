@@ -7,6 +7,15 @@ import {
   PRE1_DIRECTOR_INDIA_RESIDENT_IDS,
 } from '@/lib/checklist-pre1-validation';
 import { resolveDirectorDisplayName, resolveSignatoryDisplayName } from '@/lib/person-name';
+import { nicBusinessType } from '@/lib/nic-2008';
+import {
+  DEFAULT_PARENT_STATE,
+  resolveParentCountry,
+  resolveParentJurisdiction,
+  resolveParentState,
+} from '@/lib/parent-jurisdiction';
+
+export { DEFAULT_PARENT_STATE };
 
 type BoardResolutionStatus = 'draft' | 'finalized';
 
@@ -23,10 +32,6 @@ export interface BoardResolutionDoc {
   signedUploadedAt?: string | null;
   signedUploadedBy?: string | null;
 }
-
-const DEFAULT_PARENT_JURISDICTION = 'the United States of America';
-export const DEFAULT_PARENT_STATE = 'Utah';
-const DEFAULT_CERTIFICATION_PLACE = 'USA';
 
 export const DEFAULT_NIC_CODES =
   '62099- Other information technology and computer service activities n.e.c, &62020- Computer consultancy and computer facilities management activities';
@@ -215,6 +220,14 @@ function amountToIndianRupeeWords(raw: string): string {
   return parts.join(' ').trim();
 }
 
+/** "10,000 (Ten Thousand)" — a share count in figures and words, Indian numbering. */
+export function formatShareCountClause(count: number): string {
+  if (!Number.isFinite(count) || count <= 0) return '';
+  const figures = formatIndianFigures(String(Math.floor(count)));
+  const words = amountToIndianRupeeWords(String(Math.floor(count)));
+  return words ? `${figures} (${words})` : figures;
+}
+
 export function formatInrCapitalClause(raw: string): string {
   const figures = formatIndianFigures(raw);
   const words = amountToIndianRupeeWords(raw);
@@ -262,26 +275,26 @@ function resolveParentEntityAddress(
   );
 }
 
-/** Place line at document end — derived from parent address country or default. */
+/** Place line at document end — the Part A country, else the parent address's country, else "USA". */
 export function resolveCertificationPlace(
   pre1: ChecklistItemResponses,
   engagement?: BoardResolutionMergeInput['engagement'],
 ): string {
-  const address = pickString(pre1.parentEntityAddress, engagement?.parentEntityAddress);
-  if (address) {
-    const parts = address.split(',').flatMap((part) => {
-      const trimmed = part.trim();
-      return trimmed ? [trimmed] : [];
-    });
-    const last = parts[parts.length - 1];
-    if (last) {
-      if (/^USA$/i.test(last) || /United States of America/i.test(last)) {
-        return 'USA';
-      }
-      return last;
-    }
+  return resolveParentCountry(pre1, engagement);
+}
+
+/**
+ * Main objects clause: the Part A NIC code with its NIC-2008 description
+ * ("62011- Writing, modifying, testing …"). `nicCodes` is an older free-text
+ * key; the firm's default applies only when neither is answered.
+ */
+export function resolveNicCodesClause(pre1: ChecklistItemResponses): string {
+  const code = (pre1.nicCode ?? '').trim();
+  if (code) {
+    const description = pickString(pre1.nicBusinessType, nicBusinessType(code)?.description);
+    return description ? `${code}- ${description}` : code;
   }
-  return DEFAULT_CERTIFICATION_PLACE;
+  return pickString(pre1.nicCodes, DEFAULT_NIC_CODES);
 }
 
 function resolveDirectors(pre1: ChecklistItemResponses): {
@@ -340,10 +353,10 @@ export function buildBoardResolutionMergeFields(
     PARENT_ENTITY_NAME: parentName,
     PARENT_ENTITY_ADDRESS: resolveParentEntityAddress(pre1, engagement),
     RESOLUTION_EFFECTIVE_DATE: formatResolutionDate(resolutionDate),
-    PARENT_JURISDICTION: DEFAULT_PARENT_JURISDICTION,
-    PARENT_STATE: DEFAULT_PARENT_STATE,
+    PARENT_JURISDICTION: resolveParentJurisdiction(pre1),
+    PARENT_STATE: resolveParentState(pre1, () => DEFAULT_PARENT_STATE),
     PROPOSED_NAME_1: pickString(pre1.proposedName1, '[Proposed company name 1]'),
-    NIC_CODES: pickString(pre1.nicCodes, DEFAULT_NIC_CODES),
+    NIC_CODES: resolveNicCodesClause(pre1),
     AUTHORISED_CAPITAL: formatInrCapitalClause(authCapRaw),
     PAID_UP_CAPITAL: formatInrCapitalClause(paidCapRaw),
     INDIAN_DIRECTOR_LINE: indianLine,
@@ -404,10 +417,15 @@ export function extractBoardResolutionInlineOverrides(
   return overrides;
 }
 
+/** A parent incorporated in a country without states drops the "State of" phrase. */
+const STATE_PHRASE = ', the State of {{PARENT_STATE}}';
+
 function applyBoardResolutionTemplate(
   fields: BoardResolutionMergeFields,
 ): string {
-  let out = BOARD_RESOLUTION_TEMPLATE;
+  let out = fields.PARENT_STATE.trim()
+    ? BOARD_RESOLUTION_TEMPLATE
+    : BOARD_RESOLUTION_TEMPLATE.replace(STATE_PHRASE, '');
   for (const [key, value] of Object.entries(fields)) {
     out = out.replaceAll(`{{${key}}}`, value);
   }

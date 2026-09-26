@@ -151,6 +151,12 @@ const PRE6_SUFFIX: Record<string, string> = {
   hasOtherCompanyInterest: 'HasOtherCompanyInterest',
   din: 'Din',
   csMembershipOrCopNumber: 'CsMembershipOrCopNumber',
+  // Answers the documents print instead of deriving (`shared.ts` reads them).
+  nationality: 'Nationality',
+  identityProofType: 'IdentityProofType',
+  residenceProofType: 'ResidenceProofType',
+  residenceProofOther: 'ResidenceProofOther',
+  signingPlace: 'SigningPlace',
   ...Object.fromEntries(
     Array.from({ length: PRE15_MAX_OTHER_INTERESTS }, (_, n) =>
       Object.entries(PRE15_INTEREST_PARTS).map(([part, legacy]) => [

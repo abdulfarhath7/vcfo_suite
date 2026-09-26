@@ -189,6 +189,23 @@ export const INCORP_DOC_DEFINITIONS: Record<IncorpDocKind, IncorpDocDefinition> 
 };
 
 /**
+ * Documents that exist only because a parent entity incorporates the company:
+ * the parent authorises its representative and accepts the appointment. An
+ * independent company has no parent, so they are never listed or generated.
+ */
+export const SUBSIDIARY_ONLY_INCORP_DOCS: ReadonlySet<IncorpDocKind> = new Set([
+  'authorisation-letter',
+  'acceptance-letter',
+]);
+
+export function incorpDocAppliesToEngagement(
+  doc: IncorpDocKind,
+  engagement: { ownershipType?: string | null } | null | undefined,
+): boolean {
+  return engagement?.ownershipType !== 'independent' || !SUBSIDIARY_ONLY_INCORP_DOCS.has(doc);
+}
+
+/**
  * Who receives `doc`. Director docs go to every director audience given
  * (default: the two legacy audiences) that the doc applies to.
  */

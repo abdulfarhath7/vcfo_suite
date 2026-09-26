@@ -6,18 +6,29 @@ import {
   companyName,
   directorFormInputs,
   directorInputs,
+  directorNationalityInputs,
+  directorResidenceProofInputs,
+  directorSigningInputs,
   firstNonResident,
   nominalValuePerShare,
   nonResidentDirectorExists,
   paidUpShareCapital,
   parentEntityAddress,
+  parentEntityCountry,
   parentEntityName,
   passportOrParentRegistration,
   registeredOfficeAddress,
+  registeredOfficeState,
   signatoryDesignation,
   signatoryName,
+  subscriberEntryInputs,
+  subscribersListed,
+  subscriptionPlan,
+  subscriptionWitnessInputs,
 } from '@/lib/doc-pack/inputs';
-import type { DocDefinition, DocPackContext, RequiredInput } from '@/lib/doc-pack/types';
+import { sectionSlug } from '@/lib/doc-pack/section-slug';
+import { SUBSCRIBER_DETAILS_STEP_ID } from '@/lib/incorporation-docs/subscription-sheet';
+import type { DocDefinition, DocPackContext, DocPackDirector, RequiredInput } from '@/lib/doc-pack/types';
 
 /**
  * One definition per document the app generates today, and nothing else
@@ -39,12 +50,84 @@ function nonResidentLetterInputs(
   return [...directorInputs(nr, fields), ...extra(nr)];
 }
 
+/**
+ * Documents that exist only because a parent entity incorporates the company
+ * (its board resolution, its letters). An independent company never sees them
+ * — same rule as the parent-entity sections of Part A (`part-a-sections.ts`).
+ */
+const hasParentEntity = (ctx: DocPackContext): boolean => ctx.engagement?.ownershipType !== 'independent';
+
+const SUBSCRIPTION_KYC: Parameters<typeof directorInputs>[1] = ['fullName', 'fatherName', 'address', 'dob'];
+
+function subscriberDirectorInputs(director: DocPackDirector): RequiredInput[] {
+  return [...directorInputs(director, SUBSCRIPTION_KYC), ...directorNationalityInputs(director)];
+}
+
+/** A body corporate listed on `pre-16`: its address (body corporate only) and share count. */
+function corporateSubscriberInputs(entryIndex: number, address: string, shares: number): RequiredInput[] {
+  const tabId = sectionSlug('Subscribers');
+  return [
+    {
+      key: `subscriber.${entryIndex}.address`,
+      label: `Subscriber ${entryIndex} — registered address`,
+      stepId: SUBSCRIBER_DETAILS_STEP_ID,
+      tabId,
+      isPresent: () => Boolean(address.trim()) && !address.startsWith('['),
+    },
+    {
+      key: `subscriber.${entryIndex}.shares`,
+      label: `Subscriber ${entryIndex} — number of shares`,
+      stepId: SUBSCRIBER_DETAILS_STEP_ID,
+      tabId,
+      isPresent: () => shares > 0,
+    },
+  ];
+}
+
+/**
+ * The sheets follow `planSubscription`: a subscribing company (the parent,
+ * or a body corporate on `pre-16`) gets the body-corporate sheet with a
+ * director as its representative; individuals only get the individual sheet,
+ * one row per `pre-16` subscriber, each of whom must be a proposed director.
+ */
+function subscriptionSheetInputs(ctx: DocPackContext): RequiredInput[] {
+  const plan = subscriptionPlan(ctx);
+  const common = [companyName, ...subscriptionWitnessInputs];
+  if (plan.variant === 'foreign') {
+    const corporate = plan.corporate!;
+    const company =
+      corporate.entryIndex === null
+        ? [parentEntityName, parentEntityAddress, paidUpShareCapital]
+        : corporateSubscriberInputs(corporate.entryIndex, corporate.address, corporate.shares);
+    const representative = ctx.directors.find((d) => d.audience === plan.representative);
+    const person =
+      plan.representative === 'non-resident' || !representative
+        ? nonResidentLetterInputs(ctx, SUBSCRIPTION_KYC, (nr) => directorNationalityInputs(nr))
+        : subscriberDirectorInputs(representative);
+    return [...common, ...company, ...person];
+  }
+  if (plan.individuals.length === 0) return [...common, subscribersListed];
+  return [
+    ...common,
+    ...plan.individuals.flatMap((individual) => {
+      const director = individual.audience
+        ? ctx.directors.find((d) => d.audience === individual.audience)
+        : undefined;
+      return [
+        ...subscriberEntryInputs(individual.entryIndex, individual.name, Boolean(director), individual.shares),
+        ...(director ? subscriberDirectorInputs(director) : []),
+      ];
+    }),
+  ];
+}
+
 export const DOC_PACK_REGISTRY: DocDefinition[] = [
   {
     id: 'board-resolution',
     part: 'part-a',
     label: 'Board resolution',
     sourceStepIds: ['pre-1', 'pre-2'],
+    appliesToEngagement: hasParentEntity,
     requiredInputs: () => [],
     releaseGate: 'br-finalized',
     generate: { kind: 'board-resolution' },
@@ -55,7 +138,16 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     label: 'DIR-2 consent to act as director',
     sourceStepIds: ['pre-5', DIRECTOR_STEP],
     expandsPer: 'director',
-    requiredInputs: (_ctx, director) => [companyName, ...(director ? directorFormInputs(director) : [])],
+    requiredInputs: (_ctx, director) => [
+      companyName,
+      ...(director
+        ? [
+            ...directorFormInputs(director),
+            ...directorNationalityInputs(director),
+            ...directorResidenceProofInputs(director),
+          ]
+        : []),
+    ],
     releaseGate: 'directors-accepted',
     generate: { kind: 'incorp', doc: 'dir-2' },
   },
@@ -88,7 +180,13 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     appliesTo: (director) => directorAudienceKind(director.audience) === 'non-resident',
     requiredInputs: (_ctx, director) => [
       companyName,
-      ...(director ? directorInputs(director, ['fullName', 'fatherName', 'passport', 'address']) : []),
+      ...(director
+        ? [
+            ...directorInputs(director, ['fullName', 'fatherName', 'passport', 'address']),
+            ...directorNationalityInputs(director),
+            ...directorSigningInputs(director),
+          ]
+        : []),
     ],
     releaseGate: 'directors-accepted',
     generate: { kind: 'incorp', doc: 'pan-undertaking' },
@@ -103,7 +201,9 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     appliesTo: (director) => Boolean(director.director.values.din?.trim()),
     requiredInputs: (_ctx, director) => [
       companyName,
-      ...(director ? directorInputs(director, ['fullName', 'fatherName', 'address']) : []),
+      ...(director
+        ? [...directorInputs(director, ['fullName', 'fatherName', 'address']), ...directorSigningInputs(director)]
+        : []),
     ],
     releaseGate: 'directors-accepted',
     generate: { kind: 'incorp', doc: 'id-address-declaration' },
@@ -116,7 +216,9 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     expandsPer: 'director',
     requiredInputs: (_ctx, director) => [
       companyName,
-      ...(director ? directorInputs(director, ['fullName', 'fatherName', 'address']) : []),
+      ...(director
+        ? [...directorInputs(director, ['fullName', 'fatherName', 'address']), ...directorSigningInputs(director)]
+        : []),
     ],
     releaseGate: 'directors-accepted',
     generate: { kind: 'incorp', doc: 'deposit-declaration' },
@@ -125,10 +227,11 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     id: 'moa',
     part: 'part-b',
     label: 'Memorandum of association',
-    sourceStepIds: ['pre-1', 'pre-5', 'pre-14'],
+    sourceStepIds: ['pre-1', 'pre-5', 'pre-13', 'pre-14'],
     requiredInputs: () => [
       companyName,
       registeredOfficeAddress,
+      registeredOfficeState,
       authorisedShareCapital,
       paidUpShareCapital,
       nominalValuePerShare,
@@ -150,10 +253,12 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     part: 'part-b',
     label: 'Authorisation letter',
     sourceStepIds: ['pre-1', 'pre-5', DIRECTOR_STEP],
+    appliesToEngagement: hasParentEntity,
     requiredInputs: (ctx) => [
       companyName,
       parentEntityName,
       parentEntityAddress,
+      parentEntityCountry,
       signatoryName,
       signatoryDesignation,
       ...nonResidentLetterInputs(ctx, ['fullName', 'address'], (nr) => [passportOrParentRegistration(nr)]),
@@ -166,10 +271,12 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     part: 'part-b',
     label: 'Acceptance letter',
     sourceStepIds: ['pre-1', 'pre-5', DIRECTOR_STEP],
+    appliesToEngagement: hasParentEntity,
     requiredInputs: (ctx) => [
       companyName,
       parentEntityName,
       parentEntityAddress,
+      parentEntityCountry,
       ...nonResidentLetterInputs(ctx, ['fullName', 'fatherName', 'passport', 'address']),
     ],
     releaseGate: 'directors-accepted',
@@ -179,14 +286,8 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     id: 'moa-subscription-sheet',
     part: 'part-b',
     label: 'MOA subscription sheet',
-    sourceStepIds: ['pre-1', 'pre-5', DIRECTOR_STEP],
-    requiredInputs: (ctx) => [
-      companyName,
-      parentEntityName,
-      parentEntityAddress,
-      paidUpShareCapital,
-      ...nonResidentLetterInputs(ctx, ['fullName', 'fatherName', 'address', 'dob']),
-    ],
+    sourceStepIds: ['pre-1', 'pre-5', 'pre-7', 'pre-13', DIRECTOR_STEP, 'pre-16'],
+    requiredInputs: subscriptionSheetInputs,
     releaseGate: 'directors-accepted',
     generate: { kind: 'incorp', doc: 'moa-subscription-sheet' },
   },
@@ -194,14 +295,8 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     id: 'aoa-subscription-sheet',
     part: 'part-b',
     label: 'AOA subscription sheet',
-    sourceStepIds: ['pre-1', 'pre-5', DIRECTOR_STEP],
-    requiredInputs: (ctx) => [
-      companyName,
-      parentEntityName,
-      parentEntityAddress,
-      paidUpShareCapital,
-      ...nonResidentLetterInputs(ctx, ['fullName', 'fatherName', 'address', 'dob']),
-    ],
+    sourceStepIds: ['pre-1', 'pre-5', 'pre-7', 'pre-13', DIRECTOR_STEP, 'pre-16'],
+    requiredInputs: subscriptionSheetInputs,
     releaseGate: 'directors-accepted',
     generate: { kind: 'incorp', doc: 'aoa-subscription-sheet' },
   },

@@ -9,17 +9,22 @@ import {
 import {
   resolveParentEntityAddress,
   resolveParentEntityCountry,
+  resolveParentEntityJurisdiction,
   resolveParentEntityName,
   resolveParentEntityRegistration,
   resolveParentEntityState,
 } from '@/lib/incorporation-docs/parent-entity';
 import { resolveSignatoryDisplayName } from '@/lib/person-name';
+import { parentCountryAnswer } from '@/lib/parent-jurisdiction';
 
 export interface AuthorisationLetterMergeFields {
   DOCUMENT_DATE: string;
   PARENT_ENTITY_NAME: string;
+  /** "…under the laws of the {STATE}, {COUNTRY}"; blank drops both for {JURISDICTION}. */
   PARENT_ENTITY_STATE: string;
   PARENT_ENTITY_COUNTRY: string;
+  /** "the United Kingdom" — printed instead of state + country when there is no state. */
+  PARENT_ENTITY_JURISDICTION: string;
   PARENT_ENTITY_ADDRESS: string;
   NR_DIRECTOR_FULL_NAME: string;
   NR_PASSPORT_OR_REGISTRATION: string;
@@ -36,6 +41,7 @@ export const AUTHORISATION_LETTER_MERGE_FIELD_KEYS = [
   'PARENT_ENTITY_NAME',
   'PARENT_ENTITY_STATE',
   'PARENT_ENTITY_COUNTRY',
+  'PARENT_ENTITY_JURISDICTION',
   'PARENT_ENTITY_ADDRESS',
   'NR_DIRECTOR_FULL_NAME',
   'NR_PASSPORT_OR_REGISTRATION',
@@ -54,11 +60,15 @@ export function buildAuthorisationLetterMergeFields(
   const now = signingDate(input);
   const docDate = formatDocumentDate(now);
 
+  const state = resolveParentEntityState(pre1, engagement);
+
   const fields: AuthorisationLetterMergeFields = {
     DOCUMENT_DATE: docDate,
     PARENT_ENTITY_NAME: resolveParentEntityName(pre1, engagement),
-    PARENT_ENTITY_STATE: resolveParentEntityState(pre1, engagement),
+    // An answered state reads "the State of Delaware"; legacy output is unchanged.
+    PARENT_ENTITY_STATE: state && parentCountryAnswer(pre1) ? `State of ${state}` : state,
     PARENT_ENTITY_COUNTRY: resolveParentEntityCountry(pre1, engagement),
+    PARENT_ENTITY_JURISDICTION: resolveParentEntityJurisdiction(pre1),
     PARENT_ENTITY_ADDRESS: resolveParentEntityAddress(pre1, engagement),
     NR_DIRECTOR_FULL_NAME: pickString(
       directorField(pre6, 'non-resident', 'FullName'),
@@ -92,6 +102,9 @@ export function collectAuthorisationLetterMissingFields(input: IncorpMergeInput)
   }
   if (!resolveParentEntityAddress(pre1, input.engagement).trim() || resolveParentEntityAddress(pre1, input.engagement).startsWith('[')) {
     missing.push('Parent entity address (Pre-1)');
+  }
+  if (!parentCountryAnswer(pre1)) {
+    missing.push('Parent entity country of incorporation (Pre-1)');
   }
   if (!directorField(pre6, 'non-resident', 'FullName')) {
     missing.push('Non-resident director — full name (Pre-6)');

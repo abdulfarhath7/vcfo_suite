@@ -11,6 +11,14 @@ export const REGISTERED_OFFICE_FIELD_IDS = [
   'registeredOfficeUtilityBillCopyUrl',
 ] as const;
 
+/**
+ * State / UT of the office (MOA clause II). Asked on pre-14 only — never on
+ * the legacy Director KYC step, so it is not one of the shared ids above.
+ */
+export const REGISTERED_OFFICE_STATE_FIELD_ID = 'registeredOfficeState';
+
+const RESOLVED_FIELD_IDS = [...REGISTERED_OFFICE_FIELD_IDS, REGISTERED_OFFICE_STATE_FIELD_ID] as const;
+
 export const PRE6_REGISTERED_OFFICE_SECTION = 'Registered Office Details';
 
 /** Where a pre-14 value was seeded from, stored beside the answers (not a rendered field). */
@@ -31,7 +39,7 @@ export function resolveRegisteredOfficeResponses(
   pre14: ChecklistItemResponses = {},
 ): ChecklistItemResponses {
   const merged: ChecklistItemResponses = {};
-  for (const id of REGISTERED_OFFICE_FIELD_IDS) {
+  for (const id of RESOLVED_FIELD_IDS) {
     const fromPre14 = (pre14[id] ?? '').trim();
     const fromPre6 = (pre6[id] ?? '').trim();
     const fromPre8 = (pre8[id] ?? '').trim();

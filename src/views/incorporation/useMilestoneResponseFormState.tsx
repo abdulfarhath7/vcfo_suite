@@ -44,6 +44,7 @@ import {
 } from '@/lib/checklist-part-b-validation';
 import {
   REGISTERED_OFFICE_FIELD_IDS,
+  REGISTERED_OFFICE_STATE_FIELD_ID,
   REGISTERED_OFFICE_SOURCE_FIELD_ID,
   REGISTERED_OFFICE_SOURCE_LABEL,
   resolveRegisteredOfficeResponses,
@@ -124,6 +125,7 @@ import { internEngagementPath, internEngagementStepPath } from '@/lib/project-st
 import { internFormNextTarget } from '@/lib/intern-overview-progress';
 import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
+import { inferIndianState } from '@/lib/countries';
 
 /** The user's edits this session: full values plus which fields they touched. */
 interface DraftEdits {
@@ -414,20 +416,28 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     // `contentReady` = the full checklist has loaded; seeding off the slim
     // index copy would overwrite an address the server already holds.
     if (item.id !== 'pre-14' || !contentReady || !autoSaveEnabled || !engagement || registeredOfficeSeededRef.current) return;
-    if (savedRef.current.registeredOfficeCompleteAddress?.trim() || savedRef.current[REGISTERED_OFFICE_SOURCE_FIELD_ID]) {
-      registeredOfficeSeededRef.current = true;
-      return;
-    }
     const seed: ChecklistItemResponses = {};
     const fromSetup = (engagement.subsidiaryRegisteredAddress ?? '').trim();
-    if (fromSetup) {
+    const savedAddress = savedRef.current.registeredOfficeCompleteAddress?.trim() ?? '';
+    if (savedAddress || savedRef.current[REGISTERED_OFFICE_SOURCE_FIELD_ID]) {
+      // Address already confirmed: only offer the state when it is unanswered
+      // and the address names exactly one — the filler confirms or changes it.
+      if (!savedRef.current[REGISTERED_OFFICE_STATE_FIELD_ID]?.trim()) {
+        const inferred = inferIndianState(savedAddress || fromSetup);
+        if (inferred) seed[REGISTERED_OFFICE_STATE_FIELD_ID] = inferred;
+      }
+    } else if (fromSetup) {
       seed.registeredOfficeCompleteAddress = fromSetup;
       seed[REGISTERED_OFFICE_SOURCE_FIELD_ID] = 'project-setup';
+      const inferred = inferIndianState(fromSetup);
+      if (inferred) seed[REGISTERED_OFFICE_STATE_FIELD_ID] = inferred;
     } else {
       const legacy = resolveRegisteredOfficeResponses(pre6Responses, pre8Responses);
       if (legacy.registeredOfficeCompleteAddress?.trim()) {
         for (const id of REGISTERED_OFFICE_FIELD_IDS) if (legacy[id]) seed[id] = legacy[id]!;
         seed[REGISTERED_OFFICE_SOURCE_FIELD_ID] = 'director-kyc';
+        const inferred = inferIndianState(legacy.registeredOfficeCompleteAddress);
+        if (inferred) seed[REGISTERED_OFFICE_STATE_FIELD_ID] = inferred;
       }
     }
     registeredOfficeSeededRef.current = true;

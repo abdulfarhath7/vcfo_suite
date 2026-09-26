@@ -2,8 +2,10 @@ import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
   DEFAULT_PARENT_STATE,
-  resolveCertificationPlace,
-} from '@/lib/board-resolution';
+  resolveParentCountry,
+  resolveParentJurisdiction,
+  resolveParentState,
+} from '@/lib/parent-jurisdiction';
 import { pickString } from '@/lib/incorporation-docs/shared';
 
 const US_STATE_NAMES =
@@ -38,23 +40,34 @@ export function resolveParentEntityRegistration(
   );
 }
 
-/** US state from parent address, or default Utah for typical GCC parent entities. */
+/**
+ * State / province of incorporation: the Part A answer once the country is
+ * answered (blank for a country without states); before that, a US state
+ * named in the parent address, else Utah.
+ */
 export function resolveParentEntityState(
   pre1: ChecklistItemResponses,
   engagement?: IncorpMergeInput['engagement'],
 ): string {
-  const address = resolveParentEntityAddress(pre1, engagement);
-  const stateOf = address.match(/\bState of\s+([^,]+)/i)?.[1]?.trim();
-  if (stateOf) return stateOf;
-  const match = address.match(US_STATE_NAMES);
-  if (match?.[1]) return match[1];
-  return DEFAULT_PARENT_STATE;
+  return resolveParentState(pre1, () => {
+    const address = resolveParentEntityAddress(pre1, engagement);
+    const stateOf = address.match(/\bState of\s+([^,]+)/i)?.[1]?.trim();
+    if (stateOf) return stateOf;
+    const match = address.match(US_STATE_NAMES);
+    if (match?.[1]) return match[1];
+    return DEFAULT_PARENT_STATE;
+  });
 }
 
+/** Country: the Part A answer, else the parent address's last token, else "USA". */
 export function resolveParentEntityCountry(
   pre1: ChecklistItemResponses,
   engagement?: IncorpMergeInput['engagement'],
 ): string {
-  return resolveCertificationPlace(pre1, engagement ?? undefined) || 'USA';
+  return resolveParentCountry(pre1, engagement);
 }
 
+/** "the United Kingdom" — used where no state precedes the country. */
+export function resolveParentEntityJurisdiction(pre1: ChecklistItemResponses): string {
+  return resolveParentJurisdiction(pre1);
+}

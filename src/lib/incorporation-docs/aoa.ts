@@ -3,6 +3,7 @@ import type { ChecklistItemResponses } from '@/lib/checklist-responses';
 import { stripDirectorSalutation } from '@/lib/board-resolution';
 import {
   directorField,
+  pickString,
   resolveProposedCompanyName,
   type IncorpMergeInput,
 } from '@/lib/incorporation-docs/shared';
@@ -39,9 +40,14 @@ function buildAoaDirectorsList(
   const lines: string[] = [];
   const nrName = resolvePre6DirectorDisplayName(pre6, 'non-resident');
   const resName = resolvePre6DirectorDisplayName(pre6, 'resident');
+  // The listed director's own gender; the slot-index read is a last resort for old maps without one.
   if (nrName) {
     lines.push(
-      formatAoaDirectorLine(1, nrName, pre1[PRE1_DIRECTOR_GENDER_IDS[0]] as string | undefined),
+      formatAoaDirectorLine(
+        1,
+        nrName,
+        pickString(directorField(pre6, 'non-resident', 'Gender'), pre1[PRE1_DIRECTOR_GENDER_IDS[0]]),
+      ),
     );
   }
   if (resName) {
@@ -49,13 +55,22 @@ function buildAoaDirectorsList(
       formatAoaDirectorLine(
         lines.length + 1,
         resName,
-        pre1[PRE1_DIRECTOR_GENDER_IDS[1]] as string | undefined,
+        pickString(directorField(pre6, 'resident', 'Gender'), pre1[PRE1_DIRECTOR_GENDER_IDS[1]]),
       ),
     );
   }
 
   const count = parseDirectorCount(pre1);
+  // The slot loop below must not list the two directors already printed.
+  const nameKey = (name: string) => stripDirectorSalutation(name).toLowerCase().replace(/\s+/g, ' ').trim();
   const existingDirectorNames = new Set<string>();
+  for (const kind of ['non-resident', 'resident'] as const) {
+    const first = directorField(pre6, kind, 'FirstName');
+    const last = directorField(pre6, kind, 'LastName');
+    if (first || last) existingDirectorNames.add(nameKey([first, last].filter(Boolean).join(' ')));
+  }
+  if (nrName) existingDirectorNames.add(nameKey(nrName));
+  if (resName) existingDirectorNames.add(nameKey(resName));
   for (let i = 1; i <= count; i += 1) {
     const first = (pre1[`director${i}FirstName`] ?? '').trim();
     const last = (pre1[`director${i}LastName`] ?? '').trim();
@@ -64,9 +79,9 @@ function buildAoaDirectorsList(
     if (!name) continue;
     const genderId = PRE1_DIRECTOR_GENDER_IDS[i - 1];
     const gender = (pre1[genderId] ?? '') as string;
-    const stripped = stripDirectorSalutation(name);
-    if (existingDirectorNames.has(stripped)) continue;
-    existingDirectorNames.add(stripped);
+    const key = nameKey(name);
+    if (existingDirectorNames.has(key)) continue;
+    existingDirectorNames.add(key);
     lines.push(formatAoaDirectorLine(lines.length + 1, name, gender));
   }
 

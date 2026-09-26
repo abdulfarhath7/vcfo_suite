@@ -44,8 +44,12 @@ import {
 } from '@/lib/incorporation-docs/declarations';
 import {
   buildSubscriptionSheetMergeFields,
-  subscriptionSheetVariantForDoc,
+  RESIDENT_SUBSCRIPTION_SHEET_LOOP_KEYS,
+  RESIDENT_SUBSCRIPTION_SHEET_MERGE_FIELD_KEYS,
   SUBSCRIPTION_SHEET_MERGE_FIELD_KEYS,
+  SUBSCRIPTION_SHEET_ROW_KEYS,
+  SUBSCRIPTION_SHEET_TEMPLATES,
+  subscriptionSheetVariantForDoc,
 } from '@/lib/incorporation-docs/subscription-sheet';
 import { INCORP_DOC_DEFINITIONS, type IncorpDocKind } from '@/lib/incorporation-docs/types';
 
@@ -216,8 +220,22 @@ function renderSubscriptionSheetDocxBuffer(
   doc: 'moa-subscription-sheet' | 'aoa-subscription-sheet',
   input: IncorpMergeInput,
 ): Buffer {
-  const variant = subscriptionSheetVariantForDoc(doc);
-  const fields = buildSubscriptionSheetMergeFields({ ...input, variant });
+  const variant = subscriptionSheetVariantForDoc(doc, input);
+  const fields = buildSubscriptionSheetMergeFields(input);
+  if (variant === 'resident') {
+    return renderDocx(
+      SUBSCRIPTION_SHEET_TEMPLATES.resident,
+      [
+        ...RESIDENT_SUBSCRIPTION_SHEET_MERGE_FIELD_KEYS,
+        ...RESIDENT_SUBSCRIPTION_SHEET_LOOP_KEYS,
+        ...SUBSCRIPTION_SHEET_ROW_KEYS,
+      ],
+      {
+        ...fieldsToDocxData(RESIDENT_SUBSCRIPTION_SHEET_MERGE_FIELD_KEYS, fields),
+        ...loopRowsToDocxData(RESIDENT_SUBSCRIPTION_SHEET_LOOP_KEYS, fields),
+      },
+    );
+  }
   return renderDocx(
     INCORP_DOC_DEFINITIONS[doc].templateRelative,
     SUBSCRIPTION_SHEET_MERGE_FIELD_KEYS,

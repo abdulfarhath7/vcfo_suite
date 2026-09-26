@@ -4,6 +4,11 @@ import type { OwnershipType } from '@/data/engagements';
 import { PART_A_STEP_ID, partAFieldsFor } from '@/lib/part-a-sections';
 import { expandDirectorSlotFields, withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
 import { PRE15_MAX_OTHER_INTERESTS } from '@/lib/other-company-interests';
+import { COUNTRY_OPTIONS, INDIAN_STATE_OPTIONS } from '@/lib/countries';
+import {
+  DIRECTOR_IDENTITY_PROOF_OPTIONS,
+  DIRECTOR_RESIDENCE_PROOF_OPTIONS,
+} from '@/lib/director-proofs';
 import {
   getPre1VisibleFields,
   parsePre1BoardResolutionDate,
@@ -28,6 +33,16 @@ export function computeMcaNameApprovalExpiryDate(approvalDate: string): string {
   if (!parsed) return '';
   return format(addDays(parsed, MCA_NAME_APPROVAL_VALIDITY_DAYS), 'yyyy-MM-dd');
 }
+
+/**
+ * Helper copy for answers the incorporation documents print. They are not
+ * step-submission requirements (in-flight engagements must keep moving); the
+ * document pack lists them as missing inputs until they are filled.
+ */
+const NEEDED_FOR_DOCUMENTS = 'Needed before the incorporation documents can be generated.';
+
+const toOptions = (options: readonly { value: string; label: string }[]) =>
+  options.map(({ value, label }) => ({ value, label }));
 
 /** Structured client-input fields keyed by checklist item id (pre/post incorporation). */
 /** `otherInterest{i}Company` … for one `pre-15` director entry (see `other-company-interests.ts`). */
@@ -67,6 +82,22 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       type: 'textarea',
       section: 'Foreign Entity',
       required: true,
+    },
+    {
+      id: 'parentEntityCountry',
+      label: 'Country of incorporation',
+      type: 'select',
+      section: 'Foreign Entity',
+      options: toOptions(COUNTRY_OPTIONS),
+      helperText: `Printed on the board resolution and the authorisation and acceptance letters. ${NEEDED_FOR_DOCUMENTS}`,
+    },
+    {
+      id: 'parentEntityState',
+      label: 'State / province of incorporation (if any)',
+      type: 'text',
+      section: 'Foreign Entity',
+      placeholder: 'e.g. Delaware',
+      helperText: 'Leave blank when the country has no states or provinces.',
     },
     {
       id: 'parentEntityHasTrademark',
@@ -405,6 +436,36 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       section: 'Draft Incorporation Docs',
       filledBy: 'intern',
       placeholder: 'e.g. Hyderabad',
+    },
+    {
+      id: 'subscriptionWitnessName',
+      label: 'Witness to the subscribers — name (MOA / AOA subscription sheets)',
+      type: 'text',
+      section: 'Draft Incorporation Docs',
+      filledBy: 'intern',
+      placeholder: 'Usually the firm’s CA / CS',
+    },
+    {
+      id: 'subscriptionWitnessAddress',
+      label: 'Witness — address',
+      type: 'textarea',
+      section: 'Draft Incorporation Docs',
+      filledBy: 'intern',
+    },
+    {
+      id: 'subscriptionWitnessOccupation',
+      label: 'Witness — occupation',
+      type: 'text',
+      section: 'Draft Incorporation Docs',
+      filledBy: 'intern',
+      placeholder: 'e.g. Practising Chartered Accountant',
+    },
+    {
+      id: 'subscriptionWitnessMembershipNumber',
+      label: 'Witness — membership number (optional)',
+      type: 'text',
+      section: 'Draft Incorporation Docs',
+      filledBy: 'intern',
     },
     {
       id: 'nrDirectorDir2DraftUrl',
@@ -857,6 +918,14 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       required: true,
     },
     {
+      id: 'registeredOfficeState',
+      label: 'State / union territory of the registered office',
+      type: 'select',
+      section: 'Registered office',
+      options: toOptions(INDIAN_STATE_OPTIONS),
+      helperText: `Printed in clause II of the memorandum. ${NEEDED_FOR_DOCUMENTS}`,
+    },
+    {
       id: 'registeredOfficeNocUrl',
       label: 'No-objection certificate from the owner',
       type: 'file',
@@ -913,6 +982,13 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           options: [...PRE1_INDIA_RESIDENT_OPTIONS],
           required: true,
         },
+        {
+          id: 'nationality',
+          label: 'Nationality',
+          type: 'select',
+          options: toOptions(COUNTRY_OPTIONS),
+          helperText: `Printed on DIR-2, the PAN undertaking and the subscription sheets. Blank = India for a resident. ${NEEDED_FOR_DOCUMENTS}`,
+        },
         { id: 'din', label: 'Director Identification Number (DIN), if any', type: 'text' },
         { id: 'hasDsc', label: 'Has a valid DSC token?', type: 'segmented', options: [...PRE1_INDIA_RESIDENT_OPTIONS] },
         {
@@ -967,6 +1043,35 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           ],
           required: true,
           showWhen: { field: 'indiaResident', value: 'no' },
+        },
+        {
+          id: 'signingPlace',
+          label: 'Place of signing the incorporation documents (city, country)',
+          type: 'text',
+          placeholder: 'e.g. Austin, United States of America',
+          showWhen: { field: 'indiaResident', value: 'no' },
+          helperText: NEEDED_FOR_DOCUMENTS,
+        },
+        {
+          id: 'identityProofType',
+          label: 'Proof of identity attached to DIR-2',
+          type: 'select',
+          options: toOptions(DIRECTOR_IDENTITY_PROOF_OPTIONS),
+          helperText: 'Blank = Aadhaar card for a resident, passport for a non-resident.',
+        },
+        {
+          id: 'residenceProofType',
+          label: 'Proof of residence attached to DIR-2',
+          type: 'select',
+          options: toOptions(DIRECTOR_RESIDENCE_PROOF_OPTIONS),
+          showWhen: { field: 'indiaResident', value: 'no' },
+          helperText: NEEDED_FOR_DOCUMENTS,
+        },
+        {
+          id: 'residenceProofOther',
+          label: 'Proof of residence — document name',
+          type: 'text',
+          showWhen: { field: 'residenceProofType', value: 'other' },
         },
         // Address proof.
         {

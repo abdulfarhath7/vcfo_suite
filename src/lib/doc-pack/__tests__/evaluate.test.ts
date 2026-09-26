@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { attachedAtFromStoragePath, evaluateDocPack } from '@/lib/doc-pack/evaluate';
 import { DRAFT_BR, FINALIZED_BR, director, fullState } from '@/lib/doc-pack/__tests__/fixtures';
+import { repeatFieldId } from '@/lib/checklist-repeat';
 
 const NR = director('e1', 'no', 'Alpha');
 const RESIDENT = director('e2', 'yes', 'Beta');
@@ -157,6 +158,12 @@ describe('evaluateDocPack', () => {
         stepId: 'pre-14',
         tabId: 'registered-office',
       },
+      {
+        key: 'company.registeredOfficeState',
+        label: 'State of the registered office',
+        stepId: 'pre-14',
+        tabId: 'registered-office',
+      },
     ]);
   });
 
@@ -191,6 +198,97 @@ describe('evaluateDocPack', () => {
     expect(inc9?.status).toBe('needs-inputs');
     expect(inc9?.missing.every((m) => m.stepId === 'pre-6' && m.tabId === undefined)).toBe(true);
     expect(inc9?.sourceStepIds).toContain('pre-6');
+  });
+});
+
+describe('answers that replaced hardcoded values', () => {
+  it('a non-resident who has not answered the new questions blocks only their own documents', () => {
+    const nr = director('e1', 'no', 'Alpha', { nationality: '', signingPlace: '', residenceProofType: '' });
+    const summary = evaluateDocPack({ state: fullState([nr, RESIDENT]), brRow: FINALIZED_BR });
+    const dir2 = summary.items.find((i) => i.key === 'dir-2:non-resident');
+    expect(dir2?.missing.map((m) => m.key)).toEqual([
+      'director.1.signingPlace',
+      'director.1.nationality',
+      'director.1.residenceProofType',
+    ]);
+    expect(dir2?.missing.every((m) => m.stepId === 'pre-15' && m.tabId === 'directors')).toBe(true);
+    expect(summary.items.find((i) => i.key === 'inc-9:non-resident')?.missing.map((m) => m.key)).toEqual([
+      'director.1.signingPlace',
+    ]);
+    expect(summary.items.find((i) => i.key === 'dir-2:resident')?.status).toBe('ready');
+  });
+
+  it('the parent country and the witness point at Pre-1 and Pre-7', () => {
+    const state = fullState([NR, RESIDENT]);
+    state['pre-1'] = { status: 'completed', responses: { ...state['pre-1']!.responses, parentEntityCountry: '' } };
+    state['pre-7'] = { status: 'in-progress', responses: {} };
+    const summary = evaluateDocPack({ state, brRow: FINALIZED_BR });
+    expect(summary.items.find((i) => i.docId === 'authorisation-letter')?.missing).toEqual([
+      { key: 'parent.country', label: 'Parent entity country of incorporation', stepId: 'pre-1', tabId: 'foreign-entity' },
+    ]);
+    const sheet = summary.items.find((i) => i.docId === 'moa-subscription-sheet');
+    expect(sheet?.missing.map((m) => [m.key, m.stepId, m.tabId])).toEqual([
+      ['witness.name', 'pre-7', 'draft-incorporation-docs'],
+      ['witness.address', 'pre-7', 'draft-incorporation-docs'],
+      ['witness.occupation', 'pre-7', 'draft-incorporation-docs'],
+    ]);
+  });
+});
+
+describe('independent companies', () => {
+  const ENGAGEMENT = { companyName: 'Test Company Private Limited', ownershipType: 'independent' as const };
+
+  function independentState(subscribers: Array<{ id: string; name: string; shares: string }>) {
+    const state = fullState([director('e1', 'yes', 'Alpha'), RESIDENT]);
+    const { parentEntityName: _n, parentEntityAddress: _a, parentEntityCountry: _c, ...company } =
+      state['pre-1']!.responses as Record<string, string>;
+    state['pre-1'] = { status: 'completed', responses: company };
+    const pre16: Record<string, string> = { subscribers: subscribers.map((s) => s.id).join(',') };
+    for (const s of subscribers) {
+      pre16[repeatFieldId('subscribers', s.id, 'type')] = 'individual';
+      pre16[repeatFieldId('subscribers', s.id, 'name')] = s.name;
+      pre16[repeatFieldId('subscribers', s.id, 'shares')] = s.shares;
+    }
+    state['pre-16'] = { status: 'completed', responses: pre16 };
+    return state;
+  }
+
+  it('no board resolution or parent letters, and no parent-field blockers', () => {
+    const state = independentState([
+      { id: 's1', name: 'Alpha Director', shares: '5000' },
+      { id: 's2', name: 'Beta Director', shares: '5000' },
+    ]);
+    const summary = evaluateDocPack({ state, brRow: null, engagement: ENGAGEMENT });
+    const ids = new Set(summary.items.map((i) => i.docId));
+    expect(ids.has('board-resolution')).toBe(false);
+    expect(ids.has('authorisation-letter')).toBe(false);
+    expect(ids.has('acceptance-letter')).toBe(false);
+    expect(ids.has('moa-subscription-sheet')).toBe(true);
+    expect(summary.items.flatMap((i) => i.missing).filter((m) => m.key.startsWith('parent.'))).toEqual([]);
+    expect(summary.counts['needs-inputs']).toBe(0);
+    expect(summary.total).toBe(summary.counts.ready);
+  });
+
+  it('subscription sheets ask for Pre-16 subscribers who are proposed directors', () => {
+    const empty = evaluateDocPack({ state: independentState([]), brRow: null, engagement: ENGAGEMENT });
+    expect(empty.items.find((i) => i.docId === 'moa-subscription-sheet')?.missing).toEqual([
+      {
+        key: 'subscribers.any',
+        label: 'Subscribers to the memorandum and the shares each takes',
+        stepId: 'pre-16',
+        tabId: 'subscribers',
+      },
+    ]);
+
+    const stranger = evaluateDocPack({
+      state: independentState([{ id: 's1', name: 'Someone Else', shares: '' }]),
+      brRow: null,
+      engagement: ENGAGEMENT,
+    });
+    expect(stranger.items.find((i) => i.docId === 'aoa-subscription-sheet')?.missing.map((m) => m.key)).toEqual([
+      'subscriber.1.director',
+      'subscriber.1.shares',
+    ]);
   });
 });
 

@@ -6,7 +6,7 @@ import {
   signingDate,
   signingPlace,
   formatDocumentDate,
-  nationalityFromAddress,
+  directorNationalityOrAddressCountry,
   pickString,
 } from '@/lib/incorporation-docs/shared';
 
@@ -40,7 +40,6 @@ export function buildPanUndertakingMergeFields(
       ? input.director
       : 'non-resident';
   const now = signingDate(input);
-  const address = directorField(pre6, d, 'UtilityBillAddress');
 
   const fields: PanUndertakingMergeFields = {
     DIRECTOR_FULL_NAME: pickString(
@@ -52,7 +51,7 @@ export function buildPanUndertakingMergeFields(
       directorField(pre6, d, 'FatherName'),
       "[Father's name]",
     ),
-    DIRECTOR_NATIONALITY: nationalityFromAddress(address),
+    DIRECTOR_NATIONALITY: directorNationalityOrAddressCountry(pre6, d),
     PASSPORT_NUMBER: pickString(
       directorField(pre6, d, 'PassportNumber'),
       '[Passport number]',

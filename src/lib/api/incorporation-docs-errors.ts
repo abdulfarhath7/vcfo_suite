@@ -14,7 +14,7 @@ import { collectAuthorisationLetterMissingFields } from '@/lib/incorporation-doc
 import { collectAoaMissingFields } from '@/lib/incorporation-docs/aoa';
 import { collectMoaMissingFields } from '@/lib/incorporation-docs/moa';
 import { collectSubscriptionSheetMissingFields } from '@/lib/incorporation-docs/subscription-sheet';
-import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
+import type { IncorpDocAudience, IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
   directorAudienceKind,
   directorAudienceLabel,
@@ -27,7 +27,11 @@ import {
   resolveProposedCompanyName,
 } from '@/lib/incorporation-docs/shared';
 import { INCORP_DOC_KINDS, type IncorpDocKind } from '@/lib/incorporation-docs/types';
-import { audiencesForDoc, isCompanyIncorpDoc } from '@/lib/incorporation-docs/types';
+import {
+  audiencesForDoc,
+  incorpDocAppliesToEngagement,
+  isCompanyIncorpDoc,
+} from '@/lib/incorporation-docs/types';
 
 export const INCORP_DOCS_ERROR_CODES = {
   PRE6_NOT_ACCEPTED: 'pre6_not_accepted',
@@ -114,17 +118,28 @@ function pushMissing(missing: string[], label: string, value: string | undefined
   if (!(value ?? '').trim()) missing.push(label);
 }
 
+type MissingFieldsEngagement = Pick<Engagement, 'companyName'> & Partial<Pick<Engagement, 'ownershipType'>>;
+
 /** Collect human-readable labels for fields required to merge incorporation drafts. */
 function collectCompanyDocMissing(
   doc: IncorpDocKind,
   mergeInput: {
-    engagement?: Pick<Engagement, 'companyName'> | null;
+    engagement?: MissingFieldsEngagement | null;
     pre1: ChecklistItemResponses;
     pre5: ChecklistItemResponses;
     pre6: ChecklistItemResponses;
+    pre7: ChecklistItemResponses;
+    pre13: ChecklistItemResponses;
+    pre16: ChecklistItemResponses;
   },
+  directorsFromPre15: boolean,
 ): string[] {
-  const base = { ...mergeInput, director: 'company' as const };
+  // `engagement` is the full row at runtime; the collectors fall back to its parent fields.
+  const base = {
+    ...mergeInput,
+    engagement: mergeInput.engagement as IncorpMergeInput['engagement'],
+    director: 'company' as const,
+  };
   switch (doc) {
     case 'moa':
       return collectMoaMissingFields(base);
@@ -136,28 +151,41 @@ function collectCompanyDocMissing(
       return collectAcceptanceLetterMissingFields(base);
     case 'moa-subscription-sheet':
     case 'aoa-subscription-sheet':
-      return collectSubscriptionSheetMissingFields(base);
+      return collectSubscriptionSheetMissingFields(base, { directorsFromPre15 });
     default:
       return [];
   }
 }
 
 export function collectIncorpDocsMissingFields(input: {
-  engagement?: Pick<Engagement, 'companyName'> | null;
+  engagement?: MissingFieldsEngagement | null;
   pre1?: ChecklistItemResponses;
   pre5?: ChecklistItemResponses;
   pre6?: ChecklistItemResponses;
+  pre7?: ChecklistItemResponses;
+  pre13?: ChecklistItemResponses;
+  pre16?: ChecklistItemResponses;
   docs?: IncorpDocKind[];
   directors?: IncorpDocAudience[];
+  /**
+   * Directors come from `pre-15`, which asks nationality, signing place and
+   * proof type. Legacy `pre-6` engagements never asked them, so their
+   * documents keep the historical defaults instead of blocking.
+   */
+  directorsFromPre15?: boolean;
 }): string[] {
   const {
     engagement,
     pre1 = {},
     pre5 = {},
     pre6 = {},
-    docs = [...INCORP_DOC_KINDS],
+    pre7 = {},
+    pre13 = {},
+    pre16 = {},
     directors: audiencesFilter,
+    directorsFromPre15 = false,
   } = input;
+  const docs = (input.docs ?? [...INCORP_DOC_KINDS]).filter((d) => incorpDocAppliesToEngagement(d, engagement));
   const missing: string[] = [];
 
   const directorDocs = docs.filter((d) => !isCompanyIncorpDoc(d));
@@ -174,7 +202,13 @@ export function collectIncorpDocsMissingFields(input: {
     const docAudienceSet = new Set<IncorpDocAudience>(audiencesForDoc(doc, directorAudiences, pre6));
     if (isCompanyIncorpDoc(doc)) {
       if (docAudienceSet.has('company')) {
-        missing.push(...collectCompanyDocMissing(doc, { engagement, pre1, pre5, pre6 }));
+        missing.push(
+          ...collectCompanyDocMissing(
+            doc,
+            { engagement, pre1, pre5, pre6, pre7, pre13, pre16 },
+            directorsFromPre15,
+          ),
+        );
       }
       continue;
     }
@@ -185,6 +219,29 @@ export function collectIncorpDocsMissingFields(input: {
 
     for (const director of docDirectors) {
       const label = directorErrorLabel(director);
+      const nonResident = directorAudienceKind(director) === 'non-resident';
+      // Every director draft prints the place of signing; a non-resident's is their own answer.
+      if (directorsFromPre15 && nonResident) {
+        pushMissing(
+          missing,
+          `${label} — place of signing (Pre-15)`,
+          directorField(pre6, director, 'SigningPlace'),
+        );
+        if (doc === 'dir-2' || doc === 'pan-undertaking') {
+          pushMissing(missing, `${label} — nationality (Pre-15)`, directorField(pre6, director, 'Nationality'));
+        }
+        if (doc === 'dir-2') {
+          const proof = directorField(pre6, director, 'ResidenceProofType');
+          pushMissing(missing, `${label} — proof of residence (Pre-15)`, proof);
+          if (proof === 'other') {
+            pushMissing(
+              missing,
+              `${label} — proof of residence document name (Pre-15)`,
+              directorField(pre6, director, 'ResidenceProofOther'),
+            );
+          }
+        }
+      }
 
       if (doc === 'id-address-declaration' || doc === 'deposit-declaration') {
         pushMissing(missing, `${label} — full name (Pre-6)`, directorField(pre6, director, 'FullName'));
@@ -264,8 +321,22 @@ export function collectIncorpDocsMissingFields(input: {
   return [...new Set(missing)];
 }
 
+function stepResponses(
+  checklistState: EngagementChecklistState | null | undefined,
+  itemId: string,
+): ChecklistItemResponses {
+  const item = checklist.find((c) => c.id === itemId);
+  const slice = checklistState?.[itemId] as ChecklistItemStateSlice | undefined;
+  return item ? extractItemResponses(item, slice) : {};
+}
+
+/** True when the directors come from `pre-15` entries rather than the legacy slots. */
+export function directorsFromPre15(checklistState: EngagementChecklistState | null | undefined): boolean {
+  return readProposedDirectors(checklistState).some((d) => !d.id.startsWith('legacy-'));
+}
+
 export function validateIncorpDocsGeneration(input: {
-  engagement?: Pick<Engagement, 'companyName'> | null;
+  engagement?: MissingFieldsEngagement | null;
   checklistState?: EngagementChecklistState | null;
   docs?: IncorpDocKind[];
   directors?: IncorpDocAudience[];
@@ -273,6 +344,9 @@ export function validateIncorpDocsGeneration(input: {
   pre6: ChecklistItemResponses;
   pre1: ChecklistItemResponses;
   pre5: ChecklistItemResponses;
+  pre7: ChecklistItemResponses;
+  pre13: ChecklistItemResponses;
+  pre16: ChecklistItemResponses;
 } {
   if (!directorsAccepted(input.checklistState)) {
     throw new IncorpDocsError(
@@ -282,17 +356,22 @@ export function validateIncorpDocsGeneration(input: {
   }
 
   const { pre1, pre6 } = directorResponsesFromState(input.checklistState);
-  const pre5Item = checklist.find((c) => c.id === 'pre-5');
-  const pre5State = input.checklistState?.['pre-5'] as ChecklistItemStateSlice | undefined;
-  const pre5 = pre5Item ? extractItemResponses(pre5Item, pre5State) : {};
+  const pre5 = stepResponses(input.checklistState, 'pre-5');
+  const pre7 = stepResponses(input.checklistState, 'pre-7');
+  const pre13 = stepResponses(input.checklistState, 'pre-13');
+  const pre16 = stepResponses(input.checklistState, 'pre-16');
 
   const missingFields = collectIncorpDocsMissingFields({
     engagement: input.engagement,
     pre1,
     pre5,
     pre6,
+    pre7,
+    pre13,
+    pre16,
     docs: input.docs,
     directors: input.directors,
+    directorsFromPre15: directorsFromPre15(input.checklistState),
   });
 
   if (missingFields.length > 0) {
@@ -303,7 +382,7 @@ export function validateIncorpDocsGeneration(input: {
     );
   }
 
-  return { pre6, pre1, pre5 };
+  return { pre6, pre1, pre5, pre7, pre13, pre16 };
 }
 
 export function toIncorpDocsError(err: unknown): IncorpDocsError {

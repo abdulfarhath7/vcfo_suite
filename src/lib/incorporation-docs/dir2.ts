@@ -85,13 +85,13 @@ export function buildDir2MergeFields(
       : 'NA',
     DIRECTOR_OCCUPATION: directorOccupationLabel(pre6, d),
     DIRECTOR_DOB: formatDob(directorField(pre6, d, 'Dob')),
-    DIRECTOR_NATIONALITY: directorNationalityLabel(d),
+    DIRECTOR_NATIONALITY: directorNationalityLabel(pre6, d),
     // Owner answer Q2: every other-interest entry counts.
     DIRECTOR_OTHER_DIRECTORSHIPS: otherDirectorshipsCount(pre6, d),
     DIRECTOR_MEMBERSHIP: pickString(directorField(pre6, d, 'CsMembershipOrCopNumber'), 'NIL'),
     DOCUMENT_DATE: formatDocumentDate(now),
     DOCUMENT_PLACE: signingPlace(input, d),
-    IDENTITY_PROOF: identityProofForDirector(d),
+    IDENTITY_PROOF: identityProofForDirector(pre6, d),
     RESIDENCE_PROOF: residenceProofForDirector(pre6, d),
   };
 

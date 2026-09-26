@@ -28,7 +28,12 @@ export function director(
   const identity =
     resident === 'yes'
       ? { panNumber: 'ABCDE1234F', aadhaarNumber: '999999999999' }
-      : { passportNumber: 'X1234567' };
+      : {
+          passportNumber: 'X1234567',
+          nationality: 'Singapore',
+          signingPlace: 'Test City, Singapore',
+          residenceProofType: 'bank-statement',
+        };
   return {
     id,
     resident,
@@ -54,10 +59,19 @@ export const COMPANY_PRE1: Record<string, string> = {
   nominalValuePerEquityShare: '10',
   parentEntityName: 'Test Parent Inc',
   parentEntityAddress: '100 Parent Road, Salt Lake City, Utah, USA',
+  parentEntityCountry: 'United States of America',
+  parentEntityState: 'Utah',
   parentEntityRegistrationNumber: 'P-0000001',
   signatoryFirstName: 'Test',
   signatoryLastName: 'Signatory',
   signatoryDesignation: 'Director',
+};
+
+/** The lead's subscription-sheet witness (Pre-7). */
+export const WITNESS_PRE7: Record<string, string> = {
+  subscriptionWitnessName: 'Test Witness',
+  subscriptionWitnessAddress: '3 Witness Road, Test City',
+  subscriptionWitnessOccupation: 'Practising Chartered Accountant',
 };
 
 export function fullState(
@@ -70,14 +84,17 @@ export function fullState(
     'pre-5': { status: 'completed', responses: { approvedCompanyName: 'Test Company Private Limited' } },
     'pre-14': {
       status: 'completed',
-      responses: { registeredOfficeCompleteAddress: '2 Office Lane, Test City, 560001' },
+      responses: {
+        registeredOfficeCompleteAddress: '2 Office Lane, Test City, 560001',
+        registeredOfficeState: 'Karnataka',
+      },
     },
     'pre-15': {
       status: 'completed',
       responses: pre15Responses(directors),
       ...(accepted ? { reviewStatus: 'accepted' } : {}),
     },
-    'pre-7': { status: 'in-progress', responses: pre7 },
+    'pre-7': { status: 'in-progress', responses: { ...WITNESS_PRE7, ...pre7 } },
   };
 }
 

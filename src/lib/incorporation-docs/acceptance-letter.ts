@@ -11,6 +11,7 @@ import {
   resolveParentEntityCountry,
   resolveParentEntityName,
 } from '@/lib/incorporation-docs/parent-entity';
+import { parentCountryAnswer } from '@/lib/parent-jurisdiction';
 
 export interface AcceptanceLetterMergeFields {
   DOCUMENT_DATE: string;
@@ -85,6 +86,9 @@ export function collectAcceptanceLetterMissingFields(input: IncorpMergeInput): s
   }
   if (!resolveParentEntityAddress(pre1, input.engagement).trim() || resolveParentEntityAddress(pre1, input.engagement).startsWith('[')) {
     missing.push('Parent entity address (Pre-1)');
+  }
+  if (!parentCountryAnswer(pre1)) {
+    missing.push('Parent entity country of incorporation (Pre-1)');
   }
   if (!directorField(pre6, 'non-resident', 'FullName')) {
     missing.push('Non-resident director — full name (Pre-6)');

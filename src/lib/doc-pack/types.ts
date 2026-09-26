@@ -37,7 +37,12 @@ export interface DocPackDirector {
 
 /** `companyName` is required by the generator helpers; the parent fields may be absent. */
 export type DocPackEngagement = Pick<Engagement, 'companyName'> &
-  Partial<Pick<Engagement, 'parentEntityName' | 'parentEntityAddress' | 'parentEntityRegistrationNumber'>>;
+  Partial<
+    Pick<
+      Engagement,
+      'parentEntityName' | 'parentEntityAddress' | 'parentEntityRegistrationNumber' | 'ownershipType'
+    >
+  >;
 
 /** Everything a `RequiredInput.isPresent` may look at. Built once per evaluation. */
 export interface DocPackContext {
@@ -51,7 +56,11 @@ export interface DocPackContext {
     pre6: ChecklistItemResponses;
     pre7: ChecklistItemResponses;
     pre8: ChecklistItemResponses;
+    /** Capital structure — equity shares issued at incorporation. */
+    pre13: ChecklistItemResponses;
     pre14: ChecklistItemResponses;
+    /** Subscriber details — who takes the shares. */
+    pre16: ChecklistItemResponses;
   };
   directors: DocPackDirector[];
   /** Directors in `pre-15` the generators cannot render yet. */
@@ -82,6 +91,12 @@ export interface DocDefinition {
   label: string;
   sourceStepIds: string[];
   expandsPer?: 'director';
+  /**
+   * Whether this company gets the document at all. False → not listed, not
+   * counted, no missing inputs (a board resolution for an independent
+   * company, say). Default: every engagement.
+   */
+  appliesToEngagement?(ctx: DocPackContext): boolean;
   /** Director docs only: whether this director gets a copy. Default: every renderable director. */
   appliesTo?(director: DocPackDirector): boolean;
   requiredInputs(ctx: DocPackContext, director?: DocPackDirector): RequiredInput[];

@@ -159,3 +159,68 @@ describe('renderBoardResolutionDocxBuffer NIC merge', () => {
     expect((nicClause.match(/62099/g) ?? []).length).toBe(1);
   });
 });
+
+describe('parent jurisdiction and NIC code come from Part A answers', () => {
+  const UK_PARENT = {
+    parentEntityName: 'Test Parent Ltd',
+    parentEntityAddress: '1 Parent Street, London',
+    parentEntityCountry: 'United Kingdom',
+    parentEntityState: '',
+  };
+
+  it('a UK parent (no state) never reads Utah', () => {
+    const fields = buildBoardResolutionMergeFields({ pre1: UK_PARENT });
+    expect(fields.PARENT_JURISDICTION).toBe('the United Kingdom');
+    expect(fields.PARENT_STATE).toBe('');
+    expect(fields.CERTIFICATION_PLACE).toBe('United Kingdom');
+
+    const draft = generateBoardResolutionDraft({ pre1: UK_PARENT });
+    expect(draft).not.toContain('Utah');
+    expect(draft).toContain('the laws of the United Kingdom, and the governing documents');
+  });
+
+  it('an answered state prints as the State of …', () => {
+    const fields = buildBoardResolutionMergeFields({
+      pre1: { ...UK_PARENT, parentEntityCountry: 'United States of America', parentEntityState: 'Delaware' },
+    });
+    expect(fields.PARENT_JURISDICTION).toBe('the United States of America');
+    expect(fields.PARENT_STATE).toBe('Delaware');
+  });
+
+  it('renders the Word file without the State phrase for a UK parent', () => {
+    const templatePath = path.join(process.cwd(), 'public/templates/boardResolution.docx');
+    if (!fs.existsSync(templatePath)) return;
+    const xml = new PizZip(renderBoardResolutionDocxBuffer({ pre1: UK_PARENT })).file('word/document.xml')!.asText();
+    const text = documentPlainText(xml);
+    expect(text).toContain('laws of the United Kingdom, and the governing documents');
+    expect(text).not.toContain('State of');
+    expect(text).not.toContain('{');
+
+    const us = new PizZip(
+      renderBoardResolutionDocxBuffer({ pre1: { parentEntityCountry: 'United States of America', parentEntityState: 'Delaware' } }),
+    )
+      .file('word/document.xml')!
+      .asText();
+    expect(documentPlainText(us)).toContain('the laws of the United States of America, the State of Delaware, and');
+  });
+
+  it('NIC_CODES reads the Part A nicCode with its description', () => {
+    const fields = buildBoardResolutionMergeFields({
+      pre1: { nicCode: '62011', nicBusinessType: 'Writing, modifying, testing of computer program' },
+    });
+    expect(fields.NIC_CODES).toBe('62011- Writing, modifying, testing of computer program');
+    expect(fields.NIC_CODES).not.toContain('62099');
+    // Description looked up when the stored one is missing.
+    expect(buildBoardResolutionMergeFields({ pre1: { nicCode: '62011' } }).NIC_CODES).toMatch(/^62011- \S/);
+  });
+
+  it('legacy Part A (no country, no NIC code) → today’s output', () => {
+    const fields = buildBoardResolutionMergeFields({
+      pre1: { parentEntityAddress: '100 Market Street, Salt Lake City, Utah, USA' },
+    });
+    expect(fields.PARENT_JURISDICTION).toBe('the United States of America');
+    expect(fields.PARENT_STATE).toBe('Utah');
+    expect(fields.CERTIFICATION_PLACE).toBe('USA');
+    expect(fields.NIC_CODES).toBe(DEFAULT_NIC_CODES);
+  });
+});

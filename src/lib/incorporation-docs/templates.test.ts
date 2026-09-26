@@ -5,7 +5,20 @@ import { DOMParser } from '@xmldom/xmldom';
 import PizZip from 'pizzip';
 import { describe, expect, it } from 'vitest';
 
-const TEMPLATE_FILES = ['dir-2.docx', 'dir-8.docx', 'inc-9.docx', 'pan-undertaking.docx'] as const;
+const TEMPLATE_FILES = [
+  'dir-2.docx',
+  'dir-8.docx',
+  'inc-9.docx',
+  'pan-undertaking.docx',
+  'authorisation-letter.docx',
+  'moa-aoa-subscription-sheet-foreign.docx',
+  'moa-aoa-subscription-sheet-resident.docx',
+] as const;
+
+function documentXml(fileName: string): string {
+  const templatePath = path.join(process.cwd(), 'public', 'templates', fileName);
+  return new PizZip(fs.readFileSync(templatePath)).file('word/document.xml')?.asText() ?? '';
+}
 
 function parseXmlOrError(xml: string): string | null {
   try {
@@ -56,5 +69,35 @@ describe('prepared incorporation templates', () => {
     expect(xml).toContain('{DOCUMENT_DATE}');
     expect(xml).toContain('{DOCUMENT_PLACE}');
     expect(parseXmlOrError(xml)).toBeNull();
+  });
+
+  it.each(['moa-aoa-subscription-sheet-foreign.docx', 'moa-aoa-subscription-sheet-resident.docx'])(
+    'subscription sheet carries the witness and share-total tags: %s',
+    (fileName) => {
+      const xml = documentXml(fileName);
+      for (const tag of ['{WITNESS_NAME}', '{WITNESS_ADDRESS}', '{WITNESS_OCCUPATION}', '{WITNESS_MEMBERSHIP}', '{TOTAL_SHARES_TAKEN}']) {
+        expect(xml, tag).toContain(tag);
+      }
+      expect(parseXmlOrError(xml)).toBeNull();
+    },
+  );
+
+  it('resident sheet loops one row per subscriber and holds no sample data', () => {
+    const xml = documentXml('moa-aoa-subscription-sheet-resident.docx');
+    expect((xml.match(/\{#SUBSCRIBERS\}/g) ?? []).length).toBe(2);
+    expect((xml.match(/\{\/SUBSCRIBERS\}/g) ?? []).length).toBe(2);
+    const text = xml.replace(/<[^>]+>/g, '');
+    for (const sample of ['Naga', 'Ravanam', 'Aloha', 'Amalapuram', 'MITHILESH', 'SANNAREDDY', 'Reliance']) {
+      expect(text, sample).not.toContain(sample);
+    }
+  });
+
+  it('foreign sheet page 2 tags follow their labels', () => {
+    const text = documentXml('moa-aoa-subscription-sheet-foreign.docx')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\u00a0/g, ' ');
+    expect(text.match(/company name: \{PARENT_ENTITY_NAME\}/g)).toHaveLength(2);
+    expect(text.match(/Name: \{SUBSCRIBER_FULL_NAME\}/g)).toHaveLength(2);
+    expect(text.match(/Nationality: \{SUBSCRIBER_NATIONALITY\}/g)).toHaveLength(2);
   });
 });

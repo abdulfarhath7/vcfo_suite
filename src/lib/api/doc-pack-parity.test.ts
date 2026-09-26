@@ -67,13 +67,22 @@ describe('document pack ↔ Pre-7 panel parity', () => {
       const { doc } = item.generate;
 
       // Pre-7 panel path.
-      const { pre1, pre5, pre6 } = validateIncorpDocsGeneration({
+      const { pre1, pre5, pre6, pre7, pre13, pre16 } = validateIncorpDocsGeneration({
         engagement: ENGAGEMENT,
         checklistState,
         docs: [doc],
         directors: [item.audience],
       });
-      const fromPanel = renderIncorpDocxBuffer(doc, { engagement: ENGAGEMENT, pre1, pre5, pre6, director: item.audience });
+      const fromPanel = renderIncorpDocxBuffer(doc, {
+        engagement: ENGAGEMENT,
+        pre1,
+        pre5,
+        pre6,
+        pre7,
+        pre13,
+        pre16,
+        director: item.audience,
+      });
       const panelFilename = incorpDocDownloadFilename(doc, item.audience, {
         pre6: directorResponsesFromState(checklistState).pre6,
       });

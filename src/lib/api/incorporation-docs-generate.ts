@@ -12,6 +12,7 @@ import { downloadIncorpDocx, uploadIncorpDocx } from '@/lib/incorporation-docs/s
 import {
   audiencesForDoc,
   draftUrlFieldFor,
+  incorpDocAppliesToEngagement,
   INCORP_DOC_DEFINITIONS,
   INCORP_DOC_KINDS,
   type IncorpDocKind,
@@ -85,6 +86,7 @@ export async function generateAllIncorpDocsBestEffort(
   const failures: IncorpDocsRowFailure[] = [];
 
   for (const doc of docs) {
+    if (!incorpDocAppliesToEngagement(doc, engagement)) continue;
     for (const audience of audiencesForDoc(doc, directorAudiences, pre6)) {
       try {
         const result = await generateAndStoreIncorpDocs(ctx, engagement, checklistState, {
@@ -152,8 +154,8 @@ export async function generateAndStoreIncorpDocs(
   const isPatchOnly = Boolean(editedContent);
 
   const pre6ForLabels = pre6ResponsesFromState(checklistState);
-  const { pre6, pre1, pre5 } = isPatchOnly
-    ? { pre6: pre6ForLabels, pre1: {}, pre5: {} }
+  const { pre6, pre1, pre5, pre13, pre16 } = isPatchOnly
+    ? { pre6: pre6ForLabels, pre1: {}, pre5: {}, pre13: {}, pre16: {} }
     : validateIncorpDocsGeneration({
         engagement,
         checklistState,
@@ -167,6 +169,7 @@ export async function generateAndStoreIncorpDocs(
 
   const directorAudiences = directorAudiencesFromPre6(pre6ForLabels);
   for (const doc of options.docs) {
+    if (!incorpDocAppliesToEngagement(doc, engagement)) continue;
     const def = INCORP_DOC_DEFINITIONS[doc];
     const applicable = audiencesForDoc(doc, directorAudiences, pre6ForLabels);
     const docAudienceSet = new Set<IncorpDocAudience>(applicable);
@@ -231,6 +234,8 @@ export async function generateAndStoreIncorpDocs(
           pre5,
           pre6,
           pre7: pre7Stored,
+          pre13,
+          pre16,
           director: audience,
         });
       } catch (err) {

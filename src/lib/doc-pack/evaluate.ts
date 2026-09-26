@@ -88,7 +88,9 @@ export function buildDocPackContext(input: EvaluateDocPackInput): DocPackContext
       pre6,
       pre7: responsesFor(state, 'pre-7'),
       pre8: responsesFor(state, 'pre-8'),
+      pre13: responsesFor(state, 'pre-13'),
       pre14: responsesFor(state, 'pre-14'),
+      pre16: responsesFor(state, 'pre-16'),
     },
     directors,
     skippedDirectors: skipped,
@@ -210,6 +212,7 @@ export function evaluateDocPack(input: EvaluateDocPackInput): DocPackSummary {
   const items: DocPackItem[] = [];
 
   for (const def of DOC_PACK_REGISTRY) {
+    if (def.appliesToEngagement && !def.appliesToEngagement(ctx)) continue;
     if (def.expandsPer === 'director') {
       for (const director of ctx.directors) {
         if (def.appliesTo && !def.appliesTo(director)) continue;
