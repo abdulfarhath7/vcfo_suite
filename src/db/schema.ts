@@ -116,6 +116,8 @@ export const engagements = pgTable(
     companyType: text('company_type').notNull().default('domestic'), // domestic | foreign
     /** subsidiary (has a parent entity) | independent (standalone — no parent details asked). */
     ownershipType: text('ownership_type').notNull().default('subsidiary'),
+    /** name_only | investing — only for subsidiary + domestic; null otherwise (drives the NOC variant). */
+    parentIndianRelationship: text('parent_indian_relationship'),
     entityLegalForm: text('entity_legal_form').notNull().default('company'), // company|llp|partnership|proprietorship
     // SQL type is `date`, not timestamptz — compliance trigger math treats this
     // as a calendar date (see src/lib/compliance/fy-periods.ts).

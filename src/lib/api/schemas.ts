@@ -58,6 +58,13 @@ export const companyTypeSchema = z.enum(['domestic', 'foreign']);
 /** Dependent (has a parent entity) vs independent (standalone, no parent asked). */
 export const ownershipTypeSchema = z.enum(['subsidiary', 'independent']);
 
+/** Indian parent lends its name only, or subscribes to shares (Group + Indian parent). */
+export const parentIndianRelationshipSchema = z.enum(['name_only', 'investing']);
+
+/** Shown when a Group company with an Indian parent has no parent role chosen. */
+export const PARENT_INDIAN_RELATIONSHIP_REQUIRED =
+  'Choose whether the Indian parent lends its name or invests.';
+
 /** Indian legal form for compliance applicability. */
 export const entityLegalFormSchema = z.enum(['company', 'llp', 'partnership', 'proprietorship']);
 
@@ -102,6 +109,8 @@ export const createProjectBodySchema = z
     companyName: companyNameSchema,
     companyType: companyTypeSchema,
     ownershipType: ownershipTypeSchema.default('subsidiary'),
+    /** Required for Group company + Indian parent; ignored (stored null) otherwise. */
+    parentIndianRelationship: parentIndianRelationshipSchema.nullable().optional(),
     entityLegalForm: entityLegalFormSchema.default('company'),
     /**
      * Optional. The parent entity is captured in SPICe+ Part A (dependent
@@ -145,6 +154,13 @@ export const createProjectBodySchema = z
   )
   .superRefine((d, ctx) => {
     const independent = d.ownershipType === 'independent';
+    if (!independent && d.companyType === 'domestic' && !d.parentIndianRelationship) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: PARENT_INDIAN_RELATIONSHIP_REQUIRED,
+        path: ['parentIndianRelationship'],
+      });
+    }
     const stage = d.stage ?? 'Pre-Incorporation';
     if (stage === 'Pre-Incorporation' || independent) return;
     // Starting past Part A means the parent entity is never captured on the

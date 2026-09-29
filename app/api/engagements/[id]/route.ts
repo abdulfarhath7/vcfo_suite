@@ -11,6 +11,7 @@ import {
   companyNameSchema,
   companyTypeSchema,
   ownershipTypeSchema,
+  parentIndianRelationshipSchema,
   entityLegalFormSchema,
   parentEntityAddressSchema,
   parentEntityNameSchema,
@@ -53,6 +54,8 @@ const patchBodySchema = z.object({
   companyName: companyNameSchema.optional(),
   companyType: companyTypeSchema.optional(),
   ownershipType: ownershipTypeSchema.optional(),
+  /** null clears it; the repository also clears it when no longer Group + Indian parent. */
+  parentIndianRelationship: parentIndianRelationshipSchema.nullable().optional(),
   /** Pass null to unassign the delivery lead. */
   internId: z.union([internIdSchema, z.null()]).optional(),
   /** Pass null to unassign the project manager (admin only). */
@@ -146,6 +149,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
     if (body.data.companyType !== undefined) patch.companyType = body.data.companyType;
     if (body.data.ownershipType !== undefined) patch.ownershipType = body.data.ownershipType;
+    if (body.data.parentIndianRelationship !== undefined) {
+      patch.parentIndianRelationship = body.data.parentIndianRelationship;
+    }
     if (body.data.parentEntityName !== undefined) {
       patch.parentEntityName = body.data.parentEntityName;
     }

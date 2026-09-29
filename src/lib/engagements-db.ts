@@ -250,6 +250,8 @@ export interface CreateProjectInput {
   companyName: string;
   companyType: 'domestic' | 'foreign';
   ownershipType?: 'subsidiary' | 'independent';
+  /** Group company + Indian parent only; null/absent otherwise. */
+  parentIndianRelationship?: 'name_only' | 'investing' | null;
   entityLegalForm?: 'company' | 'llp' | 'partnership' | 'proprietorship';
   /** Optional seed — the parent entity is captured in SPICe+ Part A. */
   parentEntityName?: string;
@@ -319,6 +321,8 @@ export interface UpdateEngagementInput {
   companyName?: string;
   companyType?: Engagement['companyType'];
   ownershipType?: Engagement['ownershipType'];
+  /** null clears it (Standalone, or a Foreign parent). */
+  parentIndianRelationship?: Engagement['parentIndianRelationship'];
   /** Delivery lead scoping id — null clears the assignment. */
   internId?: string | null;
   /** Project manager profile UUID — null clears (admin only). */

@@ -16,6 +16,8 @@ import {
 const validBody = {
   companyName: 'Acme GCC',
   companyType: 'domestic' as const,
+  // Group company + Indian parent must say what the parent does.
+  parentIndianRelationship: 'investing' as const,
   parentEntityName: 'Acme Holdings',
   parentEntityAddress: '1 MG Road, Bengaluru',
   clientEmail: 'founder@acme.test',

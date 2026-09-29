@@ -5,9 +5,12 @@ import { engagements, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import {
   coerceOwnershipType,
+  coerceParentIndianRelationship,
+  normalizeParentIndianRelationship,
   PARENT_ENTITY_ONLY_STEP_IDS,
   type Engagement,
   type OwnershipType,
+  type ParentIndianRelationship,
 } from '@/data/engagements';
 import {
   type ChecklistItemStateSlice,
@@ -296,6 +299,24 @@ export async function updateEngagement(
   }
   const existing = await getEngagementById(ctx, id);
   if (!existing) throw new Error('Engagement not found or not permitted');
+  const touchesOwnership =
+    patch.ownershipType !== undefined ||
+    patch.companyType !== undefined ||
+    patch.parentIndianRelationship !== undefined;
+  if (touchesOwnership) {
+    // Only when ownership is being edited: a legacy Group + Indian row with no
+    // role chosen must still accept unrelated patches (stage, lead, …).
+    const next = normalizeParentIndianRelationship({
+      ownershipType: patch.ownershipType ?? existing.ownershipType,
+      companyType: patch.companyType ?? existing.companyType,
+      parentIndianRelationship:
+        patch.parentIndianRelationship !== undefined
+          ? patch.parentIndianRelationship
+          : existing.parentIndianRelationship,
+    });
+    if (next.missing) throw new Error('parent_indian_relationship_required');
+    patch = { ...patch, parentIndianRelationship: next.value };
+  }
   const [row] = await db
     .update(engagements)
     .set({ ...patch, updatedAt: new Date() })
@@ -340,6 +361,7 @@ export function toAppEngagement(
     companyName: row.companyName,
     companyType: row.companyType as Engagement['companyType'],
     ownershipType: coerceOwnershipType(row.ownershipType),
+    parentIndianRelationship: coerceParentIndianRelationship(row.parentIndianRelationship),
     schedule: normalizeEngagementSchedule(row.schedule),
     entityLegalForm: (row.entityLegalForm ?? 'company') as Engagement['entityLegalForm'],
     incorporationDate: row.incorporationDate ?? null,
@@ -707,6 +729,8 @@ export interface CreateProjectWithClientInput {
   companyType: string;
   /** Missing = subsidiary (the historical default). */
   ownershipType?: OwnershipType;
+  /** Required for Group company + Indian parent; forced to null otherwise. */
+  parentIndianRelationship?: ParentIndianRelationship | null;
   entityLegalForm?: string;
   /** Optional seed; Part A is the capture point. Ignored for an independent company. */
   parentEntityName?: string;
@@ -766,6 +790,19 @@ export async function createProjectWithClient(
 ): Promise<CreateProjectWithClientResult> {
   if (!isFirmWideAdmin(ctx.role) && ctx.role !== 'manager') {
     throw new Error('Only admins or managers may create projects');
+  }
+
+  // Checked before any write so a rejected create leaves no orphan client profile.
+  const ownershipType = coerceOwnershipType(input.ownershipType);
+  const independent = ownershipType === 'independent';
+  const companyType = independent ? 'domestic' : input.companyType;
+  const parentIndianRelationship = normalizeParentIndianRelationship({
+    ownershipType,
+    companyType,
+    parentIndianRelationship: input.parentIndianRelationship,
+  });
+  if (parentIndianRelationship.missing) {
+    throw new Error('parent_indian_relationship_required');
   }
 
   const { primaryManagerId, uniqueManagerIds } = resolveCreateProjectManagerAssignment({
@@ -830,16 +867,15 @@ export async function createProjectWithClient(
     }
   }
 
-  const ownershipType = coerceOwnershipType(input.ownershipType);
-  const independent = ownershipType === 'independent';
 
   try {
     const row = await createEngagement(ctx, {
       slug,
       companyName: input.companyName.trim(),
       // A standalone company has no overseas parent, whatever the form sent.
-      companyType: independent ? 'domestic' : input.companyType,
+      companyType,
       ownershipType,
+      parentIndianRelationship: parentIndianRelationship.value,
       entityLegalForm: input.entityLegalForm ?? 'company',
       // Captured in SPICe+ Part A for a dependent company; a caller may still
       // seed them here. Never stored as empty strings.

@@ -11,18 +11,77 @@ export type CompanyType = 'domestic' | 'foreign';
 export type OwnershipType = 'subsidiary' | 'independent';
 export type { EntityLegalForm };
 
+/**
+ * What an Indian parent does for a group company: lends its name only, or
+ * subscribes to shares. Decides which NOC applies (see `src/lib/noc/variant.ts`).
+ * Only meaningful for subsidiary + domestic; null everywhere else.
+ */
+export type ParentIndianRelationship = 'name_only' | 'investing';
+
 export const COMPANY_TYPE_LABEL: Record<CompanyType, string> = {
   domestic: 'Domestic',
   foreign: 'Foreign',
 };
 
 export const OWNERSHIP_TYPE_LABEL: Record<OwnershipType, string> = {
-  subsidiary: 'Dependent',
-  independent: 'Independent',
+  subsidiary: 'Group company',
+  independent: 'Standalone company',
+};
+
+export const PARENT_INDIAN_RELATIONSHIP_LABEL: Record<ParentIndianRelationship, string> = {
+  name_only: 'Name use only',
+  investing: 'Investing',
 };
 
 export function coerceOwnershipType(value: unknown): OwnershipType {
   return value === 'independent' ? 'independent' : 'subsidiary';
+}
+
+export function coerceParentIndianRelationship(value: unknown): ParentIndianRelationship | null {
+  return value === 'name_only' || value === 'investing' ? value : null;
+}
+
+/** True when the Indian parent's role must be chosen (Group company + Indian parent). */
+export function requiresParentIndianRelationship(e: {
+  ownershipType?: string | null;
+  companyType?: string | null;
+}): boolean {
+  return coerceOwnershipType(e.ownershipType) === 'subsidiary' && e.companyType === 'domestic';
+}
+
+/**
+ * Applies the invariant: the Indian parent's role survives only for Group
+ * company + Indian parent; everywhere else it is forced to null. Returns
+ * `missing: true` when it is required but absent, so callers can reject.
+ */
+export function normalizeParentIndianRelationship(e: {
+  ownershipType?: string | null;
+  companyType?: string | null;
+  parentIndianRelationship?: unknown;
+}): { value: ParentIndianRelationship | null; missing: boolean } {
+  if (!requiresParentIndianRelationship(e)) return { value: null, missing: false };
+  const value = coerceParentIndianRelationship(e.parentIndianRelationship);
+  return { value, missing: value === null };
+}
+
+/**
+ * Ownership as shown on headers and pickers. Standalone rows are stored as
+ * `domestic`, so `COMPANY_TYPE_LABEL` alone cannot tell "Indian parent" from
+ * "no parent" — this can.
+ */
+export function ownershipDisplayLabel(
+  e: Pick<Engagement, 'ownershipType' | 'companyType' | 'parentIndianRelationship'>,
+): string {
+  if (coerceOwnershipType(e.ownershipType) === 'independent') return 'Standalone';
+  if (e.companyType === 'foreign') return 'Group · Foreign parent';
+  switch (coerceParentIndianRelationship(e.parentIndianRelationship)) {
+    case 'name_only':
+      return 'Group · Indian parent (name use)';
+    case 'investing':
+      return 'Group · Indian parent (investing)';
+    default:
+      return 'Group · Indian parent';
+  }
 }
 
 /** Steps that only exist for a parent entity's board (see pre-1 boardResolutionDate). */
@@ -38,6 +97,8 @@ export interface Engagement {
   companyType: CompanyType;
   /** Dependent (has a parent entity) or Independent (standalone). Missing = subsidiary. */
   ownershipType?: OwnershipType;
+  /** Indian parent's role (Group company + Indian parent only). null = not applicable or not yet chosen. */
+  parentIndianRelationship?: ParentIndianRelationship | null;
   /** Manager-set date windows (incorporation + per step). See `schedule-windows.ts`. */
   schedule?: EngagementSchedule;
   /** Indian legal form for compliance calendar filtering */
