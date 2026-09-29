@@ -10,6 +10,7 @@ import {
   User,
   Layers,
   Globe2,
+  Handshake,
   MapPin,
   Network,
   KeyRound,
@@ -46,12 +47,21 @@ import { CreateProjectClientFields } from '@/components/admin/CreateProjectFormC
 import {
   COMPANY_TYPES,
   OWNERSHIP_TYPES,
+  PARENT_INDIAN_RELATIONSHIPS,
   ENTITY_LEGAL_FORMS,
   stageRequiresParentEntity,
   stageRequiresSubsidiary,
   type Stage,
 } from '@/components/admin/create-project-form-utils';
-import type { CompanyType, EntityLegalForm, OwnershipType } from '@/data/engagements';
+import {
+  requiresParentIndianRelationship,
+  type CompanyType,
+  type EntityLegalForm,
+  type OwnershipType,
+  type ParentIndianRelationship,
+} from '@/data/engagements';
+import { resolveNocVariant } from '@/lib/noc/variant';
+import { NOC_TEMPLATES } from '@/lib/noc/templates';
 
 type CreateProjectOwnerOption = {
   id: string;
@@ -63,6 +73,7 @@ type CreateProjectOwnerOption = {
 type CreateProjectFieldErrorKey =
   | 'companyName'
   | 'companyType'
+  | 'parentIndianRelationship'
   | 'subsidiaryLegalName'
   | 'subsidiaryRegisteredAddress'
   | 'parentEntityName'
@@ -85,6 +96,9 @@ export type CreateProjectFormViewProps = {
   setOwnershipType: (value: OwnershipType) => void;
   companyType: CompanyType;
   setCompanyType: (value: CompanyType) => void;
+  /** Group company + Indian parent only; null = not applicable or not yet chosen. */
+  parentIndianRelationship: ParentIndianRelationship | null;
+  setParentIndianRelationship: (value: ParentIndianRelationship) => void;
   entityLegalForm: EntityLegalForm;
   setEntityLegalForm: (value: EntityLegalForm) => void;
   subsidiaryLegalName: string;
@@ -217,6 +231,8 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     setOwnershipType,
     companyType,
     setCompanyType,
+    parentIndianRelationship,
+    setParentIndianRelationship,
     entityLegalForm,
     setEntityLegalForm,
     subsidiaryLegalName,
@@ -255,8 +271,11 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
   const independent = ownershipType === 'independent';
   const needsSubsidiary = stageRequiresSubsidiary(stage, ownershipType);
   const needsParent = stageRequiresParentEntity(stage, ownershipType);
+  const needsParentRole = requiresParentIndianRelationship({ ownershipType, companyType });
+  const nocVariant = resolveNocVariant({ ownershipType, companyType, parentIndianRelationship });
   const entityDone = Boolean(
     companyType &&
+      (!needsParentRole || parentIndianRelationship) &&
       (!needsSubsidiary ||
         (subsidiaryLegalName.trim() && subsidiaryRegisteredAddress.trim())) &&
       (!needsParent || (parentEntityName.trim() && parentEntityAddress.trim())),
@@ -332,6 +351,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
   const entityErr =
     fieldError('companyName') ||
     fieldError('companyType') ||
+    fieldError('parentIndianRelationship') ||
     fieldError('subsidiaryLegalName') ||
     fieldError('subsidiaryRegisteredAddress') ||
     fieldError('parentEntityName') ||
@@ -451,7 +471,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
                 >
                   <Network className="h-3.5 w-3.5" aria-hidden />
-                  Company type <span className="font-normal text-danger">*</span>
+                  Ownership <span className="font-normal text-danger">*</span>
                 </span>
                 <SegmentedPicker
                   value={ownershipType}
@@ -465,6 +485,71 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   {independent ? ' — no parent or subsidiary details are asked.' : '.'}
                 </p>
               </div>
+
+              {independent ? null : (
+              <div>
+                <span
+                  id="create-company-type-label"
+                  className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                >
+                  <Globe2 className="h-3.5 w-3.5" aria-hidden />
+                  Parent company is <span className="font-normal text-danger">*</span>
+                </span>
+                <SegmentedPicker
+                  value={companyType}
+                  options={COMPANY_TYPES.map((opt) => ({ value: opt.value, label: opt.label }))}
+                  onChange={setCompanyType}
+                  labelledBy="create-company-type-label"
+                  className="mt-2 max-w-xs"
+                />
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                  {COMPANY_TYPES.find((opt) => opt.value === companyType)?.hint}
+                </p>
+                <FieldError id="create-company-type-error" message={fieldError('companyType')} />
+              </div>
+              )}
+
+              {needsParentRole ? (
+              <div>
+                <span
+                  id="create-parent-role-label"
+                  className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                >
+                  <Handshake className="h-3.5 w-3.5" aria-hidden />
+                  Parent&apos;s role <span className="font-normal text-danger">*</span>
+                </span>
+                <SegmentedPicker
+                  value={parentIndianRelationship}
+                  options={PARENT_INDIAN_RELATIONSHIPS.map((opt) => ({
+                    value: opt.value,
+                    label: opt.label,
+                  }))}
+                  onChange={setParentIndianRelationship}
+                  labelledBy="create-parent-role-label"
+                  className="mt-2 max-w-xs"
+                />
+                {parentIndianRelationship ? (
+                  <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                    {
+                      PARENT_INDIAN_RELATIONSHIPS.find(
+                        (opt) => opt.value === parentIndianRelationship,
+                      )?.hint
+                    }
+                  </p>
+                ) : null}
+                <FieldError
+                  id="create-parent-role-error"
+                  message={fieldError('parentIndianRelationship')}
+                />
+              </div>
+              ) : null}
+
+              {nocVariant ? (
+                <p className="text-[11.5px] text-muted-foreground">
+                  {/* Registry labels read "NOC — …"; drop the prefix so the line isn't "NOC: NOC — …". */}
+                  NOC: {NOC_TEMPLATES[nocVariant].label.replace(/^NOC — /, '')}
+                </p>
+              ) : null}
 
               <CreateProjectStartingPhasePicker stage={stage} onChange={setStage} />
 
@@ -597,26 +682,6 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   </div>
                 </div>
               ) : null}
-
-              {independent ? null : (
-              <div>
-                <span
-                  id="create-company-type-label"
-                  className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
-                >
-                  <Globe2 className="h-3.5 w-3.5" aria-hidden />
-                  Parent entity origin <span className="font-normal text-danger">*</span>
-                </span>
-                <SegmentedPicker
-                  value={companyType}
-                  options={COMPANY_TYPES.map((opt) => ({ value: opt.value, label: opt.label }))}
-                  onChange={setCompanyType}
-                  labelledBy="create-company-type-label"
-                  className="mt-2 max-w-xs"
-                />
-                <FieldError id="create-company-type-error" message={fieldError('companyType')} />
-              </div>
-              )}
 
               <div>
                 <span

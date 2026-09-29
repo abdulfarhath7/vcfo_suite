@@ -1,4 +1,11 @@
-import type { CompanyType, EntityLegalForm, OwnershipType } from '@/data/engagements';
+import {
+  coerceParentIndianRelationship,
+  requiresParentIndianRelationship,
+  type CompanyType,
+  type EntityLegalForm,
+  type OwnershipType,
+  type ParentIndianRelationship,
+} from '@/data/engagements';
 import type { QuestionnaireAnswers } from '@/data/compliance-questionnaire';
 import { ENTITY_LEGAL_FORM_LABEL } from '@/lib/compliance/types';
 
@@ -39,19 +46,59 @@ export function stageRequiresParentEntity(stage: Stage, ownershipType: Ownership
 }
 
 /**
- * Asked first: does a parent entity stand behind this company? Independent
+ * Asked first: does a parent entity stand behind this company? Standalone
  * skips every parent / subsidiary question here and the parent-entity
  * sections of the incorporation checklist.
  */
 export const OWNERSHIP_TYPES: Array<{ value: OwnershipType; label: string; hint: string }> = [
-  { value: 'subsidiary', label: 'Dependent', hint: 'Subsidiary of a parent entity' },
-  { value: 'independent', label: 'Independent', hint: 'Standalone — no parent entity' },
+  {
+    value: 'subsidiary',
+    label: 'Group company',
+    hint: 'Backed by an existing company (parent / group)',
+  },
+  {
+    value: 'independent',
+    label: 'Standalone company',
+    hint: 'Promoted by individuals — no parent company',
+  },
 ];
 
+/**
+ * Where the parent is incorporated (Group company only). Labelled by the
+ * parent, not the new company — a Standalone row is also stored `domestic`.
+ */
 export const COMPANY_TYPES: Array<{ value: CompanyType; label: string; hint: string }> = [
-  { value: 'domestic', label: 'Domestic', hint: 'India-incorporated entity' },
-  { value: 'foreign', label: 'Foreign', hint: 'Overseas parent · FEMA track' },
+  { value: 'foreign', label: 'Foreign company', hint: 'Incorporated outside India · FEMA track' },
+  { value: 'domestic', label: 'Indian company', hint: 'Incorporated in India' },
 ];
+
+/** What an Indian parent does for the new company (Group + Indian parent only). */
+export const PARENT_INDIAN_RELATIONSHIPS: Array<{
+  value: ParentIndianRelationship;
+  label: string;
+  hint: string;
+}> = [
+  { value: 'name_only', label: 'Name use only', hint: 'Lends its name; does not invest' },
+  { value: 'investing', label: 'Investing', hint: 'Subscribes to shares of the new company' },
+];
+
+/** Field error shown when the Indian parent's role is required but not chosen. */
+export const PARENT_INDIAN_RELATIONSHIP_REQUIRED_MESSAGE =
+  'Choose whether the Indian parent lends its name or invests.';
+
+/** True when the form cannot submit because the Indian parent's role is unchosen. */
+export function parentIndianRelationshipMissing(
+  state: Pick<CreateProjectState, 'ownershipType' | 'companyType' | 'parentIndianRelationship'>,
+): boolean {
+  return requiresParentIndianRelationship(state) && state.parentIndianRelationship === null;
+}
+
+/** Value to send on POST / PATCH: null unless Group company + Indian parent. */
+export function parentIndianRelationshipForSubmit(
+  state: Pick<CreateProjectState, 'ownershipType' | 'companyType' | 'parentIndianRelationship'>,
+): ParentIndianRelationship | null {
+  return requiresParentIndianRelationship(state) ? state.parentIndianRelationship : null;
+}
 
 export const ENTITY_LEGAL_FORMS: Array<{ value: EntityLegalForm; label: string; hint: string }> = [
   { value: 'company', label: ENTITY_LEGAL_FORM_LABEL.company, hint: 'Private / public limited company' },
@@ -75,6 +122,8 @@ export type CreateProjectState = {
   companyName: string;
   ownershipType: OwnershipType;
   companyType: CompanyType;
+  /** Group company + Indian parent only; null = not applicable or not yet chosen. */
+  parentIndianRelationship: ParentIndianRelationship | null;
   entityLegalForm: EntityLegalForm;
   subsidiaryLegalName: string;
   subsidiaryRegisteredAddress: string;
@@ -116,6 +165,7 @@ export function createProjectReducer(state: CreateProjectState, action: CreatePr
         companyName: '',
         ownershipType: 'subsidiary',
         companyType: 'domestic',
+        parentIndianRelationship: null,
         entityLegalForm: 'company',
         subsidiaryLegalName: '',
         subsidiaryRegisteredAddress: '',
@@ -135,8 +185,14 @@ export function createProjectReducer(state: CreateProjectState, action: CreatePr
         showValidation: false,
         showPassword: false,
       };
-    case 'patch':
-      return { ...state, ...action.patch };
+    case 'patch': {
+      const next = { ...state, ...action.patch };
+      // Standalone or a Foreign parent: the Indian parent's role no longer applies.
+      if (next.parentIndianRelationship !== null && !requiresParentIndianRelationship(next)) {
+        return { ...next, parentIndianRelationship: null };
+      }
+      return next;
+    }
     default:
       return state;
   }
@@ -163,6 +219,7 @@ export function saveCreateProjectDraft(state: CreateProjectState): void {
     companyName: state.companyName,
     ownershipType: state.ownershipType,
     companyType: state.companyType,
+    parentIndianRelationship: state.parentIndianRelationship,
     entityLegalForm: state.entityLegalForm,
     subsidiaryLegalName: state.subsidiaryLegalName,
     subsidiaryRegisteredAddress: state.subsidiaryRegisteredAddress,
@@ -203,6 +260,8 @@ export function loadCreateProjectDraft(): CreateProjectDraftPayload | null {
       companyName: typeof parsed.companyName === 'string' ? parsed.companyName : '',
       ownershipType: parsed.ownershipType === 'independent' ? 'independent' : 'subsidiary',
       companyType: parsed.companyType === 'foreign' ? 'foreign' : 'domestic',
+      // Drafts saved before this field existed simply have none → null.
+      parentIndianRelationship: coerceParentIndianRelationship(parsed.parentIndianRelationship),
       entityLegalForm:
         parsed.entityLegalForm === 'llp' ||
         parsed.entityLegalForm === 'partnership' ||

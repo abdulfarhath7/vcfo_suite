@@ -31,6 +31,9 @@ import {
   reconcileSelectedIds,
   sameIdList,
   isPlaceholderTeamId,
+  parentIndianRelationshipMissing,
+  parentIndianRelationshipForSubmit,
+  PARENT_INDIAN_RELATIONSHIP_REQUIRED_MESSAGE,
   type CreateProjectState,
 } from '@/components/admin/create-project-form-utils';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
@@ -58,6 +61,8 @@ function stateFromEngagement(eng: Engagement): CreateProjectState {
     companyName: eng.companyName ?? '',
     ownershipType: eng.ownershipType ?? 'subsidiary',
     companyType: (eng.companyType ?? 'domestic') as CreateProjectState['companyType'],
+    // Legacy Group + Indian rows are null here → "not yet chosen"; save requires a pick.
+    parentIndianRelationship: eng.parentIndianRelationship ?? null,
     entityLegalForm: (eng.entityLegalForm ?? 'company') as CreateProjectState['entityLegalForm'],
     subsidiaryLegalName: eng.subsidiaryLegalName ?? '',
     subsidiaryRegisteredAddress: eng.subsidiaryRegisteredAddress ?? '',
@@ -89,6 +94,7 @@ function initialCreateProjectState(internIds: string[]): CreateProjectState {
     companyName: '',
     ownershipType: 'subsidiary',
     companyType: 'domestic',
+    parentIndianRelationship: null,
     entityLegalForm: 'company',
     subsidiaryLegalName: '',
     subsidiaryRegisteredAddress: '',
@@ -171,6 +177,7 @@ export function CreateProjectForm({
     companyName,
     ownershipType,
     companyType,
+    parentIndianRelationship,
     entityLegalForm,
     subsidiaryLegalName,
     subsidiaryRegisteredAddress,
@@ -223,6 +230,11 @@ export function CreateProjectForm({
   const companyTypeValid = companyTypeSchema.safeParse(companyType).success;
   const entityLegalFormValid = entityLegalFormSchema.safeParse(entityLegalForm).success;
   const independent = ownershipType === 'independent';
+  const parentRoleValid = !parentIndianRelationshipMissing({
+    ownershipType,
+    companyType,
+    parentIndianRelationship,
+  });
   const needsSubsidiary = stageRequiresSubsidiary(stage, ownershipType);
   const subsidiaryNameValid = !needsSubsidiary
     ? true
@@ -244,6 +256,7 @@ export function CreateProjectForm({
   const canSubmit =
     companyValid &&
     companyTypeValid &&
+    parentRoleValid &&
     entityLegalFormValid &&
     subsidiaryNameValid &&
     subsidiaryAddressValid &&
@@ -260,7 +273,8 @@ export function CreateProjectForm({
   const fieldErrors = useMemo(
     () => ({
       companyName: !companyName.trim() ? 'Enter the project or GCC entity name for this setup.' : '',
-      companyType: !companyTypeValid ? 'Select whether the company is domestic or foreign.' : '',
+      companyType: !companyTypeValid ? 'Select whether the parent company is foreign or Indian.' : '',
+      parentIndianRelationship: !parentRoleValid ? PARENT_INDIAN_RELATIONSHIP_REQUIRED_MESSAGE : '',
       subsidiaryLegalName: needsSubsidiary
         ? !subsidiaryLegalName.trim()
           ? 'Enter the subsidiary company’s full legal name.'
@@ -321,6 +335,7 @@ export function CreateProjectForm({
       isEdit,
       companyName,
       companyTypeValid,
+      parentRoleValid,
       needsSubsidiary,
       subsidiaryLegalName,
       subsidiaryNameValid,
@@ -348,8 +363,11 @@ export function CreateProjectForm({
   const fieldError = (key: keyof typeof fieldErrors) => (showValidation ? fieldErrors[key] : '');
 
   const setCompanyName = (value: string) => dispatch({ type: 'patch', patch: { companyName: value } });
+  // Clearing the Indian parent's role on Foreign / Standalone lives in the reducer.
   const setCompanyType = (value: typeof companyType) =>
     dispatch({ type: 'patch', patch: { companyType: value } });
+  const setParentIndianRelationship = (value: NonNullable<typeof parentIndianRelationship>) =>
+    dispatch({ type: 'patch', patch: { parentIndianRelationship: value } });
   // A standalone company has no overseas parent: origin snaps to domestic.
   const setOwnershipType = (value: typeof ownershipType) =>
     dispatch({
@@ -426,6 +444,7 @@ export function CreateProjectForm({
           companyName: name,
           ownershipType,
           companyType: independent ? 'domestic' : companyType,
+          parentIndianRelationship: parentIndianRelationshipForSubmit(state),
           entityLegalForm,
           subsidiaryLegalName: needsSub ? subsidiaryLegalName.trim() : null,
           subsidiaryRegisteredAddress: needsSub ? subsidiaryRegisteredAddress.trim() : null,
@@ -484,6 +503,7 @@ export function CreateProjectForm({
         companyName: name,
         ownershipType,
         companyType: independent ? 'domestic' : companyType,
+        parentIndianRelationship: parentIndianRelationshipForSubmit(state),
         entityLegalForm,
         subsidiaryLegalName: needsSubsidiary ? subsidiaryLegalName.trim() : undefined,
         subsidiaryRegisteredAddress: needsSubsidiary
@@ -592,6 +612,8 @@ export function CreateProjectForm({
     setOwnershipType,
     companyType,
     setCompanyType,
+    parentIndianRelationship,
+    setParentIndianRelationship,
     entityLegalForm,
     setEntityLegalForm,
     subsidiaryLegalName,
