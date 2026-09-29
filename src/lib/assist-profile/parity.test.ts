@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildDocPackContext } from '@/lib/doc-pack/evaluate';
 import { director } from '@/lib/doc-pack/__tests__/fixtures';
 import { buildAssistProfile } from '@/lib/assist-profile/build';
-import { assistFullState } from '@/lib/assist-profile/__tests__/fixtures';
+import { assistFullState, withSubscribers } from '@/lib/assist-profile/__tests__/fixtures';
 
 /**
  * Parity: every key the profile emits is a key VCFO Assist actually reads.
@@ -97,6 +97,74 @@ const MAPPING_JS_PATHS = new Set([
     'interests[].percent',
     'interests[].amount',
   ].map((k) => `directors[].${k}`),
+  // Part B 6a / 6b / 6c subscribers, from `vcfo_assist/fieldmaps/spice-part-b.json`
+  // and `inc-34-eaoa.json`. A subscriber-director is also read through Assist's
+  // `directors[withDin|withoutDin]` view (subscriber-directors, then directors),
+  // so it may carry every director key too.
+  ...[
+    'firstName',
+    'middleName',
+    'surName',
+    'father.firstName',
+    'father.middleName',
+    'father.surName',
+    'gender',
+    'dob',
+    'nationality',
+    'placeOfBirth',
+    'occupationType',
+    'areaOfOccupation',
+    'othersOccupation',
+    'education',
+    'othersEducation',
+    'pan',
+    'din',
+    'email',
+    'name',
+    'cin',
+    'category',
+    'place',
+    'shares.equity.class',
+    'shares.equity.number',
+    // via the directors view
+    'designation',
+    'citizenOfIndia',
+    'residentInIndia',
+    'countryCode',
+    'mobile',
+    'interests[].cin',
+    'interests[].name',
+    'interests[].address',
+    'interests[].designation',
+    'interests[].percent',
+    'interests[].amount',
+    ...[
+      'firstName',
+      'middleName',
+      'surName',
+      'father.firstName',
+      'father.middleName',
+      'father.surName',
+      'gender',
+      'dob',
+      'nationality',
+      'placeOfBirth',
+      'occupationType',
+      'areaOfOccupation',
+      'othersOccupation',
+      'education',
+      'othersEducation',
+      'pan',
+      'din',
+      'email',
+    ].map((k) => `representative.${k}`),
+  ].map((k) => `subscribers[].${k}`),
+  // INC-33 / INC-34 witness
+  'moa.witness.name',
+  'moa.witness.address',
+  'aoa.witness.name',
+  'aoa.witness.addressDescriptionOccupation',
+  'aoa.witness.dinPanMembership',
   // INC-33 / AGILE-PRO-S / INC-34 (P2)
   'company.name',
   'company.objects',
@@ -111,6 +179,7 @@ const MAPPING_JS_PATHS = new Set([
  *   lead's Preview; the portal derives them.
  * - `directors[].id`, `directors[].index`: director identity across reorders
  *   (QUESTIONS Q1).
+ * - `subscribers[].kind|isDirector|id|index`: see the entries below.
  */
 const INFORMATIONAL_PATHS = new Set([
   'company.nicDescription',
@@ -119,6 +188,13 @@ const INFORMATIONAL_PATHS = new Set([
   'registeredOffice.country',
   'directors[].id',
   'directors[].index',
+  // `kind` / `isDirector` split subscribers into Assist's 6a / 6b / 6c and
+  // directors views (`src/suite/profile.js`) rather than filling a field;
+  // `id` / `index` are identity, as for directors (QUESTIONS Q7).
+  'subscribers[].kind',
+  'subscribers[].isDirector',
+  'subscribers[].id',
+  'subscribers[].index',
 ]);
 
 function leafPaths(value: unknown, prefix = ''): string[] {
@@ -145,7 +221,15 @@ describe('assist profile ↔ mapping.js parity', () => {
       engagement: { companyName: 'Test Company India Private Limited' },
     }),
   );
-  const paths = [...new Set(leafPaths(result.profile))].sort();
+  const withIndividuals = buildAssistProfile(
+    buildDocPackContext({
+      state: withSubscribers(assistFullState([director('e1', 'no', 'Alpha', { middleName: 'M' }), interests]), [
+        { id: 's1', name: 'Gamma Director', shares: '10000' },
+      ]),
+      engagement: { companyName: 'Test Company India Private Limited', ownershipType: 'independent', companyType: 'domestic' },
+    }),
+  );
+  const paths = [...new Set([...leafPaths(result.profile), ...leafPaths(withIndividuals.profile)])].sort();
 
   it('emits every key it is expected to (the fixture exercises the full shape)', () => {
     expect(paths).toEqual(
@@ -157,6 +241,12 @@ describe('assist profile ↔ mapping.js parity', () => {
         'directors[].middleName',
         'directors[].interests[].cin',
         'directors[].interests[].designation',
+        'company.subCategory',
+        'subscribers[].representative.firstName',
+        'subscribers[].shares.equity.number',
+        'subscribers[].interests[].cin',
+        'moa.witness.name',
+        'aoa.witness.addressDescriptionOccupation',
       ]),
     );
   });

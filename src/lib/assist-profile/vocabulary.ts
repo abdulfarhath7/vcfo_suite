@@ -19,8 +19,38 @@ export const COMPANY_TYPE = { newOthers: 'New Company (Others)' } as const;
 export const COMPANY_CLASS = { private: 'Private', public: 'Public' } as const;
 /** SPICe+ Part A "Category of the company". */
 export const COMPANY_CATEGORY = { limitedByShares: 'Company limited by shares' } as const;
-/** SPICe+ Part A "Sub-category of the company". Suite does not hold the sub-category yet. */
-export const COMPANY_SUBCATEGORY = { nonGovernment: 'Non-government company' } as const;
+/**
+ * SPICe+ Part A "Sub-category of the company", derived from the project's
+ * ownership (QUESTIONS Q5).
+ *
+ * NOT YET CAPTURED FROM THE PORTAL: the list loads only after class and
+ * category are picked, so the schema capture holds no options. This wording
+ * is the owner's (2026-09-29). Assist matches option text case- and
+ * whitespace-insensitively and reports "no option matches" rather than
+ * picking a wrong one. Replace with the captured text once
+ * `docs/mca-field-capture.js` has been run on that dropdown.
+ */
+export const COMPANY_SUBCATEGORY = {
+  indianNonGovernment: 'Indian non-government company',
+  foreignSubsidiary: 'Subsidiary of company incorporated outside India',
+} as const;
+
+/**
+ * Sub-category by ownership. A Group company with a Foreign parent is a
+ * subsidiary of a foreign company; a Standalone company, or a Group company
+ * with an Indian parent, is an Indian non-government company (the Indian
+ * parent case is still to be confirmed by the owner). `undefined` when the
+ * parent's origin is not known.
+ */
+export function companySubCategoryFor(e: {
+  ownershipType?: string | null;
+  companyType?: string | null;
+}): string | undefined {
+  if (e.ownershipType === 'independent') return COMPANY_SUBCATEGORY.indianNonGovernment;
+  if (e.companyType === 'foreign') return COMPANY_SUBCATEGORY.foreignSubsidiary;
+  if (e.companyType === 'domestic') return COMPANY_SUBCATEGORY.indianNonGovernment;
+  return undefined;
+}
 
 export interface CompanyStructure {
   type: string;

@@ -1,4 +1,5 @@
 import type { EngagementChecklistState } from '@/lib/engagements-db';
+import { repeatFieldId } from '@/lib/checklist-repeat';
 import { COMPANY_PRE1, director, fullState, type FixtureDirector } from '@/lib/doc-pack/__tests__/fixtures';
 
 /** Obviously fake data only — the repo is public. Builds on the doc-pack fixtures. */
@@ -35,4 +36,18 @@ export function assistFullState(
     // Part A stage: no approved name yet, so both proposed names are filed.
     'pre-5': { status: 'not-started', responses: {} },
   };
+}
+
+/** Replaces pre-16 with individual subscribers (name matches a director as "First Director"). */
+export function withSubscribers(
+  state: EngagementChecklistState,
+  subscribers: Array<{ id: string; name: string; shares: string }>,
+): EngagementChecklistState {
+  const pre16: Record<string, string> = { subscribers: subscribers.map((s) => s.id).join(',') };
+  for (const s of subscribers) {
+    pre16[repeatFieldId('subscribers', s.id, 'type')] = 'individual';
+    pre16[repeatFieldId('subscribers', s.id, 'name')] = s.name;
+    pre16[repeatFieldId('subscribers', s.id, 'shares')] = s.shares;
+  }
+  return { ...state, 'pre-16': { status: 'completed', responses: pre16 } };
 }

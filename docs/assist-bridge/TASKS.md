@@ -73,3 +73,19 @@ Append-only. One entry per phase. Newest at the bottom.
 - Left out: no CORS headers, OPTIONS handler, token route, extension-origin env var or
   cookie `SameSite` change — by design.
 - Verification: `npm run typecheck && npm run test` pass (136 files, 1152 tests)
+
+## 2026-09-29 — Owner answers Q2–Q5 applied
+- Built: `subscribers[]` from `planSubscription` (body corporate with representative,
+  or individual subscriber-directors, with shares and INC-34 place); subscriber-directors
+  leave `directors[]` (new Q7). `moa.witness` / `aoa.witness` from the pre-7
+  subscription witness. `company.subCategory` derived from ownership (unverified
+  wording, flagged). Interim PIN-code note for the registered office (notes only).
+  pre-16 copy asks for every subscriber, directors included.
+- Files: `src/lib/assist-profile/{build,types,vocabulary}.ts`, `src/lib/doc-pack/types.ts`
+  (`DocPackEngagement` gains `companyType`, `parentIndianRelationship`),
+  `src/data/checklist.ts`, `src/lib/checklist-responses.ts` (pre-16 copy only),
+  tests `src/lib/assist-profile/{build,parity}.test.ts`, `__tests__/fixtures.ts`.
+- Left out: pre-14 structured address fields (Q4), the pre-10 lead section and client
+  step fields (Q2) — separate changes; portal capture of the sub-category list (Q5).
+- Verification: `npm run typecheck && npm run test` pass (140 files, 1235 tests);
+  lint 0 errors.

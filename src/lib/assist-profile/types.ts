@@ -54,17 +54,30 @@ export interface AssistDirector extends AssistPerson {
   interests?: AssistInterest[];
 }
 
-/** Typed for completeness; Suite does not emit subscribers yet (QUESTIONS Q3). */
-export interface AssistSubscriber extends AssistPerson {
-  kind?: 'individual' | 'bodyCorporate';
-  isDirector?: boolean;
-  din?: string;
-  email?: string;
-  mobile?: string;
-  designation?: string;
-  category?: string;
+/** The person who signs for a body-corporate subscriber (Part B 6a). */
+export type AssistRepresentative = AssistPerson & { din?: string; email?: string };
+
+/**
+ * One subscriber, from `planSubscription` (QUESTIONS Q3). A subscriber who is
+ * also a proposed director carries that director's details and `id`, and is
+ * not repeated in `directors[]` — Assist lists subscriber-directors and
+ * `directors[]` together in Part B section 5, so the two sets are disjoint
+ * (QUESTIONS Q7).
+ */
+export interface AssistSubscriber extends Omit<AssistDirector, 'id' | 'index'> {
+  /** Stable Suite id of the proposed director this subscriber is; absent otherwise. */
+  id?: string;
+  /** 1-based position in `subscribers[]`. */
+  index: number;
+  kind: 'individual' | 'bodyCorporate';
+  isDirector: boolean;
+  /** Body corporate only. */
+  name?: string;
+  cin?: string;
+  representative?: AssistRepresentative;
   shares?: { equity?: { class?: string; number?: number } };
-  interests?: AssistInterest[];
+  /** INC-34 place of signing. */
+  place?: string;
 }
 
 export interface AssistCapitalClass {
@@ -114,17 +127,23 @@ export interface AssistAgile {
   numberOfDirectors?: number;
 }
 
-/** INC-33. Suite holds none of it yet; the object is always empty (see `missing`). */
-export type AssistMoa = Record<string, never>;
-/** INC-34. Suite holds none of it yet; the object is always empty (see `missing`). */
-export type AssistAoa = Record<string, never>;
+/** INC-33. Only the subscription witness Suite holds on pre-7 (QUESTIONS Q2). */
+export interface AssistMoa {
+  witness?: { name?: string; address?: string };
+}
+/** INC-34. Only the subscription witness Suite holds on pre-7 (QUESTIONS Q2). */
+export interface AssistAoa {
+  witness?: { name?: string; addressDescriptionOccupation?: string; dinPanMembership?: string };
+}
 
 export interface AssistProfile {
   /** Suite never emits an MCA credential: `userId` is always `''`. */
   mcaLogin: { userId: '' };
   company: AssistCompany;
   registeredOffice?: AssistRegisteredOffice;
+  /** Directors who are not subscribers; subscriber-directors are in `subscribers[]`. */
   directors: AssistDirector[];
+  subscribers: AssistSubscriber[];
   agile: AssistAgile;
   moa: AssistMoa;
   aoa: AssistAoa;

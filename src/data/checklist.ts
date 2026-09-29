@@ -307,9 +307,9 @@ const preInc: ChecklistItem[] = [
     title: 'Subscriber Details',
     responsibleRole: 'client',
     description:
-      'Subscribers to the memorandum other than the directors — individuals, bodies corporate or LLPs — with the shares each takes. Optional: submit with none if the proposed directors subscribe the initial shares themselves.',
+      'Every subscriber to the memorandum — proposed directors who subscribe, other individuals, bodies corporate or LLPs — with the shares each takes. A group company whose parent is the only subscriber can submit with none.',
     forms: ['Spice Part B', 'INC-33', 'INC-34', 'INC-35'],
-    infoRequired: ['Subscribers (optional)', 'INC-35 nominee'],
+    infoRequired: ['Subscribers and shares', 'INC-35 nominee'],
     deadline: { kind: 'estimated-weeks', weeks: [5, 6] },
     expectedTimeline: '1 working day',
   },

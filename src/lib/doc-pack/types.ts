@@ -40,7 +40,12 @@ export type DocPackEngagement = Pick<Engagement, 'companyName'> &
   Partial<
     Pick<
       Engagement,
-      'parentEntityName' | 'parentEntityAddress' | 'parentEntityRegistrationNumber' | 'ownershipType'
+      | 'parentEntityName'
+      | 'parentEntityAddress'
+      | 'parentEntityRegistrationNumber'
+      | 'ownershipType'
+      | 'companyType'
+      | 'parentIndianRelationship'
     >
   >;
 

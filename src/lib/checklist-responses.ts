@@ -965,8 +965,9 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       minEntries: 0,
       maxEntries: 50,
       emptyLabel:
-        'No subscribers to add — submit as is if the proposed directors subscribe the initial shares themselves.',
-      helperText: 'Optional. Add each person or entity subscribing to the memorandum besides the directors.',
+        'No subscribers listed — submit as is only when the parent company is the sole subscriber.',
+      helperText:
+        'Add every person or entity subscribing to the memorandum, including proposed directors who subscribe, with the shares each takes.',
       entryFields: [
         {
           id: 'type',

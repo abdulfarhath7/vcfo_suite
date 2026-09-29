@@ -9,11 +9,28 @@ import {
   rupeeAmount,
   splitMobile,
   toMcaDate,
+  trailingPinCode,
 } from '@/lib/assist-profile/build';
-import { ASSIST_PRE1, NR, RESIDENT, assistFullState } from '@/lib/assist-profile/__tests__/fixtures';
+import {
+  ASSIST_PRE1,
+  NR,
+  RESIDENT,
+  assistFullState,
+  withSubscribers,
+} from '@/lib/assist-profile/__tests__/fixtures';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
+import type { DocPackEngagement } from '@/lib/doc-pack/types';
 
-function build(state: EngagementChecklistState, engagement = { companyName: 'Test Company India Private Limited' }) {
+const INDEPENDENT: DocPackEngagement = {
+  companyName: 'Test Company India Private Limited',
+  ownershipType: 'independent',
+  companyType: 'domestic',
+};
+
+function build(
+  state: EngagementChecklistState,
+  engagement: DocPackEngagement = { companyName: 'Test Company India Private Limited' },
+) {
   return buildAssistProfile(buildDocPackContext({ state, engagement }));
 }
 
@@ -73,8 +90,9 @@ describe('buildAssistProfile', () => {
     const { missing } = build(assistFullState());
     const reasons = new Set(Object.values(MISSING_REASON));
     for (const m of missing) expect(reasons.has(m.reason as never), m.key).toBe(true);
+    // No companyType on this engagement, so the sub-category cannot be derived.
     expect(missing.map((m) => m.key)).toContain('company.subCategory');
-    expect(missing.map((m) => m.key)).toContain('subscribers');
+    expect(missing.map((m) => m.key)).toContain('subscriber.1.address');
   });
 
   it('no registered office: lists company.registeredOffice at pre-14 and omits the section', () => {
@@ -225,11 +243,42 @@ describe('format helpers', () => {
 });
 
 describe('buildAssistProfile — AGILE-PRO-S, INC-33, INC-34', () => {
-  it('counts the directors for AGILE-PRO-S and supplies nothing it does not hold', () => {
+  it('counts the directors for AGILE-PRO-S and sends the pre-7 witness', () => {
     const { profile } = build(assistFullState());
     expect(profile.agile).toEqual({ numberOfDirectors: 2 });
-    expect(profile.moa).toEqual({});
-    expect(profile.aoa).toEqual({});
+    expect(profile.moa).toEqual({
+      witness: { name: 'Test Witness', address: '3 Witness Road, Test City' },
+    });
+    expect(profile.aoa).toEqual({
+      witness: {
+        name: 'Test Witness',
+        addressDescriptionOccupation: 'Practising Chartered Accountant, 3 Witness Road, Test City',
+      },
+    });
+  });
+
+  it('the witness membership number fills INC-34 DIN / PAN / membership', () => {
+    const state = assistFullState();
+    state['pre-7'] = {
+      status: 'in-progress',
+      responses: { ...state['pre-7']!.responses, subscriptionWitnessMembershipNumber: '123456' },
+    };
+    expect(build(state).profile.aoa.witness?.dinPanMembership).toBe('123456');
+  });
+
+  it('a blank witness is an ordinary missing input at pre-7, and nothing is sent', () => {
+    const state = assistFullState();
+    state['pre-7'] = { status: 'in-progress', responses: {} };
+    const result = build(state);
+    expect(result.profile.moa).toEqual({});
+    expect(result.profile.aoa).toEqual({});
+    expect(fixable(result.missing).map((m) => [m.key, m.stepId])).toEqual(
+      expect.arrayContaining([
+        ['witness.name', 'pre-7'],
+        ['witness.address', 'pre-7'],
+        ['witness.occupation', 'pre-7'],
+      ]),
+    );
   });
 
   it('with no directors, AGILE-PRO-S carries no count', () => {
@@ -249,9 +298,8 @@ describe('buildAssistProfile — AGILE-PRO-S, INC-33, INC-34', () => {
       'agile.declaration',
       'moa.objects',
       'moa.liabilityClause',
-      'moa.witness',
-      'aoa.witness',
-      'aoa.subscriberPlaces',
+      'moa.witness.parentage',
+      'aoa.witness.dinPan',
     ]);
     for (const m of eforms) {
       expect(m.stepId).toBe('pre-10');
@@ -262,5 +310,95 @@ describe('buildAssistProfile — AGILE-PRO-S, INC-33, INC-34', () => {
   it('tells the lead which e-form choices Suite leaves to the lead', () => {
     const keys = build(assistFullState()).notes.map((n) => n.key);
     expect(keys).toEqual(expect.arrayContaining(['agile.declarations', 'moa.table']));
+  });
+});
+
+describe('buildAssistProfile — subscribers (planSubscription)', () => {
+  it('a group company with no pre-16 rows: the parent subscribes, signed for by a director', () => {
+    const result = build(assistFullState());
+    expect(result.profile.subscribers).toHaveLength(1);
+    const [parent] = result.profile.subscribers;
+    expect(parent).toMatchObject({ index: 1, kind: 'bodyCorporate', isDirector: false, place: 'Test City, Singapore' });
+    expect(parent?.name).toBeTruthy();
+    expect(parent?.shares?.equity?.number).toBe(10000);
+    expect(parent?.representative).toMatchObject({ firstName: 'Alpha', surName: 'Director' });
+    expect(parent?.representative).not.toHaveProperty('id');
+    // The representative is not a subscriber in person, so stays in directors[].
+    expect(result.profile.directors.map((d) => d.id)).toEqual(['e1', 'e2']);
+  });
+
+  it('directors who subscribe move to subscribers[] and leave directors[]', () => {
+    const state = withSubscribers(assistFullState([NR, RESIDENT, director('e3', 'yes', 'Gamma')]), [
+      { id: 's1', name: 'Beta Director', shares: '6000' },
+      { id: 's2', name: 'Alpha Director', shares: '4000' },
+    ]);
+    state['pre-7'] = {
+      status: 'in-progress',
+      responses: { ...state['pre-7']!.responses, incorpDocsSigningPlace: 'Hyderabad' },
+    };
+    const { profile } = build(state, INDEPENDENT);
+    expect(profile.subscribers.map((s) => [s.index, s.id, s.isDirector, s.shares?.equity?.number, s.place])).toEqual([
+      [1, 'e2', true, 6000, 'Hyderabad'],
+      [2, 'e1', true, 4000, 'Test City, Singapore'],
+    ]);
+    expect(profile.subscribers[0]).toMatchObject({ kind: 'individual', firstName: 'Beta', din: '01234567' });
+    expect(profile.directors.map((d) => [d.index, d.id])).toEqual([[1, 'e3']]);
+    // AGILE-PRO-S still counts every proposed director.
+    expect(profile.agile).toEqual({ numberOfDirectors: 3 });
+  });
+
+  it('a resident subscriber with no pre-7 signing place is missing it at pre-7', () => {
+    const state = withSubscribers(assistFullState(), [{ id: 's1', name: 'Beta Director', shares: '10000' }]);
+    const result = build(state, INDEPENDENT);
+    expect(result.profile.subscribers[0]).not.toHaveProperty('place');
+    expect(result.missing).toContainEqual({
+      key: 'subscriber.1.place',
+      label: 'INC-34: place of signing for subscriber 1',
+      stepId: 'pre-7',
+      tabId: 'draft-incorporation-docs',
+    });
+  });
+
+  it('a standalone company with no subscribers lists them as missing', () => {
+    const result = build(withSubscribers(assistFullState(), []), INDEPENDENT);
+    expect(result.profile.subscribers).toEqual([]);
+    expect(fixable(result.missing).map((m) => m.key)).toContain('subscribers.any');
+  });
+
+  it('a subscriber who is not a proposed director, or has no shares, is missing it', () => {
+    const state = withSubscribers(assistFullState(), [{ id: 's1', name: 'Someone Else', shares: '' }]);
+    const result = build(state, INDEPENDENT);
+    expect(result.profile.subscribers).toEqual([{ index: 1, kind: 'individual', isDirector: false }]);
+    expect(fixable(result.missing).map((m) => m.key)).toEqual(
+      expect.arrayContaining(['subscriber.1.director', 'subscriber.1.shares']),
+    );
+  });
+});
+
+describe('buildAssistProfile — sub-category and PIN code', () => {
+  it('derives the sub-category from the project ownership', () => {
+    const sub = (engagement: Parameters<typeof build>[1]) => build(assistFullState(), engagement).profile.company.subCategory;
+    expect(sub({ ...INDEPENDENT })).toBe('Indian non-government company');
+    expect(sub({ companyName: 'X', ownershipType: 'subsidiary', companyType: 'foreign' })).toBe(
+      'Subsidiary of company incorporated outside India',
+    );
+    expect(sub({ companyName: 'X', ownershipType: 'subsidiary', companyType: 'domestic' })).toBe(
+      'Indian non-government company',
+    );
+  });
+
+  it('trailingPinCode takes the last six-digit number, and only notes it', () => {
+    expect(trailingPinCode('12th Floor, Outer Ring Road, Bangalore 560103, Karnataka')).toBe('560103');
+    expect(trailingPinCode('Plot 7, Sector 62, Noida 201 309')).toBe('201309');
+    expect(trailingPinCode('1 Test Street, Test City')).toBeUndefined();
+
+    const state = assistFullState();
+    state['pre-14'] = {
+      status: 'completed',
+      responses: { ...state['pre-14']!.responses, registeredOfficeCompleteAddress: '1 Test Street, Test City 560103' },
+    };
+    const result = build(state);
+    expect(result.profile.registeredOffice).not.toHaveProperty('pincode');
+    expect(result.notes.find((n) => n.key === 'registeredOffice.pincode')?.note).toMatch(/560103/);
   });
 });
