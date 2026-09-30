@@ -14,15 +14,19 @@ export function WhatsThisButton({
   label,
   compact = false,
   className,
+  feature,
 }: {
-  kind: 'step' | 'field' | 'compliance';
+  kind: 'step' | 'field' | 'compliance' | 'document';
   refId: string;
   label: string;
   compact?: boolean;
   className?: string;
+  /** Phase 9 feature this placement belongs to; hidden unless its flag is on. */
+  feature?: 'C2' | 'C5';
 }) {
   const ask = useAskOptional();
   if (!ask?.enabled || ask.shell !== 'client' || ask.preview) return null;
+  if (feature && !ask.features[feature]) return null;
   return (
     <button
       type="button"

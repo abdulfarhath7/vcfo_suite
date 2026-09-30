@@ -1,4 +1,5 @@
 import type { AnswerEnvelope, ProjectSnapshot } from '@/data/ask/schema';
+import { documentTopicSlug } from '@/data/ask/documents';
 import { findGlossaryTerm } from '@/lib/ask/glossary';
 import { stepExplainerContext, type ClientToolContext } from '@/lib/ask/tools/client';
 import {
@@ -8,7 +9,7 @@ import {
   topicToAnswer,
 } from '@/lib/ask/topics';
 
-export type AskContextRef = { kind: 'step' | 'field' | 'compliance'; ref: string; label: string };
+export type AskContextRef = { kind: 'step' | 'field' | 'compliance' | 'document'; ref: string; label: string };
 
 /**
  * "What's this?" (F1): answer from reviewed content without a model when a
@@ -57,6 +58,22 @@ export function contextAnswer(
       };
     }
     return null;
+  }
+
+  if (context.kind === 'document') {
+    // C2: the document TYPE picks a topic. Contents are never read, and this
+    // path never reaches the model — an unmapped type hands off to the lead.
+    const slug = documentTopicSlug(context.ref);
+    const topic = slug ? resolveTopicForViewer(slug, applicability, 'client') : null;
+    if (topic) return topicToAnswer(topic, { shell: 'client', snapshot: opts.snapshot });
+    return {
+      title: context.label,
+      line: 'Your project lead can explain this document and what to do with it.',
+      citations: [],
+      actions: ['askLead'],
+      origin: 'deterministic',
+      depth: 'normal',
+    };
   }
 
   const term = findGlossaryTerm(context.ref) ?? findGlossaryTerm(context.label);

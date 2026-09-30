@@ -1,0 +1,47 @@
+{
+  "slug": "doc-aoa",
+  "title": "Articles of Association",
+  "question": "What are the Articles of Association?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "The Articles of Association are the company's internal rulebook: how directors are appointed, how meetings are held, how shares are issued and transferred, and how decisions are made.",
+    "simple": "The AOA are the rules for how the company is run.",
+    "detail": "The AOA is filed with the MOA at incorporation. It sets out the rights of shareholders, the powers of the board, how meetings are called and how shares move. A private company's articles restrict share transfers. They can be changed later by a special resolution of the shareholders.",
+    "why": "When a question comes up about who can decide something in the company, the articles are where the answer is."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "Look for",
+        "v": "Director appointment, meetings, share transfer rules"
+      },
+      {
+        "k": "Signed by",
+        "v": "The subscribers"
+      },
+      {
+        "k": "You will need it for",
+        "v": "Bank account and later corporate actions"
+      },
+      {
+        "k": "What to do next",
+        "v": "Keep it with the MOA; your project lead can explain any clause"
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "companies-act-2013-s5",
+      "label": "Companies Act 2013, section 5 (articles)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

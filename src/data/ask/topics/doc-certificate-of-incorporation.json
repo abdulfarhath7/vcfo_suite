@@ -1,0 +1,47 @@
+{
+  "slug": "doc-certificate-of-incorporation",
+  "title": "Certificate of Incorporation",
+  "question": "What is the Certificate of Incorporation?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "The Certificate of Incorporation is the Registrar's proof that your company legally exists. It shows the company name, the date of incorporation and the company's identification number, and also carries its PAN and TAN.",
+    "simple": "It is the official paper proving your company exists.",
+    "detail": "The Registrar of Companies issues the certificate once SPICe+ is approved. It states the company's name, its Corporate Identification Number, the date it came into existence, and the PAN and TAN allotted with it. Banks, tax offices and business partners ask for it as the first proof of the company. Keep the digital copy safe; it is signed electronically and can be verified on the MCA portal.",
+    "why": "Almost every next step, from the bank account to tax registrations, asks for this certificate first."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "Look for",
+        "v": "Company name, incorporation date, identification number, PAN and TAN"
+      },
+      {
+        "k": "Issued by",
+        "v": "Registrar of Companies, Ministry of Corporate Affairs"
+      },
+      {
+        "k": "You will need it for",
+        "v": "Bank account, tax registrations, contracts"
+      },
+      {
+        "k": "What to do next",
+        "v": "Check the name and date are correct, then keep it on file"
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "companies-act-2013-s7",
+      "label": "Companies Act 2013, section 7 (incorporation)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

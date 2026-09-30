@@ -65,7 +65,7 @@ export type ChatBody = {
   engagementId?: string;
   message?: string;
   suggestionId?: string;
-  context?: { kind: 'step' | 'field' | 'compliance'; ref: string; label: string };
+  context?: { kind: 'step' | 'field' | 'compliance' | 'document'; ref: string; label: string };
   depth?: AnswerDepth;
 };
 

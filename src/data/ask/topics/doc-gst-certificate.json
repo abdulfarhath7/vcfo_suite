@@ -1,0 +1,47 @@
+{
+  "slug": "doc-gst-certificate",
+  "title": "GST registration certificate",
+  "question": "What is the GST registration certificate?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "The GST registration certificate shows the company's GSTIN, its legal and trade name, the registered place of business and the date registration took effect.",
+    "simple": "It proves the company is registered for GST and shows its GST number.",
+    "detail": "Form GST REG-06 is issued once the registration is approved. It lists the GSTIN, the principal place of business, any additional places, and the date from which the company is liable. The certificate must be displayed at the place of business and the GSTIN shown on invoices.",
+    "why": "Customers and vendors ask for the GSTIN before invoicing, and the company must show it on its own invoices."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "Look for",
+        "v": "GSTIN, legal name, place of business, effective date"
+      },
+      {
+        "k": "Issued by",
+        "v": "GST authorities (Form GST REG-06)"
+      },
+      {
+        "k": "You will need it for",
+        "v": "Invoices, vendor onboarding, GST returns"
+      },
+      {
+        "k": "What to do next",
+        "v": "Check the address, then share the GSTIN with your finance team"
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "cgst-rules-2017-r10",
+      "label": "CGST Rules 2017, rule 10 (registration certificate)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

@@ -1,0 +1,47 @@
+{
+  "slug": "doc-moa",
+  "title": "Memorandum of Association",
+  "question": "What is the Memorandum of Association?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "The Memorandum of Association is the company's charter. It states the company's name, the state of its registered office, what business it may do, that members' liability is limited, and its share capital.",
+    "simple": "The MOA says what the company is and what it is allowed to do.",
+    "detail": "The MOA is filed at incorporation and signed by the first shareholders (subscribers). Its clauses cover the name, the registered office state, the objects, the liability of members, the authorised share capital and the shares each subscriber takes. Changing it later needs a shareholder resolution and a filing with the Registrar.",
+    "why": "Banks and investors read the MOA to confirm what the company may do and who its first shareholders are."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "Look for",
+        "v": "Name, objects, authorised capital, subscribers and their shares"
+      },
+      {
+        "k": "Signed by",
+        "v": "The subscribers"
+      },
+      {
+        "k": "You will need it for",
+        "v": "Bank account, investor and regulatory checks"
+      },
+      {
+        "k": "What to do next",
+        "v": "Check the subscribers and share numbers are as agreed"
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "companies-act-2013-s4",
+      "label": "Companies Act 2013, section 4 (memorandum)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

@@ -2,6 +2,13 @@
  * Every topic file, imported statically so the bundle carries reviewed content
  * without a filesystem read at request time. Add new topics here.
  */
+import docCertificateOfIncorporation from './doc-certificate-of-incorporation.json';
+import docPanCard from './doc-pan-card.json';
+import docTanCard from './doc-tan-card.json';
+import docMoa from './doc-moa.json';
+import docAoa from './doc-aoa.json';
+import docGstCertificate from './doc-gst-certificate.json';
+import docIecCertificate from './doc-iec-certificate.json';
 import afterIncorporation from './after-incorporation.json';
 import capitalStructure from './capital-structure.json';
 import directorKyc from './director-kyc.json';
@@ -27,4 +34,12 @@ export const RAW_TOPICS: readonly unknown[] = [
   registeredOffice,
   subscribers,
   spicePlusConfirmation,
+  // C2: one topic per delivered document type.
+  docCertificateOfIncorporation,
+  docPanCard,
+  docTanCard,
+  docMoa,
+  docAoa,
+  docGstCertificate,
+  docIecCertificate,
 ];

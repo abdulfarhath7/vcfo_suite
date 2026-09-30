@@ -16,7 +16,7 @@ import {
 import { appendAskMessage } from '@/db/repositories/ask-messages';
 import { firmDisplayName } from '@/lib/brand';
 import { assertAskRole, AskForbiddenError, shellAllowedForRole } from '@/lib/ask/access';
-import { askConfig } from '@/lib/ask/config';
+import { askConfig, askFeatures } from '@/lib/ask/config';
 import { contextAnswer } from '@/lib/ask/context-answer';
 import { sanitizeLinks, type DestinationScope } from '@/lib/ask/destinations';
 import { gateActiveCatalog } from '@/lib/checklist-step-gate';
@@ -62,7 +62,7 @@ export const chatRequestSchema = z.object({
   suggestionId: z.string().trim().min(1).max(80).optional(),
   context: z
     .object({
-      kind: z.enum(['step', 'field', 'compliance']),
+      kind: z.enum(['step', 'field', 'compliance', 'document']),
       ref: z.string().trim().min(1).max(120),
       label: z.string().trim().min(1).max(200),
     })
@@ -244,6 +244,10 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
 
   // ---- 2. "What's this?" on reviewed content (F1) ----
   if (request.context && !request.message) {
+    if (request.context.kind === 'document' && !(shell === 'client' && askFeatures().C2)) {
+      await finish(unavailableAnswer(shell));
+      return;
+    }
     const answer = contextAnswer(request.context, { snapshot, clientTools });
     if (answer) {
       await finish(answer);

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { m, useReducedMotion } from 'framer-motion';
 import { FileBadge, FileText, IdCard, ScrollText, type LucideIcon } from 'lucide-react';
 import { Mono } from '@/components/noir';
+import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { ClientCard } from '@/components/client/overview/ClientCard';
 import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
 import type { ClientOverviewDocuments } from '@/lib/client-overview';
@@ -64,7 +65,10 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
                         <Icon className="h-4 w-4" aria-hidden />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[12.5px] font-extrabold text-ink">{doc.name}</p>
+                        <p className="flex min-w-0 items-center gap-1 text-[12.5px] font-extrabold text-ink">
+                          <span className="truncate">{doc.name}</span>
+                          <WhatsThisButton compact feature="C2" kind="document" refId={doc.id} label={doc.name} />
+                        </p>
                         <div className="mt-0.5 flex items-center gap-2">
                           {doc.issuedAt && (
                             <Mono className="text-[10.5px] tabular-nums text-muted-foreground">

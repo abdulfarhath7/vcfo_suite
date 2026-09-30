@@ -1,0 +1,47 @@
+{
+  "slug": "doc-iec-certificate",
+  "title": "IEC certificate",
+  "question": "What is the IEC certificate?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "The Importer Exporter Code certificate shows the code a business needs to import or export. It carries the company's name, address and the 10-character IEC, which is the same as its PAN.",
+    "simple": "It shows the code the company needs to import or export.",
+    "detail": "The Directorate General of Foreign Trade issues the IEC. Banks and customs ask for it when the company sends or receives foreign payments for goods or services. The details must be confirmed online every year, even when nothing has changed.",
+    "why": "Without an IEC the bank and customs cannot process most import and export transactions."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "Look for",
+        "v": "Company name, address and the IEC"
+      },
+      {
+        "k": "Issued by",
+        "v": "Directorate General of Foreign Trade"
+      },
+      {
+        "k": "You will need it for",
+        "v": "Customs clearance and foreign trade payments"
+      },
+      {
+        "k": "What to do next",
+        "v": "Keep it on file; your project lead handles the yearly confirmation"
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "ftdr-act-1992-s7",
+      "label": "Foreign Trade (Development and Regulation) Act 1992, section 7"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

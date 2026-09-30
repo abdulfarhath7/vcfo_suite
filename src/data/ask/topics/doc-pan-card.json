@@ -1,0 +1,47 @@
+{
+  "slug": "doc-pan-card",
+  "title": "PAN card",
+  "question": "What is the company PAN card?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "PAN is the company's income-tax identity number. It is quoted on tax returns, invoices and bank forms, and the card is the proof of that number.",
+    "simple": "PAN is the company's tax ID number.",
+    "detail": "A Permanent Account Number is allotted to the company together with incorporation. Every tax filing, bank account and many contracts quote it. The physical or electronic PAN card shows the company's name, the number and the date of incorporation. If the name on the card does not match the certificate, tell your project lead before using it.",
+    "why": "The bank and every tax registration will ask for the PAN, so an error here holds up the steps after incorporation."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "Look for",
+        "v": "Company name, the 10-character PAN, date of incorporation"
+      },
+      {
+        "k": "Issued by",
+        "v": "Income Tax Department"
+      },
+      {
+        "k": "You will need it for",
+        "v": "Bank account, GST registration, tax returns"
+      },
+      {
+        "k": "What to do next",
+        "v": "Check the name matches the Certificate of Incorporation"
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "income-tax-act-1961-s139a",
+      "label": "Income-tax Act 1961, section 139A (PAN)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

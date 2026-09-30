@@ -1,0 +1,47 @@
+{
+  "slug": "doc-tan-card",
+  "title": "TAN allotment",
+  "question": "What is the TAN?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "TAN is the number a company uses when it deducts tax from payments such as salaries, rent or professional fees and pays it to the government. It is quoted on every TDS payment and return.",
+    "simple": "TAN is the number the company uses to pay tax it deducts from others.",
+    "detail": "A Tax Deduction and Collection Account Number is allotted with incorporation. Whenever the company deducts tax at source, it pays that tax and files quarterly statements under its TAN. The allotment letter shows the company name and the 10-character TAN.",
+    "why": "Without a TAN the company cannot deposit tax it deducts, so it is needed before the first salary or vendor payment that attracts TDS."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "Look for",
+        "v": "Company name and the 10-character TAN"
+      },
+      {
+        "k": "Issued by",
+        "v": "Income Tax Department"
+      },
+      {
+        "k": "You will need it for",
+        "v": "TDS payments and quarterly TDS returns"
+      },
+      {
+        "k": "What to do next",
+        "v": "Share it with whoever runs payroll and vendor payments"
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "income-tax-act-1961-s203a",
+      "label": "Income-tax Act 1961, section 203A (TAN)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

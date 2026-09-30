@@ -284,3 +284,31 @@ describe('go-there links through the pipeline', () => {
     expect(tos.every((t) => ['incorporation', 'step'].includes(t))).toBe(true);
   });
 });
+
+describe('C2 explain this document', () => {
+  const ask = { shell: 'client' as const, engagementId: 'eng-1', context: { kind: 'document' as const, ref: 'pre-12:panCardFinalUrl', label: 'PAN card' } };
+
+  it('is unavailable while the flag is off', async () => {
+    delete process.env.ASK_VCFO_FEATURE_C2;
+    const provider = mockProvider([]);
+    setAskProviderForTests(provider);
+    const { answer } = await run('client', ask);
+    expect(answer?.line).toBe(REFUSAL_COPY.unavailable);
+    expect(provider.calls).toHaveLength(0);
+  });
+
+  it('serves the document-type topic and sends nothing to the provider', async () => {
+    process.env.ASK_VCFO_FEATURE_C2 = 'true';
+    const provider = mockProvider([]);
+    setAskProviderForTests(provider);
+    const { answer } = await run('client', ask);
+    expect(answer?.topicSlug).toBe('doc-pan-card');
+    expect(answer?.visual).toMatchObject({ type: 'keyFacts' });
+    expect(provider.calls).toHaveLength(0);
+    // An unmapped document type hands off; it still never reaches the model.
+    const other = await run('client', { ...ask, context: { kind: 'document', ref: 'x:unknownDocUrl', label: 'Some letter' } });
+    expect(other.answer?.actions).toEqual(['askLead']);
+    expect(provider.calls).toHaveLength(0);
+    delete process.env.ASK_VCFO_FEATURE_C2;
+  });
+});
