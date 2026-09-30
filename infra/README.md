@@ -46,6 +46,9 @@ terraform apply
 # 5. Migrate + seed from this laptop (RDS is reachable; TLS required).
 export DATABASE_URL="$(aws secretsmanager get-secret-value --profile vcfo \
   --secret-id vcfo-suite/DATABASE_URL --query SecretString --output text)"
+# pg treats sslmode=require as verify-full, so trust the RDS CA bundle; without
+# it drizzle-kit exits 1 with no message.
+export NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem
 npm run db:migrate && npm run db:seed
 ```
 
@@ -57,8 +60,8 @@ Push a new `:latest` — `auto_deployments_enabled` redeploys App Runner:
 docker build -t vcfo-suite:local . && docker tag vcfo-suite:local 600627321277.dkr.ecr.ap-south-1.amazonaws.com/vcfo-suite:latest && docker push 600627321277.dkr.ecr.ap-south-1.amazonaws.com/vcfo-suite:latest
 ```
 
-Schema changes: run `npm run db:migrate` with the RDS `DATABASE_URL` before
-(or right after) the push.
+Schema changes: run `NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate`
+with the RDS `DATABASE_URL` before (or right after) the push.
 
 ## Email (SES)
 
@@ -96,7 +99,7 @@ Terraform: you create the secret by hand, Terraform only looks it up by name.
    secret* → **Plaintext** tab → paste only the key (`sk-ant-…`, no quotes, no
    JSON) → name it `/vcfo/ask-vcfo/anthropic-api-key` → store.
 2. Migrate RDS first (Ask VCFO tables are migrations `0021`–`0023`):
-   `DATABASE_URL=<rds url> npm run db:migrate`.
+   `DATABASE_URL=<rds url> NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate`.
 3. In `terraform.tfvars` add `ask_vcfo_enabled = true`.
 4. `terraform plan` — expect only the App Runner service (two env vars, one
    secret) and the app role policy (read the new secret) to change.
