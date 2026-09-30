@@ -558,8 +558,8 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   <div>
                     <p className="text-[13px] font-medium text-foreground">Parent entity details</p>
                     <p className="mt-1 text-[11.5px] text-muted-foreground">
-                      Asked here because a project starting at this phase skips SPICe+ Part A,
-                      where the parent entity is normally captured.
+                      The company that owns this subsidiary. SPICe+ Part A is prefilled from
+                      these details.
                     </p>
                   </div>
                   <div>

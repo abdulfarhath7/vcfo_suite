@@ -83,13 +83,18 @@ describe('createProjectBodySchema ownership', () => {
     parentIndianRelationship: 'investing',
   };
 
-  it('defaults to a dependent company without demanding parent details at creation', () => {
-    // The parent entity is captured in SPICe+ Part A, not on the project form.
-    const result = createProjectBodySchema.safeParse(base);
+  it('defaults to a subsidiary and demands parent details at creation', () => {
+    const missing = createProjectBodySchema.safeParse(base);
+    expect(missing.success).toBe(false);
+    const result = createProjectBodySchema.safeParse({
+      ...base,
+      parentEntityName: 'Acme Holdings',
+      parentEntityAddress: '1 MG Road, Bengaluru',
+    });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.ownershipType).toBe('subsidiary');
-      expect(result.data.parentEntityName).toBe('');
+      expect(result.data.parentEntityName).toBe('Acme Holdings');
     }
   });
 

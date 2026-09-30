@@ -112,11 +112,7 @@ export const createProjectBodySchema = z
     /** Required for Indian subsidiary; ignored (stored null) otherwise. */
     parentIndianRelationship: parentIndianRelationshipSchema.nullable().optional(),
     entityLegalForm: entityLegalFormSchema.default('company'),
-    /**
-     * Optional. The parent entity is captured in SPICe+ Part A (dependent
-     * companies only), not at project creation; these stay for API callers that
-     * already know them.
-     */
+    /** Required for a subsidiary (any stage); ignored for a standalone company. */
     parentEntityName: z.string().trim().max(240).default(''),
     parentEntityAddress: z.string().trim().max(2000).default(''),
     clientEmail: emailSchema,
@@ -161,10 +157,8 @@ export const createProjectBodySchema = z
         path: ['parentIndianRelationship'],
       });
     }
-    const stage = d.stage ?? 'Pre-Incorporation';
-    if (stage === 'Pre-Incorporation' || independent) return;
-    // Starting past Part A means the parent entity is never captured on the
-    // checklist, so it is required here, beside the subsidiary details.
+    if (independent) return;
+    // A subsidiary names its parent at creation; SPICe+ Part A prefills from it.
     if (!d.parentEntityName.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -179,6 +173,8 @@ export const createProjectBodySchema = z
         path: ['parentEntityAddress'],
       });
     }
+    const stage = d.stage ?? 'Pre-Incorporation';
+    if (stage === 'Pre-Incorporation') return;
     const name = d.subsidiaryLegalName?.trim() ?? '';
     const address = d.subsidiaryRegisteredAddress?.trim() ?? '';
     if (!name) {

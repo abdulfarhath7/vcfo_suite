@@ -121,30 +121,35 @@ describe('create-project error copy', () => {
   });
 });
 
-describe('createProjectBodySchema — parent entity past Part A', () => {
-  const pastPartA = {
+describe('createProjectBodySchema — parent entity', () => {
+  const noParent = {
     ...validBody,
     parentEntityName: '',
     parentEntityAddress: '',
-    stage: 'Post-Incorporation' as const,
-    subsidiaryLegalName: 'Acme India Private Limited',
-    subsidiaryRegisteredAddress: '1 MG Road, Bengaluru',
   };
 
-  it('requires the parent entity for a dependent company starting at Registration or Compliance', () => {
-    const parsed = createProjectBodySchema.safeParse(pastPartA);
-    expect(parsed.success).toBe(false);
-    const messages = parsed.success ? [] : parsed.error.issues.map((i) => i.message);
-    expect(messages).toContain('parent_entity_name_required');
-    expect(messages).toContain('parent_entity_address_required');
+  it('requires the parent entity for a subsidiary at any starting phase', () => {
+    for (const stage of ['Pre-Incorporation', 'Post-Incorporation'] as const) {
+      const parsed = createProjectBodySchema.safeParse({
+        ...noParent,
+        stage,
+        subsidiaryLegalName: 'Acme India Private Limited',
+        subsidiaryRegisteredAddress: '1 MG Road, Bengaluru',
+      });
+      expect(parsed.success).toBe(false);
+      const messages = parsed.success ? [] : parsed.error.issues.map((i) => i.message);
+      expect(messages).toContain('parent_entity_name_required');
+      expect(messages).toContain('parent_entity_address_required');
+    }
   });
 
-  it('does not ask an independent company or a Pre-Incorporation project', () => {
+  it('does not ask a standalone company', () => {
     expect(
-      createProjectBodySchema.safeParse({ ...pastPartA, ownershipType: 'independent' }).success,
-    ).toBe(true);
-    expect(
-      createProjectBodySchema.safeParse({ ...pastPartA, stage: 'Pre-Incorporation' }).success,
+      createProjectBodySchema.safeParse({
+        ...noParent,
+        ownershipType: 'independent',
+        stage: 'Post-Incorporation',
+      }).success,
     ).toBe(true);
   });
 });

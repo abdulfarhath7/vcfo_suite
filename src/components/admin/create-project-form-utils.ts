@@ -37,12 +37,13 @@ export function stageRequiresSubsidiary(stage: Stage, ownershipType: OwnershipTy
 }
 
 /**
- * A dependent company that starts at Registration or Compliance never fills
- * SPICe+ Part A, where the parent entity is normally captured — so the form
- * asks for it at creation, beside the subsidiary details.
+ * A subsidiary always names its parent at creation, whatever the starting
+ * phase: the NOC, board resolutions and client overview need it from day one,
+ * and SPICe+ Part A prefills from it rather than asking again. Stage is kept in
+ * the signature so callers read the same as stageRequiresSubsidiary.
  */
-export function stageRequiresParentEntity(stage: Stage, ownershipType: OwnershipType = 'subsidiary'): boolean {
-  return stageRequiresSubsidiary(stage, ownershipType);
+export function stageRequiresParentEntity(_stage: Stage, ownershipType: OwnershipType = 'subsidiary'): boolean {
+  return ownershipType !== 'independent';
 }
 
 /**

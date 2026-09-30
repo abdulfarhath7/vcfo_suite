@@ -172,7 +172,14 @@ describe('create', () => {
       ['subsidiary', 'foreign'],
     ]) {
       expect(
-        createProjectBodySchema.safeParse({ ...baseCreate, ownershipType, companyType }).success,
+        createProjectBodySchema.safeParse({
+          ...baseCreate,
+          ownershipType,
+          companyType,
+          // A subsidiary must name its parent; that rule is not under test here.
+          parentEntityName: 'Acme Holdings',
+          parentEntityAddress: '1 MG Road, Bengaluru',
+        }).success,
       ).toBe(true);
     }
   });

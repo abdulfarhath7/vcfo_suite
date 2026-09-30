@@ -448,8 +448,7 @@ export function CreateProjectForm({
           entityLegalForm,
           subsidiaryLegalName: needsSub ? subsidiaryLegalName.trim() : null,
           subsidiaryRegisteredAddress: needsSub ? subsidiaryRegisteredAddress.trim() : null,
-          // Pre-Incorporation projects capture the parent in SPICe+ Part A;
-          // only send it when this form is the place it is asked.
+          // Standalone companies have no parent; leave any stored value alone.
           ...(needsParent
             ? {
                 parentEntityName: parentEntityName.trim(),
