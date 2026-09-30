@@ -71,3 +71,17 @@ variable "azure_ad_client_secret" {
   default     = ""
   sensitive   = true
 }
+
+# VCFO Assist (in-app assistant). The Anthropic API key is NOT a Terraform
+# variable: create the secret by hand (see README "VCFO Assist") so the key
+# never enters Terraform state, then flip this on and apply.
+variable "assist_enabled" {
+  description = "Turn on VCFO Assist in App Runner. Requires the Secrets Manager secret named by assist_anthropic_secret_name to exist with the API key as its value."
+  type        = bool
+  default     = false
+}
+variable "assist_anthropic_secret_name" {
+  description = "Name of the hand-created Secrets Manager secret holding the Anthropic API key (plain string value)."
+  type        = string
+  default     = "/vcfo/assist/anthropic-api-key"
+}

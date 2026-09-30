@@ -99,6 +99,7 @@ data "aws_iam_policy_document" "app" {
         aws_secretsmanager_secret.auth_secret.arn,
       ],
       aws_secretsmanager_secret.azure_ad_client_secret[*].arn,
+      data.aws_secretsmanager_secret.anthropic_api_key[*].arn,
     )
   }
 }
@@ -142,6 +143,12 @@ locals {
       AZURE_AD_CLIENT_ID = var.azure_ad_client_id
       AZURE_AD_TENANT_ID = var.azure_ad_tenant_id
     } : {},
+    # VCFO Assist (key comes via runtime_environment_secrets). Model ids and
+    # limits use the app defaults (.env.example); override here if needed.
+    var.assist_enabled ? {
+      ASSIST_ENABLED      = "true"
+      ASSIST_LLM_PROVIDER = "anthropic"
+    } : {},
   )
 }
 
@@ -169,6 +176,9 @@ resource "aws_apprunner_service" "app" {
           },
           local.outlook_enabled ? {
             AZURE_AD_CLIENT_SECRET = aws_secretsmanager_secret.azure_ad_client_secret[0].arn
+          } : {},
+          var.assist_enabled ? {
+            ANTHROPIC_API_KEY = data.aws_secretsmanager_secret.anthropic_api_key[0].arn
           } : {},
         )
       }
