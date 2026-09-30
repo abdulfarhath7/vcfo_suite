@@ -5,6 +5,7 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import type { FilingRow } from '@/lib/filings';
 import { buildProgress } from '@/lib/client-overview';
 import { internOverviewPhaseTitle } from '@/lib/intern-overview-progress';
+import { buildPhaseProgress } from '@/lib/ask/phase-progress';
 import { listPendingApprovals } from '@/lib/pending-approvals';
 import { deriveStuckReason, STUCK_LABEL } from '@/lib/project-stuck';
 import { numberArg, type AskTool } from './types';
@@ -147,6 +148,24 @@ export function projectSummary(data: StaffData, query: string) {
   };
 }
 
+/**
+ * Phase progress of one engagement in the caller's scope. `data` holds only
+ * what the scoped repositories returned for this caller, so an id outside it
+ * is refused exactly like an unknown one.
+ */
+export function phaseProgressFor(data: StaffData, engagementId: string) {
+  const key = engagementId.trim();
+  const match = key
+    ? data.engagements.find((e) => e.engagement.id === key || e.engagement.slug === key || e.dbId === key)
+    : undefined;
+  if (!match) return { error: 'not_in_scope' as const };
+  return {
+    engagementId: routeKey(match),
+    company: match.engagement.companyName,
+    phases: buildPhaseProgress({ state: match.state }),
+  };
+}
+
 export function firmPulse(data: StaffData) {
   const today = isoDay(data.now);
   return {
@@ -229,6 +248,21 @@ export const STAFF_TOOLS: Record<string, AskTool<StaffData>> = {
       },
     },
     run: async (data, input) => projectSummary(data, String(input.project ?? '')),
+  },
+  getPhaseProgress: {
+    definition: {
+      name: 'getPhaseProgress',
+      description:
+        'Phase-by-phase progress of one project: steps done and total per incorporation phase, the current phase and current step.',
+      strict: true,
+      input_schema: {
+        type: 'object',
+        properties: { engagementId: { type: 'string', description: 'Engagement id or slug, as other tools return it' } },
+        required: ['engagementId'],
+        additionalProperties: false,
+      },
+    },
+    run: async (data, input) => phaseProgressFor(data, String(input.engagementId ?? '')),
   },
   getFirmPulse: {
     definition: {

@@ -1,8 +1,9 @@
-import { getItem } from '@/data/checklist';
+import { getItem, type ChecklistField } from '@/data/checklist';
 import { SUGGESTIONS } from '@/data/ask/suggestions';
 import type {
   AnswerDepth,
   AnswerEnvelope,
+  AnswerLink,
   AskShell,
   ProjectSnapshot,
   StaffQuery,
@@ -16,7 +17,10 @@ import {
   topicsForStep,
   topicToAnswer,
 } from '@/lib/ask/topics';
+import { buildPhaseProgress, currentPhaseRow, type PhaseProgressRow } from '@/lib/ask/phase-progress';
 import { PREVIEW_CLIENT_LINE } from '@/lib/ask/preview';
+import { getClientResponseFields } from '@/lib/checklist-responses';
+import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { atRisk, firmPulse, overdueAndDueSoon, pendingApprovals, waitingOnClient, type StaffData } from '@/lib/ask/tools/staff';
 
 /**
@@ -48,7 +52,7 @@ export function listSuggestions(shell: AskShell, snapshot: ProjectSnapshot | nul
       out.push({ id: s.id, group: s.group, label: topic.slug === s.handler.slug ? s.label : topic.question });
       continue;
     }
-    if (s.handler.kind === 'nextStep' && !snapshot) continue;
+    if ((s.handler.kind === 'nextStep' || s.handler.kind === 'phaseProgress') && !snapshot) continue;
     out.push({ id: s.id, group: s.group, label: s.label });
   }
   return out;
@@ -113,6 +117,52 @@ export function nextStepAnswer(snapshot: ProjectSnapshot): AnswerEnvelope {
     origin: 'deterministic',
     depth: 'normal',
     target: { stepId: step.id },
+  };
+}
+
+/** `upload` only when the client's step form has a file field; otherwise `form`. */
+function stepSection(stepId: string): 'upload' | 'form' {
+  const item = getItem(stepId);
+  const fields = item ? getClientResponseFields(item) : [];
+  const hasFile = (list: readonly ChecklistField[]): boolean =>
+    list.some((f) => f.type === 'file' || (f.entryFields ? hasFile(f.entryFields) : false));
+  return hasFile(fields) ? 'upload' : 'form';
+}
+
+/** "Where is my incorporation now?" — phase rows straight from the gate, no model. */
+export function phaseProgressAnswer(_snapshot: ProjectSnapshot, rows: readonly PhaseProgressRow[]): AnswerEnvelope {
+  const done = rows.reduce((n, r) => n + r.done, 0);
+  const total = rows.reduce((n, r) => n + r.total, 0);
+  const current = currentPhaseRow(rows);
+  const step = current?.currentStep;
+  const links: AnswerLink[] = [];
+  if (step) {
+    links.push({ dest: { to: 'incorporation', focusStepId: step.id }, label: 'Open Incorporation', primary: true });
+    if (step.owner === 'client' && !step.locked) {
+      links.push({ dest: { to: 'step', stepId: step.id, section: stepSection(step.id) }, label: clip(`Open ${step.title}`, 60) });
+    }
+  }
+  return {
+    title: 'Where your incorporation is now',
+    line:
+      current && step
+        ? `${done} of ${total} steps are complete. You're in ${current.name}, on ${step.title}.`
+        : 'All incorporation steps are complete.',
+    why: 'Each phase unlocks the next, so this is the step that moves your company forward.',
+    visual: {
+      type: 'flow',
+      stages: rows.map((r) => ({
+        label: r.name,
+        sub: `${r.done} of ${r.total}`,
+        state: r.state === 'current' ? ('here' as const) : r.state === 'done' ? ('done' as const) : ('next' as const),
+      })),
+    },
+    citations: [{ id: 'getPhaseProgress', label: 'Your project' }],
+    ...(links.length > 0 ? { links } : {}),
+    actions: ['askLead'],
+    origin: 'deterministic',
+    depth: 'normal',
+    ...(step ? { target: { stepId: step.id } } : {}),
   };
 }
 
@@ -260,6 +310,8 @@ export async function resolveSuggestion(
     snapshot: ProjectSnapshot | null;
     depth?: AnswerDepth;
     loadStaff: () => Promise<StaffData>;
+    /** Client-redacted checklist state of the snapshot's engagement (phase progress). */
+    clientState?: Record<string, ChecklistItemStateSlice | undefined>;
   },
 ): Promise<AnswerEnvelope | null> {
   const suggestion = getSuggestion(id);
@@ -274,6 +326,10 @@ export async function resolveSuggestion(
     }
     case 'nextStep':
       return opts.snapshot ? nextStepAnswer(opts.snapshot) : null;
+    case 'phaseProgress':
+      return opts.snapshot
+        ? phaseProgressAnswer(opts.snapshot, buildPhaseProgress({ state: opts.clientState ?? {} }))
+        : null;
     case 'query':
       return staffQueryAnswer(h.query, await opts.loadStaff());
     case 'previewClient':

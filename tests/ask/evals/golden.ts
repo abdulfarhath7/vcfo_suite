@@ -404,6 +404,60 @@ export const GOLDEN: GoldenCase[] = [
   suggestion('det-super-fcgpr', 'super_admin', 'super', 'super-fc-gpr', { lineIncludes: 'Reserve Bank' }),
   suggestion('det-wrong-shell', 'client', 'client', 'admin-approvals', { lineIncludes: 'unavailable' }),
 
+  // ---- Phase progress ----
+  suggestion('det-client-where-now', 'client', 'client', 'client-where-now', { origin: 'deterministic', visualType: 'flow', lineIncludes: 'steps are complete' }),
+  {
+    id: 'progress-where-now',
+    category: 'routing',
+    role: 'client',
+    shell: 'client',
+    snapshot: 'domesticCompany',
+    message: 'Where is my incorporation now?',
+    mock: {
+      guard: { intent: 'project_status' },
+      answers: [
+        { toolCall: 'getPhaseProgress', input: {} },
+        answer("You're in SPICe+ Part A, on Client Details.", { citations: [{ id: 'getPhaseProgress', label: 'Your project' }] }),
+      ],
+    },
+    expect: { providerCalls: 3, origin: 'generated', lineIncludes: 'SPICe+ Part A', toolsInclude: ['getPhaseProgress'] },
+    live: { intents: ['project_status'] },
+  },
+  {
+    id: 'progress-how-far',
+    category: 'routing',
+    role: 'client',
+    shell: 'client',
+    snapshot: 'domesticCompany',
+    message: 'how far along are we',
+    mock: {
+      guard: { intent: 'project_status' },
+      answers: [
+        { toolCall: 'getPhaseProgress', input: {} },
+        answer("You're in SPICe+ Part A, on Client Details.", { citations: [{ id: 'getPhaseProgress', label: 'Your project' }] }),
+      ],
+    },
+    expect: { providerCalls: 3, origin: 'generated', lineIncludes: 'SPICe+ Part A', toolsInclude: ['getPhaseProgress'] },
+    live: { intents: ['project_status'] },
+  },
+  {
+    id: 'progress-what-phase',
+    category: 'routing',
+    role: 'client',
+    shell: 'client',
+    snapshot: 'domesticCompany',
+    message: 'what phase are we in',
+    mock: {
+      guard: { intent: 'project_status' },
+      answers: [
+        { toolCall: 'getPhaseProgress', input: {} },
+        answer("You're in SPICe+ Part A, on Client Details.", { citations: [{ id: 'getPhaseProgress', label: 'Your project' }] }),
+      ],
+    },
+    expect: { providerCalls: 3, origin: 'generated', lineIncludes: 'SPICe+ Part A', toolsInclude: ['getPhaseProgress'] },
+    live: { intents: ['project_status'] },
+  },
+
   // ---- Routing ----
   {
     id: 'route-greeting',

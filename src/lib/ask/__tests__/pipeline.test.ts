@@ -312,3 +312,25 @@ describe('C2 explain this document', () => {
     delete process.env.ASK_VCFO_FEATURE_C2;
   });
 });
+
+describe('"Where is my incorporation now?"', () => {
+  it('the suggestion answers with zero provider calls', async () => {
+    const provider = mockProvider([]);
+    setAskProviderForTests(provider);
+    const { answer } = await run('client', { shell: 'client', engagementId: 'eng-1', suggestionId: 'client-where-now' });
+    expect(provider.calls).toHaveLength(0);
+    expect(answer?.origin).toBe('deterministic');
+    expect(answer?.visual).toMatchObject({ type: 'flow' });
+    expect(String(answer?.line)).toMatch(/steps are complete\. You're in SPICe\+ Part A/);
+  });
+
+  it('the answer model is offered getPhaseProgress for a client', async () => {
+    const provider = mockProvider([
+      guard('project_status'),
+      result([toolUse('render_answer', { line: 'You are in SPICe+ Part A.', citations: [], actions: [] })]),
+    ]);
+    setAskProviderForTests(provider);
+    await run('client', { shell: 'client', engagementId: 'eng-1', message: 'how far along are we' });
+    expect((provider.calls[1]!.tools ?? []).map((t) => t.name)).toContain('getPhaseProgress');
+  });
+});

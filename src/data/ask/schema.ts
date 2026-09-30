@@ -314,6 +314,7 @@ export const suggestionSchema = z.object({
   handler: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('topic'), slug: z.string().min(1) }),
     z.object({ kind: z.literal('nextStep') }),
+    z.object({ kind: z.literal('phaseProgress') }),
     z.object({ kind: z.literal('query'), query: z.enum(STAFF_QUERIES) }),
     z.object({ kind: z.literal('previewClient') }),
   ]),

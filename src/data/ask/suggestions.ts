@@ -4,6 +4,7 @@ import type { Suggestion } from './schema';
 export const SUGGESTIONS: readonly Suggestion[] = [
   // Client
   { id: 'client-next-step', shell: 'client', group: 'About your project', label: 'What is my next step?', handler: { kind: 'nextStep' } },
+  { id: 'client-where-now', shell: 'client', group: 'About your project', label: 'Where is my incorporation now?', handler: { kind: 'phaseProgress' } },
   { id: 'client-spice-part-a', shell: 'client', group: 'Learn the basics', label: 'What is SPICe+ Part A?', handler: { kind: 'topic', slug: 'spice-plus-part-a' } },
   { id: 'client-gst', shell: 'client', group: 'Learn the basics', label: 'What is GST, and do we need it?', handler: { kind: 'topic', slug: 'gst-basics' } },
   { id: 'client-after-incorporation', shell: 'client', group: 'Learn the basics', label: 'What happens after incorporation?', handler: { kind: 'topic', slug: 'after-incorporation' } },

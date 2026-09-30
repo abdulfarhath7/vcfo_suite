@@ -1,9 +1,10 @@
 import { getActiveCatalogItems, getIncorporationPhases } from '@/data/checklist';
-import type { AskPhase, LegalForm, ProjectSnapshot } from '@/data/ask/schema';
+import type { LegalForm, ProjectSnapshot } from '@/data/ask/schema';
 import { projectSnapshotSchema } from '@/data/ask/schema';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { buildProgress } from '@/lib/client-overview';
+import { PHASE_BY_ID } from '@/lib/ask/phase-progress';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { formatWindow, normalizeEngagementSchedule, windowForStep } from '@/lib/schedule-windows';
 
@@ -23,13 +24,6 @@ export interface SnapshotFiling {
   dueDate: string;
   filedOn: string | null;
 }
-
-const PHASE_BY_ID: Record<string, AskPhase> = {
-  'pre-inc-phase-1': 'SPICe+ Part A',
-  'pre-inc-phase-2': 'SPICe+ Part B',
-  'post-inc-phase-3': 'Post-incorporation',
-  'registration-phase-4': 'Registration',
-};
 
 const LEGAL_FORMS: readonly LegalForm[] = ['company', 'llp', 'partnership', 'proprietorship'];
 

@@ -3,6 +3,7 @@ import type { ProjectSnapshot } from '@/data/ask/schema';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { filingStatus } from '@/lib/filings';
+import { buildPhaseProgress } from '@/lib/ask/phase-progress';
 import { topicsForStep } from '@/lib/ask/topics';
 import { numberArg, type AskTool } from './types';
 
@@ -57,6 +58,16 @@ export const CLIENT_TOOLS: Record<string, AskTool<ClientToolContext>> = {
       input_schema: { type: 'object', properties: {}, required: [], additionalProperties: false },
     },
     run: async (ctx) => ctx.snapshot,
+  },
+  getPhaseProgress: {
+    definition: {
+      name: 'getPhaseProgress',
+      description:
+        'Overall progress of this project: each incorporation phase with steps done and total, which phase is current, and the current step.',
+      strict: true,
+      input_schema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    },
+    run: async (ctx) => buildPhaseProgress({ state: ctx.state }),
   },
   getStepExplainerContext: {
     definition: {

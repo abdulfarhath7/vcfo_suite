@@ -237,6 +237,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       snapshot,
       depth: request.depth,
       loadStaff,
+      clientState: clientTools?.state,
     });
     await finish(answer ?? unavailableAnswer(shell));
     return;
