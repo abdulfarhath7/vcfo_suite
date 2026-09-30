@@ -1,4 +1,9 @@
-# Firm playbook for Assist (skeleton)
+/**
+ * Compact firm playbook placed in Assist's cached system prompt. A TS string
+ * (not a .md read at runtime) so the standalone Docker build always ships it.
+ * The firm reviews every change through a pull request.
+ */
+export const ASSIST_PLAYBOOK = `# Firm playbook for Assist (skeleton)
 
 This text sits in the cached system prompt. Keep it short and factual; the firm
 reviews every change through a pull request.
@@ -26,3 +31,4 @@ reviews every change through a pull request.
 
 - Typical turnaround the firm quotes to clients.
 - How the firm prefers clients to raise questions outside Assist.
+`;
