@@ -37,3 +37,33 @@ portal extension profile in `src/lib/assist-profile/`, which is a separate featu
   edits and publishes them.
 - **Flow stages carry optional `stepIds`** (topic files only) so "You are here"
   is recomputed from the viewer's snapshot.
+
+## Later judgement calls (Phases 3–8)
+
+- **No forced tool use.** The answer model (Sonnet 5.5) returns 400 on a forced
+  `tool_choice`, so `render_answer` runs with `tool_choice: auto`, a prompt
+  instruction to call it, and the §6.6 text fallback. A server-side refusal
+  fallback (`fallbacks: "default"`) is on for the Anthropic API
+  (`ASSIST_REFUSAL_FALLBACK=false` turns it off).
+- **Runtime flag for the launcher.** `/api/assist/status` reads
+  `ASSIST_ENABLED` at request time, so the flag flips without a rebuild.
+- **Pending approvals** logic moved from the hook into
+  `src/lib/pending-approvals.ts`; the Approvals inbox and Assist share it.
+- **"What's this?" placements:** client Overview next action, the step
+  journey rail (open and locked rows), the step title, form section headers,
+  field labels that name a glossary term, and compliance calendar / filings
+  rows. Buttons sit beside, never inside, links and buttons, and render only
+  for the client persona, so shared staff views are unchanged.
+- **Glossary underline** is applied to the next-action title and description.
+  Journey rail labels and calendar names sit inside links / buttons (an
+  underline card there would nest interactive elements), and step
+  descriptions are not rendered anywhere today.
+- **PDF sources are transcribed by the contextualizer model** (Messages API
+  PDF input) because no PDF text extractor is installed; DOCX is read with
+  pizzip; TXT / MD directly. Swap in a parser later if fidelity matters.
+- **Ingestion falls back to in-process** when Inngest is unreachable.
+- **Super admin "Draft reminder"** opens `/app/admin/mail` (super has no mail
+  page of its own). Compose now pre-fills `?subject=&body=`; nothing sends
+  until Send is pressed.
+- **Evals:** `tests/assist/evals/` — 64 cases in mock mode (CI) and
+  `npm run eval:live` against the real models (not yet run: no key locally).
