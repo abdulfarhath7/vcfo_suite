@@ -29,6 +29,12 @@ const VISUAL_GUIDE = [
   'Staff only: {"type":"projectRows","rows":[{"engagementId","name","step","meta","tone":"late|waiting|plain"}]}, {"type":"metrics","items":[{"k","v"}]} (2-4)',
 ].join('\n');
 
+const LINK_GUIDE = [
+  'Allowed places (client): {"to":"incorporation","focusStepId"?}, {"to":"step","stepId","section"?:"upload|form"}, {"to":"compliances"}, {"to":"documents"}, {"to":"library"}, {"to":"learn","slug"}.',
+  'Allowed places (staff): {"to":"project","engagementId"}, {"to":"projectStep","engagementId","stepId"}, {"to":"approvals"}, {"to":"compliance","filter"?:"overdue|dueSoon"}, {"to":"composeReminder","engagementId"}.',
+  'Links only open a page; they never submit, approve, upload or send. Use ids exactly as tools returned them.',
+].join(' ');
+
 export const RENDER_ANSWER_TOOL: LlmTool = {
   name: RENDER_ANSWER,
   description: `Deliver the final answer to the user. Call exactly once, last.\n${VISUAL_GUIDE}`,
@@ -49,6 +55,11 @@ export const RENDER_ANSWER_TOOL: LlmTool = {
       },
       related: { type: 'array', items: { type: 'string' }, description: 'Up to 3 topic slugs' },
       actions: { type: 'array', items: { type: 'string', enum: [...ANSWER_ACTIONS] } },
+      links: {
+        type: 'array',
+        description: `Optional go-there links, at most 2 and at most 1 primary: {"dest": <place>, "label": "Verb + place", "primary"?: true}. ${LINK_GUIDE}`,
+        items: { type: 'object' },
+      },
     },
     required: ['line', 'citations', 'actions'],
   },

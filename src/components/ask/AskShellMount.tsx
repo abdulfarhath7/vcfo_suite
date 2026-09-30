@@ -2,7 +2,9 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import { canUseAsk } from '@/lib/ask/access';
+import { AskFocusHandler } from './AskFocusHandler';
 import { AskPanel } from './AskPanel';
+import { BackToAskPill } from './BackToAskPill';
 import { useAskPushPadding } from './use-ask-layout';
 import { AskProvider } from './AskProvider';
 
@@ -17,6 +19,8 @@ export function AskShellMount({ userRole, children }: { userRole: string | null 
     <AskProvider>
       {children}
       <AskPanel />
+      <BackToAskPill />
+      <AskFocusHandler />
     </AskProvider>
   );
 }

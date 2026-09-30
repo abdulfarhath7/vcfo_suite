@@ -236,7 +236,7 @@ function MonthRow({
 }) {
   const monthKey = monthKeyOf(row.dueDate);
   return (
-    <li className="flex min-w-0 items-start gap-2.5">
+    <li className="flex min-w-0 items-start gap-2.5" data-ask-focus={row.id}>
       <span className="mono grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-raised text-[11px] font-extrabold tabular-nums text-ink">
         {row.dueDate.slice(8, 10)}
       </span>

@@ -1,0 +1,92 @@
+import { describe, expect, it } from 'vitest';
+import type { Destination } from '@/data/ask/schema';
+import { checkDestination, sanitizeLinks } from '@/lib/ask/destinations';
+import { resolveHref, stripAskParams } from '@/lib/ask/resolve-href';
+import { nextStepAnswer, staffQueryAnswer } from '@/lib/ask/suggestions';
+import { SNAPSHOTS } from '../../../../tests/ask/evals/golden';
+
+const STAFF_DESTS: Destination[] = [
+  { to: 'project', engagementId: 'acme' },
+  { to: 'projectStep', engagementId: 'acme', stepId: 'pre-14' },
+  { to: 'approvals' },
+  { to: 'compliance', filter: 'overdue' },
+  { to: 'composeReminder', engagementId: 'acme' },
+];
+
+describe('resolveHref', () => {
+  it('never sends an admin or super admin to /app/manager', () => {
+    for (const base of ['/app/admin', 'admin', '/app/super', 'super_admin'] as const) {
+      for (const dest of STAFF_DESTS) {
+        const href = resolveHref(dest, base);
+        expect(href, `${base} ${dest.to}`).not.toContain('/app/manager');
+        expect(href.startsWith('/app/admin/')).toBe(true);
+      }
+    }
+  });
+
+  it('keeps a manager in their own shell', () => {
+    expect(resolveHref({ to: 'approvals' }, '/app/manager')).toMatch(/^\/app\/manager\/approvals/);
+  });
+
+  it('adds arrival params that stripAskParams removes', () => {
+    const href = resolveHref({ to: 'incorporation', focusStepId: 'pre-13' }, '/app/admin');
+    expect(href).toBe('/app/client/incorporation?from=ask&focus=pre-13');
+    expect(stripAskParams('?from=ask&focus=pre-13&tab=x')).toBe('?tab=x');
+    expect(stripAskParams('?from=ask&focus=pre-13')).toBe('');
+  });
+});
+
+describe('checkDestination', () => {
+  const client = { shell: 'client' as const, lockedStepIds: new Set(['pre-13']) };
+  const staff = { shell: 'admin' as const, engagementKeys: new Set(['acme']) };
+
+  it('lands a locked step on the Incorporation flowchart, not its form', () => {
+    expect(checkDestination({ to: 'step', stepId: 'pre-13' }, client)).toEqual({ to: 'incorporation', focusStepId: 'pre-13' });
+    expect(checkDestination({ to: 'step', stepId: 'pre-1' }, client)).toEqual({ to: 'step', stepId: 'pre-1' });
+    const [link] = sanitizeLinks([{ dest: { to: 'step', stepId: 'pre-13' }, label: 'Upload now', primary: true }], client);
+    expect(link).toEqual({ dest: { to: 'incorporation', focusStepId: 'pre-13' }, label: 'Open Incorporation', primary: true });
+  });
+
+  it('drops legacy steps and staff places in the client shell', () => {
+    expect(checkDestination({ to: 'step', stepId: 'reg-2' }, client)).toBeNull();
+    expect(checkDestination({ to: 'approvals' }, client)).toBeNull();
+    expect(checkDestination({ to: 'project', engagementId: 'acme' }, client)).toBeNull();
+    expect(checkDestination({ to: 'learn', slug: 'no-such-topic' }, client)).toBeNull();
+  });
+
+  it('drops cross-engagement links and client places for staff', () => {
+    expect(checkDestination({ to: 'project', engagementId: 'someone-else' }, staff)).toBeNull();
+    expect(checkDestination({ to: 'projectStep', engagementId: 'someone-else', stepId: 'pre-1' }, staff)).toBeNull();
+    expect(checkDestination({ to: 'composeReminder', engagementId: 'someone-else' }, staff)).toBeNull();
+    expect(checkDestination({ to: 'incorporation' }, staff)).toBeNull();
+    expect(checkDestination({ to: 'project', engagementId: 'acme' }, staff)).toEqual({ to: 'project', engagementId: 'acme' });
+  });
+
+  it('caps links at two with one primary, primary first', () => {
+    const links = sanitizeLinks(
+      [
+        { dest: { to: 'approvals' }, label: 'A' },
+        { dest: { to: 'compliance' }, label: 'B', primary: true },
+        { dest: { to: 'project', engagementId: 'acme' }, label: 'C', primary: true },
+        { dest: { to: 'project', engagementId: 'acme' }, label: 'D' },
+      ],
+      staff,
+    );
+    expect(links.map((l) => l.label)).toEqual(['B', 'A']);
+    expect(links.filter((l) => l.primary)).toHaveLength(1);
+  });
+});
+
+describe('deterministic answers carry links', () => {
+  it('"What is my next step?" links to the step and to Incorporation', () => {
+    const answer = nextStepAnswer(SNAPSHOTS.foreignCompany);
+    expect(answer.links?.map((l) => l.dest.to)).toEqual(['step', 'incorporation']);
+    expect(answer.links?.[0]?.primary).toBe(true);
+  });
+
+  it('staff query answers link into Projects / Approvals / Compliance', () => {
+    const data = { engagements: [], filings: [], now: new Date('2026-10-01') };
+    expect(staffQueryAnswer('pendingApprovals', data).links?.[0]?.dest).toEqual({ to: 'approvals' });
+    expect(staffQueryAnswer('overdueAndDueSoon', data).links?.[0]?.dest).toEqual({ to: 'compliance', filter: 'overdue' });
+  });
+});

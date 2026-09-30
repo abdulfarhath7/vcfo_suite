@@ -806,6 +806,23 @@
     50% { opacity: 0.9; transform: scale(1.08); }
   }
 
+  /* Ask VCFO go-there arrival: one pulse on the focused item, then gone. */
+  .ask-focus-pulse {
+    border-radius: var(--radius-md);
+    animation: ask-focus-pulse 1.6s ease-out 1;
+  }
+  @keyframes ask-focus-pulse {
+    0% { box-shadow: 0 0 0 0 oklch(var(--primary) / 0.45); }
+    60% { box-shadow: 0 0 0 8px oklch(var(--primary) / 0); }
+    100% { box-shadow: 0 0 0 0 oklch(var(--primary) / 0); }
+  }
+  /* Reduced motion: a static focus ring instead of the pulse. */
+  .ask-focus-ring {
+    border-radius: var(--radius-md);
+    outline: 2px solid oklch(var(--ring));
+    outline-offset: 2px;
+  }
+
   .journey-unlock {
     animation: journey-unlock 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }

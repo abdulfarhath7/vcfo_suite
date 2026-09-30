@@ -135,7 +135,7 @@ export function InternPhaseEntryCards({
         const allDone = total > 0 && doneCount === total;
         const trailing = trailingForPhase?.(phase.id) ?? null;
         return (
-          <div key={phase.id} className={styles.rowWrap}>
+          <div key={phase.id} className={styles.rowWrap} data-ask-focus={phase.id}>
           <Link
             href={href}
             aria-label={`${title}, ${internPhaseProgressLabel(doneCount, total)}`}

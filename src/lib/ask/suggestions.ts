@@ -99,6 +99,16 @@ export function nextStepAnswer(snapshot: ProjectSnapshot): AnswerEnvelope {
     },
     citations: [{ id: 'getProjectSnapshot', label: 'Your project' }],
     related: topic ? [topic.slug] : [],
+    links: yours
+      ? [
+          {
+            dest: { to: 'step', stepId: step.id, section: item?.fields?.some((f) => f.type === 'file') ? 'upload' : 'form' },
+            label: item?.fields?.some((f) => f.type === 'file') ? 'Upload documents now' : 'Open this step',
+            primary: true,
+          },
+          { dest: { to: 'incorporation', focusStepId: step.id }, label: 'Open Incorporation' },
+        ]
+      : [{ dest: { to: 'incorporation', focusStepId: step.id }, label: 'Open Incorporation', primary: true }],
     actions: ['openStep', 'askLead'],
     origin: 'deterministic',
     depth: 'normal',
@@ -136,6 +146,9 @@ export function staffQueryAnswer(query: StaffQuery, data: StaffData): AnswerEnve
           })),
         },
         citations: LIVE_DATA('listWaitingOnClient'),
+        ...(rows[0]
+          ? { links: [{ dest: { to: 'projectStep', engagementId: rows[0].engagementId, stepId: rows[0].stepId }, label: 'Open in Projects', primary: true }] }
+          : {}),
         actions: rows.length > 0 ? ['openProject', 'draftReminder'] : [],
         ...(rows[0] ? { target: { engagementId: rows[0].engagementId } } : {}),
       };
@@ -160,6 +173,7 @@ export function staffQueryAnswer(query: StaffQuery, data: StaffData): AnswerEnve
           })),
         },
         citations: LIVE_DATA('listOverdueAndDueSoon'),
+        links: [{ dest: { to: 'compliance', filter: 'overdue' }, label: 'Open Compliance', primary: true }],
         actions: rows.length > 0 ? ['openProject'] : [],
       };
     }
@@ -180,6 +194,12 @@ export function staffQueryAnswer(query: StaffQuery, data: StaffData): AnswerEnve
           })),
         },
         citations: LIVE_DATA('listPendingApprovals'),
+        links: [
+          { dest: { to: 'approvals' }, label: 'Open Approvals', primary: true },
+          ...(rows[0]
+            ? [{ dest: { to: 'projectStep' as const, engagementId: rows[0].engagementId, stepId: rows[0].stepId }, label: 'Open in Projects' }]
+            : []),
+        ],
         actions: rows.length > 0 ? ['openProject'] : [],
       };
     }
@@ -198,6 +218,10 @@ export function staffQueryAnswer(query: StaffQuery, data: StaffData): AnswerEnve
           ],
         },
         citations: LIVE_DATA('getFirmPulse'),
+        links: [
+          { dest: { to: 'approvals' }, label: 'Open Approvals', primary: true },
+          { dest: { to: 'compliance', filter: 'overdue' }, label: 'Open Compliance' },
+        ],
         actions: [],
       };
     }
@@ -217,6 +241,7 @@ export function staffQueryAnswer(query: StaffQuery, data: StaffData): AnswerEnve
           })),
         },
         citations: LIVE_DATA('atRisk'),
+        ...(rows[0] ? { links: [{ dest: { to: 'project', engagementId: rows[0].engagementId }, label: 'Open in Projects', primary: true }] } : {}),
         actions: rows.length > 0 ? ['openProject'] : [],
       };
     }

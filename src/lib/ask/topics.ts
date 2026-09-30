@@ -195,6 +195,9 @@ export function topicToAnswer(
     depth,
     topicSlug: topic.slug,
     topicVersion: topic.version,
+    ...(client && topic.stepIds?.[0]
+      ? { links: [{ dest: { to: 'incorporation' as const, focusStepId: topic.stepIds[0] }, label: 'Open Incorporation' }] }
+      : {}),
     ...(reviewed ? {} : { draft: true }),
   };
 }

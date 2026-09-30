@@ -264,3 +264,23 @@ describe('super admin preview as a client', () => {
     );
   });
 });
+
+describe('go-there links through the pipeline', () => {
+  it('a link to a locked step lands on the Incorporation flowchart', async () => {
+    setAskProviderForTests(mockProvider([]));
+    const { answer } = await run('client', {
+      shell: 'client',
+      engagementId: 'eng-1',
+      context: { kind: 'step', ref: 'pre-13', label: 'Capital Structure' },
+    });
+    const links = answer?.links as Array<{ dest: { to: string; focusStepId?: string }; label: string }>;
+    expect(links[0]).toMatchObject({ dest: { to: 'incorporation', focusStepId: 'pre-13' }, label: 'Open Incorporation' });
+  });
+
+  it('super admin preview links stay client-shaped and never reach staff places', async () => {
+    setAskProviderForTests(mockProvider([]));
+    const { answer } = await run('super_admin', { shell: 'client', engagementId: 'eng-1', suggestionId: 'client-next-step' });
+    const tos = (answer?.links as Array<{ dest: { to: string } }>).map((l) => l.dest.to);
+    expect(tos.every((t) => ['incorporation', 'step'].includes(t))).toBe(true);
+  });
+});

@@ -13,6 +13,7 @@ import { adminProjectPath } from '@/lib/project-step-path';
 import { reminderComposeHref } from '@/lib/ask/reminder';
 import { cn } from '@/lib/utils';
 import { useAskOptional } from './ask-context';
+import { AskLinkButton } from './AskLinkButton';
 import { TrustBadge } from './TrustBadge';
 import { VisualRenderer } from './visuals/VisualRenderer';
 
@@ -90,6 +91,14 @@ export function AskAnswerCard({
             </span>
           ))}
         </p>
+      )}
+
+      {answer.links && answer.links.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {answer.links.map((link, i) => (
+            <AskLinkButton key={`${link.dest.to}-${i}`} link={link} />
+          ))}
+        </div>
       )}
 
       <div className="flex flex-wrap gap-1.5">

@@ -234,7 +234,7 @@ export function ChecklistJourneyRail({
 
           if (!canSelect) {
             return (
-              <li key={item.id} className="flex items-center">
+              <li key={item.id} className="flex items-center" data-ask-focus={item.id}>
                 <div className="min-w-0 flex-1">
                   <ChecklistLockedHint message={gate.message ?? lockedFallback}>
                     <button type="button" className={cn(rowShell, 'gap-3')}>
@@ -250,7 +250,7 @@ export function ChecklistJourneyRail({
           }
 
           return (
-            <li key={item.id}>
+            <li key={item.id} data-ask-focus={item.id}>
               <div className={rowShell}>
                 {selectedPill}
                 {compactConnector}

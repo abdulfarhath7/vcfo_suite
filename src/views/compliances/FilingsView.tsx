@@ -471,7 +471,7 @@ function RegisterTable({
       rowKey={(row) => row.id}
       empty={EMPTY_REGISTER}
       mobile={(row) => (
-        <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-w-0 items-start gap-3" data-ask-focus={row.id}>
           <div className="min-w-0 flex-1">
             <p className="flex min-w-0 items-center gap-1 text-[13px] font-semibold text-ink">
               <span className="truncate">{row.particular}</span>

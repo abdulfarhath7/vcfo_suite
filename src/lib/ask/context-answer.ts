@@ -35,6 +35,7 @@ export function contextAnswer(
         line: unlock ? `${answer.line} ${unlock}` : answer.line,
         actions: [...answer.actions, 'openStep'],
         target: { stepId: context.ref },
+        links: [{ dest: { to: 'step', stepId: context.ref }, label: 'Open this step', primary: true }],
       };
     }
     if (step && 'title' in step) {
@@ -52,6 +53,7 @@ export function contextAnswer(
         origin: 'deterministic',
         depth: 'normal',
         target: { stepId: step.stepId },
+        links: [{ dest: { to: 'step', stepId: step.stepId }, label: 'Open this step', primary: true }],
       };
     }
     return null;

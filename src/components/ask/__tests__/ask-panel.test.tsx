@@ -17,7 +17,11 @@ vi.mock('@/hooks/ask/use-ask-suggestions', () => ({
     isError: false,
   }),
 }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => '/app/client' }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => '/app/client',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const { AskShellMount } = await import('@/components/ask/AskShellMount');
 const { AskLauncher } = await import('@/components/ask/AskLauncher');

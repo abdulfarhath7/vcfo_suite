@@ -38,6 +38,9 @@ export interface AskContextValue {
   /** Re-read a topic at another depth without a model call. */
   showTopic: (slug: string, depth?: AnswerDepth, label?: string) => Promise<void>;
   reset: () => void;
+  /** Shown after a go-there link closed the panel (< 1440 px): "Back to Ask VCFO". */
+  backPill: boolean;
+  setBackPill: (show: boolean) => void;
   /** Pending hand-off draft (T5), opened from an answer's "Ask my lead". */
   handoffDraft: string | null;
   setHandoffDraft: (draft: string | null) => void;

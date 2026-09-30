@@ -63,6 +63,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [handoffDraft, setHandoffDraft] = useState<string | null>(null);
+  const [backPill, setBackPill] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const shell: AskShell | null = useMemo(() => {
@@ -127,6 +128,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
 
   const setOpen = useCallback((next: boolean) => {
     setOpenState(next);
+    if (next) setBackPill(false);
     try {
       window.sessionStorage.setItem('vcfo.ask.open', next ? '1' : '0');
     } catch {
@@ -239,8 +241,10 @@ export function AskProvider({ children }: { children: ReactNode }) {
       reset,
       handoffDraft,
       setHandoffDraft,
+      backPill,
+      setBackPill,
     }),
-    [enabled, firmName, open, setOpen, toggle, shell, engagementId, preview, setPreview, thread, status, busy, conversationId, ask, showTopic, reset, handoffDraft],
+    [enabled, firmName, open, setOpen, toggle, shell, engagementId, preview, setPreview, thread, status, busy, conversationId, ask, showTopic, reset, handoffDraft, backPill],
   );
 
   return <AskContext.Provider value={value}>{children}</AskContext.Provider>;

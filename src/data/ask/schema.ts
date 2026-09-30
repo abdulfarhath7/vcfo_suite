@@ -224,6 +224,40 @@ export const topicSchema = z
   });
 export type Topic = z.infer<typeof topicSchema>;
 
+// ---------- Go-there links (§7.7) ----------
+
+/** The only link shapes an answer may carry. Navigate / focus / prefill — never act. */
+export const destinationSchema = z.discriminatedUnion('to', [
+  // client
+  z.object({ to: z.literal('incorporation'), focusStepId: z.string().min(1).optional() }),
+  z.object({ to: z.literal('step'), stepId: z.string().min(1), section: z.enum(['upload', 'form']).optional() }),
+  z.object({ to: z.literal('inbox'), itemId: z.string().min(1).optional() }),
+  z.object({ to: z.literal('compliances'), itemId: z.string().min(1).optional() }),
+  z.object({ to: z.literal('documents'), docId: z.string().min(1).optional() }),
+  z.object({ to: z.literal('library'), itemId: z.string().min(1).optional() }),
+  z.object({ to: z.literal('learn'), slug: z.string().min(1) }),
+  // admin / super
+  z.object({ to: z.literal('project'), engagementId: z.string().min(1) }),
+  z.object({ to: z.literal('projectStep'), engagementId: z.string().min(1), stepId: z.string().min(1) }),
+  z.object({ to: z.literal('approvals') }),
+  z.object({ to: z.literal('compliance'), filter: z.enum(['overdue', 'dueSoon']).optional() }),
+  z.object({ to: z.literal('composeReminder'), engagementId: z.string().min(1) }),
+]);
+export type Destination = z.infer<typeof destinationSchema>;
+
+export const CLIENT_DESTINATIONS = ['incorporation', 'step', 'inbox', 'compliances', 'documents', 'library', 'learn'] as const;
+export const STAFF_DESTINATIONS = ['project', 'projectStep', 'approvals', 'compliance', 'composeReminder'] as const;
+
+export const answerLinkSchema = z.object({
+  dest: destinationSchema,
+  /** Verb + place: "Open Incorporation", "Upload KYC now". */
+  label: z.string().trim().min(1).max(60),
+  primary: z.boolean().optional(),
+});
+export type AnswerLink = z.infer<typeof answerLinkSchema>;
+
+export const MAX_ANSWER_LINKS = 2;
+
 // ---------- Answer envelope (§6.5) ----------
 
 export const answerCitationSchema = z.object({
@@ -245,6 +279,8 @@ export const answerEnvelopeSchema = z.object({
   topicVersion: z.number().int().optional(),
   /** Served from a draft topic: never badged "Reviewed". */
   draft: z.boolean().optional(),
+  /** Go-there links (max 2, max 1 primary), already scope-checked on the server. */
+  links: z.array(answerLinkSchema).max(MAX_ANSWER_LINKS).optional(),
   /** Title shown on library cards and the reader H1; falls back to `line`. */
   title: z.string().trim().max(160).optional(),
   /** Step / project the openStep / openProject / draftReminder actions point at. */

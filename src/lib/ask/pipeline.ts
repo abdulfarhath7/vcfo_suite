@@ -18,6 +18,8 @@ import { firmDisplayName } from '@/lib/brand';
 import { assertAskRole, AskForbiddenError, shellAllowedForRole } from '@/lib/ask/access';
 import { askConfig } from '@/lib/ask/config';
 import { contextAnswer } from '@/lib/ask/context-answer';
+import { sanitizeLinks, type DestinationScope } from '@/lib/ask/destinations';
+import { gateActiveCatalog } from '@/lib/checklist-step-gate';
 import { generateAnswer } from '@/lib/ask/generate';
 import { runGuard, type GuardResult } from '@/lib/ask/guard';
 import { getAskProvider } from '@/lib/ask/provider';
@@ -181,6 +183,19 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   let staffData: StaffData | null = null;
   const loadStaff = async () => (staffData ??= await loadStaffData(ctx, now));
 
+  const linkScope = async (): Promise<DestinationScope> => {
+    if (shell === 'client') {
+      const gates = gateActiveCatalog(clientTools?.state ?? {}, 'client');
+      const locked = new Set(Object.entries(gates).filter(([, g]) => g.kind === 'locked').map(([id]) => id));
+      return { shell, lockedStepIds: locked };
+    }
+    const data = await loadStaff();
+    return {
+      shell,
+      engagementKeys: new Set(data.engagements.flatMap((e) => [e.engagement.slug || e.engagement.id, e.engagement.id])),
+    };
+  };
+
   const finish = async (
     answer: AnswerEnvelope,
     extra: {
@@ -191,7 +206,12 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       startedAt?: number;
     } = {},
   ) => {
-    const final = actionsForShell(answer, shell, preview);
+    let final = actionsForShell(answer, shell, preview);
+    // Every link, templated or model-written, is scope-checked here (§7.7).
+    if (final.links && final.links.length > 0) {
+      const links = sanitizeLinks(final.links, await linkScope());
+      final = links.length > 0 ? { ...final, links } : { ...final, links: undefined };
+    }
     const usage = extra.usage ?? NO_USAGE;
     const row = await appendAskMessage(ctx, conversationId!, {
       sender: 'assistant',
