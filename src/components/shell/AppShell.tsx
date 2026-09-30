@@ -13,6 +13,7 @@ import { shellDesktopNavExpanded } from "@/components/shell/intern-sidebar";
 import { cn } from "@/lib/utils";
 import { AuthBootScreen } from "@/components/common/AuthBootScreen";
 import { useShellAppearance } from "@/lib/use-shell-appearance";
+import { AssistPushColumn, AssistShellMount } from "@/components/assist/AssistShellMount";
 
 export function AppShell({
   requireRole,
@@ -69,6 +70,7 @@ export function AppShell({
 
   return (
     <ShellNavProvider>
+      <AssistShellMount userRole={user.role}>
       <div
         className="relative min-h-screen bg-[oklch(var(--background))] text-foreground"
         data-role={user.role}
@@ -82,7 +84,7 @@ export function AppShell({
         <AnnouncementLivePopup />
         <NotificationLivePopup />
 
-        <div className={cn("relative z-10 pl-0 transition-[padding] duration-300 ease-out", desktopPad)}>
+        <AssistPushColumn className={cn("relative z-10 pl-0 transition-[padding] duration-300 ease-out", desktopPad)}>
           <div className="sticky top-0 z-20">
             <TopBar />
           </div>
@@ -94,8 +96,9 @@ export function AppShell({
           >
             {children}
           </main>
-        </div>
+        </AssistPushColumn>
       </div>
+      </AssistShellMount>
     </ShellNavProvider>
   );
 }

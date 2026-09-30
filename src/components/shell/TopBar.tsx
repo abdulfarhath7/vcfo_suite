@@ -1,6 +1,7 @@
 "use client";
 
 import { useApp } from "@/context/AppContext";
+import { AssistLauncher } from "@/components/assist/AssistLauncher";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
@@ -140,6 +141,7 @@ export function TopBar() {
       <CommandPalette />
 
       <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+        <AssistLauncher />
         <button
           type="button"
           onClick={() => setCommandOpen(true)}
