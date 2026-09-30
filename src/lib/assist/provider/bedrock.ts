@@ -21,7 +21,7 @@ export function createBedrockProvider(region: string): LlmProvider {
         messages: req.messages,
         ...(req.tools && req.tools.length > 0 ? { tools: req.tools, tool_choice: { type: 'auto' } } : {}),
         ...(req.effort ? { output_config: { effort: req.effort } } : {}),
-      });
+      }, req.timeoutMs ? { timeout: req.timeoutMs } : undefined);
       return {
         model: response.model,
         content: response.content,

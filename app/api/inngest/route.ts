@@ -3,8 +3,9 @@ import { inngest } from '@/jobs/client';
 import { complianceGenerate } from '@/jobs/compliance-generate';
 import { announcementFeeds } from '@/jobs/announcement-feeds';
 import { whatsappSend } from '@/jobs/whatsapp-send';
+import { assistIngest } from '@/jobs/assist-ingest';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [complianceGenerate, announcementFeeds, whatsappSend],
+  functions: [complianceGenerate, announcementFeeds, whatsappSend, assistIngest],
 });

@@ -20,6 +20,8 @@ export interface LlmRequest {
   maxTokens: number;
   /** Only sent when set — models without effort support reject it. */
   effort?: 'low' | 'medium' | 'high';
+  /** Per-request timeout (ms) for long jobs such as document transcription. */
+  timeoutMs?: number;
 }
 
 export interface LlmResult {

@@ -87,6 +87,11 @@ export async function setAssistDocumentStatus(
   return row ?? null;
 }
 
+export async function setAssistDocumentStorageKey(ctx: AuthContext, id: string, s3Key: string): Promise<void> {
+  assertSourceAdmin(ctx);
+  await db.update(assistDocuments).set({ s3Key }).where(eq(assistDocuments.id, id));
+}
+
 // ---------- Ingestion job (system) ----------
 
 export async function systemGetAssistDocument(id: string): Promise<AssistDocumentRow | null> {

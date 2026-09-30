@@ -24,7 +24,7 @@ export function createAnthropicProvider(opts: { refusalFallback: boolean }): Llm
         ...(opts.refusalFallback
           ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }
           : {}),
-      });
+      }, req.timeoutMs ? { timeout: req.timeoutMs } : undefined);
       return {
         model: response.model,
         content: response.content,
