@@ -5,7 +5,7 @@ import type { AuthContext } from '@/auth/guards';
 /**
  * Invariant for `parent_indian_relationship`, enforced in the repository (the
  * zod schema only guards the create route):
- *   - required for Group company (subsidiary) + Indian parent (domestic),
+ *   - required for an Indian subsidiary (subsidiary + domestic),
  *   - forced to null for Standalone or a Foreign parent,
  *   - a legacy Group + Indian row with no role still accepts unrelated patches.
  */

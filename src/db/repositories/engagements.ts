@@ -304,7 +304,7 @@ export async function updateEngagement(
     patch.companyType !== undefined ||
     patch.parentIndianRelationship !== undefined;
   if (touchesOwnership) {
-    // Only when ownership is being edited: a legacy Group + Indian row with no
+    // Only when ownership is being edited: a legacy Indian-subsidiary row with no
     // role chosen must still accept unrelated patches (stage, lead, …).
     const next = normalizeParentIndianRelationship({
       ownershipType: patch.ownershipType ?? existing.ownershipType,
@@ -729,7 +729,7 @@ export interface CreateProjectWithClientInput {
   companyType: string;
   /** Missing = subsidiary (the historical default). */
   ownershipType?: OwnershipType;
-  /** Required for Group company + Indian parent; forced to null otherwise. */
+  /** Required for Indian subsidiary; forced to null otherwise. */
   parentIndianRelationship?: ParentIndianRelationship | null;
   entityLegalForm?: string;
   /** Optional seed; Part A is the capture point. Ignored for an independent company. */

@@ -61,7 +61,7 @@ function stateFromEngagement(eng: Engagement): CreateProjectState {
     companyName: eng.companyName ?? '',
     ownershipType: eng.ownershipType ?? 'subsidiary',
     companyType: (eng.companyType ?? 'domestic') as CreateProjectState['companyType'],
-    // Legacy Group + Indian rows are null here → "not yet chosen"; save requires a pick.
+    // Legacy Indian-subsidiary rows are null here → "not yet chosen"; save requires a pick.
     parentIndianRelationship: eng.parentIndianRelationship ?? null,
     entityLegalForm: (eng.entityLegalForm ?? 'company') as CreateProjectState['entityLegalForm'],
     subsidiaryLegalName: eng.subsidiaryLegalName ?? '',
@@ -273,7 +273,7 @@ export function CreateProjectForm({
   const fieldErrors = useMemo(
     () => ({
       companyName: !companyName.trim() ? 'Enter the project or GCC entity name for this setup.' : '',
-      companyType: !companyTypeValid ? 'Select whether the parent company is foreign or Indian.' : '',
+      companyType: !companyTypeValid ? 'Select whether it is a foreign or Indian subsidiary.' : '',
       parentIndianRelationship: !parentRoleValid ? PARENT_INDIAN_RELATIONSHIP_REQUIRED_MESSAGE : '',
       subsidiaryLegalName: needsSubsidiary
         ? !subsidiaryLegalName.trim()

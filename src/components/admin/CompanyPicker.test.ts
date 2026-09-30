@@ -12,7 +12,7 @@ describe('companyPickerHint', () => {
     ).toBe('Company (Pvt Ltd) · Standalone');
     expect(
       companyPickerHint({ companyType: 'foreign', ownershipType: 'subsidiary', entityLegalForm: 'llp' }),
-    ).toBe('LLP · Group · Foreign parent');
+    ).toBe('LLP · Foreign subsidiary');
   });
 
   it('names the Indian parent role when chosen', () => {
@@ -22,18 +22,18 @@ describe('companyPickerHint', () => {
         ownershipType: 'subsidiary',
         parentIndianRelationship: 'name_only',
       }),
-    ).toBe('Group · Indian parent (name use)');
+    ).toBe('Indian subsidiary (name use)');
     expect(
       companyPickerHint({
         companyType: 'domestic',
         ownershipType: 'subsidiary',
         parentIndianRelationship: 'investing',
       }),
-    ).toBe('Group · Indian parent (investing)');
+    ).toBe('Indian subsidiary (investing)');
   });
 
   it('falls back to the ownership label when legal form is missing', () => {
     // Legacy row: no ownershipType (= subsidiary), no role chosen yet.
-    expect(companyPickerHint({ companyType: 'domestic' })).toBe('Group · Indian parent');
+    expect(companyPickerHint({ companyType: 'domestic' })).toBe('Indian subsidiary');
   });
 });

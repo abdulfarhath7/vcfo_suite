@@ -53,26 +53,26 @@ export function stageRequiresParentEntity(stage: Stage, ownershipType: Ownership
 export const OWNERSHIP_TYPES: Array<{ value: OwnershipType; label: string; hint: string }> = [
   {
     value: 'subsidiary',
-    label: 'Group company',
-    hint: 'Backed by an existing company (parent / group)',
+    label: 'Subsidiary',
+    hint: 'Backed by a parent company, foreign or Indian',
   },
   {
     value: 'independent',
-    label: 'Standalone company',
+    label: 'Standalone',
     hint: 'Promoted by individuals — no parent company',
   },
 ];
 
 /**
- * Where the parent is incorporated (Group company only). Labelled by the
+ * Where the parent is incorporated (Subsidiary only). Labelled by the
  * parent, not the new company — a Standalone row is also stored `domestic`.
  */
 export const COMPANY_TYPES: Array<{ value: CompanyType; label: string; hint: string }> = [
-  { value: 'foreign', label: 'Foreign company', hint: 'Incorporated outside India · FEMA track' },
-  { value: 'domestic', label: 'Indian company', hint: 'Incorporated in India' },
+  { value: 'foreign', label: 'Foreign subsidiary', hint: 'Parent incorporated outside India · FEMA track' },
+  { value: 'domestic', label: 'Indian subsidiary', hint: 'Parent incorporated in India' },
 ];
 
-/** What an Indian parent does for the new company (Group + Indian parent only). */
+/** What an Indian parent does for the new company (Indian subsidiary only). */
 export const PARENT_INDIAN_RELATIONSHIPS: Array<{
   value: ParentIndianRelationship;
   label: string;
@@ -93,7 +93,7 @@ export function parentIndianRelationshipMissing(
   return requiresParentIndianRelationship(state) && state.parentIndianRelationship === null;
 }
 
-/** Value to send on POST / PATCH: null unless Group company + Indian parent. */
+/** Value to send on POST / PATCH: null unless Indian subsidiary. */
 export function parentIndianRelationshipForSubmit(
   state: Pick<CreateProjectState, 'ownershipType' | 'companyType' | 'parentIndianRelationship'>,
 ): ParentIndianRelationship | null {
@@ -122,7 +122,7 @@ export type CreateProjectState = {
   companyName: string;
   ownershipType: OwnershipType;
   companyType: CompanyType;
-  /** Group company + Indian parent only; null = not applicable or not yet chosen. */
+  /** Indian subsidiary only; null = not applicable or not yet chosen. */
   parentIndianRelationship: ParentIndianRelationship | null;
   entityLegalForm: EntityLegalForm;
   subsidiaryLegalName: string;

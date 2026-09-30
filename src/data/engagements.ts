@@ -24,8 +24,8 @@ export const COMPANY_TYPE_LABEL: Record<CompanyType, string> = {
 };
 
 export const OWNERSHIP_TYPE_LABEL: Record<OwnershipType, string> = {
-  subsidiary: 'Group company',
-  independent: 'Standalone company',
+  subsidiary: 'Subsidiary',
+  independent: 'Standalone',
 };
 
 export const PARENT_INDIAN_RELATIONSHIP_LABEL: Record<ParentIndianRelationship, string> = {
@@ -41,7 +41,7 @@ export function coerceParentIndianRelationship(value: unknown): ParentIndianRela
   return value === 'name_only' || value === 'investing' ? value : null;
 }
 
-/** True when the Indian parent's role must be chosen (Group company + Indian parent). */
+/** True when the Indian parent's role must be chosen (Indian subsidiary). */
 export function requiresParentIndianRelationship(e: {
   ownershipType?: string | null;
   companyType?: string | null;
@@ -73,14 +73,14 @@ export function ownershipDisplayLabel(
   e: Pick<Engagement, 'ownershipType' | 'companyType' | 'parentIndianRelationship'>,
 ): string {
   if (coerceOwnershipType(e.ownershipType) === 'independent') return 'Standalone';
-  if (e.companyType === 'foreign') return 'Group · Foreign parent';
+  if (e.companyType === 'foreign') return 'Foreign subsidiary';
   switch (coerceParentIndianRelationship(e.parentIndianRelationship)) {
     case 'name_only':
-      return 'Group · Indian parent (name use)';
+      return 'Indian subsidiary (name use)';
     case 'investing':
-      return 'Group · Indian parent (investing)';
+      return 'Indian subsidiary (investing)';
     default:
-      return 'Group · Indian parent';
+      return 'Indian subsidiary';
   }
 }
 
@@ -97,7 +97,7 @@ export interface Engagement {
   companyType: CompanyType;
   /** Dependent (has a parent entity) or Independent (standalone). Missing = subsidiary. */
   ownershipType?: OwnershipType;
-  /** Indian parent's role (Group company + Indian parent only). null = not applicable or not yet chosen. */
+  /** Indian parent's role (Indian subsidiary only). null = not applicable or not yet chosen. */
   parentIndianRelationship?: ParentIndianRelationship | null;
   /** Manager-set date windows (incorporation + per step). See `schedule-windows.ts`. */
   schedule?: EngagementSchedule;

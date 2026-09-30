@@ -96,7 +96,7 @@ export type CreateProjectFormViewProps = {
   setOwnershipType: (value: OwnershipType) => void;
   companyType: CompanyType;
   setCompanyType: (value: CompanyType) => void;
-  /** Group company + Indian parent only; null = not applicable or not yet chosen. */
+  /** Indian subsidiary only; null = not applicable or not yet chosen. */
   parentIndianRelationship: ParentIndianRelationship | null;
   setParentIndianRelationship: (value: ParentIndianRelationship) => void;
   entityLegalForm: EntityLegalForm;
@@ -493,7 +493,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
                 >
                   <Globe2 className="h-3.5 w-3.5" aria-hidden />
-                  Parent company is <span className="font-normal text-danger">*</span>
+                  Subsidiary type <span className="font-normal text-danger">*</span>
                 </span>
                 <SegmentedPicker
                   value={companyType}

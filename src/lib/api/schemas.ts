@@ -58,10 +58,10 @@ export const companyTypeSchema = z.enum(['domestic', 'foreign']);
 /** Dependent (has a parent entity) vs independent (standalone, no parent asked). */
 export const ownershipTypeSchema = z.enum(['subsidiary', 'independent']);
 
-/** Indian parent lends its name only, or subscribes to shares (Group + Indian parent). */
+/** Indian parent lends its name only, or subscribes to shares (Indian subsidiary). */
 export const parentIndianRelationshipSchema = z.enum(['name_only', 'investing']);
 
-/** Shown when a Group company with an Indian parent has no parent role chosen. */
+/** Shown when an Indian subsidiary has no parent role chosen. */
 export const PARENT_INDIAN_RELATIONSHIP_REQUIRED =
   'Choose whether the Indian parent lends its name or invests.';
 
@@ -109,7 +109,7 @@ export const createProjectBodySchema = z
     companyName: companyNameSchema,
     companyType: companyTypeSchema,
     ownershipType: ownershipTypeSchema.default('subsidiary'),
-    /** Required for Group company + Indian parent; ignored (stored null) otherwise. */
+    /** Required for Indian subsidiary; ignored (stored null) otherwise. */
     parentIndianRelationship: parentIndianRelationshipSchema.nullable().optional(),
     entityLegalForm: entityLegalFormSchema.default('company'),
     /**

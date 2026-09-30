@@ -19,21 +19,21 @@ export interface NocTemplateDefinition {
 export const NOC_TEMPLATES: Record<NocVariant, NocTemplateDefinition> = {
   'foreign-parent': {
     variant: 'foreign-parent',
-    label: 'NOC — Foreign parent',
+    label: 'NOC — Foreign subsidiary',
     templateRelative: 'public/templates/noc-foreign-parent.docx',
     downloadFilename: 'noc-foreign-parent.docx',
     mergeFieldKeys: [],
   },
   'indian-name-only': {
     variant: 'indian-name-only',
-    label: 'NOC — Indian parent (name use)',
+    label: 'NOC — Indian subsidiary (name use)',
     templateRelative: 'public/templates/noc-indian-name-only.docx',
     downloadFilename: 'noc-indian-name-only.docx',
     mergeFieldKeys: [],
   },
   'indian-investing': {
     variant: 'indian-investing',
-    label: 'NOC — Indian parent (investing)',
+    label: 'NOC — Indian subsidiary (investing)',
     templateRelative: 'public/templates/noc-indian-investing.docx',
     downloadFilename: 'noc-indian-investing.docx',
     mergeFieldKeys: [],

@@ -36,10 +36,10 @@ export const COMPANY_SUBCATEGORY = {
 } as const;
 
 /**
- * Sub-category by ownership. A Group company with a Foreign parent is a
- * subsidiary of a foreign company; a Standalone company, or a Group company
- * with an Indian parent, is an Indian non-government company (the Indian
- * parent case is still to be confirmed by the owner). `undefined` when the
+ * Sub-category by ownership. A Foreign subsidiary is a subsidiary of a
+ * foreign company; a Standalone company, or an Indian subsidiary, is an
+ * Indian non-government company (the Indian subsidiary case is still to be
+ * confirmed by the owner). `undefined` when the
  * parent's origin is not known.
  */
 export function companySubCategoryFor(e: {

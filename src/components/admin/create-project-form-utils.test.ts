@@ -58,7 +58,7 @@ describe('Indian parent role validity', () => {
     ).toBe(missing);
   });
 
-  it('is only sent for Group company + Indian parent', () => {
+  it('is only sent for Indian subsidiary', () => {
     expect(
       parentIndianRelationshipForSubmit({
         ownershipType: 'subsidiary',

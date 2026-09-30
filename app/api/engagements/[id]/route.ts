@@ -54,7 +54,7 @@ const patchBodySchema = z.object({
   companyName: companyNameSchema.optional(),
   companyType: companyTypeSchema.optional(),
   ownershipType: ownershipTypeSchema.optional(),
-  /** null clears it; the repository also clears it when no longer Group + Indian parent. */
+  /** null clears it; the repository also clears it when no longer Indian subsidiary. */
   parentIndianRelationship: parentIndianRelationshipSchema.nullable().optional(),
   /** Pass null to unassign the delivery lead. */
   internId: z.union([internIdSchema, z.null()]).optional(),

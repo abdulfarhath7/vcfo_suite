@@ -250,7 +250,7 @@ export interface CreateProjectInput {
   companyName: string;
   companyType: 'domestic' | 'foreign';
   ownershipType?: 'subsidiary' | 'independent';
-  /** Group company + Indian parent only; null/absent otherwise. */
+  /** Indian subsidiary only; null/absent otherwise. */
   parentIndianRelationship?: 'name_only' | 'investing' | null;
   entityLegalForm?: 'company' | 'llp' | 'partnership' | 'proprietorship';
   /** Optional seed — the parent entity is captured in SPICe+ Part A. */

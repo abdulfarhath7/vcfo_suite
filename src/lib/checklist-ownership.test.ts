@@ -79,7 +79,7 @@ describe('createProjectBodySchema ownership', () => {
     clientPassword: 'SBC@2026',
     internId: 'intern-1',
     managerId: '00000000-0000-4000-8000-000000000000',
-    // Group company + Indian parent must say what the parent does.
+    // Indian subsidiary must say what the parent does.
     parentIndianRelationship: 'investing',
   };
 
