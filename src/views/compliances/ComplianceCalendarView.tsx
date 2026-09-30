@@ -1,5 +1,6 @@
 'use client';
 
+import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -240,12 +241,15 @@ function MonthRow({
         {row.dueDate.slice(8, 10)}
       </span>
       <span className="min-w-0 flex-1">
-        <Link
-          href={`${basePath}/filings?cadence=monthly&period=${monthKey}${companyQuery}`}
-          className="block truncate text-[12.5px] font-semibold text-ink hover:text-primary"
-        >
-          {row.particular}
-        </Link>
+        <span className="flex min-w-0 items-center gap-1">
+          <Link
+            href={`${basePath}/filings?cadence=monthly&period=${monthKey}${companyQuery}`}
+            className="block truncate text-[12.5px] font-semibold text-ink hover:text-primary"
+          >
+            {row.particular}
+          </Link>
+          <WhatsThisButton compact kind="compliance" refId={row.particular} label={row.particular} />
+        </span>
         <span className="text-[11px] text-muted-foreground">
           {showCompany ? `${row.companyName} · ` : ''}
           {row.compliance} · {formatFilingDate(row.dueDate)}

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { ArrowRight, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ClientOverviewNextAction } from '@/lib/client-overview';
+import { GlossaryText } from '@/components/assist/GlossaryTerm';
+import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
 
 /**
  * Module 2 — "what do you need from me right now".
@@ -53,15 +55,17 @@ export function ClientNextAction({
           >
             {correction ? 'Corrections needed' : 'We need this from you'}
           </p>
-          <h2 className="serif mt-0.5 text-[1.35rem] leading-tight tracking-tight text-ink">
-            {nextAction.title}
-          </h2>
+          <div className="mt-0.5 flex items-start gap-1.5">
+            <h2 className="serif text-[1.35rem] leading-tight tracking-tight text-ink">
+              <GlossaryText text={nextAction.title} />
+            </h2>
+            <WhatsThisButton kind="step" refId={nextAction.stepId} label={nextAction.title} className="mt-1" />
+          </div>
           <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
             {correction
               ? (nextAction.correctionNote ??
                 'Your project lead asked for an update — open the step and resubmit.')
-              : (nextAction.description ??
-                'Open the step to fill in the details we need to move forward.')}
+              : <GlossaryText text={nextAction.description ?? 'Open the step to fill in the details we need to move forward.'} />}
           </p>
           {nextAction.windowLabel && !correction && (
             <p className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">

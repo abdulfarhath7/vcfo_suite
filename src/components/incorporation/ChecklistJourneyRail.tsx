@@ -1,5 +1,6 @@
 'use client';
 
+import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
 import type { ChecklistItem } from '@/data/checklist';
 import type { StatusCode } from '@/data/checklist';
 import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
@@ -233,13 +234,17 @@ export function ChecklistJourneyRail({
 
           if (!canSelect) {
             return (
-              <li key={item.id}>
-                <ChecklistLockedHint message={gate.message ?? lockedFallback}>
-                  <button type="button" className={cn(rowShell, 'gap-3')}>
-                    {compactConnector}
-                    {stepCopy}
-                  </button>
-                </ChecklistLockedHint>
+              <li key={item.id} className="flex items-center">
+                <div className="min-w-0 flex-1">
+                  <ChecklistLockedHint message={gate.message ?? lockedFallback}>
+                    <button type="button" className={cn(rowShell, 'gap-3')}>
+                      {compactConnector}
+                      {stepCopy}
+                    </button>
+                  </ChecklistLockedHint>
+                </div>
+                {/* Locked steps too: Assist explains the step and what unlocks it. */}
+                <WhatsThisButton compact kind="step" refId={item.id} label={item.title} />
               </li>
             );
           }
@@ -257,6 +262,7 @@ export function ChecklistJourneyRail({
                   {stepCopy}
                 </button>
                 {attachmentSlot}
+                <WhatsThisButton compact kind="step" refId={item.id} label={item.title} className="relative z-[1]" />
               </div>
             </li>
           );

@@ -1,5 +1,8 @@
 'use client';
 
+import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
+import { GLOSSARY } from '@/data/assist/glossary';
+import { firstGlossaryTerm } from '@/lib/assist/glossary-match';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
@@ -1314,6 +1317,11 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               {field.label}
               {field.required && <span className="text-danger ml-0.5" aria-hidden>*</span>}
             </Label>
+            {(() => {
+              // Help icon only where Assist has something to say about the field.
+              const term = firstGlossaryTerm(field.label, GLOSSARY);
+              return term ? <WhatsThisButton compact kind="field" refId={term.term} label={field.label} /> : null;
+            })()}
             <FieldUnlockControl
               field={field}
               showUnlock={options?.showUnlock}
@@ -1655,15 +1663,18 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         className={cn('space-y-3', recordLayout && 'milestone-record-panel')}
       >
         {group.section && !(compactChrome && group.section === item.title) && (
-          <p
-            className={
-              recordLayout
-                ? 'text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink'
-                : 'text-base font-semibold text-foreground'
-            }
-          >
-            {group.section}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p
+              className={
+                recordLayout
+                  ? 'text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink'
+                  : 'text-base font-semibold text-foreground'
+              }
+            >
+              {group.section}
+            </p>
+            <WhatsThisButton compact kind="field" refId={group.section} label={`${item.title}: ${group.section}`} />
+          </div>
         )}
         {fieldsBlock}
       </div>

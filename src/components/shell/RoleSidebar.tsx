@@ -13,6 +13,7 @@ import {
   Inbox,
   UserSquare2,
   FolderClosed,
+  BookMarked,
   FolderOpen,
   CalendarCheck,
   BarChart3,
@@ -147,6 +148,7 @@ const clientItems: NavEntry[] = [
   { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
   compliancesGroup('/app/client'),
   { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
+  { to: '/app/client/library', label: 'Library', icon: BookMarked, iconTone: TONE.knowledge },
   { to: '/app/client/team', label: 'Team', icon: Users, iconTone: TONE.people },
   { to: '/app/client/audit', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
 ];

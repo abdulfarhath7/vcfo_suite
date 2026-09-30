@@ -64,6 +64,8 @@ const PAGE_LABEL: Record<string, string> = {
   settings: 'Account',
   engagements: 'Clients',
   'board-resolution': 'Board Resolution',
+  library: 'Library',
+  learn: 'Library',
 };
 
 const PAGE_ICON: Record<string, ShellCrumbIcon> = {
@@ -90,6 +92,8 @@ const PAGE_ICON: Record<string, ShellCrumbIcon> = {
   audit: 'history',
   settings: 'settings',
   incorporation: 'briefcase',
+  library: 'book',
+  learn: 'book',
 };
 
 function titleCase(segment: string): string {
@@ -317,6 +321,14 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     return trail(path, 'users', [
       { label: 'People', href: `${base}/people` },
       { label: titleCase(nested), href: null },
+    ]);
+  }
+
+  // Library item / topic reader: the leaf is the page itself, not a raw id or slug.
+  if (parts[1] === 'client' && (page === 'library' || page === 'learn') && parts[3]) {
+    return trail(path, 'book', [
+      { label: 'Library', href: '/app/client/library' },
+      { label: page === 'learn' ? 'Explanation' : 'Saved explanation', href: null },
     ]);
   }
 

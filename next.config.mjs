@@ -113,6 +113,8 @@ const nextConfig = {
     root: projectRoot,
   },
   // fs.readFileSync(process.cwd(), 'public/templates/...') is not auto-traced on Vercel.
+  // react-pdf ships its own font/layout engine; bundling it breaks at runtime.
+  serverExternalPackages: ['@react-pdf/renderer'],
   outputFileTracingIncludes: {
     // Pre-2 picks the foreign or an Indian (NOC) template per project.
     '/api/engagements/[id]/board-resolution/generate': [

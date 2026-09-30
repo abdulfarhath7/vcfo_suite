@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type { AnswerDepth, AssistShell } from '@/data/assist/schema';
 import { useApp } from '@/context/AppContext';
+import { findEngagementForClientUser } from '@/lib/checklist-state-key';
 import { canUseAssist, defaultShellForRole } from '@/lib/assist/access';
 import { fetchConversation, fetchTopicAnswer, streamChat } from '@/hooks/assist/assist-api';
 import { useAssistStatus } from '@/hooks/assist/use-assist-status';
@@ -73,8 +74,9 @@ export function AssistProvider({ children }: { children: ReactNode }) {
   const engagementId = useMemo(() => {
     if (shell !== 'client') return null;
     if (preview) return preview.engagementId;
-    return engagements[0]?.id ?? null;
-  }, [shell, preview, engagements]);
+    if (!user) return null;
+    return findEngagementForClientUser(engagements, user)?.id ?? engagements[0]?.id ?? null;
+  }, [shell, preview, engagements, user]);
 
   const key = storageKey(shell, engagementId);
 

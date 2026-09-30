@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
@@ -385,6 +386,7 @@ export default function EngagementStepDetail() {
       <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-foreground">
         {item.title}
       </h1>
+      <WhatsThisButton kind="step" refId={item.id} label={item.title} />
       {/* Narrow screens lose the rail (and its card); this stands in, never both. */}
       {docPackHref ? (
         <DocPackHeaderButton summary={docPack.data} packHref={docPackHref} className="ml-auto lg:hidden" />

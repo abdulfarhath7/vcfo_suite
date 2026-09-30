@@ -1,5 +1,6 @@
 'use client';
 
+import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
 import { useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -352,7 +353,12 @@ function registerColumns(
       key: 'particular',
       header: 'Particular',
       width: 'minmax(0,1.5fr)',
-      render: (row) => <span className="text-ink">{row.particular}</span>,
+      render: (row) => (
+        <span className="flex min-w-0 items-center gap-1">
+          <span className="truncate text-ink">{row.particular}</span>
+          <WhatsThisButton compact kind="compliance" refId={row.particular} label={row.particular} />
+        </span>
+      ),
     },
     {
       key: 'due',
@@ -467,7 +473,10 @@ function RegisterTable({
       mobile={(row) => (
         <div className="flex min-w-0 items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-semibold text-ink">{row.particular}</p>
+            <p className="flex min-w-0 items-center gap-1 text-[13px] font-semibold text-ink">
+              <span className="truncate">{row.particular}</span>
+              <WhatsThisButton compact kind="compliance" refId={row.particular} label={row.particular} />
+            </p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               {mode.company ? `${row.companyName} · ` : ''}
               {row.compliance} · due {formatFilingDate(row.dueDate)}
