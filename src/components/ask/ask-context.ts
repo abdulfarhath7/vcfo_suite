@@ -22,6 +22,8 @@ export type AskInput = {
 export interface AskContextValue {
   enabled: boolean;
   firmName: string;
+  /** Phase 9 feature flags (§9A); all off unless the server turns one on. */
+  features: Partial<Record<'C1' | 'C2' | 'C3' | 'C4' | 'C5', boolean>>;
   open: boolean;
   setOpen: (open: boolean) => void;
   toggle: () => void;

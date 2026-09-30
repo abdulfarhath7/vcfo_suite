@@ -4,8 +4,14 @@
   "question": "Why does our parent company sign a board resolution?",
   "category": "your-project",
   "audience": "client",
-  "appliesTo": { "legalForms": [], "residency": [] },
-  "stepIds": ["pre-3"],
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "stepIds": [
+    "pre-3"
+  ],
+  "effortLabel": "A day or two, for signatures",
   "body": {
     "normal": "When an existing company sets up an Indian subsidiary, its board formally approves the investment and names who will act for it. Your project lead drafts the resolution; the parent's board signs it and you upload the signed copy.",
     "simple": "Your parent company's board signs a paper approving the new Indian company.",
@@ -13,9 +19,14 @@
     "why": "The Registrar relies on this resolution as proof that the parent really agreed to invest, so the filing cannot go ahead without it."
   },
   "citations": [
-    { "id": "companies-act-2013-s179", "label": "Companies Act 2013, section 179 (powers of the board)" }
+    {
+      "id": "companies-act-2013-s179",
+      "label": "Companies Act 2013, section 179 (powers of the board)"
+    }
   ],
-  "related": ["spice-plus-part-a"],
+  "related": [
+    "spice-plus-part-a"
+  ],
   "status": "draft",
   "version": 1
 }

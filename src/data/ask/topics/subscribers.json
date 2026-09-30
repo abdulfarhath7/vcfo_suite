@@ -4,8 +4,16 @@
   "question": "Who are the subscribers?",
   "category": "your-project",
   "audience": "client",
-  "appliesTo": { "legalForms": ["company"], "residency": [] },
-  "stepIds": ["pre-16"],
+  "appliesTo": {
+    "legalForms": [
+      "company"
+    ],
+    "residency": []
+  },
+  "stepIds": [
+    "pre-16"
+  ],
+  "effortLabel": "About 5 minutes",
   "body": {
     "normal": "Subscribers are the first shareholders. They sign the MOA and AOA at incorporation and agree to take a set number of shares. A subscriber can be a person or a company, such as your parent company.",
     "simple": "Subscribers are the first owners of the company's shares.",
@@ -13,9 +21,14 @@
     "why": "The subscriber list decides who owns the company on day one and is printed on the MOA, the AOA and the share certificates."
   },
   "citations": [
-    { "id": "companies-act-2013-s7", "label": "Companies Act 2013, section 7 (incorporation)" }
+    {
+      "id": "companies-act-2013-s7",
+      "label": "Companies Act 2013, section 7 (incorporation)"
+    }
   ],
-  "related": ["capital-structure"],
+  "related": [
+    "capital-structure"
+  ],
   "status": "draft",
   "version": 1
 }

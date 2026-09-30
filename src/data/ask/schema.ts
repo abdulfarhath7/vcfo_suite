@@ -199,6 +199,8 @@ export const topicSchema = z
       .array(z.object({ legalForms: z.array(z.enum(LEGAL_FORMS)).min(1), slug: z.string().min(1) }))
       .optional(),
     stepIds: z.array(z.string().min(1)).optional(),
+    /** C1: how long the client's part takes, e.g. "About 5 minutes". */
+    effortLabel: z.string().trim().max(40).optional(),
     body: z.object({
       normal: z.string().trim().min(1).max(TOPIC_BODY_LIMITS.normal),
       simple: z.string().trim().min(1).max(TOPIC_BODY_LIMITS.simple),

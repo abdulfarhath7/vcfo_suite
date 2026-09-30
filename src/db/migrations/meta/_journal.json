@@ -162,6 +162,13 @@
       "when": 1790776121860,
       "tag": "0022_rename_assist_to_ask",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790776656422,
+      "tag": "0023_ask_client_prefs",
+      "breakpoints": true
     }
   ]
 }

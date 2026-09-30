@@ -55,7 +55,7 @@ function writeSession(key: string, value: string | null) {
 export function AskProvider({ children }: { children: ReactNode }) {
   const { user, engagements } = useApp();
   const role = user?.role ?? null;
-  const { enabled, firmName } = useAskStatus(role);
+  const { enabled, firmName, features } = useAskStatus(role);
   const [open, setOpenState] = useState(false);
   const [preview, setPreviewState] = useState<AskPreview | null>(null);
   const [thread, setThread] = useState<ThreadItem[]>([]);
@@ -225,6 +225,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
     () => ({
       enabled: enabled && shell !== null,
       firmName,
+      features,
       open: open && enabled,
       setOpen,
       toggle,
@@ -244,7 +245,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
       backPill,
       setBackPill,
     }),
-    [enabled, firmName, open, setOpen, toggle, shell, engagementId, preview, setPreview, thread, status, busy, conversationId, ask, showTopic, reset, handoffDraft, backPill],
+    [enabled, firmName, features, open, setOpen, toggle, shell, engagementId, preview, setPreview, thread, status, busy, conversationId, ask, showTopic, reset, handoffDraft, backPill],
   );
 
   return <AskContext.Provider value={value}>{children}</AskContext.Provider>;

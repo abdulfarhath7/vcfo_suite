@@ -17,5 +17,6 @@ export function useAskStatus(role: string | null | undefined) {
   return {
     enabled: allowed && query.data?.enabled === true,
     firmName: query.data?.firmName ?? 'SBC',
+    features: allowed && query.data?.enabled ? (query.data.features ?? {}) : {},
   };
 }

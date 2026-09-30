@@ -1018,3 +1018,15 @@ export const askChunks = pgTable(
     tsvIdx: index('ask_chunks_tsv_idx').using('gin', t.tsv),
   }),
 );
+
+/**
+ * Ask VCFO C1 (daily nudge): one row per client profile. Created in Phase 9;
+ * only the owner reads or writes it.
+ */
+export const askClientPrefs = pgTable('ask_client_prefs', {
+  profileId: uuid('profile_id')
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: 'cascade' }),
+  lastNudgeAt: timestamp('last_nudge_at', { withTimezone: true }),
+  dismissedUntil: timestamp('dismissed_until', { withTimezone: true }),
+});

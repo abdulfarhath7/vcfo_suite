@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { canUseAsk } from '@/lib/ask/access';
-import { askConfig } from '@/lib/ask/config';
+import { askConfig, askFeatures } from '@/lib/ask/config';
 import { firmDisplayName } from '@/lib/brand';
 
 /**
@@ -13,5 +13,5 @@ export async function GET() {
   const guard = await requireAuth();
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const enabled = askConfig().enabled && canUseAsk(guard.ctx.role);
-  return NextResponse.json({ enabled, firmName: firmDisplayName() }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json({ enabled, firmName: firmDisplayName(), features: enabled ? askFeatures() : {} }, { headers: { 'Cache-Control': 'no-store' } });
 }

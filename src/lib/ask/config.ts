@@ -24,6 +24,17 @@ function intEnv(name: string, fallback: number): number {
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : fallback;
 }
 
+/** Phase 9 proposed features (§9A), each off unless ASK_VCFO_FEATURE_<ID>=true. */
+export const ASK_FEATURE_IDS = ['C1', 'C2', 'C3', 'C4', 'C5'] as const;
+export type AskFeatureId = (typeof ASK_FEATURE_IDS)[number];
+export type AskFeatures = Record<AskFeatureId, boolean>;
+
+export function askFeatures(): AskFeatures {
+  return Object.fromEntries(
+    ASK_FEATURE_IDS.map((id) => [id, process.env[`ASK_VCFO_FEATURE_${id}`] === 'true']),
+  ) as AskFeatures;
+}
+
 export function askConfig(): AskConfig {
   const provider = process.env.ASK_VCFO_LLM_PROVIDER === 'bedrock' ? 'bedrock' : 'anthropic';
   const effort = process.env.ASK_VCFO_ANSWER_EFFORT;

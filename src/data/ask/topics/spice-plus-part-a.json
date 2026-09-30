@@ -4,9 +4,26 @@
   "question": "What is SPICe+ Part A?",
   "category": "incorporation",
   "audience": "both",
-  "appliesTo": { "legalForms": ["company"], "residency": [] },
-  "alternateFor": [{ "legalForms": ["llp"], "slug": "fillip-llp-incorporation" }],
-  "stepIds": ["pre-1", "pre-4", "pre-5"],
+  "appliesTo": {
+    "legalForms": [
+      "company"
+    ],
+    "residency": []
+  },
+  "alternateFor": [
+    {
+      "legalForms": [
+        "llp"
+      ],
+      "slug": "fillip-llp-incorporation"
+    }
+  ],
+  "stepIds": [
+    "pre-1",
+    "pre-4",
+    "pre-5"
+  ],
+  "effortLabel": "About 15 minutes",
   "body": {
     "normal": "SPICe+ is the single online form the Ministry of Corporate Affairs uses to incorporate a company in India. Part A reserves the company's name: we propose up to two names and the Registrar checks they are unique and allowed.",
     "simple": "Part A is where we ask the government to approve your company's name.",
@@ -16,16 +33,56 @@
   "visual": {
     "type": "flow",
     "stages": [
-      { "label": "Part A", "sub": "Name approval", "state": "here", "stepIds": ["pre-1", "pre-2", "pre-3", "pre-4", "pre-5"] },
-      { "label": "Part B", "sub": "Incorporation", "state": "next", "stepIds": ["pre-13", "pre-14", "pre-15", "pre-16", "pre-7", "pre-9", "pre-10", "pre-11", "pre-12"] },
-      { "label": "Incorporated", "sub": "Certificate issued", "state": "next" }
+      {
+        "label": "Part A",
+        "sub": "Name approval",
+        "state": "here",
+        "stepIds": [
+          "pre-1",
+          "pre-2",
+          "pre-3",
+          "pre-4",
+          "pre-5"
+        ]
+      },
+      {
+        "label": "Part B",
+        "sub": "Incorporation",
+        "state": "next",
+        "stepIds": [
+          "pre-13",
+          "pre-14",
+          "pre-15",
+          "pre-16",
+          "pre-7",
+          "pre-9",
+          "pre-10",
+          "pre-11",
+          "pre-12"
+        ]
+      },
+      {
+        "label": "Incorporated",
+        "sub": "Certificate issued",
+        "state": "next"
+      }
     ]
   },
   "citations": [
-    { "id": "mca-spice-plus", "label": "MCA — SPICe+ (INC-32) incorporation form", "url": "https://www.mca.gov.in" },
-    { "id": "companies-rules-2014-r9", "label": "Companies (Incorporation) Rules 2014, rule 9 (name reservation)" }
+    {
+      "id": "mca-spice-plus",
+      "label": "MCA — SPICe+ (INC-32) incorporation form",
+      "url": "https://www.mca.gov.in"
+    },
+    {
+      "id": "companies-rules-2014-r9",
+      "label": "Companies (Incorporation) Rules 2014, rule 9 (name reservation)"
+    }
   ],
-  "related": ["after-incorporation", "director-kyc"],
+  "related": [
+    "after-incorporation",
+    "director-kyc"
+  ],
   "status": "draft",
   "version": 1
 }

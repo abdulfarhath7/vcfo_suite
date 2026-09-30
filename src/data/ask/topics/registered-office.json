@@ -4,8 +4,14 @@
   "question": "What is a registered office?",
   "category": "your-project",
   "audience": "client",
-  "appliesTo": { "legalForms": [], "residency": [] },
-  "stepIds": ["pre-14"],
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "stepIds": [
+    "pre-14"
+  ],
+  "effortLabel": "About 10 minutes",
   "body": {
     "normal": "The registered office is the company's official address in India, where government notices are sent. It needs proof of address, such as a recent utility bill, and the owner's permission if the premises are not owned.",
     "simple": "It is the company's official address in India for government letters.",
@@ -13,7 +19,10 @@
     "why": "The address sets the state your company is registered in and the documents you gather now are attached to the incorporation filing."
   },
   "citations": [
-    { "id": "companies-act-2013-s12", "label": "Companies Act 2013, section 12 (registered office)" }
+    {
+      "id": "companies-act-2013-s12",
+      "label": "Companies Act 2013, section 12 (registered office)"
+    }
   ],
   "related": [],
   "status": "draft",

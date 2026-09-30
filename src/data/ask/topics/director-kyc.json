@@ -4,8 +4,16 @@
   "question": "What is Director KYC?",
   "category": "your-project",
   "audience": "client",
-  "appliesTo": { "legalForms": ["company"], "residency": [] },
-  "stepIds": ["pre-15"],
+  "appliesTo": {
+    "legalForms": [
+      "company"
+    ],
+    "residency": []
+  },
+  "stepIds": [
+    "pre-15"
+  ],
+  "effortLabel": "About 15 minutes per director",
   "body": {
     "normal": "Every proposed director is identified to the Ministry of Corporate Affairs with identity and address proof and a photograph. New directors are given a Director Identification Number (DIN) through the incorporation form.",
     "simple": "Each director shares ID and address proof so the government can identify them.",
@@ -24,9 +32,14 @@
     ]
   },
   "citations": [
-    { "id": "companies-rules-2014-dir", "label": "Companies (Appointment and Qualification of Directors) Rules 2014" }
+    {
+      "id": "companies-rules-2014-dir",
+      "label": "Companies (Appointment and Qualification of Directors) Rules 2014"
+    }
   ],
-  "related": ["spice-plus-part-a"],
+  "related": [
+    "spice-plus-part-a"
+  ],
   "status": "draft",
   "version": 1
 }

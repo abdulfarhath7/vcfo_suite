@@ -4,8 +4,16 @@
   "question": "What is authorised and paid-up capital?",
   "category": "your-project",
   "audience": "client",
-  "appliesTo": { "legalForms": ["company"], "residency": [] },
-  "stepIds": ["pre-13"],
+  "appliesTo": {
+    "legalForms": [
+      "company"
+    ],
+    "residency": []
+  },
+  "stepIds": [
+    "pre-13"
+  ],
+  "effortLabel": "About 5 minutes",
   "body": {
     "normal": "Authorised capital is the most share capital the company may issue under its MOA. Paid-up capital is the part the subscribers actually pay for their shares at incorporation.",
     "simple": "Authorised capital is the upper limit; paid-up capital is the money actually put in for shares.",
@@ -13,10 +21,18 @@
     "why": "These numbers go into the MOA, the subscription sheet and the share certificates, and they decide how much money has to reach the company's bank account."
   },
   "citations": [
-    { "id": "companies-act-2013-s2-8", "label": "Companies Act 2013, section 2(8) (authorised capital)" },
-    { "id": "companies-act-2013-s2-64", "label": "Companies Act 2013, section 2(64) (paid-up capital)" }
+    {
+      "id": "companies-act-2013-s2-8",
+      "label": "Companies Act 2013, section 2(8) (authorised capital)"
+    },
+    {
+      "id": "companies-act-2013-s2-64",
+      "label": "Companies Act 2013, section 2(64) (paid-up capital)"
+    }
   ],
-  "related": ["after-incorporation"],
+  "related": [
+    "after-incorporation"
+  ],
   "status": "draft",
   "version": 1
 }

@@ -4,6 +4,7 @@ import type { ProjectSnapshot } from '@/data/ask/schema';
 import { useAskSuggestions } from '@/hooks/ask/use-ask-suggestions';
 import { cn } from '@/lib/utils';
 import { useAskOptional } from './ask-context';
+import { AskNudgeCard } from './AskNudgeCard';
 
 function ProjectCard({ snapshot }: { snapshot: ProjectSnapshot }) {
   return (
@@ -38,6 +39,7 @@ export function AskHome({ compact = false }: { compact?: boolean }) {
           <p className="text-[12.5px] text-muted-foreground">Pick a question or type your own.</p>
         </div>
       )}
+      {!compact && <AskNudgeCard />}
       {snapshot && !compact && <ProjectCard snapshot={snapshot} />}
       {query.isError && (
         <p role="alert" className="text-[12.5px] text-danger-text">
