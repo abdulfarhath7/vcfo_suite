@@ -148,6 +148,13 @@
       "when": 1790679800406,
       "tag": "0020_boring_scrambler",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790771100401,
+      "tag": "0021_lonely_sunfire",
+      "breakpoints": true
     }
   ]
 }

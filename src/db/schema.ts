@@ -11,8 +11,10 @@ import {
   bigint,
   index,
   uniqueIndex,
+  customType,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * VCFO Suite database schema (Drizzle).
@@ -885,5 +887,134 @@ export const engagementChangeRequests = pgTable(
     engIdx: index('engagement_change_requests_engagement_idx').on(t.engagementId),
     statusIdx: index('engagement_change_requests_status_idx').on(t.status),
     requesterIdx: index('engagement_change_requests_requester_idx').on(t.requestedBy),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// VCFO Assist — in-app assistant (VCFO-ASSIST-CONTEXT.md §4).
+// Access is repository-scoped like everything else: conversations and library
+// items are private to their profile; knowledge sources are admin / super only.
+// ---------------------------------------------------------------------------
+
+/** Postgres full-text vector; drizzle has no built-in column type for it. */
+const tsvector = customType<{ data: string }>({
+  dataType() {
+    return 'tsvector';
+  },
+});
+
+export const assistConversations = pgTable(
+  'assist_conversations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    /** Role at creation — a later role change does not rewrite history. */
+    role: text('role').notNull(),
+    shell: text('shell').notNull(), // client|admin|super
+    engagementId: uuid('engagement_id').references(() => engagements.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    lastMessageAt: timestamp('last_message_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    profileIdx: index('assist_conversations_profile_idx').on(t.profileId, t.lastMessageAt),
+  }),
+);
+
+export const assistMessages = pgTable(
+  'assist_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => assistConversations.id, { onDelete: 'cascade' }),
+    sender: text('sender').notNull(), // user|assistant
+    text: text('text').notNull(),
+    answer: jsonb('answer'),
+    origin: text('origin'), // reviewed|generated|deterministic|refusal
+    guard: jsonb('guard'),
+    retrievedChunkIds: uuid('retrieved_chunk_ids').array().notNull().default([]),
+    /** Tool names + arguments only — never the rows a tool returned. */
+    toolCalls: jsonb('tool_calls').notNull().default([]),
+    model: text('model'),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    cacheReadTokens: integer('cache_read_tokens'),
+    latencyMs: integer('latency_ms'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    conversationIdx: index('assist_messages_conversation_idx').on(t.conversationId, t.createdAt),
+  }),
+);
+
+export const clientLibraryItems = pgTable(
+  'client_library_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => engagements.id, { onDelete: 'cascade' }),
+    topicSlug: text('topic_slug'),
+    messageId: uuid('message_id').references(() => assistMessages.id, { onDelete: 'set null' }),
+    title: text('title').notNull(),
+    category: text('category').notNull(),
+    snapshot: jsonb('snapshot').notNull(),
+    sourceVersion: integer('source_version'),
+    /** Column exists for the later team-sharing toggle; v1 never sets it. */
+    sharedWithTeam: boolean('shared_with_team').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    profileIdx: index('client_library_items_profile_idx').on(t.profileId, t.createdAt),
+    /** Saving the same topic twice updates the existing item. */
+    profileTopicUq: uniqueIndex('client_library_items_profile_topic_uq')
+      .on(t.profileId, t.engagementId, t.topicSlug)
+      .where(sql`${t.topicSlug} is not null`),
+  }),
+);
+
+export const assistDocuments = pgTable('assist_documents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  sourceType: text('source_type').notNull(), // govt|firm_pdf|firm_note
+  sourceUrl: text('source_url'),
+  s3Key: text('s3_key'),
+  effectiveFrom: date('effective_from'),
+  lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
+  ownerProfileId: uuid('owner_profile_id').references(() => profiles.id, { onDelete: 'set null' }),
+  status: text('status').notNull().default('processing'), // processing|ready|failed|archived
+  audience: text('audience').notNull().default('staff'), // client|staff|both
+  /** Last ingestion failure, shown on the sources page with a retry. */
+  error: text('error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * No `embedding` column in v1: local Postgres has no pgvector (Phase 0), and
+ * retrieval is full-text only (OD2). Adding a nullable vector later is additive.
+ */
+export const assistChunks = pgTable(
+  'assist_chunks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => assistDocuments.id, { onDelete: 'cascade' }),
+    ordinal: integer('ordinal').notNull(),
+    text: text('text').notNull(),
+    contextPrefix: text('context_prefix'),
+    tsv: tsvector('tsv').generatedAlwaysAs(
+      sql`to_tsvector('english', coalesce(context_prefix, '') || ' ' || text)`,
+    ),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    documentOrdinalUq: uniqueIndex('assist_chunks_document_ordinal_uq').on(t.documentId, t.ordinal),
+    tsvIdx: index('assist_chunks_tsv_idx').using('gin', t.tsv),
   }),
 );
