@@ -1,0 +1,34 @@
+{
+  "slug": "after-incorporation",
+  "title": "After incorporation",
+  "question": "What happens after incorporation?",
+  "category": "incorporation",
+  "audience": "both",
+  "appliesTo": { "legalForms": ["company"], "residency": [] },
+  "stepIds": ["post-3", "post-4", "post-5", "post-6", "post-2"],
+  "body": {
+    "normal": "Once the Certificate of Incorporation is issued, the company opens a bank account, receives its share capital, issues share certificates and files a few early forms, such as INC-20A to declare commencement of business and ADT-1 for its first auditor.",
+    "simple": "After the company exists, we open its bank account, bring in the money for shares and file a few starting forms.",
+    "detail": "The first months after incorporation follow a set order. The board holds its first meeting and appoints the first auditor within 30 days. The company opens a bank account and the subscribers pay for their shares. Share certificates (SH-1) are issued within 60 days. INC-20A, the declaration of commencement of business, is filed within 180 days and confirms the share money was received. Where a foreign parent paid for the shares, FC-GPR is reported to the RBI within 30 days of the shares being issued.",
+    "why": "Several of these have fixed legal deadlines counted from the incorporation date, and the bank account and share money you arrange drive most of them."
+  },
+  "visual": {
+    "type": "steps",
+    "items": [
+      { "label": "Open the company bank account" },
+      { "label": "Receive share capital" },
+      { "label": "Issue share certificates", "form": "SH-1" },
+      { "label": "Declare commencement of business", "form": "INC-20A" },
+      { "label": "Appoint the first auditor", "form": "ADT-1" },
+      { "label": "Report foreign investment (foreign parent)", "form": "FC-GPR" }
+    ]
+  },
+  "citations": [
+    { "id": "companies-act-2013-s10a", "label": "Companies Act 2013, section 10A (INC-20A)" },
+    { "id": "companies-act-2013-s56", "label": "Companies Act 2013, section 56(4) (share certificates)" },
+    { "id": "companies-act-2013-s139-6", "label": "Companies Act 2013, section 139(6) (first auditor)" }
+  ],
+  "related": ["fc-gpr", "gst-basics"],
+  "status": "draft",
+  "version": 1
+}

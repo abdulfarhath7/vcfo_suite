@@ -1,0 +1,22 @@
+{
+  "slug": "capital-structure",
+  "title": "Capital structure",
+  "question": "What is authorised and paid-up capital?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": { "legalForms": ["company"], "residency": [] },
+  "stepIds": ["pre-13"],
+  "body": {
+    "normal": "Authorised capital is the most share capital the company may issue under its MOA. Paid-up capital is the part the subscribers actually pay for their shares at incorporation.",
+    "simple": "Authorised capital is the upper limit; paid-up capital is the money actually put in for shares.",
+    "detail": "The capital clause of the Memorandum of Association states the authorised capital and how it divides into shares of a face value, for example 10,000 shares of ₹10 each. The subscribers take some or all of those shares at incorporation and pay for them after the bank account opens; that amount is the paid-up capital. Authorised capital can be increased later, but government fees at incorporation depend on it.",
+    "why": "These numbers go into the MOA, the subscription sheet and the share certificates, and they decide how much money has to reach the company's bank account."
+  },
+  "citations": [
+    { "id": "companies-act-2013-s2-8", "label": "Companies Act 2013, section 2(8) (authorised capital)" },
+    { "id": "companies-act-2013-s2-64", "label": "Companies Act 2013, section 2(64) (paid-up capital)" }
+  ],
+  "related": ["after-incorporation"],
+  "status": "draft",
+  "version": 1
+}

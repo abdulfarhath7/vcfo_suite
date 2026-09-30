@@ -1,0 +1,31 @@
+{
+  "slug": "fc-gpr",
+  "title": "FC-GPR",
+  "question": "What is FC-GPR?",
+  "category": "foreign-investment",
+  "audience": "both",
+  "appliesTo": { "legalForms": [], "residency": ["foreign"] },
+  "stepIds": ["post-7"],
+  "body": {
+    "normal": "FC-GPR is the report an Indian company files with the Reserve Bank of India after it issues shares to a foreign investor. It is filed on the RBI's FIRMS portal within 30 days of issuing the shares.",
+    "simple": "FC-GPR tells the Reserve Bank of India that a foreign company bought shares in your Indian company.",
+    "detail": "Under FEMA, foreign investment into an Indian company must be reported to the RBI. When the company issues shares to a person resident outside India, it files Form FC-GPR through the FIRMS portal within 30 days of the allotment. The filing includes the foreign inward remittance details, the bank's KYC report on the investor, a valuation certificate and a declaration from the company secretary. Late filing attracts a late submission fee.",
+    "why": "Your parent company's share money is foreign investment, so this report keeps the investment on record with the RBI and avoids penalties."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      { "k": "Filed with", "v": "Reserve Bank of India, FIRMS portal" },
+      { "k": "When", "v": "Within 30 days of issuing shares" },
+      { "k": "Needs", "v": "Remittance details, KYC report, valuation certificate" },
+      { "k": "Applies to", "v": "Shares issued to a foreign investor" }
+    ]
+  },
+  "citations": [
+    { "id": "fema-ndi-rules-2019", "label": "FEMA (Non-debt Instruments) Rules 2019" },
+    { "id": "rbi-md-fdi-reporting", "label": "RBI Master Direction — Reporting under FEMA", "url": "https://www.rbi.org.in" }
+  ],
+  "related": ["after-incorporation"],
+  "status": "draft",
+  "version": 1
+}

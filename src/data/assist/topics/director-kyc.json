@@ -1,0 +1,32 @@
+{
+  "slug": "director-kyc",
+  "title": "Director KYC",
+  "question": "What is Director KYC?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": { "legalForms": ["company"], "residency": [] },
+  "stepIds": ["pre-15"],
+  "body": {
+    "normal": "Every proposed director is identified to the Ministry of Corporate Affairs with identity and address proof and a photograph. New directors are given a Director Identification Number (DIN) through the incorporation form.",
+    "simple": "Each director shares ID and address proof so the government can identify them.",
+    "detail": "For each proposed director we collect identity proof (PAN for Indian nationals, passport for foreign nationals), address proof and a photograph. Documents of foreign directors usually need to be notarised or apostilled in their home country. Directors without a DIN get one through SPICe+ Part B. Every director also needs a Digital Signature Certificate (DSC) to sign the forms. After incorporation, directors confirm their KYC every year.",
+    "why": "The incorporation form cannot be filed until every director is identified, so missing documents here hold up the whole filing."
+  },
+  "visual": {
+    "type": "nextStep",
+    "stepId": "pre-15",
+    "title": "Proposed Directors",
+    "items": [
+      "Identity proof (PAN, or passport for foreign nationals)",
+      "Address proof",
+      "Recent photograph",
+      "Existing DIN, if the director already has one"
+    ]
+  },
+  "citations": [
+    { "id": "companies-rules-2014-dir", "label": "Companies (Appointment and Qualification of Directors) Rules 2014" }
+  ],
+  "related": ["spice-plus-part-a"],
+  "status": "draft",
+  "version": 1
+}

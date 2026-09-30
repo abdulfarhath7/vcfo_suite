@@ -1,0 +1,21 @@
+{
+  "slug": "spice-plus-confirmation",
+  "title": "SPICe+ confirmation",
+  "question": "What am I confirming before SPICe+ is filed?",
+  "category": "your-project",
+  "audience": "client",
+  "appliesTo": { "legalForms": ["company"], "residency": [] },
+  "stepIds": ["pre-9"],
+  "body": {
+    "normal": "Before your project lead files SPICe+ Part B, you check the prepared details and documents and confirm they are correct. Once filed, changes mean a resubmission, which adds time.",
+    "simple": "You check everything is right before the incorporation form is sent.",
+    "detail": "SPICe+ Part B brings together the capital, registered office, directors, subscribers and the signed documents. Your project lead prepares the form and shares it for review. Check names, spellings, share numbers and addresses against your records. When you confirm, the form is signed with the directors' digital signatures and filed with the Registrar.",
+    "why": "Mistakes caught now are quick to fix; after filing they come back as Registrar remarks and delay the certificate."
+  },
+  "citations": [
+    { "id": "mca-spice-plus", "label": "MCA — SPICe+ (INC-32) incorporation form", "url": "https://www.mca.gov.in" }
+  ],
+  "related": ["spice-plus-part-a"],
+  "status": "draft",
+  "version": 1
+}

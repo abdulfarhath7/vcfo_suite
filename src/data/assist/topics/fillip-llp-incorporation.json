@@ -1,0 +1,29 @@
+{
+  "slug": "fillip-llp-incorporation",
+  "title": "LLP incorporation (FiLLiP)",
+  "question": "How is an LLP incorporated?",
+  "category": "incorporation",
+  "audience": "both",
+  "appliesTo": { "legalForms": ["llp"], "residency": [] },
+  "body": {
+    "normal": "A Limited Liability Partnership is incorporated through FiLLiP, the Ministry of Corporate Affairs form for LLPs. The name is reserved first (through RUN-LLP or inside FiLLiP), then FiLLiP is filed with the partners' details and registered office.",
+    "simple": "An LLP is set up with one government form called FiLLiP, after its name is approved.",
+    "detail": "LLP incorporation has three main moves. First the name is reserved, either with RUN-LLP or directly inside FiLLiP. Then FiLLiP is filed with the designated partners, their identity documents, the registered office and each partner's contribution. Once the Registrar approves it, a Certificate of Incorporation with an LLPIN is issued. The LLP agreement must then be filed in Form 3 within 30 days of incorporation.",
+    "why": "An LLP follows a different path from a company, so the forms and timelines you see for your project differ from SPICe+."
+  },
+  "visual": {
+    "type": "flow",
+    "stages": [
+      { "label": "Name", "sub": "RUN-LLP or in FiLLiP", "state": "here" },
+      { "label": "FiLLiP", "sub": "Incorporation", "state": "next" },
+      { "label": "Form 3", "sub": "LLP agreement", "state": "next" }
+    ]
+  },
+  "citations": [
+    { "id": "llp-act-2008", "label": "Limited Liability Partnership Act 2008" },
+    { "id": "llp-rules-2009-r23", "label": "LLP Rules 2009, rule 23 (Form 3 within 30 days)" }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

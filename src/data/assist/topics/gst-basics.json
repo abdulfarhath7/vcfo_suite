@@ -1,0 +1,31 @@
+{
+  "slug": "gst-basics",
+  "title": "GST basics",
+  "question": "What is GST, and do we need it?",
+  "category": "tax",
+  "audience": "both",
+  "appliesTo": { "legalForms": [], "residency": [] },
+  "stepIds": ["reg-4"],
+  "body": {
+    "normal": "GST (Goods and Services Tax) is India's tax on the supply of goods and services. A business registers when its turnover crosses the threshold or when the law makes registration compulsory, for example for inter-state supplies of goods or exports under LUT.",
+    "simple": "GST is India's sales tax. Some businesses must register for it; your project lead will confirm if yours does.",
+    "detail": "GST replaced most indirect taxes in 2017. Registration gives the business a GSTIN, lets it charge GST on sales and claim credit for GST paid on purchases. Registration is compulsory once aggregate turnover crosses the threshold (generally ₹40 lakh for goods and ₹20 lakh for services, lower in some states) and in specific cases regardless of turnover, such as inter-state supply of goods or supplying through e-commerce operators. Exporters usually also file a Letter of Undertaking (LUT) to export without paying tax upfront. Registered businesses file regular returns such as GSTR-1 and GSTR-3B.",
+    "why": "Whether your company must register depends on what it sells, where and how much. That is a decision your firm confirms for you."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      { "k": "What it is", "v": "Tax on supply of goods and services" },
+      { "k": "Registration", "v": "Above turnover threshold, or compulsory in listed cases" },
+      { "k": "Identifier", "v": "GSTIN (15 characters)" },
+      { "k": "Regular returns", "v": "GSTR-1 and GSTR-3B" }
+    ]
+  },
+  "citations": [
+    { "id": "cgst-act-2017-s22-24", "label": "CGST Act 2017, sections 22–24 (registration)" },
+    { "id": "gst-portal", "label": "GST portal", "url": "https://www.gst.gov.in" }
+  ],
+  "related": ["after-incorporation"],
+  "status": "draft",
+  "version": 1
+}
