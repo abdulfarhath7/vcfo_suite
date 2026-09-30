@@ -145,10 +145,13 @@ locals {
     } : {},
     # Ask VCFO (key comes via runtime_environment_secrets). Model ids and
     # limits use the app defaults (.env.example); override here if needed.
-    var.ask_vcfo_enabled ? {
-      ASK_VCFO_ENABLED      = "true"
-      ASK_VCFO_LLM_PROVIDER = "anthropic"
-    } : {},
+    var.ask_vcfo_enabled ? merge(
+      {
+        ASK_VCFO_ENABLED      = "true"
+        ASK_VCFO_LLM_PROVIDER = "anthropic"
+      },
+      { for id in var.ask_vcfo_features : "ASK_VCFO_FEATURE_${id}" => "true" },
+    ) : {},
   )
 }
 

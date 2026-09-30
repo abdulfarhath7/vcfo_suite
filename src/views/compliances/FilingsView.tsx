@@ -1,5 +1,6 @@
 'use client';
 
+import { GlossaryText } from '@/components/ask/GlossaryTerm';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -354,8 +355,8 @@ function registerColumns(
       header: 'Particular',
       width: 'minmax(0,1.5fr)',
       render: (row) => (
-        <span className="flex min-w-0 items-center gap-1">
-          <span className="truncate text-ink">{row.particular}</span>
+        <span className="flex min-w-0 items-center gap-1" data-ask-focus={row.id}>
+          <GlossaryText text={row.particular} className="truncate text-ink" />
           <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
         </span>
       ),
@@ -474,7 +475,7 @@ function RegisterTable({
         <div className="flex min-w-0 items-start gap-3" data-ask-focus={row.id}>
           <div className="min-w-0 flex-1">
             <p className="flex min-w-0 items-center gap-1 text-[13px] font-semibold text-ink">
-              <span className="truncate">{row.particular}</span>
+              <GlossaryText text={row.particular} className="truncate" />
               <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
             </p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">

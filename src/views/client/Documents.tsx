@@ -75,7 +75,7 @@ export default function ClientDocuments() {
                   <Surface className="divide-y divide-border overflow-hidden">
                     {milestone.sections.map((section) =>
                       section.docs.map((doc) => (
-                        <div key={doc.id} className="flex min-h-11 items-center gap-3 border-l-[3px] border-l-phase-filing px-4 py-3.5 transition-colors hover:bg-primary-light/40">
+                        <div key={doc.id} data-ask-focus={doc.id} className="flex min-h-11 items-center gap-3 border-l-[3px] border-l-phase-filing px-4 py-3.5 transition-colors hover:bg-primary-light/40">
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-phase-filing-soft">
                             <FileCheck2 className="h-4 w-4 shrink-0 text-phase-filing-text" />
                           </div>

@@ -103,6 +103,12 @@ Terraform: you create the secret by hand, Terraform only looks it up by name.
 5. `terraform apply`. App Runner redeploys; "Ask VCFO" appears for client,
    admin and super admin.
 
+Optional features (all off by default): add e.g.
+`ask_vcfo_features = ["C1", "C4"]` to `terraform.tfvars`. Ids: C1 daily nudge,
+C2 explain a document, C3 field help, C4 monthly status brief, C5 "what if I
+miss it", A1 question gaps (shows clients a notice that the firm can see their
+questions).
+
 Rotate the key: put a new value on the same secret, then redeploy the service
 (App Runner reads secrets at deploy time). Turn off: `ask_vcfo_enabled = false`
 and apply. Knowledge-source indexing runs in-process until Inngest cloud keys

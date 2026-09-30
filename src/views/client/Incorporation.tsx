@@ -1,6 +1,8 @@
 "use client";
 
 import { StatusBriefButton } from '@/components/ask/StatusBriefButton';
+import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
+import { useAskOptional } from '@/components/ask/ask-context';
 import { useCallback, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2 } from "lucide-react";
@@ -113,6 +115,18 @@ export default function ClientIncorporation() {
    * A phase row opens that phase's live step, not a list of its steps — the
    * same jump `internPhaseHref` makes on the lead's project page.
    */
+  const ask = useAskOptional();
+  const askActive = Boolean(ask?.enabled && ask.shell === 'client' && !ask.preview);
+  /** "What's this?" explains the step a phase is at — and, if locked, what unlocks it. */
+  const phaseHelp = useCallback(
+    (phaseId: string) => {
+      const phase = phases.find((entry) => entry.id === phaseId);
+      const item = phase ? internOverviewCurrentItemInPhase(phase.items, gates) : null;
+      return item ? <WhatsThisButton kind="step" refId={item.id} label={item.title} /> : null;
+    },
+    [phases, gates],
+  );
+
   const phaseHref = useCallback(
     (phaseId: string): string | null => {
       const phase = phases.find((entry) => entry.id === phaseId);
@@ -206,6 +220,8 @@ export default function ClientIncorporation() {
           gates={gates}
           hrefForPhase={phaseHref}
           metaForPhase={phaseWindowMeta(engagement.schedule)}
+          // Only when Ask VCFO is on for this client: the slot reserves row space.
+          trailingForPhase={askActive ? phaseHelp : undefined}
         />
       </div>
     </PageTransition>

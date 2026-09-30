@@ -80,6 +80,16 @@ variable "ask_vcfo_enabled" {
   type        = bool
   default     = false
 }
+variable "ask_vcfo_features" {
+  description = "Ask VCFO proposed features to turn on (any of C1, C2, C3, C4, C5, A1). Each sets ASK_VCFO_FEATURE_<ID>=true; only read when ask_vcfo_enabled is true."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for id in var.ask_vcfo_features : contains(["C1", "C2", "C3", "C4", "C5", "A1"], id)])
+    error_message = "ask_vcfo_features entries must be one of C1, C2, C3, C4, C5, A1."
+  }
+}
 variable "ask_vcfo_anthropic_secret_name" {
   description = "Name of the hand-created Secrets Manager secret holding the Anthropic API key (plain string value)."
   type        = string

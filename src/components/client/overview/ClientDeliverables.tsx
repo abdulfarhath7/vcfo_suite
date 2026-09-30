@@ -60,7 +60,7 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
                     transition={{ delay: 0.04 * index, duration: 0.24, ease }}
                     className="min-w-0"
                   >
-                    <div className="client-doc-tile h-full">
+                    <div className="client-doc-tile h-full" data-ask-focus={doc.id}>
                       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[oklch(var(--phase-filing-soft))] text-[oklch(var(--phase-filing-text))]">
                         <Icon className="h-4 w-4" aria-hidden />
                       </span>

@@ -61,7 +61,7 @@ export async function createAskHandoff(
   const description = [
     question,
     input.context?.trim() ? `\n— Ask VCFO context —\n${input.context.trim().slice(0, 2000)}` : '',
-    input.conversationId ? `\nAsk conversation: ${input.conversationId}` : '',
+    input.conversationId ? `\nAsk VCFO conversation: ${input.conversationId}` : '',
   ].join('');
 
   const title = `${TITLE_PREFIX}: ${question.replace(/\s+/g, ' ').slice(0, 80)}${question.length > 80 ? '…' : ''}`;
