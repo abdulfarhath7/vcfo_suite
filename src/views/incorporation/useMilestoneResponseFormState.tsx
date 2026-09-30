@@ -1,5 +1,6 @@
 'use client';
 
+import { FieldHelpButton } from '@/components/ask/FieldHelpButton';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { GLOSSARY } from '@/data/ask/glossary';
 import { firstGlossaryTerm } from '@/lib/ask/glossary-match';
@@ -1317,6 +1318,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               {field.label}
               {field.required && <span className="text-danger ml-0.5" aria-hidden>*</span>}
             </Label>
+            <FieldHelpButton stepId={item.id} fieldId={field.id} label={field.label} />
             {(() => {
               // Help icon only where Ask VCFO has something to say about the field.
               const term = firstGlossaryTerm(field.label, GLOSSARY);
