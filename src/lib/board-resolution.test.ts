@@ -116,9 +116,54 @@ describe('prepared boardResolution.docx template', () => {
       [...documentXml.matchAll(/\{([A-Z][A-Z0-9_]*)\}/g)].map((match) => match[1]),
     );
 
+    // Kept for older callers and the text preview; the firm's 2026-09 Word file
+    // prints the names via PROPOSED_NAMES and the directors via the DIRECTORS
+    // loop, and has no parent address under "For and on behalf of".
+    const notPrinted = new Set([
+      'PROPOSED_NAME_1',
+      'INDIAN_DIRECTOR_LINE',
+      'SECOND_DIRECTOR_LINE',
+      'DIRECTOR_NAMES',
+      'PARENT_ENTITY_ADDRESS',
+    ]);
     for (const key of BOARD_RESOLUTION_MERGE_FIELD_KEYS) {
+      if (notPrinted.has(key)) continue;
       expect(found.has(key), `missing {${key}} in prepared template`).toBe(true);
     }
+    expect(documentXml).toContain('{#DIRECTORS}');
+    expect(documentXml).toContain('{NAME}');
+    expect(documentXml).toContain('{/DIRECTORS}');
+  });
+
+  it('renders one director bullet per Part A director and every proposed name', () => {
+    if (!fs.existsSync(templatePath)) return;
+    const pre1 = {
+      proposedName1: 'Alpha India Private Limited',
+      proposedName2: 'Beta India Private Limited',
+      directorCount: '3',
+      director1Name: 'Asha Rao',
+      director1Gender: 'female',
+      director1IndiaResident: 'yes',
+      director2Name: 'Ben Carter',
+      director2Gender: 'male',
+      director2IndiaResident: 'no',
+      director3Name: 'Chen Li',
+      director3IndiaResident: 'no',
+    };
+    const fields = buildBoardResolutionMergeFields({ pre1 });
+    expect(fields.PROPOSED_NAMES).toBe('Alpha India Private Limited and Beta India Private Limited');
+    expect(fields.DIRECTOR_NAMES.split('\n')).toHaveLength(3);
+
+    const zip = new PizZip(renderBoardResolutionDocxBuffer({ pre1 }));
+    const xml = zip.file('word/document.xml')?.asText() ?? '';
+    const paragraphs = [...xml.matchAll(/<w:p[ >][\s\S]*?<\/w:p>/g)].map((m) =>
+      [...m[0].matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((t) => t[1]).join(''),
+    );
+    for (const line of fields.DIRECTOR_NAMES.split('\n')) {
+      expect(paragraphs.filter((p) => p.trim() === line)).toHaveLength(1);
+    }
+    expect(xml).toContain('Alpha India Private Limited and Beta India Private Limited');
+    expect(xml).not.toMatch(/\{[#/]?[A-Z_]+\}/);
   });
 
   it('has a single NIC_CODES tag without leftover sample NIC literals', () => {

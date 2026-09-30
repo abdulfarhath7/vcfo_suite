@@ -125,9 +125,9 @@ function boardResolutionFieldsToDocxData(
 
   fields: BoardResolutionMergeFields,
 
-): Record<string, string> {
+): Record<string, unknown> {
 
-  const data: Record<string, string> = {
+  const data: Record<string, unknown> = {
 
     PARENT_ENTITY_NAME: fields.PARENT_ENTITY_NAME ?? '',
 
@@ -141,6 +141,8 @@ function boardResolutionFieldsToDocxData(
 
     PROPOSED_NAME_1: fields.PROPOSED_NAME_1 ?? '',
 
+    PROPOSED_NAMES: fields.PROPOSED_NAMES ?? '',
+
     NIC_CODES: fields.NIC_CODES ?? '',
 
     AUTHORISED_CAPITAL: fields.AUTHORISED_CAPITAL ?? '',
@@ -150,6 +152,15 @@ function boardResolutionFieldsToDocxData(
     INDIAN_DIRECTOR_LINE: fields.INDIAN_DIRECTOR_LINE ?? '',
 
     SECOND_DIRECTOR_LINE: fields.SECOND_DIRECTOR_LINE ?? '',
+
+    DIRECTOR_NAMES: fields.DIRECTOR_NAMES ?? '',
+
+    // `{#DIRECTORS}{NAME}{/DIRECTORS}` repeats the bullet paragraph once per director.
+    DIRECTORS: (fields.DIRECTOR_NAMES ?? '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((NAME) => ({ NAME })),
 
     SIGNATORY_NAME: fields.SIGNATORY_NAME ?? '',
 

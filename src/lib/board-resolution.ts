@@ -41,13 +41,17 @@ const BOARD_RESOLUTION_TEMPLATE = `CERTIFIED TRUE COPY OF BOARD RESOLUTION
 
 THE FOLLOWING IS A CERTIFIED TRUE COPY OF THE RESOLUTIONS PASSED BY THE BOARD OF DIRECTORS OF {{PARENT_ENTITY_NAME}} ("THE COMPANY"), SUCH RESOLUTIONS, EFFECTIVE AS OF {{RESOLUTION_EFFECTIVE_DATE}}.
 
-"RESOLVED THAT in accordance with the applicable provisions of the laws of {{PARENT_JURISDICTION}}, the State of {{PARENT_STATE}}, and the governing documents of {{PARENT_ENTITY_NAME}}(hereinafter referred to as the "Company"), consent of the Board of Directors be and is hereby accorded to incorporate a wholly owned subsidiary of the Company in India in the name and style of {{PROPOSED_NAME_1}} or such other name as may be approved by the Registrar of Companies, Ministry of Corporate Affairs, Government of India.
+"RESOLVED THAT in accordance with the applicable provisions of the laws of {{PARENT_JURISDICTION}}, the State of {{PARENT_STATE}}, and the governing documents of {{PARENT_ENTITY_NAME}}(hereinafter referred to as the "Company"), consent of the Board of Directors be and is hereby accorded to incorporate a wholly owned subsidiary of the Company in India in the name and style of {{PROPOSED_NAMES}} or such other name as may be approved by the Registrar of Companies, Ministry of Corporate Affairs, Government of India.
 
 RESOLVED FURTHER THAT the proposed Indian subsidiary company shall be incorporated with the following main objects as per the National Industrial Classification (NIC) codes: {{NIC_CODES}}
 
 RESOLVED FURTHER THAT the Authorized Share Capital of the proposed Indian company shall be INR {{AUTHORISED_CAPITAL}} , and the initial Paid-Up Capital shall also be INR {{PAID_UP_CAPITAL}}, to be subscribed in full by {{PARENT_ENTITY_NAME}}
 
-RESOLVED FURTHER THAT. {{INDIAN_DIRECTOR_LINE}} and {{SECOND_DIRECTOR_LINE}}, be and each hereby is authorized to take all necessary steps for the incorporation of the Indian subsidiary including but not limited to
+RESOLVED FURTHER THAT.
+
+{{DIRECTOR_NAMES}}
+
+be and each hereby is authorized to take all necessary steps for the incorporation of the Indian subsidiary including but not limited to
 
 Filing the requisite forms and documents with the Registrar of Companies in India;
 
@@ -66,8 +70,6 @@ RESOLVED FURTHER THAT a copy of this resolution, certified to be true by any Aut
 ##CERTIFIED TRUE COPY##
 
 For and on behalf of {{PARENT_ENTITY_NAME}}
-
-{{PARENT_ENTITY_ADDRESS}}
 
 Authorised Person: {{SIGNATORY_NAME}}
 Designation: {{SIGNATORY_DESIGNATION}}
@@ -94,11 +96,18 @@ export interface BoardResolutionMergeFields {
   PARENT_JURISDICTION: string;
   PARENT_STATE: string;
   PROPOSED_NAME_1: string;
+  /** "Name 1 and Name 2" — every Part A proposed name, in order. */
+  PROPOSED_NAMES: string;
   NIC_CODES: string;
   AUTHORISED_CAPITAL: string;
   PAID_UP_CAPITAL: string;
   INDIAN_DIRECTOR_LINE: string;
   SECOND_DIRECTOR_LINE: string;
+  /**
+   * One line per Part A director ("Mr. A\nMs. B"): the resolution lists each
+   * as its own bullet, so the list grows with the number of directors.
+   */
+  DIRECTOR_NAMES: string;
   SIGNATORY_NAME: string;
   SIGNATORY_DESIGNATION: string;
   CERTIFICATION_DATE: string;
@@ -112,11 +121,13 @@ export const BOARD_RESOLUTION_MERGE_FIELD_KEYS = [
   'PARENT_JURISDICTION',
   'PARENT_STATE',
   'PROPOSED_NAME_1',
+  'PROPOSED_NAMES',
   'NIC_CODES',
   'AUTHORISED_CAPITAL',
   'PAID_UP_CAPITAL',
   'INDIAN_DIRECTOR_LINE',
   'SECOND_DIRECTOR_LINE',
+  'DIRECTOR_NAMES',
   'SIGNATORY_NAME',
   'SIGNATORY_DESIGNATION',
   'CERTIFICATION_DATE',
@@ -259,6 +270,35 @@ export function formatDirectorList(
   return `${rest.join(', ')} and ${last}`;
 }
 
+/** "Mr." / "Ms." from the Part A gender; nothing when it is not recorded. */
+function directorSalutation(gender: string | undefined): string {
+  const g = (gender ?? '').trim().toLowerCase();
+  if (g === 'male') return 'Mr.';
+  if (g === 'female') return 'Ms.';
+  return '';
+}
+
+/** One line per named director, salutation first; a placeholder when none is named yet. */
+export function formatDirectorBulletLines(
+  directors: Array<{ name: string; gender?: string | undefined }>,
+): string {
+  const lines = directors
+    .map((d) => ({ name: stripDirectorSalutation(d.name).trim(), salutation: directorSalutation(d.gender) }))
+    .filter((d) => d.name)
+    .map((d) => (d.salutation ? `${d.salutation} ${d.name}` : d.name));
+  return lines.length > 0 ? lines.join('\n') : '[Director name]';
+}
+
+/** Every Part A proposed name joined with "and"; the first name's placeholder when none. */
+export function formatProposedNames(pre1: ChecklistItemResponses): string {
+  const names = [pre1.proposedName1, pre1.proposedName2]
+    .map((n) => (n ?? '').trim())
+    .filter(Boolean)
+    .filter((n, i, all) => all.findIndex((m) => m.toLowerCase() === n.toLowerCase()) === i);
+  if (names.length === 0) return '[Proposed company name 1]';
+  return names.length === 1 ? names[0]! : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
 /** Strip Mr./Ms./Mrs./Mr./Ms. prefixes if present in stored names. */
 export function stripDirectorSalutation(name: string): string {
   return name.replace(/^(?:Mr\.?|Ms\.?|Mrs\.?|Mr\.\/Ms\.)\s+/i, '').trim();
@@ -356,11 +396,13 @@ export function buildBoardResolutionMergeFields(
     PARENT_JURISDICTION: resolveParentJurisdiction(pre1),
     PARENT_STATE: resolveParentState(pre1, () => DEFAULT_PARENT_STATE),
     PROPOSED_NAME_1: pickString(pre1.proposedName1, '[Proposed company name 1]'),
+    PROPOSED_NAMES: formatProposedNames(pre1),
     NIC_CODES: resolveNicCodesClause(pre1),
     AUTHORISED_CAPITAL: formatInrCapitalClause(authCapRaw),
     PAID_UP_CAPITAL: formatInrCapitalClause(paidCapRaw),
     INDIAN_DIRECTOR_LINE: indianLine,
     SECOND_DIRECTOR_LINE: secondLine,
+    DIRECTOR_NAMES: formatDirectorBulletLines([indian, ...others]),
     SIGNATORY_NAME: pickString(resolveSignatoryDisplayName(pre1), '[Authorised person name]'),
     SIGNATORY_DESIGNATION: pickString(pre1.signatoryDesignation, '[Designation]'),
     CERTIFICATION_DATE: formatCertificationDate(resolutionDate),
@@ -427,7 +469,15 @@ function applyBoardResolutionTemplate(
     ? BOARD_RESOLUTION_TEMPLATE
     : BOARD_RESOLUTION_TEMPLATE.replace(STATE_PHRASE, '');
   for (const [key, value] of Object.entries(fields)) {
-    out = out.replaceAll(`{{${key}}}`, value);
+    // The docx lists each director as a bullet; the text preview mirrors that.
+    const text =
+      key === 'DIRECTOR_NAMES'
+        ? value
+            .split('\n')
+            .map((line) => `• ${line}`)
+            .join('\n')
+        : value;
+    out = out.replaceAll(`{{${key}}}`, text);
   }
   return out;
 }
