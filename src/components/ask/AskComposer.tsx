@@ -20,7 +20,7 @@ export function AskComposer() {
   return (
     <div className="space-y-1.5">
       <form
-        className="flex items-end gap-2 rounded-[var(--radius)] border border-input bg-background p-1.5 focus-within:ring-2 focus-within:ring-ring/40"
+        className="flex items-end gap-2 rounded-[var(--radius)] border border-input bg-panel p-1.5 focus-within:ring-2 focus-within:ring-ring/40"
         onSubmit={(e) => {
           e.preventDefault();
           submit();

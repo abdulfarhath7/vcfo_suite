@@ -88,7 +88,7 @@ export default function ClientLibrary() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search your library"
-              className="min-h-[40px] w-full max-w-xs rounded-[var(--radius-md)] border border-input bg-background px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="min-h-[40px] w-full max-w-xs rounded-[var(--radius-md)] border border-input bg-panel px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             />
             <div role="group" aria-label="Filter by category" className="flex flex-wrap gap-1.5">
               {[null, ...categories].map((c) => (

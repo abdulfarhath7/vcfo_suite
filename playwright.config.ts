@@ -11,10 +11,17 @@ export default defineConfig({
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    // Tests tagged @mobile run only in the phone project.
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, grepInvert: /@mobile/ },
+    { name: "mobile", use: { ...devices["Pixel 7"] }, grep: /@mobile/ },
+  ],
   webServer: {
     command: "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
+    // Ask VCFO is on for browser tests. Suggestions are deterministic, so no
+    // API key is needed; an already-running dev server keeps its own env.
+    env: { ASK_VCFO_ENABLED: "true" },
   },
 });

@@ -44,7 +44,8 @@ export function useAskFocus(): void {
             .map((id) => document.querySelector<HTMLElement>(`[data-ask-focus="${CSS.escape(id)}"]`))
             .find(Boolean)
         : null;
-      if (!el && focus && attempts < 20) {
+      // Up to ~9 s: a cold page loads its project data before the rows exist.
+      if (!el && focus && attempts < 60) {
         // Pages render their rows after data loads; look again shortly.
         attempts += 1;
         window.setTimeout(tryFocus, 150);

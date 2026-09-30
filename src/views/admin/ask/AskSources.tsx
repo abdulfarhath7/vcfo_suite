@@ -44,7 +44,7 @@ async function readJson<T>(res: Response, fallback: string): Promise<T> {
 }
 
 const input =
-  'min-h-[40px] w-full rounded-[var(--radius-md)] border border-input bg-background px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40';
+  'min-h-[40px] w-full rounded-[var(--radius-md)] border border-input bg-panel px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40';
 
 /** Knowledge sources Ask VCFO retrieves from (Phase 7). Admin / super admin only. */
 export default function AskSources() {

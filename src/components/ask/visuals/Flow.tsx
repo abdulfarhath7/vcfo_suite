@@ -11,12 +11,13 @@ export function Flow({ visual }: { visual: FlowVisual }) {
   return (
     <div>
       <p className="sr-only">{flowText(visual)}</p>
-      <ol className="flex items-stretch gap-1.5" aria-hidden>
+      {/* As many stages per row as fit at a readable width: 2 in the panel, 4 in the reader. */}
+      <ol className="grid gap-1.5 [grid-template-columns:repeat(auto-fit,minmax(7.5rem,1fr))]" aria-hidden>
         {visual.stages.map((stage, i) => (
           <li
             key={`${stage.label}-${i}`}
             className={cn(
-              'flex min-w-0 flex-1 flex-col gap-0.5 rounded-[var(--radius-md)] border px-2.5 py-2',
+              'flex min-w-0 flex-col gap-0.5 rounded-[var(--radius-md)] border px-2.5 py-2',
               stage.state === 'here' && 'border-primary bg-primary-light',
               stage.state === 'done' && 'border-border bg-muted',
               stage.state === 'next' && 'border-dashed border-border bg-panel',
@@ -33,8 +34,9 @@ export function Flow({ visual }: { visual: FlowVisual }) {
                 <span className="text-muted-foreground">Next</span>
               )}
             </span>
-            <span className="truncate text-[13px] font-medium text-foreground">{stage.label}</span>
-            {stage.sub && <span className="truncate text-[11.5px] text-muted-foreground">{stage.sub}</span>}
+            {/* Wrap, never truncate: "SPICe+ Part A" and "SPICe+ Part B" must stay distinguishable. */}
+            <span className="break-words text-[12.5px] font-medium leading-snug text-foreground">{stage.label}</span>
+            {stage.sub && <span className="text-[11.5px] text-muted-foreground">{stage.sub}</span>}
           </li>
         ))}
       </ol>

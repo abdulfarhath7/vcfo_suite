@@ -63,7 +63,7 @@ export function AskHandoffForm() {
         onChange={(e) => setText(e.target.value)}
         rows={3}
         maxLength={2000}
-        className="w-full resize-none rounded-[var(--radius-md)] border border-input bg-background px-2.5 py-2 text-[13px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="w-full resize-none rounded-[var(--radius-md)] border border-input bg-panel px-2.5 py-2 text-[13px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       />
       {error && (
         <p role="alert" className="text-[12px] text-danger-text">

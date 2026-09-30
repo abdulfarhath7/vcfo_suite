@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+// `m`, not `motion`: the app runs framer-motion in strict LazyMotion mode.
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { MessageCircleQuestion, RotateCcw, X } from 'lucide-react';
 import { ease } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -112,7 +113,7 @@ export function AskPanel() {
           <Dialog.Content
             id="ask-panel"
             aria-describedby={undefined}
-            className="fixed inset-x-0 bottom-0 z-50 flex h-[85vh] flex-col rounded-t-[calc(var(--radius)+6px)] border-t border-border bg-background shadow-xl focus:outline-none"
+            className="fixed inset-x-0 bottom-0 z-50 flex h-[85vh] flex-col rounded-t-[calc(var(--radius)+6px)] border-t border-border bg-panel shadow-xl focus:outline-none"
           >
             <Dialog.Title className="sr-only">Ask VCFO</Dialog.Title>
             <div className="flex justify-center pt-2" aria-hidden>
@@ -131,7 +132,7 @@ export function AskPanel() {
       {open && (
         <>
           {mode === 'overlay' && (
-            <motion.div
+            <m.div
               key="ask-scrim"
               className="fixed inset-0 z-40 bg-foreground/15"
               initial={{ opacity: 0 }}
@@ -142,13 +143,13 @@ export function AskPanel() {
               aria-hidden
             />
           )}
-          <motion.aside
+          <m.aside
             key="ask-panel"
             id="ask-panel"
             ref={panelRef}
             role="complementary"
             aria-label="Ask VCFO"
-            className={cn('fixed inset-y-0 right-0 z-50 flex flex-col border-l border-border bg-background shadow-xl')}
+            className={cn('fixed inset-y-0 right-0 z-50 flex flex-col border-l border-border bg-panel shadow-xl')}
             style={{ width: ASK_PANEL_WIDTH }}
             initial={reduceMotion ? { opacity: 0 } : { x: ASK_PANEL_WIDTH }}
             animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
@@ -157,7 +158,7 @@ export function AskPanel() {
           >
             <Header onClose={close} />
             <Body compactHome={false} />
-          </motion.aside>
+          </m.aside>
         </>
       )}
     </AnimatePresence>

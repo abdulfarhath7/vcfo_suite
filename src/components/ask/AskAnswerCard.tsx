@@ -45,6 +45,8 @@ export function AskAnswerCard({
   const has = (a: AnswerEnvelope['actions'][number]) => answer.actions.includes(a);
   const canSave = client && has('save') && !ask.preview && (answer.topicSlug || messageId) && ask.engagementId;
   const rowTarget = answer.target?.engagementId;
+  // Go-there links replace the older open-step / open-project buttons.
+  const hasLinks = Boolean(answer.links && answer.links.length > 0);
 
   const changeDepth = (depth: 'simple' | 'detail') => {
     if (answer.topicSlug) void ask.showTopic(answer.topicSlug, depth, depth === 'simple' ? 'Simpler, please' : 'More detail, please');
@@ -147,7 +149,7 @@ export function AskAnswerCard({
             Expand
           </button>
         )}
-        {has('openStep') && answer.target?.stepId && client && !ask.preview && (
+        {has('openStep') && !hasLinks && answer.target?.stepId && client && !ask.preview && (
           <Link href={clientStepHref(answer.target.stepId)} className={secondary}>
             Open step
           </Link>
@@ -157,7 +159,7 @@ export function AskAnswerCard({
             Ask my lead
           </button>
         )}
-        {has('openProject') && !client && rowTarget && (
+        {has('openProject') && !hasLinks && !client && rowTarget && (
           <Link href={adminProjectPath({ slug: rowTarget, id: rowTarget }, staffBase)} className={secondary}>
             Open in Projects
           </Link>

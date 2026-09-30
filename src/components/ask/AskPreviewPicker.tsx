@@ -32,7 +32,7 @@ export function AskPreviewPicker() {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Company name"
-        className="min-h-[40px] w-full rounded-[var(--radius-md)] border border-input bg-background px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="min-h-[40px] w-full rounded-[var(--radius-md)] border border-input bg-panel px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       />
       <ul className="space-y-1">
         {matches.map((e) => (
