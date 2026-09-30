@@ -61,7 +61,7 @@ import {
   type ParentIndianRelationship,
 } from '@/data/engagements';
 import { resolveNocVariant } from '@/lib/noc/variant';
-import { NOC_TEMPLATES } from '@/lib/noc/templates';
+import { NocTemplateLine } from '@/components/admin/NocTemplatePreview';
 
 type CreateProjectOwnerOption = {
   id: string;
@@ -544,12 +544,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               </div>
               ) : null}
 
-              {nocVariant ? (
-                <p className="text-[11.5px] text-muted-foreground">
-                  {/* Registry labels read "NOC — …"; drop the prefix so the line isn't "NOC: NOC — …". */}
-                  NOC: {NOC_TEMPLATES[nocVariant].label.replace(/^NOC — /, '')}
-                </p>
-              ) : null}
+              {nocVariant ? <NocTemplateLine variant={nocVariant} /> : null}
 
               <CreateProjectStartingPhasePicker stage={stage} onChange={setStage} />
 
