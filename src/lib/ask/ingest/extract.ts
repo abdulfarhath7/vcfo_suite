@@ -7,7 +7,7 @@ import type { LlmProvider } from '@/lib/ask/provider';
  * Text out of an uploaded source. TXT / MD are read as-is; DOCX is read from
  * its XML with pizzip (already a dependency); PDF is transcribed by the
  * contextualizer model through the Messages API's PDF input, because no PDF
- * text extractor is installed (Phase 7 decision, docs/ask/PHASE-0-RECON.md).
+ * text extractor is installed (Phase 7 decision, docs/specs/ask-vcfo/PHASE-0-RECON.md).
  */
 
 export class ExtractError extends Error {

@@ -25,7 +25,7 @@ import { sql } from 'drizzle-orm';
  * REPOSITORY layer (src/db/repositories/*) instead of RLS policies.
  *
  * >>> The old RLS policies are the SPEC for those repository filters. <<<
- * See MIGRATION.md and docs/ACCESS-CONTROL.md for the exact rules each
+ * See src/db/repositories/README.md and docs/context/notes/data-access.md for the exact rules each
  * repository query must reproduce (e.g. a client may only read an engagement
  * where client_user_id = session.userId OR client_id = session.clientId).
  *

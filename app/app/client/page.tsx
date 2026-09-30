@@ -4,7 +4,7 @@ import { pageMetadata } from "@/lib/page-metadata";
 
 export const metadata = pageMetadata("Client portal", "Client home");
 
-/** The client landing is the Overview dashboard (see docs/CLIENT-DASHBOARD-CONTEXT.md §2). */
+/** The client landing is the Overview dashboard. */
 export default function ClientHomePage() {
   redirect('/app/client/overview');
 }

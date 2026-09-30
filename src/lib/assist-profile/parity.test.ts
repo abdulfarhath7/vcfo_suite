@@ -10,7 +10,7 @@ import { assistFullState, withSubscribers } from '@/lib/assist-profile/__tests__
  * A typo here is otherwise invisible until a lead watches a field not fill.
  *
  * `MAPPING_JS_PATHS` is copied from `vcfo_assist/extension/lib/mapping.js`
- * (and `docs/assist-bridge/docs/02-profile-mapping.md`). `[]` marks an array
+ * (and `docs/specs/assist-profile/02-profile-mapping.md`). `[]` marks an array
  * element. When mapping.js starts reading a new key, add it here first.
  */
 const MAPPING_JS_PATHS = new Set([

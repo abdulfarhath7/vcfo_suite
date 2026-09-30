@@ -13,7 +13,7 @@ S3 (MinIO locally) · Inngest · Resend · Tailwind/shadcn · Vitest/Playwright.
 
 > ⚠️ This is a **scaffold generated without a network** — it is not yet verified
 > to build. Open it in **Claude Code** and follow `CLAUDE.md` to finish and
-> verify it phase by phase. `MIGRATION.md` maps every old file to its new home.
+> verify it phase by phase. `docs/context/STATE.md` records what is built and verified.
 
 ---
 
@@ -112,5 +112,6 @@ src/
 infra/                   Terraform for AWS (Stage 2)
 scripts/seed.ts          demo data
 CLAUDE.md                build instructions for Claude Code
-MIGRATION.md             old → new file map + RLS-as-spec
+docs/context/            live state, per-area notes, AWS deploy checklist
+docs/specs/              specs for features still in progress
 ```

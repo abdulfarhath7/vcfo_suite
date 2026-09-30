@@ -11,10 +11,15 @@ and green, phase by phase, verifying each step.
 `docs/context/` is the live working memory for this build — read it at the start of
 every session, and update it as you go:
 
-- `docs/context/STATE.md` — what is actually verified green right now (supersedes
-  `BUILD-STATUS.md`, which describes the pre-install scaffold)
-- `docs/context/TASKS.md` — the checklist, phase by phase, with exit criteria
-- `docs/context/NOTES.md` — gotchas already paid for once
+- `docs/context/STATE.md` — what is actually verified green right now, and what is
+  intentionally deferred
+- `docs/context/notes/` — gotchas already paid for once, one file per area
+  (`aws`, `checklist-workflow`, `compliance`, `data-access`, `design-system`,
+  `email`, `incorporation-docs`, `lead-ui`, `notifications`, `shell-ui`, `tooling`)
+- `docs/context/AWS-DEPLOY.md` — the AWS deploy checklist
+- `docs/specs/` — specs for features still in progress (`ask-vcfo`,
+  `assist-profile`, `doc-gaps`). Specs of finished features were removed on
+  2026-09-30; they are in git history.
 
 ## Ground truth about this codebase
 
@@ -27,7 +32,8 @@ every session, and update it as you go:
   `src/auth/` (Auth.js + guards), `src/storage/` (S3/MinIO), `src/jobs/`
   (Inngest). These are written but untested.
 - **Access control = Path A**: enforced in the repository layer, NOT Postgres
-  RLS. The old RLS policies are the SPEC — see `MIGRATION.md`.
+  RLS. The old RLS policies are the SPEC — see `src/db/repositories/README.md`
+  and `docs/context/notes/data-access.md`.
 - The original API routes are stashed in `app/api/_reference-supabase/` for
   reference. Port them into real routes, then delete that folder.
 
@@ -108,8 +114,8 @@ the versions in `package.json`; only bump when a peer-dep genuinely requires it.
 - **Exit:** 10 people on the office WiFi can use it end-to-end.
 
 ### Stage 2 (later) — AWS
-- See `infra/` and `MIGRATION.md`. It's a deployment + env-var change, not a
-  rewrite, because of the seam.
+- See `infra/README.md` and `docs/context/AWS-DEPLOY.md`. It's a deployment +
+  env-var change, not a rewrite, because of the seam.
 
 ## Outbound messaging (already built)
 
@@ -123,8 +129,8 @@ additive — never make one depend on the other:
   an outbound-only *nudge* channel — email stays the system of record, and a
   WhatsApp skip or failure must never touch, slow or downgrade the email path.
 
-Setup, the six templates, and the out-of-band AWS/Meta checklist are in
-`AWS-EUM-WHATSAPP-PLAN.md`; the gotchas are in `docs/context/NOTES.md`.
+Setup, the six templates, the out-of-band AWS/Meta checklist and the gotchas
+are in `docs/context/notes/aws.md`.
 
 ## Things NOT to do
 - Don't reintroduce Supabase.

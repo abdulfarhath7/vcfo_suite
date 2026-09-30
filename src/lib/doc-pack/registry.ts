@@ -32,7 +32,7 @@ import type { DocDefinition, DocPackContext, DocPackDirector, RequiredInput } fr
 
 /**
  * One definition per document the app generates today, and nothing else
- * (Phase 0 discovery, `docs/doc-pack/DISCOVERY.md` §1). Required inputs
+ * (Phase 0 discovery; see `docs/context/notes/incorporation-docs.md`). Required inputs
  * follow the generators' own missing-field collectors so the pack agrees
  * with the generate route.
  */

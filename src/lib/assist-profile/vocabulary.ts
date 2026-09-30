@@ -28,7 +28,7 @@ export const COMPANY_CATEGORY = { limitedByShares: 'Company limited by shares' }
  * is the owner's (2026-09-29). Assist matches option text case- and
  * whitespace-insensitively and reports "no option matches" rather than
  * picking a wrong one. Replace with the captured text once
- * `docs/mca-field-capture.js` has been run on that dropdown.
+ * `tools/mca-field-capture.js` has been run on that dropdown.
  */
 export const COMPANY_SUBCATEGORY = {
   indianNonGovernment: 'Indian non-government company',

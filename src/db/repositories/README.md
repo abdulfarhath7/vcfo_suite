@@ -7,7 +7,7 @@ logic, and API routes call these functions; they never import `db` directly.
 
 1. Take an `AuthContext` (from `src/auth/guards.ts`) as the first argument.
 2. Branch on `ctx.role` and filter by the scoping keys — reproducing the old
-   Postgres RLS policy for that table (see `MIGRATION.md` for the exact policies).
+   Postgres RLS policy for that table (see `docs/context/notes/data-access.md` for the rules as built).
 3. Add a test asserting cross-tenant access returns nothing.
 
 `engagements.ts` is the reference implementation. Copy its shape.

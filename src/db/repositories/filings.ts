@@ -31,7 +31,7 @@ import {
  * This is a READ over the Inngest-generated `compliance_instances`. It creates
  * no second source of truth and writes nothing.
  *
- * >>> DATA DEPENDENCY (see FILINGS-BUILD-PROGRESS.md) <<<
+ * >>> DATA DEPENDENCY (see docs/context/notes/compliance.md) <<<
  * TODO(owner): `compliance_obligations` has no dedicated `form` column. `particular` carries
  * the return/form name for most rows ("GSTR-3B", "Form 24Q") but not all
  * ("Advance Tax Payment Q1"), so it is surfaced under its own name and NOT
