@@ -9,6 +9,7 @@ import { SEO } from '@/components/SEO';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { EmptyStateIllustrated } from '@/components/noir';
 import { useAskOptional } from '@/components/ask/ask-context';
+import { StatusBriefButton } from '@/components/ask/StatusBriefButton';
 import { categoryLabel } from '@/lib/ask/categories';
 import { fetchLibrary } from '@/hooks/ask/ask-api';
 import { cn } from '@/lib/utils';
@@ -44,14 +45,17 @@ export default function ClientLibrary() {
         subtitle="Explanations you saved from Ask VCFO."
         icon={BookMarked}
         actions={
-          shown.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBriefButton />
+            {shown.length > 0 ? (
             <a
               href={`/api/ask/library/export?${new URLSearchParams({ ids: shown.map((i) => i.id).join(',') })}`}
               className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[var(--radius-md)] border border-border px-3 text-[13px] font-medium text-foreground hover:bg-muted"
             >
               <Download className="h-4 w-4" aria-hidden /> Download PDF brief
-            </a>
-          ) : undefined
+              </a>
+            ) : null}
+          </div>
         }
       />
 

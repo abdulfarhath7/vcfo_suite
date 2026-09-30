@@ -6,6 +6,8 @@ import { createElement } from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { Brief } from './pdf-brief-document';
 import type { BriefItem } from './pdf-brief-types';
+import { StatusBriefDocument } from './pdf-status-brief-document';
+import type { StatusBrief } from './status-brief';
 
 export { BRIEF_DISCLAIMER, type BriefItem } from './pdf-brief-types';
 
@@ -34,6 +36,19 @@ export async function renderBriefPdf(input: {
     createElement(Brief, {
       items: input.items,
       companyName: input.companyName,
+      firmName: input.firmName,
+      logo: loadLogo(),
+      date,
+    }) as Parameters<typeof renderToBuffer>[0],
+  );
+}
+
+/** C4: the monthly status brief as a PDF. */
+export async function renderStatusBriefPdf(input: { brief: StatusBrief; firmName: string; now?: Date }): Promise<Buffer> {
+  const date = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(input.now ?? new Date());
+  return renderToBuffer(
+    createElement(StatusBriefDocument, {
+      brief: input.brief,
       firmName: input.firmName,
       logo: loadLogo(),
       date,

@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusBriefButton } from '@/components/ask/StatusBriefButton';
 import { useCallback, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2 } from "lucide-react";
@@ -191,7 +192,10 @@ export default function ClientIncorporation() {
               {incorporationDate ? ` · ${formatDate(new Date(incorporationDate))}` : ""}
             </p>
           </div>
-          <ProgressRing value={Math.round((totalDone / totalSteps) * 100) || 0} size={52} />
+          <div className="flex items-center gap-3">
+            <StatusBriefButton />
+            <ProgressRing value={Math.round((totalDone / totalSteps) * 100) || 0} size={52} />
+          </div>
         </div>
       </header>
 
