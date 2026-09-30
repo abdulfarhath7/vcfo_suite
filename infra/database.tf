@@ -96,10 +96,10 @@ resource "aws_secretsmanager_secret_version" "azure_ad_client_secret" {
   secret_string = var.azure_ad_client_secret
 }
 
-# VCFO Assist: the Anthropic API key lives in a secret created by hand in the
+# Ask VCFO: the Anthropic API key lives in a secret created by hand in the
 # console (value never in Terraform state). Looked up only when enabled, so a
 # plan without the secret still works.
 data "aws_secretsmanager_secret" "anthropic_api_key" {
-  count = var.assist_enabled ? 1 : 0
-  name  = var.assist_anthropic_secret_name
+  count = var.ask_vcfo_enabled ? 1 : 0
+  name  = var.ask_vcfo_anthropic_secret_name
 }

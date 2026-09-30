@@ -5,8 +5,8 @@ import { db } from '@/db/client';
 import { clientLibraryItems } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
-import { answerEnvelopeSchema, type AnswerEnvelope } from '@/data/assist/schema';
-import { AssistForbiddenError, assertAssistRole } from '@/lib/assist/access';
+import { answerEnvelopeSchema, type AnswerEnvelope } from '@/data/ask/schema';
+import { AskForbiddenError, assertAskRole } from '@/lib/ask/access';
 
 /**
  * CLIENT LIBRARY — saved explanations.
@@ -31,7 +31,7 @@ export interface SaveLibraryItemInput {
 }
 
 export async function listLibraryItems(ctx: AuthContext): Promise<ClientLibraryRow[]> {
-  assertAssistRole(ctx);
+  assertAskRole(ctx);
   return db
     .select()
     .from(clientLibraryItems)
@@ -40,7 +40,7 @@ export async function listLibraryItems(ctx: AuthContext): Promise<ClientLibraryR
 }
 
 export async function getLibraryItem(ctx: AuthContext, id: string): Promise<ClientLibraryRow | null> {
-  assertAssistRole(ctx);
+  assertAskRole(ctx);
   const [row] = await db
     .select()
     .from(clientLibraryItems)
@@ -57,7 +57,7 @@ export async function saveLibraryItem(
   ctx: AuthContext,
   input: SaveLibraryItemInput,
 ): Promise<ClientLibraryRow | null> {
-  if (ctx.role !== 'client') throw new AssistForbiddenError('Only clients save to the library');
+  if (ctx.role !== 'client') throw new AskForbiddenError('Only clients save to the library');
   const answer = answerEnvelopeSchema.parse(input.answer);
   const access = await assertEngagementAccess(ctx, input.engagementId);
   if (!access.ok) return null;
@@ -106,7 +106,7 @@ export async function saveLibraryItem(
 }
 
 export async function deleteLibraryItem(ctx: AuthContext, id: string): Promise<boolean> {
-  if (ctx.role !== 'client') throw new AssistForbiddenError('Only clients change the library');
+  if (ctx.role !== 'client') throw new AskForbiddenError('Only clients change the library');
   const rows = await db
     .delete(clientLibraryItems)
     .where(and(eq(clientLibraryItems.id, id), eq(clientLibraryItems.profileId, ctx.userId)))

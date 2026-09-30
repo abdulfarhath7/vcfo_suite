@@ -1,6 +1,6 @@
 'use client';
 
-import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
+import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';

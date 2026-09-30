@@ -1,8 +1,8 @@
 'use client';
 
-import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
-import { GLOSSARY } from '@/data/assist/glossary';
-import { firstGlossaryTerm } from '@/lib/assist/glossary-match';
+import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
+import { GLOSSARY } from '@/data/ask/glossary';
+import { firstGlossaryTerm } from '@/lib/ask/glossary-match';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
@@ -1318,7 +1318,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               {field.required && <span className="text-danger ml-0.5" aria-hidden>*</span>}
             </Label>
             {(() => {
-              // Help icon only where Assist has something to say about the field.
+              // Help icon only where Ask VCFO has something to say about the field.
               const term = firstGlossaryTerm(field.label, GLOSSARY);
               return term ? <WhatsThisButton compact kind="field" refId={term.term} label={field.label} /> : null;
             })()}

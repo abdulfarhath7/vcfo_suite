@@ -104,7 +104,7 @@ export default function ComposeMail({ path }: Props) {
     };
   }, []);
 
-  // Prefill from Assist's "Draft reminder" (?subject=&body=). Nothing is sent
+  // Prefill from Ask VCFO's "Draft reminder" (?subject=&body=). Nothing is sent
   // until the user presses Send.
   useEffect(() => {
     if (typeof window === 'undefined') return;

@@ -19,7 +19,7 @@ type ApprovalEngagement = Pick<Engagement, 'id' | 'companyName' | 'slug' | 'stag
 
 /**
  * Every step waiting on a manager or admin decision across `engagements`.
- * Pure so the Approvals inbox (browser) and Assist's staff tools (server)
+ * Pure so the Approvals inbox (browser) and Ask VCFO's staff tools (server)
  * read the same rule.
  */
 export function listPendingApprovals(

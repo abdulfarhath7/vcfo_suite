@@ -87,24 +87,24 @@ secret lands in Secrets Manager `vcfo-suite/AZURE_AD_CLIENT_SECRET`, the ids in
 App Runner env. Leave all three empty to deploy without the feature. When the
 Azure secret expires (max 24 months), paste the new value and re-apply.
 
-## VCFO Assist (in-app assistant)
+## Ask VCFO (in-app assistant)
 
-Off until `assist_enabled = true`. The Anthropic API key never goes through
+Off until `ask_vcfo_enabled = true`. The Anthropic API key never goes through
 Terraform: you create the secret by hand, Terraform only looks it up by name.
 
 1. Secrets Manager (ap-south-1) → **Store a new secret** → *Other type of
    secret* → **Plaintext** tab → paste only the key (`sk-ant-…`, no quotes, no
-   JSON) → name it `/vcfo/assist/anthropic-api-key` → store.
-2. Migrate RDS first (Assist tables are migration `0021`):
+   JSON) → name it `/vcfo/ask-vcfo/anthropic-api-key` → store.
+2. Migrate RDS first (Ask VCFO tables are migrations `0021` + `0022`):
    `DATABASE_URL=<rds url> npm run db:migrate`.
-3. In `terraform.tfvars` add `assist_enabled = true`.
+3. In `terraform.tfvars` add `ask_vcfo_enabled = true`.
 4. `terraform plan` — expect only the App Runner service (two env vars, one
    secret) and the app role policy (read the new secret) to change.
-5. `terraform apply`. App Runner redeploys; "Ask Assist" appears for client,
+5. `terraform apply`. App Runner redeploys; "Ask VCFO" appears for client,
    admin and super admin.
 
 Rotate the key: put a new value on the same secret, then redeploy the service
-(App Runner reads secrets at deploy time). Turn off: `assist_enabled = false`
+(App Runner reads secrets at deploy time). Turn off: `ask_vcfo_enabled = false`
 and apply. Knowledge-source indexing runs in-process until Inngest cloud keys
 are set.
 

@@ -891,7 +891,7 @@ export const engagementChangeRequests = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// VCFO Assist — in-app assistant (VCFO-ASSIST-CONTEXT.md §4).
+// Ask VCFO — in-app assistant (ASK-VCFO-CONTEXT.md §4).
 // Access is repository-scoped like everything else: conversations and library
 // items are private to their profile; knowledge sources are admin / super only.
 // ---------------------------------------------------------------------------
@@ -903,8 +903,8 @@ const tsvector = customType<{ data: string }>({
   },
 });
 
-export const assistConversations = pgTable(
-  'assist_conversations',
+export const askConversations = pgTable(
+  'ask_conversations',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     profileId: uuid('profile_id')
@@ -918,17 +918,17 @@ export const assistConversations = pgTable(
     lastMessageAt: timestamp('last_message_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    profileIdx: index('assist_conversations_profile_idx').on(t.profileId, t.lastMessageAt),
+    profileIdx: index('ask_conversations_profile_idx').on(t.profileId, t.lastMessageAt),
   }),
 );
 
-export const assistMessages = pgTable(
-  'assist_messages',
+export const askMessages = pgTable(
+  'ask_messages',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     conversationId: uuid('conversation_id')
       .notNull()
-      .references(() => assistConversations.id, { onDelete: 'cascade' }),
+      .references(() => askConversations.id, { onDelete: 'cascade' }),
     sender: text('sender').notNull(), // user|assistant
     text: text('text').notNull(),
     answer: jsonb('answer'),
@@ -945,7 +945,7 @@ export const assistMessages = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    conversationIdx: index('assist_messages_conversation_idx').on(t.conversationId, t.createdAt),
+    conversationIdx: index('ask_messages_conversation_idx').on(t.conversationId, t.createdAt),
   }),
 );
 
@@ -960,7 +960,7 @@ export const clientLibraryItems = pgTable(
       .notNull()
       .references(() => engagements.id, { onDelete: 'cascade' }),
     topicSlug: text('topic_slug'),
-    messageId: uuid('message_id').references(() => assistMessages.id, { onDelete: 'set null' }),
+    messageId: uuid('message_id').references(() => askMessages.id, { onDelete: 'set null' }),
     title: text('title').notNull(),
     category: text('category').notNull(),
     snapshot: jsonb('snapshot').notNull(),
@@ -978,7 +978,7 @@ export const clientLibraryItems = pgTable(
   }),
 );
 
-export const assistDocuments = pgTable('assist_documents', {
+export const askDocuments = pgTable('ask_documents', {
   id: uuid('id').primaryKey().defaultRandom(),
   title: text('title').notNull(),
   sourceType: text('source_type').notNull(), // govt|firm_pdf|firm_note
@@ -998,13 +998,13 @@ export const assistDocuments = pgTable('assist_documents', {
  * No `embedding` column in v1: local Postgres has no pgvector (Phase 0), and
  * retrieval is full-text only (OD2). Adding a nullable vector later is additive.
  */
-export const assistChunks = pgTable(
-  'assist_chunks',
+export const askChunks = pgTable(
+  'ask_chunks',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     documentId: uuid('document_id')
       .notNull()
-      .references(() => assistDocuments.id, { onDelete: 'cascade' }),
+      .references(() => askDocuments.id, { onDelete: 'cascade' }),
     ordinal: integer('ordinal').notNull(),
     text: text('text').notNull(),
     contextPrefix: text('context_prefix'),
@@ -1014,7 +1014,7 @@ export const assistChunks = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    documentOrdinalUq: uniqueIndex('assist_chunks_document_ordinal_uq').on(t.documentId, t.ordinal),
-    tsvIdx: index('assist_chunks_tsv_idx').using('gin', t.tsv),
+    documentOrdinalUq: uniqueIndex('ask_chunks_document_ordinal_uq').on(t.documentId, t.ordinal),
+    tsvIdx: index('ask_chunks_tsv_idx').using('gin', t.tsv),
   }),
 );

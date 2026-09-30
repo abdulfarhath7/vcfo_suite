@@ -139,7 +139,7 @@ const firmAdminItems: NavEntry[] = [
   docsGroup('/app/admin'),
   NAV_TOOLS_BREAK,
   { to: '/app/admin/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-  { to: '/app/admin/assist/sources', label: 'Assist sources', icon: BookMarked, iconTone: TONE.knowledge },
+  { to: '/app/admin/ask-vcfo/sources', label: 'Ask VCFO sources', icon: BookMarked, iconTone: TONE.knowledge },
   { to: '/app/admin/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
 ];
 

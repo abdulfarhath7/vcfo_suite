@@ -1,6 +1,6 @@
 'use client';
 
-import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
+import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import type { ChecklistItem } from '@/data/checklist';
 import type { StatusCode } from '@/data/checklist';
 import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
@@ -243,7 +243,7 @@ export function ChecklistJourneyRail({
                     </button>
                   </ChecklistLockedHint>
                 </div>
-                {/* Locked steps too: Assist explains the step and what unlocks it. */}
+                {/* Locked steps too: Ask VCFO explains the step and what unlocks it. */}
                 <WhatsThisButton compact kind="step" refId={item.id} label={item.title} />
               </li>
             );

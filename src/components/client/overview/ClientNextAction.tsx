@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { ArrowRight, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ClientOverviewNextAction } from '@/lib/client-overview';
-import { GlossaryText } from '@/components/assist/GlossaryTerm';
-import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
+import { GlossaryText } from '@/components/ask/GlossaryTerm';
+import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 
 /**
  * Module 2 — "what do you need from me right now".

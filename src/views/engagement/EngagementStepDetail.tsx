@@ -1,6 +1,6 @@
 "use client";
 
-import { WhatsThisButton } from '@/components/assist/WhatsThisButton';
+import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
 import { HexgridLoader } from '@/components/common/HexgridLoader';

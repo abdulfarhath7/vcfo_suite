@@ -1,4 +1,4 @@
-import ClientLibraryItem from "@/views/client/assist/ClientLibraryItem";
+import ClientLibraryItem from "@/views/client/ask/ClientLibraryItem";
 
 import { pageMetadata } from "@/lib/page-metadata";
 
