@@ -1099,3 +1099,10 @@ Append here whenever something costs more than a minute to figure out.
 - `tsc --noEmit` is incremental here (`tsconfig.tsbuildinfo`); use
   `--incremental false` for a gate you trust — a stale build info once hid a test
   typing error.
+- Pre-2 board resolution picks its template by NOC variant (`boardResolutionVariant`
+  in `src/lib/board-resolution.ts`): foreign → `boardResolution.docx`, Indian
+  investing / name use → `boardResolution-indian-*.docx`. Those are built from the
+  firm's blank `noc-indian-*.docx` (kept as supplied) by
+  `node scripts/prepare-noc-board-resolution-docx.mjs`; both prepare scripts share
+  `scripts/docx-comment-tags.mjs`. Standalone or an unanswered Indian role falls
+  back to the foreign template.

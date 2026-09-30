@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { Engagement } from '@/data/engagements';
 import { directorResponsesFromState } from '@/lib/proposed-directors';
-import type { BoardResolutionMergeFields } from '@/lib/board-resolution';
+import { boardResolutionVariant, type BoardResolutionMergeFields } from '@/lib/board-resolution';
 import {
   BoardResolutionError,
   BOARD_RESOLUTION_ERROR_CODES,
@@ -105,7 +105,7 @@ export async function generateAndStoreBoardResolution(
 
   const templateFingerprint = isPatchOnly
     ? options?.preserveTemplateFingerprint?.trim() || null
-    : getBoardResolutionTemplateFingerprint();
+    : getBoardResolutionTemplateFingerprint(boardResolutionVariant(engagement));
 
   return { content, storagePath, templateFingerprint };
 }

@@ -10,6 +10,7 @@ import {
   buildBoardResolutionMergeFields,
   extractBoardResolutionInlineOverrides,
   formatDirectorList,
+  boardResolutionVariant,
   generateBoardResolutionDraft,
   resolveCertificationPlace,
   stripDirectorSalutation,
@@ -125,6 +126,11 @@ describe('prepared boardResolution.docx template', () => {
       'SECOND_DIRECTOR_LINE',
       'DIRECTOR_NAMES',
       'PARENT_ENTITY_ADDRESS',
+      // Name-only NOC fields (Indian parent) — not in the foreign resolution.
+      'PROPOSED_NAME_2',
+      'RESOLUTION_DAY',
+      'NAME_WORD',
+      'SIGNATORY_DIN',
     ]);
     for (const key of BOARD_RESOLUTION_MERGE_FIELD_KEYS) {
       if (notPrinted.has(key)) continue;
@@ -267,5 +273,76 @@ describe('parent jurisdiction and NIC code come from Part A answers', () => {
     expect(fields.PARENT_STATE).toBe('Utah');
     expect(fields.CERTIFICATION_PLACE).toBe('USA');
     expect(fields.NIC_CODES).toBe(DEFAULT_NIC_CODES);
+  });
+});
+
+describe('Pre-2 template by NOC variant', () => {
+  const pre1 = {
+    parentEntityName: 'Sampada Enterprises LLP',
+    proposedName1: 'Sampada Tech Private Limited',
+    proposedName2: 'Sampada Labs Private Limited',
+    boardResolutionDate: '2026-09-26',
+    signatoryFirstName: 'Ravi',
+    signatoryLastName: 'Kumar',
+    signatoryDesignation: 'Designated Partner',
+    directorCount: '2',
+    director1Name: 'Asha Rao',
+    director1IndiaResident: 'yes',
+    director2Name: 'Ben Carter',
+    director2IndiaResident: 'yes',
+  };
+  const indian = { companyName: 'Sampada Tech', ownershipType: 'subsidiary', companyType: 'domestic' } as const;
+  const bodyText = (docx: Buffer) =>
+    documentPlainText(new PizZip(docx).file('word/document.xml')?.asText() ?? '');
+
+  it('picks the variant from the ownership answers, defaulting to the foreign resolution', () => {
+    expect(boardResolutionVariant(null)).toBe('foreign-parent');
+    expect(boardResolutionVariant({ ownershipType: 'independent', companyType: 'domestic' })).toBe(
+      'foreign-parent',
+    );
+    expect(boardResolutionVariant({ ownershipType: 'subsidiary', companyType: 'foreign' })).toBe(
+      'foreign-parent',
+    );
+    expect(boardResolutionVariant({ ...indian, parentIndianRelationship: null })).toBe(
+      'foreign-parent',
+    );
+    expect(boardResolutionVariant({ ...indian, parentIndianRelationship: 'investing' })).toBe(
+      'indian-investing',
+    );
+    expect(boardResolutionVariant({ ...indian, parentIndianRelationship: 'name_only' })).toBe(
+      'indian-name-only',
+    );
+  });
+
+  it('renders the investing NOC under the Companies Act 2013', () => {
+    const engagement = { ...indian, parentIndianRelationship: 'investing' as const };
+    const text = bodyText(renderBoardResolutionDocxBuffer({ engagement, pre1 }));
+    expect(text).toContain('applicable provisions of the Companies Act 2013');
+    expect(text).not.toContain('the State of');
+    expect(text).toContain('Sampada Tech Private Limited and Sampada Labs Private Limited');
+    expect(text).toContain('to be subscribed in full by Sampada Enterprises LLP');
+    expect(text).not.toMatch(/\{[#/]?[A-Z_]+\}|_{3,}/);
+    expect(generateBoardResolutionDraft({ engagement, pre1 })).toContain('Companies Act 2013');
+  });
+
+  it('renders the name-only NOC with the borrowed word and both names', () => {
+    const engagement = { ...indian, parentIndianRelationship: 'name_only' as const };
+    const text = bodyText(renderBoardResolutionDocxBuffer({ engagement, pre1 }));
+    expect(text).toContain('ON SATURDAY, SEPTEMBER 26, 2026.');
+    expect(text).toContain('USE OF WORD "SAMPADA"');
+    expect(text).toContain('“Sampada Tech Private Limited” or  “Sampada Labs Private Limited” or such other name');
+    expect(text).not.toContain('subscribed in full');
+    expect(text).not.toMatch(/\{[#/]?[A-Z_]+\}/);
+    expect(generateBoardResolutionDraft({ engagement, pre1 })).toContain(
+      '“Sampada Tech Private Limited” or “Sampada Labs Private Limited” or such other name',
+    );
+  });
+
+  it('drops the second name from the name-only NOC when there is one name', () => {
+    const engagement = { ...indian, parentIndianRelationship: 'name_only' as const };
+    const text = bodyText(
+      renderBoardResolutionDocxBuffer({ engagement, pre1: { ...pre1, proposedName2: '' } }),
+    );
+    expect(text).toContain('“Sampada Tech Private Limited” or  such other name');
   });
 });

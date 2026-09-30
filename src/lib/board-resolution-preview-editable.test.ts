@@ -21,6 +21,7 @@ const sampleFields: BoardResolutionMergeFields = {
   PARENT_JURISDICTION: 'the United States of America',
   PARENT_STATE: 'Utah',
   PROPOSED_NAME_1: 'ABC India Private Limited',
+  PROPOSED_NAME_2: 'ABC Tech India Private Limited',
   PROPOSED_NAMES: 'ABC India Private Limited and ABC Tech India Private Limited',
   NIC_CODES: '62099- sample NIC',
   AUTHORISED_CAPITAL: '10,00,000 (Indian Rupees Ten Lakh Only)',
@@ -32,6 +33,9 @@ const sampleFields: BoardResolutionMergeFields = {
   SIGNATORY_DESIGNATION: 'Director',
   CERTIFICATION_DATE: '25th May, 2026',
   CERTIFICATION_PLACE: 'USA',
+  RESOLUTION_DAY: 'MONDAY',
+  NAME_WORD: 'ABC',
+  SIGNATORY_DIN: '__________',
 };
 
 function renderPreviewHtml(text: string): HTMLElement {

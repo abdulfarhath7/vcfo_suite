@@ -114,12 +114,13 @@ const nextConfig = {
   },
   // fs.readFileSync(process.cwd(), 'public/templates/...') is not auto-traced on Vercel.
   outputFileTracingIncludes: {
+    // Pre-2 picks the foreign or an Indian (NOC) template per project.
     '/api/engagements/[id]/board-resolution/generate': [
-      './public/templates/boardResolution.docx',
+      './public/templates/boardResolution*.docx',
       './public/templates/board-resolution-template.docx',
     ],
     '/api/engagements/[id]/board-resolution/status': [
-      './public/templates/boardResolution.docx',
+      './public/templates/boardResolution*.docx',
     ],
     '/api/engagements/[id]/incorporation-docs/generate': [
       './public/templates/dir-2.docx',

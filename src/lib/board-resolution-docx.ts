@@ -25,7 +25,11 @@ import {
 
   type BoardResolutionMergeInput,
 
+  boardResolutionVariant,
+
 } from '@/lib/board-resolution';
+
+import type { NocVariant } from '@/lib/noc/variant';
 
 
 
@@ -65,11 +69,21 @@ const BOARD_RESOLUTION_TEMPLATE_RELATIVE = 'public/templates/boardResolution.doc
 
 const LEGACY_TEMPLATE_RELATIVE = 'public/templates/board-resolution-template.docx';
 
+/**
+ * Indian-parent templates, built from the firm's blank NOC files by
+ * `node scripts/prepare-noc-board-resolution-docx.mjs`.
+ */
+const BOARD_RESOLUTION_TEMPLATE_BY_VARIANT: Record<NocVariant, string> = {
+  'foreign-parent': BOARD_RESOLUTION_TEMPLATE_RELATIVE,
+  'indian-investing': 'public/templates/boardResolution-indian-investing.docx',
+  'indian-name-only': 'public/templates/boardResolution-indian-name-only.docx',
+};
 
 
-function boardResolutionTemplatePath(): string {
 
-  return path.join(process.cwd(), BOARD_RESOLUTION_TEMPLATE_RELATIVE);
+function boardResolutionTemplatePath(variant: NocVariant = 'foreign-parent'): string {
+
+  return path.join(process.cwd(), BOARD_RESOLUTION_TEMPLATE_BY_VARIANT[variant]);
 
 }
 
@@ -85,8 +99,10 @@ export type BoardResolutionTemplateInfo = {
 };
 
 /** Server-only metadata for the on-disk Word template. */
-export function getBoardResolutionTemplateInfo(): BoardResolutionTemplateInfo {
-  const templatePath = boardResolutionTemplatePath();
+export function getBoardResolutionTemplateInfo(
+  variant: NocVariant = 'foreign-parent',
+): BoardResolutionTemplateInfo {
+  const templatePath = boardResolutionTemplatePath(variant);
 
   if (!fs.existsSync(templatePath)) {
     throw new Error(`Board resolution template missing at ${templatePath}.`);
@@ -98,8 +114,9 @@ export function getBoardResolutionTemplateInfo(): BoardResolutionTemplateInfo {
     .update(fs.readFileSync(templatePath))
     .digest('hex');
 
+  // Only the foreign template has a repo-root source; the NOC ones come from public/templates.
   const rootSourcePath = path.join(process.cwd(), 'boardResolution.docx');
-  const rootSourceModifiedAtMs = fs.existsSync(rootSourcePath)
+  const rootSourceModifiedAtMs = variant === 'foreign-parent' && fs.existsSync(rootSourcePath)
     ? fs.statSync(rootSourcePath).mtimeMs
     : null;
 
@@ -113,8 +130,8 @@ export function getBoardResolutionTemplateInfo(): BoardResolutionTemplateInfo {
 }
 
 /** Server-only fingerprint of the on-disk Word template (sha256 hex). */
-export function getBoardResolutionTemplateFingerprint(): string {
-  return getBoardResolutionTemplateInfo().fingerprint;
+export function getBoardResolutionTemplateFingerprint(variant: NocVariant = 'foreign-parent'): string {
+  return getBoardResolutionTemplateInfo(variant).fingerprint;
 }
 
 
@@ -140,6 +157,8 @@ function boardResolutionFieldsToDocxData(
     PARENT_STATE: fields.PARENT_STATE ?? '',
 
     PROPOSED_NAME_1: fields.PROPOSED_NAME_1 ?? '',
+
+    PROPOSED_NAME_2: fields.PROPOSED_NAME_2 ?? '',
 
     PROPOSED_NAMES: fields.PROPOSED_NAMES ?? '',
 
@@ -169,6 +188,12 @@ function boardResolutionFieldsToDocxData(
     CERTIFICATION_DATE: fields.CERTIFICATION_DATE ?? '',
 
     CERTIFICATION_PLACE: fields.CERTIFICATION_PLACE ?? '',
+
+    RESOLUTION_DAY: fields.RESOLUTION_DAY ?? '',
+
+    NAME_WORD: fields.NAME_WORD ?? '',
+
+    SIGNATORY_DIN: fields.SIGNATORY_DIN ?? '',
 
   };
 
@@ -215,7 +240,7 @@ export function renderBoardResolutionDocxBuffer(
 
 ): Buffer {
 
-  const templatePath = boardResolutionTemplatePath();
+  const templatePath = boardResolutionTemplatePath(boardResolutionVariant(input.engagement));
 
   if (!fs.existsSync(templatePath)) {
 

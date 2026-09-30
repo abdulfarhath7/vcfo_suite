@@ -31,7 +31,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   try {
     const doc = await fetchBoardResolutionForApi(auth.ctx, access.dbId);
-    const templateInfo = boardResolutionTemplateInfo();
+    const templateInfo = boardResolutionTemplateInfo(access.row);
     const {
       path: templatePath,
       fingerprint: templateFingerprint,

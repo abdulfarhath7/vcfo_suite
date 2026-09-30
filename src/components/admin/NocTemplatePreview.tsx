@@ -50,7 +50,7 @@ export function NocTemplateLine({ variant }: { variant: NocVariant }) {
             <DialogHeader className="border-b border-border px-5 py-4">
               <DialogTitle className="text-[16px]">{def.label}</DialogTitle>
               <DialogDescription>
-                Blank template, picked from the ownership answers. Details are filled in later.
+                The firm&apos;s blank template, picked from the ownership answers. The Pre-2 board resolution fills it in from the Name Application answers.
               </DialogDescription>
             </DialogHeader>
             <div className="max-h-[calc(90vh-5.5rem)] overflow-auto bg-muted/30 p-4">

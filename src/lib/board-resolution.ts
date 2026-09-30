@@ -8,6 +8,7 @@ import {
 } from '@/lib/checklist-pre1-validation';
 import { resolveDirectorDisplayName, resolveSignatoryDisplayName } from '@/lib/person-name';
 import { nicBusinessType } from '@/lib/nic-2008';
+import { resolveNocVariant, type NocVariant } from '@/lib/noc/variant';
 import {
   DEFAULT_PARENT_STATE,
   resolveParentCountry,
@@ -77,6 +78,85 @@ Designation: {{SIGNATORY_DESIGNATION}}
 Date: {{CERTIFICATION_DATE}}
 Place: {{CERTIFICATION_PLACE}}`;
 
+/**
+ * Indian parent, investing: the same resolution under the Companies Act 2013.
+ * Wording follows the firm's `noc-indian-investing.docx`.
+ */
+const BOARD_RESOLUTION_TEMPLATE_INDIAN_INVESTING = `CERTIFIED TRUE COPY OF BOARD RESOLUTION
+
+THE FOLLOWING IS A CERTIFIED TRUE COPY OF THE RESOLUTIONS PASSED BY THE BOARD OF DIRECTORS OF {{PARENT_ENTITY_NAME}} ("THE COMPANY"), SUCH RESOLUTIONS, EFFECTIVE AS OF {{RESOLUTION_EFFECTIVE_DATE}}
+
+"RESOLVED THAT in accordance with the applicable provisions of the Companies Act 2013, and the governing documents of {{PARENT_ENTITY_NAME}}(hereinafter referred to as the "Company"), consent of the Board of Directors be and is hereby accorded to incorporate a wholly owned subsidiary of the Company in India in the name and style of {{PROPOSED_NAMES}} or such other name as may be approved by the Registrar of Companies, Ministry of Corporate Affairs, Government of India.
+
+RESOLVED FURTHER THAT the proposed Indian subsidiary company shall be incorporated with the following main objects as per the National Industrial Classification (NIC) codes: {{NIC_CODES}}
+
+RESOLVED FURTHER THAT the Authorized Share Capital of the proposed Indian company shall be INR {{AUTHORISED_CAPITAL}} , and the initial Paid-Up Capital shall also be INR {{PAID_UP_CAPITAL}}, to be subscribed in full by {{PARENT_ENTITY_NAME}}
+
+RESOLVED FURTHER THAT.
+
+{{DIRECTOR_NAMES}}
+
+be and each hereby is authorized to take all necessary steps for the incorporation of the Indian subsidiary including but not limited to
+
+Filing the requisite forms and documents with the Registrar of Companies in India;
+
+Engaging legal, tax, and secretarial professionals in India for the incorporation process;
+
+Executing Memorandum and Articles of Association and other statutory documents;
+
+Opening and operating bank accounts in the name of the proposed company;
+
+Appointing the first directors and statutory auditors of the company;
+
+Taking all incidental and ancillary actions necessary for the successful incorporation and operationalization of the Indian subsidiary.
+
+RESOLVED FURTHER THAT a copy of this resolution, certified to be true by any Authorized Officer of the Company, be provided to all authorities concerned as may be required from time to time in connection with the aforesaid matter."
+
+##CERTIFIED TRUE COPY##
+
+For and on behalf of {{PARENT_ENTITY_NAME}}
+
+Authorised Person: {{SIGNATORY_NAME}}
+Designation: {{SIGNATORY_DESIGNATION}}
+
+Date: {{CERTIFICATION_DATE}}
+Place: {{CERTIFICATION_PLACE}}`;
+
+/**
+ * Indian parent that only lends a word of its name (no investment). Wording
+ * follows the firm's `noc-indian-name-only.docx`.
+ */
+const BOARD_RESOLUTION_TEMPLATE_INDIAN_NAME_ONLY = `CERTIFIED TRUE COPY OF THE RESOLUTION PASSED BY THE COMPANY {{PARENT_ENTITY_NAME}} ON {{RESOLUTION_DAY}}, {{RESOLUTION_EFFECTIVE_DATE}}.TO GRANT NO-OBJECTION CERTIFICATE ("NOC") FOR USE OF WORD "{{NAME_WORD}}" IN THE PROPOSED NAME OF THE COMPANIES ACT 2013 TO BE INCORPORATED WITH THE REGISTRAR OF COMPANIES, MINISTRY OF CORPORATE AFFAIRS (MCA).
+
+Pursuant to the applicable provisions of the Companies Act, 2013 and the rules made thereunder, the consent and no-objection of the Board of Directors of {{PARENT_ENTITY_NAME}}(the “Company”) and is hereby accorded for using the word “{{NAME_WORD}}” in the proposed name of a new company to be incorporated with the Registrar of Companies, Ministry of Corporate Affairs (“MCA”), under the proposed name {{PROPOSED_NAMES_OR}} or such other name containing the word “{{NAME_WORD}}” as may be approved by the Registrar of Companies.
+
+RESOLVED FURTHER THAT the Company shall have no objection to the submission of this resolution and the corresponding No-Objection Certificate (NOC) to the Registrar of Companies, Ministry of Corporate Affairs, or any other statutory authority, wherever required, in connection with the incorporation and registration of the proposed company.
+
+//CERTIFIED TRUE COPY//
+
+For {{PARENT_ENTITY_NAME}}
+
+{{SIGNATORY_NAME}}
+{{SIGNATORY_DESIGNATION}}
+DIN: {{SIGNATORY_DIN}}`;
+
+/**
+ * Pre-2 wording follows the NOC the ownership answers select. A standalone
+ * company, or an Indian parent whose role isn't chosen yet, keeps the original
+ * (foreign-parent) resolution so nothing that generated before changes.
+ */
+export function boardResolutionVariant(
+  engagement?: Parameters<typeof resolveNocVariant>[0] | null,
+): NocVariant {
+  return (engagement ? resolveNocVariant(engagement) : null) ?? 'foreign-parent';
+}
+
+const BOARD_RESOLUTION_TEXT_TEMPLATES: Record<NocVariant, string> = {
+  'foreign-parent': BOARD_RESOLUTION_TEMPLATE,
+  'indian-investing': BOARD_RESOLUTION_TEMPLATE_INDIAN_INVESTING,
+  'indian-name-only': BOARD_RESOLUTION_TEMPLATE_INDIAN_NAME_ONLY,
+};
+
 export interface BoardResolutionMergeInput {
   engagement?: Pick<
     Engagement,
@@ -84,6 +164,9 @@ export interface BoardResolutionMergeInput {
     | 'parentEntityAddress'
     | 'parentEntityRegistrationNumber'
     | 'companyName'
+    | 'ownershipType'
+    | 'companyType'
+    | 'parentIndianRelationship'
   > | null;
   pre1?: ChecklistItemResponses;
   overrides?: Partial<BoardResolutionMergeFields>;
@@ -96,6 +179,8 @@ export interface BoardResolutionMergeFields {
   PARENT_JURISDICTION: string;
   PARENT_STATE: string;
   PROPOSED_NAME_1: string;
+  /** Second Part A name, or '' — the name-only NOC prints it only when present. */
+  PROPOSED_NAME_2: string;
   /** "Name 1 and Name 2" — every Part A proposed name, in order. */
   PROPOSED_NAMES: string;
   NIC_CODES: string;
@@ -112,6 +197,12 @@ export interface BoardResolutionMergeFields {
   SIGNATORY_DESIGNATION: string;
   CERTIFICATION_DATE: string;
   CERTIFICATION_PLACE: string;
+  /** Weekday of the resolution date ("SATURDAY") — name-only NOC heading. */
+  RESOLUTION_DAY: string;
+  /** The word of the parent's name the new company borrows — name-only NOC. */
+  NAME_WORD: string;
+  /** Signer's DIN — not collected in Part A, so left as a blank to fill by hand. */
+  SIGNATORY_DIN: string;
 }
 
 export const BOARD_RESOLUTION_MERGE_FIELD_KEYS = [
@@ -121,6 +212,7 @@ export const BOARD_RESOLUTION_MERGE_FIELD_KEYS = [
   'PARENT_JURISDICTION',
   'PARENT_STATE',
   'PROPOSED_NAME_1',
+  'PROPOSED_NAME_2',
   'PROPOSED_NAMES',
   'NIC_CODES',
   'AUTHORISED_CAPITAL',
@@ -132,6 +224,9 @@ export const BOARD_RESOLUTION_MERGE_FIELD_KEYS = [
   'SIGNATORY_DESIGNATION',
   'CERTIFICATION_DATE',
   'CERTIFICATION_PLACE',
+  'RESOLUTION_DAY',
+  'NAME_WORD',
+  'SIGNATORY_DIN',
 ] as const satisfies readonly (keyof BoardResolutionMergeFields)[];
 
 function pickString(...values: (string | null | undefined)[]): string {
@@ -396,6 +491,7 @@ export function buildBoardResolutionMergeFields(
     PARENT_JURISDICTION: resolveParentJurisdiction(pre1),
     PARENT_STATE: resolveParentState(pre1, () => DEFAULT_PARENT_STATE),
     PROPOSED_NAME_1: pickString(pre1.proposedName1, '[Proposed company name 1]'),
+    PROPOSED_NAME_2: resolveSecondProposedName(pre1),
     PROPOSED_NAMES: formatProposedNames(pre1),
     NIC_CODES: resolveNicCodesClause(pre1),
     AUTHORISED_CAPITAL: formatInrCapitalClause(authCapRaw),
@@ -407,6 +503,9 @@ export function buildBoardResolutionMergeFields(
     SIGNATORY_DESIGNATION: pickString(pre1.signatoryDesignation, '[Designation]'),
     CERTIFICATION_DATE: formatCertificationDate(resolutionDate),
     CERTIFICATION_PLACE: resolveCertificationPlace(pre1, engagement),
+    RESOLUTION_DAY: resolutionDate.toLocaleString('en-US', { weekday: 'long' }).toUpperCase(),
+    NAME_WORD: resolveNameWord(parentName),
+    SIGNATORY_DIN: '__________',
   };
 
   if (!overrides) return fields;
@@ -459,15 +558,41 @@ export function extractBoardResolutionInlineOverrides(
   return overrides;
 }
 
+/** Second name only when it differs from the first (same dedupe as `formatProposedNames`). */
+function resolveSecondProposedName(pre1: ChecklistItemResponses): string {
+  const first = (pre1.proposedName1 ?? '').trim();
+  const second = (pre1.proposedName2 ?? '').trim();
+  return second && second.toLowerCase() !== first.toLowerCase() ? second : '';
+}
+
+/**
+ * The borrowed word defaults to the first word of the parent's name
+ * ("Sampada Enterprises LLP" → "SAMPADA"); the project lead can correct it in
+ * the editor before finalizing.
+ */
+function resolveNameWord(parentName: string): string {
+  if (parentName.startsWith('[')) return '[Name word]';
+  const word = parentName.trim().split(/\s+/)[0] ?? '';
+  return word.replace(/[^\p{L}\p{N}&-]/gu, '').toUpperCase() || '[Name word]';
+}
+
 /** A parent incorporated in a country without states drops the "State of" phrase. */
 const STATE_PHRASE = ', the State of {{PARENT_STATE}}';
 
 function applyBoardResolutionTemplate(
   fields: BoardResolutionMergeFields,
+  variant: NocVariant = 'foreign-parent',
 ): string {
-  let out = fields.PARENT_STATE.trim()
-    ? BOARD_RESOLUTION_TEMPLATE
-    : BOARD_RESOLUTION_TEMPLATE.replace(STATE_PHRASE, '');
+  const template = BOARD_RESOLUTION_TEXT_TEMPLATES[variant];
+  let out = fields.PARENT_STATE.trim() ? template : template.replace(STATE_PHRASE, '');
+  // `“A” or “B”` for the name-only NOC; mirrors the docx's optional second name.
+  out = out.replaceAll(
+    '{{PROPOSED_NAMES_OR}}',
+    [fields.PROPOSED_NAME_1, fields.PROPOSED_NAME_2]
+      .filter((n) => n.trim())
+      .map((n) => `“${n}”`)
+      .join(' or '),
+  );
   for (const [key, value] of Object.entries(fields)) {
     // The docx lists each director as a bullet; the text preview mirrors that.
     const text =
@@ -483,7 +608,10 @@ function applyBoardResolutionTemplate(
 }
 
 export function generateBoardResolutionDraft(input: BoardResolutionMergeInput): string {
-  return applyBoardResolutionTemplate(buildBoardResolutionMergeFields(input));
+  return applyBoardResolutionTemplate(
+    buildBoardResolutionMergeFields(input),
+    boardResolutionVariant(input.engagement),
+  );
 }
 
 export function parseBoardResolutionRpcPayload(data: unknown): BoardResolutionDoc | null {

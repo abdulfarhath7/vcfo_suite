@@ -1,19 +1,21 @@
 import type { NocVariant } from '@/lib/noc/variant';
 
 /**
- * Registry for the NOC templates. Shaped like `INCORP_DOC_DEFINITIONS` so
- * wiring it into generation later is a move, not a rewrite. The two Indian
- * templates are the firm's blank files, kept byte-for-byte as supplied; the
- * foreign-parent template has not been provided yet. NOC kinds are deliberately
- * not in `INCORP_DOC_DEFINITIONS` or the doc-pack registry (they would count
- * against pre-7 "all generated").
+ * Registry for the NOC templates. The NOC is the parent's Pre-2 board
+ * resolution: `templateRelative` is the firm's blank Word file, kept as
+ * supplied and shown in the Create Project preview; `generationTemplateRelative`
+ * is the tagged copy Pre-2 renders (built by the prepare scripts). NOC kinds are
+ * deliberately not in `INCORP_DOC_DEFINITIONS` or the doc-pack registry — the
+ * existing board-resolution entry already covers them.
  */
 export interface NocTemplateDefinition {
   variant: NocVariant;
   label: string;
   templateRelative: string;
   downloadFilename: string;
-  /** Merge keys the template expects. Empty until the generator is built. */
+  /** Tagged template the Pre-2 board resolution renders from. */
+  generationTemplateRelative: string;
+  /** Merge keys beyond the shared board-resolution set. */
   mergeFieldKeys: readonly string[];
   /** False while the firm has not supplied the file — the preview is hidden. */
   templateAvailable: boolean;
@@ -25,15 +27,17 @@ export const NOC_TEMPLATES: Record<NocVariant, NocTemplateDefinition> = {
     label: 'NOC — Foreign subsidiary',
     templateRelative: 'public/templates/noc-foreign-parent.docx',
     downloadFilename: 'noc-foreign-parent.docx',
+    generationTemplateRelative: 'public/templates/boardResolution.docx',
     mergeFieldKeys: [],
-    templateAvailable: false,
+    templateAvailable: true,
   },
   'indian-name-only': {
     variant: 'indian-name-only',
     label: 'NOC — Indian subsidiary (name use)',
     templateRelative: 'public/templates/noc-indian-name-only.docx',
     downloadFilename: 'noc-indian-name-only.docx',
-    mergeFieldKeys: [],
+    generationTemplateRelative: 'public/templates/boardResolution-indian-name-only.docx',
+    mergeFieldKeys: ['PROPOSED_NAME_2', 'RESOLUTION_DAY', 'NAME_WORD', 'SIGNATORY_DIN'],
     templateAvailable: true,
   },
   'indian-investing': {
@@ -41,6 +45,7 @@ export const NOC_TEMPLATES: Record<NocVariant, NocTemplateDefinition> = {
     label: 'NOC — Indian subsidiary (investing)',
     templateRelative: 'public/templates/noc-indian-investing.docx',
     downloadFilename: 'noc-indian-investing.docx',
+    generationTemplateRelative: 'public/templates/boardResolution-indian-investing.docx',
     mergeFieldKeys: [],
     templateAvailable: true,
   },
