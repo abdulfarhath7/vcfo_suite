@@ -80,9 +80,7 @@ MCA portal Chrome extension (`src/lib/assist-profile/`, spec in
 - Env `ASSIST_*` → `ASK_VCFO_*`; Terraform `ask_vcfo_enabled`, secret
   `/vcfo/ask-vcfo/anthropic-api-key`.
 - Phase 9 (owner delegated the choice): C1–C5 built behind
-  `ASK_VCFO_FEATURE_<ID>` flags, all off. **A1 (question gaps) deferred** — it
-  shows staff what clients ask, which needs the owner's visibility-notice
-  wording (§9A.1) and a privacy call.
+  `ASK_VCFO_FEATURE_<ID>` flags, all off. A1 (question gaps) is built behind `ASK_VCFO_FEATURE_A1` (off). Turning it on also shows the client visibility notice in the panel. The wording is the owner's to confirm before enabling.
 
 ## v2.0 build notes (go-there links, Phase 9)
 
@@ -101,7 +99,6 @@ MCA portal Chrome extension (`src/lib/assist-profile/`, spec in
   the firm marks content reviewed / published.
 - **C5 obligation topics** contain no rupee amounts or calendar dates; the
   firm adds exact figures during review.
-- **Feature flags are not in Terraform** yet: add `ASK_VCFO_FEATURE_<ID>` to
-  `local.app_env` in `infra/app.tf` when one should be turned on in AWS.
-- **A1 (question gaps)** is not built: it exposes client questions to staff
-  and needs the owner's wording for the client-facing visibility notice.
+- **Feature flags in Terraform:** `ask_vcfo_features = ["C1", …]` in
+  `terraform.tfvars` sets `ASK_VCFO_FEATURE_<ID>=true` in App Runner.
+- A1 (question gaps) is built behind `ASK_VCFO_FEATURE_A1` (off). Turning it on also shows the client visibility notice in the panel. The wording is the owner's to confirm before enabling.
