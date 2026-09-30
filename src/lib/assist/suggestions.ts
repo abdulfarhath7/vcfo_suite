@@ -16,6 +16,7 @@ import {
   topicsForStep,
   topicToAnswer,
 } from '@/lib/assist/topics';
+import { PREVIEW_CLIENT_LINE } from '@/lib/assist/preview';
 import { atRisk, firmPulse, overdueAndDueSoon, pendingApprovals, waitingOnClient, type StaffData } from '@/lib/assist/tools/staff';
 
 /**
@@ -222,7 +223,6 @@ export function staffQueryAnswer(query: StaffQuery, data: StaffData): AnswerEnve
   }
 }
 
-export const PREVIEW_CLIENT_LINE = 'Choose a client to preview Assist exactly as they see it.';
 
 /**
  * Deterministic answer for a suggestion, or null when it is not for this

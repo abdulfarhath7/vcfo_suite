@@ -7,5 +7,7 @@ export function reminderComposeHref(base: string, answer: AnswerEnvelope): strin
   const body = row
     ? `Hello,\n\nA quick reminder that "${row.step}" for ${row.name} is waiting on you. Please complete it in the client portal when you can.\n\nThank you.`
     : 'Hello,\n\nA quick reminder that a step on your project is waiting on you.\n\nThank you.';
-  return `${base}/mail?${new URLSearchParams({ subject, body })}`;
+  // Super admin has no mail page of its own; it may use the firm admin one.
+  const mailBase = base === '/app/super' ? '/app/admin' : base;
+  return `${mailBase}/mail?${new URLSearchParams({ subject, body })}`;
 }

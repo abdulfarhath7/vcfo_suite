@@ -14,22 +14,25 @@ const loadStaffData = vi.fn();
 let snapshot: ProjectSnapshot;
 
 vi.mock('@/db/repositories/assist-conversations', () => ({
-  createAssistConversation: vi.fn(async () => ({ id: 'conv-1' })),
+  createAssistConversation: (...a: unknown[]) => createAssistConversation(...a),
   getAssistConversationWithMessages: vi.fn(async () => null),
 }));
 vi.mock('@/db/repositories/assist-messages', () => ({
   appendAssistMessage: (...a: unknown[]) => appendAssistMessage(...a),
   countModelAnswersSince: (...a: unknown[]) => countModelAnswersSince(...a),
 }));
+const loadProjectSnapshot = vi.fn();
+const createAssistConversation = vi.fn();
 vi.mock('@/lib/assist/snapshot', () => ({
-  loadProjectSnapshot: vi.fn(async () => ({
+  loadProjectSnapshot: (...a: unknown[]) => loadProjectSnapshot(...a),
+}));
+const defaultSnapshotLoad = () => ({
     snapshot,
     engagementDbId: 'eng-db-1',
     engagementSlug: 'acme',
     state: {},
     filings: [],
-  })),
-}));
+});
 vi.mock('@/lib/assist/retrieve', () => ({ retrieveSources: vi.fn(async () => []) }));
 vi.mock('@/lib/assist/tools/staff-data', () => ({ loadStaffData: (...a: unknown[]) => loadStaffData(...a) }));
 
@@ -90,6 +93,8 @@ beforeEach(() => {
   };
   appendAssistMessage.mockImplementation(async () => ({ id: `msg-${appendAssistMessage.mock.calls.length}` }));
   countModelAnswersSince.mockResolvedValue(0);
+  loadProjectSnapshot.mockImplementation(async () => defaultSnapshotLoad());
+  createAssistConversation.mockResolvedValue({ id: 'conv-1' });
 });
 
 afterEach(() => setAssistProviderForTests(undefined));
@@ -231,5 +236,31 @@ describe('guarded free text', () => {
       'Finding sources…',
       'Writing…',
     ]);
+  });
+});
+
+describe('super admin preview as a client', () => {
+  it('is scoped to the chosen engagement and uses only client tools', async () => {
+    const provider = mockProvider([
+      guard('explain'),
+      result([toolUse('render_answer', { line: 'Your company is in SPICe+ Part B.', citations: [], actions: [] })]),
+    ]);
+    setAssistProviderForTests(provider);
+    await run('super_admin', { shell: 'client', engagementId: 'eng-chosen', message: 'Where are we?' });
+    expect(loadProjectSnapshot).toHaveBeenCalledTimes(1);
+    expect(loadProjectSnapshot.mock.calls[0]![1]).toBe('eng-chosen');
+    expect(createAssistConversation.mock.calls[0]![1]).toMatchObject({ shell: 'client', engagementId: 'eng-db-1' });
+    const toolNames = (provider.calls[1]!.tools ?? []).map((t) => t.name);
+    expect(toolNames).toContain('getProjectSnapshot');
+    expect(toolNames).not.toContain('listWaitingOnClient');
+    expect(toolNames).not.toContain('getFirmPulse');
+    expect(loadStaffData).not.toHaveBeenCalled();
+  });
+
+  it('admin cannot open a client shell', async () => {
+    setAssistProviderForTests(mockProvider([]));
+    await expect(run('admin', { shell: 'client', engagementId: 'eng-1', message: 'hi' })).rejects.toBeInstanceOf(
+      AssistForbiddenError,
+    );
   });
 });

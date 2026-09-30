@@ -104,6 +104,17 @@ export default function ComposeMail({ path }: Props) {
     };
   }, []);
 
+  // Prefill from Assist's "Draft reminder" (?subject=&body=). Nothing is sent
+  // until the user presses Send.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const presetSubject = params.get('subject');
+    const presetBody = params.get('body');
+    if (presetSubject) setSubject(presetSubject.slice(0, 300));
+    if (presetBody) setBody(presetBody.slice(0, 5000));
+  }, []);
+
   const selectedPeople = useMemo(
     () => people.filter((p) => selected.has(p.userId)),
     [people, selected],
