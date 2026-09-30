@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Library } from 'lucide-react';
 import { PageHeader } from '@/components/admin/PageHeader';
@@ -82,6 +83,14 @@ export default function AskSources() {
         title="Ask VCFO sources"
         subtitle="Documents Ask VCFO may quote. Staff-only sources are never used in client answers."
         icon={Library}
+        actions={
+          <Link
+            href="/app/admin/ask-vcfo/gaps"
+            className="inline-flex min-h-[40px] items-center rounded-[var(--radius-md)] border border-border px-3 text-[13px] font-medium text-foreground hover:bg-muted"
+          >
+            Question gaps
+          </Link>
+        }
       />
 
       <form

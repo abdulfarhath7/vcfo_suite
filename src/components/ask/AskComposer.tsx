@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { ASK_VISIBILITY_NOTICE } from '@/lib/ask/question-gaps';
 import { useAskOptional } from './ask-context';
 
 /** Input + Send — Send is the only solid primary element in the panel (D1). */
@@ -52,6 +53,7 @@ export function AskComposer() {
           <ArrowUp className="h-4 w-4" strokeWidth={2.25} />
         </button>
       </form>
+      {client && ask.features.A1 && <p className="px-1 text-[11px] text-muted-foreground">{ASK_VISIBILITY_NOTICE}</p>}
       <p className="px-1 text-[11px] text-muted-foreground">
         {client
           ? "Ask VCFO explains; it doesn't give legal advice. Your project lead confirms decisions."

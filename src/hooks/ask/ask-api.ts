@@ -29,7 +29,7 @@ async function json<T>(res: Response, fallback: string): Promise<T> {
   return body as T;
 }
 
-export type AskStatus = { enabled: boolean; firmName: string; features?: Partial<Record<'C1' | 'C2' | 'C3' | 'C4' | 'C5', boolean>> };
+export type AskStatus = { enabled: boolean; firmName: string; features?: Partial<Record<'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'A1', boolean>> };
 
 export async function fetchAskStatus(): Promise<AskStatus> {
   const res = await fetch('/api/ask/status', { cache: 'no-store' });

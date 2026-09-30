@@ -65,7 +65,7 @@ const PAGE_LABEL: Record<string, string> = {
   engagements: 'Clients',
   'board-resolution': 'Board Resolution',
   library: 'Library',
-  'ask-vcfo': 'Ask VCFO sources',
+  'ask-vcfo': 'Ask VCFO',
   learn: 'Library',
 };
 
