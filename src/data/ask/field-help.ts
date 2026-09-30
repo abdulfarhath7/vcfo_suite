@@ -4,12 +4,16 @@
  * repeating list use the entry field id, e.g. `pre-15:din`).
  *
  * Guardrail (§9A): copy is ≤ 140 characters and shown ONLY once the firm has
- * reviewed it. Every line below is a draft: set `reviewed: true` on a line
- * (through a pull request) to make it appear.
+ * reviewed it. Every line below is a draft. To make one appear, a reviewer runs
+ * `npm run ask:topics:publish -- --field <stepId>.<fieldKey> --reviewer "Name, Role"`.
+ * Keep one entry per line: the publish command edits a single line.
  */
 export interface FieldHelp {
   text: string;
   reviewed: boolean;
+  /** Set by `npm run ask:topics:publish -- --field …`; absent means unreviewed. */
+  reviewedBy?: string;
+  reviewedAt?: string;
 }
 
 export const FIELD_HELP_MAX_CHARS = 140;

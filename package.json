@@ -13,6 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "ask:topics:report": "node --conditions=react-server --import tsx scripts/ask-topics-report.ts",
+    "ask:topics:publish": "node --conditions=react-server --import tsx scripts/ask-topics-publish.ts",
     "eval:live": "node --conditions=react-server --import tsx tests/ask/evals/run-live.ts",
     "e2e": "playwright test",
     "db:generate": "drizzle-kit generate",

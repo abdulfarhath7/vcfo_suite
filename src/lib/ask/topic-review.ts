@@ -1,0 +1,184 @@
+import { getActiveCatalogItems } from '@/data/checklist';
+import { DOCUMENT_TOPICS } from '@/data/ask/documents';
+import { FIELD_HELP, type FieldHelp } from '@/data/ask/field-help';
+import { GLOSSARY } from '@/data/ask/glossary';
+import type { Suggestion, Topic } from '@/data/ask/schema';
+import { SUGGESTIONS } from '@/data/ask/suggestions';
+import { visualText } from '@/components/ask/visuals/visual-text';
+import { COMPLIANCE_OBLIGATIONS } from '@/lib/compliance/obligations-seed';
+
+/**
+ * The firm's review pack for Ask VCFO content (GAP-2): one markdown file a
+ * reviewer can read top to bottom. Pure and deterministic — the same content
+ * always renders the same file, so regenerating it shows only real changes.
+ */
+
+export const REVIEW_CHECKLIST =
+  '- [ ] Facts correct  - [ ] Plain English  - [ ] No decision stated as advice  - [ ] Citations correct  - [ ] No amounts or dates that belong in the calendar';
+
+const OBLIGATION_PREFIX = 'obligation-';
+
+export interface TopicUsage {
+  suggestions: string[];
+  steps: string[];
+  documents: string[];
+  obligation: string | null;
+  glossary: string[];
+}
+
+export interface TopicReviewInput {
+  topics: readonly Topic[];
+  suggestions?: readonly Suggestion[];
+  documentTopics?: Readonly<Record<string, string>>;
+  fieldHelp?: Readonly<Record<string, FieldHelp>>;
+  obligationIds?: ReadonlyArray<{ id: string; particular: string }>;
+}
+
+export function topicUsage(topic: Topic, input: TopicReviewInput): TopicUsage {
+  const suggestions = input.suggestions ?? SUGGESTIONS;
+  const docs = input.documentTopics ?? DOCUMENT_TOPICS;
+  const direct = suggestions.filter((s) => s.handler.kind === 'topic' && s.handler.slug === topic.slug).map((s) => s.id);
+  // A topic served in place of another (LLP → FiLLiP) is reached through that one's suggestions.
+  const viaAlternate = input.topics
+    .filter((t) => t.alternateFor?.some((a) => a.slug === topic.slug))
+    .flatMap((t) =>
+      suggestions
+        .filter((s) => s.handler.kind === 'topic' && s.handler.slug === t.slug)
+        .map((s) => `${s.id} (alternate)`),
+    );
+  return {
+    suggestions: [...direct, ...viaAlternate],
+    steps: topic.stepIds ?? [],
+    documents: Object.entries(docs)
+      .filter(([, slug]) => slug === topic.slug)
+      .map(([field]) => field),
+    obligation: topic.slug.startsWith(OBLIGATION_PREFIX) ? topic.slug.slice(OBLIGATION_PREFIX.length) : null,
+    glossary: GLOSSARY.filter((g) => g.topicSlug === topic.slug).map((g) => g.term),
+  };
+}
+
+/** Review order: client suggestions, step topics, document topics, obligation topics, the rest. */
+function rank(topic: Topic, usage: TopicUsage, suggestions: readonly Suggestion[]): number {
+  const clientSuggestion = usage.suggestions.some((id) => suggestions.find((s) => s.id === id.replace(' (alternate)', ''))?.shell === 'client');
+  if (clientSuggestion) return 0;
+  if (usage.documents.length > 0) return 2;
+  if (usage.obligation) return 3;
+  if (usage.steps.length > 0) return 1;
+  return 4;
+}
+
+function usedBy(u: TopicUsage): string {
+  const parts = [
+    ...u.suggestions.map((s) => `suggestion ${s}`),
+    ...u.steps.map((s) => `step ${s}`),
+    ...u.documents.map((d) => `document ${d}`),
+    ...(u.obligation ? [`obligation ${u.obligation}`] : []),
+    ...u.glossary.map((g) => `glossary ${g}`),
+  ];
+  return parts.join(', ') || '—';
+}
+
+const cell = (text: string | number | undefined | null) => String(text ?? '—').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+
+export function coverageGaps(input: TopicReviewInput): { steps: string[]; documents: string[]; obligations: string[] } {
+  const slugs = new Set(input.topics.map((t) => t.slug));
+  const covered = new Set(input.topics.flatMap((t) => t.stepIds ?? []));
+  const docs = input.documentTopics ?? DOCUMENT_TOPICS;
+  const obligations = input.obligationIds ?? COMPLIANCE_OBLIGATIONS.map((o) => ({ id: o.id, particular: o.particular }));
+  return {
+    steps: getActiveCatalogItems()
+      .filter((item) => item.responsibleRole === 'client' && !covered.has(item.id))
+      .map((item) => `${item.id} — ${item.title}`),
+    documents: Object.entries(docs)
+      .filter(([, slug]) => !slugs.has(slug))
+      .map(([field, slug]) => `${field} (expects topic ${slug})`),
+    obligations: obligations.filter((o) => !slugs.has(`${OBLIGATION_PREFIX}${o.id}`)).map((o) => `${o.id} — ${o.particular}`),
+  };
+}
+
+export function buildTopicReview(input: TopicReviewInput): string {
+  const suggestions = input.suggestions ?? SUGGESTIONS;
+  const fieldHelp = input.fieldHelp ?? FIELD_HELP;
+  const rows = input.topics
+    .map((topic) => ({ topic, usage: topicUsage(topic, input) }))
+    .map((r) => ({ ...r, rank: rank(r.topic, r.usage, suggestions) }))
+    .sort((a, b) => a.rank - b.rank || a.topic.slug.localeCompare(b.topic.slug));
+  const drafts = rows.filter((r) => r.topic.status === 'draft');
+  const published = rows.length - drafts.length;
+  const out: string[] = [];
+
+  out.push('# Ask VCFO — topic review pack', '');
+  out.push(
+    'Generated by `npm run ask:topics:report`. Do not edit by hand: edit the topic JSON under `src/data/ask/topics/` and run the report again.',
+    '',
+    `${rows.length} topics: ${published} published, ${drafts.length} draft. Clients see "Not yet reviewed" on every draft.`,
+    '',
+    'To publish a topic after review: `npm run ask:topics:publish -- <slug> --reviewer "Name, Role"`.',
+    'To take one back to draft: `npm run ask:topics:publish -- --unpublish <slug>`.',
+    '',
+  );
+
+  out.push('## Summary', '');
+  out.push('| Slug | Title | Category | Audience | Status | Version | Reviewed by | Reviewed at | Used by |');
+  out.push('|---|---|---|---|---|---|---|---|---|');
+  for (const { topic, usage } of rows) {
+    out.push(
+      `| ${[topic.slug, topic.title, topic.category, topic.audience, topic.status, topic.version, topic.reviewedBy, topic.reviewedAt, usedBy(usage)]
+        .map(cell)
+        .join(' | ')} |`,
+    );
+  }
+  out.push('');
+
+  const gaps = coverageGaps(input);
+  out.push('## Coverage gaps', '');
+  const gapList = (title: string, items: string[]) => {
+    out.push(`**${title}:** ${items.length === 0 ? 'none.' : ''}`);
+    for (const item of items) out.push(`- ${item}`);
+    out.push('');
+  };
+  gapList('Client-owned steps with no topic', gaps.steps);
+  gapList('Document types with no topic', gaps.documents);
+  gapList('Compliance obligations with no topic', gaps.obligations);
+
+  out.push('## Draft topics to review', '');
+  if (drafts.length === 0) out.push('No drafts. Every topic is published.', '');
+  for (const { topic, usage } of drafts) {
+    out.push(`### ${topic.title} (\`${topic.slug}\`)`, '');
+    out.push(`- **Question:** ${topic.question}`);
+    out.push(`- **Used by:** ${usedBy(usage)}`);
+    const forms = topic.appliesTo.legalForms.length ? topic.appliesTo.legalForms.join(', ') : 'all legal forms';
+    const residency = topic.appliesTo.residency.length ? topic.appliesTo.residency.join(', ') : 'domestic and foreign';
+    out.push(`- **Applies to:** ${forms}; ${residency}`);
+    out.push(`- **Audience:** ${topic.audience} · **Category:** ${topic.category} · **Version:** ${topic.version}`);
+    if (topic.effortLabel) out.push(`- **Effort label:** ${topic.effortLabel}`);
+    out.push('');
+    out.push(`**Normal:** ${topic.body.normal}`, '');
+    out.push(`**Simple:** ${topic.body.simple}`, '');
+    out.push(`**More detail:** ${topic.body.detail}`, '');
+    out.push(`**Why it matters:** ${topic.body.why}`, '');
+    out.push(`**Visual (${topic.visual ? topic.visual.type : 'none'}):** ${topic.visual ? visualText(topic.visual) : '—'}`, '');
+    out.push('**Citations:**');
+    for (const c of topic.citations) out.push(`- ${c.label}${c.url ? ` — ${c.url}` : ''} (\`${c.id}\`)`);
+    out.push('');
+    out.push(`**Related:** ${topic.related.length ? topic.related.map((s) => `\`${s}\``).join(', ') : '—'}`, '');
+    out.push(REVIEW_CHECKLIST, '');
+  }
+
+  const helpEntries = Object.entries(fieldHelp).sort(([a], [b]) => a.localeCompare(b));
+  out.push('## Field help lines ("Why do we ask this?")', '');
+  out.push(
+    `${helpEntries.filter(([, e]) => e.reviewed).length} of ${helpEntries.length} reviewed. A line shows to clients only once reviewed.`,
+    'To publish one: `npm run ask:topics:publish -- --field <stepId>.<fieldKey> --reviewer "Name, Role"`.',
+    '',
+  );
+  out.push('| Field | Text | Chars | Reviewed | Reviewed by | Reviewed at |');
+  out.push('|---|---|---|---|---|---|');
+  for (const [key, entry] of helpEntries) {
+    out.push(
+      `| ${[key.replace(':', '.'), entry.text, entry.text.length, entry.reviewed ? 'yes' : 'no', entry.reviewedBy, entry.reviewedAt].map(cell).join(' | ')} |`,
+    );
+  }
+  out.push('', '- [ ] Facts correct  - [ ] Plain English  - [ ] 140 characters or fewer', '');
+  return out.join('\n');
+}
