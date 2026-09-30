@@ -95,7 +95,7 @@ Terraform: you create the secret by hand, Terraform only looks it up by name.
 1. Secrets Manager (ap-south-1) → **Store a new secret** → *Other type of
    secret* → **Plaintext** tab → paste only the key (`sk-ant-…`, no quotes, no
    JSON) → name it `/vcfo/ask-vcfo/anthropic-api-key` → store.
-2. Migrate RDS first (Ask VCFO tables are migrations `0021` + `0022`):
+2. Migrate RDS first (Ask VCFO tables are migrations `0021`–`0023`):
    `DATABASE_URL=<rds url> npm run db:migrate`.
 3. In `terraform.tfvars` add `ask_vcfo_enabled = true`.
 4. `terraform plan` — expect only the App Runner service (two env vars, one

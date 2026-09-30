@@ -81,3 +81,25 @@ portal extension profile in `src/lib/assist-profile/`, which is a separate featu
   `ASK_VCFO_FEATURE_<ID>` flags, all off. **A1 (question gaps) deferred** — it
   shows staff what clients ask, which needs the owner's visibility-notice
   wording (§9A.1) and a privacy call.
+
+## v2.0 build notes (go-there links, Phase 9)
+
+- **Focus anchors** are `data-ask-focus` attributes on journey rail rows
+  (step id), Incorporation phase rows (phase id; a step id falls back to its
+  phase row there), and compliance rows (instance id). One handler mounted
+  with the panel serves every page. A dedicated one-shot `.ask-focus-pulse`
+  is used; `.journey-node-pulse` loops forever and marks the current step.
+- **No client Inbox** exists, so `{ to: "inbox" }` resolves to client Home.
+- **Staff links** resolve through `adminProjectPath` / `adminProjectStepPath`
+  / `staffProjectBase`; super admin lands on the firm admin pages, as those
+  helpers already decide.
+- **C2** follows the v1 draft rule (draft topic served with the "Not yet
+  reviewed" badge). **C3** lines and **C5** obligation topics are shown only
+  when reviewed, per their guardrails, so both features show nothing until
+  the firm marks content reviewed / published.
+- **C5 obligation topics** contain no rupee amounts or calendar dates; the
+  firm adds exact figures during review.
+- **Feature flags are not in Terraform** yet: add `ASK_VCFO_FEATURE_<ID>` to
+  `local.app_env` in `infra/app.tf` when one should be turned on in AWS.
+- **A1 (question gaps)** is not built: it exposes client questions to staff
+  and needs the owner's wording for the client-facing visibility notice.
