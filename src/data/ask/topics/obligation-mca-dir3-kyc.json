@@ -1,0 +1,43 @@
+{
+  "slug": "obligation-mca-dir3-kyc",
+  "title": "Director KYC (DIR-3 KYC)",
+  "question": "What is DIR-3 KYC, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "Every person holding a Director Identification Number confirms their contact details and identity with the Ministry of Corporate Affairs once a year. That yearly confirmation is DIR-3 KYC.",
+    "simple": "Each director confirms their details with the government once a year.",
+    "detail": "The director confirms their mobile number, email and address. The first time it is a full form with documents; in later years it is usually a short web confirmation. It is a personal obligation of each director, across all companies they sit on.",
+    "why": "A director whose DIN is deactivated cannot sign filings for any company until it is fixed."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Yearly identity confirmation by each director"
+      },
+      {
+        "k": "Who files it",
+        "v": "Each director; your firm helps with the filing"
+      },
+      {
+        "k": "If it is missed",
+        "v": "The director's DIN is deactivated until the KYC is filed with a late fee. Meanwhile they cannot sign company filings."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "companies-rules-2014-r12a",
+      "label": "Companies (Appointment and Qualification of Directors) Rules 2014, rule 12A"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

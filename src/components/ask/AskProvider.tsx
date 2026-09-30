@@ -225,7 +225,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
     () => ({
       enabled: enabled && shell !== null,
       firmName,
-      features,
+      features: features ?? {},
       open: open && enabled,
       setOpen,
       toggle,

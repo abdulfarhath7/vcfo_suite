@@ -1,0 +1,47 @@
+{
+  "slug": "obligation-gst-gstr-3b",
+  "title": "GSTR-3B",
+  "question": "What is GSTR-3B, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "GSTR-3B is the regular GST summary return. It reports the company's sales and purchases for the period and is filed together with the GST payment.",
+    "simple": "GSTR-3B is the regular GST return where the company pays its GST.",
+    "detail": "Every GST-registered business files GSTR-3B for each tax period, even when there were no sales. It summarises outward supplies, input tax credit claimed and the net tax, which is paid with the return. It cannot be revised once filed, so the figures are checked against the books first.",
+    "why": "A missed return stops the next one from being filed and adds cost for every day of delay."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Summary GST return with the tax payment"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "A late fee for each day of delay and interest on unpaid tax. Later returns cannot be filed until it is cleared."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "cgst-act-2017-s39",
+      "label": "CGST Act 2017, section 39 (returns)"
+    },
+    {
+      "id": "cgst-act-2017-s47",
+      "label": "CGST Act 2017, section 47 (late fee)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

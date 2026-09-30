@@ -1,0 +1,43 @@
+{
+  "slug": "obligation-mca-mgt-7",
+  "title": "Form MGT-7",
+  "question": "What is Form MGT-7, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "Form MGT-7 is the company's annual return. It gives the Registrar a yearly snapshot of the company: its shareholders, directors, share capital and meetings held.",
+    "simple": "MGT-7 is the yearly update telling the Registrar who owns and runs the company.",
+    "detail": "The annual return is filed after the annual general meeting. It records the shareholding at year end, changes in directors, and the board and shareholder meetings held during the year.",
+    "why": "Together with AOC-4 it keeps the company in good standing on the public record."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Yearly return of shareholders, directors and capital"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "An additional fee for each day of delay, and penalties on the company and its officers if it stays unfiled."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "companies-act-2013-s92",
+      "label": "Companies Act 2013, section 92 (annual return)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

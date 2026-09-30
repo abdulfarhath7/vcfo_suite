@@ -248,7 +248,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       await finish(unavailableAnswer(shell));
       return;
     }
-    const answer = contextAnswer(request.context, { snapshot, clientTools });
+    const answer = contextAnswer(request.context, { snapshot, clientTools, features: askFeatures() });
     if (answer) {
       await finish(answer);
       return;

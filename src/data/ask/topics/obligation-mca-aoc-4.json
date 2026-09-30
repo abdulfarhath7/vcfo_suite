@@ -1,0 +1,43 @@
+{
+  "slug": "obligation-mca-aoc-4",
+  "title": "Form AOC-4",
+  "question": "What is Form AOC-4, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "Form AOC-4 files the company's audited financial statements with the Registrar of Companies every year, after the shareholders adopt them at the annual general meeting.",
+    "simple": "AOC-4 sends the company's yearly accounts to the Registrar.",
+    "detail": "Each year the board approves the financial statements, the auditor reports on them and the shareholders adopt them at the AGM. AOC-4 then places them on the public record, with the board's report and auditor's report attached.",
+    "why": "Unfiled accounts show on the public record and block other filings over time."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Yearly filing of audited financial statements"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "An additional fee for each day of delay, and penalties on the company and its directors if it stays unfiled."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "companies-act-2013-s137",
+      "label": "Companies Act 2013, section 137 (filing financial statements)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

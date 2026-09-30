@@ -356,7 +356,7 @@ function registerColumns(
       render: (row) => (
         <span className="flex min-w-0 items-center gap-1">
           <span className="truncate text-ink">{row.particular}</span>
-          <WhatsThisButton compact kind="compliance" refId={row.particular} label={row.particular} />
+          <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
         </span>
       ),
     },
@@ -475,7 +475,7 @@ function RegisterTable({
           <div className="min-w-0 flex-1">
             <p className="flex min-w-0 items-center gap-1 text-[13px] font-semibold text-ink">
               <span className="truncate">{row.particular}</span>
-              <WhatsThisButton compact kind="compliance" refId={row.particular} label={row.particular} />
+              <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
             </p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               {mode.company ? `${row.companyName} · ` : ''}

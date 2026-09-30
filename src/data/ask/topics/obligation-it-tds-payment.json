@@ -1,0 +1,47 @@
+{
+  "slug": "obligation-it-tds-payment",
+  "title": "TDS payment",
+  "question": "What is the TDS payment, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "When the company pays salaries, rent, professional fees and similar amounts, it deducts tax and pays that tax to the government each month. That monthly deposit is the TDS payment.",
+    "simple": "The company pays over the tax it held back from salaries and vendor payments.",
+    "detail": "Tax deducted at source belongs to the government from the moment it is deducted. The company deposits it under its TAN, then reports the details in quarterly TDS statements so that employees and vendors get credit for it.",
+    "why": "The deducted tax is not the company's money, so the law treats late deposit seriously."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Monthly deposit of tax deducted from payments"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "Interest for each month of delay, and the related expense can be disallowed for income tax. Long delays can lead to prosecution."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "income-tax-act-1961-s200",
+      "label": "Income-tax Act 1961, section 200 (duty to pay TDS)"
+    },
+    {
+      "id": "income-tax-act-1961-s201",
+      "label": "Income-tax Act 1961, section 201 (interest)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

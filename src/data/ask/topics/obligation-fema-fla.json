@@ -1,0 +1,49 @@
+{
+  "slug": "obligation-fema-fla",
+  "title": "FLA return",
+  "question": "What is the FLA return, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": [
+      "foreign"
+    ]
+  },
+  "body": {
+    "normal": "The FLA return reports a company's foreign liabilities and assets to the Reserve Bank of India each year. Companies that have received foreign investment must file it.",
+    "simple": "A yearly report to the Reserve Bank about the company's foreign investment.",
+    "detail": "The return is filed online with the RBI and draws on the company's financial statements: foreign shareholding, loans from abroad and any overseas investments. It is required for every year in which the company holds foreign investment, even if nothing changed.",
+    "why": "Your parent company's investment makes this filing apply to you every year."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Yearly report of foreign liabilities and assets to the RBI"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "It is treated as a breach of foreign exchange rules and needs a late submission fee to regularise."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "fema-1999",
+      "label": "Foreign Exchange Management Act 1999"
+    },
+    {
+      "id": "rbi-md-fdi-reporting",
+      "label": "RBI Master Direction — Reporting under FEMA"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

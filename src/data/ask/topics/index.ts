@@ -15,6 +15,13 @@ import directorKyc from './director-kyc.json';
 import fcGpr from './fc-gpr.json';
 import fillipLlpIncorporation from './fillip-llp-incorporation.json';
 import gstBasics from './gst-basics.json';
+import obligationGstGstr3b from './obligation-gst-gstr-3b.json';
+import obligationGstGstr1 from './obligation-gst-gstr-1.json';
+import obligationItTdsPayment from './obligation-it-tds-payment.json';
+import obligationMcaAoc4 from './obligation-mca-aoc-4.json';
+import obligationMcaMgt7 from './obligation-mca-mgt-7.json';
+import obligationMcaDir3Kyc from './obligation-mca-dir3-kyc.json';
+import obligationFemaFla from './obligation-fema-fla.json';
 import registeredOffice from './registered-office.json';
 import signedBoardResolution from './signed-board-resolution.json';
 import spicePlusConfirmation from './spice-plus-confirmation.json';
@@ -42,4 +49,12 @@ export const RAW_TOPICS: readonly unknown[] = [
   docAoa,
   docGstCertificate,
   docIecCertificate,
+  // C5: one topic per compliance obligation (`obligation-<compliance_obligations.id>`).
+  obligationGstGstr3b,
+  obligationGstGstr1,
+  obligationItTdsPayment,
+  obligationMcaAoc4,
+  obligationMcaMgt7,
+  obligationMcaDir3Kyc,
+  obligationFemaFla,
 ];

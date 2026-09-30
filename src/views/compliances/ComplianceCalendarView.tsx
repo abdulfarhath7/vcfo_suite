@@ -248,7 +248,7 @@ function MonthRow({
           >
             {row.particular}
           </Link>
-          <WhatsThisButton compact kind="compliance" refId={row.particular} label={row.particular} />
+          <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
         </span>
         <span className="text-[11px] text-muted-foreground">
           {showCompany ? `${row.companyName} · ` : ''}

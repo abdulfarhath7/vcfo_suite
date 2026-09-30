@@ -4,10 +4,16 @@ import { findGlossaryTerm } from '@/lib/ask/glossary';
 import { stepExplainerContext, type ClientToolContext } from '@/lib/ask/tools/client';
 import {
   applicabilityFromSnapshot,
+  isReviewed,
   resolveTopicForViewer,
   topicsForStep,
   topicToAnswer,
 } from '@/lib/ask/topics';
+
+/** Topic slug for a compliance obligation (`compliance_obligations.id`). */
+export function obligationTopicSlug(obligationId: string): string {
+  return `obligation-${obligationId}`;
+}
 
 export type AskContextRef = { kind: 'step' | 'field' | 'compliance' | 'document'; ref: string; label: string };
 
@@ -19,7 +25,7 @@ export type AskContextRef = { kind: 'step' | 'field' | 'compliance' | 'document'
  */
 export function contextAnswer(
   context: AskContextRef,
-  opts: { snapshot: ProjectSnapshot | null; clientTools: ClientToolContext | null },
+  opts: { snapshot: ProjectSnapshot | null; clientTools: ClientToolContext | null; features?: Partial<Record<'C5', boolean>> },
 ): AnswerEnvelope | null {
   const applicability = applicabilityFromSnapshot(opts.snapshot);
 
@@ -74,6 +80,13 @@ export function contextAnswer(
       origin: 'deterministic',
       depth: 'normal',
     };
+  }
+
+  if (context.kind === 'compliance' && opts.features?.C5) {
+    // C5: penalty text comes only from a REVIEWED obligation topic — a draft
+    // is not served, and nothing here is computed or generated.
+    const topic = resolveTopicForViewer(obligationTopicSlug(context.ref), applicability, 'client');
+    if (topic && isReviewed(topic)) return topicToAnswer(topic, { shell: 'client', snapshot: opts.snapshot });
   }
 
   const term = findGlossaryTerm(context.ref) ?? findGlossaryTerm(context.label);

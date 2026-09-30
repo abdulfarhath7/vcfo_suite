@@ -1,0 +1,43 @@
+{
+  "slug": "obligation-gst-gstr-1",
+  "title": "GSTR-1",
+  "question": "What is GSTR-1, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "GSTR-1 lists the company's sales invoices for the period. Customers rely on it to claim credit for the GST they paid to the company.",
+    "simple": "GSTR-1 is the list of the company's sales invoices sent to the GST system.",
+    "detail": "GSTR-1 reports every outward supply: invoices to registered customers, exports and other sales. The details flow into each customer's records, so an invoice left out means the customer cannot claim its credit. It is filed monthly or quarterly depending on turnover.",
+    "why": "Customers notice quickly when invoices are missing from GSTR-1, because their own tax credit depends on it."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Statement of sales invoices for the period"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "A late fee for each day of delay, and customers cannot claim credit for the company's invoices until it is filed."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "cgst-act-2017-s37",
+      "label": "CGST Act 2017, section 37 (outward supplies)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}
