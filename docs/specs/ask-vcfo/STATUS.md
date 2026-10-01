@@ -81,7 +81,7 @@ ANTHROPIC_API_KEY=sk-ant-…          # free-text questions; suggestions work wi
 ASK_VCFO_FEATURE_C1=true            # optional, any of C1 C2 C3 C4 C5 A1
 ```
 
-**AWS** — see `infra/README.md` "Ask VCFO":
+**AWS** — done on 2026-10-01 (on in production). For reference, see `infra/README.md` "Ask VCFO":
 
 1. Store the key in Secrets Manager as `/vcfo/ask-vcfo/anthropic-api-key`
    (plaintext, the key only).
