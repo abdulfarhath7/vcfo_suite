@@ -1,0 +1,47 @@
+{
+  "slug": "obligation-it-tds-return-q1",
+  "title": "TDS return (Q1)",
+  "question": "What is the Q1 TDS return, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "The TDS return is a quarterly statement of the tax the company deducted and paid over, and from whom. This one covers April to June.",
+    "simple": "A quarterly report of the tax the company held back from salaries and vendor payments.",
+    "detail": "The monthly TDS payments put the money with the government; the quarterly return says whose tax it was. Salaries and other payments are reported in separate statements. Once processed, the credit shows in each employee's and vendor's tax records.",
+    "why": "Employees and vendors only get credit for the tax once the return is filed correctly."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Quarterly statement of tax deducted and deposited"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "A late fee for each day of delay, capped at the tax deducted. A penalty can also apply if it stays unfiled or is filed wrong."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "income-tax-act-1961-s200-3",
+      "label": "Income-tax Act 1961, section 200(3) (TDS statements)"
+    },
+    {
+      "id": "income-tax-act-1961-s234e",
+      "label": "Income-tax Act 1961, section 234E (late fee)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

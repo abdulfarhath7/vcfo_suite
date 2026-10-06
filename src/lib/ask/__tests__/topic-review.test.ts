@@ -32,7 +32,7 @@ describe('topic review pack', () => {
     const gaps = coverageGaps({ topics });
     expect(gaps.steps).toEqual([]);
     expect(gaps.documents).toEqual([]);
-    expect(gaps.obligations.some((o) => o.startsWith('gst-gstr-9'))).toBe(true);
+    expect(gaps.obligations.some((o) => o.startsWith('llp-form-11'))).toBe(true);
     expect(gaps.obligations.some((o) => o.startsWith('gst-gstr-3b'))).toBe(false);
     const fewer = coverageGaps({ topics: topics.filter((t) => t.slug !== 'subscribers' && t.slug !== 'doc-moa') });
     expect(fewer.steps).toEqual(['pre-16 — Subscriber Details']);

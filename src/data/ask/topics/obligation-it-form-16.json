@@ -1,0 +1,47 @@
+{
+  "slug": "obligation-it-form-16",
+  "title": "Form 16",
+  "question": "What is Form 16, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "Form 16 is the certificate the company gives each employee showing their salary for the year and the tax deducted from it. Employees use it to file their own tax returns.",
+    "simple": "The yearly tax certificate the company gives each employee.",
+    "detail": "Form 16 is generated from the tax department's system after the last quarter's TDS return is filed, so that return has to be in first. The company signs and issues it to every employee whose tax was deducted.",
+    "why": "Employees need it to file their own returns, so they notice when it is late."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Yearly certificate of salary and tax deducted, for each employee"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares it; the company signs and issues it to employees"
+      },
+      {
+        "k": "If it is missed",
+        "v": "A penalty for each day of delay, for each certificate not issued."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "income-tax-act-1961-s203",
+      "label": "Income-tax Act 1961, section 203 (certificate for tax deducted)"
+    },
+    {
+      "id": "income-tax-act-1961-s272a",
+      "label": "Income-tax Act 1961, section 272A (penalty)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

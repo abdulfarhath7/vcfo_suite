@@ -1,0 +1,47 @@
+{
+  "slug": "obligation-mca-msme-1-apr",
+  "title": "Form MSME-1 (Apr–Sep)",
+  "question": "What is Form MSME-1 for April to September, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "Form MSME-1 is a half-yearly return to the Registrar of Companies listing amounts owed to micro and small business suppliers that were not paid on time. This one covers April to September.",
+    "simple": "A half-yearly report of payments owed to small suppliers that are overdue.",
+    "detail": "It applies when the company owes money to a supplier registered as a micro or small enterprise and has not paid within the time the law allows. The return lists the amounts and the reasons for the delay. Your firm checks supplier registrations and unpaid bills to see whether a filing is needed.",
+    "why": "Small suppliers are protected by law, and delayed payments to them can also cost the company interest and tax deductions."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Half-yearly return of overdue payments to small suppliers"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "Penalties on the company and its officers for not filing."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "companies-act-2013-s405",
+      "label": "Companies Act 2013, section 405 (power to call for information)"
+    },
+    {
+      "id": "msme-1-order-2019",
+      "label": "Specified Companies (Furnishing of information about payment to micro and small enterprise suppliers) Order 2019"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}
