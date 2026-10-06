@@ -418,6 +418,9 @@ export async function assertEngagementAccess(
 
   if (ctx.role === 'manager') {
     if (rowOwnedByManager(row, ctx.userId)) return { ok: true, dbId, row };
+    // Co-managers (engagement_managers) — same membership source as scopeFor().
+    const memberIds = await listManagerMemberEngagementIds(ctx.userId);
+    if (memberIds.includes(dbId)) return { ok: true, dbId, row };
     return { ok: false, dbId, forbidden: true };
   }
 
@@ -716,6 +719,21 @@ export async function getClientProfileForEngagement(
   clientUserId: string,
 ): Promise<{ id: string; email: string; name: string | null } | null> {
   if (ctx.role !== 'admin' && ctx.role !== 'manager') return null;
+  if (ctx.role === 'manager') {
+    // Only a client on an engagement in this manager's scope (primary pointer
+    // or engagement_clients membership); anything else reads as not found.
+    const memberIds = await listClientMemberEngagementIds(clientUserId);
+    const clientConds = [eq(engagements.clientUserId, clientUserId)];
+    if (memberIds.length > 0) clientConds.push(inArray(engagements.id, memberIds));
+    const clientMatch = clientConds.length === 1 ? clientConds[0] : or(...clientConds);
+    const scope = await scopeFor(ctx);
+    const [inScope] = await db
+      .select({ id: engagements.id })
+      .from(engagements)
+      .where(and(scope, clientMatch))
+      .limit(1);
+    if (!inScope) return null;
+  }
   const [row] = await db
     .select({ id: profiles.id, email: profiles.email, name: profiles.name })
     .from(profiles)

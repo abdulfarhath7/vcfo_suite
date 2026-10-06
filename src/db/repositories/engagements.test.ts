@@ -246,6 +246,21 @@ describe('assertEngagementAccess', () => {
     if (!ok) expect(out).toMatchObject({ forbidden: true });
   });
 
+  it('manager: co-manager membership (engagement_managers) is allowed, like scopeFor', async () => {
+    selectRows = [row({ managerId: 'user-other' })];
+    listManagerMemberEngagementIds.mockResolvedValue([ENG]);
+    const out = await repo.assertEngagementAccess(ctx('manager'), ENG);
+    expect(out).toMatchObject({ ok: true, dbId: ENG });
+    expect(listManagerMemberEngagementIds).toHaveBeenCalledWith('user-manager');
+  });
+
+  it('manager: membership of a different engagement does not admit an unrelated manager', async () => {
+    selectRows = [row({ managerId: 'user-other' })];
+    listManagerMemberEngagementIds.mockResolvedValue([OTHER]);
+    const out = await repo.assertEngagementAccess(ctx('manager'), ENG);
+    expect(out).toMatchObject({ ok: false, forbidden: true });
+  });
+
   it('intern: own intern_id ok, lead membership ok, anything else forbidden', async () => {
     selectRows = [row({ internId: 'i-own' })];
     expect((await repo.assertEngagementAccess(ctx('intern'), ENG)).ok).toBe(true);
@@ -391,5 +406,36 @@ describe('admin-only surfaces', () => {
   it.each(['intern', 'client'] as const)('getClientProfileForEngagement refuses %s', async (role) => {
     await expect(repo.getClientProfileForEngagement(ctx(role), 'user-x')).resolves.toBeNull();
     expect(wheres).toHaveLength(0);
+  });
+
+  it('getClientProfileForEngagement: manager reads a client on an engagement in scope', async () => {
+    const profile = { id: 'user-x', email: 'x@client.test', name: 'X' };
+    selectRows = [profile];
+    listClientMemberEngagementIds.mockResolvedValue([ENG]);
+    await expect(repo.getClientProfileForEngagement(ctx('manager'), 'user-x')).resolves.toEqual(profile);
+    expect(listClientMemberEngagementIds).toHaveBeenCalledWith('user-x');
+    // First WHERE is the scope check: manager scope AND (client_user_id = X OR membership).
+    const scopeCheck = dialect.sqlToQuery(wheres[0]!);
+    expect(scopeCheck.sql).toContain('"engagements"."manager_id" =');
+    expect(scopeCheck.sql).toContain('"engagements"."client_user_id" =');
+    expect(scopeCheck.params).toContain('user-manager');
+    expect(scopeCheck.params).toContain('user-x');
+    expect(scopeCheck.params).toContain(ENG);
+    expect(wheres).toHaveLength(2);
+  });
+
+  it('getClientProfileForEngagement: manager cannot read a client outside scope', async () => {
+    selectRows = [];
+    await expect(repo.getClientProfileForEngagement(ctx('manager'), 'user-x')).resolves.toBeNull();
+    // The profile itself is never queried.
+    expect(wheres).toHaveLength(1);
+  });
+
+  it('getClientProfileForEngagement: admin stays firm-wide (no engagement scope check)', async () => {
+    const profile = { id: 'user-x', email: 'x@client.test', name: 'X' };
+    selectRows = [profile];
+    await expect(repo.getClientProfileForEngagement(ctx('admin'), 'user-x')).resolves.toEqual(profile);
+    expect(wheres).toHaveLength(1);
+    expect(listClientMemberEngagementIds).not.toHaveBeenCalled();
   });
 });

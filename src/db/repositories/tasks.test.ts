@@ -216,6 +216,36 @@ describe('createTask / updateTask', () => {
     expect(calls.filter((c) => c.op === 'update')).toHaveLength(0);
   });
 
+  it.each(['manager', 'intern'] as const)(
+    '%s cannot move a task onto another firm’s engagement; nothing is written',
+    async (role) => {
+      results = [[taskRow(OWN)]];
+      assertEngagementAccess.mockImplementation(async (_c: unknown, id: string) =>
+        id === OWN
+          ? { ok: true, dbId: OWN, row: {} }
+          : { ok: false, dbId: OTHER, forbidden: true },
+      );
+      expect(await repo.updateTask(ctx(role), 't-1', { engagementId: OTHER })).toBeNull();
+      expect(assertEngagementAccess).toHaveBeenCalledWith(expect.anything(), OTHER);
+      expect(calls.filter((c) => c.op === 'update')).toHaveLength(0);
+    },
+  );
+
+  it('moving a task to an accessible engagement writes the target db id', async () => {
+    const TARGET = '33333333-3333-3333-3333-333333333303';
+    results = [[taskRow(OWN)], [taskRow(TARGET)]];
+    assertEngagementAccess.mockImplementation(async (_c: unknown, id: string) => ({
+      ok: true,
+      dbId: id,
+      row: {},
+    }));
+    const out = await repo.updateTask(ctx('manager'), 't-1', { engagementId: TARGET });
+    expect(out?.engagementId).toBe(TARGET);
+    expect(assertEngagementAccess).toHaveBeenCalledWith(expect.anything(), TARGET);
+    const update = calls.find((c) => c.op === 'update');
+    expect((update!.set as { engagementId: string }).engagementId).toBe(TARGET);
+  });
+
   it('client may not update, even a visible task', async () => {
     results = [[taskRow(OWN)]];
     assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
