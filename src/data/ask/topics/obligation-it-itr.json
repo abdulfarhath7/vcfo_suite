@@ -1,0 +1,47 @@
+{
+  "slug": "obligation-it-itr",
+  "title": "Income tax return",
+  "question": "What is the income tax return, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "The income tax return reports the company's income for the financial year and settles its tax for that year. It must be filed every year, even in a year with a loss or no income.",
+    "simple": "The company's yearly income tax filing, required even when there is no profit.",
+    "detail": "The return is built from the company's final accounts and, where an audit is required, the tax audit report. Advance tax and TDS already paid are set off against the tax due. The due date depends on whether the accounts must be audited.",
+    "why": "Filing on time protects the company's right to carry forward losses to later years."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Yearly return of income and tax for the financial year"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "Interest on unpaid tax and a late filing fee. Losses in a late return generally cannot be carried forward."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "income-tax-act-1961-s139",
+      "label": "Income-tax Act 1961, section 139 (return of income)"
+    },
+    {
+      "id": "income-tax-act-1961-s234a-s234f",
+      "label": "Income-tax Act 1961, sections 234A and 234F (interest and late fee)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

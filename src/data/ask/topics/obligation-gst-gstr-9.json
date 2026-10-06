@@ -1,0 +1,47 @@
+{
+  "slug": "obligation-gst-gstr-9",
+  "title": "GSTR-9 (GST annual return)",
+  "question": "What is GSTR-9, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "GSTR-9 is the yearly GST return. It brings together everything reported in the monthly or quarterly returns for the financial year.",
+    "simple": "The once-a-year GST return that sums up the whole year.",
+    "detail": "GSTR-9 sets the year's sales, tax paid and input tax credit side by side with what was reported during the year. Differences found here may need extra tax paid. Businesses below a turnover limit may not have to file it.",
+    "why": "It is the last chance to correct the year's GST picture before the department reviews it."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Yearly GST return summarising the financial year"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "A late fee for each day of delay, up to a limit linked to turnover."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "cgst-act-2017-s44",
+      "label": "CGST Act 2017, section 44 (annual return)"
+    },
+    {
+      "id": "cgst-act-2017-s47",
+      "label": "CGST Act 2017, section 47 (late fee)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}
