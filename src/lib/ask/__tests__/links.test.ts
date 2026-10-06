@@ -84,6 +84,23 @@ describe('deterministic answers carry links', () => {
     expect(answer.links?.[0]?.primary).toBe(true);
   });
 
+  it('"What is my next step?" labels an upload step from its client form fields', () => {
+    // pre-14 (Registered Office Address) has a client file field.
+    const [link] = nextStepAnswer(SNAPSHOTS.foreignCompany).links ?? [];
+    expect(link?.label).toBe('Upload documents now');
+    expect(link?.dest).toEqual({ to: 'step', stepId: 'pre-14', section: 'upload' });
+  });
+
+  it('"What is my next step?" falls back to "Open this step" when the step has no file field', () => {
+    const snapshot = {
+      ...SNAPSHOTS.foreignCompany,
+      currentStep: { id: 'pre-13', title: 'Capital Structure', owner: 'client' as const, status: 'waiting on you' },
+    };
+    const [link] = nextStepAnswer(snapshot).links ?? [];
+    expect(link?.label).toBe('Open this step');
+    expect(link?.dest).toEqual({ to: 'step', stepId: 'pre-13', section: 'form' });
+  });
+
   it('staff query answers link into Projects / Approvals / Compliance', () => {
     const data = { engagements: [], filings: [], now: new Date('2026-10-01') };
     expect(staffQueryAnswer('pendingApprovals', data).links?.[0]?.dest).toEqual({ to: 'approvals' });
