@@ -4,15 +4,13 @@ import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CalendarDays, FileSpreadsheet } from 'lucide-react';
+import { FileSpreadsheet } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
-import { DashSection } from '@/components/dash/DashSection';
-import { ComplianceCalendar } from '@/components/admin/ComplianceCalendar';
 import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
-import { FilingStatusPill } from '@/components/compliances/FilingStatusPill';
 import { useFilings } from '@/lib/use-filings';
 import {
+  FILING_STATUS_LABEL,
   filingStatus,
   financialYearForDate,
   formatFilingDate,
@@ -24,8 +22,8 @@ import {
   sortByDueDate,
   summarise,
   type FilingRow,
+  type FilingStatus,
 } from '@/lib/filings';
-import type { ComplianceFiling } from '@/data/compliance';
 import {
   ALL_COMPANIES,
   normaliseCompanyParam,
@@ -33,24 +31,31 @@ import {
   soleCompany,
   type ComplianceScope,
 } from '@/views/compliances/compliance-scope';
+import { cn } from '@/lib/utils';
 
 /**
  * COMPLIANCE CALENDAR — the radar, one view for every role.
  *
- * The firm's statutory month grid (`StatutoryCalendar`: act legend, All /
- * Overdue scope, keyboard grid, full-screen mode) sits above the register
- * calendar, and one company selection narrows both. Every shell renders this
- * exact layout; WHAT it shows is decided by `getFilings` through
- * `AuthContext` and by the roster in `scope` — a client's own company, a
- * lead's assignments, the whole firm. Nothing is keyed off the role.
+ * ONE calendar, one colour language. The page is the firm's FY 2026-27
+ * statutory master calendar (`StatutoryCalendar`: month and year views, act
+ * filter, keyboard grid, full-screen mode), with the client's own filing
+ * register read underneath it as a month register. It used to stack a second,
+ * separately-styled month picker below the grid; that is gone — navigating
+ * months is the toolbar's job, and two calendars with two palettes on one page
+ * is what made this screen hard to show a client.
  *
- * The register rows are mapped onto the `ComplianceFiling` shape the existing
- * `ComplianceCalendar` already speaks; map, do not fork.
+ * Every shell renders this exact layout; WHAT it shows is decided by
+ * `getFilings` through `AuthContext` and by the roster in `scope` — a client's
+ * own company, a lead's assignments, the whole firm. Nothing is keyed off the
+ * role. One company selection narrows both the calendar and the register.
  *
- * Pre-incorporation is `StatutoryCalendar`'s notice, read off `scope`
- * (derived by the caller from `isIncorporated`, never a rule of this view's
- * own). The layout stays in its genuine empty state under it — nothing is
- * generated or invented to fill a calendar.
+ * Pre-incorporation is `StatutoryCalendar`'s notice, read off `scope` (derived
+ * by the caller from `isIncorporated`, never a rule of this view's own). The
+ * layout stays in its genuine empty state under it — nothing is generated or
+ * invented to fill a calendar.
+ *
+ * COLOUR: status only (overdue / due soon / upcoming). See the `.cal-*`
+ * contract at the top of that block in `app/globals.css`.
  */
 export function ComplianceCalendarView({
   basePath,
@@ -65,6 +70,8 @@ export function ComplianceCalendarView({
   const sole = soleCompany(engagements);
 
   const dateParam = parseIsoDate(params.get('date'));
+  // Owned here, driven by the calendar's own toolbar: the register below has
+  // to show the month the grid is sitting on, not whatever month it loaded in.
   const [month, setMonth] = useState<Date>(() => dateParam ?? now);
   const [pickedId, setPickedId] = useState<string>(() =>
     normaliseCompanyParam(params.get('company'), engagements),
@@ -78,30 +85,7 @@ export function ComplianceCalendarView({
 
   const monthKey = monthKeyForDate(month);
   const summary = useMemo(() => summarise(rows, monthKey, now), [rows, monthKey, now]);
-  const monthRows = useMemo(
-    () => sortByDueDate(rowsInMonth(rows, monthKey)),
-    [rows, monthKey],
-  );
-
-  const calendarFilings: ComplianceFiling[] = useMemo(
-    () =>
-      rows.map((row) => ({
-        id: row.id,
-        engagementId: row.engagementId,
-        filing: row.particular,
-        authority: row.authority,
-        frequency: row.frequency as ComplianceFiling['frequency'],
-        nextDue: row.dueDate,
-        ownerId: '',
-        status: row.filedOn
-          ? 'filed'
-          : filingStatus(row, now) === 'overdue'
-            ? 'overdue'
-            : 'upcoming',
-        penaltyRisk: 'low',
-      })),
-    [rows, now],
-  );
+  const monthRows = useMemo(() => sortByDueDate(rowsInMonth(rows, monthKey)), [rows, monthKey]);
 
   // Only a real choice travels in the URL; a sole company is implicit.
   const companyQuery = !sole && companyId !== ALL_COMPANIES ? `&company=${companyId}` : '';
@@ -115,14 +99,14 @@ export function ComplianceCalendarView({
         path={`${basePath}/calendar`}
       />
 
-      <div className="stat-cal-intern flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h1 className="serif min-w-0 flex-1 text-[22px] leading-tight tracking-tight text-foreground">
             Compliance calendar
           </h1>
           <Link
             href={`${basePath}/filings${companyQuery ? `?${companyQuery.slice(1)}` : ''}`}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1 text-[11px] font-bold text-primary hover:bg-primary-light"
+            className="cal-ghost"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden />
             Open filings
@@ -133,64 +117,53 @@ export function ComplianceCalendarView({
           engagements={engagements}
           companyId={companyId}
           onCompanyChange={setPickedId}
+          month={month}
+          onMonthChange={setMonth}
           audience={scope.audience}
         />
 
+        {/* ── The register: this company's own filings, same visual language ── */}
         {query.isPending ? (
-          <div className="surface p-4" aria-busy="true" aria-label="Loading calendar">
-            <div className="h-64 animate-pulse rounded-md bg-muted/40" />
+          <div className="cal-panel p-4" aria-busy="true" aria-label="Loading register">
+            <div className="h-40 animate-pulse rounded-md bg-muted/40" />
           </div>
         ) : (
-          <>
-            {/* The emotional read first: what this month costs you. */}
-            <div className="surface flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3">
-              <SummaryStat value={summary.dueThisMonth} label="due this month" />
-              <SummaryStat value={summary.overdue} label="overdue" hot={summary.overdue > 0} />
-              <SummaryStat value={summary.filed} label="filed" />
+          <section className="cal-panel" aria-label={`${monthLabelOf(monthKey)} register`}>
+            <div className="cal-panel-head">
+              <h2 className="cal-panel-title">{monthLabelOf(monthKey)} · your filings</h2>
               <Link
                 href={`${basePath}/filings?cadence=monthly&period=${monthKey}&fy=${fyStartYear}${companyQuery}`}
-                className="ml-auto text-[11.5px] font-bold text-primary hover:underline"
+                className="cal-stats-link"
               >
                 View this month&rsquo;s filings
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
-              <div className="surface min-w-0 p-3">
-                <ComplianceCalendar
-                  filings={calendarFilings}
-                  month={month}
-                  onMonthChange={setMonth}
-                />
-              </div>
-
-              <DashSection
-                icon={CalendarDays}
-                title={monthLabelOf(monthKey)}
-                tone="sky"
-                meta={`${monthRows.length}`}
-              >
-                {monthRows.length === 0 ? (
-                  <p className="text-[12.5px] text-muted-foreground">
-                    Nothing falls due in this month.
-                  </p>
-                ) : (
-                  <ul className="space-y-2.5">
-                    {monthRows.map((row) => (
-                      <MonthRow
-                        key={row.id}
-                        row={row}
-                        now={now}
-                        basePath={basePath}
-                        companyQuery={companyQuery}
-                        showCompany={showCompany}
-                      />
-                    ))}
-                  </ul>
-                )}
-              </DashSection>
+            <div className="cal-stats is-bare">
+              <SummaryStat value={summary.dueThisMonth} label="due this month" />
+              <SummaryStat value={summary.overdue} label="overdue" hot={summary.overdue > 0} />
+              <SummaryStat value={summary.filed} label="filed" />
             </div>
-          </>
+
+            <div className="cal-rail-body">
+              {monthRows.length === 0 ? (
+                <p className="cal-empty">Nothing falls due in this month.</p>
+              ) : (
+                <ul className="cal-rows">
+                  {monthRows.map((row) => (
+                    <MonthRow
+                      key={row.id}
+                      row={row}
+                      now={now}
+                      basePath={basePath}
+                      companyQuery={companyQuery}
+                      showCompany={showCompany}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
         )}
       </div>
     </PageTransition>
@@ -207,18 +180,26 @@ function SummaryStat({
   hot?: boolean;
 }) {
   return (
-    <span className="inline-flex items-baseline gap-1.5">
-      <span
-        className={`serif text-[1.25rem] font-bold leading-none tabular-nums ${
-          hot ? 'text-danger-text' : 'text-ink'
-        }`}
-      >
-        {value}
-      </span>
-      <span className="text-[11.5px] font-medium text-muted-foreground">{label}</span>
+    <span className={cn('cal-stat', hot && 'is-hot')}>
+      <span className="cal-stat-n">{value}</span>
+      <span className="cal-stat-label">{label}</span>
     </span>
   );
 }
+
+/**
+ * Register status → the calendar's own colour lane.
+ *
+ * `filed` is the register's one state the statutory calendar has no equivalent
+ * for. It reads as quiet rather than green: a completed filing is settled, and
+ * on a page whose whole point is what still needs doing it should recede.
+ */
+const REGISTER_STATUS_CLASS: Record<FilingStatus, string> = {
+  overdue: 'is-overdue',
+  'due-soon': 'is-due-soon',
+  filed: 'is-upcoming',
+  upcoming: 'is-upcoming',
+};
 
 function MonthRow({
   row,
@@ -235,27 +216,35 @@ function MonthRow({
   showCompany: boolean;
 }) {
   const monthKey = monthKeyOf(row.dueDate);
+  const status = filingStatus(row, now);
+  const d = new Date(`${row.dueDate}T12:00:00`);
   return (
-    <li className="flex min-w-0 items-start gap-2.5" data-ask-focus={row.id}>
-      <span className="mono grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-raised text-[11px] font-extrabold tabular-nums text-ink">
-        {row.dueDate.slice(8, 10)}
+    <li className="cal-row" data-ask-focus={row.id}>
+      <span className="cal-row-date" aria-hidden>
+        <span className="cal-row-day">{row.dueDate.slice(8, 10)}</span>
+        <span className="cal-row-dow">
+          {d.toLocaleDateString('en-IN', { weekday: 'short' })}
+        </span>
       </span>
-      <span className="min-w-0 flex-1">
+      <span className="cal-row-main">
         <span className="flex min-w-0 items-center gap-1">
           <Link
             href={`${basePath}/filings?cadence=monthly&period=${monthKey}${companyQuery}`}
-            className="block truncate text-[12.5px] font-semibold text-ink hover:text-primary"
+            className="cal-row-title hover:underline"
           >
             {row.particular}
           </Link>
           <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
         </span>
-        <span className="text-[11px] text-muted-foreground">
-          {showCompany ? `${row.companyName} · ` : ''}
-          {row.compliance} · {formatFilingDate(row.dueDate)}
+        <span className="cal-row-meta">
+          {showCompany ? <span className="cal-tag mono">{row.companyName}</span> : null}
+          <span className="cal-tag mono">{row.compliance}</span>
+          <span className="cal-period-tag">{formatFilingDate(row.dueDate)}</span>
         </span>
       </span>
-      <FilingStatusPill status={filingStatus(row, now)} />
+      <span className={cn('cal-status', REGISTER_STATUS_CLASS[status])}>
+        {FILING_STATUS_LABEL[status]}
+      </span>
     </li>
   );
 }

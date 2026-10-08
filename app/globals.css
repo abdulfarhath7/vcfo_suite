@@ -202,23 +202,10 @@
     --accent-lime: 74% 0.16 135;
     --accent-lime-soft: 96.8% 0.05 135;
 
-    /* Statutory calendar acts — hues ≥45° apart so stacked stripes do not merge. */
-    --stat-gst: 52% 0.17 145;
-    --stat-gst-soft: 95.8% 0.045 145;
-    --stat-it: 54% 0.18 250;
-    --stat-it-soft: 96% 0.04 250;
-    --stat-mca: 50% 0.20 300;
-    --stat-mca-soft: 96.2% 0.04 300;
-    --stat-fema: 56% 0.21 12;
-    --stat-fema-soft: 96.4% 0.045 12;
-    --stat-stpi: 60% 0.19 58;
-    --stat-stpi-soft: 96.6% 0.05 58;
-    --stat-labour: 50% 0.14 200;
-    --stat-labour-soft: 96.2% 0.04 200;
-    --stat-rera: 54% 0.20 328;
-    --stat-rera-soft: 96.5% 0.045 328;
-    --stat-tp: 72% 0.18 95;
-    --stat-tp-soft: 96.8% 0.055 95;
+    /* Compliance calendar — see the `.cal-*` block near the end of this file.
+       It deliberately declares NO palette of its own: surfaces come from
+       --panel/--raised/--border, type from --foreground/--muted-foreground,
+       and the only hues are --danger (overdue) and --warning (due soon). */
 
     --sidebar-background: 100% 0 0;
     --sidebar-primary: 54.6% 0.215 263;
@@ -406,23 +393,6 @@
     --accent-cyan-soft: 30% 0.05 210;
     --accent-lime: 80% 0.14 135;
     --accent-lime-soft: 30% 0.06 135;
-
-    --stat-gst: 72% 0.16 145;
-    --stat-gst-soft: 30% 0.06 145;
-    --stat-it: 74% 0.16 250;
-    --stat-it-soft: 30% 0.055 250;
-    --stat-mca: 76% 0.16 300;
-    --stat-mca-soft: 32% 0.07 300;
-    --stat-fema: 72% 0.18 12;
-    --stat-fema-soft: 32% 0.07 12;
-    --stat-stpi: 76% 0.16 58;
-    --stat-stpi-soft: 32% 0.07 58;
-    --stat-labour: 72% 0.12 200;
-    --stat-labour-soft: 30% 0.055 200;
-    --stat-rera: 74% 0.16 328;
-    --stat-rera-soft: 32% 0.065 328;
-    --stat-tp: 84% 0.16 95;
-    --stat-tp-soft: 32% 0.07 95;
 
     --border: 30% 0.05 258;
     --input: 30% 0.05 258;
@@ -1477,11 +1447,10 @@ html[data-reduce-motion="true"] .discrete-panel {
   isolation: isolate;
   border-radius: var(--radius-2xl); /* 12px */
   color: white;
-  background: var(
-    --hero-surface-bg,
-    linear-gradient(115deg, oklch(var(--primary)) 0%, oklch(var(--accent-violet)) 52%, oklch(var(--accent-pink)) 100%)
-  );
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 10px 28px -18px oklch(var(--primary) / 0.35);
+  /* Fallback for heroes that don't set --hero-surface-bg (skeletons, super
+     project detail); matches the Obsidian default in shell-appearance.ts. */
+  background: var(--hero-surface-bg, #000000);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 10px 28px -18px rgb(0 0 0 / 0.45);
 }
 .lead-hero::after {
   content: "";
@@ -1626,10 +1595,12 @@ html[data-reduce-motion="true"] .discrete-panel {
   background-size: 180% 180%;
   animation: lead-hero-drift 22s ease-in-out infinite;
 }
-[data-motion="none"] .stat-cal-cell,
-[data-motion="none"] .stat-cal-chevron,
-[data-reduce-motion="true"] .stat-cal-cell,
-[data-reduce-motion="true"] .stat-cal-chevron {
+[data-motion="none"] .cal-day,
+[data-motion="none"] .cal-navbtn,
+[data-motion="none"] .cal-mcard,
+[data-reduce-motion="true"] .cal-day,
+[data-reduce-motion="true"] .cal-navbtn,
+[data-reduce-motion="true"] .cal-mcard {
   transition: none;
 }
 [data-motion="none"] .lead-hero-fx,
@@ -1742,10 +1713,11 @@ html[data-reduce-motion="true"] .discrete-panel {
 @media (prefers-reduced-motion: reduce) {
   .lead-hero-fx { display: none; }
   [data-motion="ambient"] .lead-hero { animation: none; }
-  .stat-cal-cell,
-  .stat-cal-chevron,
-  .stat-cal-scope,
-  .stat-cal-legend-row {
+  .cal-day,
+  .cal-navbtn,
+  .cal-ghost,
+  .cal-chip,
+  .cal-mcard {
     transition: none;
   }
 }
@@ -1906,509 +1878,832 @@ html[data-reduce-motion="true"] .discrete-panel {
   max-width: 100%;
 }
 
-/* Statutory calendar — one unique hue per act (see --stat-* tokens). */
-.bg-stat-gst { background-color: oklch(var(--stat-gst)); }
-.bg-stat-it { background-color: oklch(var(--stat-it)); }
-.bg-stat-mca { background-color: oklch(var(--stat-mca)); }
-.bg-stat-fema { background-color: oklch(var(--stat-fema)); }
-.bg-stat-stpi { background-color: oklch(var(--stat-stpi)); }
-.bg-stat-labour { background-color: oklch(var(--stat-labour)); }
-.bg-stat-rera { background-color: oklch(var(--stat-rera)); }
-.bg-stat-tp { background-color: oklch(var(--stat-tp)); }
-.bg-stat-gst-soft { background-color: oklch(var(--stat-gst-soft)); }
-.bg-stat-it-soft { background-color: oklch(var(--stat-it-soft)); }
-.bg-stat-mca-soft { background-color: oklch(var(--stat-mca-soft)); }
-.bg-stat-fema-soft { background-color: oklch(var(--stat-fema-soft)); }
-.bg-stat-stpi-soft { background-color: oklch(var(--stat-stpi-soft)); }
-.bg-stat-labour-soft { background-color: oklch(var(--stat-labour-soft)); }
-.bg-stat-rera-soft { background-color: oklch(var(--stat-rera-soft)); }
-.bg-stat-tp-soft { background-color: oklch(var(--stat-tp-soft)); }
-.text-stat-gst { color: oklch(var(--stat-gst)); }
-.text-stat-it { color: oklch(var(--stat-it)); }
-.text-stat-mca { color: oklch(var(--stat-mca)); }
-.text-stat-fema { color: oklch(var(--stat-fema)); }
-.text-stat-stpi { color: oklch(var(--stat-stpi)); }
-.text-stat-labour { color: oklch(var(--stat-labour)); }
-.text-stat-rera { color: oklch(var(--stat-rera)); }
-.text-stat-tp { color: oklch(var(--stat-tp)); }
-/* Statutory calendar — deadline list (left) + month navigator (right).
-   Two colour lanes, kept apart on purpose: category (--stat-*) rides the code
-   tag and the calendar dots; status (danger / teal / primary) rides the pill
-   on the right of each row and nowhere else. */
+/* =====================================================================
+   COMPLIANCE CALENDAR — the `compliances/calendar` route in every shell
+   -------------------------------------------------------------------
+   THE COLOUR CONTRACT. Read this before adding a single hue.
 
-.stat-cal-stage {
+   This surface is shown to international clients, so it runs on ONE
+   colour lane: how urgent a deadline is. Nothing else is coloured.
+
+     overdue    --danger   (the only strong colour on the page)
+     due soon   --warning
+     upcoming   no hue at all — muted type, no fill
+
+   The eight statutory acts (GST, IT, MCA, FEMA, STPI/SEZ, Labour, RERA,
+   TP) are told apart TYPOGRAPHICALLY: a mono, uppercase code tag on a
+   neutral fill, full name in the tooltip. They previously had eight
+   saturated hues each; that is what this replaced. Do not bring it back.
+
+   Everything else is paper and ink: --panel / --raised / --border for
+   surface, --foreground / --muted-foreground / --text-tertiary for type.
+   Both themes come free because every value here is a token.
+
+   Note on --ink: it is a SURFACE token (white in light mode), not a text
+   colour. Type in this block uses --foreground.
+   ===================================================================== */
+
+.cal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────────
+   View switch and month stepper on the left, scope filters on the right.
+   One row on desktop, wrapping to two on narrow screens.                */
+
+.cal-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid oklch(var(--border));
+  border-radius: var(--radius);
+  background: oklch(var(--panel));
+}
+.cal-bar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+.cal-bar-group.is-end {
+  margin-left: auto;
+}
+
+.cal-navbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: oklch(var(--muted-foreground));
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.cal-navbtn:hover:not(:disabled) {
+  background: oklch(var(--raised));
+  border-color: oklch(var(--border));
+  color: oklch(var(--foreground));
+}
+.cal-navbtn:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+.cal-navbtn:focus-visible {
+  outline: 2px solid oklch(var(--ring) / 0.6);
+  outline-offset: 1px;
+}
+
+/* The month/year the stepper is sitting on. Fixed width so the label does
+   not jiggle the chevrons as it moves between "May" and "September". */
+.cal-period {
+  min-width: 9.5rem;
+  margin: 0;
+  padding: 0 0.25rem;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: oklch(var(--foreground));
+  font-variant-numeric: tabular-nums;
+}
+.cal-period-year {
+  margin-left: 0.3rem;
+  font-weight: 450;
+  color: oklch(var(--text-tertiary));
+}
+
+.cal-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.875rem;
+  padding: 0 0.625rem;
+  flex-shrink: 0;
+  border: 1px solid oklch(var(--border));
+  border-radius: var(--radius-sm);
+  background: oklch(var(--panel));
+  font-size: 12px;
+  font-weight: 600;
+  color: oklch(var(--muted-foreground));
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.cal-ghost:hover:not(:disabled) {
+  background: oklch(var(--raised));
+  color: oklch(var(--foreground));
+}
+.cal-ghost:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.cal-ghost:focus-visible {
+  outline: 2px solid oklch(var(--ring) / 0.6);
+  outline-offset: 1px;
+}
+
+/* ── Summary strip ────────────────────────────────────────────────────
+   Three numerals, read before anything else. Only "overdue" may carry a
+   colour, and only when it is non-zero — a zero overdue count is good
+   news and should not shout in red.                                     */
+
+.cal-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid oklch(var(--border));
+  border-radius: var(--radius);
+  background: oklch(var(--panel));
+}
+.cal-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.cal-stat-n {
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: oklch(var(--foreground));
+}
+.cal-stat.is-hot .cal-stat-n {
+  color: oklch(var(--danger-text));
+}
+.cal-stat-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: oklch(var(--muted-foreground));
+}
+/* Inside a panel that already draws the border — the register's header. */
+.cal-stats.is-bare {
+  border: 0;
+  border-radius: 0;
+  padding-top: 0;
+}
+.cal-stats-link {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: oklch(var(--muted-foreground));
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 1px solid oklch(var(--border));
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+.cal-stats-link:hover {
+  color: oklch(var(--foreground));
+  border-color: oklch(var(--foreground) / 0.4);
+}
+
+/* ── Stage ────────────────────────────────────────────────────────────
+   Month view = grid + agenda rail. Year view = twelve cards, full width. */
+
+.cal-stage {
   display: grid;
   gap: 0.75rem;
   align-items: start;
 }
-@media (min-width: 1024px) {
-  .stat-cal-stage {
-    grid-template-columns: minmax(0, 1fr) minmax(17rem, 20.5rem);
+@media (min-width: 1100px) {
+  .cal-stage:not(.is-year) {
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
   }
 }
 
-/* ── Left: the month, grouped by date ─────────────────────────────────────── */
-
-.stat-cal-list {
+.cal-panel {
   min-width: 0;
+  border: 1px solid oklch(var(--border));
+  border-radius: var(--radius);
+  background: oklch(var(--panel));
 }
-.stat-cal-list-head {
+.cal-panel-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.75rem 1rem 0.625rem;
-}
-.stat-cal-list-body {
-  padding: 0 0.5rem 0.5rem;
-}
-
-.stat-cal-scopes {
-  display: inline-flex;
-  flex-shrink: 0;
-  gap: 0.125rem;
-  padding: 0.125rem;
-  border: 1px solid oklch(var(--border));
-  border-radius: 0.625rem;
-  background: oklch(var(--raised));
-}
-.stat-cal-scope {
-  height: 1.5rem;
-  padding: 0 0.625rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: transparent;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: oklch(var(--muted-foreground));
-  cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
-}
-.stat-cal-scope:hover {
-  color: oklch(var(--foreground));
-}
-.stat-cal-scope.is-on {
-  background: oklch(var(--primary));
-  color: oklch(var(--primary-foreground));
-  box-shadow: 0 1px 2px oklch(0% 0 0 / 0.12);
-}
-.stat-cal-scope.is-on:hover {
-  color: oklch(var(--primary-foreground));
-}
-
-.stat-cal-group {
-  scroll-margin-top: 1rem;
-  border-radius: 0.625rem;
-  padding: 0.125rem 0 0.25rem;
-}
-.stat-cal-group.is-selected {
-  background: oklch(var(--primary) / 0.05);
-  box-shadow: inset 2px 0 0 oklch(var(--primary));
-}
-.stat-cal-group.is-flash {
-  background: oklch(var(--primary) / 0.09);
-  box-shadow: inset 2px 0 0 oklch(var(--primary));
-}
-.stat-cal-group.is-past {
-  opacity: 0.62;
-}
-.stat-cal-group-motion {
-  transition: background-color 0.35s ease, box-shadow 0.35s ease;
-}
-.stat-cal-group-head {
-  display: flex;
-  align-items: baseline;
   gap: 0.5rem;
-  padding: 0.5rem 0.625rem 0.25rem;
+  padding: 0.75rem 1rem 0.5rem;
 }
-.stat-cal-group-label {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: oklch(var(--text-tertiary));
-}
-.stat-cal-group-label.is-today {
-  color: oklch(var(--primary));
-}
-.stat-cal-group-n {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: oklch(var(--text-tertiary));
-}
-.stat-cal-rows {
+.cal-panel-title {
   margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.stat-cal-row {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  min-height: 3rem;
-  padding: 0.4rem 0.625rem;
-  border-radius: 0.5rem;
-}
-.stat-cal-row:hover {
-  background: oklch(var(--muted) / 0.6);
-}
-.stat-cal-row-date {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  padding: 0.2rem 0;
-  border-radius: 0.5rem;
-  background: oklch(var(--raised));
-  line-height: 1.1;
-}
-.stat-cal-row-dow {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: oklch(var(--text-tertiary));
-}
-.stat-cal-row-day {
-  font-size: 13px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  color: oklch(var(--ink));
-}
-.stat-cal-tag {
-  flex-shrink: 0;
-  min-width: 3.75rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 0.3rem;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-align: center;
-  text-transform: uppercase;
-}
-.stat-cal-row-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
   min-width: 0;
   flex: 1;
-}
-.stat-cal-row-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: oklch(var(--foreground));
-}
-.stat-cal-row-period {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.375rem;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
-  color: oklch(var(--muted-paper));
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: oklch(var(--text-tertiary));
 }
-.stat-cal-row-period-cap {
-  font-size: 9px;
+.cal-panel-n {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: oklch(var(--text-tertiary));
+}
+
+/* ── Month grid ───────────────────────────────────────────────────────
+   No rules, no fills: whitespace separates the days. The only marks are
+   the numeral, a today disc, and an urgency marker under loaded days.    */
+
+.cal-grid-body {
+  padding: 0.25rem 0.75rem 0.875rem;
+}
+
+.cal-dows {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid oklch(var(--border) / 0.7);
+}
+.cal-dow {
+  text-align: center;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: oklch(var(--text-tertiary));
 }
-.stat-cal-status {
+.cal-dow.is-weekend {
+  color: oklch(var(--text-tertiary) / 0.6);
+}
+
+.cal-month {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  min-height: 3.25rem;
+  padding: 0.4rem 0.125rem 0.3rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+}
+.cal-day.is-outside {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.28;
+}
+.cal-day:hover:not(.is-outside) {
+  background: oklch(var(--raised));
+}
+.cal-day[data-selected="true"] {
+  background: oklch(var(--raised) / 0.8);
+  box-shadow: inset 0 0 0 1.5px oklch(var(--foreground) / 0.5);
+}
+.cal-day:focus-visible {
+  outline: 2px solid oklch(var(--ring) / 0.6);
+  outline-offset: 1px;
+}
+
+.cal-day-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: oklch(var(--foreground));
+}
+/* Today is the one place a solid fill is spent on something that is not a
+   deadline — in ink, never in brand colour. */
+.cal-day[data-today="true"] .cal-day-num {
+  background: oklch(var(--foreground));
+  color: oklch(var(--panel));
+  font-weight: 650;
+}
+
+/* Urgency marker. "Upcoming" is bare type with no fill, so a month of
+   distant deadlines reads as a calm page and the red stands alone. */
+.cal-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 0.95rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: oklch(var(--muted-foreground));
+}
+.cal-mark.is-due-soon {
+  background: oklch(var(--warning-light));
+  color: oklch(var(--warning-text));
+}
+.cal-mark.is-overdue {
+  background: oklch(var(--danger-light));
+  color: oklch(var(--danger-text));
+}
+/* Keeps every cell the same height when a day carries nothing. */
+.cal-mark.is-empty {
+  visibility: hidden;
+}
+
+/* ── Legend ───────────────────────────────────────────────────────────
+   Three states, stated once, under the grid.                            */
+
+/* Footer bar under the stage: legend on the left, act filter on the right.
+   Lives outside the grid panel so it serves the month and year views alike. */
+.cal-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid oklch(var(--border));
+  border-radius: var(--radius);
+  background: oklch(var(--panel));
+}
+
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cal-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: oklch(var(--muted-foreground));
+}
+.cal-legend-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: oklch(var(--border));
+}
+.cal-legend-dot.is-overdue {
+  background: oklch(var(--danger));
+}
+.cal-legend-dot.is-due-soon {
+  background: oklch(var(--warning));
+}
+
+/* ── Agenda rail ──────────────────────────────────────────────────────
+   The month as a list, grouped by date. This is where the detail lives;
+   the grid is only the index into it.                                   */
+
+@media (min-width: 1100px) {
+  .cal-rail {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    display: flex;
+    flex-direction: column;
+  }
+}
+.cal-rail-body {
+  padding: 0 0.5rem 0.5rem;
+  overflow-y: auto;
+}
+
+.cal-group {
+  scroll-margin-top: 1rem;
+  border-radius: var(--radius-sm);
+  padding: 0.125rem 0 0.25rem;
+}
+.cal-group.is-selected,
+.cal-group.is-flash {
+  background: oklch(var(--raised) / 0.75);
+  box-shadow: inset 2px 0 0 oklch(var(--foreground) / 0.45);
+}
+.cal-group.is-past {
+  opacity: 0.6;
+}
+.cal-group-motion {
+  transition: background-color 0.35s ease, box-shadow 0.35s ease;
+}
+.cal-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem 0.25rem;
+}
+.cal-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: oklch(var(--text-tertiary));
+}
+.cal-group-label.is-today {
+  color: oklch(var(--foreground));
+}
+.cal-group-n {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: oklch(var(--text-tertiary));
+}
+
+.cal-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cal-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-sm);
+}
+.cal-row + .cal-row {
+  border-top: 1px solid oklch(var(--border) / 0.55);
+}
+.cal-row:hover {
+  background: oklch(var(--raised) / 0.7);
+}
+
+/* Date block — day over weekday, so the eye scans a single column. */
+.cal-row-date {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  width: 2rem;
+  padding-top: 0.05rem;
+  line-height: 1.15;
+}
+.cal-row-day {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: oklch(var(--foreground));
+}
+.cal-row-dow {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: oklch(var(--text-tertiary));
+}
+
+.cal-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+.cal-row-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: oklch(var(--foreground));
+}
+.cal-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Act identity: a code, set in mono caps on neutral fill. No hue, ever. */
+.cal-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  background: oklch(var(--raised));
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: oklch(var(--muted-foreground));
+  white-space: nowrap;
+}
+.cal-period-tag {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: oklch(var(--text-tertiary));
+}
+
+/* Status. "Upcoming" gets no chrome at all — the quietest state spends
+   the least ink, which is what keeps a 103-deadline month readable. */
+.cal-status {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   height: 1.25rem;
   padding: 0 0.5rem;
   border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 650;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
-.stat-cal-remind {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.3rem;
-  height: 1.65rem;
-  padding: 0 0.55rem;
-  border: 1px solid oklch(var(--border));
-  border-radius: 0.5rem;
-  background: oklch(var(--panel));
-  font-size: 11px;
-  font-weight: 600;
-  color: oklch(var(--primary));
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
+.cal-status.is-upcoming {
+  padding: 0;
+  background: transparent;
+  color: oklch(var(--text-tertiary));
+  font-weight: 500;
 }
-.stat-cal-remind:hover:not(:disabled) {
-  background: oklch(var(--primary-light));
-  border-color: oklch(var(--primary) / 0.35);
+.cal-status.is-due-soon {
+  background: oklch(var(--warning-light));
+  color: oklch(var(--warning-text));
 }
-.stat-cal-remind:disabled {
-  cursor: default;
-  opacity: 0.45;
-}
-@media (max-width: 640px) {
-  .stat-cal-row {
-    flex-wrap: wrap;
-  }
-  .stat-cal-row-main {
-    flex-basis: 100%;
-    order: 3;
-    padding-left: 2.875rem;
-  }
+.cal-status.is-overdue {
+  background: oklch(var(--danger-light));
+  color: oklch(var(--danger-text));
 }
 
-.stat-cal-empty {
+.cal-empty {
   margin: 0;
-  padding: 2.75rem 0.75rem;
+  padding: 2.5rem 0.75rem;
   text-align: center;
   font-size: 12.5px;
   color: oklch(var(--muted-foreground));
 }
 
-/* ── Right: compact month navigator + legend ──────────────────────────────── */
+/* ── Year view ────────────────────────────────────────────────────────
+   Twelve month cards across the fiscal year. This is the planning view:
+   a partner should be able to see which months are heavy without
+   clicking into any of them.                                            */
 
-.stat-cal-nav {
-  min-width: 0;
+.cal-year {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+  .cal-year { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 1024px) {
-  .stat-cal-nav {
-    position: sticky;
-    top: 1rem;
-  }
+  .cal-year { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-.stat-cal-nav-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.75rem 0.875rem 0.5rem;
-}
-.stat-cal-nav-month {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: oklch(var(--ink));
-}
-.stat-cal-nav-body {
-  padding: 0 0.875rem 0.875rem;
+@media (min-width: 1440px) {
+  .cal-year { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-.stat-cal-chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: transparent;
-  color: oklch(var(--text-tertiary));
-  cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
-}
-.stat-cal-chevron:hover:not(:disabled) {
-  background: oklch(var(--muted));
-  color: oklch(var(--foreground));
-}
-.stat-cal-chevron:disabled {
-  cursor: default;
-  opacity: 0.35;
-}
-
-.stat-cal-dows {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  margin-bottom: 0.25rem;
-}
-.stat-cal-dow {
-  text-align: center;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0.04em;
-  color: oklch(var(--text-tertiary));
-}
-.stat-cal-dow.is-weekend {
-  opacity: 0.65;
-}
-
-.stat-cal-month {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 1px;
-}
-
-.stat-cal-cell {
+.cal-mcard {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  min-height: 2.5rem;
-  padding: 0.25rem 0;
-  border: 0;
-  border-radius: 0.5rem;
-  background: transparent;
-  cursor: pointer;
-  transition: background-color 0.12s ease, box-shadow 0.12s ease;
-}
-.stat-cal-cell.is-outside {
-  cursor: default;
-  pointer-events: none;
-  opacity: 0.3;
-}
-.stat-cal-cell:hover:not(.is-outside) {
-  background: oklch(var(--muted));
-}
-.stat-cal-cell[data-today="true"] .stat-cal-cell-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 999px;
-  background: oklch(var(--primary));
-  color: oklch(var(--primary-foreground));
-  font-weight: 700;
-}
-.stat-cal-cell[data-selected="true"] {
-  background: oklch(var(--primary) / 0.1);
-  box-shadow: inset 0 0 0 1.5px oklch(var(--primary));
-}
-.stat-cal-cell:focus-visible {
-  outline: 2px solid oklch(var(--primary) / 0.55);
-  outline-offset: 1px;
-}
-.stat-cal-cell-num {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  line-height: 1.35rem;
-  color: oklch(var(--foreground));
-}
-
-.stat-cal-dots {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  height: 0.3rem;
-}
-.stat-cal-dot {
-  width: 0.3rem;
-  height: 0.3rem;
-  border-radius: 999px;
-}
-.stat-cal-dot.is-empty {
-  background: transparent;
-}
-
-.stat-cal-legend {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.125rem;
-  margin-top: 0.875rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid oklch(var(--border) / 0.75);
-}
-.stat-cal-legend-cap {
-  grid-column: 1 / -1;
-  margin: 0 0 0.25rem;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: oklch(var(--text-tertiary));
-}
-.stat-cal-legend-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
   min-width: 0;
-  padding: 0.2rem 0.3rem;
-  border: 0;
-  border-radius: 0.375rem;
-  background: transparent;
+  padding: 0.75rem 0.75rem 0.625rem;
+  border: 1px solid oklch(var(--border));
+  border-radius: var(--radius);
+  background: oklch(var(--panel));
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.12s ease, opacity 0.12s ease;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
 }
-.stat-cal-legend-row:hover {
-  background: oklch(var(--muted) / 0.7);
+.cal-mcard:hover {
+  border-color: oklch(var(--foreground) / 0.28);
+  background: oklch(var(--raised) / 0.45);
 }
-.stat-cal-legend-row.is-muted {
-  opacity: 0.45;
+.cal-mcard:focus-visible {
+  outline: 2px solid oklch(var(--ring) / 0.6);
+  outline-offset: 2px;
 }
-.stat-cal-legend-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  flex-shrink: 0;
-  border-radius: 999px;
+/* The month you are currently sitting on in the month view. */
+.cal-mcard.is-current {
+  border-color: oklch(var(--foreground) / 0.45);
 }
-.stat-cal-legend-name {
+
+.cal-mcard-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding-bottom: 0.625rem;
+}
+.cal-mcard-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: oklch(var(--foreground));
 }
-.stat-cal-legend-n {
+.cal-mcard-year {
+  font-weight: 450;
+  color: oklch(var(--text-tertiary));
+}
+/* Total for the month; turns red only when something in it is overdue. */
+.cal-mcard-n {
   margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.1rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: oklch(var(--raised));
   font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: oklch(var(--muted-foreground));
+}
+.cal-mcard-n.is-overdue {
+  background: oklch(var(--danger-light));
+  color: oklch(var(--danger-text));
+}
+.cal-mcard-n.is-zero {
+  background: transparent;
+  color: oklch(var(--text-tertiary) / 0.7);
+}
+
+.cal-mcard-dows {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  padding-bottom: 0.3rem;
+}
+.cal-mcard-dow {
+  text-align: center;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: oklch(var(--text-tertiary) / 0.75);
+}
+.cal-mcard-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+}
+.cal-mcard-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 0.15rem 0;
+  min-height: 1.75rem;
+}
+.cal-mcard-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+  color: oklch(var(--foreground));
+}
+.cal-mcard-day.is-outside .cal-mcard-num {
+  opacity: 0.25;
+}
+.cal-mcard-day[data-today="true"] .cal-mcard-num {
+  background: oklch(var(--foreground));
+  color: oklch(var(--panel));
+  font-weight: 650;
+}
+.cal-mcard-dot {
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: oklch(var(--muted-foreground) / 0.5);
+}
+.cal-mcard-dot.is-empty {
+  background: transparent;
+}
+.cal-mcard-dot.is-due-soon {
+  background: oklch(var(--warning));
+}
+.cal-mcard-dot.is-overdue {
+  background: oklch(var(--danger));
+}
+
+/* ── Act filter ───────────────────────────────────────────────────────
+   Replaces the old colour legend. Toggling an act narrows the calendar;
+   the count is how many of that act fall in the period in view.         */
+
+.cal-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+.cal-filter-cap {
+  margin: 0 0.15rem 0 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: oklch(var(--text-tertiary));
+}
+.cal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border: 1px solid oklch(var(--border));
+  border-radius: 999px;
+  background: oklch(var(--panel));
+  font-size: 10.5px;
+  font-weight: 600;
+  color: oklch(var(--muted-foreground));
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+}
+.cal-chip:hover {
+  border-color: oklch(var(--foreground) / 0.3);
+  color: oklch(var(--foreground));
+}
+.cal-chip:focus-visible {
+  outline: 2px solid oklch(var(--ring) / 0.6);
+  outline-offset: 1px;
+}
+/* Muted = excluded from the calendar. Shown hollow rather than hidden so
+   the filter never silently loses an act. */
+.cal-chip.is-muted {
+  opacity: 0.45;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.cal-chip-n {
+  font-size: 9.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: oklch(var(--text-tertiary));
 }
 
-/* Intern calendar sits under a back cluster with no KPI row — a touch tighter. */
-.stat-cal-intern .stat-cal-stage {
-  margin-top: 0.65rem;
-}
+/* ── Maximized view — full-viewport overlay ───────────────────────────
+   The dense read: every deadline named in its own cell. Ruled here,
+   because at this size whitespace alone stops holding the columns.      */
 
-/* ── Maximized statutory calendar — full-viewport overlay ─────────────────── */
-
-.stat-max {
+.cal-max {
   position: fixed;
   inset: 0;
   z-index: 60;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 13rem;
+  grid-template-columns: minmax(0, 1fr) 14rem;
   background: oklch(var(--background));
+  transition: left 0.22s ease;
+}
+.cal-max.is-nav-peek {
+  left: 16.5rem;
+  box-shadow: -12px 0 32px -18px oklch(var(--shadow-ink) / 0.55);
 }
 @media (max-width: 900px) {
-  .stat-max {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .stat-max-rail {
-    display: none;
-  }
+  .cal-max { grid-template-columns: minmax(0, 1fr); }
+  .cal-max-rail { display: none; }
+}
+.cal-max-hotzone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  z-index: 2;
 }
 
-.stat-max-main {
+.cal-max-main {
   display: flex;
   min-width: 0;
   min-height: 0;
   flex-direction: column;
   padding: 0.75rem 1rem 1rem;
 }
-
-.stat-max-bar {
+.cal-max-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2417,53 +2712,35 @@ html[data-reduce-motion="true"] .discrete-panel {
   padding-bottom: 0.75rem;
 }
 
-.stat-max-today {
-  margin-left: 0.5rem;
-  height: 1.75rem;
-  padding: 0 0.75rem;
-  border: 1px solid oklch(var(--border));
-  border-radius: 0.5rem;
-  background: oklch(var(--panel));
-  font-size: 12px;
-  font-weight: 600;
-  color: oklch(var(--primary));
-  cursor: pointer;
-  transition: background-color 0.12s ease;
-}
-.stat-max-today:hover {
-  background: oklch(var(--primary-light));
-}
-
-.stat-max-dows {
+.cal-max-dows {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  border: 1px solid oklch(var(--border) / 0.75);
+  border: 1px solid oklch(var(--border));
   border-bottom: 0;
-  border-radius: 0.75rem 0.75rem 0 0;
+  border-radius: var(--radius) var(--radius) 0 0;
   background: oklch(var(--panel));
 }
-.stat-max-dow {
+.cal-max-dow {
   padding: 0.4rem 0.75rem;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: oklch(var(--text-tertiary));
 }
 
-.stat-max-grid {
+.cal-max-grid {
   display: grid;
   flex: 1;
   min-height: 0;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   overflow: hidden;
-  border: 1px solid oklch(var(--border) / 0.75);
-  border-radius: 0 0 0.75rem 0.75rem;
+  border: 1px solid oklch(var(--border));
+  border-radius: 0 0 var(--radius) var(--radius);
   background: oklch(var(--border) / 0.55);
   gap: 1px;
 }
-
-.stat-max-cell {
+.cal-max-cell {
   display: flex;
   min-width: 0;
   min-height: 0;
@@ -2472,154 +2749,159 @@ html[data-reduce-motion="true"] .discrete-panel {
   padding: 0.45rem 0.5rem;
   background: oklch(var(--panel));
 }
-.stat-max-cell.is-outside {
-  background: oklch(var(--muted) / 0.5);
+.cal-max-cell.is-outside {
+  background: oklch(var(--raised) / 0.5);
 }
-.stat-max-cell.is-outside .stat-max-num {
-  opacity: 0.4;
+.cal-max-cell.is-outside .cal-max-num {
+  opacity: 0.35;
 }
-.stat-max-cell[data-today="true"] {
-  background: oklch(var(--primary) / 0.05);
-}
-
-.stat-max-num {
-  font-size: 12.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.3rem;
-  color: oklch(var(--foreground));
-}
-.stat-max-num.is-today {
+.cal-max-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.3rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  flex-shrink: 0;
+  align-self: flex-start;
   border-radius: 999px;
-  background: oklch(var(--primary));
-  color: oklch(var(--primary-foreground));
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: oklch(var(--foreground));
+}
+.cal-max-num.is-today {
+  background: oklch(var(--foreground));
+  color: oklch(var(--panel));
+  font-weight: 650;
 }
 
-.stat-max-pills {
+.cal-max-items {
   display: flex;
   flex: 1;
   min-height: 0;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
-.stat-max-pill {
+/* A deadline in a cell: a left rule carries the urgency, the label stays
+   plain text. Fills at this density would tile the screen in colour. */
+.cal-max-item {
   display: flex;
   min-width: 0;
   flex: 1;
   max-height: 1.5rem;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   overflow: hidden;
-  border-radius: 0.375rem;
-  padding: 0 0.45rem 0 0.3rem;
+  padding: 0 0.25rem 0 0.4rem;
+  border-left: 2px solid oklch(var(--border));
+  border-radius: 0 0.25rem 0.25rem 0;
+  background: oklch(var(--raised) / 0.6);
 }
-.stat-max-pill.is-empty {
+.cal-max-item.is-empty {
   visibility: hidden;
 }
-.stat-max-pill-notch {
-  width: 3px;
-  height: 60%;
-  flex-shrink: 0;
-  border-radius: 999px;
+.cal-max-item.is-due-soon {
+  border-left-color: oklch(var(--warning));
+  background: oklch(var(--warning-light) / 0.7);
 }
-.stat-max-pill-label {
+.cal-max-item.is-overdue {
+  border-left-color: oklch(var(--danger));
+  background: oklch(var(--danger-light) / 0.7);
+}
+.cal-max-item-tag {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: oklch(var(--text-tertiary));
+}
+.cal-max-item-label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 500;
   line-height: 1.2;
+  color: oklch(var(--foreground));
 }
 
-.stat-max-rail {
+.cal-max-rail {
   display: flex;
   min-height: 0;
   flex-direction: column;
   gap: 0.75rem;
   overflow-y: auto;
-  border-left: 1px solid oklch(var(--border) / 0.75);
+  border-left: 1px solid oklch(var(--border));
   background: oklch(var(--panel));
   padding: 0.9rem 0.75rem;
 }
-.stat-max-rail-group {
+.cal-max-rail-cap {
+  margin: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: oklch(var(--text-tertiary));
+}
+.cal-max-rail-group {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.15rem;
 }
-.stat-max-rail-rule {
+.cal-max-rail-rule {
   height: 1px;
   flex-shrink: 0;
-  background: oklch(var(--border) / 0.75);
+  background: oklch(var(--border));
 }
-.stat-max-rail-btn {
+.cal-max-rail-btn {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  min-height: 1.9rem;
+  min-height: 1.85rem;
   padding: 0.25rem 0.55rem;
-  border: 0;
-  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   background: transparent;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 550;
   color: oklch(var(--foreground));
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.12s ease, opacity 0.12s ease;
+  transition: background-color 0.12s ease, opacity 0.12s ease, border-color 0.12s ease;
 }
-.stat-max-rail-btn:hover {
-  background: oklch(var(--muted) / 0.7);
+.cal-max-rail-btn:hover {
+  background: oklch(var(--raised));
+  border-color: oklch(var(--border));
 }
-.stat-max-rail-btn.is-on {
-  background: oklch(var(--primary));
-  color: oklch(var(--primary-foreground));
+.cal-max-rail-btn:focus-visible {
+  outline: 2px solid oklch(var(--ring) / 0.6);
+  outline-offset: 1px;
 }
-.stat-max-rail-btn.is-on:hover {
-  background: oklch(var(--primary));
-}
-.stat-max-rail-btn.is-on .stat-max-rail-n {
-  color: oklch(var(--primary-foreground) / 0.8);
-}
-.stat-max-rail-btn.is-muted {
+.cal-max-rail-btn.is-muted {
   opacity: 0.45;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
 }
-.stat-max-rail-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  flex-shrink: 0;
-  border-radius: 999px;
-}
-.stat-max-rail-n {
+.cal-max-rail-n {
   margin-left: auto;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10.5px;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
   color: oklch(var(--text-tertiary));
 }
 
-/* Fullscreen calendar: left-edge hover reveals the app sidebar beneath. */
-.stat-max {
-  transition: left 0.22s ease;
-}
-.stat-max.is-nav-peek {
-  left: 16.5rem;
-  box-shadow: -12px 0 32px -18px oklch(0% 0 0 / 0.55);
-}
-.stat-max-nav-hotzone {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  z-index: 2;
+@media (prefers-reduced-motion: reduce) {
+  .cal-day,
+  .cal-navbtn,
+  .cal-ghost,
+  .cal-chip,
+  .cal-mcard,
+  .cal-group-motion,
+  .cal-max {
+    transition: none;
+  }
 }
 
 /* =====================================================================

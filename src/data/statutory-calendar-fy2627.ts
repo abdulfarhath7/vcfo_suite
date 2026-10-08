@@ -1,5 +1,4 @@
 import type { Engagement } from '@/data/engagements';
-import type { IconChipTone } from '@/components/common/IconChip';
 
 /**
  * SBC master statutory compliance calendar — FY 2026-27 (Apr 2026 – Mar 2027).
@@ -34,34 +33,28 @@ export interface StatutoryDeadline {
   scope?: McaScope;
 }
 
-export const ACT_META: Record<
-  StatutoryAct,
-  { label: string; full: string; tone: IconChipTone }
-> = {
-  GST:        { label: 'GST',      full: 'Goods & Services Tax',      tone: 'emerald' },
-  IT:         { label: 'IT',       full: 'Income Tax',                tone: 'sky' },
-  MCA:        { label: 'MCA',      full: 'Ministry of Corporate Affairs', tone: 'violet' },
-  FEMA:       { label: 'FEMA',     full: 'Foreign Exchange (RBI)',    tone: 'rose' },
-  'STPI/SEZ': { label: 'STPI/SEZ', full: 'STPI & SEZ reporting',      tone: 'orange' },
-  LABOUR:     { label: 'Labour',   full: 'PF / ESI / Professional Tax', tone: 'teal' },
-  RERA:       { label: 'RERA',     full: 'Real Estate Regulation',    tone: 'pink' },
-  TP:         { label: 'TP',       full: 'Transfer Pricing',          tone: 'amber' },
+/**
+ * Act identity is TYPOGRAPHIC, not chromatic.
+ *
+ * This calendar is read by international clients, so it carries one colour
+ * lane only: how urgent a deadline is (overdue / due soon / upcoming). The
+ * eight acts are told apart by their short code set in mono caps — `label` on
+ * the tag, `full` in its tooltip. Do not reintroduce a per-act hue; eight
+ * competing colours is what this replaced.
+ */
+export const ACT_META: Record<StatutoryAct, { label: string; full: string }> = {
+  GST:        { label: 'GST',      full: 'Goods & Services Tax' },
+  IT:         { label: 'IT',       full: 'Income Tax' },
+  MCA:        { label: 'MCA',      full: 'Ministry of Corporate Affairs' },
+  FEMA:       { label: 'FEMA',     full: 'Foreign Exchange (RBI)' },
+  'STPI/SEZ': { label: 'STPI/SEZ', full: 'STPI & SEZ reporting' },
+  LABOUR:     { label: 'Labour',   full: 'PF / ESI / Professional Tax' },
+  RERA:       { label: 'RERA',     full: 'Real Estate Regulation' },
+  TP:         { label: 'TP',       full: 'Transfer Pricing' },
 };
 
-/** Calendar-only swatches — not IconChip tones (those sit too close and merge). */
-export const ACT_SWATCH: Record<
-  StatutoryAct,
-  { solid: string; soft: string; chip: string }
-> = {
-  GST:        { solid: 'bg-stat-gst',    soft: 'bg-stat-gst-soft',    chip: 'bg-stat-gst-soft text-stat-gst' },
-  IT:         { solid: 'bg-stat-it',     soft: 'bg-stat-it-soft',     chip: 'bg-stat-it-soft text-stat-it' },
-  MCA:        { solid: 'bg-stat-mca',    soft: 'bg-stat-mca-soft',    chip: 'bg-stat-mca-soft text-stat-mca' },
-  FEMA:       { solid: 'bg-stat-fema',   soft: 'bg-stat-fema-soft',   chip: 'bg-stat-fema-soft text-stat-fema' },
-  'STPI/SEZ': { solid: 'bg-stat-stpi',   soft: 'bg-stat-stpi-soft',   chip: 'bg-stat-stpi-soft text-stat-stpi' },
-  LABOUR:     { solid: 'bg-stat-labour', soft: 'bg-stat-labour-soft', chip: 'bg-stat-labour-soft text-stat-labour' },
-  RERA:       { solid: 'bg-stat-rera',   soft: 'bg-stat-rera-soft',   chip: 'bg-stat-rera-soft text-stat-rera' },
-  TP:         { solid: 'bg-stat-tp',     soft: 'bg-stat-tp-soft',     chip: 'bg-stat-tp-soft text-stat-tp' },
-};
+/** Catalogue order — the order acts appear in filters, tags and legends. */
+export const ACT_ORDER = Object.keys(ACT_META) as StatutoryAct[];
 
 export const FY_LABEL = 'FY 2026-27';
 export const FY_START = '2026-04-01';
