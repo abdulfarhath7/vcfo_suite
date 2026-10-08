@@ -16,9 +16,15 @@ Recorded 2026-10-08 from the owner's direction. This brief drives the design of 
 
 ## Greeting card
 
-| Before | After |
+Updated 2026-10-08 (second pass):
+
+| Item | Rule |
 |---|---|
-| A tall hero with a greeting ("Good morning …") and the metric cards inside it | **A slim bar of very low height**: the **company name** (no greeting), the stage chip and a few status chips. The metric cards sit outside it. |
+| Height | Low, simple, like the current app |
+| Title | The **company name**. No greeting ("Good morning …"). |
+| Metric cards | **Inside** the greeting card, simple, as in the current app |
+| Chips at the top (entity type, subsidiary, SPICe+ phase, "Waiting on you") | **Removed** (redundant) |
+| Top-right action | **Download report** button |
 
 ## Which cards
 
@@ -42,3 +48,25 @@ https://claude.ai/artifact/V5wFoBBsQ3E2FFebgQ4rvW. There are two layouts:
 1. Design: a canvas with the existing shell and the new client home (before and after). Owner approval.
 2. Prototype with a Before / After switch. Owner approval.
 3. Build into the existing components, keeping the routes and data hooks.
+
+## Second-pass feedback (2026-10-08)
+
+| # | Area | Owner feedback | Direction |
+|---|---|---|---|
+| 1 | Registrations card (after COI) | The "Tax" group shows PAN, TAN and GST as value blocks. It does not look good. | PAN and TAN are company identifiers. They appear once, in the company card, and not as registrations. Redesign the card: the designer shows options for the owner to pick. |
+| 2 | Incorporation steps (after COI, 14 blocks) | Clicking a block opens a **pop-up** with that step's details | A deliberate exception to "pages, not pop-ups". The pop-up links to the full step page. |
+
+### Step pop-up content
+
+| Block | Content | Shown when |
+|---|---|---|
+| Header | Step n of 14 · Part A / Part B · title · status chip · owner chip (You / SBC / MCA) | Always |
+| What this step is | One line from the catalog | Always |
+| Timeline | Started → submitted → reviewed → completed, each with date and person | Always (pending steps show the stages not yet reached) |
+| What was provided | The client-visible answers (read-only key facts, for example the office address and the directors) | The step has answers |
+| Documents | Files uploaded and documents delivered, each with a download | The step has files (board-resolution drafts are never shown) |
+| Outcome | For example the SRN, the name approval letter or the COI | The step has an output |
+| Needed from you | Items, due date and the person who asked | A pending step |
+| Actions | Open full step · Ask VCFO about this step · Message the lead | Always |
+
+Visibility follows `checklistStateForViewer`. A lead's draft is never shown to the client.
