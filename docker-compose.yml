@@ -31,8 +31,10 @@ services:
   # MinIO = S3-compatible object storage that runs locally.
   # Your app's S3 code (src/storage/s3.ts) talks to this exactly as it will
   # talk to real S3 on AWS. The only difference is the endpoint URL in .env.
+  # MinIO pulled its public images (Docker Hub + Quay) in Sept 2026; Silo is
+  # the drop-in fork (same S3 API, MINIO_* env vars and on-disk format).
   minio:
-    image: minio/minio:latest
+    image: pgsty/silo:latest
     container_name: vcfo-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -52,7 +54,7 @@ services:
 
   # One-shot: create the app bucket in MinIO on startup.
   minio-setup:
-    image: minio/mc:latest
+    image: pgsty/mc:latest
     depends_on:
       - minio
     entrypoint: >

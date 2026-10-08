@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ACT_SWATCH } from '@/data/statutory-calendar-fy2627';
+import { ACT_META, ACT_ORDER, FY_END, FY_START } from '@/data/statutory-calendar-fy2627';
 import {
+  buildStatutoryFyMonths,
   buildStatutoryFyWeeks,
   buildStatutoryMonthGrid,
   calendarCellIndexAfterKey,
@@ -12,20 +13,21 @@ import {
   nextInMonthCellIndex,
   parseCalendarViewPrefs,
   selectAllActs,
-  statutoryActTextClass,
   statutoryAgendaId,
   statutoryCellActs,
-  statutoryCellWash,
   statutoryCountByDate,
   statutoryDaysUntil,
   statutoryFilingName,
   statutoryFyMonthLabels,
   statutoryHeatLevel,
+  statutoryMonthPrefix,
   statutoryPillLabel,
   statutoryReturnPeriod,
   statutoryStatus,
   statutoryStatusLabel,
+  summariseStatutoryMonth,
   toggleMutedAct,
+  trimStatutoryMonthGrid,
   uniqueActsInCatalogOrder,
 } from './statutory-calendar-utils';
 
@@ -77,26 +79,18 @@ describe('select-all chips', () => {
   });
 });
 
-describe('act swatches', () => {
-  it('gives every statutory act a unique solid class', () => {
-    const solids = Object.values(ACT_SWATCH).map((s) => s.solid);
-    expect(new Set(solids).size).toBe(solids.length);
-    expect(solids).toHaveLength(8);
-  });
-});
-
-describe('statutoryCellWash', () => {
-  it('uses that act’s soft wash for a single-act day', () => {
-    expect(statutoryCellWash(['GST'])).toBe(ACT_SWATCH.GST.soft);
+describe('act identity', () => {
+  it('distinguishes all eight acts by a unique short code, not by colour', () => {
+    const labels = ACT_ORDER.map((act) => ACT_META[act].label);
+    expect(labels).toHaveLength(8);
+    expect(new Set(labels).size).toBe(8);
   });
 
-  it('skips wash on multi-act days so stacked stripes stay distinct', () => {
-    expect(statutoryCellWash(['FEMA', 'IT', 'STPI/SEZ'])).toBeNull();
-    expect(statutoryCellWash(['GST', 'LABOUR', 'STPI/SEZ'])).toBeNull();
-  });
-
-  it('returns null when the day has no acts', () => {
-    expect(statutoryCellWash([])).toBeNull();
+  it('carries no colour of its own — urgency is the only colour lane', () => {
+    // Guards the contract in app/globals.css: reintroducing a per-act swatch
+    // here is what made this calendar unshowable to a client.
+    const serialised = JSON.stringify(ACT_META);
+    expect(serialised).not.toMatch(/bg-|text-|#[0-9a-f]{3,6}|oklch|solid|swatch/i);
   });
 });
 
@@ -113,7 +107,7 @@ describe('dateHasAgendaItems', () => {
 });
 
 describe('uniqueActsInCatalogOrder', () => {
-  it('dedupes and follows ACT_SWATCH key order', () => {
+  it('dedupes and follows ACT_ORDER', () => {
     expect(uniqueActsInCatalogOrder(['LABOUR', 'GST', 'GST', 'MCA'])).toEqual([
       'GST',
       'MCA',
@@ -122,14 +116,70 @@ describe('uniqueActsInCatalogOrder', () => {
   });
 });
 
-describe('statutoryActTextClass', () => {
-  it('pulls the unique text-stat class from each chip', () => {
-    const classes = Object.keys(ACT_SWATCH).map((act) =>
-      statutoryActTextClass(act as keyof typeof ACT_SWATCH),
-    );
-    expect(new Set(classes).size).toBe(8);
-    expect(statutoryActTextClass('GST')).toBe('text-stat-gst');
-    expect(statutoryActTextClass('STPI/SEZ')).toBe('text-stat-stpi');
+describe('statutoryMonthPrefix', () => {
+  it('zero-pads the month', () => {
+    expect(statutoryMonthPrefix(new Date(2026, 3, 17))).toBe('2026-04');
+    expect(statutoryMonthPrefix(new Date(2026, 11, 1))).toBe('2026-12');
+  });
+});
+
+describe('trimStatutoryMonthGrid', () => {
+  it('drops trailing weeks that hold no day of the month', () => {
+    // Feb 2026 starts on a Sunday and has 28 days — exactly four weeks.
+    const trimmed = trimStatutoryMonthGrid(buildStatutoryMonthGrid(new Date(2026, 1, 1)));
+    expect(trimmed).toHaveLength(28);
+    expect(trimmed.at(-1)).toMatchObject({ day: 28, inMonth: true });
+  });
+
+  it('keeps whole weeks, never a partial row', () => {
+    for (let m = 0; m < 12; m++) {
+      const trimmed = trimStatutoryMonthGrid(buildStatutoryMonthGrid(new Date(2026, m, 1)));
+      expect(trimmed.length % 7).toBe(0);
+      expect(trimmed.filter((c) => c.inMonth).length).toBe(
+        new Date(2026, m + 1, 0).getDate(),
+      );
+    }
+  });
+});
+
+describe('buildStatutoryFyMonths', () => {
+  it('returns the twelve months of the fiscal year, April first', () => {
+    const months = buildStatutoryFyMonths(FY_START, FY_END);
+    expect(months).toHaveLength(12);
+    expect(statutoryMonthPrefix(months[0])).toBe('2026-04');
+    expect(statutoryMonthPrefix(months[11])).toBe('2027-03');
+  });
+
+  it('is empty when the range is inverted or unparseable', () => {
+    expect(buildStatutoryFyMonths(FY_END, FY_START)).toEqual([]);
+    expect(buildStatutoryFyMonths('not-a-date', FY_END)).toEqual([]);
+  });
+});
+
+describe('summariseStatutoryMonth', () => {
+  const today = '2026-08-10';
+  const items = [
+    { date: '2026-08-01' }, // past
+    { date: '2026-08-09' }, // past
+    { date: '2026-08-12' }, // within 7 days
+    { date: '2026-08-30' }, // beyond 7 days
+    { date: '2026-09-05' }, // another month entirely
+  ];
+
+  it('counts only the month asked for, split by urgency', () => {
+    expect(summariseStatutoryMonth(items, '2026-08', today)).toEqual({
+      total: 4,
+      overdue: 2,
+      dueSoon: 1,
+    });
+  });
+
+  it('reports zeroes for a month with nothing in it', () => {
+    expect(summariseStatutoryMonth(items, '2026-11', today)).toEqual({
+      total: 0,
+      overdue: 0,
+      dueSoon: 0,
+    });
   });
 });
 

@@ -1,6 +1,4 @@
-import { ACT_SWATCH, type StatutoryAct } from '@/data/statutory-calendar-fy2627';
-
-const ACT_ORDER = Object.keys(ACT_SWATCH) as StatutoryAct[];
+import { ACT_ORDER, type StatutoryAct } from '@/data/statutory-calendar-fy2627';
 
 export type StatutoryMonthCell = {
   iso: string;
@@ -35,6 +33,70 @@ export function buildStatutoryMonthGrid(viewMonth: Date, weeks = 6): StatutoryMo
     });
   }
   return out;
+}
+
+/**
+ * The same grid with trailing all-outside weeks dropped.
+ *
+ * A six-week grid keeps the month navigator a stable height, but the maximized
+ * month and the year cards want every row to carry weight — a February that
+ * fits in four weeks should not render two empty ones.
+ */
+export function trimStatutoryMonthGrid(
+  cells: readonly StatutoryMonthCell[],
+): StatutoryMonthCell[] {
+  const lastInMonth = cells.map((c) => c.inMonth).lastIndexOf(true);
+  if (lastInMonth < 0) return [...cells];
+  return cells.slice(0, Math.ceil((lastInMonth + 1) / 7) * 7);
+}
+
+/** `YYYY-MM` for a date — the key every month-level lookup is bucketed by. */
+export function statutoryMonthPrefix(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * Every month the fiscal year spans, first to last — the year view's cards.
+ * Driven off the FY bounds rather than a hardcoded April so the one place that
+ * knows when the year starts stays `FY_START`.
+ */
+export function buildStatutoryFyMonths(fyStartIso: string, fyEndIso: string): Date[] {
+  const start = new Date(`${fyStartIso}T12:00:00`);
+  const end = new Date(`${fyEndIso}T12:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
+  const months: Date[] = [];
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  const stop = end.getFullYear() * 12 + end.getMonth();
+  while (cursor.getFullYear() * 12 + cursor.getMonth() <= stop && months.length < 24) {
+    months.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return months;
+}
+
+/** What a month card reports: how much is in it, and how much of that bites. */
+export type StatutoryMonthSummary = {
+  total: number;
+  overdue: number;
+  dueSoon: number;
+};
+
+export function summariseStatutoryMonth(
+  items: readonly { date: string }[],
+  monthPrefix: string,
+  todayIso: string,
+): StatutoryMonthSummary {
+  let total = 0;
+  let overdue = 0;
+  let dueSoon = 0;
+  for (const item of items) {
+    if (!item.date.startsWith(monthPrefix)) continue;
+    total += 1;
+    const status = statutoryStatus(item.date, todayIso);
+    if (status === 'overdue') overdue += 1;
+    else if (status === 'due-soon') dueSoon += 1;
+  }
+  return { total, overdue, dueSoon };
 }
 
 const KEY_STEP: Record<string, number> = {
@@ -92,10 +154,6 @@ export function nextInMonthCellIndex(
 export function uniqueActsInCatalogOrder(acts: readonly StatutoryAct[]): StatutoryAct[] {
   const present = new Set(acts);
   return ACT_ORDER.filter((act) => present.has(act));
-}
-
-export function statutoryActTextClass(act: StatutoryAct): string {
-  return ACT_SWATCH[act].chip.split(' ').find((c) => c.startsWith('text-stat-')) ?? 'text-ink';
 }
 
 /** Select-all is on when no category is muted. */
@@ -205,16 +263,6 @@ export function statutoryFyMonthLabels(
 
 export function isoInStatutoryFy(iso: string, fyStartIso: string, fyEndIso: string): boolean {
   return iso >= fyStartIso && iso <= fyEndIso;
-}
-
-/**
- * Soft cell wash for a day that has deadlines.
- * Single-act only — multi-act days skip the wash so stacked stripes stay distinct.
- */
-export function statutoryCellWash(acts: readonly StatutoryAct[]): string | null {
-  if (acts.length !== 1) return null;
-  const lead = acts[0];
-  return lead ? ACT_SWATCH[lead].soft : null;
 }
 
 /* ── Row presentation ───────────────────────────────────────────────────────
