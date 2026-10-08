@@ -70,3 +70,13 @@ https://claude.ai/artifact/V5wFoBBsQ3E2FFebgQ4rvW. There are two layouts:
 | Actions | Open full step · Ask VCFO about this step · Message the lead | Always |
 
 Visibility follows `checklistStateForViewer`. A lead's draft is never shown to the client.
+
+### Company IDs: masked, password to reveal (2026-10-08)
+
+| Item | Rule |
+|---|---|
+| Masked by default | PAN, TAN (and any director PAN shown), for example `AAKC••••1M` |
+| Shown in clear | CIN and GSTIN (public on MCA / GST portals) — owner may override |
+| Reveal | Eye button → **password pop-up** → on success the value shows for a short time (for example 60 s) or until the page is left, with copy button; eye again hides it |
+| Pop-up | Title "Confirm it's you" · password field (show/hide) · Confirm / Cancel · error on wrong password · "Forgot password?" link |
+| Build notes (later) | Server re-verifies the password (rate-limited), returns a short-lived unlock; the reveal is written to the audit trail. The value is never sent to the browser before the unlock. |
