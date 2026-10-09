@@ -32,3 +32,4 @@ Owner direction, 2026-10-08. These rules apply to every client page redesign. Th
 | 11 | Visuals over text: donuts, coloured bars, filled icon circles, date tiles, coloured status chips. Keep text short. |
 | 12 | Motion: count-up numbers, current-step pulse, toast + Undo, skeleton loaders, friendly empty states. Respect `prefers-reduced-motion`. |
 | 13 | Pages, not pop-ups, for navigation. Pop-ups are allowed only for details (step details, previews, (i), drill-downs). |
+| 14 | **Every visual can be explored.** Every chart, ring, donut, bar, progress bar, flow chart and timeline works like the dashboard donut: **hover** a part → a small tooltip names it and gives its count or date; **click** a part → a pop-up lists exactly the items behind it, with a navy sliding pill to switch between the parts and the clicked part pre-selected. Each list row opens its real page. On touch screens, tap = click. Use the same tooltip and pop-up component everywhere. |
