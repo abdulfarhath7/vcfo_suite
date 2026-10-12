@@ -118,6 +118,14 @@ import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder,
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 import { inferIndianState } from '@/lib/countries';
 import { runStepValidation } from '@/lib/checklist-step-validation';
+import {
+  canRoleEditField,
+  isDirectFlowStep,
+  isLeadOnlyField,
+  LEAD_ONLY_FIELD_HELPER,
+  stripLeadOnlyResponses,
+} from '@/lib/pre-inc-direct-flow';
+import { clientIncorporationPath, clientIncorporationStepPath } from '@/lib/project-step-path';
 
 /** True when an error key belongs to one of these fields (repeat ids are dotted under the group). */
 function errorKeyInFields(key: string, fields: readonly ChecklistField[]): boolean {
@@ -198,6 +206,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     getStateForEngagement,
     updateItem,
     submitChecklistItem,
+    submitDirectStep,
     setUnlockedFields,
     user,
     engagements,
@@ -220,8 +229,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     [item, ownershipType],
   );
   const fields = useMemo(
-    () => filterFieldsByViewer(allFields, variant),
-    [allFields, variant],
+    () => filterFieldsByViewer(allFields, variant, item.id),
+    [allFields, variant, item.id],
   );
   /** Part A validates only what this company's Part A shows (see `part-a-sections.ts`). */
   const pre1Validation = useMemo<Pre1ValidationOptions>(
@@ -335,6 +344,23 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const [focusRequest, setFocusRequest] = useState(0);
 
   const isClient = variant === 'client';
+  /**
+   * Pre-incorporation direct flow: the client and the lead fill one form and
+   * either submits it. The client's per-field submit lock does not apply —
+   * the gate opens or closes the whole step.
+   */
+  const directFlow = isDirectFlowStep(item.id);
+  const enforceClientLock = isClient && !directFlow;
+  /** What this viewer may send: a client never sends a lead-only field. */
+  const writableForViewer = useCallback(
+    (partial: ChecklistItemResponses): ChecklistItemResponses =>
+      filterResponsesToEditableFields(
+        itemState,
+        isClient && directFlow ? stripLeadOnlyResponses(item.id, partial) : partial,
+        enforceClientLock,
+      ),
+    [itemState, isClient, directFlow, item.id, enforceClientLock],
+  );
   const submissionLocked = isClientSubmissionLocked(itemState);
   const reviewBanner = isClient ? getClientReviewBanner(itemState) : null;
   const clientResubmit = canClientResubmit(itemState);
@@ -477,7 +503,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       // defaults back as if the lead had answered them.
       if (!userEditedRef.current) return;
       const partial = getChangedPartial(fields, draftRef.current, savedRef.current);
-      const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+      const editablePartial = writableForViewer(partial);
       if (Object.keys(editablePartial).length === 0) return;
       void updateItem(
         scopeId,
@@ -486,7 +512,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         { clientResponsesOnly: true, keepalive: options?.keepalive },
       ).catch(() => undefined);
     },
-    [fields, isClient, item.id, itemState, scopeId, updateItem],
+    [fields, item.id, scopeId, updateItem, writableForViewer],
   );
   // Latest flush for listeners that must not re-subscribe on every render.
   const flushPendingAutoSaveRef = useRef(flushPendingAutoSave);
@@ -529,7 +555,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
   const performSave = useCallback(
     async (partial: ChecklistItemResponses, options?: { explicit?: boolean }) => {
-      const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+      const editablePartial = writableForViewer(partial);
       if (!autoSaveEnabled || Object.keys(editablePartial).length === 0) return;
 
       if (!validatePartialForAutoSave(draftRef.current, editablePartial)) {
@@ -572,7 +598,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         }
       }
     },
-    [autoSaveEnabled, isClient, item.id, itemState, scopeId, updateItem, validatePartialForAutoSave],
+    [autoSaveEnabled, item.id, scopeId, updateItem, validatePartialForAutoSave, writableForViewer],
   );
 
   const autoSaveStatusRef = useRef(autoSaveStatus);
@@ -602,10 +628,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       clearDebounce();
 
       const runPersist = () => {
-        const nextPartial = filterResponsesToEditableFields(
-          itemState,
+        const nextPartial = writableForViewer(
           getChangedPartial(fields, draftRef.current, savedRef.current),
-          isClient,
         );
         if (Object.keys(nextPartial).length === 0) {
           if (autoSaveStatusRef.current !== 'error') setAutoSaveStatus('idle');
@@ -626,7 +650,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         runPersist();
       }, AUTO_SAVE_DEBOUNCE_MS);
     },
-    [autoSaveEnabled, clearDebounce, fields, isClient, itemState, performSave],
+    [autoSaveEnabled, clearDebounce, fields, performSave, writableForViewer],
   );
 
   /**
@@ -901,7 +925,13 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   if (!fields.length || (!canEdit && !formReadOnly)) return null;
 
   const isFieldLockedForClient = (fieldId: string) =>
-    isClient && submissionLocked && !isFieldEditableForClient(itemState, fieldId);
+    (enforceClientLock && submissionLocked && !isFieldEditableForClient(itemState, fieldId)) ||
+    (isClient && directFlow && isLeadOnlyField(item.id, fieldId));
+  /** Lead-only field on the client's form: read-only, with a line saying who fills it. */
+  const leadOnlyNote = (fieldId: string) =>
+    isClient && directFlow && isLeadOnlyField(item.id, fieldId) ? (
+      <p className="text-[11px] text-muted-foreground">{LEAD_ONLY_FIELD_HELPER}</p>
+    ) : null;
 
   const toggleFieldUnlock = (fieldId: string) => {
     if (!showFieldUnlock || !submissionLocked) return;
@@ -1070,7 +1100,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (internWorkspace && autoSaveEnabled) {
       const responsesToSave = isPre1 ? pre1Draft : draft;
       const partial = getChangedPartial(fields, responsesToSave, saved);
-      const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+      const editablePartial = writableForViewer(partial);
       if (Object.keys(editablePartial).length === 0 && autoSaveStatus !== 'error') return;
       setSaving(true);
       try {
@@ -1099,7 +1129,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
     const responsesToSave = isPre1 ? pre1Draft : draft;
     const partial = getChangedPartial(fields, responsesToSave, saved);
-    const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+    const editablePartial = writableForViewer(partial);
     if (Object.keys(editablePartial).length === 0) return;
 
     setSaving(true);
@@ -1135,7 +1165,92 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     }
   };
 
+  /** Client portal / lead after a direct submit: the next step, else the phase overview. */
+  const navigateAfterDirectSubmit = () => {
+    if (!isClient) {
+      navigateInternAfterLastTab();
+      return;
+    }
+    const target = internFormNextTarget(item.id, 0, 0);
+    router.push(target.kind === 'step' ? clientIncorporationStepPath(target.item) : clientIncorporationPath());
+  };
+
+  /**
+   * Direct-flow Submit, client and lead alike. The form checks first so a
+   * field the user can fix is marked at once; the server runs the same check
+   * and its 422 lands in the same display. A client whose only gaps are the
+   * lead-only NIC codes still submits — the step then waits on the lead.
+   */
+  const handleDirectSubmit = async () => {
+    clearDebounce();
+    pendingAfterFlightRef.current = null;
+    await waitForSaveIdle();
+
+    const submitDraft = isPre1 ? pre1Draft : { ...draft };
+    if (item.id === 'pre-5' && submitDraft.nameApprovalDate?.trim()) {
+      submitDraft.nameApprovalExpiryDate =
+        submitDraft.nameApprovalExpiryDate?.trim() ||
+        computeMcaNameApprovalExpiryDate(submitDraft.nameApprovalDate);
+    }
+    const role = user?.role ?? (isClient ? 'client' : 'intern');
+    const validation = validateStep(submitDraft);
+    const blocking: Record<string, string> = {};
+    for (const [key, message] of Object.entries(validation.errors)) {
+      if (canRoleEditField(role, item.id, key)) blocking[key] = message;
+    }
+    setFieldWarnings(validation.warnings);
+
+    const showErrors = (errors: Record<string, string>) => {
+      setFieldErrors(errors);
+      setSubmitAttempted(true);
+      toastError('Please complete required fields', 'Fix the highlighted items before submitting.');
+      if (internSectionNav) {
+        const errorIndex = internSectionGroups.findIndex((group) =>
+          Object.keys(errors).some((key) => errorKeyInFields(key, group.fields)),
+        );
+        if (errorIndex >= 0) setSelectedSectionIndex(errorIndex);
+      }
+    };
+
+    if (Object.keys(blocking).length > 0) {
+      showErrors(blocking);
+      return;
+    }
+    setFieldErrors({});
+
+    setSubmitting(true);
+    try {
+      const sent = isClient ? stripLeadOnlyResponses(item.id, submitDraft) : submitDraft;
+      const result = await submitDirectStep(scopeId, item.id, sent);
+      if (result.outcome === 'invalid') {
+        showErrors(result.fieldErrors ?? {});
+        return;
+      }
+      if (submitDraft !== draft) setDraft(submitDraft);
+      if (result.outcome === 'waiting_on_lead') {
+        toastSuccess(
+          'Submitted',
+          'Your project lead adds the NIC codes, then this step is complete.',
+          { id: `direct-submit:${scopeId}:${item.id}` },
+        );
+        return;
+      }
+      toastSuccess('Step submitted', `${item.title} is complete.`, {
+        id: `direct-submit:${scopeId}:${item.id}`,
+      });
+      navigateAfterDirectSubmit();
+    } catch (err) {
+      toastError('Could not submit', errorMessage(err, 'Try again. Your answers are saved.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleInternSubmit = async () => {
+    if (directFlow) {
+      await handleDirectSubmit();
+      return;
+    }
     if (!internWorkspace) return;
     clearDebounce();
     pendingAfterFlightRef.current = null;
@@ -1349,6 +1464,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         />
       </div>
       {readOnlyValueNode(field, 'text')}
+      {leadOnlyNote(field.id)}
     </div>
   );
 
@@ -1356,7 +1472,10 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const renderRecordRow = (field: ChecklistField) => (
     <div key={field.id} className="milestone-record-row">
       <dt className="milestone-record-label">{field.label}</dt>
-      <dd className="milestone-record-value">{readOnlyValueNode(field, 'dash')}</dd>
+      <dd className="milestone-record-value">
+        {readOnlyValueNode(field, 'dash')}
+        {leadOnlyNote(field.id)}
+      </dd>
     </div>
   );
 
@@ -1811,6 +1930,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     internSectionNav,
     internSectionNextLabel,
     isClient,
+    directFlow,
     isPhase2StructuredStep,
     isPre1,
     isPre6,

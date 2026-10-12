@@ -21,6 +21,8 @@ import type { AuthContext } from '@/auth/guards';
 /** Rows the next `db.select(...)` chain resolves to. */
 let selectRows: unknown[] = [];
 const updateCalls: unknown[] = [];
+/** Values handed to `.set(...)` — what a write would persist. */
+const setCalls: unknown[] = [];
 
 /** Chainable stub: every builder method returns a thenable resolving to rows. */
 function chain(): unknown {
@@ -29,7 +31,10 @@ function chain(): unknown {
     where: () => chain(),
     limit: () => chain(),
     orderBy: () => chain(),
-    set: () => chain(),
+    set: (value: unknown) => {
+      setCalls.push(value);
+      return chain();
+    },
     returning: () => chain(),
     then: (resolve: (value: unknown[]) => unknown) => resolve(selectRows),
   };
@@ -52,11 +57,13 @@ const { buildManagerApproval, buildClientApproval } = await import(
   '@/lib/checklist-step-approval'
 );
 const { getActiveCatalogItems } = await import('@/data/checklist');
-const { clientApproveStep, clientRequestStepChange } = await import(
+const { clientApproveStep, clientRequestStepChange, submitDirectFlowStep } = await import(
   '@/db/repositories/engagements'
 );
 
-const STEP = getActiveCatalogItems()[0]!;
+// The three-party approval still runs on every step outside the
+// pre-incorporation direct flow; post-incorporation is the first of those.
+const STEP = getActiveCatalogItems().find((item) => item.bucket === 'post-inc')!;
 const OWN = '11111111-1111-1111-1111-111111111101';
 const NOW = '2026-09-01T10:00:00.000Z';
 
@@ -71,19 +78,30 @@ function ctx(role: AuthContext['role']): AuthContext {
   } as AuthContext;
 }
 
+/** Every active step before `stepId` completed, so the client's sequence lock is open. */
+function completedBefore(stepId: string): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const item of getActiveCatalogItems()) {
+    if (item.id === stepId) break;
+    out[item.id] = { status: 'completed', reviewStatus: 'accepted' };
+  }
+  return out;
+}
+
 /** One engagement row, with the step carrying `approval`. */
 function engagementRow(approval: unknown) {
   return {
     id: OWN,
     companyName: 'Demo Pvt Ltd',
     internId: 'i1',
-    checklistState: { [STEP.id]: { status: 'completed', approval } },
+    checklistState: { ...completedBefore(STEP.id), [STEP.id]: { status: 'completed', approval } },
   };
 }
 
 beforeEach(() => {
   selectRows = [];
   updateCalls.length = 0;
+  setCalls.length = 0;
 });
 
 describe('only the client may act', () => {
@@ -157,5 +175,79 @@ describe('turn taking', () => {
     selectRows = [engagementRow(buildManagerApproval({ approvedBy: 'mgr-1', now: NOW }))];
     await expect(clientApproveStep(ctx('client'), OWN, STEP.id)).resolves.toBeTruthy();
     expect(updateCalls.length).toBeGreaterThan(0);
+  });
+});
+
+describe('pre-incorporation direct flow', () => {
+  const FULL_PRE13 = {
+    equityShares: 'yes',
+    equityQuantity: '100000',
+    equityNominalValue: '10',
+    equityTotal: '1000000',
+    preferenceShares: 'no',
+  };
+
+  /** pre-1 complete, so pre-13 … is open in sequence only once Part A is done. */
+  function directRow(state: Record<string, unknown>) {
+    return { id: OWN, companyName: 'Demo Pvt Ltd', internId: 'i1', ownershipType: 'subsidiary', checklistState: state, createdAt: new Date() };
+  }
+
+  it('a client of another engagement cannot submit a step there', async () => {
+    selectRows = []; // the scoped read sees nothing of engagement B
+    await expect(submitDirectFlowStep(ctx('client'), OWN, 'pre-1', { proposedName1: 'X' })).rejects.toThrow(
+      /not found or not permitted/i,
+    );
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it('managers do not submit direct-flow steps', async () => {
+    await expect(submitDirectFlowStep(ctx('manager'), OWN, 'pre-1', {})).rejects.toThrow(
+      /only the client or the project lead/i,
+    );
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it('a client submit never writes a lead-only NIC field', async () => {
+    selectRows = [directRow({})];
+    await submitDirectFlowStep(ctx('client'), OWN, 'pre-1', {
+      proposedName1: 'Demo India Private Limited',
+      nicCode: '62011',
+      additionalNicCodes: 'n1',
+      'additionalNicCodes.n1.code': '62020',
+    }).catch(() => undefined);
+    const written = JSON.stringify(setCalls);
+    expect(written).toContain('Demo India Private Limited');
+    expect(written).not.toContain('62011');
+    expect(written).not.toContain('additionalNicCodes');
+  });
+
+  it('refuses a client submit on a step already submitted', async () => {
+    selectRows = [directRow({ 'pre-1': { status: 'completed', reviewStatus: 'accepted' } })];
+    await expect(submitDirectFlowStep(ctx('client'), OWN, 'pre-1', {})).rejects.toThrow('step_already_submitted');
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it('client approve is refused — there is nothing to approve', async () => {
+    await expect(clientApproveStep(ctx('client'), OWN, 'pre-13')).rejects.toThrow('step_has_no_approval');
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it('a change request reopens a submitted step', async () => {
+    selectRows = [
+      directRow({
+        ...completedBefore('pre-13'),
+        'pre-13': { status: 'completed', reviewStatus: 'accepted', responses: FULL_PRE13 },
+      }),
+    ];
+    await clientRequestStepChange(ctx('client'), OWN, 'pre-13', 'Wrong share count');
+    expect(updateCalls.length).toBeGreaterThan(0);
+    const written = JSON.stringify(setCalls);
+    expect(written).toContain('in-progress');
+  });
+
+  it('a change request on an open step changes nothing', async () => {
+    selectRows = [directRow({ 'pre-13': { status: 'in-progress' } })];
+    await expect(clientRequestStepChange(ctx('client'), OWN, 'pre-13', 'x')).rejects.toThrow('step_not_with_client');
+    expect(updateCalls).toHaveLength(0);
   });
 });

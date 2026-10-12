@@ -333,7 +333,7 @@ export function summarizeEngagement(
       // `done` counts sequential completion (the progress bar's definition);
       // the open/locked split comes from the gate, so a phase never claims
       // more open work than the gate actually opened.
-      if (isChecklistStepSequentiallyComplete(coerceStatusCode(slice?.status), slice)) {
+      if (isChecklistStepSequentiallyComplete(coerceStatusCode(slice?.status), slice, item.id)) {
         phaseDone += 1;
         done += 1;
       }

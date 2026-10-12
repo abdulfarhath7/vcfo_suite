@@ -14,6 +14,13 @@ import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 import { emptyEmailDispatch } from '@/lib/email/email-dispatch';
 import { leadManagerRequestNotifyPlan } from '@/lib/email/lead-manager-request-notify';
 import { leadWritablePatch } from '@/lib/checklist-item-review';
+import {
+  isDirectFlowStep,
+  isDirectFlowStepComplete,
+  isWaitingOnLead,
+  lastEditedPatch,
+  stripLeadOnlyResponses,
+} from '@/lib/pre-inc-direct-flow';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -74,7 +81,19 @@ export async function POST(request: Request, context: RouteContext) {
     } & Partial<ChecklistItemStateSlice>;
     const retryManagerEmail = resendManagerEmail === true;
     let patch = patchFields;
-    if (guard.ctx.role === 'client') {
+    const itemId = body.data.itemId;
+    const directFlow = isDirectFlowStep(itemId);
+    if (guard.ctx.role === 'client' && directFlow) {
+      // Direct flow: the client writes answers only, never a lead-only field,
+      // and only while the step is open to them.
+      if (isDirectFlowStepComplete(itemId, prevSlice) || isWaitingOnLead(itemId, prevSlice)) {
+        return NextResponse.json(
+          { error: 'This step is submitted. Ask for a change to edit it.' },
+          { status: 409 },
+        );
+      }
+      patch = { responses: stripLeadOnlyResponses(itemId, patchFields.responses ?? {}) };
+    } else if (guard.ctx.role === 'client') {
       const {
         reviewStatus: _rs,
         reviewSource: _src,
@@ -97,6 +116,30 @@ export async function POST(request: Request, context: RouteContext) {
     }
     if (guard.ctx.role === 'intern') {
       patch = leadWritablePatch(patch);
+      if (directFlow) {
+        // No approval on a direct-flow step: a lead completes it through
+        // Submit (which validates), never by stamping a review request here.
+        const {
+          reviewStatus: _rs,
+          reviewSource: _src,
+          locked: _lk,
+          clientSubmittedAt: _cs,
+          unlockedFields: _uf,
+          clientFillRequest: _cfr,
+          ...draftOnly
+        } = patch;
+        patch = draftOnly;
+      }
+    }
+    if (directFlow && patch.responses && Object.keys(patch.responses).length > 0) {
+      patch = {
+        ...patch,
+        ...lastEditedPatch({
+          actorName: guard.ctx.name,
+          actorRole: guard.ctx.role,
+          now: new Date().toISOString(),
+        }),
+      };
     }
 
     const checklistState = await patchChecklistItem(guard.ctx, id, body.data.itemId, patch);

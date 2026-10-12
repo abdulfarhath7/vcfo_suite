@@ -1,4 +1,5 @@
 import { approvalStateOf } from '@/lib/checklist-step-approval';
+import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
 import type { EngagementChecklistState } from '@/lib/checklist-index';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 
@@ -33,7 +34,13 @@ export function checklistViewerForRole(role: string | null | undefined): Checkli
  * approval, delivers it, the client submits it, or it is marked complete / N/A.
  * A plain save — however many fields are filled — does not.
  */
-export function isStepReleasedToFirm(slice?: ChecklistItemStateSlice | null): boolean {
+export function isStepReleasedToFirm(
+  slice?: ChecklistItemStateSlice | null,
+  itemId?: string,
+): boolean {
+  // Pre-incorporation direct flow: both parties fill the step, so a draft is
+  // shared from the first keystroke (see `pre-inc-direct-flow.ts`).
+  if (itemId && isDirectFlowStep(itemId)) return true;
   if (!slice) return false;
   if (slice.status === 'completed' || slice.status === 'not-applicable') return true;
   if (slice.reviewSource || slice.reviewStatus) return true;
@@ -50,7 +57,11 @@ export function isStepReleasedToFirm(slice?: ChecklistItemStateSlice | null): bo
  * the existing release paths: the client's own submission, a delivery, an
  * accepted review, a completed / N/A mark, or an approval already in flight.
  */
-export function isStepReleasedToClient(slice?: ChecklistItemStateSlice | null): boolean {
+export function isStepReleasedToClient(
+  slice?: ChecklistItemStateSlice | null,
+  itemId?: string,
+): boolean {
+  if (itemId && isDirectFlowStep(itemId)) return true;
   if (!slice) return false;
   if (slice.status === 'not-applicable') return true;
   if (slice.reviewSource === 'client_submission') return true;
@@ -67,9 +78,10 @@ export function isStepReleasedToClient(slice?: ChecklistItemStateSlice | null): 
 export function isStepReleasedTo(
   viewer: ChecklistViewer,
   slice?: ChecklistItemStateSlice | null,
+  itemId?: string,
 ): boolean {
   if (viewer === 'lead') return true;
-  return viewer === 'firm' ? isStepReleasedToFirm(slice) : isStepReleasedToClient(slice);
+  return viewer === 'firm' ? isStepReleasedToFirm(slice, itemId) : isStepReleasedToClient(slice, itemId);
 }
 
 /**
@@ -82,7 +94,14 @@ export function isStepReleasedTo(
 export function redactChecklistSliceForViewer(
   viewer: ChecklistViewer,
   slice: ChecklistItemStateSlice,
+  itemId?: string,
 ): ChecklistItemStateSlice {
+  if (itemId && isDirectFlowStep(itemId)) {
+    // Shared with everyone, minus the staff notes the client never reads.
+    if (viewer !== 'client') return slice;
+    const { notes: _notes, ...forClient } = slice;
+    return forClient;
+  }
   if (isStepReleasedTo(viewer, slice)) return slice;
 
   const {
@@ -121,7 +140,7 @@ export function redactChecklistStateForViewer(
   if (viewer === 'lead') return state;
   const out: EngagementChecklistState = {};
   for (const [itemId, slice] of Object.entries(state)) {
-    out[itemId] = redactChecklistSliceForViewer(viewer, slice);
+    out[itemId] = redactChecklistSliceForViewer(viewer, slice, itemId);
   }
   return out;
 }

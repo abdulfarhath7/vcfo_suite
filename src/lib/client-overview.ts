@@ -333,7 +333,7 @@ export function buildProgress(state: ClientOverviewState): ClientOverviewProgres
       const slice = state[item.id];
       const gate = getStepGate(gates, item.id);
       const status = coerceStatusCode(slice?.status);
-      const complete = isChecklistStepSequentiallyComplete(status, slice);
+      const complete = isChecklistStepSequentiallyComplete(status, slice, item.id);
 
       if (complete) {
         phaseDone += 1;

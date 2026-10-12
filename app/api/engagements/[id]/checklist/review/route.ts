@@ -65,6 +65,12 @@ export async function POST(request: Request, context: RouteContext) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'review_failed';
+    if (message === 'step_has_no_approval') {
+      return NextResponse.json(
+        { error: 'The client and the project lead submit this step directly. There is nothing to approve.' },
+        { status: 409 },
+      );
+    }
     const status =
       message.includes('may not review') ? 403
       : message.includes('not found') || message.includes('not permitted') ? 404

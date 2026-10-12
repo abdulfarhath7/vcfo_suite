@@ -90,9 +90,12 @@ export async function POST(request: Request, context: RouteContext) {
       client_fill_already_pending: 'This step is already waiting on manager approval.',
       client_fill_already_with_client: 'The client has already been asked to fill this step.',
       client_fill_not_pending: 'There is no pending request on this step.',
+      step_has_no_approval: 'The client and the project lead fill this step directly. There is nothing to approve.',
     };
     const status =
-      message.startsWith('client_fill_already') || message === 'client_fill_not_pending'
+      message.startsWith('client_fill_already') ||
+      message === 'client_fill_not_pending' ||
+      message === 'step_has_no_approval'
         ? 409
         : message.includes('Only the project')
           ? 403

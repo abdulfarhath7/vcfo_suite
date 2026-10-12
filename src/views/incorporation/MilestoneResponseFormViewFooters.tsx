@@ -11,6 +11,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
     canEdit,
     clientResubmit,
     cn,
+    directFlow,
     formReadOnly,
     handleInternSectionNext,
     handleInternSubmit,
@@ -38,15 +39,17 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
   } = p;
 
   // The sectioned layout's footer exists to save / submit / advance the form.
-  // A client never writes to a step, so they get no footer at all — its primary
-  // button was the last remaining way for them to submit. A manager or admin
-  // reading the lead's answers (`formReadOnly`) gets none either: their only
-  // actions are Accept / Reject above the form.
-  const internNavFooter = sectionTabs && !isClient && !formReadOnly;
+  // A client writes only on a pre-incorporation direct-flow step, where they
+  // get the same Next / Submit footer as the lead; elsewhere they get none. A
+  // manager or admin reading the answers (`formReadOnly`) gets none either.
+  const internNavFooter = sectionTabs && !formReadOnly && (!isClient || directFlow);
+  // The older client footers (Submit for review / Submit again) never apply
+  // to a direct-flow step — its footer is the one above.
+  const legacyClientFooter = isClient && !directFlow;
 
   return (
     <>
-      {!formReadOnly && canEdit && isClient && !submissionLocked && (
+      {!formReadOnly && canEdit && legacyClientFooter && !submissionLocked && (
         <div
           className={cn(
             'flex flex-wrap items-center gap-3 border-t border-border/70 pt-4',
@@ -270,7 +273,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
         </div>
       )}
 
-      {!formReadOnly && canEdit && isClient && submissionLocked && !reviewAccepted && (
+      {!formReadOnly && canEdit && legacyClientFooter && submissionLocked && !reviewAccepted && (
         <div
           className={cn(
             'flex flex-wrap items-center gap-3 border-t border-border/70 pt-4',

@@ -1,6 +1,7 @@
 import type { ChecklistField, ChecklistItem, ChecklistResponsibleRole } from '@/data/checklist';
 import { getClientResponseFields } from '@/lib/checklist-responses';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
 
 export const RESPONSIBLE_ROLE_LABEL: Record<ChecklistResponsibleRole, string> = {
   client: 'Client',
@@ -8,12 +9,18 @@ export const RESPONSIBLE_ROLE_LABEL: Record<ChecklistResponsibleRole, string> = 
 };
 
 
-/** Fields visible/editable for the current portal variant. */
+/**
+ * Fields visible for the current portal variant. On a pre-incorporation
+ * direct-flow step the client sees every field — lead-only ones as read-only
+ * rows — because both parties fill the same form.
+ */
 export function filterFieldsByViewer(
   fields: ChecklistField[],
   variant: 'admin' | 'client',
+  itemId?: string,
 ): ChecklistField[] {
   if (variant === 'admin') return fields;
+  if (itemId && isDirectFlowStep(itemId)) return fields;
   return fields.filter((field) => field.filledBy !== 'intern');
 }
 
@@ -21,7 +28,7 @@ function getVisibleResponseFields(
   item: ChecklistItem,
   variant: 'admin' | 'client',
 ): ChecklistField[] {
-  return filterFieldsByViewer(getClientResponseFields(item), variant);
+  return filterFieldsByViewer(getClientResponseFields(item), variant, item.id);
 }
 
 export function hasResponseFormFields(
@@ -36,12 +43,12 @@ export function hasResponseFormFields(
  * Intern/manager keep edit access after deliver so they can correct and re-publish to the portal.
  */
 /**
- * The client never edits a checklist step.
+ * The client edits only pre-incorporation direct-flow steps.
  *
- * A client reads their file; the firm is the only party that writes to it. When
- * something on a step is wrong, the client asks the firm to change it (see the
- * change-request action on the step) rather than editing the record directly —
- * so every value on an engagement has exactly one author.
+ * Everywhere else a client reads their file and asks the firm to change it
+ * (the change-request action on the step). On a direct-flow step the client
+ * and the project lead fill the same form; the gate's `canEdit` (passed in as
+ * `readOnly`) decides when it is open — the current step, not submitted.
  *
  * `readOnly` still forces read-only for staff (a locked or done step).
  */
@@ -51,6 +58,7 @@ export function isMilestoneFormReadOnly(params: {
   itemId: string;
   itemState?: ChecklistItemStateSlice | null;
 }): boolean {
-  const { readOnly, variant } = params;
-  return Boolean(readOnly) || variant === 'client';
+  const { readOnly, variant, itemId } = params;
+  if (readOnly) return true;
+  return variant === 'client' && !isDirectFlowStep(itemId);
 }

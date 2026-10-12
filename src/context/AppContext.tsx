@@ -148,6 +148,18 @@ export interface AppContextValue {
     itemId: string,
     responses: ChecklistItemResponses,
   ) => Promise<void>;
+  /**
+   * Pre-incorporation direct flow: the client or the project lead submits a
+   * step. Resolves with the outcome; `invalid` carries the server's field errors.
+   */
+  submitDirectStep: (
+    scopeId: string,
+    itemId: string,
+    responses: ChecklistItemResponses,
+  ) => Promise<{
+    outcome: 'submitted' | 'waiting_on_lead' | 'invalid';
+    fieldErrors?: Record<string, string>;
+  }>;
   /** Intern/manager reopens specific fields for client editing after submit. */
   setUnlockedFields: (
     scopeId: string,
