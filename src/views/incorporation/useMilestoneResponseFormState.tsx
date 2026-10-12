@@ -39,13 +39,7 @@ import {
   repeatEntries,
   resolveFieldLabels,
 } from '@/lib/checklist-repeat';
-import {
-  shareClassTotal,
-  validatePre13Responses,
-  validatePre14Responses,
-  validatePre15Responses,
-  validatePre16Responses,
-} from '@/lib/checklist-part-b-validation';
+import { shareClassTotal } from '@/lib/checklist-part-b-validation';
 import {
   REGISTERED_OFFICE_FIELD_IDS,
   REGISTERED_OFFICE_STATE_FIELD_ID,
@@ -59,7 +53,6 @@ import {
   countWords,
   formatPre1DateDisplay,
   getPre1VisibleFields,
-  validatePre1Responses,
   type Pre1ValidationOptions,
 } from '@/lib/checklist-pre1-validation';
 import {
@@ -69,18 +62,11 @@ import {
   getPre6OtherCompanyInterestCount,
   getPre6VisibleFields,
   isPre1SubmittedForPre6,
-  validatePre6Responses,
 } from '@/lib/checklist-pre6-validation';
-import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
 import { fieldsForDirectorAudiences, type DirectorSlotContext } from '@/lib/incorp-director-slots';
 import { directorAudiencesFromPre6 } from '@/lib/incorporation-docs/audiences';
 import { isIncorpSlotSetFrozen } from '@/lib/incorporation-docs/share';
 import { directorResponsesFromState } from '@/lib/proposed-directors';
-import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
-import { validatePre9Responses } from '@/lib/checklist-pre9-validation';
-import { validatePre10Responses } from '@/lib/checklist-pre10-validation';
-import { validatePre11Responses } from '@/lib/checklist-pre11-validation';
-import { validatePre12Responses } from '@/lib/checklist-pre12-validation';
 import {
   filterResponsesToEditableFields,
   isClientSubmissionLocked,
@@ -127,9 +113,10 @@ import { IncorporationDraftDocLink } from '@/components/incorporation/Incorporat
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 import { internEngagementPath, internEngagementStepPath } from '@/lib/project-step-path';
 import { internFormNextTarget } from '@/lib/intern-overview-progress';
-import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
+import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 import { inferIndianState } from '@/lib/countries';
+import { runStepValidation } from '@/lib/checklist-step-validation';
 
 /** The user's edits this session: full values plus which fields they touched. */
 interface DraftEdits {
@@ -674,24 +661,27 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const displayValues = readOnly || formReadOnly ? saved : draft;
   const completionValues = isPre1 ? pre1Draft : draft;
 
+  /** The one step validator — the server runs the same function on Submit. */
+  const validateStep = useCallback(
+    (responses: ChecklistItemResponses) =>
+      runStepValidation({
+        itemId: item.id,
+        responses,
+        ownershipType,
+        pre1Validation,
+        pre1Responses,
+        pre1Submitted: pre1SubmittedForPre6,
+        directorSlots,
+      }),
+    [item.id, ownershipType, pre1Validation, pre1Responses, pre1SubmittedForPre6, directorSlots],
+  );
+
   const liveValidationErrors = useMemo(() => {
-    if (isPre1) return validatePre1Responses(pre1Draft, pre1Validation).errors;
-    if (isPre6) {
-      if (!pre1SubmittedForPre6) return {};
-      return validatePre6Responses(draft, pre1Responses).errors;
-    }
-    if (item.id === 'pre-7') return validatePre7Responses(draft, directorSlots).errors;
-    if (item.id === 'pre-8') return validatePre8Responses(draft, directorSlots).errors;
-    if (item.id === 'pre-9') return validatePre9Responses(draft).errors;
-    if (item.id === 'pre-10') return validatePre10Responses(draft).errors;
-    if (item.id === 'pre-11') return validatePre11Responses(draft).errors;
-    if (item.id === 'pre-12') return validatePre12Responses(draft).errors;
-    if (item.id === 'pre-13') return validatePre13Responses(draft).errors;
-    if (item.id === 'pre-14') return validatePre14Responses(draft).errors;
-    if (item.id === 'pre-15') return validatePre15Responses(draft).errors;
-    if (item.id === 'pre-16') return validatePre16Responses(draft).errors;
-    return {};
-  }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, pre1Validation, directorSlots]);
+    // Legacy pre-6 before Part A is submitted renders no fields; its gate
+    // message belongs to Submit, not to every section badge.
+    if (isPre6 && !pre1SubmittedForPre6) return {};
+    return validateStep(isPre1 ? pre1Draft : draft).errors;
+  }, [isPre1, isPre6, pre1Draft, draft, pre1SubmittedForPre6, validateStep]);
 
   const getSectionPending = useCallback(
     (groupFields: ChecklistField[]) =>
@@ -994,17 +984,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       return;
     }
 
-    const { ok, errors, warnings } = runStepValidation(
-      item.id,
-      isPre1,
-      isPre6,
-      pre1Draft,
-      draft,
-      pre1Responses,
-      pre1SubmittedForPre6,
-      pre1Validation,
-      directorSlots,
-    );
+    const { ok, errors, warnings } = validateStep(isPre1 ? pre1Draft : draft);
     setFieldErrors(errors);
     setFieldWarnings(warnings);
     if (!ok) {
@@ -1065,17 +1045,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         submitDraft.nameApprovalExpiryDate?.trim() ||
         computeMcaNameApprovalExpiryDate(submitDraft.nameApprovalDate);
     }
-    const stepValidation = runStepValidation(
-      item.id,
-      isPre1,
-      isPre6,
-      pre1Draft,
-      submitDraft,
-      pre1Responses,
-      pre1SubmittedForPre6,
-      pre1Validation,
-      directorSlots,
-    );
+    const stepValidation = validateStep(isPre1 ? pre1Draft : submitDraft);
     const delivery = isInternDeliveryStep
       ? validateInternDelivery(item.id, submitDraft)
       : { ok: true, errors: {} };
@@ -1121,17 +1091,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const handleSubmit = async () => {
     clearDebounce();
 
-    const { ok, errors, warnings } = runStepValidation(
-      item.id,
-      isPre1,
-      isPre6,
-      pre1Draft,
-      draft,
-      pre1Responses,
-      pre1SubmittedForPre6,
-      pre1Validation,
-      directorSlots,
-    );
+    const { ok, errors, warnings } = validateStep(isPre1 ? pre1Draft : draft);
     setFieldErrors(errors);
     setFieldWarnings(warnings);
     if (!ok) {

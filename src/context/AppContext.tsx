@@ -49,6 +49,14 @@ export interface ChecklistItemState {
   workflowStage?: 'collection' | 'filing' | 'approval';
   /** Lead → manager → client "please fill this step" request. */
   clientFillRequest?: ClientFillRequest;
+  /** Pre-incorporation direct flow stamps (see `src/lib/pre-inc-direct-flow.ts`). */
+  submittedByName?: string;
+  submittedByRole?: string;
+  waitingOnLeadAt?: string;
+  waitingOnLeadByName?: string;
+  lastEditedAt?: string;
+  lastEditedByName?: string;
+  lastEditedByRole?: string;
 }
 
 type ChecklistItemPatch = Partial<ChecklistItemState> & {
