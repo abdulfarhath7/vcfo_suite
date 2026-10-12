@@ -9,7 +9,10 @@ On 2026-10-09 the owner said "go with picks for everything else". Every open que
 | Flow-chart style | **E · Focus track** (Design Lab, https://claude.ai/artifact/D9fKo5KjbeTiTpXALZ6r9J) plus F's sub-step ticks. Use it everywhere a flow or timeline appears. Edge labels show on hover only. |
 | Step status icons | Set A · Solid glyphs (rule 18) |
 | Mobile drill-downs | Bottom sheet |
-| Prototypes | None until the owner asks (process rule) |
+| Prototypes | None until the owner asks (process rule). Owner asked for prototype v6 as a downloadable HTML file (2026-10-12). |
+| Icons (all pages) | Option 4 · Lucide 2 px coloured line in a 32 px pale-tint tile, 8 px radius, one glyph + colour per type (owner pick, 2026-10-12; https://claude.ai/artifact/NVSyHh8Bz8ubS6nZLGk598). Lucide everywhere else. |
+| Before / After incorporation | Sliding toggle in the top bar switches the whole prototype state (owner, 2026-10-12) |
+| Sidebar contacts | Compact rows, smaller avatars, hover actions (owner, 2026-10-12) |
 
 ## Home dashboard
 
