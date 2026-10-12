@@ -1,0 +1,1049 @@
+{
+  "source": "src/data/checklist.ts (getPreIncPhases / getPostIncPhases / getRegistrationPhases)",
+  "statusLabels": {
+    "not-started": "Not Started",
+    "in-progress": "In Progress",
+    "awaiting-client": "Awaiting Client",
+    "completed": "Completed",
+    "overdue": "Overdue",
+    "not-applicable": "Not Applicable"
+  },
+  "bucketLabels": {
+    "pre-inc": "Pre-Incorporation",
+    "post-inc": "Post-Incorporation",
+    "fema": "FEMA",
+    "statutory": "Registration"
+  },
+  "phases": [
+    {
+      "section": "Pre-incorporation",
+      "id": "pre-inc-phase-1",
+      "title": "Phase 1 — Name Application",
+      "subtitle": "Steps 1-5",
+      "steps": [
+        {
+          "step": 1,
+          "id": "pre-1",
+          "slug": "name-application",
+          "bucket": "pre-inc",
+          "title": "Client Details",
+          "description": "Client provides foreign entity details, KYC, proposed names, directors, share capital, and board resolution date.",
+          "responsibleRole": "client",
+          "timeline": "2–3 working days",
+          "forms": [
+            "RUN",
+            "Spice Part A"
+          ],
+          "infoRequired": [
+            "Details of Foreign Entity/ Parent Entity — Name, Registration Number, Complete Address; optional trademark (yes/no + document if yes)",
+            "Proof of Foreign Entity / Parent Entity — Certificate of Incorporation",
+            "Authorized Signatory Details — First name, Middle name (optional), Last name, Designation, Gender",
+            "KYC Documents of Authorized Signatory — Passport, Driving Licence, Utility Bill <2 months",
+            "Proposed Company Names — 2 names ending \"India Private Limited\"",
+            "Company Mail ID",
+            "Company Mobile Number — with country code",
+            "Business Description — up to 100 words",
+            "Proposed Directors — 2/3/4; First name + Last name (+ optional middle) and Gender each; minimum 2; at least one India resident",
+            "Share Capital Details — Authorized and Initial Paid-up (INR), nominal value per equity share (e.g. 10,00,000 / 1,00,000 / INR 10)",
+            "Date of Board Resolution"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 2,
+          "id": "pre-2",
+          "slug": "board-resolution-draft",
+          "bucket": "pre-inc",
+          "title": "Draft Board Resolution",
+          "description": "Project lead receives the draft board resolution from the tool, reviews it, and shares the finalized draft with the client.",
+          "responsibleRole": "intern",
+          "timeline": "1–2 working days",
+          "forms": [
+            "Board Resolution"
+          ],
+          "infoRequired": [
+            "Draft board resolution generated from Pre-1 client data",
+            "Project lead review and edits in the board resolution editor",
+            "Finalize and release draft to the client portal"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 3,
+          "id": "pre-3",
+          "slug": "board-resolution-execution",
+          "bucket": "pre-inc",
+          "title": "Signed Board Resolution",
+          "description": "Client signs the board resolution on letterhead and uploads the signed copy for the project lead.",
+          "responsibleRole": "client",
+          "timeline": "3–4 working days",
+          "forms": [
+            "Signed Board Resolution"
+          ],
+          "infoRequired": [
+            "Download finalized board resolution from the client portal",
+            "Sign on company letterhead",
+            "Upload signed copy for the engagement team"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 4,
+          "id": "pre-4",
+          "slug": "name-application-filing",
+          "bucket": "pre-inc",
+          "title": "Name Application",
+          "description": "Project lead reviews the signed board resolution, files the name application with ROC, and shares the filing acknowledgement with the client.",
+          "responsibleRole": "intern",
+          "timeline": "1–2 working days",
+          "forms": [],
+          "infoRequired": [],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 5,
+          "id": "pre-5",
+          "slug": "mca-name-approval",
+          "bucket": "pre-inc",
+          "title": "Name Approval",
+          "description": "Within 4 to 5 working days, project lead delivers the approved name, approval date, expiry date (20-day validity), and MCA approval letter to the client.",
+          "responsibleRole": "intern",
+          "timeline": "5–7 working days",
+          "forms": [],
+          "infoRequired": [],
+          "fields": [],
+          "urgent": false
+        }
+      ]
+    },
+    {
+      "section": "Pre-incorporation",
+      "id": "pre-inc-phase-2",
+      "title": "Phase 2 — Incorporation",
+      "subtitle": "Steps 1–6",
+      "steps": [
+        {
+          "step": 1,
+          "id": "pre-13",
+          "slug": "capital-structure",
+          "bucket": "pre-inc",
+          "title": "Capital Structure",
+          "description": "Share classes the company issues at incorporation — equity and/or preference — with the number of shares and the nominal value per share. The total for each class is worked out for you.",
+          "responsibleRole": "client",
+          "timeline": "1 working day",
+          "forms": [
+            "Spice Part B"
+          ],
+          "infoRequired": [
+            "Share classes",
+            "Number of shares",
+            "Nominal value per share"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 2,
+          "id": "pre-14",
+          "slug": "registered-office-address",
+          "bucket": "pre-inc",
+          "title": "Registered Office Address",
+          "description": "The proposed registered office, with the owner’s NOC and a utility bill as proof of address (INC-22 / AGILE-PRO-S). Pre-filled from project setup where that address is already known; correct it here if it changed.",
+          "responsibleRole": "client",
+          "timeline": "1 working day",
+          "forms": [
+            "Spice Part B",
+            "INC-22"
+          ],
+          "infoRequired": [
+            "Registered office address",
+            "NOC from owner",
+            "Utility bill"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 3,
+          "id": "pre-15",
+          "slug": "proposed-directors",
+          "bucket": "pre-inc",
+          "title": "Proposed Directors",
+          "description": "One entry per proposed director: name, residency, DIN and DSC status, plus the KYC the incorporation forms need (identity, address, contact, photograph).",
+          "responsibleRole": "client",
+          "timeline": "4–5 working days",
+          "forms": [
+            "Spice Part B",
+            "DIR-2",
+            "DIR-8",
+            "INC-9"
+          ],
+          "infoRequired": [
+            "Director details",
+            "Director KYC documents"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 4,
+          "id": "pre-16",
+          "slug": "subscriber-details",
+          "bucket": "pre-inc",
+          "title": "Subscriber Details",
+          "description": "Every subscriber to the memorandum — proposed directors who subscribe, other individuals, bodies corporate or LLPs — with the shares each takes. A group company whose parent is the only subscriber can submit with none.",
+          "responsibleRole": "client",
+          "timeline": "1 working day",
+          "forms": [
+            "Spice Part B",
+            "INC-33",
+            "INC-34",
+            "INC-35"
+          ],
+          "infoRequired": [
+            "Subscribers and shares",
+            "INC-35 nominee"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 5,
+          "id": "pre-7",
+          "slug": "kyc-review-and-dsc-creation",
+          "bucket": "pre-inc",
+          "title": "KYC Review & DSC",
+          "description": "Intern reviews submitted KYC data and initiates DSC with eMudhra. The incorporation documents are generated on the document pack page.",
+          "responsibleRole": "intern",
+          "timeline": "2–3 working days",
+          "forms": [
+            "DSC workflow"
+          ],
+          "infoRequired": [
+            "KYC review notes and correction requests (if any)",
+            "DSC success proof for each director (attachment)",
+            "Signing date and place, and the subscription-sheet witness"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 6,
+          "id": "pre-9",
+          "slug": "spice-part-b-confirmation",
+          "bucket": "pre-inc",
+          "title": "SPICe+ Confirmation",
+          "description": "Client reviews the shared SPICe+ Part B application, recommends changes if required, and confirms for filing.",
+          "responsibleRole": "client",
+          "timeline": "2–3 working days",
+          "forms": [
+            "SPICe+ Part B"
+          ],
+          "infoRequired": [
+            "Review of shared SPICe+ Part B application",
+            "Confirmation or recommended changes"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 7,
+          "id": "pre-10",
+          "slug": "incorporation-filing",
+          "bucket": "pre-inc",
+          "title": "SPICe+ Filing",
+          "description": "Project lead fills and submits SPICe+ Part B and AGILE-PRO-S forms on the MCA portal.",
+          "responsibleRole": "intern",
+          "timeline": "1–2 working days",
+          "forms": [
+            "SPICe+ Part B",
+            "AGILE-PRO-S"
+          ],
+          "infoRequired": [
+            "SPICe+ Part B and AGILE-PRO-S filed on MCA portal"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 8,
+          "id": "pre-11",
+          "slug": "mca-remarks-resubmissions",
+          "bucket": "pre-inc",
+          "title": "MCA Remarks",
+          "description": "Project lead reviews MCA portal remarks, requests client information or documents if needed, and resubmits with a clarification letter.",
+          "responsibleRole": "intern",
+          "timeline": "5–7 working days",
+          "forms": [
+            "Clarification Letter"
+          ],
+          "infoRequired": [
+            "MCA remarks summary",
+            "Client information or documents requested (if any)",
+            "Clarification letter (attachment)",
+            "Resubmission notes"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 9,
+          "id": "pre-12",
+          "slug": "certificate-of-incorporation-sharing",
+          "bucket": "pre-inc",
+          "title": "Certificate of Incorporation",
+          "description": "Project lead shares MCA-approved company identifiers and incorporation documents with the client.",
+          "responsibleRole": "intern",
+          "timeline": "14–15 working days from filing (Phase 2 Step 6)",
+          "forms": [
+            "Certificate of Incorporation"
+          ],
+          "infoRequired": [
+            "Company name, date of incorporation, Corporate Identification Number (CIN), Permanent Account Number (PAN), Tax Deduction and Collection Account Number (TAN), Provident Fund Establishment Code (PF), Employees' State Insurance Code (ESI)",
+            "Certificate of Incorporation signature verified by MCA (Yes/No), Certificate of Incorporation, Permanent Account Number (PAN) card, and Tax Deduction and Collection Account Number (TAN) card (attachments)"
+          ],
+          "fields": [],
+          "urgent": false
+        }
+      ]
+    },
+    {
+      "section": "Post-incorporation",
+      "id": "post-inc-phase-3",
+      "title": "Phase 3 — Post-Incorporation",
+      "subtitle": "Steps 1–11",
+      "steps": [
+        {
+          "step": 1,
+          "id": "post-1",
+          "slug": "first-board-meeting",
+          "bucket": "post-inc",
+          "title": "First Board Meeting",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 30 days of incorporation",
+          "forms": [],
+          "infoRequired": [
+            "Agenda of the meeting",
+            "Minutes",
+            "Resolutions"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 2,
+          "id": "post-9",
+          "slug": "letterhead-preparation",
+          "bucket": "post-inc",
+          "title": "Company Letterhead",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 30 days of incorporation",
+          "forms": [],
+          "infoRequired": [
+            "Company letterhead with name, CIN, registered office address, email, phone"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 3,
+          "id": "post-3",
+          "slug": "bank-account-opening-hdfc",
+          "bucket": "post-inc",
+          "title": "Bank Account Opening",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "Self-attested COI, PAN, rental deed",
+            "Board resolution for bank account opening",
+            "KYC of authorised signatories"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 4,
+          "id": "post-4",
+          "slug": "share-capital-infusion",
+          "bucket": "post-inc",
+          "title": "Share Capital Infusion",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 180 days of incorporation",
+          "forms": [],
+          "infoRequired": [
+            "Bank statement showing capital infused from shareholders"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 5,
+          "id": "post-5",
+          "slug": "share-certificates-sh-1",
+          "bucket": "post-inc",
+          "title": "Share Certificates (SH-1)",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 60 days of incorporation",
+          "forms": [
+            "SH-1"
+          ],
+          "infoRequired": [
+            "Details of the allottees"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 6,
+          "id": "post-6",
+          "slug": "commencement-of-business-inc-20a",
+          "bucket": "post-inc",
+          "title": "Commencement (INC-20A)",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 180 days of incorporation",
+          "forms": [
+            "INC-20A"
+          ],
+          "infoRequired": [
+            "Declaration of commencement of business",
+            "Bank statement evidence"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 7,
+          "id": "post-2",
+          "slug": "auditor-appointment-adt-1",
+          "bucket": "post-inc",
+          "title": "Auditor Appointment (ADT-1)",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 30 days of incorporation",
+          "forms": [
+            "ADT-1"
+          ],
+          "infoRequired": [
+            "Board Resolution for auditor appointment",
+            "Offer letter to auditor",
+            "Eligibility & consent letters from auditor",
+            "Intimation of first-auditor appointment"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 8,
+          "id": "post-7",
+          "slug": "fcgpr-filing-rbi",
+          "bucket": "post-inc",
+          "title": "FC-GPR Filing",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 30 days of incorporation",
+          "forms": [
+            "FCGPR"
+          ],
+          "infoRequired": [
+            "Foreign inward remittance details",
+            "FIRC copies",
+            "FIRMS portal registration",
+            "Foreign investor details (name, address, country, constitution)",
+            "Remittance: AD bank, mode of payment, date, amount, FIRC #",
+            "Board Resolution for allotment + list of allottees",
+            "Share certificates"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 9,
+          "id": "post-8",
+          "slug": "nominee-shareholder-mgt-4-5-6",
+          "bucket": "post-inc",
+          "title": "Nominee Shareholder (MGT-4/5/6)",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 30 days of incorporation",
+          "forms": [
+            "MGT-4",
+            "MGT-5",
+            "MGT-6"
+          ],
+          "infoRequired": [
+            "Nominee shareholder declaration",
+            "Beneficial owner details",
+            "ROC filing acknowledgements"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 10,
+          "id": "post-11",
+          "slug": "change-registered-office-inc-22",
+          "bucket": "post-inc",
+          "title": "Registered Office (INC-22)",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 30 days of incorporation",
+          "forms": [
+            "INC-22"
+          ],
+          "infoRequired": [
+            "Updated registered office address",
+            "Proof of address",
+            "Proof of occupancy",
+            "Board resolution for change of registered office (if applicable)"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 11,
+          "id": "post-10",
+          "slug": "display-name-board-registered-office",
+          "bucket": "post-inc",
+          "title": "Name Board",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 30 days of incorporation",
+          "forms": [],
+          "infoRequired": [
+            "Name board with company name, CIN, registered office address",
+            "Photo evidence of display at registered office"
+          ],
+          "fields": [],
+          "urgent": false
+        }
+      ]
+    },
+    {
+      "section": "Registrations",
+      "id": "registration-phase-4",
+      "title": "Phase 4 — Registration",
+      "subtitle": "Steps 1–23",
+      "steps": [
+        {
+          "step": 1,
+          "id": "reg-4",
+          "slug": "gst-registration",
+          "bucket": "statutory",
+          "title": "GST Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 2 weeks of incorporation",
+          "forms": [
+            "GST REG-01",
+            "GST RFD-11"
+          ],
+          "infoRequired": [
+            "Self-attested COI",
+            "PAN",
+            "Board Resolution",
+            "Authorisation Letter",
+            "MOA",
+            "AOA",
+            "Rental Deed",
+            "Bank Details",
+            "Directors' KYC",
+            "List of services / goods traded",
+            "Rental agreement",
+            "KYC of 2 witnesses (for LUT)"
+          ],
+          "fields": [],
+          "urgent": true
+        },
+        {
+          "step": 2,
+          "id": "reg-1",
+          "slug": "pf-dsc-esign-registration",
+          "bucket": "statutory",
+          "title": "PF Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "PF registration"
+          ],
+          "infoRequired": [
+            "Self-attested COI",
+            "PAN",
+            "Board Resolution",
+            "Authorisation Letter",
+            "MOA",
+            "AOA",
+            "Rental Deed",
+            "Bank Details",
+            "Directors' KYC",
+            "List of employees",
+            "Active DSC / e-sign credentials"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 3,
+          "id": "reg-3",
+          "slug": "esi-registration",
+          "bucket": "statutory",
+          "title": "ESI Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "ESI registration"
+          ],
+          "infoRequired": [
+            "Self-attested COI",
+            "PAN",
+            "Board Resolution",
+            "Authorisation Letter",
+            "MOA",
+            "AOA",
+            "Rental Deed",
+            "Bank Details",
+            "Directors' KYC",
+            "List of employees"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 4,
+          "id": "reg-7",
+          "slug": "pt-registration",
+          "bucket": "statutory",
+          "title": "PT Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "Form 1 — PT"
+          ],
+          "infoRequired": [
+            "Self-attested COI",
+            "PAN",
+            "Board Resolution",
+            "Authorisation Letter",
+            "MOA",
+            "AOA",
+            "Rental Deed",
+            "Bank Details",
+            "Directors' KYC",
+            "TAN",
+            "List of employees"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 5,
+          "id": "reg-6",
+          "slug": "legal-entity-identifier",
+          "bucket": "statutory",
+          "title": "LEI Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "Form 1 — LEI"
+          ],
+          "infoRequired": [
+            "Certificate of Incorporation",
+            "PAN of company",
+            "GST certificate",
+            "Authorised representative details",
+            "Details of all directors (name, father, DIN, address)"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 6,
+          "id": "reg-15",
+          "slug": "msme-registration",
+          "bucket": "statutory",
+          "title": "MSME Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "Udyam Registration"
+          ],
+          "infoRequired": [
+            "Aadhaar of authorised signatory",
+            "PAN of company",
+            "GSTIN (if registered)",
+            "Bank account details",
+            "NIC / activity codes"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 7,
+          "id": "reg-16",
+          "slug": "icegate-registrations",
+          "bucket": "statutory",
+          "title": "ICEGATE Registrations",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "Self-attested COI",
+            "PAN",
+            "Board Resolution",
+            "Authorisation Letter",
+            "MOA",
+            "AOA",
+            "Rental Deed",
+            "Bank Details",
+            "Directors' KYC",
+            "IEC code",
+            "Authorised signatory DSC"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 8,
+          "id": "reg-8",
+          "slug": "iec-import-export-code",
+          "bucket": "statutory",
+          "title": "IEC Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "Form 1 — IEC"
+          ],
+          "infoRequired": [
+            "Self-attested COI",
+            "PAN",
+            "Board Resolution",
+            "Authorisation Letter",
+            "MOA",
+            "AOA",
+            "Rental Deed",
+            "Bank Details",
+            "Directors' KYC",
+            "Goods & services exported / imported"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 9,
+          "id": "reg-5",
+          "slug": "letter-of-undertaking",
+          "bucket": "statutory",
+          "title": "LUT Filing",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "GST RFD-11"
+          ],
+          "infoRequired": [
+            "KYC of 2 witnesses"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 10,
+          "id": "reg-11",
+          "slug": "non-stpi-unit",
+          "bucket": "statutory",
+          "title": "Non-STPI Compliance",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "MOA & AOA",
+            "Board Resolution authorising signatory",
+            "PAN of company",
+            "PAN / Passport of all directors",
+            "IEC code",
+            "DIR-12, INC-22",
+            "GST registration",
+            "Banker's certificate",
+            "Sale deed / lease agreement",
+            "Project report (next 5 years)",
+            "Master service agreement with parent entity"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 11,
+          "id": "reg-9",
+          "slug": "shops-establishments-registration",
+          "bucket": "statutory",
+          "title": "Shops & Establishment",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "Form 1 — S&E",
+            "Form No-I"
+          ],
+          "infoRequired": [
+            "Name board in Telugu & English",
+            "List of employees",
+            "Rental deed of office space",
+            "Employer (MD) ID proof + 2 passport photos",
+            "COI, MOA, AOA"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 12,
+          "id": "reg-13",
+          "slug": "clra-registration",
+          "bucket": "statutory",
+          "title": "CLRA Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "CLRA registration"
+          ],
+          "infoRequired": [
+            "Self-attested COI",
+            "PAN",
+            "Board Resolution",
+            "Authorisation Letter",
+            "MOA",
+            "AOA",
+            "Rental Deed",
+            "Bank Details",
+            "Directors' KYC",
+            "Details of contract labour / contractors (if applicable)",
+            "Nature of work and establishment particulars"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 13,
+          "id": "reg-14",
+          "slug": "posh-she-box-registration",
+          "bucket": "statutory",
+          "title": "POSH / SHE Box",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "Internal Complaints Committee (ICC) constitution details",
+            "SHE Box / POSH portal registration acknowledgement",
+            "Workplace POSH policy (if available)"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 14,
+          "id": "reg-10",
+          "slug": "trade-license",
+          "bucket": "statutory",
+          "title": "Trade Licence",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "Address proof of business",
+            "ID proof of applicant + Aadhaar of authorised person",
+            "PAN, MOA, AOA, COI",
+            "Latest municipal property-tax receipt",
+            "Certified layout plan of office"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 15,
+          "id": "reg-12",
+          "slug": "trademark-registration",
+          "bucket": "statutory",
+          "title": "Trademark Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "Power of Attorney",
+            "Affidavit",
+            "MSME certificate & applications"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 16,
+          "id": "reg-17",
+          "slug": "trademark-renewal",
+          "bucket": "statutory",
+          "title": "Trademark Renewal",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "Trademark registration certificate",
+            "Renewal application particulars"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 17,
+          "id": "reg-18",
+          "slug": "patent-registration",
+          "bucket": "statutory",
+          "title": "Patent Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "Invention / specification details",
+            "Applicant and inventor particulars",
+            "Power of Attorney (if filed through agent)"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 18,
+          "id": "reg-19",
+          "slug": "icdr-registration",
+          "bucket": "statutory",
+          "title": "ICDR Registration",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "Issuer / applicant particulars",
+            "Offer or listing path details (if applicable)"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 19,
+          "id": "reg-20",
+          "slug": "fcgpr-filing",
+          "bucket": "statutory",
+          "title": "FCGPR Filing",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "Within 30 days of incorporation",
+          "forms": [
+            "FCGPR"
+          ],
+          "infoRequired": [
+            "Foreign inward remittance details",
+            "FIRC copies",
+            "FIRMS portal registration",
+            "Foreign investor particulars"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 20,
+          "id": "reg-21",
+          "slug": "fdi-reporting",
+          "bucket": "statutory",
+          "title": "FDI Reporting",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "FDI transaction particulars",
+            "Investor and investee details",
+            "FIRMS acknowledgements"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 21,
+          "id": "reg-22",
+          "slug": "odi-reporting",
+          "bucket": "statutory",
+          "title": "ODI Reporting",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [],
+          "infoRequired": [
+            "Overseas investment particulars",
+            "Indian party and foreign entity details"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 22,
+          "id": "reg-23",
+          "slug": "fla-return",
+          "bucket": "statutory",
+          "title": "FLA Return",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "FLA"
+          ],
+          "infoRequired": [
+            "Audited / unaudited financials as applicable",
+            "Foreign liabilities and assets particulars"
+          ],
+          "fields": [],
+          "urgent": false
+        },
+        {
+          "step": 23,
+          "id": "reg-24",
+          "slug": "fctrs-filing",
+          "bucket": "statutory",
+          "title": "FCTRS Filing",
+          "description": null,
+          "responsibleRole": "intern",
+          "timeline": "No statutory time limit",
+          "forms": [
+            "FC-TRS"
+          ],
+          "infoRequired": [
+            "Transfer of shares particulars",
+            "Buyer and seller details",
+            "Consideration and FIRC if applicable"
+          ],
+          "fields": [],
+          "urgent": false
+        }
+      ]
+    }
+  ]
+}
