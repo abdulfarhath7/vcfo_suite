@@ -28,6 +28,7 @@ On 2026-10-09 the owner said "go with picks for everything else". Every open que
 | Robot while scrolling | Sinks down |
 | Peek animation | Plays once when the chat opens |
 | Antenna moods | Green = answered, grey = can't answer |
+| Avatar face | Always smiling, in every state; moods show only via antenna / glow / motion (owner, 2026-10-12) |
 | "SBC help desk" label | Keep, under "Your team" |
 | Timeline change-request warning | Stays visible |
 | Progress ring | SPICe+ steps only (43%) on every page |
