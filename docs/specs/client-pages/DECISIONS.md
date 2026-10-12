@@ -58,6 +58,12 @@ On 2026-10-09 the owner said "go with picks for everything else". Every open que
 | /progress | Keep the redirect, no design |
 | Registration group names | Check against the code before the build |
 | Focus track on step page and phase map | Yes |
+| "As in VCFO Suite" redesign | Approved (2026-10-12): phase progress bars, in-place accordions with → to step pages, What's this? per step, status brief + board resolution header buttons, Focus-track journey rail, Days-to-COI tile, set-A icons with tooltips |
+| Days to COI before COI | Count down to the manager-set incorporation window end; after COI show the real date |
+| Phase end date (Post-inc., Registration) | Latest step date in the phase |
+| Progress ring | SPICe+ only (43%), not all 48 steps |
+| What's this? | Opens the Ask VCFO drawer (as in the code) |
+| Phase page | Steps open in place; the phase name still links to the phase page |
 
 ## Documents & Knowledge Bank
 
