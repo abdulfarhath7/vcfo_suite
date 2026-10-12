@@ -239,7 +239,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'nicCode',
-      label: 'NIC code',
+      label: 'Main NIC code',
       type: 'text',
       section: 'Business Description',
       placeholder: 'e.g. 62011',
@@ -256,6 +256,36 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       section: 'Business Description',
       helperText: 'Filled in from the NIC code.',
       layout: 'full',
+    },
+    {
+      // Not `nicCodes`: that is an older free-text key the board resolution
+      // still reads (`resolveNicCodesClause`).
+      id: 'additionalNicCodes',
+      label: 'Additional NIC codes',
+      type: 'repeat',
+      section: 'Business Description',
+      entryLabel: 'NIC code',
+      minEntries: 0,
+      maxEntries: 9,
+      emptyLabel: 'No additional NIC codes.',
+      entryFields: [
+        {
+          id: 'code',
+          label: 'NIC code',
+          type: 'text',
+          placeholder: 'e.g. 62020',
+          required: true,
+          layout: 'short',
+        },
+        {
+          // Derived from the entry's code, like `nicBusinessType`.
+          id: 'businessType',
+          label: 'Business type',
+          type: 'text',
+          helperText: 'Filled in from the NIC code.',
+          layout: 'full',
+        },
+      ],
     },
     {
       id: 'authorisedShareCapital',

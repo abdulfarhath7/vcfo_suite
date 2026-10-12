@@ -198,7 +198,10 @@ export function overlayTouchedFields(
  * typed. The placeholder is what the row says until its inputs are complete.
  */
 const DERIVED_DISPLAY_FIELDS: Record<string, Record<string, string>> = {
-  'pre-1': { nicBusinessType: 'Enter a valid 5-digit NIC code above to fill this in' },
+  'pre-1': {
+    nicBusinessType: 'Enter a valid 5-digit NIC code above to fill this in',
+    'additionalNicCodes.businessType': 'Enter a valid 5-digit NIC code to fill this in',
+  },
   'pre-13': {
     equityTotal: 'Enter the number of shares and the nominal value to work this out',
     preferenceTotal: 'Enter the number of shares and the nominal value to work this out',
@@ -206,5 +209,11 @@ const DERIVED_DISPLAY_FIELDS: Record<string, Record<string, string>> = {
 };
 
 export function derivedDisplayPlaceholder(itemId: string, fieldId: string): string | null {
-  return DERIVED_DISPLAY_FIELDS[itemId]?.[fieldId] ?? null;
+  const direct = DERIVED_DISPLAY_FIELDS[itemId]?.[fieldId];
+  if (direct) return direct;
+  // Inside a repeat entry the template id is the last segment
+  // (`additionalNicCodes.<entry>.businessType`).
+  const [group, , templateId] = fieldId.split('.');
+  if (group && templateId) return DERIVED_DISPLAY_FIELDS[itemId]?.[`${group}.${templateId}`] ?? null;
+  return null;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { validatePre1Responses } from '@/lib/checklist-pre1-validation';
-import { NIC_CODE_COUNT, isNicCodeFormat, nicBusinessType } from '@/lib/nic-2008';
+import { DUPLICATE_NIC_CODE_MESSAGE, validatePre1Responses } from '@/lib/checklist-pre1-validation';
+import { NIC_CODE_COUNT, isNicCodeFormat, nicBusinessType, readNicCodes } from '@/lib/nic-2008';
 
 describe('nic-2008', () => {
   it('carries every NIC-2008 sub-class', () => {
@@ -35,5 +35,77 @@ describe('validatePre1Responses — NIC code', () => {
 
   it('is required', () => {
     expect(validatePre1Responses({}).errors.nicCode).toBe('This field is required.');
+  });
+});
+
+describe('readNicCodes', () => {
+  it('lists the main code first, then the additional entries in order', () => {
+    expect(
+      readNicCodes({
+        nicCode: '62011',
+        nicBusinessType: 'Stored description',
+        additionalNicCodes: 'b2,a1',
+        'additionalNicCodes.a1.code': '62099',
+        'additionalNicCodes.b2.code': '62020',
+        'additionalNicCodes.b2.businessType': 'Consultancy',
+      }),
+    ).toEqual([
+      { code: '62011', description: 'Stored description' },
+      { code: '62020', description: 'Consultancy' },
+      { code: '62099', description: nicBusinessType('62099')!.description },
+    ]);
+  });
+
+  it('skips blank codes and returns nothing for an empty record', () => {
+    expect(readNicCodes({})).toEqual([]);
+    expect(readNicCodes({ additionalNicCodes: 'a1', 'additionalNicCodes.a1.code': ' ' })).toEqual([]);
+  });
+});
+
+describe('validatePre1Responses — additional NIC codes', () => {
+  const base = { nicCode: '62011' };
+
+  it('requires 5 digits on each entry', () => {
+    const result = validatePre1Responses({ ...base, additionalNicCodes: 'a1', 'additionalNicCodes.a1.code': '620' });
+    expect(result.errors['additionalNicCodes.a1.code']).toMatch(/5-digit/);
+  });
+
+  it('requires a code on each entry', () => {
+    const result = validatePre1Responses({ ...base, additionalNicCodes: 'a1' });
+    expect(result.errors['additionalNicCodes.a1.code']).toBe('This field is required.');
+  });
+
+  it('warns on a code outside NIC-2008', () => {
+    const result = validatePre1Responses({ ...base, additionalNicCodes: 'a1', 'additionalNicCodes.a1.code': '00000' });
+    expect(result.errors['additionalNicCodes.a1.code']).toBeUndefined();
+    expect(result.warnings['additionalNicCodes.a1.code']).toMatch(/No NIC-2008/);
+  });
+
+  it('refuses a code equal to the main code or to an earlier entry', () => {
+    const result = validatePre1Responses({
+      ...base,
+      additionalNicCodes: 'a1,b2',
+      'additionalNicCodes.a1.code': '62011',
+      'additionalNicCodes.b2.code': '62011',
+    });
+    expect(result.errors['additionalNicCodes.a1.code']).toBe(DUPLICATE_NIC_CODE_MESSAGE);
+    expect(result.errors['additionalNicCodes.b2.code']).toBe(DUPLICATE_NIC_CODE_MESSAGE);
+    const twoEntries = validatePre1Responses({
+      ...base,
+      additionalNicCodes: 'a1,b2',
+      'additionalNicCodes.a1.code': '62020',
+      'additionalNicCodes.b2.code': '62020',
+    });
+    expect(twoEntries.errors['additionalNicCodes.a1.code']).toBeUndefined();
+    expect(twoEntries.errors['additionalNicCodes.b2.code']).toBe(DUPLICATE_NIC_CODE_MESSAGE);
+  });
+
+  it('caps the list at nine', () => {
+    const ids = Array.from({ length: 10 }, (_, i) => `e${i}`);
+    const responses: Record<string, string> = { ...base, additionalNicCodes: ids.join(',') };
+    ids.forEach((id, i) => {
+      responses[`additionalNicCodes.${id}.code`] = String(62020 + i).padStart(5, '0');
+    });
+    expect(validatePre1Responses(responses).errors.additionalNicCodes).toMatch(/At most 9/);
   });
 });

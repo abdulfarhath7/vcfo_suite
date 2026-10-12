@@ -27,7 +27,7 @@ import {
   validateInternDelivery,
   type ChecklistItemResponses,
 } from '@/lib/checklist-responses';
-import { nicBusinessType } from '@/lib/nic-2008';
+import { ADDITIONAL_NIC_CODES_GROUP_ID, nicBusinessType } from '@/lib/nic-2008';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
 import {
@@ -117,6 +117,17 @@ import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder,
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 import { inferIndianState } from '@/lib/countries';
 import { runStepValidation } from '@/lib/checklist-step-validation';
+
+/** `additionalNicCodes.<entry>` for a field inside a NIC repeat entry, else null. */
+function additionalNicCodeEntryOf(fieldId: string): string | null {
+  const [group, entryId] = fieldId.split('.');
+  return group === ADDITIONAL_NIC_CODES_GROUP_ID && entryId ? `${group}.${entryId}` : null;
+}
+
+function isNicCodeInput(itemId: string, fieldId: string): boolean {
+  if (itemId !== 'pre-1') return false;
+  return fieldId === 'nicCode' || (additionalNicCodeEntryOf(fieldId) !== null && fieldId.endsWith('.code'));
+}
 
 /** The user's edits this session: full values plus which fields they touched. */
 interface DraftEdits {
@@ -869,6 +880,10 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       if (item.id === 'pre-1' && fieldId === 'nicCode') {
         next.nicBusinessType = nicBusinessType(value)?.description ?? '';
       }
+      const extraNic = item.id === 'pre-1' ? additionalNicCodeEntryOf(fieldId) : null;
+      if (extraNic && fieldId.endsWith('.code')) {
+        next[`${extraNic}.businessType`] = nicBusinessType(value)?.description ?? '';
+      }
       if (item.id === 'pre-16' && fieldId.endsWith('.type') && value === 'individual') {
         // Back to an individual: the entity-only answers no longer apply.
         const base = fieldId.slice(0, -'.type'.length);
@@ -1537,7 +1552,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             onBlur={() => autoSaveEnabled && scheduleAutoSave(true)}
             placeholder={field.placeholder}
             className={cn('milestone-form-input', error && 'border-danger')}
-            {...(field.id === 'nicCode'
+            {...(isNicCodeInput(item.id, field.id)
               ? { inputMode: 'numeric' as const, maxLength: 5, pattern: '[0-9]*' }
               : {})}
           />

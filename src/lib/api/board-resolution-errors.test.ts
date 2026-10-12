@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   BOARD_RESOLUTION_ERROR_CODES,
   BoardResolutionError,
+  boardResolutionErrorJson,
+  collectBoardResolutionMissingFieldRefs,
   collectBoardResolutionMissingFields,
   formatBoardResolutionErrorDisplay,
   isPre1SubmittedForBoardResolution,
@@ -19,6 +21,7 @@ const completePre1 = {
   signatoryDesignation: 'Director',
   authorisedShareCapital: '1000000',
   paidUpShareCapital: '100000',
+  nicCode: '62011',
   directorCount: '2',
   director1FirstName: 'Priya',
   director1LastName: 'Sharma',
@@ -171,5 +174,35 @@ describe('formatBoardResolutionErrorDisplay', () => {
     });
     expect(display.title).toBe('Missing information');
     expect(display.description).toContain('Parent entity name');
+  });
+});
+
+describe('board resolution NIC check', () => {
+  it('lists the NIC code as missing, with a link target', () => {
+    const { nicCode: _nic, ...withoutNic } = completePre1;
+    expect(collectBoardResolutionMissingFields(withoutNic)).toEqual(['NIC code']);
+    expect(collectBoardResolutionMissingFieldRefs(withoutNic)).toEqual([
+      { stepId: 'pre-1', fieldId: 'nicCode', section: 'Business Description', label: 'NIC code' },
+    ]);
+  });
+
+  it('carries the refs on the thrown error and in the API body', () => {
+    const { nicCode: _nic, ...withoutNic } = completePre1;
+    try {
+      validateBoardResolutionGeneration({ pre1: withoutNic, pre1State: { status: 'completed' } });
+      throw new Error('expected a missing-fields error');
+    } catch (err) {
+      expect(err).toBeInstanceOf(BoardResolutionError);
+      const body = boardResolutionErrorJson(err as BoardResolutionError);
+      expect(body.code).toBe(BOARD_RESOLUTION_ERROR_CODES.MISSING_FIELDS);
+      expect(body.missingFields).toEqual(['NIC code']);
+      expect(body.missingFieldRefs?.[0]?.fieldId).toBe('nicCode');
+    }
+  });
+
+  it('asks for Client Details first in plain words', () => {
+    expect(() => validateBoardResolutionGeneration({ pre1: completePre1, pre1State: { status: 'in-progress' } })).toThrow(
+      'Submit Client Details first. The board resolution uses this data.',
+    );
   });
 });

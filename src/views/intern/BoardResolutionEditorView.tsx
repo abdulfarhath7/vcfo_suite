@@ -62,10 +62,20 @@ import { PageBackButton } from '@/components/shell/PageBackButton';
 
 
 
+import { getItem } from '@/data/checklist';
+import type { BoardResolutionMissingFieldRef } from '@/lib/api/board-resolution-errors';
+import { docPackStepPath } from '@/lib/doc-pack/paths';
+import { sectionSlug } from '@/lib/doc-pack/section-slug';
 import {
   BoardResolutionEditorDocPanel,
   type BoardResolutionEditorProps,
 } from '@/views/intern/BoardResolutionEditorDocPanel';
+
+/** "NIC code — Client Details, Business Description" */
+function missingFieldRefText(ref: BoardResolutionMissingFieldRef): string {
+  const where = [getItem(ref.stepId)?.title, ref.section].filter(Boolean).join(', ');
+  return where ? `${ref.label} — ${where}` : ref.label;
+}
 
 export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
   const router = useRouter();
@@ -142,9 +152,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
           <p className="text-[12.5px] text-warning-text bg-warning/10 border border-warning/20 rounded-md px-3 py-2 mb-4">
 
-            Step 1 (Name Application) data is not available yet. The client must submit Step 1 before
-
-            you can generate the board resolution.{' '}
+            Submit Client Details first. The board resolution uses this data.{' '}
 
             <button
 
@@ -156,7 +164,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             >
 
-              Open Step 1
+              Open Client Details
 
             </button>
 
@@ -184,6 +192,26 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             <p className="mt-1 pl-6 text-text-secondary">{generateErrorDisplay.description}</p>
 
+            {generateErrorDisplay.missingFieldRefs?.length && generateError?.code === 'missing_fields' ? (
+              <ul className="mt-2 space-y-1 pl-6" aria-label="Missing information">
+                {generateErrorDisplay.missingFieldRefs.map((ref) => (
+                  <li key={`${ref.stepId}:${ref.fieldId}:${ref.label}`}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        router.push(
+                          docPackStepPath(eng, 'intern', ref.stepId, ref.section ? sectionSlug(ref.section) : undefined),
+                        )
+                      }
+                      className="text-left text-[12.5px] font-medium text-brand hover:underline"
+                    >
+                      {missingFieldRefText(ref)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
             {generateError?.code === 'step1_incomplete' && (
 
               <button
@@ -196,7 +224,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
               >
 
-                Go to Step 1 — Name Application
+                Open Client Details
 
               </button>
 

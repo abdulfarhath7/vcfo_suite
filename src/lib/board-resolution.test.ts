@@ -60,6 +60,30 @@ describe('buildBoardResolutionMergeFields NIC_CODES', () => {
     expect(fields.NIC_CODES).not.toBe(`${custom}, ${DEFAULT_NIC_CODES}`);
   });
 
+  it('joins every Part A NIC code, main code first', () => {
+    const fields = buildBoardResolutionMergeFields({
+      pre1: {
+        nicCode: '62011',
+        nicBusinessType: 'Writing software',
+        additionalNicCodes: 'a1,b2',
+        'additionalNicCodes.a1.code': '62020',
+        'additionalNicCodes.a1.businessType': 'Computer consultancy',
+        'additionalNicCodes.b2.code': '62099',
+        'additionalNicCodes.b2.businessType': 'Other IT services',
+      },
+    });
+    expect(fields.NIC_CODES).toBe(
+      '62011- Writing software, 62020- Computer consultancy, & 62099- Other IT services',
+    );
+  });
+
+  it('prints one code without a joiner', () => {
+    const fields = buildBoardResolutionMergeFields({
+      pre1: { nicCode: '62011', nicBusinessType: 'Writing software' },
+    });
+    expect(fields.NIC_CODES).toBe('62011- Writing software');
+  });
+
   it('includes default NIC codes once in plain-text draft', () => {
     const draft = generateBoardResolutionDraft({});
     expect(draft.split('62099').length - 1).toBe(1);
