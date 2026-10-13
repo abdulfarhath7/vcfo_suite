@@ -10,6 +10,7 @@ import {
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { getItem } from '@/data/checklist';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
 
 /** Lead action: mark any phase milestone as awaiting project manager review. */
 export function RequestManagerApproval({
@@ -29,6 +30,9 @@ export function RequestManagerApproval({
   const [busy, setBusy] = useState(false);
 
   if (user?.role !== 'intern') return null;
+  // Direct-flow steps have no approval; the board resolution goes to the
+  // manager from its editor ("Send for manager approval"), after its checks.
+  if (isDirectFlowStep(itemId) || itemId === MANAGER_APPROVAL_STEP_ID) return null;
 
   const item = getItem(itemId);
   if (!item) return null;

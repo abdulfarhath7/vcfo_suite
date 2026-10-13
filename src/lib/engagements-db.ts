@@ -437,6 +437,51 @@ export async function submitDirectStepInDb(
   };
 }
 
+/**
+ * Lead: "Send for manager approval" on the board resolution. A refusal keeps
+ * the server's body (`code`, `missingFields`, `missingFieldRefs`) so the editor
+ * can list each missing input with a link to it.
+ */
+export async function requestBoardResolutionApprovalInDb(
+  appEngagementId: string,
+): Promise<EngagementChecklistState> {
+  let res: Response;
+  try {
+    res = await fetch(engagementPath(appEngagementId, '/checklist/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ itemId: 'pre-2', responses: {} }),
+    });
+  } catch {
+    throw Object.assign(new Error('Network error — check your connection.'), {
+      ok: false as const,
+      error: 'Network error — check your connection.',
+    });
+  }
+  const body = (await res.json().catch(() => null)) as
+    | ({ checklistState?: unknown; email?: EmailDispatchResult } & Record<string, unknown>)
+    | null;
+  if (!res.ok) {
+    const message = typeof body?.error === 'string' ? body.error : 'Could not send for approval.';
+    // Shaped like `BoardResolutionApiErrorBody` for the editor's error panel.
+    throw Object.assign(new Error(message), { ...(body ?? {}), ok: false as const, error: message });
+  }
+  toastEmailDispatch(body?.email, { itemId: 'pre-2' });
+  const raw = body?.checklistState;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new ChecklistSaveError('Could not send for approval.');
+  }
+  return normalizeEngagementChecklistState(raw as Record<string, unknown>);
+}
+
+/** Manager / admin: "Approve and send to client" on the board resolution. */
+export async function approveBoardResolutionInDb(appEngagementId: string): Promise<void> {
+  await apiFetch(engagementPath(appEngagementId, '/board-resolution/finalize'), {
+    method: 'POST',
+    fallbackError: 'Could not approve the board resolution.',
+  });
+}
+
 /** Intern/manager accepts or rejects a submitted milestone. */
 export async function reviewChecklistItemInDb(
   appEngagementId: string,

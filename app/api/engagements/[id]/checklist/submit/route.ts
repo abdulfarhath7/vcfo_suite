@@ -8,7 +8,12 @@ import {
   submitDirectFlowStep,
 } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
-import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import {
+  BOARD_RESOLUTION_WITH_MANAGER,
+  requestBoardResolutionApproval,
+} from '@/db/repositories/board-resolution';
+import { BoardResolutionError, boardResolutionErrorJson } from '@/lib/api/board-resolution-errors';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -20,6 +25,8 @@ const bodySchema = z.object({
 const FRIENDLY: Record<string, string> = {
   step_already_submitted: 'This step is already submitted. Ask for a change to edit it.',
   step_waiting_on_lead: 'Your project lead is finishing this step.',
+  board_resolution_not_generated: 'Generate the board resolution first.',
+  [BOARD_RESOLUTION_WITH_MANAGER]: BOARD_RESOLUTION_WITH_MANAGER,
 };
 
 function errorStatus(message: string): number {
@@ -53,6 +60,30 @@ export async function POST(request: Request, context: RouteContext) {
   const direct = isDirectFlowStep(itemId) && (guard.ctx.role === 'client' || guard.ctx.role === 'intern');
 
   try {
+    // "Send for manager approval" on the board resolution (lead only).
+    if (itemId === MANAGER_APPROVAL_STEP_ID && guard.ctx.role === 'intern') {
+      try {
+        const checklistState = await requestBoardResolutionApproval(guard.ctx, id);
+        const email = await notifyEngagementEvent({
+          engagementId: id,
+          itemId,
+          event: 'lead_requested_review',
+          actorUserId: guard.ctx.userId,
+          outlookCtx: guard.ctx,
+        });
+        return NextResponse.json({
+          checklistState: checklistStateForViewer(guard.ctx, checklistState),
+          outcome: 'sent_for_approval',
+          email,
+        });
+      } catch (err) {
+        if (err instanceof BoardResolutionError) {
+          return NextResponse.json(boardResolutionErrorJson(err), { status: err.status });
+        }
+        throw err;
+      }
+    }
+
     if (direct) {
       const result = await submitDirectFlowStep(guard.ctx, id, itemId, responses);
       const checklistState = checklistStateForViewer(guard.ctx, result.checklistState);

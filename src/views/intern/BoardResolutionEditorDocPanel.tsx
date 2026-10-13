@@ -105,6 +105,10 @@ export interface BoardResolutionEditorProps {
   hasPre1Data: boolean;
   internBoardResolutionPath: typeof internBoardResolutionPath;
   isFinalized: boolean;
+  /** Sent to the manager and not decided yet — the draft is locked for the lead. */
+  withManager: boolean;
+  /** The manager's note when they sent the draft back. */
+  sentBackNote: string | null;
   loading: boolean;
   mergeFields: BoardResolutionMergeFields;
   pre1StepHref: string;
@@ -136,6 +140,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
     handleManualSave,
     hasDocx,
     isFinalized,
+    withManager,
     loading,
     mergeFields,
     previewDownloadHref,
@@ -186,7 +191,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                     )}
                   </div>
 
-                  {!isFinalized && (
+                  {!isFinalized && !withManager && (
                     <FormatToolbar
                       disabled={!previewReady || isFinalized || !hasDocx || saveStatus === 'saving'}
                       previewRef={previewRef}
@@ -203,7 +208,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                       engagementId={eng.id}
                       downloadUrl={previewDownloadHref}
                       refreshKey={previewRefreshKey}
-                      editable={!isFinalized}
+                      editable={!isFinalized && !withManager}
                       mergeFields={mergeFields}
                       previewLabel="Draft Word document"
                       docMeta={{
@@ -341,7 +346,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                   type="button"
 
-                  disabled={isFinalized || busy !== null}
+                  disabled={isFinalized || withManager || busy !== null}
 
                   onClick={() => void handleGenerate()}
 
@@ -361,7 +366,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
             <div className="flex flex-wrap gap-2 mt-5">
 
-              {!isFinalized && hasDocx && (
+              {!isFinalized && !withManager && hasDocx && (
                 <AccentButton
                   type="button"
                   size="sm"
@@ -372,19 +377,23 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                 </AccentButton>
               )}
 
-              <Button
-                type="button"
-                variant="success"
-                disabled={
-                  busy !== null ||
-                  saveStatus === 'saving' ||
-                  saveStatus === 'pending' ||
-                  (isFinalized && !hasDocx)
-                }
-                onClick={() => setFinalizeOpen(true)}
-              >
-                {isFinalized ? 'Send to client' : 'Finalize for client'}
-              </Button>
+              {/* The lead sends the draft to the manager; the manager approves it
+                  and releases it to the client. No lead release button. */}
+              {!isFinalized ? (
+                <Button
+                  type="button"
+                  variant="success"
+                  disabled={
+                    withManager ||
+                    busy !== null ||
+                    saveStatus === 'saving' ||
+                    saveStatus === 'pending'
+                  }
+                  onClick={() => setFinalizeOpen(true)}
+                >
+                  {withManager ? 'Sent for manager approval' : 'Send for manager approval'}
+                </Button>
+              ) : null}
 
             </div>
 

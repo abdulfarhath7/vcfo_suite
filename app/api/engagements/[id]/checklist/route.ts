@@ -19,6 +19,7 @@ import {
   isDirectFlowStepComplete,
   isWaitingOnLead,
   lastEditedPatch,
+  MANAGER_APPROVAL_STEP_ID,
   stripLeadOnlyResponses,
 } from '@/lib/pre-inc-direct-flow';
 
@@ -116,9 +117,11 @@ export async function POST(request: Request, context: RouteContext) {
     }
     if (guard.ctx.role === 'intern') {
       patch = leadWritablePatch(patch);
-      if (directFlow) {
+      if (directFlow || itemId === MANAGER_APPROVAL_STEP_ID) {
         // No approval on a direct-flow step: a lead completes it through
         // Submit (which validates), never by stamping a review request here.
+        // The board resolution goes to the manager only through
+        // "Send for manager approval", which checks the draft first.
         const {
           reviewStatus: _rs,
           reviewSource: _src,

@@ -4,6 +4,8 @@ import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { checklistStateForViewer, reviewChecklistItem } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
+import { approveBoardResolution } from '@/db/repositories/board-resolution';
+import { MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -24,6 +26,12 @@ export async function POST(request: Request, context: RouteContext) {
   const body = await parseJsonBody(request, bodySchema);
   if (body.ok === false) {
     return NextResponse.json({ error: body.error }, { status: body.status });
+  }
+
+  // The board resolution: Accept is "Approve and send to client" (the same
+  // function as the step's own button); Reject is "Send back" and needs a note.
+  if (body.data.itemId === MANAGER_APPROVAL_STEP_ID) {
+    return reviewBoardResolution(guard.ctx, id, body.data.action, body.data.note ?? null);
   }
 
   try {
@@ -73,6 +81,53 @@ export async function POST(request: Request, context: RouteContext) {
     }
     const status =
       message.includes('may not review') ? 403
+      : message.includes('not found') || message.includes('not permitted') ? 404
+      : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+async function reviewBoardResolution(
+  ctx: Parameters<typeof reviewChecklistItem>[0],
+  engagementId: string,
+  action: 'accept' | 'reject',
+  note: string | null,
+) {
+  try {
+    if (action === 'accept') {
+      const { checklistState, firstApproval } = await approveBoardResolution(ctx, engagementId);
+      const email = await notifyEngagementEvent({
+        engagementId,
+        itemId: MANAGER_APPROVAL_STEP_ID,
+        event: 'board_resolution_shared',
+        actorUserId: ctx.userId,
+        skipInAppNotifications: !firstApproval,
+      });
+      return NextResponse.json({ checklistState: checklistStateForViewer(ctx, checklistState), email });
+    }
+    if (!note?.trim()) {
+      return NextResponse.json({ error: 'Add a note so the project lead knows what to change.' }, { status: 400 });
+    }
+    const checklistState = await reviewChecklistItem(ctx, engagementId, MANAGER_APPROVAL_STEP_ID, 'reject', note);
+    // Sent back to the lead only: the client never hears about a draft.
+    const email = await notifyEngagementEvent({
+      engagementId,
+      itemId: MANAGER_APPROVAL_STEP_ID,
+      event: 'review_rejected',
+      note,
+      actorUserId: ctx.userId,
+    });
+    return NextResponse.json({ checklistState: checklistStateForViewer(ctx, checklistState), email });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'review_failed';
+    if (message === 'board_resolution_not_pending') {
+      return NextResponse.json(
+        { error: 'The project lead has not sent the board resolution for approval.' },
+        { status: 409 },
+      );
+    }
+    const status =
+      message.includes('Only the project') ? 403
       : message.includes('not found') || message.includes('not permitted') ? 404
       : 400;
     return NextResponse.json({ error: message }, { status });

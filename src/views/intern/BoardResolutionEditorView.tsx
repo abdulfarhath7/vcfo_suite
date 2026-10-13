@@ -95,6 +95,8 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
     signedDownloadHref,
     previewStorageCorrupt,
     handleFinalize,
+    withManager,
+    sentBackNote,
   } = p;
   return (
 
@@ -147,6 +149,18 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
           )}
 
         </div>
+
+        {withManager && !isFinalized ? (
+          <p role="status" className="mb-4 rounded-md border border-primary/30 bg-primary-light px-3 py-2 text-[12.5px] text-foreground">
+            The board resolution is with your manager. You can edit it again if they send it back.
+          </p>
+        ) : null}
+
+        {sentBackNote && !withManager && !isFinalized ? (
+          <p role="status" className="mb-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-[12.5px] text-foreground">
+            <span className="font-medium">Your manager sent this back:</span> {sentBackNote}
+          </p>
+        ) : null}
 
         {!hasPre1Data && !loading && (
 
@@ -311,14 +325,13 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
           <AlertDialogHeader>
 
             <AlertDialogTitle>
-              {isFinalized ? 'Send board resolution to client?' : 'Finalize board resolution?'}
+              Send the board resolution for manager approval?
             </AlertDialogTitle>
 
             <AlertDialogDescription>
 
-              {isFinalized
-                ? 'This opens an email to the client from your linked Outlook mailbox. They can download the Word file, sign it, and upload the signed copy.'
-                : 'The client will receive the generated Word document to download, sign, and re-upload. You will not be able to edit this record after finalization.'}
+              Your manager reads the document and the Client Details it uses. When they approve it, the
+              client can download, sign and upload it. You cannot edit it while your manager decides.
 
             </AlertDialogDescription>
 
@@ -337,7 +350,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
               }}
             >
 
-              {busy === 'finalize' ? 'Finalizing…' : isFinalized ? 'Send to client' : 'Finalize'}
+              {busy === 'finalize' ? 'Sending…' : 'Send for manager approval'}
 
             </AlertDialogAction>
 

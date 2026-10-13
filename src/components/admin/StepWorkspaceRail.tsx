@@ -20,6 +20,7 @@ import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
 import { fileNameFromStoragePath } from '@/lib/milestone-document-storage';
 import { cn } from '@/lib/utils';
 import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
+import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
 
 const STATUS_TONE_DOT: Record<
   StatusCode,
@@ -52,10 +53,13 @@ export type StepWorkspaceRailProps = {
 };
 
 function nextActionCopy(
+  itemId: string,
   itemState: ChecklistItemStateSlice | undefined,
   stepGate: ChecklistStepGate | undefined,
 ): string | null {
   if (stepGate?.kind === 'waiting' && stepGate.message) return stepGate.message;
+  // Direct flow: no approval and no delivery — Submit is the whole story.
+  if (isDirectFlowStep(itemId)) return null;
   if (isAwaitingReview(itemState)) {
     return getInternReviewLabel(itemState) ?? 'Awaiting project manager approval.';
   }
@@ -152,7 +156,7 @@ export function StepWorkspaceRail({
   onMarkAll,
   className,
 }: StepWorkspaceRailProps) {
-  const next = nextActionCopy(itemState, stepGate);
+  const next = nextActionCopy(item.id, itemState, stepGate);
 
   return (
     <aside

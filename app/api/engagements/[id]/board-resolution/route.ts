@@ -7,6 +7,7 @@ import {
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { requireAnyRole } from '@/auth/guards';
 import {
+  BOARD_RESOLUTION_WITH_MANAGER,
   repairBoardResolutionStorage,
   saveBoardResolutionDraft,
 } from '@/db/repositories/board-resolution';
@@ -95,6 +96,7 @@ export async function PUT(request: Request, context: RouteContext) {
     return NextResponse.json({ boardResolution });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'save_failed';
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    const status = message === BOARD_RESOLUTION_WITH_MANAGER ? 409 : 500;
+    return NextResponse.json({ ok: false, error: message }, { status });
   }
 }

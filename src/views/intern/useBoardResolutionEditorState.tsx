@@ -38,11 +38,12 @@ import {
 
   fetchBoardResolutionInDb,
 
-  finalizeBoardResolutionInDb,
+  requestBoardResolutionApprovalInDb,
 
   saveBoardResolutionDraftInDb,
 
 } from '@/lib/engagements-db';
+import { isLeadRequestPending } from '@/lib/checklist-item-review';
 
 import { internBoardResolutionPath, internEngagementStepPath } from '@/lib/project-step-path';
 
@@ -173,8 +174,16 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
   const [mergeOverrides, setMergeOverrides] = useState<Partial<BoardResolutionMergeFields>>({});
 
   const isFinalized = doc?.status === 'finalized';
+  /**
+   * `pre-2` sent to the manager and not yet decided: the draft is locked for
+   * the lead (the server refuses edits too) until it is approved or sent back.
+   */
+  const pre2State = eng ? getStateForEngagement(eng)['pre-2'] : undefined;
+  const withManager = isLeadRequestPending(pre2State);
+  const sentBackNote =
+    pre2State?.reviewStatus === 'rejected' ? pre2State.rejectionNote?.trim() || null : null;
   const previewStorageCorrupt = previewError?.kind === 'corrupt_xml';
-  const repairActionsDisabled = busy !== null || saveStatus === 'saving';
+  const repairActionsDisabled = busy !== null || saveStatus === 'saving' || withManager;
 
   const hasDocx = Boolean(doc?.storagePath?.trim());
 
@@ -780,39 +789,28 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
 
       }
 
-      const saved = await finalizeBoardResolutionInDb(eng.id);
-
-      setDoc(saved);
-
-      // The document pack lists the BR as waiting until this moment.
-
-      void queryClient.invalidateQueries({ queryKey: ['doc-pack', eng.id] });
-
-      reloadPreviewFromDoc(saved);
-
+      // The lead no longer releases the draft: it goes to the manager, who
+      // approves it and sends it to the client.
+      await requestBoardResolutionApprovalInDb(eng.id);
+      setGenerateError(null);
       setFinalizeOpen(false);
-
       void refreshEngagementChecklist(eng.id);
-
       toastSuccess(
-
-        isFinalized ? 'Ready to email the client' : 'Board resolution finalized',
-
-        'Compose and send from your Outlook mailbox so the client can download and sign.',
-
+        'Sent for manager approval',
+        'Your manager approves the board resolution and sends it to the client.',
       );
 
     } catch (err) {
 
       if (err instanceof Error && err.message === 'docx_required') {
 
-        toastError('Could not finalize', 'Generate the Word document first, then finalize.');
+        toastError('Could not send', 'Generate the Word document first, then send it for approval.');
 
         return;
 
       }
 
-      showBoardResolutionFailure(err, 'Could not finalize', setGenerateError);
+      showBoardResolutionFailure(err, 'Could not send for approval', setGenerateError);
 
     } finally {
 
@@ -851,6 +849,8 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
     hasDocx,
     hasPre1Data,
     internBoardResolutionPath,
+    withManager,
+    sentBackNote,
     isFinalized,
     loading,
     mergeFields,

@@ -15,6 +15,8 @@ import {
   toAppEngagement,
 } from '@/db/repositories/engagements';
 import {
+  assertLeadMayEdit,
+  BOARD_RESOLUTION_WITH_MANAGER,
   getBoardResolutionByEngagementId,
   repairBoardResolutionStorage,
   saveBoardResolutionDraft,
@@ -48,6 +50,12 @@ export async function POST(request: Request, context: RouteContext) {
 
   const engagement = toAppEngagement(access.row);
   const checklistState = checklistStateFromRow(access.row);
+  try {
+    assertLeadMayEdit(auth.ctx, checklistState);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : BOARD_RESOLUTION_WITH_MANAGER;
+    return NextResponse.json({ ok: false, error: message, code: 'with_manager' }, { status: 409 });
+  }
 
   let overrides: Record<string, string> | undefined;
   let editedContent: string | undefined;

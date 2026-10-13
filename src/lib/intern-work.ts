@@ -27,6 +27,7 @@ import { internEngagementPath, internEngagementStepPath } from '@/lib/project-st
 import { deriveStuckReason } from '@/lib/project-stuck';
 import { gateActiveCatalog } from '@/lib/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/pre-inc-direct-flow';
 
 export type InternChipTone =
   | 'primary'
@@ -364,6 +365,12 @@ function classifyStepKind(
 ): InternWorkKind | null {
   if (queueItem.status === 'not-applicable') return null;
   if (queueItem.isLocked && queueItem.status !== 'completed') return null;
+  // Direct flow: Submit completes the step; old review states read as done.
+  if (isDirectFlowStep(item.id)) {
+    if (isDirectFlowStepComplete(item.id, slice)) return 'done';
+    if (queueItem.isOverdue) return 'overdue';
+    return 'in-progress';
+  }
 
   const formallyDelivered = Boolean(slice?.deliveredToClientAt?.trim());
   if (isReviewRejected(slice)) return 'rejected';

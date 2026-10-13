@@ -26,11 +26,12 @@ import {
   isChecklistStepSequentiallyComplete,
   type ChecklistStepGateKind,
 } from '@/lib/checklist-step-gate';
-import { isAwaitingReview, isReviewRejected } from '@/lib/checklist-item-review';
+import { isReviewRejected } from '@/lib/checklist-item-review';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/project-stuck';
 import { phaseKeyFromId, type PhaseColorKey } from '@/lib/phase-colors';
 import { stageDisplayLabel, type Stage } from '@/components/admin/create-project-form-utils';
+import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
 
 export type SuperOverviewState = Record<string, ChecklistItemStateSlice | undefined>;
 
@@ -286,7 +287,7 @@ export function summarizeEngagement(
     const gate = getStepGate(gates, item.id);
     const status = coerceStatusCode(slice?.status);
 
-    if (isAwaitingReview(slice)) approvalsPending += 1;
+    if (isAwaitingManagerDecision(item.id, slice)) approvalsPending += 1;
     if (status === 'overdue' && gate.kind !== 'locked' && gate.kind !== 'done') {
       steps.overdue += 1;
     }
@@ -712,7 +713,7 @@ export function buildJourney(
         phaseLabel,
         kind: gate.kind,
         owner: gate.kind === 'waiting' ? 'client' : 'firm',
-        awaitingReview: isAwaitingReview(slice),
+        awaitingReview: isAwaitingManagerDecision(item.id, slice),
         rejected: isReviewRejected(slice),
         href: superStepHref(slugOrId, item.slug),
       });

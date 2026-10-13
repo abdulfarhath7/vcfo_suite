@@ -27,6 +27,7 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { isAdminOrManager } from '@/lib/auth';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
 
 interface ChecklistReviewActionsProps {
   engagementId: string;
@@ -57,6 +58,9 @@ export function ChecklistReviewActions({
   const statusLabel = getInternReviewLabel(itemState);
 
   if (!awaiting && !accepted && !rejected) return null;
+  // No Accept / Reject on a direct-flow step; the board resolution has its own
+  // "Approve and send to client" / "Send back" panel.
+  if (isDirectFlowStep(itemId) || itemId === MANAGER_APPROVAL_STEP_ID) return null;
 
   const runReview = async (action: 'accept' | 'reject', note?: string) => {
     if (!canApprove) return;
