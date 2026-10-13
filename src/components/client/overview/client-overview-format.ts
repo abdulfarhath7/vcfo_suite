@@ -55,3 +55,23 @@ export const PHASE_FILL: Record<PhaseColorKey, string> = {
 export function phaseTone(key: PhaseColorKey) {
   return PHASE_CLASSES[key];
 }
+
+/**
+ * INR with Indian digit grouping ("₹10,00,000"). Stored amounts may already
+ * carry commas; anything that is not a number is shown as typed.
+ */
+export function formatInr(raw: string | null | undefined): string | null {
+  const text = (raw ?? '').trim();
+  if (!text) return null;
+  const value = Number(text.replace(/[,\s₹]/g, ''));
+  if (!Number.isFinite(value)) return text;
+  return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
+
+/** A share count with Indian grouping ("1,00,000"). */
+export function formatCount(raw: string | null | undefined): string | null {
+  const text = (raw ?? '').trim();
+  if (!text) return null;
+  const value = Number(text.replace(/[,\s]/g, ''));
+  return Number.isFinite(value) ? value.toLocaleString('en-IN') : text;
+}

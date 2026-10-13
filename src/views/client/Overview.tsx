@@ -8,6 +8,7 @@ import { useClientOverview } from '@/lib/use-client-overview';
 import { ClientOverviewHero } from '@/components/client/overview/ClientOverviewHero';
 import { ClientNextAction } from '@/components/client/overview/ClientNextAction';
 import { ClientPhaseBars } from '@/components/client/overview/ClientPhaseBars';
+import { ClientCompanySnapshot } from '@/components/client/overview/ClientCompanySnapshot';
 import { ClientBallInCourt } from '@/components/client/overview/ClientBallInCourt';
 import { ClientComplianceRunway } from '@/components/client/overview/ClientComplianceRunway';
 import { ClientDeliverables } from '@/components/client/overview/ClientDeliverables';
@@ -107,6 +108,9 @@ export default function ClientOverview() {
         {/* Main column + right rail, same split as the lead dashboard's Today. */}
         <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="flex min-w-0 flex-col gap-3">
+            {/* Who the company is: directors, share capital, subscribers. */}
+            <ClientCompanySnapshot company={overview.company} />
+
             {/* Post-COI the entity identity earns the top of the column. */}
             {entityCard}
 
