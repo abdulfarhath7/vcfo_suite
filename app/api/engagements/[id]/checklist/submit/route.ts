@@ -93,7 +93,17 @@ export async function POST(request: Request, context: RouteContext) {
           { status: 422 },
         );
       }
-      return NextResponse.json({ checklistState, outcome: result.outcome });
+      // Every party hears a completed submit; a client's submit that stopped
+      // on the NIC codes is the lead's news. Autosave never reaches here.
+      const email = await notifyEngagementEvent({
+        engagementId: id,
+        itemId,
+        event: result.outcome === 'waiting_on_lead' ? 'step_waiting_on_lead' : 'step_submitted',
+        actorUserId: guard.ctx.userId,
+        actorName: guard.ctx.name,
+        actorRole: guard.ctx.role,
+      });
+      return NextResponse.json({ checklistState, outcome: result.outcome, email });
     }
 
     const checklistState = await submitChecklistItem(guard.ctx, id, itemId, responses);
