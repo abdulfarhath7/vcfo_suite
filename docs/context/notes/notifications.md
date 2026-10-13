@@ -74,3 +74,17 @@ Gotchas already paid for once. Append when something costs more than a minute to
   same bar replaces the notifications unread dot. Writer CTA goes to
   `/app/{role}/announcements?compose=1`. Storage is still
   `vcfo.announcements.read.{userId}`. Genie target: `[data-announcements-bell]`.
+
+## Pre-incorporation direct flow events (2026-10-13)
+
+- New events `step_submitted`, `step_waiting_on_lead`, `step_reopened`. Bell recipients for
+  these and for the board resolution (`lead_requested_review` / `review_rejected` on `pre-2`,
+  `board_resolution_shared`) come from one pure table, `directFlowBellAudience` in
+  `engagement-event-fanout.ts`; the actor is excluded and each person gets one row.
+- Bell text: title `{Step} submitted`, body `{Name} ({Client | Project Lead}) submitted this
+  step for {Company}.` The actor name travels in `NotifyInput.actorName/actorRole`, not a column.
+- Kinds reused: `checklist.submit` (submitted, waiting on lead), `checklist.unlock` (reopened).
+- Client-side diff toasts (`diffChecklistForNotifications`) emit one "{Step} submitted" toast
+  for a direct-flow step and skip the deliver / review / accept rules there.
+- Autosave still sends nothing: direct-flow lead patches cannot carry review stamps
+  (stripped in `POST …/checklist`), so `leadManagerRequestNotifyPlan` never fires.
