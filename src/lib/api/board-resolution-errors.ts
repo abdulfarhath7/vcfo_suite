@@ -30,27 +30,42 @@ export const BOARD_RESOLUTION_ERROR_CODES = {
 export type BoardResolutionErrorCode =
   (typeof BOARD_RESOLUTION_ERROR_CODES)[keyof typeof BOARD_RESOLUTION_ERROR_CODES];
 
+/** Where a missing board-resolution input is answered — the editor links each one there. */
+export interface BoardResolutionMissingFieldRef {
+  stepId: string;
+  fieldId: string;
+  section?: string;
+  label: string;
+}
+
 export interface BoardResolutionApiErrorBody {
   ok: false;
   error: string;
   code?: BoardResolutionErrorCode;
   missingFields?: string[];
+  missingFieldRefs?: BoardResolutionMissingFieldRef[];
 }
 
 export class BoardResolutionError extends Error {
   readonly code: BoardResolutionErrorCode;
   readonly missingFields?: string[];
+  readonly missingFieldRefs?: BoardResolutionMissingFieldRef[];
   readonly status: number;
 
   constructor(
     message: string,
     code: BoardResolutionErrorCode,
-    options?: { missingFields?: string[]; status?: number },
+    options?: {
+      missingFields?: string[];
+      missingFieldRefs?: BoardResolutionMissingFieldRef[];
+      status?: number;
+    },
   ) {
     super(message);
     this.name = 'BoardResolutionError';
     this.code = code;
     this.missingFields = options?.missingFields;
+    this.missingFieldRefs = options?.missingFieldRefs;
     this.status = options?.status ?? boardResolutionHttpStatus(code);
   }
 }
@@ -84,6 +99,7 @@ export function boardResolutionErrorJson(err: BoardResolutionError): BoardResolu
     error: err.message,
     code: err.code,
     ...(err.missingFields?.length ? { missingFields: err.missingFields } : {}),
+    ...(err.missingFieldRefs?.length ? { missingFieldRefs: err.missingFieldRefs } : {}),
   };
 }
 
@@ -99,7 +115,33 @@ const PRE1_FIELD_LABELS: Record<string, string> = {
   paidUpShareCapital: 'Paid-up share capital',
   directorCount: 'Director count',
   indiaResidentDirector: 'At least one India-resident director',
+  nicCode: 'NIC code',
 };
+
+const PART_A = 'pre-1';
+const DIRECTORS_STEP = 'pre-15';
+
+/** Where each Part A board-resolution input lives (step + field + section tab). */
+const PRE1_FIELD_REFS: Record<string, { fieldId: string; section: string }> = {
+  parentEntityName: { fieldId: 'parentEntityName', section: 'Foreign Entity' },
+  proposedName1: { fieldId: 'proposedName1', section: 'Proposed Company Names' },
+  boardResolutionDate: { fieldId: 'boardResolutionDate', section: 'Share Capital Details' },
+  signatoryName: { fieldId: 'signatoryFirstName', section: 'Authorized Signatory' },
+  signatoryDesignation: { fieldId: 'signatoryDesignation', section: 'Authorized Signatory' },
+  authorisedShareCapital: { fieldId: 'authorisedShareCapital', section: 'Share Capital Details' },
+  paidUpShareCapital: { fieldId: 'paidUpShareCapital', section: 'Share Capital Details' },
+  nicCode: { fieldId: 'nicCode', section: 'Business Description' },
+};
+
+function pre1Ref(key: keyof typeof PRE1_FIELD_REFS): BoardResolutionMissingFieldRef {
+  const ref = PRE1_FIELD_REFS[key]!;
+  return { stepId: PART_A, fieldId: ref.fieldId, section: ref.section, label: PRE1_FIELD_LABELS[key]! };
+}
+
+/** Directors now live on Part B `pre-15`; the legacy Part A slots are read through the overlay. */
+function directorRef(label: string): BoardResolutionMissingFieldRef {
+  return { stepId: DIRECTORS_STEP, fieldId: 'directors', section: 'Directors', label };
+}
 
 function directorFieldLabel(index: number, kind: 'first' | 'last' | 'resident'): string {
   if (kind === 'first') return `Director ${index} first name`;
@@ -130,33 +172,40 @@ function pickParentEntityName(
   );
 }
 
-/** Collect human-readable labels for Pre-1 fields required to merge the board resolution. */
-export function collectBoardResolutionMissingFields(
+/**
+ * Every input the board resolution needs that is still empty, with where it is
+ * answered. The NIC code is checked here so a new document can never fall back
+ * to the firm's default NIC list.
+ */
+export function collectBoardResolutionMissingFieldRefs(
   pre1: ChecklistItemResponses,
   engagement?: Pick<Engagement, 'parentEntityName' | 'companyName'> | null,
-): string[] {
-  const missing: string[] = [];
+): BoardResolutionMissingFieldRef[] {
+  const missing: BoardResolutionMissingFieldRef[] = [];
 
   if (!pickParentEntityName(pre1, engagement)) {
-    missing.push(PRE1_FIELD_LABELS.parentEntityName);
+    missing.push(pre1Ref('parentEntityName'));
   }
   if (!pre1.proposedName1?.trim()) {
-    missing.push(PRE1_FIELD_LABELS.proposedName1);
+    missing.push(pre1Ref('proposedName1'));
   }
   if (!parsePre1BoardResolutionDate(pre1.boardResolutionDate)) {
-    missing.push(PRE1_FIELD_LABELS.boardResolutionDate);
+    missing.push(pre1Ref('boardResolutionDate'));
   }
   if (!resolveSignatoryDisplayName(pre1)) {
-    missing.push(PRE1_FIELD_LABELS.signatoryName);
+    missing.push(pre1Ref('signatoryName'));
   }
   if (!pre1.signatoryDesignation?.trim()) {
-    missing.push(PRE1_FIELD_LABELS.signatoryDesignation);
+    missing.push(pre1Ref('signatoryDesignation'));
   }
   if (!pre1.authorisedShareCapital?.trim()) {
-    missing.push(PRE1_FIELD_LABELS.authorisedShareCapital);
+    missing.push(pre1Ref('authorisedShareCapital'));
   }
   if (!pre1.paidUpShareCapital?.trim()) {
-    missing.push(PRE1_FIELD_LABELS.paidUpShareCapital);
+    missing.push(pre1Ref('paidUpShareCapital'));
+  }
+  if (!pre1.nicCode?.trim()) {
+    missing.push(pre1Ref('nicCode'));
   }
 
   const directorCount = parseDirectorCount(pre1);
@@ -170,26 +219,34 @@ export function collectBoardResolutionMissingFields(
 
     if (!resolveDirectorDisplayName(pre1, index)) {
       if (!(pre1[firstNameId] ?? '').trim()) {
-        missing.push(directorFieldLabel(index, 'first'));
+        missing.push(directorRef(directorFieldLabel(index, 'first')));
       }
       if (!(pre1[lastNameId] ?? '').trim()) {
-        missing.push(directorFieldLabel(index, 'last'));
+        missing.push(directorRef(directorFieldLabel(index, 'last')));
       }
     }
 
     const resident = (pre1[residentId] ?? '').trim();
     if (!resident) {
-      missing.push(directorFieldLabel(index, 'resident'));
+      missing.push(directorRef(directorFieldLabel(index, 'resident')));
     } else if (resident === 'yes') {
       hasIndiaResident = true;
     }
   }
 
   if (directorCount >= 2 && !hasIndiaResident) {
-    missing.push(PRE1_FIELD_LABELS.indiaResidentDirector);
+    missing.push(directorRef(PRE1_FIELD_LABELS.indiaResidentDirector!));
   }
 
   return missing;
+}
+
+/** Collect human-readable labels for Pre-1 fields required to merge the board resolution. */
+export function collectBoardResolutionMissingFields(
+  pre1: ChecklistItemResponses,
+  engagement?: Pick<Engagement, 'parentEntityName' | 'companyName'> | null,
+): string[] {
+  return collectBoardResolutionMissingFieldRefs(pre1, engagement).map((ref) => ref.label);
 }
 
 export interface ValidateBoardResolutionGenerationOptions {
@@ -219,20 +276,25 @@ export function validateBoardResolutionGeneration(
 
   if (!isPre1SubmittedForBoardResolution(pre1State)) {
     throw new BoardResolutionError(
-      'Please finish Step 1 first — the client must submit the Name Application form before generating the board resolution.',
+      STEP1_INCOMPLETE_MESSAGE,
       BOARD_RESOLUTION_ERROR_CODES.STEP1_INCOMPLETE,
+      { missingFieldRefs: [{ stepId: PART_A, fieldId: 'proposedName1', label: 'Client Details' }] },
     );
   }
 
-  const missingFields = collectBoardResolutionMissingFields(pre1, engagement);
-  if (missingFields.length > 0) {
+  const missingFieldRefs = collectBoardResolutionMissingFieldRefs(pre1, engagement);
+  if (missingFieldRefs.length > 0) {
+    const missingFields = missingFieldRefs.map((ref) => ref.label);
     throw new BoardResolutionError(
       `This data is missing: ${missingFields.join(', ')}.`,
       BOARD_RESOLUTION_ERROR_CODES.MISSING_FIELDS,
-      { missingFields },
+      { missingFields, missingFieldRefs },
     );
   }
 }
+
+export const STEP1_INCOMPLETE_MESSAGE =
+  'Submit Client Details first. The board resolution uses this data.';
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   unauthorized: 'Sign in to continue.',
@@ -349,6 +411,7 @@ export interface BoardResolutionErrorDisplay {
   title: string;
   description: string;
   missingFields?: string[];
+  missingFieldRefs?: BoardResolutionMissingFieldRef[];
 }
 
 /** Format structured API errors for toast / inline UI. */
@@ -358,15 +421,15 @@ export function formatBoardResolutionErrorDisplay(
 ): BoardResolutionErrorDisplay {
   const code = body.code;
   const missingFields = body.missingFields;
+  const missingFieldRefs = body.missingFieldRefs;
   const errorText = body.error?.trim();
 
   switch (code) {
     case BOARD_RESOLUTION_ERROR_CODES.STEP1_INCOMPLETE:
       return {
-        title: 'Step 1 not complete',
-        description:
-          errorText ??
-          'Please finish Step 1 first — the client must submit the Name Application form.',
+        title: 'Client Details not submitted',
+        description: errorText ?? STEP1_INCOMPLETE_MESSAGE,
+        missingFieldRefs,
       };
     case BOARD_RESOLUTION_ERROR_CODES.MISSING_FIELDS:
       return {
@@ -377,6 +440,7 @@ export function formatBoardResolutionErrorDisplay(
             ? `This data is missing: ${missingFields.join(', ')}.`
             : 'Complete the required Step 1 fields, then try again.'),
         missingFields,
+        missingFieldRefs,
       };
     case BOARD_RESOLUTION_ERROR_CODES.FINALIZED:
       return {

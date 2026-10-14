@@ -17,7 +17,10 @@ import {
   collectAdminParties,
   collectLeadParties,
   collectManagerParties,
+  directFlowBellAudience,
+  directFlowEmailPlan,
   emailsStaffViaResend,
+  isBoardResolutionSendBack,
   inAppIncludesActor,
   mailHandlersForEvent,
   opensClientOutgoingDraft,
@@ -43,6 +46,7 @@ import {
   internEngagementStepPath,
 } from '@/lib/project-step-path';
 import { siteUrl } from '@/lib/site-url';
+import { directFlowRoleLabel } from '@/lib/pre-inc-direct-flow';
 
 export type { EmailDispatchResult };
 
@@ -61,6 +65,9 @@ type NotifyInput = {
   inAppOnly?: boolean;
   /** When set, lead→manager approval tries Graph from this staff mailbox first. */
   outlookCtx?: AuthContext;
+  /** Direct-flow bell / mail text: who acted, and as which role. */
+  actorName?: string | null;
+  actorRole?: string | null;
 };
 
 function stepTitle(itemId: string): string {
@@ -99,6 +106,11 @@ function emailKind(event: EngagementProcessEvent): ProgressEmailKind | null {
       return 'phase_approved';
     case 'client_change_requested':
       return 'client_change_requested';
+    case 'step_submitted':
+      return 'step_submitted';
+    case 'step_waiting_on_lead':
+      return 'step_waiting_on_lead';
+    case 'step_reopened':
     case 'request_created':
       return null;
   }
@@ -135,8 +147,63 @@ function notificationKind(event: EngagementProcessEvent): NotificationKind {
       return 'checklist.review';
     case 'client_change_requested':
       return 'checklist.review';
+    case 'step_submitted':
+    case 'step_waiting_on_lead':
+      return 'checklist.submit';
+    case 'step_reopened':
+      return 'checklist.unlock';
     case 'request_created':
       return 'request.created';
+  }
+}
+
+/** "Kiran Rao (Client)" — the actor as the bell and the mail name them. */
+function actorLabel(input: NotifyInput, recipients: EngagementRecipients): string {
+  const party = findPartyByUserId(recipients, input.actorUserId);
+  const name = input.actorName?.trim() || party?.name?.trim() || 'Someone';
+  const role = input.actorRole ?? (party && isClientParty(recipients, party) ? 'client' : 'intern');
+  return `${name} (${directFlowRoleLabel(role)})`;
+}
+
+/** Bell title + body for the direct-flow and board-resolution events. */
+function directFlowBellCopy(
+  input: NotifyInput,
+  title: string,
+  company: string,
+  actor: string,
+  audience: 'client' | 'lead' | 'manager' | 'admin',
+): { title: string; body: string } {
+  switch (input.event) {
+    case 'step_submitted':
+      return { title: `${title} submitted`, body: `${actor} submitted this step for ${company}.` };
+    case 'step_waiting_on_lead':
+      return {
+        title: `${title}: NIC codes needed`,
+        body: `${actor} submitted their part of this step for ${company}. Add the NIC codes to complete it.`,
+      };
+    case 'step_reopened':
+      return { title: `${title} reopened`, body: `${actor} reopened this step for ${company}.` };
+    case 'board_resolution_shared':
+      return audience === 'client'
+        ? { title: 'Board resolution ready', body: 'The board resolution is ready to download and sign.' }
+        : {
+            title: 'Board resolution approved',
+            body: `The board resolution for ${company} was approved and sent to the client.`,
+          };
+    case 'lead_requested_review':
+      return {
+        title: 'Board resolution to approve',
+        body: `${company}: the board resolution is waiting for your approval.`,
+      };
+    case 'review_rejected':
+      return {
+        title: 'Board resolution sent back',
+        body: input.note?.trim()
+          ? `${company}: ${input.note.trim()}`
+          : `${company}: your manager sent the board resolution back.`,
+      };
+    default:
+      return { title, body: `${title} for ${company}.` };
   }
 }
 
@@ -316,16 +383,25 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       Parameters<typeof createNotificationsForUsers>[0][number]
     > = [];
 
+    const adminHref = adminProjectStepPath(project, input.itemId, 'admin');
     const pushNotif = (
       userId: string | undefined,
-      role: 'client' | 'intern' | 'manager',
+      role: 'client' | 'intern' | 'manager' | 'admin',
       nTitle: string,
       body: string,
     ) => {
       if (!userId) return;
       if (userId === input.actorUserId && !inAppIncludesActor(input.event)) return;
+      // One row per person, even when they hold two roles on the engagement.
+      if (notifDrafts.some((draft) => draft.userId === userId)) return;
       const href =
-        role === 'client' ? clientHref : role === 'intern' ? leadHref : managerHref;
+        role === 'client'
+          ? clientHref
+          : role === 'intern'
+            ? leadHref
+            : role === 'admin'
+              ? adminHref
+              : managerHref;
       notifDrafts.push({
         userId,
         kind,
@@ -356,7 +432,24 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       }
     };
 
-    if (!input.skipInAppNotifications) {
+    const bellAudience = directFlowBellAudience(input.event, input.itemId);
+    if (!input.skipInAppNotifications && bellAudience) {
+      // Direct flow + board resolution: one table decides who hears it
+      // (`directFlowBellAudience`), each in their own shell's link.
+      const actor = actorLabel(input, recipients);
+      for (const audience of bellAudience) {
+        const copy = directFlowBellCopy(input, title, company, actor, audience);
+        if (audience === 'client') {
+          for (const c of clientParties(recipients)) pushNotif(c.userId, 'client', copy.title, copy.body);
+        } else if (audience === 'lead') {
+          for (const lead of collectLeadParties(recipients)) pushNotif(lead.userId, 'intern', copy.title, copy.body);
+        } else if (audience === 'manager') {
+          for (const mgr of collectManagerParties(recipients)) pushNotif(mgr.userId, 'manager', copy.title, copy.body);
+        } else {
+          for (const admin of collectAdminParties(recipients)) pushNotif(admin.userId, 'admin', copy.title, copy.body);
+        }
+      }
+    } else if (!input.skipInAppNotifications) {
     if (input.event === 'client_submitted') {
       pushNotifToLeads(
         'Client submission',
@@ -382,7 +475,6 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         'Submission accepted',
         `${title} was accepted for ${company}.`,
       );
-      const adminHref = adminProjectStepPath(project, input.itemId, 'admin');
       for (const admin of collectAdminParties(recipients)) {
         if (!admin.userId || admin.userId === input.actorUserId) continue;
         notifDrafts.push({
@@ -508,7 +600,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     // Client → staff: Resend From company_name@sbctrack.in
     // Intern → manager: Graph from the lead mailbox when connected, else Resend
     // Lead/manager → client: in-app compose + Graph Mail.Send (CC admin + lead on accept)
-    if (!input.inAppOnly && opensClientOutgoingDraft(input.event)) {
+    if (!input.inAppOnly && opensClientOutgoingDraft(input.event, input.itemId)) {
       email.outgoingDraft = buildOutgoingClientDraft(
         input,
         recipients,
@@ -636,9 +728,80 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
       }
     }
 
+    const directPlan = directFlowEmailPlan(input.event, input.actorRole);
+    const directActor =
+      input.event === 'step_submitted' || input.event === 'step_waiting_on_lead'
+        ? actorLabel(input, recipients)
+        : undefined;
+
+    // A lead's direct-flow submit: the clients hear it, managers on CC.
+    if (!input.inAppOnly && directPlan === 'clients' && progressKind) {
+      const to = clientParties(recipients).map((p) => p.email.trim()).filter(Boolean);
+      const cc = collectManagerParties(recipients)
+        .map((m) => m.email.trim())
+        .filter((addr) => addr && !to.some((t) => t.toLowerCase() === addr.toLowerCase()));
+      const actor = findPartyByUserId(recipients, input.actorUserId);
+      const copy = buildProgressEmail({
+        kind: progressKind,
+        companyName: company,
+        itemId: input.itemId,
+        portalHref: absolute(clientIncorporationPath(input.itemId)),
+        audience: 'client',
+        actor: directActor,
+      });
+      for (const addr of to) {
+        queue.push({
+          to: addr,
+          subject: copy.subject,
+          run: () =>
+            sendEmail({
+              to: addr,
+              cc,
+              from: fromForCompany(recipients),
+              replyTo: actor ? formatReplyTo(actor) : undefined,
+              subject: copy.subject,
+              html: copy.html,
+              text: copy.text,
+              purpose: `progress.${input.event}.client`,
+            }),
+        });
+      }
+    }
+
+    // Board resolution sent back: the lead's news only (never a client).
+    if (!input.inAppOnly && isBoardResolutionSendBack(input.event, input.itemId) && progressKind) {
+      for (const lead of collectLeadParties(recipients)) {
+        const addr = lead.email.trim();
+        if (!addr) continue;
+        const copy = buildProgressEmail({
+          kind: progressKind,
+          companyName: company,
+          itemId: input.itemId,
+          note: input.note,
+          portalHref: absolute(internBoardResolutionPath(project)),
+          audience: 'lead',
+        });
+        queue.push({
+          to: addr,
+          subject: copy.subject,
+          run: () =>
+            sendEmail({
+              to: addr,
+              cc: [],
+              from: fromForCompany(recipients),
+              subject: copy.subject,
+              html: copy.html,
+              text: copy.text,
+              purpose: `progress.${input.event}.lead`,
+            }),
+        });
+      }
+    }
+
     if (
       !input.inAppOnly &&
       emailsStaffViaResend(input.event) &&
+      directPlan !== 'clients' &&
       progressKind &&
       !skippedResendBecauseOutlook
     ) {
@@ -657,6 +820,7 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
             portalHref: absolute(staff.href),
             audience: 'lead',
             title: input.requestLabel,
+            actor: directActor,
           });
           const to = staff.email;
           const replyTo = replyToForStaff(recipients, input.event, input.actorUserId);

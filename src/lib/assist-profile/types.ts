@@ -96,6 +96,8 @@ export interface AssistCompany {
   subCategory?: string;
   nicCode?: string;
   nicDescription?: string;
+  /** Part A codes after the main one, in list order (`additionalNicCodes`). */
+  additionalNicCodes?: Array<{ code: string; description?: string }>;
   hasShareCapital?: boolean;
   aoaEntrenched?: boolean;
   capital?: {

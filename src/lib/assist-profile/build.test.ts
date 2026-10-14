@@ -402,3 +402,26 @@ describe('buildAssistProfile — sub-category and PIN code', () => {
     expect(result.notes.find((n) => n.key === 'registeredOffice.pincode')?.note).toMatch(/560103/);
   });
 });
+
+describe('buildAssistProfile — additional NIC codes', () => {
+  it('lists the extra Part A codes after the main one', () => {
+    const result = build(
+      assistFullState(undefined, {
+        ...ASSIST_PRE1,
+        additionalNicCodes: 'n1,n2',
+        'additionalNicCodes.n1.code': '62020',
+        'additionalNicCodes.n1.businessType': 'Computer consultancy',
+        'additionalNicCodes.n2.code': '62099',
+      }),
+    );
+    expect(result.profile.company?.nicCode).toBe('62011');
+    expect(result.profile.company?.additionalNicCodes).toEqual([
+      { code: '62020', description: 'Computer consultancy' },
+      { code: '62099', description: expect.any(String) },
+    ]);
+  });
+
+  it('emits no list when there are no extra codes', () => {
+    expect(build(assistFullState()).profile.company?.additionalNicCodes).toBeUndefined();
+  });
+});

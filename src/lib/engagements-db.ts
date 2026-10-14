@@ -385,6 +385,103 @@ export async function submitChecklistItemInDb(
   );
 }
 
+export type DirectSubmitResult =
+  | { outcome: 'submitted' | 'waiting_on_lead'; checklistState: EngagementChecklistState }
+  | {
+      outcome: 'invalid';
+      checklistState: EngagementChecklistState | null;
+      fieldErrors: Record<string, string>;
+    };
+
+/**
+ * Pre-incorporation direct flow: the client or the project lead submits a
+ * step. A 422 is an answer, not a failure — it carries the server's
+ * `fieldErrors` so the form can mark them the same way it marks its own.
+ */
+export async function submitDirectStepInDb(
+  appEngagementId: string,
+  itemId: string,
+  responses: Record<string, string>,
+): Promise<DirectSubmitResult> {
+  let res: Response;
+  try {
+    res = await fetch(engagementPath(appEngagementId, '/checklist/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ itemId, responses }),
+    });
+  } catch {
+    throw new ChecklistSaveError('Network error — check your connection.');
+  }
+  const body = (await res.json().catch(() => null)) as {
+    checklistState?: unknown;
+    outcome?: string;
+    fieldErrors?: Record<string, string>;
+    error?: string;
+    code?: string;
+  } | null;
+  const state =
+    body?.checklistState && typeof body.checklistState === 'object' && !Array.isArray(body.checklistState)
+      ? normalizeEngagementChecklistState(body.checklistState as Record<string, unknown>)
+      : null;
+
+  if (res.status === 422 && body?.fieldErrors) {
+    return { outcome: 'invalid', checklistState: state, fieldErrors: body.fieldErrors };
+  }
+  if (!res.ok || !state) {
+    throw new ChecklistSaveError(body?.error ?? 'Could not submit this step. Try again.', body?.code);
+  }
+  return {
+    outcome: body?.outcome === 'waiting_on_lead' ? 'waiting_on_lead' : 'submitted',
+    checklistState: state,
+  };
+}
+
+/**
+ * Lead: "Send for manager approval" on the board resolution. A refusal keeps
+ * the server's body (`code`, `missingFields`, `missingFieldRefs`) so the editor
+ * can list each missing input with a link to it.
+ */
+export async function requestBoardResolutionApprovalInDb(
+  appEngagementId: string,
+): Promise<EngagementChecklistState> {
+  let res: Response;
+  try {
+    res = await fetch(engagementPath(appEngagementId, '/checklist/submit'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ itemId: 'pre-2', responses: {} }),
+    });
+  } catch {
+    throw Object.assign(new Error('Network error — check your connection.'), {
+      ok: false as const,
+      error: 'Network error — check your connection.',
+    });
+  }
+  const body = (await res.json().catch(() => null)) as
+    | ({ checklistState?: unknown; email?: EmailDispatchResult } & Record<string, unknown>)
+    | null;
+  if (!res.ok) {
+    const message = typeof body?.error === 'string' ? body.error : 'Could not send for approval.';
+    // Shaped like `BoardResolutionApiErrorBody` for the editor's error panel.
+    throw Object.assign(new Error(message), { ...(body ?? {}), ok: false as const, error: message });
+  }
+  toastEmailDispatch(body?.email, { itemId: 'pre-2' });
+  const raw = body?.checklistState;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new ChecklistSaveError('Could not send for approval.');
+  }
+  return normalizeEngagementChecklistState(raw as Record<string, unknown>);
+}
+
+/** Manager / admin: "Approve and send to client" on the board resolution. */
+export async function approveBoardResolutionInDb(appEngagementId: string): Promise<void> {
+  await apiFetch(engagementPath(appEngagementId, '/board-resolution/finalize'), {
+    method: 'POST',
+    fallbackError: 'Could not approve the board resolution.',
+  });
+}
+
 /** Intern/manager accepts or rejects a submitted milestone. */
 export async function reviewChecklistItemInDb(
   appEngagementId: string,

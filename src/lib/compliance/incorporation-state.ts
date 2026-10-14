@@ -53,7 +53,7 @@ export function isIncorporated(
 
   const coi = checklistState?.[CERTIFICATE_OF_INCORPORATION_STEP_ID];
   if (!coi) return false;
-  return isChecklistStepSequentiallyComplete(coerceStatusCode(coi.status), coi);
+  return isChecklistStepSequentiallyComplete(coerceStatusCode(coi.status), coi, CERTIFICATE_OF_INCORPORATION_STEP_ID);
 }
 
 /**

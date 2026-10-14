@@ -58,6 +58,13 @@ export function processNoticeLine(event: EngagementProcessEvent, title: string):
       return `${title} was approved`;
     case 'client_change_requested':
       return `a change was requested on ${title}`;
+    /* Pre-incorporation direct flow. */
+    case 'step_submitted':
+      return `${title} was submitted`;
+    case 'step_waiting_on_lead':
+      return `${title} is waiting on the project lead`;
+    case 'step_reopened':
+      return `${title} is open for updates`;
     case 'delivered':
       return null;
   }
@@ -80,7 +87,11 @@ export function whatsappEventFor(
   title: string,
 ): WhatsAppNotice | null {
   if (input.inAppOnly || input.skipInAppNotifications) return null;
-  if (input.event === 'review_accepted' && input.itemId.trim() === COI_ITEM_ID) {
+  // Direct flow: the certificate step's Submit is what used to be Accept.
+  if (
+    (input.event === 'review_accepted' || input.event === 'step_submitted') &&
+    input.itemId.trim() === COI_ITEM_ID
+  ) {
     return { event: 'coi_issued' };
   }
   const dedicated = DEDICATED[input.event];

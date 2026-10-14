@@ -6,6 +6,7 @@ import { complianceInstances, complianceObligations } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import {
   assertEngagementAccess,
+  checklistStateForViewer,
   checklistStateFromRow,
   getMyEngagement,
   type EngagementDbRow,
@@ -16,6 +17,7 @@ import { appEngagementId } from '@/lib/legacy-engagement-ids';
 import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
 import {
   buildBallInCourt,
+  buildCompanySnapshot,
   buildDeliverables,
   buildDocumentCounts,
   buildMilestones,
@@ -263,5 +265,7 @@ export async function getClientOverview(
     activity: toActivity(auditRows),
     team,
     schedule,
+    // The client's own view of the state: lead drafts and staff notes stay out.
+    company: buildCompanySnapshot(checklistStateForViewer(ctx, state)),
   };
 }

@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       .slice(1, -1)
       .map((segment) => checklistItemForFieldId(segment.split('.')[0] ?? segment))
       .find(Boolean);
-    if (item && !isStepReleasedTo(viewer, checklistStateFromRow(access.row)[item.id])) {
+    if (item && !isStepReleasedTo(viewer, checklistStateFromRow(access.row)[item.id], item.id)) {
       return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
     }
   }

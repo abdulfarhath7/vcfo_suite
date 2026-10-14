@@ -7,10 +7,11 @@ import { AdminDashboardView } from '@/views/admin/DashboardSections';
 import { checklist, type Bucket } from '@/data/checklist';
 import type { TaskInstance } from '@/data/engagements';
 import type { Phase } from '@/components/admin/PhaseTimeline';
-import { isAwaitingReview } from '@/lib/checklist-item-review';
 import { primaryPhaseItems } from '@/lib/project-stuck';
+import { isAwaitingReview } from '@/lib/checklist-item-review';
 import { adminProjectStepPath } from '@/lib/project-step-path';
 import { YourStepNotice } from '@/components/shell/YourStepNotice';
+import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
 
 const PROCESS_KEYS = [
   { key: 'pre-inc', label: 'Pre-incorp', buckets: ['pre-inc'] as Bucket[] },
@@ -54,7 +55,7 @@ export default function AdminDashboard() {
     for (const eng of engagements) {
       const state = getStateForEngagement(eng);
       for (const item of primaryPhaseItems()) {
-        if (isAwaitingReview(state[item.id])) n += 1;
+        if (isAwaitingManagerDecision(item.id, state[item.id])) n += 1;
       }
     }
     return n;

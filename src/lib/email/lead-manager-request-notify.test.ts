@@ -140,3 +140,27 @@ describe('leadManagerRequestNotifyPlan', () => {
     ).toBe(false);
   });
 });
+
+describe('pre-incorporation direct flow autosave', () => {
+  it('a client autosave on a direct-flow step sends nothing', () => {
+    expect(
+      leadManagerRequestNotifyPlan({
+        role: 'client',
+        prevSlice: { status: 'in-progress', responses: { equityShares: 'yes' } },
+        nextSlice: { status: 'in-progress', responses: { equityShares: 'no' } },
+        patch: {},
+      }),
+    ).toEqual({ notify: false, skipInAppNotifications: false });
+  });
+
+  it('a lead autosave on a direct-flow step sends nothing', () => {
+    expect(
+      leadManagerRequestNotifyPlan({
+        role: 'intern',
+        prevSlice: { status: 'in-progress' },
+        nextSlice: { status: 'in-progress', responses: { equityShares: 'no' } },
+        patch: {},
+      }).notify,
+    ).toBe(false);
+  });
+});

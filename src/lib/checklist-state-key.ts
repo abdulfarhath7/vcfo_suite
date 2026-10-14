@@ -88,6 +88,13 @@ const ITEM_META_KEYS = new Set([
   'workflowStage',
   'clientFillRequest',
   'approval',
+  'submittedByName',
+  'submittedByRole',
+  'waitingOnLeadAt',
+  'waitingOnLeadByName',
+  'lastEditedAt',
+  'lastEditedByName',
+  'lastEditedByRole',
 ]);
 
 export interface ChecklistItemStateSlice {
@@ -121,6 +128,17 @@ export interface ChecklistItemStateSlice {
   clientFillRequest?: ClientFillRequest;
   /** Lead → manager → client sign-off. See `checklist-step-approval.ts`. */
   approval?: StepApproval;
+  /** Pre-incorporation direct flow: who completed the step with Submit. See `pre-inc-direct-flow.ts`. */
+  submittedByName?: string;
+  /** Code role of that person (`client` / `intern`); the UI label comes from `directFlowRoleLabel`. */
+  submittedByRole?: string;
+  /** ISO time a client submit stopped on lead-only fields (NIC codes); cleared by the lead's submit. */
+  waitingOnLeadAt?: string;
+  waitingOnLeadByName?: string;
+  /** "Last edited by {name} ({role}), {time}" under the step title. */
+  lastEditedAt?: string;
+  lastEditedByName?: string;
+  lastEditedByRole?: string;
 }
 
 /** Narrow one jsonb blob to a ClientFillRequest, or undefined when it is not one. */
@@ -212,6 +230,29 @@ export function engagementScopeIds(engagement: Engagement, extra?: string | null
   if (engagement.clientId) ids.add(engagement.clientId);
   if (extra?.trim()) ids.add(extra.trim());
   return [...ids];
+}
+
+/** Plain string slice keys of the pre-incorporation direct flow (see `pre-inc-direct-flow.ts`). */
+const DIRECT_FLOW_STRING_KEYS = [
+  'submittedByName',
+  'submittedByRole',
+  'waitingOnLeadAt',
+  'waitingOnLeadByName',
+  'lastEditedAt',
+  'lastEditedByName',
+  'lastEditedByRole',
+] as const;
+
+function optionalStrings<K extends string>(
+  obj: Record<string, unknown>,
+  keys: readonly K[],
+): Partial<Record<K, string>> {
+  const out: Partial<Record<K, string>> = {};
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === 'string' && value.trim()) out[key] = value;
+  }
+  return out;
 }
 
 /** Normalize one checklist item slice from DB jsonb. */
@@ -314,6 +355,7 @@ export function normalizeChecklistItemSlice(
     ...(workflowStage ? { workflowStage } : {}),
     ...(clientFillRequest ? { clientFillRequest } : {}),
     ...(approval ? { approval } : {}),
+    ...optionalStrings(obj, DIRECT_FLOW_STRING_KEYS),
     ...(Object.keys(responses).length ? { responses } : {}),
   };
 }

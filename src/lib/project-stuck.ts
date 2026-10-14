@@ -1,7 +1,7 @@
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { checklist } from '@/data/checklist';
-import { isAwaitingReview } from '@/lib/checklist-item-review';
+import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
 
 /** Why a Pre/Post incorporation project is stuck. */
 export type StuckReason =
@@ -46,7 +46,7 @@ export function deriveStuckReason(
     }
     if (slice.status === 'overdue') overdue = true;
     if (slice.status === 'awaiting-client') waitingClient = true;
-    if (isAwaitingReview(slice)) waitingManager = true;
+    if (isAwaitingManagerDecision(item.id, slice)) waitingManager = true;
     if (slice.reviewStatus === 'rejected') waitingLead = true;
     if (slice.status === 'not-started' || slice.status === 'in-progress') waitingLead = true;
   }

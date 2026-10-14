@@ -27,11 +27,14 @@ export function ClientChangeRequestButton({
   stepId,
   stepTitle,
   className,
+  onSent,
 }: {
   engagementId: string;
   stepId: string;
   stepTitle: string;
   className?: string;
+  /** After the request lands — e.g. reload the step a direct-flow request reopened. */
+  onSent?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState('');
@@ -50,6 +53,7 @@ export function ClientChangeRequestButton({
       toastSuccess('Sent to your team');
       setNote('');
       setOpen(false);
+      onSent?.();
     },
     onError: (error) => toastError(errorMessage(error)),
   });

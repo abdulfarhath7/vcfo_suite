@@ -172,6 +172,10 @@ export interface NoirDatePickerProps {
   onBlur?: () => void;
   className?: string;
   disabled?: boolean;
+  /** Marks the typed input invalid for assistive tech (`aria-invalid`). */
+  invalid?: boolean;
+  /** Id of the error text that describes the input. */
+  describedBy?: string;
 }
 
 /**
@@ -187,6 +191,8 @@ export function NoirDatePicker({
   onBlur,
   className,
   disabled,
+  invalid,
+  describedBy,
 }: NoirDatePickerProps) {
   const selected = parseIsoDate(value);
   const [open, setOpen] = useState(false);
@@ -264,6 +270,8 @@ export function NoirDatePicker({
           ref={inputRef}
           id={id}
           type="text"
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           inputMode="numeric"
           autoComplete="off"
           disabled={disabled}

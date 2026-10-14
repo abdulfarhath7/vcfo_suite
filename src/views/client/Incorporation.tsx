@@ -181,7 +181,7 @@ export default function ClientIncorporation() {
   const catalog = getActiveCatalogItems();
   const totalSteps = catalog.length;
   const totalDone = catalog.filter((item) =>
-    isChecklistStepSequentiallyComplete(state[item.id]?.status ?? "not-started", state[item.id]),
+    isChecklistStepSequentiallyComplete(state[item.id]?.status ?? "not-started", state[item.id], item.id),
   ).length;
   // The engagement row is the source of truth for the date; the legacy `Client`
   // record only carries one when a mock entry happens to exist.

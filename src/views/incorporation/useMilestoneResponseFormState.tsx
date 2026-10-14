@@ -27,7 +27,7 @@ import {
   validateInternDelivery,
   type ChecklistItemResponses,
 } from '@/lib/checklist-responses';
-import { nicBusinessType } from '@/lib/nic-2008';
+import { ADDITIONAL_NIC_CODES_GROUP_ID, nicBusinessType } from '@/lib/nic-2008';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
 import {
@@ -37,15 +37,10 @@ import {
   isRepeatField,
   removeRepeatEntry,
   repeatEntries,
+  repeatFieldLabel,
   resolveFieldLabels,
 } from '@/lib/checklist-repeat';
-import {
-  shareClassTotal,
-  validatePre13Responses,
-  validatePre14Responses,
-  validatePre15Responses,
-  validatePre16Responses,
-} from '@/lib/checklist-part-b-validation';
+import { shareClassTotal } from '@/lib/checklist-part-b-validation';
 import {
   REGISTERED_OFFICE_FIELD_IDS,
   REGISTERED_OFFICE_STATE_FIELD_ID,
@@ -59,7 +54,6 @@ import {
   countWords,
   formatPre1DateDisplay,
   getPre1VisibleFields,
-  validatePre1Responses,
   type Pre1ValidationOptions,
 } from '@/lib/checklist-pre1-validation';
 import {
@@ -69,18 +63,11 @@ import {
   getPre6OtherCompanyInterestCount,
   getPre6VisibleFields,
   isPre1SubmittedForPre6,
-  validatePre6Responses,
 } from '@/lib/checklist-pre6-validation';
-import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
 import { fieldsForDirectorAudiences, type DirectorSlotContext } from '@/lib/incorp-director-slots';
 import { directorAudiencesFromPre6 } from '@/lib/incorporation-docs/audiences';
 import { isIncorpSlotSetFrozen } from '@/lib/incorporation-docs/share';
 import { directorResponsesFromState } from '@/lib/proposed-directors';
-import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
-import { validatePre9Responses } from '@/lib/checklist-pre9-validation';
-import { validatePre10Responses } from '@/lib/checklist-pre10-validation';
-import { validatePre11Responses } from '@/lib/checklist-pre11-validation';
-import { validatePre12Responses } from '@/lib/checklist-pre12-validation';
 import {
   filterResponsesToEditableFields,
   isClientSubmissionLocked,
@@ -127,9 +114,38 @@ import { IncorporationDraftDocLink } from '@/components/incorporation/Incorporat
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 import { internEngagementPath, internEngagementStepPath } from '@/lib/project-step-path';
 import { internFormNextTarget } from '@/lib/intern-overview-progress';
-import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, runStepValidation, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
+import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 import { inferIndianState } from '@/lib/countries';
+import { runStepValidation } from '@/lib/checklist-step-validation';
+import {
+  canRoleEditField,
+  isDirectFlowStep,
+  isLeadOnlyField,
+  LEAD_ONLY_FIELD_HELPER,
+  stripLeadOnlyResponses,
+} from '@/lib/pre-inc-direct-flow';
+import { clientIncorporationPath, clientIncorporationStepPath } from '@/lib/project-step-path';
+
+/** True when an error key belongs to one of these fields (repeat ids are dotted under the group). */
+function errorKeyInFields(key: string, fields: readonly ChecklistField[]): boolean {
+  return fields.some((field) => key === field.id || key.startsWith(`${field.id}.`));
+}
+
+function fieldErrorId(itemId: string, fieldId: string): string {
+  return `${itemId}-${fieldId}-error`;
+}
+
+/** `additionalNicCodes.<entry>` for a field inside a NIC repeat entry, else null. */
+function additionalNicCodeEntryOf(fieldId: string): string | null {
+  const [group, entryId] = fieldId.split('.');
+  return group === ADDITIONAL_NIC_CODES_GROUP_ID && entryId ? `${group}.${entryId}` : null;
+}
+
+function isNicCodeInput(itemId: string, fieldId: string): boolean {
+  if (itemId !== 'pre-1') return false;
+  return fieldId === 'nicCode' || (additionalNicCodeEntryOf(fieldId) !== null && fieldId.endsWith('.code'));
+}
 
 /** The user's edits this session: full values plus which fields they touched. */
 interface DraftEdits {
@@ -190,6 +206,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     getStateForEngagement,
     updateItem,
     submitChecklistItem,
+    submitDirectStep,
     setUnlockedFields,
     user,
     engagements,
@@ -212,8 +229,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     [item, ownershipType],
   );
   const fields = useMemo(
-    () => filterFieldsByViewer(allFields, variant),
-    [allFields, variant],
+    () => filterFieldsByViewer(allFields, variant, item.id),
+    [allFields, variant, item.id],
   );
   /** Part A validates only what this company's Part A shows (see `part-a-sections.ts`). */
   const pre1Validation = useMemo<Pre1ValidationOptions>(
@@ -316,8 +333,34 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const [fieldWarnings, setFieldWarnings] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [peakEndMoment, setPeakEndMoment] = useState<'submit' | null>(null);
+  /**
+   * Error display rule: before the first Submit, only tabs the user left with
+   * Next show their errors; after a failed Submit every tab does, live.
+   */
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [visitedSections, setVisitedSections] = useState<ReadonlySet<number>>(() => new Set());
+  const pendingFocusRef = useRef<string | null>(null);
+  const [selectedSectionIndex, setSelectedSectionIndex] = useState(0);
+  const [focusRequest, setFocusRequest] = useState(0);
 
   const isClient = variant === 'client';
+  /**
+   * Pre-incorporation direct flow: the client and the lead fill one form and
+   * either submits it. The client's per-field submit lock does not apply —
+   * the gate opens or closes the whole step.
+   */
+  const directFlow = isDirectFlowStep(item.id);
+  const enforceClientLock = isClient && !directFlow;
+  /** What this viewer may send: a client never sends a lead-only field. */
+  const writableForViewer = useCallback(
+    (partial: ChecklistItemResponses): ChecklistItemResponses =>
+      filterResponsesToEditableFields(
+        itemState,
+        isClient && directFlow ? stripLeadOnlyResponses(item.id, partial) : partial,
+        enforceClientLock,
+      ),
+    [itemState, isClient, directFlow, item.id, enforceClientLock],
+  );
   const submissionLocked = isClientSubmissionLocked(itemState);
   const reviewBanner = isClient ? getClientReviewBanner(itemState) : null;
   const clientResubmit = canClientResubmit(itemState);
@@ -460,7 +503,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       // defaults back as if the lead had answered them.
       if (!userEditedRef.current) return;
       const partial = getChangedPartial(fields, draftRef.current, savedRef.current);
-      const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+      const editablePartial = writableForViewer(partial);
       if (Object.keys(editablePartial).length === 0) return;
       void updateItem(
         scopeId,
@@ -469,7 +512,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         { clientResponsesOnly: true, keepalive: options?.keepalive },
       ).catch(() => undefined);
     },
-    [fields, isClient, item.id, itemState, scopeId, updateItem],
+    [fields, item.id, scopeId, updateItem, writableForViewer],
   );
   // Latest flush for listeners that must not re-subscribe on every render.
   const flushPendingAutoSaveRef = useRef(flushPendingAutoSave);
@@ -512,7 +555,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
   const performSave = useCallback(
     async (partial: ChecklistItemResponses, options?: { explicit?: boolean }) => {
-      const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+      const editablePartial = writableForViewer(partial);
       if (!autoSaveEnabled || Object.keys(editablePartial).length === 0) return;
 
       if (!validatePartialForAutoSave(draftRef.current, editablePartial)) {
@@ -555,7 +598,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         }
       }
     },
-    [autoSaveEnabled, isClient, item.id, itemState, scopeId, updateItem, validatePartialForAutoSave],
+    [autoSaveEnabled, item.id, scopeId, updateItem, validatePartialForAutoSave, writableForViewer],
   );
 
   const autoSaveStatusRef = useRef(autoSaveStatus);
@@ -585,10 +628,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       clearDebounce();
 
       const runPersist = () => {
-        const nextPartial = filterResponsesToEditableFields(
-          itemState,
+        const nextPartial = writableForViewer(
           getChangedPartial(fields, draftRef.current, savedRef.current),
-          isClient,
         );
         if (Object.keys(nextPartial).length === 0) {
           if (autoSaveStatusRef.current !== 'error') setAutoSaveStatus('idle');
@@ -609,7 +650,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         runPersist();
       }, AUTO_SAVE_DEBOUNCE_MS);
     },
-    [autoSaveEnabled, clearDebounce, fields, isClient, itemState, performSave],
+    [autoSaveEnabled, clearDebounce, fields, performSave, writableForViewer],
   );
 
   /**
@@ -674,24 +715,28 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const displayValues = readOnly || formReadOnly ? saved : draft;
   const completionValues = isPre1 ? pre1Draft : draft;
 
-  const liveValidationErrors = useMemo(() => {
-    if (isPre1) return validatePre1Responses(pre1Draft, pre1Validation).errors;
-    if (isPre6) {
-      if (!pre1SubmittedForPre6) return {};
-      return validatePre6Responses(draft, pre1Responses).errors;
-    }
-    if (item.id === 'pre-7') return validatePre7Responses(draft, directorSlots).errors;
-    if (item.id === 'pre-8') return validatePre8Responses(draft, directorSlots).errors;
-    if (item.id === 'pre-9') return validatePre9Responses(draft).errors;
-    if (item.id === 'pre-10') return validatePre10Responses(draft).errors;
-    if (item.id === 'pre-11') return validatePre11Responses(draft).errors;
-    if (item.id === 'pre-12') return validatePre12Responses(draft).errors;
-    if (item.id === 'pre-13') return validatePre13Responses(draft).errors;
-    if (item.id === 'pre-14') return validatePre14Responses(draft).errors;
-    if (item.id === 'pre-15') return validatePre15Responses(draft).errors;
-    if (item.id === 'pre-16') return validatePre16Responses(draft).errors;
-    return {};
-  }, [isPre1, isPre6, item.id, pre1Draft, draft, pre1Responses, pre1SubmittedForPre6, pre1Validation, directorSlots]);
+  /** The one step validator — the server runs the same function on Submit. */
+  const validateStep = useCallback(
+    (responses: ChecklistItemResponses) =>
+      runStepValidation({
+        itemId: item.id,
+        responses,
+        ownershipType,
+        pre1Validation,
+        pre1Responses,
+        pre1Submitted: pre1SubmittedForPre6,
+        directorSlots,
+      }),
+    [item.id, ownershipType, pre1Validation, pre1Responses, pre1SubmittedForPre6, directorSlots],
+  );
+
+  const liveValidation = useMemo(() => {
+    // Legacy pre-6 before Part A is submitted renders no fields; its gate
+    // message belongs to Submit, not to every section badge.
+    if (isPre6 && !pre1SubmittedForPre6) return { ok: true, errors: {}, warnings: {} };
+    return validateStep(isPre1 ? pre1Draft : draft);
+  }, [isPre1, isPre6, pre1Draft, draft, pre1SubmittedForPre6, validateStep]);
+  const liveValidationErrors = liveValidation.errors;
 
   const getSectionPending = useCallback(
     (groupFields: ChecklistField[]) =>
@@ -711,6 +756,73 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   );
   const internSectionNav = sectionTabs && internSectionGroups.length > 0;
 
+  /** Live errors the user should see now, plus explicit ones (server 422, autosave limits). */
+  const shownErrors = useMemo(() => {
+    const out: Record<string, string> = {};
+    if (submitAttempted) {
+      Object.assign(out, liveValidationErrors);
+    } else if (internSectionNav) {
+      for (const index of visitedSections) {
+        const groupFields = internSectionGroups[index]?.fields ?? [];
+        for (const [key, message] of Object.entries(liveValidationErrors)) {
+          if (errorKeyInFields(key, groupFields)) out[key] = message;
+        }
+      }
+    }
+    return { ...out, ...fieldErrors };
+  }, [submitAttempted, internSectionNav, visitedSections, internSectionGroups, liveValidationErrors, fieldErrors]);
+
+  const shownWarnings = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const [key, message] of Object.entries(liveValidation.warnings)) {
+      if (submitAttempted) out[key] = message;
+      else if (
+        internSectionNav &&
+        [...visitedSections].some((index) => errorKeyInFields(key, internSectionGroups[index]?.fields ?? []))
+      ) {
+        out[key] = message;
+      }
+    }
+    return { ...out, ...fieldWarnings };
+  }, [submitAttempted, internSectionNav, visitedSections, internSectionGroups, liveValidation.warnings, fieldWarnings]);
+
+  const sectionErrorFlags = useMemo(() => {
+    if (!internSectionNav) return [] as boolean[];
+    const keys = Object.keys(shownErrors);
+    return internSectionGroups.map((group) => keys.some((key) => errorKeyInFields(key, group.fields)));
+  }, [internSectionNav, internSectionGroups, shownErrors]);
+
+  /** The summary lists every error once the user has tried to submit (tab layout). */
+  const summaryErrors = sectionTabs ? (submitAttempted ? shownErrors : {}) : fieldErrors;
+
+  /** Summary line → open the tab that holds the field and move focus to it. */
+  const focusField = useCallback(
+    (fieldId: string) => {
+      if (internSectionNav) {
+        const index = internSectionGroups.findIndex((group) => errorKeyInFields(fieldId, group.fields));
+        if (index >= 0) setSelectedSectionIndex(index);
+      }
+      pendingFocusRef.current = fieldId;
+      setFocusRequest((n) => n + 1);
+    },
+    [internSectionNav, internSectionGroups],
+  );
+
+  useEffect(() => {
+    const fieldId = pendingFocusRef.current;
+    if (!fieldId) return;
+    const frame = window.requestAnimationFrame(() => {
+      pendingFocusRef.current = null;
+      const target =
+        document.getElementById(`${item.id}-${fieldId}`) ??
+        document.getElementById(fieldErrorId(item.id, fieldId));
+      if (!target) return;
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      target.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusRequest, item.id]);
+
   const structuredSectionLabels = useMemo(() => {
     if (internSectionNav) return internSectionGroups.map((group) => group.section);
     if (!isPre1 && !isPhase2StructuredStep) return [];
@@ -726,7 +838,6 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     return internSectionGroups.map((group) => isSectionComplete(group.fields));
   }, [internSectionNav, internSectionGroups, isSectionComplete]);
 
-  const [selectedSectionIndex, setSelectedSectionIndex] = useState(0);
   useEffect(() => {
     setSelectedSectionIndex(0);
   }, [item.id]);
@@ -781,6 +892,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const handleInternSectionNext = useCallback(() => {
     if (!sectionTabs) return;
     clearDebounce({ flush: true });
+    setVisitedSections((prev) => new Set(prev).add(selectedSectionIndex));
     const target = internFormNextTarget(
       item.id,
       selectedSectionIndex,
@@ -813,7 +925,13 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   if (!fields.length || (!canEdit && !formReadOnly)) return null;
 
   const isFieldLockedForClient = (fieldId: string) =>
-    isClient && submissionLocked && !isFieldEditableForClient(itemState, fieldId);
+    (enforceClientLock && submissionLocked && !isFieldEditableForClient(itemState, fieldId)) ||
+    (isClient && directFlow && isLeadOnlyField(item.id, fieldId));
+  /** Lead-only field on the client's form: read-only, with a line saying who fills it. */
+  const leadOnlyNote = (fieldId: string) =>
+    isClient && directFlow && isLeadOnlyField(item.id, fieldId) ? (
+      <p className="text-[11px] text-muted-foreground">{LEAD_ONLY_FIELD_HELPER}</p>
+    ) : null;
 
   const toggleFieldUnlock = (fieldId: string) => {
     if (!showFieldUnlock || !submissionLocked) return;
@@ -878,6 +996,10 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       }
       if (item.id === 'pre-1' && fieldId === 'nicCode') {
         next.nicBusinessType = nicBusinessType(value)?.description ?? '';
+      }
+      const extraNic = item.id === 'pre-1' ? additionalNicCodeEntryOf(fieldId) : null;
+      if (extraNic && fieldId.endsWith('.code')) {
+        next[`${extraNic}.businessType`] = nicBusinessType(value)?.description ?? '';
       }
       if (item.id === 'pre-16' && fieldId.endsWith('.type') && value === 'individual') {
         // Back to an individual: the entity-only answers no longer apply.
@@ -978,7 +1100,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     if (internWorkspace && autoSaveEnabled) {
       const responsesToSave = isPre1 ? pre1Draft : draft;
       const partial = getChangedPartial(fields, responsesToSave, saved);
-      const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+      const editablePartial = writableForViewer(partial);
       if (Object.keys(editablePartial).length === 0 && autoSaveStatus !== 'error') return;
       setSaving(true);
       try {
@@ -994,17 +1116,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       return;
     }
 
-    const { ok, errors, warnings } = runStepValidation(
-      item.id,
-      isPre1,
-      isPre6,
-      pre1Draft,
-      draft,
-      pre1Responses,
-      pre1SubmittedForPre6,
-      pre1Validation,
-      directorSlots,
-    );
+    const { ok, errors, warnings } = validateStep(isPre1 ? pre1Draft : draft);
     setFieldErrors(errors);
     setFieldWarnings(warnings);
     if (!ok) {
@@ -1017,7 +1129,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
     const responsesToSave = isPre1 ? pre1Draft : draft;
     const partial = getChangedPartial(fields, responsesToSave, saved);
-    const editablePartial = filterResponsesToEditableFields(itemState, partial, isClient);
+    const editablePartial = writableForViewer(partial);
     if (Object.keys(editablePartial).length === 0) return;
 
     setSaving(true);
@@ -1053,7 +1165,92 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     }
   };
 
+  /** Client portal / lead after a direct submit: the next step, else the phase overview. */
+  const navigateAfterDirectSubmit = () => {
+    if (!isClient) {
+      navigateInternAfterLastTab();
+      return;
+    }
+    const target = internFormNextTarget(item.id, 0, 0);
+    router.push(target.kind === 'step' ? clientIncorporationStepPath(target.item) : clientIncorporationPath());
+  };
+
+  /**
+   * Direct-flow Submit, client and lead alike. The form checks first so a
+   * field the user can fix is marked at once; the server runs the same check
+   * and its 422 lands in the same display. A client whose only gaps are the
+   * lead-only NIC codes still submits — the step then waits on the lead.
+   */
+  const handleDirectSubmit = async () => {
+    clearDebounce();
+    pendingAfterFlightRef.current = null;
+    await waitForSaveIdle();
+
+    const submitDraft = isPre1 ? pre1Draft : { ...draft };
+    if (item.id === 'pre-5' && submitDraft.nameApprovalDate?.trim()) {
+      submitDraft.nameApprovalExpiryDate =
+        submitDraft.nameApprovalExpiryDate?.trim() ||
+        computeMcaNameApprovalExpiryDate(submitDraft.nameApprovalDate);
+    }
+    const role = user?.role ?? (isClient ? 'client' : 'intern');
+    const validation = validateStep(submitDraft);
+    const blocking: Record<string, string> = {};
+    for (const [key, message] of Object.entries(validation.errors)) {
+      if (canRoleEditField(role, item.id, key)) blocking[key] = message;
+    }
+    setFieldWarnings(validation.warnings);
+
+    const showErrors = (errors: Record<string, string>) => {
+      setFieldErrors(errors);
+      setSubmitAttempted(true);
+      toastError('Please complete required fields', 'Fix the highlighted items before submitting.');
+      if (internSectionNav) {
+        const errorIndex = internSectionGroups.findIndex((group) =>
+          Object.keys(errors).some((key) => errorKeyInFields(key, group.fields)),
+        );
+        if (errorIndex >= 0) setSelectedSectionIndex(errorIndex);
+      }
+    };
+
+    if (Object.keys(blocking).length > 0) {
+      showErrors(blocking);
+      return;
+    }
+    setFieldErrors({});
+
+    setSubmitting(true);
+    try {
+      const sent = isClient ? stripLeadOnlyResponses(item.id, submitDraft) : submitDraft;
+      const result = await submitDirectStep(scopeId, item.id, sent);
+      if (result.outcome === 'invalid') {
+        showErrors(result.fieldErrors ?? {});
+        return;
+      }
+      if (submitDraft !== draft) setDraft(submitDraft);
+      if (result.outcome === 'waiting_on_lead') {
+        toastSuccess(
+          'Submitted',
+          'Your project lead adds the NIC codes, then this step is complete.',
+          { id: `direct-submit:${scopeId}:${item.id}` },
+        );
+        return;
+      }
+      toastSuccess('Step submitted', `${item.title} is complete.`, {
+        id: `direct-submit:${scopeId}:${item.id}`,
+      });
+      navigateAfterDirectSubmit();
+    } catch (err) {
+      toastError('Could not submit', errorMessage(err, 'Try again. Your answers are saved.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleInternSubmit = async () => {
+    if (directFlow) {
+      await handleDirectSubmit();
+      return;
+    }
     if (!internWorkspace) return;
     clearDebounce();
     pendingAfterFlightRef.current = null;
@@ -1065,17 +1262,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         submitDraft.nameApprovalExpiryDate?.trim() ||
         computeMcaNameApprovalExpiryDate(submitDraft.nameApprovalDate);
     }
-    const stepValidation = runStepValidation(
-      item.id,
-      isPre1,
-      isPre6,
-      pre1Draft,
-      submitDraft,
-      pre1Responses,
-      pre1SubmittedForPre6,
-      pre1Validation,
-      directorSlots,
-    );
+    const stepValidation = validateStep(isPre1 ? pre1Draft : submitDraft);
     const delivery = isInternDeliveryStep
       ? validateInternDelivery(item.id, submitDraft)
       : { ok: true, errors: {} };
@@ -1085,13 +1272,14 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     setFieldErrors(errors);
     setFieldWarnings(warnings);
     if (!ok) {
+      setSubmitAttempted(true);
       toastError(
         'Please complete required fields',
         'Fix the highlighted items before submitting.',
       );
       if (internSectionNav) {
         const errorIndex = internSectionGroups.findIndex((group) =>
-          group.fields.some((field) => errors[field.id]),
+          Object.keys(errors).some((key) => errorKeyInFields(key, group.fields)),
         );
         if (errorIndex >= 0) setSelectedSectionIndex(errorIndex);
       }
@@ -1121,20 +1309,11 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const handleSubmit = async () => {
     clearDebounce();
 
-    const { ok, errors, warnings } = runStepValidation(
-      item.id,
-      isPre1,
-      isPre6,
-      pre1Draft,
-      draft,
-      pre1Responses,
-      pre1SubmittedForPre6,
-      pre1Validation,
-      directorSlots,
-    );
+    const { ok, errors, warnings } = validateStep(isPre1 ? pre1Draft : draft);
     setFieldErrors(errors);
     setFieldWarnings(warnings);
     if (!ok) {
+      setSubmitAttempted(true);
       toastError(
         'Please complete required fields',
         'Fix the highlighted items before submitting for review.',
@@ -1285,6 +1464,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
         />
       </div>
       {readOnlyValueNode(field, 'text')}
+      {leadOnlyNote(field.id)}
     </div>
   );
 
@@ -1292,7 +1472,10 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const renderRecordRow = (field: ChecklistField) => (
     <div key={field.id} className="milestone-record-row">
       <dt className="milestone-record-label">{field.label}</dt>
-      <dd className="milestone-record-value">{readOnlyValueNode(field, 'dash')}</dd>
+      <dd className="milestone-record-value">
+        {readOnlyValueNode(field, 'dash')}
+        {leadOnlyNote(field.id)}
+      </dd>
     </div>
   );
 
@@ -1300,8 +1483,12 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     field: ChecklistField,
     options?: { showUnlock?: boolean },
   ) => {
-    const error = fieldErrors[field.id];
-    const warning = fieldWarnings[field.id];
+    const error = shownErrors[field.id];
+    const warning = shownWarnings[field.id];
+    const errorId = fieldErrorId(item.id, field.id);
+    const invalidProps = error
+      ? { 'aria-invalid': true as const, 'aria-describedby': errorId }
+      : {};
     const wordCount =
       field.type === 'textarea' && field.maxWords
         ? countWords(draft[field.id] ?? '')
@@ -1362,6 +1549,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             options={field.options.map((opt) => ({ value: opt.value, label: opt.label }))}
             onChange={(next) => setField(field.id, next)}
             ariaLabel={field.label}
+            ariaInvalid={Boolean(error)}
+            ariaDescribedBy={error ? errorId : undefined}
             size="sm"
             className={cn('max-w-md', error && 'ring-1 ring-danger/40 rounded-lg')}
           />
@@ -1374,6 +1563,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               onBlur={() => autoSaveEnabled && scheduleAutoSave(true)}
               placeholder={field.placeholder}
               rows={3}
+              {...invalidProps}
               className={cn('milestone-form-textarea min-h-[72px] overflow-y-auto', error && 'border-danger')}
             />
             {field.maxWords != null && (
@@ -1393,7 +1583,11 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
           <div
             role="radiogroup"
             aria-label={field.label}
-            className="inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-border bg-raised/60 p-1"
+            {...invalidProps}
+            className={cn(
+              'inline-flex max-w-full flex-wrap gap-1 rounded-lg border bg-raised/60 p-1',
+              error ? 'border-danger' : 'border-border',
+            )}
           >
             {field.options.map((opt) => {
               const selected = (draft[field.id] ?? '') === opt.value;
@@ -1435,6 +1629,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
           >
             <SelectTrigger
               id={`${item.id}-${field.id}`}
+              {...invalidProps}
               className={cn('milestone-form-input', error && 'border-danger')}
             >
               <SelectValue placeholder="Select…" />
@@ -1526,6 +1721,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               <input
                 id={`${item.id}-${field.id}`}
                 type="file"
+                {...invalidProps}
                 className="sr-only"
                 accept={`${field.accept ?? '.pdf,image/*'},.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document`}
                 disabled={uploadingField === field.id}
@@ -1555,6 +1751,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               value={draft[field.id] ?? ''}
               onChange={(v) => setField(field.id, v)}
               onBlur={() => autoSaveEnabled && scheduleAutoSave(true)}
+              invalid={Boolean(error)}
+              describedBy={error ? errorId : undefined}
               className={cn(error && 'border-danger')}
             />
           )
@@ -1576,14 +1774,19 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             onChange={(e) => setField(field.id, e.target.value)}
             onBlur={() => autoSaveEnabled && scheduleAutoSave(true)}
             placeholder={field.placeholder}
+            {...invalidProps}
             className={cn('milestone-form-input', error && 'border-danger')}
-            {...(field.id === 'nicCode'
+            {...(isNicCodeInput(item.id, field.id)
               ? { inputMode: 'numeric' as const, maxLength: 5, pattern: '[0-9]*' }
               : {})}
           />
         )}
 
-        {error && <p className="text-[11px] font-medium text-danger">{error}</p>}
+        {error && (
+          <p id={errorId} tabIndex={-1} className="text-[11px] font-medium text-danger outline-none">
+            {error}
+          </p>
+        )}
         {!error && warning && (
           <p className="text-[11px] text-warning">{warning}</p>
         )}
@@ -1683,6 +1886,13 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     );
   });
 
+  /** Readable label for an error key, repeat entries included ("NIC code · NIC code 2"). */
+  const fieldLabelFor = (fieldId: string): string =>
+    repeatFieldLabel(fields, draft, fieldId) ??
+    visibleFields.find((field) => field.id === fieldId)?.label ??
+    fields.find((field) => field.id === fieldId)?.label ??
+    fieldId;
+
   const reviewBannerIcon =
     reviewBanner?.tone === 'rejected'
       ? AlertCircle
@@ -1704,6 +1914,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     cn,
     completedStructuredSections,
     fieldErrors,
+    focusField,
+    fieldLabelFor,
     formReadOnly,
     extraFooterActions,
     handleInternSectionNext,
@@ -1718,6 +1930,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     internSectionNav,
     internSectionNextLabel,
     isClient,
+    directFlow,
     isPhase2StructuredStep,
     isPre1,
     isPre6,
@@ -1732,6 +1945,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     reviewBannerIcon,
     saving,
     sectionCompleteFlags,
+    sectionErrorFlags,
     sectionTabs,
     selectedSectionIndex,
     setSelectedSectionIndex,
@@ -1744,6 +1958,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     structuredSectionLabels,
     submissionLocked,
     submitting,
+    summaryErrors,
     unlockedFields,
     visibleFields,
   };

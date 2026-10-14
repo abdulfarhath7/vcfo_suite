@@ -13,6 +13,12 @@ import {
 } from '@/lib/checklist-repeat';
 import { Button } from '@/components/ui/button';
 
+/** Lower-case a noun for mid-sentence use, but keep an acronym ("NIC code" stays). */
+function inSentence(noun: string): string {
+  const firstWord = noun.split(' ')[0] ?? noun;
+  return firstWord.length > 1 && firstWord === firstWord.toUpperCase() ? noun : noun.toLowerCase();
+}
+
 /**
  * Add / remove list for a `repeat` field. Each entry is a card of the
  * template fields rendered by the host form (`renderField`), so every input
@@ -41,7 +47,7 @@ export function RepeatGroupEditor({
     <div className="space-y-3">
       {entries.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">
-          {group.emptyLabel ?? `No ${noun.toLowerCase()} added yet.`}
+          {group.emptyLabel ?? `No ${inSentence(noun)} added yet.`}
         </p>
       ) : null}
       {entries.map((entry) => (
@@ -76,7 +82,7 @@ export function RepeatGroupEditor({
         {entries.length < max ? (
           <Button type="button" size="sm" variant="outline" onClick={onAdd} className="cursor-pointer">
             <Plus className="h-3.5 w-3.5" aria-hidden />
-            Add {noun.toLowerCase()}
+            Add {inSentence(noun)}
           </Button>
         ) : null}
       </div>

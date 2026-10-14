@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'framer-motion';
 
-import { buildMilestones, buildProgress, type ClientOverview } from '@/lib/client-overview';
+import {
+  buildCompanySnapshot,
+  buildMilestones,
+  buildProgress,
+  type ClientOverview,
+} from '@/lib/client-overview';
 
 const useClientOverview = vi.fn();
 
@@ -50,6 +55,7 @@ const base: ClientOverview = {
   milestones: buildMilestones({}),
   activity: [],
   team: [],
+  company: buildCompanySnapshot({}),
 };
 
 function draw() {
@@ -197,5 +203,40 @@ describe('client Overview', () => {
       'href',
       '/app/client/compliances',
     );
+  });
+});
+
+describe('client Overview — company snapshot', () => {
+  it('is the first card in the main column, with empty states and links', () => {
+    useClientOverview.mockReturnValue(ok(base));
+    draw();
+    const card = screen.getByRole('heading', { name: 'Company snapshot' });
+    expect(card).toBeTruthy();
+    expect(screen.getByText('No directors added yet.')).toBeTruthy();
+    expect(screen.getByText('No subscribers added yet.')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Add directors' }).getAttribute('href')).toBe(
+      '/app/client/incorporation/step/proposed-directors',
+    );
+  });
+
+  it('shows directors, capital in INR and subscribers', () => {
+    useClientOverview.mockReturnValue(
+      ok({
+        ...base,
+        company: {
+          ...base.company,
+          directors: [{ name: 'Priya Sharma', indiaResident: true, din: '01234567' }],
+          capital: { authorised: '1000000', paidUp: '100000', nominalValue: '10', shareClasses: [] },
+          subscribers: [{ name: 'Parent Co', shares: '10000' }],
+        },
+      }),
+    );
+    draw();
+    expect(screen.getByText('Priya Sharma')).toBeTruthy();
+    expect(screen.getByText('Resident in India · DIN 01234567')).toBeTruthy();
+    expect(screen.getByText('₹10,00,000')).toBeTruthy();
+    expect(screen.getByText('₹1,00,000')).toBeTruthy();
+    expect(screen.getByText('10,000 shares')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'View share capital' })).toBeTruthy();
   });
 });

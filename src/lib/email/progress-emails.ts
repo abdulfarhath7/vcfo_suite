@@ -22,7 +22,10 @@ export type ProgressEmailKind =
   | 'client_fill_declined'
   | 'step_awaiting_client_approval'
   | 'phase_approved'
-  | 'client_change_requested';
+  | 'client_change_requested'
+  /* Pre-incorporation direct flow. */
+  | 'step_submitted'
+  | 'step_waiting_on_lead';
 
 export type ProgressEmailCopy = {
   subject: string;
@@ -64,11 +67,60 @@ export function buildProgressEmail(input: {
   audience: 'client' | 'lead';
   /** Overrides checklist step title (e.g. document request label). */
   title?: string | null;
+  /** "Kiran Rao (Client)" — who submitted, for the direct-flow emails. */
+  actor?: string | null;
 }): ProgressEmailCopy {
   const step = input.title?.trim() || stepTitle(input.itemId);
   const company = input.companyName;
   const note = input.note?.trim();
   const href = absHref(input.portalHref);
+
+  if (input.kind === 'step_submitted') {
+    const who = input.actor?.trim() || 'Your team';
+    if (input.audience === 'lead') {
+      return {
+        subject: `${company}: “${step}” submitted`,
+        html: wrap(
+          `${step} submitted`,
+          emailParagraph(
+            `${escapeHtml(who)} submitted <strong>${escapeHtml(step)}</strong> for <strong>${escapeHtml(company)}</strong>. The step is complete.`,
+          ),
+          'Open the step',
+          href,
+        ),
+        text: `${who} submitted “${step}” for ${company}. The step is complete.\n\nOpen: ${href}`,
+      };
+    }
+    return {
+      subject: `${company}: “${step}” is complete`,
+      html: wrap(
+        `${step} is complete`,
+        emailParagraph(
+          `${escapeHtml(who)} submitted <strong>${escapeHtml(step)}</strong> for <strong>${escapeHtml(company)}</strong>.`,
+        ) + emailParagraph('You can read it in your portal. Ask for a change there if something is wrong.'),
+        'Open client portal',
+        href,
+      ),
+      text: `${who} submitted “${step}” for ${company}. Ask for a change in your portal if something is wrong.\n\nOpen: ${href}`,
+    };
+  }
+
+  if (input.kind === 'step_waiting_on_lead') {
+    const who = input.actor?.trim() || 'The client';
+    return {
+      subject: `${company}: add the NIC codes to complete “${step}”`,
+      html: wrap(
+        'Your part is next',
+        emailParagraph(
+          `${escapeHtml(who)} submitted their part of <strong>${escapeHtml(step)}</strong> for <strong>${escapeHtml(company)}</strong>.`,
+        ) + emailParagraph('Add the NIC codes, then submit to complete the step.'),
+        'Open the step',
+        href,
+        'Action required',
+      ),
+      text: `${who} submitted their part of “${step}” for ${company}. Add the NIC codes, then submit.\n\nOpen: ${href}`,
+    };
+  }
 
   if (input.kind === 'client_submitted') {
     if (input.audience === 'lead') {

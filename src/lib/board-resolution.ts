@@ -7,7 +7,7 @@ import {
   PRE1_DIRECTOR_INDIA_RESIDENT_IDS,
 } from '@/lib/checklist-pre1-validation';
 import { resolveDirectorDisplayName, resolveSignatoryDisplayName } from '@/lib/person-name';
-import { nicBusinessType } from '@/lib/nic-2008';
+import { readNicCodes } from '@/lib/nic-2008';
 import { resolveNocVariant, type NocVariant } from '@/lib/noc/variant';
 import {
   DEFAULT_PARENT_STATE,
@@ -419,15 +419,19 @@ export function resolveCertificationPlace(
 }
 
 /**
- * Main objects clause: the Part A NIC code with its NIC-2008 description
- * ("62011- Writing, modifying, testing …"). `nicCodes` is an older free-text
- * key; the firm's default applies only when neither is answered.
+ * Main objects clause: every Part A NIC code with its NIC-2008 description,
+ * main code first ("62011- Writing, …, & 62020- Computer consultancy …").
+ * `nicCodes` is an older free-text key. The firm's default list applies only
+ * to a document stored before the NIC check existed: a new generation cannot
+ * reach here without a main NIC code (`collectBoardResolutionMissingFields`).
  */
 export function resolveNicCodesClause(pre1: ChecklistItemResponses): string {
-  const code = (pre1.nicCode ?? '').trim();
-  if (code) {
-    const description = pickString(pre1.nicBusinessType, nicBusinessType(code)?.description);
-    return description ? `${code}- ${description}` : code;
+  const lines = readNicCodes(pre1).map(({ code, description }) =>
+    description ? `${code}- ${description}` : code,
+  );
+  if (lines.length === 1) return lines[0]!;
+  if (lines.length > 1) {
+    return `${lines.slice(0, -1).join(', ')}, & ${lines[lines.length - 1]}`;
   }
   return pickString(pre1.nicCodes, DEFAULT_NIC_CODES);
 }

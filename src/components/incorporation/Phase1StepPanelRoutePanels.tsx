@@ -9,7 +9,9 @@ import {
   type ChecklistItemResponses,
 } from '@/lib/checklist-responses';
 import { formatPre1DateDisplay } from '@/lib/checklist-pre1-validation';
-import { isDeliveredToClient } from '@/lib/checklist-state-key';
+import { isDeliveredToClient, type ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { isLeadRequestPending } from '@/lib/checklist-item-review';
+import { ManagerBoardResolutionReview } from '@/components/incorporation/ManagerBoardResolutionReview';
 import { clientBoardResolutionPath } from '@/lib/project-step-path';
 import { incorpDraftDocLinksFromResponses } from '@/lib/incorporation-docs/client';
 import {
@@ -30,7 +32,7 @@ import {
 import type { Phase1StepPanelRoutesProps } from '@/components/incorporation/Phase1StepPanelSections';
 
 export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
-  const { engagement, className, isClient, isIntern, brStatus } = props;
+  const { engagement, className, isClient, isIntern, brStatus, itemState, getStateForEngagement } = props;
     if (!engagement) return null;
 
     // Intern CTA lives in the form-card footer (`aboveFooterActions`), not above the fields.
@@ -49,7 +51,9 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
             {brStatus === 'draft' && (
               <p className="flex items-center gap-1.5 text-text-secondary">
                 <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                Draft in progress — awaiting project lead review and finalization.
+                {isLeadRequestPending(itemState as ChecklistItemStateSlice | undefined)
+                  ? 'Sent for your approval. Read the document and the Client Details, then approve or send it back.'
+                  : 'Draft in progress — the project lead sends it for your approval when it is ready.'}
               </p>
             )}
             {brStatus === 'finalized' && (
@@ -64,6 +68,15 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
                 Client has uploaded a signed copy (Step 3).
               </p>
             )}
+            {brStatus !== 'loading' && brStatus !== 'none' ? (
+              <div className="mt-4">
+                <ManagerBoardResolutionReview
+                  engagement={engagement}
+                  pre2State={itemState as ChecklistItemStateSlice | undefined}
+                  pre1State={getStateForEngagement(engagement)['pre-1'] as ChecklistItemStateSlice | undefined}
+                />
+              </div>
+            ) : null}
           </PanelShell>
         </div>
       );

@@ -10,6 +10,7 @@ import { ClientNeeds } from '@/components/client/overview/ClientNeeds';
 import { ClientPhaseBars } from '@/components/client/overview/ClientPhaseBars';
 import { ClientWhoHolds } from '@/components/client/overview/ClientWhoHolds';
 import { ClientAlerts } from '@/components/client/overview/ClientAlerts';
+import { ClientCompanySnapshot } from '@/components/client/overview/ClientCompanySnapshot';
 import { ClientComplianceRunway } from '@/components/client/overview/ClientComplianceRunway';
 import { ClientDeliverables } from '@/components/client/overview/ClientDeliverables';
 import { ClientEntityCard } from '@/components/client/overview/ClientEntityCard';
@@ -114,6 +115,8 @@ export default function ClientOverview() {
             milestones={overview.milestones}
             incorporated={incorporated}
           />
+          {/* Who the company is: directors, share capital, subscribers. */}
+          <ClientCompanySnapshot company={overview.company} />
           <div className="grid grid-cols-1 border-t border-border md:grid-cols-2 xl:grid-cols-3">
             <div className="min-w-0 border-b border-border md:border-r xl:border-b-0">
               <ClientWhoHolds milestones={overview.milestones} />

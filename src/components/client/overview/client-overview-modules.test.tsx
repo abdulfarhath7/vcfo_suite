@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'framer-motion';
 
-import { buildProgress, type ClientOverview } from '@/lib/client-overview';
+import { buildCompanySnapshot, buildProgress, type ClientOverview } from '@/lib/client-overview';
 import { ClientOverviewHero } from '@/components/client/overview/ClientOverviewHero';
 import { ClientNeeds } from '@/components/client/overview/ClientNeeds';
 import { ClientPhaseBars } from '@/components/client/overview/ClientPhaseBars';
@@ -59,6 +59,7 @@ const preCoi: ClientOverview = {
   milestones: buildMilestones({}),
   activity: [],
   team: [],
+  company: buildCompanySnapshot({}),
 };
 
 const postCoi: ClientOverview = {

@@ -64,6 +64,7 @@ import { DocPackHeaderButton } from '@/components/doc-pack/DocPackHeaderButton';
 import { DocPackRailCard } from '@/components/doc-pack/DocPackRailCard';
 import { DocSourceStrip } from '@/components/doc-pack/DocSourceStrip';
 import { CopyForAssist } from '@/components/assist-profile/CopyForAssist';
+import { ReopenStepButton } from '@/components/incorporation/ReopenStepButton';
 import { ASSIST_PROFILE_STEP_IDS } from '@/lib/assist-profile/paths';
 import { useDocPack } from '@/hooks/use-doc-pack';
 import { docPackPagePath, docPackStepPath, type DocPackShell } from '@/lib/doc-pack/paths';
@@ -79,6 +80,27 @@ import {
 import type { BoardResolutionProgressSnapshot } from '@/lib/client-progress-board';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { findEngagementForClientUser } from '@/lib/checklist-state-key';
+import {
+  directFlowRoleLabel,
+  isDirectFlowStep,
+  isDirectFlowStepComplete,
+  isWaitingOnLead,
+} from '@/lib/pre-inc-direct-flow';
+
+/** "Last edited by Kiran Rao (Client), 12 Oct 2026, 4:05 pm" — IST, like every other time in the app. */
+function lastEditedLine(slice: ChecklistItemStateSlice | undefined): string | null {
+  const at = slice?.lastEditedAt?.trim();
+  if (!at) return null;
+  const date = new Date(at);
+  if (Number.isNaN(date.getTime())) return null;
+  const when = date.toLocaleString('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Kolkata',
+  });
+  const who = slice?.lastEditedByName?.trim() || 'Someone';
+  return `Last edited by ${who} (${directFlowRoleLabel(slice?.lastEditedByRole)}), ${when}`;
+}
 
 function journeyRailItems(
   steps: readonly ChecklistItem[],
@@ -297,7 +319,7 @@ export default function EngagementStepDetail() {
   };
 
   const clientVisibleFields = isClientRoute
-    ? filterFieldsByViewer(getClientResponseFields(item), 'client')
+    ? filterFieldsByViewer(getClientResponseFields(item), 'client', item.id)
     : [];
   const clientHasContent = clientVisibleFields.some((field) =>
     String(responses?.[field.id] ?? '').trim().length > 0,
@@ -311,12 +333,12 @@ export default function EngagementStepDetail() {
    */
   const stepSlice = checklistState[item.id];
   const clientNothingYet =
-    isClientRoute && !isStepReleasedToClient(stepSlice) && !clientHasContent;
+    isClientRoute && !isStepReleasedToClient(stepSlice, item.id) && !clientHasContent;
   const staffAwaitingLead =
     readOnlyView &&
     !isClientRoute &&
     hasResponseFormFields(item, 'admin') &&
-    !isStepReleasedToFirm(stepSlice);
+    !isStepReleasedToFirm(stepSlice, item.id);
   const nothingYetIntro = staffAwaitingLead
     ? 'Your project lead is still preparing this step. Their answers appear here once they ask for your approval.'
     : undefined;
@@ -376,11 +398,47 @@ export default function EngagementStepDetail() {
   // Readers get the lead's workspace layout, not the old staff rail layout.
   const internWorkspace = isIntern || readOnlyView;
 
-  const approvalLabel = isClientRoute ? stepApprovalLabel(checklistState[item.id]) : null;
+  // Direct-flow steps have no approval: no status pill, no Approve button.
+  const directFlow = isDirectFlowStep(item.id);
+  const approvalLabel =
+    isClientRoute && !directFlow ? stepApprovalLabel(checklistState[item.id]) : null;
+  const directFlowComplete = directFlow && isDirectFlowStepComplete(item.id, stepSlice);
+  const editedLine = directFlow ? lastEditedLine(stepSlice) : null;
+  /** Gate copy the light layout would otherwise never show (waiting / opens after …). */
+  const gateNotice =
+    directFlow && stepGate?.message && (stepGate.kind === 'waiting' || stepGate.kind === 'locked')
+      ? stepGate.message
+      : null;
+  const leadWaitingNotice =
+    directFlow && isIntern && isWaitingOnLead(item.id, stepSlice)
+      ? `${stepSlice?.waitingOnLeadByName?.trim() || 'The client'} submitted their part. Fill the NIC codes, then submit to complete this step.`
+      : null;
+
+  /** pre-2 and pre-3 show the resolution itself, with the actions as its footer. */
   const boardResolutionStep = item.id === 'pre-2' || item.id === 'pre-3';
-  const clientApproval =
+  const actionRowClass = boardResolutionStep
+    ? 'flex items-center justify-end gap-2'
+    : 'mt-3 flex items-center justify-end gap-2';
+
+  /* Direct flow: the client's only step-level action is asking for a change
+     once the step is submitted — it reopens the step. */
+  const directFlowClientAction =
+    isClientRoute && directFlowComplete ? (
+      <div className={actionRowClass}>
+        <ClientChangeRequestButton
+          engagementId={eng.id}
+          stepId={item.id}
+          stepTitle={item.title}
+          onSent={() => void refreshEngagementChecklist(eng.id)}
+        />
+      </div>
+    ) : null;
+
+  /* pre-2 keeps lead -> manager approval, so the client signs it off or says
+     what should change. */
+  const approvalClientAction =
     isClientRoute && (approvalLabel || !clientNothingYet) ? (
-      <div className={boardResolutionStep ? 'flex items-center justify-end gap-2' : 'mt-3 flex items-center justify-end gap-2'}>
+      <div className={actionRowClass}>
         {approvalLabel ? (
           <span className="mr-auto text-[12px] text-muted-foreground">{approvalLabel}</span>
         ) : null}
@@ -402,6 +460,8 @@ export default function EngagementStepDetail() {
         ) : null}
       </div>
     ) : null;
+
+  const clientApproval = directFlow ? directFlowClientAction : approvalClientAction;
 
   const docPackHref = docPackVisible
     ? docPackPagePath(eng, docPackShell, internPhase?.id === 'pre-inc-phase-1' ? 'part-a' : 'part-b')
@@ -430,6 +490,22 @@ export default function EngagementStepDetail() {
       ) : null}
     </div>
   );
+  const stepMetaRow =
+    editedLine || gateNotice || leadWaitingNotice ? (
+      <div className="-mt-2 mb-4 space-y-2">
+        {editedLine ? <p className="text-[12px] text-muted-foreground">{editedLine}</p> : null}
+        {gateNotice ? (
+          <p role="status" className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[13px] text-foreground">
+            {gateNotice}
+          </p>
+        ) : null}
+        {leadWaitingNotice ? (
+          <p role="status" className="rounded-md border border-primary/30 bg-primary-light px-3 py-2 text-[13px] text-foreground">
+            {leadWaitingNotice}
+          </p>
+        ) : null}
+      </div>
+    ) : null;
 
   const docPackRailCard = docPackHref ? (
     <DocPackRailCard
@@ -479,6 +555,13 @@ export default function EngagementStepDetail() {
           can do: sign it off, or say what should change. On the board
           resolution steps the actions close the document, so the page is the
           paper plus a decision, not a short card and an empty viewport. */}
+      {/* Lead, manager or admin: open a submitted direct-flow step again. */}
+      {!isClientRoute && directFlowComplete ? (
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <ReopenStepButton scopeId={eng.id} itemId={item.id} stepTitle={item.title} />
+        </div>
+      ) : null}
+
       {isClientRoute && boardResolutionStep ? (
         <ClientStepDocument
           engagementId={eng.id}
@@ -553,6 +636,7 @@ export default function EngagementStepDetail() {
             </div>
           )}
           {stepTitleRow}
+          {stepMetaRow}
           {internPhase ? (
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18.5rem)] lg:items-start">
               <div className="min-w-0">{stepForm}</div>
@@ -578,6 +662,7 @@ export default function EngagementStepDetail() {
               </div>
             )}
             {stepTitleRow}
+            {stepMetaRow}
             {stepForm}
           </div>
         </div>

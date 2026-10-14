@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { getActiveCatalogItems } from '@/data/checklist';
 import {
+  buildCompanySnapshot,
   buildBallInCourt,
   buildDeliverables,
   buildDocumentCounts,
@@ -313,5 +314,55 @@ describe('stepHolder', () => {
   it('gives done and locked steps to nobody', () => {
     expect(stepHolder({ id: 'pre-1', kind: 'done' })).toBeNull();
     expect(stepHolder({ id: 'pre-5', kind: 'locked' })).toBeNull();
+  });
+});
+
+describe('buildCompanySnapshot', () => {
+  it('is empty with links for a new engagement', () => {
+    const snapshot = buildCompanySnapshot({});
+    expect(snapshot.directors).toEqual([]);
+    expect(snapshot.subscribers).toEqual([]);
+    expect(snapshot.capital).toEqual({ authorised: null, paidUp: null, nominalValue: null, shareClasses: [] });
+    expect(snapshot.links.directors).toBe('/app/client/incorporation/step/proposed-directors');
+    expect(snapshot.links.capital).toContain('?tab=share-capital-details');
+  });
+
+  it('reads directors, capital, share classes and subscribers', () => {
+    const snapshot = buildCompanySnapshot({
+      'pre-1': {
+        status: 'completed',
+        responses: { authorisedShareCapital: '1000000', paidUpShareCapital: '100000', nominalValuePerEquityShare: '10' },
+      },
+      'pre-13': {
+        status: 'completed',
+        responses: { equityShares: 'yes', equityQuantity: '100000', equityNominalValue: '10', equityTotal: '1000000', preferenceShares: 'no' },
+      },
+      'pre-15': {
+        status: 'completed',
+        responses: {
+          directors: 'd1,d2',
+          'directors.d1.firstName': 'Priya',
+          'directors.d1.lastName': 'Sharma',
+          'directors.d1.indiaResident': 'yes',
+          'directors.d1.din': '01234567',
+          'directors.d2.firstName': 'John',
+          'directors.d2.lastName': 'Smith',
+          'directors.d2.indiaResident': 'no',
+        },
+      },
+      'pre-16': {
+        status: 'completed',
+        responses: { subscribers: 's1', 'subscribers.s1.name': 'Parent Co', 'subscribers.s1.shares': '10000' },
+      },
+    });
+    expect(snapshot.directors).toEqual([
+      { name: 'Priya Sharma', indiaResident: true, din: '01234567' },
+      { name: 'John Smith', indiaResident: false, din: null },
+    ]);
+    expect(snapshot.capital.authorised).toBe('1000000');
+    expect(snapshot.capital.shareClasses).toEqual([
+      { kind: 'equity', quantity: '100000', nominalValue: '10', total: '1000000' },
+    ]);
+    expect(snapshot.subscribers).toEqual([{ name: 'Parent Co', shares: '10000' }]);
   });
 });

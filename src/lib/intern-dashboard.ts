@@ -7,8 +7,8 @@ import {
   overallClientProgressPercent,
   type BoardResolutionProgressSnapshot,
 } from '@/lib/client-progress-board';
-import { isAwaitingReview } from '@/lib/checklist-item-review';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist-step-gate';
+import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
 
 const NONE_BR: BoardResolutionProgressSnapshot = { status: 'none', hasDraftDoc: false };
 
@@ -47,7 +47,7 @@ function buildInternQueueForEngagement(
       engagementId: engagement.id,
       checklistKey: item.id,
       status,
-      awaitsReview: isAwaitingReview(slice) && !isLocked,
+      awaitsReview: isAwaitingManagerDecision(item.id, slice) && !isLocked,
       isOverdue: status === 'overdue' && current,
       isLocked,
     };

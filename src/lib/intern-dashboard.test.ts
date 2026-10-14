@@ -62,7 +62,9 @@ describe('internQueueStats', () => {
     const queue = buildInternPortfolioQueue(
       [engagement],
       () => ({
-        'pre-1': { status: 'in-progress', reviewStatus: 'reviewing', clientSubmittedAt: '2026-05-01' },
+        // pre-1 completes on Submit now; pre-2 still waits on a decision.
+        'pre-1': { status: 'completed', reviewStatus: 'accepted' },
+        'pre-2': { status: 'in-progress', reviewStatus: 'reviewing', clientSubmittedAt: '2026-05-01' },
       }),
       'intern-a',
     );

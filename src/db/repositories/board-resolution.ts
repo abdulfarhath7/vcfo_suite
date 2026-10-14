@@ -7,7 +7,21 @@ import type { AuthContext } from '@/auth/guards';
 import type { BoardResolutionDoc } from '@/lib/board-resolution';
 import { parseBoardResolutionRpcPayload } from '@/lib/board-resolution';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
-import { getEngagementById } from '@/db/repositories/engagements';
+import {
+  checklistStateFromRow,
+  getEngagementById,
+  patchChecklistItem,
+  toAppEngagement,
+  type EngagementChecklistState,
+} from '@/db/repositories/engagements';
+import { isFirmWideAdmin } from '@/lib/auth';
+import { internLeadManagerRequestPatch, isLeadRequestPending } from '@/lib/checklist-item-review';
+import { MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { validateBoardResolutionGeneration } from '@/lib/api/board-resolution-errors';
+
+/** Lead edits while the manager decides are refused with this text. */
+export const BOARD_RESOLUTION_WITH_MANAGER = 'The board resolution is with your manager.';
 
 /**
  * BOARD RESOLUTION REPOSITORY.
@@ -86,6 +100,7 @@ export async function saveBoardResolutionDraft(
   }
 
   const engagement = await requireEngagement(ctx, appOrDbId);
+  assertLeadMayEdit(ctx, checklistStateFromRow(engagement));
   const existing = await getBoardResolutionByEngagementId(ctx, engagement.id);
   if (existing?.status === 'finalized') {
     throw new Error('Board resolution is finalized');
@@ -119,6 +134,98 @@ export async function saveBoardResolutionDraft(
     .returning();
 
   return mapRow(row);
+}
+
+/**
+ * While `pre-2` waits on the manager the lead cannot change the draft: the
+ * manager must approve the document they read.
+ */
+export function assertLeadMayEdit(ctx: AuthContext, state: EngagementChecklistState): void {
+  if (ctx.role === 'intern' && isLeadRequestPending(state[MANAGER_APPROVAL_STEP_ID])) {
+    throw new Error(BOARD_RESOLUTION_WITH_MANAGER);
+  }
+}
+
+/**
+ * Lead: "Send for manager approval". The draft must exist as a file and the
+ * generation checks must still pass (Part A submitted, nothing missing), so
+ * the manager never approves a document built on stale or empty data.
+ */
+export async function requestBoardResolutionApproval(
+  ctx: AuthContext,
+  appOrDbId: string,
+): Promise<EngagementChecklistState> {
+  if (ctx.role !== 'intern') {
+    throw new Error('Only the project lead may send the board resolution for approval');
+  }
+  const engagement = await requireEngagement(ctx, appOrDbId);
+  const state = checklistStateFromRow(engagement);
+  if (isLeadRequestPending(state[MANAGER_APPROVAL_STEP_ID])) {
+    throw new Error(BOARD_RESOLUTION_WITH_MANAGER);
+  }
+  const doc = await getBoardResolutionByEngagementId(ctx, engagement.id);
+  if (!doc || !doc.storagePath?.trim()) {
+    throw new Error('board_resolution_not_generated');
+  }
+  if (doc.status === 'finalized') throw new Error('Board resolution is finalized');
+
+  const { pre1 } = directorResponsesFromState(state);
+  validateBoardResolutionGeneration({
+    pre1,
+    pre1State: state['pre-1'],
+    engagement: toAppEngagement(engagement),
+  });
+
+  return patchChecklistItem(
+    ctx,
+    engagement.id,
+    MANAGER_APPROVAL_STEP_ID,
+    internLeadManagerRequestPatch(state[MANAGER_APPROVAL_STEP_ID]),
+  );
+}
+
+export interface BoardResolutionApproval {
+  boardResolution: BoardResolutionDoc;
+  checklistState: EngagementChecklistState;
+  /** True when this call is what finalized it (not a repeat click). */
+  firstApproval: boolean;
+}
+
+/**
+ * Manager / admin: "Approve and send to client" — the one pre-incorporation
+ * approval. Finalizes the draft (which releases it to the client) and closes
+ * `pre-2`. The Approvals inbox Accept and the step's button both land here.
+ */
+export async function approveBoardResolution(
+  ctx: AuthContext,
+  appOrDbId: string,
+): Promise<BoardResolutionApproval> {
+  if (!isFirmWideAdmin(ctx.role) && ctx.role !== 'manager') {
+    throw new Error('Only the project manager or admin may approve the board resolution');
+  }
+  const engagement = await requireEngagement(ctx, appOrDbId);
+  const state = checklistStateFromRow(engagement);
+  const pre2 = state[MANAGER_APPROVAL_STEP_ID];
+  if (!isLeadRequestPending(pre2)) {
+    throw new Error('board_resolution_not_pending');
+  }
+
+  const before = await getBoardResolutionByEngagementId(ctx, engagement.id);
+  const boardResolution = await finalizeBoardResolution(ctx, engagement.id);
+  const now = new Date().toISOString();
+  const checklistState = await patchChecklistItem(ctx, engagement.id, MANAGER_APPROVAL_STEP_ID, {
+    status: 'completed',
+    completedOn: now.slice(0, 10),
+    deliveredToClientAt: now,
+    reviewStatus: 'accepted',
+    reviewedAt: now,
+    reviewedBy: ctx.userId,
+    rejectionNote: undefined,
+    responses: {
+      boardResolutionSharedAt: pre2?.responses?.boardResolutionSharedAt?.trim() || now.slice(0, 10),
+    },
+  });
+  return { boardResolution, checklistState, firstApproval: before?.status !== 'finalized' };
 }
 
 /** Rebuild storage for a finalized doc without changing status (corrupt-file repair). */

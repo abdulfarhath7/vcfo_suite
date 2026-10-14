@@ -21,6 +21,11 @@ import {
   type ChecklistItem,
 } from '@/data/checklist';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
+import { isRepeatField, repeatEntries } from '@/lib/checklist-repeat';
+import { displayName, readProposedDirectors } from '@/lib/proposed-directors';
+import { clientIncorporationStepPath } from '@/lib/project-step-path';
+import { STEP_TAB_PARAM } from '@/lib/doc-pack/paths';
+import { sectionSlug } from '@/lib/doc-pack/section-slug';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import { formatWindow, windowForStep, type EngagementSchedule } from '@/lib/schedule-windows';
 import {
@@ -196,6 +201,33 @@ export interface ClientOverview {
   team: ClientOverviewTeamMember[];
   /** Manager-set date windows, when any have been saved. */
   schedule?: EngagementSchedule;
+  /** Directors, share capital and subscribers from the pre-incorporation steps. */
+  company: ClientCompanySnapshot;
+}
+
+export interface ClientShareClass {
+  kind: 'equity' | 'preference';
+  quantity: string;
+  nominalValue: string;
+  total: string;
+}
+
+export interface ClientCompanySnapshot {
+  directors: Array<{ name: string; indiaResident: boolean | null; din: string | null }>;
+  capital: {
+    /** pre-1 `authorisedShareCapital` */
+    authorised: string | null;
+    /** pre-1 `paidUpShareCapital` */
+    paidUp: string | null;
+    /** pre-1 `nominalValuePerEquityShare` */
+    nominalValue: string | null;
+    /** pre-13 */
+    shareClasses: ClientShareClass[];
+  };
+  /** pre-16 */
+  subscribers: Array<{ name: string; shares: string | null }>;
+  /** Client step URLs for each block. */
+  links: { directors: string; capital: string; shareClasses: string; subscribers: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -338,6 +370,79 @@ export function identifiersFromState(state: ClientOverviewState): ClientOverview
   };
 }
 
+function textOrNull(value: string | undefined): string | null {
+  const trimmed = (value ?? '').trim();
+  return trimmed ? trimmed : null;
+}
+
+function responsesOf(state: ClientOverviewState, itemId: string): Record<string, string> {
+  const item = getItem(itemId);
+  return item ? extractItemResponses(item, state[itemId]) : {};
+}
+
+/**
+ * The company as the pre-incorporation steps describe it: directors (`pre-15`,
+ * legacy Part A slots as a fallback), share capital (`pre-1`), share classes
+ * (`pre-13`) and subscribers (`pre-16`). `state` must already be the client's
+ * redacted view (`checklistStateForViewer`).
+ */
+export function buildCompanySnapshot(state: ClientOverviewState): ClientCompanySnapshot {
+  const directors = readProposedDirectors(state)
+    .map((director) => {
+      const resident = (director.values.indiaResident ?? '').trim();
+      return {
+        name: displayName(director.values),
+        indiaResident: resident === 'yes' ? true : resident === 'no' ? false : null,
+        din: textOrNull(director.values.din),
+      };
+    })
+    .filter((director) => director.name);
+
+  const pre1 = responsesOf(state, 'pre-1');
+  const pre13 = responsesOf(state, 'pre-13');
+  const shareClasses: ClientShareClass[] = [];
+  for (const kind of ['equity', 'preference'] as const) {
+    if ((pre13[`${kind}Shares`] ?? '').trim() !== 'yes') continue;
+    shareClasses.push({
+      kind,
+      quantity: (pre13[`${kind}Quantity`] ?? '').trim(),
+      nominalValue: (pre13[`${kind}NominalValue`] ?? '').trim(),
+      total: (pre13[`${kind}Total`] ?? '').trim(),
+    });
+  }
+
+  const pre16Item = getItem('pre-16');
+  const subscriberGroup = pre16Item
+    ? getClientResponseFields(pre16Item).find((field) => field.id === 'subscribers')
+    : undefined;
+  const subscribers =
+    subscriberGroup && isRepeatField(subscriberGroup)
+      ? repeatEntries(responsesOf(state, 'pre-16'), subscriberGroup)
+          .map((entry) => ({
+            name: (entry.values.name ?? '').trim(),
+            shares: textOrNull(entry.values.shares),
+          }))
+          .filter((subscriber) => subscriber.name)
+      : [];
+
+  return {
+    directors,
+    capital: {
+      authorised: textOrNull(pre1.authorisedShareCapital),
+      paidUp: textOrNull(pre1.paidUpShareCapital),
+      nominalValue: textOrNull(pre1.nominalValuePerEquityShare),
+      shareClasses,
+    },
+    subscribers,
+    links: {
+      directors: clientIncorporationStepPath('pre-15'),
+      capital: `${clientIncorporationStepPath('pre-1')}?${STEP_TAB_PARAM}=${sectionSlug('Share Capital Details')}`,
+      shareClasses: clientIncorporationStepPath('pre-13'),
+      subscribers: clientIncorporationStepPath('pre-16'),
+    },
+  };
+}
+
 export function buildProgress(state: ClientOverviewState): ClientOverviewProgress {
   const phases = getIncorporationPhases();
   const gates = gateActiveCatalog(state, 'client');
@@ -355,7 +460,7 @@ export function buildProgress(state: ClientOverviewState): ClientOverviewProgres
       const slice = state[item.id];
       const gate = getStepGate(gates, item.id);
       const status = coerceStatusCode(slice?.status);
-      const complete = isChecklistStepSequentiallyComplete(status, slice);
+      const complete = isChecklistStepSequentiallyComplete(status, slice, item.id);
 
       if (complete) {
         phaseDone += 1;

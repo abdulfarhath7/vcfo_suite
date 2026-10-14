@@ -1,6 +1,10 @@
 import type { ChecklistField } from '@/data/checklist';
 import type { ChecklistItemResponses } from '@/lib/checklist-responses';
-import { isNicCodeFormat, nicBusinessType } from '@/lib/nic-2008';
+import {
+  ADDITIONAL_NIC_CODES_GROUP_ID,
+  isNicCodeFormat,
+  nicBusinessType,
+} from '@/lib/nic-2008';
 
 const INDIA_PVT_SUFFIX = /india\s+private\s+limited\s*$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -236,6 +240,12 @@ export function validatePre1Responses(
     warnings.nicCode = 'No NIC-2008 sub-class has this code — check it against the SPICe+ list.';
   }
 
+  if (applies(ADDITIONAL_NIC_CODES_GROUP_ID)) {
+    const extra = validateAdditionalNicCodes(responses);
+    Object.assign(errors, extra.errors);
+    Object.assign(warnings, extra.warnings);
+  }
+
   for (const id of ['proposedName1', 'proposedName2'] as const) {
     const value = (responses[id] ?? '').trim();
     if (value && !INDIA_PVT_SUFFIX.test(value)) {
@@ -255,6 +265,47 @@ export function validatePre1Responses(
   }
 
   return { ok: Object.keys(errors).length === 0, errors, warnings };
+}
+
+const ADDITIONAL_NIC_CODES_MAX = 9;
+export const DUPLICATE_NIC_CODE_MESSAGE = 'This NIC code is already in the list.';
+
+/**
+ * The extra NIC codes on Part A. Each code: required and 5 digits (error), in
+ * NIC-2008 (warning), and not equal to the main code or an earlier entry
+ * (error). Errors are keyed by the concrete id (`additionalNicCodes.<entry>.code`).
+ */
+export function validateAdditionalNicCodes(responses: ChecklistItemResponses): {
+  errors: Record<string, string>;
+  warnings: Record<string, string>;
+} {
+  const errors: Record<string, string> = {};
+  const warnings: Record<string, string> = {};
+  const entryIds = (responses[ADDITIONAL_NIC_CODES_GROUP_ID] ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+  if (entryIds.length > ADDITIONAL_NIC_CODES_MAX) {
+    errors[ADDITIONAL_NIC_CODES_GROUP_ID] = `At most ${ADDITIONAL_NIC_CODES_MAX} NIC codes allowed.`;
+  }
+  const seen = new Set<string>();
+  const main = (responses.nicCode ?? '').trim();
+  if (main) seen.add(main);
+  for (const entryId of entryIds) {
+    const key = `${ADDITIONAL_NIC_CODES_GROUP_ID}.${entryId}.code`;
+    const code = (responses[key] ?? '').trim();
+    if (!code) {
+      errors[key] = 'This field is required.';
+    } else if (!isNicCodeFormat(code)) {
+      errors[key] = 'Enter the 5-digit NIC-2008 code (digits only).';
+    } else if (seen.has(code)) {
+      errors[key] = DUPLICATE_NIC_CODE_MESSAGE;
+    } else if (!nicBusinessType(code)) {
+      warnings[key] = 'No NIC-2008 sub-class has this code — check it against the SPICe+ list.';
+    }
+    if (code) seen.add(code);
+  }
+  return { errors, warnings };
 }
 
 /** Positive numeric nominal value per equity share (commas allowed). */

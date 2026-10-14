@@ -107,7 +107,13 @@ export function pendingApprovals(data: StaffData) {
       company: row.companyName,
       stepId: row.itemId,
       stepTitle: getItem(row.itemId)?.title ?? row.itemId,
-      kind: row.clientFill ? 'send_to_client' : row.reviewSource === 'lead_manager_request' ? 'lead_request' : 'client_submit',
+      kind: row.clientFill
+        ? 'send_to_client'
+        : row.itemId === 'pre-2'
+          ? 'board_resolution'
+          : row.reviewSource === 'lead_manager_request'
+            ? 'lead_request'
+            : 'client_submit',
       daysWaiting: daysSince(slice?.clientSubmittedAt, data.now),
     };
   });

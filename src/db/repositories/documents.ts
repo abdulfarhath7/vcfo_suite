@@ -102,7 +102,7 @@ function stepReleasedForViewer(
   if (!stepId) return true;
   const viewer = checklistViewerForRole(ctx.role);
   if (viewer === 'lead') return true;
-  return isStepReleasedTo(viewer, normalizeChecklistItemSlice(stepSlice, stepId));
+  return isStepReleasedTo(viewer, normalizeChecklistItemSlice(stepSlice, stepId), stepId);
 }
 
 function mapJoinedRows(ctx: Pick<AuthContext, 'role'>, rows: JoinedRow[]): DocumentDto[] {
