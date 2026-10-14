@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Documents — current</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);
+--primary:oklch(54.6% 0.215 263);--primary-dark:oklch(48.8% 0.217 264);--primary-light:oklch(96.6% 0.02 260);
+--navy:#0f2a4a;--navy-2:#17396b;--navy-3:#1b4f94;--gold:#c9a24b;
+--ok:oklch(56% 0.13 168);--ok-light:oklch(96% 0.028 170);--ok-text:oklch(39% 0.09 172);
+--due:oklch(66% 0.17 48);--due-light:oklch(96.8% 0.04 55);--due-text:oklch(48% 0.14 42);
+--teal:oklch(55% 0.1 195);--teal-light:oklch(96.4% 0.026 195);--teal-chip:oklch(47% 0.09 195);
+--shadow:0 1px 2px oklch(25% 0.04 264 / 0.04), 0 6px 18px -10px oklch(28% 0.06 264 / 0.18)}
+a{color:var(--primary);text-decoration:none;font-weight:600}a:hover{color:var(--primary-dark)}
+.surf{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.eye{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle);margin:0 0 8px}
+.r{display:flex;align-items:center;gap:12px;min-height:44px;padding:14px 16px;border-top:1px solid var(--border)}
+.r:first-child{border-top:0}
+.r.ms{border-left:3px solid var(--teal)}
+.r:hover{background:oklch(96.6% 0.02 260 / .4)}
+.tile{width:36px;height:36px;border-radius:8px;background:var(--teal-light);color:var(--teal-chip);display:flex;align-items:center;justify-content:center;flex:none}
+.t1{font-size:13px;font-weight:500;color:var(--fg)}
+.t2{font-size:11px;color:var(--muted);margin-top:1px}
+.pill{border-radius:99px;padding:2px 8px;font-size:11px}
+</style>
+</helmet>
+<div style="position:relative;width:1440px;min-height:1240px;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+  <div style="width:248px;flex:none;background:#0f2a4a"><dc-import name="side" active="4" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div style="flex:1;min-width:0">
+    <dc-import name="topbar" trail="Documents" hint-size="100%,52px" style="display:block"></dc-import>
+    <main style="padding:24px 32px;max-width:1080px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px">
+        <span style="width:44px;height:44px;border-radius:10px;background:var(--teal-light);color:var(--teal-chip);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 14l1.5-2.9A2 2 0 0 1 9.3 10H20a2 2 0 0 1 1.9 2.5l-1.5 6A2 2 0 0 1 18.4 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.7.9l.8 1.2a2 2 0 0 0 1.7.9H18a2 2 0 0 1 2 2v2"></path></svg></span>
+        <div>
+          <h1 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em;line-height:1">Documents</h1>
+          <p style="margin:6px 0 0;font-size:13px;color:var(--muted)">11 milestone uploads · 2 requests on file · 2 still needed</p>
+        </div>
+      </div>
+
+      <a href="#" style="display:flex;align-items:center;gap:12px;border:1px solid oklch(54.6% 0.215 263 / .3);background:oklch(54.6% 0.215 263 / .05);border-radius:6px;padding:12px 16px;margin-bottom:24px;color:var(--fg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="oklch(54% 0.2 260)" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z M14 3v5h5 M9 13h6 M9 17h6"></path></svg><span style="font-size:13px;font-weight:500">Board resolution ready</span></a>
+
+      <div style="display:flex;flex-direction:column;gap:24px;margin-bottom:32px">
+        <sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+          <section>
+            <p class="eye">{{g.title}}</p>
+            <div class="surf">
+              <sc-for list="{{g.docs}}" as="d" hint-placeholder-count="2">
+                <div class="r ms">
+                  <span class="tile"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z M14 3v5h5 M9 15l2 2 4-4"></path></svg></span>
+                  <div style="flex:1;min-width:0"><div class="t1">{{d.label}}</div><div class="t2">{{d.section}} · {{d.date}}</div></div>
+                  <a href="#" style="font-size:12px;display:inline-flex;align-items:center;min-height:44px">{{d.file}}</a>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+
+      <p class="eye">Document requests on file</p>
+      <div class="surf" style="margin-bottom:24px">
+        <div class="r"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z M14 3v5h5 M9 15l2 2 4-4"></path></svg><div style="flex:1"><div class="t1">Bank statement — October 2026</div><div class="t2">hdfc-statement-oct.pdf · 3 Nov 2026</div></div><span class="pill" style="background:var(--ok-light);color:var(--ok-text)">approved</span></div>
+        <div class="r"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z M14 3v5h5 M9 15l2 2 4-4"></path></svg><div style="flex:1"><div class="t1">Apostilled parent company COI</div><div class="t2">parent-coi-apostille.pdf · 6 Nov 2026</div></div><span class="pill" style="background:var(--ok-light);color:var(--ok-text)">uploaded</span></div>
+      </div>
+
+      <p class="eye">Still needed</p>
+      <div class="surf">
+        <div class="r"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--due)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z M14 3v5h5 M9 13h6 M9 17h4"></path></svg><div style="flex:1" class="t1">Notarised lease deed for the office</div><span class="pill" style="background:var(--due-light);color:var(--due-text)">Upload required</span></div>
+        <div class="r"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--due)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z M14 3v5h5 M9 13h6 M9 17h4"></path></svg><div style="flex:1" class="t1">Signed DIR-2 consent — Meera Shah</div><span class="pill" style="background:var(--due-light);color:var(--due-text)">Upload required</span></div>
+      </div>
+    </main>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const G = [
+      ['Director KYC', [['PAN card — Ravi Kumar', 'Director 1', '14 Sep 2026', 'ravi-kumar-pan.pdf'], ['Passport — Meera Shah', 'Director 2', '14 Sep 2026', 'meera-shah-passport.pdf'], ['Address proof — Ravi Kumar', 'Director 1', '15 Sep 2026', 'electricity-bill-aug.pdf'], ['Photograph — Meera Shah', 'Director 2', '15 Sep 2026', 'meera-photo.jpg']]],
+      ['Registered Office Address', [['Utility bill', 'Office proof', '22 Sep 2026', 'office-electricity-sep.pdf'], ['NOC from the owner', 'Office proof', '22 Sep 2026', 'owner-noc-signed.pdf'], ['Rent agreement', 'Office proof', '23 Sep 2026', 'rent-agreement.pdf']]],
+      ['Signed Board Resolution', [['Signed board resolution', 'Parent company', '18 Sep 2026', 'board-resolution-signed.pdf']]],
+      ['Certificate of Incorporation', [['Certificate of Incorporation', 'Outcome', '24 Oct 2026', 'COI-Northwind.pdf'], ['MoA and AoA (stamped)', 'Outcome', '24 Oct 2026', 'moa-aoa-northwind.pdf']]],
+      ['Share Capital Infusion', [['FIRC from the bank', 'Inward remittance', '2 Nov 2026', 'firc-hdfc.pdf']]]
+    ];
+    return { groups: G.map((g) => ({ title: g[0], docs: g[1].map((d) => ({ label: d[0], section: d[1], date: d[2], file: d[3] })) })) };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

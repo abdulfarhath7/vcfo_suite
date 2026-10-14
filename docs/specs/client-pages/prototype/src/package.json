@@ -1,0 +1,19 @@
+{
+  "name": "vcfo-client-portal-prototype",
+  "version": "7.0.0",
+  "private": true,
+  "description": "Sources, bundler and checks for the single-file VCFO Suite client-portal prototype (v7).",
+  "scripts": {
+    "build": "node build/bundle.js",
+    "gen:incorporation": "node generators/incorporation/build.js",
+    "check": "node checks/check.js",
+    "serve": "python3 -m http.server 8768 --bind 127.0.0.1 --directory app"
+  },
+  "devDependencies": {
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/manrope": "5.3.0",
+    "@fontsource/space-grotesk": "5.3.0",
+    "lucide-static": "1.55.0"
+  },
+  "engines": { "node": ">=18" }
+}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Where Documents and the Knowledge Bank can improve</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--navy:#0f2a4a;--gold:#c9a24b;--ok-light:oklch(96% 0.028 170);--ok-text:oklch(39% 0.09 172);--teal-light:oklch(96.4% 0.026 195);--teal-chip:oklch(47% 0.09 195);--violet-light:oklch(96.4% 0.032 292);--violet-text:oklch(42% 0.16 292)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;line-height:1.45}
+th{text-align:left;padding:10px 12px;font:800 10.5px Manrope,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:var(--navy)}
+td{padding:9px 12px;border-top:1px solid var(--hair);vertical-align:top}
+tr.sec td{background:var(--raised);font:800 11px Manrope,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--navy)}
+.mono{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.chip{display:inline-flex;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;white-space:nowrap}
+</style>
+</helmet>
+<div style="width:1440px;min-height:1180px;box-sizing:border-box;padding:32px;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg)">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <table>
+      <thead><tr><th style="width:36px">#</th><th style="width:330px">Problem today (from the code)</th><th style="width:330px">Fix</th><th>Value to the client</th><th style="width:70px">Size</th></tr></thead>
+      <tbody>
+        <tr class="sec"><td colspan="5">Documents / Vault · src/views/client/Documents.tsx</td></tr>
+        <tr><td>1</td><td>Each file row asks the server for its own signed link on load (<span class="mono">MilestoneDocumentLink</span>). The link opens a new tab; a failure shows "(link unavailable)".</td><td>Fetch the link only on 👁 / ⬇ click, then open the shared in-app viewer.</td><td>Page loads fast with many files; no dead links; the client stays in the app.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr><td>2</td><td>No search, filter or sort. Files are fixed in milestone order.</td><td>Search, source filter (You / SBC), group switch (step / category / latest).</td><td>Finds "the PAN card" in seconds as the vault grows.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr><td>3</td><td>"Still needed" rows only show a chip "Upload required". There is no way to upload from this page.</td><td>Drop zone per request, using the existing request upload action.</td><td>One click from "needed" to "sent"; fewer chasers from SBC.</td><td><span class="chip" style="background:var(--teal-light);color:var(--teal-chip)">M</span></td></tr>
+        <tr><td>4</td><td>Request dates show the raw value (<span class="mono">2026-11-03</span>); milestone dates use 03 Nov 2026. Status shows the raw word ("uploaded").</td><td>One date format; status words mapped to In review / Approved / Re-upload.</td><td>Consistent, clear status.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr><td>5</td><td>Requests and milestone files live in two separate lists below each other.</td><td>One list; requests become badges on their step.</td><td>One place to look.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr><td>6</td><td>When no engagement is found the page renders nothing (<span class="mono">return null</span>).</td><td>Friendly empty state with Upload and Open incorporation.</td><td>No blank screen for new clients.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr><td>7</td><td>Only the latest file per field is listed; an older version and SBC's reason for a re-upload are not visible.</td><td>Keep versions; show "Replaced" greyed (hidden by default, the h toggle in option A) and SBC's re-upload note.</td><td>Clear history; fewer "which one is right?" questions.</td><td><span class="chip" style="background:var(--teal-light);color:var(--teal-chip)">M</span></td></tr>
+        <tr><td>8</td><td>No bulk download. Each file is opened one by one.</td><td>Select + "Download ZIP"; "Download all".</td><td>Hand everything to a bank or auditor at once.</td><td><span class="chip" style="background:var(--teal-light);color:var(--teal-chip)">M</span></td></tr>
+        <tr><td>9</td><td>No sign that a dated proof (utility bill, bank statement) is too old.</td><td>Amber "expires" chip when older than the rule (for example 2 months).</td><td>Avoids rejected filings.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr class="sec"><td colspan="5">Knowledge Bank / Library · src/views/client/ask/*</td></tr>
+        <tr><td>10</td><td>Cards are text with an "Open" button; the visual type is a grey word ("Timeline").</td><td>Book covers by category, whole cover clickable, drawn from the answer's visual.</td><td>Easy to scan; the "bank" feels like a collection worth keeping.</td><td><span class="chip" style="background:var(--teal-light);color:var(--teal-chip)">M</span></td></tr>
+        <tr><td>11</td><td>"Remove from library" deletes at once and leaves the page; no confirm, no undo.</td><td>Toast with Undo (soft delete for a few seconds).</td><td>No lost explanations by a slip.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr><td>12</td><td>Learn topic shows "Loading…" forever when the Ask context has no engagement id.</td><td>Show the topic without project facts, or a clear message with a way back.</td><td>No stuck page.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr><td>13</td><td>Loading is the word "Loading…"; a missing item shows an error line with no way back.</td><td>Skeleton books; error card with "Back to library".</td><td>Feels fast and safe.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr><td>14</td><td>The "Updated" chip is amber (warning colour), though nothing is due.</td><td>Blue "Updated" ribbon (info).</td><td>Colours keep one meaning.</td><td><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">S</span></td></tr>
+        <tr><td>15</td><td>No "recently read" or reading progress; topics not yet saved are only reachable from the chat.</td><td>Recently read strip; "Suggested for you" topics linking to learn/[slug].</td><td>Picks up where they left off; discovers answers before asking.</td><td><span class="chip" style="background:var(--teal-light);color:var(--teal-chip)">M</span></td></tr>
+        <tr><td>16</td><td>A topic never links to the client's own filing or documents.</td><td>Reader side panel: "In your project" (due date) and "Documents for this".</td><td>Knowledge turns into action.</td><td><span class="chip" style="background:var(--teal-light);color:var(--teal-chip)">M</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

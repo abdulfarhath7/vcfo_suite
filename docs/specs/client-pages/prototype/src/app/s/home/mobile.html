@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Home · mobile</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:oklch(97.4% 0.006 255);--panel:#fff;--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);
+--primary:oklch(54.6% 0.215 263);--primary-light:oklch(96.6% 0.02 260);--navy:#0f2a4a;--navy-3:#1b4f94;--gold:#c9a24b;--gold-soft:#fbf3df;--gold-text:#6e500f;
+--ok:oklch(56% 0.13 168);--ok-light:oklch(96% 0.028 170);--ok-text:oklch(39% 0.09 172);--due:oklch(66% 0.17 48);--due-light:oklch(96.8% 0.04 55);--due-text:oklch(48% 0.14 42);--due-chip:oklch(55% 0.17 42);
+--over:oklch(57% 0.2 22);--over-light:oklch(96.4% 0.026 18);--over-text:oklch(46% 0.17 20);--prog:oklch(55% 0.16 252);--prog-light:oklch(96% 0.026 250);--prog-text:oklch(43% 0.13 254);--up:oklch(82% 0.018 255);
+--violet:oklch(54% 0.17 292);--shadow:0 1px 2px oklch(25% 0.04 264 / .04),0 6px 18px -10px oklch(28% 0.06 264 / .18);--spring:linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
+*{box-sizing:border-box}
+html,body{margin:0;background:#dfe5ee}
+body{font:500 13px/1.45 Manrope,system-ui,sans-serif;color:var(--fg);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+.app{position:relative;width:100%;max-width:560px;min-height:100vh;margin:0 auto;background:var(--bg);overflow-x:clip;padding-bottom:120px}
+.metric{font-family:"Space Grotesk",Manrope,sans-serif;font-weight:600;letter-spacing:-.03em;font-feature-settings:"tnum"}
+.mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+/* top bar */
+.bar{position:sticky;top:0;z-index:20;height:56px;display:flex;align-items:center;gap:4px;padding:0 6px;background:oklch(100% 0 0 / .94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.ib{width:44px;height:44px;border:0;background:none;border-radius:6px;display:grid;place-items:center;color:var(--muted);cursor:pointer;position:relative}
+.ib:active{background:var(--primary-light)}
+.logo{display:flex;align-items:center;gap:8px;font:800 15px Manrope;color:var(--navy)}
+.logo i{width:28px;height:28px;border-radius:7px;background:var(--navy);color:var(--gold);display:grid;place-items:center;font:800 11px Manrope;font-style:normal}
+.dot{position:absolute;top:6px;right:5px;min-width:17px;height:17px;padding:0 3px;border-radius:99px;background:var(--primary);color:#fff;font:700 11px/1 Manrope;display:grid;place-items:center;box-shadow:0 0 0 2px #fff}
+.wrap{padding:14px 14px 0;display:flex;flex-direction:column;gap:12px}
+/* greeting */
+.greet{position:relative;border-radius:12px;background:var(--navy);color:#fff;padding:14px 14px 12px;overflow:hidden}
+.greet:before{content:"";position:absolute;right:-60px;top:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(closest-side,oklch(80% .12 85 / .18),transparent)}
+.greet .d{font:600 11px "IBM Plex Mono",monospace;letter-spacing:.08em;color:oklch(82% .03 255)}
+.greet h1{margin:4px 0 0;font:700 19px/1.2 Manrope;max-width:260px}
+.greet .top{display:flex;align-items:flex-start;gap:10px}
+.ring{position:relative;width:62px;height:62px;flex:none;margin-left:auto;cursor:pointer;border:0;background:none;padding:0;color:#fff}
+.ring svg{transform:rotate(-90deg)}
+.ring .v{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 14px "Space Grotesk"}
+.ring .l{position:absolute;left:-10px;right:-10px;bottom:-16px;text-align:center;font:700 11px Manrope;letter-spacing:.06em;white-space:nowrap;color:oklch(82% .03 255)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:16px}
+.stat{border:0;border-radius:8px;background:oklch(100% 0 0 / .08);padding:8px;text-align:left;color:#fff;cursor:pointer}
+.stat b{display:block;font:600 20px "Space Grotesk";letter-spacing:-.03em}
+.stat span{font-size:11.5px;line-height:1.25;display:block;color:oklch(85% .02 255)}
+.stat.w{grid-column:span 1}
+.rep{margin-top:10px;display:flex;gap:8px}
+.rep .btn{flex:1 1 0;min-width:0;padding:0 8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 14px;border-radius:6px;border:1px solid transparent;font:700 13px Manrope;cursor:pointer;white-space:nowrap}
+.btn-g{background:var(--gold);color:var(--navy)}
+.btn-gl{background:oklch(100% 0 0 / .1);color:#fff;border-color:oklch(100% 0 0 / .18)}
+.btn-n{background:var(--navy);color:#fff}
+.btn-o{background:#fff;color:var(--fg);border-color:var(--border)}
+.btn-sm{height:40px;padding:0 12px;font-size:12.5px}
+/* cards */
+.card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:visible}
+.card.t:before{content:"";position:absolute;left:14px;top:-1px;width:34px;height:3px;border-radius:0 0 3px 3px;background:var(--gold)}
+.ch{display:flex;align-items:center;gap:6px;padding:14px 14px 10px}
+.ch h2{margin:0;font:800 12px Manrope;letter-spacing:.07em;text-transform:uppercase;color:var(--navy)}
+.ch .r{margin-left:auto}
+.info{position:relative;display:inline-flex}
+.info>button{position:relative;width:24px;height:24px;border:0;background:none;color:oklch(62% .02 255);border-radius:4px;display:grid;place-items:center;cursor:pointer}
+.info>button:after{content:"";position:absolute;inset:-8px}
+.pr{position:relative}.pr:after{content:"";position:absolute;inset:-8px -2px}
+.pop{position:absolute;left:50%;top:calc(100% + 6px);transform:translate(-50%,-4px);z-index:40;width:min(250px,calc(100vw - 24px));padding:10px 12px;border-radius:8px;background:#fff;border:1px solid var(--border);box-shadow:0 12px 32px -12px oklch(21% .042 264 / .35);font:500 12px/1.45 Manrope;color:var(--fg);opacity:0;visibility:hidden;transition:opacity .15s,transform .15s,visibility .15s;text-transform:none;letter-spacing:0}
+.info.open .pop{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.pop .ask{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--hair);color:var(--primary);font-weight:700;border-left:0;border-right:0;border-bottom:0;background:none;width:100%;cursor:pointer;padding-left:0}
+.go{display:flex;align-items:center;gap:6px;width:100%;border:0;border-top:1px solid var(--hair);background:none;padding:11px 14px;font:800 12px Manrope;color:var(--primary);cursor:pointer;text-align:left;border-radius:0 0 10px 10px}
+/* sliding pill */
+.seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:oklch(96.5% .008 250);box-shadow:inset 0 0 0 1px var(--border);margin:0 14px 10px}
+.seg .th{position:absolute;top:2px;bottom:2px;left:2px;border-radius:6px;background:var(--navy);transition:transform .42s var(--spring),width .3s}
+.seg button{position:relative;z-index:1;border:0;background:none;height:38px;min-width:0;padding:0 4px;border-radius:6px;font:600 12px Manrope;color:oklch(50% .022 255);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.seg button[aria-selected=true]{color:#fff}
+.seg .c{font:600 11px "IBM Plex Mono";opacity:.75}
+/* rows */
+.row{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border-top:1px solid var(--hair);width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;cursor:pointer;color:inherit}
+.row:active{background:var(--raised)}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font:700 13.5px/1.3 Manrope;overflow-wrap:anywhere}
+.row .t span{font-size:11.5px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font:700 11px/16px Manrope;white-space:nowrap}
+.tile{width:42px;height:46px;border-radius:8px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 16px/1 "Space Grotesk"}
+.tile small{font:800 11px Manrope;letter-spacing:.06em;margin-top:2px}
+/* status icons · set A (rule 18) */
+.si{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;position:relative}
+.si.done{background:oklch(56% .14 150)}.si.now{background:var(--navy);color:var(--gold)}.si.you{background:var(--due)}.si.sbc{background:oklch(56% .19 262)}.si.up{background:oklch(95% .008 255);box-shadow:inset 0 0 0 2px oklch(88% .012 255)}.si.late{background:var(--over)}
+.si.now:after{content:"";position:absolute;inset:-3px;border-radius:50%;box-shadow:0 0 0 2px var(--gold);animation:pulse 1.9s ease-out infinite}
+@keyframes pulse{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.35)}}
+/* focus track (style E) */
+.ft{padding:4px 14px 12px;position:relative}
+.ft .rail{position:absolute;left:25px;top:16px;bottom:24px;width:4px;border-radius:2px;background:repeating-linear-gradient(to bottom,var(--up) 0 3px,transparent 3px 8px)}
+.ft .rail i{position:absolute;left:0;top:0;width:4px;border-radius:2px;background:oklch(56% .14 150);height:0;transition:height .9s cubic-bezier(.22,1,.36,1) .2s}
+.fs{position:relative;display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:6px 0;text-align:left;cursor:pointer;color:inherit}
+.fs .t b{font:700 13px Manrope}.fs .t span{display:block;font-size:11.5px;color:var(--muted)}
+.fs.cur{background:var(--navy);color:#fff;border-radius:12px;padding:10px 12px 10px 4px;margin:6px 0;box-shadow:0 10px 24px -10px oklch(21% .042 264 / .55)}
+.fs.cur .t span{color:oklch(85% .02 255)}
+.fs.cur .eb{font:800 11px Manrope;letter-spacing:.08em;color:var(--gold);text-transform:uppercase}
+.fs.cur .si{margin-left:8px}
+.fold{display:inline-flex;align-items:center;gap:6px;margin:2px 0 4px 38px;padding:5px 9px;border-radius:6px;border:0;background:var(--ok-light);color:var(--ok-text);font:800 12px Manrope;box-shadow:inset 0 0 0 1.5px oklch(56% .14 150 / .5);cursor:pointer}
+.ticks{display:flex;gap:5px;margin:2px 0 0 38px}.ticks i{width:7px;height:7px;border-radius:50%;background:var(--up)}.ticks i.d{background:oklch(56% .14 150)}.ticks i.n{background:var(--gold)}
+/* bars */
+.pb{height:8px;border-radius:4px;background:var(--raised);overflow:hidden;flex:1}
+.pb>i{display:block;height:100%;border-radius:4px;transform-origin:left;transform:scaleX(0);transition:transform .9s cubic-bezier(.2,.7,.2,1)}
+.in .pb>i{transform:scaleX(1)}
+.gantt{padding:4px 14px 14px;display:flex;flex-direction:column;gap:9px;position:relative}
+.gr{display:grid;grid-template-columns:112px 1fr;align-items:center;gap:8px;border:0;background:none;padding:0;text-align:left;cursor:pointer;color:inherit}
+.gr span{font:700 11.5px/1.25 Manrope;overflow-wrap:anywhere}
+.gt{position:relative;height:14px;border-radius:4px;background:var(--raised)}
+.gt i{position:absolute;top:0;bottom:0;border-radius:4px;transform-origin:left;transform:scaleX(0);transition:transform .8s cubic-bezier(.2,.7,.2,1)}
+.in .gt i{transform:scaleX(1)}
+.today{position:absolute;top:0;bottom:12px;width:2px;background:var(--over);left:calc(14px + 120px + (100% - 148px) * .47)}
+.today:before{content:"Today";position:absolute;top:-4px;left:4px;font:800 11px Manrope;color:var(--over-text);white-space:nowrap}
+/* donut */
+.dn{display:flex;align-items:center;gap:14px;padding:4px 14px 14px}
+.dn svg{transform:rotate(-90deg);flex:none}
+.dn circle.s{transition:stroke-dasharray .9s cubic-bezier(.22,1,.36,1);cursor:pointer}
+.lg{flex:1;display:grid;gap:4px}
+.lg button{display:flex;align-items:center;gap:8px;border:0;background:none;padding:6px 6px;border-radius:6px;text-align:left;cursor:pointer;font:600 12.5px Manrope;color:inherit}
+.lg button:active{background:var(--raised)}
+.lg i{width:10px;height:10px;border-radius:3px}
+.lg b{margin-left:auto;font:600 13px "Space Grotesk"}
+/* ids */
+.idr{display:flex;align-items:center;gap:6px;padding:10px 14px;border-top:1px solid var(--hair)}
+.idr .k{width:46px;flex:none;font:800 11px Manrope;letter-spacing:.07em;color:var(--subtle)}
+.idr .v{flex:1;min-width:0;font:600 12px "IBM Plex Mono";overflow-wrap:anywhere}
+.ic{width:40px;height:40px;border:1px solid var(--border);border-radius:6px;background:#fff;display:grid;place-items:center;color:var(--muted);cursor:pointer;flex:none}
+.ic:active{background:var(--primary-light)}
+.pr{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 7px;border-radius:4px;border:1px solid var(--border);background:#fff;font:700 11px Manrope;color:var(--navy);cursor:pointer}
+.pr.pend{background:var(--due-light);color:var(--due-text);border-color:transparent}
+/* bot bubble (rule 16) */
+.bot{display:flex;align-items:flex-end;gap:10px;padding:16px 14px 18px}
+.bot .bb{position:relative;flex:1;padding:10px 12px;border-radius:10px 10px 10px 2px;background:#fff;border:1px solid var(--border);box-shadow:0 8px 20px -12px oklch(21% .042 264 / .35)}
+.bot .bb b{display:block;font:600 13px/1.45 Manrope}
+.bot .bb button{margin-top:6px;border:0;background:none;padding:0;color:var(--primary);font:700 12px Manrope;cursor:pointer}
+.av{width:44px;height:44px;flex:none}
+/* launcher */
+.launch{position:fixed;right:24px;bottom:24px;z-index:30;display:flex;flex-direction:column;align-items:flex-end;gap:6px;animation:rise .55s var(--spring) .5s both}
+.launch .lb{background:var(--navy);color:#fff;font:700 12px Manrope;padding:4px 10px;border-radius:6px;position:relative}
+.launch .lb:after{content:"";position:absolute;right:27px;bottom:-4px;width:8px;height:8px;background:var(--navy);transform:rotate(45deg)}
+.launch button{width:62px;height:62px;border-radius:50%;border:0;background:oklch(97.2% .014 255);box-shadow:0 10px 24px -8px oklch(25% .06 258 / .45),0 0 0 1px var(--border);display:grid;place-items:center;cursor:pointer}
+.launch.sink{transform:translateY(70px)}
+.launch{transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.launch{display:none!important} /* the shared launcher from proto.js replaces it */
+@keyframes rise{from{transform:translateY(120px)}to{transform:none}}
+.bob{animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+/* sheet */
+.scrim{position:fixed;inset:0;z-index:60;background:oklch(20% .05 258 / .45);opacity:0;transition:opacity .2s;pointer-events:none}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{visibility:hidden;position:fixed;left:50%;bottom:0;z-index:61;width:min(100%,560px);max-height:min(82vh,calc(100dvh - 24px));display:flex;flex-direction:column;background:#fff;border-radius:14px 14px 0 0;box-shadow:0 -16px 40px -20px oklch(15% .05 258 / .5);transform:translate(-50%,105%);transition:transform .38s var(--spring)}
+.sheet.on{visibility:visible;transform:translate(-50%,0)}
+.sheet .grab{display:flex;justify-content:center;padding:8px 0 4px}.sheet .grab i{width:40px;height:4px;border-radius:2px;background:var(--border)}
+.sheet .sh{display:flex;align-items:center;gap:8px;padding:4px 14px 10px}
+.sheet .sh h3{margin:0;font:800 16px Manrope;color:var(--navy);flex:1}
+.sheet .body{overflow:auto;padding-bottom:20px}
+/* chat */
+.msg{margin:8px 14px;max-width:85%;padding:9px 12px;border-radius:10px;font:500 13px/1.5 Manrope}
+.msg.me{margin-left:auto;background:var(--navy);color:#fff;border-radius:10px 10px 2px 10px}
+.msg.ai{background:var(--raised);border-radius:10px 10px 10px 2px}
+.sug{display:flex;flex-wrap:wrap;gap:6px;padding:4px 14px 10px}
+.sug button{min-height:40px;padding:0 10px;border-radius:6px;border:1px solid oklch(54.6% .215 263 / .35);background:var(--primary-light);color:var(--primary);font:600 12px Manrope;cursor:pointer}
+.compose{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--hair)}
+.compose input{flex:1;height:42px;border-radius:8px;border:1px solid var(--border);padding:0 12px;font:500 14px Manrope}
+.typing i{display:inline-block;width:6px;height:6px;margin-right:3px;border-radius:50%;background:var(--subtle);animation:th 1s infinite}.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+@keyframes th{0%,100%{opacity:.3}50%{opacity:1}}
+/* drawer */
+.drawer{position:fixed;top:0;bottom:0;left:max(0px,calc(50% - 280px));z-index:62;width:min(300px,calc(100vw - 48px));background:var(--navy);color:#fff;transform:translateX(-105%);visibility:hidden;transition:transform .32s cubic-bezier(.22,1,.36,1),visibility 0s linear .32s;display:flex;flex-direction:column;overflow:auto}
+.drawer.on{transform:none;visibility:visible;transition:transform .32s cubic-bezier(.22,1,.36,1)}
+.drawer a{display:flex;align-items:center;gap:10px;height:44px;padding:0 16px;color:oklch(85% .02 255);text-decoration:none;font:600 14px Manrope}
+.drawer a.on{background:oklch(100% 0 0 / .1);color:#fff;box-shadow:inset 3px 0 0 oklch(66% .16 262)}
+.drawer .lbl{padding:14px 16px 6px;font:800 11px Manrope;letter-spacing:.08em;color:var(--gold);text-transform:uppercase}
+.drawer .p{display:flex;align-items:center;gap:10px;padding:6px 16px}
+.drawer .p i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:800 12px Manrope;font-style:normal}
+/* skeleton (L1) */
+.sk .card,.sk .greet{position:relative}
+.sk .card>*,.sk .greet>*{visibility:hidden}
+.sk .card:after,.sk .greet:after{content:"";position:absolute;inset:12px;border-radius:6px;background:linear-gradient(90deg,oklch(93.5% .008 255) 0,oklch(96.5% .006 255) 40%,oklch(93.5% .008 255) 80%);background-size:600px 100%;animation:sh 1.2s linear infinite}
+.sk .greet:after{background:linear-gradient(90deg,oklch(30% .05 258) 0,oklch(36% .05 258) 40%,oklch(30% .05 258) 80%);background-size:600px 100%}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+/* enter stagger */
+.wrap>*{animation:fu .3s cubic-bezier(.22,1,.36,1) both}
+.sk .wrap>*{animation:none}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hide{display:none!important}
+body.sheet-open #vp-mini,body.sheet-open #vp-bar{display:none}
+:focus-visible{outline:2px solid oklch(54.6% .215 263 / .5);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app sk" id="app">
+  <header class="bar">
+    <button class="ib" id="menuBtn" data-vp-menu aria-label="Open menu" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="logo"><img class="vp-mlogo" src="../../brand/vcfo-icon.png" alt="VCFO Suite" width="23" height="26">Home</span>
+    <span style="flex:1"></span>
+    <button class="ib" type="button" aria-label="Search" data-act="search"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4"/></svg></button>
+    <button class="ib" type="button" aria-label="Announcements" data-route="announcements"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h3l8-4.5v13L7 14H4Z M7 14l1.5 5.5H11L10 14 M18 9.5a3.5 3.5 0 0 1 0 5"/></svg></button>
+    <button class="ib" type="button" aria-label="Notifications, 3 new" data-route="notifications" style="color:var(--primary)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4.5 1.8 6.5 1.8 6.5H4.7S6.5 14.5 6.5 10Z M10 19.5a2.2 2.2 0 0 0 4 0"/></svg><span class="dot">3</span></button>
+  </header>
+  <main class="wrap" id="main"></main>
+</div>
+
+<div class="launch" id="launch"><span class="lb">Ask VCFO</span><button type="button" aria-label="Chat with Ask VCFO" id="botBtn"><span class="bob" style="display:flex"><img class="av" src="assets/vcfo-bot-avatar.svg" alt=""></span></button></div>
+<div class="scrim" id="scrim"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shT"><div class="grab"><i></i></div><div class="sh"><h3 id="shT"></h3><button class="ib" type="button" aria-label="Close" id="shX"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><div class="body" id="shB"></div></section>
+<nav class="drawer" id="drawer" aria-label="Main"></nav>
+
+<script>
+(function(){
+var AFTER=false; try{AFTER=location.hash==='#after'||JSON.parse(localStorage.getItem('vcfo.after'))===true}catch(e){}
+var RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return [].slice.call((r||document).querySelectorAll(s))};
+function go(r){ if(window.vcfoGo) vcfoGo(r); }
+function toast(m,u){ if(window.vcfoToast) vcfoToast(m,u); }
+var I={check:'<path d="M6 12.5l4 4 8-9"/>',clock:'<path d="M12 7v5l3 2"/>',user:'<circle cx="12" cy="9" r="3.4" fill="currentColor" stroke="none"/><path d="M5.5 19c1.2-3.2 3.6-4.6 6.5-4.6s5.3 1.4 6.5 4.6" fill="currentColor" stroke="none"/>',arrow:'<path d="M6 15l5-5 3 3 5-5 M14 8h5v5"/>',bang:'<path d="M12 6.5v7 M12 17.5h.01"/>',dl:'<path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14"/>',eye:'<path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z"/>',ext:'<path d="M14 4.5h5.5V10 M19.5 4.5 11 13 M18 14v4.5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1H10"/>',clip:'<path d="M15.5 7.5 8.6 14.4a2 2 0 0 0 2.8 2.8l7.3-7.3a3.8 3.8 0 0 0-5.4-5.4L6 11.8a5.6 5.6 0 0 0 8 8l5.5-5.5"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',go:'<path d="M9 6l6 6-6 6"/>',lock:'<path d="M6.5 10.5h11v9h-11Z M9 10.5V8a3 3 0 0 1 6 0v2.5"/>',up:'<path d="M12 15V4 M7.5 8.5 12 4l4.5 4.5 M5 19.5h14"/>',copy:'<path d="M9 9h10v11H9Z M5 15V4h10"/>'};
+function ic(n,s,w){return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[n]+'</svg>';}
+var ST={done:['done','check','Done'],now:['now','clock','In progress'],you:['you','user','Waiting on you'],sbc:['sbc','arrow','With SBC'],up:['up','','Upcoming'],late:['late','bang','Late']};
+function si(k,tip){var s=ST[k];return '<span class="si '+s[0]+'" role="img" aria-label="'+(tip||s[2])+'" title="'+(tip||s[2])+'">'+(s[1]?ic(s[1],13,2.6):'')+'</span>';}
+function info(t){return '<span class="info"><button type="button" aria-label="About this card" data-info>'+ic('info',15)+'</button><span class="pop" role="tooltip">'+t+'<button type="button" class="ask" data-ask>'+'<img src="assets/vcfo-bot-avatar.svg" alt="" width="16" height="16">Ask VCFO about this</button></span></span>';}
+function card(id,title,inf,body,foot){return '<section class="card t" id="'+id+'"><div class="ch"><h2>'+title+'</h2>'+info(inf)+'</div>'+body+(foot?'<button class="go" type="button" '+foot[1]+'>'+foot[0]+' '+ic('go',14,2.4)+'</button>':'')+'</section>';}
+function seg(id,tabs,sel){return '<div class="seg" role="tablist" data-seg="'+id+'"><span class="th"></span>'+tabs.map(function(t,i){return '<button type="button" role="tab" aria-selected="'+(i===sel)+'" data-i="'+i+'">'+t[0]+'<span class="c">'+t[1]+'</span></button>'}).join('')+'</div>';}
+function bot(text,act){return '<div class="bot" role="status"><img class="av" src="assets/vcfo-bot-avatar.svg" alt=""><div class="bb"><b>'+text+'</b><button type="button" data-ask>'+(act||'Ask VCFO why')+'</button></div></div>';}
+function tile(d,m,kind){var c={over:'background:var(--over);color:#fff',due:'background:var(--due);color:#fff',up:'background:var(--raised);color:var(--fg)',navy:'background:var(--navy);color:#fff'}[kind||'up'];return '<span class="tile" style="'+c+'">'+d+'<small>'+m+'</small></span>';}
+
+/* ---------- data ---------- */
+var B={date:'TUE 6 OCT 2026',ring:43,ringL:'SPICE+',stats:[[4,'Waiting on you','you'],[1,'With SBC','sbc'],[1,'Overdue','late'],['4/6','Docs in','docs'],['28 Oct','Expected COI','coi']],
+ needs:[['Upload',2,[['Utility bill — office','Step 7 · asked by Arjun Mehta','9','OCT','due','Upload'],['NOC from the owner','Step 7 · asked by Arjun Mehta','9','OCT','due','Upload']]],['Fill',1,[['Subscriber details','Step 9 · 3 fields left','10','OCT','up','Fill']]],['Correct',1,[['Passport copy — Meera Shah','Sent back · blurred scan','5','OCT','over','Fix']]],['Sign',0,[]]],
+ steps:[['done','Capital Structure','Step 6 · done 1 Oct'],['now','Registered Office Address','Step 7 · You · due 9 Oct'],['you','Proposed Directors','Step 8 · You · in progress'],['you','Subscriber Details','Step 9 · You · in progress'],['sbc','KYC Review & DSC','Step 10 · SBC · in progress'],['up','SPICe+ Confirmation','Step 11 · You · from 16 Oct']],
+ alerts:[['09','OCT','2 office documents','In 3 days','due'],['10','OCT','MOA & AOA drafts','In 4 days','due'],['14','OCT','Approved name expires','In 8 days','up']],
+ sbc:[['KYC Review & DSC',30],['MOA & AOA drafts',0],['DSC for both directors',0],['File SPICe+ Part B',0]],
+ docs:[['JPG','Director 1 — passport','6 Oct'],['PDF','Name approval letter','24 Sep'],['PDF','Signed Board Resolution','18 Sep'],['DOCX','Draft Board Resolution','16 Sep']],
+ act:[['5 Oct','2 documents requested','Arjun Mehta','sbc'],['4 Oct','Proposed Directors saved','You','you'],['3 Oct','Passport copy sent back','Arjun Mehta','sbc'],['1 Oct','Capital Structure accepted','Priya Raman','sbc']]};
+var A={date:'SUN 8 NOV 2026',ring:64,ringL:'SETUP',stats:[[4,'Waiting on you','you'],[1,'Overdue','late'],[3,'Due soon','due'],['5/13','Registrations','reg'],['24 Oct','Incorporated','coi']],
+ needs:[['Upload',2,[['October salary register','Payroll · asked by Priya Raman','13','NOV','up','Upload'],['Bank FIRC + KYC letter','FC-GPR · asked by Arjun Mehta','20','NOV','up','Upload']]],['Fill',1,[['TDS payment details · Oct','Overdue 1 day','07','NOV','over','Fill']]],['Correct',0,[]],['Sign',1,[['Board minutes — 1st meeting','Sign with DSC','12','NOV','up','Sign']]]],
+ next:[['07','NOV','TDS Payment · Oct 2026','Overdue 1 day · You','over','https://www.incometax.gov.in'],['15','NOV','EPF Return & Payment','In 7 days · You','due','https://unifiedportal-emp.epfindia.gov.in'],['15','NOV','ESI Payment','In 7 days · SBC','due','https://www.esic.gov.in'],['20','NOV','PT Payment','In 12 days · SBC','up','https://pt.kar.nic.in']],
+ comp:[['Filed',1,'oklch(56% .14 150)'],['Due soon',3,'var(--due)'],['Overdue',1,'var(--over)'],['Upcoming',33,'var(--up)']],
+ ids:[['CIN','U72900KA2026FTC198431',false,'https://www.mca.gov.in'],['PAN','AAKC••••1M',true,'https://www.incometax.gov.in'],['TAN','BLRN••••2D',true,'https://www.tin-nsdl.com'],['GSTIN','29AAKCN4821M1Z5',false,'https://www.gst.gov.in']],
+ regs:[['GST Registration','GSTN · 1 Nov','done',true,'https://www.gst.gov.in'],['PF Registration','EPFO · 2 Nov','done',true,'https://unifiedportal-emp.epfindia.gov.in'],['ESI Registration','ESIC · 3 Nov','done',false,'https://www.esic.gov.in'],['PT Registration','Karnataka CTD · est. 12 Nov','sbc',null,'https://pt.kar.nic.in'],['IEC Registration','DGFT · est. 14 Nov','sbc',null,'https://www.dgft.gov.in'],['Trademark','IP India · Jan 2027','up',null,'https://ipindia.gov.in']],
+ post:[['FC-GPR Filing','You · 2 Dec 2026',6,30],['Nominee Shareholder (MGT-4/5/6)','SBC · 23 Nov 2026',15,30],['Share Certificates (SH-1)','SBC · 23 Dec 2026',15,60],['Commencement (INC-20A)','SBC · 22 Apr 2027',15,180]],
+ docs:[['PDF','Certificate of Incorporation','24 Oct'],['PDF','Board meeting minutes','2 Nov'],['PDF','GST certificate','1 Nov'],['PDF','Share capital FIRC','2 Nov']],
+ act:[['8 Nov','TDS Payment overdue','VCFO Suite','late'],['5 Nov','TDS details requested','Priya Raman','sbc'],['3 Nov','ESI registration done','Arjun Mehta','done'],['2 Nov','Share capital received','You','you'],['1 Nov','GST certificate delivered','Arjun Mehta','done']]};
+var D=AFTER?A:B;
+
+/* ---------- render ---------- */
+function greet(){var C=2*Math.PI*26;return '<section class="greet" id="greet"><div class="top"><div><div class="d">'+D.date+'</div><h1>Northwind Technologies India Pvt Ltd</h1></div><button class="ring" type="button" aria-label="'+(AFTER?'Setup':'Incorporation')+' '+D.ring+'% — open steps" data-drill="ring"><svg width="62" height="62" viewBox="0 0 62 62"><circle cx="31" cy="31" r="26" fill="none" stroke="oklch(100% 0 0 / .14)" stroke-width="6"/><circle id="ringArc" cx="31" cy="31" r="26" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" stroke-dasharray="0 '+C+'"/></svg><span class="v"><span data-count="'+D.ring+'">0</span>%</span><span class="l">'+D.ringL+'</span></button></div>'+
+ '<div class="stats">'+D.stats.slice(0,3).map(function(s){return '<button class="stat" type="button" data-drill="stat:'+s[2]+'"><b data-count="'+s[0]+'">'+s[0]+'</b><span>'+s[1]+'</span></button>'}).join('')+'</div>'+
+ '<div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:6px">'+D.stats.slice(3).map(function(s){return '<button class="stat" type="button" data-drill="stat:'+s[2]+'"><b>'+s[0]+'</b><span>'+s[1]+'</span></button>'}).join('')+'</div>'+
+ '<div class="rep"><button class="btn btn-g" type="button" data-act="report">'+ic('dl',15)+'Download report</button><button class="btn btn-gl" type="button" data-route="incorporation">Open Incorporation</button></div></section>';}
+function needs(sel){var t=D.needs[sel];var rows=t[2].length?t[2].map(function(r,i){return '<div class="row" style="cursor:default">'+tile(r[2],r[3],r[4])+'<span class="t"><b>'+r[0]+'</b><span>'+r[1]+'</span></span><button class="btn btn-sm '+(r[4]==='over'?'btn-n':'btn-o')+'" type="button" data-need="'+sel+':'+i+'">'+r[5]+'</button></div>'}).join(''):bot('Nothing to '+t[0].toLowerCase()+' right now. You are all caught up here.');
+ return seg('needs',D.needs.map(function(n){return [n[0],n[1]]}),sel)+'<div id="needsRows">'+rows+'</div>';}
+function focus(){var s=D===B?B.steps:null;
+ return '<div class="ft"><div class="rail"><i id="railFill"></i></div>'+
+ '<button class="fold" type="button" data-drill="steps:done">'+ic('check',12,3)+'5 done · Phase 1</button>'+
+ s.map(function(x,i){ if(x[0]==='now') return '<button class="fs cur" type="button" data-drill="steps:'+i+'">'+si('now','Waiting on you · due 9 Oct')+'<span class="t"><span class="eb">Now · step 7 of 14</span><b>'+x[1]+'</b><span>'+x[2]+'</span><span class="ticks" style="margin:6px 0 0"><i class="d"></i><i class="d"></i><i class="n"></i><i></i></span></span></button>';
+  return '<button class="fs" type="button" data-drill="steps:'+i+'">'+si(x[0],x[0]==='you'?'In progress · You':x[0]==='sbc'?'With SBC':undefined)+'<span class="t"><b>'+x[1]+'</b><span>'+x[2]+'</span></span></button>'}).join('')+
+ '<button class="fold" type="button" style="background:#fff;color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--up)" data-drill="steps:more">+3 more · SPICe+ filing → COI</button></div>';}
+function gantt(){var rows=AFTER?[['Phase 1 · Name Application',0,.18,'oklch(56% .14 150)'],['Phase 2 · Incorporation',.18,.62,'oklch(56% .14 150)'],['MCA review',.62,.8,'oklch(56% .14 150)'],['COI · 24 Oct',.8,.82,'var(--gold)']]:[['Phase 1 · Name Application',0,.18,'oklch(56% .14 150)'],['Phase 2 · 22%',.2,.68,'var(--navy-3)'],['MCA review',.68,.86,'var(--up)'],['COI · 28 Oct',.88,.9,'var(--gold)']];
+ return '<div class="gantt">'+rows.map(function(r,i){return '<button class="gr" type="button" data-drill="tl:'+i+'"><span>'+r[0]+'</span><span class="gt"><i style="left:'+r[1]*100+'%;width:'+Math.max(3,(r[2]-r[1])*100)+'%;background:'+r[3]+';transition-delay:'+(i*.08)+'s"></i></span></button>'}).join('')+(AFTER?'':'<span class="today" aria-hidden="true"></span>')+'</div>';}
+function alerts(){return D===B?B.alerts.map(function(a,i){return '<button class="row" type="button" data-drill="al:'+i+'">'+tile(a[0],a[1],a[4])+'<span class="t"><b>'+a[2]+'</b><span>'+a[3]+'</span></span>'+ic('go',14,2.4)+'</button>'}).join(''):'';}
+function sbc(){return (AFTER?[['PT Registration',70],['IEC Registration',50]]:B.sbc).map(function(s,i){return '<button class="row" type="button" data-drill="sbc:'+i+'">'+si(s[1]?'sbc':'up',s[1]?'With SBC · '+s[1]+'%':'Upcoming')+'<span class="t"><b>'+s[0]+'</b><span style="display:flex;align-items:center;gap:8px;margin-top:4px"><span class="pb"><i style="width:'+s[1]+'%;background:oklch(56% .19 262)"></i></span><span class="mono" style="font-size:11px">'+s[1]+'%</span></span></span></button>'}).join('');}
+function nextc(){return seg('next',[['15 days',4],['30 days',6]],0)+A.next.map(function(n,i){return '<div class="row" style="cursor:default">'+tile(n[0],n[1],n[4])+'<span class="t"><b>'+n[2]+'</b><span>'+n[3]+'</span></span><a class="ic" href="'+n[5]+'" target="_blank" rel="noopener" aria-label="Open the official portal">'+ic('ext',14)+'</a><button class="ic" type="button" aria-label="Open '+n[2]+'" data-drill="next:'+i+'">'+ic('go',14,2.4)+'</button></div>'}).join('');}
+function donut(){var tot=A.comp.reduce(function(a,c){return a+c[1]},0),C=2*Math.PI*44,off=0;
+ var arcs=A.comp.map(function(c,i){var len=c[1]/tot*C;var s='<circle class="s" cx="55" cy="55" r="44" fill="none" stroke="'+c[2]+'" stroke-width="14" stroke-dasharray="0 '+C+'" data-len="'+len+'" stroke-dashoffset="'+(-off)+'" data-drill="comp:'+i+'" tabindex="0" role="button" aria-label="'+c[0]+' · '+c[1]+'"><title>'+c[0]+' · '+c[1]+'</title></circle>';off+=len;return s}).join('');
+ return '<div class="dn"><svg width="110" height="110" viewBox="0 0 110 110">'+arcs+'</svg><div class="lg"><div style="font:600 26px \'Space Grotesk\';letter-spacing:-.03em"><span data-count="38">38</span> <span style="font:700 11px Manrope;color:var(--muted);letter-spacing:0">this FY</span></div>'+A.comp.map(function(c,i){return '<button type="button" data-drill="comp:'+i+'"><i style="background:'+c[2]+'"></i>'+c[0]+'<b>'+c[1]+'</b></button>'}).join('')+'</div></div>';}
+function ids(){return A.ids.map(function(d,i){return '<div class="idr"><span class="k">'+d[0]+'</span><span class="v" id="id'+i+'">'+d[1]+'</span>'+(d[2]?'<button class="ic" type="button" aria-label="Reveal '+d[0]+'" data-reveal="'+i+'">'+ic('eye',15)+'</button>':'<button class="ic" type="button" aria-label="Copy '+d[0]+'" data-copy="'+d[1]+'">'+ic('copy',14)+'</button>')+'<a class="ic" href="'+d[3]+'" target="_blank" rel="noopener" aria-label="Open the official portal">'+ic('ext',14)+'</a></div>'}).join('');}
+function regs(){return A.regs.map(function(r,i){var p=r[3]===true?'<button class="pr" type="button" data-proof="'+i+'" aria-label="Open proof for '+r[0]+'">'+ic('clip',12)+'Proof</button>':r[3]===false?'<span class="pr pend" title="Filed, proof not uploaded yet">Proof pending</span>':'';
+ return '<div class="row" style="cursor:default">'+si(r[2],ST[r[2]][2])+'<span class="t"><b>'+r[0]+'</b><span>'+r[1]+'</span></span>'+p+'<a class="ic" href="'+r[4]+'" target="_blank" rel="noopener" aria-label="Open the official portal">'+ic('ext',14)+'</a></div>'}).join('');}
+function post(){return A.post.map(function(p,i){var pct=Math.round(p[2]/p[3]*100);return '<button class="row" type="button" data-drill="post:'+i+'"><span class="t"><b>'+p[0]+'</b><span>'+p[1]+' · day '+p[2]+' of '+p[3]+'</span><span style="display:flex;margin-top:5px"><span class="pb"><i style="width:'+pct+'%;background:'+(pct>45?'var(--due)':'var(--navy-3)')+'"></i></span></span></span></button>'}).join('');}
+function docs(){return D.docs.map(function(d,i){var c={PDF:'var(--over)',JPG:'oklch(47% .09 195)',DOCX:'oklch(51% .17 252)'}[d[0]];return '<div class="row" style="cursor:default"><span class="mono" style="width:38px;height:20px;border-radius:3px;background:'+c+';color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;flex:none">'+d[0]+'</span><span class="t"><b>'+d[1]+'</b><span>'+d[2]+'</span></span><button class="ic" type="button" aria-label="Preview '+d[1]+'" data-route="doc-viewer">'+ic('eye',15)+'</button><button class="ic" type="button" aria-label="Download '+d[1]+'" data-dl="'+d[1]+'">'+ic('dl',15)+'</button></div>'}).join('');}
+function act(sel){var who=[null,'sbc','you'][sel];var l=D.act.filter(function(a){return !who||(who==='sbc'?a[3]!=='you':a[3]==='you')});
+ return seg('act',[['All',D.act.length],['SBC',D.act.filter(function(a){return a[3]!=='you'}).length],['You',D.act.filter(function(a){return a[3]==='you'}).length]],sel)+'<div id="actRows">'+l.map(function(a){return '<div class="row" style="cursor:default">'+si(a[3]==='you'?'you':a[3]==='late'?'late':'done',a[2])+'<span class="t"><b>'+a[1]+'</b><span>'+a[0]+' · '+a[2]+'</span></span></div>'}).join('')+'</div>';}
+
+function render(){
+ var h=greet();
+ h+=card('needs','Needs from you','Items your project lead asked for. Upload, fill, correct or sign them here.',needs(0));
+ if(!AFTER){
+  h+=card('holds','Who holds it now','Your current step and the steps around it. Tap a step for its details.',focus(),['Open step 7',"data-route='incorporation'"]);
+  h+=card('timeline','Timeline','Planned dates for each phase. The red line is today.',gantt(),['Open Incorporation',"data-route='incorporation'"]).replace('</h2>','</h2>').replace('<div class="ch"><h2>Timeline</h2>','<div class="ch"><h2>Timeline</h2><button class="btn btn-sm btn-o r" type="button" data-tledit style="margin-left:auto;order:3">Edit</button>');
+  h+=card('alerts','Important alerts','Dated items only, nearest first.',alerts());
+  h+=card('sbcdo','What SBC is doing','Work your SBC team is doing now. Tap for the detail.',sbc());
+ }else{
+  h+=card('next','What is next','Filings due in the next 15 or 30 days. ↗ opens the official portal.',nextc(),['Open Compliances',"data-route='compliances'"]);
+  h+=card('comp','Compliance status','All filings this financial year by status. Tap a slice for its filings.',donut(),['Open Filings',"data-route='filings'"]);
+  h+=card('ids','Company IDs','PAN and TAN stay hidden. Reveal asks for your password and hides again after 60 s.',ids());
+  h+=card('regs','Registrations','Every registration with its portal ↗ and its proof 📎.',regs());
+  h+=card('post','Post-incorporation setup','Statutory windows that started on the COI date.',post());
+  h+=card('sbcdo','What SBC is doing','Work your SBC team is doing now.',sbc());
+  h+=card('timeline','Timeline','Incorporation is complete.',gantt(),['Open Incorporation',"data-route='incorporation'"]);
+ }
+ h+=card('docs','Recent documents','The newest files from your project. 👁 previews, ⬇ downloads.',docs(),['Open Documents',"data-route='documents'"]);
+ h+=card('act','Recent activity','Who did what, newest first.',act(0));
+ $('#main').innerHTML=h;
+ $$('#main>*').forEach(function(el,i){el.style.animationDelay=(i*0.06)+'s'});
+ $$('.seg').forEach(placeThumb);
+}
+function placeThumb(s){var b=s.querySelector('[aria-selected=true]'),th=s.querySelector('.th');if(!b||!th)return;th.style.width=b.offsetWidth+'px';th.style.transform='translateX('+(b.offsetLeft-2)+'px)';}
+function countUp(){ $$('[data-count]').forEach(function(el){var t=parseFloat(el.getAttribute('data-count'));if(isNaN(t)||String(t)!==el.getAttribute('data-count'))return;if(RM){el.textContent=t;return;}var s=performance.now();(function f(n){var p=Math.min(1,(n-s)/900),e=1-Math.pow(1-p,3);el.textContent=Math.round(t*e);if(p<1)requestAnimationFrame(f)})(s);});}
+function drawIn(){ var C=2*Math.PI*26,a=$('#ringArc');if(a)a.setAttribute('stroke-dasharray',(D.ring/100*C)+' '+C);
+ a&&(a.style.transition='stroke-dasharray 1s cubic-bezier(.22,1,.36,1)');
+ $$('.dn circle.s').forEach(function(c){var C2=2*Math.PI*44;c.setAttribute('stroke-dasharray',c.getAttribute('data-len')+' '+C2)});
+ var rf=$('#railFill');if(rf)rf.style.height='34%';
+ $$('.card').forEach(function(c){c.classList.add('in')}); }
+
+/* ---------- bottom sheet (rule 14 on mobile) ---------- */
+var sheet=$('#sheet'),scrim=$('#scrim'),lastFocus;
+function openSheet(title,html,after){if(sheet.classList.contains('on')&&sheet._t===title&&sheet._h===html){closeSheet();return;}sheet._t=title;sheet._h=html;lastFocus=document.activeElement;$('#shT').textContent=title;$('#shB').innerHTML=html;scrim.classList.add('on');sheet.classList.add('on');document.body.classList.add('sheet-open');$('#launch').classList.add('sink');setTimeout(function(){$$('#shB .seg').forEach(placeThumb);after&&after();$('#shX').focus({preventScroll:true})},30);}
+function closeSheet(){document.body.classList.remove('sheet-open');scrim.classList.remove('on');sheet.classList.remove('on');$('#launch').classList.remove('sink');lastFocus&&lastFocus.focus&&lastFocus.focus({preventScroll:true});}
+scrim.onclick=closeSheet;$('#shX').onclick=closeSheet;
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeSheet();closeDrawer();}});
+function drill(title,parts,sel,rowsFor){var render=function(i){return seg('drill',parts.map(function(p){return [p[0],p[1]]}),i)+'<div id="drillRows">'+rowsFor(i)+'</div>';};
+ openSheet(title,render(sel));
+ $('#shB').onclick=function(e){var b=e.target.closest('[data-seg=drill] button');if(b){var i=+b.getAttribute('data-i');$$('[data-seg=drill] button').forEach(function(x){x.setAttribute('aria-selected',String(x===b))});placeThumb(b.parentNode);$('#drillRows').innerHTML=rowsFor(i);return;}
+  var r=e.target.closest('[data-open]');if(r){closeSheet();go(r.getAttribute('data-open'));}};}
+function drow(k,t,s,route){return '<button class="row" type="button" data-open="'+(route||'incorporation')+'">'+si(k)+'<span class="t"><b>'+t+'</b><span>'+s+'</span></span>'+ic('go',14,2.4)+'</button>';}
+var STEPS=[['done','Client Details','Step 1 · done 12 Sep'],['done','Draft Board Resolution','Step 2 · done 16 Sep'],['done','Signed Board Resolution','Step 3 · done 20 Sep'],['done','Name Application','Step 4 · done 24 Sep'],['done','Name Approval','Step 5 · done 24 Sep'],['done','Capital Structure','Step 6 · done 1 Oct'],['you','Registered Office Address','Step 7 · You · due 9 Oct'],['you','Proposed Directors','Step 8 · You · in progress'],['you','Subscriber Details','Step 9 · You · in progress'],['sbc','KYC Review & DSC','Step 10 · SBC · in progress · 13 Oct'],['up','SPICe+ Confirmation','Step 11 · 16 Oct'],['up','SPICe+ Filing','Step 12 · 20 Oct'],['up','MCA Remarks','Step 13 · 24 Oct'],['up','Certificate of Incorporation','Step 14 · 28 Oct']];
+function stepsDrill(sel){var parts=[['Done','done'],['You','you'],['SBC','sbc'],['Upcoming','up']].map(function(q){return [q[0],STEPS.filter(function(s){return s[0]===q[1]}).length,q[1]]});
+ drill('Incorporation steps',parts,sel,function(i){var l=STEPS.filter(function(s){return s[0]===parts[i][2]});return l.length?l.map(function(s){return drow(s[0],s[1],s[2])}).join(''):bot('Nothing here right now.')});}
+
+/* ---------- chat ---------- */
+var QA=AFTER?{'What is due next?':'<b>TDS Payment · Oct 2026</b> is overdue by 1 day. Next are <b>EPF</b> and <b>ESI</b> on <b>15 Nov</b>.','Which registrations are pending?':'Two are with SBC: <b>PT Registration</b> (est. 12 Nov) and <b>IEC</b> (est. 14 Nov).','When is FC-GPR due?':'<b>2 Dec 2026</b>, day 6 of the 30-day window. Upload the bank FIRC + KYC letter first.'}:{'What is my next step?':'Your next step is <b>Step 7 · Registered Office Address</b>. Upload the utility bill and the owner NOC by <b>9 Oct</b>.','Where is my incorporation now?':'You are in <b>Phase 2</b>, 1 of 9 steps done (6 of 14 overall). Steps 7, 8 and 9 are with you; step 10 is with SBC. MCA filing is planned for <b>20 Oct</b> and the COI for <b>28 Oct</b>.','Which documents are missing?':'Two: the <b>office utility bill</b> and the <b>NOC from the owner</b>. Both are due 9 Oct.'};
+function chat(){openSheet('Ask VCFO','<div id="msgs"><div class="msg ai">Hello. Ask me anything about your company setup, or pick a question below.</div></div><div class="sug">'+Object.keys(QA).map(function(q){return '<button type="button" data-q="'+q+'">'+q+'</button>'}).join('')+'</div><form class="compose" id="cf"><input id="ci" aria-label="Type a question" placeholder="Type a question"><button class="btn btn-n" type="submit">Send</button></form>');
+ $('#shB').onclick=function(e){var b=e.target.closest('[data-q]');if(b)ask(b.getAttribute('data-q'));var h=e.target.closest('[data-handoff]');if(h){toast('Arjun Mehta will reply by email within 1 working day',true);}};
+ $('#cf').onsubmit=function(e){e.preventDefault();var v=$('#ci').value.trim();if(v){ask(v);$('#ci').value='';}};}
+function ask(q){var m=$('#msgs');m.insertAdjacentHTML('beforeend','<div class="msg me">'+q.replace(/</g,'&lt;')+'</div><div class="msg ai typing" id="ty"><i></i><i></i><i></i></div>');m.parentNode.scrollTop=1e5;
+ setTimeout(function(){$('#ty').remove();var a=QA[q];m.insertAdjacentHTML('beforeend',a?'<div class="msg ai">'+a+'</div>':'<div class="msg ai">I can’t answer that one yet. I’ve passed it to your project lead.<br><button class="btn btn-sm btn-o" type="button" data-handoff style="margin-top:8px">Hand off to Arjun Mehta</button></div>');m.parentNode.scrollTop=1e5;},RM?0:900);}
+
+/* ---------- drawer ---------- */
+var drawer=$('#drawer');
+drawer.innerHTML=[['Home','home',1],['Updates','notifications'],['Incorporation','incorporation'],['Compliances','compliances'],['Documents','documents'],['Library','knowledge-bank'],['Team','team'],['Audit','audit']].map(function(n){return '<a href="#" data-route="'+n[1]+'"'+(n[2]?' class="on" aria-current="page"':'')+'>'+n[0]+'</a>'}).join('')+
+ '<div class="lbl">Your team</div><div class="p"><i style="background:oklch(62% .08 40)">PR</i><div><b>Priya Raman</b><div style="font-size:11px;opacity:.75">Project Manager</div></div></div><div class="p"><i style="background:oklch(55% .09 200)">AM</i><div><b>Arjun Mehta</b><div style="font-size:11px;opacity:.75">Project Lead</div></div></div><div class="p"><i style="background:oklch(100% 0 0 / .14)">☎</i><div><b>Customer support</b><div style="font-size:11px;opacity:.75">SBC help desk · +91 90597 90014</div></div></div>'+
+ '<a href="#" data-route="settings" style="margin-top:auto;border-top:1px solid oklch(100% 0 0 / .1)">Rahul Khanna · Northwind · Client</a>';
+function openDrawer(){drawer.classList.add('on');scrim.classList.add('on');}
+function closeDrawer(){drawer.classList.remove('on');if(!sheet.classList.contains('on'))scrim.classList.remove('on');}
+$('#menuBtn').onclick=function(){if(window.vcfoOpenSide)window.vcfoOpenSide();else openDrawer();}; scrim.addEventListener('click',closeDrawer);
+
+/* ---------- events ---------- */
+document.addEventListener('click',function(e){
+ var t=e.target, el;
+ if(el=t.closest('[data-tledit]')){if(window.vcfoOpenTimeline)vcfoOpenTimeline();return;}
+ if(el=t.closest('[data-route]')){e.preventDefault();closeDrawer();go(el.getAttribute('data-route'));return;}
+ if(el=t.closest('[data-info]')){var w=el.parentNode;$$('.info.open').forEach(function(x){if(x!==w)x.classList.remove('open')});w.classList.toggle('open');var pp=w.querySelector('.pop');if(pp){pp.style.marginLeft='';var pr=pp.getBoundingClientRect(),W=document.documentElement.clientWidth,dx=0;if(pr.right>W-8)dx=W-8-pr.right;if(pr.left+dx<8)dx=8-pr.left;if(dx)pp.style.marginLeft=Math.round(dx)+'px';}return;}
+ if(!t.closest('.info'))$$('.info.open').forEach(function(x){x.classList.remove('open')});
+ if(el=t.closest('[data-ask]')){chat();return;}
+ if(el=t.closest('#botBtn')){chat();return;}
+ if(el=t.closest('#main [data-seg] button')){var s=el.parentNode,id=s.getAttribute('data-seg'),i=+el.getAttribute('data-i');$$('button',s).forEach(function(x){x.setAttribute('aria-selected',String(x===el))});placeThumb(s);
+   if(id==='needs'){var rows=D.needs[i][2];$('#needsRows').innerHTML=(rows.length?rows.map(function(r,j){return '<div class="row" style="cursor:default">'+tile(r[2],r[3],r[4])+'<span class="t"><b>'+r[0]+'</b><span>'+r[1]+'</span></span><button class="btn btn-sm '+(r[4]==='over'?'btn-n':'btn-o')+'" type="button" data-need="'+i+':'+j+'">'+r[5]+'</button></div>'}).join(''):bot('Nothing to '+D.needs[i][0].toLowerCase()+' right now. You are all caught up here.'));}
+   if(id==='act'){var tmp=document.createElement('div');tmp.innerHTML=act(i);$('#actRows').innerHTML=tmp.querySelector('#actRows').innerHTML;}
+   if(id==='next'){toast(i?'Showing the next 30 days · 6 filings':'Showing the next 15 days · 4 filings');}
+   return;}
+ if(el=t.closest('[data-need]')){var p=el.getAttribute('data-need').split(':'),r=D.needs[p[0]][2][p[1]];
+   if(/Upload|Fix/.test(r[5])){openSheet(r[0],'<button class="row" type="button" data-up>'+ic('up',18)+'<span class="t"><b>Choose a file</b><span>PDF, JPG or PNG · up to 10 MB</span></span></button><button class="row" type="button" data-up>'+ic('eye',18)+'<span class="t"><b>Take a photo</b><span>Use the phone camera</span></span></button>');
+     $('#shB').onclick=function(e){if(e.target.closest('[data-up]')){closeSheet();toast('Uploaded · '+r[0],true);}};}
+   else {toast(r[5]+' · '+r[0]+' opened');go('incorporation');}
+   return;}
+ if(el=t.closest('[data-drill]')){var k=el.getAttribute('data-drill');
+   if(/^steps|^ring|^stat:you|^stat:sbc|^tl/.test(k)){var m={'steps:done':0,'stat:you':1,'stat:sbc':2,'steps:more':3};stepsDrill(m[k]!==undefined?m[k]:(/steps:(\d)/.test(k)?({done:0,now:1,you:1,sbc:2,up:3}[B.steps[+k.split(':')[1]][0]]):1));return;}
+   if(/^comp/.test(k)){var parts=A.comp.map(function(c){return [c[0],c[1]]});var F={0:[['done','ROC · AOC-4 FY25','Filed 28 Oct']],1:[['you','EPF Return & Payment · Oct','15 Nov · You'],['sbc','ESI Payment · Oct','15 Nov · SBC'],['sbc','PT Payment · Oct','20 Nov · SBC']],2:[['late','TDS Payment · Oct 2026','Overdue 1 day · You']],3:[['up','GSTR-1 · Nov','11 Dec'],['up','GSTR-3B · Nov','20 Dec'],['up','FC-GPR','2 Dec'],['up','… 30 more','Open Filings']]};
+     drill('Compliance status · FY 2026-27',parts,+k.split(':')[1]||0,function(i){return F[i].map(function(f){return drow(f[0],f[1],f[2],'filings')}).join('')});return;}
+   if(/^stat:late|^next|^stat:due/.test(k)){drill('Due and overdue',[['Overdue',1],['Due soon',3]],/late|next:0/.test(k)?0:1,function(i){return i?drow('you','EPF Return & Payment','15 Nov · You','compliances')+drow('sbc','ESI Payment','15 Nov · SBC','compliances')+drow('sbc','PT Payment','20 Nov · SBC','compliances'):AFTER?drow('late','TDS Payment · Oct 2026','Overdue 1 day · You','compliances'):drow('late','Passport copy — Meera Shah','Sent back 3 Oct · fix now','incorporation')});return;}
+   if(/^stat:docs/.test(k)){drill('Documents',[['In',4],['Missing',2]],0,function(i){return i?drow('you','Utility bill — office','Due 9 Oct','documents')+drow('you','NOC from the owner','Due 9 Oct','documents'):['Director 1 — passport','Name approval letter','Signed Board Resolution','Capital structure note'].map(function(d){return drow('done',d,'Received','documents')}).join('')});return;}
+   if(/^stat:reg/.test(k)){drill('Registrations',[['Done',5],['With SBC',2],['Upcoming',6]],0,function(i){return A.regs.filter(function(r){return r[2]===['done','sbc','up'][i]}).map(function(r){return drow(r[2],r[0],r[1],'home')}).join('')});return;}
+   if(/^stat:coi/.test(k)){go('incorporation');return;}
+   if(/^al/.test(k)){var a=B.alerts[+k.split(':')[1]];drill('Important alerts',[['15 days',3],['30 days',3]],0,function(){return B.alerts.map(function(x){return drow(x[4]==='due'?'you':'up',x[2],x[0]+' '+x[1]+' · '+x[3])}).join('')});return;}
+   if(/^sbc/.test(k)){var l=AFTER?[['PT Registration',70],['IEC Registration',50]]:B.sbc;drill('What SBC is doing',[['In progress',l.filter(function(s){return s[1]}).length],['Not started',l.filter(function(s){return !s[1]}).length]],l[+k.split(':')[1]][1]?0:1,function(i){return l.filter(function(s){return i?!s[1]:s[1]}).map(function(s){return drow(s[1]?'sbc':'up',s[0],s[1]?s[1]+'% · Arjun Mehta':'Not started yet')}).join('')});return;}
+   if(/^post/.test(k)){drill('Post-incorporation setup',[['Open',4],['Completed',7]],0,function(i){return i?['Bank account','First board meeting','Auditor ADT-1','PAN & TAN','GST','PF','ESI'].map(function(x){return drow('done',x,'Completed')}).join(''):A.post.map(function(p){return drow(p[1].indexOf('You')===0?'you':'sbc',p[0],p[1])}).join('')});return;}
+ }
+ if(el=t.closest('[data-reveal]')){var i=+el.getAttribute('data-reveal');openSheet('Show '+A.ids[i][0],'<form id="pw" style="padding:4px 14px 10px;display:grid;gap:10px"><label style="font:700 12px Manrope">Your password<input type="password" id="pwi" style="display:block;width:100%;height:44px;margin-top:6px;border-radius:8px;border:1px solid var(--border);padding:0 12px;font:500 15px Manrope" value="••••••••"></label><span style="font-size:12px;color:var(--muted)">'+ic('lock',13)+' Shown for 60 seconds, then hidden again.</span><button class="btn btn-n" type="submit">Show '+A.ids[i][0]+'</button></form>');
+   $('#pw').onsubmit=function(e){e.preventDefault();closeSheet();var v=$('#id'+i);v.textContent=i===1?'AAKCN4821M':'BLRN04392D';v.style.color='var(--ok-text)';toast(A.ids[i][0]+' shown for 60 s');setTimeout(function(){v.textContent=A.ids[i][1];v.style.color='';},60000);};return;}
+ if(el=t.closest('[data-copy]')){try{navigator.clipboard.writeText(el.getAttribute('data-copy')).catch(function(){})}catch(x){}toast('Copied · '+el.getAttribute('data-copy'));return;}
+ if(el=t.closest('[data-proof]')){go('doc-viewer');return;}
+ if(el=t.closest('[data-dl]')){toast('Download started · '+el.getAttribute('data-dl'));return;}
+ if(el=t.closest('[data-act=report]')){toast('Preparing your progress report (PDF)…');setTimeout(function(){toast('Report downloaded · Northwind-progress-6-Oct.pdf')},RM?0:1400);return;}
+ if(el=t.closest('[data-act=search]')){openSheet('Search','<div style="padding:0 14px 10px"><input aria-label="Search" placeholder="Search steps, filings, documents" style="width:100%;height:44px;border-radius:8px;border:1px solid var(--border);padding:0 12px;font:500 15px Manrope" id="sq"></div>'+drow('you','Registered Office Address','Step 7 · Incorporation')+drow('done','Certificate of Incorporation','Document',"documents")+drow('up','GSTR-3B · Oct','Filing',"filings"));
+   $('#shB').onclick=function(e){var r=e.target.closest('[data-open]');if(r){closeSheet();go(r.getAttribute('data-open'));}};return;}
+},false);
+/* robot sinks while scrolling (decision) */
+var st;addEventListener('scroll',function(){$('#launch').classList.add('sink');clearTimeout(st);st=setTimeout(function(){if(!sheet.classList.contains('on'))$('#launch').classList.remove('sink')},420)},{passive:true});
+
+/* ---------- boot: L1 skeleton (after 150 ms, held ≥ 300 ms) ---------- */
+render();
+if(/chat/.test(location.hash))setTimeout(chat,700);
+setTimeout(function(){ $('#app').classList.remove('sk'); requestAnimationFrame(function(){ countUp(); setTimeout(drawIn,60); }); }, RM?0:450);
+})();
+</script>
+<script>window.__vcfoOwnChat=true;</script>
+<script src="../../routes.js"></script>
+<script src="../../proto.js"></script>
+</body>
+</html>

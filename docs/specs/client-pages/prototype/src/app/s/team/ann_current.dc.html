@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Announcements, current</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+.ak{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;font-size:10.5px;font-weight:700;flex:none}
+.arow{display:flex;align-items:center;gap:10px;padding:14px 20px}
+.arow+.arow{border-top:1px solid var(--border)}
+</style>
+</helmet>
+<div class="old" style="position:relative;width:1440px;min-height:1100px;display:flex;background:var(--bg);color:var(--fg);font-size:13px">
+  <div style="width:248px;flex:none;background:#fff"><dc-import name="side_legacy" active="ann" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div style="flex:1;min-width:0">
+    <dc-import name="topbar" crumb="Announcements" mid="Updates" legacy="{{yes}}" active="ann" hint-size="100%,52px" style="display:block;width:100%"></dc-import>
+    <main style="padding:24px 32px;display:flex;flex-direction:column;gap:20px">
+      <h1 style="margin:0;font-size:26px;font-weight:600">Announcements</h1>
+      <section class="old-card" style="overflow:hidden">
+        <div style="display:flex;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border)"><h2 style="margin:0;font-size:13px;font-weight:600">Latest</h2><span style="font-size:12px;color:var(--muted)">6</span></div>
+        <sc-for list="{{items}}" as="a" hint-placeholder-count="6">
+          <article class="arow">
+            <span class="ak" style="{{a.k}}">{{a.kind}}</span>
+            <div style="flex:1;min-width:0"><p style="margin:0;font-size:14px;font-weight:600">{{a.t}}</p><p style="margin:2px 0 0;font-size:12px;display:flex;align-items:center;gap:6px;color:var(--muted)"><span style="{{a.dot}}"></span>{{a.by}}</p><sc-if value="{{a.src}}" hint-placeholder-val="{{false}}"><span style="display:inline-block;margin-top:6px;font-size:12px;font-weight:500;color:var(--primary)">Source ↗</span></sc-if></div>
+          </article>
+        </sc-for>
+      </section>
+      <section class="old-card" style="padding:20px">
+        <h2 style="margin:0 0 14px;font-size:13px;font-weight:600">Official portals</h2>
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px">Setup</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+            <div style="border:1px solid var(--border);border-radius:10px;background:oklch(98.5% 0.004 255);padding:4px 14px">
+              <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12.5px;font-weight:600"><span>{{g.h}}</span><span style="color:var(--muted);font-size:11px">{{g.n}} {{g.c}}</span></div>
+              <sc-if value="{{g.open}}" hint-placeholder-val="{{true}}"><ul style="list-style:none;margin:0 0 6px;padding:0;border-top:1px solid var(--border)"><sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2"><li style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span>{{r}}</span><span style="font-size:11px;color:var(--muted)">Portal ↗  Circular ↗</span></li></sc-for></ul></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:16px 0 8px">Recurring</div>
+        <div style="display:grid;gap:10px">
+          <div style="border:1px solid var(--border);border-radius:10px;background:oklch(98.5% 0.004 255);padding:8px 14px;display:flex;justify-content:space-between;font-size:12.5px;font-weight:600"><span>Monthly Compliances</span><span style="color:var(--muted);font-size:11px">9 ▴</span></div>
+          <div style="border:1px solid var(--border);border-radius:10px;background:oklch(98.5% 0.004 255);padding:8px 14px;display:flex;justify-content:space-between;font-size:12.5px;font-weight:600"><span>Quarterly Compliances</span><span style="color:var(--muted);font-size:11px">6 ▾</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const K = { Deadline: 'background:var(--due-light);color:var(--due-text)', MCA: 'background:var(--violet-light);color:var(--violet-chip)', Tax: 'background:var(--prog-light);color:var(--prog-text)', Compliance: 'background:var(--sky-light);color:var(--sky-chip)', GST: 'background:var(--ok-light);color:var(--ok-text)', 'Post-Incorp': 'background:var(--raised);color:var(--muted)' };
+    const u = 'width:6px;height:6px;border-radius:99px;background:var(--primary)', r = 'display:none';
+    const A = [['Deadline', 'GSTR-3B for September is due on 20 Oct', 'Priya Raman', 1, 0], ['MCA', 'MCA V3 portal down 11–12 Oct for an upgrade', 'VCFOSuite', 1, 1], ['Compliance', 'DIR-3 KYC window is open for all directors', 'Priya Raman', 0, 0], ['Tax', 'Advance tax: third instalment due 15 Dec', 'VCFOSuite', 0, 1], ['GST', 'GST invoice management system changes from 1 Nov', 'VCFOSuite', 0, 1], ['Post-Incorp', 'After COI: open the current account within 30 days', 'Arjun Mehta', 0, 0]];
+    const items = A.map((a) => ({ kind: a[0], k: K[a[0]], t: a[1], by: a[2], dot: a[3] ? u : r, src: Boolean(a[4]) }));
+    const groups = [{ h: 'Incorporation', n: 2, c: '▴', open: true, rows: ['Pre-Incorporation', 'Post-Incorporation'] }, { h: 'Registrations', n: 4, c: '▴', open: true, rows: ['GST Registration', 'PF Registration', 'ESI Registration', 'PT Registration'] }, { h: 'FEMA', n: 5, c: '▾', open: false, rows: [] }, { h: 'Customs', n: 3, c: '▾', open: false, rows: [] }];
+    return { items, groups, yes: true };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

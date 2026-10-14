@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Team, hand off your seat</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position:relative;width:1440px;height:1000px;overflow:hidden;font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+  <dc-import name="team_redesign" hint-size="1440px,1000px" style="display:block;width:1440px"></dc-import>
+  <div class="ov">
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="ho-t" style="width:500px">
+      <div class="dlg-h">
+        <span class="ic" style="background:var(--over-chip)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3.5-3.5 M20 16H7l3.5 3.5"></path></svg></span>
+        <h2 id="ho-t" style="margin:0;font:700 16px Manrope;color:var(--navy)">Hand off your seat</h2>
+        <button type="button" class="ibtn" aria-label="Close" style="margin-left:auto;border:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+      </div>
+      <div class="dlg-b">
+        <div style="display:grid;grid-template-columns:1fr 28px 1fr;align-items:center;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px"><span class="av" style="width:34px;height:34px;font-size:11px;background:var(--primary)">RK</span><div style="min-width:0"><div class="rt">Rahul Khanna</div><div class="cap">Primary · you</div></div></div>
+          <span style="color:var(--over)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16 M14 6l6 6-6 6"></path></svg></span>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1.5px dashed var(--navy-3);border-radius:8px;background:var(--primary-light)"><span class="av" style="width:34px;height:34px;font-size:11px;background:var(--navy)">KS</span><div style="min-width:0"><div class="rt">Kavya Sen</div><div class="cap">New Primary</div></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--over-light);color:var(--over-text);font-weight:700;font-size:12.5px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 21 20H3Z M12 10v4 M12 17h.01"></path></svg>
+          You lose access to Northwind right after this.
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <label class="fl">Name<input class="inp" value="Kavya Sen"></label>
+          <label class="fl">Work email<input class="inp" type="email" value="kavya.sen@northwind.in"></label>
+        </div>
+        <div class="fl">
+          <span>Sign-in for Kavya</span>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+            <span class="ic" style="background:var(--navy)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></span>
+            <span style="flex:1;min-width:0"><span class="rt" style="display:block">Set-password link by email</span><span class="cap">Expires in 7 days</span></span>
+            <button type="button" class="ibtn" aria-label="Copy the link" data-tip="Copy the link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h10v11H9Z M5 15V4h10"></path></svg></button>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:600"><input type="checkbox" checked style="width:16px;height:16px;accent-color:var(--navy)">I understand I will be signed out</label>
+      </div>
+      <div class="dlg-f">
+        <button type="button" class="btn btn-g">Cancel</button>
+        <button type="button" class="btn" style="background:var(--over-chip);color:#fff">Hand off &amp; leave</button>
+      </div>
+    </div>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

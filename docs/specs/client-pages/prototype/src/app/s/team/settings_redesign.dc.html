@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings, redesign</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+/* v7 responsive contract (team boards): phone <=767, tablet 768-1279 (72 px rail), desktop >=1280 */
+:root{--vp-side-w:248px}
+@media (max-width:1279px){:root{--vp-side-w:72px}}
+@media (max-width:767px){:root{--vp-side-w:0px}}
+.tb-root{position:relative;width:100%;min-height:100vh;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px}
+.tb-side{width:var(--vp-side-w,248px);flex:none;background:#0f2a4a;overflow:hidden;min-width:0}
+.tb-side>*{width:248px}
+.tb-main{flex:1;min-width:0}
+.pg.tb-wrap{width:100%;max-width:1600px;margin-inline:auto;box-sizing:border-box;padding:clamp(16px,2vw,24px) clamp(16px,2vw,24px) 96px}
+.tb-launch{position:absolute;right:0;top:870px}
+.tb-segx{max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;border-radius:8px;-webkit-overflow-scrolling:touch}
+.tb-segx::-webkit-scrollbar{display:none}
+.tb-segx>.seg{width:max-content;min-width:100%;box-sizing:border-box}
+.tb-m{display:none!important}
+/* no text under 11 px */
+html .lbl{font-size:11px}
+html .seg .cnt,html .kbd{font-size:11px}
+html .dtile .m{font-size:11px;letter-spacing:.06em}
+/* pop-ups fit the viewport */
+.tb-ov{position:fixed!important;inset:0;z-index:60!important;overflow:auto;padding:var(--ovt,12px) 12px 12px;box-sizing:border-box}
+.tb-ov.tb-top{--ovt:min(120px,12vh);align-items:flex-start!important}
+.tb-ov>.dlg{max-width:calc(100vw - 24px);max-height:calc(100dvh - var(--ovt,12px) - 12px);overflow:auto;flex:none;box-sizing:border-box}
+.tb-toast{position:fixed!important;left:calc(50% + var(--vp-side-w,248px) / 2)!important;bottom:24px;max-width:calc(100vw - 24px);box-sizing:border-box;z-index:61!important}
+@media (max-width:1279px){.tb-side>*{display:none!important}}
+@media (max-width:767px){
+  .tb-side{display:none}
+  .pg.tb-wrap{padding:16px 16px 104px}
+  .tb-d{display:none!important}
+  .tb-m{display:revert!important}
+  .tb-m.tb-flex{display:flex!important}
+  .tb-m.tb-iflex{display:inline-flex!important}
+  .tb-ov.tb-top{--ovt:12px;align-items:center!important}
+  .tb-toast{left:50%!important;bottom:96px}
+  .tb-hd>.tb-segx{flex:1 1 100%;margin-left:0!important}
+  /* touch targets >= 40 px */
+  html .btn,html .btn-sm{height:40px;min-height:40px}
+  html .ibtn{width:40px;height:40px}
+  html .seg button{height:40px}
+  html .tgl{position:relative}
+  html .tgl::before{content:"";position:absolute;left:-2px;right:-2px;top:-9px;bottom:-9px}
+  html .info>button{width:40px;height:40px;margin:-11px}
+}
+.tb-g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;align-items:start}
+.tb-s5{grid-column:span 5;display:flex;flex-direction:column;gap:16px;min-width:0}.tb-s7{grid-column:span 7;display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:959px){.tb-s5,.tb-s7{grid-column:1 / -1}}
+.tb-ch2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;padding:12px 18px 6px}
+.tb-app{padding:12px 18px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}
+.kv>*{min-width:0}
+.tb-ch2 .mono.cap{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kv .rt{overflow-wrap:anywhere}
+@media (max-width:767px){
+  .ph>.tb-segx{flex:1 1 100%}
+  .tb-seta{height:40px!important}
+  button[aria-label="Change photo"]::before{content:"";position:absolute;inset:-6px}
+  html .kv{grid-template-columns:92px minmax(0,1fr) auto}
+  html .mx{grid-template-columns:minmax(0,1fr) 60px 76px;gap:10px;padding:10px 12px}
+  html .mx>:first-child{display:none}
+  .tb-ch2{padding:12px 12px 6px}
+  .tb-app{grid-template-columns:minmax(0,1fr);padding:12px}
+  #profile>div:last-child,#security>div:last-child{padding-left:14px!important;padding-right:14px!important}
+}
+
+.kv{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--hair)}
+.kv:first-child{border-top:0}
+.kv>.k{font-size:12px;font-weight:700;color:var(--muted)}
+.mx{display:grid;grid-template-columns:34px minmax(0,1fr) 84px 84px;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--hair)}
+.sw{width:40px;height:40px;border-radius:8px;border:0;cursor:pointer;padding:0}
+</style>
+</helmet>
+<div class="tb-root">
+  <div class="tb-side" data-vp="side"><dc-import name="side" active="8" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div class="tb-main">
+    <dc-import name="topbar" crumb="Settings" hint-size="100%,52px" style="display:block;width:100%"></dc-import>
+    <main class="pg tb-wrap">
+      <div class="ph">
+        <div class="tb-segx"><div class="seg" role="tablist" aria-label="Settings sections" style="grid-template-columns:repeat(4,minmax(0,1fr))"><span class="thumb" style="width:calc((100% - 4px)/4);{{thumb}}"></span><sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><a href="{{t.href}}" role="tab" onClick="{{t.pick}}" class="{{t.cls}} tb-seta" style="position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 12px;border-radius:5px;font:500 12px Manrope;text-decoration:none;{{t.c}}">{{t.label}}</a></sc-for></div></div>
+        <div class="acts"><button type="button" class="btn btn-d btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5h4.5v15H14 M10 8l-4 4 4 4 M6 12h10"></path></svg>Sign out</button></div>
+      </div>
+
+      <div class="tb-g12">
+        <div class="tb-s5">
+          <section style="position:relative;border-radius:10px;padding:18px;background:linear-gradient(115deg,var(--navy) 0%,var(--navy-2) 60%,var(--navy-3) 100%);color:#fff;overflow:hidden;display:flex;align-items:center;gap:16px">
+            <div style="position:relative;flex:none"><span style="width:72px;height:72px;border-radius:99px;background:var(--primary);display:flex;align-items:center;justify-content:center;font:700 22px Space Grotesk;box-shadow:0 0 0 3px oklch(100% 0 0 / .25)">RK</span><button type="button" aria-label="Change photo" style="position:absolute;right:-4px;bottom:-4px;width:28px;height:28px;border-radius:6px;border:0;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;cursor:pointer" data-tip="Change photo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4Z M12 10.5a3.2 3.2 0 1 0 0 6.4a3.2 3.2 0 1 0 0-6.4Z"></path></svg></button></div>
+            <div style="min-width:0;flex:1"><div class="metric" style="font-size:22px;color:#fff">Rahul Khanna</div><div class="mono" style="font-size:11px;opacity:.75;margin-top:2px;overflow-wrap:anywhere">rahul@northwind.in</div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><span class="chip" style="background:var(--gold);color:var(--navy)">Primary</span><span class="chip" style="background:oklch(100% 0 0 / .14);color:#fff">Northwind Technologies</span></div></div>
+            <span style="position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--gold),oklch(78% 0.1 85 / 0) 70%)"></span>
+          </section>
+
+          <section id="profile" class="card">
+            <div class="ch" style="padding-bottom:4px"><span class="ic" style="background:var(--navy)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8a4 4 0 1 0 0 8Z M4.5 20c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5"></path></svg></span><h2 class="h3">Profile</h2><button type="button" class="btn btn-g btn-sm" style="margin-left:auto">Edit</button></div>
+            <div style="padding:4px 18px 12px">
+              <div class="kv"><span class="k">Full name</span><span class="rt">Rahul Khanna</span><span></span></div>
+              <div class="kv"><span class="k">Email</span><span class="rt mono" style="font-size:12px">rahul@northwind.in</span><span class="info"><button type="button" aria-label="About changing email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></button><span class="pop" role="tooltip" style="left:auto;right:-8px;transform:none">Changing email needs your password. Sign-in moves to the new address.<a class="ask" href="#"><dc-import name="v7c_bot" state="idle" size="16" hint-size="16px,16px"></dc-import>Ask VCFO about this</a></span></span></div>
+              <div class="kv"><span class="k">Phone</span><span class="rt mono" style="font-size:12px">+91 98765 43210</span><span></span></div>
+              <div class="kv"><span class="k">WhatsApp</span><span class="rt mono" style="font-size:12px">{{waNum}}</span><span class="chip" style="{{waChip}}">{{waState}}</span></div>
+            </div>
+          </section>
+
+          <section id="security" class="card">
+            <div class="ch" style="padding-bottom:4px"><span class="ic" style="background:var(--navy)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 10.5h12v9.5H6Z M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"></path></svg></span><h2 class="h3">Security</h2></div>
+            <div style="padding:4px 18px 14px">
+              <div class="kv"><span class="k">Password</span><span><span class="mono rt">••••••••</span><span class="cap" style="margin-left:8px;display:inline-block;white-space:nowrap">changed 2 Sep</span></span><sc-if value="{{pwClosed}}" hint-placeholder-val="{{true}}"><button type="button" class="btn btn-o btn-sm" onClick="{{openPw}}">Change</button></sc-if></div>
+              <sc-if value="{{pwOpen}}" hint-placeholder-val="{{false}}">
+                <form style="display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:8px;background:var(--raised);margin:4px 0 8px">
+                  <label class="fl">Current password<input class="inp" type="password" value="oldpassword" autocomplete="current-password"></label>
+                  <label class="fl">New password<input class="inp" type="password" value="Northwind#2026" autocomplete="new-password"></label>
+                  <div style="display:flex;gap:4px" aria-label="Strength: strong"><span style="flex:1;height:5px;border-radius:2px;background:var(--ok)"></span><span style="flex:1;height:5px;border-radius:2px;background:var(--ok)"></span><span style="flex:1;height:5px;border-radius:2px;background:var(--ok)"></span><span style="flex:1;height:5px;border-radius:2px;background:var(--ok)"></span></div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">✓ 8+ characters</span><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">✓ Number</span><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">✓ Symbol</span><span class="chip" style="background:var(--ok-chip);color:#fff">Strong</span></div>
+                  <label class="fl">Confirm new password<input class="inp" type="password" value="Northwind#2026" autocomplete="new-password" style="border-color:var(--ok)"></label>
+                  <div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn btn-g btn-sm" onClick="{{closePw}}">Cancel</button><button type="button" class="btn btn-n btn-sm" onClick="{{savePw}}">Save password</button></div>
+                </form>
+              </sc-if>
+              <div class="kv"><span class="k">This device</span><span class="rt">Chrome on Windows · Hyderabad</span><span class="chip" style="background:var(--ok-light);color:var(--ok-text)">Active now</span></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="tb-s7">
+          <section id="notifications" class="card t">
+            <div class="ch"><span class="ic" style="background:var(--navy)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4.5 1.8 6.5 1.8 6.5H4.7S6.5 14.5 6.5 10Z M10 19.5a2.2 2.2 0 0 0 4 0"></path></svg></span><h2 class="h3">Notifications</h2>
+              <span class="info"><button type="button" aria-label="About notifications"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></button><span class="pop" role="tooltip">Email is your record and stays on for anything you must act on. WhatsApp is a quick nudge on top.<a class="ask" href="#"><dc-import name="v7c_bot" state="idle" size="16" hint-size="16px,16px"></dc-import>Ask VCFO about this</a></span></span>
+            </div>
+            <div class="tb-ch2">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;border:1px solid var(--border)">
+                <span class="circ" style="background:var(--prog-chip)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5.5h14A1.5 1.5 0 0 1 20.5 7v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17V7A1.5 1.5 0 0 1 5 5.5Z M4.5 7.5l7.5 5.5 7.5-5.5"></path></svg></span>
+                <div style="flex:1;min-width:0"><div class="rt" style="font-weight:800">Email</div><div class="mono cap">rahul@northwind.in</div></div>
+                <span class="chip" style="background:var(--prog-light);color:var(--prog-text)">Always on</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:8px;border:1px solid var(--border);{{waCard}}">
+                <span class="circ" style="background:var(--ok)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4a8 8 0 0 0-6.9 12L4 20l4.1-1.1A8 8 0 1 0 12 4Z M9.2 8.8c.2-.4.6-.4.9-.2l.8 1.4c.1.3 0 .6-.2.8l-.4.4c.4.9 1.2 1.7 2.1 2.1l.4-.4c.2-.2.5-.3.8-.2l1.4.8c.3.2.3.6.1.9-.5.8-1.4 1.1-2.3.7a7 7 0 0 1-3.7-3.7c-.4-.9-.1-1.8.1-2.6Z"></path></svg></span>
+                <div style="flex:1;min-width:0"><div class="rt" style="font-weight:800">WhatsApp</div><div class="mono cap">{{waNum}}</div></div>
+                <sc-if value="{{waOn}}" hint-placeholder-val="{{true}}"><span data-tip="WhatsApp is on · click to turn off" style="display:inline-flex"><button type="button" class="tgl on" aria-pressed="true" aria-label="WhatsApp is on · click to turn off" onClick="{{waToggle}}"></button></span></sc-if>
+                <sc-if value="{{waOffState}}" hint-placeholder-val="{{false}}"><button type="button" class="btn btn-n btn-sm" onClick="{{waToggle}}">Turn on</button></sc-if>
+              </div>
+            </div>
+            <div class="mx" style="border-top:0;padding-top:12px;padding-bottom:6px"><span></span><span class="lbl">Tell me when</span><span class="lbl" style="text-align:center">Email</span><span class="lbl" style="text-align:center">WhatsApp</span></div>
+            <sc-for list="{{prefs}}" as="p" hint-placeholder-count="7">
+              <div class="mx">
+                <span class="ic" style="{{p.bg}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.icon}}"></path></svg></span>
+                <span class="rt">{{p.t}}</span>
+                <span style="display:flex;justify-content:center"><sc-if value="{{p.locked}}" hint-placeholder-val="{{false}}"><span class="chip" data-tip="Always on · email is your record" style="background:var(--raised);color:var(--muted);box-shadow:inset 0 0 0 1px var(--border)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 10.5h12v9.5H6Z M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"></path></svg>On</span></sc-if><sc-if value="{{p.free}}" hint-placeholder-val="{{true}}"><span data-tip="{{p.etip}}" style="display:inline-flex"><button type="button" class="{{p.ec}}" aria-pressed="{{p.ea}}" aria-label="{{p.etip}}" onClick="{{p.te}}"></button></span></sc-if></span>
+                <span style="display:flex;justify-content:center"><sc-if value="{{p.hasWa}}" hint-placeholder-val="{{true}}"><span data-tip="{{p.wtip}}" style="display:inline-flex"><button type="button" class="{{p.wc}}" aria-pressed="{{p.wa}}" aria-label="{{p.wtip}}" onClick="{{p.tw}}" disabled="{{p.wdis}}"></button></span></sc-if><sc-if value="{{p.noWa}}" hint-placeholder-val="{{false}}"><span class="cap">—</span></sc-if></span>
+              </div>
+            </sc-for>
+            <div class="mx" style="background:var(--raised);border-radius:0 0 10px 10px"><span class="ic" style="background:var(--navy-2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5Z"></path></svg></span><span class="rt">Quiet hours · no WhatsApp 9 pm – 8 am</span><span></span><span style="display:flex;justify-content:center"><span data-tip="{{qtip}}" style="display:inline-flex"><button type="button" class="{{qc}}" aria-pressed="{{qa}}" aria-label="{{qtip}}" onClick="{{tq}}" disabled="{{wdis}}"></button></span></span></div>
+          </section>
+
+          <section id="appearance" class="card">
+            <div class="ch"><span class="ic" style="background:var(--navy)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1 0 1.5-.7 1.5-1.5 0-1.2-1-1.6-1-2.6 0-.9.7-1.4 1.6-1.4H16a4.5 4.5 0 0 0 4.5-4.5c0-4-3.8-7-8.5-7Z M7.5 12h.01 M10 8h.01 M14.5 8h.01"></path></svg></span><h2 class="h3">Appearance</h2></div>
+            <div class="tb-app">
+              <div><div class="lbl" style="margin-bottom:8px">Theme</div><div class="seg" role="tablist" style="grid-template-columns:repeat(3,minmax(0,1fr))"><span class="thumb" style="width:calc((100% - 4px)/3);{{ththumb}}"></span><sc-for list="{{themes}}" as="t" hint-placeholder-count="3"><button type="button" role="tab" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for></div></div>
+              <div><div class="lbl" style="margin-bottom:8px">Reduce motion</div><span data-tip="{{mtip}}" style="display:inline-flex"><button type="button" class="{{mc}}" aria-pressed="{{ma}}" aria-label="{{mtip}}" onClick="{{tm}}"></button></span></div>
+              <div style="grid-column:1 / -1"><div class="lbl" style="margin-bottom:8px">Greeting card</div><div style="display:flex;gap:10px;flex-wrap:wrap"><sc-for list="{{swatches}}" as="w" hint-placeholder-count="6"><button type="button" class="sw" aria-label="{{w.n}}" aria-pressed="{{w.on}}" onClick="{{w.pick}}" style="{{w.s}}" data-tip="{{w.n}}"></button></sc-for><button type="button" class="sw" aria-label="Upload a photo" style="background:var(--raised);box-shadow:inset 0 0 0 1.5px var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center" data-tip="Upload a photo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast tb-toast"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:oklch(80% 0.12 160)"><path d="M5 12.5 10 17.5 19 7"></path></svg><span>{{toastText}}</span><a href="#" onClick="{{undo}}">Undo</a></div></sc-if>
+  <sc-if value="{{waDialog}}" hint-placeholder-val="{{false}}">
+    <div class="ov tb-ov">
+      <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="wa-t" style="width:460px">
+        <div class="dlg-h"><span class="ic" style="background:var(--ok)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4a8 8 0 0 0-6.9 12L4 20l4.1-1.1A8 8 0 1 0 12 4Z"></path></svg></span><h2 id="wa-t" style="margin:0;font:700 16px Manrope;color:var(--navy)">Turn on WhatsApp</h2><button type="button" class="ibtn" aria-label="Close" style="margin-left:auto;border:0" onClick="{{closeWa}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+        <div class="dlg-b">
+          <div style="display:flex;align-items:center;gap:8px"><span class="node" style="background:var(--ok-chip);width:24px;height:24px;box-shadow:none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"></path></svg></span><span style="font-size:12px;font-weight:700">Number</span><span style="flex:1;height:2px;background:var(--ok)"></span><span class="node pulse" style="background:var(--navy);width:24px;height:24px;box-shadow:none;font:700 11px Manrope">2</span><span style="font-size:12px;font-weight:700">Code</span><span style="flex:1;height:2px;border-top:2px dashed var(--border)"></span><span class="node" style="background:var(--panel);color:var(--muted);width:24px;height:24px;box-shadow:inset 0 0 0 1.5px var(--border);font:700 11px Manrope">3</span><span style="font-size:12px;font-weight:700;color:var(--muted)">Done</span></div>
+          <label class="fl">WhatsApp number<span style="display:flex;gap:8px"><span class="inp mono" style="width:70px;display:flex;align-items:center">+91</span><input class="inp mono" value="98765 43210" style="flex:1"></span></label>
+          <div class="fl">Code sent to WhatsApp<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px"><input class="inp mono" aria-label="Digit 1" value="4" style="text-align:center;font-size:18px;height:44px"><input class="inp mono" aria-label="Digit 2" value="7" style="text-align:center;font-size:18px;height:44px"><input class="inp mono" aria-label="Digit 3" value="2" style="text-align:center;font-size:18px;height:44px"><input class="inp mono" aria-label="Digit 4" value="" style="text-align:center;font-size:18px;height:44px;border-color:var(--navy)"><input class="inp mono" aria-label="Digit 5" value="" style="text-align:center;font-size:18px;height:44px"><input class="inp mono" aria-label="Digit 6" value="" style="text-align:center;font-size:18px;height:44px"></div></div>
+          <label style="display:flex;align-items:flex-start;gap:10px;font-size:12.5px;font-weight:600;line-height:1.4"><input type="checkbox" checked style="width:16px;height:16px;margin-top:1px;accent-color:var(--navy)">Send me WhatsApp updates about Northwind. Reply STOP to stop.</label>
+        </div>
+        <div class="dlg-f"><button type="button" class="btn btn-g" onClick="{{closeWa}}">Cancel</button><button type="button" class="btn btn-n" onClick="{{confirmWa}}">Verify &amp; turn on</button></div>
+      </div>
+    </div>
+  </sc-if>
+  <div class="tb-launch"><dc-import name="launcher" hint-size="160px,130px"></dc-import></div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"section":{"editor":"enum","options":[0,1,2,3],"default":2},"pwOpen":{"editor":"boolean","default":false},"waOff":{"editor":"boolean","default":false},"waDialog":{"editor":"boolean","default":false},"toast":{"editor":"text","default":""},"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = {}; }
+  pick(k, d) { const s = this.state; return s[k] !== undefined ? s[k] : d; }
+  renderVals() {
+    const P = this.props;
+    const sec = this.pick('sec', Number(P.section ?? 2));
+    const pwOpen = this.pick('pwOpen', Boolean(P.pwOpen));
+    const waOff = this.pick('waOff', Boolean(P.waOff));
+    const waDialog = this.pick('waDialog', Boolean(P.waDialog));
+    const toastText = this.pick('toastText', P.toast || '');
+    const em = this.pick('em', { ann: true, feed: false, digest: true });
+    const wa = this.pick('wa', { docs: true, steps: true, dead: true, time: true, ann: false, feed: false });
+    const q = this.pick('q', true), rm = this.pick('rm', false), th = this.pick('th', 0), sw = this.pick('sw', 0);
+    const T = ['Profile', 'Security', 'Notifications', 'Appearance'];
+    const tabs = T.map((l, i) => ({ label: l, href: '#' + l.toLowerCase(), cls: sec === i ? 'on' : '', c: sec === i ? 'color:#fff' : 'color:oklch(55% 0.022 255)', pick: () => this.setState({ sec: i }) }));
+    const tg = (on) => 'tgl' + (on ? ' on' : '');
+    const R = [
+      ['docs', 'Documents requested or sent back', 1, 'background:var(--due-chip)', 'M7 3.5h7l4 4v13H7Z M14 3.5v4h4 M10 13h5 M10 16.5h5'],
+      ['steps', 'Step accepted or needs changes', 1, 'background:var(--ok-chip)', 'M5 12.5 10 17.5 19 7'],
+      ['dead', 'Deadlines and reminders', 1, 'background:var(--over-chip)', 'M12 4.5a7.5 7.5 0 1 0 0 15a7.5 7.5 0 1 0 0-15Z M12 8v4.2l2.8 1.8'],
+      ['time', 'Timeline changes', 1, 'background:var(--prog-chip)', 'M4 7h10 M4 12h16 M4 17h7'],
+      ['ann', 'Announcements from SBC', 0, 'background:var(--navy-3)', 'M4 10h3l8-4.5v13L7 14H4Z'],
+      ['feed', 'Official feed news (MCA, GST, Tax)', 0, 'background:var(--sky-chip)', 'M5 19a1 1 0 1 0 0 .01 M5 12a7 7 0 0 1 7 7 M5 5a14 14 0 0 1 14 14'],
+      ['digest', 'Weekly summary · Monday 9 am', 0, 'background:var(--violet-chip)', 'M6 5.5h12v14H6Z M9 9.5h6 M9 13h6 M9 16.5h3']
+    ];
+    const prefs = R.map((r) => {
+      const k = r[0], locked = Boolean(r[2]), hasWa = k !== 'digest';
+      const eOn = locked || Boolean(em[k]); const wOn = !waOff && Boolean(wa[k]);
+      return { t: r[1], bg: r[3], icon: r[4], locked, free: !locked, hasWa, noWa: !hasWa,
+        ec: tg(eOn), ea: eOn ? 'true' : 'false', wc: tg(wOn), wa: wOn ? 'true' : 'false', wdis: waOff,
+        etip: 'Email ' + (eOn ? 'on' : 'off') + ' · ' + r[1], wtip: waOff ? 'Turn on WhatsApp first' : 'WhatsApp ' + (wOn ? 'on' : 'off') + ' · ' + r[1],
+        te: () => this.setState({ em: { ...em, [k]: !em[k] } }),
+        tw: () => this.setState({ wa: { ...wa, [k]: !wa[k] } }) };
+    });
+    const themes = ['Light', 'Dark', 'System'].map((l, i) => ({ label: l, cls: th === i ? 'on' : '', pick: () => this.setState({ th: i }) }));
+    const SW = [['Navy', 'background:linear-gradient(115deg,#0f2a4a,#17396b 60%,#1b4f94)'], ['Navy and gold', 'background:linear-gradient(115deg,#0f2a4a,#c9a24b)'], ['Teal', 'background:linear-gradient(115deg,#134e4a,#1b4f94)'], ['Plum', 'background:linear-gradient(115deg,#0f2a4a,#6b3fa0)'], ['Graphite', 'background:#2b3340'], ['Forest', 'background:#1f4d3a']];
+    const swatches = SW.map((w, i) => ({ n: w[0], on: sw === i ? 'true' : 'false', s: w[1] + (sw === i ? ';box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--gold)' : ''), pick: () => this.setState({ sw: i }) }));
+    return {
+      tabs, thumb: 'transform:translateX(' + (sec * 100) + '%)', prefs, themes, ththumb: 'transform:translateX(' + (th * 100) + '%)', swatches,
+      pwOpen, pwClosed: !pwOpen, openPw: () => this.setState({ pwOpen: true, sec: 1 }), closePw: () => this.setState({ pwOpen: false }),
+      savePw: () => this.setState({ pwOpen: false, toastText: 'Password changed' }),
+      waOn: !waOff, waOffState: waOff, waNum: waOff ? 'Not set up' : '+91 98765 43210',
+      waState: waOff ? 'Off' : 'Verified', waChip: waOff ? 'background:var(--raised);color:var(--muted)' : 'background:var(--ok-light);color:var(--ok-text)',
+      waCard: waOff ? 'background:var(--raised)' : '',
+      waToggle: () => waOff ? this.setState({ waDialog: true }) : this.setState({ waOff: true, toastText: 'WhatsApp turned off' }),
+      waDialog, closeWa: () => this.setState({ waDialog: false }), confirmWa: () => this.setState({ waDialog: false, waOff: false, toastText: 'WhatsApp is on' }),
+      qc: tg(q && !waOff), qa: q ? 'true' : 'false', tq: () => this.setState({ q: !q }), wdis: waOff,
+      qtip: waOff ? 'Turn on WhatsApp first' : 'Quiet hours ' + (q ? 'on' : 'off'), mtip: 'Reduce motion ' + (rm ? 'on' : 'off'),
+      mc: tg(rm), ma: rm ? 'true' : 'false', tm: () => this.setState({ rm: !rm }),
+      toast: Boolean(toastText), toastText, undo: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ toastText: '' }); }
+    };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

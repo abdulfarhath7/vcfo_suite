@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings, current</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@500;600&amp;family=Instrument+Serif&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+.sr{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--hair);font-size:13px}
+.sr:last-child{border-bottom:0}
+.sr>span:first-child{font-size:12.5px;color:var(--muted)}
+.sw{width:34px;height:34px;border-radius:8px;border:1px solid var(--border)}
+</style>
+</helmet>
+<div class="old" style="position:relative;width:1440px;min-height:1300px;display:flex;background:var(--bg);color:var(--fg);font-size:13px">
+  <div style="width:248px;flex:none;background:#fff"><dc-import name="side_legacy" active="settings" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div style="flex:1;min-width:0">
+    <dc-import name="topbar" crumb="Settings" legacy="{{yes}}" hint-size="100%,52px" style="display:block;width:100%"></dc-import>
+    <main style="padding:24px 32px">
+      <div style="max-width:1080px;margin:0 auto;display:grid;grid-template-columns:392px 1fr;gap:32px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <div class="old-card" style="border-radius:8px;padding:20px">
+            <div style="display:flex;align-items:center;gap:18px">
+              <span style="width:80px;height:80px;border-radius:99px;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:18px;box-shadow:0 0 0 1px oklch(54.6% 0.215 263 / .2)">RK</span>
+              <div><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--muted)">←</span><h1 style="margin:0;font:400 28px 'Instrument Serif',serif">Rahul Khanna</h1></div><div style="font-size:12.5px;color:var(--muted);margin-top:4px">rahul@northwind.in · Client</div></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:14px"><span class="btn btn-o btn-sm">Upload photo</span><span class="btn btn-g btn-sm">Remove</span></div>
+          </div>
+          <div class="old-card" style="border-radius:8px">
+            <section style="padding:20px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:15px;font-weight:600">Profile</h2><span style="font-size:12px;color:var(--muted)">✎ Edit</span></div>
+              <div style="margin-top:8px"><div class="sr"><span>Full name</span><span>Rahul Khanna</span></div><div class="sr"><span>Email</span><span>rahul@northwind.in</span></div><div class="sr"><span>Phone</span><span>Not set</span></div><div class="sr"><span>Role</span><span>Client</span></div></div>
+            </section>
+            <div style="height:1px;background:var(--border);margin:0 20px"></div>
+            <section style="padding:20px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:15px;font-weight:600">Security</h2><span style="font-size:12px;color:var(--muted)">✎ Edit</span></div>
+              <div style="margin-top:8px"><div class="sr"><span>Password</span><span class="mono">••••••••</span></div></div>
+            </section>
+          </div>
+        </div>
+        <div class="old-card" style="border-radius:8px;padding:20px">
+          <h2 style="margin:0 0 16px;font-size:15px;font-weight:600">Appearance</h2>
+          <h3 style="margin:0 0 10px;font-size:13px;font-weight:600">Greeting Card Appearance</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="sw" style="background:var(--navy);box-shadow:0 0 0 2px #fff,0 0 0 4px var(--primary)"></span><span class="sw" style="background:oklch(45% 0.1 160)"></span><span class="sw" style="background:oklch(35% 0.05 260)"></span><span class="sw" style="background:linear-gradient(135deg,#1b4f94,#c9a24b)"></span><span class="sw" style="background:linear-gradient(135deg,#0f2a4a,#6b3fa0)"></span><span class="sw" style="background:linear-gradient(135deg,#134e4a,#1b4f94)"></span><span class="sw" style="border-style:dashed;display:flex;align-items:center;justify-content:center;color:var(--muted)">+</span></div>
+          <h3 style="margin:22px 0 10px;font-size:13px;font-weight:600">Sidebar Appearance</h3>
+          <div style="display:flex;gap:8px"><span class="sw" style="background:#fff;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--primary)"></span><span class="sw" style="background:var(--navy)"></span><span class="sw" style="background:oklch(25% 0.02 260)"></span></div>
+          <h3 style="margin:22px 0 10px;font-size:13px;font-weight:600">Animations</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span>Reduce motion</span><span style="width:36px;height:20px;border-radius:99px;background:var(--border);position:relative"><span style="position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:99px;background:#fff"></span></span></div>
+        </div>
+      </div>
+      <footer style="max-width:1080px;margin:40px auto 0;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end"><span class="btn btn-sm" style="background:var(--over);color:#fff">Sign out</span></footer>
+    </main>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return { yes: true }; }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>
