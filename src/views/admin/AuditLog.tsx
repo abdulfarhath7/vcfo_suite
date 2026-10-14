@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useReducer } from 'react';
 import { m } from 'framer-motion';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ChevronDown, History, Search, ScrollText } from 'lucide-react';
+import { History, Search, ScrollText } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
@@ -24,7 +24,6 @@ import type { AuditActionCategory, AuditEventRow } from '@/lib/audit-log';
 import {
   formatActorDisplay,
   formatAuditActionLabel,
-  formatAuditMetadata,
   getAuditActionCategory,
   getAuditTargetType,
 } from '@/lib/audit-log';
@@ -196,10 +195,8 @@ function AuditEventRowView({
   index: number;
   showTarget: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const when = formatWhen(ev.created_at);
   const actionLabel = formatAuditActionLabel(ev.action);
-  const metadataText = formatAuditMetadata(ev.metadata);
   const actorName = ev.actor_name?.trim();
   const actorEmail = ev.actor_email?.trim();
   const targetType = getAuditTargetType(ev.action);
@@ -210,19 +207,24 @@ function AuditEventRowView({
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.015 * Math.min(index, 12) }}
-        className="grid grid-cols-1 gap-3 px-4 py-3.5 hover:bg-muted/30 sm:grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_minmax(0,1.15fr)_2rem] sm:items-start sm:gap-x-4"
+        className={cn(
+          'grid grid-cols-1 gap-3 px-4 py-3.5 hover:bg-muted/30 sm:items-start sm:gap-x-4',
+          showTarget
+            ? 'sm:grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_minmax(0,1.15fr)]'
+            : 'sm:grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)]',
+        )}
       >
         <div className="min-w-0 sm:pt-0.5">
-          <div className="text-[12px] font-medium text-ink">{when.relative}</div>
+          <div className="text-[12px] font-medium text-foreground">{when.relative}</div>
           <time className="mono mt-0.5 block text-[10.5px] tabular-nums text-text-tertiary">
             {when.absolute}
           </time>
         </div>
 
         <div className="min-w-0">
-          <div className="text-[13px] font-medium leading-snug text-ink">{actionLabel}</div>
+          <div className="text-[13.5px] font-semibold leading-snug text-foreground">{actionLabel}</div>
           {ev.summary && ev.summary !== actionLabel && (
-            <p className="mt-1 text-[12px] leading-snug text-ink-soft">{ev.summary}</p>
+            <p className="mt-1 text-[12px] leading-snug text-muted-foreground">{ev.summary}</p>
           )}
           <span className="mono mt-1.5 inline-block text-[10px] text-text-tertiary sm:hidden">
             {ev.action}
@@ -233,7 +235,7 @@ function AuditEventRowView({
           <div className="flex flex-wrap items-center gap-1.5">
             <RoleBadge role={ev.actor_role} />
           </div>
-          <div className="mt-1.5 truncate text-[12.5px] text-ink">
+          <div className="mt-1.5 truncate text-[12.5px] text-foreground">
             {actorName || actorEmail || 'Unknown actor'}
           </div>
           {actorName && actorEmail && (
@@ -243,10 +245,10 @@ function AuditEventRowView({
 
         {showTarget ? (
           <div className="min-w-0">
-            <span className="inline-flex h-5 items-center rounded-full border border-hairline bg-muted/50 px-2 text-[10.5px] font-medium text-ink-soft">
+            <span className="inline-flex h-5 items-center rounded-full border border-hairline bg-muted/50 px-2 text-[10.5px] font-medium text-muted-foreground">
               {targetType}
             </span>
-            <div className="mt-1.5 truncate text-[12.5px] text-ink">
+            <div className="mt-1.5 truncate text-[12.5px] text-foreground">
               {projectName ?? '—'}
             </div>
             {ev.engagement_id && (
@@ -255,41 +257,8 @@ function AuditEventRowView({
               </div>
             )}
           </div>
-        ) : (
-          <div className="hidden sm:block" aria-hidden />
-        )}
-
-        <div className="flex items-start justify-end sm:pt-0.5">
-          {metadataText ? (
-            <button
-              type="button"
-              onClick={() => setExpanded((open) => !open)}
-              className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-md border border-hairline text-text-tertiary transition-colors hover:bg-muted hover:text-ink',
-                expanded && 'bg-muted text-ink',
-              )}
-              aria-expanded={expanded}
-              aria-label={expanded ? 'Hide event details' : 'Show event details'}
-            >
-              <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
-            </button>
-          ) : (
-            <span className="h-7 w-7" aria-hidden />
-          )}
-        </div>
+        ) : null}
       </m.div>
-
-      {expanded && metadataText && (
-        <div className="border-t border-hairline/50 bg-muted/20 px-4 py-3">
-          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-text-tertiary">
-            Metadata
-          </p>
-          <pre className="mono max-h-40 overflow-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-ink-soft">
-            {metadataText}
-          </pre>
-          <p className="mono mt-2 text-[10px] text-text-tertiary">{ev.action}</p>
-        </div>
-      )}
     </div>
   );
 }
@@ -352,17 +321,16 @@ function AuditTable({
           <div className="min-w-[52rem]">
             <div
               className={cn(
-                'grid gap-x-4 px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground bg-table-header border-b border-border',
+                'grid gap-x-4 border-b border-border bg-table-header px-4 py-2.5 text-[12px] font-semibold text-foreground',
                 showTarget
-                  ? 'grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_minmax(0,1.15fr)_2rem]'
-                  : 'grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_2rem]',
+                  ? 'grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_minmax(0,1.15fr)]'
+                  : 'grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)]',
               )}
             >
               <span>When</span>
               <span>What happened</span>
               <span>Who</span>
               {showTarget && <span>Target</span>}
-              <span className="sr-only">Details</span>
             </div>
 
             {filtered.map((ev, index) => {

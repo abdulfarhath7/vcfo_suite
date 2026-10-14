@@ -19,6 +19,7 @@ import {
   buildDeliverables,
   buildDocumentCounts,
   buildMilestones,
+  buildNeeds,
   buildNextAction,
   buildProgress,
   complianceGroupForAuthority,
@@ -59,6 +60,9 @@ const ACTIVITY_LIMIT = 12;
 /** Compliance runway window (§8: "next ~90 days of filings"). */
 const COMPLIANCE_RUNWAY_DAYS = 90;
 
+/** How far back an unfiled filing still counts as overdue on the dashboard. */
+const OVERDUE_LOOKBACK_DAYS = 60;
+
 function legalFormOf(row: EngagementDbRow): ClientLegalForm {
   const value = row.entityLegalForm?.trim().toLowerCase();
   if (value === 'llp' || value === 'partnership' || value === 'proprietorship') return value;
@@ -94,29 +98,38 @@ async function loadTeam(dbEngagementId: string): Promise<ClientOverviewTeamMembe
   const seen = new Set<string>();
   const out: ClientOverviewTeamMember[] = [];
 
+  const member = (
+    party: (typeof recipients.managers)[number],
+    role: ClientOverviewTeamMember['role'],
+  ): ClientOverviewTeamMember => {
+    const phone = party.phoneE164?.trim();
+    return {
+      id: party.userId,
+      name: party.name,
+      email: party.email,
+      ...(phone ? { phoneE164: phone } : {}),
+      role,
+    };
+  };
+
   for (const manager of recipients.managers) {
     if (seen.has(manager.userId)) continue;
     seen.add(manager.userId);
-    out.push({
-      id: manager.userId,
-      name: manager.name,
-      email: manager.email,
-      role: 'Project Manager',
-    });
+    out.push(member(manager, 'Project Manager'));
   }
   for (const lead of recipients.leads) {
     if (seen.has(lead.userId)) continue;
     seen.add(lead.userId);
     // Never surface the code role word "intern" to a client.
-    out.push({ id: lead.userId, name: lead.name, email: lead.email, role: 'Project Lead' });
+    out.push(member(lead, 'Project Lead'));
   }
   return out;
 }
 
 /**
- * Upcoming filings for one already-authorized engagement.
- * Scoped by the caller-approved `dbEngagementId`, so a client can only ever
- * read their own runway.
+ * Upcoming filings — plus recent ones still unfiled past their due date — for
+ * one already-authorized engagement. Scoped by the caller-approved
+ * `dbEngagementId`, so a client can only ever read their own runway.
  */
 async function loadComplianceRunway(
   dbEngagementId: string,
@@ -124,25 +137,32 @@ async function loadComplianceRunway(
 ): Promise<ClientOverviewComplianceItem[]> {
   const horizon = new Date(now);
   horizon.setDate(horizon.getDate() + COMPLIANCE_RUNWAY_DAYS);
+  const lookback = new Date(now);
+  lookback.setDate(lookback.getDate() - OVERDUE_LOOKBACK_DAYS);
+  const today = ymd(now);
 
-  const rows = await db
+  const all = await db
     .select({
       id: complianceInstances.id,
       obligationId: complianceInstances.obligationId,
       dueDate: complianceInstances.dueDate,
       status: complianceInstances.status,
+      filedOn: complianceInstances.filedOn,
       periodLabel: complianceInstances.periodLabel,
     })
     .from(complianceInstances)
     .where(
       and(
         inArray(complianceInstances.engagementId, [dbEngagementId]),
-        gte(complianceInstances.dueDate, ymd(now)),
+        gte(complianceInstances.dueDate, ymd(lookback)),
         lte(complianceInstances.dueDate, ymd(horizon)),
       ),
     )
     .orderBy(asc(complianceInstances.dueDate));
 
+  const rows = all.filter(
+    (row) => row.dueDate >= today || (!row.filedOn && row.status !== 'filed'),
+  );
   if (rows.length === 0) return [];
 
   const obligationIds = [...new Set(rows.map((row) => row.obligationId))];
@@ -166,7 +186,7 @@ async function loadComplianceRunway(
       authority,
       group: complianceGroupForAuthority(authority),
       dueDate: row.dueDate,
-      status: row.status,
+      status: row.dueDate < today && !row.filedOn ? 'overdue' : row.status,
       periodLabel: row.periodLabel?.trim() || undefined,
     };
   });
@@ -213,6 +233,7 @@ export async function getClientOverview(
   ]);
 
   const incorporationDate = row.incorporationDate?.trim() || undefined;
+  const schedule = normalizeEngagementSchedule(row.schedule);
 
   return {
     engagement: {
@@ -230,7 +251,8 @@ export async function getClientOverview(
     identifiers,
     incorporated: Boolean(identifiers.cin || incorporationDate),
     progress,
-    nextAction: buildNextAction(state, normalizeEngagementSchedule(row.schedule)),
+    nextAction: buildNextAction(state, schedule),
+    needs: buildNeeds(state, schedule),
     ballInCourt: buildBallInCourt(state),
     documents: {
       deliverables,
@@ -240,5 +262,6 @@ export async function getClientOverview(
     milestones: buildMilestones(state),
     activity: toActivity(auditRows),
     team,
+    schedule,
   };
 }

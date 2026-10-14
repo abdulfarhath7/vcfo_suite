@@ -237,31 +237,7 @@ export function CommandPalette() {
       </span>
     ) : null;
 
-  if (!commandOpen) {
-    return (
-      <div
-        ref={rootRef}
-        className="relative hidden min-w-[8rem] w-[min(100%,12.5rem)] max-w-xs shrink sm:block lg:w-[min(100%,16rem)]"
-      >
-        <div className="flex h-9 items-center gap-2 rounded-xl border border-border/70 bg-raised/50 px-3 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-raised hover:text-foreground">
-          <Search className="h-3.5 w-3.5 shrink-0 text-primary/80" strokeWidth={1.75} aria-hidden />
-          <input
-            className="h-9 min-w-0 flex-1 bg-transparent py-0 text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
-            placeholder="Search"
-            aria-label="Search"
-            aria-keyshortcuts="Meta+K Control+K"
-            value=""
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setCommandOpen(true);
-            }}
-            onFocus={() => setCommandOpen(true)}
-          />
-          {shortcutHint}
-        </div>
-      </div>
-    );
-  }
+  if (!commandOpen) return null;
 
   return (
     <div

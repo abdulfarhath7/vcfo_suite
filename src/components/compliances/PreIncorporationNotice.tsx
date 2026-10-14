@@ -21,7 +21,7 @@ export interface PreIncorporationScope {
   companyName?: string;
 }
 
-function preIncorporationCopy(scope: PreIncorporationScope): string {
+export function preIncorporationCopy(scope: PreIncorporationScope): string {
   if (scope.audience === 'client') {
     return 'Your compliance calendar and filings begin once your company is incorporated. Nothing’s due yet — this fills in automatically after your Certificate of Incorporation is issued.';
   }

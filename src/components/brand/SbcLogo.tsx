@@ -1,14 +1,14 @@
 import { cn } from '@/lib/utils';
 
-/** Official lockup, black mark — light UI (`html` without `.dark`). */
-export const SBC_LOCKUP_LIGHT_SRC = '/sbc-logo-light.png';
-const SBC_LOCKUP_LIGHT_SIZE = { width: 971, height: 288 } as const;
-/** Official lockup, white mark — dark UI (`html.dark`). */
-export const SBC_LOCKUP_DARK_SRC = '/sbc-logo-dark.png';
-const SBC_LOCKUP_DARK_SIZE = { width: 1020, height: 301 } as const;
-const SBC_MARK_SRC = '/sbc-logo-mark.png';
-const SBC_MARK_SIZE = { width: 118, height: 140 } as const;
-export const SBC_LOGO_LABEL = 'SBC — Local connect. Global outlook.';
+/** VCFO by SBC lockup — light UI (`html` without `.dark`). */
+export const SBC_LOCKUP_LIGHT_SRC = '/vcfo-logo-light.png';
+const SBC_LOCKUP_LIGHT_SIZE = { width: 956, height: 463 } as const;
+/** Same lockup with the SBC line in white — dark UI (`html.dark`). */
+export const SBC_LOCKUP_DARK_SRC = '/vcfo-logo-dark.png';
+const SBC_LOCKUP_DARK_SIZE = { width: 956, height: 463 } as const;
+const SBC_MARK_SRC = '/vcfo-mark.png';
+const SBC_MARK_SIZE = { width: 398, height: 365 } as const;
+export const SBC_LOGO_LABEL = 'VCFO by SBC';
 
 export function sbcLockupSrc(theme: 'light' | 'dark'): string {
   return theme === 'dark' ? SBC_LOCKUP_DARK_SRC : SBC_LOCKUP_LIGHT_SRC;
@@ -31,46 +31,26 @@ type SbcLogoProps = {
   size?: number;
 };
 
-/** Shared VCFO Suite mark — keep in sync with app/icon.svg and public/logo-mark.svg */
 function SbcLogoMark({
   size = 32,
   className,
-  gradientId = 'vcfo-logo-mark-grad',
   decorative = true,
 }: {
   size?: number;
   className?: string;
-  gradientId?: string;
   decorative?: boolean;
 }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 32 32"
-      fill="none"
-      width={size}
-      height={size}
-      className={cn('shrink-0', className)}
-      role={decorative ? undefined : 'img'}
-      aria-hidden={decorative ? true : undefined}
-      aria-label={decorative ? undefined : 'VCFO Suite'}
-    >
-      <defs>
-        {/* var() is invalid in SVG presentation attributes — stop colors go through style */}
-        <linearGradient id={gradientId} x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-          <stop style={{ stopColor: 'oklch(var(--gold))' }} />
-          <stop offset="1" style={{ stopColor: 'oklch(var(--gold-deep))' }} />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="6" fill={`url(#${gradientId})`} />
-      <path d="M10 9v14" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" opacity="0.3" />
-      <circle cx="10" cy="9.5" r="2.6" fill="#fff" />
-      <circle cx="10" cy="16" r="2.6" fill="#fff" fillOpacity="0.8" />
-      <circle cx="10" cy="22.5" r="2.6" fill="#fff" fillOpacity="0.4" />
-      <path d="M15 9.5h9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M15 16h6.5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeOpacity="0.8" />
-      <path d="M15 22.5h4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeOpacity="0.4" />
-    </svg>
+    <img
+      src={SBC_MARK_SRC}
+      alt={decorative ? '' : SBC_LOGO_LABEL}
+      width={SBC_MARK_SIZE.width}
+      height={SBC_MARK_SIZE.height}
+      className={cn('w-auto shrink-0', className)}
+      style={{ height: size }}
+      decoding="async"
+      draggable={false}
+    />
   );
 }
 
@@ -161,8 +141,6 @@ export function SbcLogo({
   markClassName,
   size = 32,
 }: SbcLogoProps) {
-  const gradientId = `vcfo-logo-mark-grad-${variant}-${tone}-${size}`;
-
   if (variant === 'lockup') {
     return (
       <SbcThemeLockup
@@ -175,36 +153,13 @@ export function SbcLogo({
   }
 
   if (variant === 'navbar') {
-    const imgH = 28;
     return (
-      <span className={cn('inline-flex h-9 shrink-0 items-center', className)}>
-        <span className="relative h-7 w-[26px] overflow-hidden sm:hidden">
-          <SbcOfficialImg
-            decorative={decorative}
-            heightPx={imgH}
-            theme="light"
-            className="absolute left-0 top-1/2 max-w-none -translate-y-1/2 dark:hidden"
-          />
-          <SbcOfficialImg
-            decorative={decorative}
-            heightPx={imgH}
-            theme="dark"
-            className="absolute left-0 top-1/2 hidden max-w-none -translate-y-1/2 dark:block"
-          />
-        </span>
-        <SbcOfficialImg
-          decorative={decorative}
-          heightPx={imgH}
-          theme="light"
-          className="hidden sm:block dark:hidden"
-        />
-        <SbcOfficialImg
-          decorative={decorative}
-          heightPx={imgH}
-          theme="dark"
-          className="hidden dark:sm:block"
-        />
-      </span>
+      <SbcThemeLockup
+        surface={surface}
+        decorative={decorative}
+        heightPx={40}
+        className={className}
+      />
     );
   }
 
@@ -221,12 +176,7 @@ export function SbcLogo({
 
   if (variant === 'mark') {
     return (
-      <SbcLogoMark
-        size={size}
-        className={className}
-        gradientId={gradientId}
-        decorative={decorative}
-      />
+      <SbcLogoMark size={size} className={className} decorative={decorative} />
     );
   }
 
@@ -234,7 +184,7 @@ export function SbcLogo({
 
   return (
     <div className={cn('flex items-center gap-2.5', className)} role="img" aria-label="VCFO Suite">
-      <SbcLogoMark size={markSize} className={markClassName} gradientId={`${gradientId}-m`} decorative />
+      <SbcLogoMark size={markSize} className={markClassName} decorative />
       <span
         className={cn(
           'font-medium tracking-tight leading-none',

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Check, ExternalLink } from 'lucide-react';
 import type { AnswerEnvelope } from '@/data/ask/schema';
 import { saveToLibrary } from '@/hooks/ask/ask-api';
@@ -37,6 +38,7 @@ export function AskAnswerCard({
   const ask = useAskOptional();
   const router = useRouter();
   const staffBase = useStaffBasePath();
+  const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -118,6 +120,7 @@ export function AskAnswerCard({
                   ...(answer.topicSlug ? { topicSlug: answer.topicSlug, answer } : { messageId: messageId! }),
                 });
                 setSaved(true);
+                void queryClient.invalidateQueries({ queryKey: ['ask', 'library'] });
               } catch (err) {
                 setSaveError((err as Error).message);
               } finally {
@@ -127,10 +130,10 @@ export function AskAnswerCard({
           >
             {saved ? (
               <>
-                <Check className="h-3.5 w-3.5" aria-hidden /> Saved to library
+                <Check className="h-3.5 w-3.5" aria-hidden /> Saved
               </>
             ) : (
-              'Save to library'
+              'Save answer'
             )}
           </button>
         )}

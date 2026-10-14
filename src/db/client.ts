@@ -26,6 +26,10 @@ const pool =
     // No `ssl: { rejectUnauthorized: false }` — that would silently accept
     // any certificate on a public endpoint. Trust the RDS CA bundle instead.
     connectionString: process.env.DATABASE_URL,
+    // A restarted Postgres must fail the session lookup in seconds. The
+    // default wait is unbounded, which left the opening screen up for minutes.
+    connectionTimeoutMillis: 8_000,
+    query_timeout: 20_000,
   });
 
 if (process.env.NODE_ENV !== 'production') {

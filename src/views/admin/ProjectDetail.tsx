@@ -7,6 +7,7 @@ import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
+import { ProjectTimeline } from '@/components/client/overview/ClientTimeline';
 import { InternPhaseEntryCards } from '@/components/incorporation/InternOverviewProgress';
 import { ProgressRing } from '@/components/noir';
 import { DocPackPhasePill } from '@/components/doc-pack/DocPackPhasePill';
@@ -159,6 +160,13 @@ export default function ProjectDetail() {
       </header>
 
       <div className="flex flex-col gap-3">
+        <ProjectTimeline
+          engagementId={eng.id}
+          startDate={eng.createdAt}
+          schedule={eng.schedule}
+          state={state}
+          viewer="client"
+        />
         <InternPhaseEntryCards
           phases={phases}
           gates={gates}

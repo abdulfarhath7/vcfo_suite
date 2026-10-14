@@ -561,12 +561,15 @@ export function SidebarNavGroup({
   ink = 'dark',
   hoverFollow,
   stacked = false,
+  badge,
 }: {
   id: string;
   label: string;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   iconTone?: string;
   items: SidebarNavLeaf[];
+  /** Count shown on the group trigger (e.g. unread Updates). */
+  badge?: number;
   expanded: boolean;
   pathname: string;
   layoutIdPrefix: string;
@@ -583,6 +586,7 @@ export function SidebarNavGroup({
       label={label}
       icon={icon}
       iconTone={iconTone}
+      badge={badge}
       sidebarExpanded={expanded}
       sectionActive={sectionActive}
       layoutIdPrefix={layoutIdPrefix}

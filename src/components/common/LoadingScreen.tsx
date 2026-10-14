@@ -19,7 +19,7 @@ export function LoadingScreen({ message = "Opening VCFO Suite…" }: { message?:
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
         <header className="mb-10 flex flex-col items-center gap-4">
-          <SbcLogo variant="mark" size={48} decorative={false} />
+          <SbcLogo variant="lockup" size={88} decorative={false} />
           <Eyebrow className="mb-0">Compliance cockpit</Eyebrow>
           <h1 className="serif display-md text-foreground">VCFO Suite</h1>
           <GoldDivider className="w-28" />

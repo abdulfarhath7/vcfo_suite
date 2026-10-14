@@ -17,8 +17,18 @@ import {
   internActionQueueByCompany,
   internWorkItemsForDay,
   ymdInIst,
+  type InternWorkKind,
 } from '@/lib/intern-work';
 import { cn } from '@/lib/utils';
+import { YourStepNotice } from '@/components/shell/YourStepNotice';
+
+const LEAD_STEP: ReadonlySet<InternWorkKind> = new Set([
+  'rejected',
+  'review',
+  'deliver',
+  'overdue',
+  'in-progress',
+]);
 
 export default function InternToday() {
   const { user, getStateForEngagement } = useApp();
@@ -29,6 +39,7 @@ export default function InternToday() {
   const dayItems = selectedDay ? internWorkItemsForDay(workItems, selectedDay, todayYmd) : null;
   const queueSource = dayItems ?? workItems;
   const queueGroups = internActionQueueByCompany(queueSource, now);
+  const leadStep = workItems.find((item) => LEAD_STEP.has(item.kind));
   const queueLeads = queueGroups.length >= Math.max(myEngagements.length, 1) && queueGroups.length > 0;
 
   const selectDay = useCallback((ymd: string) => {
@@ -47,6 +58,13 @@ export default function InternToday() {
       />
 
       <div className="flex flex-col gap-3">
+        {leadStep ? (
+          <YourStepNotice
+            stepKey={`lead:${leadStep.engagementId}:${leadStep.catalogId ?? leadStep.id}`}
+            stepTitle={leadStep.title}
+            href={leadStep.href}
+          />
+        ) : null}
         <LeadHero
           name={user?.name ?? ''}
           kpis={kpis}

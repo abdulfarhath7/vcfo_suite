@@ -12,7 +12,9 @@ and green, phase by phase, verifying each step.
 every session, and update it as you go:
 
 - `docs/context/STATE.md` — what is actually verified green right now, and what is
-  intentionally deferred
+ intentionally deferred
+- `docs/context/HANDOFF.md` — the latest session's work, the owner's working
+ preferences, and the next steps (read this before changing anything)
 - `docs/context/notes/` — gotchas already paid for once, one file per area
   (`aws`, `checklist-workflow`, `compliance`, `data-access`, `design-system`,
   `email`, `incorporation-docs`, `lead-ui`, `notifications`, `shell-ui`, `tooling`)

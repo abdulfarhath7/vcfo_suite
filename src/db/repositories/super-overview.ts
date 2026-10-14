@@ -17,6 +17,7 @@ import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipi
 import { listStaffPeople, type StaffPersonRow } from '@/db/repositories/profiles';
 import { listAuditEvents } from '@/db/repositories/audit-events';
 import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
 import {
   buildJourney,
   buildSuperOverview,
@@ -325,6 +326,7 @@ export async function getSuperEngagementDetail(
   return {
     summary,
     journey: buildJourney(state, slugOrId),
+    schedule: normalizeEngagementSchedule(row.schedule),
     documents: documents.map((doc) => ({
       id: doc.id,
       fileName: doc.fileName,

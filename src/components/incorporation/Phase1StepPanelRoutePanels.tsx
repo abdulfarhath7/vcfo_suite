@@ -98,7 +98,10 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
 }
 
 export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
-  const { className, isClient, brStatus } = props;
+  const { className, isClient, brStatus, responses } = props;
+    // The signed file already sits in the record and the document stage.
+    // A second "not uploaded yet" banner only repeats the page title.
+    if (isClient && responses.signedBoardResolutionUrl?.trim()) return null;
     if (isClient) {
       return (
         <div className={className}>

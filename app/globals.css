@@ -474,6 +474,10 @@
     --ring: 66% 0.16 262;
     --sidebar-active: 26% 0.03 258;
     --sidebar-foreground-active: 86% 0.06 258;
+    /* The light client rule pins a near-white surface. Without this, dark mode
+       keeps white cards and light type, so the labels vanish. */
+    --background: 16% 0.042 258;
+    --surface: 19.5% 0.045 258;
   }
 
   /* Login + marketing keep data-role accents, but that selector also pins a
@@ -897,18 +901,18 @@
   .milestone-record-panel {
     /* Real internal padding: the tab strip sits flush to the card edge, so the
        record needs its own gutters rather than inheriting none. */
-    @apply px-5 pb-5 pt-4;
+    @apply px-4 pb-3 pt-3;
   }
   .milestone-record {
     @apply min-w-0;
   }
   .milestone-record-row {
-    @apply grid grid-cols-1 gap-1 border-t border-border py-3 first:border-t-0 first:pt-0;
+    @apply grid grid-cols-1 gap-1 border-t border-border py-2 first:border-t-0 first:pt-0;
   }
   @screen md {
     .milestone-record-row {
-      grid-template-columns: 200px minmax(0, 1fr);
-      @apply items-baseline gap-6;
+      grid-template-columns: 11.5rem minmax(0, 1fr);
+      @apply items-baseline gap-4;
     }
   }
   .milestone-record-label {
@@ -950,7 +954,7 @@
     @apply cursor-pointer rounded-md px-3.5 py-2 text-sm font-medium transition-colors duration-200 min-h-[40px] sm:min-h-0;
   }
   .milestone-review-banner {
-    @apply rounded-lg border px-4 py-3 text-xs flex gap-3 items-start;
+    @apply flex items-center gap-2.5 rounded-md border px-3 py-2 text-xs;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1818,8 +1822,8 @@ html[data-reduce-motion="true"] .discrete-panel {
   z-index: 0;
   margin: 0.1rem 0;
   border-radius: 8px;
-  background: oklch(var(--primary-light));
-  opacity: 0.7;
+  background: oklch(58% 0.08 85);
+  opacity: 0.28;
   pointer-events: none;
 }
 
@@ -2912,11 +2916,106 @@ html[data-reduce-motion="true"] .discrete-panel {
    rebrand reskins this surface by editing :root alone.
    ===================================================================== */
 
+/* Home hero: a deep brand band, the same in light and dark mode. */
+.client-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: oklch(98% 0.005 255);
+  background:
+    radial-gradient(60% 120% at 100% 0%, oklch(var(--primary) / 0.55), transparent 62%),
+    radial-gradient(45% 90% at 0% 100%, oklch(var(--phase-post) / 0.32), transparent 65%),
+    linear-gradient(135deg, oklch(24% 0.06 262), oklch(30% 0.11 262) 55%, oklch(34% 0.14 266));
+}
+.client-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(oklch(100% 0 0 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(100% 0 0 / 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(90deg, transparent, black 30%, black 70%, transparent);
+}
+.client-hero::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    oklch(var(--phase-pre)),
+    oklch(var(--phase-filing)),
+    oklch(var(--phase-post)),
+    oklch(var(--phase-registration))
+  );
+}
+
+/* KPI tile: `--kpi` is the tile's identifying hue. */
+.client-kpi {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid oklch(var(--border));
+  background:
+    linear-gradient(160deg, oklch(var(--kpi) / 0.09), transparent 55%),
+    oklch(var(--panel));
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.client-kpi::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 3px;
+  background: oklch(var(--kpi));
+}
+@media (hover: hover) {
+  .client-kpi:hover {
+    transform: translateY(-2px);
+    border-color: oklch(var(--kpi) / 0.45);
+    box-shadow: 0 12px 24px -16px oklch(var(--kpi) / 0.6);
+  }
+}
+
+/* Staggered entrance for the home sections. */
+@keyframes client-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.client-rise {
+  animation: client-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--rise, 0) * 70ms);
+}
+
+/* "Live" dot: the step that is the client's turn right now. */
+@keyframes client-live {
+  0% { box-shadow: 0 0 0 0 oklch(var(--live, var(--primary)) / 0.55); }
+  70% { box-shadow: 0 0 0 7px oklch(var(--live, var(--primary)) / 0); }
+  100% { box-shadow: 0 0 0 0 oklch(var(--live, var(--primary)) / 0); }
+}
+.client-live {
+  animation: client-live 2s ease-out infinite;
+}
+
+.client-ring-arc {
+  transition: stroke-dasharray 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-rise,
+  .client-live { animation: none; }
+  .client-kpi,
+  .client-ring-arc { transition: none; }
+}
+
 /* Progress + ball-in-court bars. */
 .client-bar-track {
   position: relative;
   overflow: hidden;
-  height: 0.5rem;
+  height: 0.625rem;
   border-radius: 999px;
   background: oklch(var(--raised));
   border: 1px solid oklch(var(--border) / 0.7);

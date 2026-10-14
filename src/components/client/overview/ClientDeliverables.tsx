@@ -5,7 +5,7 @@ import { m, useReducedMotion } from 'framer-motion';
 import { FileBadge, FileText, IdCard, ScrollText, type LucideIcon } from 'lucide-react';
 import { Mono } from '@/components/noir';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
-import { ClientCard } from '@/components/client/overview/ClientCard';
+import { ClientCard, clientCardActionClass } from '@/components/client/overview/ClientCard';
 import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
 import type { ClientOverviewDocuments } from '@/lib/client-overview';
 import { formatClientDate } from '@/components/client/overview/client-overview-format';
@@ -34,7 +34,7 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
       action={
         <Link
           href="/app/client/documents"
-          className="text-[11.5px] font-bold text-primary hover:underline"
+          className={clientCardActionClass}
         >
           All documents
         </Link>
@@ -43,7 +43,7 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
       {/* Nothing issued: ONE calm line, and no donut. A ring reading "1 document"
           over a list saying there are none made the two fight each other. */}
       {deliverables.length === 0 ? (
-        <p className="text-[12.5px] text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           Your certificates will appear here as they are issued.
         </p>
       ) : (
@@ -65,7 +65,7 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
                         <Icon className="h-4 w-4" aria-hidden />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="flex min-w-0 items-center gap-1 text-[12.5px] font-extrabold text-ink">
+                        <p className="flex min-w-0 items-center gap-1 text-[13.5px] font-medium text-foreground">
                           <span className="truncate">{doc.name}</span>
                           <WhatsThisButton compact feature="C2" kind="document" refId={doc.id} label={doc.name} />
                         </p>
@@ -175,17 +175,17 @@ function DocStatusDonut({
             ))}
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span className="serif text-[1.35rem] font-bold leading-none tabular-nums text-ink">
+          <span className="text-[15px] font-semibold leading-none tabular-nums text-foreground">
             {total}
           </span>
-          <span className="mt-0.5 text-[8.5px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
+          <span className="mt-0.5 text-[12px] text-muted-foreground">
             {total === 1 ? 'document' : 'documents'}
           </span>
         </div>
       </div>
 
       {/* Legend beside the ring, same as the lead dashboard's compliance donut. */}
-      <figcaption className="flex min-w-0 flex-1 flex-col gap-1.5 text-[12px] font-bold text-muted-foreground lg:w-full lg:flex-none">
+      <figcaption className="flex min-w-0 flex-1 flex-col gap-1.5 text-[13px] text-muted-foreground lg:w-full lg:flex-none">
         {arcs.map((arc) => (
           <span key={arc.key} className="flex min-w-0 items-center gap-2">
             <i

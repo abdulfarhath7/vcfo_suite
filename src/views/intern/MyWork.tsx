@@ -10,11 +10,10 @@ import { SEO } from '@/components/SEO';
 import { InternWorkBoardCard, InternWorkDenseRow } from '@/components/intern/InternWorkRow';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { LeadCompanyChip, LeadCompanyPill } from '@/components/intern/LeadCompanyChip';
-import { internKindChipLabel, internToneBadge, internToneBg, internToneText, KIND_TONE } from '@/components/intern/intern-tones';
+import { internKindChipLabel, internToneBadge, internToneText, KIND_TONE } from '@/components/intern/intern-tones';
 import { useInternPortfolio } from '@/lib/use-intern-portfolio';
 import {
   INTERN_WORK_VIEW_KEY,
-  TIMELINE_PRIORITY_TONE,
   WEEK_CHIP_TONE,
   filterInternWork,
   formatDueLabel,
@@ -296,6 +295,13 @@ function BoardView({ items, now }: { items: InternWorkItem[]; now: Date }) {
   );
 }
 
+function timelineBarClass(priority: 'overdue' | 'soon' | 'ok' | 'done'): string {
+  if (priority === 'done') return 'bg-[oklch(40%_0.045_168)] text-white';
+  if (priority === 'overdue') return 'bg-[oklch(46%_0.055_78)] text-white';
+  if (priority === 'soon') return 'bg-[oklch(30%_0.028_255)] text-white';
+  return 'border border-[oklch(78%_0.012_255)] bg-[oklch(94%_0.006_255)] text-[oklch(28%_0.03_255)]';
+}
+
 function TimelineView({
   items,
   now,
@@ -341,7 +347,7 @@ function TimelineView({
                     className={cn(
                       'min-w-0 px-0.5 py-1 text-center text-[10.5px] font-extrabold leading-tight text-text-tertiary',
                       weekend && !isToday && 'opacity-45',
-                      isToday && 'rounded-md bg-primary text-white',
+                      isToday && 'rounded-md bg-[oklch(58%_0.08_85)] text-[oklch(22%_0.04_70)]',
                       isSelected && !isToday && 'rounded-md ring-2 ring-primary ring-offset-1 ring-offset-panel',
                     )}
                   >
@@ -380,8 +386,7 @@ function TimelineView({
                       title={`${row.item.title} · ${row.item.why}`}
                       className={cn(
                         'lead-tl-bar',
-                        internToneBg(TIMELINE_PRIORITY_TONE[row.priority]),
-                        row.priority === 'soon' ? 'text-warning-text' : 'text-white',
+                        timelineBarClass(row.priority),
                         row.clippedStart && 'rounded-l-sm',
                         row.clippedEnd && 'rounded-r-sm',
                       )}

@@ -170,14 +170,12 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
               <>
 
-                <div className="mb-4">
-                  <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-[12px] uppercase tracking-wider text-blue-600 font-semibold">
-                      Document preview
-                    </p>
+                <div className="mb-3">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[12.5px] font-semibold text-foreground">Document</p>
                     {!isFinalized && saveStatusText && (
                       <p
-                        className="text-[11px] text-text-tertiary"
+                        className="text-[12px] text-muted-foreground"
                         aria-live="polite"
                         aria-atomic="true"
                       >
@@ -197,7 +195,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                     />
                   )}
 
-                  <div className="flex items-start justify-center overflow-x-auto">
+                  <div className="overflow-x-auto bg-muted/40 px-4 py-6 sm:px-10">
                     <BoardResolutionDocPreview
                       ref={previewRef}
                       engagementId={eng.id}
@@ -231,23 +229,12 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                   </div>
                 </div>
 
-                <div className="mb-6 rounded-lg border border-primary/35 bg-primary/5 p-5">
-
-                  <p className="text-[12px] uppercase tracking-wider text-blue-600 font-semibold mb-2">
-
-                    Word document ready
-
-                  </p>
-
-                  <p className="text-[13px] text-text-secondary mb-4 max-w-lg">
-
-                    {previewStorageCorrupt && isFinalized
-                      ? 'The stored file could not be previewed. Re-generate or apply the latest template below to rebuild storage; the document stays finalized for the client.'
-                      : isFinalized
-                        ? 'This is the file clients download after finalization. Re-generate or apply the latest template to refresh it from current Pre-1 data; release status is unchanged.'
-                        : 'This is the file clients receive after finalization. Re-generate to apply the latest template and current Pre-1 data.'}
-
-                  </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                  {previewStorageCorrupt && isFinalized ? (
+                    <p className="mr-auto text-[12px] text-warning-text">
+                      The stored file needs a rebuild. Re-generate or apply the latest template.
+                    </p>
+                  ) : null}
 
                   <div className="flex flex-wrap gap-2">
 
@@ -257,7 +244,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                       download={BOARD_RESOLUTION_DOCX_FILENAME}
 
-                      className="gold-sheen inline-flex items-center justify-center gap-2 rounded-md h-9 px-4 text-[13px] font-medium tracking-tight hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+                      className="inline-flex h-8 items-center justify-center gap-2 rounded-md bg-foreground px-3 text-[13px] font-semibold text-background hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 
                     >
 

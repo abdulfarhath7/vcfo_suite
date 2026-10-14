@@ -181,14 +181,3 @@ export function getAuditTargetType(action: string): string {
       return 'System';
   }
 }
-
-export function formatAuditMetadata(
-  metadata: Record<string, unknown> | null,
-): string | null {
-  if (!metadata || !Object.keys(metadata).length) return null;
-  try {
-    return JSON.stringify(metadata, null, 2);
-  } catch {
-    return String(metadata);
-  }
-}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
+import { ProjectTimeline } from '@/components/client/overview/ClientTimeline';
 import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
@@ -314,6 +315,14 @@ export default function EngagementDetail() {
             </InternOverviewSyncNotice>
           ) : null}
 
+          <ProjectTimeline
+            engagementId={eng.id}
+            startDate={eng.createdAt}
+            schedule={eng.schedule}
+            state={checklistState}
+            viewer={gateViewer}
+          />
+
           {INTERN_PHASE_TABS_ENABLED ? (
             renderInternPhases()
           ) : (
@@ -372,6 +381,16 @@ export default function EngagementDetail() {
               Syncing client answers…
             </div>
           )}
+
+          <div className="mb-6">
+            <ProjectTimeline
+              engagementId={eng.id}
+              startDate={eng.createdAt}
+              schedule={eng.schedule}
+              state={checklistState}
+              viewer={gateViewer}
+            />
+          </div>
 
           <div className="space-y-6">
             {visibleBuckets.map((b) => {

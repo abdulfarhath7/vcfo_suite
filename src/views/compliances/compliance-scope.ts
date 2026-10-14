@@ -77,6 +77,25 @@ export function rowsForStatus(
   return rows.filter((row) => filingStatus(row, now) === status);
 }
 
+export interface FilingsSummary {
+  counts: Record<FilingStatus, number>;
+  /** The earliest unfiled row still due today or later — "what's next". */
+  next: FilingRow | null;
+}
+
+/** Status counts and the next open filing for the glance strip above the register. */
+export function summariseFilings(rows: readonly FilingRow[], now: Date): FilingsSummary {
+  const counts: Record<FilingStatus, number> = { overdue: 0, 'due-soon': 0, upcoming: 0, filed: 0 };
+  let next: FilingRow | null = null;
+  for (const row of rows) {
+    const status = filingStatus(row, now);
+    counts[status] += 1;
+    if (status !== 'due-soon' && status !== 'upcoming') continue;
+    if (!next || row.dueDate < next.dueDate) next = row;
+  }
+  return { counts, next };
+}
+
 /** The engagement the picker is narrowed to, or null on "All companies". */
 export function pickedCompany(
   engagements: readonly Engagement[],

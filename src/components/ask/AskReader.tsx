@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Check, Download } from 'lucide-react';
 import type { AnswerDepth, AnswerEnvelope } from '@/data/ask/schema';
 import { saveToLibrary } from '@/hooks/ask/ask-api';
@@ -48,6 +49,7 @@ export function AskReader({
   engagementId: string | null;
 }) {
   const ask = useAskOptional();
+  const queryClient = useQueryClient();
   const [saved, setSaved] = useState(savedInitially);
   const [error, setError] = useState<string | null>(null);
   const firmName = ask?.firmName ?? 'SBC';
@@ -132,6 +134,7 @@ export function AskReader({
               try {
                 await saveToLibrary({ engagementId, topicSlug, answer });
                 setSaved(true);
+                void queryClient.invalidateQueries({ queryKey: ['ask', 'library'] });
               } catch (err) {
                 setError((err as Error).message);
               }
@@ -139,10 +142,10 @@ export function AskReader({
           >
             {saved ? (
               <>
-                <Check className="h-4 w-4" aria-hidden /> Saved to library
+                <Check className="h-4 w-4" aria-hidden /> Saved
               </>
             ) : (
-              'Save to library'
+              'Save answer'
             )}
           </button>
         )}

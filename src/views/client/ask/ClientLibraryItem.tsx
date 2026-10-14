@@ -24,7 +24,7 @@ export default function ClientLibraryItem() {
   if (query.isError || !query.data) {
     return (
       <p role="alert" className="p-6 text-[13px] text-danger-text">
-        This item is not in your library.
+        This saved answer no longer exists.
       </p>
     );
   }
@@ -36,8 +36,8 @@ export default function ClientLibraryItem() {
         title={item.title}
         category={item.category}
         answer={item.answer}
-        backHref="/app/client/library"
-        backLabel="Library"
+        backHref="/app/client"
+        backLabel="Back to home"
         notice={notice}
         topicSlug={item.topicSlug}
         savedInitially
@@ -52,14 +52,14 @@ export default function ClientLibraryItem() {
             try {
               await deleteLibraryItem(id);
               await queryClient.invalidateQueries({ queryKey: ['ask', 'library'] });
-              router.push('/app/client/library');
+              router.push('/app/client');
             } catch (err) {
               setError((err as Error).message);
             }
           }}
           className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[13px] text-muted-foreground hover:bg-muted hover:text-danger-text"
         >
-          <Trash2 className="h-4 w-4" aria-hidden /> Remove from library
+          <Trash2 className="h-4 w-4" aria-hidden /> Remove saved answer
         </button>
         {error && (
           <p role="alert" className="text-[12.5px] text-danger-text">

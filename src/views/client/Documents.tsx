@@ -1,16 +1,16 @@
 "use client";
 
 import { useMemo } from 'react';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTransition';
-import { PageHeader } from '@/components/admin/PageHeader';
+import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
-import { EmptyStateIllustrated, Surface, Eyebrow } from '@/components/noir';
 import { ClientBoardResolutionCard } from '@/components/client/ClientBoardResolutionCard';
 import { collectVaultDocuments, groupVaultDocuments } from '@/lib/vault-documents';
 import { findEngagementForClientUser } from '@/lib/checklist-state-key';
-import { FileCheck2, FileText, FolderOpen } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 function formatUploadDate(iso: string | null): string {
   if (!iso) return '—';
@@ -48,6 +48,17 @@ export default function ClientDocuments() {
 
   if (!engagement) return null;
 
+  const stats = [
+    {
+      label: 'Still needed',
+      value: pendingLegacy.length,
+      accent: pendingLegacy.length > 0 ? 'text-danger-text' : 'text-foreground',
+    },
+    { label: 'Files on record', value: milestoneDocs.length, accent: 'text-foreground' },
+    { label: 'Requests answered', value: uploadedLegacy.length, accent: 'text-foreground' },
+    { label: 'Milestones with files', value: entity?.milestones.length ?? 0, accent: 'text-foreground' },
+  ];
+
   return (
     <PageTransition>
       <SEO
@@ -56,94 +67,134 @@ export default function ClientDocuments() {
         path="/app/client/documents"
       />
 
-      <PageHeader
-        accent="teal"
-        icon={FolderOpen}
-        title="Documents"
-        subtitle={`${milestoneDocs.length} milestone upload${milestoneDocs.length === 1 ? '' : 's'}${uploadedLegacy.length ? ` · ${uploadedLegacy.length} request${uploadedLegacy.length === 1 ? '' : 's'} on file` : ''}${pendingLegacy.length ? ` · ${pendingLegacy.length} still needed` : ''}`}
-      />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <div className="flex min-w-0 items-center gap-2">
+          <Link
+            href="/app/client/overview"
+            className="-ml-1.5 inline-flex h-9 shrink-0 items-center gap-1 rounded-xl px-2 text-[13px] font-medium text-muted-foreground hover:bg-primary-light hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            Back to home
+          </Link>
+          <h1 className="min-w-0 truncate text-[20px] font-semibold tracking-tight text-foreground">Documents</h1>
+        </div>
+        <p className="truncate text-[13px] text-muted-foreground">{engagement.companyName}</p>
+      </div>
 
-      <ClientBoardResolutionCard engagement={engagement} />
+      <div className="flex flex-col gap-4">
+        <div className="border border-border bg-panel">
+          <div className="grid grid-cols-2 gap-2 px-5 py-4 sm:grid-cols-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="rounded-md border border-border bg-background px-3 py-2">
+                <span className={cn('block text-[18px] font-semibold leading-none tabular-nums', stat.accent)}>
+                  {stat.value}
+                </span>
+                <span className="mt-1 block text-[11px] font-medium text-muted-foreground">{stat.label}</span>
+              </div>
+            ))}
+          </div>
 
-      {entity ? (
-        <Stagger>
-          <div className="mb-8 space-y-6">
-            {entity.milestones.map((milestone) => (
-              <StaggerItem key={milestone.milestoneId}>
-                <section>
-                  <Eyebrow className="mb-2">{milestone.milestoneTitle}</Eyebrow>
-                  <Surface className="divide-y divide-border overflow-hidden">
-                    {milestone.sections.map((section) =>
-                      section.docs.map((doc) => (
-                        <div key={doc.id} data-ask-focus={doc.id} className="flex min-h-11 items-center gap-3 border-l-[3px] border-l-phase-filing px-4 py-3.5 transition-colors hover:bg-primary-light/40">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-phase-filing-soft">
-                            <FileCheck2 className="h-4 w-4 shrink-0 text-phase-filing-text" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-[13px] font-medium text-foreground">{doc.fieldLabel}</div>
-                            <div className="text-[11px] text-muted-foreground">
-                              {section.section} · {formatUploadDate(doc.uploadedAt)}
-                            </div>
-                          </div>
+          {pendingLegacy.length > 0 ? (
+            <section className="border-t border-border">
+              <SectionHeading title="Still needed from you" count={pendingLegacy.length} />
+              <ul className="divide-y divide-border">
+                {pendingLegacy.map((r) => (
+                  <li key={r.id} className="flex items-center gap-3 px-5 py-2.5">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-warning" aria-hidden />
+                    <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-foreground">{r.label}</span>
+                    <span className="shrink-0 rounded-sm bg-warning-light px-1.5 py-px text-[11px] font-semibold text-warning-text">
+                      Upload required
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <section className="border-t border-border">
+            <SectionHeading title="Files on record" count={milestoneDocs.length} />
+            {entity && entity.milestones.length > 0 ? (
+              entity.milestones.map((milestone) => {
+                const rows = milestone.sections.flatMap((section) =>
+                  section.docs.map((doc) => ({ section: section.section, doc })),
+                );
+                return (
+                  <div key={milestone.milestoneId}>
+                    <h3 className="flex items-baseline justify-between gap-3 border-b border-border bg-muted/40 px-5 py-2 text-[12.5px] font-semibold text-foreground">
+                      {milestone.milestoneTitle}
+                      <span className="text-[11.5px] font-medium tabular-nums text-muted-foreground">
+                        {rows.length} file{rows.length === 1 ? '' : 's'}
+                      </span>
+                    </h3>
+                    <ul className="divide-y divide-border">
+                      {rows.map(({ section, doc }) => (
+                        <li
+                          key={doc.id}
+                          data-ask-focus={doc.id}
+                          className="grid items-center gap-x-4 gap-y-0.5 px-5 py-2.5 transition-colors hover:bg-muted/40 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_7rem_minmax(0,12rem)]"
+                        >
+                          <span className="min-w-0 truncate text-[13.5px] font-medium text-foreground">{doc.fieldLabel}</span>
+                          <span className="min-w-0 truncate text-[12px] text-muted-foreground">{section}</span>
+                          <span className="text-[12px] tabular-nums text-muted-foreground">
+                            {formatUploadDate(doc.uploadedAt)}
+                          </span>
                           <MilestoneDocumentLink
                             storagePath={doc.storagePath}
                             label={doc.fileName}
                             variant="client"
-                            className="shrink-0 text-[12px] min-h-11 inline-flex items-center"
+                            className="min-w-0 justify-self-start break-all text-[12px] sm:justify-self-end"
                           />
-                        </div>
-                      )),
-                    )}
-                  </Surface>
-                </section>
-              </StaggerItem>
-            ))}
-          </div>
-        </Stagger>
-      ) : (
-        <EmptyStateIllustrated
-          icon={FolderOpen}
-          title="No milestone documents yet"
-          actionLabel="Open incorporation"
-          onAction={() => window.location.assign('/app/client/incorporation')}
-          className="mb-8"
-        />
-      )}
-
-      {uploadedLegacy.length > 0 && (
-        <>
-          <Eyebrow className="mb-2">Document requests on file</Eyebrow>
-          <Surface className="mb-6 divide-y divide-border overflow-hidden">
-            {uploadedLegacy.map((r) => (
-              <div key={r.id} className="flex min-h-11 items-center gap-3 px-4 py-3.5">
-                <FileCheck2 className="h-4 w-4 text-success" />
-                <div className="flex-1">
-                  <div className="text-[13px] text-foreground">{r.label}</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {r.fileName} · {r.uploadedAt}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
-                <span className="rounded-full bg-success-light px-2 py-0.5 text-[11px] capitalize text-success-text">{r.status}</span>
-              </div>
-            ))}
-          </Surface>
-        </>
-      )}
+                );
+              })
+            ) : (
+              <p className="px-5 py-3 text-[13px] text-muted-foreground">
+                Nothing uploaded yet. Files you add on your{' '}
+                <Link href="/app/client/incorporation" className="font-medium text-primary underline-offset-2 hover:underline">
+                  incorporation steps
+                </Link>{' '}
+                appear here.
+              </p>
+            )}
+          </section>
 
-      {pendingLegacy.length > 0 && (
-        <>
-          <Eyebrow className="mb-2">Still needed</Eyebrow>
-          <Surface className="divide-y divide-border overflow-hidden">
-            {pendingLegacy.map((r) => (
-              <div key={r.id} className="flex min-h-11 items-center gap-3 px-4 py-3.5">
-                <FileText className="h-4 w-4 text-warning" />
-                <div className="flex-1 text-[13px] text-foreground">{r.label}</div>
-                <span className="rounded-full bg-warning-light px-2 py-0.5 text-[11px] text-warning-text">Upload required</span>
-              </div>
-            ))}
-          </Surface>
-        </>
-      )}
+          {uploadedLegacy.length > 0 ? (
+            <section className="border-t border-border">
+              <SectionHeading title="Document requests answered" count={uploadedLegacy.length} />
+              <ul className="divide-y divide-border">
+                {uploadedLegacy.map((r) => (
+                  <li key={r.id} className="flex items-center gap-3 px-5 py-2.5">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-success" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-medium text-foreground">{r.label}</span>
+                      <span className="block truncate text-[12px] text-muted-foreground">
+                        {r.fileName} · {r.uploadedAt}
+                      </span>
+                    </span>
+                    <span className="shrink-0 rounded-sm bg-success-light px-1.5 py-px text-[11px] font-semibold capitalize text-success-text">
+                      {r.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </div>
+
+        <ClientBoardResolutionCard engagement={engagement} />
+      </div>
     </PageTransition>
+  );
+}
+
+function SectionHeading({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b border-border px-5 py-3">
+      <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
+      <span className="text-[12px] tabular-nums text-muted-foreground">{count}</span>
+    </div>
   );
 }

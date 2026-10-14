@@ -10,7 +10,9 @@ import { useApp } from "@/context/AppContext";
 import { PageTransition } from "@/components/shell/PageTransition";
 import { PageBackButton } from "@/components/shell/PageBackButton";
 import { SEO } from "@/components/SEO";
-import { InternPhaseEntryCards } from "@/components/incorporation/InternOverviewProgress";
+import { ProjectTimeline } from "@/components/client/overview/ClientTimeline";
+import { ClientPhaseBars } from "@/components/client/overview/ClientPhaseBars";
+import { buildMilestones, buildProgress } from "@/lib/client-overview";
 import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
 import { EmptyStateIllustrated, ProgressRing } from "@/components/noir";
 import { ClientBoardResolutionCard } from "@/components/client/ClientBoardResolutionCard";
@@ -65,14 +67,13 @@ function resolveClientForPortal(
 /**
  * CLIENT INCORPORATION.
  *
- * Two levels, the same shape the lead dashboard uses for a project:
- *   L1 — four phase rows (SPICe+ Part A / Part B / Post-incorporation /
- *        Registration), each with a tick track and n/m, clicked to go in.
- *   L2 — `?phase=` opens that phase's steps in the client wizard.
+ * Four phase cards (SPICe+ Part A / Part B / Post-incorporation /
+ * Registration) — the same `ClientPhaseBars` the client home uses. A card
+ * opens its steps in place; each open step links into the wizard. `?phase=`
+ * from older links still jumps to that phase's live step.
  *
- * The rows are `InternPhaseEntryCards`, the lead's own component, so the two
- * surfaces are the same object rather than lookalikes. Sequencing is unchanged:
- * gates come from `gateActiveCatalog`, and a locked step stays locked.
+ * Sequencing is unchanged: gates come from `gateActiveCatalog`, and a locked
+ * step stays locked.
  */
 export default function ClientIncorporation() {
   const {
@@ -110,6 +111,8 @@ export default function ClientIncorporation() {
     [engagement, getStateForEngagement],
   );
   const gates = useMemo(() => gateActiveCatalog(state, "client"), [state]);
+  const phaseProgress = useMemo(() => buildProgress(state), [state]);
+  const phaseMilestones = useMemo(() => buildMilestones(state), [state]);
 
   /**
    * A phase row opens that phase's live step, not a list of its steps — the
@@ -196,7 +199,7 @@ export default function ClientIncorporation() {
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <div className="mb-1 flex min-w-0 items-center gap-1.5">
-              <PageBackButton className="-ml-1.5" />
+              <PageBackButton className="-ml-1.5" label="Back to home" fallbackHref="/app/client/overview" />
               <h1 className="serif min-w-0 text-2xl tracking-tight text-foreground sm:text-3xl">
                 {engagement.companyName}
               </h1>
@@ -214,15 +217,25 @@ export default function ClientIncorporation() {
       </header>
 
       <div className="flex flex-col gap-3">
-        <ClientBoardResolutionCard engagement={engagement} />
-        <InternPhaseEntryCards
-          phases={phases}
-          gates={gates}
-          hrefForPhase={phaseHref}
-          metaForPhase={phaseWindowMeta(engagement.schedule)}
-          // Only when Ask VCFO is on for this client: the slot reserves row space.
-          trailingForPhase={askActive ? phaseHelp : undefined}
+        <ProjectTimeline
+          engagementId={engagement.id}
+          startDate={engagement.createdAt}
+          schedule={engagement.schedule}
+          state={state}
+          viewer="client"
+          allowRequest
         />
+        <ClientBoardResolutionCard engagement={engagement} />
+        <div className="border border-border bg-panel">
+          <ClientPhaseBars
+            progress={phaseProgress}
+            milestones={phaseMilestones}
+            incorporated={Boolean(incorporationDate)}
+            heading="Phases"
+            metaForPhase={phaseWindowMeta(engagement.schedule)}
+            trailingForPhase={askActive ? phaseHelp : undefined}
+          />
+        </div>
       </div>
     </PageTransition>
   );

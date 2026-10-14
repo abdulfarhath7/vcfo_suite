@@ -96,7 +96,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
         </motion.div>
       )}
 
-      {internSectionNav ? (
+      {internSectionNav && structuredSectionLabels.length > 1 ? (
         <InternSectionHeadingNav
           sections={structuredSectionLabels.map((title, index) => ({
             title,
@@ -193,11 +193,11 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
               />
             );
           })()}
-          <div className="min-w-0 space-y-1">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <p className="font-semibold text-foreground">{reviewBanner.title}</p>
-            {reviewBanner.body && (
-              <p className="text-muted-foreground leading-relaxed">{reviewBanner.body}</p>
-            )}
+            {reviewBanner.body ? (
+              <p className="text-muted-foreground">{reviewBanner.body}</p>
+            ) : null}
           </div>
         </div>
       )}

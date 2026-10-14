@@ -41,6 +41,8 @@ import { useShellNav } from '@/components/shell/shell-nav-context';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { SidebarComplianceMini } from '@/components/shell/SidebarComplianceMini';
+import { SidebarClientTeam } from '@/components/shell/SidebarClientTeam';
+import { ClientIncorporationMeta, ClientUploadsBadge } from '@/components/shell/ClientNavMeta';
 import { complianceLeaves } from '@/components/shell/compliance-nav';
 import { TONE } from '@/components/shell/nav-tones';
 import { InternClientsNav, INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
@@ -197,7 +199,7 @@ function SidebarNavBody({
   /** Pinned closed: icon over a short label. Hover-peek stays icon-only. */
   stacked?: boolean;
 }) {
-  const { user, engagements, getStateForEngagement } = useApp();
+  const { user, engagements, getStateForEngagement, unreadNotificationCount } = useApp();
   const pathname = usePathname();
   const staffBase = useStaffBasePath();
   const osReduce = useReducedMotion();
@@ -283,7 +285,7 @@ function SidebarNavBody({
             expanded ? 'gap-2.5 pr-1.5' : 'justify-center',
           )}
         >
-          <SbcLogo variant="mark" size={28} decorative />
+          <SbcLogo variant="mark" size={40} decorative />
           <span
             className={cn(
               'truncate text-[13px] font-semibold tracking-tight',
@@ -314,6 +316,7 @@ function SidebarNavBody({
                 icon={it.icon}
                 iconTone={it.iconTone}
                 items={it.items}
+                badge={user.role === 'client' && it.id === 'updates:/app/client' ? unreadNotificationCount : undefined}
                 expanded={expanded}
                 pathname={pathname}
                 layoutIdPrefix={layoutIdPrefix}
@@ -342,6 +345,8 @@ function SidebarNavBody({
           }
           const active = pathname.startsWith(it.to);
           const showInternBadge = user.role === 'intern' && it.to === '/app/intern/tasks';
+          const clientUploads = user.role === 'client' && it.to === '/app/client/documents';
+          const clientProgress = user.role === 'client' && it.to === '/app/client/incorporation';
           return (
             <Link
               key={it.to}
@@ -385,7 +390,8 @@ function SidebarNavBody({
               />
               {stacked ? <SidebarRailLabel>{it.label}</SidebarRailLabel> : null}
               {stacked && showInternBadge ? <StackedInternWorkBadge /> : null}
-              {stacked && !showInternBadge ? <SidebarRailBadge count={it.badge ?? 0} /> : null}
+              {stacked && clientUploads ? <ClientUploadsBadge stacked /> : null}
+              {stacked && !showInternBadge && !clientUploads ? <SidebarRailBadge count={it.badge ?? 0} /> : null}
               <span className={cn('relative z-10 min-w-0 flex-1 truncate', !expanded && 'hidden')}>
                 {it.label}
               </span>
@@ -395,13 +401,25 @@ function SidebarNavBody({
                   !expanded && 'hidden',
                 )}
               >
-                {showInternBadge ? <InternMyWorkBadge /> : <SidebarNavCountBadge count={it.badge ?? 0} />}
+                {showInternBadge ? (
+                  <InternMyWorkBadge />
+                ) : clientUploads ? (
+                  <ClientUploadsBadge />
+                ) : clientProgress ? (
+                  <ClientIncorporationMeta ink={ink} />
+                ) : (
+                  <SidebarNavCountBadge count={it.badge ?? 0} />
+                )}
               </span>
             </Link>
           );
         })}
         <div onPointerEnter={onHoverLeave}>
-          <SidebarComplianceMini expanded={expanded} staffBase={staffBase} ink={ink} />
+          {user.role === 'client' ? (
+            <SidebarClientTeam expanded={expanded} ink={ink} />
+          ) : (
+            <SidebarComplianceMini expanded={expanded} staffBase={staffBase} ink={ink} />
+          )}
         </div>
         </LayoutGroup>
       </nav>

@@ -6,12 +6,14 @@ import {
   buildDeliverables,
   buildDocumentCounts,
   buildMilestones,
+  buildNeeds,
   buildNextAction,
   buildProgress,
   clientStepHref,
   complianceGroupForAuthority,
   identifiersFromState,
   latestCompletedPhase,
+  stepHolder,
   type ClientOverviewState,
 } from '@/lib/client-overview';
 
@@ -268,5 +270,48 @@ describe('complianceGroupForAuthority', () => {
 describe('clientStepHref', () => {
   it('deep-links into the gated flowchart rather than duplicating the workflow', () => {
     expect(clientStepHref('reg-4')).toBe('/app/client/incorporation?step=reg-4');
+  });
+});
+
+describe('buildNeeds', () => {
+  it('lists the opening step as a form to fill, dated by the manager window', () => {
+    const needs = buildNeeds(
+      {},
+      { steps: { 'pre-1': { from: '2026-09-12', to: '2026-09-19', setBy: 'm1', setAt: '2026-09-01T00:00:00Z' } } },
+    );
+    expect(needs).toEqual([
+      {
+        stepId: 'pre-1',
+        title: 'Client Details',
+        action: 'fill',
+        href: '/app/client/incorporation?step=pre-1',
+        dueDate: '2026-09-19',
+      },
+    ]);
+  });
+
+  it('marks work sent back as a correction and carries the trimmed note', () => {
+    const [need] = buildNeeds({
+      'pre-1': { status: 'completed', reviewStatus: 'rejected', rejectionNote: '  Passport unreadable.  ' },
+    });
+    expect(need).toMatchObject({ stepId: 'pre-1', action: 'correct', correctionNote: 'Passport unreadable.' });
+  });
+
+  it('is empty while the ball is with the firm', () => {
+    expect(buildNeeds(completeFirst(1))).toEqual([]);
+  });
+});
+
+describe('stepHolder', () => {
+  it('names who owns the next move on an open step', () => {
+    expect(stepHolder({ id: 'pre-1', kind: 'active' })).toBe('you');
+    expect(stepHolder({ id: 'pre-2', kind: 'waiting' })).toBe('team');
+    expect(stepHolder({ id: 'pre-5', kind: 'waiting' })).toBe('mca');
+    expect(stepHolder({ id: 'pre-12', kind: 'waiting' })).toBe('mca');
+  });
+
+  it('gives done and locked steps to nobody', () => {
+    expect(stepHolder({ id: 'pre-1', kind: 'done' })).toBeNull();
+    expect(stepHolder({ id: 'pre-5', kind: 'locked' })).toBeNull();
   });
 });

@@ -28,11 +28,8 @@ export const metadata: Metadata = {
   title: "VCFO Suite",
   description: "VCFO Suite — compliance cockpit for GCC setup, filings, and client collaboration.",
   icons: {
-    icon: [
-      { url: "/logo-mark.svg", type: "image/svg+xml" },
-      { url: "/icon.svg", type: "image/svg+xml" },
-    ],
-    apple: [{ url: "/apple-icon.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/vcfo-mark.png", type: "image/png" }],
+    apple: [{ url: "/vcfo-mark.png", type: "image/png" }],
   },
 };
 
