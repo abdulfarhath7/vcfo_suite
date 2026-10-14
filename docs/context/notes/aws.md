@@ -32,10 +32,45 @@ Gotchas already paid for once. Append when something costs more than a minute to
 
 - One transport: `sendWhatsAppTemplate` (dispatcher, runs the guards) →
   `sendViaEum` in `send-whatsapp-eum.ts`, shared result/deps types in
-  `send-whatsapp-shared.ts`. The Twilio transport, its two webhooks, the
-  `WHATSAPP_PROVIDER` switch and the `twilio` dependency were removed on
-  2026-09-16. Do not reintroduce a
+  `send-whatsapp-shared.ts`. A Twilio sandbox transport was tried on
+  2026-10-12 and removed again on 2026-10-14 (owner). Do not reintroduce a
   provider field "just in case".
+- **Recipients match the email.** Each WhatsApp goes to the people on that
+  mail (To, and CC where the mail copies someone), minus the person who
+  triggered it (`mailHandlersForEvent`). A person with no phone number or no
+  consent is skipped. Passwords stay in email only.
+- **Events (LCC parity, 2026-10-14).** Message to client:
+  `step_awaiting_approval`, `client_action_needed` (from
+  `client_fill_approved`), `documents_shared`, `document_delivered`,
+  `coi_issued`, `welcome`, the three compliance events. Message to firm:
+  `staff_client_submitted`, `staff_client_uploaded`, `staff_change_requested`,
+  `phase_approved` (its email goes to leads + managers only). Every other
+  process email sends `process_notice`. Mapping: `whatsappEventFor` in
+  `src/lib/notify/process-event-whatsapp.ts`; bodies and variable order:
+  `notes/whatsapp-templates.md`. `inAppOnly` and `skipInAppNotifications`
+  (re-opened compose) send nothing.
+- **At most once a day.** Each queued send carries the Inngest event id
+  `wa:<event>:<engagement>:<step>:<person>:<YYYY-MM-DD>`; Inngest drops a
+  repeat, so a double click or a re-run cannot message twice that day.
+- **Throttle:** the `whatsapp-send` function is throttled to 20 runs a minute
+  (`throttle: { limit: 20, period: '1m' }`, inngest 3.54); excess runs wait.
+- **Retries happen inside the `send` step.** A step that returns is memoised,
+  so throwing after it only replayed the stored failure; the step now throws
+  on a retryable code and the last attempt records the failure.
+- **Status only moves forward** (`src/lib/notify/delivery-status.ts`):
+  queued 0 → sent 1 → delivered 2 → read 3, failed 4 is final, skipped is
+  final. The webhook update matches only rows a step behind, so a late or
+  duplicate SNS event changes nothing.
+- **Send log** (project page, admin + manager): `SendLogPanel` reads
+  `GET /api/engagements/:id/notification-deliveries`; channel / status
+  filters; phone masked `+91 98480 •••00` (`maskPhone`); reason column uses
+  `skipReasonText` / `whatsappErrorText`. Email sends are not written to
+  `notification_deliveries` yet, so the Email filter is empty.
+- **Retry:** `POST …/notification-deliveries/:deliveryId/retry` (admin +
+  manager, same scope as the GET) re-queues a failed WhatsApp row with dedupe
+  id `retry:<deliveryId>:<attempt>`; the job re-reads consent. Needs migration
+  **0024** (`variables` jsonb + `retry_of` on `notification_deliveries`) so the
+  same message is resent — run `npm run db:migrate` (RDS: with the CA bundle).
 - **The guards run once, in the dispatcher.** `resolveWhatsAppChannel` is pure
   and returns the approved Meta template name as `templateRef`; it lands in
   the text `template_sid` column (name kept, option A). Guard order is
@@ -44,7 +79,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   `fromMetaPhone` adds the `+` back when a webhook reports a number, because
   profiles are keyed by E.164.
 - **EUM template names default to the event name**, so the path needs no
-  per-event env at all — approve the six templates in WhatsApp Manager under
+  per-event env at all — approve the fourteen templates in WhatsApp Manager under
   `welcome`, `coi_issued`, … Overrides use `WHATSAPP_TEMPLATE_NAME_<EVENT>`.
 - **EUM needs no credentials in config** — it authenticates through the App
   Runner / ECS instance role like `sendViaSes`, so `isWhatsAppConfigured`
@@ -82,11 +117,9 @@ single EUM transport (there is no `WHATSAPP_PROVIDER` any more).
 2. In the AWS End User Messaging (Social) console, link that WABA and register
    the number, then copy the **origination phone number id** into
    `EUM_PHONE_NUMBER_ID`.
-3. Get the six templates approved in WhatsApp Manager under names matching
-   `NOTIFY_EVENTS` (`welcome`, `coi_issued`, `document_delivered`,
-   `compliance_due_monthly`, `compliance_due_quarterly`, `compliance_overdue`),
-   category **utility**, language `en`. Body variable order must match the
-   template definitions in `src/lib/notify/`.
+3. Get the fourteen templates in `notes/whatsapp-templates.md` approved in
+   WhatsApp Manager under names matching `NOTIFY_EVENTS`, category
+   **utility**, language `en`. Body variable order must match that file.
 4. Create the **SNS topic** EUM publishes to; subscribe the HTTPS endpoint
    `…/api/webhooks/aws-eum`; the route confirms the subscription itself once
    deployed. Set `AWS_EUM_SNS_TOPIC_ARN` to pin the topic.
@@ -99,3 +132,16 @@ single EUM transport (there is no `WHATSAPP_PROVIDER` any more).
 Until the number is registered and `EUM_PHONE_NUMBER_ID` is set, every send is
 recorded as `skipped/disabled` and no AWS call is made. Templates are `en`
 only (`WHATSAPP_TEMPLATE_LANG`).
+
+## WhatsApp — testing locally (2026-10-14)
+
+- Nothing sends until `EUM_PHONE_NUMBER_ID` is set and AWS credentials can
+  reach EUM; until then every attempt is recorded as `skipped/disabled`, which
+  the Send log shows.
+- Real notices are queued through Inngest. Under `next dev` the SDK is in dev
+  mode and posts to `localhost:8288`; without `npm run inngest:dev` the enqueue
+  throws, is logged as `[whatsapp] queue failed`, and nothing is recorded.
+- Settings → **Send test message** (`POST /api/account/whatsapp-test`) sends
+  directly, skipping Inngest, and records a `notification_deliveries` row.
+- A recipient needs `phone_e164` and `whatsapp_opt_in_at` (Settings → Edit →
+  tick consent); `.env.local` changes need a `npm run dev` restart.

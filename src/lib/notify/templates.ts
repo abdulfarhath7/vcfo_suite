@@ -51,6 +51,13 @@ export function readTemplateNames(
  *   compliance_due_monthly   1 company name, 2 obligation name, 3 due date
  *   compliance_due_quarterly 1 company name, 2 obligation name, 3 due date
  *   compliance_overdue       1 company name, 2 obligation name
+ *   step_awaiting_approval   1 first name, 2 company name, 3 step title
+ *   phase_approved           1 first name, 2 company name, 3 step title
+ *   client_action_needed     1 first name, 2 company name, 3 step title
+ *   documents_shared         1 first name, 2 company name
+ *   staff_client_submitted   1 first name, 2 company name, 3 step title
+ *   staff_client_uploaded    1 first name, 2 company name, 3 step title
+ *   staff_change_requested   1 first name, 2 company name, 3 step title
  *   process_notice           1 company name, 2 short notice
  */
 function orderedVariables(
@@ -73,6 +80,15 @@ function orderedVariables(
       ];
     case 'compliance_overdue':
       return [vars.companyName ?? '', vars.obligationName ?? ''];
+    case 'step_awaiting_approval':
+    case 'phase_approved':
+    case 'client_action_needed':
+    case 'staff_client_submitted':
+    case 'staff_client_uploaded':
+    case 'staff_change_requested':
+      return [vars.firstName ?? '', vars.companyName ?? '', vars.stepTitle ?? ''];
+    case 'documents_shared':
+      return [vars.firstName ?? '', vars.companyName ?? ''];
     case 'process_notice':
       return [vars.companyName ?? '', vars.stepTitle ?? ''];
   }

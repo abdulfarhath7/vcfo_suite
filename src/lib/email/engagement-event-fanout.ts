@@ -207,3 +207,107 @@ export function staffEmailTargetsForEvent(
 
   return targets;
 }
+
+export type MailHandler = {
+  userId: string | null;
+  email: string;
+  name: string;
+};
+
+function clientFanoutParties(recipients: FanoutRecipients): FanoutParty[] {
+  return uniqueParties(
+    recipients.clients.length > 0
+      ? recipients.clients
+      : recipients.client
+        ? [recipients.client]
+        : [],
+  );
+}
+
+function knownFanoutParties(recipients: FanoutRecipients): FanoutParty[] {
+  return uniqueParties([
+    ...clientFanoutParties(recipients),
+    ...collectLeadParties(recipients),
+    ...collectManagerParties(recipients),
+    ...collectAdminParties(recipients),
+  ]);
+}
+
+/** Known people keep their user id. An address with no account is looked up later. */
+function handlersForAddresses(recipients: FanoutRecipients, emails: string[]): MailHandler[] {
+  const byEmail = new Map(
+    knownFanoutParties(recipients).map((party) => [party.email.trim().toLowerCase(), party]),
+  );
+  const out: MailHandler[] = [];
+  const seen = new Set<string>();
+  for (const raw of emails) {
+    const email = raw.trim();
+    const key = email.toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    const party = byEmail.get(key);
+    out.push(
+      party
+        ? { userId: party.userId, email: party.email, name: party.name }
+        : { userId: null, email, name: '' },
+    );
+  }
+  return out;
+}
+
+/**
+ * People a process email is actually addressed to (To, plus CC on the mails
+ * that copy the team), minus whoever triggered it. WhatsApp uses this list and
+ * no one else.
+ */
+export function mailHandlersForEvent(
+  event: EngagementProcessEvent,
+  recipients: FanoutRecipients,
+  actorUserId?: string,
+): MailHandler[] {
+  const handlers = addressedHandlers(event, recipients, actorUserId);
+  return actorUserId ? handlers.filter((handler) => handler.userId !== actorUserId) : handlers;
+}
+
+function addressedHandlers(
+  event: EngagementProcessEvent,
+  recipients: FanoutRecipients,
+  actorUserId?: string,
+): MailHandler[] {
+  const actorEmail = knownFanoutParties(recipients).find(
+    (party) => party.userId === actorUserId,
+  )?.email;
+
+  if (opensClientOutgoingDraft(event)) {
+    const emails = clientFanoutParties(recipients).map((party) => party.email);
+    if (event === 'review_accepted') {
+      emails.push(
+        ...approvalCcEmails(recipients, {
+          excludeEmails: actorEmail ? [actorEmail] : [],
+        }),
+      );
+    }
+    return handlersForAddresses(recipients, emails);
+  }
+
+  if (event === 'client_fill_approved' || event === 'step_awaiting_client_approval') {
+    return handlersForAddresses(recipients, [
+      ...clientFanoutParties(recipients).map((party) => party.email),
+      ...approvalCcEmails(recipients, {
+        excludeEmails: actorEmail ? [actorEmail] : [],
+      }),
+    ]);
+  }
+
+  if (emailsStaffViaResend(event)) {
+    return handlersForAddresses(
+      recipients,
+      staffEmailTargetsForEvent(event, recipients, {
+        leadHref: '',
+        managerHref: '',
+      }).map((target) => target.email),
+    );
+  }
+
+  return [];
+}

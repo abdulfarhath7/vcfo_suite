@@ -23,6 +23,8 @@ export async function queueWhatsAppForMailHandlers(input: {
   event: NotifyEvent;
   variables: NotifyVariables;
   handlers: MailHandlerInput[];
+  /** Per-person Inngest event id, so a repeat on the same day is dropped. */
+  dedupeIdFor?: (recipientProfileId: string) => string;
 }): Promise<void> {
   try {
     const pending: Array<{ userId: string; name: string }> = [];
@@ -61,6 +63,7 @@ export async function queueWhatsAppForMailHandlers(input: {
           ...shared,
           firstName: firstNameOf(party.name),
         },
+        ...(input.dedupeIdFor ? { dedupeId: input.dedupeIdFor(party.userId) } : {}),
       })),
     );
   } catch (err) {

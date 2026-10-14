@@ -81,6 +81,8 @@ export async function queueWhatsAppSend(input: {
    * with the same id, so a job re-run on the same day cannot double-message.
    */
   dedupeId?: string;
+  /** The failed delivery row a staff Retry is resending. */
+  retryOf?: string;
 }): Promise<void> {
   try {
     const { inngest } = await import('@/jobs/client');
@@ -93,6 +95,7 @@ export async function queueWhatsAppSend(input: {
         recipientProfileId: input.recipientProfileId,
         event: input.event,
         variables: input.variables,
+        ...(input.retryOf ? { retryOf: input.retryOf } : {}),
       },
     });
   } catch (err) {

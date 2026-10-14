@@ -765,11 +765,21 @@ export const notificationDeliveries = pgTable(
     /** no_phone | no_consent | opted_out | no_template | disabled */
     skipReason: text('skip_reason'),
     errorCode: text('error_code'),
+    /**
+     * The template variables sent (NotifyVariables: first name, company, step
+     * title…), so Retry resends the same message. Short, non-sensitive values only.
+     */
+    variables: jsonb('variables'),
+    /** The failed row this send retried; null for a first attempt. */
+    retryOf: uuid('retry_of').references((): AnyPgColumn => notificationDeliveries.id, {
+      onDelete: 'set null',
+    }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     engIdx: index('notification_deliveries_engagement_idx').on(t.engagementId),
+    retryOfIdx: index('notification_deliveries_retry_of_idx').on(t.retryOf),
     recipientIdx: index('notification_deliveries_recipient_idx').on(t.recipientProfileId),
     // Status webhooks arrive keyed only by the provider id.
     providerIdx: index('notification_deliveries_provider_idx').on(t.providerMessageId),

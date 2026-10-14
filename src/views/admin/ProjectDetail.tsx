@@ -31,6 +31,8 @@ import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowContr
 import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
 import { setEngagementWindowInDb } from '@/lib/engagements-db';
 import { canSetScheduleWindows } from '@/lib/schedule-windows';
+import { isFirmWideAdmin } from '@/lib/auth';
+import { SendLogPanel } from '@/components/admin/SendLogPanel';
 
 /**
  * STAFF PROJECT DETAIL (admin + manager) — the client's incorporation page,
@@ -164,6 +166,7 @@ export default function ProjectDetail() {
           metaForPhase={phaseWindowMeta(eng.schedule)}
           trailingForPhase={docPackPill}
         />
+        {user?.role === 'manager' || isFirmWideAdmin(user?.role) ? <SendLogPanel engagementId={eng.id} /> : null}
       </div>
     </PageTransition>
   );

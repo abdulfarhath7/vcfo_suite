@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { desc, eq, inArray, or } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { engagements, notificationDeliveries, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -8,11 +8,14 @@ import { isFirmWideAdmin } from '@/lib/auth';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import { managerOwnsEngagement } from '@/db/repositories/engagements';
 import { listLeadMemberEngagementIds } from '@/db/repositories/engagement-leads-membership';
-import type {
-  DeliveryStatus,
-  NotifyChannel,
-  NotifyEvent,
-  SkipReason,
+import { statusesThatMayAdvanceTo } from '@/lib/notify/delivery-status';
+import {
+  isNotifyEvent,
+  type DeliveryStatus,
+  type NotifyChannel,
+  type NotifyEvent,
+  type NotifyVariables,
+  type SkipReason,
 } from '@/lib/notify/types';
 
 /**
@@ -47,6 +50,10 @@ export type RecordDeliveryInput = {
   status: DeliveryStatus;
   skipReason?: SkipReason | null;
   errorCode?: string | null;
+  /** Template variables sent — short, non-sensitive values only. */
+  variables?: NotifyVariables | null;
+  /** The failed delivery this send retried. */
+  retryOf?: string | null;
 };
 
 /** Resolve slug/legacy id → engagements.id, tolerating an already-resolved uuid. */
@@ -74,6 +81,8 @@ function toRowValues(input: RecordDeliveryInput, dbEngagementId: string | null) 
     status: input.status,
     skipReason: input.skipReason ?? null,
     errorCode: input.errorCode?.trim() || null,
+    variables: input.variables ?? null,
+    retryOf: input.retryOf?.trim() || null,
   };
 }
 
@@ -100,7 +109,8 @@ export async function systemRecordDelivery(
 /**
  * SYSTEM WRITER — EUM SNS delivery webhook. See the header note.
  * Keyed by the opaque provider message id; no engagement scope is available
- * or needed. Never throws.
+ * or needed. Status only moves forward (`delivery-status.ts`): a late or
+ * duplicate event matches no row and changes nothing. Never throws.
  */
 export async function systemUpdateDeliveryByProviderId(
   providerMessageId: string,
@@ -112,6 +122,9 @@ export async function systemUpdateDeliveryByProviderId(
   const sid = providerMessageId.trim();
   if (!sid) return null;
 
+  const from = patch.status ? statusesThatMayAdvanceTo(patch.status) : null;
+  if (from && from.length === 0) return null;
+
   try {
     const [row] = await db
       .update(notificationDeliveries)
@@ -120,7 +133,11 @@ export async function systemUpdateDeliveryByProviderId(
         ...(patch.errorCode !== undefined ? { errorCode: patch.errorCode } : {}),
         updatedAt: new Date(),
       })
-      .where(eq(notificationDeliveries.providerMessageId, sid))
+      .where(
+        from
+          ? and(eq(notificationDeliveries.providerMessageId, sid), inArray(notificationDeliveries.status, from))
+          : eq(notificationDeliveries.providerMessageId, sid),
+      )
       .returning();
     return row ?? null;
   } catch (err) {
@@ -169,6 +186,8 @@ export type NotificationDeliveryView = {
   toAddress: string | null;
   recipientName: string | null;
   recipientEmail: string | null;
+  /** Set when this row is a retry of an earlier failed send. */
+  retryOf: string | null;
   createdAt: string;
 };
 
@@ -211,6 +230,71 @@ export async function listDeliveriesByEngagement(
     toAddress: r.delivery.toAddress,
     recipientName: r.recipientName,
     recipientEmail: r.recipientEmail,
+    retryOf: r.delivery.retryOf,
     createdAt: r.delivery.createdAt.toISOString(),
   }));
+}
+
+export type RetryableDelivery = {
+  id: string;
+  engagementId: string;
+  recipientProfileId: string;
+  event: NotifyEvent;
+  variables: NotifyVariables;
+  /** 1 for the first retry of this row, 2 for the second… */
+  attempt: number;
+};
+
+export type RetryLookup =
+  | { ok: true; delivery: RetryableDelivery }
+  | { ok: false; error: 'not_found' | 'not_retryable' };
+
+/**
+ * A failed WhatsApp delivery on one engagement, ready to queue again.
+ * Same scope as `listDeliveriesByEngagement`: a row outside the caller's
+ * engagements reads as not found.
+ */
+export async function getDeliveryForRetry(
+  ctx: AuthContext,
+  engagementId: string,
+  deliveryId: string,
+): Promise<RetryLookup> {
+  const dbId = await resolveEngagementDbId(engagementId);
+  if (!dbId) return { ok: false, error: 'not_found' };
+
+  const scope = await readableEngagementIds(ctx);
+  if (scope !== 'all' && !scope.includes(dbId)) return { ok: false, error: 'not_found' };
+
+  const [row] = await db
+    .select()
+    .from(notificationDeliveries)
+    .where(and(eq(notificationDeliveries.id, deliveryId), eq(notificationDeliveries.engagementId, dbId)))
+    .limit(1);
+  if (!row) return { ok: false, error: 'not_found' };
+
+  if (
+    row.channel !== 'whatsapp' ||
+    row.status !== 'failed' ||
+    !row.recipientProfileId ||
+    !isNotifyEvent(row.eventType)
+  ) {
+    return { ok: false, error: 'not_retryable' };
+  }
+
+  const [prior] = await db
+    .select({ n: count() })
+    .from(notificationDeliveries)
+    .where(eq(notificationDeliveries.retryOf, row.id));
+
+  return {
+    ok: true,
+    delivery: {
+      id: row.id,
+      engagementId: dbId,
+      recipientProfileId: row.recipientProfileId,
+      event: row.eventType,
+      variables: (row.variables as NotifyVariables | null) ?? {},
+      attempt: (prior?.n ?? 0) + 1,
+    },
+  };
 }
