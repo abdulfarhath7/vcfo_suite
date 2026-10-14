@@ -15,8 +15,6 @@ import { emptyEmailDispatch, pushEmailSubject } from '@/lib/email/email-dispatch
 import { fetchEngagementProgressCcEmails } from '@/lib/email/fetch-engagement-progress-cc';
 import { notifyTeamAssignments } from '@/lib/email/notify-team-assignment';
 import { resolvePortalUrl, sendWelcomeEmail } from '@/lib/email/welcome-email';
-import { queueWhatsAppSend } from '@/lib/notify/send-whatsapp';
-import { firstNameOf } from '@/lib/notify/templates';
 
 /**
  * GET /api/engagements — role-scoped list.
@@ -77,22 +75,13 @@ export async function POST(request: Request) {
       managerName: auth.ctx.name,
       managerEmail: auth.ctx.email,
       portalUrl: resolvePortalUrl(),
+      clientUserId: created.clientUserId,
+      engagementId: created.engagement.id,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'welcome_email_failed';
     emailResult = { ok: false, error: message };
   }
-
-  // WhatsApp welcome nudge — background, after email, never blocks the response.
-  await queueWhatsAppSend({
-    engagementId: created.engagement.id,
-    recipientProfileId: created.clientUserId,
-    event: 'welcome',
-    variables: {
-      firstName: firstNameOf(data.clientName ?? data.companyName),
-      companyName: created.engagement.companyName,
-    },
-  });
 
   const teamEmail = emptyEmailDispatch();
   try {

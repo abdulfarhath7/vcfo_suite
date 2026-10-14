@@ -11,6 +11,7 @@ import {
   escapeHtml,
   renderEmailDocument,
 } from '@/lib/email/email-layout';
+import { queueWhatsAppForMailHandlers } from '@/lib/notify/queue-mail-handlers';
 import { loginUrl } from '@/lib/site-url';
 
 export interface ClientEmailChangedParams {
@@ -23,6 +24,9 @@ export interface ClientEmailChangedParams {
   /** Staff member who made the change. */
   actorName: string;
   actorEmail: string;
+  /** The person who lost the address. WhatsApp goes to them, not the new one. */
+  previousUserId?: string | null;
+  engagementId?: string | null;
 }
 
 function buildClientEmailChangedEmail(params: ClientEmailChangedParams): {
@@ -85,7 +89,7 @@ export async function sendClientEmailChangedEmail(
   params: ClientEmailChangedParams,
 ): Promise<SendEmailResult> {
   const { subject, html, text } = buildClientEmailChangedEmail(params);
-  return sendEmail({
+  const result = await sendEmail({
     purpose: 'client-email-changed',
     to: params.previousEmail,
     from: formatFromWithSender({ name: params.actorName }),
@@ -94,4 +98,22 @@ export async function sendClientEmailChangedEmail(
     html,
     text,
   });
+
+  await queueWhatsAppForMailHandlers({
+    engagementId: params.engagementId ?? null,
+    event: 'process_notice',
+    variables: {
+      companyName: params.companyName,
+      stepTitle: 'your sign-in email has been changed',
+    },
+    handlers: [
+      {
+        userId: params.previousUserId,
+        email: params.previousEmail,
+        name: params.previousName,
+      },
+    ],
+  });
+
+  return result;
 }

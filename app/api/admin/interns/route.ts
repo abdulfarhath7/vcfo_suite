@@ -65,6 +65,7 @@ export async function POST(request: Request) {
     managerEmail: auth.ctx.email,
     portalUrl: urls.portalUrl,
     resetUrl: urls.resetUrl,
+    internUserId: created.userId,
   });
 
   await recordAuditEvent(auth.ctx, {

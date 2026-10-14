@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     managerName: auth.ctx.name,
     managerEmail: auth.ctx.email,
     portalUrl: resolvePortalUrl(),
+    engagementId: engagementId ?? null,
   });
 
   if (result.ok || result.skipped) {

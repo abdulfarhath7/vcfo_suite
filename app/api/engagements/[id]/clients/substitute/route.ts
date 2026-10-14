@@ -66,6 +66,8 @@ export async function POST(request: Request, context: RouteContext) {
         portalUrl: resolvePortalUrl(),
         clientPassword: result.tempPassword,
         engagementProgressCc: eng?.progressCcEmails ?? [],
+        clientUserId: result.userId,
+        engagementId: id,
       });
       email = {
         attempted: 1,
@@ -83,6 +85,8 @@ export async function POST(request: Request, context: RouteContext) {
       companyName: result.companyName,
       actorName: guard.ctx.name,
       actorEmail: guard.ctx.email,
+      previousUserId: result.replacedUserId,
+      engagementId: id,
     }).catch(() => null);
     const previousClientNotice: EmailDispatchResult = {
       attempted: 1,

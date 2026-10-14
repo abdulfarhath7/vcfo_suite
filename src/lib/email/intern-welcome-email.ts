@@ -1,4 +1,5 @@
 import 'server-only';
+import { queueWhatsAppForMailHandlers } from '@/lib/notify/queue-mail-handlers';
 import { loginUrl, resetPasswordUrl } from '@/lib/site-url';
 import {
   formatReplyTo,
@@ -23,6 +24,7 @@ export interface InternWelcomeEmailParams {
   resetUrl: string;
   /** One-time credential for welcome email only — never log or persist. */
   temporaryPassword: string;
+  internUserId?: string | null;
 }
 
 function buildInternWelcomeEmail(params: InternWelcomeEmailParams): {
@@ -77,7 +79,7 @@ export async function sendInternWelcomeEmail(
 ): Promise<SendEmailResult> {
   const { subject, html, text } = buildInternWelcomeEmail(params);
 
-  return sendEmail({
+  const result = await sendEmail({
     purpose: 'intern-welcome',
     to: params.internEmail,
     from: formatFromWithSender({ name: params.managerName }),
@@ -89,6 +91,25 @@ export async function sendInternWelcomeEmail(
     html,
     text,
   });
+
+  // The password stays in the email. WhatsApp only says the account is ready.
+  await queueWhatsAppForMailHandlers({
+    engagementId: null,
+    event: 'process_notice',
+    variables: {
+      companyName: 'VCFO Suite',
+      stepTitle: 'your project lead account is ready',
+    },
+    handlers: [
+      {
+        userId: params.internUserId,
+        email: params.internEmail,
+        name: params.internName,
+      },
+    ],
+  });
+
+  return result;
 }
 
 export function resolveInternWelcomeUrls(): { portalUrl: string; resetUrl: string } {

@@ -1,6 +1,7 @@
 import { dueItemsForStage, formatEngagementDueContext, type DueLine } from './due-summary';
 import { getProgressCcRecipients } from './merge-cc';
 import { formatReplyTo, formatFromWithSender, sendEmail, type SendEmailResult } from '@/lib/email/send-email';
+import { queueWhatsAppForMailHandlers } from '@/lib/notify/queue-mail-handlers';
 import { loginUrl } from '@/lib/site-url';
 import {
   emailCallout,
@@ -26,6 +27,9 @@ export interface WelcomeEmailParams {
   isResend?: boolean;
   /** Engagement-specific CC (merged with RESEND_PROGRESS_CC; excludes primary recipient). */
   engagementProgressCc?: string[];
+  /** When known, WhatsApp uses this id instead of looking the address up. */
+  clientUserId?: string | null;
+  engagementId?: string | null;
 }
 
 
@@ -149,7 +153,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<Send
     excludeTo: params.clientEmail,
   });
 
-  return sendEmail({
+  const result = await sendEmail({
     purpose: 'welcome',
     to: params.clientEmail,
     cc: cc.length > 0 ? cc : undefined,
@@ -162,4 +166,22 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<Send
     html,
     text,
   });
+
+  // Same people as the mail: the client, plus anyone copied who has an account.
+  // The temporary password stays in the email only.
+  await queueWhatsAppForMailHandlers({
+    engagementId: params.engagementId ?? null,
+    event: 'welcome',
+    variables: { companyName: params.companyName },
+    handlers: [
+      {
+        userId: params.clientUserId,
+        email: params.clientEmail,
+        name: params.clientName,
+      },
+      ...cc.map((email) => ({ email })),
+    ],
+  });
+
+  return result;
 }

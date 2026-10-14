@@ -22,6 +22,8 @@ export const NOTIFY_EVENTS = [
   'compliance_due_monthly',
   'compliance_due_quarterly',
   'compliance_overdue',
+  /** Every other process email. Variables: company, then the short notice. */
+  'process_notice',
 ] as const;
 
 export type NotifyEvent = (typeof NOTIFY_EVENTS)[number];

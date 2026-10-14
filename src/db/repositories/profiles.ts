@@ -1,6 +1,6 @@
 import 'server-only';
 import bcrypt from 'bcryptjs';
-import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   profiles,
@@ -940,7 +940,9 @@ export async function systemGetNotifyRecipient(profileId: string): Promise<{
     .where(eq(profiles.id, id))
     .limit(1);
 
-  if (!row || row.status !== 'active') return null;
+  // `removed` still receives the sign-in-changed mail, so the same person can
+  // get that WhatsApp. Anyone else is not a mail handler.
+  if (!row || (row.status !== 'active' && row.status !== 'removed')) return null;
 
   return {
     profileId: row.id,
@@ -950,4 +952,38 @@ export async function systemGetNotifyRecipient(profileId: string): Promise<{
     whatsappOptInAt: row.whatsappOptInAt,
     whatsappOptOutAt: row.whatsappOptOutAt,
   };
+}
+
+/**
+ * SYSTEM READER — match a mail's To/CC addresses to profiles.
+ *
+ * Used when a copied address is not already on the engagement party list.
+ * Returns active and removed profiles only. Phone and consent are checked
+ * later, at send time.
+ */
+export async function systemListProfilesForMail(
+  emails: string[],
+): Promise<Array<{ profileId: string; name: string; email: string }>> {
+  const wanted = [
+    ...new Set(emails.map((email) => email.trim().toLowerCase()).filter(Boolean)),
+  ].slice(0, 40);
+  if (wanted.length === 0) return [];
+
+  const rows = await db
+    .select({
+      id: profiles.id,
+      name: profiles.name,
+      email: profiles.email,
+      status: profiles.status,
+    })
+    .from(profiles)
+    .where(inArray(sql`lower(${profiles.email})`, wanted));
+
+  return rows
+    .filter((row) => row.status === 'active' || row.status === 'removed')
+    .map((row) => ({
+      profileId: row.id,
+      name: row.name?.trim() || row.email,
+      email: row.email,
+    }));
 }

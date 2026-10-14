@@ -312,6 +312,9 @@ export default function AccountSettings({ path }: Props) {
                       <span className="font-mono text-[12px]">{display.email || '—'}</span>
                     </SettingsRow>
                     <SettingsRow label="Phone">{display.phone || 'Not set'}</SettingsRow>
+                    <SettingsRow label="WhatsApp">
+                      <WhatsAppStatus phoneE164={display.phoneE164} optedIn={display.whatsappOptIn} />
+                    </SettingsRow>
                     <SettingsRow label="Role" last>
                       {roleLabel}
                     </SettingsRow>
@@ -921,6 +924,76 @@ function OutlookMailboxCard({
         </div>
       )}
     </section>
+  );
+}
+
+const WHATSAPP_TEST_REASON: Record<string, string> = {
+  disabled: 'WhatsApp is switched off on the server (WHATSAPP_ENABLED or the sender number is not set).',
+  no_template: 'The WhatsApp message template is not approved on Meta yet.',
+  no_phone: 'Add your WhatsApp number with the country code first.',
+  no_consent: 'Tick “Send me WhatsApp updates” under Edit, then save.',
+  opted_out: 'You replied STOP earlier. Tick the consent box again to turn updates back on.',
+  too_soon: 'A test was just sent. Wait 30 seconds before sending another.',
+};
+
+function WhatsAppStatus({ phoneE164, optedIn }: { phoneE164: string; optedIn: boolean }) {
+  const [sending, setSending] = useState(false);
+
+  if (!phoneE164) {
+    return <span className="text-muted-foreground">Not set — use Edit to add your number</span>;
+  }
+
+  const sendTest = async () => {
+    setSending(true);
+    try {
+      const res = await fetch('/api/account/whatsapp-test', { method: 'POST' });
+      const body = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        reason?: string;
+        error?: string;
+        errorCode?: string;
+      };
+      if (body.ok) {
+        toastSuccess('Test sent', `Check WhatsApp on ${phoneE164}.`);
+        return;
+      }
+      const key = body.reason ?? body.error ?? '';
+      const message =
+        WHATSAPP_TEST_REASON[key] ?? (body.error || 'The message could not be sent.');
+      toastError('WhatsApp test not delivered', message);
+    } catch (err) {
+      toastError('WhatsApp test not delivered', errorMessage(err));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <span className="flex min-w-0 items-center gap-2">
+        <span
+          className={cn('h-1.5 w-1.5 shrink-0 rounded-full', optedIn ? 'bg-success' : 'bg-border')}
+          aria-hidden
+        />
+        <span className="font-mono text-[12px]">{phoneE164}</span>
+        <span className={cn('text-[12px]', optedIn ? 'text-success-text' : 'text-muted-foreground')}>
+          {optedIn ? 'Updates on' : 'Updates off'}
+        </span>
+      </span>
+      {optedIn ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 shrink-0"
+          disabled={sending}
+          onClick={() => void sendTest()}
+        >
+          {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+          {sending ? 'Sending…' : 'Send test message'}
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
