@@ -1,13 +1,6 @@
 import { m } from 'framer-motion';
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  CATEGORICAL_TONES,
-  TONE_BADGE,
-  TONE_BG,
-  TONE_TEXT,
-  type IconChipTone,
-} from '@/components/common/IconChip';
 
 export interface Phase {
   key: string;
@@ -22,27 +15,28 @@ interface PhaseTimelineProps {
   variant?: 'vertical' | 'journey';
 }
 
-/* Each phase keeps its own hue across the journey, so the timeline reads as
-   a colorful map rather than a monochrome list. */
-function phaseTone(i: number): IconChipTone {
-  return CATEGORICAL_TONES[i % CATEGORICAL_TONES.length];
-}
+const BAR: Record<Phase['status'], string> = {
+  completed: 'bg-[oklch(40%_0.045_168)]',
+  'in-progress': 'bg-[oklch(30%_0.028_255)]',
+  'not-started': 'bg-[oklch(78%_0.012_255)]',
+};
+
+const ICON: Record<Phase['status'], string> = {
+  completed: 'text-[oklch(40%_0.045_168)]',
+  'in-progress': 'text-[oklch(30%_0.028_255)]',
+  'not-started': 'text-muted-foreground',
+};
+
+const CHIP: Record<Phase['status'], string> = {
+  completed: 'border border-transparent bg-[oklch(94%_0.02_168)] text-[oklch(32%_0.04_168)]',
+  'in-progress': 'border border-transparent bg-[oklch(94%_0.012_255)] text-[oklch(28%_0.03_255)]',
+  'not-started': 'border border-border bg-raised text-muted-foreground',
+};
 
 function PhaseNode({ p, i }: { p: Phase; i: number }) {
-  const tone = phaseTone(i);
   const Icon = p.status === 'completed' ? CheckCircle2 : p.status === 'in-progress' ? Clock : Circle;
-  const iconCls =
-    p.status === 'completed'
-      ? 'text-success'
-      : p.status === 'in-progress'
-        ? TONE_TEXT[tone]
-        : 'text-muted-foreground';
-  const chipCls =
-    p.status === 'completed'
-      ? 'bg-success/10 text-success border border-success/20'
-      : p.status === 'in-progress'
-        ? cn(TONE_BADGE[tone], 'border border-transparent')
-        : 'bg-raised text-muted-foreground border border-border';
+  const iconCls = ICON[p.status];
+  const chipCls = CHIP[p.status];
   const label = p.status === 'completed' ? 'Complete' : p.status === 'in-progress' ? 'In progress' : 'Not started';
 
   return (
@@ -51,7 +45,7 @@ function PhaseNode({ p, i }: { p: Phase; i: number }) {
         className={cn(
           'w-10 h-10 rounded-full flex items-center justify-center shrink-0 border',
           p.status === 'in-progress'
-            ? cn(TONE_BADGE[tone], 'border-transparent animate-gold-pulse')
+            ? 'border-transparent bg-[oklch(94%_0.012_255)]'
             : 'border-border bg-raised',
         )}
       >
@@ -72,7 +66,7 @@ function PhaseNode({ p, i }: { p: Phase; i: number }) {
               transition={{ duration: 0.9, delay: 0.08 * i, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
                 'h-full rounded-full',
-                p.status === 'completed' ? 'bg-success' : p.status === 'in-progress' ? TONE_BG[tone] : 'bg-muted-foreground/30',
+                BAR[p.status],
               )}
             />
           </div>
@@ -90,19 +84,20 @@ export function PhaseTimeline({ phases, variant = 'vertical' }: PhaseTimelinePro
         <div className="hidden md:block absolute top-5 left-5 right-5 h-px bg-border" aria-hidden />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-3">
           {phases.map((p, i) => {
-            const tone = phaseTone(i);
             return (
               <div key={p.key} className="relative flex md:flex-col md:items-center md:text-center gap-3 md:gap-2">
                 <div
                   className={cn(
                     'w-10 h-10 rounded-full flex items-center justify-center shrink-0 border z-10',
-                    p.status === 'in-progress' ? cn(TONE_BADGE[tone], 'border-transparent') : 'border-border bg-panel',
+                    p.status === 'in-progress'
+                      ? 'border-transparent bg-[oklch(94%_0.012_255)]'
+                      : 'border-border bg-panel',
                   )}
                 >
                   {p.status === 'completed' ? (
-                    <CheckCircle2 className="w-4 h-4 text-success" />
+                    <CheckCircle2 className={cn('w-4 h-4', ICON.completed)} />
                   ) : p.status === 'in-progress' ? (
-                    <Clock className={cn('w-4 h-4', TONE_TEXT[tone])} />
+                    <Clock className={cn('w-4 h-4', ICON['in-progress'])} />
                   ) : (
                     <Circle className="w-4 h-4 text-muted-foreground" />
                   )}
@@ -115,7 +110,7 @@ export function PhaseTimeline({ phases, variant = 'vertical' }: PhaseTimelinePro
                       initial={{ width: 0 }}
                       animate={{ width: `${p.percent}%` }}
                       transition={{ duration: 0.9, delay: 0.08 * i, ease: [0.22, 1, 0.36, 1] }}
-                      className={cn('h-full rounded-full', p.status === 'completed' ? 'bg-success' : p.status === 'in-progress' ? TONE_BG[tone] : 'bg-muted-foreground/30')}
+                      className={cn('h-full rounded-full', BAR[p.status])}
                     />
                   </div>
                 </div>

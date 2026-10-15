@@ -2,13 +2,16 @@
 
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackButton } from '@/components/shell/PageBackButton';
 import { ClientChangeRequestButton } from '@/components/client/ClientChangeRequestButton';
 import { ClientStepApproveButton } from '@/components/client/ClientStepApproveButton';
+import { ClientStepDocument } from '@/components/client/ClientStepDocument';
 import { stepApprovalLabel } from '@/lib/checklist-step-approval';
 import { SEO } from '@/components/SEO';
 import { StepDetailContent } from '@/components/admin/StepDetailContent';
@@ -48,9 +51,9 @@ import {
   isInternEngagementPathname,
 } from '@/lib/project-step-path';
 import {
-  engagementRouteParamFromParams,
   resolveChecklistItemFromStepParam,
   resolveEngagementFromRouteParam,
+  stepRouteParams,
 } from '@/lib/slug';
 import {
   ChecklistJourneyRail,
@@ -162,8 +165,7 @@ export default function EngagementStepDetail() {
    * Reject pair when the step is waiting on their decision.
    */
   const readOnlyView = isClientRoute || !isIntern;
-  const engagementParam = engagementRouteParamFromParams(params);
-  const stepParam = params.stepId as string;
+  const { engagementParam, stepParam } = stepRouteParams(params);
   const staffRole = user?.role === 'admin' || user?.role === 'manager' ? user.role : 'manager';
 
   const projectPath = isClientRoute
@@ -412,13 +414,72 @@ export default function EngagementStepDetail() {
       ? `${stepSlice?.waitingOnLeadByName?.trim() || 'The client'} submitted their part. Fill the NIC codes, then submit to complete this step.`
       : null;
 
+  /** pre-2 and pre-3 show the resolution itself, with the actions as its footer. */
+  const boardResolutionStep = item.id === 'pre-2' || item.id === 'pre-3';
+  const actionRowClass = boardResolutionStep
+    ? 'flex items-center justify-end gap-2'
+    : 'mt-3 flex items-center justify-end gap-2';
+
+  /* Direct flow: the client's only step-level action is asking for a change
+     once the step is submitted — it reopens the step. */
+  const directFlowClientAction =
+    isClientRoute && directFlowComplete ? (
+      <div className={actionRowClass}>
+        <ClientChangeRequestButton
+          engagementId={eng.id}
+          stepId={item.id}
+          stepTitle={item.title}
+          onSent={() => void refreshEngagementChecklist(eng.id)}
+        />
+      </div>
+    ) : null;
+
+  /* pre-2 keeps lead -> manager approval, so the client signs it off or says
+     what should change. */
+  const approvalClientAction =
+    isClientRoute && (approvalLabel || !clientNothingYet) ? (
+      <div className={actionRowClass}>
+        {approvalLabel ? (
+          <span className="mr-auto text-[12px] text-muted-foreground">{approvalLabel}</span>
+        ) : null}
+        {/* While the firm holds the step (a change the client asked for is
+            being made) only the status line remains — nothing to act on. */}
+        {!clientNothingYet ? (
+          <>
+            <ClientChangeRequestButton
+              engagementId={eng.id}
+              stepId={item.id}
+              stepTitle={item.title}
+            />
+            <ClientStepApproveButton
+              engagementId={eng.id}
+              stepId={item.id}
+              itemState={checklistState[item.id]}
+            />
+          </>
+        ) : null}
+      </div>
+    ) : null;
+
+  const clientApproval = directFlow ? directFlowClientAction : approvalClientAction;
+
   const docPackHref = docPackVisible
     ? docPackPagePath(eng, docPackShell, internPhase?.id === 'pre-inc-phase-1' ? 'part-a' : 'part-b')
     : null;
 
   const stepTitleRow = (
     <div className="mb-4 flex min-w-0 items-center gap-1.5">
-      <PageBackButton className="-ml-1.5" />
+      {isClientRoute ? (
+        <Link
+          href="/app/client/overview"
+          className="-ml-1.5 inline-flex h-9 shrink-0 items-center gap-1 rounded-xl px-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          Back to home
+        </Link>
+      ) : (
+        <PageBackButton className="-ml-1.5" />
+      )}
       <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-foreground">
         {item.title}
       </h1>
@@ -491,7 +552,9 @@ export default function EngagementStepDetail() {
 
       {/* The client's two actions on a step, at STEP level — never per tab.
           They never edit the step itself, so this is the whole of what they
-          can do: sign it off, or say what should change. */}
+          can do: sign it off, or say what should change. On the board
+          resolution steps the actions close the document, so the page is the
+          paper plus a decision, not a short card and an empty viewport. */}
       {/* Lead, manager or admin: open a submitted direct-flow step again. */}
       {!isClientRoute && directFlowComplete ? (
         <div className="mt-3 flex items-center justify-end gap-2">
@@ -499,42 +562,16 @@ export default function EngagementStepDetail() {
         </div>
       ) : null}
 
-      {/* Direct flow: the client's only step-level action is asking for a
-          change once the step is submitted — it reopens the step. */}
-      {isClientRoute && directFlow && directFlowComplete ? (
-        <div className="mt-3 flex items-center justify-end gap-2">
-          <ClientChangeRequestButton
-            engagementId={eng.id}
-            stepId={item.id}
-            stepTitle={item.title}
-            onSent={() => void refreshEngagementChecklist(eng.id)}
-          />
-        </div>
-      ) : null}
-
-      {isClientRoute && !directFlow && (approvalLabel || !clientNothingYet) ? (
-        <div className="mt-3 flex items-center justify-end gap-2">
-          {approvalLabel ? (
-            <span className="mr-auto text-[12px] text-muted-foreground">{approvalLabel}</span>
-          ) : null}
-          {/* While the firm holds the step (a change the client asked for is
-              being made) only the status line remains — nothing to act on. */}
-          {!clientNothingYet ? (
-            <>
-              <ClientChangeRequestButton
-                engagementId={eng.id}
-                stepId={item.id}
-                stepTitle={item.title}
-              />
-              <ClientStepApproveButton
-                engagementId={eng.id}
-                stepId={item.id}
-                itemState={checklistState[item.id]}
-              />
-            </>
-          ) : null}
-        </div>
-      ) : null}
+      {isClientRoute && boardResolutionStep ? (
+        <ClientStepDocument
+          engagementId={eng.id}
+          itemId={item.id}
+          storagePath={responses.signedBoardResolutionUrl}
+          footer={clientApproval}
+        />
+      ) : (
+        clientApproval
+      )}
     </>
   );
 

@@ -32,12 +32,16 @@ type WhatsAppSendEventData = {
   recipientProfileId: string;
   event: NotifyEvent;
   variables: NotifyVariables;
+  retryOf?: string;
 };
 
+const MAX_RETRIES = 3;
+
 export const whatsappSend = inngest.createFunction(
-  { id: 'whatsapp-send', retries: 3 },
+  // Throttle queues excess runs instead of dropping them: at most 20 sends a minute.
+  { id: 'whatsapp-send', retries: MAX_RETRIES, throttle: { limit: 20, period: '1m' } },
   { event: WHATSAPP_SEND_EVENT },
-  async ({ event, step }) => {
+  async ({ event, step, attempt }) => {
     const data = event.data as WhatsAppSendEventData;
 
     if (!data?.recipientProfileId || !isNotifyEvent(String(data.event))) {
@@ -58,13 +62,15 @@ export const whatsappSend = inngest.createFunction(
           channel: 'whatsapp',
           status: 'skipped',
           skipReason: 'no_phone',
+          variables: data.variables ?? {},
+          retryOf: data.retryOf ?? null,
         }),
       );
       return { skipped: 'recipient_not_found' };
     }
 
-    const result = await step.run('send', async () =>
-      sendWhatsAppTemplate({
+    const result = await step.run('send', async () => {
+      const sent = await sendWhatsAppTemplate({
         recipient: {
           profileId: recipient.profileId,
           name: recipient.name,
@@ -76,8 +82,15 @@ export const whatsappSend = inngest.createFunction(
         },
         event: data.event,
         variables: data.variables ?? {},
-      }),
-    );
+      });
+      // Throw inside the step: a step that returns is memoised, so a throw
+      // after it would replay the same failure instead of sending again. The
+      // last attempt returns the failure so it is recorded.
+      if (sent.status === 'failed' && isRetryableWhatsAppError(sent.errorCode) && attempt < MAX_RETRIES) {
+        throw new Error(`whatsapp_send_retryable:${sent.errorCode ?? 'unknown'}`);
+      }
+      return sent;
+    });
 
     await step.run('record-delivery', async () =>
       systemRecordDelivery({
@@ -93,13 +106,10 @@ export const whatsappSend = inngest.createFunction(
         status: result.status,
         skipReason: result.status === 'skipped' ? result.skipReason : null,
         errorCode: result.status === 'failed' ? (result.errorCode ?? null) : null,
+        variables: data.variables ?? {},
+        retryOf: data.retryOf ?? null,
       }),
     );
-
-    if (result.status === 'failed' && isRetryableWhatsAppError(result.errorCode)) {
-      // Throwing hands the retry decision to Inngest's backoff.
-      throw new Error(`whatsapp_send_retryable:${result.errorCode ?? 'unknown'}`);
-    }
 
     return { status: result.status };
   },

@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
 import { RoleSidebar, MobileNavSheet } from "./RoleSidebar";
 import { TopBar } from "./TopBar";
@@ -25,6 +25,7 @@ export function AppShell({
   const { user, authLoading, sidebarMode } = useApp();
   const { prefs, reduceMotion } = useShellAppearance();
   const pathname = usePathname();
+  const router = useRouter();
   const internProjectOpen = isInternEngagementPathname(pathname);
   const navExpanded = shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
 
@@ -40,6 +41,12 @@ export function AppShell({
   useEffect(() => {
     document.documentElement.setAttribute("data-reduce-motion", reduceMotion ? "true" : "false");
   }, [reduceMotion]);
+
+  useEffect(() => {
+    if (authLoading || user) return;
+    const next = pathname?.startsWith("/app") ? `?next=${encodeURIComponent(pathname)}` : "";
+    router.replace(`/login${next}`);
+  }, [authLoading, user, pathname, router]);
 
   if (authLoading || !user) return <AuthBootScreen />;
   if (

@@ -1,14 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Download, FileSignature, FileText, Upload } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronLeft, Download, FileText, Upload } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
-import { Eyebrow, EmptyStateIllustrated } from '@/components/noir';
+import { EmptyStateIllustrated } from '@/components/noir';
 import { Button } from '@/components/ui/button';
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
@@ -154,12 +154,19 @@ export default function BoardResolutionView() {
         path="/app/client/board-resolution"
       />
 
-      <PageHeader
-        accent="violet"
-        icon={FileSignature}
-        title="Board Resolution"
-        subtitle={engagement.companyName}
-      />
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Link
+            href="/app/client/overview"
+            className="-ml-1.5 inline-flex h-9 shrink-0 items-center gap-1 rounded-xl px-2 text-[13px] font-medium text-muted-foreground hover:bg-primary-light hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            Back to home
+          </Link>
+          <h1 className="min-w-0 truncate text-[20px] font-semibold tracking-tight text-foreground">Board resolution</h1>
+        </div>
+        <p className="truncate text-[13px] text-muted-foreground">{engagement.companyName}</p>
+      </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-[12px] text-text-tertiary py-8">
@@ -167,23 +174,13 @@ export default function BoardResolutionView() {
           Loading…
         </div>
       ) : visible ? (
-        <article className="surface-raised p-6 md:p-8 print:shadow-none print:border-0">
-          <Eyebrow className="mb-4">Certified true copy</Eyebrow>
-
-          <div className="mb-6 flex items-start justify-center print:hidden">
-            <BoardResolutionDocPreview
-              engagementId={engagement.id}
-              downloadUrl={downloadHref}
-              refreshKey={`${doc.storagePath ?? ''}:${doc.updatedAt ?? ''}`}
-              mergeFields={mergeFields}
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 mb-6 print:hidden">
+        <article className="overflow-hidden border border-border bg-panel print:border-0">
+          <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5 print:hidden">
+            <p className="mr-auto text-[12.5px] font-semibold text-foreground">Certified true copy</p>
             <a
               href={downloadHref}
               download={BOARD_RESOLUTION_DOCX_FILENAME}
-              className="gold-sheen inline-flex items-center justify-center gap-2 rounded-md h-11 px-5 text-[14px] font-medium tracking-tight hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+              className="inline-flex h-8 items-center justify-center gap-2 rounded-md bg-foreground px-3 text-[13px] font-semibold text-background hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
             >
               <Download className="w-4 h-4" />
               Download Word document (.docx)
@@ -204,7 +201,7 @@ export default function BoardResolutionView() {
               type="button"
               variant="outline"
               disabled={uploading}
-              className="h-11 gap-2"
+              className="h-8 gap-2"
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="w-4 h-4" />
@@ -225,26 +222,32 @@ export default function BoardResolutionView() {
             )}
           </div>
 
-          {doc.signedUploadedAt && (
-            <p className="text-[11.5px] text-success-text mb-4 print:hidden">
-              Signed copy uploaded{' '}
-              {new Date(doc.signedUploadedAt).toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </p>
-          )}
-          {doc.finalizedAt && (
-            <p className="text-[11.5px] text-text-tertiary mt-6 print:hidden">
-              Released{' '}
-              {new Date(doc.finalizedAt).toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-              })}
+          <div className="bg-muted/40 px-4 py-6 sm:px-10 print:bg-transparent print:p-0">
+            <BoardResolutionDocPreview
+              engagementId={engagement.id}
+              downloadUrl={downloadHref}
+              refreshKey={`${doc.storagePath ?? ''}:${doc.updatedAt ?? ''}`}
+              mergeFields={mergeFields}
+            />
+          </div>
+
+          {(doc.signedUploadedAt || doc.finalizedAt) && (
+            <p className="border-t border-border px-4 py-2 text-[12px] text-muted-foreground print:hidden">
+              {doc.finalizedAt
+                ? `Released ${new Date(doc.finalizedAt).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                  })}`
+                : null}
+              {doc.finalizedAt && doc.signedUploadedAt ? ' · ' : null}
+              {doc.signedUploadedAt
+                ? `Signed copy uploaded ${new Date(doc.signedUploadedAt).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                  })}`
+                : null}
             </p>
           )}
         </article>

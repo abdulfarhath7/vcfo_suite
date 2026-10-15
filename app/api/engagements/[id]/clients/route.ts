@@ -77,6 +77,8 @@ export async function POST(request: Request, context: RouteContext) {
         portalUrl: resolvePortalUrl(),
         clientPassword: invited.tempPassword,
         engagementProgressCc: eng?.progressCcEmails ?? [],
+        clientUserId: invited.userId,
+        engagementId: id,
       });
       email = {
         attempted: 1,

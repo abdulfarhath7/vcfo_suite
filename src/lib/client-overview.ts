@@ -153,6 +153,22 @@ export interface ClientOverviewMilestone {
   completedOn?: string;
 }
 
+/** What the client has to do on an open step — the "Needs from you" tabs. */
+export type ClientNeedAction = 'upload' | 'fill' | 'correct' | 'sign';
+
+export interface ClientOverviewNeed {
+  stepId: string;
+  title: string;
+  action: ClientNeedAction;
+  href: string;
+  /** Last day of the manager's window for this step (ISO date), when one is set. */
+  dueDate?: string;
+  correctionNote?: string;
+}
+
+/** Who holds an open step: the client, the VCFO team, or MCA reviewing a filing. */
+export type ClientStepHolder = 'you' | 'team' | 'mca';
+
 export interface ClientOverviewActivity {
   id: string;
   at: string;
@@ -163,6 +179,8 @@ export interface ClientOverviewTeamMember {
   id: string;
   name: string;
   email?: string;
+  /** E.164, for Call / WhatsApp; only when the person saved one. */
+  phoneE164?: string;
   role: 'Project Manager' | 'Project Lead';
 }
 
@@ -173,12 +191,16 @@ export interface ClientOverview {
   incorporated: boolean;
   progress: ClientOverviewProgress;
   nextAction?: ClientOverviewNextAction;
+  /** Every open step that is the client's to act on, oldest first. */
+  needs: ClientOverviewNeed[];
   ballInCourt: { waitingOnClient: number; waitingOnFirm: number };
   documents: ClientOverviewDocuments;
   compliance: { upcoming: ClientOverviewComplianceItem[] };
   milestones: ClientOverviewMilestone[];
   activity: ClientOverviewActivity[];
   team: ClientOverviewTeamMember[];
+  /** Manager-set date windows, when any have been saved. */
+  schedule?: EngagementSchedule;
   /** Directors, share capital and subscribers from the pre-incorporation steps. */
   company: ClientCompanySnapshot;
 }
@@ -506,6 +528,58 @@ export function buildNextAction(
   return undefined;
 }
 
+/** Steps that are a signature or sign-off rather than a form or an upload. */
+const SIGN_STEPS: ReadonlySet<string> = new Set(['pre-3', 'pre-8', 'pre-9']);
+
+function needActionFor(item: ChecklistItem, slice: ChecklistItemStateSlice | undefined): ClientNeedAction {
+  if (isReviewRejected(slice)) return 'correct';
+  if (SIGN_STEPS.has(item.id)) return 'sign';
+  const own = getClientResponseFields(item).filter(
+    (field) => (field.filledBy ?? item.responsibleRole ?? 'client') === 'client',
+  );
+  if (own.length > 0 && own.every((field) => field.type === 'file')) return 'upload';
+  return 'fill';
+}
+
+/** Every step the gate has opened for the client, with what it asks of them. */
+export function buildNeeds(
+  state: ClientOverviewState,
+  schedule?: EngagementSchedule | null,
+): ClientOverviewNeed[] {
+  const gates = gateActiveCatalog(state, 'client');
+  const out: ClientOverviewNeed[] = [];
+  for (const item of getActiveCatalogItems()) {
+    if (getStepGate(gates, item.id).kind !== 'active') continue;
+    const slice = state[item.id];
+    const action = needActionFor(item, slice);
+    const window = windowForStep(schedule, item.id);
+    out.push({
+      stepId: item.id,
+      title: item.title,
+      action,
+      href: clientStepHref(item.id),
+      ...(window ? { dueDate: window.to } : {}),
+      ...(action === 'correct' && slice?.rejectionNote?.trim()
+        ? { correctionNote: slice.rejectionNote.trim() }
+        : {}),
+    });
+  }
+  return out;
+}
+
+/**
+ * Steps where the firm has filed and MCA decides: name approval, the remarks
+ * round on SPICe+, and the certificate itself.
+ */
+const MCA_STEPS: ReadonlySet<string> = new Set(['pre-5', 'pre-11', 'pre-12']);
+
+/** Who holds an open milestone; `null` once it is done or still locked. */
+export function stepHolder(milestone: Pick<ClientOverviewMilestone, 'id' | 'kind'>): ClientStepHolder | null {
+  if (milestone.kind === 'active') return 'you';
+  if (milestone.kind !== 'waiting') return null;
+  return MCA_STEPS.has(milestone.id) ? 'mca' : 'team';
+}
+
 /** Open steps split by who owns the next move. Locked steps belong to neither. */
 export function buildBallInCourt(state: ClientOverviewState): {
   waitingOnClient: number;
@@ -606,23 +680,14 @@ export function latestCompletedPhase(
   return complete.length ? complete[complete.length - 1]! : null;
 }
 
-/** One-line state for the hero — the "where are we" answer in five seconds. */
-export function heroStateLine(overview: ClientOverview): string {
-  const { progress, incorporated, nextAction } = overview;
-  if (incorporated) {
-    const open = progress.byPhase.find((p) => p.pct < 100);
-    if (!open) return 'Every milestone complete — now on ongoing compliance.';
-    return `Certificate of Incorporation issued — now in ${open.label}.`;
-  }
-  // Pre-COI, say where things stand and whose move it is. "We are getting X
-  // started" was filler: it restated the company name and told the client
-  // nothing they could act on.
-  if (progress.overallPct === 0) {
-    return nextAction
-      ? 'Incorporation not started — the first step is yours.'
-      : 'Incorporation not started.';
-  }
-  return nextAction
-    ? `Incorporation in progress — the next step is yours.`
-    : 'Incorporation in progress — with your VCFO team.';
+/**
+ * Company status under the name. Whose turn it is is not said here — that
+ * arrives once, as "your step right now", when the person lands.
+ */
+export function heroStateLine(overview: ClientOverview): string | null {
+  const { progress, incorporated } = overview;
+  if (!incorporated) return null;
+  const open = progress.byPhase.find((p) => p.pct < 100);
+  if (!open) return 'Every milestone complete — now on ongoing compliance.';
+  return `Certificate of Incorporation issued — now in ${open.label}.`;
 }

@@ -1,0 +1,43 @@
+# CodeBuild — builds the production image and pushes it to ECR.
+#
+# Why this exists: App Runner deploys whatever sits at <ecr>/vcfo-suite:latest,
+# and `auto_deployments_enabled` (infra/app.tf) means the push IS the deploy.
+# Normally you build that image locally (infra/README.md), but a machine
+# without virtualisation cannot run Docker at all — this does the same build in
+# AWS instead. Identical Dockerfile, identical result.
+#
+# Driven by scripts/deploy-codebuild.ps1. Requires privilegedMode on the
+# project so the build container can run a Docker daemon.
+
+version: 0.2
+
+env:
+  variables:
+    IMAGE_REPO: vcfo-suite
+    IMAGE_TAG: latest
+    # NEXT_PUBLIC_* is inlined into the client bundle at build time
+    # (Dockerfile:17), so this has to be the real origin, not the localhost
+    # default. Server-side links still read the runtime SITE_URL env.
+    NEXT_PUBLIC_SITE_URL: https://app.sbctrack.in
+    NEXT_PUBLIC_MAX_UPLOAD_MB: "50"
+
+phases:
+  pre_build:
+    commands:
+      - REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - echo "Pushing to $REGISTRY/$IMAGE_REPO:$IMAGE_TAG"
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+
+  build:
+    commands:
+      - REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - docker build --build-arg NEXT_PUBLIC_SITE_URL="$NEXT_PUBLIC_SITE_URL" --build-arg NEXT_PUBLIC_MAX_UPLOAD_MB="$NEXT_PUBLIC_MAX_UPLOAD_MB" -t "$REGISTRY/$IMAGE_REPO:$IMAGE_TAG" .
+
+  post_build:
+    commands:
+      - REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      # Guard against a half-built image being tagged live: only push when the
+      # build phase actually succeeded.
+      - if [ "$CODEBUILD_BUILD_SUCCEEDING" != "1" ]; then echo "Build failed — not pushing."; exit 1; fi
+      - docker push "$REGISTRY/$IMAGE_REPO:$IMAGE_TAG"
+      - echo "Pushed. App Runner auto-deploys this tag."

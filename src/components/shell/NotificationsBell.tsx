@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { m, useReducedMotion } from "framer-motion";
-import { Bell, CheckCheck, History } from "lucide-react";
+import { Bell, CheckCheck, History, MessageCircle } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getToastVariantStyle } from "@/components/ui/hot-toast";
@@ -22,7 +22,7 @@ import {
   notificationsMatchingClearScope,
   type NotificationClearScope,
 } from "@/lib/notification-dismiss";
-import { roleNotificationsPath } from "@/lib/auth-routes";
+import { roleNotificationsPath, roleSettingsPath } from "@/lib/auth-routes";
 import {
   NOTIFICATION_GENIE_LAND_EVENT,
   requestNotificationPopup,
@@ -75,6 +75,16 @@ function offerUndoToast(message: string, onUndo: () => void) {
       position: "top-right",
     },
   );
+}
+
+function dayLabel(createdAt: string, now: Date): string {
+  const at = new Date(createdAt);
+  if (Number.isNaN(at.getTime())) return "Earlier";
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const t = at.getTime();
+  if (t >= startOfToday) return "Today";
+  if (t >= startOfToday - 86_400_000) return "Yesterday";
+  return "Earlier";
 }
 
 function clearCopy(scope: NotificationClearScope, count: number, filter: NotificationDirection): string {
@@ -271,8 +281,8 @@ export function NotificationsBell() {
         data-notifications-bell=""
         className={cn(
           "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:min-h-9 sm:min-w-9",
-          hasUnread && "bg-primary-light text-primary hover:bg-primary-light",
-          catching && "bg-primary-light text-primary",
+          hasUnread && "text-foreground",
+          (catching || open) && "bg-primary-light text-primary",
         )}
         aria-label={
           hasUnread
@@ -289,18 +299,11 @@ export function NotificationsBell() {
           animate={catching && !osReduce ? { scale: [1, 1.38, 0.94, 1.08, 1] } : { scale: 1 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Bell
-            className={cn(
-              "h-[18px] w-[18px] shrink-0",
-              hasUnread && "fill-primary/25",
-            )}
-            strokeWidth={hasUnread ? 2.25 : 2}
-            aria-hidden
-          />
+          <Bell className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
         </m.span>
         {hasUnread && (
           <span
-            className="absolute top-1 right-1 min-w-[15px] h-[15px] px-0.5 flex items-center justify-center rounded-full bg-role text-[9px] font-semibold text-role-foreground leading-none ring-2 ring-panel"
+            className="absolute -top-0.5 -right-0.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white ring-2 ring-panel"
             aria-hidden
           >
             {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
@@ -315,8 +318,13 @@ export function NotificationsBell() {
         onInteractOutside={guardOutside}
       >
         <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-1.5">
-          <p className="p-0 text-[13px] font-bold leading-tight tracking-tight text-ink">
+          <p className="p-0 text-[14px] font-semibold leading-tight tracking-tight text-foreground">
             Notifications
+            {hasUnread ? (
+              <span className="ml-1.5 text-[12px] font-medium text-danger-text tabular-nums">
+                {unreadNotificationCount} new
+              </span>
+            ) : null}
           </p>
           {hasUnread && (
             <button
@@ -392,47 +400,55 @@ export function NotificationsBell() {
               {emptyCopy}
             </p>
           ) : (
-            filtered.map((n) => {
+            filtered.map((n, index) => {
               const exiting = exitingIds.has(n.id);
               const exitDelayMs = exiting ? (exitDelayMsById[n.id] ?? 0) : 0;
+              const day = dayLabel(n.createdAt, now);
+              const showDay = index === 0 || dayLabel(filtered[index - 1].createdAt, now) !== day;
 
               return (
-                <div
-                  key={n.id}
-                  className={cn(
-                    "transition-[transform,opacity] ease motion-reduce:transition-none",
-                    exiting
-                      ? "translate-x-full opacity-0"
-                      : "translate-x-0 opacity-100",
-                  )}
-                  style={{
-                    transitionDuration: `${NOTIFICATION_ROW_EXIT_MS}ms`,
-                    transitionDelay: `${exitDelayMs}ms`,
-                  }}
-                >
-                  <NotificationItem
-                    item={n}
-                    expanded={selectedId === n.id}
-                    exiting={exiting}
-                    showOpenLink
-                    onOpen={() => {
-                      markNotificationRead(n.id);
-                      if (notificationDirection(n.kind) === "received") {
-                        requestNotificationPopup(n);
-                        setOpen(false);
-                        return;
-                      }
-                      setSelectedId((current) => (current === n.id ? null : n.id));
+                <div key={n.id}>
+                  {showDay ? (
+                    <p className="px-2 pb-1 pt-2 text-[11px] font-semibold text-muted-foreground first:pt-1">
+                      {day}
+                    </p>
+                  ) : null}
+                  <div
+                    className={cn(
+                      "transition-[transform,opacity] ease motion-reduce:transition-none",
+                      exiting
+                        ? "translate-x-full opacity-0"
+                        : "translate-x-0 opacity-100",
+                    )}
+                    style={{
+                      transitionDuration: `${NOTIFICATION_ROW_EXIT_MS}ms`,
+                      transitionDelay: `${exitDelayMs}ms`,
                     }}
-                    onDismiss={() => handleDeleteOne(n)}
-                  />
+                  >
+                    <NotificationItem
+                      item={n}
+                      expanded={selectedId === n.id}
+                      exiting={exiting}
+                      showOpenLink
+                      onOpen={() => {
+                        markNotificationRead(n.id);
+                        if (notificationDirection(n.kind) === "received") {
+                          requestNotificationPopup(n);
+                          setOpen(false);
+                          return;
+                        }
+                        setSelectedId((current) => (current === n.id ? null : n.id));
+                      }}
+                      onDismiss={() => handleDeleteOne(n)}
+                    />
+                  </div>
                 </div>
               );
             })
           )}
         </div>
 
-        <div className="border-t border-border px-3 py-2">
+        <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2">
           <Link
             href={historyHref}
             className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-primary-dark"
@@ -441,6 +457,16 @@ export function NotificationsBell() {
             <History className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
             Notification history
           </Link>
+          {user ? (
+            <Link
+              href={roleSettingsPath(user.role)}
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+              onClick={() => setOpen(false)}
+            >
+              <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              Get these on WhatsApp
+            </Link>
+          ) : null}
         </div>
       </PopoverContent>
     </Popover>

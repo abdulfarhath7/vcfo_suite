@@ -44,8 +44,10 @@ import {
   rowsInMonth,
   sortByDueDate,
   type FilingRow,
+  type FilingStatus,
   type FilingsCadence,
 } from '@/lib/filings';
+import { shellRoleHomePath } from '@/components/shell/shell-back';
 import { cn } from '@/lib/utils';
 import {
   ALL_COMPANIES,
@@ -56,6 +58,7 @@ import {
   rowsForCompany,
   rowsForStatus,
   soleCompany,
+  summariseFilings,
   type ComplianceScope,
   type FilingStatusFilter,
 } from '@/views/compliances/compliance-scope';
@@ -210,6 +213,16 @@ export function FilingsView({
           />
         </div>
 
+        {!query.isPending && !query.isError && companyRows.length > 0 ? (
+          <FilingsGlance
+            rows={companyRows}
+            now={now}
+            basePath={basePath}
+            fyLabel={financialYearLabel(fyStartYear)}
+            showCompany={columnsMode.company}
+          />
+        ) : null}
+
         {query.isPending ? (
           <FilingsSkeleton />
         ) : query.isError ? (
@@ -267,9 +280,16 @@ function FilingsHeader({
 }) {
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2">
-      <h1 className="serif min-w-0 flex-1 text-[22px] leading-tight tracking-tight text-foreground">
-        Filings
-      </h1>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <Link
+          href={shellRoleHomePath(basePath)}
+          className="-ml-1.5 inline-flex h-9 shrink-0 items-center gap-1 rounded-xl px-2 text-[13px] font-medium text-muted-foreground hover:bg-primary-light hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          Back to home
+        </Link>
+        <h1 className="min-w-0 truncate text-[20px] font-semibold tracking-tight text-foreground">Filings</h1>
+      </div>
       <div className="flex shrink-0 items-center gap-1 rounded-full border border-border px-1 py-0.5">
         <button
           type="button"
@@ -279,7 +299,7 @@ function FilingsHeader({
         >
           <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
         </button>
-        <span className="mono px-1 text-[11.5px] font-bold tabular-nums text-ink">{fyLabel}</span>
+        <span className="mono px-1 text-[11.5px] font-bold tabular-nums text-foreground">{fyLabel}</span>
         <button
           type="button"
           aria-label="Next financial year"
@@ -299,6 +319,83 @@ function FilingsHeader({
         Open calendar
       </Link>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Glance strip — the whole FY for the picked company, every cadence
+// ---------------------------------------------------------------------------
+
+const GLANCE_TILES: { status: FilingStatus; label: string; accent: string; dot: string }[] = [
+  { status: 'overdue', label: 'Overdue', accent: 'text-danger-text', dot: 'bg-danger' },
+  { status: 'due-soon', label: 'Due in 14 days', accent: 'text-warning-text', dot: 'bg-warning' },
+  { status: 'upcoming', label: 'Upcoming', accent: 'text-foreground', dot: 'bg-muted-foreground/50' },
+  { status: 'filed', label: 'Filed', accent: 'text-success-text', dot: 'bg-success' },
+];
+
+function FilingsGlance({
+  rows,
+  now,
+  basePath,
+  fyLabel,
+  showCompany,
+}: {
+  rows: FilingRow[];
+  now: Date;
+  basePath: string;
+  fyLabel: string;
+  showCompany: boolean;
+}) {
+  const { counts, next } = useMemo(() => summariseFilings(rows, now), [rows, now]);
+  return (
+    <section
+      aria-label={`Filings at a glance, ${fyLabel}`}
+      className="grid grid-cols-2 border border-border bg-panel sm:grid-cols-4 lg:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.8fr)]"
+    >
+      {GLANCE_TILES.map((tile, index) => {
+        const value = counts[tile.status];
+        return (
+          <div
+            key={tile.status}
+            className={cn(
+              'border-b border-r border-border px-4 py-3 lg:border-b-0',
+              index === 1 && 'border-r-0 sm:border-r',
+              index === 3 && 'border-r-0 lg:border-r',
+            )}
+          >
+            <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <span className={cn('h-1.5 w-1.5 rounded-full', tile.dot)} aria-hidden />
+              {tile.label}
+            </span>
+            <span
+              className={cn(
+                'mt-1 block text-[20px] font-semibold leading-none tabular-nums',
+                value > 0 ? tile.accent : 'text-muted-foreground',
+              )}
+            >
+              {value}
+            </span>
+          </div>
+        );
+      })}
+      <div className="col-span-2 px-4 py-3 sm:col-span-4 lg:col-span-1">
+        <span className="text-[11px] font-medium text-muted-foreground">Next filing · {fyLabel}</span>
+        {next ? (
+          <Link
+            href={`${basePath}/calendar?date=${next.dueDate}`}
+            className="mt-1 flex min-w-0 items-baseline gap-2 text-[13.5px] hover:underline"
+          >
+            <span className="min-w-0 truncate font-semibold text-foreground">
+              {showCompany ? `${next.companyName} · ` : ''}
+              {next.particular}
+            </span>
+            <span className="mono shrink-0 text-[12px] tabular-nums text-primary">{formatFilingDate(next.dueDate)}</span>
+          </Link>
+        ) : (
+          <p className="mt-1 text-[13px] text-muted-foreground">Nothing open for the rest of this year.</p>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -335,7 +432,7 @@ function registerColumns(
       key: 'company',
       header: 'Company',
       width: 'minmax(0,1.2fr)',
-      render: (row) => <span className="truncate text-ink">{row.companyName}</span>,
+      render: (row) => <span className="truncate text-foreground">{row.companyName}</span>,
     });
   }
   columns.push(
@@ -345,7 +442,7 @@ function registerColumns(
       width: 'minmax(0,0.9fr)',
       render: (row) => (
         <span className="flex min-w-0 flex-col items-start gap-0.5">
-          <span className="text-ink">{row.compliance}</span>
+          <span className="text-foreground">{row.compliance}</span>
           <AuthorityChip authority={row.authority} />
         </span>
       ),
@@ -356,7 +453,7 @@ function registerColumns(
       width: 'minmax(0,1.5fr)',
       render: (row) => (
         <span className="flex min-w-0 items-center gap-1" data-ask-focus={row.id}>
-          <GlossaryText text={row.particular} className="truncate text-ink" />
+          <GlossaryText text={row.particular} className="truncate text-foreground" />
           <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
         </span>
       ),
@@ -381,7 +478,7 @@ function registerColumns(
       width: 'minmax(0,0.8fr)',
       mono: true,
       render: (row) => (
-        <span className={row.filedOn ? 'text-ink' : 'text-muted-foreground'}>
+        <span className={row.filedOn ? 'text-foreground' : 'text-muted-foreground'}>
           {formatFilingDate(row.filedOn)}
         </span>
       ),
@@ -474,7 +571,7 @@ function RegisterTable({
       mobile={(row) => (
         <div className="flex min-w-0 items-start gap-3" data-ask-focus={row.id}>
           <div className="min-w-0 flex-1">
-            <p className="flex min-w-0 items-center gap-1 text-[13px] font-semibold text-ink">
+            <p className="flex min-w-0 items-center gap-1 text-[13px] font-semibold text-foreground">
               <GlossaryText text={row.particular} className="truncate" />
               <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
             </p>
@@ -564,7 +661,7 @@ function MonthlyTab({
               <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
               Previous
             </button>
-            <span className="mono text-[11.5px] font-bold tabular-nums text-ink">
+            <span className="mono text-[11.5px] font-bold tabular-nums text-foreground">
               {monthLabelOf(monthKey)}
             </span>
             <button
@@ -708,7 +805,7 @@ function PeriodMatrix({
         <tbody>
           {matrix.map((row) => (
             <tr key={row.key} className="border-t border-border align-top">
-              <th scope="row" className="px-3.5 py-3 text-left font-semibold text-ink">
+              <th scope="row" className="px-3.5 py-3 text-left font-semibold text-foreground">
                 <span className="block">{row.particular}</span>
                 <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
                   {row.companyName ? `${row.companyName} · ` : ''}
@@ -725,7 +822,7 @@ function PeriodMatrix({
                 >
                   {cell.status ? (
                     <span className="flex flex-col items-center gap-1">
-                      <span className="mono text-[11px] tabular-nums text-ink">
+                      <span className="mono text-[11px] tabular-nums text-foreground">
                         {formatFilingDate(cell.dueDate)}
                       </span>
                       {showFiledRow ? (

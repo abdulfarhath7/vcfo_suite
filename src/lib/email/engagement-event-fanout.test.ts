@@ -9,6 +9,7 @@ import {
   inAppIncludesActor,
   opensClientOutgoingDraft,
   sendsFromActorMailbox,
+  mailHandlersForEvent,
   staffEmailTargetsForEvent,
   type FanoutRecipients,
 } from './engagement-event-fanout';
@@ -143,6 +144,70 @@ describe('approvalCcEmails', () => {
         }),
       ).sort(),
     ).toEqual(['admin@sbcllp.in', 'extra@sbcllp.in', 'intern@vcfo.local']);
+  });
+});
+
+describe('mailHandlersForEvent', () => {
+  const admin = { userId: 'adm-1', email: 'admin@sbcllp.in', name: 'Admin' };
+
+  it('follows a client submission to the lead and the manager only', () => {
+    expect(mailHandlersForEvent('client_submitted', recipients()).map((p) => p.userId)).toEqual([
+      'lead-1',
+      'mgr-1',
+    ]);
+  });
+
+  it('follows a delivery to the client only', () => {
+    expect(mailHandlersForEvent('delivered', recipients()).map((p) => p.email)).toEqual([
+      'client@vcfo.local',
+    ]);
+  });
+
+  it('follows an acceptance to the client and the people copied on that mail', () => {
+    expect(
+      mailHandlersForEvent(
+        'review_accepted',
+        recipients({ admins: [admin], progressCc: ['extra@sbcllp.in'] }),
+        'adm-1',
+      ).map((p) => p.email),
+    ).toEqual(['client@vcfo.local', 'intern@vcfo.local', 'extra@sbcllp.in']);
+  });
+
+  it('follows a manager-approval ask to the managers only', () => {
+    expect(mailHandlersForEvent('lead_requested_review', recipients()).map((p) => p.userId)).toEqual([
+      'mgr-1',
+    ]);
+  });
+
+  it('follows the staff-bound client events to the lead and the manager', () => {
+    for (const event of ['client_uploaded', 'client_change_requested', 'phase_approved'] as const) {
+      expect(mailHandlersForEvent(event, recipients(), 'cli-1').map((p) => p.userId)).toEqual([
+        'lead-1',
+        'mgr-1',
+      ]);
+    }
+  });
+
+  it('follows an approval ask to the client and the people copied on it', () => {
+    expect(
+      mailHandlersForEvent('step_awaiting_client_approval', recipients({ admins: [admin] }), 'mgr-1').map(
+        (p) => p.userId,
+      ),
+    ).toEqual(['cli-1', 'adm-1', 'lead-1']);
+  });
+
+  it('never messages the person who triggered the event', () => {
+    expect(
+      mailHandlersForEvent('phase_approved', recipients({ managers: [manager, coManager] }), 'mgr-1').map(
+        (p) => p.userId,
+      ),
+    ).toEqual(['lead-1', 'mgr-2']);
+  });
+
+  it('follows a declined client-fill ask to the lead only', () => {
+    expect(mailHandlersForEvent('client_fill_declined', recipients()).map((p) => p.userId)).toEqual([
+      'lead-1',
+    ]);
   });
 });
 

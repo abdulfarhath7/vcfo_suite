@@ -19,6 +19,7 @@ import {
   type EmailDispatchResult,
 } from '@/lib/email/email-dispatch';
 import { adminProjectPath, internEngagementPath } from '@/lib/project-step-path';
+import { queueWhatsAppForMailHandlers } from '@/lib/notify/queue-mail-handlers';
 import { siteUrl } from '@/lib/site-url';
 
 export type TeamRoleLabel = 'project manager' | 'project lead';
@@ -149,6 +150,11 @@ export async function notifyTeamAssignment(input: {
           actorName: input.actor.name,
         });
 
+  const notice =
+    input.action === 'assigned'
+      ? `you were assigned as ${input.role}`
+      : `you were removed as ${input.role}`;
+
   try {
     const result = await sendEmail({
       purpose: `team.${input.action}.${input.role === 'project lead' ? 'lead' : 'manager'}`,
@@ -168,6 +174,22 @@ export async function notifyTeamAssignment(input: {
     email.attempted += 1;
     email.failed.push(input.party.email);
   }
+
+  await queueWhatsAppForMailHandlers({
+    engagementId: input.engagementAppId,
+    event: 'process_notice',
+    variables: {
+      companyName: input.companyName,
+      stepTitle: notice,
+    },
+    handlers: [
+      {
+        userId: input.party.userId,
+        email: input.party.email,
+        name: input.party.name,
+      },
+    ],
+  });
 
   try {
     await createNotificationsForUsers([

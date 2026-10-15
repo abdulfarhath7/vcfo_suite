@@ -58,7 +58,7 @@ export function MarketingNav() {
           className="relative z-10 shrink-0 transition-opacity hover:opacity-80"
           aria-label="VCFO Suite home"
         >
-          <SbcLogo variant="lockup" size={28} decorative />
+          <SbcLogo variant="lockup" size={40} decorative />
         </Link>
 
         <nav

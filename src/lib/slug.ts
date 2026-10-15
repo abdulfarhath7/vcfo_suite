@@ -71,6 +71,30 @@ export function engagementRouteParamFromParams(
   return typeof raw === 'string' ? raw.trim() : '';
 }
 
+function firstParam(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0]?.trim() ?? '';
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/**
+ * Staff step screens are served through one catch-all (`parts`) because a
+ * second dynamic segment under `…/step/[stepId]` is not registered by the
+ * dev server. Direct `[id]` + `[stepId]` params still win when present.
+ */
+export function stepRouteParams(
+  params: Record<string, string | string[] | undefined>,
+): { engagementParam: string; stepParam: string } {
+  const parts = Array.isArray(params.parts)
+    ? params.parts
+    : firstParam(params.parts)
+      ? [firstParam(params.parts)]
+      : [];
+  return {
+    engagementParam: engagementRouteParamFromParams(params) || parts[0]?.trim() || '',
+    stepParam: firstParam(params.stepId) || parts[1]?.trim() || '',
+  };
+}
+
 export function resolveEngagementFromRouteParam(
   engagements: Engagement[],
   param: string,

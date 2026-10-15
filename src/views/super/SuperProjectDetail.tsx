@@ -6,6 +6,7 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashHero } from '@/components/dash/DashHero';
 import { AccentButton } from '@/components/noir/AccentButton';
+import { ClientTimeline } from '@/components/client/overview/ClientTimeline';
 import { SuperProjectJourney } from '@/components/super/project/SuperProjectJourney';
 import { SuperProjectDocuments } from '@/components/super/project/SuperProjectDocuments';
 import { SuperProjectRail } from '@/components/super/project/SuperProjectRail';
@@ -119,6 +120,23 @@ export default function SuperProjectDetail() {
 
         <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
           <div className="flex min-w-0 flex-col gap-3">
+            <ClientTimeline
+              engagementId={summary.id}
+              startDate={summary.createdAt}
+              schedule={detail.schedule}
+              steps={detail.journey
+                .filter(
+                  (step) => step.phaseId === 'pre-inc-phase-1' || step.phaseId === 'pre-inc-phase-2',
+                )
+                .map((step) => ({
+                  id: step.id,
+                  title: step.title,
+                  kind: step.kind,
+                  completedOn: step.completedOn,
+                }))}
+              allowRequest={false}
+              managerName={summary.managerName ?? undefined}
+            />
             <SuperProjectJourney detail={detail} />
             <SuperProjectDocuments detail={detail} />
           </div>

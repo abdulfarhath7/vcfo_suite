@@ -61,7 +61,7 @@ export default function InviteAccept() {
       <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-blue-700 to-blue-800 text-white p-12 overflow-hidden">
         <GrainOverlay className="opacity-10" />
         <div className="relative z-10">
-          <SbcLogo variant="lockup" size={36} surface="dark" decorative />
+          <SbcLogo variant="lockup" size={64} surface="dark" decorative />
         </div>
 
         <m.div
@@ -97,7 +97,7 @@ export default function InviteAccept() {
           className="surface relative z-10 w-full max-w-[420px] p-8"
         >
           <div className="mb-6 lg:hidden">
-            <SbcLogo variant="lockup" size={28} decorative />
+            <SbcLogo variant="lockup" size={48} decorative />
           </div>
 
           <Eyebrow>Client portal</Eyebrow>

@@ -6,17 +6,20 @@ import { SEO } from '@/components/SEO';
 import { EmptyStateIllustrated } from '@/components/noir';
 import { useClientOverview } from '@/lib/use-client-overview';
 import { ClientOverviewHero } from '@/components/client/overview/ClientOverviewHero';
-import { ClientNextAction } from '@/components/client/overview/ClientNextAction';
+import { ClientNeeds } from '@/components/client/overview/ClientNeeds';
 import { ClientPhaseBars } from '@/components/client/overview/ClientPhaseBars';
+import { ClientWhoHolds } from '@/components/client/overview/ClientWhoHolds';
+import { ClientAlerts } from '@/components/client/overview/ClientAlerts';
 import { ClientCompanySnapshot } from '@/components/client/overview/ClientCompanySnapshot';
-import { ClientBallInCourt } from '@/components/client/overview/ClientBallInCourt';
 import { ClientComplianceRunway } from '@/components/client/overview/ClientComplianceRunway';
 import { ClientDeliverables } from '@/components/client/overview/ClientDeliverables';
 import { ClientEntityCard } from '@/components/client/overview/ClientEntityCard';
-import { ClientTeamCard } from '@/components/client/overview/ClientTeamCard';
+import { AskLauncher } from '@/components/ask/AskLauncher';
 import { ClientActivityFeed } from '@/components/client/overview/ClientActivityFeed';
 import { ClientMilestoneCelebration } from '@/components/client/overview/ClientMilestoneCelebration';
 import { ClientOverviewSkeleton } from '@/components/client/overview/ClientOverviewSkeleton';
+import { ClientTimeline } from '@/components/client/overview/ClientTimeline';
+import { YourStepNotice } from '@/components/shell/YourStepNotice';
 
 /**
  * CLIENT MISSION CONTROL.
@@ -78,13 +81,11 @@ export default function ClientOverview() {
 
   const { engagement, progress, incorporated, identifiers, documents, compliance } = overview;
 
-  // Pre/post-COI adaptivity: the entity ID card only exists once there is an
-  // identity to show, and when it does it takes the top of the main column.
-  const entityCard = incorporated ? (
+  const entityCard = (
     <ClientEntityCard engagement={engagement} identifiers={identifiers} />
-  ) : null;
+  );
 
-  const runway = (
+  const taxes = (
     <ClientComplianceRunway upcoming={compliance.upcoming} incorporated={incorporated} />
   );
 
@@ -96,57 +97,51 @@ export default function ClientOverview() {
         path="/app/client/overview"
       />
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
+        {overview.nextAction ? (
+          <YourStepNotice
+            stepKey={`client:${overview.nextAction.stepId}`}
+            stepTitle={overview.nextAction.title}
+            href={overview.nextAction.href}
+          />
+        ) : null}
         <ClientMilestoneCelebration engagementId={engagement.id} progress={progress} />
 
-        {/* 1 + 3 — where are we, and the four key numbers in the hero strip */}
-        <ClientOverviewHero overview={overview} />
-
-        {/* 2 — what do you need from me */}
-        <ClientNextAction nextAction={overview.nextAction} />
-
-        {/* Main column + right rail, same split as the lead dashboard's Today. */}
-        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="flex min-w-0 flex-col gap-3">
-            {/* Who the company is: directors, share capital, subscribers. */}
-            <ClientCompanySnapshot company={overview.company} />
-
-            {/* Post-COI the entity identity earns the top of the column. */}
-            {entityCard}
-
-            {/* Progress is ONE card: bars, expanding to the milestone track.
-                "Whose turn it is" only earns its place post-COI, where work
-                genuinely ping-pongs; pre-COI it restates the hero and the
-                next-action card. */}
-            {incorporated ? (
-              <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-                <ClientPhaseBars
-                  progress={progress}
-                  milestones={overview.milestones}
-                  incorporated={incorporated}
-                />
-                <ClientBallInCourt
-                  waitingOnClient={overview.ballInCourt.waitingOnClient}
-                  waitingOnFirm={overview.ballInCourt.waitingOnFirm}
-                />
-              </div>
-            ) : (
-              <ClientPhaseBars
-                progress={progress}
-                milestones={overview.milestones}
-                incorporated={incorporated}
-              />
-            )}
-
-            <ClientDeliverables documents={documents} />
-          </div>
-
-          <div className="flex min-w-0 flex-col gap-3">
-            {runway}
-            <ClientTeamCard team={overview.team} companyName={engagement.companyName} />
-            <ClientActivityFeed activity={overview.activity} />
+        <div className="rounded-xl border border-border bg-panel shadow-[0_18px_40px_-28px_oklch(var(--primary)/0.45)]">
+          <ClientOverviewHero overview={overview} aside={<AskLauncher placement="inline" />} />
+          <ClientNeeds needs={overview.needs} />
+          <ClientPhaseBars
+            progress={progress}
+            milestones={overview.milestones}
+            incorporated={incorporated}
+          />
+          {/* Who the company is: directors, share capital, subscribers. */}
+          <ClientCompanySnapshot company={overview.company} />
+          <div className="grid grid-cols-1 border-t border-border md:grid-cols-2 xl:grid-cols-3">
+            <div className="min-w-0 border-b border-border md:border-r xl:border-b-0">
+              <ClientWhoHolds milestones={overview.milestones} />
+            </div>
+            <div className="min-w-0 border-b border-border xl:border-b-0 xl:border-r">
+              <ClientAlerts needs={overview.needs} upcoming={compliance.upcoming} />
+            </div>
+            <div className="min-w-0 md:col-span-2 xl:col-span-1">
+              <ClientActivityFeed activity={overview.activity} />
+            </div>
           </div>
         </div>
+
+        {entityCard}
+        {taxes}
+
+        <ClientTimeline
+          engagementId={engagement.id}
+          startDate={engagement.startDate}
+          milestones={overview.milestones}
+          schedule={overview.schedule}
+          team={overview.team}
+        />
+
+        <ClientDeliverables documents={documents} />
 
         {isFetching && (
           <p className="sr-only" role="status">

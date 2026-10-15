@@ -169,6 +169,13 @@
       "when": 1790776656422,
       "tag": "0023_ask_client_prefs",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791973770966,
+      "tag": "0024_whatsapp_delivery_variables",
+      "breakpoints": true
     }
   ]
 }

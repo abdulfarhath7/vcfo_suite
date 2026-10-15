@@ -24,14 +24,15 @@ const CHIP: Record<ClientCardTone, string> = {
   neutral: 'bg-muted-foreground text-white',
 };
 
+/** Quiet header link, same weight as the compliance register. */
+export const clientCardActionClass =
+  'text-[12px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline';
+
 /**
- * One section shell for the whole client dashboard.
+ * One section shell for the client home.
  *
- * `.surface` with a sentence-case heading. Both the title and the icon are
- * optional: a card whose content names itself gets neither, which is how the
- * client home stops repeating each label twice and stops wearing an icon tile
- * on every header. Keeping this shared is why the change is one edit, not
- * twelve.
+ * Header and body use the same inset as Urgent pending: 16px padding, a
+ * 15px sentence-case title, and a hairline under the header.
  */
 export function ClientCard({
   title,
@@ -56,7 +57,7 @@ export function ClientCard({
   return (
     <section className={cn('surface h-fit min-w-0 overflow-hidden', className)}>
       {title || action ? (
-        <div className="flex min-w-0 items-center gap-2 px-4 pt-3.5">
+        <div className="flex min-w-0 items-center gap-3 border-b border-foreground/10 px-4 py-3">
           {Icon ? (
             <span
               className={cn('grid h-6 w-6 shrink-0 place-items-center rounded-md', CHIP[tone])}
@@ -65,12 +66,12 @@ export function ClientCard({
             </span>
           ) : null}
           {title ? (
-            <h2 className="min-w-0 truncate text-[13px] font-semibold text-ink">{title}</h2>
+            <h2 className="min-w-0 truncate text-[15px] font-semibold text-foreground">{title}</h2>
           ) : null}
           {action ? <div className="ml-auto shrink-0">{action}</div> : null}
         </div>
       ) : null}
-      <div className={cn('px-4 pb-4 pt-2.5', bodyClassName)}>{children}</div>
+      <div className={cn('px-4 py-3', bodyClassName)}>{children}</div>
     </section>
   );
 }

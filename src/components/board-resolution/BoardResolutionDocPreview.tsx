@@ -349,7 +349,7 @@ function BoardResolutionDocPreviewInner({
   return (
     <div
       className={cn(
-        'mx-auto w-fit max-w-none self-start overflow-visible rounded-lg border border-border/60 bg-white shadow-md',
+        'mx-auto w-fit max-w-full self-start overflow-visible border border-border bg-white',
         className,
       )}
     >

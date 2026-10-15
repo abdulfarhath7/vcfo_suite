@@ -6,7 +6,6 @@ import { useApp } from '@/context/AppContext';
 import { CheckCheck, ChevronLeft, ChevronRight, Minimize2 } from 'lucide-react';
 import {
   ACT_META,
-  ACT_SWATCH,
   FY_END,
   FY_START,
   type StatutoryAct,
@@ -19,21 +18,27 @@ import {
   muteAllActs,
   selectAllActs,
   statutoryPillLabel,
+  statutoryStatus,
+  trimStatutoryMonthGrid,
 } from '@/components/admin/statutory-calendar-utils';
 import { cn } from '@/lib/utils';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 /** A date carries at most 3 deadlines — 3 fixed slots lock every cell height. */
-const PILL_SLOTS = [0, 1, 2] as const;
+const ITEM_SLOTS = [0, 1, 2] as const;
 
 type Scope = 'all' | 'overdue';
 
 /**
- * Maximized statutory calendar — a full-viewport overlay so the shell header
+ * Maximized compliance calendar — a full-viewport overlay so the shell header
  * and page chrome disappear without touching the app shell. All filter state
  * is owned by the minimized view and shared through props; this component is
  * presentation plus the same toggle callbacks.
+ *
+ * Colour follows the page contract: an item's urgency rides a 2px left rule
+ * and a faint wash, never a saturated fill. At this density — up to 3 named
+ * deadlines in every one of 35 cells — filled chips would tile the screen.
  */
 export function StatutoryMaxiCalendar({
   acts,
@@ -73,13 +78,11 @@ export function StatutoryMaxiCalendar({
   onMinimize: () => void;
 }) {
   const selectAllOn = isSelectAllActive(mutedActs);
-  const cells = useMemo(() => {
-    // Trim to the weeks this month actually needs so rows get maximum height.
-    const six = buildStatutoryMonthGrid(viewMonth);
-    const lastInMonth = six.map((c) => c.inMonth).lastIndexOf(true);
-    const weeks = Math.ceil((lastInMonth + 1) / 7);
-    return six.slice(0, weeks * 7);
-  }, [viewMonth]);
+  // Trim to the weeks this month actually needs so rows get maximum height.
+  const cells = useMemo(
+    () => trimStatutoryMonthGrid(buildStatutoryMonthGrid(viewMonth)),
+    [viewMonth],
+  );
   const weekCount = cells.length / 7;
 
   /** Overlay slides right to reveal the app sidebar when the pointer hits the left edge. */
@@ -119,27 +122,23 @@ export function StatutoryMaxiCalendar({
   if (typeof document === 'undefined') return null;
   return createPortal(
     <div
-      className={cn('stat-max', navPeek && 'is-nav-peek')}
+      className={cn('cal-max', navPeek && 'is-nav-peek')}
       style={navPeek ? { left: peekLeft } : undefined}
       role="dialog"
       aria-modal="true"
-      aria-label="Statutory calendar, maximized"
+      aria-label="Compliance calendar, maximized"
     >
       {!navPeek ? (
-        <div
-          className="stat-max-nav-hotzone"
-          aria-hidden
-          onMouseEnter={() => setNavPeek(true)}
-        />
+        <div className="cal-max-hotzone" aria-hidden onMouseEnter={() => setNavPeek(true)} />
       ) : null}
-      <div className="stat-max-main">
-        <div className="stat-max-bar">
+      <div className="cal-max-main">
+        <div className="cal-max-bar">
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => onShiftMonth(-1)}
               disabled={!canPrev}
-              className="stat-cal-chevron"
+              className="cal-navbtn"
               aria-label="Previous month"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
@@ -148,40 +147,40 @@ export function StatutoryMaxiCalendar({
               type="button"
               onClick={() => onShiftMonth(1)}
               disabled={!canNext}
-              className="stat-cal-chevron"
+              className="cal-navbtn"
               aria-label="Next month"
             >
               <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
             </button>
-            <h2 className="ml-1 text-[15px] font-bold tracking-tight text-ink">{monthLabel}</h2>
-            <button type="button" onClick={onJumpToday} className="stat-max-today">
+            <h2 className="ml-1 mr-2 text-[15px] font-semibold tracking-tight text-foreground">
+              {monthLabel}
+            </h2>
+            <button type="button" onClick={onJumpToday} className="cal-ghost">
               Today
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onMinimize}
-              className="stat-cal-chevron"
-              aria-label="Minimize calendar"
-              title="Minimize (Esc)"
-            >
-              <Minimize2 className="h-4 w-4" strokeWidth={1.75} />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onMinimize}
+            className="cal-navbtn"
+            aria-label="Minimize calendar"
+            title="Minimize (Esc)"
+          >
+            <Minimize2 className="h-4 w-4" strokeWidth={1.75} />
+          </button>
         </div>
 
-        <div className="stat-max-dows" aria-hidden>
+        <div className="cal-max-dows" aria-hidden>
           {WEEKDAYS.map((day) => (
-            <div key={day} className="stat-max-dow">
+            <div key={day} className="cal-max-dow">
               {day}
             </div>
           ))}
         </div>
 
         <div
-          className="stat-max-grid"
+          className="cal-max-grid"
           role="grid"
           aria-label={monthLabel}
           style={{ gridTemplateRows: `repeat(${weekCount}, minmax(0, 1fr))` }}
@@ -194,22 +193,29 @@ export function StatutoryMaxiCalendar({
               <div
                 key={cell.iso}
                 role="gridcell"
-                className={cn('stat-max-cell', !cell.inMonth && 'is-outside')}
+                className={cn('cal-max-cell', !cell.inMonth && 'is-outside')}
                 data-today={isToday ? 'true' : undefined}
               >
-                <span className={cn('stat-max-num', isToday && 'is-today')}>{cell.day}</span>
-                <div className="stat-max-pills">
-                  {PILL_SLOTS.map((slot) => {
+                <span className={cn('cal-max-num', isToday && 'is-today')}>{cell.day}</span>
+                <div className="cal-max-items">
+                  {ITEM_SLOTS.map((slot) => {
                     const item = items[slot];
-                    if (!item) return <span key={slot} className="stat-max-pill is-empty" />;
+                    if (!item) return <span key={slot} className="cal-max-item is-empty" />;
+                    const status = statutoryStatus(item.date, todayIso);
                     return (
                       <span
                         key={slot}
-                        title={item.title}
-                        className={cn('stat-max-pill', ACT_SWATCH[item.act].chip)}
+                        title={`${ACT_META[item.act].full} — ${item.title}`}
+                        className={cn(
+                          'cal-max-item',
+                          status === 'due-soon' && 'is-due-soon',
+                          status === 'overdue' && 'is-overdue',
+                        )}
                       >
-                        <span className={cn('stat-max-pill-notch', ACT_SWATCH[item.act].solid)} aria-hidden />
-                        <span className="stat-max-pill-label">{statutoryPillLabel(item.title)}</span>
+                        <span className="cal-max-item-tag mono">{ACT_META[item.act].label}</span>
+                        <span className="cal-max-item-label">
+                          {statutoryPillLabel(item.title)}
+                        </span>
                       </span>
                     );
                   })}
@@ -220,7 +226,7 @@ export function StatutoryMaxiCalendar({
         </div>
       </div>
 
-      <aside className="stat-max-rail" aria-label="Calendar filters">
+      <aside className="cal-max-rail" aria-label="Calendar filters">
         <SegmentedPicker
           value={scope}
           options={scopes.map((s) => ({ value: s.id, label: s.label }))}
@@ -230,19 +236,18 @@ export function StatutoryMaxiCalendar({
           className="w-full"
         />
 
-        <div className="stat-max-rail-rule" aria-hidden />
+        <div className="cal-max-rail-rule" aria-hidden />
 
-        <div className="stat-max-rail-group" role="group" aria-label="Categories">
+        <div className="cal-max-rail-group" role="group" aria-label="Filter by act">
+          <p className="cal-max-rail-cap">Acts</p>
           <button
             type="button"
             aria-pressed={selectAllOn}
-            onClick={() =>
-              onSetMutedActs(selectAllOn ? muteAllActs(acts) : selectAllActs())
-            }
-            className={cn('stat-max-rail-btn', selectAllOn && 'is-on')}
+            onClick={() => onSetMutedActs(selectAllOn ? muteAllActs(acts) : selectAllActs())}
+            className="cal-max-rail-btn"
           >
             <CheckCheck className="h-3 w-3 shrink-0" strokeWidth={2.25} aria-hidden />
-            Select all
+            {selectAllOn ? 'Clear all' : 'Select all'}
           </button>
           {acts.map((act) => {
             const muted = mutedActs.has(act);
@@ -253,17 +258,10 @@ export function StatutoryMaxiCalendar({
                 onClick={() => onToggleAct(act)}
                 title={ACT_META[act].full}
                 aria-pressed={!muted}
-                className={cn('stat-max-rail-btn', muted && 'is-muted')}
+                className={cn('cal-max-rail-btn', muted && 'is-muted')}
               >
-                <span
-                  className={cn(
-                    'stat-max-rail-dot',
-                    muted ? 'bg-text-tertiary/40' : ACT_SWATCH[act].solid,
-                  )}
-                  aria-hidden
-                />
                 <span className="min-w-0 flex-1 truncate text-left">{ACT_META[act].label}</span>
-                <span className="stat-max-rail-n">{actCounts[act]}</span>
+                <span className="cal-max-rail-n">{actCounts[act]}</span>
               </button>
             );
           })}

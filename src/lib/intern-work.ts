@@ -51,7 +51,7 @@ const INTERN_QUEUE_EXPANDED_STORAGE_PREFIX = 'vcfo.intern.queue.expanded.';
 export const INTERN_WORK_VIEW_KEY = 'vcfo.intern.workView';
 
 type InternWorkSource = 'step' | 'filing' | 'request';
-type InternWorkKind =
+export type InternWorkKind =
   | 'rejected'
   | 'review'
   | 'deliver'

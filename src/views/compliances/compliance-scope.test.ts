@@ -10,6 +10,7 @@ import {
   rowsForCompany,
   rowsForStatus,
   soleCompany,
+  summariseFilings,
 } from '@/views/compliances/compliance-scope';
 
 const NOW = new Date('2026-09-01T00:00:00Z');
@@ -109,5 +110,26 @@ describe('status filter', () => {
     expect(rowsForStatus(rows, 'overdue', NOW).map((r) => r.id)).toEqual(['late']);
     expect(rowsForStatus(rows, 'due-soon', NOW).map((r) => r.id)).toEqual(['soon']);
     expect(rowsForStatus(rows, 'filed', NOW).map((r) => r.id)).toEqual(['done']);
+  });
+});
+
+describe('summariseFilings', () => {
+  it('counts every status and picks the earliest open filing as next', () => {
+    const summary = summariseFilings(
+      [
+        row({ id: 'late', dueDate: '2026-08-20' }),
+        row({ id: 'later', dueDate: '2026-11-30' }),
+        row({ id: 'soon', dueDate: '2026-09-10' }),
+        row({ id: 'done', dueDate: '2026-08-20', filedOn: '2026-08-18' }),
+      ],
+      NOW,
+    );
+    expect(summary.counts).toEqual({ overdue: 1, 'due-soon': 1, upcoming: 1, filed: 1 });
+    expect(summary.next?.id).toBe('soon');
+  });
+
+  it('has no next filing when everything is filed or overdue', () => {
+    const summary = summariseFilings([row({ id: 'late', dueDate: '2026-08-20' })], NOW);
+    expect(summary.next).toBeNull();
   });
 });

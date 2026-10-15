@@ -30,6 +30,7 @@ import { isReviewRejected } from '@/lib/checklist-item-review';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/project-stuck';
 import { phaseKeyFromId, type PhaseColorKey } from '@/lib/phase-colors';
+import type { EngagementSchedule } from '@/lib/schedule-windows';
 import { stageDisplayLabel, type Stage } from '@/components/admin/create-project-form-utils';
 import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
 
@@ -647,6 +648,8 @@ export interface SuperJourneyStep {
   /** True when the lead must redo work the PM sent back. */
   rejected: boolean;
   href: string;
+  /** Completion day, when the checklist recorded one. */
+  completedOn?: string;
 }
 
 export interface SuperDocument {
@@ -673,6 +676,8 @@ export interface SuperEngagementDetail {
   filings: SuperFiling[];
   activity: SuperActivityEntry[];
   team: SuperTeamMember[];
+  /** Manager-set date windows, when the engagement has any. */
+  schedule?: EngagementSchedule;
   /**
    * Read-only inspection links into the role shells (context §3, §6). These are
    * plain links — no impersonation, no role swap, so nothing role-scoped can be
@@ -716,6 +721,7 @@ export function buildJourney(
         awaitingReview: isAwaitingManagerDecision(item.id, slice),
         rejected: isReviewRejected(slice),
         href: superStepHref(slugOrId, item.slug),
+        completedOn: slice?.completedOn?.trim() || slice?.deliveredToClientAt?.trim() || undefined,
       });
     }
   }

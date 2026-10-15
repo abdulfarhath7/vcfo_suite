@@ -64,6 +64,8 @@ export async function POST(request: Request) {
     managerName: auth.ctx.name,
     managerEmail: auth.ctx.email,
     portalUrl: resolvePortalUrl(),
+    clientUserId: engagement.clientUserId,
+    engagementId: body.data.engagementId,
   });
 
   if (result.ok || result.skipped) {

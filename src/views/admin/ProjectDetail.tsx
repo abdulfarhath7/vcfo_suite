@@ -7,6 +7,7 @@ import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
+import { ProjectTimeline } from '@/components/client/overview/ClientTimeline';
 import { InternPhaseEntryCards } from '@/components/incorporation/InternOverviewProgress';
 import { ProgressRing } from '@/components/noir';
 import { DocPackPhasePill } from '@/components/doc-pack/DocPackPhasePill';
@@ -31,6 +32,8 @@ import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowContr
 import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
 import { setEngagementWindowInDb } from '@/lib/engagements-db';
 import { canSetScheduleWindows } from '@/lib/schedule-windows';
+import { isFirmWideAdmin } from '@/lib/auth';
+import { SendLogPanel } from '@/components/admin/SendLogPanel';
 
 /**
  * STAFF PROJECT DETAIL (admin + manager) — the client's incorporation page,
@@ -157,6 +160,13 @@ export default function ProjectDetail() {
       </header>
 
       <div className="flex flex-col gap-3">
+        <ProjectTimeline
+          engagementId={eng.id}
+          startDate={eng.createdAt}
+          schedule={eng.schedule}
+          state={state}
+          viewer="client"
+        />
         <InternPhaseEntryCards
           phases={phases}
           gates={gates}
@@ -164,6 +174,7 @@ export default function ProjectDetail() {
           metaForPhase={phaseWindowMeta(eng.schedule)}
           trailingForPhase={docPackPill}
         />
+        {user?.role === 'manager' || isFirmWideAdmin(user?.role) ? <SendLogPanel engagementId={eng.id} /> : null}
       </div>
     </PageTransition>
   );

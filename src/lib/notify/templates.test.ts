@@ -69,6 +69,28 @@ describe('variable serialisation', () => {
     ]);
   });
 
+  it.each([
+    'step_awaiting_approval',
+    'phase_approved',
+    'client_action_needed',
+    'staff_client_submitted',
+    'staff_client_uploaded',
+    'staff_change_requested',
+  ] as const)('orders %s first name → company → step title', (event) => {
+    expect(buildTemplateComponents(event, vars)[0]!.parameters.map((p) => p.text)).toEqual([
+      'Asha',
+      'Kestrel Robotics India Pvt Ltd',
+      'Certificate of Incorporation',
+    ]);
+  });
+
+  it('orders documents_shared first name → company, with no step title', () => {
+    expect(buildTemplateComponents('documents_shared', vars)[0]!.parameters.map((p) => p.text)).toEqual([
+      'Asha',
+      'Kestrel Robotics India Pvt Ltd',
+    ]);
+  });
+
   it('collapses whitespace and clamps long values', () => {
     const messy = { companyName: `  Kestrel\n\n  Robotics  ${'x'.repeat(200)}  ` };
     const [component] = buildTemplateComponents('coi_issued', messy);

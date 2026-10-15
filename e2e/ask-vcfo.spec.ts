@@ -61,14 +61,15 @@ test.describe('client', () => {
     await expect(reopened.locator('[data-visual="flow"]')).toBeVisible();
   });
 
-  test('topic answer saves to the library', async ({ page }) => {
+  test('topic answer can be saved', async ({ page }) => {
     const panel = await openAsk(page);
     await panel.getByRole('button', { name: 'What is GST, and do we need it?' }).click();
     await expect(panel.getByText('Not yet reviewed')).toBeVisible(ANSWER);
-    await panel.getByRole('button', { name: 'Save to library' }).click();
-    await expect(panel.getByText('Saved to library')).toBeVisible();
-    await page.goto('/app/client/library');
-    await expect(page.getByRole('heading', { name: 'GST basics' })).toBeVisible(ANSWER);
+    await panel.getByRole('button', { name: 'Save answer' }).click();
+    await expect(panel.getByRole('button', { name: 'Saved' })).toBeVisible();
+    const res = await page.request.get('/api/ask/library');
+    const { items } = (await res.json()) as { items: { title: string }[] };
+    expect(items.map((i) => i.title)).toContain('GST basics');
   });
 
   test('an off-topic question is refused', async ({ page }) => {

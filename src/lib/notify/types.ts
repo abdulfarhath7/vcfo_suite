@@ -22,6 +22,17 @@ export const NOTIFY_EVENTS = [
   'compliance_due_monthly',
   'compliance_due_quarterly',
   'compliance_overdue',
+  /* Message to client — same people as the process email. */
+  'step_awaiting_approval',
+  'phase_approved',
+  'client_action_needed',
+  'documents_shared',
+  /* Message to firm — the staff the process email goes to. */
+  'staff_client_submitted',
+  'staff_client_uploaded',
+  'staff_change_requested',
+  /** Every other process email. Variables: company, then the short notice. */
+  'process_notice',
 ] as const;
 
 export type NotifyEvent = (typeof NOTIFY_EVENTS)[number];

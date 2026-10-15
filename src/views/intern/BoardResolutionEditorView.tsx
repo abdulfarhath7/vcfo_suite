@@ -112,7 +112,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
       />
 
-      <div className="surface p-6 md:p-8 max-w-4xl">
+      <div className="border border-border bg-panel px-5 py-4 md:px-6">
 
         <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
 
@@ -124,7 +124,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
               <PageBackButton className="-ml-1.5" />
 
-              <h1 className="serif text-[28px] text-ink tracking-tight flex min-w-0 items-center gap-2">
+              <h1 className="flex min-w-0 items-center gap-2 text-[20px] font-semibold tracking-tight text-foreground">
 
                 <FileText className="w-6 h-6 text-blue-600 shrink-0" />
 

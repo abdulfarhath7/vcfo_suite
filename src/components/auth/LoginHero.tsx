@@ -30,7 +30,7 @@ export function LoginHero({ className, variant = 'full' }: LoginHeroProps) {
         <Aurora className="opacity-90" variant="light" />
         <GrainOverlay className="opacity-[0.08]" />
         <div className="relative z-10">
-          <SbcLogo variant="lockup" size={32} decorative />
+          <SbcLogo variant="lockup" size={52} decorative />
         </div>
       </div>
     );
@@ -56,7 +56,7 @@ export function LoginHero({ className, variant = 'full' }: LoginHeroProps) {
         transition={springGentle}
         className="relative z-10"
       >
-        <SbcLogo variant="lockup" size={40} decorative />
+        <SbcLogo variant="lockup" size={72} decorative />
       </m.div>
 
       <div className="relative z-10 max-w-lg">

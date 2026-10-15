@@ -73,6 +73,21 @@ export function fromMetaPhone(value: string | null | undefined): string {
 }
 
 /**
+ * A number for a log or a staff screen, never in full: `+91 98480 •••00`.
+ * Indian numbers keep the country code and first five digits; anything else
+ * keeps all but the last five. The last two always show.
+ */
+export function maskPhone(value: string | null | undefined): string {
+  const digits = toMetaPhone(value);
+  if (digits.length < 7) return digits ? '•••' : '';
+  const last = digits.slice(-2);
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return `+91 ${digits.slice(2, 7)} •••${last}`;
+  }
+  return `+${digits.slice(0, -5)} •••${last}`;
+}
+
+/**
  * Inbound opt-out keywords. A self-managed sender must honour them itself —
  * the timestamp is recorded so the send guards stop sending.
  */

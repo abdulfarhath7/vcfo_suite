@@ -154,6 +154,8 @@ export async function applyChangeRequest(
     companyName: engagement.companyName,
     actorName: adminCtx.name,
     actorEmail: adminCtx.email,
+    previousUserId: result.replacedUserId,
+    engagementId: request.engagementId,
   }).catch(() => null);
 
   await recordAuditEvent(adminCtx, {

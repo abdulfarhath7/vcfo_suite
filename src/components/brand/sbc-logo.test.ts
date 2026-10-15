@@ -7,9 +7,9 @@ import {
 
 describe('sbcLockupSrc', () => {
   it('points at the canonical theme files', () => {
-    expect(SBC_LOCKUP_LIGHT_SRC).toBe('/sbc-logo-light.png');
-    expect(SBC_LOCKUP_DARK_SRC).toBe('/sbc-logo-dark.png');
-    expect(sbcLockupSrc('light')).toBe('/sbc-logo-light.png');
-    expect(sbcLockupSrc('dark')).toBe('/sbc-logo-dark.png');
+    expect(SBC_LOCKUP_LIGHT_SRC).toBe('/vcfo-logo-light.png');
+    expect(SBC_LOCKUP_DARK_SRC).toBe('/vcfo-logo-dark.png');
+    expect(sbcLockupSrc('light')).toBe('/vcfo-logo-light.png');
+    expect(sbcLockupSrc('dark')).toBe('/vcfo-logo-dark.png');
   });
 });

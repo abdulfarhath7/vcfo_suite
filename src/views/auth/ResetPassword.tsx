@@ -28,7 +28,7 @@ export default function ResetPassword() {
       <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-blue-600 to-blue-700 text-white p-12 overflow-hidden">
         <GrainOverlay className="opacity-10" />
         <div className="relative z-10">
-          <SbcLogo variant="lockup" size={36} surface="dark" decorative />
+          <SbcLogo variant="lockup" size={64} surface="dark" decorative />
         </div>
 
         <m.div

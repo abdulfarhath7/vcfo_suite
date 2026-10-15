@@ -22,6 +22,7 @@ import {
   emailsStaffViaResend,
   isBoardResolutionSendBack,
   inAppIncludesActor,
+  mailHandlersForEvent,
   opensClientOutgoingDraft,
   sendsFromActorMailbox,
   staffEmailTargetsForEvent,
@@ -35,9 +36,8 @@ import {
   type SendEmailResult,
 } from '@/lib/email/send-email';
 import type { NotificationKind } from '@/lib/checklist-notifications';
-import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
-import { firstNameOf } from '@/lib/notify/templates';
-import type { NotifyEvent } from '@/lib/notify/types';
+import { queueWhatsAppForMailHandlers } from '@/lib/notify/queue-mail-handlers';
+import { whatsappDedupeId, whatsappEventFor } from '@/lib/notify/process-event-whatsapp';
 import {
   adminProjectStepPath,
   clientBoardResolutionPath,
@@ -114,38 +114,6 @@ function emailKind(event: EngagementProcessEvent): ProgressEmailKind | null {
     case 'request_created':
       return null;
   }
-}
-
-/** Certificate of Incorporation step — accepting it is the `coi_issued` nudge. */
-const COI_ITEM_ID = 'pre-12';
-
-/**
- * Which process events also earn a WhatsApp nudge.
- *
- * Returns null for everything else — WhatsApp is a small, chosen subset, not a
- * mirror of the email fan-out. Email is unaffected either way.
- */
-function whatsappEventFor(input: NotifyInput): NotifyEvent | null {
-  if (input.event === 'delivered') {
-    // `inAppOnly` marks a re-deliver; only the first Deliver nudges.
-    return input.inAppOnly ? null : 'document_delivered';
-  }
-  if (
-    (input.event === 'review_accepted' || input.event === 'step_submitted') &&
-    input.itemId.trim() === COI_ITEM_ID
-  ) {
-    // Direct flow: the certificate step's Submit is what used to be Accept.
-    return 'coi_issued';
-  }
-  // TODO(whatsapp): `step_awaiting_client_approval`, `phase_approved` and
-  // `client_change_requested` are each specified to nudge on WhatsApp too.
-  // Wiring them means adding three entries to `NOTIFY_EVENTS`, three variable
-  // builders in `src/lib/notify/templates.ts`, and three
-  // `WHATSAPP_TEMPLATE_*` SIDs — all inside `src/lib/notify/**`, which is
-  // currently off-limits by owner instruction. Email is unaffected: it is
-  // already complete for all three, and by the existing rule neither channel
-  // is downgraded when the other is missing.
-  return null;
 }
 
 function notificationKind(event: EngagementProcessEvent): NotificationKind {
@@ -905,22 +873,30 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     email.failed = [...new Set(email.failed)];
     email.subjects = [...new Set(email.subjects ?? [])];
 
-    // WhatsApp last, on the background path, so a WhatsApp send can never
-    // slow this request or change anything above. Never throws.
-    const whatsappEvent = whatsappEventFor(input);
-    if (whatsappEvent) {
-      await queueWhatsAppSends(
-        clientParties(recipients).map((party) => ({
+    // WhatsApp last, and only to the people this email was addressed to.
+    // A skip or a throw here cannot change the email result above.
+    const notice = whatsappEventFor(input, title);
+    if (notice) {
+      try {
+        await queueWhatsAppForMailHandlers({
           engagementId: recipients.appId,
-          recipientProfileId: party.userId,
-          event: whatsappEvent,
+          event: notice.event,
           variables: {
-            firstName: firstNameOf(party.name),
             companyName: company,
-            stepTitle: title,
+            stepTitle: notice.stepTitle,
           },
-        })),
-      );
+          handlers: mailHandlersForEvent(input.event, recipients, input.actorUserId),
+          dedupeIdFor: (recipientProfileId) =>
+            whatsappDedupeId({
+              event: notice.event,
+              engagementId: recipients.appId,
+              itemId: input.itemId,
+              recipientProfileId,
+            }),
+        });
+      } catch (err) {
+        console.error('[whatsapp] queue failed', input.event, err);
+      }
     }
   } catch (err) {
     console.error('[notify] engagement event failed', input.event, err);

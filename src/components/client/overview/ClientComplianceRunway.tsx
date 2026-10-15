@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { m, useReducedMotion } from 'framer-motion';
 import { Mono } from '@/components/noir';
-import { ClientCard } from '@/components/client/overview/ClientCard';
+import { ClientCard, clientCardActionClass } from '@/components/client/overview/ClientCard';
 import {
   COMPLIANCE_GROUP_ORDER,
   type ClientOverviewComplianceItem,
@@ -25,9 +25,11 @@ import { cn } from '@/lib/utils';
 export function ClientComplianceRunway({
   upcoming,
   incorporated,
+  title = 'Taxes',
 }: {
   upcoming: ClientOverviewComplianceItem[];
   incorporated: boolean;
+  title?: string;
 }) {
   const reduceMotion = useReducedMotion();
   const groups = groupByAuthority(upcoming);
@@ -35,22 +37,18 @@ export function ClientComplianceRunway({
 
   return (
     <ClientCard
-      title="Compliance runway"
+      title={title}
       action={
         <Link
           href="/app/client/compliances"
-          className="text-[11.5px] font-bold text-primary hover:underline"
+          className={clientCardActionClass}
         >
           All filings
         </Link>
       }
     >
       {upcoming.length === 0 ? (
-        <p className="text-[12.5px] text-muted-foreground">
-          {incorporated
-            ? 'Nothing due in the next 90 days.'
-            : 'Your compliance calendar begins once your Certificate of Incorporation is issued.'}
-        </p>
+        <TaxBoard incorporated={incorporated} />
       ) : (
         <>
           <ul className="space-y-2.5" aria-label="Filings by authority">
@@ -62,7 +60,7 @@ export function ClientComplianceRunway({
                 transition={{ delay: 0.05 * index, duration: 0.26, ease }}
                 className="flex items-center gap-3"
               >
-                <span className="w-[5rem] shrink-0 truncate text-[11.5px] font-extrabold text-ink">
+                <span className="w-[5.5rem] shrink-0 truncate text-[13px] font-medium text-foreground">
                   {group.group}
                 </span>
                 <div className="client-bar-track h-2.5 flex-1">
@@ -74,7 +72,7 @@ export function ClientComplianceRunway({
                     }}
                   />
                 </div>
-                <span className="mono w-5 shrink-0 text-right text-[11.5px] font-bold tabular-nums text-ink">
+                <span className="w-5 shrink-0 text-right text-[12px] tabular-nums text-muted-foreground">
                   {group.items.length}
                 </span>
               </m.li>
@@ -82,8 +80,8 @@ export function ClientComplianceRunway({
           </ul>
 
           <div className="mt-3.5 border-t border-border pt-3">
-            <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
-              Coming up · next 90 days
+            <p className="mb-2 text-[13px] text-muted-foreground">
+              Coming up in the next 90 days
             </p>
             <ul className="space-y-2">
               {upcoming.slice(0, 5).map((item) => (
@@ -97,22 +95,22 @@ export function ClientComplianceRunway({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-baseline gap-1.5">
-                      <span className="min-w-0 truncate text-[12.5px] font-extrabold text-ink">
+                      <span className="min-w-0 truncate text-[13.5px] font-medium text-foreground">
                         {item.title}
                       </span>
                       {item.periodLabel && (
-                        <span className="shrink-0 text-[10.5px] font-semibold text-muted-foreground">
+                        <span className="shrink-0 text-[12px] text-muted-foreground">
                           {item.periodLabel}
                         </span>
                       )}
                     </div>
-                    <div className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[10.5px] text-muted-foreground">
-                      <span className="font-bold">{item.group}</span>
+                    <div className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[12px] text-muted-foreground">
+                      <span>{item.group}</span>
                       <span aria-hidden>·</span>
                       <Mono className="tabular-nums">{formatClientDate(item.dueDate)}</Mono>
                       <span
                         className={cn(
-                          'ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold',
+                          'ml-auto shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
                           item.status === 'filed'
                             ? 'bg-success-light text-success-text'
                             : 'bg-raised text-muted-foreground',
@@ -126,7 +124,7 @@ export function ClientComplianceRunway({
               ))}
             </ul>
             {upcoming.length > 5 && (
-              <p className="mt-2 text-[11.5px] font-semibold text-muted-foreground">
+              <p className="mt-2 text-[13px] text-muted-foreground">
                 +{upcoming.length - 5} more in the window
               </p>
             )}
@@ -134,6 +132,42 @@ export function ClientComplianceRunway({
         </>
       )}
     </ClientCard>
+  );
+}
+
+const TAX_HEADS = ['GST', 'Income tax', 'Payroll', 'MCA'] as const;
+
+const TAX_DOT: Record<(typeof TAX_HEADS)[number], string> = {
+  GST: 'oklch(0.72 0.13 200)',
+  'Income tax': 'oklch(0.48 0.19 255)',
+  Payroll: 'oklch(0.50 0.16 145)',
+  MCA: 'oklch(0.45 0.18 295)',
+};
+
+function TaxBoard({ incorporated }: { incorporated: boolean }) {
+  return (
+    <div>
+      <p className="mb-2 text-[13px] font-medium text-foreground">
+        {incorporated ? 'Nothing due' : 'After incorporation'}
+      </p>
+      <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {TAX_HEADS.map((head) => (
+          <li key={head}>
+            <Link
+              href="/app/client/compliances"
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-foreground hover:underline"
+            >
+              <span
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ background: TAX_DOT[head] }}
+                aria-hidden
+              />
+              {head}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
