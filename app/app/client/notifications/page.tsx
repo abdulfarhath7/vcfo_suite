@@ -1,4 +1,5 @@
 import NotificationHistoryPage from '@/views/notifications/NotificationHistoryPage';
+import { ClientNotificationsEntry } from '@/components/client-portal/pages/team';
 import { pageMetadata } from '@/lib/page-metadata';
 
 export const metadata = pageMetadata(
@@ -7,5 +8,5 @@ export const metadata = pageMetadata(
 );
 
 export default function Page() {
-  return <NotificationHistoryPage />;
+  return <ClientNotificationsEntry legacy={<NotificationHistoryPage />} />;
 }

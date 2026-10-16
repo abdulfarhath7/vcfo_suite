@@ -1,0 +1,154 @@
+/* @cp-scope page=home */
+/* Verbatim from prototype final-src/s/home/*.dc.html <style> blocks (Home v7). Shared board base (b/ecdc…css) is already loaded; only the Home deltas live here. */
+/* Home boards use 11px labels / table heads / pill counts (shared base: 10.5px) */
+.lbl{font-size:11px}
+th{font-size:11px}
+.seg .cnt{font:600 11px "IBM Plex Mono",monospace}
+/* hover tooltips + drill rows (every v7c card) */
+
+.tipw{cursor:pointer}
+.tipw .tt{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translate(-50%,4px);z-index:60;background:var(--navy);color:#fff;font:700 12px/1.3 Manrope,sans-serif;letter-spacing:0;text-transform:none;padding:5px 9px;border-radius:6px;white-space:nowrap;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s,transform .12s,visibility .12s}
+.tipw .tt::after{content:"";position:absolute;left:50%;top:100%;width:8px;height:8px;background:inherit;transform:translate(-50%,-4px) rotate(45deg)}
+.tipw .tt.l{left:auto;right:calc(100% + 10px);bottom:auto;top:50%;transform:translate(4px,-50%)}
+.tipw .tt.l::after{left:100%;top:50%;transform:translate(-4px,-50%) rotate(45deg)}
+.tipw .tt.w{background:light-dark(#fff, oklch(13% 0 89.9));color:var(--navy-ink,var(--navy))}
+.tipw:hover>.tt,.tipw:focus-visible>.tt{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.tipw:hover>.tt.l,.tipw:focus-visible>.tt.l{transform:translate(0,-50%)}
+.ddrow{display:grid;grid-template-columns:minmax(0,1fr) 62px 116px 16px;align-items:center;gap:12px;padding:9px 10px;margin:0 -10px;border-radius:6px;color:var(--fg)}
+.ddrow>.mono{text-align:right}
+.ddrow>.chip{width:100%;justify-content:center}
+.ddrow:hover{background:var(--raised)}
+@media (prefers-reduced-motion: reduce){.tipw .tt{transition:none}}
+
+/* v7 responsive layer (style data-vh) */
+
+/* v7 responsive layer (Home) - board root, sidebar column, top bar, card grid */
+.vh-root{position:relative;width:100%;min-height:100vh;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px}
+.vh-side{width:var(--vp-side-w,248px);flex:none;background:#0f2a4a;overflow:hidden}
+.vh-body{flex:1;min-width:0}
+.vh-top{--vh-hg:12px;--vh-hp:16px}
+.vh-menu{display:none;flex:none;width:40px;height:40px;margin-left:-6px;border:0;border-radius:8px;background:none;color:var(--navy-ink,var(--navy));align-items:center;justify-content:center;cursor:pointer}
+.vh-menu:hover{background:var(--primary-light)}
+.vh-search{width:256px;padding:0 10px 0 12px}
+.vh-main{box-sizing:border-box;width:100%;max-width:1600px;margin-inline:auto;padding:clamp(12px,2vw,24px);display:grid;gap:16px;align-items:start;grid-template-columns:minmax(0,1fr)}
+.vh-main>.stag{display:flex;flex-direction:column;gap:16px;min-width:0}
+.vh-b{grid-template-areas:"g" "a" "c1" "b" "c2"}
+.vh-a{grid-template-areas:"g" "a1" "c1" "a2" "c2" "f" "d" "e"}
+@media (min-width:600px){
+ .vh-b{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"g g" "a a" "c1 c2" "b b"}
+ .vh-a{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"g g" "a1 a1" "c1 a2" "c1 c2" "f f" "d e";grid-template-rows:auto auto auto 1fr}
+}
+@media (min-width:1180px){
+ .vh-b{grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-areas:"g g" "a c1" "a c2" "b c2";grid-template-rows:auto auto 1fr auto}
+ .vh-a{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"g g g g g g" "a1 a1 a1 a1 c1 c1" "a1 a1 a1 a1 c2 c2" "a2 a2 a2 a2 c2 c2" "f f f f f f" "d d d e e e";grid-template-rows:auto auto 1fr auto}
+}
+@media (min-width:1800px){
+ .vh-b{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"g g g" "a c1 c2" "b b c2";grid-template-rows:auto auto 1fr}
+ .vh-a{grid-template-areas:"g g g g g g" "a1 a1 a2 a2 c1 c1" "a1 a1 c2 c2 c1 c1" "f f f f f f" "d d d e e e";grid-template-rows:auto auto 1fr}
+}
+@media (max-width:1099px){
+ .vh-search{width:36px;padding:0;justify-content:center}
+ .vh-search>span{display:none!important}
+}
+@media (max-width:767px){
+ .vh-top{--vh-hg:6px;--vh-hp:10px}
+ .vh-menu{display:flex}
+ .vh-crumb>*{display:none!important}
+ .vh-top img{height:22px!important}
+ .vh-top button{min-width:40px;min-height:40px}
+ .vh-hide-sm{display:none!important}
+ .card .btn,.card .seg button{min-height:40px}
+ .card:hover{transform:none}
+}
+@media (max-width:479px){.vh-hide-xs{display:none!important}}
+.vh-pbar{display:none}
+@media (max-width:767px){
+ .vh-pbar{display:flex;position:absolute;left:0;right:0;top:0;height:52px;z-index:4;align-items:center;gap:6px;padding:0 10px;background:light-dark(#fff, oklch(13% 0 89.9));border-bottom:1px solid var(--border);box-sizing:border-box}
+ .vh-pbar .vh-menu{display:flex}
+ .vh-under-bar{top:52px!important}
+ .vh-zoom{bottom:72px!important}
+}
+/* cards: let long text shrink, headers wrap, tables and charts scroll inside their own box */
+.card [style*="flex:1"]{min-width:0}
+section.card>div:first-of-type{flex-wrap:wrap;row-gap:8px}
+.vh-x{overflow-x:auto;max-width:100%;overscroll-behavior-x:contain}
+.vh-x>table{min-width:var(--tmin,520px)}
+.vh-tl{overflow-x:auto;overscroll-behavior-x:contain}
+.vh-stats{row-gap:8px}
+@media (max-width:599px){
+ .vh-gtop{flex-wrap:wrap}
+ .vh-stats{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px 12px}
+ .vh-stat{border-right:0!important;margin-right:0!important;padding-right:0!important}
+}
+@media (max-width:767px){
+ .vh-segwrap{display:flex!important;flex-wrap:wrap;gap:2px}
+ .vh-segwrap>.thumb{display:none}
+ .vh-segwrap button{flex:1 1 auto}
+ .vh-segwrap button.on{background:var(--navy);color:#fff}
+}
+/* pop-ups always fit the viewport; closed ones take no space (no phantom page scroll) */
+.info .pop{max-width:min(280px,calc(100vw - 24px));display:none}
+.info:focus-within .pop,.info.open .pop{display:block;animation:vhfade .15s ease-out}
+.tipw .tt{display:none}
+.tipw:hover>.tt,.tipw:focus-visible>.tt{display:block;animation:vhfade .12s ease-out}
+@keyframes vhfade{from{opacity:0}to{opacity:1}}
+.vh-dd{width:min(600px,calc(100vw - 24px))!important;max-height:min(560px,calc(100dvh - 24px))!important}
+@media (max-width:640px){
+ .vh-dd .seg{display:flex!important;flex-wrap:wrap;gap:2px}
+ .vh-dd .seg>.thumb{display:none}
+ .vh-dd .seg button{flex:1 1 auto}
+ .vh-dd .seg button.on{background:var(--navy);color:#fff}
+ .vh-dd .ddrow{grid-template-columns:minmax(0,1fr) 116px 16px}
+ .vh-dd .ddrow>.mono{display:none}
+}
+@media (pointer:coarse){.info>button{position:relative}.info>button::after{content:"";position:absolute;inset:-11px}}
+
+/* Recent documents + Steps card (v7_before / v7c_docs / v7c_steps) */
+/* Recent documents, grouped by arrival: rows, not boxes; controls appear on hover or focus */
+.rd-g{font:800 10px Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin:0 0 2px;display:flex;align-items:center;gap:8px}
+.rd-g::after{content:"";height:1px;flex:1;background:var(--hair)}
+.rd-r+.rd-g{margin-top:12px}
+.rd-r{display:flex;align-items:center;gap:9px;padding:7px 2px;border-radius:6px;cursor:pointer;min-width:0}
+.rd-r:hover{background:var(--raised)}
+.rd-r:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+.rd-ft{flex:none;width:20px;height:20px;border-radius:6px;text-align:center;font:700 7px/20px "IBM Plex Mono",monospace;letter-spacing:-.02em}
+.rd-n{flex:1;min-width:0;font-size:12.5px;font-weight:500;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-s{flex:none;font:600 11px Manrope,sans-serif;color:var(--subtle);white-space:nowrap}
+.rd-s .rd-me{color:var(--gold-text)}
+.rd-s .rd-d{font-family:"IBM Plex Mono",monospace;font-weight:500;font-feature-settings:"tnum"}
+.rd-s .rd-sep{opacity:.45;margin:0 4px}
+.rd-a{display:flex;gap:2px;flex:none}
+.rd-b{width:26px;height:26px;padding:0;border:0;border-radius:6px;background:none;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.rd-b:hover{background:var(--primary-light);color:var(--primary)}
+.rd-b:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+@media (max-width:330px){.rd-s .rd-who{display:none}.rd-s .rd-sep{display:none}}
+/* every status chip is one width, so the column reads as a column and the cell
+   beside it keeps the same x on every row */
+.stp-row>td:nth-child(4)>.chip{min-width:116px;justify-content:center}
+.stp-row>td:nth-child(3)>.chip{min-width:88px;justify-content:center}
+
+
+.stp-g{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.stp-g>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;user-select:none;border-radius:8px;transition:background .15s}
+.stp-g>summary::-webkit-details-marker{display:none}
+.stp-g>summary:hover{background:var(--raised)}
+.stp-g>summary .stp-cv{transition:transform .25s cubic-bezier(.22,1,.36,1);color:var(--muted)}
+.stp-g[open]>summary .stp-cv{transform:rotate(90deg)}
+.stp-g[open]>summary{border-bottom:1px solid var(--hair);border-radius:8px 8px 0 0}
+.stp-g>.vh-x{margin:4px 0 6px}
+.stp-g[open]>.vh-x{animation:stpIn .28s cubic-bezier(.22,1,.36,1)}
+@keyframes stpIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.stp-row{cursor:pointer}
+.stp-row:hover .stp-go{color:var(--primary);background:var(--primary-light);transform:translateX(2px)}
+.stp-go{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:var(--muted);transition:color .15s,background .15s,transform .15s}
+.stp-go:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+@media (prefers-reduced-motion: reduce){.stp-g>summary .stp-cv,.stp-go{transition:none}.stp-g[open]>.vh-x{animation:none}}
+
+.stp-tl{white-space:normal!important;font-size:11.5px;color:var(--muted);min-width:110px;max-width:190px;line-height:1.35}.stp-ph{color:inherit;font-weight:800}
+
+/* owner character, static head. Moods: antenna colour (idle teal, answered green, cannot grey); thinking = antenna pulse + eyes scan. The smile never changes. */
+.vb-scan{animation:vbScan 1.3s ease-in-out infinite}
+@keyframes vbScan{0%,100%{transform:translateX(-9px)}50%{transform:translateX(9px)}}
+.vb-ant{animation:vbAnt 1s ease-in-out infinite}
+@keyframes vbAnt{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.vb-scan,.vb-ant{animation:none}}

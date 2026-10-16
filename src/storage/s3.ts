@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -82,6 +83,34 @@ export async function signedDownloadUrl(
     new GetObjectCommand({ Bucket: BUCKET, Key: key }),
     { expiresIn: expiresInSeconds },
   );
+}
+
+/**
+ * Every object under a key prefix (paginated). Used by repositories only —
+ * e.g. the client Documents page lists earlier uploads of a milestone field
+ * (`milestone-documents/{engagement}/{field}/…`) as "Replaced" versions.
+ */
+export async function listObjects(
+  prefix: string,
+  maxKeys = 5000,
+): Promise<Array<{ key: string; size: number | null; lastModified: string | null }>> {
+  const out: Array<{ key: string; size: number | null; lastModified: string | null }> = [];
+  let token: string | undefined;
+  do {
+    const res = await s3.send(
+      new ListObjectsV2Command({ Bucket: BUCKET, Prefix: prefix, ContinuationToken: token }),
+    );
+    for (const o of res.Contents ?? []) {
+      if (!o.Key) continue;
+      out.push({
+        key: o.Key,
+        size: o.Size ?? null,
+        lastModified: o.LastModified ? o.LastModified.toISOString() : null,
+      });
+    }
+    token = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (token && out.length < maxKeys);
+  return out;
 }
 
 export async function deleteObject(key: string): Promise<void> {

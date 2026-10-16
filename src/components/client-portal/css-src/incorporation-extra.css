@@ -1,0 +1,32 @@
+/* @cp-scope page=incorporation */
+/* Additions the React build needs around the verbatim board CSS. */
+/* L1 skeleton (prototype s/home/mobile.html l.171–177, verbatim, + the navy tiles) */
+.sk .card,.sk .coi,.sk .hero{position:relative}
+.sk .card>*,.sk .coi>*,.sk .hero>*{visibility:hidden}
+.sk .card:after,.sk .coi:after,.sk .hero:after{content:"";position:absolute;inset:12px;height:auto;border-radius:6px;background:linear-gradient(90deg,light-dark(oklch(93.5% .008 255), oklch(22.8% 0.008 255)) 0,light-dark(oklch(96.5% .006 255), oklch(18.3% 0.006 255)) 40%,light-dark(oklch(93.5% .008 255), oklch(22.8% 0.008 255)) 80%);background-size:600px 100%;animation:sh 1.2s linear infinite}
+.sk .coi:after,.sk .hero:after{background:linear-gradient(90deg,oklch(30% .05 258) 0,oklch(36% .05 258) 40%,oklch(30% .05 258) 80%);background-size:600px 100%}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.wrap>*{animation:fu .3s cubic-bezier(.22,1,.36,1) both}
+.sk .wrap>*{animation:none}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.sk-blk{display:block;min-height:120px}
+/* visually hidden file inputs behind the drop zones */
+.vh{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+/* drag over a drop zone; NOC-blocked approve scrolls here and pulses */
+.drop.over{border-style:solid;filter:brightness(.98)}
+.drop.pulse{animation:dpulse 1.2s ease-out 2}
+@keyframes dpulse{0%{box-shadow:0 0 0 0 rgba(200,98,14,.45)}100%{box-shadow:0 0 0 12px rgba(200,98,14,0)}}
+.drop.busy{opacity:.7;pointer-events:none}
+/* real document preview inside the board-resolution paper */
+.pvw .paper.live{padding:0;width:min(560px,100%);overflow:hidden}
+/* change-request dialog (prototype .dlg look, shared CSS) */
+.cr-ov{position:fixed;inset:0;z-index:2147482800;background:rgba(10,22,40,.4);display:grid;place-items:center;padding:16px}
+.cr-dlg{width:min(460px,100%);background:var(--panel);border-radius:12px;box-shadow:0 30px 70px -20px rgba(8,20,40,.6);padding:18px;display:flex;flex-direction:column;gap:12px}
+.cr-dlg h2{margin:0;font:700 15px Manrope,sans-serif;color:var(--navy-ink,var(--navy))}
+.cr-dlg textarea{width:100%;min-height:110px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font:500 13px/1.5 Manrope,sans-serif;color:var(--fg);background:var(--panel);resize:vertical}
+.cr-dlg textarea:focus{outline:2px solid var(--primary);outline-offset:1px}
+.cr-dlg .row2{display:flex;justify-content:flex-end;gap:8px}
+.cr-dlg .err{color:var(--over);font-size:12px}
+/* focus rings (DESIGN-RULES a11y) */
+.btn:focus-visible,.sq:focus-visible,.ibtn:focus-visible,.lkb:focus-visible,.gbar:focus-visible,.lg:focus-visible,.nar .ib:focus-visible,.nabk:focus-visible,.naw:focus-visible,.wr:focus-visible,.rr:focus-visible,.pill:focus-visible,.stb:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.no-coi .big b{font-size:clamp(20px,2.2vw,24px)}

@@ -1,0 +1,30 @@
+/* @cp-scope page=docviewer */
+/* Shared document viewer overlay — prototype s/home/v7x_doc_viewer.dc.html
+   (responsive .vh-* layer, .info pop-over fit, zoom bar on phone). The markup
+   keeps the board's inline styles; only the classes it relies on live here. */
+
+@media (max-width:767px){
+ .vh-hide-sm{display:none!important}
+ .vh-under-bar{top:52px!important}
+ .vh-zoom{bottom:72px!important}
+}
+.info .pop{max-width:min(280px,calc(100vw - 24px))}
+@media (pointer:coarse){.info>button{position:relative}.info>button::after{content:"";position:absolute;inset:-11px}}
+/* overlay enter: page fade (proto.js vpIn .26s) and dialog pop */
+@keyframes dvin{from{opacity:0}to{opacity:1}}
+@keyframes dvpop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+.dv-scrim{animation:dvin .18s ease-out both}
+.dv-dlg{animation:dvpop .22s cubic-bezier(.22,1,.36,1) both}
+/* real file renders inside the paper island */
+.dv-frame{display:block;width:100%;height:100%;border:0;background:#fff}
+.dv-img{display:block;width:100%;height:auto}
+.dv-docx{width:100%;color:oklch(21% 0.042 264)}
+.dv-docx .docx-wrapper{background:transparent!important;padding:0!important}
+.dv-docx section.docx{box-shadow:none!important;margin:0 0 24px!important;width:auto!important;min-height:0!important;padding:0!important}
+.dv-line{height:7px;border-radius:3px;margin-top:10px}
+@keyframes dvsk{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.dv-line{background:linear-gradient(90deg,oklch(92% 0.01 255) 0,oklch(96% 0.006 255) 50%,oklch(92% 0.01 255) 100%);background-size:600px 100%;animation:dvsk 1.3s linear infinite}
+.dv-nav:hover{background:var(--raised)!important}
+.dv-zb:hover{background:oklch(100% 0 0 / .14)!important}
+.dv-zb:disabled{opacity:.4;cursor:default!important}
+@media (prefers-reduced-motion: reduce){.dv-scrim,.dv-dlg,.dv-line{animation:none!important}[data-paper]{transition:none!important}}

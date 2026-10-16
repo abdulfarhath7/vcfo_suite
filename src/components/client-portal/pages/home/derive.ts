@@ -1,0 +1,706 @@
+/**
+ * Home (client portal v7) — pure builders that turn the three real reads
+ * (step model, ClientOverview, ClientHome) into what each prototype card draws.
+ * No React, no fetch. Every value here comes from data; nothing is invented.
+ */
+import { getChecklistStepTimelineLabel, getItem } from '@/data/checklist';
+import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
+import { isReviewRejected } from '@/lib/checklist-item-review';
+import { approvalStateOf } from '@/lib/checklist-step-approval';
+import { isClientFillAwaitingClient } from '@/lib/checklist-client-fill';
+import { complianceGroupForAuthority, type ClientOverview, type ComplianceGroup } from '@/lib/client-overview';
+import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
+import type { ClientHome, HomeFiling, NeedKind, TimelinePhaseDates } from '@/lib/client-home';
+import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
+import { portalHref, stepHref } from '@/components/client-portal/routes';
+
+export type Tone = 'ok' | 'due' | 'over' | 'prog' | 'up';
+
+/* ------------------------------------------------------------------ dates */
+
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+export function ymd(v?: string | null): string | undefined {
+  if (!v) return undefined;
+  const s = v.trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? undefined : new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 10);
+}
+function parts(iso: string) {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  return { y: y!, m: m! - 1, d: d! };
+}
+/** "9 Oct" */
+export function dShort(iso?: string): string {
+  if (!iso) return '—';
+  const p = parts(iso);
+  return `${p.d} ${MON[p.m]}`;
+}
+/** "9 Oct 2026" */
+export function dLong(iso?: string): string {
+  if (!iso) return '—';
+  const p = parts(iso);
+  return `${p.d} ${MON[p.m]} ${p.y}`;
+}
+/** ["09", "OCT"] */
+export function dayMon(iso: string): [string, string] {
+  const p = parts(iso);
+  return [String(p.d).padStart(2, '0'), MON[p.m]!.toUpperCase()];
+}
+/** "TUE 6 OCT 2026" */
+export function dHeader(iso: string): string {
+  const p = parts(iso);
+  const dow = new Date(Date.UTC(p.y, p.m, p.d)).getUTCDay();
+  return `${DOW[dow]} ${p.d} ${MON[p.m]!.toUpperCase()} ${p.y}`;
+}
+export function days(a: string, b: string): number {
+  return Math.round((Date.parse(`${b.slice(0, 10)}T00:00:00Z`) - Date.parse(`${a.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
+}
+export function addDays(iso: string, n: number): string {
+  return new Date(Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+}
+function plural(n: number, w: string) {
+  return `${n} ${w}${n === 1 ? '' : 's'}`;
+}
+/** "In 5 days" / "Today" / "Overdue 1 day" */
+export function rel(today: string, iso: string): string {
+  const n = days(today, iso);
+  if (n < 0) return `Overdue ${plural(-n, 'day')}`;
+  if (n === 0) return 'Today';
+  return `In ${plural(n, 'day')}`;
+}
+export function chipTone(today: string, iso?: string): Tone {
+  if (!iso) return 'up';
+  const n = days(today, iso);
+  if (n < 0) return 'over';
+  if (n <= 7) return 'due';
+  return 'prog';
+}
+
+export const chipBg = (t: Tone) => `var(--${t}-chip)`;
+export function solid(t: Tone): React.CSSProperties {
+  return { background: `var(--${t}-chip)`, color: '#fff' };
+}
+
+/* -------------------------------------------------------------- steps */
+
+export const STEP_STATUS: Record<string, [string, Tone]> = {
+  done: ['Completed', 'ok'],
+  you: ['Waiting', 'due'],
+  prog: ['In progress', 'prog'],
+  with: ['In progress', 'prog'],
+  next: ['Upcoming', 'up'],
+  up: ['Upcoming', 'up'],
+};
+
+export function stepStatus(s: PortalStep): [string, Tone] {
+  if (s.late && s.kind !== 'done') return ['Overdue', 'over'];
+  return STEP_STATUS[s.kind] ?? ['Upcoming', 'up'];
+}
+
+export function stepOwnerLabel(s: PortalStep, company: string): string {
+  return s.owner === 'client' ? company : 'SBC';
+}
+
+export function stepTimelineText(s: PortalStep): string {
+  return getChecklistStepTimelineLabel(s.item);
+}
+
+export function stepDateLabel(s: PortalStep): string {
+  if (s.kind === 'done') return s.doneOn ? dShort(s.doneOn) : 'Done';
+  return s.due ? dShort(s.due) : '—';
+}
+
+/** Rows for the "Incorporation steps" drill: All / Completed / In progress / Waiting / Upcoming. */
+export function spiceStepsDrill(model: PortalIncorporationModel, company: string, active: number): DrillConfig {
+  const steps = model.steps.filter((s) => s.phaseNo <= 2);
+  const row = (s: PortalStep): DrillRow => {
+    const [label, tone] = stepStatus(s);
+    return { title: s.title, meta: stepDateLabel(s), chip: label, chipColor: chipBg(tone), href: stepHref(s.id) };
+  };
+  const by = (f: (s: PortalStep) => boolean) => steps.filter(f).map(row);
+  return {
+    title: 'Incorporation steps',
+    active,
+    tabs: [
+      { label: 'All', rows: steps.map(row) },
+      { label: 'Completed', rows: by((s) => s.kind === 'done') },
+      { label: 'In progress', rows: by((s) => s.kind === 'prog' || s.kind === 'with') },
+      { label: `Waiting for ${company}`, rows: by((s) => s.kind === 'you') },
+      { label: 'Upcoming', rows: by((s) => s.kind === 'up' || s.kind === 'next') },
+    ],
+    link: { lead: 'These items live in Incorporation', text: 'Open Incorporation →', href: portalHref('incorporation'), where: 'Incorporation' },
+  };
+}
+
+/* ------------------------------------------------------------- needs */
+
+export interface NeedRow {
+  key: string;
+  title: string;
+  /** (i) text: step / filing it belongs to. */
+  sub: string;
+  kind: NeedKind;
+  due?: string;
+  stepId?: string;
+  stepN?: number;
+  requestId?: string;
+  askedBy?: string;
+  href?: string;
+  createdAt?: string;
+}
+
+export function buildNeeds(model: PortalIncorporationModel, home: ClientHome | undefined, filingsById: Map<string, HomeFiling>): NeedRow[] {
+  const out: NeedRow[] = [];
+  for (const r of home?.needs ?? []) {
+    const step = r.stepId ? model.byId[r.stepId] : undefined;
+    const filing = r.complianceInstanceId ? filingsById.get(r.complianceInstanceId) : undefined;
+    const due = r.dueDate ?? (filing ? filing.dueDate : step?.due);
+    out.push({
+      key: `req:${r.id}`,
+      title: r.title,
+      sub: step ? step.title : filing ? `${filing.title}${filing.periodLabel ? ` · ${filing.periodLabel}` : ''}` : r.detail ?? 'Requested by SBC',
+      kind: r.kind,
+      due,
+      stepId: step?.id,
+      stepN: step?.n,
+      requestId: r.id,
+      askedBy: r.requestedByName,
+      href: step ? stepHref(step.id) : filing ? portalHref('compliances') : portalHref('documents'),
+      createdAt: r.createdAt,
+    });
+  }
+  for (const s of model.steps) {
+    if (s.kind !== 'you') continue;
+    const slice = s.slice;
+    let kind: NeedKind = 'fill';
+    let title = s.title;
+    if (isReviewRejected(slice)) {
+      kind = 'correct';
+      const note = slice?.rejectionNote?.trim();
+      title = note ? (note.length > 48 ? `${note.slice(0, 46)}…` : note) : `${s.title} — sent back`;
+    } else if (approvalStateOf(slice) === 'pending_client') {
+      kind = 'sign';
+      title = `Approve ${s.title}`;
+    } else if (isClientFillAwaitingClient(slice?.clientFillRequest)) {
+      kind = 'fill';
+    }
+    out.push({ key: `step:${s.id}`, title, sub: s.title, kind, due: s.due, stepId: s.id, stepN: s.n, href: stepHref(s.id) });
+  }
+  return out;
+}
+
+export function needChip(today: string, due: string | undefined, after: boolean): { label: string; tone: Tone } | null {
+  if (!due) return null;
+  const n = days(today, due);
+  if (n < 0) return { label: `Overdue ${-n}d`, tone: 'over' };
+  return { label: after ? rel(today, due) : dShort(due), tone: n <= 7 ? 'due' : 'prog' };
+}
+
+export const NEED_TABS: [NeedKind, string][] = [
+  ['upload', 'Upload'],
+  ['fill', 'Fill'],
+  ['correct', 'Correct'],
+  ['sign', 'Sign'],
+];
+
+/* ---------------------------------------------------------- filings */
+
+export type FilingBucket = 'filed' | 'dueSoon' | 'overdue' | 'upcoming';
+export const DUE_SOON_DAYS = 15;
+
+export function bucketOf(f: HomeFiling, today: string): FilingBucket {
+  if (f.status === 'filed' || f.filedOn) return 'filed';
+  if (f.status === 'overdue' || f.dueDate < today) return 'overdue';
+  if (days(today, f.dueDate) <= DUE_SOON_DAYS) return 'dueSoon';
+  return 'upcoming';
+}
+export const BUCKET_LABEL: Record<FilingBucket, string> = { filed: 'Filed', dueSoon: 'Due soon', overdue: 'Overdue', upcoming: 'Upcoming' };
+export const BUCKET_TONE: Record<FilingBucket, Tone> = { filed: 'ok', dueSoon: 'due', overdue: 'over', upcoming: 'up' };
+export const BUCKETS: FilingBucket[] = ['filed', 'dueSoon', 'overdue', 'upcoming'];
+
+export const AREA_ORDER: ComplianceGroup[] = ['MCA', 'GST', 'Income tax', 'Payroll', 'FEMA', 'Other'];
+export const AREA_NAME: Record<ComplianceGroup, string> = {
+  MCA: 'MCA / ROC',
+  GST: 'GST',
+  'Income tax': 'Income tax / TDS',
+  Payroll: 'Payroll (PF / ESI / PT)',
+  FEMA: 'FEMA / RBI',
+  Other: 'Other',
+};
+export const groupOf = (f: HomeFiling) => complianceGroupForAuthority(f.authority);
+
+export function filingName(f: HomeFiling, withPeriod = true): string {
+  return withPeriod && f.periodLabel ? `${f.title} · ${f.periodLabel}` : f.title;
+}
+
+export const PORTALS: Record<string, [string, string]> = {
+  GST: ['https://www.gst.gov.in', 'GST portal'],
+  'Income tax': ['https://www.incometax.gov.in', 'Income-tax portal'],
+  Payroll: ['https://unifiedportal-emp.epfindia.gov.in', 'EPFO portal'],
+  MCA: ['https://www.mca.gov.in', 'MCA portal'],
+  FEMA: ['https://firms.rbi.org.in', 'RBI FIRMS'],
+};
+export function filingPortal(f: HomeFiling): [string, string] | undefined {
+  const a = f.authority.trim().toUpperCase();
+  if (a === 'ESIC') return ['https://www.esic.gov.in', 'ESIC portal'];
+  if (a === 'PT') return undefined;
+  if (a === 'IT' || a === 'INCOME TAX' || a === 'CBDT') {
+    if (/tds|24q|26q|27q/i.test(f.title)) return ['https://www.tdscpc.gov.in', 'TRACES'];
+  }
+  return PORTALS[groupOf(f)];
+}
+
+export function filingRow(f: HomeFiling, today: string): DrillRow {
+  const b = bucketOf(f, today);
+  return {
+    title: filingName(f),
+    meta: b === 'filed' && f.filedOn ? `Filed ${dShort(f.filedOn)}` : dShort(f.dueDate),
+    chip: BUCKET_LABEL[b],
+    chipColor: chipBg(BUCKET_TONE[b]),
+    href: portalHref('filings'),
+  };
+}
+
+export function complianceDrill(rows: HomeFiling[], today: string, fyLabel: string, active: number, title?: string): DrillConfig {
+  const by = (b: FilingBucket) => rows.filter((f) => bucketOf(f, today) === b).map((f) => filingRow(f, today));
+  return {
+    title: title ?? `Compliances · ${fyLabel}`,
+    active,
+    tabs: [
+      { label: 'All', rows: rows.map((f) => filingRow(f, today)) },
+      { label: 'Filed', rows: by('filed') },
+      { label: 'Due soon', rows: by('dueSoon') },
+      { label: 'Overdue', rows: by('overdue') },
+      { label: 'Upcoming', rows: by('upcoming') },
+    ],
+    link: { lead: 'These items live in Filings', text: 'Open Filings →', href: portalHref('filings'), where: 'Filings' },
+  };
+}
+
+/* ---------------------------------------------------------- alerts */
+
+export interface AlertRow {
+  key: string;
+  title: string;
+  meta: string;
+  date: string;
+  tone: Tone;
+  href: string;
+  /** The hero (overdue) row's button. */
+  action?: string;
+}
+
+export function buildAlerts(
+  after: boolean,
+  today: string,
+  model: PortalIncorporationModel,
+  needs: NeedRow[],
+  filings: HomeFiling[],
+  company: string,
+): { hero?: AlertRow; rows: AlertRow[] } {
+  const rows: AlertRow[] = [];
+  let hero: AlertRow | undefined;
+  if (!after) {
+    const rejected = model.steps.find((s) => s.kind === 'you' && isReviewRejected(s.slice));
+    if (rejected) {
+      const at = ymd(rejected.slice?.reviewedAt) ?? rejected.due ?? today;
+      const note = rejected.slice?.rejectionNote?.trim();
+      hero = {
+        key: `rej:${rejected.id}`,
+        title: `${rejected.title} sent back`,
+        meta: `${note ? `${note} · ` : ''}waiting on ${company}`,
+        date: at,
+        tone: 'over',
+        href: stepHref(rejected.id),
+        action: 'Fix',
+      };
+    } else {
+      const late = model.steps.find((s) => s.late && (s.kind === 'you' || s.kind === 'prog'));
+      if (late && late.due) {
+        hero = { key: `late:${late.id}`, title: `${late.title} is late`, meta: `Step ${late.n} · waiting on ${company}`, date: late.due, tone: 'over', href: stepHref(late.id), action: 'Continue' };
+      }
+    }
+    // open needs with a date, grouped by step
+    const groups = new Map<string, NeedRow[]>();
+    for (const n of needs) {
+      if (!n.due || n.due < today || n.key.startsWith('step:')) continue;
+      const k = n.stepId ?? n.key;
+      groups.set(k, [...(groups.get(k) ?? []), n]);
+    }
+    for (const [k, list] of groups) {
+      const due = list.map((n) => n.due!).sort()[0]!;
+      rows.push({
+        key: `need:${k}`,
+        title: list.length > 1 ? `${list.length} documents` : list[0]!.title,
+        meta: list[0]!.sub,
+        date: due,
+        tone: days(today, due) <= 7 ? 'due' : 'prog',
+        href: list[0]!.href ?? portalHref('documents'),
+      });
+    }
+    // client steps with a date
+    for (const s of model.steps) {
+      if ((s.kind !== 'you' && s.kind !== 'prog') || !s.due || s.due < today) continue;
+      if (rows.some((r) => r.key === `need:${s.id}`)) continue;
+      rows.push({ key: `step:${s.id}`, title: s.title, meta: `Step ${s.n} · ${company} fills this`, date: s.due, tone: days(today, s.due) <= 7 ? 'due' : 'prog', href: stepHref(s.id) });
+    }
+    // approved name expiry (pre-5) while SPICe+ Part B is not filed
+    const pre5 = getItem('pre-5');
+    const filed = model.byId['pre-10']?.kind === 'done' || model.byId['pre-12']?.kind === 'done';
+    if (pre5 && !filed) {
+      const exp = ymd(extractItemResponses(pre5, model.byId['pre-5']?.slice ?? null).nameApprovalExpiryDate);
+      if (exp && exp >= today) rows.push({ key: 'name-expiry', title: 'Approved name expires', meta: 'File Part B before', date: exp, tone: days(today, exp) <= 7 ? 'due' : 'prog', href: stepHref('pre-10') });
+    }
+  } else {
+    const open = filings.filter((f) => bucketOf(f, today) !== 'filed');
+    const over = open.filter((f) => bucketOf(f, today) === 'overdue').sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    const h = over[0];
+    if (h) {
+      const late = days(h.dueDate, today);
+      hero = {
+        key: `fil:${h.id}`,
+        title: `${h.title} overdue ${plural(late, 'day')}`,
+        meta: h.owner === 'client' ? `Interest runs until paid · waiting on ${company}` : 'Interest runs until paid · with SBC',
+        date: h.dueDate,
+        tone: 'over',
+        href: portalHref('compliances'),
+        action: h.owner === 'client' ? 'Fill details' : 'Open',
+      };
+    }
+    const groups = new Map<string, HomeFiling[]>();
+    for (const f of open) {
+      if (f === h || bucketOf(f, today) === 'overdue') continue;
+      const k = `${groupOf(f)}|${f.periodLabel ?? f.dueDate}`;
+      groups.set(k, [...(groups.get(k) ?? []), f]);
+    }
+    for (const [k, list] of groups) {
+      const due = list.map((f) => f.dueDate).sort()[0]!;
+      const g = groupOf(list[0]!);
+      rows.push({
+        key: `fg:${k}`,
+        title: list.length > 1 ? `${list.length} ${g === 'Payroll' ? 'payroll' : g} dues` : `${list[0]!.title} due`,
+        meta: list.length > 1 ? `${list.map((f) => f.title).join(' · ')}${list[0]!.periodLabel ? ` for ${list[0]!.periodLabel}` : ''}` : list[0]!.needTitle ? `${list[0]!.needTitle} needed` : `${list[0]!.periodLabel ?? ''}${list[0]!.periodLabel ? ' · ' : ''}${AREA_NAME[g]}`,
+        date: due,
+        tone: days(today, due) <= 7 ? 'due' : 'prog',
+        href: portalHref('compliances'),
+      });
+    }
+  }
+  rows.sort((a, b) => a.date.localeCompare(b.date));
+  return { hero, rows };
+}
+
+export function alertsDrill(hero: AlertRow | undefined, rows: AlertRow[], today: string, after: boolean): DrillConfig {
+  const all = [...(hero ? [hero] : []), ...rows];
+  const r = (a: AlertRow): DrillRow => ({
+    title: a.title,
+    meta: dShort(a.date),
+    chip: a === hero ? 'Overdue' : rel(today, a.date),
+    chipColor: chipBg(a.tone),
+    href: a.href,
+  });
+  const n15 = rows.filter((a) => days(today, a.date) <= 15);
+  const later = rows.filter((a) => days(today, a.date) > 15);
+  return {
+    title: 'Important alerts',
+    tabs: [
+      { label: 'All', rows: all.map(r) },
+      { label: 'Overdue', rows: hero ? [r(hero)] : [] },
+      { label: 'Next 15 days', rows: n15.map(r) },
+      ...(after || later.length ? [{ label: 'Later', rows: later.map(r) }] : []),
+    ],
+    link: { lead: 'These items live in Notifications', text: 'Open Notifications →', href: portalHref('notifications'), where: 'Notifications' },
+  };
+}
+
+/* ---------------------------------------------------------- timeline */
+
+export interface TlPhase {
+  id: TimelinePhaseDates['id'];
+  name: string;
+  from: string;
+  to: string;
+  done: boolean;
+  pct?: number;
+  milestone?: boolean;
+}
+
+function spanOf(steps: PortalStep[]): { from?: string; to?: string; done: boolean } {
+  const starts: string[] = [];
+  const ends: string[] = [];
+  for (const s of steps) {
+    const a = s.windowFrom ?? s.doneOn;
+    const b = s.kind === 'done' ? s.doneOn ?? s.due : s.due;
+    if (a) starts.push(a);
+    if (b) ends.push(b);
+  }
+  starts.sort();
+  ends.sort();
+  return { from: starts[0], to: ends.at(-1), done: steps.length > 0 && steps.every((s) => s.kind === 'done') };
+}
+
+export function buildTimeline(model: PortalIncorporationModel, incorporationDate?: string): TlPhase[] | null {
+  const p1 = model.phases[0];
+  const p2 = model.phases[1];
+  if (!p1 || !p2) return null;
+  const a = spanOf(p1.steps);
+  const b = spanOf(p2.steps.filter((s) => s.id !== 'pre-11' && s.id !== 'pre-12'));
+  const mcaStep = model.byId['pre-11'];
+  const coiStep = model.byId['pre-12'];
+  const coi = ymd(incorporationDate) ?? (coiStep?.kind === 'done' ? coiStep.doneOn : undefined) ?? model.coiExpected ?? coiStep?.due;
+  if (!coi) return null;
+  const aFrom = a.from ?? b.from;
+  if (!aFrom) return null;
+  const aTo = a.to && a.to >= aFrom ? a.to : aFrom;
+  const bFrom = b.from && b.from >= aTo ? b.from : aTo;
+  let bTo = b.to && b.to >= bFrom ? b.to : bFrom;
+  if (bTo > coi) bTo = coi;
+  const mcaOwn = mcaStep?.windowFrom && model.byId['pre-11']?.due !== model.coiExpected ? { from: mcaStep.windowFrom, to: mcaStep.kind === 'done' ? mcaStep.doneOn ?? mcaStep.due : mcaStep.due } : undefined;
+  const mFrom = mcaOwn?.from && mcaOwn.from >= bTo ? mcaOwn.from : bTo;
+  const mTo = mcaOwn?.to && mcaOwn.to >= mFrom && mcaOwn.to <= coi ? mcaOwn.to : coi;
+  const p2pct = p2.total ? Math.round((p2.done / p2.total) * 100) : 0;
+  return [
+    { id: 'p1', name: `Phase 1 · ${p1.name}`, from: aFrom, to: aTo, done: a.done },
+    { id: 'p2', name: `Phase 2 · ${p2.name}`, from: bFrom, to: bTo, done: b.done, pct: p2pct },
+    { id: 'mca', name: 'MCA review', from: mFrom, to: mTo, done: mcaStep?.kind === 'done' },
+    { id: 'coi', name: 'COI', from: coi, to: coi, done: coiStep?.kind === 'done' || Boolean(incorporationDate), milestone: true },
+  ];
+}
+
+export function timelineAxis(phases: TlPhase[], today: string): { t0: string; span: number; ticks: { iso: string; pct: number }[] } {
+  const t0 = phases[0]!.from;
+  const end = [phases[3]!.to, today].sort().at(-1)!;
+  const span = Math.max(14, days(t0, end) + 11);
+  const ticks: { iso: string; pct: number }[] = [];
+  for (let n = 0; n <= span; n += 7) ticks.push({ iso: addDays(t0, n), pct: (n / span) * 100 });
+  return { t0, span, ticks };
+}
+
+export function timelineDrill(model: PortalIncorporationModel, active: number): DrillConfig {
+  const p1 = model.phases[0]?.steps ?? [];
+  const p2 = (model.phases[1]?.steps ?? []).filter((s) => s.id !== 'pre-11' && s.id !== 'pre-12');
+  const row = (s: PortalStep): DrillRow => {
+    const [label, tone] = stepStatus(s);
+    return { title: s.title, meta: stepDateLabel(s), chip: label === 'Waiting' ? 'Waiting' : label, chipColor: chipBg(tone), href: stepHref(s.id) };
+  };
+  const one = (id: string) => (model.byId[id] ? [row(model.byId[id]!)] : []);
+  return {
+    title: 'Timeline phases',
+    active,
+    tabs: [
+      { label: 'Phase 1 · Name', rows: p1.map(row) },
+      { label: `Phase 2 · ${model.phases[1]?.name ?? 'Incorporation'}`, rows: p2.map(row) },
+      { label: 'MCA review', rows: one('pre-11') },
+      { label: 'COI', rows: one('pre-12') },
+    ],
+    link: { lead: 'These items live in Incorporation', text: 'Open Incorporation →', href: portalHref('incorporation'), where: 'Incorporation' },
+  };
+}
+
+/* ------------------------------------------------------- registrations */
+
+export type RegCat = 'Tax' | 'Labour' | 'Business' | 'IP' | 'FEMA';
+export const REG_CATS: RegCat[] = ['Tax', 'Labour', 'Business', 'IP', 'FEMA'];
+const REG_META: Record<string, [RegCat, string, string?]> = {
+  'reg-4': ['Tax', 'GSTN', 'https://www.gst.gov.in'],
+  'reg-5': ['Tax', 'GSTN', 'https://www.gst.gov.in'],
+  'reg-1': ['Labour', 'EPFO', 'https://unifiedportal-emp.epfindia.gov.in'],
+  'reg-3': ['Labour', 'ESIC', 'https://www.esic.gov.in'],
+  'reg-7': ['Labour', 'State PT department'],
+  'reg-9': ['Labour', 'State Labour Dept'],
+  'reg-13': ['Labour', 'Labour Dept'],
+  'reg-14': ['Labour', 'Local Committee'],
+  'reg-15': ['Business', 'Ministry of MSME', 'https://udyamregistration.gov.in'],
+  'reg-8': ['Business', 'DGFT', 'https://www.dgft.gov.in'],
+  'reg-10': ['Business', 'Municipal corporation'],
+  'reg-6': ['Business', 'LEIL', 'https://www.lei-india.org'],
+  'reg-16': ['Business', 'CBIC · ICEGATE', 'https://www.icegate.gov.in'],
+  'reg-11': ['Business', 'STPI', 'https://stpi.in'],
+  'reg-19': ['Business', 'ICDR'],
+  'reg-12': ['IP', 'IP India', 'https://ipindia.gov.in'],
+  'reg-17': ['IP', 'IP India', 'https://ipindia.gov.in'],
+  'reg-18': ['IP', 'IP India', 'https://ipindia.gov.in'],
+  'reg-20': ['FEMA', 'RBI · FIRMS', 'https://firms.rbi.org.in'],
+  'reg-21': ['FEMA', 'RBI · FIRMS', 'https://firms.rbi.org.in'],
+  'reg-22': ['FEMA', 'RBI · FIRMS', 'https://firms.rbi.org.in'],
+  'reg-23': ['FEMA', 'RBI', 'https://flair.rbi.org.in'],
+  'reg-24': ['FEMA', 'RBI · FIRMS', 'https://firms.rbi.org.in'],
+};
+
+export interface RegRow {
+  step: PortalStep;
+  name: string;
+  cat: RegCat;
+  authority: string;
+  portal?: string;
+  number?: string;
+  date?: string;
+  dateLabel: string;
+  status: 'Registered' | 'In progress' | 'Upcoming';
+  tone: Tone;
+  certPath?: string;
+  certName?: string;
+}
+
+export function buildRegistrations(model: PortalIncorporationModel): RegRow[] {
+  const phase = model.phases[3];
+  if (!phase) return [];
+  return phase.steps
+    .filter((s) => (s.slice?.status as string | undefined) !== 'not-applicable')
+    .map((s) => {
+      const meta = REG_META[s.id] ?? ['Business', 'SBC'];
+      const fields = getClientResponseFields(s.item);
+      const resp = extractItemResponses(s.item, s.slice ?? null);
+      const numF = fields.find((f) => /(number|arn|code|gstin)$/i.test(f.id) && f.type !== 'file');
+      const dateF = fields.find((f) => /(registration|filing)Date$/i.test(f.id)) ?? fields.find((f) => /Date$/.test(f.id));
+      const certF = fields.find((f) => f.type === 'file' && /certificate/i.test(f.id));
+      const number = numF ? resp[numF.id]?.trim() || undefined : undefined;
+      const date = dateF ? ymd(resp[dateF.id]) : undefined;
+      const done = s.kind === 'done';
+      const working = s.kind === 'with' || s.kind === 'you' || s.kind === 'prog';
+      const certPath = certF ? resp[certF.id]?.trim() || undefined : undefined;
+      return {
+        step: s,
+        name: s.title,
+        cat: meta[0],
+        authority: meta[1],
+        portal: meta[2],
+        number,
+        date: done ? date ?? s.doneOn : s.due,
+        dateLabel: done ? dLong(date ?? s.doneOn) : s.due ? `${working ? 'Est.' : 'By'} ${dLong(s.due)}` : '—',
+        status: done ? 'Registered' : working ? 'In progress' : 'Upcoming',
+        tone: done ? 'ok' : working ? 'prog' : 'up',
+        certPath,
+        certName: certPath ? `${s.title} certificate` : undefined,
+      } satisfies RegRow;
+    });
+}
+
+/* --------------------------------------------------------- post-inc */
+
+export interface PostRow {
+  step: PortalStep;
+  limitDays?: number;
+  dueDate?: string;
+  day?: number;
+  usedPct: number;
+  owner: 'client' | 'sbc';
+  info: string;
+}
+
+export function buildPostInc(model: PortalIncorporationModel, incorporationDate: string | undefined, today: string): { open: PostRow[]; done: PortalStep[]; dayN?: number } {
+  const phase = model.phases[2];
+  const anchor = ymd(incorporationDate);
+  const open: PostRow[] = [];
+  const done: PortalStep[] = [];
+  for (const s of phase?.steps ?? []) {
+    if (s.kind === 'done') {
+      done.push(s);
+      continue;
+    }
+    const text = stepTimelineText(s);
+    const m = /within\s+(\d+)\s+days/i.exec(text);
+    const limit = m ? Number(m[1]) : undefined;
+    const dueDate = anchor && limit ? addDays(anchor, limit) : s.due;
+    const day = anchor ? Math.max(0, days(anchor, today)) : undefined;
+    const usedPct = limit && day != null ? Math.min(100, (day / limit) * 100) : 0;
+    open.push({
+      step: s,
+      limitDays: limit,
+      dueDate,
+      day: limit && day != null ? Math.min(day, limit) : day,
+      usedPct,
+      owner: s.kind === 'you' || s.kind === 'prog' ? 'client' : 'sbc',
+      info: `${text}${STEP_STATUS[s.kind] ? ` · ${STEP_STATUS[s.kind]![0].toLowerCase()}` : ''}`,
+    });
+  }
+  return { open, done, dayN: anchor ? Math.max(0, days(anchor, today)) : undefined };
+}
+
+export function postIncDrill(open: PostRow[], done: PortalStep[], active: number): DrillConfig {
+  const o = open.map<DrillRow>((p) => ({
+    title: p.step.title,
+    meta: p.limitDays && p.day != null ? `day ${p.day} of ${p.limitDays} · ${dShort(p.dueDate)}` : dShort(p.dueDate),
+    chip: 'Open',
+    chipColor: chipBg(p.owner === 'client' ? 'due' : 'prog'),
+    href: stepHref(p.step.id),
+  }));
+  const d = done.map<DrillRow>((s) => ({ title: s.title, meta: dShort(s.doneOn), chip: 'Completed', chipColor: chipBg('ok'), href: stepHref(s.id) }));
+  return {
+    title: 'Post-incorporation setup',
+    active,
+    tabs: [
+      { label: 'All', rows: [...o, ...d] },
+      { label: 'Open', rows: o },
+      { label: 'Completed', rows: d },
+    ],
+    link: { lead: 'These items live in Incorporation', text: 'Open Incorporation →', href: portalHref('incorporation'), where: 'Incorporation' },
+  };
+}
+
+/* --------------------------------------------------------- documents */
+
+export interface DocItem {
+  id: string;
+  name: string;
+  type: string;
+  date?: string;
+  from: 'client' | 'firm';
+  kind: 'doc' | 'milestone';
+  ref: string;
+  contentType?: string | null;
+  sizeBytes?: number | null;
+  stepId?: string | null;
+}
+
+export function fileType(name: string, contentType?: string | null): string {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  if (ext === 'pdf' || contentType === 'application/pdf') return 'PDF';
+  if (ext === 'jpg' || ext === 'jpeg' || contentType === 'image/jpeg') return 'JPG';
+  if (ext === 'png' || contentType === 'image/png') return 'PNG';
+  if (ext === 'docx' || ext === 'doc') return 'DOCX';
+  if (ext === 'xlsx' || ext === 'xls') return 'XLSX';
+  return (ext || 'FILE').toUpperCase().slice(0, 4);
+}
+
+export function buildDocs(home: ClientHome | undefined, overview: ClientOverview | undefined): DocItem[] {
+  const out: DocItem[] = [];
+  for (const d of home?.docs ?? []) {
+    out.push({ id: d.id, name: d.fileName.replace(/\.[a-z0-9]{2,5}$/i, ''), type: fileType(d.fileName, d.contentType), date: ymd(d.createdAt), from: d.from, kind: 'doc', ref: d.id, contentType: d.contentType, sizeBytes: d.sizeBytes, stepId: d.stepId });
+  }
+  for (const v of overview?.documents.deliverables ?? []) {
+    const file = v.storagePath.split('/').pop() ?? v.name;
+    out.push({ id: v.id, name: v.name, type: fileType(file), date: ymd(v.issuedAt), from: 'firm', kind: 'milestone', ref: v.storagePath, stepId: v.stepId });
+  }
+  return out.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).slice(0, 6);
+}
+
+export function docGroup(today: string, iso?: string): 'This week' | 'Last week' | 'Earlier' {
+  if (!iso) return 'Earlier';
+  const p = parts(today);
+  const dow = (new Date(Date.UTC(p.y, p.m, p.d)).getUTCDay() + 6) % 7; // Monday = 0
+  const monday = addDays(today, -dow);
+  if (iso >= monday) return 'This week';
+  if (iso >= addDays(monday, -7)) return 'Last week';
+  return 'Earlier';
+}
+
+export const FT_STYLE: Record<string, React.CSSProperties> = {
+  JPG: { background: 'var(--teal-light)', color: 'var(--teal-chip)' },
+  PNG: { background: 'var(--teal-light)', color: 'var(--teal-chip)' },
+  PDF: { background: 'var(--over-light)', color: 'var(--over-text)' },
+  DOCX: { background: 'var(--prog-light)', color: 'var(--prog-text)' },
+};
+export const FT_PHONE: Record<string, string> = { PDF: 'var(--over)', JPG: 'oklch(47% .09 195)', PNG: 'oklch(47% .09 195)', DOCX: 'oklch(51% .17 252)' };
+
+export async function docUrl(d: DocItem): Promise<string> {
+  const res = await fetch(
+    d.kind === 'doc' ? `/api/documents/${encodeURIComponent(d.ref)}/signed-url` : `/api/milestone-documents/signed-url?path=${encodeURIComponent(d.ref)}`,
+  );
+  const body = (await res.json().catch(() => ({}))) as { url?: string };
+  if (!res.ok || !body.url) throw new Error('Could not open the file');
+  return body.url;
+}

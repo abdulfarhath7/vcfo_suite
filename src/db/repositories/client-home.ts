@@ -1,0 +1,504 @@
+import 'server-only';
+
+import { and, asc, desc, eq, gte, inArray, lte } from 'drizzle-orm';
+import { db } from '@/db/client';
+import {
+  clientNeedMeta,
+  clientTimelineRequests,
+  clientWorkItems,
+  complianceInstances,
+  complianceObligations,
+  documentRequests,
+  documents,
+  profiles,
+} from '@/db/schema';
+import type { AuthContext } from '@/auth/guards';
+import {
+  assertEngagementAccess,
+  checklistStateForViewer,
+  checklistStateFromRow,
+  getMyEngagement,
+  type EngagementDbRow,
+} from '@/db/repositories/engagements';
+import { listDocuments } from '@/db/repositories/documents';
+import { listAuditEvents, recordAuditEvent } from '@/db/repositories/audit-events';
+import { getItem } from '@/data/checklist';
+import { extractItemResponses } from '@/lib/checklist-responses';
+import { identifiersFromState } from '@/lib/client-overview';
+import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import {
+  fyLabelOf,
+  fyStartYearOf,
+  isNeedKind,
+  maskId,
+  type ClientHome,
+  type HomeActivity,
+  type HomeDoc,
+  type HomeFiling,
+  type HomeNeedRequest,
+  type HomeWorkItem,
+  type NeedKind,
+  type TimelinePhaseDates,
+  type TimelineRequestDto,
+} from '@/lib/client-home';
+
+/**
+ * CLIENT HOME REPOSITORY — the aggregate behind `GET /api/client/home`
+ * (client portal v7 Home) plus the few writes the Home cards make.
+ *
+ * >>> ACCESS CONTROL (Path A) <<<
+ * Every function resolves the engagement through `assertEngagementAccess`
+ * (admin all / manager owned-or-member / lead assigned-or-member / client
+ * owner-or-member) and then reads or writes ONLY rows carrying that approved
+ * engagement id. Nothing takes an engagement id from a row the caller named
+ * without that check:
+ *
+ *   document_requests, client_need_meta — engagement_id = approved id
+ *   client_work_items                    — engagement_id = approved id;
+ *                                          writes: staff only (admin/manager/lead)
+ *   documents                            — via `listDocuments(ctx, id)` (its own
+ *                                          client release rules) + uploads the
+ *                                          client makes against an open request
+ *   audit_events                         — via `listAuditEvents(ctx, { engagementId })`
+ *   compliance_instances                 — engagement_id = approved id
+ *   client_timeline_requests             — engagement_id = approved id; a
+ *                                          withdraw is the requester's own only
+ *   profiles                             — only names / roles of people already
+ *                                          attached to rows above
+ *
+ * PAN and TAN leave this module MASKED. The clear values are revealed by the
+ * credentials flow (IdsRevealDialog), never by this read.
+ */
+
+const STAFF_ROLES = new Set(['super_admin', 'admin', 'manager', 'intern']);
+const DUE_SOON_DAYS = 15;
+const HIDDEN_AUDIT_ACTIONS = new Set([
+  'board_resolution.draft',
+  'board_resolution.update',
+  'engagement.checklist.save_draft',
+]);
+
+type Access = { dbId: string; row: EngagementDbRow };
+
+async function resolve(ctx: AuthContext, engagementId?: string): Promise<Access | null> {
+  let id = engagementId?.trim();
+  if (!id) {
+    const mine = await getMyEngagement(ctx);
+    if (!mine) return null;
+    id = mine.id;
+  }
+  const access = await assertEngagementAccess(ctx, id);
+  if (!access.ok) return null;
+  return { dbId: access.dbId, row: access.row };
+}
+
+async function namesFor(ids: (string | null | undefined)[]): Promise<Map<string, { name: string; role: string }>> {
+  const uniq = [...new Set(ids.filter((x): x is string => Boolean(x)))];
+  if (uniq.length === 0) return new Map();
+  const rows = await db
+    .select({ id: profiles.id, name: profiles.name, email: profiles.email, role: profiles.role })
+    .from(profiles)
+    .where(inArray(profiles.id, uniq));
+  return new Map(rows.map((r) => [r.id, { name: r.name?.trim() || r.email, role: r.role }]));
+}
+
+/* ------------------------------------------------------------------ reads */
+
+async function loadNeeds(dbId: string): Promise<HomeNeedRequest[]> {
+  const rows = await db
+    .select({
+      id: documentRequests.id,
+      title: documentRequests.title,
+      detail: documentRequests.detail,
+      status: documentRequests.status,
+      requestedBy: documentRequests.requestedBy,
+      createdAt: documentRequests.createdAt,
+      stepId: clientNeedMeta.stepId,
+      complianceInstanceId: clientNeedMeta.complianceInstanceId,
+      kind: clientNeedMeta.kind,
+      dueDate: clientNeedMeta.dueDate,
+    })
+    .from(documentRequests)
+    .leftJoin(clientNeedMeta, eq(clientNeedMeta.requestId, documentRequests.id))
+    .where(and(eq(documentRequests.engagementId, dbId), eq(documentRequests.status, 'pending')))
+    .orderBy(asc(documentRequests.createdAt));
+  const names = await namesFor(rows.map((r) => r.requestedBy));
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    detail: r.detail ?? undefined,
+    kind: isNeedKind(r.kind) ? r.kind : 'upload',
+    stepId: r.stepId ?? undefined,
+    complianceInstanceId: r.complianceInstanceId ?? undefined,
+    dueDate: r.dueDate ?? undefined,
+    requestedByName: r.requestedBy ? names.get(r.requestedBy)?.name : undefined,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+async function loadWork(dbId: string): Promise<HomeWorkItem[]> {
+  const rows = await db
+    .select()
+    .from(clientWorkItems)
+    .where(and(eq(clientWorkItems.engagementId, dbId), eq(clientWorkItems.status, 'active')))
+    .orderBy(desc(clientWorkItems.progressPct), asc(clientWorkItems.createdAt));
+  const names = await namesFor(rows.map((r) => r.assigneeId));
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    stepId: r.stepId ?? undefined,
+    assigneeName: r.assigneeId ? names.get(r.assigneeId)?.name : undefined,
+    progressPct: Math.max(0, Math.min(100, r.progressPct)),
+    readyOn: r.readyOn ?? undefined,
+  }));
+}
+
+async function loadDocs(ctx: AuthContext, dbId: string): Promise<HomeDoc[]> {
+  const list = await listDocuments(ctx, appEngagementId(dbId));
+  const recent = [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
+  const names = await namesFor(recent.map((d) => d.uploadedBy));
+  return recent.map((d) => {
+    const who = d.uploadedBy ? names.get(d.uploadedBy) : undefined;
+    return {
+      id: d.id,
+      fileName: d.fileName,
+      contentType: d.contentType,
+      sizeBytes: d.sizeBytes,
+      stepId: d.stepId,
+      createdAt: d.createdAt,
+      from: who?.role === 'client' ? 'client' : 'firm',
+      uploaderName: who?.name,
+    };
+  });
+}
+
+async function loadActivity(ctx: AuthContext, dbId: string): Promise<HomeActivity[]> {
+  const rows = await listAuditEvents(ctx, { engagementId: dbId, limit: 40 });
+  return rows
+    .filter((r) => !HIDDEN_AUDIT_ACTIONS.has(r.action))
+    .slice(0, 12)
+    .map((r) => {
+      const system = r.action.startsWith('system.') || r.action.startsWith('compliance.job');
+      return {
+        id: r.id,
+        at: r.created_at,
+        label: r.summary,
+        action: r.action,
+        actorName: system ? 'VCFO Suite' : r.actor_name?.trim() || r.actor_email || 'SBC',
+        actorKind: system ? 'system' : r.actor_role === 'client' ? 'client' : 'firm',
+      } satisfies HomeActivity;
+    });
+}
+
+async function loadFilings(dbId: string, now: Date, needs: HomeNeedRequest[]): Promise<ClientHome['filings']> {
+  const fy = fyStartYearOf(now);
+  const rows = await db
+    .select({
+      id: complianceInstances.id,
+      dueDate: complianceInstances.dueDate,
+      filedOn: complianceInstances.filedOn,
+      periodLabel: complianceInstances.periodLabel,
+      fyLabel: complianceInstances.fyLabel,
+      status: complianceInstances.status,
+      ownerId: complianceInstances.ownerId,
+      windowTo: complianceInstances.windowTo,
+      evidenceUrl: complianceInstances.evidenceUrl,
+      particular: complianceObligations.particular,
+      authority: complianceObligations.authority,
+    })
+    .from(complianceInstances)
+    .innerJoin(complianceObligations, eq(complianceObligations.id, complianceInstances.obligationId))
+    .where(
+      and(
+        eq(complianceInstances.engagementId, dbId),
+        gte(complianceInstances.dueDate, `${fy}-04-01`),
+        lte(complianceInstances.dueDate, `${fy + 1}-03-31`),
+      ),
+    )
+    .orderBy(asc(complianceInstances.dueDate));
+  const owners = await namesFor(rows.map((r) => r.ownerId));
+  const needByFiling = new Map(needs.filter((n) => n.complianceInstanceId).map((n) => [n.complianceInstanceId!, n]));
+  const out: HomeFiling[] = rows.map((r) => {
+    const owner = r.ownerId ? owners.get(r.ownerId) : undefined;
+    const need = needByFiling.get(r.id);
+    return {
+      id: r.id,
+      title: r.particular,
+      authority: r.authority,
+      periodLabel: r.periodLabel ?? undefined,
+      fyLabel: r.fyLabel ?? undefined,
+      dueDate: r.dueDate,
+      filedOn: r.filedOn ?? undefined,
+      status: r.status,
+      owner: need || owner?.role === 'client' ? 'client' : owner ? 'firm' : null,
+      windowTo: r.windowTo ?? undefined,
+      hasProof: Boolean(r.evidenceUrl?.trim()),
+      needTitle: need?.title,
+      needAskedBy: need?.requestedByName,
+    };
+  });
+  return { fyLabel: fyLabelOf(fy), fyStartYear: fy, rows: out };
+}
+
+function toTimelineDto(r: typeof clientTimelineRequests.$inferSelect): TimelineRequestDto {
+  const p = (r.payload ?? {}) as { phases?: TimelinePhaseDates[]; coiFrom?: string; coiTo?: string; slipDays?: number };
+  return {
+    id: r.id,
+    reason: r.reason,
+    status: (['pending', 'approved', 'rejected', 'withdrawn'].includes(r.status) ? r.status : 'pending') as TimelineRequestDto['status'],
+    phases: Array.isArray(p.phases) ? p.phases : [],
+    coiFrom: p.coiFrom,
+    coiTo: p.coiTo,
+    slipDays: Number(p.slipDays) || 0,
+    createdAt: r.createdAt.toISOString(),
+    requestedByName: r.requestedByName ?? undefined,
+  };
+}
+
+async function loadTimeline(ctx: AuthContext, dbId: string): Promise<ClientHome['timeline']> {
+  const [pending] = await db
+    .select()
+    .from(clientTimelineRequests)
+    .where(and(eq(clientTimelineRequests.engagementId, dbId), eq(clientTimelineRequests.status, 'pending')))
+    .orderBy(desc(clientTimelineRequests.createdAt))
+    .limit(1);
+  const audit = await listAuditEvents(ctx, { engagementId: dbId, limit: 200 });
+  const last = audit.find((r) => r.action.startsWith('schedule.'));
+  return {
+    lastChangedBy: last ? last.actor_name?.trim() || last.actor_email || undefined : undefined,
+    lastChangedAt: last?.created_at,
+    pending: pending ? toTimelineDto(pending) : undefined,
+  };
+}
+
+/** The Home aggregate. `null` = no engagement / not permitted (route → 404). */
+export async function getClientHome(
+  ctx: AuthContext,
+  engagementId?: string,
+  now: Date = new Date(),
+): Promise<ClientHome | null> {
+  const access = await resolve(ctx, engagementId);
+  if (!access) return null;
+  const { dbId, row } = access;
+
+  const state = checklistStateForViewer(ctx, checklistStateFromRow(row));
+  const ids = identifiersFromState(state);
+  const reg4 = getItem('reg-4');
+  const gstin = reg4 ? extractItemResponses(reg4, state['reg-4'] ?? null).gstinNumber?.trim() : undefined;
+
+  const needs = await loadNeeds(dbId);
+  const reqRows = await db
+    .select({ status: documentRequests.status })
+    .from(documentRequests)
+    .where(eq(documentRequests.engagementId, dbId));
+  const requestCounts = {
+    total: reqRows.filter((r) => r.status !== 'cancelled').length,
+    fulfilled: reqRows.filter((r) => r.status === 'fulfilled' || r.status === 'approved').length,
+  };
+  const [work, docs, activity, filings, timeline] = await Promise.all([
+    loadWork(dbId),
+    loadDocs(ctx, dbId),
+    loadActivity(ctx, dbId),
+    loadFilings(dbId, now, needs),
+    loadTimeline(ctx, dbId),
+  ]);
+
+  return {
+    engagementId: appEngagementId(dbId),
+    needs,
+    requestCounts,
+    work,
+    docs,
+    activity,
+    filings,
+    identifiers: {
+      cin: ids.cin,
+      panMasked: maskId(ids.pan),
+      tanMasked: maskId(ids.tan),
+      gstin: gstin || undefined,
+    },
+    timeline,
+  };
+}
+
+export { DUE_SOON_DAYS };
+
+/* ----------------------------------------------------------------- writes */
+
+/**
+ * The client uploaded a file against an open request: index the stored object
+ * as a document shared with the client, and mark the request fulfilled.
+ * The caller (route) has already stored the bytes under a key it built from
+ * the approved engagement id returned by `needUploadTarget`.
+ */
+export async function needUploadTarget(
+  ctx: AuthContext,
+  requestId: string,
+): Promise<{ dbId: string; title: string; stepId?: string } | null> {
+  const [req] = await db
+    .select({ id: documentRequests.id, engagementId: documentRequests.engagementId, title: documentRequests.title, status: documentRequests.status, stepId: clientNeedMeta.stepId })
+    .from(documentRequests)
+    .leftJoin(clientNeedMeta, eq(clientNeedMeta.requestId, documentRequests.id))
+    .where(eq(documentRequests.id, requestId))
+    .limit(1);
+  if (!req) return null;
+  const access = await assertEngagementAccess(ctx, req.engagementId);
+  if (!access.ok) return null;
+  if (req.status !== 'pending') throw new Error('request_closed');
+  return { dbId: access.dbId, title: req.title, stepId: req.stepId ?? undefined };
+}
+
+export async function recordNeedUpload(
+  ctx: AuthContext,
+  requestId: string,
+  file: { objectKey: string; fileName: string; contentType: string | null; sizeBytes: number },
+): Promise<{ documentId: string; title: string } | null> {
+  const target = await needUploadTarget(ctx, requestId);
+  if (!target) return null;
+  const [doc] = await db
+    .insert(documents)
+    .values({
+      engagementId: target.dbId,
+      category: 'documents',
+      fileName: file.fileName,
+      objectKey: file.objectKey,
+      contentType: file.contentType,
+      sizeBytes: file.sizeBytes,
+      uploadedBy: ctx.userId,
+      stepId: target.stepId ?? null,
+      sharedWithClient: true,
+    })
+    .returning({ id: documents.id });
+  await db
+    .update(documentRequests)
+    .set({ status: 'fulfilled' })
+    .where(and(eq(documentRequests.id, requestId), eq(documentRequests.engagementId, target.dbId)));
+  await recordAuditEvent(ctx, {
+    engagementId: target.dbId,
+    action: 'client.need_uploaded',
+    summary: `${target.title} uploaded`,
+    metadata: { requestId, documentId: doc?.id },
+  });
+  return doc ? { documentId: doc.id, title: target.title } : null;
+}
+
+/** Undo of the upload toast: reopen the request and drop the caller's own document row. */
+export async function undoNeedUpload(
+  ctx: AuthContext,
+  requestId: string,
+  documentId: string,
+): Promise<{ objectKey: string } | null> {
+  const [req] = await db
+    .select({ engagementId: documentRequests.engagementId, title: documentRequests.title })
+    .from(documentRequests)
+    .where(eq(documentRequests.id, requestId))
+    .limit(1);
+  if (!req) return null;
+  const access = await assertEngagementAccess(ctx, req.engagementId);
+  if (!access.ok) return null;
+  const [doc] = await db
+    .delete(documents)
+    .where(
+      and(
+        eq(documents.id, documentId),
+        eq(documents.engagementId, access.dbId),
+        eq(documents.uploadedBy, ctx.userId),
+      ),
+    )
+    .returning({ objectKey: documents.objectKey });
+  if (!doc) return null;
+  await db
+    .update(documentRequests)
+    .set({ status: 'pending' })
+    .where(and(eq(documentRequests.id, requestId), eq(documentRequests.engagementId, access.dbId)));
+  await recordAuditEvent(ctx, {
+    engagementId: access.dbId,
+    action: 'client.need_upload_undone',
+    summary: `${req.title} upload undone`,
+    metadata: { requestId, documentId },
+  });
+  return { objectKey: doc.objectKey };
+}
+
+/** Staff: say what a request is for (step / filing / verb / due date). */
+export async function setNeedMeta(
+  ctx: AuthContext,
+  requestId: string,
+  meta: { stepId?: string | null; complianceInstanceId?: string | null; kind?: NeedKind; dueDate?: string | null; fieldId?: string | null },
+): Promise<boolean> {
+  if (!STAFF_ROLES.has(ctx.role)) return false;
+  const [req] = await db
+    .select({ engagementId: documentRequests.engagementId })
+    .from(documentRequests)
+    .where(eq(documentRequests.id, requestId))
+    .limit(1);
+  if (!req) return false;
+  const access = await assertEngagementAccess(ctx, req.engagementId);
+  if (!access.ok) return false;
+  if (meta.complianceInstanceId) {
+    const [inst] = await db
+      .select({ id: complianceInstances.id })
+      .from(complianceInstances)
+      .where(and(eq(complianceInstances.id, meta.complianceInstanceId), eq(complianceInstances.engagementId, access.dbId)))
+      .limit(1);
+    if (!inst) return false;
+  }
+  const values = {
+    requestId,
+    engagementId: access.dbId,
+    stepId: meta.stepId ?? null,
+    complianceInstanceId: meta.complianceInstanceId ?? null,
+    kind: meta.kind ?? 'upload',
+    dueDate: meta.dueDate ?? null,
+    fieldId: meta.fieldId ?? null,
+    updatedAt: new Date(),
+  };
+  await db
+    .insert(clientNeedMeta)
+    .values(values)
+    .onConflictDoUpdate({ target: clientNeedMeta.requestId, set: values });
+  return true;
+}
+
+/** Staff: create or update a work item the client sees under "What SBC is doing". */
+export async function upsertWorkItem(
+  ctx: AuthContext,
+  input: {
+    engagementId: string;
+    id?: string;
+    title: string;
+    stepId?: string | null;
+    assigneeId?: string | null;
+    progressPct?: number;
+    readyOn?: string | null;
+    status?: 'active' | 'done' | 'hidden';
+  },
+): Promise<HomeWorkItem | null> {
+  if (!STAFF_ROLES.has(ctx.role)) return null;
+  const access = await assertEngagementAccess(ctx, input.engagementId);
+  if (!access.ok) return null;
+  const pct = Math.max(0, Math.min(100, Math.round(input.progressPct ?? 0)));
+  const values = {
+    engagementId: access.dbId,
+    title: input.title.trim(),
+    stepId: input.stepId ?? null,
+    assigneeId: input.assigneeId ?? null,
+    progressPct: pct,
+    readyOn: input.readyOn ?? null,
+    status: input.status ?? 'active',
+    updatedAt: new Date(),
+  };
+  let row;
+  if (input.id) {
+    [row] = await db
+      .update(clientWorkItems)
+      .set(values)
+      .where(and(eq(clientWorkItems.id, input.id), eq(clientWorkItems.engagementId, access.dbId)))
+      .returning();
+  } else {
+    [row] = await db.insert(clientWorkItems).values({ ...values, createdBy: ctx.userId }).returning();
+  }
+  if (!row) return null;
+  return { id: row.id, title: row.title, stepId: row.stepId ?? undefined, progressPct: row.progressPct, readyOn: row.readyOn ?? undefined };
+}
+

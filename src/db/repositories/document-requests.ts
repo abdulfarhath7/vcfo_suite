@@ -1,7 +1,8 @@
 import 'server-only';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { documentRequests } from '@/db/schema';
+import { documentRequestDetails, documentRequests } from '@/db/schema';
+import { getItem } from '@/data/checklist';
 import type { AuthContext } from '@/auth/guards';
 import type { DocRequest } from '@/data/engagements';
 import {
@@ -114,6 +115,17 @@ export async function createDocumentRequest(
       status: 'pending',
     })
     .returning();
+
+  // Client portal v7: keep the due date and the owning step (side table
+  // `document_request_details`; the request row has no such columns).
+  const dueOn = input.dueAt && /^\d{4}-\d{2}-\d{2}/.test(input.dueAt) ? input.dueAt.slice(0, 10) : null;
+  const stepId = input.taskId && getItem(input.taskId) ? input.taskId : null;
+  if (row && (dueOn || stepId)) {
+    await db
+      .insert(documentRequestDetails)
+      .values({ requestId: row.id, engagementId: access.dbId, dueOn, stepId })
+      .onConflictDoNothing();
+  }
 
   const mapped = toAppDocRequest(row);
   return { ...mapped, taskId: input.taskId ?? '', dueAt: input.dueAt };

@@ -1,0 +1,49 @@
+/* @cp-scope page=team */
+/* v7 responsive contract shared by the five team boards (team_redesign.dc.html:13-55,
+   byte-identical in ann/notif/audit/settings). The board's sidebar/launcher placeholders
+   (.tb-root/.tb-side/.tb-launch) are the shell's job and are left out; .tb-ov keeps the
+   runtime's stacking (21-runtime.css .ov) instead of z-index 60 so it sits above the shell. */
+.pg.tb-wrap{width:100%;max-width:1600px;margin-inline:auto;box-sizing:border-box;padding:clamp(16px,2vw,24px) clamp(16px,2vw,24px) 96px}
+.tb-segx{max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;border-radius:8px;-webkit-overflow-scrolling:touch}
+.tb-segx::-webkit-scrollbar{display:none}
+.tb-segx>.seg{width:max-content;min-width:100%;box-sizing:border-box}
+.tb-m{display:none!important}
+/* no text under 11 px */
+html .lbl{font-size:11px}
+html .seg .cnt,html .kbd{font-size:11px}
+html .dtile .m{font-size:11px;letter-spacing:.06em}
+/* pop-ups fit the viewport */
+.tb-ov{position:fixed!important;inset:0;overflow:auto;padding:var(--ovt,12px) 12px 12px;box-sizing:border-box}
+.tb-ov.tb-top{--ovt:min(120px,12vh);align-items:flex-start!important}
+.tb-ov>.dlg{max-width:calc(100vw - 24px);max-height:calc(100dvh - var(--ovt,12px) - 12px);overflow:auto;flex:none;box-sizing:border-box}
+@media (max-width:767px){
+  .pg.tb-wrap{padding:16px 16px 104px}
+  .tb-d{display:none!important}
+  .tb-m{display:revert!important}
+  .tb-m.tb-flex{display:flex!important}
+  .tb-m.tb-iflex{display:inline-flex!important}
+  .tb-ov.tb-top{--ovt:12px;align-items:center!important}
+  .tb-hd>.tb-segx{flex:1 1 100%;margin-left:0!important}
+  /* touch targets >= 40 px */
+  html .btn,html .btn-sm{height:40px;min-height:40px}
+  html .ibtn{width:40px;height:40px}
+  html .seg button{height:40px}
+  html .tgl{position:relative}
+  html .tgl::before{content:"";position:absolute;left:-2px;right:-2px;top:-9px;bottom:-9px}
+  html .info>button{width:40px;height:40px;margin:-11px}
+  /* DECISIONS "Mobile drill-downs = bottom sheet" (gap G11) */
+  .tb-ov.tb-sheet{--ovt:0px;padding:0;align-items:flex-end!important}
+  .tb-ov.tb-sheet>.dlg{width:100%!important;max-width:100vw;max-height:92dvh;border-radius:16px 16px 0 0;animation:tbsheet .26s cubic-bezier(.22,1,.36,1)}
+}
+@keyframes tbsheet{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+/* the rule-16 bubble used by the boards (bot + bubble) */
+.tb-bot{display:flex;align-items:flex-end;justify-content:center;gap:10px}
+.tb-bot .bface{border-radius:99px;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255));box-shadow:0 6px 16px -8px oklch(25% 0.06 258 / .45),0 0 0 1px var(--border);display:grid;place-items:center;flex:none;overflow:hidden}
+.tb-bot .bface.ans{box-shadow:0 6px 16px -8px oklch(25% 0.06 258 / .45),0 0 0 2px oklch(72% 0.15 160 / .6)}
+.tb-bubble{max-width:300px;background:var(--panel);border:1px solid var(--border);border-radius:10px 10px 10px 3px;padding:10px 12px;box-shadow:var(--shadow)}
+@media (prefers-reduced-motion: reduce){.tb-ov.tb-sheet>.dlg{animation:none}}
+.tb-dlgin{animation:tbdlg .2s cubic-bezier(.22,1,.36,1)}
+@keyframes tbdlg{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.tb-dlgin{animation:none}}
+/* Settings › Reduce motion (until the shell applies data-reduce-motion portal-wide) */
+html[data-reduce-motion="true"] *,html[data-reduce-motion="true"] *::before,html[data-reduce-motion="true"] *::after{animation:none!important;transition:none!important}

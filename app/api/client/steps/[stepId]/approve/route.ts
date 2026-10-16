@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { checklistStateForViewer, clientApproveStep } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
+import { openFileRequestsForStep } from '@/db/repositories/client-incorporation';
 
 type RouteContext = { params: Promise<{ stepId: string }> };
 
@@ -37,6 +38,16 @@ export async function POST(request: Request, context: RouteContext) {
   const engagementId = body.engagementId?.trim();
   if (!engagementId || !stepId?.trim()) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  }
+
+  // Client portal v7: a step cannot be approved while a file the firm asked
+  // the client for is still missing (DECISIONS › "Approve without NOC: blocked").
+  const missing = await openFileRequestsForStep(guard.ctx, engagementId, stepId.trim()).catch(() => []);
+  if (missing.length > 0) {
+    return NextResponse.json(
+      { error: `Upload ${missing[0]!.label} first.`, code: 'requested_files_missing', missing: missing.map((m) => m.id) },
+      { status: 409 },
+    );
   }
 
   try {

@@ -1,0 +1,234 @@
+'use client';
+
+/**
+ * Compliances · Calendar on phones (< 700 px) — prototype #cal-mobile:
+ * week nav · 3 KPI cards · area pill · week strip · agenda (DECISIONS: week
+ * strip + agenda; no grid / donut / year / timeline on phones). The prototype's
+ * own phone top bar is the shared portal phone top bar.
+ */
+import { useMemo, useRef, useState } from 'react';
+import { usePortal } from '../../PortalProvider';
+import { BotSays } from '../../shared';
+import {
+  AREAS,
+  MON,
+  addDays,
+  byDate,
+  countByStatus,
+  dow,
+  filterArea,
+  fyLabelOf,
+  fyStartOfMonth,
+  sortByDue,
+  statusOf,
+  tileVar,
+  weekOf,
+  worstStatus,
+  type PortalFiling,
+} from '@/lib/client-portal/compliances';
+import { useCompFilings } from './api';
+import { AreaChip, Chip, I, Seg, usePageTips } from './bits';
+import { useComp } from './ctx';
+import { DetailModal } from './Detail';
+import type { useCalendarState } from './CalendarPage';
+
+export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typeof useCalendarState>; onOpenFilings: (f: PortalFiling) => void }) {
+  const { after, toast } = usePortal();
+  const { today, openDrill } = useComp();
+  const { area, set, nowKey } = state;
+  const root = useRef<HTMLDivElement>(null);
+  usePageTips(root);
+  const [week0, setWeek0] = useState(() => weekOf(state.month === nowKey ? today : `${state.month}-01`)[0]!);
+  const week = weekOf(week0);
+  const [selDay, setSelDay] = useState<string | null>(null);
+
+  const fyA = fyStartOfMonth(week[0]!.slice(0, 7));
+  const fyB = fyStartOfMonth(week[6]!.slice(0, 7));
+  const todayFy = fyStartOfMonth(nowKey);
+  const qA = useCompFilings(fyA, after);
+  const qB = useCompFilings(fyB, after && fyB !== fyA);
+  const qT = useCompFilings(todayFy, after);
+  const rows = useMemo(() => {
+    if (!after) return [];
+    const m = new Map<string, PortalFiling>();
+    for (const r of [...(qA.data?.rows ?? []), ...(fyB !== fyA ? qB.data?.rows ?? [] : []), ...(qT.data?.rows ?? [])]) m.set(r.id, r);
+    return sortByDue([...m.values()]);
+  }, [after, qA.data, qB.data, qT.data, fyA, fyB]);
+  const fyRows = useMemo(() => (after ? qT.data?.rows ?? [] : []), [after, qT.data]);
+  const loading = after && (qA.isLoading || qT.isLoading);
+
+  const c = countByStatus(fyRows, today);
+  const fyPct = fyRows.length ? Math.round((c.ok / fyRows.length) * 100) : 0;
+  const fyTitle = `Compliances · ${fyLabelOf(todayFy)}`;
+  const areaRows = filterArea(rows, area);
+  const dates = byDate(areaRows);
+  const areaIdx = Math.max(0, AREAS.findIndex((a) => a.id === area));
+  const areaCounts = AREAS.map((a) => (a.id === 'all' ? fyRows.length : fyRows.filter((r) => r.area === a.id).length));
+
+  const from = week[0]! > today ? week[0]! : addDays(today, -1);
+  const agenda = selDay ? dates.get(selDay) ?? [] : areaRows.filter((r) => r.dueDate >= from).slice(0, 6);
+  const detail = state.filing ? rows.find((r) => r.id === state.filing) ?? null : null;
+  const mid = week[3]!;
+  const label = `${MON[Number(mid.slice(5, 7)) - 1]} ${mid.slice(0, 4)}`;
+
+  return (
+    <div className="cp-comp-root cm-root" ref={root}>
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <button
+              type="button"
+              className="ibtn"
+              style={{ border: 0 }}
+              aria-label="Previous week"
+              onClick={() => {
+                setWeek0(addDays(week0, -7));
+                setSelDay(null);
+              }}
+            >
+              {I.chevL(15)}
+            </button>
+            <b style={{ font: "700 13px 'Space Grotesk'" }}>{label}</b>
+            <button
+              type="button"
+              className="ibtn"
+              style={{ border: 0 }}
+              aria-label="Next week"
+              onClick={() => {
+                setWeek0(addDays(week0, 7));
+                setSelDay(null);
+              }}
+            >
+              {I.chevR(15)}
+            </button>
+          </span>
+        </div>
+        {after ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 8 }}>
+            {(
+              [
+                [String(c.due), 'Due in 7 days', '--due', 'due'],
+                [String(c.over), 'Overdue', '--over', 'over'],
+                [`${fyPct}%`, 'FY filed', '--ok', 'ok'],
+              ] as const
+            ).map(([v, l, col, k]) => (
+              <button
+                key={l}
+                type="button"
+                data-tip={`${l} · ${v}`}
+                aria-label={`${l} · ${v} · show the list`}
+                onClick={() => openDrill({ kind: 'status', k, title: fyTitle, rows: fyRows })}
+                style={{ textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', background: 'light-dark(#fff, oklch(13% 0 89.9))', border: '1px solid var(--border)', borderRadius: 10, padding: 10, borderTop: `3px solid var(${col})` }}
+              >
+                <div className="metric" style={{ fontSize: 22 }}>
+                  {loading ? '–' : v}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)' }}>{l}</div>
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <div className="cm-seg">
+          <div style={{ width: 'max-content' }}>
+            <Seg
+              opts={AREAS.map((a) => a.label)}
+              on={areaIdx}
+              counts={areaCounts}
+              label="Area"
+              onPick={(i) => set({ area: AREAS[i]!.id })}
+              same={(i) => toast(`Already showing ${AREAS[i]!.label === 'All' ? 'all areas' : AREAS[i]!.label}`)}
+            />
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,minmax(0,1fr))', gap: 4 }} role="group" aria-label="Week">
+          {week.map((iso, i) => {
+            const it = dates.get(iso) ?? [];
+            const s = it.length ? worstStatus(it, today) : '';
+            const bg = s ? tileVar(s) : 'light-dark(#fff, oklch(13% 0 89.9))';
+            const t = iso === today;
+            return (
+              <button
+                key={iso}
+                type="button"
+                className={`cm-day${selDay === iso ? ' sel' : ''}`}
+                aria-pressed={selDay === iso}
+                aria-label={`${dow(iso)} ${Number(iso.slice(8))} ${MON[Number(iso.slice(5, 7)) - 1]}, ${it.length} filings${t ? ', today' : ''}`}
+                data-tip={it.length ? `${dow(iso)} ${Number(iso.slice(8))} ${MON[Number(iso.slice(5, 7)) - 1]} · ${it.length} filing${it.length > 1 ? 's' : ''}` : undefined}
+                onClick={() => setSelDay(selDay === iso ? null : iso)}
+                style={{
+                  height: 58,
+                  borderRadius: 8,
+                  background: bg,
+                  color: s ? '#fff' : 'var(--fg)',
+                  border: `1px solid ${s ? 'transparent' : 'var(--border)'}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                  ...(t ? { boxShadow: '0 0 0 2px var(--navy)' } : {}),
+                }}
+              >
+                <small style={{ font: '800 11px Manrope', opacity: 0.8 }}>{['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}</small>
+                <b style={{ font: "700 16px 'Space Grotesk'" }}>{Number(iso.slice(8))}</b>
+                {t ? (
+                  <span className="pulse" />
+                ) : (
+                  <small style={{ fontSize: 11, lineHeight: '7px', height: 7, letterSpacing: -1 }}>{it.length ? '●'.repeat(Math.min(it.length, 3)) : ''}</small>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {!after ? (
+            <BotSays size={48} question="Why is my compliance calendar empty before incorporation?">
+              Your calendar starts after incorporation.
+              <br />
+              Nothing is due yet.
+            </BotSays>
+          ) : loading ? (
+            [1, 2, 3].map((i) => <div key={i} className="sk-row" style={{ height: 62, borderRadius: 10 }} />)
+          ) : qT.isError ? (
+            <div role="alert" style={{ color: 'var(--over-text)', fontWeight: 700 }}>
+              Could not load the register.
+            </div>
+          ) : agenda.length ? (
+            agenda.map((r) => {
+              const s = statusOf(r, today);
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  className="cm-ag"
+                  aria-label={`${r.name} · ${r.period} · open the details`}
+                  data-notip=""
+                  onClick={() => set({ filing: r.id })}
+                  style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 56, background: 'light-dark(#fff, oklch(13% 0 89.9))', border: '1px solid var(--border)', borderRadius: 10, padding: 8 }}
+                >
+                  <div className="dtile" style={{ background: tileVar(s), width: 40, height: 44 }}>
+                    <b style={{ fontSize: 16 }}>{Number(r.dueDate.slice(8))}</b>
+                    <small>{dow(r.dueDate)}</small>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 3 }}>
+                      <AreaChip a={r.area} />
+                      <Chip s={s} />
+                    </div>
+                  </div>
+                  {I.chevR(15)}
+                </button>
+              );
+            })
+          ) : (
+            <BotSays size={44} action="">
+              {selDay ? 'Nothing is due on this day.' : 'Nothing due this week.'}
+            </BotSays>
+          )}
+        </div>
+      </div>
+      {detail ? <DetailModal f={detail} onClose={() => set({ filing: null })} onOpenFilings={onOpenFilings} /> : null}
+    </div>
+  );
+}

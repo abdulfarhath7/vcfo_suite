@@ -1,0 +1,695 @@
+import 'server-only';
+
+import PizZip from 'pizzip';
+import { and, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { db } from '@/db/client';
+import {
+  documentRequestDetails,
+  documentRequestFiles,
+  documentRequests,
+  profiles,
+} from '@/db/schema';
+import type { AuthContext } from '@/auth/guards';
+import {
+  assertEngagementAccess,
+  checklistStateForViewer,
+  checklistStateFromRow,
+  getMyEngagement,
+  type EngagementDbRow,
+} from '@/db/repositories/engagements';
+import { getDocumentById, listDocuments } from '@/db/repositories/documents';
+import { getBoardResolutionByEngagementId } from '@/db/repositories/board-resolution';
+import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { checklist, getItem } from '@/data/checklist';
+import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
+import { repeatFieldLabel } from '@/lib/checklist-repeat';
+import { isStepReleasedTo } from '@/lib/checklist-visibility';
+import { checklistItemForFieldId } from '@/lib/vault-documents';
+import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import {
+  fileNameFromStoragePath,
+  isMilestoneStoragePath,
+  MILESTONE_DOCUMENTS_BUCKET,
+  uploadTimestampFromStoragePath,
+} from '@/lib/milestone-document-storage';
+import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution-storage';
+import {
+  EXTENSION_TO_MIME,
+  MAX_UPLOAD_BYTES,
+  MILESTONE_DOCUMENT_EXTENSIONS,
+  maxUploadSizeError,
+  maxUploadSizeLabel,
+  resolveUploadContentType,
+  resolveUploadExtension,
+} from '@/lib/upload-limits';
+import {
+  categoryFor,
+  DOC_CATEGORIES,
+  isStaleProof,
+  OTHER_PHASE_ID,
+  OTHER_PHASE_TITLE,
+  portalForField,
+  stepNumbers,
+  zipSegment,
+  type ClientDocumentsPayload,
+  type DocNode,
+  type OpenRequest,
+} from '@/lib/client-portal/documents';
+import { bucketKey, deleteObject, getObjectBuffer, listObjects, putObject, type StorageBucket } from '@/storage/s3';
+
+/**
+ * CLIENT DOCUMENTS REPOSITORY (client portal v7 — Documents page).
+ *
+ * >>> ACCESS CONTROL (Path A) <<<
+ * Client role only. Every function resolves the caller's OWN engagement
+ * (`getMyEngagement` + `assertEngagementAccess`) — no caller-supplied
+ * engagement id is ever trusted — and then reads only:
+ *   - the client-redacted checklist state (`checklistStateForViewer`): a step's
+ *     files appear once the step is released to the client;
+ *   - `documents` rows through `listDocuments` / `getDocumentById` (client:
+ *     shared_with_client = true + released step);
+ *   - the board resolution only once finalized (drafts never reach a client);
+ *   - `document_requests` / `document_request_details` / `document_request_files`
+ *     rows whose engagement_id is that engagement.
+ * File refs handed to the browser are re-checked on every download (the ref
+ * is resolved against the same rules, never trusted). Uploads go only to the
+ * caller's own PENDING requests; Undo only removes the caller's own upload,
+ * within 10 minutes.
+ */
+
+export class ClientDocumentsForbiddenError extends Error {}
+
+const UNDO_WINDOW_MS = 10 * 60_000;
+
+function assertClient(ctx: AuthContext) {
+  if (ctx.role !== 'client') throw new ClientDocumentsForbiddenError('Documents portal is for clients only');
+}
+
+async function myEngagement(ctx: AuthContext): Promise<{ dbId: string; row: EngagementDbRow } | null> {
+  assertClient(ctx);
+  const mine = await getMyEngagement(ctx);
+  if (!mine) return null;
+  const access = await assertEngagementAccess(ctx, mine.id);
+  if (!access.ok) return null;
+  return { dbId: access.dbId, row: access.row };
+}
+
+function shortCompany(name: string): string {
+  return name.replace(/\s+(India\s+)?(Private|Pvt\.?)\s+(Limited|Ltd\.?)$/i, '').trim() || name;
+}
+
+function todayIST(): string {
+  return new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
+}
+
+function contentTypeForName(name: string): string | null {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  return (EXTENSION_TO_MIME as Record<string, string>)[ext] ?? null;
+}
+
+/** "ravi-kumar_pan.pdf" → "Ravi kumar pan". */
+function readableName(fileName: string): string {
+  const base = fileName.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ').trim();
+  return base ? base.charAt(0).toUpperCase() + base.slice(1) : fileName;
+}
+
+/** documents.object_key → bucket + path (same mapping as /api/documents/[id]/signed-url). */
+function indexedKey(objectKey: string): { bucket: StorageBucket; path: string } {
+  const clean = objectKey.replace(/^\/+/, '');
+  if (clean.startsWith(`${MILESTONE_DOCUMENTS_BUCKET}/`)) {
+    return { bucket: MILESTONE_DOCUMENTS_BUCKET, path: clean.slice(MILESTONE_DOCUMENTS_BUCKET.length + 1) };
+  }
+  if (clean.startsWith(`${ENGAGEMENT_DOCUMENTS_BUCKET}/`)) {
+    return { bucket: ENGAGEMENT_DOCUMENTS_BUCKET, path: clean.slice(ENGAGEMENT_DOCUMENTS_BUCKET.length + 1) };
+  }
+  if (isMilestoneStoragePath(clean)) return { bucket: MILESTONE_DOCUMENTS_BUCKET, path: clean };
+  return { bucket: ENGAGEMENT_DOCUMENTS_BUCKET, path: clean };
+}
+
+function noteFromDetail(detail: string | null): string | undefined {
+  if (!detail) return undefined;
+  const text = detail
+    .split('\n')
+    .filter((l) => !/^(file|uploadedAt):/.test(l.trim()))
+    .join(' ')
+    .trim();
+  return text || undefined;
+}
+
+/* ------------------------------------------------------------------ */
+/* Aggregate: every document source for the client's engagement        */
+/* ------------------------------------------------------------------ */
+
+export async function getClientDocuments(ctx: AuthContext): Promise<ClientDocumentsPayload | null> {
+  const mine = await myEngagement(ctx);
+  if (!mine) return null;
+  const { dbId, row } = mine;
+  const company = shortCompany(row.companyName);
+  const state = checklistStateForViewer(ctx, checklistStateFromRow(row));
+  const today = todayIST();
+  const now = new Date();
+
+  const [recipients, indexed, br, s3Objects, reqRows] = await Promise.all([
+    resolveEngagementRecipients(dbId).catch(() => null),
+    listDocuments(ctx, dbId).catch(() => []),
+    getBoardResolutionByEngagementId(ctx, dbId).catch(() => null),
+    listObjects(`${MILESTONE_DOCUMENTS_BUCKET}/${dbId}/`).catch(() => [] as Awaited<ReturnType<typeof listObjects>>),
+    db
+      .select({ req: documentRequests, det: documentRequestDetails, askedBy: profiles.name })
+      .from(documentRequests)
+      .leftJoin(documentRequestDetails, eq(documentRequestDetails.requestId, documentRequests.id))
+      .leftJoin(profiles, eq(profiles.id, documentRequests.requestedBy))
+      .where(and(eq(documentRequests.engagementId, dbId), ne(documentRequests.status, 'cancelled')))
+      .orderBy(desc(documentRequests.createdAt)),
+  ]);
+  const leadName = recipients?.leads?.[0]?.name;
+  const sbcFrom = leadName ? `SBC · ${leadName}` : 'SBC';
+
+  const nodes: DocNode[] = [];
+  const usedPaths = new Set<string>();
+
+  /* ---- earlier uploads per milestone field (S3 listing) ---- */
+  const versionsByField = new Map<string, Array<{ path: string; size: number | null }>>();
+  const prefix = `${MILESTONE_DOCUMENTS_BUCKET}/`;
+  for (const o of s3Objects) {
+    const path = o.key.startsWith(prefix) ? o.key.slice(prefix.length) : o.key;
+    if (!isMilestoneStoragePath(path)) continue;
+    const parts = path.split('/');
+    const field = parts.slice(1, -1).join('/');
+    const list = versionsByField.get(field) ?? [];
+    list.push({ path, size: o.size });
+    versionsByField.set(field, list);
+  }
+  const sizeByPath = new Map<string, number | null>(s3Objects.map((o): [string, number | null] => [o.key.startsWith(prefix) ? o.key.slice(prefix.length) : o.key, o.size]));
+
+  /* ---- checklist uploads ---- */
+  for (const item of checklist) {
+    const slice = state[item.id];
+    if (!slice || !isStepReleasedTo('client', slice)) continue;
+    const responses = extractItemResponses(item, slice);
+    const fields = getClientResponseFields(item);
+    const fieldById = new Map(fields.map((f) => [f.id, f]));
+    const firmStep = item.responsibleRole !== 'client';
+    const done =
+      slice.status === 'completed' ||
+      slice.status === 'not-applicable' ||
+      Boolean(slice.deliveredToClientAt?.trim()) ||
+      slice.reviewStatus === 'accepted';
+    const status: DocNode['status'] = firmStep ? (done ? 'Final' : 'In review') : done ? 'Approved' : 'In review';
+    const from = firmStep ? sbcFrom : company;
+
+    const add = (fieldId: string, path: string, label: string) => {
+      const ts = uploadTimestampFromStoragePath(path);
+      const date = ts ? new Date(ts).toISOString() : slice.deliveredToClientAt || slice.clientSubmittedAt || undefined;
+      usedPaths.add(path);
+      nodes.push({
+        id: `m-${item.id}-${fieldId}`,
+        ref: `m:${path}`,
+        label,
+        fileName: fileNameFromStoragePath(path),
+        contentType: contentTypeForName(path),
+        sizeBytes: sizeByPath.get(path) ?? null,
+        status,
+        replaced: false,
+        from,
+        fromSbc: firmStep,
+        date,
+        stepId: item.id,
+        categoryId: categoryFor(item.id, label),
+        stale: isStaleProof(label, date, now),
+        portal: portalForField(fieldId),
+        source: 'milestone',
+      });
+      // earlier uploads of the same field → Replaced versions (v1, v2…)
+      const older = (versionsByField.get(fieldId) ?? [])
+        .filter((v) => v.path !== path && (uploadTimestampFromStoragePath(v.path) ?? 0) < (ts ?? Number.MAX_SAFE_INTEGER))
+        .sort((a, b) => (uploadTimestampFromStoragePath(a.path) ?? 0) - (uploadTimestampFromStoragePath(b.path) ?? 0));
+      older.forEach((v, k) => {
+        const vts = uploadTimestampFromStoragePath(v.path);
+        usedPaths.add(v.path);
+        nodes.push({
+          id: `m-${item.id}-${fieldId}-v${k + 1}`,
+          ref: `m:${v.path}`,
+          label: `${label} (v${k + 1})`,
+          fileName: fileNameFromStoragePath(v.path),
+          contentType: contentTypeForName(v.path),
+          sizeBytes: v.size,
+          status: 'Replaced',
+          replaced: true,
+          from,
+          fromSbc: firmStep,
+          date: vts ? new Date(vts).toISOString() : undefined,
+          stepId: item.id,
+          categoryId: categoryFor(item.id, label),
+          source: 'milestone',
+        });
+      });
+    };
+
+    const used = new Set<string>();
+    for (const field of fields) {
+      if (field.type !== 'file') continue;
+      const p = String(responses[field.id] ?? '').trim();
+      if (!isMilestoneStoragePath(p)) continue;
+      used.add(field.id);
+      add(field.id, p, field.label);
+    }
+    for (const [fieldId, value] of Object.entries(responses)) {
+      if (used.has(fieldId) || typeof value !== 'string' || !isMilestoneStoragePath(value)) continue;
+      const field = fieldById.get(fieldId);
+      const label = field?.label ?? repeatFieldLabel(fields, responses, fieldId) ?? readableName(fileNameFromStoragePath(value));
+      add(fieldId, value.trim(), label);
+    }
+  }
+
+  /* ---- indexed documents shared with the client ---- */
+  if (indexed.length) {
+    const uploaderIds = [...new Set(indexed.map((d) => d.uploadedBy).filter(Boolean) as string[])];
+    const ups = uploaderIds.length
+      ? await db.select({ id: profiles.id, name: profiles.name, role: profiles.role }).from(profiles).where(inArray(profiles.id, uploaderIds))
+      : [];
+    const upById = new Map(ups.map((u) => [u.id, u]));
+    for (const d of indexed) {
+      const { bucket, path } = indexedKey(d.objectKey);
+      if (bucket === MILESTONE_DOCUMENTS_BUCKET && usedPaths.has(path)) continue;
+      const up = d.uploadedBy ? upById.get(d.uploadedBy) : undefined;
+      const fromClient = up?.role === 'client';
+      const label = readableName(d.fileName);
+      nodes.push({
+        id: `d-${d.id}`,
+        ref: `d:${d.id}`,
+        label,
+        fileName: d.fileName,
+        contentType: d.contentType ?? contentTypeForName(d.fileName),
+        sizeBytes: d.sizeBytes,
+        status: fromClient ? 'Approved' : 'Final',
+        replaced: false,
+        from: fromClient ? company : up?.name ? `SBC · ${up.name}` : 'SBC',
+        fromSbc: !fromClient,
+        date: d.createdAt,
+        stepId: d.stepId && getItem(d.stepId) ? d.stepId : undefined,
+        categoryId: categoryFor(d.stepId ?? undefined, `${label} ${d.category ?? ''}`),
+        stale: isStaleProof(label, d.createdAt, now),
+        source: 'index',
+      });
+    }
+  }
+
+  /* ---- board resolution (finalized only; never a draft) ---- */
+  if (br && br.status === 'finalized') {
+    const finalizer = br.finalizedBy
+      ? (await db.select({ name: profiles.name }).from(profiles).where(eq(profiles.id, br.finalizedBy)).limit(1))[0]?.name
+      : undefined;
+    const signed = br.signedStoragePath?.trim();
+    if (signed) {
+      nodes.push({
+        id: 'br-signed',
+        ref: 'br:signed',
+        label: 'Board resolution (final)',
+        fileName: signed.split('/').pop() || 'signed-board-resolution.pdf',
+        contentType: contentTypeForName(signed),
+        status: 'Final',
+        replaced: false,
+        from: company,
+        fromSbc: false,
+        date: br.signedUploadedAt ?? undefined,
+        stepId: 'pre-3',
+        categoryId: 'c3',
+        source: 'board-resolution',
+      });
+    }
+    if (br.storagePath?.trim()) {
+      nodes.push({
+        id: 'br-final',
+        ref: 'br:final',
+        label: signed ? 'Board resolution (unsigned)' : 'Board resolution (final)',
+        fileName: 'board-resolution.docx',
+        contentType: EXTENSION_TO_MIME.docx,
+        status: signed ? 'Replaced' : 'Final',
+        replaced: Boolean(signed),
+        from: finalizer ? `SBC · ${finalizer}` : sbcFrom,
+        fromSbc: true,
+        date: br.finalizedAt ?? undefined,
+        stepId: 'pre-3',
+        categoryId: 'c3',
+        source: 'board-resolution',
+      });
+    }
+  }
+
+  /* ---- document requests ---- */
+  const reqIds = reqRows.map((r) => r.req.id);
+  const files = reqIds.length
+    ? await db
+        .select()
+        .from(documentRequestFiles)
+        .where(and(eq(documentRequestFiles.engagementId, dbId), inArray(documentRequestFiles.requestId, reqIds)))
+        .orderBy(desc(documentRequestFiles.uploadedAt))
+    : [];
+  const filesByReq = new Map<string, typeof files>();
+  for (const f of files) {
+    const list = filesByReq.get(f.requestId) ?? [];
+    list.push(f);
+    filesByReq.set(f.requestId, list);
+  }
+  const openRequests: OpenRequest[] = [];
+  for (const { req, det, askedBy } of reqRows) {
+    const stepId = det?.stepId && getItem(det.stepId) ? det.stepId : undefined;
+    const reqFiles = filesByReq.get(req.id) ?? [];
+    const pending = req.status === 'pending';
+    const due = det?.dueOn ?? undefined;
+    const overdue = Boolean(pending && due && due < today);
+    const note = det?.reviewNote?.trim() || (pending && reqFiles.length ? noteFromDetail(req.detail) : undefined);
+    const noteBy = det?.reviewNote?.trim() ? undefined : askedBy ?? undefined;
+    const cat = categoryFor(stepId, req.title);
+    if (pending) {
+      openRequests.push({ id: req.id, label: req.title, due, overdue, stepId, note, noteBy, askedBy: askedBy ?? undefined, reupload: reqFiles.length > 0 });
+      nodes.push({
+        id: `req-${req.id}`,
+        label: req.title,
+        fileName: '—',
+        status: 'Missing',
+        replaced: false,
+        from: askedBy ? `Asked by ${askedBy}` : 'Asked by SBC',
+        fromSbc: true,
+        date: due,
+        due,
+        overdue,
+        stepId,
+        categoryId: cat,
+        requestId: req.id,
+        note,
+        noteBy,
+        source: 'request',
+      });
+    }
+    const current = pending ? undefined : reqFiles.find((f) => !f.replacedAt) ?? reqFiles[0];
+    const older = reqFiles.filter((f) => f !== current).reverse();
+    if (current) {
+      nodes.push({
+        id: `rf-${current.id}`,
+        ref: `r:${current.id}`,
+        label: req.title,
+        fileName: current.fileName,
+        contentType: current.contentType,
+        sizeBytes: current.sizeBytes,
+        status: req.status === 'approved' ? 'Approved' : 'In review',
+        replaced: false,
+        from: company,
+        fromSbc: false,
+        date: current.uploadedAt.toISOString(),
+        stepId,
+        categoryId: cat,
+        stale: isStaleProof(req.title, current.uploadedAt.toISOString(), now),
+        requestId: req.id,
+        source: 'request',
+      });
+    }
+    older.forEach((f, k) => {
+      nodes.push({
+        id: `rf-${f.id}`,
+        ref: `r:${f.id}`,
+        label: `${req.title} (v${k + 1})`,
+        fileName: f.fileName,
+        contentType: f.contentType,
+        sizeBytes: f.sizeBytes,
+        status: 'Replaced',
+        replaced: true,
+        from: company,
+        fromSbc: false,
+        date: f.uploadedAt.toISOString(),
+        stepId,
+        categoryId: cat,
+        requestId: req.id,
+        source: 'request',
+      });
+    });
+  }
+
+  return {
+    engagementId: appEngagementId(dbId),
+    companyName: row.companyName,
+    companyShort: company,
+    nodes,
+    openRequests,
+    accept: { exts: [...MILESTONE_DOCUMENT_EXTENSIONS], maxLabel: maxUploadSizeLabel() },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Resolve a file ref (re-checked on every download)                   */
+/* ------------------------------------------------------------------ */
+
+export interface ResolvedClientFile {
+  key: string;
+  fileName: string;
+  contentType: string;
+}
+
+export async function resolveClientDocumentFile(ctx: AuthContext, ref: string): Promise<ResolvedClientFile | null> {
+  const mine = await myEngagement(ctx);
+  if (!mine) return null;
+  const { dbId, row } = mine;
+  const ct = (name: string) => contentTypeForName(name) ?? 'application/octet-stream';
+
+  if (ref.startsWith('m:')) {
+    const path = ref.slice(2).trim();
+    if (!isMilestoneStoragePath(path) || path.split('/')[0] !== dbId) return null;
+    const item = path
+      .split('/')
+      .slice(1, -1)
+      .map((seg) => checklistItemForFieldId(seg.split('.')[0] ?? seg))
+      .find(Boolean);
+    // a path whose field names no step is not shown to clients
+    if (!item || !isStepReleasedTo('client', checklistStateFromRow(row)[item.id])) return null;
+    const name = fileNameFromStoragePath(path);
+    return { key: bucketKey(MILESTONE_DOCUMENTS_BUCKET, path), fileName: name, contentType: ct(name) };
+  }
+  if (ref.startsWith('d:')) {
+    const doc = await getDocumentById(ctx, ref.slice(2));
+    if (!doc || appEngagementId(dbId) !== doc.engagementId) return null;
+    const { bucket, path } = indexedKey(doc.objectKey);
+    return { key: bucketKey(bucket, path), fileName: doc.fileName, contentType: doc.contentType || ct(doc.fileName) };
+  }
+  if (ref === 'br:final' || ref === 'br:signed') {
+    const br = await getBoardResolutionByEngagementId(ctx, dbId);
+    if (!br || br.status !== 'finalized') return null;
+    const path = ref === 'br:final' ? br.storagePath?.trim() : br.signedStoragePath?.trim();
+    if (!path) return null;
+    const name = ref === 'br:final' ? 'board-resolution.docx' : path.split('/').pop() || 'signed-board-resolution.pdf';
+    return { key: bucketKey(ENGAGEMENT_DOCUMENTS_BUCKET, path), fileName: name, contentType: ct(name) };
+  }
+  if (ref.startsWith('r:')) {
+    const id = ref.slice(2);
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+    const [f] = await db
+      .select()
+      .from(documentRequestFiles)
+      .where(and(eq(documentRequestFiles.id, id), eq(documentRequestFiles.engagementId, dbId)))
+      .limit(1);
+    if (!f) return null;
+    return { key: f.objectKey, fileName: f.fileName, contentType: f.contentType || ct(f.fileName) };
+  }
+  return null;
+}
+
+export async function readClientDocumentFile(
+  ctx: AuthContext,
+  ref: string,
+): Promise<(ResolvedClientFile & { bytes: Buffer }) | null> {
+  const file = await resolveClientDocumentFile(ctx, ref);
+  if (!file) return null;
+  const bytes = await getObjectBuffer(file.key);
+  if (!bytes) return null;
+  return { ...file, bytes };
+}
+
+/* ------------------------------------------------------------------ */
+/* ZIP — real step names as folders                                    */
+/* ------------------------------------------------------------------ */
+
+export async function buildClientDocumentsZip(
+  ctx: AuthContext,
+  folder: string,
+): Promise<{ buffer: Buffer; filename: string; count: number; missing: number } | null> {
+  const payload = await getClientDocuments(ctx);
+  if (!payload) return null;
+  const steps = stepNumbers();
+  const byCategory = folder.startsWith('cat:');
+  const pick = payload.nodes.filter((nd) => {
+    if (nd.replaced || nd.status === 'Missing' || !nd.ref) return false;
+    if (folder === 'all') return true;
+    if (folder.startsWith('phase:')) {
+      const ph = folder.slice(6);
+      return ph === OTHER_PHASE_ID ? !nd.stepId || !steps[nd.stepId] : !!nd.stepId && steps[nd.stepId]?.phaseId === ph;
+    }
+    if (folder.startsWith('step:')) return nd.stepId === folder.slice(5);
+    if (byCategory) return nd.categoryId === folder.slice(4);
+    return false;
+  });
+
+  let rootName = `${payload.companyShort} documents`;
+  if (folder.startsWith('phase:')) {
+    const ph = folder.slice(6);
+    rootName = ph === OTHER_PHASE_ID ? OTHER_PHASE_TITLE : Object.values(steps).find((s) => s.phaseId === ph)?.phaseTitle ?? rootName;
+  } else if (folder.startsWith('step:')) rootName = steps[folder.slice(5)]?.title ?? rootName;
+  else if (byCategory) rootName = DOC_CATEGORIES.find((c) => c.id === folder.slice(4))?.name ?? rootName;
+  rootName = zipSegment(rootName);
+
+  const zip = new PizZip();
+  const used = new Set<string>();
+  let count = 0;
+  let missing = 0;
+  for (const nd of pick) {
+    const file = await resolveClientDocumentFile(ctx, nd.ref!);
+    const bytes = file ? await getObjectBuffer(file.key).catch(() => null) : null;
+    if (!file || !bytes) {
+      missing += 1;
+      continue;
+    }
+    const ext = file.fileName.includes('.') ? `.${file.fileName.split('.').pop()}` : '';
+    const st = nd.stepId ? steps[nd.stepId] : undefined;
+    const parts: string[] = [rootName];
+    if (folder === 'all' || folder.startsWith('phase:')) {
+      if (folder === 'all') parts.push(zipSegment(st ? st.phaseTitle : OTHER_PHASE_TITLE));
+      parts.push(zipSegment(st ? `${st.n} · ${st.title}` : 'Requested files'));
+    } else if (byCategory && st) {
+      parts.push(zipSegment(`${st.n} · ${st.title}`));
+    }
+    let path = `${parts.join('/')}/${zipSegment(nd.label)}${ext}`;
+    for (let k = 2; used.has(path); k += 1) path = `${parts.join('/')}/${zipSegment(nd.label)} (${k})${ext}`;
+    used.add(path);
+    zip.file(path, bytes);
+    count += 1;
+  }
+  const buffer = zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' }) as Buffer;
+  await recordAuditEvent(ctx, {
+    engagementId: payload.engagementId,
+    action: 'documents.download_zip',
+    summary: `Downloaded ${rootName}.zip (${count} files)`,
+    metadata: { folder, count, missing },
+  });
+  return { buffer, filename: `${rootName}.zip`, count, missing };
+}
+
+/* ------------------------------------------------------------------ */
+/* Upload against an open request · Undo                               */
+/* ------------------------------------------------------------------ */
+
+export class UploadRejectedError extends Error {}
+
+function safeName(name: string): string {
+  const base = name.split(/[/\\]/).pop() ?? 'document';
+  return base.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'document';
+}
+
+export async function uploadRequestFile(
+  ctx: AuthContext,
+  requestId: string,
+  file: { name: string; type: string; size: number; bytes: Buffer },
+): Promise<{ fileId: string; requestLabel: string; engagementId: string; requestId: string } | null> {
+  const mine = await myEngagement(ctx);
+  if (!mine) return null;
+  const { dbId } = mine;
+  const [req] = await db
+    .select()
+    .from(documentRequests)
+    .where(and(eq(documentRequests.id, requestId), eq(documentRequests.engagementId, dbId)))
+    .limit(1);
+  if (!req) return null;
+  if (req.status !== 'pending') throw new UploadRejectedError('This request is not open any more');
+  if (file.size > MAX_UPLOAD_BYTES) throw new UploadRejectedError(maxUploadSizeError());
+  const ext = resolveUploadExtension(file, MILESTONE_DOCUMENT_EXTENSIONS);
+  if (!ext) throw new UploadRejectedError(`${file.name} · this file type can't be opened`);
+  const contentType = resolveUploadContentType(file, MILESTONE_DOCUMENT_EXTENSIONS);
+  const key = bucketKey(ENGAGEMENT_DOCUMENTS_BUCKET, `${dbId}/requests/${requestId}/${Date.now()}-${safeName(file.name)}`);
+  await putObject(key, file.bytes, contentType);
+
+  const now = new Date();
+  const inserted = await db.transaction(async (tx) => {
+    await tx
+      .update(documentRequestFiles)
+      .set({ replacedAt: now })
+      .where(and(eq(documentRequestFiles.requestId, requestId), isNull(documentRequestFiles.replacedAt)));
+    const [row] = await tx
+      .insert(documentRequestFiles)
+      .values({
+        requestId,
+        engagementId: dbId,
+        objectKey: key,
+        fileName: file.name.split(/[/\\]/).pop() || 'document',
+        contentType,
+        sizeBytes: file.size,
+        uploadedBy: ctx.userId,
+        uploadedAt: now,
+      })
+      .returning();
+    await tx.update(documentRequests).set({ status: 'fulfilled' }).where(eq(documentRequests.id, requestId));
+    return row;
+  });
+  return { fileId: inserted!.id, requestLabel: req.title, engagementId: appEngagementId(dbId), requestId };
+}
+
+export async function undoRequestUpload(ctx: AuthContext, requestId: string, fileId: string): Promise<boolean> {
+  const mine = await myEngagement(ctx);
+  if (!mine) return false;
+  const [f] = await db
+    .select()
+    .from(documentRequestFiles)
+    .where(
+      and(
+        eq(documentRequestFiles.id, fileId),
+        eq(documentRequestFiles.requestId, requestId),
+        eq(documentRequestFiles.engagementId, mine.dbId),
+        eq(documentRequestFiles.uploadedBy, ctx.userId),
+      ),
+    )
+    .limit(1);
+  if (!f || Date.now() - f.uploadedAt.getTime() > UNDO_WINDOW_MS) return false;
+  const [req] = await db.select().from(documentRequests).where(eq(documentRequests.id, requestId)).limit(1);
+  if (!req || req.status !== 'fulfilled') return false;
+  await db.transaction(async (tx) => {
+    await tx.delete(documentRequestFiles).where(eq(documentRequestFiles.id, fileId));
+    await tx.update(documentRequests).set({ status: 'pending' }).where(eq(documentRequests.id, requestId));
+  });
+  await deleteObject(f.objectKey).catch(() => undefined);
+  return true;
+}
+
+/* ------------------------------------------------------------------ */
+/* Staff: request details (due date, step, field, re-upload note)      */
+/* ------------------------------------------------------------------ */
+
+export interface DocumentRequestDetailsInput {
+  dueOn?: string | null;
+  stepId?: string | null;
+  fieldId?: string | null;
+  reviewNote?: string | null;
+}
+
+/** Staff only; the request's engagement must pass `assertEngagementAccess`. */
+export async function setDocumentRequestDetails(
+  ctx: AuthContext,
+  requestId: string,
+  input: DocumentRequestDetailsInput,
+): Promise<boolean> {
+  if (ctx.role === 'client') throw new ClientDocumentsForbiddenError('Clients may not edit request details');
+  const [req] = await db.select().from(documentRequests).where(eq(documentRequests.id, requestId)).limit(1);
+  if (!req) return false;
+  const access = await assertEngagementAccess(ctx, req.engagementId);
+  if (!access.ok) return false;
+  const dueOn = input.dueOn && /^\d{4}-\d{2}-\d{2}/.test(input.dueOn) ? input.dueOn.slice(0, 10) : input.dueOn === null ? null : undefined;
+  const set = {
+    ...(dueOn !== undefined ? { dueOn } : {}),
+    ...(input.stepId !== undefined ? { stepId: input.stepId && getItem(input.stepId) ? input.stepId : null } : {}),
+    ...(input.fieldId !== undefined ? { fieldId: input.fieldId?.trim() || null } : {}),
+    ...(input.reviewNote !== undefined ? { reviewNote: input.reviewNote?.trim() || null, reviewNoteBy: ctx.userId } : {}),
+    updatedAt: new Date(),
+  };
+  await db
+    .insert(documentRequestDetails)
+    .values({ requestId, engagementId: req.engagementId, ...set })
+    .onConflictDoUpdate({ target: documentRequestDetails.requestId, set });
+  return true;
+}

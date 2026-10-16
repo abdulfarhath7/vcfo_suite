@@ -1,0 +1,8 @@
+/* @cp-scope page=team */
+/* Announcements — ann_redesign.dc.html:56-61 */
+.tp-ann .tb-g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;align-items:start}
+.tp-ann .tb-s8{grid-column:span 8}.tp-ann .tb-s4{grid-column:span 4}
+.tp-ann .tb-hd{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--hair);flex-wrap:wrap}
+.tp-ann .tb-hd .tb-segx{margin-left:auto}
+@media (max-width:959px){.tp-ann .tb-s8,.tp-ann .tb-s4{grid-column:1 / -1}}
+@media (max-width:767px){.tp-ann .tb-focus{flex-wrap:wrap;padding:12px 14px!important}.tp-ann .tb-focus .btn{margin-left:auto}}
