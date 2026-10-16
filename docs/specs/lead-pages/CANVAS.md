@@ -11,6 +11,12 @@ whole highlighted box, and the smiling Ask VCFO bot. "NEW" badges mark features 
 
 The first canvas page, "Main canvas design", shows every board on one screen: one row per page in PLAN.md order, with a numbered label above each row, 80 px between boards and 120 px between rows. These boards are exact copies (`A_*.dc.html`) of the per-page boards. The per-page pages stay as they were, so existing links still work. **Edit the per-page board and re-copy it**, otherwise the two drift apart.
 
+## Ask VCFO avatar (owner, 2026-10-16)
+
+- The robot is the client's visor robot (`prototype/v7-inputs/visor-avatar-animated.svg`), with the smile inside the eyes group. `Launcher.dc.html` draws it inline with the file's own 20.5 s keyframes (rise, look, blink, grip), the same way the client prototype does (`src/app/proto.js`): the robot grips the bottom edge, with the navy "Ask VCFO" pill and its teal dot beside it. Every page board and both phone frames import it.
+- Still pictures of the bot (digest, tips, chat header) use the same robot's head without the loop, as the client does.
+- The Chat board copies the client chat window: navy header with an avatar circle, the robot peeking over the top edge, gray bot bubbles and navy user bubbles, an answer card, suggestion chips and Send. It shows three states: idle (teal antenna), thinking (antenna pulses) and answered (green antenna) with a hand-off button. Only the text is written for a Lead.
+
 ## Shared pieces
 
 - `Side.dc.html` is the sidebar and `Top.dc.html` is the top bar. Every page imports both, so a change to either
