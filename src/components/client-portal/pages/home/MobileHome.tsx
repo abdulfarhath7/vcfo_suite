@@ -217,11 +217,11 @@ export function MobileHome({ h, onEditTimeline, phases, onOpenDocs }: { h: HomeD
     const t = setTimeout(() => xRef.current?.focus({ preventScroll: true }), 30);
     const k = (e: KeyboardEvent) => e.key === 'Escape' && closeSheet();
     document.addEventListener('keydown', k);
-    document.body.classList.add('sheet-open');
+    document.querySelector('.cp')?.classList.add('sheet-open');
     return () => {
       clearTimeout(t);
       document.removeEventListener('keydown', k);
-      document.body.classList.remove('sheet-open');
+      document.querySelector('.cp')?.classList.remove('sheet-open');
     };
   }, [sheet, closeSheet]);
   const goR = useCallback(

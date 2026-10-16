@@ -263,8 +263,22 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         }
       }
     };
+    // Esc belongs to the viewer while it is open, even over another pop-up
+    // (Home step pop-up, Compliances detail): catch it first, at the window,
+    // in the capture phase, so the layer underneath never sees it.
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (document.querySelector('.cp-docviewer .info.open')) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      close();
+    };
+    window.addEventListener('keydown', onEsc, true);
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onEsc, true);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [close, go]);
 
   const download = useCallback(async () => {
@@ -490,7 +504,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) close();
         }}
-        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 'var(--vp-side-w,248px)', background: 'oklch(20% 0.05 258 / 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2147482400 }}
+        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 'var(--vp-side-w,248px)', background: 'oklch(20% 0.05 258 / 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2147482700 }}
       >
         {body}
       </div>

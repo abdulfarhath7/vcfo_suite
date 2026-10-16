@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const docHits = docs
     .filter((d) => d.fileName.toLowerCase().includes(q))
     .slice(0, 12)
-    .map((d) => ({ group: 'Documents', title: d.fileName, href: `/app/client/documents?doc=${encodeURIComponent(d.id)}` }));
+    .map((d) => ({ group: 'Documents', title: d.fileName, href: `/app/client/documents?doc=d-${encodeURIComponent(d.id)}` }));
   const filingHits = filings.rows
     .filter((f) => `${f.particular} ${f.compliance} ${f.periodLabel ?? ''}`.toLowerCase().includes(q))
     .slice(0, 12)

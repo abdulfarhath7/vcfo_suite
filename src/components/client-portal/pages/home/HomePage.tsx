@@ -172,7 +172,8 @@ export function HomePage() {
     return (
       <>
         <MobileHome h={h} phases={phases} onEditTimeline={() => setEditor(true)} onOpenDocs={openDocs} />
-        {overlays}
+        {/* pop-ups need the Home page styles (.cp-home …) on phones too */}
+        <div className="cp-home">{overlays}</div>
       </>
     );
   }

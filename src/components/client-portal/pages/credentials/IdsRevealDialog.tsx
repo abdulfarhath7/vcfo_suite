@@ -135,10 +135,10 @@ export function IdsRevealDialog({
     setPhone(mq.matches);
     const on = () => setPhone(mq.matches);
     mq.addEventListener('change', on);
-    document.body.classList.add('sheet-open');
+    document.querySelector('.cp')?.classList.add('sheet-open');
     return () => {
       mq.removeEventListener('change', on);
-      document.body.classList.remove('sheet-open');
+      document.querySelector('.cp')?.classList.remove('sheet-open');
     };
   }, []);
   useEffect(() => {
