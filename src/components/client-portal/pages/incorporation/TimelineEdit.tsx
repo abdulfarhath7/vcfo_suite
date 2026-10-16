@@ -1,22 +1,25 @@
 'use client';
 
 /**
- * Timeline "Edit" (OV-08). The editor itself (tl-editor.js: drag / resize the
- * phase bars, manager "Save timeline", client "Request a timeline change") is
- * the Home page's. Until it is exported for reuse, Edit opens Home with the
- * editor requested (`#timeline-edit`). QUESTIONS.md › Incorporation.
+ * Timeline "Edit" (OV-08) on the Incorporation landing: the same live editor as
+ * Home (React port of tl-editor.js — drag / resize the phase bars, compare,
+ * client "Request a timeline change"), fed by the same Home data.
  */
-import { useEffect } from 'react';
-import { usePortal } from '../../PortalProvider';
-import { portalHref } from '../../routes';
+import { useHome } from '../home/useHome';
+import { TimelineEditor } from '../home/TimelineEditor';
+import '../../css/home-tle.css';
 
 export function TimelineEdit({ onClose }: { onClose: () => void }) {
-  const { go, toast } = usePortal();
-  useEffect(() => {
-    toast('Opening the timeline editor on Home');
-    go(`${portalHref('home')}#timeline-edit`);
-    onClose();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return null;
+  const h = useHome();
+  if (!h.timeline || !h.engagementId) return null;
+  return (
+    <TimelineEditor
+      phases={h.timeline}
+      today={h.today}
+      engagementId={h.engagementId}
+      company={h.company}
+      manager={h.manager}
+      onClose={onClose}
+    />
+  );
 }
