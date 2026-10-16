@@ -11,6 +11,7 @@ import { BotSays } from '@/components/client-portal/shared';
 import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig } from '@/components/client-portal/PortalProvider';
 import type { HomeFiling } from '@/lib/client-home';
+import { useRevealedIdentifier } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
 import { CardHead, Ico, InfoPopover, Seg, Tip, copyText, ownerChipStyle } from './ui';
 import type { HomeData } from './useHome';
 import {
@@ -531,6 +532,7 @@ export function CompCard({ h, onOpen }: { h: HomeData; onOpen: (tab: number) => 
 
 export function IdsCard({ h, onReveal, onCoi }: { h: HomeData; onReveal: (f: 'pan' | 'tan') => void; onCoi?: () => void }) {
   const ids = h.home?.identifiers ?? {};
+  const shown = { pan: useRevealedIdentifier('pan'), tan: useRevealedIdentifier('tan') };
   const rows: { k: string; v?: string; secret?: 'pan' | 'tan'; portal: [string, string] }[] = [
     { k: 'CIN', v: ids.cin, portal: ['https://www.mca.gov.in', 'MCA portal'] },
     { k: 'PAN', v: ids.panMasked, secret: 'pan', portal: ['https://www.incometax.gov.in', 'Income-tax portal'] },
@@ -568,8 +570,8 @@ export function IdsCard({ h, onReveal, onCoi }: { h: HomeData; onReveal: (f: 'pa
                   <span className="chip" style={{ padding: '0 5px', fontSize: 11, background: 'var(--navy)', color: 'var(--gold)' }}>Private</span>
                 ) : null}
               </span>
-              <span className="mono" style={{ fontSize: 12.5, fontWeight: 600, ...(r.secret ? { letterSpacing: '.06em' } : { overflowWrap: 'anywhere' }), ...(r.v ? {} : { color: 'var(--subtle)' }) }}>
-                {r.v ?? '—'}
+              <span className="mono" style={{ fontSize: 12.5, fontWeight: 600, ...(r.secret ? { letterSpacing: '.06em' } : { overflowWrap: 'anywhere' }), ...(r.v ? {} : { color: 'var(--subtle)' }), ...(r.secret && shown[r.secret] ? { color: 'var(--ok-text)' } : {}) }}>
+                {(r.secret && shown[r.secret]) || r.v || '—'}
               </span>
               <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                 {r.v && r.secret ? (
