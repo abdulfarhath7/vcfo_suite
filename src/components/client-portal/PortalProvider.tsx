@@ -68,6 +68,9 @@ interface PortalContextValue {
   go: (key: PortalRouteKey | string) => void;
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
+  /** Page-set location trail after "Home" (e.g. ["Incorporation", "SPICe+ Part B", "Registered Office Address"]). */
+  crumbs: string[] | null;
+  setCrumbs: (trail: string[] | null) => void;
 }
 
 /** What's this? answer card (owner board vs_ask). */
@@ -90,6 +93,18 @@ export function usePortal(): PortalContextValue {
 
 export function usePortalOptional(): PortalContextValue | null {
   return useContext(PortalContext);
+}
+
+/** A page sets the top-bar location trail while it is mounted. */
+export function usePortalCrumbs(trail: string[] | null) {
+  const ctx = useContext(PortalContext);
+  const key = trail ? trail.join('\u0000') : '';
+  useEffect(() => {
+    if (!ctx) return;
+    ctx.setCrumbs(key ? key.split('\u0000') : null);
+    return () => ctx.setCrumbs(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 }
 
 export const PORTAL_SHELL_KEY = ['client-portal', 'shell'] as const;
@@ -229,6 +244,7 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
   const closeChat = useCallback(() => setChatOpen(false), []);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [crumbs, setCrumbs] = useState<string[] | null>(null);
 
   const go = useCallback(
     (key: PortalRouteKey | string) => {
@@ -259,8 +275,10 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
       go,
       drawerOpen,
       setDrawerOpen,
+      crumbs,
+      setCrumbs,
     }),
-    [shell, isLoading, after, setAfter, theme, toggleTheme, prefs, savePrefs, toast, drill, tipAt, chatOpen, openChat, closeChat, pendingQuestion, go, drawerOpen],
+    [shell, isLoading, after, setAfter, theme, toggleTheme, prefs, savePrefs, toast, drill, tipAt, chatOpen, openChat, closeChat, pendingQuestion, go, drawerOpen, crumbs],
   );
 
   return (

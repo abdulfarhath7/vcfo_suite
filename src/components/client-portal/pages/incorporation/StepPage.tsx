@@ -28,7 +28,7 @@ import { fileNameFromStoragePath, isMilestoneStoragePath, validateMilestoneUploa
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
 import { phaseHref, portalHref } from '../../routes';
-import { usePortal } from '../../PortalProvider';
+import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
 import { triggerDownload } from '../documents/file-types';
 import { BotSay, Ic, IncFrame, InfoBtn, Si, fmt, fmtL, fmtS, istDay, kb } from './ui';
@@ -158,6 +158,8 @@ function ChangeDialog({ title, onClose, onSend }: { title: string; onClose: () =
 
 /* ---------------- the page ---------------- */
 
+const PHASE_PART: Record<number, string> = { 1: 'SPICe+ Part A', 2: 'SPICe+ Part B', 3: 'Post-incorporation', 4: 'Registration' };
+
 export default function StepPage({ stepParam }: { stepParam: string }) {
   const d = useIncData();
   const { go, openChat, toast, drill } = usePortal();
@@ -166,6 +168,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const item = useMemo(() => resolveChecklistItemFromStepParam(stepParam), [stepParam]);
   const s = item ? d.model.byId[item.id] : undefined;
   const phase = s ? d.model.phases[s.phaseNo - 1] : undefined;
+  usePortalCrumbs(s ? ['Incorporation', PHASE_PART[s.phaseNo] ?? `Phase ${s.phaseNo}`, `Step ${s.n} · ${s.title}`] : ['Incorporation', 'Step']);
   const catalog = useMemo(() => getActiveCatalogItems(), []);
   const ci = s ? catalog.findIndex((c) => c.id === s.id) : -1;
   const prev = ci > 0 ? d.model.byId[catalog[ci - 1]!.id] : undefined;

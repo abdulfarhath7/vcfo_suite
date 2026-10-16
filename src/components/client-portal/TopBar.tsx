@@ -5,7 +5,7 @@
  * Before/After pill (desktop) · Announcements · Notifications · Theme.
  * No profile and no Ask VCFO button in the top bar (design rule 2).
  */
-import { useEffect } from 'react';
+import { Fragment, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { usePortal } from './PortalProvider';
 import { crumbsFor, activeKeyFor } from './routes';
@@ -13,7 +13,7 @@ import { BeforeAfterPill, useBreakpoint } from './Sidebar';
 
 export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => void; hasAnnouncements: boolean }) {
   const pathname = usePathname();
-  const { shell, go, theme, toggleTheme, setDrawerOpen } = usePortal();
+  const { shell, go, theme, toggleTheme, setDrawerOpen, crumbs } = usePortal();
   const bp = useBreakpoint();
   const { mid, crumb } = crumbsFor(pathname);
   const act = activeKeyFor(pathname);
@@ -66,6 +66,30 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             </svg>
           </span>
           <ol className="tbar-ol">
+            {crumbs && crumbs.length ? (
+              <>
+                <li className="tbar-pre tbar-mid" style={{ color: 'var(--muted)', fontWeight: 500 }}>
+                  Home
+                </li>
+                {crumbs.slice(0, -1).map((c, i) => (
+                  <Fragment key={`${c}-${i}`}>
+                    <li aria-hidden="true" className="tbar-pre tbar-mid" style={{ color: 'var(--subtle)' }}>
+                      /
+                    </li>
+                    <li className="tbar-mid" style={{ color: 'var(--muted)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 28 }}>
+                      {c}
+                    </li>
+                  </Fragment>
+                ))}
+                <li aria-hidden="true" className={crumbs.length > 1 ? 'tbar-mid' : 'tbar-pre tbar-mid'} style={{ color: 'var(--subtle)' }}>
+                  /
+                </li>
+                <li aria-current="page" className="tbar-cur" style={{ minWidth: 48 }}>
+                  {crumbs[crumbs.length - 1]}
+                </li>
+              </>
+            ) : (
+              <>
             {act !== 'home' ? (
               <li className="tbar-pre tbar-mid" style={{ color: 'var(--muted)', fontWeight: 500 }}>
                 Home
@@ -89,6 +113,8 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             <li aria-current="page" className="tbar-cur">
               {crumb}
             </li>
+              </>
+            )}
           </ol>
         </nav>
         <div className="tbar-r">

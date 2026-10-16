@@ -8,7 +8,7 @@
 import { useMemo, useState } from 'react';
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
 import { phaseHref, portalHref } from '../../routes';
-import { usePortal } from '../../PortalProvider';
+import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
 import { Bmini, BotSay, Ic, IncFrame, InfoBtn, Own, Si, days, fmt, fmtY } from './ui';
 import {
@@ -183,6 +183,7 @@ export default function PhasePage({ phaseNo }: { phaseNo: number }) {
   const viewer = useDocViewer();
   const p = d.model.phases[Math.min(4, Math.max(1, phaseNo)) - 1];
   const i = (p?.no ?? 1) - 1;
+  usePortalCrumbs(['Incorporation', p ? `Phase ${p.no} · ${p.name}` : 'Phase']);
   const coi = d.coiDate ?? d.coiExpected;
   const plan = p ? phPlan(p, coi) : null;
   const doneEnd = p ? phDoneEnd(p) : undefined;

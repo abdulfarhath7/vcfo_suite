@@ -23,7 +23,7 @@ import {
 import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
-import { usePortal } from '../../PortalProvider';
+import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { phaseHref } from '../../routes';
 import { useDocViewer } from '../documents/DocViewer';
 import { triggerDownload } from '../documents/file-types';
@@ -33,6 +33,7 @@ import { INC_EXTRAS_KEY, firstName, stepHrefOf, useIncData } from './data';
 export default function BoardPage() {
   const d = useIncData();
   const { go, toast, openChat } = usePortal();
+  usePortalCrumbs(['Incorporation', 'Board resolution']);
   const qc = useQueryClient();
   const viewer = useDocViewer();
   const { engagements, user, getStateForEngagement } = useApp();

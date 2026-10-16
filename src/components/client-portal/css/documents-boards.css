@@ -115,3 +115,7 @@
 .cp .cp-documents .vup a:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .4);outline-offset:2px}
 @media (max-width:700px){.cp .cp-documents .vup-scrim{align-items:flex-end;padding:0}.cp .cp-documents .vup-dlg{border-radius:12px 12px 0 0!important;animation:up-documents-boards .25s cubic-bezier(.22,1,.36,1) both}.cp .cp-documents .vup-for{grid-template-columns:minmax(0,1fr)!important}.cp .cp-documents .vup .btn{height:44px}}
 @media (prefers-reduced-motion: reduce){.cp .cp-documents .vup-dlg{animation:none}.cp .cp-documents .vup .bar>span{transition:none}}
+/* docx render inside the phone preview paper */
+.cp .cp-documents .vmp .dv-docx{width:100%;color:oklch(21% 0.042 264)}
+.cp .cp-documents .vmp .dv-docx .docx-wrapper{background:transparent!important;padding:0!important}
+.cp .cp-documents .vmp .dv-docx section.docx{box-shadow:none!important;margin:0 0 24px!important;width:auto!important;min-height:0!important;padding:0!important}

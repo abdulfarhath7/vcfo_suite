@@ -91,3 +91,4 @@
 .cp #tle .chgt{margin:12px 18px 0;width:calc(100% - 36px);border-collapse:collapse;font-size:12.5px}
 @media (max-width:767px){.cp #tle .info-strip,
 .cp #tle .chgt{margin-left:12px;margin-right:12px;width:calc(100% - 24px)}}
+.cp #tle .today:after{content:attr(data-today)}

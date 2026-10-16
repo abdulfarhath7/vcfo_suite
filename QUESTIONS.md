@@ -29,6 +29,7 @@ Every choice the owner may want to change is one row: **area · question · what
 | Shell | Not built on purpose (prototype-only) | N-02 fallback toasts on dead controls, R-08 the floating PROTOTYPE bar, S-20 phone fallback menu band, L-07 hiding robots drawn inside boards: they exist only to make the static prototype clickable; in the app every control is real and the top bar always has the phone menu button. | — |
 | Ask VCFO | "Expand to side panel" button (chat design boards only) | Not built: FINAL's runtime chat has no expand button. The staff app's push side panel stays staff-only. | add a button in `AskLauncher.tsx` header if wanted |
 | Shell | PAN / TAN in the client overview API | `/api/client/overview` now sends PAN and TAN masked to clients (first 2 + bullets + last 2). The clear value only comes from `POST /api/client/identifiers/reveal` (own password, 60 s). Staff still get clear values. The old staff-era `ClientEntityCard` therefore also shows masked values to a client. | `maskIdentifier` in `src/db/repositories/client-overview.ts` |
+| Shell | Long location trail (FINAL `v7x_topbar`) | Pages set the trail with `usePortalCrumbs([...])`; Step pages show Home / Incorporation / SPICe+ Part A·B, Post-incorporation or Registration / Step N · title; phase pages "Phase N · name"; board resolution. Ancestors are muted text, not links. | `usePortalCrumbs` in `PortalProvider.tsx`; `TopBar.tsx` |
 <!-- /area:shell -->
 
 <!-- area:home -->

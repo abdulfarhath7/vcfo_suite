@@ -107,3 +107,7 @@ html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
 .vup button:focus-visible,.vup a:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .4);outline-offset:2px}
 @media (max-width:700px){.vup-scrim{align-items:flex-end;padding:0}.vup-dlg{border-radius:12px 12px 0 0!important;animation:up .25s cubic-bezier(.22,1,.36,1) both}.vup-for{grid-template-columns:minmax(0,1fr)!important}.vup .btn{height:44px}}
 @media (prefers-reduced-motion: reduce){.vup-dlg{animation:none}.vup .bar>span{transition:none}}
+/* docx render inside the phone preview paper */
+.vmp .dv-docx{width:100%;color:oklch(21% 0.042 264)}
+.vmp .dv-docx .docx-wrapper{background:transparent!important;padding:0!important}
+.vmp .dv-docx section.docx{box-shadow:none!important;margin:0 0 24px!important;width:auto!important;min-height:0!important;padding:0!important}
