@@ -2,6 +2,8 @@
 
 Built autonomously from `docs/specs/client-pages/prototype/vcfo-client-portal-FINAL.html`.
 Every choice the owner may want to change is one row: **area · question · what was decided · how to change it**.
+The ten worth reading first are listed at the end of `docs/specs/client-pages/BUILD-REPORT.md`.
+Nothing here was tested in a browser or against a database (owner rule for this build).
 
 <!-- area:shell -->
 ## Shell and shared
