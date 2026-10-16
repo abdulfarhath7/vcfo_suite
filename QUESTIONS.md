@@ -60,6 +60,7 @@ Every choice the owner may want to change is one row: **area · question · what
 | Incorporation | Step rail ⋮ "More" (prototype: toast "more actions in the full app") | Opens a drill-down with the step's attachments (Attached → preview, Still needed → step). | `moreFor` in `StepPage.tsx` |
 | Incorporation | Portal ↗ links | Mapped from the step's forms/title to the official portal (MCA V3, GST, EPFO, ESIC, RBI FIRMS/FLAIR, IT, ICEGATE, DGFT, STPI, IP India, Udyam, LEI, Telangana PT); opens a new tab. Done firm steps show 📎 Proof (first uploaded file) or "Proof pending". | `portals.ts` |
 | Incorporation | Registration names / "Next" status | Registration sub-headers come from the real `internRegistrationHeadingForTitle`. "Next" = first locked step after the current one in the same phase (landing table only). | `StepTable.tsx`, `step-model.ts` |
+| Incorporation | Who creates the client's file requests (drop zones, NOC blocking)? | Coordinator added a staff panel "Request files from the client" under the step form on the staff step pages (lead, manager, admin): pick a file field of the step, the name the client sees, a due date and a note; cancel open ones. | `src/components/incorporation/ClientFileRequestsPanel.tsx` in `EngagementStepDetail.tsx` |
 <!-- /area:incorporation -->
 
 <!-- area:compliances -->

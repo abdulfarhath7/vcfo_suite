@@ -1,0 +1,36 @@
+import { NextResponse } from 'next/server';
+import { requireAuth } from '@/auth/guards';
+import { getTopic, isReviewed } from '@/lib/ask/topics';
+
+/**
+ * GET /api/client/library/topic?slug= — reader side data for a published
+ * topic (Library reader): review date ("Updated 6 Nov"), the steps it is
+ * about ("Documents for this", "In <Company>'s project"), the related topics'
+ * titles and the source links. Public firm content; no client data.
+ */
+export async function GET(request: Request) {
+  const guard = await requireAuth();
+  if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
+  const slug = new URL(request.url).searchParams.get('slug')?.trim() ?? '';
+  const topic = slug ? getTopic(slug) : null;
+  if (!topic || topic.status !== 'published' || topic.audience === 'staff') {
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  }
+  const related = topic.related
+    .map((s) => getTopic(s))
+    .filter((t): t is NonNullable<typeof t> => !!t && t.status === 'published' && t.audience !== 'staff')
+    .map((t) => ({ slug: t.slug, title: t.title, category: t.category }));
+  return NextResponse.json({
+    topic: {
+      slug: topic.slug,
+      title: topic.title,
+      category: topic.category,
+      reviewed: isReviewed(topic),
+      reviewedAt: topic.reviewedAt ?? null,
+      stepIds: topic.stepIds ?? [],
+      related,
+      citations: topic.citations,
+      obligationId: topic.slug.startsWith('obligation-') ? topic.slug.slice('obligation-'.length) : null,
+    },
+  });
+}

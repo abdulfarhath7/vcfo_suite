@@ -57,7 +57,7 @@ function useSkeleton(loading: boolean): boolean {
       return () => clearTimeout(t);
     }
   }, [loading, show, since]);
-  return loading ? show : show;
+  return show;
 }
 
 function toViewer(d: DocItem, company: string): ViewerDoc {
@@ -106,6 +106,14 @@ export function HomePage() {
   const [reveal, setReveal] = useState<'pan' | 'tan' | null>(null);
   const [viewer, setViewer] = useState<{ docs: ViewerDoc[]; i: number } | null>(null);
 
+  // route `home-chat` (#chat): open the Ask VCFO chat 500 ms after load
+  const { openChat } = h.portal;
+  useEffect(() => {
+    if (!/chat/.test(window.location.hash)) return;
+    const t = setTimeout(() => openChat(), 500);
+    return () => clearTimeout(t);
+  }, [openChat]);
+
   const openDocs = useCallback((docs: DocItem[], i: number) => setViewer({ docs: docs.map((d) => toViewer(d, h.company)), i }), [h.company]);
   const upload = useCallback((n: NeedRow) => {
     if (n.requestId) pick(n.requestId, n.title);
@@ -113,7 +121,7 @@ export function HomePage() {
   }, [pick, h.portal]);
 
   if (phone === null || (h.loading && !skeleton && !h.overview)) return <div className="cp-home" style={{ minHeight: '60vh' }} />;
-  if (h.loading) return phone ? <div className="cp-home-m"><div className="app sk"><main className="wrap"><section className="greet" /><section className="card t" style={{ height: 180 }} /><section className="card t" style={{ height: 240 }} /></main></div></div> : <Skeleton after={h.after} />;
+  if (h.loading || skeleton) return phone ? <div className="cp-home-m"><div className="app sk"><main className="wrap"><section className="greet" /><section className="card t" style={{ height: 180 }} /><section className="card t" style={{ height: 240 }} /></main></div></div> : <Skeleton after={h.after} />;
   if (h.error) {
     return (
       <div className="cp-home">
