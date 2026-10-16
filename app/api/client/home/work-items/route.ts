@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
-import { upsertWorkItem } from '@/db/repositories/client-home';
+import { listWorkItems, upsertWorkItem } from '@/db/repositories/client-home';
 
 /**
  * POST /api/client/home/work-items — staff (admin / manager / lead) create or
@@ -38,4 +38,13 @@ export async function POST(request: Request) {
   });
   if (!item) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   return NextResponse.json({ item });
+}
+
+/** GET /api/client/home/work-items?engagementId= — the staff editor's list (scoped read). */
+export async function GET(request: Request) {
+  const guard = await requireAuth();
+  if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
+  const engagementId = new URL(request.url).searchParams.get('engagementId') ?? '';
+  if (!engagementId) return NextResponse.json({ items: [] });
+  return NextResponse.json({ items: await listWorkItems(guard.ctx, engagementId) });
 }

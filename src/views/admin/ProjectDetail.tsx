@@ -8,6 +8,8 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { InternPhaseEntryCards } from '@/components/incorporation/InternOverviewProgress';
+import { TimelineRequestsPanel } from '@/components/incorporation/TimelineRequestsPanel';
+import { WorkItemsPanel } from '@/components/incorporation/WorkItemsPanel';
 import { ProgressRing } from '@/components/noir';
 import { DocPackPhasePill } from '@/components/doc-pack/DocPackPhasePill';
 import { useDocPack } from '@/hooks/use-doc-pack';
@@ -156,6 +158,7 @@ export default function ProjectDetail() {
         </div>
       </header>
 
+      <TimelineRequestsPanel engagementId={eng.id} canDecide={canSetScheduleWindows(user?.role)} />
       <div className="flex flex-col gap-3">
         <InternPhaseEntryCards
           phases={phases}
@@ -165,6 +168,7 @@ export default function ProjectDetail() {
           trailingForPhase={docPackPill}
         />
       </div>
+      <WorkItemsPanel engagementId={eng.id} />
     </PageTransition>
   );
 }

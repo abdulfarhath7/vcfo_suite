@@ -502,3 +502,24 @@ export async function upsertWorkItem(
   return { id: row.id, title: row.title, stepId: row.stepId ?? undefined, progressPct: row.progressPct, readyOn: row.readyOn ?? undefined };
 }
 
+
+/** Staff editor: the engagement's work items (active + done, not hidden), for anyone with access. */
+export async function listWorkItems(
+  ctx: AuthContext,
+  engagementId: string,
+): Promise<Array<HomeWorkItem & { status: string }>> {
+  const access = await assertEngagementAccess(ctx, engagementId);
+  if (!access.ok) return [];
+  const rows = await db.select().from(clientWorkItems).where(eq(clientWorkItems.engagementId, access.dbId));
+  return rows
+    .filter((r) => r.status !== 'hidden')
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .map((r) => ({
+      id: r.id,
+      title: r.title,
+      stepId: r.stepId ?? undefined,
+      progressPct: r.progressPct,
+      readyOn: r.readyOn ?? undefined,
+      status: r.status,
+    }));
+}

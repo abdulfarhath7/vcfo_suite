@@ -237,3 +237,95 @@ export async function withdrawClientTimelineRequest(ctx: AuthContext, id: string
   });
   return true;
 }
+
+/* ---------------------------------------------------------------- staff decision */
+
+/** Pending + recent timeline requests on one engagement (anyone with access reads). */
+export async function listTimelineRequests(ctx: AuthContext, engagementId: string): Promise<TimelineRequestDto[]> {
+  const access = await assertEngagementAccess(ctx, engagementId);
+  if (!access.ok) return [];
+  const rows = await db
+    .select()
+    .from(clientTimelineRequests)
+    .where(eq(clientTimelineRequests.engagementId, access.dbId));
+  return rows
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 10)
+    .map((r) => {
+      const p = (r.payload ?? {}) as { phases?: TimelinePhaseDates[]; coiFrom?: string; coiTo?: string; slipDays?: number };
+      return {
+        id: r.id,
+        reason: r.reason,
+        status: r.status as TimelineRequestDto['status'],
+        phases: p.phases ?? [],
+        coiFrom: p.coiFrom,
+        coiTo: p.coiTo,
+        slipDays: p.slipDays ?? 0,
+        createdAt: r.createdAt.toISOString(),
+        requestedByName: r.requestedByName ?? undefined,
+      };
+    });
+}
+
+/**
+ * Manager / admin approves or rejects a client's timeline request. Approve
+ * writes the proposed dates into the engagement schedule through the schedule
+ * repository (which re-checks that the caller may set windows):
+ *   p1  → every Phase 1 step window      p2  → Phase 2 steps except MCA / COI
+ *   mca → pre-11 window                  coi → pre-12 window
+ *   and the incorporation window = Phase 1 start → COI date.
+ */
+export async function decideTimelineRequest(
+  ctx: AuthContext,
+  requestId: string,
+  decision: 'approve' | 'reject',
+  note?: string,
+): Promise<boolean> {
+  if (ctx.role !== 'manager' && ctx.role !== 'admin' && ctx.role !== 'super_admin') {
+    throw new Error('Only a project manager or admin may decide timeline requests');
+  }
+  const [row] = await db.select().from(clientTimelineRequests).where(eq(clientTimelineRequests.id, requestId)).limit(1);
+  if (!row || row.status !== 'pending') return false;
+  const access = await assertEngagementAccess(ctx, row.engagementId);
+  if (!access.ok) return false;
+
+  if (decision === 'approve') {
+    const { setEngagementWindow } = await import('@/db/repositories/schedule');
+    const { getIncorporationPhases } = await import('@/data/checklist');
+    const payload = (row.payload ?? {}) as { phases?: TimelinePhaseDates[] };
+    const byId = new Map((payload.phases ?? []).map((p) => [p.id, p]));
+    const phases = getIncorporationPhases();
+    const targets: Array<[string, TimelinePhaseDates | undefined]> = [];
+    for (const item of phases[0]?.items ?? []) targets.push([item.id, byId.get('p1')]);
+    for (const item of phases[1]?.items ?? []) {
+      const key = item.id === 'pre-11' ? 'mca' : item.id === 'pre-12' ? 'coi' : 'p2';
+      targets.push([item.id, byId.get(key as TimelinePhaseDates['id'])]);
+    }
+    for (const [itemId, w] of targets) {
+      if (w) await setEngagementWindow(ctx, row.engagementId, { kind: 'step', itemId }, { from: w.from, to: w.to });
+    }
+    const p1 = byId.get('p1');
+    const coi = byId.get('coi');
+    if (p1 && coi) await setEngagementWindow(ctx, row.engagementId, { kind: 'incorporation' }, { from: p1.from, to: coi.to });
+  }
+
+  await db
+    .update(clientTimelineRequests)
+    .set({
+      status: decision === 'approve' ? 'approved' : 'rejected',
+      decidedBy: ctx.userId,
+      decidedAt: new Date(),
+      decisionNote: note?.trim() || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(clientTimelineRequests.id, row.id));
+  if (row.taskId) await db.update(tasks).set({ status: 'done' }).where(eq(tasks.id, row.taskId));
+
+  await recordAuditEvent(ctx, {
+    engagementId: access.dbId,
+    action: decision === 'approve' ? 'client.timeline_change_approved' : 'client.timeline_change_rejected',
+    summary: decision === 'approve' ? 'Timeline change approved' : 'Timeline change declined',
+    metadata: { requestId: row.id, note: note?.trim() || undefined },
+  });
+  return true;
+}

@@ -54,6 +54,7 @@ Every choice the owner may want to change is one row: **area · question · what
 | home | Step pop-up "Message <lead>" | Sends through the existing `POST /api/client/handoff` (task + bell for the lead, reply by email) | `StepPopup` in `pages/home/Popups.tsx` |
 | home | Where the step pop-up opens | From step names in "Who holds it now" (holder rows and Steps around); Steps-card rows still go to the step page | `onStep` in `CurrentCard` |
 | home | Client upload limits | PDF, JPG or PNG up to 10 MB, stored under `engagement-documents/<engagementId>/requests/<requestId>/` and shared with the client | `app/api/client/home/needs/[id]/upload/route.ts` |
+| Home | Staff screens for the Home data | Coordinator added, on the admin/manager project page: "Client asked for a timeline change" (Approve writes the proposed dates into the schedule — Phase 1 / Phase 2 / MCA / COI step windows + the incorporation window; Decline closes it; the lead's task is closed either way) and "What SBC is doing" (add items, % done slider, ready date, done/remove). Need metadata (what a document request is for) still has only its API. | `TimelineRequestsPanel.tsx`, `WorkItemsPanel.tsx` in `src/components/incorporation/`; `decideTimelineRequest` in `client-change-requests.ts` |
 <!-- /area:home -->
 
 <!-- area:incorporation -->
