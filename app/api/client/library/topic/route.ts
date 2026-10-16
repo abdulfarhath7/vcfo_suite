@@ -8,10 +8,19 @@ import { getTopic, isReviewed } from '@/lib/ask/topics';
  * about ("Documents for this", "In <Company>'s project"), the related topics'
  * titles and the source links. Public firm content; no client data.
  */
+const SUGGESTED = ['spice-plus-part-a', 'after-incorporation', 'gst-basics'];
+
 export async function GET(request: Request) {
   const guard = await requireAuth();
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const slug = new URL(request.url).searchParams.get('slug')?.trim() ?? '';
+  if (!slug) {
+    // Empty Library: suggested topics (lib_empty board — SPICe+, after the COI, GST).
+    const suggestions = SUGGESTED.map((s) => getTopic(s))
+      .filter((t): t is NonNullable<typeof t> => !!t && t.status === 'published' && t.audience !== 'staff')
+      .map((t) => ({ slug: t.slug, title: t.title, question: t.question }));
+    return NextResponse.json({ suggestions });
+  }
   const topic = slug ? getTopic(slug) : null;
   if (!topic || topic.status !== 'published' || topic.audience === 'staff') {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });

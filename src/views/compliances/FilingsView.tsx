@@ -1,5 +1,6 @@
 'use client';
 
+import { FilingProofEditor } from '@/components/compliances/FilingProofEditor';
 import { GlossaryText } from '@/components/ask/GlossaryTerm';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useMemo, type ReactNode } from 'react';
@@ -446,6 +447,7 @@ function RegisterTable({
     const value = row.windowFrom && row.windowTo ? { from: row.windowFrom, to: row.windowTo } : null;
     if (!mayWrite) return <ScheduleWindowMeta value={value} />;
     return (
+      <span className="inline-flex items-center gap-1">
       <ScheduleWindowControl
         value={value}
         label={row.particular}
@@ -454,6 +456,8 @@ function RegisterTable({
           await queryClient.invalidateQueries({ queryKey: ['filings'] });
         }}
       />
+      <FilingProofEditor instanceId={row.id} label={row.particular} />
+      </span>
     );
   };
   const ordered = sortByDueDate(rows);

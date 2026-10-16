@@ -36,6 +36,24 @@ Every choice the owner may want to change is one row: **area · question · what
 ## Home
 | Area | Question | Decided | How to change |
 |---|---|---|---|
+| home | Phone layout breakpoint | The phone board (mobile.html) renders below 700 px, as the brief and BUILD-GUIDE say; 700–767 shows the desktop board with its phone CSS rules | Change the `(max-width: 699px)` query in `usePhone()` in `pages/home/HomePage.tsx` |
+| home | Where do "Needs" items come from? | Open `document_requests` (Upload, or the verb set in NEW `client_need_meta.kind`) plus steps waiting on the client from the step model (rejected → Correct, approval pending → Sign, otherwise Fill) | `buildNeeds()` in `pages/home/derive.ts`; staff set a request's step/filing/verb/due date with `PATCH /api/client/home/needs/[id]` (no staff UI yet) |
+| home | Staff UI for need metadata and SBC work items | Not built (outside the Home area). Without work items, "What SBC is doing" lists the steps SBC holds now with no % (bar shown light, no % text) | Build a lead/manager form that calls `PATCH /api/client/home/needs/[id]` and `POST /api/client/home/work-items` |
+| home | "Documents in x/y" | fulfilled ÷ (all non-cancelled) document requests of the engagement; the stat is hidden when there are no requests | `requestCounts` in `getClientHome()` and `GreetCard` |
+| home | Registrations list and "x/y" denominator (Q3) | Every phase-4 step that is not marked not-applicable (not the prototype's curated 13); category / authority / portal from a static map | `REG_META` and `buildRegistrations()` in `pages/home/derive.ts` |
+| home | Steps card "Timeline" column (Q4) | Shows the playbook text (`getChecklistStepTimelineLabel`) as in the prototype | `stepTimelineText()` in `derive.ts` (swap for `formatWindow` to show manager windows) |
+| home | Timeline card phases | Phase 1 / Phase 2 (without pre-11, pre-12) = min start / max end of their steps' windows or done dates; MCA review = Phase 2 end → COI; COI = incorporation date after COI, else the manager's incorporation window end | `buildTimeline()` in `derive.ts` |
+| home | Client timeline change request — approval | The request is stored (`client_timeline_requests`, pending) with a task for the lead, an audit event and the `client_change_requested` email (anchored on step pre-12). There is no manager approve/reject UI yet and approving does not write the schedule | Manager area: list pending `client_timeline_requests`, approve → `setEngagementWindow` per phase, set status |
+| home | Manager mode of the timeline editor | Not offered: the client portal only edits as the client (mode = role, no toggle) | Reuse `TimelineEditor` in the staff app with a save path to `/api/engagements/[id]/schedule` |
+| home | Post-incorporation statutory windows | N days parsed from the step's playbook text ("Within 30 days of incorporation"), anchored on the incorporation date (also FC-GPR, not the share-allotment date); steps without a limit show "no time limit" | `buildPostInc()` in `derive.ts` |
+| home | Compliance "Due soon" | Not filed and due within 15 days; "Other" area shown only when it has filings | `DUE_SOON_DAYS` and `AREA_ORDER` in `derive.ts` |
+| home | Activity actor kinds | Audit actor role client → company short name; staff → their name; actions starting `system.` → "VCFO Suite" (no job writes these yet, e.g. "TDS Payment overdue") | `loadActivity()` in `client-home.ts`; add system audit rows from `src/jobs/compliance-generate.ts` |
+| home | Alerts before COI | Dated items only: rejected step (hero), open requests grouped by step, client steps with a due date, name-approval expiry (pre-5) until Part B is filed | `buildAlerts()` in `derive.ts` |
+| home | Phone top bar, search sheet, drawer, launcher, chat sheet | Not re-built in the page: the shell's TopBar, SearchPalette (⌘K), drawer and AskLauncher/chat serve the phone too (M-25 search sheet and M-30 fallback drawer not built) | Shell area |
+| home | PAN/TAN in `/api/client/overview` | Home reads masked PAN/TAN from `/api/client/home`; the overview masking is done by the coordinator | — |
+| home | Step pop-up "Message <lead>" | Sends through the existing `POST /api/client/handoff` (task + bell for the lead, reply by email) | `StepPopup` in `pages/home/Popups.tsx` |
+| home | Where the step pop-up opens | From step names in "Who holds it now" (holder rows and Steps around); Steps-card rows still go to the step page | `onStep` in `CurrentCard` |
+| home | Client upload limits | PDF, JPG or PNG up to 10 MB, stored under `engagement-documents/<engagementId>/requests/<requestId>/` and shared with the client | `app/api/client/home/needs/[id]/upload/route.ts` |
 <!-- /area:home -->
 
 <!-- area:incorporation -->
