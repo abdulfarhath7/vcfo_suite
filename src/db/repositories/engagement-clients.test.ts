@@ -140,10 +140,24 @@ describe('inviteEngagementClient', () => {
     },
   );
 
+  it('a client who is not the Primary contact cannot invite (owner decision)', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
+    selectQueue = [
+      [{ id: OWN, clientId: 'c-a', clientUserId: 'user-primary', companyName: 'Acme' }],
+      [{ role: 'member' }], // caller's membership row
+    ];
+    await expect(
+      repo.inviteEngagementClient(ctx('client', 'user-member'), { ...input, engagementId: OWN }),
+    ).rejects.toThrow(/Only the Primary contact can invite/);
+    expect(writes).toEqual([]);
+    expect(recordAuditEvent).not.toHaveBeenCalled();
+  });
+
   it('refuses to attach a staff account as a client', async () => {
     assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
     selectQueue = [
-      [{ id: OWN, clientId: 'c-a', clientUserId: null, companyName: 'Acme' }],
+      // caller is the Primary contact (engagements.client_user_id)
+      [{ id: OWN, clientId: 'c-a', clientUserId: 'user-client', companyName: 'Acme' }],
       [{ id: 'user-staff', role: 'manager', status: 'active', clientId: null }],
     ];
     await expect(
@@ -155,7 +169,8 @@ describe('inviteEngagementClient', () => {
   it('writes membership and audit against the approved engagement', async () => {
     assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
     selectQueue = [
-      [{ id: OWN, clientId: 'c-a', clientUserId: null, companyName: 'Acme' }],
+      // the Primary contact invites (engagements.client_user_id = caller)
+      [{ id: OWN, clientId: 'c-a', clientUserId: 'user-client-a', companyName: 'Acme' }],
       [{ id: 'user-peer', role: 'client', status: 'active', clientId: 'c-a', name: 'Peer' }],
       [], // not already a member
     ];
@@ -167,7 +182,8 @@ describe('inviteEngagementClient', () => {
     // eng lookup, profile lookup, membership check — all against OWN where an engagement is named.
     expect(render(wheres[0]!).params).toEqual([OWN]);
     expect(render(wheres[2]!).params).toEqual([OWN, 'user-peer']);
-    expect(writes).toEqual(['insert']);
+    // owner membership row ensured for the Primary, then the new member row
+    expect(writes).toEqual(['insert', 'insert']);
     expect(recordAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'user-client-a' }),
       expect.objectContaining({ engagementId: 'e1', action: 'client.invite' }),
@@ -214,6 +230,23 @@ describe('substituteEngagementClient', () => {
     await expect(
       repo.substituteEngagementClient(ctx('client', 'user-outsider'), input),
     ).rejects.toThrow(/Not permitted to substitute/);
+    expect(writes).toEqual([]);
+    expect(recordAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it('a member may not substitute someone else — only the Primary contact can', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
+    selectQueue = [
+      [{ id: OWN, clientId: 'c-a', clientUserId: null, companyName: 'Acme' }],
+      [
+        { userId: 'user-client-a', memberRole: 'owner', email: 'a@acme.test', name: 'A' },
+        { userId: 'user-member', memberRole: 'member', email: 'm@acme.test', name: 'M' },
+      ],
+      [{ role: 'member' }], // caller's membership row
+    ];
+    await expect(
+      repo.substituteEngagementClient(ctx('client', 'user-member'), input),
+    ).rejects.toThrow(/Only the Primary contact can substitute others/);
     expect(writes).toEqual([]);
     expect(recordAuditEvent).not.toHaveBeenCalled();
   });
