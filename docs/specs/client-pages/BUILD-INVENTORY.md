@@ -739,13 +739,13 @@ A full page, not a pop-up. Sidebar item "Credentials" (key-round icon) between L
 
 | Done | id | item | content / behaviour |
 |---|---|---|---|
-| ☐ | DV-01 | Overlay | Covers the content area only (`left:var(--vp-side-w)`), dim `oklch(20% .05 258 / .6)`; dialog `width:min(1152px,100%-24px)`, `height:min(720px,100%-24px)`, radius 12, grey canvas `light-dark(oklch(94% .008 255), oklch(22% .008 255))`. |
-| ☐ | DV-02 | Header | 30px type badge (PDF over-light) · file name (700 14px, ellipsis) "Certificate of Incorporation.pdf" + (i) "From SBC · 24 Oct 2026 · Size [size]" · caption position "1 of 4" · outline "⬇ Download" (label hidden on phone) · 32px × "Close preview (Esc)". |
-| ☐ | DV-03 | Page | A4 paper (`aspect-ratio:1/1.414`, width 460px × zoom, white, shadow, radius 2, `data-paper` = always light in dark mode) with sample content + diagonal "SAMPLE" watermark (placeholder for the real PDF render). Padding `28px clamp(12px,6vw,72px) 72px`. |
-| ☐ | DV-04 | Prev/next | 40px round buttons at left/right 16px, vertically centred: "Previous document" / "Next document" cycle the list (Certificate of Incorporation 24 Oct 2026 SBC · Board meeting minutes 26 Oct · GST certificate 1 Nov · Share capital FIRC 2 Nov 2026 Northwind). |
-| ☐ | DV-05 | Zoom bar | Navy floating pill bottom-centre (bottom 16px; 72px on phone): "Page 1 / 1" · divider · − · "100%" · + ; zoom 50–150% in 25% steps; page width animates .2s. |
-| ☐ | DV-06 | Close | Esc or × → back to the opener (`vcfoBack`, else Home). |
-| ☐ | DV-07 | Unsupported type | Second dialog (860px, min-height 380): DOCX badge, "Draft Board Resolution.docx" + (i) "From SBC · 14 Sep 2026 · Size [size]", Download, ×; body 64px DOCX icon tile + "Preview not available for this file type" + primary "⬇ Download". |
+| ☑ | DV-01 | Overlay | Covers the content area only (`left:var(--vp-side-w)`), dim `oklch(20% .05 258 / .6)`; dialog `width:min(1152px,100%-24px)`, `height:min(720px,100%-24px)`, radius 12, grey canvas `light-dark(oklch(94% .008 255), oklch(22% .008 255))`. |
+| ☑ | DV-02 | Header | 30px type badge (PDF over-light) · file name (700 14px, ellipsis) "Certificate of Incorporation.pdf" + (i) "From SBC · 24 Oct 2026 · Size [size]" · caption position "1 of 4" · outline "⬇ Download" (label hidden on phone) · 32px × "Close preview (Esc)". |
+| ◐ | DV-03 | Page | A4 paper (`aspect-ratio:1/1.414`, width 460px × zoom, white, shadow, radius 2, `data-paper` = always light in dark mode) with sample content + diagonal "SAMPLE" watermark (placeholder for the real PDF render). Padding `28px clamp(12px,6vw,72px) 72px`. |
+| ☑ | DV-04 | Prev/next | 40px round buttons at left/right 16px, vertically centred: "Previous document" / "Next document" cycle the list (Certificate of Incorporation 24 Oct 2026 SBC · Board meeting minutes 26 Oct · GST certificate 1 Nov · Share capital FIRC 2 Nov 2026 Northwind). |
+| ◐ | DV-05 | Zoom bar | Navy floating pill bottom-centre (bottom 16px; 72px on phone): "Page 1 / 1" · divider · − · "100%" · + ; zoom 50–150% in 25% steps; page width animates .2s. |
+| ☑ | DV-06 | Close | Esc or × → back to the opener (`vcfoBack`, else Home). |
+| ☑ | DV-07 | Unsupported type | Second dialog (860px, min-height 380): DOCX badge, "Draft Board Resolution.docx" + (i) "From SBC · 14 Sep 2026 · Size [size]", Download, ×; body 64px DOCX icon tile + "Preview not available for this file type" + primary "⬇ Download". |
 
 Data: `GET /api/documents/[id]/signed-url` (S3) / `GET /api/milestone-documents/signed-url`; PDF render via `<iframe>`/pdf.js; images inline; other types → unsupported state. Size from `documents.size_bytes`. Prev/next = the list the viewer was opened from. Shared preview component is also used by Documents and Incorporation (DECISIONS: "shared preview").
 
@@ -1128,7 +1128,7 @@ Files: L = `final-src/s/inc/incorporation.html` (`x/incorporation.app.js`), P = 
 |---|---|---|---|---|
 | ☑ | SH-01 | Sidebar | Navy `#0f2a4a`, fixed. 248 px at ≥1280, a 72 px icon rail at 768–1279, a drawer at ≤767 (`--vp-side-w`). Items: Home · Updates (badge 3) · **Incorporation (badge "6/14" Before, "14/14" After, i.e. SPICe+ done/14)** · Compliances ▸ · Documents (6) · Library · Credentials · Team · Audit · Settings. Then "NORTHWIND'S TEAM": Priya Raman · Project Manager, Arjun Mehta · Project Lead, Customer support · SBC help desk (compact rows, hover actions). Then the account row: Rohan Kumar · Northwind · Client. | SJ (`incBadge()` l.269) |
 | ☑ | SH-02 | Top bar | 52 px tall, white, bottom border. Menu button (phone only) · SBC logo 28 px · breadcrumb · spacer · Search ⌘K (240 px, collapses to a 40 px icon below 1280) · **Before / After sliding pill** (desktop top bar; inside the rail on tablet; at the top of the drawer on phone) · Announcements · Notifications (badge 3, tinted primary-light) · Theme toggle. No profile, no Ask button. | `*.body`, SJ |
-| ◐ | SH-03 | Breadcrumb | Landing: `Home / **Incorporation**`. Phase: `Home / Incorporation / **Phase 2 · Incorporation**` (uses PH names). Step: `Home / Incorporation / **SPICe+ Part B** / **<step title>**` (`crumbPhase()` inserts the PHN phase link). Board: `Home / Incorporation / **Board resolution**`. Phone: only the bold current crumb, navy 14.5 px. | body + S `crumbPhase` |
+| ☑ | SH-03 | Breadcrumb | Landing: `Home / **Incorporation**`. Phase: `Home / Incorporation / **Phase 2 · Incorporation**` (uses PH names). Step: `Home / Incorporation / **SPICe+ Part B** / **<step title>**` (`crumbPhase()` inserts the PHN phase link). Board: `Home / Incorporation / **Board resolution**`. Phone: only the bold current crumb, navy 14.5 px. | body + S `crumbPhase` |
 | ☑ | SH-04 | Ask VCFO launcher | Bottom-right robot and "Ask VCFO" pill. It sinks while you scroll. When the step action bar is present it lifts above it (`.has-act #vp-launch{bottom:var(--acth)}`). | PJ, template CSS |
 | ✗ | SH-05 | Prototype bar | Bottom-centre "PROTOTYPE" control (Before COI / After COI, Desktop / Mobile 390, page select). **Prototype-only, do not build.** | PJ `buildBar` |
 | ☑ | SH-06 | Page title | `document.title`: "Incorporation · VCFO Suite", "Phase N · <PH> · Incorporation · VCFO Suite", "<step title> · Incorporation · VCFO Suite", "Board resolution · Incorporation · VCFO Suite". | L/P/S/B |
@@ -1754,292 +1754,292 @@ Full catalogue (verbatim CSS, markup, logic): `inventory/documents.md`.
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | D-01 | Page root `.vdoc` | Full viewport flex row: sidebar column + content column. `height:100vh/100dvh; min-height:560px`; bg `--bg`; Manrope 13px. **No page H1** on the redesign (title lives only in the top-bar trail "Documents"). | docs_a_refined.dc.html:90,127 |
-| ☐ | D-02 | Sidebar column `.vp-sidecol` | 248 px (desktop), 72 px (≤1279), 0 + hidden (≤767). Navy `#0f2a4a`. Holds the shell sidebar (active = Documents). | :87-89,128 |
-| ☐ | D-03 | Top bar | `dc-import topbar trail="Documents"`, 52 px. Logo · folder crumb icon · "Documents" · Search ⌘K · Announcements · Notifications (3) · Theme. See S-01..S-08. | :130; topbar.dc.html:37-53 |
-| ☐ | D-04 | Main `.vdoc-main` | max-width 1600, centred, padding `clamp(12px,1.6vw,20px) clamp(12px,1.8vw,24px) clamp(12px,1.8vw,24px)`, column gap 14. | :92,131 |
-| ☐ | D-05 | Explorer card `section[aria-label="Document explorer"]` | One white card: radius 10, 1 px border, `--shadow`, flex column, fills height. Contains toolbar + body (tree | pane) + toast layer (position:relative). | :132 |
-| ☐ | D-06 | Toolbar `.vdoc-tools` | min-height 52, padding 9/12, wraps (`gap:8px 6px`), bottom border. Order: Filter · Status toggle · Replaced toggle · Arrange-by pill · spacer · Download all (ZIP) · Upload · N requested. | :93,133-140 |
-| ☐ | D-07 | Filter input | `label.vdoc-q` 32 px tall, search glyph 14 px, `input[type=search]` placeholder **"Filter documents"**, aria-label same; right side mono 11 px counter **`{shown}/{total}`** files (e.g. "15/17"; total counts every file node incl. missing + replaced; shown applies the Replaced toggle and the query). Typing filters live (onInput). Flex `1 1 200px`, min 200, max 300 (≤999: full row). | :94,134,311-313,371 |
-| ☐ | D-08 | Filter behaviour | Case-insensitive `includes` on the **row name** (not file name). While a query is set: every folder is forced open (chevrons at 90°), folders with no matching visible file are removed, missing rows match too. | :311-312,323,327-328 |
-| ☐ | D-09 | "Status" toggle `.tg` | 32 px pill button, icon = three 6 px dots (green `--ok`, blue `--prog`, amber `--due`), label "Status". `aria-pressed`. **Default ON**. ON → `.tg.on` (primary-light bg, navy text, border primary/35%). Shows/hides the per-file status glyph (DT-14). Tooltip (data-tip) "Show status icons" — note: `.tg` has no `.tip` class, so the tip renders through proto's rule-17 tooltip only if icon-only; label is visible so effectively none. | :33-34,135,346,372-374 |
-| ☐ | D-10 | "Replaced" toggle (the "h toggle") | Same `.tg` style, eye-off icon 14 px + "Replaced". **Default OFF** (DECISIONS: replaced files shown but hidden by default). ON reveals replaced rows (DT-11). data-tip "Show files that were replaced". | :136,312,374 |
-| ☐ | D-11 | Arrange-by sliding pill `.seg` | `role=tablist aria-label="Arrange by"`, width 190, two tabs **"By step" / "By category"**; navy thumb slides `translateX(view*100%)` with spring (A-01). Active label white. **Default By step.** DECISIONS: "the choice is remembered" — prototype does **not** persist it (state only) → must persist (localStorage per user, or user pref). Switching closes any open menu. | :35-38,137,375-376 |
-| ☐ | D-12 | Spacer | `.vdoc-sp` flex 1 (hidden ≤999). | :95,138 |
-| ☐ | D-13 | "Download all (ZIP)" button `.btn.btn-o` | 32 px outline button, download glyph + "Download all (ZIP)". Starts ZIP toast for **"Northwind documents.zip"** with total = all files that are not Missing and not Replaced (demo 16). DECISIONS: ZIP uses real step names in folder paths. | :139,366,377 |
-| ☐ | D-14 | "Upload · 2 requested" button `.btn.btn-n` | Navy 32 px, upload glyph + **"Upload · {n} requested"** where n = open requests (demo 2: DIR-2 + lease deed). Opens the Upload dialog (U-08). DECISIONS: upload **only against open requests** — no free upload; hide/disable when n = 0. | :139; docs_upload.dc.html:88-109 |
-| ☐ | D-15 | Tablet button height | ≤1279: toolbar `.btn` height 36. | :103 |
+| ☑ | D-01 | Page root `.vdoc` | Full viewport flex row: sidebar column + content column. `height:100vh/100dvh; min-height:560px`; bg `--bg`; Manrope 13px. **No page H1** on the redesign (title lives only in the top-bar trail "Documents"). | docs_a_refined.dc.html:90,127 |
+| ☑ | D-02 | Sidebar column `.vp-sidecol` | 248 px (desktop), 72 px (≤1279), 0 + hidden (≤767). Navy `#0f2a4a`. Holds the shell sidebar (active = Documents). | :87-89,128 |
+| ☑ | D-03 | Top bar | `dc-import topbar trail="Documents"`, 52 px. Logo · folder crumb icon · "Documents" · Search ⌘K · Announcements · Notifications (3) · Theme. See S-01..S-08. | :130; topbar.dc.html:37-53 |
+| ☑ | D-04 | Main `.vdoc-main` | max-width 1600, centred, padding `clamp(12px,1.6vw,20px) clamp(12px,1.8vw,24px) clamp(12px,1.8vw,24px)`, column gap 14. | :92,131 |
+| ☑ | D-05 | Explorer card `section[aria-label="Document explorer"]` | One white card: radius 10, 1 px border, `--shadow`, flex column, fills height. Contains toolbar + body (tree | pane) + toast layer (position:relative). | :132 |
+| ☑ | D-06 | Toolbar `.vdoc-tools` | min-height 52, padding 9/12, wraps (`gap:8px 6px`), bottom border. Order: Filter · Status toggle · Replaced toggle · Arrange-by pill · spacer · Download all (ZIP) · Upload · N requested. | :93,133-140 |
+| ☑ | D-07 | Filter input | `label.vdoc-q` 32 px tall, search glyph 14 px, `input[type=search]` placeholder **"Filter documents"**, aria-label same; right side mono 11 px counter **`{shown}/{total}`** files (e.g. "15/17"; total counts every file node incl. missing + replaced; shown applies the Replaced toggle and the query). Typing filters live (onInput). Flex `1 1 200px`, min 200, max 300 (≤999: full row). | :94,134,311-313,371 |
+| ☑ | D-08 | Filter behaviour | Case-insensitive `includes` on the **row name** (not file name). While a query is set: every folder is forced open (chevrons at 90°), folders with no matching visible file are removed, missing rows match too. | :311-312,323,327-328 |
+| ☑ | D-09 | "Status" toggle `.tg` | 32 px pill button, icon = three 6 px dots (green `--ok`, blue `--prog`, amber `--due`), label "Status". `aria-pressed`. **Default ON**. ON → `.tg.on` (primary-light bg, navy text, border primary/35%). Shows/hides the per-file status glyph (DT-14). Tooltip (data-tip) "Show status icons" — note: `.tg` has no `.tip` class, so the tip renders through proto's rule-17 tooltip only if icon-only; label is visible so effectively none. | :33-34,135,346,372-374 |
+| ☑ | D-10 | "Replaced" toggle (the "h toggle") | Same `.tg` style, eye-off icon 14 px + "Replaced". **Default OFF** (DECISIONS: replaced files shown but hidden by default). ON reveals replaced rows (DT-11). data-tip "Show files that were replaced". | :136,312,374 |
+| ☑ | D-11 | Arrange-by sliding pill `.seg` | `role=tablist aria-label="Arrange by"`, width 190, two tabs **"By step" / "By category"**; navy thumb slides `translateX(view*100%)` with spring (A-01). Active label white. **Default By step.** DECISIONS: "the choice is remembered" — prototype does **not** persist it (state only) → must persist (localStorage per user, or user pref). Switching closes any open menu. | :35-38,137,375-376 |
+| ☑ | D-12 | Spacer | `.vdoc-sp` flex 1 (hidden ≤999). | :95,138 |
+| ☑ | D-13 | "Download all (ZIP)" button `.btn.btn-o` | 32 px outline button, download glyph + "Download all (ZIP)". Starts ZIP toast for **"Northwind documents.zip"** with total = all files that are not Missing and not Replaced (demo 16). DECISIONS: ZIP uses real step names in folder paths. | :139,366,377 |
+| ☑ | D-14 | "Upload · 2 requested" button `.btn.btn-n` | Navy 32 px, upload glyph + **"Upload · {n} requested"** where n = open requests (demo 2: DIR-2 + lease deed). Opens the Upload dialog (U-08). DECISIONS: upload **only against open requests** — no free upload; hide/disable when n = 0. | :139; docs_upload.dc.html:88-109 |
+| ☑ | D-15 | Tablet button height | ≤1279: toolbar `.btn` height 36. | :103 |
 
 ### 1.2 Documents — tree rows (`role=tree`)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | DT-01 | Tree container `.vdoc-tree` | `role=tree aria-label="Folders and files"`, width `clamp(300px,44%,440px)`, right border, own scroll, padding 6/0. ≤999: full width, `max-height:52vh`, bottom border. | :98,107,143 |
-| ☐ | DT-02 | Row `.tr` | `role=treeitem`, `aria-expanded` on folders, `aria-selected`. Height 36 (44 on ≤767), 13 px. Inner full-width `<button class="main">` (click target) + optional progress bar link + kebab. Hover bg `--raised`. | :39-46,145-146 |
-| ☐ | DT-03 | Indent guides `.gd` | One 16 px column per depth with a 1 px left border (`--border`), margin-left 7. Phase depth 0, step 1, file 2. | :47,147,297,337 |
-| ☐ | DT-04 | Chevron | 12 px chevron in a 16/20 px slot, folders only; rotates 0°→90° when open, `transition:transform .15s`. | :148,341 |
-| ☐ | DT-05 | Folder glyph | 16 px folder SVG inside a 20×20 r6 tile (tint `light-dark(oklch(94.5% 0.015 255), oklch(21.3% 0.01 255))`), glyph scaled to 12 px. Fill `--folder` (#0f2a4a) closed, `--folder-open` (#1b4f94) open. Inner line `M3 9.2h18` white/35%. Selected row: fill white, line navy. | :48,119-124,149,340 |
-| ☐ | DT-06 | Phase folder row | Label e.g. "Phase 1 — Name application". Right side: mono 11 px **count** = non-replaced files under it (incl. missing). No progress bar. Default open: p1, p2, p3. | :156,261-287,342 |
-| ☐ | DT-07 | Step folder row | Label "**{step no} · {step name}**" e.g. "6 · Director KYC" (DECISIONS: readable real step names). Right side **per-step progress bar** (DT-08). Default open: s3, s6, s8, s17, s22; **s21 closed**. | :241,331,343 |
-| ☐ | DT-08 | Per-step progress bar `a.pb` | 56×4 px track (`--hair`), 1 px gaps, three segments in order **ok (green `--ok`) · in review (blue `--prog`) · missing (amber `--due`)** widths = share of non-replaced files. Then mono frac **"{ok}/{total}"**. Hover: bg primary/8%, navy tooltip above-right (`::after`, max 240, 11.5 px/600) text **"{Step name without number} · {ok} received · {rv} in review · {ms} missing"** (e.g. "Director KYC · 4 received · 0 in review · 1 missing"); tooltip shows on hover **and** focus-visible, `.12s` no delay. **Click → progress drill-down dialog (DD-*)**. aria-label "{tip}. Open the list". Only rendered if total > 0. | :55-59,158,330,343-345 |
-| ☐ | DT-09 | Category folder row (By category view) | 5 categories, flat (no phases): **Identity & KYC (c1) · Office address (c2) · Company records (c3) · Certificates (c4) · Banking & capital (c5)**; each file is re-parented under its category (keeps `step` for "Open step N"). Category rows get the same progress bar + frac as steps. Default open c1–c4, **c5 closed**. | :288,291-294,332,343 |
-| ☐ | DT-10 | File row | Type tile (DT-12) · name (`.lb` 600, ellipsis) · optional chips · status glyph (DT-14). Click → selects file (navy row) and shows it in the preview pane; closes menus. (Rule 9 says "click a row → preview overlay" — FINAL desktop shows it in the right pane; the pane's page/eye opens the overlay viewer.) | :150-155,355 |
-| ☐ | DT-11 | Replaced row `.tr.hid` | Only when Replaced toggle ON. Text `--subtle`, label italic, **no status glyph**; shows eye-off icon (14 px) with tooltip **"Replaced by a newer file"**. Excluded from counts/progress and from ZIP totals. Status text in pane "Replaced" (raised bg, muted). Demo: "Board resolution (draft v1)" DOCX, "Address proof — Ravi (June bill)". | :43-44,154,264,270,312,329 |
-| ☐ | DT-12 | File-type tile `.ft` | 20×20, r6, `font:700 7px/20px IBM Plex Mono`, letter-spacing −.02em. Colours (tint + ink): **PDF** `--over-light`/`--over-text`; **JPG** `--teal-light`/`--teal-chip`; **DOCX** `--prog-light`/`--prog-text`. Tooltip + aria-label: "PDF file" · "Image (JPG)" · "Word document". DECISIONS: file-type colour only as a thin band/tile; **status is always a separate badge**. (PNG/HEIC not in demo — add PNG = JPG colours, "Image (PNG)".) | :51,119-120,150,298,301 |
-| ☐ | DT-13 | Missing (requested, not uploaded) row | DECISIONS "missing files as dashed rows": dashed 14×14 r3 1.5 px `--due` square inside a 20 px slot (instead of the type tile) · name · status glyph (person amber / ! red) · **due chip**: "Due 12 Nov" (`--due-chip` white) or **"Overdue"** (`--over-chip` white), 18 px tall. Click → selects; pane shows drop zone. Never counted in ZIP. | :151,155,272,276,348 |
-| ☐ | DT-14 | Status glyph `.sg` (rule 18, set A) | 20×20 r6 filled tile, white 10 px glyph. Shown when Status toggle ON and row not replaced (missing rows show it too). Mapping: Approved/Final → **done** green check (`--ok-chip`); In review → **SBC** blue arrow-up-right (`oklch(55% 0.2 262)`); Missing due → **you** amber person (`--due-chip`); Missing overdue → **late** red "!" (`--over-chip`). Tooltip/aria: "Done · approved {date}", "Done · from SBC {date}", "With SBC · in review since {date}", "Waiting on Northwind · due {date}", "Late · was due {date}". Selected row: 1.5 px white ring. (`now` navy clock glyph defined but unused.) | :82-83,121,155,302-310,346-347 |
-| ☐ | DT-15 | "Older than 2 months" stale chip | DECISIONS "stale-proof flag". Amber chip (`--due-light`/`--due-text`, 18 px, 11 px) after the name of a dated proof older than 2 months (demo: Address proof electricity bill). Tooltip **"Bill is older than 2 months. SBC may ask for a newer one."** | :154,269,346 |
-| ☐ | DT-16 | Board resolution row | DECISIONS: **a row with a "Final" badge, no separate card**. Demo: Phase 1 › "3 · Signed Board Resolution" › "Board resolution (final)" PDF, status Final, From "SBC · Arjun Mehta". Older draft is a Replaced DOCX. Replaces today's `ClientBoardResolutionCard`. | :262-264 |
-| ☐ | DT-17 | Kebab `.kb` (⋮) | 28×28 transparent, **opacity 0 until row hover / focus-within / menu open** (always visible ≤767 at 40×40). Hover bg primary/12% (on selected navy row: white/16%). aria "More actions for {label}", `aria-haspopup=menu`, `aria-expanded`. Toggles that row's menu (only one open at a time). | :60-64,117,159,349,352 |
-| ☐ | DT-18 | Selected row `.tr.sel` | Navy bg, white text, **3 px gold left bar** (`::before`), guides white/20%, counts white/70%, folder glyph white. Default selection **f9 Certificate of Incorporation**. | :41-42,48-49,54,241 |
-| ☐ | DT-19 | Folder click | Toggles open/closed (`aria-expanded`), closes menus. Folders don't select. | :355 |
-| ☐ | DT-20 | Empty filter result | When no rows: bot (40 px, idle) + speech bubble **"No document matches “{q}”."** + text button **"Clear filter"** (clears q) + link **"Ask VCFO why"** (opens chat). | :186,370 |
-| ☐ | DT-21 | Row "id" naming | Rows use human names ("PAN card — Ravi Kumar"); actual file name only in pane "File" row (DECISIONS "readable row names"). | :267,213 |
+| ☑ | DT-01 | Tree container `.vdoc-tree` | `role=tree aria-label="Folders and files"`, width `clamp(300px,44%,440px)`, right border, own scroll, padding 6/0. ≤999: full width, `max-height:52vh`, bottom border. | :98,107,143 |
+| ☑ | DT-02 | Row `.tr` | `role=treeitem`, `aria-expanded` on folders, `aria-selected`. Height 36 (44 on ≤767), 13 px. Inner full-width `<button class="main">` (click target) + optional progress bar link + kebab. Hover bg `--raised`. | :39-46,145-146 |
+| ☑ | DT-03 | Indent guides `.gd` | One 16 px column per depth with a 1 px left border (`--border`), margin-left 7. Phase depth 0, step 1, file 2. | :47,147,297,337 |
+| ☑ | DT-04 | Chevron | 12 px chevron in a 16/20 px slot, folders only; rotates 0°→90° when open, `transition:transform .15s`. | :148,341 |
+| ☑ | DT-05 | Folder glyph | 16 px folder SVG inside a 20×20 r6 tile (tint `light-dark(oklch(94.5% 0.015 255), oklch(21.3% 0.01 255))`), glyph scaled to 12 px. Fill `--folder` (#0f2a4a) closed, `--folder-open` (#1b4f94) open. Inner line `M3 9.2h18` white/35%. Selected row: fill white, line navy. | :48,119-124,149,340 |
+| ☑ | DT-06 | Phase folder row | Label e.g. "Phase 1 — Name application". Right side: mono 11 px **count** = non-replaced files under it (incl. missing). No progress bar. Default open: p1, p2, p3. | :156,261-287,342 |
+| ☑ | DT-07 | Step folder row | Label "**{step no} · {step name}**" e.g. "6 · Director KYC" (DECISIONS: readable real step names). Right side **per-step progress bar** (DT-08). Default open: s3, s6, s8, s17, s22; **s21 closed**. | :241,331,343 |
+| ☑ | DT-08 | Per-step progress bar `a.pb` | 56×4 px track (`--hair`), 1 px gaps, three segments in order **ok (green `--ok`) · in review (blue `--prog`) · missing (amber `--due`)** widths = share of non-replaced files. Then mono frac **"{ok}/{total}"**. Hover: bg primary/8%, navy tooltip above-right (`::after`, max 240, 11.5 px/600) text **"{Step name without number} · {ok} received · {rv} in review · {ms} missing"** (e.g. "Director KYC · 4 received · 0 in review · 1 missing"); tooltip shows on hover **and** focus-visible, `.12s` no delay. **Click → progress drill-down dialog (DD-*)**. aria-label "{tip}. Open the list". Only rendered if total > 0. | :55-59,158,330,343-345 |
+| ☑ | DT-09 | Category folder row (By category view) | 5 categories, flat (no phases): **Identity & KYC (c1) · Office address (c2) · Company records (c3) · Certificates (c4) · Banking & capital (c5)**; each file is re-parented under its category (keeps `step` for "Open step N"). Category rows get the same progress bar + frac as steps. Default open c1–c4, **c5 closed**. | :288,291-294,332,343 |
+| ☑ | DT-10 | File row | Type tile (DT-12) · name (`.lb` 600, ellipsis) · optional chips · status glyph (DT-14). Click → selects file (navy row) and shows it in the preview pane; closes menus. (Rule 9 says "click a row → preview overlay" — FINAL desktop shows it in the right pane; the pane's page/eye opens the overlay viewer.) | :150-155,355 |
+| ☑ | DT-11 | Replaced row `.tr.hid` | Only when Replaced toggle ON. Text `--subtle`, label italic, **no status glyph**; shows eye-off icon (14 px) with tooltip **"Replaced by a newer file"**. Excluded from counts/progress and from ZIP totals. Status text in pane "Replaced" (raised bg, muted). Demo: "Board resolution (draft v1)" DOCX, "Address proof — Ravi (June bill)". | :43-44,154,264,270,312,329 |
+| ☑ | DT-12 | File-type tile `.ft` | 20×20, r6, `font:700 7px/20px IBM Plex Mono`, letter-spacing −.02em. Colours (tint + ink): **PDF** `--over-light`/`--over-text`; **JPG** `--teal-light`/`--teal-chip`; **DOCX** `--prog-light`/`--prog-text`. Tooltip + aria-label: "PDF file" · "Image (JPG)" · "Word document". DECISIONS: file-type colour only as a thin band/tile; **status is always a separate badge**. (PNG/HEIC not in demo — add PNG = JPG colours, "Image (PNG)".) | :51,119-120,150,298,301 |
+| ☑ | DT-13 | Missing (requested, not uploaded) row | DECISIONS "missing files as dashed rows": dashed 14×14 r3 1.5 px `--due` square inside a 20 px slot (instead of the type tile) · name · status glyph (person amber / ! red) · **due chip**: "Due 12 Nov" (`--due-chip` white) or **"Overdue"** (`--over-chip` white), 18 px tall. Click → selects; pane shows drop zone. Never counted in ZIP. | :151,155,272,276,348 |
+| ☑ | DT-14 | Status glyph `.sg` (rule 18, set A) | 20×20 r6 filled tile, white 10 px glyph. Shown when Status toggle ON and row not replaced (missing rows show it too). Mapping: Approved/Final → **done** green check (`--ok-chip`); In review → **SBC** blue arrow-up-right (`oklch(55% 0.2 262)`); Missing due → **you** amber person (`--due-chip`); Missing overdue → **late** red "!" (`--over-chip`). Tooltip/aria: "Done · approved {date}", "Done · from SBC {date}", "With SBC · in review since {date}", "Waiting on Northwind · due {date}", "Late · was due {date}". Selected row: 1.5 px white ring. (`now` navy clock glyph defined but unused.) | :82-83,121,155,302-310,346-347 |
+| ☑ | DT-15 | "Older than 2 months" stale chip | DECISIONS "stale-proof flag". Amber chip (`--due-light`/`--due-text`, 18 px, 11 px) after the name of a dated proof older than 2 months (demo: Address proof electricity bill). Tooltip **"Bill is older than 2 months. SBC may ask for a newer one."** | :154,269,346 |
+| ☑ | DT-16 | Board resolution row | DECISIONS: **a row with a "Final" badge, no separate card**. Demo: Phase 1 › "3 · Signed Board Resolution" › "Board resolution (final)" PDF, status Final, From "SBC · Arjun Mehta". Older draft is a Replaced DOCX. Replaces today's `ClientBoardResolutionCard`. | :262-264 |
+| ☑ | DT-17 | Kebab `.kb` (⋮) | 28×28 transparent, **opacity 0 until row hover / focus-within / menu open** (always visible ≤767 at 40×40). Hover bg primary/12% (on selected navy row: white/16%). aria "More actions for {label}", `aria-haspopup=menu`, `aria-expanded`. Toggles that row's menu (only one open at a time). | :60-64,117,159,349,352 |
+| ☑ | DT-18 | Selected row `.tr.sel` | Navy bg, white text, **3 px gold left bar** (`::before`), guides white/20%, counts white/70%, folder glyph white. Default selection **f9 Certificate of Incorporation**. | :41-42,48-49,54,241 |
+| ☑ | DT-19 | Folder click | Toggles open/closed (`aria-expanded`), closes menus. Folders don't select. | :355 |
+| ☑ | DT-20 | Empty filter result | When no rows: bot (40 px, idle) + speech bubble **"No document matches “{q}”."** + text button **"Clear filter"** (clears q) + link **"Ask VCFO why"** (opens chat). | :186,370 |
+| ☑ | DT-21 | Row "id" naming | Rows use human names ("PAN card — Ravi Kumar"); actual file name only in pane "File" row (DECISIONS "readable row names"). | :267,213 |
 
 ### 1.3 Documents — row menus (pop-over, `role=menu`)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | DM-01 | Menu container `.menu` | Absolute under the row (`right:6px; top:34px`), 236 px (max `100vw-24px`), padding 4, r8, border, shadow `0 16px 36px -12px`. z 70. Items 34 px, 12.5 px/600, icon 15 px, hover/focus primary-light + navy. `hr` hairline. Right-aligned mono hint `.k`. | :65-69,161 |
-| ☐ | DM-02 | Folder menu (phase, step or category) | 1 **Download folder as ZIP** — hint "{n} files" (non-missing, non-replaced) → ZIP toast "{folder name without number}.zip" (DECISIONS: real step names). 2 **Expand all** (opens folder + all sub-folders). 3 **Collapse all**. — hr — 4 **Copy link to folder** → toast "Link copied". | :162-168,351,356-359 |
-| ☐ | DM-03 | File menu | 1 **Download** (closes menu; real: signed URL download). 2 **Preview** (= row click/select; real: open viewer V). 3 **Open step {N}** (N = step number of the owning step, also in category view) → navigate to `/app/client/incorporation/step/{N}` (prototype only closes). — hr — 4 **Copy link** → "Link copied" toast. | :169-175,350,360 |
-| ☐ | DM-04 | Missing-row menu | 1 **Upload** (selects row → pane drop zone; real: open upload for that request). 2 **Open step {N}**. — hr — 3 **Copy link**. | :176-181 |
-| ☐ | DM-05 | Close behaviour | Esc inside menu (onKeyDown on menu) closes; picking any item closes; clicking another kebab swaps; switching view closes. **No outside-click close in prototype — add it.** Focus does not move into the menu in the prototype — add roving focus (↑/↓) for a11y. | :161,318,352-353 |
-| ☐ | DM-06 | Prototype states board | `docs_a_states.dc.html` shows two 1440 boards side by side: folder menu open on "6 · Director KYC" + ZIP preparing (3 of 4); file menu open on COI + ZIP done. | docs_a_states.dc.html:15-16; docs_a_refined.dc.html:236,243-246 |
+| ☑ | DM-01 | Menu container `.menu` | Absolute under the row (`right:6px; top:34px`), 236 px (max `100vw-24px`), padding 4, r8, border, shadow `0 16px 36px -12px`. z 70. Items 34 px, 12.5 px/600, icon 15 px, hover/focus primary-light + navy. `hr` hairline. Right-aligned mono hint `.k`. | :65-69,161 |
+| ☑ | DM-02 | Folder menu (phase, step or category) | 1 **Download folder as ZIP** — hint "{n} files" (non-missing, non-replaced) → ZIP toast "{folder name without number}.zip" (DECISIONS: real step names). 2 **Expand all** (opens folder + all sub-folders). 3 **Collapse all**. — hr — 4 **Copy link to folder** → toast "Link copied". | :162-168,351,356-359 |
+| ☑ | DM-03 | File menu | 1 **Download** (closes menu; real: signed URL download). 2 **Preview** (= row click/select; real: open viewer V). 3 **Open step {N}** (N = step number of the owning step, also in category view) → navigate to `/app/client/incorporation/step/{N}` (prototype only closes). — hr — 4 **Copy link** → "Link copied" toast. | :169-175,350,360 |
+| ☑ | DM-04 | Missing-row menu | 1 **Upload** (selects row → pane drop zone; real: open upload for that request). 2 **Open step {N}**. — hr — 3 **Copy link**. | :176-181 |
+| ☑ | DM-05 | Close behaviour | Esc inside menu (onKeyDown on menu) closes; picking any item closes; clicking another kebab swaps; switching view closes. **No outside-click close in prototype — add it.** Focus does not move into the menu in the prototype — add roving focus (↑/↓) for a11y. | :161,318,352-353 |
+| ☑ | DM-06 | Prototype states board | `docs_a_states.dc.html` shows two 1440 boards side by side: folder menu open on "6 · Director KYC" + ZIP preparing (3 of 4); file menu open on COI + ZIP done. | docs_a_states.dc.html:15-16; docs_a_refined.dc.html:236,243-246 |
 
 ### 1.4 Documents — ZIP / copy toast
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | DZ-01 | Toast container | Absolute, bottom 20, centred, width `min(360px,100%-24px)`, navy, r8, padding 10/12, `role=status aria-live=polite`, enter animation A-04. | :74-76,219-230 |
-| ☐ | DZ-02 | Preparing state | 22 px round white/14% badge with zip glyph · **"Preparing {name}.zip…"** · mono "{n} of {total}" (75% opacity) · dismiss ✕ (24 px). Below: 4 px track white/18% with **gold** fill `width:n/total`, `transition:width .25s`. Prototype ticks 1 file / **260 ms**. | :77-78,223-228,248-257,380-382 |
-| ☐ | DZ-03 | Done state | Green 22 px check badge (`--ok-chip`) · **"Downloaded {name}.zip"** · "{total} files". No bar. Stays until dismissed (prototype). Real: auto-hide ~3–4 s like the global toast (3200 ms, `proto.js:164`). | :222,380-381 |
-| ☐ | DZ-04 | Copy state | "Link copied", no count, no bar, check badge. | :319,380 |
-| ☐ | DZ-05 | Dismiss ✕ | aria "Dismiss"; clears timer and toast. | :226,383 |
+| ☑ | DZ-01 | Toast container | Absolute, bottom 20, centred, width `min(360px,100%-24px)`, navy, r8, padding 10/12, `role=status aria-live=polite`, enter animation A-04. | :74-76,219-230 |
+| ☑ | DZ-02 | Preparing state | 22 px round white/14% badge with zip glyph · **"Preparing {name}.zip…"** · mono "{n} of {total}" (75% opacity) · dismiss ✕ (24 px). Below: 4 px track white/18% with **gold** fill `width:n/total`, `transition:width .25s`. Prototype ticks 1 file / **260 ms**. | :77-78,223-228,248-257,380-382 |
+| ☑ | DZ-03 | Done state | Green 22 px check badge (`--ok-chip`) · **"Downloaded {name}.zip"** · "{total} files". No bar. Stays until dismissed (prototype). Real: auto-hide ~3–4 s like the global toast (3200 ms, `proto.js:164`). | :222,380-381 |
+| ☑ | DZ-04 | Copy state | "Link copied", no count, no bar, check badge. | :319,380 |
+| ☑ | DZ-05 | Dismiss ✕ | aria "Dismiss"; clears timer and toast. | :226,383 |
 
 ### 1.5 Documents — preview pane (right)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | DP-01 | Pane header | 52 px, padding 0 12 0 16, bottom border: type tile (min-width 34, 20 tall, 11 px text, tooltip) · name 700 14 px ellipsis · **status badge** · (files only) **Preview** eye icon button `.ib` (tooltip "Preview") → viewer; **Download** icon button (tooltip "Download"). Missing → type tile shows "—" on `--due-chip`, tooltip "Not uploaded yet". | :190-195,378 |
-| ☐ | DP-02 | Status badge colours | Approved: `--ok-light`/`--ok-text`. **Final: navy bg white** (BR, COI, MoA, SH-1). In review: `--prog-light`/`--prog-text`. Replaced: `--raised`/`--muted`. Missing: `--due-chip` white. 20 px, r4, 11 px/700. | :27,300 |
-| ☐ | DP-03 | Preview area `.vdoc-pv` | `--raised` bg, centred, padding 20. **File**: paper card `.vdoc-page` (`data-paper`, always light paper even in dark mode), `width:min(340px,100%)`, `aspect-ratio:340/440`, padding 34/36, shadow. Content placeholder: "SAMPLE · PLACEHOLDER PAGE" 11 px caps · title 18 px Space Grotesk · company 11.5 px · 4 grey lines. **Whole page is a link → opens the document viewer (V)**. Real: first-page thumbnail (PDF/image) or docx render. | :100-101,196-204 |
-| ☐ | DP-04 | Missing drop zone `.vdoc-drop` | `min(360px,100%)×220`, dashed 1.5 px `--due`, r10, `--due-light` bg, 40 px `--due-chip` round upload badge, "Drop the file or **browse**". Link → upload (U). Real: drag & drop target + file picker for that request. | :102,205-207 |
-| ☐ | DP-05 | Key-value rows `.kv` | 36 px rows, hairline top border, label muted 500 / value 600 right-aligned. **Step** "17 · Certificate of Incorporation" · **From** "SBC · Arjun Mehta" / "Northwind" / for missing "Asked by Arjun Mehta" · **Date** (mono 12) or **Due** for missing · **File** mono 12/500 (actual filename, "—" if missing) · **Verify** (only for some docs) portal link + ↗ 12 px, opens new tab, tooltip "Open {portal}", sr "(opens in a new tab)". Demo portals: COI & MoA → "MCA portal" `https://www.mca.gov.in`; PAN → "Income-tax e-filing" `https://www.incometax.gov.in`. (Rule 15.) | :70-73,209-215,363-368,378 |
-| ☐ | DP-06 | ≤999 stacking | Pane goes under the tree; preview height `clamp(260px,42vh,420px)`; page uses `height:100%; width:auto`. | :104-112 |
+| ☑ | DP-01 | Pane header | 52 px, padding 0 12 0 16, bottom border: type tile (min-width 34, 20 tall, 11 px text, tooltip) · name 700 14 px ellipsis · **status badge** · (files only) **Preview** eye icon button `.ib` (tooltip "Preview") → viewer; **Download** icon button (tooltip "Download"). Missing → type tile shows "—" on `--due-chip`, tooltip "Not uploaded yet". | :190-195,378 |
+| ☑ | DP-02 | Status badge colours | Approved: `--ok-light`/`--ok-text`. **Final: navy bg white** (BR, COI, MoA, SH-1). In review: `--prog-light`/`--prog-text`. Replaced: `--raised`/`--muted`. Missing: `--due-chip` white. 20 px, r4, 11 px/700. | :27,300 |
+| ☑ | DP-03 | Preview area `.vdoc-pv` | `--raised` bg, centred, padding 20. **File**: paper card `.vdoc-page` (`data-paper`, always light paper even in dark mode), `width:min(340px,100%)`, `aspect-ratio:340/440`, padding 34/36, shadow. Content placeholder: "SAMPLE · PLACEHOLDER PAGE" 11 px caps · title 18 px Space Grotesk · company 11.5 px · 4 grey lines. **Whole page is a link → opens the document viewer (V)**. Real: first-page thumbnail (PDF/image) or docx render. | :100-101,196-204 |
+| ☑ | DP-04 | Missing drop zone `.vdoc-drop` | `min(360px,100%)×220`, dashed 1.5 px `--due`, r10, `--due-light` bg, 40 px `--due-chip` round upload badge, "Drop the file or **browse**". Link → upload (U). Real: drag & drop target + file picker for that request. | :102,205-207 |
+| ☑ | DP-05 | Key-value rows `.kv` | 36 px rows, hairline top border, label muted 500 / value 600 right-aligned. **Step** "17 · Certificate of Incorporation" · **From** "SBC · Arjun Mehta" / "Northwind" / for missing "Asked by Arjun Mehta" · **Date** (mono 12) or **Due** for missing · **File** mono 12/500 (actual filename, "—" if missing) · **Verify** (only for some docs) portal link + ↗ 12 px, opens new tab, tooltip "Open {portal}", sr "(opens in a new tab)". Demo portals: COI & MoA → "MCA portal" `https://www.mca.gov.in`; PAN → "Income-tax e-filing" `https://www.incometax.gov.in`. (Rule 15.) | :70-73,209-215,363-368,378 |
+| ☑ | DP-06 | ≤999 stacking | Pane goes under the tree; preview height `clamp(260px,42vh,420px)`; page uses `height:100%; width:auto`. | :104-112 |
 
 ### 1.6 Documents — progress drill-down dialog (`docs_a_drill.dc.html`)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | DD-01 | Trigger | Click a step/category progress bar `a.pb` (DT-08). Rule 14: hover a part → tooltip; click → pop-up listing the items, with sliding pill, clicked part pre-selected. | docs_a_refined.dc.html:158 |
-| ☐ | DD-02 | Scrim | Full-screen `oklch(20% 0.05 258 / .55)`, dialog centred. | docs_a_drill.dc.html:46 |
-| ☐ | DD-03 | Dialog | 640 px, r12, shadow `0 24px 60px -20px`, `role=dialog aria-modal`, aria-label "{step} documents". Pop animation A-05. | :47 |
-| ☐ | DD-04 | Context strip `.dd-top` | primary-light bar 9/18 px, 12 px muted: "These documents are for **Director KYC** in **Incorporation**" + right link **"Open Incorporation →"** (800, 12.5) → incorporation page (real: the step page). | :47 |
-| ☐ | DD-05 | Header | 56 px: navy folder 18 px · H2 "6 · Director KYC" 700 15 · mini bar 80×5 (ok/missing split) · mono "4/5" · close `.ib` ✕ (tooltip "Close"). | :48-54 |
-| ☐ | DD-06 | Status pill | `.seg` full width, 4 tabs **All · Received · In review · Missing** each with mono count (`.c` 10.5 px; white/72% when active). Thumb slides (A-01). Prototype opens on **Received** (t=1). Real: open on the segment that was hovered/clicked; default All. | :56,78,88-92 |
-| ☐ | DD-07 | List rows `.row` | 44 px, hairline top, hover raised: type tile (or dashed square) · name link (600; file → viewer, missing → upload) · mono date (11.5, `--subtle`; missing shows "Due 12 Nov") · status badge · action `.ib`: eye **Preview** (files) or amber-bordered **Upload** (missing). | :59-69,93 |
-| ☐ | DD-08 | Empty tab | Bot 40 px + bubble "Nothing in this group yet." + "Ask VCFO why". | :70,94 |
-| ☐ | DD-09 | Close | ✕ link; Esc and scrim click must also close (proto `vcfoDrill` pattern: Esc + scrim, focus returns to trigger, focus moves to ✕ on open — `proto.js:711-739`). | :53; proto.js:726-734 |
-| ☐ | DD-10 | Phone | Drill becomes a bottom sheet (DECISIONS "Mobile drill-downs = Bottom sheet"; `proto.js:743` `@media (max-width:700px)` sheet, radius 14 top, max 86vh). | proto.js:708 |
+| ☑ | DD-01 | Trigger | Click a step/category progress bar `a.pb` (DT-08). Rule 14: hover a part → tooltip; click → pop-up listing the items, with sliding pill, clicked part pre-selected. | docs_a_refined.dc.html:158 |
+| ☑ | DD-02 | Scrim | Full-screen `oklch(20% 0.05 258 / .55)`, dialog centred. | docs_a_drill.dc.html:46 |
+| ☑ | DD-03 | Dialog | 640 px, r12, shadow `0 24px 60px -20px`, `role=dialog aria-modal`, aria-label "{step} documents". Pop animation A-05. | :47 |
+| ☑ | DD-04 | Context strip `.dd-top` | primary-light bar 9/18 px, 12 px muted: "These documents are for **Director KYC** in **Incorporation**" + right link **"Open Incorporation →"** (800, 12.5) → incorporation page (real: the step page). | :47 |
+| ☑ | DD-05 | Header | 56 px: navy folder 18 px · H2 "6 · Director KYC" 700 15 · mini bar 80×5 (ok/missing split) · mono "4/5" · close `.ib` ✕ (tooltip "Close"). | :48-54 |
+| ☑ | DD-06 | Status pill | `.seg` full width, 4 tabs **All · Received · In review · Missing** each with mono count (`.c` 10.5 px; white/72% when active). Thumb slides (A-01). Prototype opens on **Received** (t=1). Real: open on the segment that was hovered/clicked; default All. | :56,78,88-92 |
+| ☑ | DD-07 | List rows `.row` | 44 px, hairline top, hover raised: type tile (or dashed square) · name link (600; file → viewer, missing → upload) · mono date (11.5, `--subtle`; missing shows "Due 12 Nov") · status badge · action `.ib`: eye **Preview** (files) or amber-bordered **Upload** (missing). | :59-69,93 |
+| ☑ | DD-08 | Empty tab | Bot 40 px + bubble "Nothing in this group yet." + "Ask VCFO why". | :70,94 |
+| ☑ | DD-09 | Close | ✕ link; Esc and scrim click must also close (proto `vcfoDrill` pattern: Esc + scrim, focus returns to trigger, focus moves to ✕ on open — `proto.js:711-739`). | :53; proto.js:726-734 |
+| ☑ | DD-10 | Phone | Drill becomes a bottom sheet (DECISIONS "Mobile drill-downs = Bottom sheet"; `proto.js:743` `@media (max-width:700px)` sheet, radius 14 top, max 86vh). | proto.js:708 |
 
 ### 1.7 Documents — page states
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | DS-01 | Loading skeleton | `main[aria-busy=true]`. Toolbar skeletons: 300×32 (filter), 84×32, 96×32, 220×32 r8 (pill), spacer, 170×32. Tree (420 px): rows 36 px with 16 px icon + bar; step rows indented 36 px with 56×4 bar at right; file rows indented 60 px with 22×16 r3 tile. Pane: header skeleton (26×20, 240×12, two 32 px squares), page 340×440 r2, two kv rows (60/180, 50/120). Shimmer A-06. Rule: show after 150 ms, hold ≥ 300 ms (DECISIONS Incorporation "Loading L1"). **Note**: loading/empty boards still show an H1 "Documents" (22 px) above the card — the refined page has none; drop the H1 for consistency. | docs_a_loading.dc.html:13-20,22-54 |
-| ☐ | DS-02 | Empty (no documents at all) | Toolbar at 50% opacity with "Filter documents 0/0". Tree shows the three phase folders greyed (`--subtle`, folder fill-opacity .3, count 0). Right side (raised): bot **56 px** + bubble **"No documents yet. Northwind’s files will appear here as each step is done."** + "Ask VCFO why"; buttons **Upload a document** (navy; only if open requests exist) · **Open incorporation** (outline). Replaces today's `return null` (improve #6). | docs_a_empty.dc.html:13-25,27-50 |
-| ☐ | DS-03 | No match | DT-20. | docs_a_refined.dc.html:186 |
-| ☐ | DS-04 | Error | Not drawn. Use rule 16 exception: errors keep red style. Suggest red card in the tree area with "Could not load documents" + Retry. | — |
+| ☑ | DS-01 | Loading skeleton | `main[aria-busy=true]`. Toolbar skeletons: 300×32 (filter), 84×32, 96×32, 220×32 r8 (pill), spacer, 170×32. Tree (420 px): rows 36 px with 16 px icon + bar; step rows indented 36 px with 56×4 bar at right; file rows indented 60 px with 22×16 r3 tile. Pane: header skeleton (26×20, 240×12, two 32 px squares), page 340×440 r2, two kv rows (60/180, 50/120). Shimmer A-06. Rule: show after 150 ms, hold ≥ 300 ms (DECISIONS Incorporation "Loading L1"). **Note**: loading/empty boards still show an H1 "Documents" (22 px) above the card — the refined page has none; drop the H1 for consistency. | docs_a_loading.dc.html:13-20,22-54 |
+| ☑ | DS-02 | Empty (no documents at all) | Toolbar at 50% opacity with "Filter documents 0/0". Tree shows the three phase folders greyed (`--subtle`, folder fill-opacity .3, count 0). Right side (raised): bot **56 px** + bubble **"No documents yet. Northwind’s files will appear here as each step is done."** + "Ask VCFO why"; buttons **Upload a document** (navy; only if open requests exist) · **Open incorporation** (outline). Replaces today's `return null` (improve #6). | docs_a_empty.dc.html:13-25,27-50 |
+| ☑ | DS-03 | No match | DT-20. | docs_a_refined.dc.html:186 |
+| ☑ | DS-04 | Error | Not drawn. Use rule 16 exception: errors keep red style. Suggest red card in the tree area with "Could not load documents" + Retry. | — |
 
 ### 1.8 Documents — phone (`docs_a_mobile.dc.html`, menu-sheet variant `docs_a_mobile_menu.dc.html`)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | M-01 | Root | `width:100%; height:100dvh; min-height:520px`, column, bg `--bg`. | docs_a_mobile.dc.html:46 |
-| ☐ | M-02 | Header | 56 px white, border-bottom: menu `.tbb` 44×44 (`data-vp-menu` → opens shell drawer) · SBC logo 24 px · spacer · bell 44×44 (primary colour, aria "Notifications, 3 new"). | :47-52 |
-| ☐ | M-03 | Back row (drilled levels only) | min-height 44: back chevron `.tbb` (margin-left −10, navy, aria "Back to {parent label}") · crumb mono 11 px `--subtle` ("Documents / Phase 2") · **H1 19 px/700 navy** = current folder name (ellipsis). Hidden at root (screenshot root shows no title). | :54-57,146-147 |
-| ☐ | M-04 | Filter + level kebab | 44 px filter (search 15 px, input 14 px, counter "14/16") + 44×44 bordered kebab for the **current level** → bottom sheet with the folder actions. (Menu variant: kebab in the title row, filter on its own row; crumb 10.5 px.) | :58-61; docs_a_mobile_menu.dc.html:53-58 |
-| ☐ | M-05 | List card | Card r10 border shadow, `role=list`; enter animation A-08 on each level change. | :63-64 |
-| ☐ | M-06 | Folder row | min-height 56: folder 20 px (navy fill) · label 14/600 · **step folders**: under the label a 64×4 progress track (ok/rv/ms) + mono frac "4/5"; **phase folders**: right mono count · chevron 14 px. Tap → drill into folder (push to path). Kebab 44×44 → sheet. | :66-79,129 |
-| ☐ | M-07 | File row | Type tile · label 14/600 · under it **status badge + mono date** (missing: dashed 16 px square, badge "Missing", date "Due 12 Nov"/"Overdue"). Tap: **no-op in prototype** → must open the phone preview sheet (MP). Kebab → sheet. | :69-74,127 |
-| ☐ | M-08 | Bottom sheet (actions) | Scrim button (aria "Close menu", `oklch(20% 0.05 258 / .45)`) + sheet (`role=menu`), r12 top, handle 40×4, title row 14/700 navy with hairline, items 52 px 14/600 with 18 px navy icons, mono right hint. Padding bottom **76 px** (clears the Ask VCFO pill; menu variant 20 px). Animation A-07. | :83-90 |
-| ☐ | M-09 | Sheet items — folder | **Download folder as ZIP** ("{n} files") → toast; **Copy link to folder**. | :140-141 |
-| ☐ | M-10 | Sheet items — file | **Download · Preview · Open step {N} · Copy link**. | :138 |
-| ☐ | M-11 | Sheet items — missing | **Take photo** (camera glyph — DECISIONS "camera capture" → `<input type=file accept="image/*" capture="environment">`) · **Choose file** · **Open step {N}** · **Copy link**. | :137 |
-| ☐ | M-12 | Toast | Absolute left/right 16, bottom 20, navy r8: text + mono count + gold bar while busy. Text "Preparing {name}.zip…" → "Downloaded {name}.zip", count "n of total" → "{total} files". 260 ms ticks. | :91-96,104-108,150 |
-| ☐ | M-13 | Missing on phone | No Status / Replaced toggles, no By step/category pill, no Download all, no Upload button on phone. Recommend: put "Download all (ZIP)" + "Upload · N requested" in the root-level kebab sheet; keep replaced hidden. | — |
-| ☐ | M-14 | Tap targets | All interactive ≥ 44 px (rows 56, kebabs 44). | :22-29 |
+| ☑ | M-01 | Root | `width:100%; height:100dvh; min-height:520px`, column, bg `--bg`. | docs_a_mobile.dc.html:46 |
+| ◐ | M-02 | Header | 56 px white, border-bottom: menu `.tbb` 44×44 (`data-vp-menu` → opens shell drawer) · SBC logo 24 px · spacer · bell 44×44 (primary colour, aria "Notifications, 3 new"). | :47-52 |
+| ☑ | M-03 | Back row (drilled levels only) | min-height 44: back chevron `.tbb` (margin-left −10, navy, aria "Back to {parent label}") · crumb mono 11 px `--subtle` ("Documents / Phase 2") · **H1 19 px/700 navy** = current folder name (ellipsis). Hidden at root (screenshot root shows no title). | :54-57,146-147 |
+| ☑ | M-04 | Filter + level kebab | 44 px filter (search 15 px, input 14 px, counter "14/16") + 44×44 bordered kebab for the **current level** → bottom sheet with the folder actions. (Menu variant: kebab in the title row, filter on its own row; crumb 10.5 px.) | :58-61; docs_a_mobile_menu.dc.html:53-58 |
+| ☑ | M-05 | List card | Card r10 border shadow, `role=list`; enter animation A-08 on each level change. | :63-64 |
+| ☑ | M-06 | Folder row | min-height 56: folder 20 px (navy fill) · label 14/600 · **step folders**: under the label a 64×4 progress track (ok/rv/ms) + mono frac "4/5"; **phase folders**: right mono count · chevron 14 px. Tap → drill into folder (push to path). Kebab 44×44 → sheet. | :66-79,129 |
+| ☑ | M-07 | File row | Type tile · label 14/600 · under it **status badge + mono date** (missing: dashed 16 px square, badge "Missing", date "Due 12 Nov"/"Overdue"). Tap: **no-op in prototype** → must open the phone preview sheet (MP). Kebab → sheet. | :69-74,127 |
+| ☑ | M-08 | Bottom sheet (actions) | Scrim button (aria "Close menu", `oklch(20% 0.05 258 / .45)`) + sheet (`role=menu`), r12 top, handle 40×4, title row 14/700 navy with hairline, items 52 px 14/600 with 18 px navy icons, mono right hint. Padding bottom **76 px** (clears the Ask VCFO pill; menu variant 20 px). Animation A-07. | :83-90 |
+| ☑ | M-09 | Sheet items — folder | **Download folder as ZIP** ("{n} files") → toast; **Copy link to folder**. | :140-141 |
+| ☑ | M-10 | Sheet items — file | **Download · Preview · Open step {N} · Copy link**. | :138 |
+| ☑ | M-11 | Sheet items — missing | **Take photo** (camera glyph — DECISIONS "camera capture" → `<input type=file accept="image/*" capture="environment">`) · **Choose file** · **Open step {N}** · **Copy link**. | :137 |
+| ☑ | M-12 | Toast | Absolute left/right 16, bottom 20, navy r8: text + mono count + gold bar while busy. Text "Preparing {name}.zip…" → "Downloaded {name}.zip", count "n of total" → "{total} files". 260 ms ticks. | :91-96,104-108,150 |
+| ☑ | M-13 | Missing on phone | No Status / Replaced toggles, no By step/category pill, no Download all, no Upload button on phone. Recommend: put "Download all (ZIP)" + "Upload · N requested" in the root-level kebab sheet; keep replaced hidden. | — |
+| ☑ | M-14 | Tap targets | All interactive ≥ 44 px (rows 56, kebabs 44). | :22-29 |
 
 ### 1.9 Upload flow (`docs_upload.dc.html` — specimen board, 1440×900)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | U-01 | Request card (waiting) | `.card.t` (gold 38×3 tab at top-left): title 13/700 "Signed DIR-2 — Meera Shah" + due chip right (min-width 116, centred) · drop strip `.drop` (dashed amber/55%, amber-light/50% bg, r8): 32 px white round upload badge with amber ring · "Drop the file or **browse**". | docs_upload.dc.html:24-25,32,47-53 |
-| ☐ | U-02 | Dragging over | Drop strip turns **solid navy border**, primary-light bg, 4 px primary/12% ring, centred, padding 18/12; badge navy filled; text **"Release to upload"** 700 navy. | :54-60 |
-| ☐ | U-03 | Uploading | Inner box: tiny mono "PDF" tag (9 px, over tint) · filename 12.5/600 ellipsis · mono "64%" · cancel ✕ (aria "Cancel upload") · 6 px bar navy fill (prototype animates 8→64% loop A-11; real: real progress). | :34-36,61-70 |
-| ☐ | U-04 | Done | The new row moves into the list: row with 28×34 file glyph (tint body + coloured **bottom band** "PDF" — the "thin band" look) · name · chip **In review**; row bg glows ok-light → panel (A-12, prototype loops; real: once). Toast **"Sent to Arjun for review"** with green check + gold **Undo** (800 12.5). Toast enter A-13. | :38-40,71-85 |
-| ☐ | U-05 | Error — file refused | Red alert box (1.5 px over/50% border, over-light bg): 28 px red "!" badge · "{file} · this file type can't be opened" (over-text 600) · outline **Try again** (28 px). Title chip "Overdue · 6 Nov". | :110-119 |
-| ☐ | U-06 | Re-upload asked by SBC | Card title + red chip **"Re-upload"** · note row (raised bg r6): navy mono initials tag "AM" + quoted reason "“Bill is older than 2 months. Please send the latest one.”" · drop strip "Drop the new file or **browse**". | :120-125 |
-| ☐ | U-07 | Accepted types caption | mono 11 px "PDF · JPG · PNG · DOCX · up to 10 MB". Real limit is `MAX_UPLOAD_MB` (default 50, env) and `MILESTONE_DOCUMENT_EXTENSIONS` → print from config. | :104; src/lib/upload-limits.ts:7,19,91 |
-| ☐ | U-08 | Upload dialog (from toolbar button) | `role=dialog aria-label="Upload a document"`, r12: header "Upload a document" 700 15 navy + close 30 px · body: label **"For"** + 2-col grid of request cards (button; selected = 2 px navy border + primary-light; each shows name + due chip "Overdue"/"Due 12 Nov") · large drop zone (dashed primary/45%, primary-light/50%, r10, padding 28): 44 px navy upload badge, "Drop files here or **browse**", type caption · footer (raised): **Cancel** (outline) · **Upload** (navy). Only open requests are listed. | :88-109 |
-| ☐ | U-09 | After upload | Request turns into a file row (In review) in its step; "N requested" count decrements; email to lead (existing `client_uploaded` event). | — |
+| ☑ | U-01 | Request card (waiting) | `.card.t` (gold 38×3 tab at top-left): title 13/700 "Signed DIR-2 — Meera Shah" + due chip right (min-width 116, centred) · drop strip `.drop` (dashed amber/55%, amber-light/50% bg, r8): 32 px white round upload badge with amber ring · "Drop the file or **browse**". | docs_upload.dc.html:24-25,32,47-53 |
+| ☑ | U-02 | Dragging over | Drop strip turns **solid navy border**, primary-light bg, 4 px primary/12% ring, centred, padding 18/12; badge navy filled; text **"Release to upload"** 700 navy. | :54-60 |
+| ☑ | U-03 | Uploading | Inner box: tiny mono "PDF" tag (9 px, over tint) · filename 12.5/600 ellipsis · mono "64%" · cancel ✕ (aria "Cancel upload") · 6 px bar navy fill (prototype animates 8→64% loop A-11; real: real progress). | :34-36,61-70 |
+| ☑ | U-04 | Done | The new row moves into the list: row with 28×34 file glyph (tint body + coloured **bottom band** "PDF" — the "thin band" look) · name · chip **In review**; row bg glows ok-light → panel (A-12, prototype loops; real: once). Toast **"Sent to Arjun for review"** with green check + gold **Undo** (800 12.5). Toast enter A-13. | :38-40,71-85 |
+| ☑ | U-05 | Error — file refused | Red alert box (1.5 px over/50% border, over-light bg): 28 px red "!" badge · "{file} · this file type can't be opened" (over-text 600) · outline **Try again** (28 px). Title chip "Overdue · 6 Nov". | :110-119 |
+| ☑ | U-06 | Re-upload asked by SBC | Card title + red chip **"Re-upload"** · note row (raised bg r6): navy mono initials tag "AM" + quoted reason "“Bill is older than 2 months. Please send the latest one.”" · drop strip "Drop the new file or **browse**". | :120-125 |
+| ☑ | U-07 | Accepted types caption | mono 11 px "PDF · JPG · PNG · DOCX · up to 10 MB". Real limit is `MAX_UPLOAD_MB` (default 50, env) and `MILESTONE_DOCUMENT_EXTENSIONS` → print from config. | :104; src/lib/upload-limits.ts:7,19,91 |
+| ☑ | U-08 | Upload dialog (from toolbar button) | `role=dialog aria-label="Upload a document"`, r12: header "Upload a document" 700 15 navy + close 30 px · body: label **"For"** + 2-col grid of request cards (button; selected = 2 px navy border + primary-light; each shows name + due chip "Overdue"/"Due 12 Nov") · large drop zone (dashed primary/45%, primary-light/50%, r10, padding 28): 44 px navy upload badge, "Drop files here or **browse**", type caption · footer (raised): **Cancel** (outline) · **Upload** (navy). Only open requests are listed. | :88-109 |
+| ☑ | U-09 | After upload | Request turns into a file row (In review) in its step; "N requested" count decrements; email to lead (existing `client_uploaded` event). | — |
 
 ### 1.10 Shared document viewer (overlay) — `s/home/v7x_doc_viewer.dc.html` (routed) / `s/docs/v7x_doc_viewer.dc.html`
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | V-01 | Opened from | Pane eye button, pane paper click, drill eye, file menu "Preview", reader "Documents for this" row, Home docs widget. DECISIONS "shared preview" = one component everywhere. | docs_a_refined.dc.html:194,198 |
-| ☐ | V-02 | Scrim | `oklch(20% 0.05 258 / .6)`; in the routed version it starts at `left: var(--vp-side-w,248px)` (sidebar stays visible) and `top:52px` on phone under a mini bar (`.vh-pbar` with menu button, logo, "Documents"). | s/home/v7x_doc_viewer.dc.html:226 |
-| ☐ | V-03 | Dialog | `width:min(1152px,100%-24px)`, `height:min(720px,100%-24px)`, r12, bg `light-dark(oklch(94% 0.008 255), oklch(22% 0.008 255))`, shadow `0 30px 70px -20px`. `role=dialog aria-modal aria-label="Document preview"`. | :226 |
-| ☐ | V-04 | Header bar | white, padding 10/14: 30×30 r6 type tile (mono 11/700 PDF tint) · file name 14/700 ellipsis · **(i) info** 18 px → pop-over (≤280 px, arrow) "From SBC · 24 Oct 2026 · Size [size]" + row "🤖 Ask VCFO about this" · position "1 of 4" (cap 600) · **Download** outline 32 px (label hidden ≤767, aria "Download") · **Close** 32 px ✕ (aria "Close preview (Esc)", title "Close (Esc)"). | :226 |
-| ☐ | V-05 | Page area | scroll, padding `28px clamp(12px,6vw,72px) 72px`; paper `data-paper` width `{pageW}` = 460 px × zoom, `aspect-ratio:1/1.414`, padding `clamp(20px,5vw,48px) clamp(18px,5vw,52px)`, `transition:width .2s`; demo content + rotated "SAMPLE" watermark (prototype only). | :226 |
-| ☐ | V-06 | Prev / Next document | 40 px round buttons at left/right 16, vertically centred, shadow; aria "Previous document"/"Next document"; cycles through the **current list** (wraps). Real: the visible tree order (or drill list). | :226,247 |
-| ☐ | V-07 | Zoom bar | navy floating pill bottom centre: "Page 1 / 1" · divider · − (aria "Zoom out") · "{zoom}%" · + (aria "Zoom in"). Range **50–150 %, step 25**, default 100. Phone: bar lifted to bottom 72 px (`.vh-zoom`). | :226,247 |
-| ☐ | V-08 | Unsupported type state | Same chrome (no position, no prev/next): centred 64 px r12 prog-tint tile with doc glyph · "Preview not available for this file type" 15/700 · primary **Download** button. Example "Draft Board Resolution.docx". Real app **can** render DOCX (`IncorporationDocxPreview`, `docx-preview` dep) → use this state only for HEIC/ZIP/other. | :227-230 |
-| ☐ | V-09 | Close | ✕ button or **Esc** (`keydown` on document, `preventDefault`) → back to the opener (shell back, else history.back). | :232-244 |
-| ☐ | V-10 | Dark mode | `[data-paper]` stays white paper with light ink in dark theme (`proto.js:67-69`). | proto.js:66-69 |
+| ☑ | V-01 | Opened from | Pane eye button, pane paper click, drill eye, file menu "Preview", reader "Documents for this" row, Home docs widget. DECISIONS "shared preview" = one component everywhere. | docs_a_refined.dc.html:194,198 |
+| ◐ | V-02 | Scrim | `oklch(20% 0.05 258 / .6)`; in the routed version it starts at `left: var(--vp-side-w,248px)` (sidebar stays visible) and `top:52px` on phone under a mini bar (`.vh-pbar` with menu button, logo, "Documents"). | s/home/v7x_doc_viewer.dc.html:226 |
+| ☑ | V-03 | Dialog | `width:min(1152px,100%-24px)`, `height:min(720px,100%-24px)`, r12, bg `light-dark(oklch(94% 0.008 255), oklch(22% 0.008 255))`, shadow `0 30px 70px -20px`. `role=dialog aria-modal aria-label="Document preview"`. | :226 |
+| ☑ | V-04 | Header bar | white, padding 10/14: 30×30 r6 type tile (mono 11/700 PDF tint) · file name 14/700 ellipsis · **(i) info** 18 px → pop-over (≤280 px, arrow) "From SBC · 24 Oct 2026 · Size [size]" + row "🤖 Ask VCFO about this" · position "1 of 4" (cap 600) · **Download** outline 32 px (label hidden ≤767, aria "Download") · **Close** 32 px ✕ (aria "Close preview (Esc)", title "Close (Esc)"). | :226 |
+| ☑ | V-05 | Page area | scroll, padding `28px clamp(12px,6vw,72px) 72px`; paper `data-paper` width `{pageW}` = 460 px × zoom, `aspect-ratio:1/1.414`, padding `clamp(20px,5vw,48px) clamp(18px,5vw,52px)`, `transition:width .2s`; demo content + rotated "SAMPLE" watermark (prototype only). | :226 |
+| ☑ | V-06 | Prev / Next document | 40 px round buttons at left/right 16, vertically centred, shadow; aria "Previous document"/"Next document"; cycles through the **current list** (wraps). Real: the visible tree order (or drill list). | :226,247 |
+| ◐ | V-07 | Zoom bar | navy floating pill bottom centre: "Page 1 / 1" · divider · − (aria "Zoom out") · "{zoom}%" · + (aria "Zoom in"). Range **50–150 %, step 25**, default 100. Phone: bar lifted to bottom 72 px (`.vh-zoom`). | :226,247 |
+| ☑ | V-08 | Unsupported type state | Same chrome (no position, no prev/next): centred 64 px r12 prog-tint tile with doc glyph · "Preview not available for this file type" 15/700 · primary **Download** button. Example "Draft Board Resolution.docx". Real app **can** render DOCX (`IncorporationDocxPreview`, `docx-preview` dep) → use this state only for HEIC/ZIP/other. | :227-230 |
+| ☑ | V-09 | Close | ✕ button or **Esc** (`keydown` on document, `preventDefault`) → back to the opener (shell back, else history.back). | :232-244 |
+| ☑ | V-10 | Dark mode | `[data-paper]` stays white paper with light ink in dark theme (`proto.js:67-69`). | proto.js:66-69 |
 
 ### 1.11 Phone preview sheet (`docs_mobile_preview.dc.html`)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | MP-01 | Sheet | Dark backdrop `oklch(20% 0.05 258)`; sheet from `top:28px` to bottom, r12 top, handle 40×4, enter A-09. `role=dialog aria-modal aria-label="Preview: {name}"`. | docs_mobile_preview.dc.html:26-28 |
-| ☐ | MP-02 | Header | H2 15/700 navy ellipsis; under it chips **Final** (navy) · **SBC** (gold-soft/gold-text source chip) · mono date; close 44×44 ✕ (aria "Close preview"). | :29-32 |
-| ☐ | MP-03 | Page | grey well `light-dark(oklch(93.5% 0.01 255), oklch(22.8% 0.01 255))`, paper 330×466 serif (Source Serif 4) demo COI. | :33-39 |
-| ☐ | MP-04 | Pager | dots (active 18×4 navy, inactive 6×4) + mono "Page 1 of 2 · swipe" → horizontal swipe between pages. | :40 |
-| ☐ | MP-05 | Footer | 2-col: **Ask VCFO** outline (18 px bot) · **Download** navy, 44 px. | :41-44 |
+| ☑ | MP-01 | Sheet | Dark backdrop `oklch(20% 0.05 258)`; sheet from `top:28px` to bottom, r12 top, handle 40×4, enter A-09. `role=dialog aria-modal aria-label="Preview: {name}"`. | docs_mobile_preview.dc.html:26-28 |
+| ☑ | MP-02 | Header | H2 15/700 navy ellipsis; under it chips **Final** (navy) · **SBC** (gold-soft/gold-text source chip) · mono date; close 44×44 ✕ (aria "Close preview"). | :29-32 |
+| ☑ | MP-03 | Page | grey well `light-dark(oklch(93.5% 0.01 255), oklch(22.8% 0.01 255))`, paper 330×466 serif (Source Serif 4) demo COI. | :33-39 |
+| ☑ | MP-04 | Pager | dots (active 18×4 navy, inactive 6×4) + mono "Page 1 of 2 · swipe" → horizontal swipe between pages. | :40 |
+| ☑ | MP-05 | Footer | 2-col: **Ask VCFO** outline (18 px bot) · **Download** navy, 44 px. | :41-44 |
 
 ### 1.12 Before / after incorporation (Documents)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | BA-01 | Toggle | Prototype bar "Before COI / After COI" + top-bar pill; Documents board unchanged; toast only. | proto.js:182,213-219 |
-| ☐ | BA-02 | Real-app variant | Driven by data: before COI → Phase 3/4 folders absent (no files), COI/MoA rows absent, more dashed missing rows in Phases 1–2; empty state DS-02 for a brand-new client. After COI → COI, MoA/AoA, SH-1 are **Final** rows with MCA "Verify" links. | docs_a_refined.dc.html:277-286 |
+| ☑ | BA-01 | Toggle | Prototype bar "Before COI / After COI" + top-bar pill; Documents board unchanged; toast only. | proto.js:182,213-219 |
+| ☑ | BA-02 | Real-app variant | Driven by data: before COI → Phase 3/4 folders absent (no files), COI/MoA rows absent, more dashed missing rows in Phases 1–2; empty state DS-02 for a brand-new client. After COI → COI, MoA/AoA, SH-1 are **Final** rows with MCA "Verify" links. | docs_a_refined.dc.html:277-286 |
 
 ### 1.13 Knowledge Bank — bookshelf (`lib_shelf_a.dc.html`)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | L-01 | Page frame `.vlib` | sidebar column (active = Library/Knowledge Bank) + column with topbar `trail="Library"` (→ "Knowledge Bank") + main (max 1600, padding `clamp(12px,1.6vw,20px) clamp(12px,1.8vw,24px) 96px`, gap 16). No H1. | lib_shelf_a.dc.html:66-68,95-99 |
-| ☐ | L-02 | Toolbar `.vlib-tools` | wraps, gap 10: category pill · "{n} books" chip · **Monthly status brief** (outline 34 px) · **PDF brief** (outline + download glyph) · search. | :69,100-103 |
-| ☐ | L-03 | Category pill | `role=tablist aria-label="Category"`; 6 tabs **All 15 · Incorporation 4 · Foreign inv. 3 · Tax 3 · Compliance 3 · Northwind’s project 2** (label + mono count); buttons 30 px; wrapper `flex:1 1 680px; max-width:740px` with hidden-scrollbar horizontal scroll, pill min-width 680. Thumb slides (A-01). Selecting filters shelves (only that category's shelf shown). | :24-29,70-72,101,158-162 |
-| ☐ | L-04 | "{n} books" chip | `--primary-chip` bg white 11/700 — total saved items (not filtered). (`--primary-chip` is defined in proto dark tokens and side.dc.html: `oklch(52% 0.21 263)`.) | :101,160 |
-| ☐ | L-05 | Monthly status brief | → `/api/ask/brief?engagementId=` PDF (existing `StatusBriefButton`). | :101 |
-| ☐ | L-06 | PDF brief | Exports the shown books → `/api/ask/library/export?ids=`. | :101 |
-| ☐ | L-07 | Search | 34 px (44 on phone), placeholder/aria **"Search books"**, live filter on book title (case-insensitive). | :102,156-157 |
-| ☐ | L-08 | Recently read strip `.vlib-recent` | H2 "RECENTLY READ" (800 11 px, .1em caps, navy, 110 px wide; full row ≤1279) + up to **3 mini cards** `.mini` (min 230, `flex:1 1 200px; max 360`): 30×42 cover in book colour (inset 4 px spine shade; Northwind's-project covers get a **gold** spine) · title link (12.5 px → reader) · progress bar 5 px (`.pbar`; hover adds 2 px primary/25% ring) with tooltip **"70% read · 2 of 3 sections"** / **"Finished · read on 8 Nov"** / "35% read · 1 of 3 sections"; bar click → Recently-read drill (LD). | :41-45,74-78,105-110 |
-| ☐ | L-09 | Shelves card | One white card r10, padding 6/0/18, gap 6. One `section` per category with ≥1 visible book, in fixed order: **Incorporation, Foreign investment, Tax, Compliance, Northwind’s project**. | :112-129,142-148,157 |
-| ☐ | L-10 | Shelf header | 10×10 r3 colour dot · H2 13/700 navy (category title) · mono count. Padding 14/28/0. | :115 |
-| ☐ | L-11 | Shelf `.shelf` | flex-wrap, gap 18 (row-gap 40), padding 22/28/0, `perspective:900px`, min-height 186; repeating plank background every 212 px (so wrapped rows each get a plank). Plank `.plank` 14 px gradient + shadow below the last row (margin 0 16). | :30-31,79,116,127 |
-| ☐ | L-12 | Book `a.book` | 128×172, padding 16/12/12/22, r `2 6 6 2`, bg `--bc` (category colour), white; spine shading (`::before` 11 px gradient), page edges (`::after` 5 px striped, right −5). Gold top band `.bk-band` 5 px. 28 px round white/18% icon disc with category glyph (15 px). Title `.bk-t` 700 13/1.32, **2-line clamp** (6 lines on hover). Bottom `.bk-c` short category 11/700 caps .04em 80% opacity. aria "Open {title}" → reader. | :32-39,56-60,118-124 |
-| ☐ | L-13 | Book hover/focus | Lift + tilt: `translate3d(0,-14px,0) rotate(-2.5deg)`, deeper shadow, title unclamps to 6 lines; active (press) `translate(0,-10px) rotate(-1.5deg) scale(.985)`. Timing A-14. | :56-60 |
-| ☐ | L-14 | "Updated" ribbon `.rib` | DECISIONS **"Updated" chip = blue**: 14×22 bookmark ribbon at top-right (right 8), `--prog-chip` (blue), clip-path notch; `title="Updated"` (needs a real tooltip + aria per rule 17: "Updated since you saved it"). Shown when the topic version is newer than the saved copy. Demo: "FC-GPR after share allotment". | :40,120,152 |
-| ☐ | L-15 | Category colours & glyphs | Incorporation `var(--navy-3)` building glyph, short "Incorp." · Foreign investment `oklch(45% 0.16 14)` globe, "FDI" · Tax `oklch(50% 0.12 62)` receipt, "Tax" · Compliance `oklch(42% 0.08 200)` shield-check, "Compliance" · Northwind’s project `var(--navy)` flag, "Northwind’s project". (Real categories also include **labour** — needs a colour, e.g. `oklch(50% 0.12 200)` `--cat-labour`.) | :142-148; src/lib/ask/categories.ts |
-| ☐ | L-16 | No match | Bot 40 + "No book matches “{q}”." + **Clear search** (clears q **and** resets category to All) + "Ask VCFO why". | :130,162 |
-| ☐ | L-17 | Ask VCFO launcher | Bottom-right floating launcher (boards draw a 68 px round bot button + "Ask VCFO" label; the real one is the shared launcher, `proto.js:~312-…`). | :134 |
+| ☑ | L-01 | Page frame `.vlib` | sidebar column (active = Library/Knowledge Bank) + column with topbar `trail="Library"` (→ "Knowledge Bank") + main (max 1600, padding `clamp(12px,1.6vw,20px) clamp(12px,1.8vw,24px) 96px`, gap 16). No H1. | lib_shelf_a.dc.html:66-68,95-99 |
+| ☑ | L-02 | Toolbar `.vlib-tools` | wraps, gap 10: category pill · "{n} books" chip · **Monthly status brief** (outline 34 px) · **PDF brief** (outline + download glyph) · search. | :69,100-103 |
+| ☑ | L-03 | Category pill | `role=tablist aria-label="Category"`; 6 tabs **All 15 · Incorporation 4 · Foreign inv. 3 · Tax 3 · Compliance 3 · Northwind’s project 2** (label + mono count); buttons 30 px; wrapper `flex:1 1 680px; max-width:740px` with hidden-scrollbar horizontal scroll, pill min-width 680. Thumb slides (A-01). Selecting filters shelves (only that category's shelf shown). | :24-29,70-72,101,158-162 |
+| ☑ | L-04 | "{n} books" chip | `--primary-chip` bg white 11/700 — total saved items (not filtered). (`--primary-chip` is defined in proto dark tokens and side.dc.html: `oklch(52% 0.21 263)`.) | :101,160 |
+| ☑ | L-05 | Monthly status brief | → `/api/ask/brief?engagementId=` PDF (existing `StatusBriefButton`). | :101 |
+| ☑ | L-06 | PDF brief | Exports the shown books → `/api/ask/library/export?ids=`. | :101 |
+| ☑ | L-07 | Search | 34 px (44 on phone), placeholder/aria **"Search books"**, live filter on book title (case-insensitive). | :102,156-157 |
+| ☑ | L-08 | Recently read strip `.vlib-recent` | H2 "RECENTLY READ" (800 11 px, .1em caps, navy, 110 px wide; full row ≤1279) + up to **3 mini cards** `.mini` (min 230, `flex:1 1 200px; max 360`): 30×42 cover in book colour (inset 4 px spine shade; Northwind's-project covers get a **gold** spine) · title link (12.5 px → reader) · progress bar 5 px (`.pbar`; hover adds 2 px primary/25% ring) with tooltip **"70% read · 2 of 3 sections"** / **"Finished · read on 8 Nov"** / "35% read · 1 of 3 sections"; bar click → Recently-read drill (LD). | :41-45,74-78,105-110 |
+| ☑ | L-09 | Shelves card | One white card r10, padding 6/0/18, gap 6. One `section` per category with ≥1 visible book, in fixed order: **Incorporation, Foreign investment, Tax, Compliance, Northwind’s project**. | :112-129,142-148,157 |
+| ☑ | L-10 | Shelf header | 10×10 r3 colour dot · H2 13/700 navy (category title) · mono count. Padding 14/28/0. | :115 |
+| ☑ | L-11 | Shelf `.shelf` | flex-wrap, gap 18 (row-gap 40), padding 22/28/0, `perspective:900px`, min-height 186; repeating plank background every 212 px (so wrapped rows each get a plank). Plank `.plank` 14 px gradient + shadow below the last row (margin 0 16). | :30-31,79,116,127 |
+| ☑ | L-12 | Book `a.book` | 128×172, padding 16/12/12/22, r `2 6 6 2`, bg `--bc` (category colour), white; spine shading (`::before` 11 px gradient), page edges (`::after` 5 px striped, right −5). Gold top band `.bk-band` 5 px. 28 px round white/18% icon disc with category glyph (15 px). Title `.bk-t` 700 13/1.32, **2-line clamp** (6 lines on hover). Bottom `.bk-c` short category 11/700 caps .04em 80% opacity. aria "Open {title}" → reader. | :32-39,56-60,118-124 |
+| ☑ | L-13 | Book hover/focus | Lift + tilt: `translate3d(0,-14px,0) rotate(-2.5deg)`, deeper shadow, title unclamps to 6 lines; active (press) `translate(0,-10px) rotate(-1.5deg) scale(.985)`. Timing A-14. | :56-60 |
+| ☑ | L-14 | "Updated" ribbon `.rib` | DECISIONS **"Updated" chip = blue**: 14×22 bookmark ribbon at top-right (right 8), `--prog-chip` (blue), clip-path notch; `title="Updated"` (needs a real tooltip + aria per rule 17: "Updated since you saved it"). Shown when the topic version is newer than the saved copy. Demo: "FC-GPR after share allotment". | :40,120,152 |
+| ☑ | L-15 | Category colours & glyphs | Incorporation `var(--navy-3)` building glyph, short "Incorp." · Foreign investment `oklch(45% 0.16 14)` globe, "FDI" · Tax `oklch(50% 0.12 62)` receipt, "Tax" · Compliance `oklch(42% 0.08 200)` shield-check, "Compliance" · Northwind’s project `var(--navy)` flag, "Northwind’s project". (Real categories also include **labour** — needs a colour, e.g. `oklch(50% 0.12 200)` `--cat-labour`.) | :142-148; src/lib/ask/categories.ts |
+| ☑ | L-16 | No match | Bot 40 + "No book matches “{q}”." + **Clear search** (clears q **and** resets category to All) + "Ask VCFO why". | :130,162 |
+| ☑ | L-17 | Ask VCFO launcher | Bottom-right floating launcher (boards draw a 68 px round bot button + "Ask VCFO" label; the real one is the shared launcher, `proto.js:~312-…`). | :134 |
 
 ### 1.14 Knowledge Bank — recently-read drill (`lib_recent_drill.dc.html`)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | LD-01 | Dialog | Over the shelf, scrim .55, 600 px r12, pop A-05, aria "Recently read". Context strip "These guides live in the Library" + "Open Library →". Header H2 "Recently read" + close. | lib_recent_drill.dc.html:36-43 |
-| ☐ | LD-02 | Pill | **All 3 · In progress 2 · Finished 1**; opens on In progress. | :44,61,68 |
-| ☐ | LD-03 | Rows `a.row` | 56 px: 30×42 cover · title 700 · 140×5 bar · mono 56 px right "70%" / "Done". Row → reader. | :25-29,46-53,70 |
+| ☑ | LD-01 | Dialog | Over the shelf, scrim .55, 600 px r12, pop A-05, aria "Recently read". Context strip "These guides live in the Library" + "Open Library →". Header H2 "Recently read" + close. | lib_recent_drill.dc.html:36-43 |
+| ☑ | LD-02 | Pill | **All 3 · In progress 2 · Finished 1**; opens on In progress. | :44,61,68 |
+| ☑ | LD-03 | Rows `a.row` | 56 px: 30×42 cover · title 700 · 140×5 bar · mono 56 px right "70%" / "Done". Row → reader. | :25-29,46-53,70 |
 
 ### 1.15 Knowledge Bank — empty (`lib_empty.dc.html`)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | LE-01 | Layout | H1 "Library" (→ "Knowledge Bank") 22 px; card min-height 580 centred. | lib_empty.dc.html:31-33 |
-| ☐ | LE-02 | Book illustration | 200×110 with 3 px violet-soft floor; 4 books rise in (A-15) staggered 0/.08/.16/.24 s; last one leaning 12°. | :21-24,34-40 |
-| ☐ | LE-03 | Bot message | Bot 48 + bubble **"Northwind’s library is empty. Save an answer from Ask VCFO and it lands here as a book."** + "Ask VCFO why". | :41 |
-| ☐ | LE-04 | CTA | Navy **Ask VCFO** (opens chat). | :42 |
-| ☐ | LE-05 | Suggested topics | violet-tint chips (32 px, r6) "What is SPICe+?" · "What happens after the COI?" · "When do I need GST?" → `/app/client/learn/{slug}`. | :20,43-45 |
-| ☐ | LE-06 | Loading | Not drawn; improve #13 asks for **skeleton books** + error card "Back to library". | improve.dc.html:43 |
+| ☑ | LE-01 | Layout | H1 "Library" (→ "Knowledge Bank") 22 px; card min-height 580 centred. | lib_empty.dc.html:31-33 |
+| ☑ | LE-02 | Book illustration | 200×110 with 3 px violet-soft floor; 4 books rise in (A-15) staggered 0/.08/.16/.24 s; last one leaning 12°. | :21-24,34-40 |
+| ☑ | LE-03 | Bot message | Bot 48 + bubble **"Northwind’s library is empty. Save an answer from Ask VCFO and it lands here as a book."** + "Ask VCFO why". | :41 |
+| ☑ | LE-04 | CTA | Navy **Ask VCFO** (opens chat). | :42 |
+| ☑ | LE-05 | Suggested topics | violet-tint chips (32 px, r6) "What is SPICe+?" · "What happens after the COI?" · "When do I need GST?" → `/app/client/learn/{slug}`. | :20,43-45 |
+| ☑ | LE-06 | Loading | Not drawn; improve #13 asks for **skeleton books** + error card "Back to library". | improve.dc.html:43 |
 
 ### 1.16 Knowledge Bank — reader (`lib_reader.dc.html`, mode `saved` | `learn`)
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | R-01 | Frame | Topbar `trail="Library"` + `leaf="{title}"` (crumb Library / title). Grid `minmax(0,780px) minmax(260px,340px)` gap 20 centred; ≤1100 one column with side cards in an auto-fit grid (min 240). | lib_reader.dc.html:56-71,93-94 |
-| ☐ | R-02 | Hero `.vrd-hero` | r10 padding 22/24/20, gradient `115deg navy → navy-2 62% → oklch(38% 0.12 292)`, white. 3 px gold underline gradient at bottom. | :96,104 |
-| ☐ | R-03 | Hero chips | Category chip (white/14% + inset ring) "Foreign investment" · **"✓ Reviewed by SBC"** (`--ok-chip`, min 116) · **"Updated 6 Nov"** (`--prog-chip` blue, min 116, saved mode only). | :97 |
-| ☐ | R-04 | Title | H1 white `clamp(22px,1.2vw + 14px,30px)/1.2` 700. | :61,98 |
-| ☐ | R-05 | Depth pill | `role=group aria-label="Depth"`, **Simpler · Normal · More detail**, white thumb on translucent track, active label navy 700, inactive white/78%; `aria-pressed`. Default Normal. Changes the lead line and (More detail) shows the facts grid (R-09). | :100,168,179-181 |
-| ☐ | R-06 | Read time + official link | mono "3 min read" (70%) · pill link **"Official link · RBI FIRMS ↗"** (white/12% + ring, 30 px, new tab). | :102 |
-| ☐ | R-07 | Lead paragraph | 17 px/1.6 500, max 68ch (16 px on phone). | :108 |
-| ☐ | R-08 | Timeline visual | primary-light panel r10: label "TIMELINE" violet-text; 3 nodes 170 px: done (green ✓ 40 px) "Shares allotted · Day 0 · 2 Nov" — green link — **current** (navy "2" + 3 px gold ring + pulse A-16) "FIRC + KYC from bank · Now" — dashed link — next (dashed primary ring) "File FC-GPR on FIRMS · By day 30 · 2 Dec". Phone: vertical, links 3×22. (Rule 10 / Focus track.) | :41-45,109-118,76-80 |
-| ☐ | R-09 | Facts grid (More detail) | 3 raised tiles: WHO FILES "SBC, for Northwind" · LATE FEE "LSF, per RBI" · PORTAL "RBI FIRMS". 1 column on phone. | :119 |
-| ☐ | R-10 | Why it matters | gold-soft box, 28 px gold star disc, H2 "Why it matters to Northwind" (gold-text) + 13.5 px text. | :120-123 |
-| ☐ | R-11 | Sources | label "SOURCES" + chips (26 px raised + ring) with ↗. | :124-130 |
-| ☐ | R-12 | Action row | top border: saved → green **"✓ Saved to library"** (static `.btn-ok`) · learn → navy **"Save to library"** (bookmark) · **PDF brief** · **Ask a follow-up** (18 px bot) · spacer · saved → trash `.ib` (aria "Remove from library", hover red tint). improve #11: removal = toast with **Undo** (soft delete). | :131-138 |
-| ☐ | R-13 | Side: In Northwind’s project | `.card.t`: H2 · date tile 50×54 amber "DEC 2" · "FC-GPR filing" + chips "24 days left" (due tint) · "SBC files" · link "Open in Compliances". | :143-150 |
-| ☐ | R-14 | Side: Related | H2 "Related in Northwind’s library" + rows (28 px primary-light icon tile + title) with hairlines. | :151-155 |
-| ☐ | R-15 | Side: Documents for this | H2 + row: PDF tag · "FIRC from the bank" · chip Approved → opens the shared viewer. (improve #16, DECISIONS "topic → documents link"). | :156-159 |
-| ☐ | R-16 | Launcher | Ask VCFO launcher bottom-right with label arrow. | :163 |
-| ☐ | R-17 | Phone | hero/body padding 18/16, buttons 40, `.ib` 40, pill buttons 36, source chips wrap min 40. | :72-87 |
+| ☑ | R-01 | Frame | Topbar `trail="Library"` + `leaf="{title}"` (crumb Library / title). Grid `minmax(0,780px) minmax(260px,340px)` gap 20 centred; ≤1100 one column with side cards in an auto-fit grid (min 240). | lib_reader.dc.html:56-71,93-94 |
+| ☑ | R-02 | Hero `.vrd-hero` | r10 padding 22/24/20, gradient `115deg navy → navy-2 62% → oklch(38% 0.12 292)`, white. 3 px gold underline gradient at bottom. | :96,104 |
+| ☑ | R-03 | Hero chips | Category chip (white/14% + inset ring) "Foreign investment" · **"✓ Reviewed by SBC"** (`--ok-chip`, min 116) · **"Updated 6 Nov"** (`--prog-chip` blue, min 116, saved mode only). | :97 |
+| ☑ | R-04 | Title | H1 white `clamp(22px,1.2vw + 14px,30px)/1.2` 700. | :61,98 |
+| ☑ | R-05 | Depth pill | `role=group aria-label="Depth"`, **Simpler · Normal · More detail**, white thumb on translucent track, active label navy 700, inactive white/78%; `aria-pressed`. Default Normal. Changes the lead line and (More detail) shows the facts grid (R-09). | :100,168,179-181 |
+| ☑ | R-06 | Read time + official link | mono "3 min read" (70%) · pill link **"Official link · RBI FIRMS ↗"** (white/12% + ring, 30 px, new tab). | :102 |
+| ☑ | R-07 | Lead paragraph | 17 px/1.6 500, max 68ch (16 px on phone). | :108 |
+| ◐ | R-08 | Timeline visual | primary-light panel r10: label "TIMELINE" violet-text; 3 nodes 170 px: done (green ✓ 40 px) "Shares allotted · Day 0 · 2 Nov" — green link — **current** (navy "2" + 3 px gold ring + pulse A-16) "FIRC + KYC from bank · Now" — dashed link — next (dashed primary ring) "File FC-GPR on FIRMS · By day 30 · 2 Dec". Phone: vertical, links 3×22. (Rule 10 / Focus track.) | :41-45,109-118,76-80 |
+| ☑ | R-09 | Facts grid (More detail) | 3 raised tiles: WHO FILES "SBC, for Northwind" · LATE FEE "LSF, per RBI" · PORTAL "RBI FIRMS". 1 column on phone. | :119 |
+| ☑ | R-10 | Why it matters | gold-soft box, 28 px gold star disc, H2 "Why it matters to Northwind" (gold-text) + 13.5 px text. | :120-123 |
+| ☑ | R-11 | Sources | label "SOURCES" + chips (26 px raised + ring) with ↗. | :124-130 |
+| ☑ | R-12 | Action row | top border: saved → green **"✓ Saved to library"** (static `.btn-ok`) · learn → navy **"Save to library"** (bookmark) · **PDF brief** · **Ask a follow-up** (18 px bot) · spacer · saved → trash `.ib` (aria "Remove from library", hover red tint). improve #11: removal = toast with **Undo** (soft delete). | :131-138 |
+| ☑ | R-13 | Side: In Northwind’s project | `.card.t`: H2 · date tile 50×54 amber "DEC 2" · "FC-GPR filing" + chips "24 days left" (due tint) · "SBC files" · link "Open in Compliances". | :143-150 |
+| ☑ | R-14 | Side: Related | H2 "Related in Northwind’s library" + rows (28 px primary-light icon tile + title) with hairlines. | :151-155 |
+| ☑ | R-15 | Side: Documents for this | H2 + row: PDF tag · "FIRC from the bank" · chip Approved → opens the shared viewer. (improve #16, DECISIONS "topic → documents link"). | :156-159 |
+| ☑ | R-16 | Launcher | Ask VCFO launcher bottom-right with label arrow. | :163 |
+| ☑ | R-17 | Phone | hero/body padding 18/16, buttons 40, `.ib` 40, pill buttons 36, source chips wrap min 40. | :72-87 |
 
 ### 1.17 Shell, top bar, bot, prototype-wide behaviours
 
 | Done | id | item | exact behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | S-01 | Top bar `.vtb` | 52 px, white/90% + hairline. Menu (phone only) · logo 26 px (22 phone) · location trail (24 px primary-light folder tile hidden on phone; trail 13 px; with leaf: trail muted 500 / "/" / leaf 600) · right: Search button (`clamp(180px,18vw,256px)`, collapses to 36 px icon ≤1279, 40 ≤767) with kbd ⌘ K · Announcements · Notifications (badge 17 px "3", primary tint active) · Theme (hidden on phone). | topbar.dc.html:21-53 |
-| ☐ | S-02 | Search ⌘K | Visual only in the prototype (no key handler; click → toast "Search · type to find steps, filings and documents"). Real: command palette (`src/components/shell/CommandPalette.tsx` already fetches `/api/documents`). | proto.js:245 |
-| ☐ | S-03 | Theme | light / dark (True black) / system, stored `vcfo.theme`; any button whose aria contains "theme" toggles. | proto.js:6-75 |
-| ☐ | S-04 | Rule-17 tooltip | Icon-only controls get a navy tooltip after **120 ms** (`#vp-tip`), unless `data-tip` exists (then CSS `.tip::after` with 120 ms delay). | proto.js:297-310,661 |
-| ☐ | S-05 | Fallback toasts | 3200 ms toast for dead controls: "Download started · …", "Preparing the ZIP…", "Choose a file to upload", "Link copied", "Opens the official portal in a new tab". Real app must do the real action. | proto.js:159-166,237-245 |
-| ☐ | S-06 | Page transitions | enter `vpIn .26s` (y 6 → 0), leave `.14s` opacity .35. | proto.js:135-137 |
-| ☐ | S-07 | Bot avatar | `v7c_bot` states idle / thinking (antenna pulse 1 s + eye scan 1.3 s) / answered (green antenna) / cannot (grey); sizes used: 16, 18, 40, 48, 56. Smile never changes. | v7c_bot.dc.html:128-141 |
-| ☐ | S-08 | Speech bubble (rule 16) | max 320, padding 10/14, r `10 10 10 2`, panel + border + shadow `0 8px 20px -12px`; text 600 13/1.45; action links 12/700 primary. | docs_a_refined.dc.html:186 |
-| ☐ | S-09 | Scrollbars | Hidden everywhere (`scrollbar-width:none`) — prototype choice. | proto.js:141-142 |
+| ☑ | S-01 | Top bar `.vtb` | 52 px, white/90% + hairline. Menu (phone only) · logo 26 px (22 phone) · location trail (24 px primary-light folder tile hidden on phone; trail 13 px; with leaf: trail muted 500 / "/" / leaf 600) · right: Search button (`clamp(180px,18vw,256px)`, collapses to 36 px icon ≤1279, 40 ≤767) with kbd ⌘ K · Announcements · Notifications (badge 17 px "3", primary tint active) · Theme (hidden on phone). | topbar.dc.html:21-53 |
+| ☑ | S-02 | Search ⌘K | Visual only in the prototype (no key handler; click → toast "Search · type to find steps, filings and documents"). Real: command palette (`src/components/shell/CommandPalette.tsx` already fetches `/api/documents`). | proto.js:245 |
+| ☑ | S-03 | Theme | light / dark (True black) / system, stored `vcfo.theme`; any button whose aria contains "theme" toggles. | proto.js:6-75 |
+| ☑ | S-04 | Rule-17 tooltip | Icon-only controls get a navy tooltip after **120 ms** (`#vp-tip`), unless `data-tip` exists (then CSS `.tip::after` with 120 ms delay). | proto.js:297-310,661 |
+| ☑ | S-05 | Fallback toasts | 3200 ms toast for dead controls: "Download started · …", "Preparing the ZIP…", "Choose a file to upload", "Link copied", "Opens the official portal in a new tab". Real app must do the real action. | proto.js:159-166,237-245 |
+| ☑ | S-06 | Page transitions | enter `vpIn .26s` (y 6 → 0), leave `.14s` opacity .35. | proto.js:135-137 |
+| ☑ | S-07 | Bot avatar | `v7c_bot` states idle / thinking (antenna pulse 1 s + eye scan 1.3 s) / answered (green antenna) / cannot (grey); sizes used: 16, 18, 40, 48, 56. Smile never changes. | v7c_bot.dc.html:128-141 |
+| ☑ | S-08 | Speech bubble (rule 16) | max 320, padding 10/14, r `10 10 10 2`, panel + border + shadow `0 8px 20px -12px`; text 600 13/1.45; action links 12/700 primary. | docs_a_refined.dc.html:186 |
+| ☑ | S-09 | Scrollbars | Hidden everywhere (`scrollbar-width:none`) — prototype choice. | proto.js:141-142 |
 
 ### 1.18 Keyboard
 
 | Done | id | key | behaviour | file:line |
 |---|---|---|---|---|
-| ☐ | K-01 | Esc in row menu | closes menu | docs_a_refined.dc.html:353 |
-| ☐ | K-02 | Esc in viewer | closes viewer → opener | s/home/v7x_doc_viewer.dc.html:232-235 |
-| ☐ | K-03 | Esc in drill pop-up | closes, focus back to trigger | proto.js:726-728 |
-| ☐ | K-04 | Esc / Tab in phone drawer | closes drawer / focus trap | shell.js:433-445 |
-| ☐ | K-05 | Tab / Shift-Tab | all controls are buttons/links with `:focus-visible` 2 px primary/50% ring (offset 2; tree `.main` offset −2). Kebab becomes visible on focus. Progress tooltip shows on focus-visible. | docs_a_refined.dc.html:46,64,84 |
-| ☐ | K-06 | ⌘K | displayed only (S-02) | topbar.dc.html:48 |
-| ☐ | K-07 | Tree arrows | **Not implemented** in prototype; `role=tree/treeitem` promises it → implement WAI tree keys (↑/↓ move, →/← expand/collapse, Enter select, Home/End). | docs_a_refined.dc.html:143-145 |
-| ☐ | K-08 | Viewer ←/→, +/− | Not wired; recommended to mirror prev/next + zoom buttons. | — |
+| ☑ | K-01 | Esc in row menu | closes menu | docs_a_refined.dc.html:353 |
+| ☑ | K-02 | Esc in viewer | closes viewer → opener | s/home/v7x_doc_viewer.dc.html:232-235 |
+| ☑ | K-03 | Esc in drill pop-up | closes, focus back to trigger | proto.js:726-728 |
+| ☑ | K-04 | Esc / Tab in phone drawer | closes drawer / focus trap | shell.js:433-445 |
+| ☑ | K-05 | Tab / Shift-Tab | all controls are buttons/links with `:focus-visible` 2 px primary/50% ring (offset 2; tree `.main` offset −2). Kebab becomes visible on focus. Progress tooltip shows on focus-visible. | docs_a_refined.dc.html:46,64,84 |
+| ☑ | K-06 | ⌘K | displayed only (S-02) | topbar.dc.html:48 |
+| ☑ | K-07 | Tree arrows | **Not implemented** in prototype; `role=tree/treeitem` promises it → implement WAI tree keys (↑/↓ move, →/← expand/collapse, Enter select, Home/End). | docs_a_refined.dc.html:143-145 |
+| ☑ | K-08 | Viewer ←/→, +/− | Not wired; recommended to mirror prev/next + zoom buttons. | — |
 
 ### 1.19 Animations & timings
 
 | Done | id | what | spec | file:line |
 |---|---|---|---|---|
-| ☐ | A-01 | Sliding pill thumb | `transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)` (= `springSnappy` 420/32/0.8); label colour `.2s` | docs_a_refined.dc.html:36-37 |
-| ☐ | A-02 | Tree chevron | `transform .15s` 0→90° | :341 |
-| ☐ | A-03 | Tooltips | `.tip::after` opacity/transform/visibility `.12s` **delay .12s**, from `translate(-50%,3px)`; progress-bar tip `.12s` no delay | :58-59,80-81 |
-| ☐ | A-04 | Docs toast in | `tin .25s cubic-bezier(.22,1,.36,1)` from `translate(-50%,10px)` opacity 0; progress fill `width .25s`; ZIP tick 260 ms/file | :74-78,256 |
-| ☐ | A-05 | Dialog pop (drill, recent drill) | `pop .22s cubic-bezier(.22,1,.36,1)` from `translateY(8px) scale(.985)` opacity 0 | docs_a_drill.dc.html:31-32 |
-| ☐ | A-06 | Skeleton shimmer | `sh 1.3s linear infinite`, gradient bg 600 px wide moving −300→300 px | docs_a_loading.dc.html:16-17 |
-| ☐ | A-07 | Phone action sheet | `up .25s cubic-bezier(.22,1,.36,1)` from `translateY(40px)` opacity 0 | docs_a_mobile.dc.html:32-33 |
-| ☐ | A-08 | Phone level change | `sl .2s cubic-bezier(.22,1,.36,1)` from `translateX(14px)` opacity 0 | :34-35 |
-| ☐ | A-09 | Phone preview sheet | `sheet .28s cubic-bezier(.22,1,.36,1)` from `translateY(40px)` | docs_mobile_preview.dc.html:21-22 |
-| ☐ | A-10 | Viewer zoom | paper `width .2s` | s/home/v7x_doc_viewer.dc.html:226 |
-| ☐ | A-11 | Upload bar (specimen) | `fill 1.6s cubic-bezier(.2,.7,.2,1) infinite alternate` 8%→64% | docs_upload.dc.html:35-36 |
-| ☐ | A-12 | New row glow | `glow 2.4s ease-out` ok-light → panel (prototype infinite; ship once) | :39-40 |
-| ☐ | A-13 | Upload toast | `toast .3s cubic-bezier(.22,1,.36,1) .3s both` from y 10 | :37-38 |
-| ☐ | A-14 | Book hover | `transform .42s cubic-bezier(.34,1.45,.5,1)`, `box-shadow .3s cubic-bezier(.22,1,.36,1)`, `will-change:transform` | lib_shelf_a.dc.html:56 |
-| ☐ | A-15 | Empty-library books rise | `rise .6s cubic-bezier(.22,1,.36,1)` scaleY .2→1, delays 0/.08/.16/.24 s | lib_empty.dc.html:22-23,35-38 |
-| ☐ | A-16 | Current-node pulse | `v7pulse 1.8s ease-in-out infinite` gold ring 0→7 px | lib_reader.dc.html:44-45 |
-| ☐ | A-17 | Ask VCFO launcher | `v7up .45s cubic-bezier(.22,1,.36,1) .5s` from y 48; `v7bob 2.6s ease-in-out infinite` (−4 px) | lib_shelf_a.dc.html:48-51 |
-| ☐ | A-18 | Reduced motion | every board: `@media (prefers-reduced-motion: reduce)` disables all animations/transitions; books `transform:none` | docs_a_refined.dc.html:85; lib_shelf_a.dc.html:52,61 |
+| ☑ | A-01 | Sliding pill thumb | `transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)` (= `springSnappy` 420/32/0.8); label colour `.2s` | docs_a_refined.dc.html:36-37 |
+| ☑ | A-02 | Tree chevron | `transform .15s` 0→90° | :341 |
+| ☑ | A-03 | Tooltips | `.tip::after` opacity/transform/visibility `.12s` **delay .12s**, from `translate(-50%,3px)`; progress-bar tip `.12s` no delay | :58-59,80-81 |
+| ☑ | A-04 | Docs toast in | `tin .25s cubic-bezier(.22,1,.36,1)` from `translate(-50%,10px)` opacity 0; progress fill `width .25s`; ZIP tick 260 ms/file | :74-78,256 |
+| ☑ | A-05 | Dialog pop (drill, recent drill) | `pop .22s cubic-bezier(.22,1,.36,1)` from `translateY(8px) scale(.985)` opacity 0 | docs_a_drill.dc.html:31-32 |
+| ☑ | A-06 | Skeleton shimmer | `sh 1.3s linear infinite`, gradient bg 600 px wide moving −300→300 px | docs_a_loading.dc.html:16-17 |
+| ☑ | A-07 | Phone action sheet | `up .25s cubic-bezier(.22,1,.36,1)` from `translateY(40px)` opacity 0 | docs_a_mobile.dc.html:32-33 |
+| ☑ | A-08 | Phone level change | `sl .2s cubic-bezier(.22,1,.36,1)` from `translateX(14px)` opacity 0 | :34-35 |
+| ☑ | A-09 | Phone preview sheet | `sheet .28s cubic-bezier(.22,1,.36,1)` from `translateY(40px)` | docs_mobile_preview.dc.html:21-22 |
+| ☑ | A-10 | Viewer zoom | paper `width .2s` | s/home/v7x_doc_viewer.dc.html:226 |
+| ☑ | A-11 | Upload bar (specimen) | `fill 1.6s cubic-bezier(.2,.7,.2,1) infinite alternate` 8%→64% | docs_upload.dc.html:35-36 |
+| ☑ | A-12 | New row glow | `glow 2.4s ease-out` ok-light → panel (prototype infinite; ship once) | :39-40 |
+| ☑ | A-13 | Upload toast | `toast .3s cubic-bezier(.22,1,.36,1) .3s both` from y 10 | :37-38 |
+| ☑ | A-14 | Book hover | `transform .42s cubic-bezier(.34,1.45,.5,1)`, `box-shadow .3s cubic-bezier(.22,1,.36,1)`, `will-change:transform` | lib_shelf_a.dc.html:56 |
+| ☑ | A-15 | Empty-library books rise | `rise .6s cubic-bezier(.22,1,.36,1)` scaleY .2→1, delays 0/.08/.16/.24 s | lib_empty.dc.html:22-23,35-38 |
+| ☑ | A-16 | Current-node pulse | `v7pulse 1.8s ease-in-out infinite` gold ring 0→7 px | lib_reader.dc.html:44-45 |
+| ☑ | A-17 | Ask VCFO launcher | `v7up .45s cubic-bezier(.22,1,.36,1) .5s` from y 48; `v7bob 2.6s ease-in-out infinite` (−4 px) | lib_shelf_a.dc.html:48-51 |
+| ☑ | A-18 | Reduced motion | every board: `@media (prefers-reduced-motion: reduce)` disables all animations/transitions; books `transform:none` | docs_a_refined.dc.html:85; lib_shelf_a.dc.html:52,61 |
 
 ### 1.20 Breakpoint variants
 
 | Done | id | width | Documents | Knowledge Bank | Reader | file:line |
 |---|---|---|---|---|---|---|
-| ☐ | B-01 | ≥1280 | sidebar 248; tree `clamp(300px,44%,440px)` + pane side by side; toolbar one line | seg wrapper 680–740; "Recently read" label inline | 2 columns | docs_a_refined.dc.html:87,98 |
-| ☐ | B-02 | 1000–1279 | sidebar 72 (icon rail; Before/After pill moves into rail in screenshot); toolbar buttons 36 px and wrap to 2nd line (screenshot 1024) | "Recently read" heading full row | 2 cols until 1100 | :88,103; lib_shelf_a.dc.html:77 |
-| ☐ | B-03 | ≤1100 | — | — | single column; side cards in auto-fit grid min 240 | lib_reader.dc.html:68-71 |
-| ☐ | B-04 | ≤999 | page grows (height auto); tree above pane (max 52vh); preview fixed `clamp(260px,42vh,420px)`; filter full row; spacer hidden | — | — | docs_a_refined.dc.html:104-112 |
-| ☐ | B-05 | ≤767 | sidebar hidden (drawer); toolbar controls 40, pill buttons 36, rows 44, kebabs 40 always visible — **but the router serves the phone board (M-*) instead** | seg full row, buttons 40, search 44, shelf = grid `repeat(auto-fill,128px)` centred, gap 40/18; mini cards full width, links 40 | hero/body padding 16, timeline vertical, facts 1 col, buttons 40 | :113-118; lib_shelf_a.dc.html:80-92; lib_reader.dc.html:72-87 |
-| ☐ | B-06 | phone board | M-01…M-14, MP-* | (no dedicated phone board for the shelf; uses B-05 rules) | | docs_a_mobile.dc.html |
+| ☑ | B-01 | ≥1280 | sidebar 248; tree `clamp(300px,44%,440px)` + pane side by side; toolbar one line | seg wrapper 680–740; "Recently read" label inline | 2 columns | docs_a_refined.dc.html:87,98 |
+| ☑ | B-02 | 1000–1279 | sidebar 72 (icon rail; Before/After pill moves into rail in screenshot); toolbar buttons 36 px and wrap to 2nd line (screenshot 1024) | "Recently read" heading full row | 2 cols until 1100 | :88,103; lib_shelf_a.dc.html:77 |
+| ☑ | B-03 | ≤1100 | — | — | single column; side cards in auto-fit grid min 240 | lib_reader.dc.html:68-71 |
+| ☑ | B-04 | ≤999 | page grows (height auto); tree above pane (max 52vh); preview fixed `clamp(260px,42vh,420px)`; filter full row; spacer hidden | — | — | docs_a_refined.dc.html:104-112 |
+| ☑ | B-05 | ≤767 | sidebar hidden (drawer); toolbar controls 40, pill buttons 36, rows 44, kebabs 40 always visible — **but the router serves the phone board (M-*) instead** | seg full row, buttons 40, search 44, shelf = grid `repeat(auto-fill,128px)` centred, gap 40/18; mini cards full width, links 40 | hero/body padding 16, timeline vertical, facts 1 col, buttons 40 | :113-118; lib_shelf_a.dc.html:80-92; lib_reader.dc.html:72-87 |
+| ☑ | B-06 | phone board | M-01…M-14, MP-* | (no dedicated phone board for the shelf; uses B-05 rules) | | docs_a_mobile.dc.html |
 
 ---
 
@@ -2054,12 +2054,12 @@ function taking `AuthContext`, plus a cross-tenant test.
 
 | Done | Page | Today's code | Data today |
 |---|---|---|---|
-| ☐ | `/app/client/documents` | `app/app/client/documents/page.tsx` → `src/views/client/Documents.tsx` (149 lines) | `useApp()` → `engagements`, `requests`, `getStateForEngagement`; `collectVaultDocuments` / `groupVaultDocuments` (`src/lib/vault-documents.ts`) build milestone → section → doc lists from `checklist_state`; each row fetches its own signed URL on mount via `MilestoneDocumentLink` (`src/components/common/MilestoneDocumentLink.tsx` → `getMilestoneDocumentSignedUrl` → `GET /api/milestone-documents/signed-url?path=`); `ClientBoardResolutionCard` (`fetchBoardResolutionInDb` → `GET /api/engagements/[id]/board-resolution`); legacy requests split into "on file" / "Still needed" lists. Returns `null` with no engagement. |
-| ☐ | `/app/client/library` | `src/views/client/ask/ClientLibrary.tsx` | `useQuery(['ask','library'], fetchLibrary)` → `GET /api/ask/library` → `listLibraryItems(ctx)` (`src/db/repositories/client-library.ts:33`) → `toLibraryView` (`src/lib/ask/library.ts`) giving `{id,title,category,topicSlug,updated,savedAt,answer}`; `StatusBriefButton` → `/api/ask/brief`; export → `/api/ask/library/export?ids=`. |
-| ☐ | `/app/client/library/[id]` | `src/views/client/ask/ClientLibraryItem.tsx` → `AskReader` | `fetchLibraryItem(id)` → `GET /api/ask/library/[id]` (`{item, notice}`); delete → `DELETE /api/ask/library/[id]` (`deleteLibraryItem` repo) then router push. Export `/api/ask/library/[id]/export`. |
-| ☐ | `/app/client/learn/[slug]` | `src/views/client/ask/ClientLearnTopic.tsx` → `AskReader` | `fetchTopicAnswer(slug,{depth,engagementId})` → `GET /api/ask/topics/[slug]`; depth switch re-fetches; save → `POST /api/ask/library` (`saveToLibrary`). |
-| ☐ | Staff vault (reference only) | `src/views/vault/DocumentVaultPage.tsx` | `useIndexedDocuments` (`src/lib/use-vault-documents.ts`) → `GET /api/documents`; `getIndexedDocumentSignedUrl` → `GET /api/documents/[id]/signed-url`. |
-| ☐ | Firm Knowledge Bank (staff) | `src/db/repositories/knowledge-bank.ts`, `app/api/knowledge-bank/**` | **Staff-only** (`requireAnyRole('admin','manager','intern')`). Not the client "Knowledge Bank": the client one is the Ask VCFO library (`client_library_items`) + topics (`src/data/ask/topics/*.json`). Do not expose firm KB files to clients. |
+| ☑ | `/app/client/documents` | `app/app/client/documents/page.tsx` → `src/views/client/Documents.tsx` (149 lines) | `useApp()` → `engagements`, `requests`, `getStateForEngagement`; `collectVaultDocuments` / `groupVaultDocuments` (`src/lib/vault-documents.ts`) build milestone → section → doc lists from `checklist_state`; each row fetches its own signed URL on mount via `MilestoneDocumentLink` (`src/components/common/MilestoneDocumentLink.tsx` → `getMilestoneDocumentSignedUrl` → `GET /api/milestone-documents/signed-url?path=`); `ClientBoardResolutionCard` (`fetchBoardResolutionInDb` → `GET /api/engagements/[id]/board-resolution`); legacy requests split into "on file" / "Still needed" lists. Returns `null` with no engagement. |
+| ☑ | `/app/client/library` | `src/views/client/ask/ClientLibrary.tsx` | `useQuery(['ask','library'], fetchLibrary)` → `GET /api/ask/library` → `listLibraryItems(ctx)` (`src/db/repositories/client-library.ts:33`) → `toLibraryView` (`src/lib/ask/library.ts`) giving `{id,title,category,topicSlug,updated,savedAt,answer}`; `StatusBriefButton` → `/api/ask/brief`; export → `/api/ask/library/export?ids=`. |
+| ☑ | `/app/client/library/[id]` | `src/views/client/ask/ClientLibraryItem.tsx` → `AskReader` | `fetchLibraryItem(id)` → `GET /api/ask/library/[id]` (`{item, notice}`); delete → `DELETE /api/ask/library/[id]` (`deleteLibraryItem` repo) then router push. Export `/api/ask/library/[id]/export`. |
+| ☑ | `/app/client/learn/[slug]` | `src/views/client/ask/ClientLearnTopic.tsx` → `AskReader` | `fetchTopicAnswer(slug,{depth,engagementId})` → `GET /api/ask/topics/[slug]`; depth switch re-fetches; save → `POST /api/ask/library` (`saveToLibrary`). |
+| ☑ | Staff vault (reference only) | `src/views/vault/DocumentVaultPage.tsx` | `useIndexedDocuments` (`src/lib/use-vault-documents.ts`) → `GET /api/documents`; `getIndexedDocumentSignedUrl` → `GET /api/documents/[id]/signed-url`. |
+| ☑ | Firm Knowledge Bank (staff) | `src/db/repositories/knowledge-bank.ts`, `app/api/knowledge-bank/**` | **Staff-only** (`requireAnyRole('admin','manager','intern')`). Not the client "Knowledge Bank": the client one is the Ask VCFO library (`client_library_items`) + topics (`src/data/ask/topics/*.json`). Do not expose firm KB files to clients. |
 
 ### 2.1 Documents — one unified "document node" model (NEW view-model, existing sources)
 
@@ -2072,126 +2072,126 @@ built by a **NEW repository** `src/db/repositories/client-documents.ts` → `lis
 
 | Done | Source | Gives | Existing function |
 |---|---|---|---|
-| ☐ | Checklist uploads (paths in `engagements.checklist_state[*].responses`) | milestone files per step/field, upload timestamp from the path | `collectVaultDocuments` / `extractItemResponses` / `uploadTimestampFromStoragePath` / `fileNameFromStoragePath` (`src/lib/vault-documents.ts`, `src/lib/milestone-document-storage.ts:123-142`) — move server-side; client release filter via `isStepReleasedTo` (`src/lib/checklist-visibility.ts:67`) like `listDocuments` does |
-| ☐ | Indexed documents table | SBC-delivered files (COI, MoA, SH-1…), category, `stepId`, `contentType`, `sizeBytes`, `uploadedBy`, `sharedWithClient` | `listDocuments(ctx, engagementId)` (`src/db/repositories/documents.ts:130`) — client sees `shared_with_client = true` + released steps only |
-| ☐ | Board resolution | final / signed BR file | `fetchBoardResolutionForApi` (`src/lib/api/board-resolution-access.ts`) / `GET /api/engagements/[id]/board-resolution` (client allowed) + `download` / `download-signed` routes (client allowed) |
-| ☐ | Incorporation drafts shared with client | DOCX drafts | `filterClientVisibleIncorpDrafts` (`src/lib/incorporation-docs/share.ts`) as used in `incorporation-docs/download-all/route.ts` |
-| ☐ | Open requests | dashed "missing" rows | `listDocumentRequests(ctx)` (`src/db/repositories/document-requests.ts:58`) filtered `status==='pending'` + engagement |
-| ☐ | Step / phase structure | phase → step tree, step names | `getIncorporationPhases()` (`src/data/checklist.ts:1071`) + `CLIENT_PROGRESS_PHASE_TITLES` (`src/lib/client-progress-board.ts:21-26`: "Phase 1 — Name Application", "Phase 2 — Incorporation", "Phase 3 — Post-Incorporation", "Phase 4 — Registration") |
+| ☑ | Checklist uploads (paths in `engagements.checklist_state[*].responses`) | milestone files per step/field, upload timestamp from the path | `collectVaultDocuments` / `extractItemResponses` / `uploadTimestampFromStoragePath` / `fileNameFromStoragePath` (`src/lib/vault-documents.ts`, `src/lib/milestone-document-storage.ts:123-142`) — move server-side; client release filter via `isStepReleasedTo` (`src/lib/checklist-visibility.ts:67`) like `listDocuments` does |
+| ☑ | Indexed documents table | SBC-delivered files (COI, MoA, SH-1…), category, `stepId`, `contentType`, `sizeBytes`, `uploadedBy`, `sharedWithClient` | `listDocuments(ctx, engagementId)` (`src/db/repositories/documents.ts:130`) — client sees `shared_with_client = true` + released steps only |
+| ☑ | Board resolution | final / signed BR file | `fetchBoardResolutionForApi` (`src/lib/api/board-resolution-access.ts`) / `GET /api/engagements/[id]/board-resolution` (client allowed) + `download` / `download-signed` routes (client allowed) |
+| ✗ | Incorporation drafts shared with client | DOCX drafts | `filterClientVisibleIncorpDrafts` (`src/lib/incorporation-docs/share.ts`) as used in `incorporation-docs/download-all/route.ts` |
+| ☑ | Open requests | dashed "missing" rows | `listDocumentRequests(ctx)` (`src/db/repositories/document-requests.ts:58`) filtered `status==='pending'` + engagement |
+| ☑ | Step / phase structure | phase → step tree, step names | `getIncorporationPhases()` (`src/data/checklist.ts:1071`) + `CLIENT_PROGRESS_PHASE_TITLES` (`src/lib/client-progress-board.ts:21-26`: "Phase 1 — Name Application", "Phase 2 — Incorporation", "Phase 3 — Post-Incorporation", "Phase 4 — Registration") |
 
 ### 2.2 Documents — field-by-field mapping
 
 | Done | UI datum (id) | Prototype value | Real source | Status |
 |---|---|---|---|---|
-| ☐ | Phase folder label (DT-06) | "Phase 2 — Incorporation" | `CLIENT_PROGRESS_PHASE_TITLES[phase.id]` | EXISTS (casing differs: board uses sentence case "Name application", "Post-incorporation"; pick the app's string or lower-case second word consistently) |
-| ☐ | Phase count (DT-06) | 10 | count of non-replaced DocNodes under phase (incl. missing) | NEW (derived) |
-| ☐ | Step folder label (DT-07) "N · Name" | "6 · Director KYC" | step number = 1-based position of the item in the client step order (`getIncorporationPhases()` flattened), name = `item.title` | PARTIAL (number helper: reuse whatever the Incorporation page uses to print "Step 7 of 14"; else NEW tiny helper in `src/lib/`) |
-| ☐ | Per-step progress ok/rv/ms (DT-08) | 4 / 0 / 1 | ok = files with status Approved or Final; rv = In review; ms = Missing rows | NEW (derived in repo) |
-| ☐ | Category folders (DT-09) | Identity & KYC, Office address, Company records, Certificates, Banking & capital | `documents.category` today holds `documents|images|reports|deliverables` or a field `section` / vault phase (`milestone-documents/route.ts:141`) — **not** these 5 | NEW: a `CLIENT_DOC_CATEGORY` map `fieldId/stepId → c1..c5` in `src/lib/` (static, like `vaultPhaseForItem`) |
-| ☐ | Row name (DT-21) | "PAN card — Ravi Kumar" | field label (`getClientResponseFields(item)[].label`, repeat label via `repeatFieldLabel`) + person name for director repeats (`resolvePre6DisplayNameForPrefix`) ; indexed rows: a human title | PARTIAL (VaultDocument.fieldLabel exists; person suffix NEW) |
-| ☐ | Type tile (DT-12) | PDF / JPG / DOCX | `contentType` (indexed) or extension of `fileName` (`resolveUploadExtension`, `src/lib/upload-limits.ts:125`) | EXISTS |
-| ☐ | Status Approved (DT-14) | green | step slice `getReviewStatus(slice)==='accepted'` (`src/lib/checklist-item-review.ts:11-25`) or request `status==='approved'` | EXISTS |
-| ☐ | Status In review | blue | `isAwaitingReview(slice)` / request `uploaded` | EXISTS |
-| ☐ | Status Final | navy badge | SBC-delivered: indexed doc uploaded by staff & shared, or `isDeliveredToClient(slice)` (`src/lib/checklist-state-key.ts:187`), BR `status==='finalized'`/signed (`boardResolutionProgressFromDoc`, `client-progress-board.ts:33`) | EXISTS (rule to combine = NEW) |
-| ☐ | Status Replaced (DT-11) | greyed, hidden by default | older uploads for the same field. Today only the **latest** path is kept in `checklist_state` (improve #7), but every upload is a new S3 object `{eng}/{fieldId}/{ts}-{name}` (`milestoneDocumentObjectPath`) | **NEW**: keep history — either a `document_versions` table (doc_id, object_key, replaced_at, replaced_by) or index every upload in `documents` with `replaced_by_id`; repo fn `listFieldVersions(ctx, engagementId, fieldId)`. Alternative: S3 `ListObjectsV2` on the prefix → **NEW** `listObjects(prefix)` in `src/storage/s3.ts` (only the repo may call it) |
-| ☐ | Missing row (DT-13) | "Signed DIR-2 — Meera Shah", due 12 Nov | pending `document_requests` row (title) | EXISTS (title) |
-| ☐ | Due date / Overdue | "Due 12 Nov" / "Overdue" | `DocRequest.dueAt` exists in the type and in `createDocumentRequest` input, **but `document_requests` has no due column** (`src/db/schema.ts:673-683`) — dropped on insert | **NEW**: migration `document_requests.due_at timestamptz`, `step_id text`, `field_id text`, `object_key text`, `file_name text`, `uploaded_at timestamptz`, `review_note text`; map in repo |
-| ☐ | "Asked by Arjun Mehta" (DP-05) | requester name | `document_requests.requested_by` → profiles name | NEW join in `listDocumentRequests` (return `requestedByName`) |
-| ☐ | "From" (DP-05) | "SBC · Arjun Mehta" / "Northwind" | indexed `documents.uploaded_by` → profile name + role (staff → "SBC · {name}", client → company name); milestone uploads by the client → company name | PARTIAL (uploaded_by exists for indexed rows; milestone path has no uploader → store `uploadedBy` in the response slice or index client uploads too) |
-| ☐ | Date (DP-05) | "24 Oct 2026" | indexed `createdAt`; milestone `uploadTimestampFromStoragePath`; format `dd MMM yyyy` (`formatUploadDate` in Documents.tsx uses `en-IN` "24 Oct 2026") | EXISTS |
-| ☐ | File (DP-05) | `COI-Northwind.pdf` | `fileName` / `fileNameFromStoragePath` | EXISTS |
-| ☐ | Verify portal (DP-05) | MCA portal / Income-tax e-filing | map by document kind → portal (rule 15). Portal URL constants exist in `src/lib/announcement-portals.ts` (MCA, etc.) | NEW map `src/lib/document-portals.ts` (kind → {label,url}) |
-| ☐ | Stale flag "Older than 2 months" (DT-15) | address-proof bill | needs the **bill date** (document date), not upload date. Fields: utility bill / bank statement / address proof | NEW: rule table `{fieldId → maxAgeDays: 60}` + use an entered "bill date" response if the step captures it, else upload date as fallback; flag computed in repo |
-| ☐ | Board resolution row (DT-16) | Phase 1 › step "Signed Board Resolution" › "Board resolution (final)" Final + replaced draft | `fetchBoardResolutionForApi` → `storagePath` (draft docx) + `signedStoragePath` (signed) + `status` | EXISTS (merge into tree = NEW); delete `ClientBoardResolutionCard` usage on this page |
-| ☐ | Toolbar counter "15/17" (D-07) | shown/total files | client-side from the tree | derived |
-| ☐ | "Upload · 2 requested" (D-14) | open request count | pending requests for the engagement | EXISTS (`requests` in `useApp()` or the new endpoint) |
-| ☐ | Arrange-by remembered (D-11) | By step | — | NEW: `localStorage['vcfo.docs.view']` (per-viewer convenience) or `ask-client-prefs`-style user pref repo (`src/db/repositories/ask-client-prefs.ts` exists as a pattern) |
-| ☐ | Status / Replaced toggles | on / off | — | client state (optionally remembered) |
-| ☐ | Open state of folders | default map | — | client state; default open all except collapsed long steps |
-| ☐ | Selected file | f9 | — | client state; deep link `?doc=` (for "Copy link") NEW |
+| ☑ | Phase folder label (DT-06) | "Phase 2 — Incorporation" | `CLIENT_PROGRESS_PHASE_TITLES[phase.id]` | EXISTS (casing differs: board uses sentence case "Name application", "Post-incorporation"; pick the app's string or lower-case second word consistently) |
+| ☑ | Phase count (DT-06) | 10 | count of non-replaced DocNodes under phase (incl. missing) | NEW (derived) |
+| ☑ | Step folder label (DT-07) "N · Name" | "6 · Director KYC" | step number = 1-based position of the item in the client step order (`getIncorporationPhases()` flattened), name = `item.title` | PARTIAL (number helper: reuse whatever the Incorporation page uses to print "Step 7 of 14"; else NEW tiny helper in `src/lib/`) |
+| ☑ | Per-step progress ok/rv/ms (DT-08) | 4 / 0 / 1 | ok = files with status Approved or Final; rv = In review; ms = Missing rows | NEW (derived in repo) |
+| ☑ | Category folders (DT-09) | Identity & KYC, Office address, Company records, Certificates, Banking & capital | `documents.category` today holds `documents|images|reports|deliverables` or a field `section` / vault phase (`milestone-documents/route.ts:141`) — **not** these 5 | NEW: a `CLIENT_DOC_CATEGORY` map `fieldId/stepId → c1..c5` in `src/lib/` (static, like `vaultPhaseForItem`) |
+| ☑ | Row name (DT-21) | "PAN card — Ravi Kumar" | field label (`getClientResponseFields(item)[].label`, repeat label via `repeatFieldLabel`) + person name for director repeats (`resolvePre6DisplayNameForPrefix`) ; indexed rows: a human title | PARTIAL (VaultDocument.fieldLabel exists; person suffix NEW) |
+| ☑ | Type tile (DT-12) | PDF / JPG / DOCX | `contentType` (indexed) or extension of `fileName` (`resolveUploadExtension`, `src/lib/upload-limits.ts:125`) | EXISTS |
+| ☑ | Status Approved (DT-14) | green | step slice `getReviewStatus(slice)==='accepted'` (`src/lib/checklist-item-review.ts:11-25`) or request `status==='approved'` | EXISTS |
+| ☑ | Status In review | blue | `isAwaitingReview(slice)` / request `uploaded` | EXISTS |
+| ☑ | Status Final | navy badge | SBC-delivered: indexed doc uploaded by staff & shared, or `isDeliveredToClient(slice)` (`src/lib/checklist-state-key.ts:187`), BR `status==='finalized'`/signed (`boardResolutionProgressFromDoc`, `client-progress-board.ts:33`) | EXISTS (rule to combine = NEW) |
+| ☑ | Status Replaced (DT-11) | greyed, hidden by default | older uploads for the same field. Today only the **latest** path is kept in `checklist_state` (improve #7), but every upload is a new S3 object `{eng}/{fieldId}/{ts}-{name}` (`milestoneDocumentObjectPath`) | **NEW**: keep history — either a `document_versions` table (doc_id, object_key, replaced_at, replaced_by) or index every upload in `documents` with `replaced_by_id`; repo fn `listFieldVersions(ctx, engagementId, fieldId)`. Alternative: S3 `ListObjectsV2` on the prefix → **NEW** `listObjects(prefix)` in `src/storage/s3.ts` (only the repo may call it) |
+| ☑ | Missing row (DT-13) | "Signed DIR-2 — Meera Shah", due 12 Nov | pending `document_requests` row (title) | EXISTS (title) |
+| ☑ | Due date / Overdue | "Due 12 Nov" / "Overdue" | `DocRequest.dueAt` exists in the type and in `createDocumentRequest` input, **but `document_requests` has no due column** (`src/db/schema.ts:673-683`) — dropped on insert | **NEW**: migration `document_requests.due_at timestamptz`, `step_id text`, `field_id text`, `object_key text`, `file_name text`, `uploaded_at timestamptz`, `review_note text`; map in repo |
+| ☑ | "Asked by Arjun Mehta" (DP-05) | requester name | `document_requests.requested_by` → profiles name | NEW join in `listDocumentRequests` (return `requestedByName`) |
+| ☑ | "From" (DP-05) | "SBC · Arjun Mehta" / "Northwind" | indexed `documents.uploaded_by` → profile name + role (staff → "SBC · {name}", client → company name); milestone uploads by the client → company name | PARTIAL (uploaded_by exists for indexed rows; milestone path has no uploader → store `uploadedBy` in the response slice or index client uploads too) |
+| ☑ | Date (DP-05) | "24 Oct 2026" | indexed `createdAt`; milestone `uploadTimestampFromStoragePath`; format `dd MMM yyyy` (`formatUploadDate` in Documents.tsx uses `en-IN` "24 Oct 2026") | EXISTS |
+| ☑ | File (DP-05) | `COI-Northwind.pdf` | `fileName` / `fileNameFromStoragePath` | EXISTS |
+| ☑ | Verify portal (DP-05) | MCA portal / Income-tax e-filing | map by document kind → portal (rule 15). Portal URL constants exist in `src/lib/announcement-portals.ts` (MCA, etc.) | NEW map `src/lib/document-portals.ts` (kind → {label,url}) |
+| ☑ | Stale flag "Older than 2 months" (DT-15) | address-proof bill | needs the **bill date** (document date), not upload date. Fields: utility bill / bank statement / address proof | NEW: rule table `{fieldId → maxAgeDays: 60}` + use an entered "bill date" response if the step captures it, else upload date as fallback; flag computed in repo |
+| ☑ | Board resolution row (DT-16) | Phase 1 › step "Signed Board Resolution" › "Board resolution (final)" Final + replaced draft | `fetchBoardResolutionForApi` → `storagePath` (draft docx) + `signedStoragePath` (signed) + `status` | EXISTS (merge into tree = NEW); delete `ClientBoardResolutionCard` usage on this page |
+| ☑ | Toolbar counter "15/17" (D-07) | shown/total files | client-side from the tree | derived |
+| ☑ | "Upload · 2 requested" (D-14) | open request count | pending requests for the engagement | EXISTS (`requests` in `useApp()` or the new endpoint) |
+| ☑ | Arrange-by remembered (D-11) | By step | — | NEW: `localStorage['vcfo.docs.view']` (per-viewer convenience) or `ask-client-prefs`-style user pref repo (`src/db/repositories/ask-client-prefs.ts` exists as a pattern) |
+| ☑ | Status / Replaced toggles | on / off | — | client state (optionally remembered) |
+| ☑ | Open state of folders | default map | — | client state; default open all except collapsed long steps |
+| ☑ | Selected file | f9 | — | client state; deep link `?doc=` (for "Copy link") NEW |
 
 ### 2.3 Documents — actions mapping
 
 | Done | Action | Prototype | Real backend | Status |
 |---|---|---|---|---|
-| ☐ | Preview (pane page, eye, menu Preview, drill eye) | opens `v7x_doc_viewer` | signed URL **on click only** (improve #1): milestone → `GET /api/milestone-documents/signed-url?path=` ; indexed → `GET /api/documents/[id]/signed-url` ; BR → `GET /api/engagements/[id]/board-resolution/download(-signed)`; render PDF in `<iframe>`/`<object>` or pdf.js, images `<img>`, DOCX via `IncorporationDocxPreview` (`src/components/incorporation/IncorporationDocxPreview.tsx`, dep `docx-preview`) as `DocPackPreviewDialog` does | EXISTS (endpoints) / NEW (shared `DocumentViewer` component) |
-| ☐ | Pane thumbnail (DP-03) | placeholder page | first page of PDF / the image / docx render, lazy | NEW (client render from signed URL) |
-| ☐ | Download (icon, menu, viewer) | toast | same signed URLs with `Content-Disposition: attachment` (add `?download=1` → `signedDownloadUrl(key, ttl, {filename})`) | PARTIAL — `signedDownloadUrl(key, expiresIn)` (`src/storage/s3.ts:75-84`) has **no** `ResponseContentDisposition`; NEW optional `{ downloadName }` param → `GetObjectCommand({…, ResponseContentDisposition: 'attachment; filename="…"'})` |
-| ☐ | Download folder as ZIP / Download all (ZIP) | 260 ms ticking toast | **NEW** route `GET /api/client/documents/zip?engagementId=&folder={phaseId|itemId|categoryId|all}` — streams a zip with **real step names as folders** ("Phase 2 — Incorporation/6 · Director KYC/PAN card — Ravi Kumar.pdf"); reuse `pizzip` like `src/lib/incorporation-docs/zip.ts`; read bytes via `getObjectBuffer` (`src/storage/s3.ts:63`) inside a repository-side helper; audit with `recordAuditEvent` (`doc_pack.download_zip` pattern in `app/api/engagements/[id]/doc-pack/zip/route.ts`). Progress: real toast can show indeterminate → done, or stream with `Content-Length`. Staff doc-pack zip is **staff-only** (`src/lib/api/doc-pack.ts:50`) — do not reuse for clients. | NEW |
-| ☐ | Copy link / Copy link to folder | "Link copied" toast | `navigator.clipboard.writeText(origin + '/app/client/documents?doc=' + id)` / `?folder=` | NEW (URL param handling in page) |
-| ☐ | Open step N | — | `router.push('/app/client/incorporation/step/{stepId}')` (route `app/app/client/incorporation/step/[stepId]/page.tsx` takes the checklist **item id**, not the display number) | EXISTS (route) |
-| ☐ | Upload against a request (U-*, DP-04, M-11) | specimen | **NEW** `POST /api/requests/[id]/upload` (multipart) → validate (`validateMilestoneUploadFile`, `MILESTONE_DOCUMENT_EXTENSIONS`), `putObject(bucketKey(...))`, then `updateDocumentRequest(ctx,id,{status:'uploaded',fileName,uploadedAt})` + store `object_key` (new column) → fires existing `client_uploaded` email (`app/api/requests/[id]/route.ts`). When the request is tied to a checklist field, call the existing `POST /api/engagements/[id]/milestone-documents` (fieldId + file) instead, then PATCH the request. Today `uploadDoc` in `src/context/use-app-provider-value.ts:927-942` only records a file **name** — no bytes are stored. | NEW |
-| ☐ | Undo after upload (U-04) | gold Undo | NEW `DELETE /api/requests/[id]/upload` within N s (soft: revert status to pending, delete object) | NEW |
-| ☐ | Re-upload note (U-06) | "AM: Bill is older…" | `document_requests.detail` today mixes message + `file:`/`uploadedAt:` lines (`document-requests.ts:135-148`) — fragile | NEW `review_note` column (or reuse step `reviewStatus==='rejected'` + reviewer note) |
-| ☐ | Take photo (M-11) | sheet item | `<input type="file" accept="image/*" capture="environment">` → same upload route | NEW (UI only) |
-| ☐ | Accepted types caption (U-07) | "PDF · JPG · PNG · DOCX · up to 10 MB" | `MILESTONE_DOCUMENT_EXTENSIONS` + `maxUploadSizeLabel()` (`src/lib/upload-limits.ts:25,91`, default 50 MB) | EXISTS — print from config, don't hard-code 10 MB |
-| ☐ | Upload error (U-05) | ".heic · this file type can't be opened" | route returns `validateMilestoneUploadFile` error | EXISTS |
-| ☐ | Ask VCFO why / Ask VCFO about this | opens chat | `useAskOptional()` → `ask.setOpen(true)`; context `{kind:'document', ref, label}` exists in `ChatBody.context` (`src/hooks/ask/ask-api.ts:62-70`) | EXISTS |
-| ☐ | Open incorporation (empty state, drill link) | — | `/app/client/incorporation` | EXISTS |
+| ☑ | Preview (pane page, eye, menu Preview, drill eye) | opens `v7x_doc_viewer` | signed URL **on click only** (improve #1): milestone → `GET /api/milestone-documents/signed-url?path=` ; indexed → `GET /api/documents/[id]/signed-url` ; BR → `GET /api/engagements/[id]/board-resolution/download(-signed)`; render PDF in `<iframe>`/`<object>` or pdf.js, images `<img>`, DOCX via `IncorporationDocxPreview` (`src/components/incorporation/IncorporationDocxPreview.tsx`, dep `docx-preview`) as `DocPackPreviewDialog` does | EXISTS (endpoints) / NEW (shared `DocumentViewer` component) |
+| ☑ | Pane thumbnail (DP-03) | placeholder page | first page of PDF / the image / docx render, lazy | NEW (client render from signed URL) |
+| ☑ | Download (icon, menu, viewer) | toast | same signed URLs with `Content-Disposition: attachment` (add `?download=1` → `signedDownloadUrl(key, ttl, {filename})`) | PARTIAL — `signedDownloadUrl(key, expiresIn)` (`src/storage/s3.ts:75-84`) has **no** `ResponseContentDisposition`; NEW optional `{ downloadName }` param → `GetObjectCommand({…, ResponseContentDisposition: 'attachment; filename="…"'})` |
+| ☑ | Download folder as ZIP / Download all (ZIP) | 260 ms ticking toast | **NEW** route `GET /api/client/documents/zip?engagementId=&folder={phaseId|itemId|categoryId|all}` — streams a zip with **real step names as folders** ("Phase 2 — Incorporation/6 · Director KYC/PAN card — Ravi Kumar.pdf"); reuse `pizzip` like `src/lib/incorporation-docs/zip.ts`; read bytes via `getObjectBuffer` (`src/storage/s3.ts:63`) inside a repository-side helper; audit with `recordAuditEvent` (`doc_pack.download_zip` pattern in `app/api/engagements/[id]/doc-pack/zip/route.ts`). Progress: real toast can show indeterminate → done, or stream with `Content-Length`. Staff doc-pack zip is **staff-only** (`src/lib/api/doc-pack.ts:50`) — do not reuse for clients. | NEW |
+| ☑ | Copy link / Copy link to folder | "Link copied" toast | `navigator.clipboard.writeText(origin + '/app/client/documents?doc=' + id)` / `?folder=` | NEW (URL param handling in page) |
+| ☑ | Open step N | — | `router.push('/app/client/incorporation/step/{stepId}')` (route `app/app/client/incorporation/step/[stepId]/page.tsx` takes the checklist **item id**, not the display number) | EXISTS (route) |
+| ☑ | Upload against a request (U-*, DP-04, M-11) | specimen | **NEW** `POST /api/requests/[id]/upload` (multipart) → validate (`validateMilestoneUploadFile`, `MILESTONE_DOCUMENT_EXTENSIONS`), `putObject(bucketKey(...))`, then `updateDocumentRequest(ctx,id,{status:'uploaded',fileName,uploadedAt})` + store `object_key` (new column) → fires existing `client_uploaded` email (`app/api/requests/[id]/route.ts`). When the request is tied to a checklist field, call the existing `POST /api/engagements/[id]/milestone-documents` (fieldId + file) instead, then PATCH the request. Today `uploadDoc` in `src/context/use-app-provider-value.ts:927-942` only records a file **name** — no bytes are stored. | NEW |
+| ☑ | Undo after upload (U-04) | gold Undo | NEW `DELETE /api/requests/[id]/upload` within N s (soft: revert status to pending, delete object) | NEW |
+| ☑ | Re-upload note (U-06) | "AM: Bill is older…" | `document_requests.detail` today mixes message + `file:`/`uploadedAt:` lines (`document-requests.ts:135-148`) — fragile | NEW `review_note` column (or reuse step `reviewStatus==='rejected'` + reviewer note) |
+| ☑ | Take photo (M-11) | sheet item | `<input type="file" accept="image/*" capture="environment">` → same upload route | NEW (UI only) |
+| ☑ | Accepted types caption (U-07) | "PDF · JPG · PNG · DOCX · up to 10 MB" | `MILESTONE_DOCUMENT_EXTENSIONS` + `maxUploadSizeLabel()` (`src/lib/upload-limits.ts:25,91`, default 50 MB) | EXISTS — print from config, don't hard-code 10 MB |
+| ☑ | Upload error (U-05) | ".heic · this file type can't be opened" | route returns `validateMilestoneUploadFile` error | EXISTS |
+| ☑ | Ask VCFO why / Ask VCFO about this | opens chat | `useAskOptional()` → `ask.setOpen(true)`; context `{kind:'document', ref, label}` exists in `ChatBody.context` (`src/hooks/ask/ask-api.ts:62-70`) | EXISTS |
+| ☑ | Open incorporation (empty state, drill link) | — | `/app/client/incorporation` | EXISTS |
 
 ### 2.4 Shared document viewer (V-*) data
 
 | Done | Datum | Source | Status |
 |---|---|---|---|
-| ☐ | File name, type tile | DocNode | from 2.2 |
-| ☐ | (i) "From SBC · 24 Oct 2026 · Size [size]" | `uploadedBy` name, date, `sizeBytes` (`formatUploadFileSize`, `src/lib/upload-limits.ts:35`) — milestone uploads have no size → S3 `HeadObject` NEW or store size at upload | PARTIAL |
-| ☐ | "1 of 4" + prev/next | the ordered list the viewer was opened from (tree order / drill tab) | client |
-| ☐ | Page n / N, zoom | PDF renderer page count | NEW (pdf.js or browser viewer) |
-| ☐ | Unsupported state | types other than pdf/jpg/png/docx | client |
+| ☑ | File name, type tile | DocNode | from 2.2 |
+| ☑ | (i) "From SBC · 24 Oct 2026 · Size [size]" | `uploadedBy` name, date, `sizeBytes` (`formatUploadFileSize`, `src/lib/upload-limits.ts:35`) — milestone uploads have no size → S3 `HeadObject` NEW or store size at upload | PARTIAL |
+| ☑ | "1 of 4" + prev/next | the ordered list the viewer was opened from (tree order / drill tab) | client |
+| ◐ | Page n / N, zoom | PDF renderer page count | NEW (pdf.js or browser viewer) |
+| ☑ | Unsupported state | types other than pdf/jpg/png/docx | client |
 
 ### 2.5 Knowledge Bank shelf (L-*)
 
 | Done | UI datum | Prototype | Real source | Status |
 |---|---|---|---|---|
-| ☐ | Books | 15 saved items | `fetchLibrary()` → `LibraryItemView[]` (`src/hooks/ask/ask-api.ts:119-145`) | EXISTS |
-| ☐ | Book title | "FC-GPR after share allotment" | `item.title` | EXISTS |
-| ☐ | Shelf / category | 5 shelves | `item.category` ∈ `incorporation · tax · foreign-investment · labour · compliance · your-project` (`src/lib/ask/categories.ts`); label via `categoryLabel` but **"your-project" must render as "{Company}’s project"** (company from `ask.engagementId` → engagement name) | EXISTS (+ label tweak) ; add **labour** shelf colour |
-| ☐ | Category order | Incorporation, Foreign investment, Tax, Compliance, Northwind’s project | static order array in the view | NEW (const) |
-| ☐ | Category pill counts | All 15 · … | count per category of loaded items | derived |
-| ☐ | "{n} books" chip | 15 | `items.length` | derived |
-| ☐ | Updated ribbon (L-14) | blue ribbon | `item.updated` (`isLibraryItemUpdated`, `src/lib/ask/library.ts`) — today rendered as an **amber** "Updated" chip in `ClientLibrary.tsx:119-121` → change to blue ribbon | EXISTS (restyle) |
-| ☐ | Book glyph | per category | static per category | NEW (const) |
-| ☐ | Search "Search books" | title includes | today searches `title + answer.line` (`ClientLibrary.tsx:34-38`) | EXISTS |
-| ☐ | Monthly status brief | button | `StatusBriefButton` → `/api/ask/brief?engagementId=` | EXISTS |
-| ☐ | PDF brief | button | `/api/ask/library/export?ids=` | EXISTS |
-| ☐ | Recently read (L-08) + drill (LD-*) | 3 items, % read, "2 of 3 sections", "read on 8 Nov", In progress/Finished | — | **NEW**: table `client_library_reads (profile_id, item_id | topic_slug, progress_pct int, sections_read int, sections_total int, last_read_at, finished_at)`; repo `src/db/repositories/library-reads.ts` (`listRecentReads(ctx, limit)`, `recordReadProgress(ctx, …)`) scoped to `ctx.userId`; API `GET/POST /api/ask/library/reads`; reader reports scroll progress (IntersectionObserver per section) |
-| ☐ | Suggested chips (LE-05) | 3 topic titles | `fetchSuggestions('client', engagementId)` → `GET /api/ask/suggestions` or published topics list (`src/lib/ask/topics.ts`) linking to `/app/client/learn/{slug}` | EXISTS |
-| ☐ | Empty state | bot text | `items.length===0` | EXISTS |
-| ☐ | Loading | skeleton books | `query.isLoading` | EXISTS (UI NEW) |
-| ☐ | Error | error card + "Back to library" | `query.isError` | EXISTS (UI NEW) |
+| ☑ | Books | 15 saved items | `fetchLibrary()` → `LibraryItemView[]` (`src/hooks/ask/ask-api.ts:119-145`) | EXISTS |
+| ☑ | Book title | "FC-GPR after share allotment" | `item.title` | EXISTS |
+| ☑ | Shelf / category | 5 shelves | `item.category` ∈ `incorporation · tax · foreign-investment · labour · compliance · your-project` (`src/lib/ask/categories.ts`); label via `categoryLabel` but **"your-project" must render as "{Company}’s project"** (company from `ask.engagementId` → engagement name) | EXISTS (+ label tweak) ; add **labour** shelf colour |
+| ☑ | Category order | Incorporation, Foreign investment, Tax, Compliance, Northwind’s project | static order array in the view | NEW (const) |
+| ☑ | Category pill counts | All 15 · … | count per category of loaded items | derived |
+| ☑ | "{n} books" chip | 15 | `items.length` | derived |
+| ☑ | Updated ribbon (L-14) | blue ribbon | `item.updated` (`isLibraryItemUpdated`, `src/lib/ask/library.ts`) — today rendered as an **amber** "Updated" chip in `ClientLibrary.tsx:119-121` → change to blue ribbon | EXISTS (restyle) |
+| ☑ | Book glyph | per category | static per category | NEW (const) |
+| ☑ | Search "Search books" | title includes | today searches `title + answer.line` (`ClientLibrary.tsx:34-38`) | EXISTS |
+| ☑ | Monthly status brief | button | `StatusBriefButton` → `/api/ask/brief?engagementId=` | EXISTS |
+| ☑ | PDF brief | button | `/api/ask/library/export?ids=` | EXISTS |
+| ☑ | Recently read (L-08) + drill (LD-*) | 3 items, % read, "2 of 3 sections", "read on 8 Nov", In progress/Finished | — | **NEW**: table `client_library_reads (profile_id, item_id | topic_slug, progress_pct int, sections_read int, sections_total int, last_read_at, finished_at)`; repo `src/db/repositories/library-reads.ts` (`listRecentReads(ctx, limit)`, `recordReadProgress(ctx, …)`) scoped to `ctx.userId`; API `GET/POST /api/ask/library/reads`; reader reports scroll progress (IntersectionObserver per section) |
+| ☑ | Suggested chips (LE-05) | 3 topic titles | `fetchSuggestions('client', engagementId)` → `GET /api/ask/suggestions` or published topics list (`src/lib/ask/topics.ts`) linking to `/app/client/learn/{slug}` | EXISTS |
+| ☑ | Empty state | bot text | `items.length===0` | EXISTS |
+| ☑ | Loading | skeleton books | `query.isLoading` | EXISTS (UI NEW) |
+| ☑ | Error | error card + "Back to library" | `query.isError` | EXISTS (UI NEW) |
 
 ### 2.6 Reader (R-*)
 
 | Done | UI datum | Prototype | Real source | Status |
 |---|---|---|---|---|
-| ☐ | Category chip | "Foreign investment" | `categoryLabel(item.category)` | EXISTS |
-| ☐ | "Reviewed by SBC" | green chip | `TrustBadge` logic (`src/components/ask/TrustBadge.tsx`): topic answers with `reviewedBy` and not `draft` | EXISTS |
-| ☐ | "Updated 6 Nov" (blue) | saved mode | `item.updated` + `notice` (`UPDATED_SINCE_SAVED`) ; date = topic `reviewedAt` (topic schema) | PARTIAL (date not in `LibraryItemView` → add `topicReviewedAt`) |
-| ☐ | Title | H1 | `item.title` / `topic.title` | EXISTS |
-| ☐ | Depth pill | Simpler · Normal · More detail | `AnswerDepth` `simple|normal|detail`; learn page re-fetches (`onDepth`); saved item: snapshot has only one depth → NEW: re-fetch topic at chosen depth when `topicSlug` present (call `fetchTopicAnswer`) ; for generated answers hide the pill | PARTIAL |
-| ☐ | "3 min read" | read time | NEW derived: words(line + why + visual text) / 200 wpm, min 1 |
-| ☐ | Official link · RBI FIRMS | hero pill | first `answer.citations[]` with `url` of a govt source, or NEW portal map per topic | PARTIAL |
-| ☐ | Lead line | 17 px | `answer.line` | EXISTS |
-| ☐ | Timeline visual | 3 nodes | `answer.visual` type `timeline` → `VisualRenderer` (`src/components/ask/visuals/`) — restyle to Focus-track nodes (done ✓ / current navy+gold pulse / next dashed) | EXISTS (restyle) |
-| ☐ | Facts grid (More detail) | Who files / Late fee / Portal | `visual.type==='keyFacts'` (`{k,v}[]`) at detail depth | EXISTS (data shape) |
-| ☐ | Why it matters to Northwind | gold box | `answer.why` (title must use company name) | EXISTS |
-| ☐ | Sources chips | 2 | `answer.citations[]` | EXISTS |
-| ☐ | Save / Saved / Remove | buttons | `saveToLibrary` / `deleteLibraryItem` — Remove needs **toast + Undo** (improve #11): soft delete → NEW `deleted_at` column on `client_library_items` + restore endpoint, or delay the DELETE 5 s client-side | NEW (undo) |
-| ☐ | PDF brief | button | `/api/ask/library/[id]/export` (saved) | EXISTS (learn mode: NEW export by slug or hide) |
-| ☐ | Ask a follow-up | button | `ask.setOpen(true); ask.showTopic(slug, depth, 'Tell me more about …')` | EXISTS |
-| ☐ | In Northwind’s project (R-13) | FC-GPR filing 2 Dec, 24 days left, SBC files, Open in Compliances | topic slug ↔ compliance obligation (topics `obligation-*.json` exist; FC-GPR topic `fc-gpr.json`) → `getFilings(ctx, …)` (`src/db/repositories/filings.ts:65`) / `useComplianceFilings` (`src/hooks/use-compliance-filings.ts:10`) filtered by obligation | NEW mapping topic→obligation id (static) + reuse filings |
-| ☐ | Related in library (R-14) | 2 rows | `topic.related[]` (max 3 slugs, `src/data/ask/schema.ts` topicSchema) → saved item if exists else `/learn/{slug}` | EXISTS (data) |
-| ☐ | Documents for this (R-15) | FIRC from the bank · Approved | `topic.stepIds[]` → DocNodes in those steps (new tree endpoint, filter by `stepId`) → opens shared viewer | NEW (join) |
-| ☐ | Trail leaf | title | page | EXISTS |
+| ☑ | Category chip | "Foreign investment" | `categoryLabel(item.category)` | EXISTS |
+| ☑ | "Reviewed by SBC" | green chip | `TrustBadge` logic (`src/components/ask/TrustBadge.tsx`): topic answers with `reviewedBy` and not `draft` | EXISTS |
+| ☑ | "Updated 6 Nov" (blue) | saved mode | `item.updated` + `notice` (`UPDATED_SINCE_SAVED`) ; date = topic `reviewedAt` (topic schema) | PARTIAL (date not in `LibraryItemView` → add `topicReviewedAt`) |
+| ☑ | Title | H1 | `item.title` / `topic.title` | EXISTS |
+| ☑ | Depth pill | Simpler · Normal · More detail | `AnswerDepth` `simple|normal|detail`; learn page re-fetches (`onDepth`); saved item: snapshot has only one depth → NEW: re-fetch topic at chosen depth when `topicSlug` present (call `fetchTopicAnswer`) ; for generated answers hide the pill | PARTIAL |
+| ☑ | "3 min read" | read time | NEW derived: words(line + why + visual text) / 200 wpm, min 1 |
+| ☑ | Official link · RBI FIRMS | hero pill | first `answer.citations[]` with `url` of a govt source, or NEW portal map per topic | PARTIAL |
+| ☑ | Lead line | 17 px | `answer.line` | EXISTS |
+| ◐ | Timeline visual | 3 nodes | `answer.visual` type `timeline` → `VisualRenderer` (`src/components/ask/visuals/`) — restyle to Focus-track nodes (done ✓ / current navy+gold pulse / next dashed) | EXISTS (restyle) |
+| ☑ | Facts grid (More detail) | Who files / Late fee / Portal | `visual.type==='keyFacts'` (`{k,v}[]`) at detail depth | EXISTS (data shape) |
+| ☑ | Why it matters to Northwind | gold box | `answer.why` (title must use company name) | EXISTS |
+| ☑ | Sources chips | 2 | `answer.citations[]` | EXISTS |
+| ☑ | Save / Saved / Remove | buttons | `saveToLibrary` / `deleteLibraryItem` — Remove needs **toast + Undo** (improve #11): soft delete → NEW `deleted_at` column on `client_library_items` + restore endpoint, or delay the DELETE 5 s client-side | NEW (undo) |
+| ☑ | PDF brief | button | `/api/ask/library/[id]/export` (saved) | EXISTS (learn mode: NEW export by slug or hide) |
+| ☑ | Ask a follow-up | button | `ask.setOpen(true); ask.showTopic(slug, depth, 'Tell me more about …')` | EXISTS |
+| ☑ | In Northwind’s project (R-13) | FC-GPR filing 2 Dec, 24 days left, SBC files, Open in Compliances | topic slug ↔ compliance obligation (topics `obligation-*.json` exist; FC-GPR topic `fc-gpr.json`) → `getFilings(ctx, …)` (`src/db/repositories/filings.ts:65`) / `useComplianceFilings` (`src/hooks/use-compliance-filings.ts:10`) filtered by obligation | NEW mapping topic→obligation id (static) + reuse filings |
+| ☑ | Related in library (R-14) | 2 rows | `topic.related[]` (max 3 slugs, `src/data/ask/schema.ts` topicSchema) → saved item if exists else `/learn/{slug}` | EXISTS (data) |
+| ☑ | Documents for this (R-15) | FIRC from the bank · Approved | `topic.stepIds[]` → DocNodes in those steps (new tree endpoint, filter by `stepId`) → opens shared viewer | NEW (join) |
+| ☑ | Trail leaf | title | page | EXISTS (usePortalCrumbs) |
 
 ### 2.7 Shell & shared
 
 | Done | Item | Real source | Status |
 |---|---|---|---|
-| ☐ | Sidebar badge "Documents 6" | open requests + new files? (prototype hard-codes "6") — define as pending requests count | NEW (definition) |
-| ☐ | Notifications badge | existing notifications repo | EXISTS |
-| ☐ | Bot avatar | existing launcher/assets (`src/components/ask/AskLauncher.tsx`) | EXISTS |
-| ☐ | Theme | existing `ThemeToggle` | EXISTS |
+| ☑ | Sidebar badge "Documents 6" | open requests + new files? (prototype hard-codes "6") — define as pending requests count | NEW (definition) |
+| ☑ | Notifications badge | existing notifications repo | EXISTS |
+| ☑ | Bot avatar | existing launcher/assets (`src/components/ask/AskLauncher.tsx`) | EXISTS |
+| ☑ | Theme | existing `ThemeToggle` | EXISTS |
 
 ### 2.8 Access-control notes for new pieces (Path A)
 
@@ -2205,22 +2205,22 @@ built by a **NEW repository** `src/db/repositories/client-documents.ts` → `lis
 
 | Done | # | Problem today | Fix (in FINAL) |
 |---|---|---|---|
-| ☐ | 1 | Each row fetches its own signed link on load; new tab; "(link unavailable)" | fetch only on 👁/⬇, open shared in-app viewer |
-| ☐ | 2 | No search/filter/sort | filter, source filter, group switch |
-| ☐ | 3 | "Still needed" has no upload | drop zone per request |
-| ☐ | 4 | Raw dates / raw status words | one date format; In review / Approved / Re-upload |
-| ☐ | 5 | Requests and files in two lists | one list; requests become rows/badges on their step |
-| ☐ | 6 | No engagement → blank | friendly empty state |
-| ☐ | 7 | Only latest file; no reason for re-upload | keep versions; Replaced greyed (h toggle); SBC note |
-| ☐ | 8 | No bulk download | Download ZIP / Download all |
-| ☐ | 9 | No stale-proof sign | amber "older than" chip |
-| ☐ | 10 | Library cards are text | book covers by category |
-| ☐ | 11 | Remove deletes at once | toast with Undo |
-| ☐ | 12 | Learn topic "Loading…" forever without engagement | show topic without project facts / clear message |
-| ☐ | 13 | "Loading…" text, dead-end errors | skeleton books; error card "Back to library" |
-| ☐ | 14 | "Updated" chip amber | blue ribbon |
-| ☐ | 15 | No recently read / suggestions | Recently read strip; suggested topics |
-| ☐ | 16 | Topic never links to filings/docs | reader side panel "In {Company}’s project" + "Documents for this" |
+| ☑ | 1 | Each row fetches its own signed link on load; new tab; "(link unavailable)" | fetch only on 👁/⬇, open shared in-app viewer |
+| ☑ | 2 | No search/filter/sort | filter, source filter, group switch |
+| ☑ | 3 | "Still needed" has no upload | drop zone per request |
+| ☑ | 4 | Raw dates / raw status words | one date format; In review / Approved / Re-upload |
+| ☑ | 5 | Requests and files in two lists | one list; requests become rows/badges on their step |
+| ☑ | 6 | No engagement → blank | friendly empty state |
+| ☑ | 7 | Only latest file; no reason for re-upload | keep versions; Replaced greyed (h toggle); SBC note |
+| ☑ | 8 | No bulk download | Download ZIP / Download all |
+| ☑ | 9 | No stale-proof sign | amber "older than" chip |
+| ☑ | 10 | Library cards are text | book covers by category |
+| ☑ | 11 | Remove deletes at once | toast with Undo |
+| ☑ | 12 | Learn topic "Loading…" forever without engagement | show topic without project facts / clear message |
+| ☑ | 13 | "Loading…" text, dead-end errors | skeleton books; error card "Back to library" |
+| ☑ | 14 | "Updated" chip amber | blue ribbon |
+| ☑ | 15 | No recently read / suggestions | Recently read strip; suggested topics |
+| ☑ | 16 | Topic never links to filings/docs | reader side panel "In {Company}’s project" + "Documents for this" |
 
 Source: `final-src/s/docs/improve.dc.html:22-45`.
 
@@ -2233,6 +2233,8 @@ Template syntax: `{{x}}` = value from the board's `renderVals()`; `<sc-for list 
 `<dc-import name="v7c_bot" …>` = the bot avatar component; `<dc-import name="side|topbar">` = shell placeholders.
 `light-dark(a, b)` = light value, dark value. Fonts: **Manrope** (UI), **IBM Plex Mono** (`.mono`, counts, dates, file names, type tiles),
 **Space Grotesk** (preview titles / metrics), **Source Serif 4** (phone preview paper only).
+
+NEW (documents builder): tables `document_request_details`, `document_request_files`, `client_library_reads`, `client_library_removals` (src/db/schema-portal-documents.ts); repositories `client-documents.ts`, `client-library-portal.ts`; routes `GET /api/client/documents`, `GET /api/client/documents/file`, `GET /api/client/documents/zip`, `POST|DELETE /api/client/documents/requests/[id]/upload`, `PATCH /api/requests/[id]/details`, `GET|POST /api/client/library/reads`, `POST|DELETE /api/client/library/[id]/remove`, `GET /api/client/library/topic`; `listObjects` in src/storage/s3.ts.
 <!-- /area:documents -->
 
 <!-- area:team -->

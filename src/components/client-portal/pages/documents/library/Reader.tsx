@@ -15,7 +15,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AnswerDepth, AnswerEnvelope, Visual } from '@/data/ask/schema';
-import { usePortal, usePortalOptional } from '@/components/client-portal/PortalProvider';
+import { usePortal, usePortalCrumbs, usePortalOptional } from '@/components/client-portal/PortalProvider';
 import { usePortalIncorporation, todayIST } from '@/components/client-portal/hooks';
 import { portalHref, stepHref } from '@/components/client-portal/routes';
 import { VisualRenderer } from '@/components/ask/visuals/VisualRenderer';
@@ -159,6 +159,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
 
   const answer: AnswerEnvelope | undefined = (topicQ.data?.answer && (mode === 'learn' || depth != null)) ? topicQ.data.answer : item?.answer;
   const title = mode === 'learn' ? topicQ.data?.topic.title ?? metaQ.data?.title ?? '' : item?.title ?? '';
+  usePortalCrumbs(['Library', title || 'Reading']);
   const category = mode === 'learn' ? topicQ.data?.topic.category ?? metaQ.data?.category ?? '' : item?.category ?? '';
   const savedItem = mode === 'learn' ? libQ.data?.items.find((x) => x.topicSlug === slug) : item;
   const loading = mode === 'saved' ? itemQ.isLoading : topicQ.isLoading;

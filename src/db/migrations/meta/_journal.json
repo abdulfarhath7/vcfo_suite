@@ -176,6 +176,13 @@
       "when": 1792169975932,
       "tag": "0024_client_portal_v7",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792184697353,
+      "tag": "0025_client_portal_v7_pages",
+      "breakpoints": true
     }
   ]
 }
