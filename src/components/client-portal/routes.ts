@@ -1,0 +1,92 @@
+/**
+ * Client portal route keys (the prototype's `routes.js` keys) → real app paths.
+ * Every `data-go="key"` in the prototype becomes `portalHref(key)` here.
+ */
+export const CP_BASE = '/app/client';
+
+export type PortalRouteKey =
+  | 'home'
+  | 'announcements'
+  | 'notifications'
+  | 'incorporation'
+  | 'compliances'
+  | 'filings'
+  | 'documents'
+  | 'knowledge-bank'
+  | 'credentials'
+  | 'team'
+  | 'audit'
+  | 'settings'
+  | 'board-resolution';
+
+export const PORTAL_PATHS: Record<PortalRouteKey, string> = {
+  home: `${CP_BASE}/overview`,
+  announcements: `${CP_BASE}/announcements`,
+  notifications: `${CP_BASE}/notifications`,
+  incorporation: `${CP_BASE}/incorporation`,
+  compliances: `${CP_BASE}/compliances/calendar`,
+  filings: `${CP_BASE}/compliances/filings`,
+  documents: `${CP_BASE}/documents`,
+  'knowledge-bank': `${CP_BASE}/library`,
+  credentials: `${CP_BASE}/credentials`,
+  team: `${CP_BASE}/team`,
+  audit: `${CP_BASE}/audit`,
+  settings: `${CP_BASE}/settings`,
+  'board-resolution': `${CP_BASE}/board-resolution`,
+};
+
+export const PORTAL_TITLES: Record<PortalRouteKey, string> = {
+  home: 'Home',
+  announcements: 'Announcements',
+  notifications: 'Notifications',
+  incorporation: 'Incorporation',
+  compliances: 'Calendar',
+  filings: 'Filings',
+  documents: 'Documents',
+  'knowledge-bank': 'Library',
+  credentials: 'Credentials',
+  team: 'Team',
+  audit: 'Audit',
+  settings: 'Settings',
+  'board-resolution': 'Board resolution',
+};
+
+export function portalHref(key: PortalRouteKey): string {
+  return PORTAL_PATHS[key];
+}
+
+/** `inc-step-7` style keys from the prototype → the step page by checklist item id. */
+export function stepHref(stepId: string): string {
+  return `${CP_BASE}/incorporation/step/${encodeURIComponent(stepId)}`;
+}
+
+export function phaseHref(phaseNo: number): string {
+  return `${CP_BASE}/incorporation/phase/${phaseNo}`;
+}
+
+/** Which sidebar item is current for a pathname (prototype shell.js `active()` + ALIAS). */
+export function activeKeyFor(pathname: string): PortalRouteKey | null {
+  const p = pathname.replace(/\/+$/, '');
+  if (p === CP_BASE || p.startsWith(`${CP_BASE}/overview`)) return 'home';
+  if (p.startsWith(`${CP_BASE}/incorporation`) || p.startsWith(`${CP_BASE}/board-resolution`)) return 'incorporation';
+  if (p.startsWith(`${CP_BASE}/compliances/filings`)) return 'filings';
+  if (p.startsWith(`${CP_BASE}/compliances`)) return 'compliances';
+  if (p.startsWith(`${CP_BASE}/library`) || p.startsWith(`${CP_BASE}/learn`)) return 'knowledge-bank';
+  for (const key of Object.keys(PORTAL_PATHS) as PortalRouteKey[]) {
+    if (p.startsWith(PORTAL_PATHS[key])) return key;
+  }
+  return null;
+}
+
+/** Top bar location trail: [middle crumb?, current crumb]. */
+export function crumbsFor(pathname: string): { mid?: string; crumb: string; icon: PortalRouteKey } {
+  const key = activeKeyFor(pathname) ?? 'home';
+  const p = pathname;
+  if (p.includes('/incorporation/step/')) return { mid: 'Incorporation', crumb: 'Step', icon: 'incorporation' };
+  if (p.includes('/incorporation/phase/')) return { mid: 'Incorporation', crumb: 'Phase', icon: 'incorporation' };
+  if (p.includes('/board-resolution')) return { mid: 'Incorporation', crumb: 'Board resolution', icon: 'incorporation' };
+  if (key === 'compliances' || key === 'filings') return { mid: 'Compliances', crumb: PORTAL_TITLES[key], icon: key };
+  if (key === 'announcements' || key === 'notifications') return { mid: 'Updates', crumb: PORTAL_TITLES[key], icon: key };
+  if (/\/library\/[^/]+/.test(p) || p.includes('/learn/')) return { mid: 'Library', crumb: 'Reading', icon: 'knowledge-bank' };
+  return { crumb: PORTAL_TITLES[key], icon: key };
+}

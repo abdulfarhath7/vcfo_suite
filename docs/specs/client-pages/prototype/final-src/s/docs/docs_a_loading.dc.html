@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A refined — loading</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--navy:#0f2a4a;--sk:oklch(93.5% 0.008 255);--shadow:0 1px 2px oklch(25% 0.04 264 / 0.04), 0 6px 18px -10px oklch(28% 0.06 264 / 0.18)}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.sk{display:block;border-radius:4px;background:linear-gradient(90deg,var(--sk) 0,light-dark(oklch(96.5% 0.006 255), oklch(18.3% 0.006 255)) 40%,var(--sk) 80%) var(--sk);background-size:600px 100%;animation:sh 1.3s linear infinite}
+.r{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+</style>
+</helmet>
+<div style="position:relative;width:1440px;height:1000px;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+  <div style="width:248px;flex:none;background:#0f2a4a"><dc-import name="side" active="4" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="topbar" trail="Documents" hint-size="100%,52px" style="display:block"></dc-import>
+    <main style="flex:1;min-height:0;padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px" aria-busy="true">
+      <div style="display:flex;align-items:center;gap:8px;height:32px"><h1 style="margin:0;font:700 22px Manrope,sans-serif;color:var(--navy-ink,var(--navy))">Documents</h1></div>
+      <section aria-label="Loading documents" style="flex:1;min-height:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:8px;height:52px;padding:0 12px;border-bottom:1px solid var(--border)"><span class="sk" style="width:300px;height:32px;border-radius:6px"></span><span class="sk" style="width:84px;height:32px;border-radius:6px"></span><span class="sk" style="width:96px;height:32px;border-radius:6px"></span><span class="sk" style="width:220px;height:32px;border-radius:8px"></span><span style="flex:1"></span><span class="sk" style="width:170px;height:32px;border-radius:6px"></span></div>
+        <div style="flex:1;display:flex">
+          <div style="width:420px;border-right:1px solid var(--border);padding:6px 0">
+            <div class="r"><span class="sk" style="width:16px;height:16px"></span><span class="sk" style="width:210px;height:10px"></span></div>
+            <div class="r" style="padding-left:36px"><span class="sk" style="width:16px;height:16px"></span><span class="sk" style="width:170px;height:10px"></span><span style="flex:1"></span><span class="sk" style="width:56px;height:4px"></span></div>
+            <div class="r" style="padding-left:60px"><span class="sk" style="width:22px;height:16px;border-radius:3px"></span><span class="sk" style="width:190px;height:10px"></span></div>
+            <div class="r" style="padding-left:60px"><span class="sk" style="width:22px;height:16px;border-radius:3px"></span><span class="sk" style="width:150px;height:10px"></span></div>
+            <div class="r"><span class="sk" style="width:16px;height:16px"></span><span class="sk" style="width:190px;height:10px"></span></div>
+            <div class="r" style="padding-left:36px"><span class="sk" style="width:16px;height:16px"></span><span class="sk" style="width:140px;height:10px"></span><span style="flex:1"></span><span class="sk" style="width:56px;height:4px"></span></div>
+            <div class="r" style="padding-left:60px"><span class="sk" style="width:22px;height:16px;border-radius:3px"></span><span class="sk" style="width:200px;height:10px"></span></div>
+            <div class="r" style="padding-left:60px"><span class="sk" style="width:22px;height:16px;border-radius:3px"></span><span class="sk" style="width:160px;height:10px"></span></div>
+            <div class="r" style="padding-left:60px"><span class="sk" style="width:22px;height:16px;border-radius:3px"></span><span class="sk" style="width:180px;height:10px"></span></div>
+            <div class="r" style="padding-left:36px"><span class="sk" style="width:16px;height:16px"></span><span class="sk" style="width:180px;height:10px"></span><span style="flex:1"></span><span class="sk" style="width:56px;height:4px"></span></div>
+            <div class="r"><span class="sk" style="width:16px;height:16px"></span><span class="sk" style="width:220px;height:10px"></span></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:8px;height:52px;padding:0 16px;border-bottom:1px solid var(--border)"><span class="sk" style="width:26px;height:20px"></span><span class="sk" style="width:240px;height:12px"></span><span style="flex:1"></span><span class="sk" style="width:32px;height:32px;border-radius:6px"></span><span class="sk" style="width:32px;height:32px;border-radius:6px"></span></div>
+            <div style="flex:1;background:var(--raised);display:flex;align-items:center;justify-content:center"><span class="sk" style="width:340px;height:440px;border-radius:2px"></span></div>
+            <div style="height:36px;border-top:1px solid var(--hair);display:flex;align-items:center;justify-content:space-between;padding:0 16px"><span class="sk" style="width:60px;height:10px"></span><span class="sk" style="width:180px;height:10px"></span></div>
+            <div style="height:36px;border-top:1px solid var(--hair);display:flex;align-items:center;justify-content:space-between;padding:0 16px"><span class="sk" style="width:50px;height:10px"></span><span class="sk" style="width:120px;height:10px"></span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

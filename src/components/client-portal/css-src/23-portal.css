@@ -1,0 +1,19 @@
+/* @cp-scope shared */
+/* Portal layout (the prototype's board frame): side placeholder + content column.
+   Plus the Search ⌘K palette, which the prototype only toasts; it reuses the
+   drill-down pop-up look (#vp-drill). */
+body{margin:0}
+.cp-body{display:flex;min-height:100vh;min-width:0;background:var(--bg)}
+.cp-sidepad{width:var(--vp-side-w,248px);flex:none}
+.cp-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.cp-page-host{flex:1;min-width:0;display:block}
+/* bottom spacer: content scrolls clear of the floating Ask VCFO pill */
+.cp-page-host::after{content:"";display:block;height:var(--vp-launch-h)}
+#vp-side{height:100vh}
+@supports (height:100dvh){#vp-side,#vp-drawer{height:100dvh}}
+.cp-search .cp-search-in{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid light-dark(#e3e8ef, oklch(24.8% 0.011 256.7));color:#5a6b82}
+.cp-search .cp-search-in input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:600 15px Manrope,system-ui,sans-serif;color:light-dark(#0f1b2d, oklch(91.2% 0.028 258.3))}
+.cp-search .cp-search-g{padding:10px 0 4px;font:800 10.5px Manrope,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle)}
+.cp-search .list{padding-top:4px}
+/* phone drawer and chat lock the page under them */
+html.vp-chat-on{overscroll-behavior:contain}

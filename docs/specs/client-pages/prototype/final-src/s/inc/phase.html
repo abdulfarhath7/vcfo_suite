@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phase · Incorporation · VCFO Suite</title>
+<style>
+:root{--bg:#f3f5f9;--panel:#fff;--raised:#f5f7fa;--border:#e2e7ef;--hair:#edf0f5;--fg:#0f1b2d;--muted:#56667d;--subtle:#7b889c;
+--primary:oklch(54.6% 0.215 263);--primary-dark:oklch(48.8% 0.217 264);--primary-light:oklch(96.6% 0.02 260);--navy:#0f2a4a;--gold:#c9a24b;--gold-2:#e6c46e;
+--ok:#15805f;--ok-light:#e5f4ee;--ok-text:#0f6a4e;--you:#c8620e;--you-light:#fdf2e6;--you-text:#9a4a08;--with:#2453c7;--with-light:#e9effc;--with-text:#2349a8;
+--over:#cf3a2f;--up:#cfd6e2;--own-you:#fbf0d2;--own-you-t:#7a5a0c;--own-sbc:#e8eefb;--own-sbc-t:#2349a8;--violet:#6b3fc4;--violet-light:#efe9fb;
+--shadow:0 1px 2px rgba(15,27,45,.04),0 6px 18px -10px rgba(15,27,45,.16);
+--sw:var(--vp-side-w,248px);--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--disp:"Space Grotesk",Manrope,system-ui,sans-serif}
+@media (max-width:1279px){:root{--sw:var(--vp-side-w,72px)}}
+@media (max-width:767px){:root{--sw:var(--vp-side-w,0px)}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:500 13px/1.5 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+body{overflow-x:clip}
+a{color:var(--primary);text-decoration:none;font-weight:700}
+button{font:inherit;color:inherit}
+.mono{font-family:var(--mono)}
+.ic{width:16px;height:16px;flex:none}
+.side{position:fixed;left:0;top:0;bottom:0;width:var(--sw);flex:none;background:#0f2a4a}
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:40;margin-left:var(--sw);height:52px;display:flex;align-items:center;gap:12px;padding:0 16px 0 14px;background:light-dark(#fff, oklch(13% 0 89.9));border-bottom:1px solid var(--border)}
+.top .sbc{height:28px;width:auto;display:block;flex:none}
+.crumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);min-width:0}
+.crumb a{color:var(--muted);font-weight:500;white-space:nowrap}.crumb a:hover{color:var(--fg)}
+.crumb .sl{color:var(--subtle)}
+.crumb b{color:var(--fg);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp{flex:1}
+.search{display:flex;align-items:center;gap:8px;width:240px;height:36px;padding:0 8px 0 12px;border-radius:8px;border:1px solid var(--border);background:var(--raised);color:var(--subtle);cursor:text;flex:none}
+.search .k{margin-left:auto;display:flex;gap:4px}.search .k span{min-width:18px;height:18px;border-radius:4px;background:light-dark(#fff, oklch(13% 0 89.9));box-shadow:inset 0 0 0 1px var(--border);display:grid;place-items:center;font:500 11px var(--mono)}
+.tb{position:relative;width:36px;height:36px;border-radius:8px;border:0;background:none;color:var(--muted);display:grid;place-items:center;cursor:pointer;flex:none}
+.tb:hover{background:var(--primary-light);color:var(--fg)}
+.tb .n{position:absolute;right:3px;top:2px;min-width:16px;height:16px;border-radius:99px;background:var(--primary-fill,var(--primary));color:#fff;font:700 11px/16px Manrope,sans-serif;text-align:center;box-shadow:0 0 0 2px light-dark(#fff, oklch(13% 0.006 260))}
+.tb.b{box-shadow:inset 0 0 0 1px var(--border)}
+.tb.srch{display:none}
+.menu{display:none}
+/* ---------- page ---------- */
+main{margin-left:var(--sw);padding:24px clamp(14px,2.2vw,24px) 120px}
+.wrap{max-width:1600px;margin-inline:auto;display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);min-width:0}
+.card.acc:before{content:"";position:absolute;left:18px;top:-1px;width:30px;height:3px;border-radius:0 0 3px 3px;background:var(--gold)}
+.lbl{font:800 12.5px Manrope,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-ink,var(--navy));margin:0;display:flex;align-items:center;gap:6px}
+.cnt{font:500 11.5px var(--mono);color:var(--subtle);white-space:nowrap}
+.ch{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 18px 10px}
+.ch .sp{min-width:8px}
+.ibtn{width:24px;height:24px;border-radius:6px;border:0;background:none;color:var(--subtle);display:inline-grid;place-items:center;cursor:pointer;flex:none;padding:0}
+.ibtn:hover,.ibtn[aria-expanded=true]{background:var(--primary-light);color:var(--primary)}
+.ibtn svg{width:15px;height:15px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border-radius:7px;font:600 13px Manrope,sans-serif;border:1px solid var(--border);background:light-dark(#fff, oklch(13% 0 89.9));color:var(--fg);cursor:pointer;white-space:nowrap;transition:transform .12s,background .15s;text-decoration:none}
+.btn:hover{background:var(--raised)}.btn:active{transform:scale(.98)}
+.btn.p{background:var(--primary-fill,var(--primary));border-color:transparent;color:#fff}.btn.p:hover{background:var(--primary-fill-2,var(--primary-dark))}
+.btn.nv{background:var(--navy);border-color:var(--navy);color:#fff}.btn.nv:hover{background:#173c66}
+.btn svg{width:16px;height:16px;flex:none}
+.btn.sm{height:32px;padding:0 11px;font-size:12.5px}
+.sq{width:32px;height:32px;border-radius:7px;border:1px solid var(--border);background:light-dark(#fff, oklch(13% 0 89.9));color:var(--navy-ink,var(--navy));display:inline-grid;place-items:center;cursor:pointer;flex:none;padding:0}
+.sq:hover{background:var(--primary-light);color:var(--primary)}
+.sq svg{width:15px;height:15px}
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:700;white-space:nowrap;line-height:1.5}
+.chip.done{background:var(--ok);color:#fff}.chip.you{background:var(--you);color:#fff}.chip.with{background:var(--with);color:#fff}.chip.prog{background:var(--navy);color:#fff}
+.chip.up{background:light-dark(#fff, oklch(13% 0 89.9));color:var(--muted);box-shadow:inset 0 0 0 1px var(--up)}
+.chip.risk{background:var(--you);color:#fff}.chip.late{background:var(--over);color:#fff}
+.own{display:inline-block;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:800;text-align:center;line-height:1.6;white-space:nowrap}
+.own.You{background:var(--own-you);color:var(--own-you-t)}.own.SBC{background:var(--own-sbc);color:var(--own-sbc-t)}.own.MCA{background:var(--violet-light);color:var(--violet)}
+/* status glyphs · set A solid (rule 18) */
+.si{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;flex:none;position:relative;z-index:1}
+.si svg{width:12px;height:12px}
+.si.done{background:var(--ok);color:#fff}.si.you{background:var(--you);color:#fff}.si.prog{background:var(--navy);color:var(--gold-2)}.si.with{background:var(--with);color:#fff}
+.si.up{background:light-dark(#fff, oklch(13% 0 89.9));box-shadow:inset 0 0 0 1.5px var(--up)}.si.late{background:var(--over);color:#fff}
+.si.xl{width:26px;height:26px}.si.xl svg{width:14px;height:14px}
+/* bot (rule 16) */
+.bot{display:flex;gap:12px;align-items:flex-start}
+.bav{flex:none;width:40px;height:40px;border-radius:50%;background:var(--primary-light);display:grid;place-items:center;overflow:hidden}
+.bav svg{width:34px;height:43px;margin-top:9px}
+.bub{position:relative;flex:1;min-width:0;background:var(--with-light);border-radius:10px;padding:9px 12px;font-size:12.5px;line-height:1.5;color:var(--fg)}
+.bub .btn{margin-top:8px;height:30px;font-size:12px;padding:0 10px}
+.bmini{display:inline-grid;place-items:center;width:18px;height:18px;flex:none}
+.bmini svg{width:100%;height:100%}
+/* ---------- navy hero band ---------- */
+.hero{position:relative;overflow:hidden;border-radius:12px;color:#fff;background:linear-gradient(100deg,#0f2a4a 0%,#14386a 55%,#1b4f94 100%);padding:16px 20px 18px;box-shadow:0 10px 30px -18px rgba(15,42,74,.7)}
+.hero:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--gold) 0%,var(--gold-2) 40%,rgba(201,162,75,.15) 100%)}
+.hrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:relative}
+.hl{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 360px}
+.hback{width:34px;height:34px;border-radius:7px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none;padding:0}
+.hback:hover{background:rgba(255,255,255,.15)}
+.hback svg{width:16px;height:16px}
+.htx{min-width:0}
+.eb{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--gold-2)}
+.ht{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 3px}
+.ht h1{margin:0;font:700 clamp(19px,1.9vw,23px)/1.2 var(--disp);letter-spacing:-.01em;color:#fff;overflow-wrap:anywhere}
+.hm{font:500 12px var(--mono);color:rgba(255,255,255,.82);overflow-wrap:anywhere}
+.hr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
+.hbtn{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:7px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.07);color:#fff;font:600 13px Manrope,sans-serif;cursor:pointer;white-space:nowrap;text-decoration:none}
+.hbtn:hover{background:rgba(255,255,255,.16)}
+.hbtn svg{width:15px;height:15px;flex:none}
+.hbtn .rd{display:inline-flex;align-items:center;gap:4px;background:var(--ok);color:#fff;border-radius:4px;padding:1px 7px;font-size:11.5px;font-weight:800}
+.hbtn .rd svg{width:12px;height:12px}
+.wbtn{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 10px;border-radius:7px;border:1px solid light-dark(rgba(255,255,255,.3), oklch(22% 0 89.9 / 0.3));background:rgba(255,255,255,.12);color:#fff;font:600 12.5px Manrope,sans-serif;cursor:pointer;white-space:nowrap}
+.wbtn:hover{background:rgba(255,255,255,.22)}
+.ring{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;padding:0;color:#fff;cursor:pointer;border-radius:8px}
+.ring .rw{position:relative;width:50px;height:50px}
+.ring svg{width:50px;height:50px;display:block;transform:rotate(-90deg)}
+.ring .pc{position:absolute;inset:0;display:grid;place-items:center;font:700 12px Manrope,sans-serif}
+.ring small{font:600 11px var(--mono);color:rgba(255,255,255,.7);letter-spacing:.04em}
+.ring:focus-visible,.hbtn:focus-visible,.hback:focus-visible{outline:2px solid var(--gold-2);outline-offset:2px}
+/* ---------- landing row 2 ---------- */
+.r2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:16px}
+.coi{position:relative;overflow:hidden;border-radius:12px;color:#fff;background:linear-gradient(120deg,#0f2a4a 0%,#173f74 100%);padding:clamp(16px,2vw,22px) clamp(16px,2vw,20px) 20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 30px -18px rgba(15,42,74,.7)}
+.coi:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--gold),rgba(201,162,75,.1))}
+.coi .t1{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.big{display:inline-flex;align-items:baseline;gap:10px;border:0;background:none;color:#fff;padding:0;cursor:pointer;text-align:left;border-radius:6px}
+.big b{font:700 clamp(34px,4vw,42px)/1 var(--disp);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.big span{font:600 clamp(15px,1.5vw,18px) var(--disp);color:var(--gold-2)}
+.big:focus-visible{outline:2px solid var(--gold-2);outline-offset:4px}
+.coi .ibtn{color:rgba(255,255,255,.75);margin-top:6px}.coi .ibtn:hover,.coi .ibtn[aria-expanded=true]{background:rgba(255,255,255,.14);color:#fff}
+.coi .t1 .chip{margin-left:auto;margin-top:8px;text-decoration:none}
+.coi .sub{font-size:13px;color:rgba(255,255,255,.9);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.coi .sub .mono{font-size:11.5px;color:rgba(255,255,255,.7)}
+.coi .sub a{color:var(--gold-2)}
+.pill{display:flex;align-items:center;gap:12px;width:100%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);border-radius:9px;padding:7px 12px;color:#fff;cursor:pointer;font:600 13.5px Manrope,sans-serif;text-align:left}
+.pill:hover{background:rgba(255,255,255,.13)}
+.pill .tr{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;min-width:40px}
+.pill .tr i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#1fb488,#2fd3a0)}
+.pill b{font:700 15px var(--disp)}
+.week{padding:14px 18px 12px}
+.week .ch{padding:0 0 8px}
+.wbot{display:flex;align-items:center;gap:8px;margin-left:auto;min-width:0}
+.wbot .bmini{width:26px;height:26px}
+.wbot span:last-child{background:var(--with-light);border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;color:var(--fg)}
+.wr{display:grid;grid-template-columns:80px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 4px;border-top:1px solid var(--hair);color:var(--fg);font-weight:600;border-radius:6px;text-decoration:none}
+.wr:hover{background:var(--raised)}
+.wr .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr .dt{font:500 11.5px var(--mono);color:var(--muted);white-space:nowrap}
+/* ---------- phases card ---------- */
+.phc{padding-bottom:6px}
+.phc .ch{padding:16px 18px 6px}
+.gax,.phh{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr) auto;gap:14px;align-items:center}
+.gax{padding:2px 18px 8px;font:500 11px var(--mono);color:var(--subtle)}
+.gax .tl{position:relative;height:16px}
+.gax .tl span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.gax .ob0{min-width:84px}
+.gax.e2 .tl span:nth-child(2n),.gax.e4 .tl span:not(:nth-child(4n+1)){display:none}
+.phr{border-top:1px solid var(--hair)}
+.phr.open{background:light-dark(#f7f9fc, oklch(15.8% 0.005 258.3))}
+.phh{padding:12px 18px;min-height:58px}
+.pnm{display:flex;align-items:center;gap:10px;min-width:0}
+.pnm .tx{min-width:0}
+.pnm a{display:block;font:700 14px Manrope,sans-serif;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pnm a:hover{color:var(--primary);text-decoration:underline}
+.pnm small{display:block;font:500 11.5px var(--mono);color:var(--subtle)}
+.gl{position:relative;height:34px;min-width:0}
+.today{position:absolute;top:-13px;bottom:-13px;width:2px;margin-left:-1px;background:var(--over);z-index:2;border:0;padding:0;cursor:pointer}
+.today:before{content:"";position:absolute;left:-6px;right:-6px;top:0;bottom:0}
+.gbar{position:absolute;top:50%;height:11px;margin-top:-5.5px;border-radius:99px;overflow:visible;border:0;padding:0;cursor:pointer;background:var(--raised);display:block}
+.gbar .in{position:absolute;inset:0;border-radius:99px;overflow:hidden;display:block}
+.gbar .f{position:absolute;left:0;top:0;bottom:0;display:block}
+.gbar.s-done .f{background:var(--ok)}
+.gbar .lt{position:absolute;right:0;top:0;bottom:0;background:var(--over);display:block}
+.gbar.s-active{background:light-dark(#fff, oklch(13% 0 89.9));box-shadow:inset 0 0 0 1.5px var(--navy)}
+.gbar.s-active .f{background:var(--navy)}
+.gbar.s-up{background:repeating-linear-gradient(135deg,light-dark(#e3e8ef, oklch(23.6% 0.01 256.7)) 0 4px,light-dark(#f3f5f8, oklch(17.6% 0.005 258.3)) 4px 8px)}
+.gbar .ms{position:absolute;right:-8px;top:50%;width:14px;height:14px;margin-top:-7px;background:var(--gold);transform:rotate(45deg);border-radius:2px;box-shadow:0 0 0 2px light-dark(#fff, oklch(13% 0.006 260));display:block}
+.gbar:hover,.gbar:focus-visible{filter:brightness(1.08);outline:none;box-shadow:0 0 0 3px oklch(54.6% 0.215 263 / .25)}
+.gbar.s-active:hover,.gbar.s-active:focus-visible{box-shadow:inset 0 0 0 1.5px var(--navy),0 0 0 3px oklch(54.6% 0.215 263 / .25)}
+.glab{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:baseline;gap:8px;white-space:nowrap;font-size:12.5px;font-weight:600;color:var(--muted);pointer-events:none;z-index:3;background:light-dark(#fff, oklch(13% 0 89.9));padding:0 6px;border-radius:4px}
+.phr.open .glab{background:light-dark(#f7f9fc, oklch(15.8% 0.005 258.3))}
+.glab b{font:700 17px var(--disp);color:var(--fg)}
+.glab .e{color:var(--fg);font-weight:700}.glab .e.late{color:var(--over)}.glab .e.early{color:var(--ok-text)}
+.ob{min-width:84px}
+.ob svg{transition:transform .2s}
+.phr.open .ob{background:var(--navy);border-color:var(--navy);color:#fff}
+.phr.open .ob svg{transform:rotate(180deg)}
+/* simple mode (narrow): bar under the name */
+.phc.simple .gax{display:none}
+.phc.simple .phh{grid-template-columns:minmax(0,1fr) auto;row-gap:8px}
+.phc.simple .gl{grid-column:1/-1;grid-row:2;height:auto;display:flex;flex-direction:column;gap:8px}
+.phc.simple .today{display:none}
+.phc.simple .gbar{position:relative;left:0!important;width:100%!important;top:0;margin-top:0}
+.phc.simple .gbar .ms{right:-2px}
+.phc.simple .glab{position:static;transform:none;flex-wrap:wrap;white-space:normal;row-gap:2px}
+.phb{display:none;padding:0 18px 12px}
+.phr.open .phb{display:block;animation:fin .2s ease-out}
+@keyframes fin{from{opacity:0;transform:translateY(-4px)}}
+.phb .bot{margin:2px 0 10px}
+/* steps table */
+.stt{container-type:inline-size}
+.sth,.str{display:grid;grid-template-columns:22px 26px minmax(0,1fr) 88px 128px 112px 34px 32px 32px;gap:8px;align-items:center}
+.sth{padding:8px 12px 6px;font:800 11px Manrope,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--subtle)}
+.sth .lk{display:flex;gap:2px;justify-content:center;align-items:center;color:var(--subtle)}.sth .lk svg{width:12px;height:12px}
+.str{padding:7px 12px;border-top:1px solid var(--hair);position:relative;background:transparent;transition:background .3s}
+.str.k-you{background:light-dark(#fffdf8, oklch(13.9% 0.007 88.6));box-shadow:inset 3px 0 0 var(--gold)}
+.str.cur{background:var(--primary-light)}
+.str .nb{font:500 11.5px var(--mono);color:var(--subtle);text-align:right}
+.str .nm{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--fg);font-size:13.5px}
+.str .urg{margin-left:6px;font:700 11px Manrope,sans-serif;color:var(--over);background:light-dark(#fde8e8, oklch(25.1% 0.065 17.6));border-radius:4px;padding:1px 6px}
+.str .dt{font:500 11.5px var(--mono);color:var(--muted);white-space:nowrap}
+.str .lkc{display:flex;justify-content:center}
+.lkb{width:28px;height:28px;border:0;background:none;border-radius:6px;color:var(--subtle);display:grid;place-items:center;cursor:pointer;padding:0}
+.lkb:hover{background:var(--primary-light);color:var(--primary)}
+.lkb svg{width:14px;height:14px}
+.str .sq{width:30px;height:30px}
+.grp{font:800 11px Manrope,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--primary);padding:12px 12px 4px}
+@container (max-width:720px){
+  .sth,.str{grid-template-columns:22px 24px minmax(0,1fr) 88px 128px 32px 32px}
+  .sth .c-dt,.str .c-dt,.sth .c-lk,.str .c-lk{display:none}
+}
+@container (max-width:520px){
+  .sth{display:none}
+  .str{grid-template-columns:22px 22px minmax(0,1fr) 40px 40px;padding:6px 6px}
+  .str .c-own,.str .c-st{display:none}
+  .str .sq{width:40px;height:40px}
+}
+/* donuts */
+.dg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+@media (max-width:1279px){.dg{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:767px){.dg{grid-template-columns:minmax(0,1fr)}}
+.dc{padding:16px 18px 18px;container-type:inline-size}
+.dc .lbl{margin-bottom:12px}
+.dn{display:flex;align-items:center;gap:16px}
+.dnut{position:relative;width:96px;height:96px;flex:none}
+.dnut svg{width:96px;height:96px;display:block;transform:rotate(-90deg)}
+.dnut circle.sg{fill:none;stroke-width:13;cursor:pointer;transition:stroke-width .15s}
+.dnut circle.sg:hover{stroke-width:16}
+.dnut .c{position:absolute;inset:0;display:grid;place-items:center;font:700 24px var(--disp);color:var(--fg);pointer-events:none}
+.lgd{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.lg{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:8px;align-items:center;border:0;background:none;padding:4px 6px;margin:0 -6px;border-radius:6px;cursor:pointer;font:600 13px Manrope,sans-serif;color:var(--fg);text-align:left}
+.lg:hover{background:var(--raised)}
+.lg i{width:11px;height:11px;border-radius:3px}
+.lg b{font:600 13px var(--mono)}
+@container (max-width:250px){.dn{gap:10px}.dnut,.dnut svg{width:72px;height:72px}.dnut .c{font-size:19px}.lg{font-size:12px;gap:6px;grid-template-columns:10px minmax(0,1fr) auto}.lg i{width:10px;height:10px}.lg b{font-size:12px}}
+/* ---------- step page ---------- */
+.hnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hnav .wbtn{max-width:240px}
+.hnav .wbtn span{overflow:hidden;text-overflow:ellipsis}
+.hnav .wbtn svg{width:14px;height:14px;flex:none}
+.wt{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 10px 0 8px;border-radius:7px;border:1px solid light-dark(rgba(255,255,255,.3), oklch(22% 0 89.9 / 0.3));background:rgba(255,255,255,.12);color:#fff;font:600 12.5px Manrope,sans-serif;cursor:pointer;white-space:nowrap}
+.wt:hover{background:rgba(255,255,255,.22)}
+/* lifecycle tracker */
+.trk{padding:22px clamp(14px,2vw,22px) 20px}
+.lc{display:flex;align-items:center;min-width:0}
+.lc .cn{flex:1;min-width:16px;height:3px;border-radius:99px;background:var(--hair);margin:0 6px;align-self:flex-start;margin-top:13px}
+.lc .cn.ok{background:var(--ok)}
+.lc .cn.dot{background:none;border-top:3px dotted light-dark(#c9d1dc, oklch(27.7% 0.012 256.3));height:0}
+.stg{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;text-align:center;flex:none}
+.stg .lb{display:flex;flex-direction:column;gap:2px}
+.stg .o{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none}
+.stg .o svg{width:14px;height:14px}
+.stg.ok .o{background:var(--ok);color:#fff}
+.stg.todo .o{border:2px dashed #aeb9c9;background:light-dark(#fff, oklch(13% 0 89.9))}
+.stg b{font-size:12.5px;font-weight:700;color:var(--fg);line-height:1.2}
+.stg.todo b{color:var(--muted)}
+.stg small{font-size:11.5px;color:var(--muted);line-height:1.2}
+.now{position:relative;display:flex;align-items:center;gap:12px;background:var(--navy);color:#fff;border-radius:10px;padding:12px 16px 12px 12px;box-shadow:0 0 0 4px #f3e7c6,0 14px 30px -14px rgba(15,42,74,.8);flex:none;min-width:0;max-width:280px;text-align:left}
+.now.ok{background:var(--ok);box-shadow:0 0 0 4px #d5efe5,0 14px 30px -14px rgba(21,128,95,.7)}
+.now .tile{width:32px;height:32px;border-radius:8px;background:var(--gold);color:var(--navy);display:grid;place-items:center;flex:none}
+.now.ok .tile{background:light-dark(#fff, oklch(13% 0 89.9));color:var(--ok)}
+.now .tile svg{width:16px;height:16px}
+.now .tx{min-width:0}
+.now .k{display:block;font:700 11px var(--mono);letter-spacing:.06em;color:var(--gold-2);text-transform:uppercase}
+.now.ok .k{color:#d7f5e9}
+.now b{display:block;font:700 15px Manrope,sans-serif;line-height:1.25}
+.now small{display:block;font-size:12px;color:rgba(255,255,255,.85)}
+.now .tag{position:absolute;right:10px;top:-11px;background:var(--you);color:#fff;border-radius:4px;padding:1px 7px;font-size:11.5px;font-weight:700}
+/* banner */
+.ban{display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:12px;background:light-dark(#fbf4e6, oklch(23.9% 0.058 84.6));border:1px solid light-dark(#efdcb3, oklch(32% 0.1 86.1))}
+.ban.ok{background:var(--ok-light);border-color:light-dark(#c3e6d7, oklch(32% 0.084 167.6))}
+.ban.ok .si{width:28px;height:28px}
+.ban .bmini{width:40px;height:40px}
+.ban b{display:block;font-size:13.5px;font-weight:700;color:var(--fg)}
+.ban span span{display:block;font-size:12.5px;color:var(--muted)}
+.ban.ok b,.ban.ok span span{color:var(--ok-text)}
+.sgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);gap:16px;align-items:start}
+.scol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.fchips{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.fch{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;border-radius:5px;border:1px solid var(--border);background:light-dark(#fff, oklch(13% 0 89.9));font:500 11.5px var(--mono);color:var(--fg);cursor:pointer;white-space:nowrap}
+.fch:hover{border-color:var(--primary);color:var(--primary)}
+.fch svg{width:12px;height:12px;color:var(--subtle)}
+.tabs{display:flex;gap:4px;padding:0 18px;border-bottom:1px solid var(--border)}
+.tab{border:0;background:none;padding:8px 12px 10px;font:700 13px Manrope,sans-serif;color:var(--navy-ink,var(--navy));border-bottom:2px solid var(--navy);margin-bottom:-1px;cursor:pointer}
+.pre{display:flex;align-items:center;gap:6px;padding:12px 18px 2px;font:500 11.5px var(--mono);color:var(--muted)}
+.pre svg{width:12px;height:12px}
+.kv{padding:4px 18px 8px}
+.kvr{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:16px;padding:12px 0;border-top:1px solid var(--hair);align-items:center}
+.kvr:first-child{border-top:0}
+.kvr .k{color:var(--muted);font-size:13px}
+.kvr .k small{display:block;font-size:11.5px;color:var(--subtle)}
+.kvr .v{font-size:13.5px;font-weight:600;color:var(--fg);overflow-wrap:anywhere;display:flex;align-items:center;gap:6px}
+.kvr .v.no{color:var(--subtle);font-weight:500}
+.kvr .v .si{width:18px;height:18px}.kvr .v .si svg{width:10px;height:10px}
+.cbot{padding:6px 18px 4px}
+.cft{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--border)}
+.cft .t{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--muted);flex:1;min-width:0}
+.dreq{display:flex;align-items:center;gap:6px;padding:4px 18px 6px;font-size:12px;color:var(--muted)}
+.dreq .si{width:16px;height:16px}.dreq .si svg{width:9px;height:9px}
+.drop{margin:0 18px 10px;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1.5px dashed #e7a463;background:var(--you-light);flex-wrap:wrap}
+.drop.blue{border-color:#9bb5ee;background:light-dark(#f2f6fe, oklch(17.1% 0.01 264.5))}
+.drop .ut{width:38px;height:38px;border-radius:50%;background:var(--you);color:#fff;display:grid;place-items:center;flex:none;border:0;cursor:pointer;padding:0}
+.drop.blue .ut{background:var(--with)}
+.drop .ut svg{width:17px;height:17px}
+.drop .tx{flex:1;min-width:140px}
+.drop b{display:flex;align-items:center;gap:4px;font-size:13.5px}
+.drop .tx>span{font-size:12.5px;color:var(--you-text)}
+.drop.blue .tx>span{color:var(--with-text)}
+.drop .tx>span button{border:0;background:none;padding:0;font:700 12.5px Manrope,sans-serif;color:inherit;text-decoration:underline;cursor:pointer}
+.drop .mono{font-size:11.5px;color:var(--subtle)}
+.file{margin:0 18px 10px;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:light-dark(#fff, oklch(13% 0 89.9));flex-wrap:wrap}
+.file .ft{width:36px;height:36px;border-radius:7px;display:grid;place-items:center;font:700 11px var(--mono);flex:none}
+.file .ft.pdf{background:light-dark(#fdecec, oklch(24.6% 0.054 17.5));color:#c0392b}.file .ft.xlsx{background:light-dark(#e6f4ee, oklch(19.7% 0.01 168.5));color:var(--ok-text)}.file .ft.docx{background:light-dark(#e9effc, oklch(24.9% 0.055 266));color:var(--with)}
+.file .tx{flex:1;min-width:120px}
+.file b{display:block;font-size:13.5px}
+.file small{display:block;font:500 11.5px var(--mono);color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file .acts{display:flex;align-items:center;gap:8px;margin-left:auto}
+.tlst{padding:2px 18px 14px}
+.te{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;position:relative;padding:8px 0}
+.te:before{content:"";position:absolute;left:10px;top:30px;bottom:-8px;width:2px;background:var(--hair)}
+.te:last-child:before{display:none}
+.te.ok:before{background:light-dark(#bfe3d4, oklch(28.9% 0.113 168.2))}
+.te b{display:block;font-size:13px;font-weight:700}
+.te small{display:block;font-size:11.5px;color:var(--muted)}
+.te .dt{font:500 11.5px var(--mono);color:var(--muted);white-space:nowrap}
+/* journey rail (focus track) */
+.rail{padding:14px 14px 12px}
+.rail .ch{padding:0 4px 10px}
+.rl{display:flex;flex-direction:column}
+.rr{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:start;padding:8px 6px;border-radius:8px;position:relative;color:var(--fg);text-decoration:none;font-weight:500}
+a.rr:hover{background:var(--raised)}
+.rr .si{margin-top:1px}
+.rr:after{content:"";position:absolute;left:17px;top:32px;bottom:-8px;width:0;border-left:2px dotted light-dark(#cfd6e2, oklch(27% 0.012 261.3))}
+.rr.ok:after{border-left:2px solid var(--ok)}
+.rr.last:after{display:none}
+.rr b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rr small{display:block;font-size:11.5px;color:var(--muted)}
+.dots{display:flex;gap:3px;margin-top:3px}
+.dots i{width:6px;height:6px;border-radius:50%;box-shadow:inset 0 0 0 1.5px #b8c2d0}
+.dots i.on{background:var(--ok);box-shadow:none}.dots i.cu{background:var(--with);box-shadow:none}
+.rh{position:relative;margin:4px -6px;background:var(--navy);color:#fff;border-radius:12px;padding:12px 14px 12px;box-shadow:0 0 0 4px #f3e7c6,0 14px 30px -14px rgba(15,42,74,.8);z-index:1}
+.rh .k{font:700 11px var(--mono);letter-spacing:.06em;color:var(--gold-2);text-transform:uppercase}
+.rh .hh{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:start}
+.rh b{display:block;font:700 14.5px Manrope,sans-serif;line-height:1.3}
+.rh small{display:block;font-size:12px;color:rgba(255,255,255,.8)}
+.rh .wq{width:30px;height:30px;border-radius:7px;border:0;background:light-dark(#fff, oklch(13% 0 89.9));color:var(--navy-ink,var(--navy));display:grid;place-items:center;cursor:pointer;padding:0}
+.rh .wq svg{width:15px;height:15px}
+.subt{display:flex;align-items:flex-start;margin:12px 0 0}
+.subt .sb{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;min-width:0}
+.subt .sb:before{content:"";position:absolute;top:5px;left:-50%;right:50%;height:2px;background:rgba(255,255,255,.25)}
+.subt .sb.on:before{background:#2fd3a0}
+.subt .sb:first-child:before{display:none}
+.subt .sb i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.3);position:relative;z-index:1}
+.subt .sb.on i{background:#2fd3a0}.subt .sb.cu i{background:var(--gold-2);box-shadow:0 0 0 3px rgba(230,196,110,.3)}
+.subt .sb span{font-size:11px;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.subn{margin-top:8px;font:500 11.5px var(--mono);color:rgba(255,255,255,.75)}
+.rmore{margin:6px 0 0;width:100%}
+/* needed from Northwind */
+.need{padding:14px 18px 10px}
+.need .ch{padding:0 0 8px}
+.nr{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--hair);cursor:pointer}
+.nr:first-of-type{border-top:0}
+.nr input{appearance:none;-webkit-appearance:none;width:18px;height:18px;border-radius:4px;border:2px solid var(--you);margin:0;cursor:pointer;display:grid;place-items:center;background:light-dark(#fff, oklch(13% 0 89.9))}
+.nr input:checked{background:var(--ok);border-color:var(--ok)}
+.nr input:checked:after{content:"";width:5px;height:9px;border:solid light-dark(#fff, oklch(22% 0 89.9));border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.nr span{font-size:13px;font-weight:600}
+.nr input:checked+span{text-decoration:line-through;color:var(--muted)}
+.nr .dt{font:500 11.5px var(--mono);color:var(--muted)}
+.team{padding:14px 18px 14px}
+.team .ch{padding:0 0 8px}
+.pr{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0}
+.av{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font:700 12px Manrope,sans-serif}
+.pr b{display:block;font-size:13px}.pr small{display:block;font-size:11.5px;color:var(--muted)}
+/* action bar */
+.act{position:sticky;bottom:0;z-index:30;margin:calc(4px + var(--vp-launch-h,64px)) calc(-1 * clamp(14px,2.2vw,24px)) -120px;padding:12px clamp(14px,2.2vw,24px) 14px;background:light-dark(rgba(255,255,255,.96), oklch(13% 0 89.9 / 0.96));backdrop-filter:blur(6px);border-top:1px solid var(--border);box-shadow:0 -10px 30px -20px rgba(15,27,45,.4)}
+.act .in{max-width:1600px;margin-inline:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.act .st{display:flex;align-items:center;gap:10px;flex:1 1 220px;min-width:0}
+.act .st b{display:block;font-size:13.5px}
+.act .st .tr{display:block;width:200px;max-width:100%;height:4px;border-radius:99px;background:var(--hair);margin-top:5px;overflow:hidden}
+.act .st .tr i{display:block;height:100%;background:var(--primary-fill,var(--primary));border-radius:99px}
+.act .bs{display:flex;gap:10px;flex-wrap:wrap}
+.has-act #vp-launch{bottom:var(--acth,68px)!important}
+.has-act #vp-mini{bottom:calc(var(--acth,68px) + 12px)!important}
+.pn{display:none;justify-content:space-between;gap:8px}
+.pn .btn{min-width:0;flex:1}
+.pn .btn span{overflow:hidden;text-overflow:ellipsis}
+/* phase page */
+.psum{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.psum .bw{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.psum .gbar{position:relative;flex:1 1 260px;top:auto;margin-top:0;height:12px}
+.psum .glab{position:static;transform:none;flex-wrap:wrap;white-space:normal}
+.kd{display:flex;flex-wrap:wrap;gap:8px}
+.kd span{background:var(--raised);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--muted)}
+.kd b{color:var(--fg)}
+.kd a{font-weight:700}
+.obar{display:flex;gap:2px;height:12px;border-radius:99px;overflow:hidden;margin:4px 0 8px;background:var(--raised)}
+.obar button{border:0;padding:0;cursor:pointer;min-width:8px}
+.obar button:hover{filter:brightness(1.1)}
+/* board resolution */
+.brg{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start}
+.prv{background:var(--raised);overflow:hidden}
+.prv .ch{background:light-dark(#fff, oklch(13% 0 89.9));border-bottom:1px solid var(--border);border-radius:12px 12px 0 0;padding:12px 18px}
+.pvw{overflow:auto;padding:20px 16px 24px;display:flex;justify-content:center}
+.paper{width:440px;max-width:100%;flex:none;background:light-dark(#fff, oklch(13% 0 89.9));box-shadow:0 10px 30px -12px rgba(15,27,45,.35);padding:34px 38px 30px;font:12px/1.6 Georgia,"Times New Roman",serif;color:light-dark(#1d1d1d, oklch(90.8% 0 89.9));transform-origin:top center;transition:transform .2s}
+.paper .t{text-align:center;font-weight:700;font-size:12px;margin-bottom:16px}
+.paper .ln{height:7px;border-radius:2px;background:light-dark(#e4e7ec, oklch(23.9% 0.007 260.7));margin:7px 0}
+.paper h4{margin:16px 0 6px;font:700 12px Georgia,serif}
+.paper .sig{margin-top:34px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.paper .sg{width:130px;border-bottom:1px solid #333;font:italic 22px/1.2 "Brush Script MT","Segoe Script",cursive;color:light-dark(#1b3a7a, oklch(85.4% 0.081 262.7))}
+.paper .sgl{font-size:11px;margin-top:4px}
+.paper .stamp{width:64px;height:64px;border-radius:50%;border:2px solid #4b6fd6;color:light-dark(#3557c0, oklch(80.3% 0.119 266.6));display:grid;place-items:center;text-align:center;font:700 11px/1.15 Manrope,sans-serif;transform:rotate(-12deg);flex:none}
+.files{padding-bottom:8px}
+/* pop-overs, tooltips, brief */
+#ip-brief-scrim{position:fixed;inset:0;z-index:2147482700;background:rgba(10,22,40,.32);opacity:0;transition:opacity .18s;display:flex;justify-content:flex-end}
+#ip-brief-scrim.on{opacity:1}
+#ip-brief{width:min(420px,100%);height:100%;max-height:100dvh;background:light-dark(#fff, oklch(13% 0 89.9));box-shadow:-24px 0 60px -24px rgba(8,20,40,.5);display:flex;flex-direction:column;transform:translateX(28px);transition:transform .26s cubic-bezier(.22,1,.36,1);font:500 13px/1.45 Manrope,system-ui,sans-serif;color:var(--fg)}
+#ip-brief-scrim.on #ip-brief{transform:none}
+#ip-brief .bh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+#ip-brief .bh b{display:block;font:800 15px Manrope,sans-serif;color:var(--navy-ink,var(--navy))}
+#ip-brief .bh small{display:block;font-size:12px;color:var(--muted)}
+#ip-brief .bb{flex:1;min-height:0;overflow:auto;padding:12px 16px 16px}
+#ip-brief .hl{margin:4px 0 6px;padding:10px 12px;border-radius:8px;background:var(--raised);font-size:13px;display:block}
+#ip-brief .sub-h{font:800 11px Manrope,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--subtle);margin:14px 0 4px}
+#ip-brief .bp{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px;margin:0 -8px;border-radius:8px;color:var(--fg);font-weight:600}
+#ip-brief .bp:hover{background:var(--raised)}
+#ip-brief .bp small{display:block;font:500 11.5px var(--mono);color:var(--muted)}
+#ip-brief .mini{display:block;height:5px;border-radius:99px;background:var(--raised);overflow:hidden;margin-top:5px;box-shadow:inset 0 0 0 1px var(--hair)}
+#ip-brief .mini i{display:block;height:100%;background:var(--ok)}
+#ip-brief .bf{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--raised);justify-content:flex-end;flex-wrap:wrap}
+.ip-pop{position:absolute;z-index:2147482600;width:290px;max-width:calc(100vw - 24px);background:light-dark(#fff, oklch(13% 0 89.9));border:1px solid var(--border);border-radius:10px;box-shadow:0 18px 40px -16px rgba(8,20,40,.45);padding:12px;font:500 12.5px/1.5 Manrope,system-ui,sans-serif;color:var(--fg)}
+.ip-pop p{margin:0}
+.ip-pop button{margin-top:10px;width:100%;display:flex;align-items:center;gap:8px;border:0;border-top:1px solid var(--hair);background:none;padding:10px 0 0;font:700 12.5px Manrope,sans-serif;color:var(--primary);cursor:pointer;text-align:left}
+#ip-tt{position:fixed;z-index:2147483002;pointer-events:none;background:#0f2a4a;color:#fff;font:600 12px/1.35 Manrope,system-ui,sans-serif;padding:6px 9px;border-radius:6px;white-space:nowrap;max-width:calc(100vw - 16px);overflow:hidden;text-overflow:ellipsis;opacity:0;transform:translateY(3px);transition:opacity .12s,transform .12s;left:0;top:0;box-shadow:0 8px 20px -10px rgba(8,20,40,.6)}
+#ip-tt.on{opacity:1;transform:none}
+::-webkit-scrollbar{display:none}html{scrollbar-width:none}
+/* ---------- tablet ---------- */
+@media (max-width:1279px){
+  .search{width:40px;padding:0;justify-content:center;gap:0}.search .k,.search .st{display:none}.search svg{width:16px;height:16px}
+}
+@media (max-width:999px){
+  .sgrid{grid-template-columns:minmax(0,1fr)}
+  .brg{grid-template-columns:minmax(0,1fr)}
+  .scol.side2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));align-items:start}
+}
+/* ---------- phone ---------- */
+@media (max-width:767px){
+  .top{height:56px;padding:0 6px;gap:4px}
+  .search,.tb.hide-m,.crumb a,.crumb .sl{display:none}
+  .tb.srch{display:grid}
+  .menu{display:grid;width:40px;height:40px}
+  .tb{width:40px;height:40px}
+  .top .sbc{height:24px}
+  .crumb b{font-size:14.5px;font-weight:700;color:var(--navy-ink,var(--navy))}
+  main{padding:14px 12px 120px}
+  .wrap{gap:14px}
+  .hero{padding:14px 14px 16px}
+  .hl{flex-basis:100%;align-items:flex-start;gap:10px}
+  .hback{margin-top:18px;width:40px;height:40px}
+  .hr{margin-left:0;width:100%}
+  .hr .ring,.hr>.si{margin-left:auto}
+  .hbtn .lt{display:none}
+  .hbtn{height:40px;min-width:40px;justify-content:center;padding:0 10px}
+  .wt{height:36px}
+  .ch{padding:14px 14px 8px}
+  .phc .ch{padding:14px 14px 6px}
+  .phh{padding:12px 14px}
+  .phb{padding:0 8px 10px}
+  .ob{min-height:40px}
+  .week{padding:14px 14px 10px}
+  .wbot{margin-left:0;flex-basis:100%}
+  .wr{min-height:40px}
+  .dc{padding:14px}
+  .lg{min-height:36px}
+  .kvr{grid-template-columns:minmax(0,1fr);gap:2px;padding:10px 0}
+  .kv,.tlst,.pre,.cbot,.dreq,.cft{padding-left:14px;padding-right:14px}
+  .drop,.file{margin-left:14px;margin-right:14px}
+  .tabs{padding:0 14px}
+  .lc{flex-direction:column;align-items:stretch}
+  .lc .cn{width:2px;height:14px;min-width:0;flex:none;margin:2px 0 2px 13px;align-self:flex-start}
+  .lc .cn.dot{width:0;height:14px;border-top:0;border-left:2px dotted light-dark(#c9d1dc, oklch(27.7% 0.012 256.3))}
+  .stg{flex-direction:row;align-items:center;text-align:left;gap:10px}
+  .now{max-width:none}
+  .trk{padding:16px 14px}
+  .hnav{display:none}
+  .pn{display:flex}
+  .act{margin:calc(4px + var(--vp-launch-h,64px)) -12px -120px;padding:10px 12px 12px}
+  .act .bs{width:100%}
+  .act .bs .btn{flex:1;min-width:0;padding:0 10px;height:40px}
+  .act .bs .btn svg{display:none}
+  .rail{padding:14px 10px 10px}
+  .rr{min-height:44px}
+  .paper{padding:24px 20px;font-size:11.5px}
+  .paper .t{font-size:11.5px}
+  .sq{width:40px;height:40px}
+  .lkb{width:40px;height:40px}
+  .fch{height:32px}
+  .nr{min-height:40px}
+  .ibtn,.gbar,.coi .chip.risk,.drop .tx>span button,.pnm a{position:relative}
+  .ibtn:after,.coi .chip.risk:after,.drop .tx>span button:after{content:"";position:absolute;inset:-9px}
+  .phc .gbar:after{content:"";position:absolute;left:0;right:0;top:-15px;bottom:-15px}
+  .pnm a:after{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px}
+  .lg{min-height:40px}.pill{min-height:42px}.fch{height:36px}.drop .ut{width:40px;height:40px}.tab{min-height:40px}
+  #ip-brief-scrim{align-items:flex-end}
+  #ip-brief{height:auto;max-height:88dvh;border-radius:14px 14px 0 0;transform:translateY(28px)}
+}
+@media (max-width:370px){
+  .top .sbc{height:20px}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+/* the five step statuses share one width so they line up down the table */
+.chip.done,.chip.you,.chip.prog,.chip.with,.chip.up{min-width:116px;justify-content:center}
+.own{min-width:88px}
+</style>
+</head>
+<body>
+<div class="side" data-vp="side" aria-hidden="true"></div>
+<header class="top">
+  <button class="tb menu" type="button" aria-label="Open menu" data-vp-menu><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <img class="sbc" src="vcfo-bin:b/6e69009086da4b463a19d1d632abaa20.png" alt="SBC">
+  <nav class="crumb" aria-label="Breadcrumb"><a href="#" data-go="home">Home</a><span class="sl">/</span><a href="#" data-go="incorporation">Incorporation</a><span class="sl">/</span><b id="crB">Phase</b></nav>
+  <span class="sp"></span>
+  <div class="search" role="button" tabindex="0" aria-label="Search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4"/></svg><span class="st">Search</span><span class="k"><span>⌘</span><span>K</span></span></div>
+  <button class="tb srch" type="button" aria-label="Search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4"/></svg></button>
+  <button class="tb hide-m" type="button" aria-label="Announcements" data-go="announcements"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h3l8-4.5v13L7 14H4Z M7 14l1.5 5.5H11L10 14 M18 9.5a3.5 3.5 0 0 1 0 5"/></svg></button>
+  <button class="tb" type="button" aria-label="Notifications, 3 new" data-go="notifications" style="background:var(--primary-light);color:var(--primary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 5 2 6.5 2 6.5h-15s2-1.5 2-6.5 M10 19.5a2 2 0 0 0 4 0"/></svg><span class="n">3</span></button>
+  <button class="tb b hide-m" type="button" aria-label="Switch theme"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></button>
+</header>
+<main id="main"></main>
+<script src="../../routes.js"></script>
+<script src="../../proto.js"></script>
+<script>
+var PAGE='phase';
+var STEPS=[{"n":1,"p":1,"t":"Client Details","d":"Client provides foreign entity details, KYC, proposed names, directors, share capital, and board resolution date.","o":"You","tl":"2–3 working days","f":["RUN","Spice Part A"],"i":[["Details of Foreign Entity/ Parent Entity","Name, Registration Number, Complete Address; optional trademark (yes/no + document if yes)"],["Proof of Foreign Entity / Parent Entity","Certificate of Incorporation"],["Authorized Signatory Details","First name, Middle name (optional), Last name, Designation, Gender"],["KYC Documents of Authorized Signatory","Passport, Driving Licence, Utility Bill \u003c2 months"],["Proposed Company Names","2 names ending \"India Private Limited\""],["Company Mail ID",""],["Company Mobile Number","with country code"],["Business Description","up to 100 words"],["Proposed Directors","2/3/4; First name + Last name (+ optional middle) and Gender each; minimum 2; at least one India resident"],["Share Capital Details","Authorized and Initial Paid-up (INR), nominal value per equity share (e.g. 10,00,000 / 1,00,000 / INR 10)"],["Date of Board Resolution",""]],"u":false},{"n":2,"p":1,"t":"Draft Board Resolution","d":"Project lead receives the draft board resolution from the tool, reviews it, and shares the finalized draft with the client.","o":"SBC","tl":"1–2 working days","f":["Board Resolution"],"i":[["Draft board resolution generated from Pre-1 client data",""],["Project lead review and edits in the board resolution editor",""],["Finalize and release draft to the client portal",""]],"u":false},{"n":3,"p":1,"t":"Signed Board Resolution","d":"Client signs the board resolution on letterhead and uploads the signed copy for the project lead.","o":"You","tl":"3–4 working days","f":["Signed Board Resolution"],"i":[["Download finalized board resolution from the client portal",""],["Sign on company letterhead",""],["Upload signed copy for the engagement team",""]],"u":false},{"n":4,"p":1,"t":"Name Application","d":"Project lead reviews the signed board resolution, files the name application with ROC, and shares the filing acknowledgement with the client.","o":"SBC","tl":"1–2 working days","f":[],"i":[],"u":false},{"n":5,"p":1,"t":"Name Approval","d":"Within 4 to 5 working days, project lead delivers the approved name, approval date, expiry date (20-day validity), and MCA approval letter to the client.","o":"SBC","tl":"5–7 working days","f":[],"i":[],"u":false},{"n":6,"p":2,"t":"Capital Structure","d":"Share classes the company issues at incorporation — equity and/or preference — with the number of shares and the nominal value per share. The total for each class is worked out automatically.","o":"You","tl":"1 working day","f":["Spice Part B"],"i":[["Share classes",""],["Number of shares",""],["Nominal value per share",""]],"u":false},{"n":7,"p":2,"t":"Registered Office Address","d":"The proposed registered office, with the owner’s NOC and a utility bill as proof of address (INC-22 / AGILE-PRO-S). Pre-filled from project setup where that address is already known; correct it here if it changed.","o":"You","tl":"1 working day","f":["Spice Part B","INC-22"],"i":[["Registered office address",""],["NOC from owner",""],["Utility bill",""]],"u":false},{"n":8,"p":2,"t":"Proposed Directors","d":"One entry per proposed director: name, residency, DIN and DSC status, plus the KYC the incorporation forms need (identity, address, contact, photograph).","o":"You","tl":"4–5 working days","f":["Spice Part B","DIR-2","DIR-8","INC-9"],"i":[["Director details",""],["Director KYC documents",""]],"u":false},{"n":9,"p":2,"t":"Subscriber Details","d":"Every subscriber to the memorandum — proposed directors who subscribe, other individuals, bodies corporate or LLPs — with the shares each takes. A group company whose parent is the only subscriber can submit with none.","o":"You","tl":"1 working day","f":["Spice Part B","INC-33","INC-34","INC-35"],"i":[["Subscribers and shares",""],["INC-35 nominee",""]],"u":false},{"n":10,"p":2,"t":"KYC Review & DSC","d":"Intern reviews submitted KYC data and initiates DSC with eMudhra. The incorporation documents are generated on the document pack page.","o":"SBC","tl":"2–3 working days","f":["DSC workflow"],"i":[["KYC review notes and correction requests (if any)",""],["DSC success proof for each director (attachment)",""],["Signing date and place, and the subscription-sheet witness",""]],"u":false},{"n":11,"p":2,"t":"SPICe+ Confirmation","d":"Client reviews the shared SPICe+ Part B application, recommends changes if required, and confirms for filing.","o":"You","tl":"2–3 working days","f":["SPICe+ Part B"],"i":[["Review of shared SPICe+ Part B application",""],["Confirmation or recommended changes",""]],"u":false},{"n":12,"p":2,"t":"SPICe+ Filing","d":"Project lead fills and submits SPICe+ Part B and AGILE-PRO-S forms on the MCA portal.","o":"SBC","tl":"1–2 working days","f":["SPICe+ Part B","AGILE-PRO-S"],"i":[["SPICe+ Part B and AGILE-PRO-S filed on MCA portal",""]],"u":false},{"n":13,"p":2,"t":"MCA Remarks","d":"Project lead reviews MCA portal remarks, requests client information or documents if needed, and resubmits with a clarification letter.","o":"SBC","tl":"5–7 working days","f":["Clarification Letter"],"i":[["MCA remarks summary",""],["Client information or documents requested (if any)",""],["Clarification letter (attachment)",""],["Resubmission notes",""]],"u":false},{"n":14,"p":2,"t":"Certificate of Incorporation","d":"Project lead shares MCA-approved company identifiers and incorporation documents with the client.","o":"SBC","tl":"14–15 working days from filing (Phase 2 Step 6)","f":["Certificate of Incorporation"],"i":[["Company name, date of incorporation, Corporate Identification Number (CIN), Permanent Account Number (PAN), Tax Deduction and Collection Account Number (TAN), Provident Fund Establishment Code (PF), Employees' State Insurance Code (ESI)",""],["Certificate of Incorporation signature verified by MCA (Yes/No), Certificate of Incorporation, Permanent Account Number (PAN) card, and Tax Deduction and Collection Account Number (TAN) card (attachments)",""]],"u":false},{"n":15,"p":3,"t":"First Board Meeting","d":"","o":"SBC","tl":"Within 30 days of incorporation","f":[],"i":[["Agenda of the meeting",""],["Minutes",""],["Resolutions",""]],"u":false},{"n":16,"p":3,"t":"Company Letterhead","d":"","o":"SBC","tl":"Within 30 days of incorporation","f":[],"i":[["Company letterhead with name, CIN, registered office address, email, phone",""]],"u":false},{"n":17,"p":3,"t":"Bank Account Opening","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["Self-attested COI, PAN, rental deed",""],["Board resolution for bank account opening",""],["KYC of authorised signatories",""]],"u":false},{"n":18,"p":3,"t":"Share Capital Infusion","d":"","o":"SBC","tl":"Within 180 days of incorporation","f":[],"i":[["Bank statement showing capital infused from shareholders",""]],"u":false},{"n":19,"p":3,"t":"Share Certificates (SH-1)","d":"","o":"SBC","tl":"Within 60 days of incorporation","f":["SH-1"],"i":[["Details of the allottees",""]],"u":false},{"n":20,"p":3,"t":"Commencement (INC-20A)","d":"","o":"SBC","tl":"Within 180 days of incorporation","f":["INC-20A"],"i":[["Declaration of commencement of business",""],["Bank statement evidence",""]],"u":false},{"n":21,"p":3,"t":"Auditor Appointment (ADT-1)","d":"","o":"SBC","tl":"Within 30 days of incorporation","f":["ADT-1"],"i":[["Board Resolution for auditor appointment",""],["Offer letter to auditor",""],["Eligibility & consent letters from auditor",""],["Intimation of first-auditor appointment",""]],"u":false},{"n":22,"p":3,"t":"FC-GPR Filing","d":"","o":"SBC","tl":"Within 30 days of incorporation","f":["FCGPR"],"i":[["Foreign inward remittance details",""],["FIRC copies",""],["FIRMS portal registration",""],["Foreign investor details (name, address, country, constitution)",""],["Remittance: AD bank, mode of payment, date, amount, FIRC #",""],["Board Resolution for allotment + list of allottees",""],["Share certificates",""]],"u":false},{"n":23,"p":3,"t":"Nominee Shareholder (MGT-4/5/6)","d":"","o":"SBC","tl":"Within 30 days of incorporation","f":["MGT-4","MGT-5","MGT-6"],"i":[["Nominee shareholder declaration",""],["Beneficial owner details",""],["ROC filing acknowledgements",""]],"u":false},{"n":24,"p":3,"t":"Registered Office (INC-22)","d":"","o":"SBC","tl":"Within 30 days of incorporation","f":["INC-22"],"i":[["Updated registered office address",""],["Proof of address",""],["Proof of occupancy",""],["Board resolution for change of registered office (if applicable)",""]],"u":false},{"n":25,"p":3,"t":"Name Board","d":"","o":"SBC","tl":"Within 30 days of incorporation","f":[],"i":[["Name board with company name, CIN, registered office address",""],["Photo evidence of display at registered office",""]],"u":false},{"n":26,"p":4,"t":"GST Registration","d":"","o":"SBC","tl":"Within 2 weeks of incorporation","f":["GST REG-01","GST RFD-11"],"i":[["Self-attested COI",""],["PAN",""],["Board Resolution",""],["Authorisation Letter",""],["MOA",""],["AOA",""],["Rental Deed",""],["Bank Details",""],["Directors' KYC",""],["List of services / goods traded",""],["Rental agreement",""],["KYC of 2 witnesses (for LUT)",""]],"u":true},{"n":27,"p":4,"t":"PF Registration","d":"","o":"SBC","tl":"No statutory time limit","f":["PF registration"],"i":[["Self-attested COI",""],["PAN",""],["Board Resolution",""],["Authorisation Letter",""],["MOA",""],["AOA",""],["Rental Deed",""],["Bank Details",""],["Directors' KYC",""],["List of employees",""],["Active DSC / e-sign credentials",""]],"u":false},{"n":28,"p":4,"t":"ESI Registration","d":"","o":"SBC","tl":"No statutory time limit","f":["ESI registration"],"i":[["Self-attested COI",""],["PAN",""],["Board Resolution",""],["Authorisation Letter",""],["MOA",""],["AOA",""],["Rental Deed",""],["Bank Details",""],["Directors' KYC",""],["List of employees",""]],"u":false},{"n":29,"p":4,"t":"PT Registration","d":"","o":"SBC","tl":"No statutory time limit","f":["Form 1 — PT"],"i":[["Self-attested COI",""],["PAN",""],["Board Resolution",""],["Authorisation Letter",""],["MOA",""],["AOA",""],["Rental Deed",""],["Bank Details",""],["Directors' KYC",""],["TAN",""],["List of employees",""]],"u":false},{"n":30,"p":4,"t":"LEI Registration","d":"","o":"SBC","tl":"No statutory time limit","f":["Form 1 — LEI"],"i":[["Certificate of Incorporation",""],["PAN of company",""],["GST certificate",""],["Authorised representative details",""],["Details of all directors (name, father, DIN, address)",""]],"u":false},{"n":31,"p":4,"t":"MSME Registration","d":"","o":"SBC","tl":"No statutory time limit","f":["Udyam Registration"],"i":[["Aadhaar of authorised signatory",""],["PAN of company",""],["GSTIN (if registered)",""],["Bank account details",""],["NIC / activity codes",""]],"u":false},{"n":32,"p":4,"t":"ICEGATE Registrations","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["Self-attested COI",""],["PAN",""],["Board Resolution",""],["Authorisation Letter",""],["MOA",""],["AOA",""],["Rental Deed",""],["Bank Details",""],["Directors' KYC",""],["IEC code",""],["Authorised signatory DSC",""]],"u":false},{"n":33,"p":4,"t":"IEC Registration","d":"","o":"SBC","tl":"No statutory time limit","f":["Form 1 — IEC"],"i":[["Self-attested COI",""],["PAN",""],["Board Resolution",""],["Authorisation Letter",""],["MOA",""],["AOA",""],["Rental Deed",""],["Bank Details",""],["Directors' KYC",""],["Goods & services exported / imported",""]],"u":false},{"n":34,"p":4,"t":"LUT Filing","d":"","o":"SBC","tl":"No statutory time limit","f":["GST RFD-11"],"i":[["KYC of 2 witnesses",""]],"u":false},{"n":35,"p":4,"t":"Non-STPI Compliance","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["MOA & AOA",""],["Board Resolution authorising signatory",""],["PAN of company",""],["PAN / Passport of all directors",""],["IEC code",""],["DIR-12, INC-22",""],["GST registration",""],["Banker's certificate",""],["Sale deed / lease agreement",""],["Project report (next 5 years)",""],["Master service agreement with parent entity",""]],"u":false},{"n":36,"p":4,"t":"Shops & Establishment","d":"","o":"SBC","tl":"No statutory time limit","f":["Form 1 — S&E","Form No-I"],"i":[["Name board in Telugu & English",""],["List of employees",""],["Rental deed of office space",""],["Employer (MD) ID proof + 2 passport photos",""],["COI, MOA, AOA",""]],"u":false},{"n":37,"p":4,"t":"CLRA Registration","d":"","o":"SBC","tl":"No statutory time limit","f":["CLRA registration"],"i":[["Self-attested COI",""],["PAN",""],["Board Resolution",""],["Authorisation Letter",""],["MOA",""],["AOA",""],["Rental Deed",""],["Bank Details",""],["Directors' KYC",""],["Details of contract labour / contractors (if applicable)",""],["Nature of work and establishment particulars",""]],"u":false},{"n":38,"p":4,"t":"POSH / SHE Box","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["Internal Complaints Committee (ICC) constitution details",""],["SHE Box / POSH portal registration acknowledgement",""],["Workplace POSH policy (if available)",""]],"u":false},{"n":39,"p":4,"t":"Trade Licence","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["Address proof of business",""],["ID proof of applicant + Aadhaar of authorised person",""],["PAN, MOA, AOA, COI",""],["Latest municipal property-tax receipt",""],["Certified layout plan of office",""]],"u":false},{"n":40,"p":4,"t":"Trademark Registration","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["Power of Attorney",""],["Affidavit",""],["MSME certificate & applications",""]],"u":false},{"n":41,"p":4,"t":"Trademark Renewal","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["Trademark registration certificate",""],["Renewal application particulars",""]],"u":false},{"n":42,"p":4,"t":"Patent Registration","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["Invention / specification details",""],["Applicant and inventor particulars",""],["Power of Attorney (if filed through agent)",""]],"u":false},{"n":43,"p":4,"t":"ICDR Registration","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["Issuer / applicant particulars",""],["Offer or listing path details (if applicable)",""]],"u":false},{"n":44,"p":4,"t":"FCGPR Filing","d":"","o":"SBC","tl":"Within 30 days of incorporation","f":["FCGPR"],"i":[["Foreign inward remittance details",""],["FIRC copies",""],["FIRMS portal registration",""],["Foreign investor particulars",""]],"u":false},{"n":45,"p":4,"t":"FDI Reporting","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["FDI transaction particulars",""],["Investor and investee details",""],["FIRMS acknowledgements",""]],"u":false},{"n":46,"p":4,"t":"ODI Reporting","d":"","o":"SBC","tl":"No statutory time limit","f":[],"i":[["Overseas investment particulars",""],["Indian party and foreign entity details",""]],"u":false},{"n":47,"p":4,"t":"FLA Return","d":"","o":"SBC","tl":"No statutory time limit","f":["FLA"],"i":[["Audited / unaudited financials as applicable",""],["Foreign liabilities and assets particulars",""]],"u":false},{"n":48,"p":4,"t":"FCTRS Filing","d":"","o":"SBC","tl":"No statutory time limit","f":["FC-TRS"],"i":[["Transfer of shares particulars",""],["Buyer and seller details",""],["Consideration and FIRC if applicable",""]],"u":false}];
+var BEFORE=["done","done","done","done","done","done","you","prog","prog","prog","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up","up"];
+var AFTER=["done","done","done","done","done","done","done","done","done","done","done","done","done","done","done","done","done","done","prog","prog","done","prog","prog","done","done","done","done","done","prog","up","done","up","prog","done","up","prog","up","up","up","up","up","up","up","up","up","up","up","up"];
+var DATES_B=["2026-09-12","2026-09-18","2026-09-24","2026-09-27","2026-10-01","2026-10-04","2026-10-09","2026-10-16","2026-10-13","2026-10-19","2026-10-20","2026-10-21","2026-10-27","2026-10-28","2026-10-31","2026-11-01","2026-11-07","2026-11-10","2026-11-20","2026-11-24","2026-11-08","2026-11-23","2026-11-25","2026-11-03","2026-11-04","2026-11-09","2026-11-11","2026-11-11","2026-11-21","2026-11-28","2026-11-06","2026-12-05","2026-11-22","2026-11-14","2026-12-08","2026-11-24","2026-12-06","2026-12-07","2026-12-11","2026-12-13","2026-12-14","2026-12-15","2026-12-18","2026-11-27","2026-12-20","2026-12-21","2026-12-25","2026-12-27"];
+var DATES_A=["2026-09-12","2026-09-18","2026-09-24","2026-09-27","2026-10-01","2026-10-04","2026-10-09","2026-10-14","2026-10-15","2026-10-17","2026-10-19","2026-10-20","2026-10-23","2026-10-24","2026-10-27","2026-10-28","2026-11-03","2026-11-06","2026-11-16","2026-11-20","2026-11-04","2026-11-19","2026-11-21","2026-10-30","2026-10-31","2026-11-05","2026-11-07","2026-11-07","2026-11-17","2026-11-24","2026-11-02","2026-12-01","2026-11-18","2026-11-10","2026-12-04","2026-11-20","2026-12-02","2026-12-03","2026-12-07","2026-12-09","2026-12-10","2026-12-11","2026-12-14","2026-11-23","2026-12-16","2026-12-17","2026-12-21","2026-12-23"];
+var IC={"check":"\u003cpath d=\"M20 6 9 17l-5-5\"/>","clock":"\u003ccircle cx=\"12\" cy=\"12\" r=\"10\"/>\u003cpath d=\"M12 6v6l4 2\"/>","user-round":"\u003ccircle cx=\"12\" cy=\"8\" r=\"5\"/>\u003cpath d=\"M20 21a8 8 0 0 0-16 0\"/>","trending-up":"\u003cpath d=\"M16 7h6v6\"/>\u003cpath d=\"m22 7-8.5 8.5-5-5L2 17\"/>","chevron-left":"\u003cpath d=\"m15 18-6-6 6-6\"/>","chevron-right":"\u003cpath d=\"m9 18 6-6-6-6\"/>","chevron-down":"\u003cpath d=\"m6 9 6 6 6-6\"/>","arrow-right":"\u003cpath d=\"M5 12h14\"/>\u003cpath d=\"m12 5 7 7-7 7\"/>","arrow-left":"\u003cpath d=\"m12 19-7-7 7-7\"/>\u003cpath d=\"M19 12H5\"/>","info":"\u003ccircle cx=\"12\" cy=\"12\" r=\"10\"/>\u003cpath d=\"M12 16v-4\"/>\u003cpath d=\"M12 8h.01\"/>","download":"\u003cpath d=\"M12 15V3\"/>\u003cpath d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/>\u003cpath d=\"m7 10 5 5 5-5\"/>","file-text":"\u003cpath d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\"/>\u003cpath d=\"M14 2v5a1 1 0 0 0 1 1h5\"/>\u003cpath d=\"M10 9H8\"/>\u003cpath d=\"M16 13H8\"/>\u003cpath d=\"M16 17H8\"/>","external-link":"\u003cpath d=\"M15 3h6v6\"/>\u003cpath d=\"M10 14 21 3\"/>\u003cpath d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\"/>","paperclip":"\u003cpath d=\"m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551\"/>","circle-help":"\u003ccircle cx=\"12\" cy=\"12\" r=\"10\"/>\u003cpath d=\"M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3\"/>\u003cpath d=\"M12 17h.01\"/>","upload":"\u003cpath d=\"M12 3v12\"/>\u003cpath d=\"m17 8-5-5-5 5\"/>\u003cpath d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/>","eye":"\u003cpath d=\"M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0\"/>\u003ccircle cx=\"12\" cy=\"12\" r=\"3\"/>","x":"\u003cpath d=\"M18 6 6 18\"/>\u003cpath d=\"m6 6 12 12\"/>","copy":"\u003crect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/>\u003cpath d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/>","lock":"\u003crect width=\"18\" height=\"11\" x=\"3\" y=\"11\" rx=\"2\" ry=\"2\"/>\u003cpath d=\"M7 11V7a5 5 0 0 1 10 0v4\"/>","refresh-cw":"\u003cpath d=\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"/>\u003cpath d=\"M21 3v5h-5\"/>\u003cpath d=\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"/>\u003cpath d=\"M8 16H3v5\"/>","minus":"\u003cpath d=\"M5 12h14\"/>","plus":"\u003cpath d=\"M5 12h14\"/>\u003cpath d=\"M12 5v14\"/>","maximize":"\u003cpath d=\"M8 3H5a2 2 0 0 0-2 2v3\"/>\u003cpath d=\"M21 8V5a2 2 0 0 0-2-2h-3\"/>\u003cpath d=\"M3 16v3a2 2 0 0 0 2 2h3\"/>\u003cpath d=\"M16 21h3a2 2 0 0 0 2-2v-3\"/>","message-square":"\u003cpath d=\"M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z\"/>","sun":"\u003ccircle cx=\"12\" cy=\"12\" r=\"4\"/>\u003cpath d=\"M12 2v2\"/>\u003cpath d=\"M12 20v2\"/>\u003cpath d=\"m4.93 4.93 1.41 1.41\"/>\u003cpath d=\"m17.66 17.66 1.41 1.41\"/>\u003cpath d=\"M2 12h2\"/>\u003cpath d=\"M20 12h2\"/>\u003cpath d=\"m6.34 17.66-1.41 1.41\"/>\u003cpath d=\"m19.07 4.93-1.41 1.41\"/>","pen-line":"\u003cpath d=\"M13 21h8\"/>\u003cpath d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\"/>"};
+(function(){
+'use strict';
+var PH=['Name Application','Incorporation','Post-Incorporation','Registration'];
+var PH_KEY=['inc-phase-a','inc-phase','inc-phase-3','inc-phase-4'];
+var PH_TIP=['SPICe+ Part A · name approval with MCA','SPICe+ Part B · the company is formed','Post-incorporation · the first 180 days','Registrations · tax, labour, trade and FEMA'];
+var PH_INFO=['Name approval with MCA (SPICe+ Part A): Northwind’s details, the board resolution, and the name application SBC files for Northwind.','SPICe+ Part B: capital, registered office, directors and subscribers, KYC and DSC, the filing, and the Certificate of Incorporation.','What a new company must do in its first months: board meeting, bank account, share capital, share certificates and ROC filings.','The registrations the company needs to operate, grouped as in VCFO Suite: General, Customs, Foreign Trade, Labour, Local Compliance, IP/Brand and FEMA.'];
+var PH_WHY=['Nothing else can start until MCA approves the company name.','It ends with the Certificate of Incorporation: Northwind exists from that date.','Most of these have legal deadlines counted from the incorporation date (30 to 180 days).','The company needs these to invoice, hire and trade; GST comes first.'];
+var PH_SRC=['Companies Act 2013 · SPICe+ Part A (RUN)','Companies Act 2013 · SPICe+ Part B, AGILE-PRO-S','Companies Act 2013 · INC-20A, ADT-1, SH-1','GST, labour, trade and FEMA rules'];
+var INFO_WHY={coi:'It is the date your company legally exists; everything after it is counted from that day.',phases:'It shows at a glance which phase is late, on time or not started.',docs:'Missing or old documents are the most common reason MCA sends a filing back.',noc:'Without it MCA rejects the registered office proof.',timeline:'It shows who did what and when, so nothing waits unnoticed.'};
+var PH_WAIT=['','','Post-incorporation starts once the Certificate of Incorporation is issued.','Registrations start after the Certificate of Incorporation. GST comes first.'];
+var KL={done:'Done',you:'Waiting',prog:'In progress',with:'With SBC',up:'Upcoming'};
+var KCOL={done:'#15805f',you:'#c8620e',prog:'#0f2a4a',with:'#2453c7',up:'#8a97a8'};
+var KORD=['done','you','prog','with','up'];
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var DAY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var TODAY_B='2026-10-06',TODAY_A='2026-11-12',WIN_END='2026-10-28',AX0='2026-09-08',AX1='2026-12-31';
+var PLAN={1:['2026-09-08','2026-09-28'],2:['2026-09-29',WIN_END]};
+var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+var AFTER_ON=readAfter(),openPh=null,briefOpen=false,firstPaint=true,pop=null,popBtn=null,lastFocus=null,railAll=false,zoom=1,checks={};
+var main=document.getElementById('main');
+
+/* ---------- helpers ---------- */
+function readAfter(){try{return JSON.parse(localStorage.getItem('vcfo.after'))===true;}catch(e){return false;}}
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function ic(n,c){return '<svg class="'+(c||'ic')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(IC[n]||'')+'</svg>';}
+function sic(n,w){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||3)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(IC[n]||'')+'</svg>';}
+var GLY={done:sic('check',3.6),you:sic('user-round',3),prog:sic('clock',2.8),with:sic('trending-up',3),up:'',late:sic('x',3.4)};
+function si(k,tip,cls){return '<span class="si '+k+(cls?' '+cls:'')+'"'+(tip?' role="img" aria-label="'+esc(tip)+'" data-tt="'+esc(tip)+'"':' aria-hidden="true"')+'>'+(GLY[k]||'')+'</span>';}
+var BOTI='<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="15" y="2" width="2" height="5" rx="1" fill="#1e40af"/><circle cx="16" cy="3" r="2.2" fill="#2dd4bf"/><rect x="3" y="7" width="26" height="21" rx="9" fill="#2563eb"/><rect x="7" y="12" width="18" height="10" rx="5" fill="#0b1736"/><rect x="11" y="14.5" width="3" height="5" rx="1.5" fill="#7dd3fc"/><rect x="18" y="14.5" width="3" height="5" rx="1.5" fill="#7dd3fc"/></svg>';
+function bmini(){return '<span class="bmini" aria-hidden="true">'+BOTI+'</span>';}
+function pd(s){var a=s.split('-');return new Date(Date.UTC(+a[0],+a[1]-1,+a[2]));}
+function isoD(d){return d.toISOString().slice(0,10);}
+function addD(s,k){var d=pd(s);d.setUTCDate(d.getUTCDate()+k);return isoD(d);}
+function fmt(s){var d=pd(s);return d.getUTCDate()+' '+MON[d.getUTCMonth()];}
+function fmtY(s){return fmt(s)+' '+pd(s).getUTCFullYear();}
+function wd(s){return DAY[pd(s).getUTCDay()];}
+function days(a,b){return Math.round((pd(b)-pd(a))/864e5);}
+function today(){return AFTER_ON?TODAY_A:TODAY_B;}
+function ST(n){return (AFTER_ON?AFTER:BEFORE)[n-1];}
+function KD(n){var s=ST(n);return s==='prog'&&STEPS[n-1].o!=='You'?'with':s;}
+function DT(n){return (AFTER_ON?DATES_A:DATES_B)[n-1];}
+function since(n){var d=addD(DT(n),-5);return d>today()?today():d;}
+function coiDate(){return AFTER_ON?DT(14):WIN_END;}
+function steps(p){return STEPS.filter(function(x){return x.p===p;});}
+function cnt(list){var c={done:0,you:0,prog:0,with:0,up:0};list.forEach(function(x){c[KD(x.n)]++;});return c;}
+function phState(p){var l=steps(p),c=cnt(l);return c.done===l.length?'done':(c.up===l.length?'up':'active');}
+function phKind(p){var s=phState(p);return s==='done'?'done':(s==='up'?'up':'prog');}
+function phEnd(p){var d=steps(p).map(function(x){return DT(x.n);}).sort();return d[d.length-1];}
+function phPlan(p){if(PLAN[p])return PLAN[p];return [coiDate(),phEnd(p)];}
+function curPhase(){for(var p=1;p<=4;p++){if(phState(p)!=='done')return p;}return 4;}
+function doneN(list){return list.filter(function(x){return ST(x.n)==='done';}).length;}
+function dateCell(n){var k=KD(n),d=fmt(DT(n));if(k==='done')return 'Done '+d;if(k==='you'||k==='prog')return 'Due '+d;if(k==='with')return 'since '+fmt(since(n));return n===14?'exp. '+fmt(coiDate()):'—';}
+function tipTxt(n){var k=KD(n),d=fmt(DT(n));return KL[k]+' · '+(k==='done'?d:k==='with'?'since '+fmt(since(n))+' · due '+d:k==='up'?'planned '+d:'due '+d);}
+function chip(k){return '<span class="chip '+k+'">'+KL[k]+'</span>';}
+function own(o){var L=(o==='You'?'Northwind':o);return '<span class="own '+o+'" role="img" aria-label="Owner · '+L+'" data-tt="'+(o==='You'?'Northwind owns this step':'SBC owns this step')+'">'+L+'</span>';}
+function short(l){l=String(l).replace(/\s*\(.*$/,'').replace(/,.*$/,'');return l.length>22?l.slice(0,20).replace(/\s+\S*$/,'')+'…':l;}
+function toast(m,u){if(window.vcfoToast)window.vcfoToast(m,u);}
+function chat(q){if(window.vcfoChat)window.vcfoChat(q);else toast('Ask VCFO · '+q);}
+function touch(el){if(el&&el.setAttribute)el.setAttribute('data-hit',String(Date.now()));}
+function drill(cfg){if(window.vcfoDrill)window.vcfoDrill(cfg);else toast(cfg.title);}
+function botSay(text,btn,q,aria,go){return '<div class="bot"><span class="bav" aria-hidden="true">'+(window.vcfoBotSVG||'')+'</span><div class="bub">'+text+(btn?'<br><button type="button" class="btn"'+(go?' data-go="'+go+'"':' data-chatq="'+esc(q)+'"')+' aria-label="'+esc(aria||btn)+'">'+esc(btn)+'</button>':'')+'</div></div>';}
+function stRow(x){return [esc(x.n+' · '+x.t),dateCell(x.n),KL[KD(x.n)],KCOL[KD(x.n)],'inc-step-'+x.n];}
+function tabsFor(list){return KORD.map(function(k){return {k:k,label:KL[k],color:KCOL[k],rows:list.filter(function(x){return KD(x.n)===k;}).map(stRow)};}).filter(function(t){return t.rows.length;});}
+function idx(tabs,k){for(var i=0;i<tabs.length;i++){if(tabs[i].k===k)return i;}return 0;}
+function whats(x){return 'What’s this: '+x.t+'?';}
+function regGroup(t){
+  t=t.toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim();
+  if(/\bfc\s*gpr\b|\bfdi\b|\bodi\b|\bfla\b|\bfctrs\b|\bfc\s*trs\b|\bfema\b/.test(t))return 'FEMA';
+  if(/\bgst\b|\besi\b|(^| )pf( |$)|(^| )pt( |$)|\blei\b|\bmsme\b/.test(t))return 'General';
+  if(/\bicegate\b|\biec\b|\blut\b/.test(t))return 'Customs';
+  if(/\bnon stpi\b|\bstpi\b/.test(t))return 'Foreign Trade';
+  if(/\bshops?\b|\bestablishment\b|\bclra\b|\bposh\b|\bshe box\b/.test(t))return 'Labour';
+  if(/\btrade licen/.test(t))return 'Local Compliance';
+  if(/\btrademark\b|\bpatent\b|\bicdr\b/.test(t))return 'IP/Brand';
+  return 'General';
+}
+
+/* ---------- sub-steps ---------- */
+var SUBS={6:['Share classes','Shares','Face value','Holding'],7:['Office address','State','NOC','Utility bill'],8:['Directors','DIN · DSC','ID proofs','Address proofs','Interests'],10:['KYC data','KYC review','DSC']};
+var SUBK_B={7:['done','done','now','done'],8:['done','done','now','todo','todo'],10:['done','now','todo']};
+function subList(x){
+  var labels=SUBS[x.n]||((x.i&&x.i.length)?x.i.map(function(q){return short(q[0]);}):[short(x.t)]),k=ST(x.n),n=labels.length,st;
+  if(k==='done')st=labels.map(function(){return 'done';});
+  else if(k==='up')st=labels.map(function(){return 'todo';});
+  else if(!AFTER_ON&&SUBK_B[x.n])st=SUBK_B[x.n];
+  else{var m=k==='you'?n-1:Math.floor(n/2);st=labels.map(function(_,j){return j<m?'done':(j===m?'now':'todo');});}
+  return labels.map(function(l,j){return {l:l,s:st[j]};});
+}
+function dots(x){return '<span class="dots" aria-hidden="true">'+subList(x).slice(0,6).map(function(s){return '<i class="'+(s.s==='done'?'on':s.s==='now'?'cu':'')+'"></i>';}).join('')+'</span>';}
+
+/* ---------- shared: hero ---------- */
+function ringSvg(pct,col){var R=20,C=2*Math.PI*R,l=C*pct/100;return '<svg viewBox="0 0 50 50" aria-hidden="true"><circle cx="25" cy="25" r="'+R+'" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="5"></circle><circle cx="25" cy="25" r="'+R+'" fill="none" stroke="'+(col||'#e6c46e')+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+Math.max(l,.01).toFixed(2)+' '+C.toFixed(2)+'"></circle></svg>';}
+function spice(){var sp=STEPS.filter(function(x){return x.p<=2;}),d=doneN(sp);return {d:d,t:sp.length,pct:Math.round(d/sp.length*100)};}
+
+/* ---------- landing ---------- */
+function heroLanding(){
+  var all=doneN(STEPS),s=spice();
+  return '<section class="hero" aria-label="Incorporation · Northwind Technologies India Pvt Ltd"><div class="hrow">'+
+    '<div class="hl"><button type="button" class="hback" data-go="home" aria-label="Back to Home">'+ic('chevron-left')+'</button>'+
+    '<div class="htx"><div class="eb">Incorporation · 4 phases</div><div class="ht"><h1>Northwind Technologies India Pvt Ltd</h1></div>'+
+    '<div class="hm">'+all+'/48 · '+(AFTER_ON?'incorporated '+fmtY(DT(14)):'COI expected '+fmtY(WIN_END))+'</div></div></div>'+
+    '<div class="hr"><button type="button" class="hbtn" data-brief aria-haspopup="dialog" aria-label="Monthly status brief" data-tt="Monthly status brief" data-notip>'+ic('download')+'<span class="lt">Monthly status brief</span></button>'+
+    '<a href="#" class="hbtn" data-go="board-resolution" aria-label="Board resolution · ready" data-tt="Board resolution · signed copy received" data-notip>'+ic('file-text')+'<span class="lt">Board resolution</span><span class="rd">'+ic('check')+'Ready</span></a>'+
+    '<button type="button" class="ring" data-ring aria-label="SPICe+ progress · '+s.pct+'% · '+s.d+' of '+s.t+' steps done" data-tt="SPICe+ · '+s.d+' of '+s.t+' steps done" data-notip><span class="rw">'+ringSvg(s.pct)+'<span class="pc">'+s.pct+'%</span></span><small>SPICe+</small></button></div>'+
+  '</div></section>';
+}
+function coiTile(){
+  var all=doneN(STEPS),pct=Math.round(all/48*100),h='<section class="coi" aria-label="'+(AFTER_ON?'Incorporated':'Days to COI')+'"><div class="t1">';
+  if(!AFTER_ON){
+    var d=days(TODAY_B,WIN_END),you=STEPS.filter(function(x){return KD(x.n)==='you';})[0];
+    h+='<button type="button" class="big" data-coi aria-label="'+d+' days to COI · expected '+wd(WIN_END)+' '+fmtY(WIN_END)+'" data-tt="Expected '+wd(WIN_END)+' '+fmtY(WIN_END)+' · window set by Arjun Mehta" data-notip><b id="coiN">'+d+'</b><span>days to COI</span></button>'+
+      '<button type="button" class="ibtn" data-info="coi" aria-expanded="false" aria-label="About days to COI" data-tt="About days to COI" data-notip>'+ic('info')+'</button>'+
+      (you?'<a href="#" class="chip risk" data-go="inc-step-'+you.n+'" aria-label="At risk · step '+you.n+' · '+esc(you.t)+'" data-tt="Step '+you.n+' is waiting on Northwind · due '+fmt(DT(you.n))+'" data-notip>At risk · step '+you.n+'</a>':'')+
+      '</div><div class="sub"><span>Expected '+wd(WIN_END)+' '+fmt(WIN_END)+'</span><span class="mono">· from the incorporation date</span></div>';
+  }else{
+    var e=days(DT(14),WIN_END);
+    h+='<button type="button" class="big" data-coi aria-label="Incorporated '+fmtY(DT(14))+'" data-tt="Certificate of Incorporation · '+wd(DT(14))+' '+fmtY(DT(14))+'" data-notip><b>'+fmt(DT(14))+'</b><span>incorporated</span></button>'+
+      '<button type="button" class="ibtn" data-info="coi" aria-expanded="false" aria-label="About the incorporation date" data-tt="About the incorporation date" data-notip>'+ic('info')+'</button>'+
+      '<span class="chip done" style="margin-left:auto;margin-top:8px" role="img" aria-label="'+e+' days early" data-tt="Window ended '+wd(WIN_END)+' '+fmt(WIN_END)+'">'+e+' days early</span>'+
+      '</div><div class="sub"><span>Incorporated '+wd(DT(14))+' '+fmt(DT(14))+'</span><span class="mono">· CIN, PAN and TAN issued</span><a href="#" data-go="doc-viewer">Open certificate</a></div>';
+  }
+  h+='<button type="button" class="pill" data-allsteps aria-label="'+all+' of 48 steps done · '+pct+'%"><span>'+all+' / 48 steps</span><span class="tr"><i style="width:'+Math.max(pct,2)+'%"></i></span><b>'+pct+'%</b></button>';
+  return h+'</section>';
+}
+var WEEK_B=[['You','Upload NOC · requested by Arjun','9 Oct',7],['You','Check & approve step 7','9 Oct',7],['SBC','KYC review & DSC','now',10],['SBC','Draft MOA & AOA','12 Oct',11]];
+function weekCard(){
+  var rows=AFTER_ON?STEPS.filter(function(x){var k=KD(x.n);return k==='with'||k==='you'||k==='prog';}).sort(function(a,b){return DT(a.n)<DT(b.n)?-1:1;}).slice(0,4).map(function(x){return [x.o,x.t,DT(x.n)<=addD(TODAY_A,3)?'now':fmt(DT(x.n)),x.n];}):WEEK_B;
+  var range=AFTER_ON?'9 – 15 Nov':'6 – 12 Oct';
+  var h='<section class="card week" aria-label="This week"><div class="ch"><h2 class="lbl">This week</h2><span class="cnt">'+range+'</span><span class="wbot">'+bmini()+'<span>'+(AFTER_ON?'Nothing is waiting on Northwind this week.':'MCA: nothing pending this week.')+'</span></span></div>';
+  rows.forEach(function(r){h+='<a href="#" class="wr" data-go="inc-step-'+r[3]+'" aria-label="'+esc(r[1])+' · '+(r[0]==='You'?'Northwind':r[0])+' · '+r[2]+'"><span class="own '+r[0]+'">'+(r[0]==='You'?'Northwind':r[0])+'</span><span class="t">'+esc(r[1])+'</span><span class="dt">'+r[2]+'</span></a>';});
+  return h+'</section>';
+}
+function pos(s){return Math.max(0,Math.min(1,days(AX0,s)/days(AX0,AX1)))*100;}
+function phLabel(p){
+  var l=steps(p),d=doneN(l),t=l.length,pct=Math.round(d/t*100),ps=phState(p),pl=phPlan(p),e;
+  if(ps==='done'){var end=phEnd(p),dl=days(pl[1],end);e='<span class="e'+(dl>0?' late':dl<0?' early':'')+'">Finished '+fmt(end)+(dl>0?' · '+dl+' day'+(dl===1?'':'s')+' late':dl<0?' · '+(-dl)+' days early':'')+'</span>';}
+  else e='<span class="e">Ends '+fmt(pl[1])+'</span>';
+  return '<b>'+pct+'%</b><span>'+d+' / '+t+' steps</span>'+e;
+}
+function phBar(p,inline){
+  var l=steps(p),d=doneN(l),t=l.length,ps=phState(p),pl=phPlan(p),end=ps==='done'?phEnd(p):pl[1],last=end>pl[1]?end:pl[1];
+  var a=pos(pl[0]),b=pos(last),w=Math.max(b-a,1.5),fill,late='',cls=ps==='done'?'s-done':(ps==='up'?'s-up':'s-active');
+  if(ps==='done'){fill=100;if(end>pl[1]){var lp=days(pl[1],end)/Math.max(1,days(pl[0],end))*100;late='<i class="lt" style="width:'+lp.toFixed(1)+'%"></i>';}}
+  else fill=Math.round(d/t*100);
+  var tip='Phase '+p+' · '+PH[p-1]+' · '+d+' of '+t+' done · '+fmt(pl[0])+' → '+fmt(pl[1]);
+  return '<button type="button" class="gbar '+cls+'" data-bar="'+p+'"'+(inline?'':' style="left:'+a.toFixed(2)+'%;width:'+w.toFixed(2)+'%"')+' aria-label="'+esc(tip)+'" data-tt="'+esc(tip)+'" data-notip><span class="in"><i class="f" style="width:'+fill+'%"></i>'+late+'</span>'+(p===2?'<i class="ms"></i>':'')+'</button>';
+}
+function axis(){
+  var h='',d='2026-09-15';
+  while(d<='2026-12-29'){h+='<span style="left:'+pos(d).toFixed(2)+'%">'+fmt(d)+'</span>';d=addD(d,7);}
+  return '<div class="gax" aria-hidden="true"><span></span><div class="tl">'+h+'</div><span class="ob0"></span></div>';
+}
+function stepTable(p,cur){
+  var h='<div class="stt"><div class="sth" aria-hidden="true"><span></span><span></span><span>Step</span><span class="c-own">Owner</span><span class="c-st">Status</span><span class="c-dt">Date</span><span class="lk c-lk">'+ic('external-link')+'·'+ic('paperclip')+'</span><span></span><span></span></div>',g='';
+  if(phState(p)==='up'&&PH_WAIT[p-1])h=botSay(PH_WAIT[p-1],'Ask VCFO when it starts','When does Phase '+p+' · '+PH[p-1]+' start?','Ask VCFO when Phase '+p+' starts')+h;
+  steps(p).forEach(function(x){
+    if(p===4){var gg=regGroup(x.t);if(gg!==g){h+='<div class="grp">'+gg+'</div>';g=gg;}}
+    var k=KD(x.n),lk='';
+    if(x.n===6||x.n===7)lk='<a href="#" class="lkb" data-go="inc-step-'+x.n+'" aria-label="Attachments of step '+x.n+'" data-tt="Attachments · open the step" data-notip>'+ic('paperclip')+'</a>';
+    else if(x.o==='SBC'&&x.f&&x.f.length)lk='<button type="button" class="lkb" data-portal="'+x.n+'" aria-label="Open '+esc(x.f[0])+' on the official portal" data-tt="'+esc(x.f[0])+' · official portal" data-notip>'+ic('external-link')+'</button>';
+    h+='<div class="str k-'+k+(cur===x.n?' cur':'')+'" id="step-'+x.n+'">'+si(k,tipTxt(x.n))+'<span class="nb">'+x.n+'</span><span class="nm" title="'+esc(x.t)+'">'+esc(x.t)+(x.u?'<span class="urg">Urgent</span>':'')+'</span>'+
+      '<span class="c-own">'+own(x.o)+'</span><span class="c-st">'+chip(k)+'</span><span class="dt c-dt">'+dateCell(x.n)+'</span><span class="lkc c-lk">'+lk+'</span>'+
+      '<button type="button" class="sq" data-ask="'+x.n+'" aria-label="What’s this? '+esc(x.t)+'" data-tt="What’s this? · ask VCFO" data-notip>'+ic('circle-help')+'</button>'+
+      '<a href="#" class="sq" data-go="inc-step-'+x.n+'" aria-label="Open step '+x.n+' · '+esc(x.t)+'" data-tt="Open step '+x.n+'" data-notip>'+ic('arrow-right')+'</a></div>';
+  });
+  return h+'</div>';
+}
+function todayLine(){var t=today();return '<button type="button" class="today" style="left:'+pos(t).toFixed(2)+'%" aria-label="Today · '+wd(t)+' '+fmt(t)+'" data-tt="Today · '+wd(t)+' '+fmt(t)+'" data-notip></button>';}
+function phaseRow(p){
+  var l=steps(p),open=openPh===p,ps=phState(p),k=phKind(p);
+  return '<div class="phr'+(open?' open':'')+'" data-p="'+p+'"><div class="phh">'+
+    '<div class="pnm">'+si(k,'Phase '+p+' · '+(ps==='done'?'done':ps==='up'?'upcoming':'in progress'),'xl')+'<div class="tx"><a href="#" data-go="'+PH_KEY[p-1]+'" aria-label="Open the Phase '+p+' page · '+PH[p-1]+'" data-tt="'+esc(PH_TIP[p-1])+'" data-notip>'+PH[p-1]+'</a><small>'+doneN(l)+' / '+l.length+' steps</small></div></div>'+
+    '<div class="gl">'+phBar(p)+'<span class="glab">'+phLabel(p)+'</span>'+todayLine()+'</div>'+
+    '<button type="button" class="btn sm ob" data-toggle="'+p+'" aria-expanded="'+open+'" aria-controls="phb-'+p+'" aria-label="'+(open?'Close':'Open')+' Phase '+p+' · '+PH[p-1]+'">'+(open?'Close':'Open')+ic('chevron-down')+'</button>'+
+    '</div><div class="phb" id="phb-'+p+'" role="region" aria-label="Phase '+p+' steps">'+(open?stepTable(p):'')+'</div></div>';
+}
+function phasesCard(){
+  var d=doneN(STEPS);
+  var h='<section class="card phc" id="phc"><div class="ch"><h2 class="lbl">Phases<button type="button" class="ibtn" data-info="phases" aria-expanded="false" aria-label="About the phases" data-tt="About the phases" data-notip>'+ic('info')+'</button></h2><span class="sp"></span><span class="cnt">'+d+' of 48 steps · Sep – Dec 2026</span><a class="btn btn-o" href="#" style="height:30px;padding:0 10px;font-size:12px;margin-left:10px" aria-label="Edit the timeline"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path class="duo" d="M14.5 5.5l4 4L9 19l-4.5 1 1-4.5Z"></path><path d="M15.5 4.5a2 2 0 0 1 2.9 0l1.1 1.1a2 2 0 0 1 0 2.9L9 19l-4.5 1 1-4.5Z M13.5 6.5l4 4"></path></svg>Edit</a></div>'+axis();
+  for(var p=1;p<=4;p++)h+=phaseRow(p);
+  return h+'</section>';
+}
+/* donuts */
+var DOCS_B={you:[['Submitted',8,'#15805f',['PAN · Rohan Kumar','Aadhaar · Rohan Kumar','Passport · J. Carter','Address proof · J. Carter','Photo · Rohan Kumar','Photo · J. Carter','Signed board resolution','Cap table']],['Under review',1,'#2453c7',['Utility bill · September']],['Pending',2,'#d9731f',['NOC from property owner','Bank statement · J. Carter']],['Sent back',1,'#cf3a2f',['Address proof · Rohan Kumar · older than two months']]],
+  sbc:[['Generated',5,'#2f6fd0',['Board resolution draft','Name application (RUN)','Name approval letter','SPICe+ Part A','DIR-2 consent letters']],['Pending',7,'#dfe4ec',['MOA','AOA','INC-9','DIR-8','INC-22','AGILE-PRO-S','SPICe+ Part B']],['Signed by Northwind',2,'#15805f',['Board resolution (signed)','DIR-2 · Rohan Kumar']]]};
+var DOCS_A={you:[['Submitted',11,'#15805f',['PAN · Rohan Kumar','Aadhaar · Rohan Kumar','Passport · J. Carter','Address proof · J. Carter','Address proof · Rohan Kumar','Photo · Rohan Kumar','Photo · J. Carter','Signed board resolution','Cap table','Utility bill · September','NOC from property owner']],['Under review',0,'#2453c7',[]],['Pending',1,'#d9731f',['Bank KYC letter · FIRC']],['Sent back',0,'#cf3a2f',[]]],
+  sbc:[['Generated',14,'#2f6fd0',['Certificate of Incorporation','PAN card','TAN card','MOA','AOA','INC-9','DIR-8','INC-22','AGILE-PRO-S','SPICe+ Part B','First board meeting minutes','ADT-1','Company letterhead','GST certificate']],['Pending',5,'#dfe4ec',['SH-1 share certificates','INC-20A','FC-GPR','MGT-4/5/6','PT certificate']],['Signed by Northwind',3,'#15805f',['Board resolution (signed)','DIR-2 · Rohan Kumar','SPICe+ Part B']]]};
+function donut(key,title,segs){
+  var tot=segs.reduce(function(a,s){return a+s[1];},0),R=38,C=2*Math.PI*R,off=0,svg='',nz=segs.filter(function(q){return q[1];}).length;
+  segs.forEach(function(s,i){if(!s[1])return;var l=C*s[1]/tot,g=nz>1?1.2:0;
+    svg+='<circle class="sg" cx="48" cy="48" r="'+R+'" stroke="'+s[2]+'" stroke-dasharray="'+Math.max(l-g,.1).toFixed(2)+' '+(C-l+g).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" data-seg="'+key+':'+i+'" data-tt="'+esc(s[0])+' · '+s[1]+'"></circle>';off+=l;});
+  return '<section class="card acc dc" aria-label="'+esc(title)+'"><h2 class="lbl">'+title+'</h2><div class="dn"><div class="dnut"><svg viewBox="0 0 96 96" aria-hidden="true">'+svg+'</svg><span class="c">'+tot+'</span></div><div class="lgd">'+
+    segs.map(function(s,i){return '<button type="button" class="lg" data-seg="'+key+':'+i+'" aria-label="'+esc(title)+' · '+esc(s[0])+' · '+s[1]+'"><i style="background:'+s[2]+'"></i><span>'+esc(s[0])+'</span><b>'+s[1]+'</b></button>';}).join('')+'</div></div></section>';
+}
+function segData(){
+  var D=AFTER_ON?DOCS_A:DOCS_B,left=STEPS.filter(function(x){return ST(x.n)!=='done';});
+  var you=left.filter(function(x){return x.o==='You';}),sbc=left.filter(function(x){return x.o!=='You';});
+  var act=STEPS.filter(function(x){var k=KD(x.n);return k==='you'||k==='prog'||k==='with';});
+  var risk=act.filter(function(x){return KD(x.n)==='you';}),ok=act.filter(function(x){return KD(x.n)!=='you';});
+  return {you:D.you,sbc:D.sbc,who:[['Northwind',you.length,'#c9a24b',you],['SBC',sbc.length,'#2f6fd0',sbc]],plan:[['On time',ok.length,'#15805f',ok],['At risk',risk.length,'#d9731f',risk],['Overdue',0,'#cf3a2f',[]]]};
+}
+var SEG_T={you:'Documents from Northwind',sbc:'Documents SBC prepares',who:'Who’s working on what',plan:'On plan vs overdue'};
+function donuts(){var s=segData();return '<div class="dg">'+donut('you',SEG_T.you,s.you)+donut('sbc',SEG_T.sbc,s.sbc)+donut('who',SEG_T.who,s.who)+donut('plan',SEG_T.plan,s.plan)+'</div>';}
+function drillSeg(v){
+  var a=v.split(':'),key=a[0],i=+a[1],s=segData()[key],docs=key==='you'||key==='sbc';
+  var tabs=s.map(function(q,j){return {k:j,label:q[0],color:q[2],rows:(q[3]||[]).map(function(r){return typeof r==='string'?[esc(r),key==='you'?'From Northwind':'Prepared by SBC','','','documents']:stRow(r);})};});
+  var cfg={title:SEG_T[key],sub:s.reduce(function(t,q){return t+q[1];},0)+(docs?' documents':' steps'),tabs:tabs,active:i};
+  if(docs)cfg.link={lead:'Every document, with versions',text:'Open Documents →',go:'documents',where:'Documents'};
+  drill(cfg);
+}
+function renderLanding(){
+  document.title='Incorporation · VCFO Suite';
+  main.innerHTML='<div class="wrap">'+heroLanding()+'<div class="r2">'+coiTile()+weekCard()+'</div>'+phasesCard()+donuts()+'</div>';
+  layoutGantt();
+  if(firstPaint&&!AFTER_ON&&!reduce){var el=document.getElementById('coiN');if(el){var to=+el.textContent,t0=0;el.textContent='0';
+    requestAnimationFrame(function f(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/650);el.textContent=String(Math.round(to*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(f);});}}
+}
+function layoutGantt(){
+  var c=document.getElementById('phc');if(!c)return;
+  c.classList.remove('simple');
+  var gl=c.querySelector('.gl');if(!gl)return;
+  var W=gl.getBoundingClientRect().width,simple=W<500,ax=c.querySelector('.gax'),sp=W*7/days(AX0,AX1);
+  if(ax){ax.classList.toggle('e2',sp<58&&sp>=29);ax.classList.toggle('e4',sp<29);}
+  if(!simple)[].forEach.call(c.querySelectorAll('.gl'),function(g){
+    var b=g.querySelector('.gbar'),lb=g.querySelector('.glab');if(!b||!lb)return;
+    var a=parseFloat(b.style.left)/100*W,e=a+parseFloat(b.style.width)/100*W,lw=lb.getBoundingClientRect().width;
+    lb.style.left='';lb.style.right='';
+    if(W-e>=lw+18)lb.style.left=(e+14)+'px';
+    else if(a>=lw+14)lb.style.right=(W-a+10)+'px';
+    else simple=true;
+  });
+  if(simple){c.classList.add('simple');[].forEach.call(c.querySelectorAll('.glab'),function(lb){lb.style.left='';lb.style.right='';});}
+}
+
+/* ---------- journey rail (focus track) ---------- */
+function railSub(x){var k=KD(x.n);return k==='done'?'Done · '+fmt(DT(x.n)):k==='you'?'Waiting on Northwind · due '+fmt(DT(x.n)):k==='prog'?'In progress · due '+fmt(DT(x.n)):k==='with'?'With Northwind’s project lead · since '+fmt(since(x.n)):'Opens later';}
+function railHero(x,isPage){
+  var k=KD(x.n),sl=subList(x),dn=sl.filter(function(s){return s.s==='done';}).length,lbl=(isPage?(k==='done'?'Done':k==='up'?'Upcoming':'Now'):'Now')+' · step '+x.n;
+  var labels=sl.length<=4&&sl.every(function(s){return s.l.length<=14;});
+  return '<div class="rh" role="group" aria-label="Step '+x.n+' · '+esc(x.t)+' · '+railSub(x)+'"><div class="hh">'+si(k,tipTxt(x.n))+'<div style="min-width:0"><div class="k">'+lbl+'</div><b>'+esc(x.t)+'</b><small>'+railSub(x)+'</small></div>'+
+    '<button type="button" class="wq" data-ask="'+x.n+'" aria-label="What’s this? '+esc(x.t)+'" data-tt="What’s this? · ask VCFO" data-notip>'+ic('circle-help')+'</button></div>'+
+    '<div class="subt">'+sl.map(function(s){return '<span class="sb '+(s.s==='done'?'on':s.s==='now'?'cu':'')+'" role="img" aria-label="'+esc(s.l)+' · '+(s.s==='done'?'done':s.s==='now'?'in progress':'to do')+'" data-tt="'+esc(s.l)+' · '+(s.s==='done'?'done':s.s==='now'?'in progress':'to do')+'"><i></i>'+(labels?'<span>'+esc(s.l)+'</span>':'')+'</span>';}).join('')+'</div>'+
+    (labels?'':'<div class="subn">'+dn+' of '+sl.length+' sub-steps done</div>')+'</div>';
+}
+function rail(p,focus,isPage){
+  var l=steps(p),d=doneN(l),list=l;
+  if(l.length>11&&!railAll){var i=l.map(function(x){return x.n;}).indexOf(focus),s=Math.max(0,Math.min(l.length-9,i-4));list=l.slice(s,s+9);}
+  var h='<section class="card acc rail" aria-label="Journey · Phase '+p+'"><div class="ch"><h2 class="lbl" style="font-size:11.5px">'+PH[p-1]+' · journey</h2><span class="sp"></span><span class="chip up" style="font-family:var(--mono);font-weight:600">'+d+' / '+l.length+'</span></div><div class="rl">';
+  list.forEach(function(x,j){
+    var k=KD(x.n),nx=list[j+1],ok=k==='done'&&nx&&KD(nx.n)==='done';
+    if(x.n===focus){h+=railHero(x,isPage);return;}
+    h+='<a href="#" class="rr'+(ok?' ok':'')+(j===list.length-1?' last':'')+'" data-go="inc-step-'+x.n+'" aria-label="Step '+x.n+' · '+esc(x.t)+' · '+railSub(x)+'">'+si(k,tipTxt(x.n))+'<span style="min-width:0"><b>'+x.n+' · '+esc(x.t)+'</b><small>'+railSub(x)+'</small>'+(k==='done'||k==='up'?'':dots(x))+'</span>'+own(x.o)+'</a>';
+  });
+  h+='</div>'+(l.length>11?'<button type="button" class="btn sm rmore" data-railall aria-expanded="'+railAll+'">'+(railAll?'Show fewer steps':'Show all '+l.length+' steps')+'</button>':'');
+  return h+'</section>';
+}
+
+/* ---------- step page ---------- */
+var X={
+ 6:{tab:'Capital structure',forms:['SPICe+ Part B'],pre:'Filled by Arjun Mehta from Northwind’s cap table',
+    f:[['Authorised capital','₹10,00,000'],['Paid-up capital','₹1,00,000'],['Face value','₹10 · 10,000 shares'],['Shareholding','Northwind Inc. 9,999 · nominee 1']],
+    docs:[{t:'xlsx',n:'Cap table',f:'northwind-cap-table.xlsx',m:'Northwind · 2 Oct',s:'Checked'}],
+    tl:[['ok','Answers filled','Arjun Mehta','2 Oct'],['ok','Approved by Northwind’s manager','Priya Raman','3 Oct'],['ok','Approved by Northwind','Northwind','4 Oct']],
+    stg:['Arjun · 2 Oct','Arjun · 3 Oct','Priya · 3 Oct','4 Oct']},
+ 7:{tab:'Registered office',forms:['SPICe+ Part B','INC-22'],pre:'Pre-filled from project setup',
+    f:[['Complete address of the proposed registered office','Plot 42, 3rd Floor, Cyber Towers, HITEC City, Madhapur, Hyderabad 500081'],['State / union territory of the registered office','Telangana'],['Utility bill type','Electricity bill'],['Utility bill number','TSSPDCL 1102 4587 66'],['Remarks (optional)','—']],
+    banner:'Northwind’s team filled this step. Check it, upload the NOC Arjun asked for, then approve & submit.',bsub:'Prepared from Northwindr project setup; approved by Priya Raman on 6 Oct.',
+    need:[['noc','Upload NOC from owner','9 Oct',false],['chk','Check the answers','9 Oct',true],['ok','Approve & submit','9 Oct',false]],
+    tlB:[['ok','Pre-filled from project setup','Arjun Mehta · Project Lead','5 Oct'],['ok','Utility bill attached','Arjun Mehta','5 Oct'],['ok','Approved by Northwind’s manager','Priya Raman','6 Oct'],['you','NOC requested from Northwind','Arjun Mehta','6 Oct'],['you','Approve & submit','Northwind','due 9 Oct'],['up','Step 8 opens','Proposed directors','after approval']],
+    tlA:[['ok','Pre-filled from project setup','Arjun Mehta · Project Lead','5 Oct'],['ok','Approved by Northwind’s manager','Priya Raman','6 Oct'],['ok','NOC uploaded','Northwind','8 Oct'],['ok','Approved by Northwind','Northwind','9 Oct'],['ok','Step 8 opened','Proposed directors','9 Oct']],
+    stgB:['Arjun · 2 Oct','Northwind · due 9 Oct','Arjun Mehta','Priya Raman'],stgA:['Arjun · 2 Oct','Northwind · 8 Oct','Arjun · 9 Oct','9 Oct']},
+ 8:{tab:'Directors',forms:['DIR-2','INC-9'],
+    fB:[['Director name · gender · residency','Rohan Kumar · male · resident; J. Carter · male · non-resident'],['DIN · DSC status','Applying through SPICe+ (DIR-3)'],['Aadhaar + PAN (resident) / passport (non-resident)','2 of 3 uploaded'],['Utility bill · photograph','—'],['Other company interests','—']],
+    fA:[['Director name · gender · residency','Rohan Kumar · male · resident; J. Carter · male · non-resident'],['DIN · DSC status','DIN allotted with the COI · DSC issued'],['Aadhaar + PAN (resident) / passport (non-resident)','3 of 3 uploaded'],['Utility bill · photograph','Uploaded for both directors'],['Other company interests','None declared (DIR-8)']],
+    bubB:'Northwind has started this step. The missing KYC for J. Carter is due by 16 Oct. Northwind’s team reviews it once step 7 is approved.',
+    need:[['kyc','Add J. Carter’s address proof','16 Oct',false],['ph','Upload both photographs','16 Oct',false],['sub','Submit for review','16 Oct',false]],
+    tlB:[['ok','Director details pre-filled','Arjun Mehta · from project setup','5 Oct'],['ok','Passport · J. Carter uploaded','Northwind','6 Oct'],['prog','Fill and submit','Northwind · 2 of 5 answered','due 16 Oct'],['up','Review by Northwind’s team','Arjun Mehta','after Northwind submits']],
+    tlA:[['ok','Director details filled','Northwind','12 Oct'],['ok','Reviewed by Northwind’s team','Arjun Mehta','14 Oct'],['ok','Approved by Northwind','Northwind','16 Oct']],
+    stgB:['Northwind · due 16 Oct','Northwind','Arjun Mehta','Priya Raman'],stgA:['Northwind · 10 Oct','Northwind · 12 Oct','Arjun · 14 Oct','16 Oct']},
+ 10:{tab:'KYC & DSC',forms:['DSC · eMudhra'],
+    fB:[['KYC review status','—'],['DSC success message · Non-resident director','—'],['DSC success message · Resident director','—'],['Date of signing','—'],['Place of signing','—'],['Witness to the subscribers','—'],['Other attachments','—']],
+    fA:[['KYC review status','Cleared · 17 Oct'],['DSC success message · Non-resident director','Issued · eMudhra · 18 Oct'],['DSC success message · Resident director','Issued · eMudhra · 18 Oct'],['Date of signing','19 Oct 2026'],['Place of signing','Hyderabad'],['Witness to the subscribers','Priya Raman, CS'],['Other attachments','Video KYC recordings (2)']],
+    bubB:'Northwind’s team prepares this step. The KYC result and the DSC proof appear here when they are delivered.',
+    tlB:[['ok','KYC data received','From Northwind’s project setup','6 Oct'],['with','KYC review','Arjun Mehta · in progress','since 6 Oct'],['up','DSC creation (eMudhra)','Two 30-minute video slots','15 – 16 Oct'],['up','Delivered to Northwind','Northwind approves or requests a change','19 Oct']],
+    tlA:[['ok','KYC data received','From Northwind’s project setup','6 Oct'],['ok','KYC review','Arjun Mehta','17 Oct'],['ok','DSC creation (eMudhra)','Both directors','18 Oct'],['ok','Delivered and approved','Northwind','19 Oct']],
+    stgB:['Arjun Mehta · since 6 Oct','19 Oct','Northwind','Priya Raman'],stgA:['Arjun · 6 Oct','18 Oct','Northwind · 19 Oct','19 Oct']}
+};
+function curN(){var m=(location.hash||'').match(/n=(\d+)/),n=m?+m[1]:7;return (n>=1&&n<=48)?n:7;}
+function stages(x){
+  var k=KD(x.n),you=x.o==='You',d=DT(x.n),c=X[x.n]||{},sg=c[AFTER_ON?'stgA':'stgB']||c.stg;
+  if(sg&&(k==='up'))sg=null;
+  var names=you?['Started','Submitted','Reviewed','Completed']:(k==='with'?['With SBC','Delivered to Northwind','Northwind approves','Completed']:k==='done'?['Started','Delivered to Northwind','Northwind approved','Completed']:['Started','Delivered to Northwind','Northwind approves','Completed']);
+  if(k==='up')names=['','Delivered to Northwind','Northwind approves','Completed'];
+  var subs=sg||(k==='done'?['Arjun · '+fmt(addD(d,-4)),'Arjun · '+fmt(addD(d,-2)),(you?'Priya · ':'Northwind · ')+fmt(addD(d,-1)),fmt(d)]:k==='you'?['Arjun · '+fmt(addD(today(),-3)),'Northwind · due '+fmt(d),'Arjun Mehta','Priya Raman']:k==='prog'?['Northwind · due '+fmt(d),'Northwind','Arjun Mehta','Priya Raman']:k==='with'?['Arjun Mehta · since '+fmt(since(x.n)),fmt(d),'Northwind','Priya Raman']:['','~'+fmt(d),'',''] );
+  var cur=k==='done'?3:k==='you'?(you?1:2):0,parts=[];
+  names.forEach(function(nm,i){
+    var state=k==='done'||i<cur?'ok':(i===cur?'now':'todo');
+    if(i===cur){
+      var hero;
+      if(k==='done')hero=['ok','check','Completed',you?'Approved by Northwind':'Completed',subs[3]];
+      else if(k==='you')hero=['','upload','Now · '+(cur+1)+' of 4',nm,subs[cur],'Waiting on Northwind'];
+      else if(k==='prog')hero=['','pen-line','Now · 1 of 4','Filling in',subs[0]];
+      else if(k==='with')hero=['','sun','Now · with SBC','SBC is working on it',subs[0]];
+      else hero=['','lock','Opens after step '+(x.n-1),'Not started','Starts when step '+(x.n-1)+' is done'];
+      parts.push('<div class="now'+(hero[0]?' '+hero[0]:'')+'" role="group" aria-label="'+esc(hero[2]+' · '+hero[3]+' · '+hero[4])+'">'+(hero[5]?'<span class="tag">'+hero[5]+'</span>':'')+'<span class="tile">'+ic(hero[1])+'</span><span class="tx"><span class="k">'+hero[2]+'</span><b>'+hero[3]+'</b><small>'+esc(hero[4])+'</small></span></div>');
+    }else{
+      parts.push('<div class="stg '+(state==='ok'?'ok':'todo')+'"><span class="o">'+(state==='ok'?sic('check',3.4):'')+'</span><span class="lb"><b>'+nm+'</b>'+(subs[i]?'<small>'+esc(subs[i])+'</small>':'')+'</span></div>');
+    }
+    if(i<3)parts.push('<span class="cn'+(k==='done'||i+1<=cur?' ok':' dot')+'" aria-hidden="true"></span>');
+  });
+  return '<section class="card trk" aria-label="Progress of this step"><div class="lc">'+parts.join('')+'</div></section>';
+}
+function fields(x){
+  var c=X[x.n],k=ST(x.n);
+  if(c){var f=c.f||c[AFTER_ON?'fA':'fB'];if(f)return f.map(function(r){return {l:r[0],v:r[1]};});}
+  var it=(x.i&&x.i.length)?x.i:[[x.t,'']];
+  return it.map(function(q){return {l:q[0],h:q[1],v:k==='done'?'✓':'—'};});
+}
+function kvRows(x){
+  return fields(x).map(function(r){var v=r.v==='✓'?si('done')+'<span>Provided · '+fmt(DT(x.n))+'</span>':esc(r.v);
+    return '<div class="kvr"><div class="k">'+esc(r.l)+(r.h?'<small>'+esc(r.h)+'</small>':'')+'</div><div class="v'+(r.v==='—'?' no':'')+'">'+v+'</div></div>';}).join('');
+}
+function formChips(x){var c=X[x.n],f=(c&&c.forms)||x.f||[];return f.length?'<span class="fchips">'+f.slice(0,3).map(function(n){return '<button type="button" class="fch" data-portal-f="'+esc(n)+'" aria-label="Open '+esc(n)+' on the official portal" data-tt="'+esc(n)+' · official portal" data-notip>'+esc(n)+ic('external-link')+'</button>';}).join('')+'</span>':'';}
+function answersCard(x){
+  var k=KD(x.n),c=X[x.n]||{};
+  var title=(k==='done'||k==='you')?'Answers':'What this step captures';
+  var h='<section class="card acc" aria-label="'+title+'"><div class="ch"><h2 class="lbl">'+title+'<button type="button" class="ibtn" data-info="answers" aria-expanded="false" aria-label="About this step" data-tt="About this step" data-notip>'+ic('info')+'</button></h2>'+formChips(x)+'</div>';
+  if(c.tab&&(k==='done'||k==='you'))h+='<div class="tabs" role="tablist"><button type="button" class="tab" role="tab" aria-selected="true">'+esc(c.tab)+'</button></div>'+(c.pre?'<div class="pre">'+ic('refresh-cw')+esc(c.pre)+'</div>':'');
+  if(k==='with'||k==='up'||k==='prog'){
+    var msg,btn='',go='';
+    if(k==='up'){var pv=STEPS[x.n-2];msg='This step opens after step '+(x.n-1)+' · '+esc(pv?pv.t:'')+'. Here is what it will ask for.';btn='Go to step '+(x.n-1);go='inc-step-'+(x.n-1);}
+    else if(k==='with')msg=c.bubB&&!AFTER_ON?c.bubB:'Northwind’s team prepares this step. The result appears here when it is delivered.';
+    else msg=c.bubB&&!AFTER_ON?c.bubB:'Northwind has started this step. The remaining answers are due by '+fmt(DT(x.n))+'.';
+    h+='<div class="cbot">'+botSay(msg,btn,'',btn,go)+'</div>';
+  }
+  h+='<div class="kv">'+kvRows(x)+'</div>';
+  if(k==='done')h+='<div class="cft"><span class="t">'+si('done')+(x.o==='You'?'Approved by Northwind':'Completed by Northwind’s team')+'</span><button type="button" class="btn" data-change="'+x.n+'">'+ic('message-square')+'Request a change</button></div>';
+  else if(k==='with')h+='<div class="cft"><span class="t">'+si('with')+'Awaiting Northwind’s team</span><button type="button" class="btn" data-msg>'+ic('message-square')+'Message Arjun</button></div>';
+  else if(k==='prog')h+='<div class="cft"><span class="t">'+si('prog')+'In progress · due '+fmt(DT(x.n))+'</span><button type="button" class="btn" data-draft>'+ic('pen-line')+'Save draft</button></div>';
+  else if(k==='up')h+='<div class="cft"><span class="t">'+si('up')+'Opens later</span></div>';
+  return h+'</section>';
+}
+function fileRow(d){
+  return '<div class="file"><span class="ft '+d.t+'">'+d.t.toUpperCase()+'</span><span class="tx"><b>'+esc(d.n)+'</b><small>'+esc(d.f)+' · '+esc(d.m)+'</small></span><span class="acts"><span class="chip done">'+esc(d.s)+'</span><button type="button" class="sq" data-view="'+esc(d.n)+'" aria-label="Preview '+esc(d.n)+'">'+ic('eye')+'</button><button type="button" class="sq" data-dl="'+esc(d.f)+'" aria-label="Download '+esc(d.f)+'">'+ic('download')+'</button></span></div>';
+}
+function docsCard(x){
+  var c=X[x.n]||{},h='';
+  if(x.n===7){
+    var nocDone=AFTER_ON||checks['7:noc'];
+    h+='<div class="dreq">'+si(nocDone?'done':'you')+'No-objection certificate from the owner · requested by Arjun</div>';
+    h+=nocDone?fileRow({t:'pdf',n:'NOC from property owner',f:'noc-plot42-owner.pdf',m:'188 KB · Northwind · '+(AFTER_ON?'8 Oct':'just now'),s:'Uploaded'}):
+      '<div class="drop" data-drop="7"><button type="button" class="ut" data-upload="7" aria-label="Upload the NOC from the property owner">'+ic('upload')+'</button><span class="tx"><b>NOC from property owner<button type="button" class="ibtn" data-info="noc" aria-expanded="false" aria-label="About the NOC" data-tt="About the NOC" data-notip>'+ic('info')+'</button></b><span>Drop a file here or <button type="button" data-upload="7">browse</button></span></span><span class="chip you">Due 9 Oct</span></div>';
+    h+='<div class="dreq">'+si('done')+'Copy of utility bill (not older than two months)</div>'+fileRow({t:'pdf',n:'Utility bill · September',f:'tsspdcl-sep-2026.pdf',m:'301 KB · Arjun · 5 Oct',s:'Uploaded'});
+    var n2=nocDone?2:1;
+    return '<section class="card acc" id="docs" aria-label="Documents"><div class="ch"><h2 class="lbl">Documents<button type="button" class="ibtn" data-info="docs" aria-expanded="false" aria-label="About these documents" data-tt="About these documents" data-notip>'+ic('info')+'</button></h2><span class="sp"></span><span class="chip '+(n2===2?'done':'you')+'">'+n2+' of 2</span></div>'+h+'</section>';
+  }
+  if(c.docs)return '<section class="card acc" id="docs" aria-label="Documents"><div class="ch"><h2 class="lbl">Documents</h2><span class="sp"></span><span class="cnt">'+c.docs.length+' file</span></div>'+c.docs.map(fileRow).join('')+'</section>';
+  return '';
+}
+function timeline(x){
+  var k=KD(x.n),c=X[x.n]||{},d=DT(x.n),ev=c[AFTER_ON?'tlA':'tlB']||c.tl,pv=STEPS[x.n-2];
+  if(!ev){
+    if(k==='done')ev=x.o==='You'?[['ok','Answers filled','Arjun Mehta',fmt(addD(d,-2))],['ok','Approved by Northwind’s manager','Priya Raman',fmt(addD(d,-1))],['ok','Approved by Northwind','Northwind',fmt(d)]]:[['ok','Started by Northwind’s team','Arjun Mehta',fmt(addD(d,-4))],['ok','Reviewed by Northwind’s manager','Priya Raman',fmt(addD(d,-1))],['ok','Completed','Arjun Mehta',fmt(d)]];
+    else if(k==='you')ev=[['ok','Prepared by Northwind’s team','Arjun Mehta',fmt(addD(today(),-1))],['ok','Approved by Northwind’s manager','Priya Raman',fmt(today())],['you','Approve & submit','Northwind','due '+fmt(d)]];
+    else if(k==='prog')ev=[['ok','Step opened','Arjun Mehta',fmt(since(x.n))],['prog','Fill and submit','Northwind','due '+fmt(d)],['up','Review by Northwind’s team','Arjun Mehta','after Northwind submits']];
+    else if(k==='with')ev=[['ok','Started by Northwind’s team','Arjun Mehta',fmt(since(x.n))],['with','In progress','Arjun Mehta · Project Lead','now'],['up','Delivered to Northwind','Northwind approves or requests a change',fmt(d)]];
+    else{var pk=pv?KD(pv.n):'up';ev=[[pk==='done'?'ok':pk,'Step '+(x.n-1)+' · '+(pv?KL[pk].toLowerCase():''),pv?pv.t:'',pk==='up'?'later':'now'],['up','Opens for Northwind’s team','Arjun Mehta','after step '+(x.n-1)],['up','Delivered to Northwind','Northwind approves','~'+fmt(d)]];}
+  }
+  return '<section class="card acc" aria-label="Timeline"><div class="ch"><h2 class="lbl">Timeline<button type="button" class="ibtn" data-info="timeline" aria-expanded="false" aria-label="About the timeline" data-tt="About the timeline" data-notip>'+ic('info')+'</button></h2></div><div class="tlst">'+
+    ev.map(function(e){var g=e[0]==='ok'?'done':e[0];return '<div class="te'+(e[0]==='ok'?' ok':'')+'">'+si(g)+'<span style="min-width:0"><b>'+esc(e[1])+'</b><small>'+esc(e[2])+'</small></span><span class="dt">'+esc(e[3])+'</span></div>';}).join('')+'</div></section>';
+}
+function needItems(x){var k=KD(x.n),c=X[x.n]||{};if(k==='you')return c.need||[['chk','Check the answers',fmt(DT(x.n)),false],['ok','Approve & submit',fmt(DT(x.n)),false]];if(k==='prog')return c.need||[['fill','Fill the answers',fmt(DT(x.n)),false],['sub','Submit for review',fmt(DT(x.n)),false]];return null;}
+function isOn(x,it){var key=x.n+':'+it[0];return (key in checks)?checks[key]:it[3];}
+function needCard(x){
+  var items=needItems(x);
+  if(!items){
+    return '<section class="card acc team" aria-label="Northwind’s team on this step"><div class="ch"><h2 class="lbl">Northwind’s team on this step</h2></div>'+
+      '<div class="pr"><span class="av">AM</span><span><b>Arjun Mehta</b><small>Project Lead · '+(x.o==='You'?'reviews Northwind’s answers':'does this step')+'</small></span><button type="button" class="sq" data-msg aria-label="Message Arjun Mehta">'+ic('message-square')+'</button></div>'+
+      '<div class="pr"><span class="av" style="background:#2f6fd0">PR</span><span><b>Priya Raman</b><small>Project Manager · approves</small></span><button type="button" class="sq" data-msg aria-label="Message Priya Raman">'+ic('message-square')+'</button></div></section>';
+  }
+  var left=items.filter(function(it){return !isOn(x,it);}).length;
+  return '<section class="card acc need" aria-label="Needed from Northwind"><div class="ch"><h2 class="lbl">Needed from Northwind</h2><span class="sp"></span><span class="chip '+(left?'you':'done')+'" id="needN">'+(left?left+' left':'All done')+'</span></div>'+
+    items.map(function(it){return '<label class="nr"><input type="checkbox" data-need="'+x.n+':'+it[0]+'"'+(isOn(x,it)?' checked':'')+'><span>'+esc(it[1])+'</span><span class="dt">'+esc(it[2])+'</span></label>';}).join('')+'</section>';
+}
+function banner(x){
+  var k=KD(x.n),c=X[x.n]||{};
+  if(k==='you')return '<div class="ban">'+bmini()+'<span><b>'+esc(c.banner||'Northwind’s team filled this step. Check it, then approve & submit.')+'</b><span>'+esc(c.bsub||'Prepared by Arjun Mehta; approved by Priya Raman.')+'</span></span></div>';
+  if(k==='done')return '<div class="ban ok">'+si('done')+'<span><b>'+(x.o==='You'?'Approved by Northwind':'Completed by Northwind’s team')+'</b><span>'+(x.o==='You'?'Accepted after submission on ':'Finished on ')+fmt(DT(x.n))+'.</span></span></div>';
+  return '';
+}
+function actBar(x){
+  if(KD(x.n)!=='you')return '';
+  var items=needItems(x),done=items.filter(function(it){return isOn(x,it);}).length,pct=Math.round(done/items.length*100);
+  return '<div class="act" role="region" aria-label="Approval"><div class="in"><div class="st">'+si('you')+'<span style="min-width:0;flex:1"><b>Awaiting Northwind’s approval</b><span class="tr"><i style="width:'+Math.max(pct,6)+'%"></i></span></span></div><div class="bs"><button type="button" class="btn" data-change="'+x.n+'">'+ic('message-square')+'Request a change</button><button type="button" class="btn p" data-approve="'+x.n+'">'+ic('check')+'Approve & submit</button></div></div></div>';
+}
+function renderStep(){
+  var n=curN(),x=STEPS[n-1],k=KD(n),pi=steps(x.p),pos1=pi.indexOf(x)+1,pv=STEPS[n-2],nx=STEPS[n];
+  document.title='Step '+n+' · '+x.t+' · Incorporation · VCFO Suite';
+  var cb=document.getElementById('crB');if(cb)cb.textContent=x.t;
+  var meta=k==='done'?x.o+' · done '+fmt(DT(n)):k==='with'?'Project Lead · with SBC since '+fmt(since(n))+' · due '+fmt(DT(n)):k==='up'?x.o+' · '+esc(x.tl)+' · opens after step '+(n-1):x.o+' · '+esc(x.tl)+' · due '+fmt(DT(n))+' · reviewer Arjun Mehta';
+  var h='<div class="wrap"><section class="hero" aria-label="Step '+n+' · '+esc(x.t)+'"><div class="hrow">'+
+    '<div class="hl"><button type="button" class="hback" data-go="'+PH_KEY[x.p-1]+'" aria-label="Back to Phase '+x.p+' · '+PH[x.p-1]+'">'+ic('chevron-left')+'</button>'+
+    '<div class="htx"><div class="eb">Phase '+x.p+' · '+PH[x.p-1]+' · step '+pos1+' of '+pi.length+'</div><div class="ht"><h1>'+esc(x.t)+'</h1><button type="button" class="wt" data-ask="'+n+'" aria-label="What’s this? '+esc(x.t)+'" data-tt="What’s this? · ask VCFO" data-notip>'+bmini()+'What’s this?</button></div><div class="hm">'+meta+'</div></div></div>'+
+    '<div class="hr"><div class="hnav">'+(pv?'<a href="#" class="wbtn" data-go="inc-step-'+(n-1)+'" aria-label="Previous step · '+(n-1)+' · '+esc(pv.t)+'">'+ic('chevron-left')+'<span>'+(n-1)+' · '+esc(pv.t)+'</span></a>':'')+(nx?'<a href="#" class="wbtn" data-go="inc-step-'+(n+1)+'" aria-label="Next step · '+(n+1)+' · '+esc(nx.t)+'"><span>'+(n+1)+' · '+esc(nx.t)+'</span>'+ic('chevron-right')+'</a>':'')+'</div>'+si(k,tipTxt(n),'xl')+'</div>'+
+  '</div></section>';
+  h+=stages(x)+banner(x);
+  h+='<div class="sgrid"><div class="scol">'+answersCard(x)+docsCard(x)+timeline(x)+'</div><div class="scol side2">'+rail(x.p,n,true)+needCard(x)+'</div></div>';
+  h+='<nav class="pn" aria-label="Steps">'+(pv?'<button type="button" class="btn" data-go="inc-step-'+(n-1)+'">'+ic('arrow-left')+'<span>'+(n-1)+' · '+esc(pv.t)+'</span></button>':'<button type="button" class="btn" data-go="incorporation">'+ic('arrow-left')+'<span>All phases</span></button>')+(nx?'<button type="button" class="btn" data-go="inc-step-'+(n+1)+'"><span>'+(n+1)+' · '+esc(nx.t)+'</span>'+ic('arrow-right')+'</button>':'<button type="button" class="btn" data-go="incorporation"><span>All phases</span>'+ic('arrow-right')+'</button>')+'</nav>';
+  h+=actBar(x)+'</div>';
+  main.innerHTML=h;
+  document.body.classList.toggle('has-act',k==='you');
+  actH();
+}
+function actH(){var a=main.querySelector('.act');if(a)document.documentElement.style.setProperty('--acth',a.offsetHeight+'px');}
+
+/* ---------- phase page ---------- */
+function curP(){var m=(location.hash||'').match(/p=(\d)/),p=m?+m[1]:curPhase();return (p>=1&&p<=4)?p:curPhase();}
+function renderPhase(){
+  var p=curP(),l=steps(p),d=doneN(l),t=l.length,ps=phState(p),pl=phPlan(p),pct=Math.round(d/t*100),endD=ps==='done'?phEnd(p):pl[1];
+  document.title='Phase '+p+' · '+PH[p-1]+' · Incorporation · VCFO Suite';
+  var cb=document.getElementById('crB');if(cb)cb.textContent='Phase '+p+' · '+PH[p-1];
+  var focus=(l.filter(function(x){return KD(x.n)==='you';})[0]||l.filter(function(x){return ST(x.n)!=='done';})[0]||l[l.length-1]).n,cur=STEPS[focus-1];
+  var h='<div class="wrap"><section class="hero" aria-label="Phase '+p+' · '+PH[p-1]+'"><div class="hrow">'+
+    '<div class="hl"><button type="button" class="hback" data-go="incorporation" aria-label="Back to Incorporation">'+ic('chevron-left')+'</button>'+
+    '<div class="htx"><div class="eb">Incorporation · phase '+p+' of 4</div><div class="ht"><h1>'+PH[p-1]+'</h1><button type="button" class="wt" data-chatq="What’s this: Phase '+p+' · '+PH[p-1]+'?" aria-label="What’s this? Phase '+p+' · '+PH[p-1]+'" data-tt="What’s this? · ask VCFO" data-notip>'+bmini()+'What’s this?</button></div>'+
+    '<div class="hm">'+d+'/'+t+' · '+fmt(pl[0])+' → '+fmt(endD)+' · '+(ps==='done'?'finished ':'ends ')+fmtY(endD)+'</div></div></div>'+
+    '<div class="hr"><div class="hnav">'+(p>1?'<a href="#" class="wbtn" data-go="'+PH_KEY[p-2]+'" aria-label="Previous phase · '+PH[p-2]+'">'+ic('chevron-left')+'<span>Phase '+(p-1)+' · '+PH[p-2]+'</span></a>':'')+(p<4?'<a href="#" class="wbtn" data-go="'+PH_KEY[p]+'" aria-label="Next phase · '+PH[p]+'"><span>Phase '+(p+1)+' · '+PH[p]+'</span>'+ic('chevron-right')+'</a>':'')+'</div>'+
+    '<button type="button" class="ring" data-bar="'+p+'" aria-label="Phase '+p+' · '+pct+'% · '+d+' of '+t+' steps done" data-tt="Phase '+p+' · '+d+' of '+t+' steps done" data-notip><span class="rw">'+ringSvg(pct,ps==='done'?'#2fd3a0':'#e6c46e')+'<span class="pc">'+pct+'%</span></span><small>Phase '+p+'</small></button></div>'+
+  '</div></section>';
+  h+='<section class="card acc psum" aria-label="Phase progress"><div class="ch" style="padding:0"><h2 class="lbl">Progress<button type="button" class="ibtn" data-info="phase" aria-expanded="false" aria-label="About this phase" data-tt="About this phase" data-notip>'+ic('info')+'</button></h2><span class="sp"></span><span class="cnt">'+d+' of '+t+' steps</span></div>'+
+    '<div class="bw">'+phBar(p,true)+'<span class="glab">'+phLabel(p)+'</span></div>'+
+    '<div class="kd"><span>Starts <b>'+fmt(pl[0])+'</b></span><span>'+(ps==='done'?'Finished':'Ends')+' <b>'+fmt(endD)+'</b></span>'+(ps!=='done'?'<span>Now <a href="#" data-go="inc-step-'+cur.n+'">Step '+cur.n+' · '+esc(cur.t)+'</a></span>':'')+(p===2?'<span>COI <b>'+fmt(coiDate())+(AFTER_ON?'':' (expected)')+'</b></span>':'')+'<span>Reviewer <b>Arjun Mehta</b></span></div></section>';
+  var you=l.filter(function(x){return x.o==='You';}),sbc=l.filter(function(x){return x.o!=='You';}),O=[['Northwind',you,'#c9a24b'],['SBC',sbc,'#2f6fd0']];
+  var wh='<section class="card acc team" aria-label="Who’s doing it"><div class="ch"><h2 class="lbl">Who’s doing it</h2></div><div class="obar" role="group" aria-label="Owners in Phase '+p+'">'+
+    O.filter(function(o){return o[1].length;}).map(function(o){return '<button type="button" style="flex:'+o[1].length+';background:'+o[2]+'" data-owner="'+o[0]+'" aria-label="'+o[0]+' · '+o[1].length+' steps" data-tt="'+o[0]+' · '+o[1].length+' of '+t+' steps" data-notip></button>';}).join('')+'</div>'+
+    '<div class="lgd">'+O.map(function(o){return '<button type="button" class="lg" data-owner="'+o[0]+'" aria-label="Steps owned by '+o[0]+' · '+o[1].length+'"><i style="background:'+o[2]+'"></i><span>'+o[0]+'</span><b>'+o[1].length+'</b></button>';}).join('')+'</div></section>';
+  h+='<div class="sgrid"><div class="scol"><section class="card acc" aria-label="Steps"><div class="ch"><h2 class="lbl">Steps</h2><span class="sp"></span><span class="cnt">'+t+' steps</span></div><div style="padding:0 8px 8px">'+stepTable(p,focus)+'</div></section></div><div class="scol side2">'+rail(p,focus,false)+wh+'</div></div>';
+  h+='<nav class="pn" aria-label="Phases">'+(p>1?'<button type="button" class="btn" data-go="'+PH_KEY[p-2]+'">'+ic('arrow-left')+'<span>Phase '+(p-1)+'</span></button>':'<button type="button" class="btn" data-go="incorporation">'+ic('arrow-left')+'<span>All phases</span></button>')+(p<4?'<button type="button" class="btn" data-go="'+PH_KEY[p]+'"><span>Phase '+(p+1)+'</span>'+ic('arrow-right')+'</button>':'<button type="button" class="btn" data-go="incorporation"><span>All phases</span>'+ic('arrow-right')+'</button>')+'</nav></div>';
+  main.innerHTML=h;
+}
+
+/* ---------- board resolution ---------- */
+function renderBoard(){
+  document.title='Board resolution · Incorporation · VCFO Suite';
+  var stg=[['Drafted','SBC · 26 Sep'],['Released','28 Sep'],['Signed','Northwind · 30 Sep']],parts=[];
+  stg.forEach(function(s){parts.push('<div class="stg ok"><span class="o">'+sic('check',3.4)+'</span><span class="lb"><b>'+s[0]+'</b><small>'+s[1]+'</small></span></div>','<span class="cn ok" aria-hidden="true"></span>');});
+  parts.push('<div class="now ok" role="group" aria-label="Received by SBC · Arjun · 30 Sep"><span class="tile">'+ic('check')+'</span><span class="tx"><span class="k">Received</span><b>Received by SBC</b><small>Arjun · 30 Sep</small></span></div>');
+  var ln=function(w){return '<div class="ln" style="width:'+w+'%"></div>';};
+  var h='<div class="wrap"><section class="hero" aria-label="Board resolution"><div class="hrow">'+
+    '<div class="hl"><button type="button" class="hback" data-go="inc-phase-a" aria-label="Back to Phase 1 · Name Application">'+ic('chevron-left')+'</button>'+
+    '<div class="htx"><div class="eb">Phase 1 · Name Application · steps 2–3</div><div class="ht"><h1>Board resolution</h1><button type="button" class="wt" data-chatq="What’s this: Board resolution?" aria-label="What’s this? Board resolution" data-tt="What’s this? · ask VCFO" data-notip>'+bmini()+'What’s this?</button></div>'+
+    '<div class="hm" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"><span class="chip done">Signed copy received · 30 Sep</span><span class="chip" style="background:rgba(255,255,255,.16);color:#fff">Certified true copy</span></div></div></div>'+
+    '<div class="hr"><div class="hnav"><a href="#" class="wbtn" data-go="inc-step-2" aria-label="Step 2 · Draft Board Resolution"><span>2 · Draft Board Resolution</span>'+ic('chevron-right')+'</a><a href="#" class="wbtn" data-go="inc-step-3" aria-label="Step 3 · Signed Board Resolution"><span>3 · Signed Board Resolution</span>'+ic('chevron-right')+'</a></div>'+si('done','Done · received 30 Sep','xl')+'</div>'+
+  '</div></section>';
+  h+='<section class="card trk" aria-label="Progress of the board resolution"><div class="lc">'+parts.join('')+'</div></section>';
+  h+='<div class="brg"><section class="card prv" aria-label="Preview"><div class="ch"><h2 class="lbl">Preview</h2><span class="cnt">page 1 of 2 · <span id="zv">'+Math.round(zoom*100)+'%</span></span><span class="sp"></span>'+
+    '<button type="button" class="sq" data-zoom="-1" aria-label="Zoom out">'+ic('minus')+'</button><button type="button" class="sq" data-zoom="1" aria-label="Zoom in">'+ic('plus')+'</button><button type="button" class="sq" data-full aria-label="Open full screen">'+ic('maximize')+'</button></div>'+
+    '<div class="pvw"><div class="paper" id="paper" style="transform:scale('+zoom+')"><div class="t">CERTIFIED TRUE COPY OF THE RESOLUTION PASSED BY THE BOARD OF DIRECTORS OF NORTHWIND INC. ON 24 SEPTEMBER 2026</div>'+ln(90)+ln(100)+ln(80)+'<h4>RESOLVED THAT</h4>'+ln(100)+ln(85)+ln(100)+ln(60)+'<h4>RESOLVED FURTHER THAT</h4>'+ln(100)+ln(75)+ln(100)+ln(50)+
+    '<div class="sig"><div><div class="sg">J. Carter</div><div class="sgl">Director, Northwind Inc.</div></div><div class="stamp">NORTHWIND<br>INC.</div></div></div></div></section>';
+  h+='<div class="scol"><section class="card acc files" aria-label="Files"><div class="ch"><h2 class="lbl">Files</h2><span class="sp"></span><span class="cnt">2 files</span></div>'+
+    fileRow({t:'docx',n:'Draft · Word',f:'board-resolution.docx',m:'SBC · 26 Sep',s:'Released'})+fileRow({t:'pdf',n:'Signed copy',f:'br-signed-northwind.pdf',m:'Northwind · 30 Sep',s:'Received'})+
+    '<div class="drop blue"><button type="button" class="ut" data-upload="br" aria-label="Replace the signed copy">'+ic('refresh-cw')+'</button><span class="tx"><b>Replace signed copy</b><span>Drop a PDF or <button type="button" data-upload="br">browse</button></span></span><span class="mono">PDF · DOCX</span></div></section>'+
+    '<section class="card acc team" aria-label="What happens with it"><div class="ch"><h2 class="lbl">What happens with it</h2></div>'+botSay('Northwind’s parent board authorised the India subsidiary. SBC drafted it, J. Carter signed it, and it went with the name application in step 4.','Open step 3','','Open step 3 · Signed Board Resolution','inc-step-3')+'</section></div></div></div>';
+  main.innerHTML=h;
+}
+
+/* ---------- status brief drawer ---------- */
+function briefBody(){
+  var s=spice();
+  var h=AFTER_ON?'<p class="hl">Incorporated on <b>'+fmtY(DT(14))+'</b>. SPICe+ is <b>100%</b> done. Post-incorporation and Registration are under way.</p>'
+    :'<p class="hl"><b>'+days(TODAY_B,WIN_END)+' days</b> to the expected COI ('+wd(WIN_END)+' '+fmt(WIN_END)+'). SPICe+ is <b>'+s.pct+'%</b> done: '+s.d+' of '+s.t+' steps.</p>';
+  h+='<div class="sub-h">Phases</div>';
+  for(var p=1;p<=4;p++){var l=steps(p),d=doneN(l),ps=phState(p);
+    h+='<a href="#" class="bp" data-go="'+PH_KEY[p-1]+'" aria-label="Open Phase '+p+' · '+PH[p-1]+'">'+si(phKind(p))+'<span>Phase '+p+' · '+PH[p-1]+'<small>'+d+' of '+l.length+' · '+(ps==='done'?'done ':'ends ')+fmt(ps==='done'?phEnd(p):phPlan(p)[1])+'</small><span class="mini"><i style="width:'+Math.round(d/l.length*100)+'%"></i></span></span><span class="chip '+phKind(p)+'">'+(ps==='done'?'Done':ps==='up'?'Upcoming':'In progress')+'</span></a>';}
+  var you=STEPS.filter(function(x){return KD(x.n)==='you';}),act=STEPS.filter(function(x){var k=KD(x.n);return k==='prog'||k==='with';});
+  var row=function(x){return '<a href="#" class="bp" data-go="inc-step-'+x.n+'" aria-label="Open step '+x.n+' · '+esc(x.t)+'">'+si(KD(x.n))+'<span>'+x.n+' · '+esc(x.t)+'<small>'+dateCell(x.n)+'</small></span><span class="own '+x.o+'">'+x.o+'</span></a>';};
+  h+='<div class="sub-h">Waiting on Northwind</div>'+(you.length?you.map(row).join(''):botSay('Nothing is waiting on Northwind.'));
+  h+='<div class="sub-h">In progress</div>'+act.map(row).join('');
+  return h;
+}
+function openBrief(btn){
+  lastFocus=btn||document.activeElement;closeInfo();
+  var sc=document.getElementById('ip-brief-scrim');if(sc)sc.remove();
+  sc=document.createElement('div');sc.id='ip-brief-scrim';
+  sc.innerHTML='<aside id="ip-brief" role="dialog" aria-modal="true" aria-labelledby="ip-brief-t"><div class="bh"><span class="si prog">'+GLY.prog+'</span><div style="flex:1;min-width:0"><b id="ip-brief-t">Monthly status brief</b><small>Northwind Technologies India Pvt Ltd · as of '+fmtY(today())+'</small></div><button type="button" class="sq" data-brief-close aria-label="Close status brief">'+ic('x')+'</button></div>'+
+    '<div class="bb">'+briefBody()+'</div><div class="bf"><button type="button" class="btn" data-copy>'+ic('copy')+'Copy brief</button><button type="button" class="btn p" data-pdf>'+ic('download')+'Download PDF</button></div></aside>';
+  document.body.appendChild(sc);briefOpen=true;
+  if(btn)btn.setAttribute('aria-expanded','true');
+  requestAnimationFrame(function(){sc.classList.add('on');});
+  setTimeout(function(){var x=sc.querySelector('[data-brief-close]');x&&x.focus({preventScroll:true});},40);
+}
+function closeBrief(){
+  var sc=document.getElementById('ip-brief-scrim');if(!sc)return;briefOpen=false;sc.classList.remove('on');
+  setTimeout(function(){sc.remove();},reduce?0:180);
+  var b=document.querySelector('[data-brief]');if(b)b.setAttribute('aria-expanded','false');
+  if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});
+}
+function briefText(){var t=['Incorporation status brief · Northwind Technologies India Pvt Ltd'];for(var p=1;p<=4;p++){var l=steps(p);t.push('Phase '+p+' · '+PH[p-1]+': '+doneN(l)+' of '+l.length+' done');}return t.join('\n');}
+
+/* ---------- info pop-over (rule 7) ---------- */
+var INFO={coi:['Days to COI','Counts down to the end of the incorporation window Northwind’s manager set (Wed 28 Oct 2026). After the Certificate of Incorporation it shows the real incorporation date.'],
+  phases:['The phases','Each bar is the planned window of a phase. The fill is the share of steps done; red is time past the plan. The red line is today; the gold diamond is the COI.'],
+  docs:['Documents','Files this step needs. SBC checks each one before it goes into the MCA filing.'],
+  noc:['NOC from the owner','A no-objection certificate signed by the owner of the premises, needed when the company does not own the registered office.'],
+  timeline:['Timeline','Everything that happened on this step, oldest first, with who did it.']};
+function openInfo(btn){
+  if(pop&&popBtn===btn){closeInfo();return;}closeInfo();
+  var key=btn.getAttribute('data-info'),it=INFO[key]||['',''],title=it[0],txt=it[1];
+  if(key==='answers'){var x=STEPS[curN()-1];title=x.t;txt=x.d||'';}
+  if(key==='phase'){var p=curP();title='Phase '+p+' · '+PH[p-1];txt=PH_INFO[p-1];}
+  pop=document.createElement('div');pop.className='ip-pop';pop.setAttribute('role','dialog');pop.setAttribute('aria-label','About '+title);
+  pop.innerHTML='<p>'+esc(txt)+'</p><button type="button" data-chatq="What’s this: '+esc(title)+'?" aria-label="Ask VCFO: what’s this? '+esc(title)+'">'+bmini()+'Ask VCFO about this</button>';
+  document.body.appendChild(pop);popBtn=btn;btn.setAttribute('aria-expanded','true');
+  var r=btn.getBoundingClientRect(),w=pop.offsetWidth;pop.style.left=(Math.max(12,Math.min(innerWidth-w-12,r.left-8))+scrollX)+'px';pop.style.top=(r.bottom+scrollY+8)+'px';
+}
+function closeInfo(){if(pop){pop.remove();pop=null;}if(popBtn){popBtn.setAttribute('aria-expanded','false');popBtn=null;}}
+
+/* ---------- tooltips (rules 14 + 17) ---------- */
+var tt=null,ttT=0,lpT=0;
+function tipEl(){if(!tt){tt=document.createElement('div');tt.id='ip-tt';tt.setAttribute('role','tooltip');document.body.appendChild(tt);}return tt;}
+function showTip(el,x,y){
+  var t=el.getAttribute('data-tt');if(!t)return;var d=tipEl();d.textContent=t;
+  var r=el.getBoundingClientRect(),svg=(el instanceof SVGElement)&&x!=null,cx=svg?x:r.left+r.width/2,top=svg?y-10:r.top,w=d.offsetWidth,hgt=d.offsetHeight;
+  d.style.left=Math.max(8,Math.min(innerWidth-w-8,cx-w/2))+'px';
+  var ty=top-hgt-8;d.style.top=(ty<4?(svg?y+18:r.bottom+8):ty)+'px';
+  clearTimeout(ttT);ttT=setTimeout(function(){d.classList.add('on');},100);
+}
+function hideTip(){if(tt){clearTimeout(ttT);tt.classList.remove('on');}}
+document.addEventListener('mouseover',function(e){var el=e.target.closest&&e.target.closest('[data-tt]');if(el)showTip(el,e.clientX,e.clientY);else hideTip();});
+document.addEventListener('focusin',function(e){var el=e.target.closest&&e.target.closest('[data-tt]');var fv=true;try{fv=e.target.matches(':focus-visible');}catch(x){}if(el&&fv)showTip(el);});
+document.addEventListener('focusout',hideTip);
+document.addEventListener('scroll',hideTip,true);
+document.addEventListener('pointerdown',function(e){
+  hideTip();clearTimeout(lpT);if(e.pointerType!=='touch')return;
+  var el=e.target.closest&&e.target.closest('[data-tt]');if(!el)return;
+  lpT=setTimeout(function(){showTip(el,e.clientX,e.clientY);setTimeout(hideTip,1800);},450);
+},true);
+['pointerup','pointercancel'].forEach(function(n){document.addEventListener(n,function(){clearTimeout(lpT);},true);});
+
+/* ---------- interactions ---------- */
+function togglePh(p){openPh=openPh===p?null:p;var c=document.getElementById('phc');if(!c)return;
+  [].forEach.call(c.querySelectorAll('.phr'),function(r){var q=+r.getAttribute('data-p'),o=openPh===q;r.classList.toggle('open',o);var b=r.querySelector('[data-toggle]');
+    b.setAttribute('aria-expanded',String(o));b.setAttribute('aria-label',(o?'Close':'Open')+' Phase '+q+' · '+PH[q-1]);b.innerHTML=(o?'Close':'Open')+ic('chevron-down');
+    r.querySelector('.phb').innerHTML=o?stepTable(q):'';});}
+function drillPhase(p){var l=steps(p),tabs=tabsFor(l),c=cnt(l),act=c.you?'you':c.with?'with':c.prog?'prog':c.done===l.length?'done':'up';
+  var cfg={title:'Phase '+p+' · '+PH[p-1],sub:doneN(l)+' of '+l.length+' steps done',tabs:tabs,active:idx(tabs,act)};
+  if(PAGE!=='phase')cfg.link={lead:'Every step of this phase',text:'Open the phase page →',go:PH_KEY[p-1],where:'the phase page'};drill(cfg);}
+function drillRing(){var sp=STEPS.filter(function(x){return x.p<=2;}),tabs=tabsFor(sp);drill({title:'SPICe+ progress',sub:'Phases 1 and 2 · '+doneN(sp)+' of '+sp.length+' steps done',tabs:tabs,active:idx(tabs,'you'),link:{lead:'SPICe+ ends with the Certificate of Incorporation',text:'Open Phase 2 →',go:'inc-phase',where:'the phase pages'}});}
+function drillAll(){var tabs=tabsFor(STEPS);drill({title:'All 48 steps',sub:doneN(STEPS)+' done · '+(48-doneN(STEPS))+' to go',tabs:tabs,active:idx(tabs,AFTER_ON?'with':'you')});}
+function drillOwner(o){var p=curP(),l=steps(p),tabs=['You','SBC'].map(function(k){return {k:k,label:(k==='You'?'Northwind':k),color:k==='You'?'#c9a24b':'#2f6fd0',rows:l.filter(function(x){return x.o===k;}).map(stRow)};}).filter(function(t){return t.rows.length;});
+  drill({title:'Who’s doing it · Phase '+p,sub:PH[p-1]+' · '+l.length+' steps',tabs:tabs,active:idx(tabs,o)});}
+function setNeed(key,on){
+  checks[key]=on;
+  if(key==='7:noc'){render();if(on)toast('NOC marked as uploaded',true);return;}
+  var items=main.querySelectorAll('[data-need]'),left=[].filter.call(items,function(i){return !i.checked;}).length,c=document.getElementById('needN');
+  if(c){c.className='chip '+(left?'you':'done');c.textContent=left?left+' left':'All done';}
+  var bar=main.querySelector('.act .tr i');if(bar)bar.style.width=Math.max(6,Math.round((items.length-left)/items.length*100))+'%';
+}
+document.addEventListener('click',function(e){
+  var t=e.target;if(!t||!t.closest)return;
+  if(t.closest('#vp-bar,#vp-chat,#vp-launch,#vp-drill-scrim,.vps,#vp-drawer,#vp-toast'))return;
+  var el;
+  if(pop&&!t.closest('.ip-pop')&&!t.closest('[data-info]'))closeInfo();
+  if((el=t.closest('#ip-brief-scrim'))&&t===el){e.preventDefault();closeBrief();return;}
+  if(t.closest('[data-go]')){closeInfo();if(briefOpen)closeBrief();return;}   /* proto.js routes data-go */
+  if((el=t.closest('[data-toggle]'))){e.preventDefault();togglePh(+el.getAttribute('data-toggle'));return;}
+  if((el=t.closest('[data-ask]'))){e.preventDefault();touch(el);chat(whats(STEPS[+el.getAttribute('data-ask')-1]));return;}
+  if((el=t.closest('[data-chatq]'))){e.preventDefault();touch(el);closeInfo();if(briefOpen)closeBrief();chat(el.getAttribute('data-chatq'));return;}
+  if((el=t.closest('[data-bar]'))){e.preventDefault();touch(el);drillPhase(+el.getAttribute('data-bar'));return;}
+  if((el=t.closest('[data-ring]'))){e.preventDefault();touch(el);drillRing();return;}
+  if((el=t.closest('[data-coi]'))){e.preventDefault();touch(el);drillRing();return;}
+  if((el=t.closest('[data-allsteps]'))){e.preventDefault();touch(el);drillAll();return;}
+  if((el=t.closest('.today'))){e.preventDefault();touch(el);toast('Today · '+wd(today())+' '+fmtY(today()));return;}
+  if((el=t.closest('[data-seg]'))){e.preventDefault();touch(el);drillSeg(el.getAttribute('data-seg'));return;}
+  if((el=t.closest('[data-owner]'))){e.preventDefault();touch(el);drillOwner(el.getAttribute('data-owner'));return;}
+  if((el=t.closest('[data-railall]'))){e.preventDefault();railAll=!railAll;render();return;}
+  if((el=t.closest('[data-portal]'))){e.preventDefault();touch(el);toast('Opens '+STEPS[+el.getAttribute('data-portal')-1].f[0]+' on the official portal in a new tab');return;}
+  if((el=t.closest('[data-portal-f]'))){e.preventDefault();touch(el);toast('Opens '+el.getAttribute('data-portal-f')+' on the official portal in a new tab');return;}
+  if((el=t.closest('[data-upload]'))){e.preventDefault();touch(el);
+    if(el.getAttribute('data-upload')==='7'){checks['7:noc']=true;render();toast('NOC from property owner uploaded · Arjun will check it',true);}else toast('Choose a PDF to replace the signed copy');return;}
+  if((el=t.closest('[data-view]'))){e.preventDefault();touch(el);toast('Preview · '+el.getAttribute('data-view'));return;}
+  if((el=t.closest('[data-dl]'))){e.preventDefault();touch(el);toast('Download started · '+el.getAttribute('data-dl'));return;}
+  if((el=t.closest('[data-change]'))){e.preventDefault();touch(el);var cn=+el.getAttribute('data-change');chat('I want to request a change to step '+cn+' · '+STEPS[cn-1].t);return;}
+  if((el=t.closest('[data-approve]'))){e.preventDefault();touch(el);var an=+el.getAttribute('data-approve');
+    if(an===7&&!checks['7:noc']){toast('Upload the NOC first · it is still needed from Northwind');return;}
+    el.innerHTML=ic('check')+'Submitted';el.disabled=true;toast('Approved & submitted · Arjun Mehta files it next',true);return;}
+  if((el=t.closest('[data-msg]'))){e.preventDefault();touch(el);chat('Message for Arjun Mehta about step '+curN()+' · '+STEPS[curN()-1].t);return;}
+  if((el=t.closest('[data-draft]'))){e.preventDefault();touch(el);toast('Draft saved',true);return;}
+  if((el=t.closest('[data-zoom]'))){e.preventDefault();zoom=Math.max(.6,Math.min(1.6,Math.round((zoom+(+el.getAttribute('data-zoom'))*.1)*10)/10));var pp=document.getElementById('paper');if(pp)pp.style.transform='scale('+zoom+')';var zv=document.getElementById('zv');if(zv)zv.textContent=Math.round(zoom*100)+'%';touch(el);return;}
+  if((el=t.closest('[data-full]'))){e.preventDefault();touch(el);toast('Full screen · opens the document viewer in the full app');return;}
+  if((el=t.closest('[data-brief]'))){e.preventDefault();openBrief(el);return;}
+  if((el=t.closest('[data-brief-close]'))){e.preventDefault();closeBrief();return;}
+  if((el=t.closest('[data-copy]'))){e.preventDefault();touch(el);try{var pr=navigator.clipboard&&navigator.clipboard.writeText(briefText());if(pr&&pr.catch)pr.catch(function(){});}catch(err){}toast('Status brief copied',false);return;}
+  if((el=t.closest('[data-pdf]'))){e.preventDefault();touch(el);toast('Download started · status-brief-'+(AFTER_ON?'nov':'oct')+'-2026.pdf');return;}
+  if((el=t.closest('[data-info]'))){e.preventDefault();openInfo(el);return;}
+  if((el=t.closest('.tab'))){e.preventDefault();touch(el);toast('Already showing '+el.textContent);return;}
+},true);
+document.addEventListener('change',function(e){var el=e.target;if(el&&el.matches&&el.matches('[data-need]'))setNeed(el.getAttribute('data-need'),el.checked);});
+document.addEventListener('keydown',function(e){if(e.key!=='Escape')return;if(pop){closeInfo();return;}if(briefOpen){e.stopPropagation();closeBrief();}},true);
+var rzT=0;addEventListener('resize',function(){closeInfo();clearTimeout(rzT);rzT=setTimeout(function(){layoutGantt();actH();},80);});
+
+function render(){closeInfo();hideTip();shownKey=viewKey();
+  if(PAGE==='phase')renderPhase();else if(PAGE==='step')renderStep();else if(PAGE==='board')renderBoard();else renderLanding();
+  if(briefOpen){var b=document.querySelector('#ip-brief .bb');if(b)b.innerHTML=briefBody();}
+  firstPaint=false;}
+function rerender(v){var nv=(v===undefined)?readAfter():!!v;if(nv===AFTER_ON)return;AFTER_ON=nv;render();}
+/* What's this? answers for the Ask VCFO drawer: window.vcfoWhatsThis('What’s this: <step title>?') -> {title,text,why,source,go} or null */
+window.vcfoWhatsThis=function(q){
+  var m=String(q||'').match(/^What[’']s this:\s*(.+?)\?$/i);if(!m)return null;var t=m[1].toLowerCase(),x=null;
+  STEPS.forEach(function(s){if(s.t.toLowerCase()===t)x=s;});
+  var pm=t.match(/^phase\s*(\d)/),pi=pm?+pm[1]:0;
+  if(!x&&!pi)PH.forEach(function(n,i){if(n.toLowerCase()===t&&i!==1)pi=i+1;});
+  if(!x&&pi>=1&&pi<=4){var pl=steps(pi);return {title:'Phase '+pi+' · '+PH[pi-1],text:PH_INFO[pi-1],why:PH_WHY[pi-1],source:PH_SRC[pi-1]+' · VCFO Suite checklist, steps '+pl[0].n+'–'+pl[pl.length-1].n,go:PH_KEY[pi-1]};}
+  if(!x){var ik=null;Object.keys(INFO).forEach(function(k){if(INFO[k][0].toLowerCase()===t)ik=k;});
+    if(ik)return {title:INFO[ik][0],text:INFO[ik][1],why:INFO_WHY[ik],source:'VCFO Suite · Northwind’s incorporation project',go:ik==='docs'||ik==='noc'||ik==='timeline'?'inc-step-'+curN():'incorporation'};}
+  if(!x)return /board resolution/.test(t)?{title:'Board resolution',text:'Northwind’s parent board authorises the India subsidiary. SBC drafts it, a director signs it, and Northwind uploads the signed copy.',why:'The name application in step 4 cannot be filed without it.',source:'Companies Act 2013 · SPICe+ Part A',go:'board-resolution'}:null;
+  return {title:x.t,text:x.d,why:x.o==='You'?'Northwind owns this step: Northwind’s answers and documents go into the '+(x.f[0]||'filing')+'.':'SBC does this step for you; you see the result and approve it.',source:(x.f.length?x.f.join(', ')+' · ':'')+'VCFO Suite checklist, step '+x.n,go:'inc-step-'+x.n};
+};
+window.__incRerender=rerender;
+document.addEventListener('vcfo-after',function(e){rerender(e.detail);});
+addEventListener('storage',function(e){if(e.key==='vcfo.after')rerender();});
+var shownKey=null;function viewKey(){return PAGE==='phase'?'p'+curP():PAGE==='step'?'n'+curN():PAGE;}
+if(PAGE==='phase'||PAGE==='step')addEventListener('hashchange',function(){if(viewKey()===shownKey)return;railAll=false;render();window.scrollTo(0,0);});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){layoutGantt();});
+render();
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Team, redesign</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+<style>body{margin:0}
+/* v7 responsive contract (team boards): phone <=767, tablet 768-1279 (72 px rail), desktop >=1280 */
+:root{--vp-side-w:248px}
+@media (max-width:1279px){:root{--vp-side-w:72px}}
+@media (max-width:767px){:root{--vp-side-w:0px}}
+.tb-root{position:relative;width:100%;min-height:100vh;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px}
+.tb-side{width:var(--vp-side-w,248px);flex:none;background:#0f2a4a;overflow:hidden;min-width:0}
+.tb-side>*{width:248px}
+.tb-main{flex:1;min-width:0}
+.pg.tb-wrap{width:100%;max-width:1600px;margin-inline:auto;box-sizing:border-box;padding:clamp(16px,2vw,24px) clamp(16px,2vw,24px) 96px}
+.tb-launch{position:absolute;right:0;top:870px}
+.tb-segx{max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;border-radius:8px;-webkit-overflow-scrolling:touch}
+.tb-segx::-webkit-scrollbar{display:none}
+.tb-segx>.seg{width:max-content;min-width:100%;box-sizing:border-box}
+.tb-m{display:none!important}
+/* no text under 11 px */
+html .lbl{font-size:11px}
+html .seg .cnt,html .kbd{font-size:11px}
+html .dtile .m{font-size:11px;letter-spacing:.06em}
+/* pop-ups fit the viewport */
+.tb-ov{position:fixed!important;inset:0;z-index:60!important;overflow:auto;padding:var(--ovt,12px) 12px 12px;box-sizing:border-box}
+.tb-ov.tb-top{--ovt:min(120px,12vh);align-items:flex-start!important}
+.tb-ov>.dlg{max-width:calc(100vw - 24px);max-height:calc(100dvh - var(--ovt,12px) - 12px);overflow:auto;flex:none;box-sizing:border-box}
+.tb-toast{position:fixed!important;left:calc(50% + var(--vp-side-w,248px) / 2)!important;bottom:24px;max-width:calc(100vw - 24px);box-sizing:border-box;z-index:61!important}
+@media (max-width:1279px){.tb-side>*{display:none!important}}
+@media (max-width:767px){
+  .tb-side{display:none}
+  .pg.tb-wrap{padding:16px 16px 104px}
+  .tb-d{display:none!important}
+  .tb-m{display:revert!important}
+  .tb-m.tb-flex{display:flex!important}
+  .tb-m.tb-iflex{display:inline-flex!important}
+  .tb-ov.tb-top{--ovt:12px;align-items:center!important}
+  .tb-toast{left:50%!important;bottom:96px}
+  .tb-hd>.tb-segx{flex:1 1 100%;margin-left:0!important}
+  /* touch targets >= 40 px */
+  html .btn,html .btn-sm{height:40px;min-height:40px}
+  html .ibtn{width:40px;height:40px}
+  html .seg button{height:40px}
+  html .tgl{position:relative}
+  html .tgl::before{content:"";position:absolute;left:-2px;right:-2px;top:-9px;bottom:-9px}
+  html .info>button{width:40px;height:40px;margin:-11px}
+}
+.tb-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px}
+.tb-line{overflow-wrap:anywhere}
+.tb-ph{display:flex;align-items:center;gap:10px;padding:14px 16px;flex-wrap:wrap}
+.tb-ph .tb-segx{margin-left:auto}
+@media (max-width:767px){.tb-cbtn{height:40px!important}.tb-ph .tb-segx{margin-left:0;flex:1 1 100%}}
+</style>
+</helmet>
+<div class="tb-root">
+  <div class="tb-side" data-vp="side"><dc-import name="side" active="6" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div class="tb-main">
+    <dc-import name="topbar" crumb="Team" hint-size="100%,52px" style="display:block;width:100%"></dc-import>
+    <main class="pg tb-wrap stag">
+      <div class="ph">
+        <div class="acts"><button type="button" class="btn btn-n" data-tip="Only the Primary contact can invite"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 12.5a3.5 3.5 0 1 0 0-7a3.5 3.5 0 1 0 0 7Z M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5 M18 8v6 M15 11h6"></path></svg>Invite</button></div>
+      </div>
+
+      <section class="tb-cards">
+        <sc-for list="{{sbc}}" as="p" hint-placeholder-count="3">
+          <article class="card t" style="padding:18px;gap:14px">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div title="Photo placeholder" style="width:60px;height:60px;border-radius:99px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font:700 18px Space Grotesk;box-shadow:0 0 0 3px var(--panel),0 0 0 5px {{p.ring}};{{p.bg}}">{{p.ini}}</div>
+              <div style="min-width:0;flex:1">
+                <span class="chip" style="{{p.chip}}">{{p.role}}</span>
+                <div style="font:700 16px Manrope;margin-top:6px;color:var(--navy-ink,var(--navy))">{{p.name}}</div>
+                <div class="mono tb-line" style="font-size:11px;color:var(--muted);margin-top:2px">{{p.line}}</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+              <a href="#" class="btn wa tb-cbtn" aria-label="WhatsApp {{p.name}}" style="height:38px;padding:0" data-tip="WhatsApp {{p.name}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4a8 8 0 0 0-6.9 12L4 20l4.1-1.1A8 8 0 1 0 12 4Z M9.2 8.8c.2-.4.6-.4.9-.2l.8 1.4c.1.3 0 .6-.2.8l-.4.4c.4.9 1.2 1.7 2.1 2.1l.4-.4c.2-.2.5-.3.8-.2l1.4.8c.3.2.3.6.1.9-.5.8-1.4 1.1-2.3.7a7 7 0 0 1-3.7-3.7c-.4-.9-.1-1.8.1-2.6Z"></path></svg></a>
+              <a href="#" class="btn btn-o tb-cbtn" aria-label="Call {{p.name}}" style="height:38px;padding:0;color:var(--navy-ink,var(--navy))" data-tip="Call {{p.name}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h2.2l1.3 3.6-1.8 1.2a10 10 0 0 0 6.5 6.5l1.2-1.8L20 14.8V17a2 2 0 0 1-2 2A14 14 0 0 1 5 6a2 2 0 0 1 2-2Z"></path></svg></a>
+              <a href="#" class="btn btn-o tb-cbtn" aria-label="Email {{p.name}}" style="height:38px;padding:0;color:var(--navy-ink,var(--navy))" data-tip="Email {{p.name}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5.5h14A1.5 1.5 0 0 1 20.5 7v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17V7A1.5 1.5 0 0 1 5 5.5Z M4.5 7.5l7.5 5.5 7.5-5.5"></path></svg></a>
+              <a href="#" class="btn btn-o tb-cbtn" aria-label="Teams {{p.name}}" style="height:38px;padding:0;color:light-dark(oklch(48% 0.14 280), oklch(80.8% 0.098 280))" data-tip="Teams {{p.name}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7h10v10h-10Z M6.5 10h4 M8.5 10v5 M16.5 9.5a2 2 0 1 0 0-4a2 2 0 1 0 0 4Z M15.5 11h5v4.5a2.5 2.5 0 0 1-5 0"></path></svg></a>
+            </div>
+          </article>
+        </sc-for>
+      </section>
+
+      <section class="card">
+        <div class="tb-ph">
+          <span class="ic" style="background:var(--violet)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 12.5a3.5 3.5 0 1 0 0-7a3.5 3.5 0 1 0 0 7Z M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5 M15.5 5.7a3.3 3.3 0 0 1 0 6.4"></path></svg></span>
+          <h2 class="h3">People from Northwind</h2>
+          <div class="tb-segx"><div class="seg" role="tablist" style="grid-template-columns:repeat(4,minmax(0,1fr))"><span class="thumb" style="width:calc((100% - 4px)/4);{{thumb}}"></span><sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button type="button" role="tab" onClick="{{t.pick}}" class="{{t.cls}}">{{t.label}}<span class="cnt">{{t.cnt}}</span></button></sc-for></div></div>
+        </div>
+        <div style="border-top:1px solid var(--hair)">
+          <sc-if value="{{noRows}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:32px 16px">
+              <span style="display:flex;flex:none"><dc-import name="v7c_bot" state="idle" size="48" hint-size="48px,48px"></dc-import></span>
+              <div role="status" style="max-width:300px;background:var(--panel);border:1px solid var(--border);border-radius:10px 10px 10px 3px;padding:10px 12px;box-shadow:var(--shadow)">
+                <div class="rt" style="font-weight:700">{{emptyText}}</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button type="button" class="btn btn-o btn-sm">Invite</button><a href="#" style="font-size:12px">Ask VCFO why</a></div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+            <div class="row" style="padding:12px 16px">
+              <span class="av" style="width:36px;height:36px;font-size:12px;{{r.av}}">{{r.ini}}</span>
+              <div style="min-width:0;flex:1"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="rt">{{r.name}}</span><sc-if value="{{r.you}}" hint-placeholder-val="{{false}}"><span class="chip" style="background:var(--gold-soft);color:var(--gold-text)">Northwind</span></sc-if><span class="chip tb-m tb-iflex" style="{{r.roleStyle}}">{{r.role}}</span></div><div class="mono" style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.email}}</div><div class="mono tb-m" style="font-size:11px;color:var(--muted);margin-top:2px">{{r.when}}</div></div>
+              <span class="chip tb-d" style="{{r.roleStyle}}">{{r.role}}</span>
+              <span class="mono tb-d" style="width:110px;font-size:11.5px;color:var(--muted);text-align:right;flex:none">{{r.when}}</span>
+              <div style="display:flex;gap:6px;min-width:76px;flex:none;justify-content:flex-end">
+                <sc-if value="{{r.pending}}" hint-placeholder-val="{{false}}"><button type="button" class="ibtn" aria-label="Resend invite to {{r.email}}" data-tip="Resend invite to {{r.email}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 0 1 13-5 M19.5 12a7.5 7.5 0 0 1-13 5 M17.5 3.5v3.5H14 M6.5 20.5V17H10"></path></svg></button><button type="button" class="ibtn" aria-label="Cancel invite" data-tip="Cancel invite"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></sc-if>
+                <sc-if value="{{r.member}}" hint-placeholder-val="{{true}}"><button type="button" class="ibtn" aria-label="Substitute {{r.name}}" data-tip="Substitute {{r.name}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3.5-3.5 M20 16H7l3.5 3.5"></path></svg></button></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="tb-launch"><dc-import name="launcher" hint-size="160px,130px"></dc-import></div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { tab: 0 }; }
+  renderVals() {
+    const s = this.state;
+    const sbc = [
+      { name: 'Priya Raman', role: 'Project Manager', ini: 'PR', line: 'priya.raman@sbc.in', bg: 'background:oklch(62% 0.08 40)', ring: 'var(--gold)', chip: 'background:var(--navy);color:#fff' },
+      { name: 'Arjun Mehta', role: 'Project Lead', ini: 'AM', line: 'arjun.mehta@sbc.in', bg: 'background:oklch(55% 0.09 200)', ring: 'var(--gold)', chip: 'background:var(--navy);color:#fff' },
+      { name: 'Farhat', role: 'Customer support', ini: 'F', line: 'support@sbc.in · +91 90597 90014', bg: 'background:var(--navy-3)', ring: 'var(--border)', chip: 'background:var(--prog-light);color:var(--prog-text)' }
+    ];
+    const P = [
+      { name: 'Rahul Khanna', ini: 'RK', email: 'rahul@northwind.in', role: 'Primary', when: 'Since 2 Sep', you: true, k: 'p', av: 'background:var(--primary-fill,var(--primary))' },
+      { name: 'Meera Iyer', ini: 'MI', email: 'meera@northwind.in', role: 'Member', when: 'Since 12 Sep', k: 'm', av: 'background:oklch(52% 0.13 330)' },
+      { name: 'Dev Sharma', ini: 'DS', email: 'dev.sharma@northwind.in', role: 'Member', when: 'Since 30 Sep', k: 'm', av: 'background:oklch(50% 0.12 200)' },
+      { name: 'Ananya Rao', ini: 'AR', email: 'ananya@northwind.in', role: 'Invite sent', when: 'Sent 6 Oct', k: 'i', pending: true, av: 'background:var(--up);color:var(--fg)' }
+    ];
+    const TABS = [['All', 4, null], ['Primary', 1, 'p'], ['Members', 2, 'm'], ['Invited', 1, 'i']];
+    const tabs = TABS.map((t, i) => ({ label: t[0], cnt: t[1], cls: s.tab === i ? 'on' : '', pick: () => this.setState({ tab: i }) }));
+    const key = TABS[s.tab][2];
+    const rows = P.filter((r) => !key || r.k === key).map((r) => ({
+      ...r, you: Boolean(r.you), pending: Boolean(r.pending), member: !r.pending,
+      roleStyle: r.k === 'p' ? 'background:var(--navy);color:#fff' : r.k === 'i' ? 'background:var(--due-light);color:var(--due-text)' : 'background:var(--raised);color:var(--muted)'
+    }));
+    return { sbc, tabs, rows, noRows: rows.length === 0, emptyText: s.tab === 3 ? 'No pending invites.' : 'No one here yet.', thumb: 'transform:translateX(' + (s.tab * 100) + '%)' };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>
