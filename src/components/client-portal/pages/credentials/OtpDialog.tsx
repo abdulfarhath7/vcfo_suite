@@ -81,6 +81,8 @@ export function OtpDialog({
       } else if (out.error === 'locked' && out.lockedUntil) {
         setLockUntil(new Date(out.lockedUntil).getTime());
         setNow(Date.now());
+      } else if (out.error === 'too_many_requests') {
+        onFail('Too many codes asked for in the last hour. Try again later, or call your Project Manager.');
       } else if (out.error === 'no_manager') {
         onFail('No Project Manager is assigned yet, so no code can be sent. Ask SBC to assign one.');
       } else {

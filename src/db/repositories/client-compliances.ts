@@ -425,6 +425,8 @@ export async function systemListDueComplianceReminders(today: string) {
       and(
         lte(complianceReminders.remindOn, today),
         isNull(complianceReminders.sentAt),
+        // removed people get no more reminders (security review L6)
+        eq(profiles.status, 'active'),
         isNull(complianceInstances.filedOn),
         gte(complianceInstances.dueDate, addDays(today, -1)),
       ),

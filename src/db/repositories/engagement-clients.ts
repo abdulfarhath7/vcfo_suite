@@ -221,6 +221,12 @@ export async function inviteEngagementClient(
   let createdNewUser = false;
 
   if (existing) {
+    // A client may only invite brand-new people (security review H1): attaching
+    // an existing account — possibly another company's client — to this
+    // engagement is staff-only. One generic error, no account-type hint.
+    if (ctx.role === 'client') {
+      throw new Error('invite_existing_account_not_allowed');
+    }
     if (existing.role !== 'client') {
       throw new Error('email_not_a_client');
     }

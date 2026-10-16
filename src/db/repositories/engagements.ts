@@ -450,7 +450,15 @@ export async function assertEngagementAccess(
 export async function getMyEngagement(ctx: AuthContext): Promise<EngagementListRow | null> {
   if (ctx.role !== 'client') return null;
   const rows = await listEngagements(ctx);
-  return rows[0] ?? null;
+  // Deterministic: the engagement this client OWNS first, then the oldest one
+  // they are a member of — never "whichever row the database returned first".
+  return (
+    [...rows].sort((a, b) => {
+      const ao = a.clientUserId === ctx.userId ? 0 : 1;
+      const bo = b.clientUserId === ctx.userId ? 0 : 1;
+      return ao - bo || a.createdAt.getTime() - b.createdAt.getTime();
+    })[0] ?? null
+  );
 }
 
 export function checklistStateFromRow(row: EngagementDbRow): EngagementChecklistState {

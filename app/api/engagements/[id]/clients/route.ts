@@ -104,7 +104,7 @@ export async function POST(request: Request, context: RouteContext) {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'invite_failed';
     const status =
-      message === 'already_a_member' || message === 'email_already_registered'
+      message === 'already_a_member' || message === 'email_already_registered' || message === 'invite_existing_account_not_allowed'
         ? 409
         : message.includes('not found') || message.includes('not permitted')
           ? 403

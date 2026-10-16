@@ -95,6 +95,8 @@ const OTP_TTL_MS = 10 * 60_000;
 const RESEND_MS = 30_000;
 const LOCK_MS = 60_000;
 const MAX_TRIES = 3;
+/** New OTP codes one person may ask for per engagement per hour (security review H2). */
+const OTP_REQUESTS_PER_HOUR = 6;
 const SHEETS: CredSheet[] = ['address', 'login', 'reg', 'kyc', 'other'];
 
 type Access = { dbId: string; row: EngagementDbRow; staff: boolean };
@@ -576,6 +578,30 @@ export async function requestCredentialOtp(
   const locked = await activeLock(ctx, acc.dbId);
   if (locked) throw new CredentialsError('locked', 423, { lockedUntil: locked.toISOString() });
 
+  // Security review H2: at most OTP_REQUESTS_PER_HOUR codes per person and
+  // engagement, and only ONE live code — a new request retires the old ones.
+  const [recent] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(credentialOtps)
+    .where(
+      and(
+        eq(credentialOtps.requestedBy, ctx.userId),
+        eq(credentialOtps.engagementId, acc.dbId),
+        gt(credentialOtps.createdAt, new Date(Date.now() - 60 * 60_000)),
+      ),
+    );
+  if (Number(recent?.n ?? 0) >= OTP_REQUESTS_PER_HOUR) throw new CredentialsError('too_many_requests', 429);
+  await db
+    .update(credentialOtps)
+    .set({ consumedAt: new Date() })
+    .where(
+      and(
+        eq(credentialOtps.requestedBy, ctx.userId),
+        eq(credentialOtps.engagementId, acc.dbId),
+        isNull(credentialOtps.consumedAt),
+      ),
+    );
+
   const built = await build(ctx, acc);
   const label = scopeLabel(built.payload.sheets, built.payload.ids, input.scope);
   const id = randomUUID();
@@ -675,10 +701,31 @@ export async function verifyCredentialOtp(ctx: AuthContext, input: { otpId: stri
   }
   if (otp.expiresAt.getTime() <= now) return { ok: false, error: 'expired' };
   const code = String(input.code ?? '').replace(/\D/g, '');
-  // A lock that has run out resets the tries back to 3 (prototype).
-  const attemptsBefore = otp.lockedUntil ? 0 : otp.attempts;
-  if (code.length !== 6 || !otpMatches(otp.id, code, otp.codeHash)) {
-    const attempts = attemptsBefore + 1;
+  // Security review H2: count the try ATOMICALLY before comparing, so parallel
+  // guesses cannot all read the same counter. A lock that has run out starts
+  // the count again (prototype: 3 more tries).
+  const nowDate = new Date(now);
+  const bumped = await db
+    .update(credentialOtps)
+    .set({
+      attempts: sql`case when ${credentialOtps.lockedUntil} is not null and ${credentialOtps.lockedUntil} <= ${nowDate} then 1 else ${credentialOtps.attempts} + 1 end`,
+      lockedUntil: sql`case when ${credentialOtps.lockedUntil} <= ${nowDate} then null else ${credentialOtps.lockedUntil} end`,
+    })
+    .where(
+      and(
+        eq(credentialOtps.id, otp.id),
+        isNull(credentialOtps.consumedAt),
+        or(isNull(credentialOtps.lockedUntil), sql`${credentialOtps.lockedUntil} <= ${nowDate}`),
+      ),
+    )
+    .returning({ attempts: credentialOtps.attempts, lockedUntil: credentialOtps.lockedUntil });
+  const attempts = bumped[0]?.attempts;
+  if (attempts == null) {
+    const [cur] = await db.select({ lockedUntil: credentialOtps.lockedUntil }).from(credentialOtps).where(eq(credentialOtps.id, otp.id)).limit(1);
+    if (cur?.lockedUntil) return { ok: false, error: 'locked', lockedUntil: cur.lockedUntil.toISOString() };
+    throw new CredentialsError('not_found', 404);
+  }
+  if (attempts > MAX_TRIES || code.length !== 6 || !otpMatches(otp.id, code, otp.codeHash)) {
     if (attempts >= MAX_TRIES) {
       const lockedUntil = new Date(now + LOCK_MS);
       await db.update(credentialOtps).set({ attempts: 0, lockedUntil }).where(eq(credentialOtps.id, otp.id));
@@ -690,7 +737,6 @@ export async function verifyCredentialOtp(ctx: AuthContext, input: { otpId: stri
       });
       return { ok: false, error: 'locked', lockedUntil: lockedUntil.toISOString() };
     }
-    await db.update(credentialOtps).set({ attempts, lockedUntil: null }).where(eq(credentialOtps.id, otp.id));
     return { ok: false, error: 'wrong_code', triesLeft: MAX_TRIES - attempts };
   }
 
@@ -989,7 +1035,9 @@ export async function listCredentialsLog(ctx: AuthContext, engagementId?: string
     )
     .orderBy(desc(auditEvents.createdAt))
     .limit(200);
-  return rows.map((r) => ({ id: r.id, at: r.at.toISOString(), text: `${r.name?.trim() || r.email || 'Someone'} ${r.summary}` }));
+  // clients never see staff e-mail addresses (security review M2)
+  const who = (r: (typeof rows)[number]) => r.name?.trim() || (acc.staff ? r.email : null) || 'Someone';
+  return rows.map((r) => ({ id: r.id, at: r.at.toISOString(), text: `${who(r)} ${r.summary.replace(/[^\s<>()@,;:]+@[^\s<>()@,;:]+\.[a-z]{2,}/gi, acc.staff ? '$&' : 'a colleague')}` }));
 }
 
 /* ------------------------------------------------------------------ */

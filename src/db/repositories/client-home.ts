@@ -1,8 +1,9 @@
 import 'server-only';
 
-import { and, asc, desc, eq, gte, inArray, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
+  auditEvents,
   clientNeedMeta,
   clientTimelineRequests,
   clientWorkItems,
@@ -21,6 +22,7 @@ import {
   type EngagementDbRow,
 } from '@/db/repositories/engagements';
 import { listDocuments } from '@/db/repositories/documents';
+import { isClientVisibleAuditAction, scrubForClient } from '@/db/repositories/client-audit';
 import { listAuditEvents, recordAuditEvent } from '@/db/repositories/audit-events';
 import { getItem } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
@@ -99,7 +101,7 @@ async function namesFor(ids: (string | null | undefined)[]): Promise<Map<string,
     .select({ id: profiles.id, name: profiles.name, email: profiles.email, role: profiles.role })
     .from(profiles)
     .where(inArray(profiles.id, uniq));
-  return new Map(rows.map((r) => [r.id, { name: r.name?.trim() || r.email, role: r.role }]));
+  return new Map(rows.map((r) => [r.id, { name: r.name?.trim() || (r.role === 'client' ? r.email.split('@')[0]! : 'SBC'), role: r.role }]));
 }
 
 /* ------------------------------------------------------------------ reads */
@@ -175,16 +177,18 @@ async function loadDocs(ctx: AuthContext, dbId: string): Promise<HomeDoc[]> {
 async function loadActivity(ctx: AuthContext, dbId: string): Promise<HomeActivity[]> {
   const rows = await listAuditEvents(ctx, { engagementId: dbId, limit: 40 });
   return rows
-    .filter((r) => !HIDDEN_AUDIT_ACTIONS.has(r.action))
+    // client-safe only (security review M2): the Audit page's allowlist, no
+    // e-mail addresses, staff by name only
+    .filter((r) => !HIDDEN_AUDIT_ACTIONS.has(r.action) && (isClientVisibleAuditAction(r.action) || r.action.startsWith('schedule.') || r.action.startsWith('system.') || r.action.startsWith('compliance.job')))
     .slice(0, 12)
     .map((r) => {
       const system = r.action.startsWith('system.') || r.action.startsWith('compliance.job');
       return {
         id: r.id,
         at: r.created_at,
-        label: r.summary,
+        label: scrubForClient(r.summary),
         action: r.action,
-        actorName: system ? 'VCFO Suite' : r.actor_name?.trim() || r.actor_email || 'SBC',
+        actorName: system ? 'VCFO Suite' : r.actor_name?.trim() || (r.actor_role === 'client' ? 'Your team' : 'SBC'),
         actorKind: system ? 'system' : r.actor_role === 'client' ? 'client' : 'firm',
       } satisfies HomeActivity;
     });
@@ -265,7 +269,7 @@ async function loadTimeline(ctx: AuthContext, dbId: string): Promise<ClientHome[
   const audit = await listAuditEvents(ctx, { engagementId: dbId, limit: 200 });
   const last = audit.find((r) => r.action.startsWith('schedule.'));
   return {
-    lastChangedBy: last ? last.actor_name?.trim() || last.actor_email || undefined : undefined,
+    lastChangedBy: last ? last.actor_name?.trim() || 'SBC' : undefined,
     lastChangedAt: last?.created_at,
     pending: pending ? toTimelineDto(pending) : undefined,
   };
@@ -396,6 +400,38 @@ export async function undoNeedUpload(
   if (!req) return null;
   const access = await assertEngagementAccess(ctx, req.engagementId);
   if (!access.ok) return null;
+  // Security review M3: undo only THIS upload — the document must be the one
+  // recorded for this request by this caller, within the 10-minute undo window,
+  // and the request must still be the fulfilled one it turned into.
+  if (!/^[0-9a-f-]{36}$/i.test(documentId)) return null;
+  const windowStart = new Date(Date.now() - 10 * 60_000);
+  const [link] = await db
+    .select({ id: auditEvents.id })
+    .from(auditEvents)
+    .where(
+      and(
+        eq(auditEvents.engagementId, access.dbId),
+        eq(auditEvents.action, 'client.need_uploaded'),
+        eq(auditEvents.actorUserId, ctx.userId),
+        gte(auditEvents.createdAt, windowStart),
+        sql`${auditEvents.metadata}->>'requestId' = ${requestId}`,
+        sql`${auditEvents.metadata}->>'documentId' = ${documentId}`,
+      ),
+    )
+    .limit(1);
+  if (!link) return null;
+  const reopened = await db
+    .update(documentRequests)
+    .set({ status: 'pending' })
+    .where(
+      and(
+        eq(documentRequests.id, requestId),
+        eq(documentRequests.engagementId, access.dbId),
+        eq(documentRequests.status, 'fulfilled'),
+      ),
+    )
+    .returning({ id: documentRequests.id });
+  if (!reopened.length) return null;
   const [doc] = await db
     .delete(documents)
     .where(
@@ -403,14 +439,11 @@ export async function undoNeedUpload(
         eq(documents.id, documentId),
         eq(documents.engagementId, access.dbId),
         eq(documents.uploadedBy, ctx.userId),
+        gte(documents.createdAt, windowStart),
       ),
     )
     .returning({ objectKey: documents.objectKey });
   if (!doc) return null;
-  await db
-    .update(documentRequests)
-    .set({ status: 'pending' })
-    .where(and(eq(documentRequests.id, requestId), eq(documentRequests.engagementId, access.dbId)));
   await recordAuditEvent(ctx, {
     engagementId: access.dbId,
     action: 'client.need_upload_undone',

@@ -54,6 +54,16 @@ async function myEngagementDbId(ctx: AuthContext): Promise<{ dbId: string; compa
 
 const EMAIL_RE = /[^\s<>()@,;:]+@[^\s<>()@,;:]+\.[a-z]{2,}/gi;
 const UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+/** A client may see this audit action (same allowlist as the Audit page). */
+export function isClientVisibleAuditAction(action: string): boolean {
+  return PREFIXES.some((p) => action.startsWith(p)) || EXACT.includes(action);
+}
+
+/** Client-safe text: e-mail addresses and ids removed. */
+export function scrubForClient(s: string): string {
+  return scrub(s);
+}
+
 function scrub(s: string): string {
   return s.replace(EMAIL_RE, 'a colleague').replace(UUID_RE, '').replace(/\s{2,}/g, ' ').trim();
 }

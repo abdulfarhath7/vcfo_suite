@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { rejectLargeBody } from '@/lib/api/body-limit';
 import { requireAuth } from '@/auth/guards';
 import { needUploadTarget, recordNeedUpload, undoNeedUpload } from '@/db/repositories/client-home';
 import { bucketKey, deleteObject, putObject } from '@/storage/s3';
@@ -32,6 +33,8 @@ export async function POST(request: Request, context: RouteContext) {
   }
   if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
+  const tooLarge = rejectLargeBody(request, 25 * 1024 * 1024);
+  if (tooLarge) return tooLarge;
   const form = await request.formData().catch(() => null);
   const file = form?.get('file');
   if (!(file instanceof File)) return NextResponse.json({ error: 'Choose a file to upload' }, { status: 400 });

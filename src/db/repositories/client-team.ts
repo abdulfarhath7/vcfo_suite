@@ -146,6 +146,21 @@ export async function createClientInvite(
   input: { name: string; email: string; tempPassword: string },
 ): Promise<CreatedClientInvite> {
   const { dbId, row } = await requirePrimary(ctx);
+  // Security (client portal v7 review H1): from the client side an invite only
+  // ever CREATES a new account. An email that already has any account (another
+  // company's client, staff, a removed user) is refused with one generic
+  // message, so a client can neither attach someone else's account to their
+  // engagement, nor reactivate it, nor learn which kind of account it is.
+  // Staff add existing people from the staff screens.
+  const normalized = input.email.trim().toLowerCase();
+  const [existing] = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(eq(profiles.email, normalized))
+    .limit(1);
+  if (existing) {
+    throw new ClientTeamError('This email can’t be invited from here. Ask your project manager to add this person.', 409);
+  }
   let invited;
   try {
     invited = await inviteEngagementClient(ctx, {
@@ -296,10 +311,18 @@ export async function restoreClientInvite(ctx: AuthContext, inviteId: string): P
         .insert(engagementClients)
         .values({ engagementId: eng.dbId, userId: inv.profileId, memberRole: 'member', invitedBy: ctx.userId })
         .onConflictDoNothing({ target: [engagementClients.engagementId, engagementClients.userId] });
+      // Only undo OUR cancellation (review M4): an account removed for any
+      // other reason stays removed.
       await tx
         .update(profiles)
         .set({ status: 'active', removedAt: null, removedReason: null, updatedAt: new Date() })
-        .where(and(eq(profiles.id, inv.profileId), eq(profiles.role, 'client')));
+        .where(
+          and(
+            eq(profiles.id, inv.profileId),
+            eq(profiles.role, 'client'),
+            eq(profiles.removedReason, `Invite cancelled on ${eng.row.companyName}`),
+          ),
+        );
     }
   });
   await recordAuditEvent(ctx, {

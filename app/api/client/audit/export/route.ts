@@ -21,7 +21,11 @@ export async function GET(request: Request) {
         (!who || e.who.side === who) &&
         (!q || `${e.action} ${e.subject} ${e.who.name}`.toLowerCase().includes(q)),
     );
-    const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+    const esc = (raw: string) => {
+      // spreadsheet formula injection: a cell starting with = + - @ is text
+      const v = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+      return /[",\n']/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+    };
     const lines = [
       ['Date', 'Time (IST)', 'Type', 'What', 'Subject', 'Who', 'Role', 'Details'].join(','),
       ...rows.map((e) =>

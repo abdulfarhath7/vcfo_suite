@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { rejectLargeBody } from '@/lib/api/body-limit';
 import { requireAuth } from '@/auth/guards';
 import {
   addFilingProof,
@@ -31,6 +32,9 @@ export async function POST(request: Request, ctx: Ctx) {
   const guard = await requireAuth();
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const { id } = await ctx.params;
+  if (guard.ctx.role === 'client') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  const tooLarge = rejectLargeBody(request, 25 * 1024 * 1024);
+  if (tooLarge) return tooLarge;
   const form = await request.formData().catch(() => null);
   const file = form?.get('file');
   if (!file || typeof file === 'string') return NextResponse.json({ error: 'file_required' }, { status: 400 });

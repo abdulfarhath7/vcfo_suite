@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { rejectLargeBody } from '@/lib/api/body-limit';
 import { requireAuth } from '@/auth/guards';
 import {
   ClientDocumentsForbiddenError,
@@ -22,6 +23,8 @@ export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
   let form: FormData;
   try {
+    const tooLarge = rejectLargeBody(request, 25 * 1024 * 1024);
+    if (tooLarge) return tooLarge;
     form = await request.formData();
   } catch {
     return NextResponse.json({ error: 'invalid_form' }, { status: 400 });

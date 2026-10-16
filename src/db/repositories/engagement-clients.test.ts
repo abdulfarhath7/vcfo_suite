@@ -140,7 +140,7 @@ describe('inviteEngagementClient', () => {
     },
   );
 
-  it('refuses to attach a staff account as a client', async () => {
+  it('refuses to attach an existing (here: staff) account when a client invites', async () => {
     assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
     selectQueue = [
       // caller is the Primary contact (engagements.client_user_id)
@@ -149,7 +149,7 @@ describe('inviteEngagementClient', () => {
     ];
     await expect(
       repo.inviteEngagementClient(ctx('client'), { ...input, engagementId: OWN }),
-    ).rejects.toThrow('email_not_a_client');
+    ).rejects.toThrow('invite_existing_account_not_allowed');
     expect(writes).toEqual([]);
   });
 
@@ -161,7 +161,8 @@ describe('inviteEngagementClient', () => {
       [{ id: 'user-peer', role: 'client', status: 'active', clientId: 'c-a', name: 'Peer' }],
       [], // not already a member
     ];
-    const out = await repo.inviteEngagementClient(ctx('client', 'user-client-a'), {
+    // attaching an EXISTING account is staff-only (security review H1)
+    const out = await repo.inviteEngagementClient(ctx('manager', 'user-client-a'), {
       ...input,
       engagementId: 'e1',
     });

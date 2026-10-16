@@ -406,8 +406,10 @@ export function focusNodes(f: PortalFiling, companyShort: string, today: string)
 /* --------------------------------------------------------------- csv / ics */
 
 export function csvEscape(v: string | number | null | undefined): string {
-  const s = v == null ? '' : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  let s = v == null ? '' : String(v);
+  // spreadsheet formula injection: a cell starting with = + - @ is text
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",\n']/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 export function filingsCsv(rows: PortalFiling[], today: string): string {
   const head = ['Due date', 'Area', 'Filing', 'Period', 'Frequency', 'Authority', 'Status', 'Filed on', 'ARN', 'Tax paid (INR)', 'Proof files'];
