@@ -42,6 +42,19 @@ whole highlighted box, and the smiling Ask VCFO bot. "NEW" badges mark features 
 | 16 | Settings | Settings | Profile, WhatsApp opt-in, password, Outlook, appearance, Sign out. |
 | 17 | Shell | Side, Top, Palette, Chat | Sidebar and top bar as standalone boards; Ctrl K palette with the "Project Lead workbench" group; notification and announcement bell drop-downs; Ask VCFO chat with the smiling avatar in its idle, answered and can't-answer states. |
 
+## Preview switch rule (owner, 2026-10-16)
+
+- Today is one layout, used by all three boards (`Main`, `TodayBefore`, `TodayAfter` are the same file with a different default state).
+  Card order is fixed: greeting · incorporated note [C] · digest · this week · action queue · ball in court ·
+  phase progress [I] · phase-bar timeline [I] · clients × filings [C] · due-date calendar [C] · client health |
+  rail: triage · to-dos · stuck steps [I] · days to COI [I] · compliance health [C] · waiting on · managers.
+  [I] shows only when a client is incorporating, [C] only when a client is in compliance; shared cards show items from both groups.
+- All incorporating = shared + [I]. All compliance = shared + [C]. Mixed = shared + [I] + [C], data split by client
+  (Northwind, Orchid, Larkspur, Juniper incorporating; Brightwave, Tidewater, Kestrel, Halcyon in compliance).
+  Checked by running each board's logic for the three states: Mixed equals before ∪ after, same order.
+- Work uses the same rule for its items (timeline rows, to-dos, calendar blocks, all-day filings, month events).
+  Every other page's switch now drives the sidebar (Compliances appears only when a client is in compliance); Clients also updates its stage chips and counts.
+
 ## Defaults taken (no approval asked, per the owner)
 
 - In Work, the Planner view is the default and List and Board stay as tabs. Tasks are created only in To-do; the timeline and the calendar show the same task.
