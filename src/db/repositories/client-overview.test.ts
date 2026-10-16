@@ -209,7 +209,8 @@ describe('getClientOverview — shape', () => {
 
     expect(overview?.incorporated).toBe(true);
     expect(overview?.identifiers.cin).toBe('U74999KA2026PTC123456');
-    expect(overview?.identifiers.pan).toBe('AAACA1234A');
+    // clients get PAN masked (client portal v7: reveal needs their password)
+    expect(overview?.identifiers.pan).toBe('AA••••••4A');
     expect(overview?.engagement.incorporationDate).toBe('2026-04-01');
   });
 });

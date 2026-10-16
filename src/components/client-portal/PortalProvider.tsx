@@ -176,6 +176,16 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
     }
   }, [theme, rootRef]);
 
+  /* ---------- reduced motion: one flag on the portal root for every page's CSS ---------- */
+  useEffect(() => {
+    const el = rootRef.current;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => el?.setAttribute('data-reduce-motion', mq.matches ? 'true' : 'false');
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, [rootRef]);
+
   /* ---------- toast (prototype #vp-toast: 3.2 s, Undo) ---------- */
   const [toastState, setToastState] = useState<{ msg: string; undo?: () => void; n: number; on: boolean } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

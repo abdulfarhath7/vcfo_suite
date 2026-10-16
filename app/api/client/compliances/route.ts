@@ -8,12 +8,19 @@ import { todayIso } from '@/lib/client-portal/compliances';
  * GET /api/client/compliances?fy=2026 — the client portal register (calendar +
  * filings pages): FilingRow plus period dates, penalty risk, owner, ARN / tax
  * paid / filed by, focus-track dates, proof count and the caller's reminder.
- * Scoped by AuthContext in the repository (a client reads only their company).
+ * `?id=<instance>` returns just that filing (deep links). Scoped by AuthContext in the repository (a client reads only their company).
  */
 export async function GET(request: Request) {
   const guard = await requireAuth();
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
-  const fy = parseFyParam(new URL(request.url).searchParams.get('fy')) ?? undefined;
+  const params = new URL(request.url).searchParams;
+  const id = params.get('id');
+  if (id) {
+    // one filing (deep links: ?filing= / ?open= from Search, Announcements)
+    const rows = /^[0-9a-f-]{36}$/i.test(id) ? await getPortalFilings(guard.ctx, { ids: [id] }) : [];
+    return NextResponse.json({ rows, today: todayIso() });
+  }
+  const fy = parseFyParam(params.get('fy')) ?? undefined;
   const rows = await getPortalFilings(guard.ctx, { fyStartYear: fy });
   return NextResponse.json({ rows, today: todayIso() });
 }

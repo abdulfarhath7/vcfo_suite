@@ -1,18 +1,9 @@
-import { Suspense } from "react";
-import ClientIncorporation from "@/views/client/Incorporation";
+import { IncorporationRoute } from '@/components/client-portal/pages/incorporation';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
+export const metadata = pageMetadata('Incorporation', 'Incorporation checklist');
 
-export const metadata = pageMetadata("Incorporation", "Incorporation checklist");
-
-
+/** Client portal v7 landing. `?step=` (email links) and `?phase=` still deep-link. */
 export default function Page() {
-  // The wizard reads `?step=` from a "please fill this" email link.
-  return (
-    <Suspense
-      fallback={<div className="p-6 text-sm text-muted-foreground">Loading checklist…</div>}
-    >
-      <ClientIncorporation />
-    </Suspense>
-  );
+  return <IncorporationRoute />;
 }

@@ -99,9 +99,9 @@ const X = (
 
 /* ------------------------------------------------------------- step pop-up */
 
-type Stage = { name: string; meta: string; info: string; state: 'done' | 'now' | 'next' };
+export type Stage = { name: string; meta: string; info: string; state: 'done' | 'now' | 'next' };
 
-function stagesOf(h: HomeData, s: PortalStep): Stage[] {
+export function stagesOf(h: HomeData, s: PortalStep): Stage[] {
   const sl = s.slice;
   const submitted = Boolean(sl?.clientSubmittedAt);
   const reviewed = isReviewAccepted(sl) || s.kind === 'done';

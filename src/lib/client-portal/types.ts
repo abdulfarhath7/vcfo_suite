@@ -63,6 +63,8 @@ export interface ClientPortalContact {
   support?: boolean;
   email?: string;
   phoneE164?: string;
+  /** Same-origin photo URL (`/api/client/portal/team-photo/<id>`), when the person has one. */
+  avatarUrl?: string;
   whatsappE164?: string;
 }
 

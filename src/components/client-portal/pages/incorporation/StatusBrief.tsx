@@ -80,6 +80,7 @@ export function StatusBrief({ d, onClose }: { d: IncData; onClose: () => void })
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- scrim click closes; Esc handled on document
     <div
       id="ip-brief-scrim"
       className={on ? 'on' : undefined}

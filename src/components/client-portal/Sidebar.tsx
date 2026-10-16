@@ -144,6 +144,13 @@ function ContactBtn({ p, c, fly }: { p: ClientPortalContact; c: Channel; fly?: b
 }
 
 function Avatar({ p }: { p: ClientPortalContact }) {
+  if (p.avatarUrl)
+    return (
+      <span className="vps-av" style={{ overflow: 'hidden' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={p.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+      </span>
+    );
   return <span className="vps-av">{p.support ? <ShellIcon name="head" size={14} /> : p.initials}</span>;
 }
 

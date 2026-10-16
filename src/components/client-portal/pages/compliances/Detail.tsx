@@ -85,6 +85,7 @@ export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; on
   const d = D(f.dueDate);
   return (
     <>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc closes (useModal) */}
       <div className="scrim" onClick={onClose} />
       <div className="modal cdet" role="dialog" aria-modal="true" aria-labelledby="comp-det-t" ref={ref}>
         <span className="sheet-grab" aria-hidden="true" />
@@ -132,18 +133,17 @@ export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; on
           ) : null}
         </div>
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--hair)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <a
-            href="#"
+          <button
+            type="button"
             className="ask"
-            style={{ border: 0, margin: 0, padding: 0, flex: 1 }}
-            onClick={(e) => {
-              e.preventDefault();
+            style={{ border: 0, margin: 0, padding: 0, flex: 1, background: 'none', font: 'inherit', cursor: 'pointer', textAlign: 'left', }}
+            onClick={() => {
               onClose();
               openChat(`Tell me about ${f.name} · ${f.period}`);
             }}
           >
             🤖 Ask VCFO about {f.name}
-          </a>
+          </button>
           {!f.filedOn ? (
             <button type="button" className="btn btn-o btn-s" onClick={() => addToCalendar(f)}>
               {I.cal(14)} Add to my calendar
@@ -182,6 +182,7 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
   const proofs = useProofs(f.filedOn ? f.id : null);
   return (
     <>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc closes (useModal) */}
       <div className="scrim" onClick={onClose} />
       <div className="modal fpan" role="dialog" aria-modal="true" aria-labelledby="comp-pan-t" ref={ref}>
         <span className="sheet-grab" aria-hidden="true" />
@@ -281,18 +282,17 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
           ) : null}
         </div>
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--hair)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <a
-            href="#"
+          <button
+            type="button"
             className="ask"
-            style={{ border: 0, margin: 0, padding: 0, flex: 1 }}
-            onClick={(e) => {
-              e.preventDefault();
+            style={{ border: 0, margin: 0, padding: 0, flex: 1, background: 'none', font: 'inherit', cursor: 'pointer', textAlign: 'left', }}
+            onClick={() => {
               onClose();
               openChat(`Tell me about ${f.name} · ${f.period}`);
             }}
           >
             🤖 Ask VCFO about this filing
-          </a>
+          </button>
           {!f.filedOn ? (
             <>
               <button type="button" className="btn btn-o btn-s" onClick={() => addToCalendar(f)}>

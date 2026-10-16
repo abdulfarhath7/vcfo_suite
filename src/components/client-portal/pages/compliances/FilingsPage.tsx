@@ -10,7 +10,8 @@
  * URL state: ?fy= · ?cadence=monthly|quarterly|annual · ?area= · ?status=
  * all|over|due|up|ok · ?period=YYYY-MM (window end month) · ?view=year · ?filing=<id>.
  */
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { usePortal } from '../../PortalProvider';
 import { BotSays } from '../../shared';
@@ -74,11 +75,12 @@ function useFilingsState() {
   // window end month: ?period, else today's month (inside the FY), else the FY's first month + 1
   const end = perP && months.includes(perP) && months.indexOf(perP) > 0 ? perP : months.includes(nowKey) && months.indexOf(nowKey) > 0 ? nowKey : months[1]!;
   const fullYear = params.get('view') === 'year';
-  const filing = params.get('filing');
+  const filing = params.get('filing') ?? params.get('open');
   const set = useCallback(
     (patch: Record<string, string | null>) => {
       const next = new URLSearchParams(params.toString());
       for (const [k, v] of Object.entries(patch)) {
+        if (k === 'filing') next.delete('open');
         if (v == null || v === '' || (k === 'area' && v === 'all') || (k === 'status' && v === 'all')) next.delete(k);
         else next.set(k, k === 'area' ? v.toLowerCase() : v);
       }
@@ -132,6 +134,28 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
     [inView, area, status, today],
   );
   const detail = st.filing ? all.find((r) => r.id === st.filing) ?? null : null;
+  // deep link to a filing outside the FY in view (?filing= / ?open=): look it up and jump to its FY
+  const missing = Boolean(st.filing) && after && q.isSuccess && !detail;
+  const lookup = useQuery({
+    queryKey: ['client-compliances', 'one', st.filing],
+    enabled: missing,
+    queryFn: async () => {
+      const res = await fetch(`/api/client/compliances?id=${encodeURIComponent(st.filing!)}`, { cache: 'no-store' });
+      if (!res.ok) return null;
+      return ((await res.json()) as { rows: PortalFiling[] }).rows[0] ?? null;
+    },
+  });
+  useEffect(() => {
+    if (!missing || lookup.isLoading) return;
+    const f = lookup.data;
+    if (f) {
+      const ffy = fyStartOfMonth(f.dueDate.slice(0, 7));
+      if (ffy !== fy) set({ fy: String(ffy), period: null, filing: f.id });
+    } else if (lookup.isFetched) {
+      set({ filing: null });
+      toast('That filing is not in your register');
+    }
+  }, [missing, lookup.isLoading, lookup.data, lookup.isFetched, fy, set, toast]);
   const drillTitle = `Filings · ${fullYear ? fyLabelOf(fy) : winLabel.replace(' – ', '–')}`;
 
   const exportHref = `/api/client/compliances/export?fy=${fy}&cadence=${cadence}&area=${area}&status=${status}`;
@@ -455,7 +479,7 @@ function AreaBars({
         const L = AREA_LABEL[a];
         const part = (n: number, bg: string, tip: string) =>
           n ? (
-            <span data-dd="area" data-tip={`${L} · ${n} ${tip}`} role="button" tabIndex={-1} aria-label={`${L} · ${n} ${tip}`} style={{ flex: n, background: bg }} onClick={() => open(a)} />
+            <span data-dd="area" data-tip={`${L} · ${n} ${tip}`} role="button" tabIndex={-1} aria-label={`${L} · ${n} ${tip}`} style={{ flex: n, background: bg }} onClick={() => open(a)} onKeyDown={key(a)} />
           ) : null;
         return (
           <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -476,7 +500,7 @@ function AreaBars({
               {part(o, 'var(--over)', 'overdue')}
               {part(d, 'var(--due)', 'due soon')}
               {u || !rs.length ? (
-                <span data-dd="area" data-tip={`${L} · ${u} upcoming`} role="button" tabIndex={-1} aria-label={`${L} · ${u} upcoming`} style={{ flex: u || 1, background: rs.length ? 'var(--up)' : 'transparent' }} onClick={() => open(a)} />
+                <span data-dd="area" data-tip={`${L} · ${u} upcoming`} role="button" tabIndex={-1} aria-label={`${L} · ${u} upcoming`} style={{ flex: u || 1, background: rs.length ? 'var(--up)' : 'transparent' }} onClick={() => open(a)} onKeyDown={key(a)} />
               ) : null}
             </span>
             <span className="mono" style={{ width: 34, flex: 'none', textAlign: 'right', fontSize: 11, color: 'var(--muted)' }}>

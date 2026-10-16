@@ -53,6 +53,14 @@ import {
  * screen that owns the action.
  */
 
+/** "ABCDE1234F" → "AB••••••4F" (first 2 + bullets + last 2). */
+function maskIdentifier(value?: string): string | undefined {
+  if (!value) return value;
+  const v = value.trim();
+  if (v.length <= 4) return '•'.repeat(v.length);
+  return `${v.slice(0, 2)}${'•'.repeat(v.length - 4)}${v.slice(-2)}`;
+}
+
 /** Recent scoped audit actions worth showing a non-accountant. */
 const ACTIVITY_LIMIT = 12;
 
@@ -227,7 +235,12 @@ export async function getClientOverview(
       registeredOffice: row.subsidiaryRegisteredAddress?.trim() || undefined,
       parentEntityName: row.parentEntityName?.trim() || undefined,
     },
-    identifiers,
+    // A client sees PAN / TAN masked; the clear value needs their password
+    // (POST /api/client/identifiers/reveal, client portal v7).
+    identifiers:
+      ctx.role === 'client'
+        ? { ...identifiers, pan: maskIdentifier(identifiers.pan), tan: maskIdentifier(identifiers.tan) }
+        : identifiers,
     incorporated: Boolean(identifiers.cin || incorporationDate),
     progress,
     nextAction: buildNextAction(state, normalizeEngagementSchedule(row.schedule)),

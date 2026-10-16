@@ -66,6 +66,7 @@ export function CompDrill({
   const list = sortByDue(state.rows.filter((r) => match(r, k)));
   return (
     <>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc closes (useModal) */}
       <div className="ddscrim" onClick={onClose} />
       <div className="dd" role="dialog" aria-modal="true" aria-labelledby="comp-dd-t" ref={ref}>
         <span className="sheet-grab" aria-hidden="true" />
@@ -74,17 +75,16 @@ export function CompDrill({
           style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)' }}
         >
           <span>These filings live in Compliances · Filings</span>
-          <a
-            href="#"
-            style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap', color: 'var(--primary)' }}
-            onClick={(e) => {
-              e.preventDefault();
+          <button
+            type="button"
+            style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', font: 'inherit', marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap', color: 'var(--primary)' }}
+            onClick={() => {
               onClose();
               link.onClick();
             }}
           >
             {link.text}
-          </a>
+          </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
           <div id="comp-dd-t" style={{ flex: 1, font: '700 15px Manrope', color: 'var(--navy-ink,var(--navy))', display: 'flex', alignItems: 'center', gap: 4 }}>

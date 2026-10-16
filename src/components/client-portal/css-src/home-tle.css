@@ -79,3 +79,4 @@
 #tle .info-strip{display:flex;gap:10px;align-items:center;border:1px solid var(--border);border-left:3px solid var(--prog);border-radius:8px;padding:9px 12px;margin:12px 18px 0;background:var(--prog-light)}
 #tle .chgt{margin:12px 18px 0;width:calc(100% - 36px);border-collapse:collapse;font-size:12.5px}
 @media (max-width:767px){#tle .info-strip,#tle .chgt{margin-left:12px;margin-right:12px;width:calc(100% - 24px)}}
+#tle .today:after{content:attr(data-today)}

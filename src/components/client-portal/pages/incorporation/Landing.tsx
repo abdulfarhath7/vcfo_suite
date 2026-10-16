@@ -35,7 +35,6 @@ import {
 } from './ui';
 import {
   INFO_WHY,
-  KL,
   PHL,
   PH_TIP,
   firstName,
@@ -397,6 +396,7 @@ export default function IncorporationLanding() {
               <span className="mono">· {issuedLine(d.identifiers)} issued</span>
             ) : null}
             {d.certificate ? (
+              // eslint-disable-next-line jsx-a11y/anchor-is-valid -- prototype markup: a gold text link
               <a
                 href="#"
                 onClick={(e) => {
@@ -752,6 +752,7 @@ export default function IncorporationLanding() {
         <span className="cnt">
           {all.done} of {all.total} steps{rangeLabel ? ` · ${rangeLabel}` : ''}
         </span>
+        {/* eslint-disable-next-line jsx-a11y/anchor-is-valid -- prototype markup: the Edit link button */}
         <a
           className="btn btn-o"
           href="#"

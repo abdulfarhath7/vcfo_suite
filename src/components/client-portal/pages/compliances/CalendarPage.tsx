@@ -83,11 +83,12 @@ export function useCalendarState() {
   const view: View = (VIEWS as readonly string[]).includes(viewP ?? '') ? (viewP as View) : 'month';
   const areaP = (params.get('area') ?? 'all').toUpperCase();
   const area: AreaFilter = areaP === 'ALL' ? 'all' : AREA_IDS.includes(areaP as AreaFilter) ? (areaP as AreaFilter) : 'all';
-  const filing = params.get('filing');
+  const filing = params.get('filing') ?? params.get('open');
   const set = useCallback(
     (patch: Record<string, string | null>) => {
       const next = new URLSearchParams(params.toString());
       for (const [k, v] of Object.entries(patch)) {
+        if (k === 'filing') next.delete('open');
         if (v == null || v === '' || (k === 'view' && v === 'month') || (k === 'area' && v === 'all') || (k === 'date' && v === nowKey)) next.delete(k);
         else next.set(k, k === 'area' ? v.toLowerCase() : v);
       }
@@ -524,17 +525,17 @@ const DayPopover = forwardRef<
               <Chip s={statusOf(r, today)} />
             </div>
           ))}
-          <a
-            href="#"
+          <button
+            type="button"
             className="ask"
-            onClick={(e) => {
-              e.preventDefault();
+            style={{ width: '100%', borderLeft: 0, borderRight: 0, borderBottom: 0, background: 'none', padding: '8px 0 0', font: 'inherit', fontWeight: 700, cursor: 'pointer' }}
+            onClick={() => {
               onClose();
               openChat(`What is due on ${fmtLong(iso)}?`);
             }}
           >
             🤖 Ask VCFO
-          </a>
+          </button>
         </>
       ) : (
         <BotSays size={40} action="">

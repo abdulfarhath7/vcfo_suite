@@ -302,7 +302,7 @@ export function FocusTrack({ nodes }: { nodes: TrackNode[] }) {
     }
     if (n.st === 'cur')
       out.push(
-        <div key={i} className="ft-cur" data-tip={n.tip} aria-label={n.tip} tabIndex={0} role="img">
+        <div key={i} className="ft-cur" data-tip={n.tip} aria-label={n.tip} role="img">
           <span className="ft-ic">{n.icon === 'person' ? I.user(17) : n.icon === 'check' ? I.check(17) : n.icon === 'file' ? I.file(17) : I.gear(17)}</span>
           <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span className="ft-eye">
@@ -407,9 +407,11 @@ export function CountUp({ n, svg = false }: { n: number; svg?: boolean }) {
 /** Esc + outside-click close for pop-overs. */
 export function useDismiss(open: boolean, ref: RefObject<HTMLElement | null>, closeFn: () => void, ignore?: (t: Element) => boolean) {
   const closeRef = useRef(closeFn);
-  closeRef.current = closeFn;
   const ignoreRef = useRef(ignore);
-  ignoreRef.current = ignore;
+  useEffect(() => {
+    closeRef.current = closeFn;
+    ignoreRef.current = ignore;
+  });
   useEffect(() => {
     if (!open) return;
     const close = () => closeRef.current();
@@ -436,7 +438,9 @@ export function useDismiss(open: boolean, ref: RefObject<HTMLElement | null>, cl
 /** Focus trap + Esc for modal dialogs; returns focus to the opener on close. */
 export function useModal(ref: RefObject<HTMLElement | null>, closeFn: () => void) {
   const closeRef = useRef(closeFn);
-  closeRef.current = closeFn;
+  useEffect(() => {
+    closeRef.current = closeFn;
+  });
   useEffect(() => {
     const close = () => closeRef.current();
     const last = document.activeElement as HTMLElement | null;

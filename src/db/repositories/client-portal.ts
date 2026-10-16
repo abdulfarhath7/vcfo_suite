@@ -156,10 +156,11 @@ export async function getClientPortalShell(ctx: AuthContext): Promise<ClientPort
   }
   const phones = staff.length
     ? await db
-        .select({ id: profiles.id, phoneE164: profiles.phoneE164, phone: profiles.phone })
+        .select({ id: profiles.id, phoneE164: profiles.phoneE164, phone: profiles.phone, avatarKey: profiles.avatarObjectKey })
         .from(profiles)
         .where(inArray(profiles.id, staff.map((s) => s.userId)))
     : [];
+  const photoById = new Map(phones.map((p) => [p.id, p.avatarKey ? `/api/client/portal/team-photo/${p.id}?v=${encodeURIComponent(p.avatarKey.slice(-12))}` : undefined]));
   const phoneById = new Map(phones.map((p) => [p.id, p.phoneE164?.trim() || p.phone?.trim() || undefined]));
 
   const team: ClientPortalContact[] = staff.map((s) => ({
@@ -170,6 +171,7 @@ export async function getClientPortalShell(ctx: AuthContext): Promise<ClientPort
     email: s.email || undefined,
     phoneE164: phoneById.get(s.userId),
     whatsappE164: phoneById.get(s.userId),
+    avatarUrl: photoById.get(s.userId),
   }));
   team.push(supportContact());
 
@@ -196,4 +198,21 @@ export async function getClientPortalShell(ctx: AuthContext): Promise<ClientPort
     },
     prefs,
   };
+}
+
+/**
+ * Object key of a team member's photo, only when that person is a manager or
+ * lead on the caller's own engagement (client role). Anything else → null.
+ */
+export async function getTeamPhotoKey(ctx: AuthContext, profileId: string): Promise<string | null> {
+  assertClient(ctx);
+  const mine = await getMyEngagement(ctx);
+  if (!mine) return null;
+  const access = await assertEngagementAccess(ctx, mine.id);
+  if (!access.ok) return null;
+  const recipients = await resolveEngagementRecipients(access.dbId);
+  const onTeam = [...(recipients?.managers ?? []), ...(recipients?.leads ?? [])].some((p) => p.userId === profileId);
+  if (!onTeam) return null;
+  const [row] = await db.select({ key: profiles.avatarObjectKey }).from(profiles).where(eq(profiles.id, profileId)).limit(1);
+  return row?.key ?? null;
 }

@@ -29,7 +29,8 @@ import type { PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
 import { phaseHref, portalHref } from '../../routes';
 import { usePortal } from '../../PortalProvider';
-import { useDocViewer, triggerDownload, type ViewerDoc } from '../documents/DocViewer';
+import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
+import { triggerDownload } from '../documents/file-types';
 import { BotSay, Ic, IncFrame, InfoBtn, Si, fmt, fmtL, fmtS, istDay, kb } from './ui';
 import {
   INC_EXTRAS_KEY,
@@ -121,6 +122,7 @@ function ChangeDialog({ title, onClose, onSend }: { title: string; onClose: () =
     };
   }, [onClose]);
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- scrim click closes; Esc handled on document
     <div className="cr-ov" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="cr-dlg" role="dialog" aria-modal="true" aria-labelledby="cr-t">
         <h2 id="cr-t">Request a change · {title}</h2>
