@@ -46,20 +46,20 @@ Full catalogue: `inventory/home.md`.
 
 | Done | route key (`data-go` / `vcfoGo`) | prototype file | real Next.js route (app/app/client/**) | notes |
 |---|---|---|---|---|
-| ☐ | `home` | v7_before (≥700) / mobile.html | `/app/client/overview` (`/app/client` redirects here) | same URL before and after COI; layout chosen by `overview.incorporated` |
-| ☐ | `home-after` | v7_after / mobile.html#after | `/app/client/overview` | hidden route key, prototype only |
-| ☐ | `home-chat` | v7_before#chat / mobile.html#chat | `/app/client/overview` + open Ask panel | real: `AskProvider` / `AskLauncher` open state (`src/components/ask/*`) |
-| ☐ | `incorporation` | s/inc/incorporation.html | `/app/client/incorporation` | |
-| ☐ | `inc-phase-a` / `inc-phase` / `inc-phase-3` / `inc-phase-4` | s/inc/phase.html#p=1..4 | `/app/client/incorporation?phase=pre-inc-phase-1` … (or a phase sub-route; incorporation agent decides) | Phase 1 Name Application, 2 Incorporation, 3 Post-Incorporation, 4 Registration |
-| ☐ | `inc-step-N` (N = 1…48) | s/inc/step.html#n=N | `/app/client/incorporation/step/...` (folder `app/app/client/incorporation/step` exists) or `clientStepHref(stepId)` = `/app/client/incorporation?step=<id>` (src/lib/client-overview.ts) | N → checklist id table in 5.10 |
-| ☐ | `compliances` | s/comp/index.html#cal-redesign | `/app/client/compliances/calendar` (folder exists) | |
-| ☐ | `filings` | s/comp/index.html#fil-redesign | `/app/client/compliances/filings` | |
-| ☐ | `documents` | s/docs/docs_a_refined | `/app/client/documents` | |
-| ☐ | `knowledge-bank` | s/docs/lib_shelf_a | `/app/client/library` | sidebar label "Library" |
-| ☐ | `doc-viewer` | s/home/v7x_doc_viewer | NOT a page in the real app: an overlay/preview component opened in place (rule 9 "click a row → preview overlay"); fetch via `GET /api/documents/[id]/signed-url` or `GET /api/milestone-documents/signed-url` | prototype models it as a route only because it is a separate file |
-| ☐ | `ids-password` | s/home/v7p_ids_password | NOT a page: modal over Home | |
-| ☐ | `credentials` | s/home/v7p_credentials | NEW page `/app/client/credentials` (no folder yet) | sidebar item "Credentials" (icon key-round) sits between Library and Team in `shell.js` NAV |
-| ☐ | `team` / `audit` / `settings` / `announcements` / `notifications` | s/team/* | `/app/client/team`, `/audit`, `/settings`, `/announcements`, `/notifications` | |
+| ☑ | `home` | v7_before (≥700) / mobile.html | `/app/client/overview` (`/app/client` redirects here) | same URL before and after COI; layout chosen by `overview.incorporated` |
+| ☑ | `home-after` | v7_after / mobile.html#after | `/app/client/overview` | hidden route key, prototype only |
+| ☑ | `home-chat` | v7_before#chat / mobile.html#chat | `/app/client/overview` + open Ask panel | real: `AskProvider` / `AskLauncher` open state (`src/components/ask/*`) |
+| ☑ | `incorporation` | s/inc/incorporation.html | `/app/client/incorporation` | |
+| ☑ | `inc-phase-a` / `inc-phase` / `inc-phase-3` / `inc-phase-4` | s/inc/phase.html#p=1..4 | `/app/client/incorporation?phase=pre-inc-phase-1` … (or a phase sub-route; incorporation agent decides) | Phase 1 Name Application, 2 Incorporation, 3 Post-Incorporation, 4 Registration |
+| ☑ | `inc-step-N` (N = 1…48) | s/inc/step.html#n=N | `/app/client/incorporation/step/...` (folder `app/app/client/incorporation/step` exists) or `clientStepHref(stepId)` = `/app/client/incorporation?step=<id>` (src/lib/client-overview.ts) | N → checklist id table in 5.10 |
+| ☑ | `compliances` | s/comp/index.html#cal-redesign | `/app/client/compliances/calendar` (folder exists) | |
+| ☑ | `filings` | s/comp/index.html#fil-redesign | `/app/client/compliances/filings` | |
+| ☑ | `documents` | s/docs/docs_a_refined | `/app/client/documents` | |
+| ☑ | `knowledge-bank` | s/docs/lib_shelf_a | `/app/client/library` | sidebar label "Library" |
+| ☑ | `doc-viewer` | s/home/v7x_doc_viewer | NOT a page in the real app: an overlay/preview component opened in place (rule 9 "click a row → preview overlay"); fetch via `GET /api/documents/[id]/signed-url` or `GET /api/milestone-documents/signed-url` | prototype models it as a route only because it is a separate file |
+| ☑ | `ids-password` | s/home/v7p_ids_password | NOT a page: modal over Home | |
+| ☑ | `credentials` | s/home/v7p_credentials | NEW page `/app/client/credentials` (no folder yet) | sidebar item "Credentials" (icon key-round) sits between Library and Team in `shell.js` NAV |
+| ☑ | `team` / `audit` / `settings` / `announcements` / `notifications` | s/team/* | `/app/client/team`, `/audit`, `/settings`, `/announcements`, `/notifications` | |
 
 ---
 
@@ -69,27 +69,27 @@ Full catalogue: `inventory/home.md`.
 
 | Done | id | item | exact behaviour / content | file |
 |---|---|---|---|---|
-| ☐ | G-01 | Design tokens | Light tokens on `:root` (Appendix A). Dark ("True black") tokens injected by proto.js into `html[data-theme="dark"]` (bg #000, panel oklch(13% .006 260), navy→oklch(46% .15 258), `--navy-ink`, `--navy-deep`, `--primary-fill`…). Theme stored in `localStorage vcfo.theme` = light/dark/system. Any button whose aria-label contains "theme" toggles; label flips "Switch to dark theme"/"Switch to light theme", `aria-pressed`. | proto.js lines 6–56 |
-| ☐ | G-02 | Card | `section.card`: white panel, 1px `--border`, radius 10px, `--shadow`, flex column. Entry animation `up .5s cubic-bezier(.2,.7,.2,1) backwards` (opacity 0, translateY 10px → 0). Hover (v7.1 override): `translateY(-2px)`, border `oklch(54.6% .215 263 / .35)`, layered shadow; transition `.16s cubic-bezier(.22,1,.36,1)`. Phone (≤767): no hover lift. Header row: `display:flex;align-items:center;gap:8px;padding:14px 16px 0`, title `h3` `font:700 13px Manrope;color:var(--navy-ink,var(--navy))`, right group `margin-left:auto;display:flex;gap:6px`. Headers wrap (`row-gap:8px`). | Appendix A + every v7c |
-| ☐ | G-03 | Sliding pill (`.seg`) | Track: `padding:2px;border-radius:8px;background:light-dark(oklch(96.5% .008 250),oklch(18.3% .008 250));box-shadow:inset 0 0 0 1px var(--border)`; `display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)`. Thumb `.thumb`: absolute, `top/bottom/left:2px`, radius 5px, navy (`--navy-3` in dark), width `calc((100% - 4px)/N)`, `transform:translateX(i*100%)`, transition `.42s` spring `linear(0,0.0637,…,1.0004)` (= springSnappy 420/32/0.8). Buttons: height 28px, padding 0 10px, `font:500 12px Manrope`, color oklch(55% .022 255); active `.on` white, weight 500; counts `.cnt` `600 11px IBM Plex Mono`, active count white 72%. Phone ≤767 with `.vh-segwrap`: becomes flex-wrap, thumb hidden, active button gets navy background. All card buttons ≥40px tall on phone. | Appendix A |
-| ☐ | G-04 | Info (i) pop-over | `span.info > button[aria-label="More information"]` (18×18, 15 px circle-i icon, colour oklch(62% .02 255), navy on hover/focus/open) + `span.pop[role=tooltip]`: below the icon (`top:calc(100% + 8px)`, centred), 200–280px (`max-width:min(280px,100vw-24px)`), radius 8, 1px border, shadow `0 12px 32px -12px`, 12px/1.45 text, 10px arrow (`::before` rotated square). Opens on click/tap (class `.open`) or keyboard focus (`:focus-within`), fade `.15s`; only one open at a time; outside click closes; kept inside viewport by the fit script (B-08). Last row `a.ask`: 16px bot avatar + "Ask VCFO about this" (border-top hair, primary colour, bold) → opens chat with question "Tell me about <closest heading/strong text>" (proto.js `chatQuestion`). Touch: 11px invisible hit-area expansion (`pointer:coarse`). Spec board: v7x_info_popover (section 10). Build: Radix Popover. | Appendix A, v7x_info_popover |
-| ☐ | G-05 | Hover tooltip (`.tipw` + `.tt`) | Navy bubble `font:700 12px/1.3`, padding 5px 9px, radius 6, white text, arrow 8px; above the element (`bottom:calc(100% + 8px)`), `.tt.l` = left side, `.tt.w` = white bubble with navy text (used on the greeting ring). Shows on `:hover`/`:focus-visible` after display, fade `.12s`. Every chart part is a `.tipw role=button tabindex=0 aria-label=<same text>` that opens the drill-down on click/Enter (rule 14). | Appendix A |
-| ☐ | G-06 | Drill-down pop-up | `v7x_drilldown` (section 10.2): 600px (`min(600px,100vw-24px)`), max-height 560px, radius 12, dimmed backdrop `oklch(20% .05 258 / .45)` (fixed, z 200; dialog z 201, centred). Top strip "These items live in {Page}" + "Open {Page} →" (`data-go`), title + × (30px), navy sliding pill of tabs (clicked part pre-selected), list rows `ddrow` (grid `minmax(0,1fr) 62px 116px 16px`: name · mono date · status chip full-width · → arrow), empty "Nothing here.", footer "Showing n of m" / "Showing all n" + "Open full list". ≤640px: pill wraps, date column hidden. Closes on backdrop, ×, Esc. Page link chosen by title regex: /filings/→Filings, /alert/→Notifications, /document/→Documents, /team|who/→Team, /compliance|deadline/→Compliances, else Incorporation. | v7x_drilldown |
-| ☐ | G-07 | Chips | `.chip`: `inline-flex;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px`. Solid status chip = `background:var(--<k>-chip);color:#fff` where k ∈ ok (Completed/Filed/Registered), due (Waiting/Due soon), over (Overdue), prog (In progress/With SBC), up (Upcoming/Not started). Owner chip (light) = `background:var(--due-light);color:var(--due-text)` "Northwind" / `background:var(--prog-light);color:var(--prog-text)` "SBC". Status chips in step lists `min-width:116px;justify-content:center`; owner chips `min-width:88px`. | Appendix A, cards |
-| ☐ | G-08 | Buttons | `.btn` 36px, padding 0 14px, radius 6, `600 13px Manrope`; `.btn-p` primary blue (`--primary-fill`), inset highlight; `.btn-o` white outline. Card-row buttons are compact: `height:30px;padding:0 10px;font-size:12px`. `:active` scale .98 (.12s). Phone: ≥40px. | Appendix A |
-| ☐ | G-09 | Bot avatar (`v7c_bot`) | Props `state` ∈ idle/thinking/answered/cannot, `size` (default 56). SVG head (blue gradient #4C8DF8→#1D4ED8 body, #0B1736 visor, #7DD3FC eyes + smile, antenna). Moods ONLY via antenna colour/motion: idle teal #2DD4BF, thinking #7DD3FC pulsing (`vbAnt 1s`) + eyes scan (`vbScan 1.3s` ±9px), answered green #34D399, cannot grey #94A3B8. Smile never changes (owner decision). Used at 16px (info rows), 28px (empty states / chat avatars), 50px. Unique gradient/filter ids per instance. | v7c_bot |
-| ☐ | G-10 | Global Ask VCFO launcher | `#vp-launch` fixed bottom-right (`right:var(--vpl-in)` = clamp(14px,1.25vw+8px,24px)): animated character gripping the bottom edge (`--vpl-w` clamp(96px,4.5vw+72px,148px), SVG 340×216, 20.5 s loop: rise/look/blink/grip keyframes) + navy pill "● Ask VCFO" (36px tall, 40px on phone; teal dot #2DD4BF with 3px glow). Pill hover #17396b, active scale .97. Character ducks (`translateY(100%)`, .32s ease-in) while scrolling (650 ms debounce), while the chat is open, while a sheet is open, or when it would cover a control (hit-test grid); rises with `.5s cubic-bezier(.34,1.45,.5,1)`. Pill toggles the chat; when open the pill reads "× Close". Board-local launchers (`[aria-label="Open Ask VCFO"]`) are hidden at runtime. | proto.js |
-| ☐ | G-11 | Global chat window | `#vp-chat` (section 7.1). | proto.js |
-| ☐ | G-12 | Toast | `#vp-toast` navy, bottom-centre 64px above bottom (100px on phone), max-width min(560px,100vw-32px), `600 13px`, optional gold "Undo" button; in: opacity + translateY 12→0 (.18s/.22s); auto-hide 3200 ms; "Undone" toast after Undo. | proto.js |
-| ☐ | G-13 | Icon-only tooltip (rule 17) | Any icon-only `a/button` with `aria-label` (text ≤2 chars, no `data-tip`, not "obvious") shows a navy fixed tooltip 120 ms after hover, placed above (or below if no room). Obvious labels (Close, Search, Notifications…, WhatsApp/Call/Email/Teams…) get no tooltip. Hidden on pointerdown/scroll. | proto.js |
-| ☐ | G-14 | `data-go` | Any element with `data-go="<route>"` navigates (with the 140 ms leave fade). Controls nested inside a `data-go` tile (buttons, links, `.info`) handle their own click and do NOT trigger the tile. "You are already on X" toast when re-clicking the current route. | proto.js |
-| ☐ | G-15 | Fallback toasts (prototype only) | Any click that changes nothing within 380 ms shows a toast from its label: /download/→"Download started · …", /zip/→"Preparing the ZIP…", /upload|choose file|take photo/→"Choose a file to upload", /copy/→"Link copied", /whatsapp|call|email|teams/→"Opening …", /portal|↗/→"Opens the official portal in a new tab", /approve|submit|send|save|mark|confirm|request|remind|resend|cancel invite|hand off|turn on|turn off/→"<label> · done" + Undo, /search/→"Search · type to find steps, filings and documents", else the label itself. **These mark controls the board did not wire; the real behaviour is given per control below.** | proto.js |
-| ☐ | G-16 | Stagger | Home columns are `.stag` wrappers; each child has an inline `animation-delay` (0.04 s, 0.10, 0.16 … +0.06 per card) and `animation:v7fade .2s cubic-bezier(.22,1,.36,1) backwards` (opacity 0, translateY 6px). | v7_before/after |
-| ☐ | G-17 | Current-step pulse | `.pulse{animation:v7pulse 1.8s ease-in-out infinite}`: gold ring `box-shadow 0 0 0 0 → 0 0 0 5px oklch(80% .12 85 / 0)`. | Appendix A |
-| ☐ | G-18 | Bar grow | `.bar>span` / `.stack>span` `animation:grow .9s cubic-bezier(.2,.7,.2,1) .2s backwards` (scaleX 0→1 from left). | Appendix A |
-| ☐ | G-19 | Reduced motion | `@media (prefers-reduced-motion: reduce)`: all animations/transitions off (cards, pills, stagger, bot bob/react, tooltips, pulse, launcher shows head static and fully visible, chat no peek). | Appendix A, proto.js |
-| ☐ | G-20 | Top bar | `header.vh-top` 52px, `gap:var(--vh-hg)` (12px; 6px on phone), `padding:0 var(--vh-hp)` (16px; 10px phone), border-bottom `oklch(91.5% .012 255 / .6)`, background white 90% (sticky via proto.js `pinNav`, z 40). Left→right: menu button (`.vh-menu`, 40×40, hidden ≥768, opens shell drawer `vcfoOpenSide()`), SBC logo link (26px tall; 22px on phone; aria "SBC home"), location trail `nav.vh-crumb` (24px primary-light tile with dashboard icon + "Home"; hidden ≤767), right group gap 6px: Search button 256px wide (`Search` + ⌘ K kbd; collapses to 36px icon ≤1099px), Before/After pill (inserted by shell.js before Announcements, desktop only), Announcements (36px icon → route `announcements`), Notifications (36px, primary-light tinted, badge "3" 15px circle → route `notifications`), Theme (36px outlined; sun icon; toggles theme). Long trails truncate, the right group never moves (v7x_topbar). | v7_before, v7x_topbar |
-| ☐ | G-21 | Sidebar | Real sidebar is drawn by `shell.js` over the `.vh-side` placeholder (width `var(--vp-side-w)`: 248px desktop ≥1280, 72px icon rail 768–1279, 0 + drawer on phone). NAV: Home · Updates (badge 3, red; children Announcements, Notifications) · Incorporation (badge "6/14" before COI; none after) · Compliances (children Calendar, Filings) · Documents (badge 6) · Library · Credentials · Team · Audit · Settings. Team block: Priya Raman (Project Manager), Arjun Mehta (Project Lead), Customer support (SBC help desk), each with WhatsApp/Call/Email/Teams hover actions. Account row RK "Rohan Kumar · Northwind · Client" with menu (Account settings, Sign out). Before/After pill: top bar on desktop, inside the rail on tablet (vertical 56×66), top of the drawer on phone. (`v7c_side`/`v7c_side_a` are the static board version: 248×900, active pill slides `translateY(i*38px)`, same spring.) Owned by the shell-ui inventory; listed here because Home imports it. | shell.js, v7c_side(_a) |
+| ☑ | G-01 | Design tokens | Light tokens on `:root` (Appendix A). Dark ("True black") tokens injected by proto.js into `html[data-theme="dark"]` (bg #000, panel oklch(13% .006 260), navy→oklch(46% .15 258), `--navy-ink`, `--navy-deep`, `--primary-fill`…). Theme stored in `localStorage vcfo.theme` = light/dark/system. Any button whose aria-label contains "theme" toggles; label flips "Switch to dark theme"/"Switch to light theme", `aria-pressed`. | proto.js lines 6–56 |
+| ☑ | G-02 | Card | `section.card`: white panel, 1px `--border`, radius 10px, `--shadow`, flex column. Entry animation `up .5s cubic-bezier(.2,.7,.2,1) backwards` (opacity 0, translateY 10px → 0). Hover (v7.1 override): `translateY(-2px)`, border `oklch(54.6% .215 263 / .35)`, layered shadow; transition `.16s cubic-bezier(.22,1,.36,1)`. Phone (≤767): no hover lift. Header row: `display:flex;align-items:center;gap:8px;padding:14px 16px 0`, title `h3` `font:700 13px Manrope;color:var(--navy-ink,var(--navy))`, right group `margin-left:auto;display:flex;gap:6px`. Headers wrap (`row-gap:8px`). | Appendix A + every v7c |
+| ☑ | G-03 | Sliding pill (`.seg`) | Track: `padding:2px;border-radius:8px;background:light-dark(oklch(96.5% .008 250),oklch(18.3% .008 250));box-shadow:inset 0 0 0 1px var(--border)`; `display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)`. Thumb `.thumb`: absolute, `top/bottom/left:2px`, radius 5px, navy (`--navy-3` in dark), width `calc((100% - 4px)/N)`, `transform:translateX(i*100%)`, transition `.42s` spring `linear(0,0.0637,…,1.0004)` (= springSnappy 420/32/0.8). Buttons: height 28px, padding 0 10px, `font:500 12px Manrope`, color oklch(55% .022 255); active `.on` white, weight 500; counts `.cnt` `600 11px IBM Plex Mono`, active count white 72%. Phone ≤767 with `.vh-segwrap`: becomes flex-wrap, thumb hidden, active button gets navy background. All card buttons ≥40px tall on phone. | Appendix A |
+| ☑ | G-04 | Info (i) pop-over | `span.info > button[aria-label="More information"]` (18×18, 15 px circle-i icon, colour oklch(62% .02 255), navy on hover/focus/open) + `span.pop[role=tooltip]`: below the icon (`top:calc(100% + 8px)`, centred), 200–280px (`max-width:min(280px,100vw-24px)`), radius 8, 1px border, shadow `0 12px 32px -12px`, 12px/1.45 text, 10px arrow (`::before` rotated square). Opens on click/tap (class `.open`) or keyboard focus (`:focus-within`), fade `.15s`; only one open at a time; outside click closes; kept inside viewport by the fit script (B-08). Last row `a.ask`: 16px bot avatar + "Ask VCFO about this" (border-top hair, primary colour, bold) → opens chat with question "Tell me about <closest heading/strong text>" (proto.js `chatQuestion`). Touch: 11px invisible hit-area expansion (`pointer:coarse`). Spec board: v7x_info_popover (section 10). Build: Radix Popover. | Appendix A, v7x_info_popover |
+| ☑ | G-05 | Hover tooltip (`.tipw` + `.tt`) | Navy bubble `font:700 12px/1.3`, padding 5px 9px, radius 6, white text, arrow 8px; above the element (`bottom:calc(100% + 8px)`), `.tt.l` = left side, `.tt.w` = white bubble with navy text (used on the greeting ring). Shows on `:hover`/`:focus-visible` after display, fade `.12s`. Every chart part is a `.tipw role=button tabindex=0 aria-label=<same text>` that opens the drill-down on click/Enter (rule 14). | Appendix A |
+| ☑ | G-06 | Drill-down pop-up | `v7x_drilldown` (section 10.2): 600px (`min(600px,100vw-24px)`), max-height 560px, radius 12, dimmed backdrop `oklch(20% .05 258 / .45)` (fixed, z 200; dialog z 201, centred). Top strip "These items live in {Page}" + "Open {Page} →" (`data-go`), title + × (30px), navy sliding pill of tabs (clicked part pre-selected), list rows `ddrow` (grid `minmax(0,1fr) 62px 116px 16px`: name · mono date · status chip full-width · → arrow), empty "Nothing here.", footer "Showing n of m" / "Showing all n" + "Open full list". ≤640px: pill wraps, date column hidden. Closes on backdrop, ×, Esc. Page link chosen by title regex: /filings/→Filings, /alert/→Notifications, /document/→Documents, /team|who/→Team, /compliance|deadline/→Compliances, else Incorporation. | v7x_drilldown |
+| ☑ | G-07 | Chips | `.chip`: `inline-flex;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px`. Solid status chip = `background:var(--<k>-chip);color:#fff` where k ∈ ok (Completed/Filed/Registered), due (Waiting/Due soon), over (Overdue), prog (In progress/With SBC), up (Upcoming/Not started). Owner chip (light) = `background:var(--due-light);color:var(--due-text)` "Northwind" / `background:var(--prog-light);color:var(--prog-text)` "SBC". Status chips in step lists `min-width:116px;justify-content:center`; owner chips `min-width:88px`. | Appendix A, cards |
+| ☑ | G-08 | Buttons | `.btn` 36px, padding 0 14px, radius 6, `600 13px Manrope`; `.btn-p` primary blue (`--primary-fill`), inset highlight; `.btn-o` white outline. Card-row buttons are compact: `height:30px;padding:0 10px;font-size:12px`. `:active` scale .98 (.12s). Phone: ≥40px. | Appendix A |
+| ☑ | G-09 | Bot avatar (`v7c_bot`) | Props `state` ∈ idle/thinking/answered/cannot, `size` (default 56). SVG head (blue gradient #4C8DF8→#1D4ED8 body, #0B1736 visor, #7DD3FC eyes + smile, antenna). Moods ONLY via antenna colour/motion: idle teal #2DD4BF, thinking #7DD3FC pulsing (`vbAnt 1s`) + eyes scan (`vbScan 1.3s` ±9px), answered green #34D399, cannot grey #94A3B8. Smile never changes (owner decision). Used at 16px (info rows), 28px (empty states / chat avatars), 50px. Unique gradient/filter ids per instance. | v7c_bot |
+| ☑ | G-10 | Global Ask VCFO launcher | `#vp-launch` fixed bottom-right (`right:var(--vpl-in)` = clamp(14px,1.25vw+8px,24px)): animated character gripping the bottom edge (`--vpl-w` clamp(96px,4.5vw+72px,148px), SVG 340×216, 20.5 s loop: rise/look/blink/grip keyframes) + navy pill "● Ask VCFO" (36px tall, 40px on phone; teal dot #2DD4BF with 3px glow). Pill hover #17396b, active scale .97. Character ducks (`translateY(100%)`, .32s ease-in) while scrolling (650 ms debounce), while the chat is open, while a sheet is open, or when it would cover a control (hit-test grid); rises with `.5s cubic-bezier(.34,1.45,.5,1)`. Pill toggles the chat; when open the pill reads "× Close". Board-local launchers (`[aria-label="Open Ask VCFO"]`) are hidden at runtime. | proto.js |
+| ☑ | G-11 | Global chat window | `#vp-chat` (section 7.1). | proto.js |
+| ☑ | G-12 | Toast | `#vp-toast` navy, bottom-centre 64px above bottom (100px on phone), max-width min(560px,100vw-32px), `600 13px`, optional gold "Undo" button; in: opacity + translateY 12→0 (.18s/.22s); auto-hide 3200 ms; "Undone" toast after Undo. | proto.js |
+| ☑ | G-13 | Icon-only tooltip (rule 17) | Any icon-only `a/button` with `aria-label` (text ≤2 chars, no `data-tip`, not "obvious") shows a navy fixed tooltip 120 ms after hover, placed above (or below if no room). Obvious labels (Close, Search, Notifications…, WhatsApp/Call/Email/Teams…) get no tooltip. Hidden on pointerdown/scroll. | proto.js |
+| ☑ | G-14 | `data-go` | Any element with `data-go="<route>"` navigates (with the 140 ms leave fade). Controls nested inside a `data-go` tile (buttons, links, `.info`) handle their own click and do NOT trigger the tile. "You are already on X" toast when re-clicking the current route. | proto.js |
+| ☑ | G-15 | Fallback toasts (prototype only) | Any click that changes nothing within 380 ms shows a toast from its label: /download/→"Download started · …", /zip/→"Preparing the ZIP…", /upload|choose file|take photo/→"Choose a file to upload", /copy/→"Link copied", /whatsapp|call|email|teams/→"Opening …", /portal|↗/→"Opens the official portal in a new tab", /approve|submit|send|save|mark|confirm|request|remind|resend|cancel invite|hand off|turn on|turn off/→"<label> · done" + Undo, /search/→"Search · type to find steps, filings and documents", else the label itself. **These mark controls the board did not wire; the real behaviour is given per control below.** | proto.js |
+| ☑ | G-16 | Stagger | Home columns are `.stag` wrappers; each child has an inline `animation-delay` (0.04 s, 0.10, 0.16 … +0.06 per card) and `animation:v7fade .2s cubic-bezier(.22,1,.36,1) backwards` (opacity 0, translateY 6px). | v7_before/after |
+| ☑ | G-17 | Current-step pulse | `.pulse{animation:v7pulse 1.8s ease-in-out infinite}`: gold ring `box-shadow 0 0 0 0 → 0 0 0 5px oklch(80% .12 85 / 0)`. | Appendix A |
+| ☑ | G-18 | Bar grow | `.bar>span` / `.stack>span` `animation:grow .9s cubic-bezier(.2,.7,.2,1) .2s backwards` (scaleX 0→1 from left). | Appendix A |
+| ☑ | G-19 | Reduced motion | `@media (prefers-reduced-motion: reduce)`: all animations/transitions off (cards, pills, stagger, bot bob/react, tooltips, pulse, launcher shows head static and fully visible, chat no peek). | Appendix A, proto.js |
+| ☑ | G-20 | Top bar | `header.vh-top` 52px, `gap:var(--vh-hg)` (12px; 6px on phone), `padding:0 var(--vh-hp)` (16px; 10px phone), border-bottom `oklch(91.5% .012 255 / .6)`, background white 90% (sticky via proto.js `pinNav`, z 40). Left→right: menu button (`.vh-menu`, 40×40, hidden ≥768, opens shell drawer `vcfoOpenSide()`), SBC logo link (26px tall; 22px on phone; aria "SBC home"), location trail `nav.vh-crumb` (24px primary-light tile with dashboard icon + "Home"; hidden ≤767), right group gap 6px: Search button 256px wide (`Search` + ⌘ K kbd; collapses to 36px icon ≤1099px), Before/After pill (inserted by shell.js before Announcements, desktop only), Announcements (36px icon → route `announcements`), Notifications (36px, primary-light tinted, badge "3" 15px circle → route `notifications`), Theme (36px outlined; sun icon; toggles theme). Long trails truncate, the right group never moves (v7x_topbar). | v7_before, v7x_topbar |
+| ☑ | G-21 | Sidebar | Real sidebar is drawn by `shell.js` over the `.vh-side` placeholder (width `var(--vp-side-w)`: 248px desktop ≥1280, 72px icon rail 768–1279, 0 + drawer on phone). NAV: Home · Updates (badge 3, red; children Announcements, Notifications) · Incorporation (badge "6/14" before COI; none after) · Compliances (children Calendar, Filings) · Documents (badge 6) · Library · Credentials · Team · Audit · Settings. Team block: Priya Raman (Project Manager), Arjun Mehta (Project Lead), Customer support (SBC help desk), each with WhatsApp/Call/Email/Teams hover actions. Account row RK "Rohan Kumar · Northwind · Client" with menu (Account settings, Sign out). Before/After pill: top bar on desktop, inside the rail on tablet (vertical 56×66), top of the drawer on phone. (`v7c_side`/`v7c_side_a` are the static board version: 248×900, active pill slides `translateY(i*38px)`, same spring.) Owned by the shell-ui inventory; listed here because Home imports it. | shell.js, v7c_side(_a) |
 
 #### 3.2 Shared data shapes used by the cards
 
@@ -103,17 +103,17 @@ The drill-down takes `tabs = [[label, count], …]` and `rows = [[name, meta(dat
 
 | Done | id | area | card (board) | animation-delay |
 |---|---|---|---|---|
-| ☐ | HB-01 | `g` | Greeting `v7c_greet_b` | 0.04s |
-| ☐ | HB-02 | `a` | Needs from Northwind `v7c_needs_b` | 0.10s |
-| ☐ | HB-03 | `a` | Who holds it now `v7c_current` | 0.16s |
-| ☐ | HB-04 | `c1` | Important alerts `v7c_alerts_b` | 0.22s |
-| ☐ | HB-05 | `c1` | What SBC is doing `v7c_sbc_b` | 0.28s |
-| ☐ | HB-06 | `b` | Timeline `v7c_timeline_b` | 0.34s |
-| ☐ | HB-07 | `b` | Steps `v7c_steps_b` | 0.40s |
-| ☐ | HB-08 | `c2` | Recent documents `v7c_docs_b` | 0.46s |
-| ☐ | HB-09 | `c2` | Recent activity `v7c_activity_b` | 0.52s |
-| ☐ | HB-10 | floating | Ask VCFO launcher (global, G-10) | rises .45s after .5s |
-| ☐ | HB-11 | top | Top bar (G-20) + sidebar (G-21) | — |
+| ☑ | HB-01 | `g` | Greeting `v7c_greet_b` | 0.04s |
+| ☑ | HB-02 | `a` | Needs from Northwind `v7c_needs_b` | 0.10s |
+| ☑ | HB-03 | `a` | Who holds it now `v7c_current` | 0.16s |
+| ☑ | HB-04 | `c1` | Important alerts `v7c_alerts_b` | 0.22s |
+| ☑ | HB-05 | `c1` | What SBC is doing `v7c_sbc_b` | 0.28s |
+| ☑ | HB-06 | `b` | Timeline `v7c_timeline_b` | 0.34s |
+| ☑ | HB-07 | `b` | Steps `v7c_steps_b` | 0.40s |
+| ☑ | HB-08 | `c2` | Recent documents `v7c_docs_b` | 0.46s |
+| ☑ | HB-09 | `c2` | Recent activity `v7c_activity_b` | 0.52s |
+| ☑ | HB-10 | floating | Ask VCFO launcher (global, G-10) | rises .45s after .5s |
+| ☑ | HB-11 | top | Top bar (G-20) + sidebar (G-21) | — |
 
 Grid areas per breakpoint (section 11 has the CSS): <600px one column `g a c1 b c2`; 600–1179 two columns `g g / a a / c1 c2 / b b`; 1180–1799 `2fr 1fr`: `g g / a c1 / a c2 / b c2`; ≥1800 three columns `g g g / a c1 c2 / b b c2`.
 
@@ -129,20 +129,20 @@ Same board; proto.js opens the global chat 500 ms after load when the hash conta
 
 | Done | id | area | card (board) | animation-delay |
 |---|---|---|---|---|
-| ☐ | HA-01 | `g` | Greeting `v7c_greet_a` | 0.04s |
-| ☐ | HA-02 | `a1` | Needs from Northwind `v7c_needs_a` | 0.10s |
-| ☐ | HA-03 | `a1` | What is next `v7c_next` | 0.16s |
-| ☐ | HA-04 | `c1` | Important alerts `v7c_alerts_a` | 0.22s |
-| ☐ | HA-05 | `c1` | What SBC is doing `v7c_sbc_a` (hint 240px) | 0.28s |
-| ☐ | HA-06 | `a2` | Compliance status `v7c_comp` (donut) | 0.34s |
-| ☐ | HA-07 | `c2` | Company IDs `v7c_ids` | 0.40s |
-| ☐ | HA-08 | `f` | Compliance by area `v7c_area` | 0.46s |
-| ☐ | HA-09 | `f` | Registrations `v7c_reg` | 0.52s |
-| ☐ | HA-10 | `f` | Post-incorporation setup `v7c_postinc` | 0.58s |
-| ☐ | HA-11 | `f` | Timeline `v7c_timeline_a` (completed) | 0.64s |
-| ☐ | HA-12 | `f` | Steps `v7c_steps_a` | 0.70s |
-| ☐ | HA-13 | `d` | Recent documents `v7c_docs_a` | 0.76s |
-| ☐ | HA-14 | `e` | Recent activity `v7c_activity_a` | 0.82s |
+| ☑ | HA-01 | `g` | Greeting `v7c_greet_a` | 0.04s |
+| ☑ | HA-02 | `a1` | Needs from Northwind `v7c_needs_a` | 0.10s |
+| ☑ | HA-03 | `a1` | What is next `v7c_next` | 0.16s |
+| ☑ | HA-04 | `c1` | Important alerts `v7c_alerts_a` | 0.22s |
+| ☑ | HA-05 | `c1` | What SBC is doing `v7c_sbc_a` (hint 240px) | 0.28s |
+| ☑ | HA-06 | `a2` | Compliance status `v7c_comp` (donut) | 0.34s |
+| ☑ | HA-07 | `c2` | Company IDs `v7c_ids` | 0.40s |
+| ☑ | HA-08 | `f` | Compliance by area `v7c_area` | 0.46s |
+| ☑ | HA-09 | `f` | Registrations `v7c_reg` | 0.52s |
+| ☑ | HA-10 | `f` | Post-incorporation setup `v7c_postinc` | 0.58s |
+| ☑ | HA-11 | `f` | Timeline `v7c_timeline_a` (completed) | 0.64s |
+| ☑ | HA-12 | `f` | Steps `v7c_steps_a` | 0.70s |
+| ☑ | HA-13 | `d` | Recent documents `v7c_docs_a` | 0.76s |
+| ☑ | HA-14 | `e` | Recent activity `v7c_activity_a` | 0.82s |
 
 Grid areas: <600 one column `g a1 c1 a2 c2 f d e`; 600–1179 two columns `g g / a1 a1 / c1 a2 / c1 c2 / f f / d e` (rows `auto auto auto 1fr`); 1180–1799 six columns `g×6 / a1×4 c1×2 / a1×4 c2×2 / a2×4 c2×2 / f×6 / d×3 e×3` (rows `auto auto 1fr auto`); ≥1800 `g×6 / a1 a1 a2 a2 c1 c1 / a1 a1 c2 c2 c1 c1 / f×6 / d×3 e×3`. Preview height 3240px at 1440.
 
@@ -154,34 +154,34 @@ Inventory
 
 | Done | id | item | behaviour / content | file |
 |---|---|---|---|---|
-| ☐ | GR-01 | Card | `section.vh-greet`, radius 10, `padding:12px clamp(14px,2vw,18px) 10px`, background `linear-gradient(115deg, navy 0%, navy-2 60%, navy-3 100%)` (dark: `--navy-deep` set), white text, overflow hidden; 3px gold underline at the bottom `linear-gradient(90deg,var(--gold),oklch(78% .1 85 / 0) 70%)`. | greet_b |
-| ☐ | GR-02 | Date | Mono 11px, opacity .65, uppercase: "TUE 6 OCT 2026" / "SUN 8 NOV 2026". | |
-| ☐ | GR-03 | Company name | `h1.metric` Space Grotesk 600, `font-size:clamp(19px,calc(15px + .6vw),24px)`, lh 1.15: "Northwind Technologies India Pvt Ltd". | |
-| ☐ | GR-04 | Report button | `a.btn` 30px, padding 0 10px, translucent white (bg 12%, border 28%), download icon + "Report" (label hidden <480px, `.vh-hide-xs`; aria-label "Report"). Not wired in board (fallback toast "Report"). Phone version: "Download report" → toast "Preparing Northwind’s progress report (PDF)…" then after 1400 ms "Report downloaded · Northwind-progress-6-Oct.pdf". **Real: GET `/api/ask/brief?engagementId=` (C4 monthly status brief PDF) exists → download.** | greet_b, mobile |
-| ☐ | GR-05 | Progress ring | 46×46 conic ring (gold arc on 16% white track), inner 37px navy-2 disc with "43%" (`700 11px Space Grotesk`); label under it "SPICE+" (11px, letter-spacing .1em, .7 opacity). Tooltip (white variant, left side): "Incorporation · 6 of 14 SPICe+ steps". Click/Enter → drill-down "Incorporation steps" tab All (GR-08). After: "64%" ring, label "SETUP", tooltip "Setup · 7 of 11 done", drill "Post-incorporation setup" tab "Open". DECISION: ring = SPICe+ steps only (Phases 1+2) before COI. | |
-| ☐ | GR-06 | Divider | 1px white 14%, margin 8px 0 7px. | |
-| ☐ | GR-07 | Stat strip | `.vh-stats` flex-wrap; each stat = metric 18px + 11.5px label (opacity .75), separated by 1px white-14% border with 16px padding/margin. BEFORE: **4** (colour oklch(86% .09 60) amber) "Waiting on Northwind" · **1** "With SBC" · **1** (oklch(84% .09 20) red) "Overdue" · **4/6** "Documents in" · **28 Oct** "Expected COI". AFTER: **4** amber "Waiting on Northwind" · **1** red "Overdue" · **3** amber "Due soon" · **5/13** "Registrations" · **24 Oct** "Incorporated". <600px: grid `repeat(auto-fill,minmax(118px,1fr))`, gap 8px 12px, no separators. Stats are static on desktop (not clickable); on phone each stat is a button opening a drill (section 6). | |
-| ☐ | GR-08 | Drill (before) | Title "Incorporation steps"; tabs All 14 · Completed 6 · In progress 3 · Waiting for Northwind 1 · Upcoming 4. Rows: Client Details 12 Sep Completed · Draft Board Resolution 14 Sep · Signed Board Resolution 18 Sep · Name Application "Part A" · Name Approval 24 Sep · Capital Structure 1 Oct (all Completed/ok) · Proposed Directors 6 Oct In progress · Subscriber Details 10 Oct In progress · Registered Office Address 9 Oct Waiting (due) · KYC Review & DSC 13 Oct In progress · SPICe+ Confirmation 16 Oct · SPICe+ Filing 20 Oct · MCA Remarks 24 Oct · Certificate of Incorporation 28 Oct (Upcoming). Opened on tab 0. | greet_b |
-| ☐ | GR-09 | Drill (after) | "Post-incorporation setup"; tabs All 11 · Open 4 · Completed 7; rows FC-GPR Filing "day 6 of 30 · 2 Dec" Open(due) · Nominee Shareholder (MGT-4/5/6) "day 15 of 30 · 23 Nov" · Share Certificates (SH-1) "day 15 of 60 · 23 Dec" · Commencement (INC-20A) "day 15 of 180 · 22 Apr" (Open/prog) · Registered Office (INC-22) 25 Oct · First Board Meeting 26 Oct · Company Letterhead 27 Oct · Bank Account Opening 29 Oct · Name Board 30 Oct · Share Capital Infusion 2 Nov · Auditor Appointment (ADT-1) 5 Nov (Completed). Opens on tab 1 (Open). | greet_a |
+| ☑ | GR-01 | Card | `section.vh-greet`, radius 10, `padding:12px clamp(14px,2vw,18px) 10px`, background `linear-gradient(115deg, navy 0%, navy-2 60%, navy-3 100%)` (dark: `--navy-deep` set), white text, overflow hidden; 3px gold underline at the bottom `linear-gradient(90deg,var(--gold),oklch(78% .1 85 / 0) 70%)`. | greet_b |
+| ☑ | GR-02 | Date | Mono 11px, opacity .65, uppercase: "TUE 6 OCT 2026" / "SUN 8 NOV 2026". | |
+| ☑ | GR-03 | Company name | `h1.metric` Space Grotesk 600, `font-size:clamp(19px,calc(15px + .6vw),24px)`, lh 1.15: "Northwind Technologies India Pvt Ltd". | |
+| ☑ | GR-04 | Report button | `a.btn` 30px, padding 0 10px, translucent white (bg 12%, border 28%), download icon + "Report" (label hidden <480px, `.vh-hide-xs`; aria-label "Report"). Not wired in board (fallback toast "Report"). Phone version: "Download report" → toast "Preparing Northwind’s progress report (PDF)…" then after 1400 ms "Report downloaded · Northwind-progress-6-Oct.pdf". **Real: GET `/api/ask/brief?engagementId=` (C4 monthly status brief PDF) exists → download.** | greet_b, mobile |
+| ☑ | GR-05 | Progress ring | 46×46 conic ring (gold arc on 16% white track), inner 37px navy-2 disc with "43%" (`700 11px Space Grotesk`); label under it "SPICE+" (11px, letter-spacing .1em, .7 opacity). Tooltip (white variant, left side): "Incorporation · 6 of 14 SPICe+ steps". Click/Enter → drill-down "Incorporation steps" tab All (GR-08). After: "64%" ring, label "SETUP", tooltip "Setup · 7 of 11 done", drill "Post-incorporation setup" tab "Open". DECISION: ring = SPICe+ steps only (Phases 1+2) before COI. | |
+| ☑ | GR-06 | Divider | 1px white 14%, margin 8px 0 7px. | |
+| ☑ | GR-07 | Stat strip | `.vh-stats` flex-wrap; each stat = metric 18px + 11.5px label (opacity .75), separated by 1px white-14% border with 16px padding/margin. BEFORE: **4** (colour oklch(86% .09 60) amber) "Waiting on Northwind" · **1** "With SBC" · **1** (oklch(84% .09 20) red) "Overdue" · **4/6** "Documents in" · **28 Oct** "Expected COI". AFTER: **4** amber "Waiting on Northwind" · **1** red "Overdue" · **3** amber "Due soon" · **5/13** "Registrations" · **24 Oct** "Incorporated". <600px: grid `repeat(auto-fill,minmax(118px,1fr))`, gap 8px 12px, no separators. Stats are static on desktop (not clickable); on phone each stat is a button opening a drill (section 6). | |
+| ☑ | GR-08 | Drill (before) | Title "Incorporation steps"; tabs All 14 · Completed 6 · In progress 3 · Waiting for Northwind 1 · Upcoming 4. Rows: Client Details 12 Sep Completed · Draft Board Resolution 14 Sep · Signed Board Resolution 18 Sep · Name Application "Part A" · Name Approval 24 Sep · Capital Structure 1 Oct (all Completed/ok) · Proposed Directors 6 Oct In progress · Subscriber Details 10 Oct In progress · Registered Office Address 9 Oct Waiting (due) · KYC Review & DSC 13 Oct In progress · SPICe+ Confirmation 16 Oct · SPICe+ Filing 20 Oct · MCA Remarks 24 Oct · Certificate of Incorporation 28 Oct (Upcoming). Opened on tab 0. | greet_b |
+| ☑ | GR-09 | Drill (after) | "Post-incorporation setup"; tabs All 11 · Open 4 · Completed 7; rows FC-GPR Filing "day 6 of 30 · 2 Dec" Open(due) · Nominee Shareholder (MGT-4/5/6) "day 15 of 30 · 23 Nov" · Share Certificates (SH-1) "day 15 of 60 · 23 Dec" · Commencement (INC-20A) "day 15 of 180 · 22 Apr" (Open/prog) · Registered Office (INC-22) 25 Oct · First Board Meeting 26 Oct · Company Letterhead 27 Oct · Bank Account Opening 29 Oct · Name Board 30 Oct · Share Capital Infusion 2 Nov · Auditor Appointment (ADT-1) 5 Nov (Completed). Opens on tab 1 (Open). | greet_a |
 
 Data → real app
 
 | Done | field | example | source in real app |
 |---|---|---|---|
-| ☐ | date | TUE 6 OCT 2026 | client clock; `src/hooks/use-client-locale-date.ts` |
-| ☐ | company name | Northwind Technologies India Pvt Ltd | `overview.engagement.companyName` (GET `/api/client/overview`, `useClientOverview()` in `src/lib/use-client-overview.ts`, repo `getClientOverview` in `src/db/repositories/client-overview.ts`) |
-| ☐ | ring % before | 43% = 6/14 | `overview.progress.byPhase` → sum of phases `pre-inc-phase-1` + `pre-inc-phase-2` (done/total). Existing. |
-| ☐ | ring % after | 64% = 7/11 | `overview.progress.byPhase` `post-inc-phase-3`. Existing. |
-| ☐ | Waiting on Northwind | 4 | prototype = number of open items in "Needs from Northwind" (2 upload + 1 fill + 1 correct). Real `overview.ballInCourt.waitingOnClient` counts ACTIVE STEPS, not items → **NEW: item-level needs list (see 5.2); count = its length.** |
-| ☐ | With SBC | 1 | `overview.ballInCourt.waitingOnFirm` (existing; step-level). |
-| ☐ | Overdue | 1 | `overview.progress.byStatus.overdue` (steps) + overdue items; after COI also overdue `compliance_instances` (status `overdue`). Partially existing; needs one combined count (NEW derivation in `src/lib/client-overview.ts`). |
-| ☐ | Documents in | 4/6 | NEW: requested-documents fulfilled/total. Closest existing: `overview.documents.counts` (requested/submitted are STEP counts). Needs per-file requests (`document_requests` table + repo `src/db/repositories/document-requests.ts` exist; requests are not yet linked to steps → add `step_id`, `due_date`, `kind` columns, see 5.2). |
-| ☐ | Expected COI | 28 Oct | engagement `schedule.incorporation.to` (manager-set window; `normalizeEngagementSchedule`, `src/lib/schedule-windows.ts`). DECISIONS: "Days to COI before COI count down to the manager-set incorporation window end". Not in overview payload → **add `expectedCoiDate` to `ClientOverview`** (repo already loads `row.schedule`). |
-| ☐ | Incorporated | 24 Oct | `overview.engagement.incorporationDate` (existing). |
-| ☐ | Due soon | 3 | `overview.compliance.upcoming` filtered to due within 15 days and not filed (existing data, new derivation). |
-| ☐ | Registrations | 5/13 | `overview.progress.byPhase['registration-phase-4']` gives done/23 (catalog has 23 phase-4 steps). The prototype's 13 = the curated registrations list of `v7c_reg` (section 5.15). Decide denominator (open question Q3). |
-| ☐ | Report | — | GET `/api/ask/brief` (existing PDF). |
-| ☐ | ring drill rows | step, date, status | `overview.milestones` (id, title, kind, completedOn, ownedByClient) + `windowForStep(schedule, id)` for future dates. Existing data; drill component NEW (UI). |
+| ☑ | date | TUE 6 OCT 2026 | client clock; `src/hooks/use-client-locale-date.ts` |
+| ☑ | company name | Northwind Technologies India Pvt Ltd | `overview.engagement.companyName` (GET `/api/client/overview`, `useClientOverview()` in `src/lib/use-client-overview.ts`, repo `getClientOverview` in `src/db/repositories/client-overview.ts`) |
+| ☑ | ring % before | 43% = 6/14 | `overview.progress.byPhase` → sum of phases `pre-inc-phase-1` + `pre-inc-phase-2` (done/total). Existing. |
+| ☑ | ring % after | 64% = 7/11 | `overview.progress.byPhase` `post-inc-phase-3`. Existing. |
+| ☑ | Waiting on Northwind | 4 | prototype = number of open items in "Needs from Northwind" (2 upload + 1 fill + 1 correct). Real `overview.ballInCourt.waitingOnClient` counts ACTIVE STEPS, not items → **NEW: item-level needs list (see 5.2); count = its length.** |
+| ☑ | With SBC | 1 | `overview.ballInCourt.waitingOnFirm` (existing; step-level). |
+| ☑ | Overdue | 1 | `overview.progress.byStatus.overdue` (steps) + overdue items; after COI also overdue `compliance_instances` (status `overdue`). Partially existing; needs one combined count (NEW derivation in `src/lib/client-overview.ts`). |
+| ☑ | Documents in | 4/6 | NEW: requested-documents fulfilled/total. Closest existing: `overview.documents.counts` (requested/submitted are STEP counts). Needs per-file requests (`document_requests` table + repo `src/db/repositories/document-requests.ts` exist; requests are not yet linked to steps → add `step_id`, `due_date`, `kind` columns, see 5.2). |
+| ☑ | Expected COI | 28 Oct | engagement `schedule.incorporation.to` (manager-set window; `normalizeEngagementSchedule`, `src/lib/schedule-windows.ts`). DECISIONS: "Days to COI before COI count down to the manager-set incorporation window end". Not in overview payload → **add `expectedCoiDate` to `ClientOverview`** (repo already loads `row.schedule`). |
+| ☑ | Incorporated | 24 Oct | `overview.engagement.incorporationDate` (existing). |
+| ☑ | Due soon | 3 | `overview.compliance.upcoming` filtered to due within 15 days and not filed (existing data, new derivation). |
+| ◐ | Registrations | 5/13 | `overview.progress.byPhase['registration-phase-4']` gives done/23 (catalog has 23 phase-4 steps). The prototype's 13 = the curated registrations list of `v7c_reg` (section 5.15). Decide denominator (open question Q3). |
+| ☑ | Report | — | GET `/api/ask/brief` (existing PDF). |
+| ☑ | ring drill rows | step, date, status | `overview.milestones` (id, title, kind, completedOn, ownedByClient) + `windowForStep(schedule, id)` for future dates. Existing data; drill component NEW (UI). |
 
 ---
 
@@ -189,25 +189,25 @@ Data → real app
 
 | Done | id | item | behaviour / content | file |
 |---|---|---|---|---|
-| ☐ | ND-01 | Header | "Needs from Northwind" (h3 13px/700 navy). No (i) on desktop; phone card has (i): "Items Northwind’s project lead asked for. Upload, fill, correct or sign them here." | needs_b, mobile |
-| ☐ | ND-02 | Tabs | Full-width 4-column sliding pill: Upload · Fill · Correct · Sign with counts. Before: 2·1·1·0. After: 2·1·0·1. Default tab 0. Click switches rows (thumb spring .42s). | |
-| ☐ | ND-03 | Row | `display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--hair)`: 18×18 empty checkbox `.box` (2px primary border, radius 4) · title `.rt` 13px/600 + (i) pop-over with the step name · date chip (solid, colour by urgency) · 30px outline button (min-width 76px) with the verb. | |
-| ☐ | ND-04 | Rows before | Upload: "Utility bill - office" (i "Registered Office Address") chip **9 Oct** due · button Upload; "NOC from owner" (Registered Office Address) 9 Oct due · Upload. Fill: "Director 2 - nationality, ID" (Proposed Directors) **11 Oct** prog · Fill. Correct: "Passport copy - page 2" (Proposed Directors) **Overdue 3d** over · Correct. Sign: none. | needs_b |
-| ☐ | ND-05 | Rows after | Upload: "October salary register" (EPF Return · Oct 2026) **In 5 days** due; "Bank FIRC + KYC letter" (FC-GPR Filing) **In 12 days** prog. Fill: "TDS challan details" (TDS Payment · Oct 2026) **Overdue 1d** over. Correct: none. Sign: "FC-GPR declaration" (FC-GPR Filing) **In 20 days** prog. | needs_a |
-| ☐ | ND-06 | Empty state | Before: "Nothing to sign." (any empty tab shows this exact text — prototype bug; should be "Nothing to <verb>."); after: "Nothing here." Plain `.cap` text in a bordered row. Phone version uses the bot bubble (rule 16): "Nothing to sign right now. You are all caught up here." + "Ask VCFO why". Use the bot bubble everywhere. | |
-| ☐ | ND-07 | Upload button | Desktop: not wired (fallback "Choose a file to upload"). Phone: opens bottom sheet titled with the item name: rows "Choose a file — PDF, JPG or PNG · up to 10 MB" and "Take a photo — Use the phone camera"; choosing → sheet closes, toast "Uploaded · <item>" with Undo. **Real: upload against the open request (DECISIONS: uploads only against open requests).** | mobile |
-| ☐ | ND-08 | Fill / Correct / Sign | Desktop fallback toasts. Phone: Fill → toast "Fill · <item> opened" + go `incorporation`; Fix (overdue) opens the upload sheet. **Real: Fill/Correct → the owning step page (`inc-step-N`); Correct reopens via the rejection note; Sign → the signing flow of that step (DSC / e-sign) or the compliance filing.** | mobile |
-| ☐ | ND-09 | Checkbox | Decorative (no click). | |
+| ☑ | ND-01 | Header | "Needs from Northwind" (h3 13px/700 navy). No (i) on desktop; phone card has (i): "Items Northwind’s project lead asked for. Upload, fill, correct or sign them here." | needs_b, mobile |
+| ☑ | ND-02 | Tabs | Full-width 4-column sliding pill: Upload · Fill · Correct · Sign with counts. Before: 2·1·1·0. After: 2·1·0·1. Default tab 0. Click switches rows (thumb spring .42s). | |
+| ☑ | ND-03 | Row | `display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--hair)`: 18×18 empty checkbox `.box` (2px primary border, radius 4) · title `.rt` 13px/600 + (i) pop-over with the step name · date chip (solid, colour by urgency) · 30px outline button (min-width 76px) with the verb. | |
+| ☑ | ND-04 | Rows before | Upload: "Utility bill - office" (i "Registered Office Address") chip **9 Oct** due · button Upload; "NOC from owner" (Registered Office Address) 9 Oct due · Upload. Fill: "Director 2 - nationality, ID" (Proposed Directors) **11 Oct** prog · Fill. Correct: "Passport copy - page 2" (Proposed Directors) **Overdue 3d** over · Correct. Sign: none. | needs_b |
+| ☑ | ND-05 | Rows after | Upload: "October salary register" (EPF Return · Oct 2026) **In 5 days** due; "Bank FIRC + KYC letter" (FC-GPR Filing) **In 12 days** prog. Fill: "TDS challan details" (TDS Payment · Oct 2026) **Overdue 1d** over. Correct: none. Sign: "FC-GPR declaration" (FC-GPR Filing) **In 20 days** prog. | needs_a |
+| ☑ | ND-06 | Empty state | Before: "Nothing to sign." (any empty tab shows this exact text — prototype bug; should be "Nothing to <verb>."); after: "Nothing here." Plain `.cap` text in a bordered row. Phone version uses the bot bubble (rule 16): "Nothing to sign right now. You are all caught up here." + "Ask VCFO why". Use the bot bubble everywhere. | |
+| ☑ | ND-07 | Upload button | Desktop: not wired (fallback "Choose a file to upload"). Phone: opens bottom sheet titled with the item name: rows "Choose a file — PDF, JPG or PNG · up to 10 MB" and "Take a photo — Use the phone camera"; choosing → sheet closes, toast "Uploaded · <item>" with Undo. **Real: upload against the open request (DECISIONS: uploads only against open requests).** | mobile |
+| ☑ | ND-08 | Fill / Correct / Sign | Desktop fallback toasts. Phone: Fill → toast "Fill · <item> opened" + go `incorporation`; Fix (overdue) opens the upload sheet. **Real: Fill/Correct → the owning step page (`inc-step-N`); Correct reopens via the rejection note; Sign → the signing flow of that step (DSC / e-sign) or the compliance filing.** | mobile |
+| ☑ | ND-09 | Checkbox | Decorative (no click). | |
 
 Data → real app
 
 | Done | field | example | source |
 |---|---|---|---|
-| ☐ | item title | Utility bill - office | **NEW**: there is no item-level "need" today. Closest: (a) `document_requests` rows (title, detail, status pending/fulfilled, requested_by) — table + repo exist but no step link, due date or kind; (b) per-step required documents from `src/data/checklist.ts` (`infoRequired`) + `src/lib/checklist-responses.ts` field ids (e.g. pre-14 `registeredOfficeUtilityBill…`); (c) `clientFillRequest` on a step slice (`requestClientFill` in engagements repo); (d) rejected steps (`isReviewRejected`, `rejectionNote`) → "Correct"; (e) after COI: `compliance_instances` needing client input. Proposal: extend `document_requests` with `step_id text`, `compliance_instance_id uuid`, `kind text ('upload'|'fill'|'correct'|'sign')`, `due_date date`, `field_id text`, and add `listOpenClientNeeds(ctx, engagementId)` returning a unified list (requests + fill requests + rejected steps) → include as `overview.needs[]` in `/api/client/overview`. |
-| ☐ | subtitle/(i) | Registered Office Address | step title via `getItem(stepId).title` or obligation `particular` + period. |
-| ☐ | date chip | 9 Oct / Overdue 3d / In 5 days | `due_date` (NEW column) or step schedule window `windowForStep(schedule, stepId).to`; label = relative ("In N days", "Overdue Nd") or absolute date. |
-| ☐ | counts per tab | 2·1·1·0 | group by `kind`. |
-| ☐ | upload action | — | existing upload plumbing: `POST /api/documents` (+ S3 `src/storage/s3.ts`), mark request fulfilled `PATCH /api/requests/[id]`. |
+| ☑ | item title | Utility bill - office | **NEW**: there is no item-level "need" today. Closest: (a) `document_requests` rows (title, detail, status pending/fulfilled, requested_by) — table + repo exist but no step link, due date or kind; (b) per-step required documents from `src/data/checklist.ts` (`infoRequired`) + `src/lib/checklist-responses.ts` field ids (e.g. pre-14 `registeredOfficeUtilityBill…`); (c) `clientFillRequest` on a step slice (`requestClientFill` in engagements repo); (d) rejected steps (`isReviewRejected`, `rejectionNote`) → "Correct"; (e) after COI: `compliance_instances` needing client input. Proposal: extend `document_requests` with `step_id text`, `compliance_instance_id uuid`, `kind text ('upload'|'fill'|'correct'|'sign')`, `due_date date`, `field_id text`, and add `listOpenClientNeeds(ctx, engagementId)` returning a unified list (requests + fill requests + rejected steps) → include as `overview.needs[]` in `/api/client/overview`. |
+| ☑ | subtitle/(i) | Registered Office Address | step title via `getItem(stepId).title` or obligation `particular` + period. |
+| ☑ | date chip | 9 Oct / Overdue 3d / In 5 days | `due_date` (NEW column) or step schedule window `windowForStep(schedule, stepId).to`; label = relative ("In N days", "Overdue Nd") or absolute date. |
+| ☑ | counts per tab | 2·1·1·0 | group by `kind`. |
+| ☑ | upload action | — | existing upload plumbing: `POST /api/documents` (+ S3 `src/storage/s3.ts`), mark request fulfilled `PATCH /api/requests/[id]`. |
 
 ---
 
@@ -215,25 +215,25 @@ Data → real app
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | WH-01 | Header | "Who holds it now". Phone card: "WHO HOLDS IT NOW" + (i) "Northwind’s current step and the steps around it. Tap a step for its details." + footer "Open step 7 →" (route incorporation). |
-| ☐ | WH-02 | Tabs | 3-column pill (full width): **Northwind 3** · **SBC 1** · **MCA 0**. |
-| ☐ | WH-03 | Holder rows (Northwind tab) | Each a bordered box (`border:1px solid var(--border);border-radius:8px;padding:8px 12px;border-left:3px solid var(--<colour>)`), flex-wrap: title + status chip (wrapped in `.tipw` with tooltip; click opens drill on the matching tab) / caption line / button (30px): ① **Registered Office Address** (bold 800) chip "Waiting for Northwind" (due) tip "Waiting for Northwind · 1 step"; caption "Step 7 · due 9 Oct · 2 files missing"; **primary** button "Continue" → `inc-step-7`. ② Proposed Directors · "In progress" (prog) tip "In progress · 3 steps" · "Step 8 · Director 2 details · Northwind fills this" · outline "Continue" → `inc-step-8`. ③ Subscriber Details · In progress · "Step 9 · 3 fields left · Northwind fills this" · "Continue" → `inc-step-9`. |
-| ☐ | WH-04 | SBC tab | KYC Review & DSC · In progress · "Step 10 · Arjun Mehta · 30% · ready 13 Oct" · outline "Open" → `inc-step-10`. |
-| ☐ | WH-05 | MCA tab (empty) | Dashed box (`border:1px dashed var(--border);border-radius:8px;background:var(--raised);padding:10px 12px`) with 28px idle bot + "Nothing is with MCA yet. SBC files SPICe+ on 20 Oct, then MCA reviews it." (`role=status`). Rule-16 bot empty state. |
-| ☐ | WH-06 | "Steps around Northwind" | `.lbl` navy uppercase label then rows (`padding:7px 0;border-top hair`): mono "Step N" (50px) · step name (current step weight 800; upcoming muted) · owner chip (light, min-width 88) · status chip (min-width 116, inside `.tipw` → drill): Step 6 Capital Structure · Northwind · Completed (tip "Completed · 6 steps") / Step 7 Registered Office Address (bold) · Northwind · Waiting (tip "Waiting for Northwind · 1 step") / Step 8 Proposed Directors · Northwind · In progress (tip "In progress · 3 steps") / Step 9 Subscriber Details · Northwind · In progress / Step 10 KYC Review & DSC · **SBC** · In progress / Step 11 SPICe+ Confirmation (muted) · Northwind · "Not started" (up-light chip, tip "Not started · 4 steps"). Window = 1 done step before the current one through 1 upcoming after. |
-| ☐ | WH-07 | Drill | Same "Incorporation steps" config as GR-08, opened on tab 1 (Completed), 2 (In progress), 3 (Waiting) or 4 (Upcoming) depending on the clicked chip. |
+| ☑ | WH-01 | Header | "Who holds it now". Phone card: "WHO HOLDS IT NOW" + (i) "Northwind’s current step and the steps around it. Tap a step for its details." + footer "Open step 7 →" (route incorporation). |
+| ☑ | WH-02 | Tabs | 3-column pill (full width): **Northwind 3** · **SBC 1** · **MCA 0**. |
+| ☑ | WH-03 | Holder rows (Northwind tab) | Each a bordered box (`border:1px solid var(--border);border-radius:8px;padding:8px 12px;border-left:3px solid var(--<colour>)`), flex-wrap: title + status chip (wrapped in `.tipw` with tooltip; click opens drill on the matching tab) / caption line / button (30px): ① **Registered Office Address** (bold 800) chip "Waiting for Northwind" (due) tip "Waiting for Northwind · 1 step"; caption "Step 7 · due 9 Oct · 2 files missing"; **primary** button "Continue" → `inc-step-7`. ② Proposed Directors · "In progress" (prog) tip "In progress · 3 steps" · "Step 8 · Director 2 details · Northwind fills this" · outline "Continue" → `inc-step-8`. ③ Subscriber Details · In progress · "Step 9 · 3 fields left · Northwind fills this" · "Continue" → `inc-step-9`. |
+| ☑ | WH-04 | SBC tab | KYC Review & DSC · In progress · "Step 10 · Arjun Mehta · 30% · ready 13 Oct" · outline "Open" → `inc-step-10`. |
+| ☑ | WH-05 | MCA tab (empty) | Dashed box (`border:1px dashed var(--border);border-radius:8px;background:var(--raised);padding:10px 12px`) with 28px idle bot + "Nothing is with MCA yet. SBC files SPICe+ on 20 Oct, then MCA reviews it." (`role=status`). Rule-16 bot empty state. |
+| ☑ | WH-06 | "Steps around Northwind" | `.lbl` navy uppercase label then rows (`padding:7px 0;border-top hair`): mono "Step N" (50px) · step name (current step weight 800; upcoming muted) · owner chip (light, min-width 88) · status chip (min-width 116, inside `.tipw` → drill): Step 6 Capital Structure · Northwind · Completed (tip "Completed · 6 steps") / Step 7 Registered Office Address (bold) · Northwind · Waiting (tip "Waiting for Northwind · 1 step") / Step 8 Proposed Directors · Northwind · In progress (tip "In progress · 3 steps") / Step 9 Subscriber Details · Northwind · In progress / Step 10 KYC Review & DSC · **SBC** · In progress / Step 11 SPICe+ Confirmation (muted) · Northwind · "Not started" (up-light chip, tip "Not started · 4 steps"). Window = 1 done step before the current one through 1 upcoming after. |
+| ☑ | WH-07 | Drill | Same "Incorporation steps" config as GR-08, opened on tab 1 (Completed), 2 (In progress), 3 (Waiting) or 4 (Upcoming) depending on the clicked chip. |
 
 Data → real app
 
 | Done | field | example | source |
 |---|---|---|---|
-| ☐ | holders by party | Northwind 3 / SBC 1 / MCA 0 | `overview.milestones` (kind + `ownedByClient`) + statuses; MCA = steps `pre-10` SPICe+ Filing and `pre-11` MCA Remarks when filed and awaiting MCA (NEW derivation: "with MCA" = SPICe+ filed, COI not issued). |
-| ☐ | caption "due 9 Oct · 2 files missing" | | due = `windowForStep(schedule,'pre-14').to`; files missing = count of open needs for that step (NEW needs list). |
-| ☐ | "Director 2 details · Northwind fills this" | | NEW per-step summary line; can be derived from missing required fields (`src/lib/checklist-responses.ts` + validation modules `src/lib/checklist-*-validation.ts`). |
-| ☐ | "Arjun Mehta · 30% · ready 13 Oct" | | lead name: `overview.team` (role Project Lead); % NEW (lead-side progress per step — not stored; could be fields filled / required); ready date = schedule window. |
-| ☐ | step N label | Step 7 | global catalog index (table in 5.10). |
-| ☐ | Continue → | inc-step-7 | `clientStepHref('pre-14')`. |
-| ☐ | **Conflict** | steps 7, 8, 9 all "In progress" for the client at once and step 10 with SBC | the real gate (`gateActiveCatalog`, `src/lib/checklist-step-gate.ts`) is SEQUENTIAL: one active step; later steps are `locked`. See Q1. |
+| ☑ | holders by party | Northwind 3 / SBC 1 / MCA 0 | `overview.milestones` (kind + `ownedByClient`) + statuses; MCA = steps `pre-10` SPICe+ Filing and `pre-11` MCA Remarks when filed and awaiting MCA (NEW derivation: "with MCA" = SPICe+ filed, COI not issued). |
+| ☑ | caption "due 9 Oct · 2 files missing" | | due = `windowForStep(schedule,'pre-14').to`; files missing = count of open needs for that step (NEW needs list). |
+| ◐ | "Director 2 details · Northwind fills this" | | NEW per-step summary line; can be derived from missing required fields (`src/lib/checklist-responses.ts` + validation modules `src/lib/checklist-*-validation.ts`). |
+| ◐ | "Arjun Mehta · 30% · ready 13 Oct" | | lead name: `overview.team` (role Project Lead); % NEW (lead-side progress per step — not stored; could be fields filled / required); ready date = schedule window. |
+| ☑ | step N label | Step 7 | global catalog index (table in 5.10). |
+| ☑ | Continue → | inc-step-7 | `clientStepHref('pre-14')`. |
+| ◐ | **Conflict** | steps 7, 8, 9 all "In progress" for the client at once and step 10 with SBC | the real gate (`gateActiveCatalog`, `src/lib/checklist-step-gate.ts`) is SEQUENTIAL: one active step; later steps are `locked`. See Q1. |
 
 ---
 
@@ -241,21 +241,21 @@ Data → real app
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | WN-01 | Header | "What is next" + right: 2-tab pill **15 days 4** · **30 days 6** (default 15). Phone (i): "Filings due in the next 15 or 30 days. ↗ opens the official portal." footer "Open Compliances →". |
-| ☐ | WN-02 | Hero row (overdue) | `.tipw` box (`padding:12px 14px;border-radius:8px;background:var(--over-light);border:1px solid oklch(57% .2 22 / .3);margin-bottom:6px`, flex-wrap gap 10px 14px): big date "07" (metric 30px over-text) / "NOV" label · title **TDS Payment · Oct 2026** (14px) + (i) "Waiting on Northwind · TDS challan details · asked by Priya Raman" + chip "Overdue 1 day" (over) · primary 30px "Fill details" → `compliances`. Hover tooltip "TDS Payment · overdue 1 day"; click → drill tab Overdue. |
-| ☐ | WN-03 | Rows | 44×48 date tile (`border-radius:8px;color:#fff;background:var(--<urgency>)`, metric 18px day + 11px/800 month; `.tipw` tooltip "<name> · DD MON", click → drill tab "Next 15 days" if ≤15 days else "16–30 days") · title + (i) "<period> · <area> · SBC by <date>" · owner chip (Northwind = due-chip / SBC = prog-chip) · urgency chip (width 92). 15-day rows: EPF Return & Payment 15 NOV (Oct 2026 · Payroll · SBC by 13 Nov) Northwind "In 7 days" due; ESI Payment 15 NOV SBC In 7 days; PT Payment 20 NOV SBC "In 12 days" prog. 30-day adds: FC-GPR Filing 02 DEC (Share allotment · FEMA · SBC by 28 Nov) Northwind "In 24 days"; TDS Payment 07 DEC (Nov 2026 · Income tax · SBC by 5 Dec) SBC "In 29 days". The overdue item is always the hero, never in the list. |
-| ☐ | WN-04 | Drill | "What is next": All 6 · Overdue 1 · Next 15 days 3 · 16–30 days 2. Rows TDS Payment · Oct 7 Nov Overdue · EPF Return & Payment · Oct 15 Nov In 7 days · ESI Payment · Oct 15 Nov · PT Payment · Oct 20 Nov In 12 days · FC-GPR Filing 2 Dec In 24 days · TDS Payment · Nov 7 Dec In 29 days. Link strip → Compliances. |
-| ☐ | WN-05 | Portal ↗ (phone, rule 15) | Phone rows carry a 40px ↗ icon link to the official portal (incometax.gov.in, unifiedportal-emp.epfindia.gov.in, esic.gov.in, pt.kar.nic.in) + → button opening the drill. Desktop card has no ↗ — rule 15 says every compliance gets one; add it. |
+| ☑ | WN-01 | Header | "What is next" + right: 2-tab pill **15 days 4** · **30 days 6** (default 15). Phone (i): "Filings due in the next 15 or 30 days. ↗ opens the official portal." footer "Open Compliances →". |
+| ☑ | WN-02 | Hero row (overdue) | `.tipw` box (`padding:12px 14px;border-radius:8px;background:var(--over-light);border:1px solid oklch(57% .2 22 / .3);margin-bottom:6px`, flex-wrap gap 10px 14px): big date "07" (metric 30px over-text) / "NOV" label · title **TDS Payment · Oct 2026** (14px) + (i) "Waiting on Northwind · TDS challan details · asked by Priya Raman" + chip "Overdue 1 day" (over) · primary 30px "Fill details" → `compliances`. Hover tooltip "TDS Payment · overdue 1 day"; click → drill tab Overdue. |
+| ☑ | WN-03 | Rows | 44×48 date tile (`border-radius:8px;color:#fff;background:var(--<urgency>)`, metric 18px day + 11px/800 month; `.tipw` tooltip "<name> · DD MON", click → drill tab "Next 15 days" if ≤15 days else "16–30 days") · title + (i) "<period> · <area> · SBC by <date>" · owner chip (Northwind = due-chip / SBC = prog-chip) · urgency chip (width 92). 15-day rows: EPF Return & Payment 15 NOV (Oct 2026 · Payroll · SBC by 13 Nov) Northwind "In 7 days" due; ESI Payment 15 NOV SBC In 7 days; PT Payment 20 NOV SBC "In 12 days" prog. 30-day adds: FC-GPR Filing 02 DEC (Share allotment · FEMA · SBC by 28 Nov) Northwind "In 24 days"; TDS Payment 07 DEC (Nov 2026 · Income tax · SBC by 5 Dec) SBC "In 29 days". The overdue item is always the hero, never in the list. |
+| ☑ | WN-04 | Drill | "What is next": All 6 · Overdue 1 · Next 15 days 3 · 16–30 days 2. Rows TDS Payment · Oct 7 Nov Overdue · EPF Return & Payment · Oct 15 Nov In 7 days · ESI Payment · Oct 15 Nov · PT Payment · Oct 20 Nov In 12 days · FC-GPR Filing 2 Dec In 24 days · TDS Payment · Nov 7 Dec In 29 days. Link strip → Compliances. |
+| ☑ | WN-05 | Portal ↗ (phone, rule 15) | Phone rows carry a 40px ↗ icon link to the official portal (incometax.gov.in, unifiedportal-emp.epfindia.gov.in, esic.gov.in, pt.kar.nic.in) + → button opening the drill. Desktop card has no ↗ — rule 15 says every compliance gets one; add it. |
 
 Data → real app
 
 | Done | field | source |
 |---|---|---|
-| ☐ | filings list, due date, period, area | `overview.compliance.upcoming` (repo `loadComplianceRunway`: `compliance_instances` ⋈ `compliance_obligations`, 90-day horizon, fields title/authority/group/dueDate/status/periodLabel). Existing. Overdue items are EXCLUDED today (query is `dueDate >= today`) → **extend to include `status='overdue'` or `dueDate < today and status != 'filed'`.** Also `GET /api/filings` (`src/db/repositories/filings.ts`) and hook `useComplianceFilings` (`src/hooks/use-compliance-filings.ts`). |
-| ☐ | owner (Northwind/SBC) | `compliance_instances.owner_id` (exists, uuid) → whether owner is a client profile or staff. Needs population (NEW data, no column change). |
-| ☐ | "SBC by 13 Nov" | `compliance_instances.window_to` (manager working window; exists) — set via `setComplianceInstanceWindow` (`src/db/repositories/schedule.ts`) / `PATCH /api/filings/[id]/window`. |
-| ☐ | "asked by Priya Raman" / "TDS challan details" | linked client need (NEW needs list with `compliance_instance_id`). |
-| ☐ | portal URL | NEW static map authority → portal URL (front-end constant). |
+| ☑ | filings list, due date, period, area | `overview.compliance.upcoming` (repo `loadComplianceRunway`: `compliance_instances` ⋈ `compliance_obligations`, 90-day horizon, fields title/authority/group/dueDate/status/periodLabel). Existing. Overdue items are EXCLUDED today (query is `dueDate >= today`) → **extend to include `status='overdue'` or `dueDate < today and status != 'filed'`.** Also `GET /api/filings` (`src/db/repositories/filings.ts`) and hook `useComplianceFilings` (`src/hooks/use-compliance-filings.ts`). |
+| ◐ | owner (Northwind/SBC) | `compliance_instances.owner_id` (exists, uuid) → whether owner is a client profile or staff. Needs population (NEW data, no column change). |
+| ◐ | "SBC by 13 Nov" | `compliance_instances.window_to` (manager working window; exists) — set via `setComplianceInstanceWindow` (`src/db/repositories/schedule.ts`) / `PATCH /api/filings/[id]/window`. |
+| ☑ | "asked by Priya Raman" / "TDS challan details" | linked client need (NEW needs list with `compliance_instance_id`). |
+| ☑ | portal URL | NEW static map authority → portal URL (front-end constant). |
 
 ---
 
@@ -263,22 +263,22 @@ Data → real app
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | AL-01 | Header | "Important alerts" + 2-tab pill: before **15 days 3 · 30 days 3** (default 15); after **15 days 1 · 30 days 2** (default **30 days**, `state.tab=1`). DECISION: before COI, dated items only. Phone (i): "Dated items only, nearest first." |
-| ☐ | AL-02 | Hero overdue row | Same red box as WN-02 but with a 22px octagon-alert icon (over-text). Before: **Passport copy sent back** + (i) "Proposed Directors · page 2 · waiting on Northwind" + chip "Overdue" + primary "Fix" → `inc-step-8`. Tooltip "Passport copy · overdue 3 days". After: **TDS Payment overdue 1 day** + (i) "Interest runs until paid · waiting on Northwind" + chip Overdue + "Fill details" → `compliances`. Tooltip "TDS Payment · overdue 1 day". Click (not on the button) → drill tab Overdue. |
-| ☐ | AL-03 | Dated rows | 44×48 date tile (bg `var(--<k>)` solid, white) · title + (i) meta · status chip width 92. Before (all ≤15 days, so both tabs show the same 3): 09 OCT "2 office documents" (i "Registered Office Address") "In 3 days" due · 10 OCT "MOA & AOA drafts" (i "Review") "In 4 days" prog · 14 OCT "Approved name expires" (i "File Part B before") "In 8 days" due. Before tiles are NOT clickable; after tiles are `.tipw` (tooltip "<title> · DD MON", click → drill tab ≤15 → 1 else 2). After: 15 NOV "3 payroll dues" (EPF · ESI · PT for Oct 2026) In 7 days due · 02 DEC "FC-GPR due" (Bank FIRC needed) "In 24 days" prog · (23 DEC "Share certificates (SH-1)" 60-day limit… In 45 days — beyond 30, never shown). |
-| ☐ | AL-04 | Drill | "Important alerts" before: All 4 · Overdue 1 · Next 15 days 3 (rows Passport copy sent back 3 Oct Overdue; 2 office documents 9 Oct In 3 days; MOA & AOA drafts 10 Oct In 4 days; Approved name expires 14 Oct In 8 days). After: All 4 · Overdue 1 · Next 15 days 1 · Later 2 (TDS 7 Nov; 3 payroll dues 15 Nov; FC-GPR due 2 Dec In 24 days; Share certificates (SH-1) 23 Dec In 45 days). Drill link → Notifications (title matches /alert/). |
-| ☐ | AL-05 | Phone | Rows are buttons (tile + title + "In N days" + chevron) → drill "Important alerts" with tabs 15 days 3 · 30 days 3. |
+| ☑ | AL-01 | Header | "Important alerts" + 2-tab pill: before **15 days 3 · 30 days 3** (default 15); after **15 days 1 · 30 days 2** (default **30 days**, `state.tab=1`). DECISION: before COI, dated items only. Phone (i): "Dated items only, nearest first." |
+| ☑ | AL-02 | Hero overdue row | Same red box as WN-02 but with a 22px octagon-alert icon (over-text). Before: **Passport copy sent back** + (i) "Proposed Directors · page 2 · waiting on Northwind" + chip "Overdue" + primary "Fix" → `inc-step-8`. Tooltip "Passport copy · overdue 3 days". After: **TDS Payment overdue 1 day** + (i) "Interest runs until paid · waiting on Northwind" + chip Overdue + "Fill details" → `compliances`. Tooltip "TDS Payment · overdue 1 day". Click (not on the button) → drill tab Overdue. |
+| ☑ | AL-03 | Dated rows | 44×48 date tile (bg `var(--<k>)` solid, white) · title + (i) meta · status chip width 92. Before (all ≤15 days, so both tabs show the same 3): 09 OCT "2 office documents" (i "Registered Office Address") "In 3 days" due · 10 OCT "MOA & AOA drafts" (i "Review") "In 4 days" prog · 14 OCT "Approved name expires" (i "File Part B before") "In 8 days" due. Before tiles are NOT clickable; after tiles are `.tipw` (tooltip "<title> · DD MON", click → drill tab ≤15 → 1 else 2). After: 15 NOV "3 payroll dues" (EPF · ESI · PT for Oct 2026) In 7 days due · 02 DEC "FC-GPR due" (Bank FIRC needed) "In 24 days" prog · (23 DEC "Share certificates (SH-1)" 60-day limit… In 45 days — beyond 30, never shown). |
+| ☑ | AL-04 | Drill | "Important alerts" before: All 4 · Overdue 1 · Next 15 days 3 (rows Passport copy sent back 3 Oct Overdue; 2 office documents 9 Oct In 3 days; MOA & AOA drafts 10 Oct In 4 days; Approved name expires 14 Oct In 8 days). After: All 4 · Overdue 1 · Next 15 days 1 · Later 2 (TDS 7 Nov; 3 payroll dues 15 Nov; FC-GPR due 2 Dec In 24 days; Share certificates (SH-1) 23 Dec In 45 days). Drill link → Notifications (title matches /alert/). |
+| ☑ | AL-05 | Phone | Rows are buttons (tile + title + "In N days" + chevron) → drill "Important alerts" with tabs 15 days 3 · 30 days 3. |
 
 Data → real app
 
 | Done | alert | source |
 |---|---|---|
-| ☐ | Passport copy sent back (overdue) | rejected step slice: `isReviewRejected(slice)` + `rejectionNote` on `pre-15` (Proposed Directors); date = review date `reviewedAt`. Existing data. |
-| ☐ | 2 office documents due 9 Oct | open needs for `pre-14` with due date (NEW needs list). |
-| ☐ | MOA & AOA drafts 10 Oct | SBC deliverable with a date: step `pre-9` SPICe+ Confirmation / incorporation docs (`app/api/engagements/[id]/incorporation-docs/share`) + schedule window. NEW: "dated item" derivation. |
-| ☐ | Approved name expires 14 Oct | `pre-5` response `nameApprovalExpiryDate` (exists in `checklist-responses.ts`). Existing data, NEW derivation. |
-| ☐ | TDS overdue / payroll / FC-GPR / SH-1 | `compliance_instances` (status, due_date) + post-inc statutory windows (5.17). |
-| ☐ | Proposal | NEW pure function `buildAlerts(state, schedule, compliance, needs, now)` in `src/lib/client-overview.ts` → `overview.alerts[] {id,title,meta,date,severity:'over'|'due'|'prog',href}`. |
+| ☑ | Passport copy sent back (overdue) | rejected step slice: `isReviewRejected(slice)` + `rejectionNote` on `pre-15` (Proposed Directors); date = review date `reviewedAt`. Existing data. |
+| ☑ | 2 office documents due 9 Oct | open needs for `pre-14` with due date (NEW needs list). |
+| ◐ | MOA & AOA drafts 10 Oct | SBC deliverable with a date: step `pre-9` SPICe+ Confirmation / incorporation docs (`app/api/engagements/[id]/incorporation-docs/share`) + schedule window. NEW: "dated item" derivation. |
+| ☑ | Approved name expires 14 Oct | `pre-5` response `nameApprovalExpiryDate` (exists in `checklist-responses.ts`). Existing data, NEW derivation. |
+| ☑ | TDS overdue / payroll / FC-GPR / SH-1 | `compliance_instances` (status, due_date) + post-inc statutory windows (5.17). |
+| ☑ | Proposal | NEW pure function `buildAlerts(state, schedule, compliance, needs, now)` in `src/lib/client-overview.ts` → `overview.alerts[] {id,title,meta,date,severity:'over'|'due'|'prog',href}`. |
 
 ---
 
@@ -286,20 +286,20 @@ Data → real app
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | SB-01 | Header | "What SBC is doing". Phone (i): "Work the SBC team is doing now. Tap for the detail." |
-| ☐ | SB-02 | Row | `padding:9px 0;border-top hair`: title + (i) "<person> · <step> · ready <date>" · `.pct` (11.5px/800, width 36, right) · 26px outlined link-icon button (aria "Open Step N", → `inc-step-N`) · below: 6px bar (`.bar`, grow animation) filled `var(--prog)` or `var(--up)` at 0%. |
-| ☐ | SB-03 | Rows before | KYC Review & DSC 30% (Arjun Mehta · Step 10 · ready 13 Oct) → inc-step-10 · MOA & AOA drafts 0% (Arjun Mehta · Step 11 · drafts reach Northwind 10 Oct) → inc-step-11 · DSC for both directors 0% (Arjun Mehta · Step 10 · ready 13 Oct) → inc-step-10 · File SPICe+ Part B 0% (Priya Raman · Step 12 · ready 20 Oct) → inc-step-12. |
-| ☐ | SB-04 | Rows after | PT Registration 70% (Arjun Mehta · Registrations · ready 12 Nov) · IEC Registration 50% (Arjun Mehta · Registrations · ready 14 Nov). Link icon aria "Open Registrations", no `data-go` (fallback toast) → real: `inc-phase-4` or the specific step (`reg-7` PT = step 29, `reg-8` IEC = step 33). |
-| ☐ | SB-05 | No tooltip/drill on bars (desktop). Phone rows are buttons → drill "What SBC is doing": tabs In progress / Not started, rows "<n>% · Arjun Mehta" / "Not started yet". Rule 14 says bars should also have hover tooltips; add "<task> · 30% · ready 13 Oct". |
+| ◐ | SB-01 | Header | "What SBC is doing". Phone (i): "Work the SBC team is doing now. Tap for the detail." |
+| ◐ | SB-02 | Row | `padding:9px 0;border-top hair`: title + (i) "<person> · <step> · ready <date>" · `.pct` (11.5px/800, width 36, right) · 26px outlined link-icon button (aria "Open Step N", → `inc-step-N`) · below: 6px bar (`.bar`, grow animation) filled `var(--prog)` or `var(--up)` at 0%. |
+| ◐ | SB-03 | Rows before | KYC Review & DSC 30% (Arjun Mehta · Step 10 · ready 13 Oct) → inc-step-10 · MOA & AOA drafts 0% (Arjun Mehta · Step 11 · drafts reach Northwind 10 Oct) → inc-step-11 · DSC for both directors 0% (Arjun Mehta · Step 10 · ready 13 Oct) → inc-step-10 · File SPICe+ Part B 0% (Priya Raman · Step 12 · ready 20 Oct) → inc-step-12. |
+| ◐ | SB-04 | Rows after | PT Registration 70% (Arjun Mehta · Registrations · ready 12 Nov) · IEC Registration 50% (Arjun Mehta · Registrations · ready 14 Nov). Link icon aria "Open Registrations", no `data-go` (fallback toast) → real: `inc-phase-4` or the specific step (`reg-7` PT = step 29, `reg-8` IEC = step 33). |
+| ◐ | SB-05 | No tooltip/drill on bars (desktop). Phone rows are buttons → drill "What SBC is doing": tabs In progress / Not started, rows "<n>% · Arjun Mehta" / "Not started yet". Rule 14 says bars should also have hover tooltips; add "<task> · 30% · ready 13 Oct". |
 
 Data → real app
 
 | Done | field | source |
 |---|---|---|
-| ☐ | work items | NEW. Today only step-level: milestones with `ownedByClient=false` and gate `waiting`/in-progress (`overview.milestones`, `ballInCourt.waitingOnFirm`). Sub-tasks like "MOA & AOA drafts", "DSC for both directors" are not modelled → could come from `tasks` (repo `src/db/repositories/tasks.ts`, `GET /api/tasks`) filtered to engagement + client-visible flag (**NEW column `visible_to_client boolean`, `progress_pct int`, `due_at` exists as `deadline`**). |
-| ☐ | person | task assignee → profile name (team). |
-| ☐ | % | NEW (`tasks.progress_pct`) or derive from step field completion. |
-| ☐ | ready date | `tasks.deadline` or `windowForStep(...).to`. |
+| ◐ | work items | NEW. Today only step-level: milestones with `ownedByClient=false` and gate `waiting`/in-progress (`overview.milestones`, `ballInCourt.waitingOnFirm`). Sub-tasks like "MOA & AOA drafts", "DSC for both directors" are not modelled → could come from `tasks` (repo `src/db/repositories/tasks.ts`, `GET /api/tasks`) filtered to engagement + client-visible flag (**NEW column `visible_to_client boolean`, `progress_pct int`, `due_at` exists as `deadline`**). |
+| ☑ | person | task assignee → profile name (team). |
+| ◐ | % | NEW (`tasks.progress_pct`) or derive from step field completion. |
+| ☑ | ready date | `tasks.deadline` or `windowForStep(...).to`. |
 
 ---
 
@@ -307,23 +307,23 @@ Data → real app
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | TL-01 | Header | "Timeline" + (i) "Last changed by Priya Raman on 1 Oct 2026". Right: BEFORE outline button 30px with pencil icon "Edit" → opens the timeline editor (`tl-editor.js`, proto.js intercepts any "Edit" in a card whose h3 is "Timeline"). AFTER: no Edit; chip "Completed" (ok-light/ok-text). When a client change request is pending, a chip button `.tle-pend` "Change request pending · COI <date>" (amber `#fdecd3`/#8a4b0f, 24px, 800 11px) is inserted before Edit; click → toast "Waiting for Priya Raman to approve · “<reason…>”". DECISION: the change-request warning stays visible. |
-| ☐ | TL-02 | Chart frame | `.vh-tl` (horizontal scroll on narrow screens) padding `12px 16px 30px`; inner `min-width:600px`; grid `150px minmax(0,1fr)`. |
-| ☐ | TL-03 | Axis | Mono caption labels at weekly ticks, `translateX(-50%)`: before axis 12 Sep → 7 Nov (12 Sep 0%, 19 Sep 12.28%, 26 Sep 24.56%, 3 Oct 36.84%, 10 Oct 49.12%, 17 Oct 61.4%, 24 Oct 73.68%, 31 Oct 85.96%, 7 Nov 98.25%; span 57 days). After axis 63 days (ticks 0, 11.11 … 88.89%). Vertical 1px hair grid lines at each tick. |
-| ☐ | TL-04 | Today line | 2px `var(--over)` line `top:-4px` + chip at the bottom (`bottom:-20px`, over-chip, padding 0 6px) "Today 6 Oct" (42.11%) / "Today 8 Nov" (90.48%). |
-| ☐ | TL-05 | Rows (30px each) | Label `.rt` 12px · bar (`position:absolute;top:5px;bottom:5px;border-radius:4px`, `.tipw` with tooltip, click → drill on that phase tab) · caption after the bar (`left:calc(<end>% + 8px)`, 700). BEFORE: Phase 1 · Name Application 0–21.05% ok, "Done 24 Sep", tip "Phase 1 · Name Application · 12 Sep – 24 Sep · done" / Phase 2 · Incorporation 22.81%+43.86% `var(--prog)`, "22%", tip "… · 25 Sep – 20 Oct · 22%" / MCA review 66.67%+14.03% `var(--up)`, tip "MCA review · 20 Oct – 28 Oct" / COI 80.7% w 1.76% navy, "28 Oct", tip "COI · expected 28 Oct". AFTER: all ok: Phase 1 0–19.05% "Done 24 Sep"; Phase 2 20.63%+34.93% "Filed 17 Oct" tip "· 25 Sep – 17 Oct · filed"; MCA review 55.56%+11.11% tip "17 Oct – 24 Oct · done"; COI 66.67% "24 Oct" tip "COI · 24 Oct". |
-| ☐ | TL-06 | Drill | "Timeline phases": Phase 1 · Name 5 · Phase 2 · Incorporation 7 · MCA review 1 · COI 1 (no All tab; opens on the clicked phase). Rows = the 14 SPICe+ steps tagged by phase (after: all Completed, MCA Remarks "17–24 Oct"). |
-| ☐ | TL-07 | Editor | Section 8.6. Saving re-animates the card bars (`left/width .5s cubic-bezier(.22,1,.36,1)`), updates tooltips and the COI label, and rewrites the (i) text to "Last changed by Northwind just now". |
-| ☐ | TL-08 | Phone | Card "Timeline" (i) "Planned dates for each phase. The red line is today." + outline "Edit" button (40px) + gantt (section 6) + footer "Open Incorporation →". After: (i) "Incorporation is complete.", no Edit. |
+| ☑ | TL-01 | Header | "Timeline" + (i) "Last changed by Priya Raman on 1 Oct 2026". Right: BEFORE outline button 30px with pencil icon "Edit" → opens the timeline editor (`tl-editor.js`, proto.js intercepts any "Edit" in a card whose h3 is "Timeline"). AFTER: no Edit; chip "Completed" (ok-light/ok-text). When a client change request is pending, a chip button `.tle-pend` "Change request pending · COI <date>" (amber `#fdecd3`/#8a4b0f, 24px, 800 11px) is inserted before Edit; click → toast "Waiting for Priya Raman to approve · “<reason…>”". DECISION: the change-request warning stays visible. |
+| ☑ | TL-02 | Chart frame | `.vh-tl` (horizontal scroll on narrow screens) padding `12px 16px 30px`; inner `min-width:600px`; grid `150px minmax(0,1fr)`. |
+| ☑ | TL-03 | Axis | Mono caption labels at weekly ticks, `translateX(-50%)`: before axis 12 Sep → 7 Nov (12 Sep 0%, 19 Sep 12.28%, 26 Sep 24.56%, 3 Oct 36.84%, 10 Oct 49.12%, 17 Oct 61.4%, 24 Oct 73.68%, 31 Oct 85.96%, 7 Nov 98.25%; span 57 days). After axis 63 days (ticks 0, 11.11 … 88.89%). Vertical 1px hair grid lines at each tick. |
+| ☑ | TL-04 | Today line | 2px `var(--over)` line `top:-4px` + chip at the bottom (`bottom:-20px`, over-chip, padding 0 6px) "Today 6 Oct" (42.11%) / "Today 8 Nov" (90.48%). |
+| ☑ | TL-05 | Rows (30px each) | Label `.rt` 12px · bar (`position:absolute;top:5px;bottom:5px;border-radius:4px`, `.tipw` with tooltip, click → drill on that phase tab) · caption after the bar (`left:calc(<end>% + 8px)`, 700). BEFORE: Phase 1 · Name Application 0–21.05% ok, "Done 24 Sep", tip "Phase 1 · Name Application · 12 Sep – 24 Sep · done" / Phase 2 · Incorporation 22.81%+43.86% `var(--prog)`, "22%", tip "… · 25 Sep – 20 Oct · 22%" / MCA review 66.67%+14.03% `var(--up)`, tip "MCA review · 20 Oct – 28 Oct" / COI 80.7% w 1.76% navy, "28 Oct", tip "COI · expected 28 Oct". AFTER: all ok: Phase 1 0–19.05% "Done 24 Sep"; Phase 2 20.63%+34.93% "Filed 17 Oct" tip "· 25 Sep – 17 Oct · filed"; MCA review 55.56%+11.11% tip "17 Oct – 24 Oct · done"; COI 66.67% "24 Oct" tip "COI · 24 Oct". |
+| ☑ | TL-06 | Drill | "Timeline phases": Phase 1 · Name 5 · Phase 2 · Incorporation 7 · MCA review 1 · COI 1 (no All tab; opens on the clicked phase). Rows = the 14 SPICe+ steps tagged by phase (after: all Completed, MCA Remarks "17–24 Oct"). |
+| ◐ | TL-07 | Editor | Section 8.6. Saving re-animates the card bars (`left/width .5s cubic-bezier(.22,1,.36,1)`), updates tooltips and the COI label, and rewrites the (i) text to "Last changed by Northwind just now". |
+| ☑ | TL-08 | Phone | Card "Timeline" (i) "Planned dates for each phase. The red line is today." + outline "Edit" button (40px) + gantt (section 6) + footer "Open Incorporation →". After: (i) "Incorporation is complete.", no Edit. |
 
 Data → real app
 
 | Done | field | source |
 |---|---|---|
-| ☐ | phase windows | engagement `schedule` jsonb `{ incorporation?: Window, steps?: {[itemId]: Window} }` (`src/lib/schedule-windows.ts`; repo `setEngagementWindow` in `src/db/repositories/schedule.ts`; route `PUT/PATCH /api/engagements/[id]/schedule`). Phase window = min(from)/max(to) of its steps' windows (DECISIONS: "Phase end date = latest step date in the phase"). MCA review = windows of `pre-10`/`pre-11`; COI = `schedule.incorporation.to` (before) or `incorporationDate` (after). |
-| ☐ | % in Phase 2 | `progress.byPhase` pct. |
-| ☐ | "Last changed by …" | latest audit event of action `schedule.*` (`listAuditEvents`), or NEW `schedule_updated_by/at` inside the schedule jsonb. |
-| ☐ | Client change request | **NEW**: `engagement_change_requests.kind` today = delete_project/change_client/change_manager (`src/db/repositories/engagement-change-requests.ts`, routes `/api/engagement-change-requests`). Add kind **`timeline`** with payload `{ phases:[{id,from,to}], coiFrom, coiTo, slipDays }`, `reason` (required), status pending→approved/rejected by the manager; on approve call `setEngagementWindow`. Pending request exposed in overview (`overview.timelineRequest`). Manager direct edit = existing schedule write (role-gated by `canSetScheduleWindows`). Notifications on save: "email and WhatsApp to admin, manager, lead and client" (manager board) → `notifyEngagementEvent` + WhatsApp templates (NEW event `timeline_changed`). |
+| ☑ | phase windows | engagement `schedule` jsonb `{ incorporation?: Window, steps?: {[itemId]: Window} }` (`src/lib/schedule-windows.ts`; repo `setEngagementWindow` in `src/db/repositories/schedule.ts`; route `PUT/PATCH /api/engagements/[id]/schedule`). Phase window = min(from)/max(to) of its steps' windows (DECISIONS: "Phase end date = latest step date in the phase"). MCA review = windows of `pre-10`/`pre-11`; COI = `schedule.incorporation.to` (before) or `incorporationDate` (after). |
+| ☑ | % in Phase 2 | `progress.byPhase` pct. |
+| ☑ | "Last changed by …" | latest audit event of action `schedule.*` (`listAuditEvents`), or NEW `schedule_updated_by/at` inside the schedule jsonb. |
+| ◐ | Client change request | **NEW**: `engagement_change_requests.kind` today = delete_project/change_client/change_manager (`src/db/repositories/engagement-change-requests.ts`, routes `/api/engagement-change-requests`). Add kind **`timeline`** with payload `{ phases:[{id,from,to}], coiFrom, coiTo, slipDays }`, `reason` (required), status pending→approved/rejected by the manager; on approve call `setEngagementWindow`. Pending request exposed in overview (`overview.timelineRequest`). Manager direct edit = existing schedule write (role-gated by `canSetScheduleWindows`). Notifications on save: "email and WhatsApp to admin, manager, lead and client" (manager board) → `notifyEngagementEvent` + WhatsApp templates (NEW event `timeline_changed`). |
 
 ---
 
@@ -331,19 +331,19 @@ Data → real app
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | ST-01 | Header | "Steps" + right link "Open Incorporation →" (`data-go="incorporation"`, 12px/700). |
-| ☐ | ST-02 | Phase accordions | 4 `<details class="stp-g">` (gap 8px): border 1px, radius 8, overflow hidden. `summary`: flex gap 10, padding 10px 12px, hover raised; chevron 14px rotates 90° when open (.25s); phase name is a link (`a.stp-ph`, inherits colour, 800) → phase page; status chip (min-width 116) "x of y"; mono caption state. Open body animates `stpIn .28s` (opacity, translateY -4px). BEFORE: Phase 1 · Name Application "5 of 5" ok "done" → `inc-phase-a`; **Phase 2 · Incorporation "1 of 9" prog "in progress" (open by default)** → `inc-phase`; Phase 3 · Post-Incorporation "0 of 11" up "upcoming" → `inc-phase-3`; Phase 4 · Registration "0 of 23" up "upcoming" → `inc-phase-4`. AFTER: Phase 1 5/5 done; Phase 2 9/9 ok done; **Phase 3 "7 of 11" prog in progress (open)**; Phase 4 "5 of 23" prog in progress. |
-| ☐ | ST-03 | Table | Inside `.vh-x` (scrolls horizontally inside its box, `--tmin:560px`). Columns: # (mono caption 600) · Step (`.rt` 12.5px) · Owner chip (light; Northwind/SBC) · Status chip (min-width 116) · Timeline (`.stp-tl` 11.5px muted, wraps, 110–190px) · 28px arrow button (`.stp-go`, aria "Open step N · <name>"). Whole row is `data-go="inc-step-N"` (cursor pointer); row hover moves the arrow 2px right with primary-light bg. |
-| ☐ | ST-04 | Rows | 48 rows; full list in 5.10 with owner, status before/after and "Timeline" text (e.g. "2–3 working days", "Within 30 days of incorporation", "No statutory time limit", "14–15 working days from filing (Phase 2 Step 6)"). |
+| ☑ | ST-01 | Header | "Steps" + right link "Open Incorporation →" (`data-go="incorporation"`, 12px/700). |
+| ☑ | ST-02 | Phase accordions | 4 `<details class="stp-g">` (gap 8px): border 1px, radius 8, overflow hidden. `summary`: flex gap 10, padding 10px 12px, hover raised; chevron 14px rotates 90° when open (.25s); phase name is a link (`a.stp-ph`, inherits colour, 800) → phase page; status chip (min-width 116) "x of y"; mono caption state. Open body animates `stpIn .28s` (opacity, translateY -4px). BEFORE: Phase 1 · Name Application "5 of 5" ok "done" → `inc-phase-a`; **Phase 2 · Incorporation "1 of 9" prog "in progress" (open by default)** → `inc-phase`; Phase 3 · Post-Incorporation "0 of 11" up "upcoming" → `inc-phase-3`; Phase 4 · Registration "0 of 23" up "upcoming" → `inc-phase-4`. AFTER: Phase 1 5/5 done; Phase 2 9/9 ok done; **Phase 3 "7 of 11" prog in progress (open)**; Phase 4 "5 of 23" prog in progress. |
+| ☑ | ST-03 | Table | Inside `.vh-x` (scrolls horizontally inside its box, `--tmin:560px`). Columns: # (mono caption 600) · Step (`.rt` 12.5px) · Owner chip (light; Northwind/SBC) · Status chip (min-width 116) · Timeline (`.stp-tl` 11.5px muted, wraps, 110–190px) · 28px arrow button (`.stp-go`, aria "Open step N · <name>"). Whole row is `data-go="inc-step-N"` (cursor pointer); row hover moves the arrow 2px right with primary-light bg. |
+| ☑ | ST-04 | Rows | 48 rows; full list in 5.10 with owner, status before/after and "Timeline" text (e.g. "2–3 working days", "Within 30 days of incorporation", "No statutory time limit", "14–15 working days from filing (Phase 2 Step 6)"). |
 
 Data → real app
 
 | Done | field | source |
 |---|---|---|
-| ☐ | phases, step titles, owner, timeline text | `src/data/checklist.ts` (`getIncorporationPhases()`; `item.responsibleRole` client→"Northwind", intern→"SBC"; `item.timeline`). Note: client-overview.ts comment says the working-days SLA "is no longer shown" (replaced by the manager window `formatWindow`). Prototype still shows the playbook timeline text → Q4. |
-| ☐ | status | `overview.milestones[].kind` (done/active/waiting/locked) + slice status (`coerceStatusCode`); label map: done→Completed (ok), active→Waiting (due) for client-owned / In progress (prog), waiting→In progress (prog), locked→Upcoming (up), overdue→Overdue. |
-| ☐ | x of y | `progress.byPhase[].done/total`. |
-| ☐ | default open | the phase containing the current step. |
+| ☑ | phases, step titles, owner, timeline text | `src/data/checklist.ts` (`getIncorporationPhases()`; `item.responsibleRole` client→"Northwind", intern→"SBC"; `item.timeline`). Note: client-overview.ts comment says the working-days SLA "is no longer shown" (replaced by the manager window `formatWindow`). Prototype still shows the playbook timeline text → Q4. |
+| ☑ | status | `overview.milestones[].kind` (done/active/waiting/locked) + slice status (`coerceStatusCode`); label map: done→Completed (ok), active→Waiting (due) for client-owned / In progress (prog), waiting→In progress (prog), locked→Upcoming (up), overdue→Overdue. |
+| ☑ | x of y | `progress.byPhase[].done/total`. |
+| ☑ | default open | the phase containing the current step. |
 
 ---
 
@@ -351,22 +351,22 @@ Data → real app
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | RD-01 | Header | "Recent documents" + right link "Documents →" (not wired → real: route `documents`). |
-| ☐ | RD-02 | Group labels | `p.rd-g` 800 10px uppercase subtle + trailing hair line: BEFORE "Last week", "Earlier"; AFTER "This week", "Last week", "Earlier". Grouped by arrival. |
-| ☐ | RD-03 | Row | `.rd-r` (`role=button tabindex=0`, `data-go="doc-viewer"`, title "<name> · <TYPE> · <d Mon yyyy> · from <who>"): file-type badge 20×20 radius 6 (`700 7px/20px IBM Plex Mono`; JPG teal-light/teal-chip, PDF over-light/over-text, DOCX prog-light/prog-text) · name (12.5px/500, ellipsis) · meta "Northwind" (gold-text when uploaded by the client) or "SBC" · "·" · mono date · 26px download icon button (aria "Download <name>", hover primary-light). Row hover raised. Below 330px the "who" and separator hide. DECISION rule 9: row click → preview overlay; actions 👁 Preview · ⬇ Download (the board only shows ⬇; the row itself previews). |
-| ☐ | RD-04 | Rows before | Last week: Director 1 - passport · JPG · Northwind · 2 Oct. Earlier: Name approval letter · PDF · SBC · 24 Sep; Signed Board Resolution · PDF · Northwind · 18 Sep; Draft Board Resolution · DOCX · SBC · 14 Sep. |
-| ☐ | RD-05 | Rows after | This week: Share capital FIRC · PDF · Northwind · 2 Nov. Last week: GST certificate · PDF · SBC · 1 Nov; Board meeting minutes · PDF · SBC · 26 Oct. Earlier: Certificate of Incorporation · PDF · SBC · 24 Oct. |
-| ☐ | RD-06 | Phone | Rows with 38×20 type badge (PDF over, JPG oklch(47% .09 195), DOCX oklch(51% .17 252)), name + date, 40px 👁 (→ doc-viewer) and ⬇ (toast "Download started · <name>") buttons; footer "Open Documents →". Phone (i) "The newest files from Northwind’s project. 👁 previews, ⬇ downloads." (typo in source: "Northwindr"). |
+| ☑ | RD-01 | Header | "Recent documents" + right link "Documents →" (not wired → real: route `documents`). |
+| ☑ | RD-02 | Group labels | `p.rd-g` 800 10px uppercase subtle + trailing hair line: BEFORE "Last week", "Earlier"; AFTER "This week", "Last week", "Earlier". Grouped by arrival. |
+| ☑ | RD-03 | Row | `.rd-r` (`role=button tabindex=0`, `data-go="doc-viewer"`, title "<name> · <TYPE> · <d Mon yyyy> · from <who>"): file-type badge 20×20 radius 6 (`700 7px/20px IBM Plex Mono`; JPG teal-light/teal-chip, PDF over-light/over-text, DOCX prog-light/prog-text) · name (12.5px/500, ellipsis) · meta "Northwind" (gold-text when uploaded by the client) or "SBC" · "·" · mono date · 26px download icon button (aria "Download <name>", hover primary-light). Row hover raised. Below 330px the "who" and separator hide. DECISION rule 9: row click → preview overlay; actions 👁 Preview · ⬇ Download (the board only shows ⬇; the row itself previews). |
+| ☑ | RD-04 | Rows before | Last week: Director 1 - passport · JPG · Northwind · 2 Oct. Earlier: Name approval letter · PDF · SBC · 24 Sep; Signed Board Resolution · PDF · Northwind · 18 Sep; Draft Board Resolution · DOCX · SBC · 14 Sep. |
+| ☑ | RD-05 | Rows after | This week: Share capital FIRC · PDF · Northwind · 2 Nov. Last week: GST certificate · PDF · SBC · 1 Nov; Board meeting minutes · PDF · SBC · 26 Oct. Earlier: Certificate of Incorporation · PDF · SBC · 24 Oct. |
+| ☑ | RD-06 | Phone | Rows with 38×20 type badge (PDF over, JPG oklch(47% .09 195), DOCX oklch(51% .17 252)), name + date, 40px 👁 (→ doc-viewer) and ⬇ (toast "Download started · <name>") buttons; footer "Open Documents →". Phone (i) "The newest files from Northwind’s project. 👁 previews, ⬇ downloads." (typo in source: "Northwindr"). |
 
 Data → real app
 
 | Done | field | source |
 |---|---|---|
-| ☐ | list | `GET /api/documents?engagementId=` → `listDocuments(ctx)` (`src/db/repositories/documents.ts`; client sees only `shared_with_client=true` and released step files) ordered by `created_at desc`, limit 4–6. Plus firm deliverables `overview.documents.deliverables` (COI, PAN/TAN cards, MOA/AOA, GST/IEC certs) whose files live in `checklist_state` paths. Merge both sources (NEW small server derivation or client merge). |
-| ☐ | who | `uploaded_by` → profile role (client → company short name, staff → "SBC"). |
-| ☐ | type | `content_type`/extension of `file_name`. |
-| ☐ | preview | `GET /api/documents/[id]/signed-url` (S3 presigned) / `GET /api/milestone-documents/signed-url` → doc viewer overlay (10.1). |
-| ☐ | download | same signed URL with `content-disposition: attachment`. |
+| ☑ | list | `GET /api/documents?engagementId=` → `listDocuments(ctx)` (`src/db/repositories/documents.ts`; client sees only `shared_with_client=true` and released step files) ordered by `created_at desc`, limit 4–6. Plus firm deliverables `overview.documents.deliverables` (COI, PAN/TAN cards, MOA/AOA, GST/IEC certs) whose files live in `checklist_state` paths. Merge both sources (NEW small server derivation or client merge). |
+| ☑ | who | `uploaded_by` → profile role (client → company short name, staff → "SBC"). |
+| ☑ | type | `content_type`/extension of `file_name`. |
+| ☑ | preview | `GET /api/documents/[id]/signed-url` (S3 presigned) / `GET /api/milestone-documents/signed-url` → doc viewer overlay (10.1). |
+| ☑ | download | same signed URL with `content-disposition: attachment`. |
 
 ---
 
@@ -376,54 +376,54 @@ Global N = position in `getIncorporationPhases()` order (from `prototype/incorpo
 
 | Done | N | id | title | owner | status B | status A | timeline text |
 |---|---|---|---|---|---|---|---|
-| ☐ | 1 | pre-1 | Client Details | Northwind | Completed | Completed | 2–3 working days |
-| ☐ | 2 | pre-2 | Draft Board Resolution | SBC | Completed | Completed | 1–2 working days |
-| ☐ | 3 | pre-3 | Signed Board Resolution | Northwind | Completed | Completed | 3–4 working days |
-| ☐ | 4 | pre-4 | Name Application | SBC | Completed | Completed | 1–2 working days |
-| ☐ | 5 | pre-5 | Name Approval | SBC | Completed | Completed | 5–7 working days |
-| ☐ | 6 | pre-13 | Capital Structure | Northwind | Completed | Completed | 1 working day |
-| ☐ | 7 | pre-14 | Registered Office Address | Northwind | **Waiting** | Completed | 1 working day |
-| ☐ | 8 | pre-15 | Proposed Directors | Northwind | In progress | Completed | 4–5 working days |
-| ☐ | 9 | pre-16 | Subscriber Details | Northwind | In progress | Completed | 1 working day |
-| ☐ | 10 | pre-7 | KYC Review & DSC | SBC | In progress | Completed | 2–3 working days |
-| ☐ | 11 | pre-9 | SPICe+ Confirmation | Northwind | Upcoming | Completed | 2–3 working days |
-| ☐ | 12 | pre-10 | SPICe+ Filing | SBC | Upcoming | Completed | 1–2 working days |
-| ☐ | 13 | pre-11 | MCA Remarks | SBC | Upcoming | Completed | 5–7 working days |
-| ☐ | 14 | pre-12 | Certificate of Incorporation | SBC | Upcoming | Completed | 14–15 working days from filing (Phase 2 Step 6) |
-| ☐ | 15 | post-1 | First Board Meeting | SBC | Upcoming | Completed | Within 30 days of incorporation |
-| ☐ | 16 | post-9 | Company Letterhead | SBC | Upcoming | Completed | Within 30 days of incorporation |
-| ☐ | 17 | post-3 | Bank Account Opening | SBC | Upcoming | Completed | No statutory time limit |
-| ☐ | 18 | post-4 | Share Capital Infusion | SBC | Upcoming | Completed | Within 180 days of incorporation |
-| ☐ | 19 | post-5 | Share Certificates (SH-1) | SBC | Upcoming | In progress | Within 60 days of incorporation |
-| ☐ | 20 | post-6 | Commencement (INC-20A) | SBC | Upcoming | In progress | Within 180 days of incorporation |
-| ☐ | 21 | post-2 | Auditor Appointment (ADT-1) | SBC | Upcoming | Completed | Within 30 days of incorporation |
-| ☐ | 22 | post-7 | FC-GPR Filing | SBC | Upcoming | In progress | Within 30 days of incorporation |
-| ☐ | 23 | post-8 | Nominee Shareholder (MGT-4/5/6) | SBC | Upcoming | In progress | Within 30 days of incorporation |
-| ☐ | 24 | post-11 | Registered Office (INC-22) | SBC | Upcoming | Completed | Within 30 days of incorporation |
-| ☐ | 25 | post-10 | Name Board | SBC | Upcoming | Completed | Within 30 days of incorporation |
-| ☐ | 26 | reg-4 | GST Registration | SBC | Upcoming | Completed | Within 2 weeks of incorporation |
-| ☐ | 27 | reg-1 | PF Registration | SBC | Upcoming | Completed | No statutory time limit |
-| ☐ | 28 | reg-3 | ESI Registration | SBC | Upcoming | Completed | No statutory time limit |
-| ☐ | 29 | reg-7 | PT Registration | SBC | Upcoming | In progress | No statutory time limit |
-| ☐ | 30 | reg-6 | LEI Registration | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 31 | reg-15 | MSME Registration | SBC | Upcoming | Completed | No statutory time limit |
-| ☐ | 32 | reg-16 | ICEGATE Registrations | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 33 | reg-8 | IEC Registration | SBC | Upcoming | In progress | No statutory time limit |
-| ☐ | 34 | reg-5 | LUT Filing | SBC | Upcoming | Completed | No statutory time limit |
-| ☐ | 35 | reg-11 | Non-STPI Compliance | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 36 | reg-9 | Shops & Establishment | SBC | Upcoming | In progress | No statutory time limit |
-| ☐ | 37 | reg-13 | CLRA Registration | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 38 | reg-14 | POSH / SHE Box | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 39 | reg-10 | Trade Licence | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 40 | reg-12 | Trademark Registration | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 41 | reg-17 | Trademark Renewal | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 42 | reg-18 | Patent Registration | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 43 | reg-19 | ICDR Registration | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 44 | reg-20 | FCGPR Filing | SBC | Upcoming | Upcoming | Within 30 days of incorporation |
-| ☐ | 45 | reg-21 | FDI Reporting | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 46 | reg-22 | ODI Reporting | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 47 | reg-23 | FLA Return | SBC | Upcoming | Upcoming | No statutory time limit |
-| ☐ | 48 | reg-24 | FCTRS Filing | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 1 | pre-1 | Client Details | Northwind | Completed | Completed | 2–3 working days |
+| ☑ | 2 | pre-2 | Draft Board Resolution | SBC | Completed | Completed | 1–2 working days |
+| ☑ | 3 | pre-3 | Signed Board Resolution | Northwind | Completed | Completed | 3–4 working days |
+| ☑ | 4 | pre-4 | Name Application | SBC | Completed | Completed | 1–2 working days |
+| ☑ | 5 | pre-5 | Name Approval | SBC | Completed | Completed | 5–7 working days |
+| ☑ | 6 | pre-13 | Capital Structure | Northwind | Completed | Completed | 1 working day |
+| ☑ | 7 | pre-14 | Registered Office Address | Northwind | **Waiting** | Completed | 1 working day |
+| ☑ | 8 | pre-15 | Proposed Directors | Northwind | In progress | Completed | 4–5 working days |
+| ☑ | 9 | pre-16 | Subscriber Details | Northwind | In progress | Completed | 1 working day |
+| ☑ | 10 | pre-7 | KYC Review & DSC | SBC | In progress | Completed | 2–3 working days |
+| ☑ | 11 | pre-9 | SPICe+ Confirmation | Northwind | Upcoming | Completed | 2–3 working days |
+| ☑ | 12 | pre-10 | SPICe+ Filing | SBC | Upcoming | Completed | 1–2 working days |
+| ☑ | 13 | pre-11 | MCA Remarks | SBC | Upcoming | Completed | 5–7 working days |
+| ☑ | 14 | pre-12 | Certificate of Incorporation | SBC | Upcoming | Completed | 14–15 working days from filing (Phase 2 Step 6) |
+| ☑ | 15 | post-1 | First Board Meeting | SBC | Upcoming | Completed | Within 30 days of incorporation |
+| ☑ | 16 | post-9 | Company Letterhead | SBC | Upcoming | Completed | Within 30 days of incorporation |
+| ☑ | 17 | post-3 | Bank Account Opening | SBC | Upcoming | Completed | No statutory time limit |
+| ☑ | 18 | post-4 | Share Capital Infusion | SBC | Upcoming | Completed | Within 180 days of incorporation |
+| ☑ | 19 | post-5 | Share Certificates (SH-1) | SBC | Upcoming | In progress | Within 60 days of incorporation |
+| ☑ | 20 | post-6 | Commencement (INC-20A) | SBC | Upcoming | In progress | Within 180 days of incorporation |
+| ☑ | 21 | post-2 | Auditor Appointment (ADT-1) | SBC | Upcoming | Completed | Within 30 days of incorporation |
+| ☑ | 22 | post-7 | FC-GPR Filing | SBC | Upcoming | In progress | Within 30 days of incorporation |
+| ☑ | 23 | post-8 | Nominee Shareholder (MGT-4/5/6) | SBC | Upcoming | In progress | Within 30 days of incorporation |
+| ☑ | 24 | post-11 | Registered Office (INC-22) | SBC | Upcoming | Completed | Within 30 days of incorporation |
+| ☑ | 25 | post-10 | Name Board | SBC | Upcoming | Completed | Within 30 days of incorporation |
+| ☑ | 26 | reg-4 | GST Registration | SBC | Upcoming | Completed | Within 2 weeks of incorporation |
+| ☑ | 27 | reg-1 | PF Registration | SBC | Upcoming | Completed | No statutory time limit |
+| ☑ | 28 | reg-3 | ESI Registration | SBC | Upcoming | Completed | No statutory time limit |
+| ☑ | 29 | reg-7 | PT Registration | SBC | Upcoming | In progress | No statutory time limit |
+| ☑ | 30 | reg-6 | LEI Registration | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 31 | reg-15 | MSME Registration | SBC | Upcoming | Completed | No statutory time limit |
+| ☑ | 32 | reg-16 | ICEGATE Registrations | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 33 | reg-8 | IEC Registration | SBC | Upcoming | In progress | No statutory time limit |
+| ☑ | 34 | reg-5 | LUT Filing | SBC | Upcoming | Completed | No statutory time limit |
+| ☑ | 35 | reg-11 | Non-STPI Compliance | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 36 | reg-9 | Shops & Establishment | SBC | Upcoming | In progress | No statutory time limit |
+| ☑ | 37 | reg-13 | CLRA Registration | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 38 | reg-14 | POSH / SHE Box | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 39 | reg-10 | Trade Licence | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 40 | reg-12 | Trademark Registration | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 41 | reg-17 | Trademark Renewal | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 42 | reg-18 | Patent Registration | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 43 | reg-19 | ICDR Registration | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 44 | reg-20 | FCGPR Filing | SBC | Upcoming | Upcoming | Within 30 days of incorporation |
+| ☑ | 45 | reg-21 | FDI Reporting | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 46 | reg-22 | ODI Reporting | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 47 | reg-23 | FLA Return | SBC | Upcoming | Upcoming | No statutory time limit |
+| ☑ | 48 | reg-24 | FCTRS Filing | SBC | Upcoming | Upcoming | No statutory time limit |
 
 Phase counts: 5 / 9 / 11 / 23. "Step 7 of 14" in the DECISIONS label = SPICe+ numbering (Phases 1+2 = 14 steps); the Steps card numbers 1–48 globally; the phone current step says "Now · step 7 of 14".
 
@@ -433,11 +433,11 @@ Phase counts: 5 / 9 / 11 / 23. "Step 7 of 14" in the DECISIONS label = SPICe+ nu
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | RA-01 | Header | "Recent activity" + 3-tab pill All · SBC · Northwind (before 4·3·1, after 5·3·1). Phone (i) "Who did what, newest first." |
-| ☐ | RA-02 | Row | grid `96px minmax(0,1fr) auto`, gap 12, padding 8px 0, border-top hair: mono date 12px/600 · text `.rt` 600 · actor caption. |
-| ☐ | RA-03 | Rows before | 5 Oct 2026 · 2 documents requested · Arjun Mehta (sbc) / 4 Oct 2026 · Proposed Directors saved · Northwind (client) / 3 Oct 2026 · Passport copy sent back · Arjun Mehta / 1 Oct 2026 · Capital Structure accepted · Priya Raman. |
-| ☐ | RA-04 | Rows after | 8 Nov 2026 · TDS Payment overdue · VCFO Suite (system; appears only under All) / 5 Nov · TDS details requested · Priya Raman / 3 Nov · ESI registration done · Arjun Mehta / 2 Nov · Share capital received · Northwind / 1 Nov · GST certificate delivered · Arjun Mehta. |
-| ☐ | RA-05 | Filter | SBC = staff actors; Northwind = client actors; All = everything. No empty state designed (use bot bubble "Nothing here yet."). Phone rows prefix a set-A status glyph (done/you/late). |
+| ☑ | RA-01 | Header | "Recent activity" + 3-tab pill All · SBC · Northwind (before 4·3·1, after 5·3·1). Phone (i) "Who did what, newest first." |
+| ☑ | RA-02 | Row | grid `96px minmax(0,1fr) auto`, gap 12, padding 8px 0, border-top hair: mono date 12px/600 · text `.rt` 600 · actor caption. |
+| ☑ | RA-03 | Rows before | 5 Oct 2026 · 2 documents requested · Arjun Mehta (sbc) / 4 Oct 2026 · Proposed Directors saved · Northwind (client) / 3 Oct 2026 · Passport copy sent back · Arjun Mehta / 1 Oct 2026 · Capital Structure accepted · Priya Raman. |
+| ☑ | RA-04 | Rows after | 8 Nov 2026 · TDS Payment overdue · VCFO Suite (system; appears only under All) / 5 Nov · TDS details requested · Priya Raman / 3 Nov · ESI registration done · Arjun Mehta / 2 Nov · Share capital received · Northwind / 1 Nov · GST certificate delivered · Arjun Mehta. |
+| ☑ | RA-05 | Filter | SBC = staff actors; Northwind = client actors; All = everything. No empty state designed (use bot bubble "Nothing here yet."). Phone rows prefix a set-A status glyph (done/you/late). |
 
 Data → real app: `overview.activity[]` (id, at, label) from `listAuditEvents(ctx,{engagementId,limit:40})`, 12 newest, internal actions hidden (`HIDDEN_AUDIT_ACTIONS`). Missing: actor name/role → **extend `ClientOverviewActivity` with `actorName` and `actorKind: 'firm'|'client'|'system'`** (columns `actor_name`, `actor_role` already exist in `audit_events`). Alternative source `GET /api/activity` (`listActivity`). System events (overdue) need a writer (compliance job `src/jobs/compliance-generate.ts`) → NEW audit/activity row "TDS Payment overdue".
 
@@ -447,10 +447,10 @@ Data → real app: `overview.activity[]` (id, at, label) from `listAuditEvents(c
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | CS-01 | Header | "Compliance status" + (i) "Hover a slice for its count · click a slice, a legend row or the centre to see the list" + right chip "FY 2026-27" (up-light, min-width 116). |
-| ☐ | CS-02 | Donut | 140×140 `conic-gradient(var(--ok) 0 2.6%, var(--due) 2.6% 10.5%, var(--over) 10.5% 13.2%, var(--up) 13.2% 100%)`; inner 98px white disc is a link (title "Show all") with "38" (metric 28px) + caption "this FY". Body padding `22px 16px 16px`, flex gap 20, align center. |
-| ☐ | CS-03 | Legend | 4 link rows (`padding:6px 8px;margin:0 -8px;border-radius:6px`): 10px square swatch · label (500) · mono "n (p%)": Filed 1 (3%) · **Due soon 3 (8%)** (pre-highlighted `background:var(--raised)`) · Overdue 1 (3%) · Upcoming 33 (87%). |
-| ☐ | CS-04 | Interaction (intended) | The board does NOT wire slices/legend/centre (fallback toast). Intended per (i) text, rule 14 and `v7p_compliance`: hover a slice → tooltip "<status> · n"; click a slice / legend row → compliance pop-up (8.2) with that status tab pre-selected; click centre → same pop-up on "All". (DECISIONS: "The compliance donut keeps its own pop-up (same pattern)".) Phone: SVG donut 110px (r 44, stroke 14, `stroke-dasharray` animates .9s cubic-bezier(.22,1,.36,1)), each arc `role=button` with `<title>` "<status> · n"; legend buttons with Space Grotesk counts; tap → bottom-sheet drill "Compliance status · FY 2026-27" (rows: Filed: ROC · AOC-4 FY25 "Filed 28 Oct"; Due soon: EPF Return & Payment · Oct 15 Nov · Northwind, ESI Payment · Oct 15 Nov · SBC, PT Payment · Oct 20 Nov · SBC; Overdue: TDS Payment · Oct 2026 "Overdue 1 day · Northwind"; Upcoming: GSTR-1 · Nov 11 Dec, GSTR-3B · Nov 20 Dec, FC-GPR 2 Dec, "… 30 more · Open Filings"); rows → `filings`. Footer "Open Filings →". |
+| ☑ | CS-01 | Header | "Compliance status" + (i) "Hover a slice for its count · click a slice, a legend row or the centre to see the list" + right chip "FY 2026-27" (up-light, min-width 116). |
+| ☑ | CS-02 | Donut | 140×140 `conic-gradient(var(--ok) 0 2.6%, var(--due) 2.6% 10.5%, var(--over) 10.5% 13.2%, var(--up) 13.2% 100%)`; inner 98px white disc is a link (title "Show all") with "38" (metric 28px) + caption "this FY". Body padding `22px 16px 16px`, flex gap 20, align center. |
+| ☑ | CS-03 | Legend | 4 link rows (`padding:6px 8px;margin:0 -8px;border-radius:6px`): 10px square swatch · label (500) · mono "n (p%)": Filed 1 (3%) · **Due soon 3 (8%)** (pre-highlighted `background:var(--raised)`) · Overdue 1 (3%) · Upcoming 33 (87%). |
+| ☑ | CS-04 | Interaction (intended) | The board does NOT wire slices/legend/centre (fallback toast). Intended per (i) text, rule 14 and `v7p_compliance`: hover a slice → tooltip "<status> · n"; click a slice / legend row → compliance pop-up (8.2) with that status tab pre-selected; click centre → same pop-up on "All". (DECISIONS: "The compliance donut keeps its own pop-up (same pattern)".) Phone: SVG donut 110px (r 44, stroke 14, `stroke-dasharray` animates .9s cubic-bezier(.22,1,.36,1)), each arc `role=button` with `<title>` "<status> · n"; legend buttons with Space Grotesk counts; tap → bottom-sheet drill "Compliance status · FY 2026-27" (rows: Filed: ROC · AOC-4 FY25 "Filed 28 Oct"; Due soon: EPF Return & Payment · Oct 15 Nov · Northwind, ESI Payment · Oct 15 Nov · SBC, PT Payment · Oct 20 Nov · SBC; Overdue: TDS Payment · Oct 2026 "Overdue 1 day · Northwind"; Upcoming: GSTR-1 · Nov 11 Dec, GSTR-3B · Nov 20 Dec, FC-GPR 2 Dec, "… 30 more · Open Filings"); rows → `filings`. Footer "Open Filings →". |
 
 Data → real app: counts by status of `compliance_instances` for the engagement in the current FY (`fy_label`). Existing source: `GET /api/filings` (`getFilings` in `src/db/repositories/filings.ts`, hook `useComplianceFilings`). Overview's runway only covers +90 days → either call `/api/filings?engagementId=&fy=` from the card, or **add `overview.compliance.fyCounts {filed,dueSoon,overdue,upcoming,total,fyLabel}`** (NEW aggregate in `client-overview.ts` repo). "Due soon" threshold = due within 15 days and not filed (define as constant; compliances page uses the same).
 
@@ -460,21 +460,21 @@ Data → real app: counts by status of `compliance_instances` for the engagement
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | ID-01 | Header | "Company IDs" + (i) "PAN and TAN need your password to show" + right link "COI →" (12px/700; not wired → real: open the Certificate of Incorporation in the doc viewer). |
-| ☐ | ID-02 | Rows | grid `62px minmax(0,1fr) auto`, gap 6px 10px, padding 9px 0, border-top hair: `.lbl` key (+ "Private" chip for secrets: navy bg, gold text, padding 0 5px, 11px) · mono 12.5px/600 value · 26px action button. CIN `U72900KA2026FTC198431` + Copy (primary-light square) · PAN `AAKC••••1M` (letter-spacing .06em) + **Show PAN** (navy square, eye icon) · TAN `BLRN••••2D` + **Show TAN** · GSTIN `29AAKCN4821M1Z5` + Copy. Mask rule: first 4 + "••••" + last 2. |
-| ☐ | ID-03 | Copy | Desktop fallback toast "Link copied"; phone: `navigator.clipboard.writeText` + toast "Copied · <value>". Real: clipboard + toast "Copied". |
-| ☐ | ID-04 | Show PAN/TAN (desktop) | Not wired on the card (fallback toast "Show PAN"). The designed modal is `v7p_ids_password` (route key `ids-password`, section 8.3): "Confirm it's you" + account password; "Shown for 60 seconds". |
-| ☐ | ID-05 | Show PAN/TAN (phone) | Bottom sheet "Show PAN": label "Your password" + password input (44px, prefilled ••••••••) + "🔒 Shown for 60 seconds, then hidden again." + navy button "Show PAN". Submit → sheet closes, value replaced by the full value (`AAKCN4821M` for PAN, `BLRN04392D` for TAN — note TAN digits differ from the masked value's source `BLRN04822D` on the Credentials page; demo typo) in `--ok-text` colour, toast "PAN shown for 60 s"; after 60 000 ms it reverts to the masked value. Phone rows also carry a 40px ↗ portal link (MCA, incometax.gov.in, tin-nsdl.com, gst.gov.in) per rule 15. |
-| ☐ | ID-06 | Phone (i) | "PAN and TAN stay hidden. Reveal asks for your password and hides again after 60 s." |
+| ☑ | ID-01 | Header | "Company IDs" + (i) "PAN and TAN need your password to show" + right link "COI →" (12px/700; not wired → real: open the Certificate of Incorporation in the doc viewer). |
+| ☑ | ID-02 | Rows | grid `62px minmax(0,1fr) auto`, gap 6px 10px, padding 9px 0, border-top hair: `.lbl` key (+ "Private" chip for secrets: navy bg, gold text, padding 0 5px, 11px) · mono 12.5px/600 value · 26px action button. CIN `U72900KA2026FTC198431` + Copy (primary-light square) · PAN `AAKC••••1M` (letter-spacing .06em) + **Show PAN** (navy square, eye icon) · TAN `BLRN••••2D` + **Show TAN** · GSTIN `29AAKCN4821M1Z5` + Copy. Mask rule: first 4 + "••••" + last 2. |
+| ☑ | ID-03 | Copy | Desktop fallback toast "Link copied"; phone: `navigator.clipboard.writeText` + toast "Copied · <value>". Real: clipboard + toast "Copied". |
+| ☑ | ID-04 | Show PAN/TAN (desktop) | Not wired on the card (fallback toast "Show PAN"). The designed modal is `v7p_ids_password` (route key `ids-password`, section 8.3): "Confirm it's you" + account password; "Shown for 60 seconds". |
+| ☑ | ID-05 | Show PAN/TAN (phone) | Bottom sheet "Show PAN": label "Your password" + password input (44px, prefilled ••••••••) + "🔒 Shown for 60 seconds, then hidden again." + navy button "Show PAN". Submit → sheet closes, value replaced by the full value (`AAKCN4821M` for PAN, `BLRN04392D` for TAN — note TAN digits differ from the masked value's source `BLRN04822D` on the Credentials page; demo typo) in `--ok-text` colour, toast "PAN shown for 60 s"; after 60 000 ms it reverts to the masked value. Phone rows also carry a 40px ↗ portal link (MCA, incometax.gov.in, tin-nsdl.com, gst.gov.in) per rule 15. |
+| ☑ | ID-06 | Phone (i) | "PAN and TAN stay hidden. Reveal asks for your password and hides again after 60 s." |
 
 Data → real app
 
 | Done | field | source |
 |---|---|---|
-| ☐ | CIN, PAN, TAN | `overview.identifiers` (`identifiersFromState`: pre-12 responses `cin`, `pan`, `tan`, also `pfCode`, `esiCode`). Existing. **Security change needed:** the overview currently ships PAN/TAN in clear to the browser. For the reveal design, the API must return masked PAN/TAN and expose a NEW `POST /api/client/identifiers/reveal {field:'pan'|'tan', password}` that re-verifies the session user's password (bcrypt against `profiles.password_hash`, same check as `app/api/account/password/route.ts`), rate-limits (3 tries → lock; v7p_ids_password shows "Wrong password. 2 tries left."), writes an audit event (`identifiers.reveal`), and returns the clear value once. Client hides it after 60 s. |
-| ☐ | GSTIN | reg-4 response `gstinNumber` (`src/lib/checklist-responses.ts`) — not in `identifiersFromState` today → **add `gstin`** (also `iecCode`, `leiNumber`, `pfRegistrationNumber`, `esiRegistrationNumber` for the Registrations card). |
-| ☐ | COI → | `overview.documents.deliverables` entry `pre-12:certificateOfIncorporationFinalUrl` → milestone signed URL. |
-| ☐ | portal ↗ | static map. |
+| ☑ | CIN, PAN, TAN | `overview.identifiers` (`identifiersFromState`: pre-12 responses `cin`, `pan`, `tan`, also `pfCode`, `esiCode`). Existing. **Security change needed:** the overview currently ships PAN/TAN in clear to the browser. For the reveal design, the API must return masked PAN/TAN and expose a NEW `POST /api/client/identifiers/reveal {field:'pan'|'tan', password}` that re-verifies the session user's password (bcrypt against `profiles.password_hash`, same check as `app/api/account/password/route.ts`), rate-limits (3 tries → lock; v7p_ids_password shows "Wrong password. 2 tries left."), writes an audit event (`identifiers.reveal`), and returns the clear value once. Client hides it after 60 s. |
+| ☑ | GSTIN | reg-4 response `gstinNumber` (`src/lib/checklist-responses.ts`) — not in `identifiersFromState` today → **add `gstin`** (also `iecCode`, `leiNumber`, `pfRegistrationNumber`, `esiRegistrationNumber` for the Registrations card). |
+| ☑ | COI → | `overview.documents.deliverables` entry `pre-12:certificateOfIncorporationFinalUrl` → milestone signed URL. |
+| ☑ | portal ↗ | static map. |
 
 ---
 
@@ -482,11 +482,11 @@ Data → real app
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | CA-01 | Header | "Compliance by area" + chip "FY 2026-27 · as of 8 Nov 2026" (up-light). DECISION: 5 areas MCA · GST · Income tax · Payroll · FEMA. |
-| ☐ | CA-02 | Tabs | 6-tab pill full width with `.vh-segwrap` (wraps on phone): All 38 · MCA 2 · GST 10 · Income tax 7 · Payroll 18 · FEMA 1. |
-| ☐ | CA-03 | All tab | Table in `.vh-x` (`--tmin:600px`), 12.5px, margin-top 10: Area · Total · Filed (ok-text) · Due soon (due-text) · Overdue (over-text) · Mix (26% width, 10px `.stack` of segments, each a `.tipw` with tooltip "<Area> · <Status> · n", click → drill "<Area> · filings" on that status tab) · Status chip. Rows: MCA / ROC 2·1·0·0 "Compliant" ok; GST 10·0·0·0 "Upcoming" up; Income tax / TDS 7·0·0·1 "Overdue" over; Payroll (PF / ESI / PT) 18·0·3·0 "Due soon" due; FEMA / RBI 1·0·0·0 "Upcoming" up. Total row (border-top 1.5px, 800): 38 · 1 · 3 · 1. |
-| ☐ | CA-04 | Single-area tab | Summary line: metric 22px area name + caption "<n> filings this FY · f filed · d due soon · o overdue"; table Filing · Period · Due / filed · Status: MCA: ADT-1 (auditor appointment) FY 2026-27 "Filed 5 Nov 2026" Filed; Commencement (INC-20A) One-time 22 Apr 2027 Upcoming. GST: GSTR-1 Nov 2026 11 Dec 2026; GSTR-3B Nov 2026 20 Dec 2026. Income tax: TDS Payment Oct 2026 7 Nov 2026 Overdue; TDS Payment Nov 2026 7 Dec 2026 Upcoming. Payroll: EPF Return & Payment / ESI Payment Oct 2026 15 Nov 2026 Due soon; PT Payment 20 Nov 2026 Due soon. FEMA: FC-GPR Filing "Share allotment" 2 Dec 2026 Upcoming. Footer caption "Showing k of n · full list in Filings" or "Showing all n". |
-| ☐ | CA-05 | Drills | 5 configs (one per area): tabs All · Filed · Due soon · Overdue · Upcoming with area totals; 20 openers (area × status 1..4). Link strip → Filings. |
+| ☑ | CA-01 | Header | "Compliance by area" + chip "FY 2026-27 · as of 8 Nov 2026" (up-light). DECISION: 5 areas MCA · GST · Income tax · Payroll · FEMA. |
+| ☑ | CA-02 | Tabs | 6-tab pill full width with `.vh-segwrap` (wraps on phone): All 38 · MCA 2 · GST 10 · Income tax 7 · Payroll 18 · FEMA 1. |
+| ☑ | CA-03 | All tab | Table in `.vh-x` (`--tmin:600px`), 12.5px, margin-top 10: Area · Total · Filed (ok-text) · Due soon (due-text) · Overdue (over-text) · Mix (26% width, 10px `.stack` of segments, each a `.tipw` with tooltip "<Area> · <Status> · n", click → drill "<Area> · filings" on that status tab) · Status chip. Rows: MCA / ROC 2·1·0·0 "Compliant" ok; GST 10·0·0·0 "Upcoming" up; Income tax / TDS 7·0·0·1 "Overdue" over; Payroll (PF / ESI / PT) 18·0·3·0 "Due soon" due; FEMA / RBI 1·0·0·0 "Upcoming" up. Total row (border-top 1.5px, 800): 38 · 1 · 3 · 1. |
+| ☑ | CA-04 | Single-area tab | Summary line: metric 22px area name + caption "<n> filings this FY · f filed · d due soon · o overdue"; table Filing · Period · Due / filed · Status: MCA: ADT-1 (auditor appointment) FY 2026-27 "Filed 5 Nov 2026" Filed; Commencement (INC-20A) One-time 22 Apr 2027 Upcoming. GST: GSTR-1 Nov 2026 11 Dec 2026; GSTR-3B Nov 2026 20 Dec 2026. Income tax: TDS Payment Oct 2026 7 Nov 2026 Overdue; TDS Payment Nov 2026 7 Dec 2026 Upcoming. Payroll: EPF Return & Payment / ESI Payment Oct 2026 15 Nov 2026 Due soon; PT Payment 20 Nov 2026 Due soon. FEMA: FC-GPR Filing "Share allotment" 2 Dec 2026 Upcoming. Footer caption "Showing k of n · full list in Filings" or "Showing all n". |
+| ☑ | CA-05 | Drills | 5 configs (one per area): tabs All · Filed · Due soon · Overdue · Upcoming with area totals; 20 openers (area × status 1..4). Link strip → Filings. |
 
 Data → real app: `compliance_instances` ⋈ `compliance_obligations` grouped by `complianceGroupForAuthority(authority)` (exists in `src/lib/client-overview.ts`: GST, Income tax, Payroll, MCA, FEMA, Other). Status buckets from `status` + due date. Source `GET /api/filings` / `getFilings` (existing, FY filter) → NEW grouping helper (pure). "Other" group is not in the design (5 areas) — fold or hide (Q5).
 
@@ -496,10 +496,10 @@ Data → real app: `compliance_instances` ⋈ `compliance_obligations` grouped b
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | RG-01 | Header | "Registrations" (no right control). |
-| ☐ | RG-02 | Tabs | 6-tab wrapping pill: All 13 · Tax 2 · Labour 4 · Business 4 · IP 1 · FEMA 2. |
-| ☐ | RG-03 | Table | `.vh-x` `--tmin:720px`: Registration · Category · Authority (caption) · Number (mono 11.5px/600, "-" when none) · Date (mono right) · Status chip · download icon (only when Registered; aria "Download certificate", title "Certificate"). Rows: GST Registration · Tax · GSTN · 29AAKCN4821M1Z5 · 1 Nov 2026 · Registered / LUT Filing · Tax · GSTN · AD291126001234X · 3 Nov 2026 · Registered / PF Registration · Labour · EPFO · KNBNG2954118000 · 2 Nov 2026 · Registered / ESI Registration · Labour · ESIC · 53001234560001001 · 3 Nov 2026 · Registered / PT Registration · Labour · Karnataka CTD · – · Est. 12 Nov 2026 · In progress / Shops & Establishment · Labour · Karnataka Labour Dept · – · Est. 15 Nov 2026 · In progress / MSME Registration · Business · Ministry of MSME · UDYAM-KR-03-0123456 · 30 Oct 2026 · Registered / IEC Registration · Business · DGFT · – · Est. 14 Nov 2026 · In progress / Trade Licence · Business · BBMP · Dec 2026 · Upcoming / LEI Registration · Business · LEIL · Dec 2026 · Upcoming / Trademark Registration · IP · IP India · Jan 2027 · Upcoming / FCGPR Filing · FEMA · RBI · FIRMS · By 2 Dec 2026 · Upcoming / FLA Return · FEMA · RBI · By 15 Jul 2027 · Upcoming. |
-| ☐ | RG-04 | Phone | "Registrations" (i) "Every registration with its portal ↗ and its proof 📎." Rows: status glyph · name · "<authority> · <date>" · "📎 Proof" chip button (→ doc-viewer) or amber "Proof pending" chip (filed, no proof) or nothing (not filed) · ↗ portal. Rows: GST (GSTN · 1 Nov, done, proof) · PF (EPFO · 2 Nov, done, proof) · ESI (ESIC · 3 Nov, done, Proof pending) · PT (Karnataka CTD · est. 12 Nov, with SBC) · IEC (DGFT · est. 14 Nov, with SBC) · Trademark (IP India · Jan 2027, upcoming). Rule 15 asks for the same ↗ / 📎 on desktop → add. |
+| ☑ | RG-01 | Header | "Registrations" (no right control). |
+| ☑ | RG-02 | Tabs | 6-tab wrapping pill: All 13 · Tax 2 · Labour 4 · Business 4 · IP 1 · FEMA 2. |
+| ☑ | RG-03 | Table | `.vh-x` `--tmin:720px`: Registration · Category · Authority (caption) · Number (mono 11.5px/600, "-" when none) · Date (mono right) · Status chip · download icon (only when Registered; aria "Download certificate", title "Certificate"). Rows: GST Registration · Tax · GSTN · 29AAKCN4821M1Z5 · 1 Nov 2026 · Registered / LUT Filing · Tax · GSTN · AD291126001234X · 3 Nov 2026 · Registered / PF Registration · Labour · EPFO · KNBNG2954118000 · 2 Nov 2026 · Registered / ESI Registration · Labour · ESIC · 53001234560001001 · 3 Nov 2026 · Registered / PT Registration · Labour · Karnataka CTD · – · Est. 12 Nov 2026 · In progress / Shops & Establishment · Labour · Karnataka Labour Dept · – · Est. 15 Nov 2026 · In progress / MSME Registration · Business · Ministry of MSME · UDYAM-KR-03-0123456 · 30 Oct 2026 · Registered / IEC Registration · Business · DGFT · – · Est. 14 Nov 2026 · In progress / Trade Licence · Business · BBMP · Dec 2026 · Upcoming / LEI Registration · Business · LEIL · Dec 2026 · Upcoming / Trademark Registration · IP · IP India · Jan 2027 · Upcoming / FCGPR Filing · FEMA · RBI · FIRMS · By 2 Dec 2026 · Upcoming / FLA Return · FEMA · RBI · By 15 Jul 2027 · Upcoming. |
+| ☑ | RG-04 | Phone | "Registrations" (i) "Every registration with its portal ↗ and its proof 📎." Rows: status glyph · name · "<authority> · <date>" · "📎 Proof" chip button (→ doc-viewer) or amber "Proof pending" chip (filed, no proof) or nothing (not filed) · ↗ portal. Rows: GST (GSTN · 1 Nov, done, proof) · PF (EPFO · 2 Nov, done, proof) · ESI (ESIC · 3 Nov, done, Proof pending) · PT (Karnataka CTD · est. 12 Nov, with SBC) · IEC (DGFT · est. 14 Nov, with SBC) · Trademark (IP India · Jan 2027, upcoming). Rule 15 asks for the same ↗ / 📎 on desktop → add. |
 
 Data → real app: registration steps `reg-*` (phase 4) in `checklist_state`: status (gate), numbers from responses (`gstinNumber`, `lutArn`, `pfRegistrationNumber`, `esiRegistrationNumber`, `iecCode`, `leiNumber`…; MSME/Udyam, PT, S&E have no number fields yet — **NEW fields** in `src/lib/checklist-responses.ts` for reg-7/reg-9/reg-10/reg-12/reg-15), dates (`gstRegistrationDate`, `pfRegistrationDate`, …), estimated dates = schedule window. Category/authority = NEW static map per step id (front-end). Certificate = step file (e.g. `gstCertificateUrl`, `iecCertificateUrl`) via milestone signed URL. **NEW pure builder `buildRegistrations(state, schedule)` → `overview.registrations[]`.**
 
@@ -509,12 +509,12 @@ Data → real app: registration steps `reg-*` (phase 4) in `checklist_state`: st
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | PI-01 | Header | "Post-incorporation setup" + chip "Day 15 since COI" (up-light, min 116). |
-| ☐ | PI-02 | Section label | "OPEN · STATUTORY WINDOW USED" (`.lbl` navy). |
-| ☐ | PI-03 | Row | title + (i) · owner chip (Northwind due-light / SBC prog-light) · mono due date (min-width 80, right) / below: 10px track (`background:var(--raised);box-shadow:inset 0 0 0 1px var(--border);radius 3`) as `.tipw` (tooltip "<name> · day d of N · due <date>", click → drill tab Open) with fill = d/N (FC-GPR `var(--due)`, others `var(--prog)`) · mono caption "day d of N". Rows: FC-GPR Filing (i "Within 30 days of share allotment (2 Nov) · Bank FIRC + KYC letter needed") Northwind · 2 Dec 2026 · 20% · day 6 of 30 / Nominee Shareholder (MGT-4/5/6) (i "Within 30 days of incorporation · 50% done") SBC · 23 Nov 2026 · 50% · day 15 of 30 / Share Certificates (SH-1) (i "Within 60 days of incorporation · 60% done") SBC · 23 Dec 2026 · 25% · day 15 of 60 / Commencement (INC-20A) (i "Within 180 days of incorporation · 40% done") SBC · 22 Apr 2027 · 8.3% · day 15 of 180. Note: the bar shows window used, the (i) shows work done. |
-| ☐ | PI-04 | Completed box | Bordered box (radius 8, padding 10px 12px): check icon · "7 completed" (dotted underline, `.tipw` tooltip "Completed · 7 items", click → drill tab Completed) + (i) listing "First Board Meeting · 26 Oct · Registered Office (INC-22) · 25 Oct · Company Letterhead · 27 Oct · Bank Account Opening · 29 Oct · Name Board · 30 Oct · Share Capital Infusion · 2 Nov · Auditor Appointment (ADT-1) · 5 Nov". |
-| ☐ | PI-05 | Drill | = GR-09 config (All 11 · Open 4 · Completed 7). |
-| ☐ | PI-06 | Phone | Card "Post-incorporation setup" (i) "Statutory windows that started on the COI date." Rows buttons: name, "<owner> · <date> · day d of N", 8px bar (`var(--due)` if >45% used else `var(--navy-3)`); tap → drill Open/Completed. |
+| ☑ | PI-01 | Header | "Post-incorporation setup" + chip "Day 15 since COI" (up-light, min 116). |
+| ☑ | PI-02 | Section label | "OPEN · STATUTORY WINDOW USED" (`.lbl` navy). |
+| ☑ | PI-03 | Row | title + (i) · owner chip (Northwind due-light / SBC prog-light) · mono due date (min-width 80, right) / below: 10px track (`background:var(--raised);box-shadow:inset 0 0 0 1px var(--border);radius 3`) as `.tipw` (tooltip "<name> · day d of N · due <date>", click → drill tab Open) with fill = d/N (FC-GPR `var(--due)`, others `var(--prog)`) · mono caption "day d of N". Rows: FC-GPR Filing (i "Within 30 days of share allotment (2 Nov) · Bank FIRC + KYC letter needed") Northwind · 2 Dec 2026 · 20% · day 6 of 30 / Nominee Shareholder (MGT-4/5/6) (i "Within 30 days of incorporation · 50% done") SBC · 23 Nov 2026 · 50% · day 15 of 30 / Share Certificates (SH-1) (i "Within 60 days of incorporation · 60% done") SBC · 23 Dec 2026 · 25% · day 15 of 60 / Commencement (INC-20A) (i "Within 180 days of incorporation · 40% done") SBC · 22 Apr 2027 · 8.3% · day 15 of 180. Note: the bar shows window used, the (i) shows work done. |
+| ☑ | PI-04 | Completed box | Bordered box (radius 8, padding 10px 12px): check icon · "7 completed" (dotted underline, `.tipw` tooltip "Completed · 7 items", click → drill tab Completed) + (i) listing "First Board Meeting · 26 Oct · Registered Office (INC-22) · 25 Oct · Company Letterhead · 27 Oct · Bank Account Opening · 29 Oct · Name Board · 30 Oct · Share Capital Infusion · 2 Nov · Auditor Appointment (ADT-1) · 5 Nov". |
+| ☑ | PI-05 | Drill | = GR-09 config (All 11 · Open 4 · Completed 7). |
+| ☑ | PI-06 | Phone | Card "Post-incorporation setup" (i) "Statutory windows that started on the COI date." Rows buttons: name, "<owner> · <date> · day d of N", 8px bar (`var(--due)` if >45% used else `var(--navy-3)`); tap → drill Open/Completed. |
 
 Data → real app: phase 3 steps `post-*` (`overview.milestones`, `progress.byPhase`), statutory window N from the step's playbook timeline text ("Within 30/60/180 days of incorporation") → NEW parsed constant per step id; day d = today − `incorporationDate` (or share-allotment date for FC-GPR: `post-7` responses `fcgprRemittanceDate`/allotment). Owner from `responsibleRole` (all intern in catalog; FC-GPR shown as Northwind because the client must upload FIRC → derived from open needs). "% done" NEW (step sub-progress). Also the compliance engine already generates event filings (`compliance_events`, e.g. `fc_gpr`) — reuse due dates from there.
 
@@ -534,36 +534,36 @@ One self-contained file (own CSS, own render script; Appendix C). `.app` max-wid
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | M-01 | Top bar | sticky 56px, white 94% + blur 8px, border-bottom: 44px menu button (`data-vp-menu` → shell drawer `vcfoOpenSide()`, fallback internal drawer M-30) · logo (VCFO icon 23×26) + "Home" (800 15px) · spacer · 44px Search (opens search sheet M-25) · Announcements (→ `announcements`) · Notifications (primary colour, badge "3" 17px) (→ `notifications`). |
-| ☐ | M-02 | Skeleton (L1) | `#app.sk` on load: every `.card` and `.greet` hides its children and shows a shimmer block (`inset:12px;radius 6px`; gradient 600px, `sh 1.2s linear infinite`; greet uses navy shimmer). Removed after 450 ms (0 with reduced motion), then count-up + draw-in. |
-| ☐ | M-03 | Stagger | `.wrap>*{animation:fu .3s cubic-bezier(.22,1,.36,1) both}` (opacity, translateY 8px), delay `i*0.06s`. |
-| ☐ | M-04 | Greeting | `.greet` navy (flat `var(--navy)`, not gradient), radius 12, padding 14px 14px 12px, radial gold glow top-right (180px). Date mono 11px .08em oklch(82% .03 255); h1 700 19px/1.2 max-width 260px. Ring button 62×62 (SVG r 26, stroke 6, track white 14%, gold arc round caps, animates `stroke-dasharray` 1s cubic-bezier(.22,1,.36,1)); value 700 14px Space Grotesk counts up; label "SPICE+"/"SETUP" under it. aria "Incorporation 43% — open steps" → steps drill. |
-| ☐ | M-05 | Stats | Grid 3 columns (first 3 stats) + grid 2 columns (last 2), gap 6, margin-top 16/6: each a button (white 8% bg, radius 8, padding 8) with value (600 20px Space Grotesk; numbers count up 900 ms ease-out-cubic) + label (11.5px). Before: 4 Waiting on Northwind · 1 With SBC · 1 Overdue · 4/6 Docs in · 28 Oct Expected COI. After: 4 Waiting on Northwind · 1 Overdue · 3 Due soon · 5/13 Registrations · 24 Oct Incorporated. Taps: Waiting → steps drill tab "Northwind"; With SBC → steps drill tab "SBC"; Overdue/Due soon → "Due and overdue" drill (tabs Overdue 1 · Due soon 3; before overdue row "Passport copy — Meera Shah · Sent back 3 Oct · fix now" → incorporation; after "TDS Payment · Oct 2026 · Overdue 1 day · Northwind" → compliances; Due soon rows EPF/ESI/PT → compliances); Docs in → "Documents" drill (In 4: Director 1 — passport, Name approval letter, Signed Board Resolution, Capital structure note; Missing 2: Utility bill — office, NOC from the owner, due 9 Oct) → documents; Registrations → "Registrations" drill (Done 5 · With SBC 2 · Upcoming 6); Expected COI / Incorporated → go `incorporation`. |
-| ☐ | M-06 | Greeting buttons | Row of 2 equal 40px buttons: gold "⬇ Download report" (GR-04) and translucent "Open Incorporation" (→ incorporation). |
-| ☐ | M-07 | Card chrome | `.card.t` (gold 34×3 tab at left 14px), header `.ch` padding 14px 14px 10px, title `h2` 800 12px uppercase .07em navy + (i) (24px button, 8px hit expansion; pop 250px max). Optional footer `.go` (full-width, border-top hair, padding 11px 14px, 800 12px primary, chevron). |
-| ☐ | M-08 | Needs | Card "Needs from Northwind" + pill (38px buttons) Upload 2 · Fill 1 · Correct 1 · Sign 0 (after: Upload 2 · Fill 1 · Correct 0 · Sign 1). Rows (52px min): date tile 42×46 (over = red, due = amber, up = raised grey, navy) · title (700 13.5px) + subtitle (11.5px muted) · 40px button (navy if overdue else outline). Before rows: Upload: "Utility bill — office" "Step 7 · asked by Arjun Mehta" 9 OCT; "NOC from the owner" same 9 OCT; Fill: "Subscriber details" "Step 9 · 3 fields left" 10 OCT; Correct: "Passport copy — Meera Shah" "Sent back · blurred scan" 5 OCT over, button "Fix". After: Upload "October salary register" "Payroll · asked by Priya Raman" 13 NOV; "Bank FIRC + KYC letter" "FC-GPR · asked by Arjun Mehta" 20 NOV; Fill "TDS payment details · Oct" "Overdue 1 day" 07 NOV over; Sign "Board minutes — 1st meeting" "Sign with DSC" 12 NOV. Empty tab → bot bubble "Nothing to <verb> right now. You are all caught up here." + "Ask VCFO why" (opens chat). Actions: ND-07/ND-08. (Phone demo data differs from desktop — see Q8.) |
-| ☐ | M-09 | Who holds it now (before) | Focus track (DECISIONS style E): dashed 4px rail at left 25px with green fill animating to 34% height (.9s, delay .2s); "✓ 5 done · Phase 1" green fold chip (→ steps drill Done); step rows with set-A status glyph (24px circles: done green ✓, now navy + gold clock with pulsing gold ring 1.9s, you amber person, sbc blue arrow, up light grey, late red !) + name + caption; current step rendered as a navy card (radius 12, shadow) with gold eyebrow "NOW · STEP 7 OF 14", title, caption "Step 7 · Northwind · due 9 Oct" and sub-step ticks (2 done green, 1 gold, 1 grey); rows: Capital Structure (Step 6 · done 1 Oct) · Registered Office Address (current) · Proposed Directors (Step 8 · Northwind · in progress) · Subscriber Details (Step 9 · Northwind · in progress) · KYC Review & DSC (Step 10 · SBC · in progress) · SPICe+ Confirmation (Step 11 · Northwind · from 16 Oct); bottom fold "+3 more · SPICe+ filing → COI" (→ drill Upcoming). Each row → steps drill on its group. Footer "Open step 7 →" (→ incorporation). Glyph tooltips: "Waiting on Northwind · due 9 Oct", "In progress · You", "With SBC". |
-| ☐ | M-10 | Timeline (before) | Header "Timeline" + (i) + outline "Edit" (opens tl-editor). Gantt rows grid `112px 1fr`, gap 9: label 700 11.5px + 14px track; bars animate scaleX .8s with `i*0.08s` delay: Phase 1 · Name Application 0–18% green; "Phase 2 · 22%" 20–68% navy-3; MCA review 68–86% up; "COI · 28 Oct" 88–90% gold; red "Today" line at 47% with "Today" label. Each row → steps drill. Footer "Open Incorporation →". After: rows all green ("COI · 24 Oct" gold), no Today line, no Edit, (i) "Incorporation is complete." |
-| ☐ | M-11 | Important alerts (before only) | (i) "Dated items only, nearest first." Rows: 09 OCT 2 office documents In 3 days (due) / 10 OCT MOA & AOA drafts In 4 days (due) / 14 OCT Approved name expires In 8 days (up) → drill "Important alerts". No overdue hero on phone. |
-| ☐ | M-12 | What SBC is doing | Rows: glyph (sbc if >0% else up) + name + 8px bar (blue oklch(56% .19 262)) + mono "%"; before KYC Review & DSC 30, MOA & AOA drafts 0, DSC for both directors 0, File SPICe+ Part B 0; after PT Registration 70, IEC Registration 50 → drill. |
-| ☐ | M-13 | What is next (after) | Pill 15 days 4 · 30 days 6 (toast only: "Showing the next 15 days · 4 filings" / "… 30 days · 6 filings"; list does not change — wire it). Rows: tile · title · "<when> · <owner>" · ↗ portal link (new tab) · → drill "Due and overdue". Footer "Open Compliances →". |
-| ☐ | M-14 | Compliance status (after) | 6.1/CS-04. Footer "Open Filings →". |
-| ☐ | M-15 | Company IDs (after) | ID-05. |
-| ☐ | M-16 | Registrations (after) | RG-04. |
-| ☐ | M-17 | Post-incorporation setup (after) | PI-06. |
-| ☐ | M-18 | Recent documents | RD-06; before rows JPG Director 1 — passport 6 Oct · PDF Name approval letter 24 Sep · PDF Signed Board Resolution 18 Sep · DOCX Draft Board Resolution 16 Sep; after PDF Certificate of Incorporation 24 Oct · Board meeting minutes 2 Nov · GST certificate 1 Nov · Share capital FIRC 2 Nov. |
-| ☐ | M-19 | Recent activity | Pill All · SBC · Northwind; rows glyph + text + "<date> · <who>". |
-| ☐ | M-20 | Card order | Before: greet, Needs, Who holds it now, Timeline, Important alerts, What SBC is doing, Recent documents, Recent activity. After: greet, Needs, What is next, Compliance status, Company IDs, Registrations, Post-incorporation setup, What SBC is doing, Timeline, Recent documents, Recent activity. (No Steps card and no Compliance-by-area card on phone.) |
-| ☐ | M-21 | Bottom sheet | `.sheet` fixed bottom, width min(100%,560px), max-height min(82vh,100dvh-24px), radius 14 14 0 0, grab handle 40×4, header h3 800 16px + 44px close; slides `translate(-50%,105%)→0` with the spring (.38s); scrim fades .2s; body `sheet-open` hides the prototype bar and the launcher pill; Esc/scrim/× close; focus returns to the opener; re-tapping the same opener toggles it closed. Used for drills, upload, reveal, search, chat. |
-| ☐ | M-22 | Drill in sheet | Pill of parts (selected = clicked) + rows (`.row` buttons with glyph, title, sub, chevron) → close + go route; empty → bot "Nothing here right now." Steps drill "Incorporation steps": Done 6 · Northwind 3 · SBC 1 · Upcoming 4 with the 14 STEPS (Client Details "Step 1 · done 12 Sep", Draft BR "done 16 Sep", Signed BR "done 20 Sep", Name Application "done 24 Sep", Name Approval "done 24 Sep", Capital Structure "done 1 Oct", Registered Office Address "Step 7 · Northwind · due 9 Oct", Proposed Directors, Subscriber Details, KYC Review & DSC "Step 10 · SBC · in progress · 13 Oct", SPICe+ Confirmation "Step 11 · 16 Oct", SPICe+ Filing 20 Oct, MCA Remarks 24 Oct, Certificate of Incorporation 28 Oct). |
-| ☐ | M-23 | Launcher | The board's own `.launch` is hidden (`display:none!important`); `window.__vcfoOwnChat=true` makes the global pill open THIS file's chat sheet (M-26). The robot sinks while scrolling (`.sink`, 420 ms debounce) — DECISION "Robot while scrolling: sinks down". |
-| ☐ | M-24 | Count-up | `[data-count]` numbers animate 0→N over 900 ms (ease-out cubic) after the skeleton; skipped for non-integers ("4/6", "28 Oct"). |
-| ☐ | M-25 | Search sheet | "Search" sheet: 44px input "Search steps, filings, documents" + sample results Registered Office Address (Step 7 · Incorporation) / Certificate of Incorporation (Document → documents) / GSTR-3B · Oct (Filing → filings). Real: shell command palette (⌘K) — owned by shell agent. |
-| ☐ | M-26 | Chat sheet (`#chat`, launcher) | Sheet "Ask VCFO": bubble "Hello. Ask me anything about Northwind’s setup, or pick a question below." · suggestion buttons (40px, primary-light) · compose (42px input + navy Send). Before Q&A: "What is my next step?", "Where is my incorporation now?", "Which documents are missing?"; after: "What is due next?", "Which registrations are pending?", "When is FC-GPR due?" (answers 7.1). Typing dots 900 ms; unknown → "I can’t answer that one yet. I’ve passed it to Northwind’s project lead." + "Hand off to Arjun Mehta" → toast "Arjun Mehta will reply by email within 1 working day" + Undo. `#chat` hash opens it 700 ms after load. |
-| ☐ | M-27 | Report | GR-04 phone behaviour. |
-| ☐ | M-28 | Proof chip | → `doc-viewer`. |
-| ☐ | M-29 | Download | toast "Download started · <name>". |
-| ☐ | M-30 | Fallback drawer | Only if shell.js is missing: navy drawer (300px) with links Home (current, inset 3px blue bar) / Updates / Incorporation / Compliances / Documents / Library / Team / Audit, "Northwind’s team" (PR Priya Raman Project Manager, AM Arjun Mehta Project Lead, ☎ Customer support "SBC help desk · +91 90597 90014"), account link "Rahul Khanna · Northwind · Client" (name inconsistent with Rohan Kumar, Q9). |
+| ☑ | M-01 | Top bar | sticky 56px, white 94% + blur 8px, border-bottom: 44px menu button (`data-vp-menu` → shell drawer `vcfoOpenSide()`, fallback internal drawer M-30) · logo (VCFO icon 23×26) + "Home" (800 15px) · spacer · 44px Search (opens search sheet M-25) · Announcements (→ `announcements`) · Notifications (primary colour, badge "3" 17px) (→ `notifications`). |
+| ☑ | M-02 | Skeleton (L1) | `#app.sk` on load: every `.card` and `.greet` hides its children and shows a shimmer block (`inset:12px;radius 6px`; gradient 600px, `sh 1.2s linear infinite`; greet uses navy shimmer). Removed after 450 ms (0 with reduced motion), then count-up + draw-in. |
+| ☑ | M-03 | Stagger | `.wrap>*{animation:fu .3s cubic-bezier(.22,1,.36,1) both}` (opacity, translateY 8px), delay `i*0.06s`. |
+| ☑ | M-04 | Greeting | `.greet` navy (flat `var(--navy)`, not gradient), radius 12, padding 14px 14px 12px, radial gold glow top-right (180px). Date mono 11px .08em oklch(82% .03 255); h1 700 19px/1.2 max-width 260px. Ring button 62×62 (SVG r 26, stroke 6, track white 14%, gold arc round caps, animates `stroke-dasharray` 1s cubic-bezier(.22,1,.36,1)); value 700 14px Space Grotesk counts up; label "SPICE+"/"SETUP" under it. aria "Incorporation 43% — open steps" → steps drill. |
+| ☑ | M-05 | Stats | Grid 3 columns (first 3 stats) + grid 2 columns (last 2), gap 6, margin-top 16/6: each a button (white 8% bg, radius 8, padding 8) with value (600 20px Space Grotesk; numbers count up 900 ms ease-out-cubic) + label (11.5px). Before: 4 Waiting on Northwind · 1 With SBC · 1 Overdue · 4/6 Docs in · 28 Oct Expected COI. After: 4 Waiting on Northwind · 1 Overdue · 3 Due soon · 5/13 Registrations · 24 Oct Incorporated. Taps: Waiting → steps drill tab "Northwind"; With SBC → steps drill tab "SBC"; Overdue/Due soon → "Due and overdue" drill (tabs Overdue 1 · Due soon 3; before overdue row "Passport copy — Meera Shah · Sent back 3 Oct · fix now" → incorporation; after "TDS Payment · Oct 2026 · Overdue 1 day · Northwind" → compliances; Due soon rows EPF/ESI/PT → compliances); Docs in → "Documents" drill (In 4: Director 1 — passport, Name approval letter, Signed Board Resolution, Capital structure note; Missing 2: Utility bill — office, NOC from the owner, due 9 Oct) → documents; Registrations → "Registrations" drill (Done 5 · With SBC 2 · Upcoming 6); Expected COI / Incorporated → go `incorporation`. |
+| ☑ | M-06 | Greeting buttons | Row of 2 equal 40px buttons: gold "⬇ Download report" (GR-04) and translucent "Open Incorporation" (→ incorporation). |
+| ☑ | M-07 | Card chrome | `.card.t` (gold 34×3 tab at left 14px), header `.ch` padding 14px 14px 10px, title `h2` 800 12px uppercase .07em navy + (i) (24px button, 8px hit expansion; pop 250px max). Optional footer `.go` (full-width, border-top hair, padding 11px 14px, 800 12px primary, chevron). |
+| ☑ | M-08 | Needs | Card "Needs from Northwind" + pill (38px buttons) Upload 2 · Fill 1 · Correct 1 · Sign 0 (after: Upload 2 · Fill 1 · Correct 0 · Sign 1). Rows (52px min): date tile 42×46 (over = red, due = amber, up = raised grey, navy) · title (700 13.5px) + subtitle (11.5px muted) · 40px button (navy if overdue else outline). Before rows: Upload: "Utility bill — office" "Step 7 · asked by Arjun Mehta" 9 OCT; "NOC from the owner" same 9 OCT; Fill: "Subscriber details" "Step 9 · 3 fields left" 10 OCT; Correct: "Passport copy — Meera Shah" "Sent back · blurred scan" 5 OCT over, button "Fix". After: Upload "October salary register" "Payroll · asked by Priya Raman" 13 NOV; "Bank FIRC + KYC letter" "FC-GPR · asked by Arjun Mehta" 20 NOV; Fill "TDS payment details · Oct" "Overdue 1 day" 07 NOV over; Sign "Board minutes — 1st meeting" "Sign with DSC" 12 NOV. Empty tab → bot bubble "Nothing to <verb> right now. You are all caught up here." + "Ask VCFO why" (opens chat). Actions: ND-07/ND-08. (Phone demo data differs from desktop — see Q8.) |
+| ☑ | M-09 | Who holds it now (before) | Focus track (DECISIONS style E): dashed 4px rail at left 25px with green fill animating to 34% height (.9s, delay .2s); "✓ 5 done · Phase 1" green fold chip (→ steps drill Done); step rows with set-A status glyph (24px circles: done green ✓, now navy + gold clock with pulsing gold ring 1.9s, you amber person, sbc blue arrow, up light grey, late red !) + name + caption; current step rendered as a navy card (radius 12, shadow) with gold eyebrow "NOW · STEP 7 OF 14", title, caption "Step 7 · Northwind · due 9 Oct" and sub-step ticks (2 done green, 1 gold, 1 grey); rows: Capital Structure (Step 6 · done 1 Oct) · Registered Office Address (current) · Proposed Directors (Step 8 · Northwind · in progress) · Subscriber Details (Step 9 · Northwind · in progress) · KYC Review & DSC (Step 10 · SBC · in progress) · SPICe+ Confirmation (Step 11 · Northwind · from 16 Oct); bottom fold "+3 more · SPICe+ filing → COI" (→ drill Upcoming). Each row → steps drill on its group. Footer "Open step 7 →" (→ incorporation). Glyph tooltips: "Waiting on Northwind · due 9 Oct", "In progress · You", "With SBC". |
+| ☑ | M-10 | Timeline (before) | Header "Timeline" + (i) + outline "Edit" (opens tl-editor). Gantt rows grid `112px 1fr`, gap 9: label 700 11.5px + 14px track; bars animate scaleX .8s with `i*0.08s` delay: Phase 1 · Name Application 0–18% green; "Phase 2 · 22%" 20–68% navy-3; MCA review 68–86% up; "COI · 28 Oct" 88–90% gold; red "Today" line at 47% with "Today" label. Each row → steps drill. Footer "Open Incorporation →". After: rows all green ("COI · 24 Oct" gold), no Today line, no Edit, (i) "Incorporation is complete." |
+| ☑ | M-11 | Important alerts (before only) | (i) "Dated items only, nearest first." Rows: 09 OCT 2 office documents In 3 days (due) / 10 OCT MOA & AOA drafts In 4 days (due) / 14 OCT Approved name expires In 8 days (up) → drill "Important alerts". No overdue hero on phone. |
+| ☑ | M-12 | What SBC is doing | Rows: glyph (sbc if >0% else up) + name + 8px bar (blue oklch(56% .19 262)) + mono "%"; before KYC Review & DSC 30, MOA & AOA drafts 0, DSC for both directors 0, File SPICe+ Part B 0; after PT Registration 70, IEC Registration 50 → drill. |
+| ☑ | M-13 | What is next (after) | Pill 15 days 4 · 30 days 6 (toast only: "Showing the next 15 days · 4 filings" / "… 30 days · 6 filings"; list does not change — wire it). Rows: tile · title · "<when> · <owner>" · ↗ portal link (new tab) · → drill "Due and overdue". Footer "Open Compliances →". |
+| ☑ | M-14 | Compliance status (after) | 6.1/CS-04. Footer "Open Filings →". |
+| ☑ | M-15 | Company IDs (after) | ID-05. |
+| ☑ | M-16 | Registrations (after) | RG-04. |
+| ☑ | M-17 | Post-incorporation setup (after) | PI-06. |
+| ☑ | M-18 | Recent documents | RD-06; before rows JPG Director 1 — passport 6 Oct · PDF Name approval letter 24 Sep · PDF Signed Board Resolution 18 Sep · DOCX Draft Board Resolution 16 Sep; after PDF Certificate of Incorporation 24 Oct · Board meeting minutes 2 Nov · GST certificate 1 Nov · Share capital FIRC 2 Nov. |
+| ☑ | M-19 | Recent activity | Pill All · SBC · Northwind; rows glyph + text + "<date> · <who>". |
+| ☑ | M-20 | Card order | Before: greet, Needs, Who holds it now, Timeline, Important alerts, What SBC is doing, Recent documents, Recent activity. After: greet, Needs, What is next, Compliance status, Company IDs, Registrations, Post-incorporation setup, What SBC is doing, Timeline, Recent documents, Recent activity. (No Steps card and no Compliance-by-area card on phone.) |
+| ☑ | M-21 | Bottom sheet | `.sheet` fixed bottom, width min(100%,560px), max-height min(82vh,100dvh-24px), radius 14 14 0 0, grab handle 40×4, header h3 800 16px + 44px close; slides `translate(-50%,105%)→0` with the spring (.38s); scrim fades .2s; body `sheet-open` hides the prototype bar and the launcher pill; Esc/scrim/× close; focus returns to the opener; re-tapping the same opener toggles it closed. Used for drills, upload, reveal, search, chat. |
+| ☑ | M-22 | Drill in sheet | Pill of parts (selected = clicked) + rows (`.row` buttons with glyph, title, sub, chevron) → close + go route; empty → bot "Nothing here right now." Steps drill "Incorporation steps": Done 6 · Northwind 3 · SBC 1 · Upcoming 4 with the 14 STEPS (Client Details "Step 1 · done 12 Sep", Draft BR "done 16 Sep", Signed BR "done 20 Sep", Name Application "done 24 Sep", Name Approval "done 24 Sep", Capital Structure "done 1 Oct", Registered Office Address "Step 7 · Northwind · due 9 Oct", Proposed Directors, Subscriber Details, KYC Review & DSC "Step 10 · SBC · in progress · 13 Oct", SPICe+ Confirmation "Step 11 · 16 Oct", SPICe+ Filing 20 Oct, MCA Remarks 24 Oct, Certificate of Incorporation 28 Oct). |
+| ☑ | M-23 | Launcher | The board's own `.launch` is hidden (`display:none!important`); `window.__vcfoOwnChat=true` makes the global pill open THIS file's chat sheet (M-26). The robot sinks while scrolling (`.sink`, 420 ms debounce) — DECISION "Robot while scrolling: sinks down". |
+| ☑ | M-24 | Count-up | `[data-count]` numbers animate 0→N over 900 ms (ease-out cubic) after the skeleton; skipped for non-integers ("4/6", "28 Oct"). |
+| ✗ | M-25 | Search sheet | "Search" sheet: 44px input "Search steps, filings, documents" + sample results Registered Office Address (Step 7 · Incorporation) / Certificate of Incorporation (Document → documents) / GSTR-3B · Oct (Filing → filings). Real: shell command palette (⌘K) — owned by shell agent. |
+| ☑ | M-26 | Chat sheet (`#chat`, launcher) | Sheet "Ask VCFO": bubble "Hello. Ask me anything about Northwind’s setup, or pick a question below." · suggestion buttons (40px, primary-light) · compose (42px input + navy Send). Before Q&A: "What is my next step?", "Where is my incorporation now?", "Which documents are missing?"; after: "What is due next?", "Which registrations are pending?", "When is FC-GPR due?" (answers 7.1). Typing dots 900 ms; unknown → "I can’t answer that one yet. I’ve passed it to Northwind’s project lead." + "Hand off to Arjun Mehta" → toast "Arjun Mehta will reply by email within 1 working day" + Undo. `#chat` hash opens it 700 ms after load. |
+| ☑ | M-27 | Report | GR-04 phone behaviour. |
+| ☑ | M-28 | Proof chip | → `doc-viewer`. |
+| ☑ | M-29 | Download | toast "Download started · <name>". |
+| ✗ | M-30 | Fallback drawer | Only if shell.js is missing: navy drawer (300px) with links Home (current, inset 3px blue bar) / Updates / Incorporation / Compliances / Documents / Library / Team / Audit, "Northwind’s team" (PR Priya Raman Project Manager, AM Arjun Mehta Project Lead, ☎ Customer support "SBC help desk · +91 90597 90014"), account link "Rahul Khanna · Northwind · Client" (name inconsistent with Rohan Kumar, Q9). |
 
 #### 6.2 Phone breakpoints
 `mobile.html` is used below 700 px. Between 700 and 767 the DESKTOP board renders with phone rules (`max-width:767px` blocks in Appendix A: menu button shown, crumb hidden, 40px touch targets, pills wrap, no card hover lift, `.vh-pbar` 52px bar for pop-up boards). In the real app there is one responsive page: use the phone composition (6.1) below 768 px (README contract says phone ≤767) and drop the 700 px file swap.
@@ -576,18 +576,18 @@ One self-contained file (own CSS, own render script; Appendix C). `.app` max-wid
 
 | Done | id | item | behaviour / content |
 |---|---|---|---|
-| ☐ | C-01 | Window | Floating card above the launcher pill: `right:var(--vpl-in)`, width clamp(340px,24vw+40px,440px), height min(clamp(480px,62vh,680px), viewport minus pill), radius 12, 1px border, shadow `0 24px 60px -20px`. Opens with `translateY(12px) scale(.96)` → none, opacity, .26s cubic-bezier(.22,1,.36,1) from bottom-right origin. Phone ≤767: full-width bottom sheet, radius 16 16 0 0, height min(640px, 100dvh − 20px − peek), safe-area padding, 40px+ targets, input 16px font. |
-| ☐ | C-02 | Peek character | The robot peeks over the top edge once per open: hands grip in (.32s, right hand +.09s), head rises (.95s cubic-bezier(.3,.75,.35,1), delay .22s), looks left/right (2.2s from 1.25s), then blinks every 6.5s. DECISION "Peek animation plays once when the chat opens". |
-| ☐ | C-03 | Header | Navy bar: 36px white circle with static head · "Ask VCFO" (800 14px) / "Answers from Northwind’s project data" (11.5px #c7d2e2) · 36px "×" close (aria "Close chat"). |
-| ☐ | C-04 | Messages | `aria-live=polite` list: first bot bubble "Hello. Ask me anything about Northwind’s setup, or pick a question below."; user bubbles navy right (radius 10 10 2 10); bot bubbles light (#f1f4f8, radius 10 10 10 2), max 84%. Log persists in `sessionStorage vcfo.chat`. |
-| ☐ | C-05 | Suggestions | Wrap row of chips (32px; primary-light, 1px rgba(46,92,255,.35)): before "What is my next step?" / "Where is my incorporation now?" / "Which documents are missing?"; after "What is due next?" / "Which registrations are pending?" / "When is FC-GPR due?". |
-| ☐ | C-06 | Answers | Before: next step → "Step 7 · Registered Office Address is waiting for Northwind. Upload the utility bill and the owner NOC by 9 Oct, then approve. Steps 8 Proposed Directors and 9 Subscriber Details are also in progress with Northwind." · where → "Northwind is in Phase 2 · Incorporation: 1 of 9 steps done, 6 of 14 SPICe+ steps overall (43%). Step 7 is waiting for Northwind, steps 8 and 9 are in progress with Northwind, and step 10 KYC Review & DSC is with SBC. The COI is expected on 28 Oct." · missing → "Two, both for step 7 · Registered Office Address: the office utility bill and the NOC from the owner. Both are due 9 Oct." After: due next → "TDS Payment · Oct 2026 is overdue by 1 day. Next are EPF and ESI on 15 Nov." · registrations → "Two are with SBC: PT Registration (est. 12 Nov) and IEC (est. 14 Nov)." · FC-GPR → "2 Dec 2026, day 6 of the 30-day window. Upload the bank FIRC + KYC letter first." |
-| ☐ | C-07 | Thinking | Typing bubble with 3 dots (`vpTh 1s`, .2s/.4s delays) for 900 ms; antenna pulses (`vpc-think`). |
-| ☐ | C-08 | Moods | Answered → antenna green #22C55E + hop (.7s); cannot answer → grey #94A3B8 + dip (1.2s). DECISION: green = answered, grey = can't answer; face always smiling. |
-| ☐ | C-09 | Can't answer | "I can’t answer that one yet. I can pass it to Northwind’s project lead." + button "Hand off to Arjun Mehta" → appends "Sent to Arjun Mehta. You will get a reply by email within 1 working day." + toast "Handed off to Arjun Mehta" (Undo). |
-| ☐ | C-10 | What's this? card | When a screen provides `window.vcfoWhatsThis(q)` (Incorporation pages), the answer renders as a card: title, paragraph, "Why it matters to Northwind" block, "Source: …", and a button "Open this step"/"Open <page>" → route. |
-| ☐ | C-11 | Composer | 40px input "Type a question" + navy Send; empty submit → focus + toast "Type a question first, or pick one above". Esc closes. Focus moves to input on open, back to the pill on close. |
-| ☐ | C-12 | "Ask VCFO about this" | From any (i) pop-over → opens chat and asks "Tell me about <heading>". |
+| ☑ | C-01 | Window | Floating card above the launcher pill: `right:var(--vpl-in)`, width clamp(340px,24vw+40px,440px), height min(clamp(480px,62vh,680px), viewport minus pill), radius 12, 1px border, shadow `0 24px 60px -20px`. Opens with `translateY(12px) scale(.96)` → none, opacity, .26s cubic-bezier(.22,1,.36,1) from bottom-right origin. Phone ≤767: full-width bottom sheet, radius 16 16 0 0, height min(640px, 100dvh − 20px − peek), safe-area padding, 40px+ targets, input 16px font. |
+| ☑ | C-02 | Peek character | The robot peeks over the top edge once per open: hands grip in (.32s, right hand +.09s), head rises (.95s cubic-bezier(.3,.75,.35,1), delay .22s), looks left/right (2.2s from 1.25s), then blinks every 6.5s. DECISION "Peek animation plays once when the chat opens". |
+| ☑ | C-03 | Header | Navy bar: 36px white circle with static head · "Ask VCFO" (800 14px) / "Answers from Northwind’s project data" (11.5px #c7d2e2) · 36px "×" close (aria "Close chat"). |
+| ☑ | C-04 | Messages | `aria-live=polite` list: first bot bubble "Hello. Ask me anything about Northwind’s setup, or pick a question below."; user bubbles navy right (radius 10 10 2 10); bot bubbles light (#f1f4f8, radius 10 10 10 2), max 84%. Log persists in `sessionStorage vcfo.chat`. |
+| ☑ | C-05 | Suggestions | Wrap row of chips (32px; primary-light, 1px rgba(46,92,255,.35)): before "What is my next step?" / "Where is my incorporation now?" / "Which documents are missing?"; after "What is due next?" / "Which registrations are pending?" / "When is FC-GPR due?". |
+| ☑ | C-06 | Answers | Before: next step → "Step 7 · Registered Office Address is waiting for Northwind. Upload the utility bill and the owner NOC by 9 Oct, then approve. Steps 8 Proposed Directors and 9 Subscriber Details are also in progress with Northwind." · where → "Northwind is in Phase 2 · Incorporation: 1 of 9 steps done, 6 of 14 SPICe+ steps overall (43%). Step 7 is waiting for Northwind, steps 8 and 9 are in progress with Northwind, and step 10 KYC Review & DSC is with SBC. The COI is expected on 28 Oct." · missing → "Two, both for step 7 · Registered Office Address: the office utility bill and the NOC from the owner. Both are due 9 Oct." After: due next → "TDS Payment · Oct 2026 is overdue by 1 day. Next are EPF and ESI on 15 Nov." · registrations → "Two are with SBC: PT Registration (est. 12 Nov) and IEC (est. 14 Nov)." · FC-GPR → "2 Dec 2026, day 6 of the 30-day window. Upload the bank FIRC + KYC letter first." |
+| ☑ | C-07 | Thinking | Typing bubble with 3 dots (`vpTh 1s`, .2s/.4s delays) for 900 ms; antenna pulses (`vpc-think`). |
+| ☑ | C-08 | Moods | Answered → antenna green #22C55E + hop (.7s); cannot answer → grey #94A3B8 + dip (1.2s). DECISION: green = answered, grey = can't answer; face always smiling. |
+| ☑ | C-09 | Can't answer | "I can’t answer that one yet. I can pass it to Northwind’s project lead." + button "Hand off to Arjun Mehta" → appends "Sent to Arjun Mehta. You will get a reply by email within 1 working day." + toast "Handed off to Arjun Mehta" (Undo). |
+| ☑ | C-10 | What's this? card | When a screen provides `window.vcfoWhatsThis(q)` (Incorporation pages), the answer renders as a card: title, paragraph, "Why it matters to Northwind" block, "Source: …", and a button "Open this step"/"Open <page>" → route. |
+| ☑ | C-11 | Composer | 40px input "Type a question" + navy Send; empty submit → focus + toast "Type a question first, or pick one above". Esc closes. Focus moves to input on open, back to the pill on close. |
+| ☑ | C-12 | "Ask VCFO about this" | From any (i) pop-over → opens chat and asks "Tell me about <heading>". |
 
 Real app: `src/components/ask/*` (AskLauncher, AskPanel, AskComposer, AskHandoffForm, WhatsThisButton, AskProvider), hooks `src/hooks/ask/*` (`use-ask-status`, `use-ask-suggestions`, `ask-api`), routes `POST /api/ask/chat` (NDJSON stream: status labels + one answer), `GET /api/ask/suggestions`, `POST /api/ask/handoff` (→ `createAskHandoff`: task for the lead + bell), `GET /api/ask/status` (launcher enabled), `GET /api/ask/library`, `GET /api/ask/brief`, `GET/POST /api/ask/nudge` (first-visit note "once per client" → `ask_client_prefs`). Spec: `docs/specs/ask-vcfo`. All existing; Home only needs to mount the launcher and pass "Ask VCFO about this" questions.
 
@@ -595,11 +595,11 @@ Real app: `src/components/ask/*` (AskLauncher, AskPanel, AskComposer, AskHandoff
 
 | Done | id | board | content |
 |---|---|---|---|
-| ☐ | CB-01 | `v7chat_launcher` | Closed state with first-visit note: card 300px (radius 10, shadow) above the launcher, slides up `v7up .35s` after .9s: "Hello. Ask me anything about Northwind’s setup, or pick a question below." + dismiss × (24px) + 2 suggestion chips (30px) "What is my next step?" / "Where is my incorporation now?". Navy "Ask VCFO" label + 68px round launcher (bobbing 2.6s). DECISION: first-visit bot note once per client. |
-| ☐ | CB-02 | `v7chat_home` (state v=home) | Panel 400×640 at right 24 / bottom 104, radius 12, `animation:v7up .3s`. Header navy: 36px avatar · "Ask VCFO" / green dot "Answers from verified sources" · 32px "Expand to side panel" · 32px close. Navy hero "Hello," / "Northwind Technologies" (metric 21px) overlapped by a white project card: "NORTHWIND’S PROJECT" + chip "SPICe+ Part B" (prog) / "Registered Office Address" (700 13.5px) / 5px progress bar 18% / caption "7 of 38 steps done". "QUICK QUESTIONS" + 2-tab pill "About Northwind’s project 2" · "Learn the basics 4"; tab 0: "What is my next step?", "Where is my incorporation now?" (→ thinking → answer after 1600 ms); tab 1: "What is SPICe+ Part A?", "What is GST, and do we need it?", "What happens after incorporation?", "What is FC-GPR?" (40px rows with → arrow). "PICK UP WHERE NORTHWIND LEFT OFF": Last conversation (i "What is SPICe+ Part A?") · Northwind’s Library (i "Explanations Northwind saved from Ask VCFO") · Monthly status brief (i "PDF · October 2026"). DECISION: "Pick up where you left off" = 1 item (board shows 3 links: conversation is the 1 item; Library + brief are shortcuts). Composer: input "Ask about Northwind’s setup…" (38px) + (i) "Northwind can see questions asked here. Ask VCFO explains; it doesn’t give legal advice. Northwind’s project lead confirms decisions." + 38px Send (40% opacity when empty). Peek image `vcfo-bot-peek.svg` 132×107 above the panel (white outline drop-shadows). Launcher becomes a navy close button. |
-| ☐ | CB-03 | `v7chat_thinking` (v=thinking) | Header gains a back button. User bubble "Where is my incorporation now?" (right, radius 12 12 4 12, light grey). Bot row: 28px avatar + typing dots + sr-only "Finding sources…" + 3-stage status list: ✓ "Checking Northwind’s project…" (ok-text) · spinner "Finding sources…" · dashed circle "Writing…" (subtle). |
-| ☐ | CB-04 | `v7chat_answer` (v=answer) | Avatar does `react` (.55s scale/rotate). Answer card: chip "✓ Reviewed by SBC" (ok-light) · "7 of 38 steps are complete. You're in SPICe+ Part B, on Registered Office Address.¹" · 2×2 phase grid (each `.tipw`, click → drill "Where Northwind’s incorporation is": SPICe+ Part A 5 · SPICe+ Part B 9 · Post-incorporation 11 · Registration 13): "DONE / SPICe+ Part A / 5 of 5" (grey-tint), "NORTHWIND IS HERE / SPICe+ Part B / 2 of 9" (primary border + primary-light), "NEXT / Post-incorporation / 0 of 11" (dashed), "NEXT / Registration / 0 of 13" (dashed) · gold-ruled "Why it matters to Northwind — Each phase unlocks the next, so this is the step that moves Northwind forward." · buttons "Open Incorporation →" (primary outline) / "Open Registered Office Address →" · "SOURCES ¹ Northwind’s project". Under the card: "Ask my lead" small button · "Helpful?" 👍 👎 (30px). DECISION: keep 👍/👎. |
-| ☐ | CB-05 | `v7chat_handoff` | Question "Can our registered office be a co-working space?" → card chip "AI answer · check with Northwind’s lead" + "I’m not certain about this one. Northwind’s project lead can answer it." + highlighted "Ask my lead". Hand-off form (border-top 3px primary): person row (36px photo placeholder, "Arjun Mehta" + (i) "Project Lead · replies by email", caption Project Lead) · label "Ask Northwind’s project lead" + (i) "The last 4 messages go with it, so they have the context." · textarea (3 rows, prefilled with the question) · Cancel (ghost) / primary "Send to lead". Sent state: green status strip "Sent to Northwind’s project lead. They’ll reply by email." + "Close". |
+| ☑ | CB-01 | `v7chat_launcher` | Closed state with first-visit note: card 300px (radius 10, shadow) above the launcher, slides up `v7up .35s` after .9s: "Hello. Ask me anything about Northwind’s setup, or pick a question below." + dismiss × (24px) + 2 suggestion chips (30px) "What is my next step?" / "Where is my incorporation now?". Navy "Ask VCFO" label + 68px round launcher (bobbing 2.6s). DECISION: first-visit bot note once per client. |
+| ☑ | CB-02 | `v7chat_home` (state v=home) | Panel 400×640 at right 24 / bottom 104, radius 12, `animation:v7up .3s`. Header navy: 36px avatar · "Ask VCFO" / green dot "Answers from verified sources" · 32px "Expand to side panel" · 32px close. Navy hero "Hello," / "Northwind Technologies" (metric 21px) overlapped by a white project card: "NORTHWIND’S PROJECT" + chip "SPICe+ Part B" (prog) / "Registered Office Address" (700 13.5px) / 5px progress bar 18% / caption "7 of 38 steps done". "QUICK QUESTIONS" + 2-tab pill "About Northwind’s project 2" · "Learn the basics 4"; tab 0: "What is my next step?", "Where is my incorporation now?" (→ thinking → answer after 1600 ms); tab 1: "What is SPICe+ Part A?", "What is GST, and do we need it?", "What happens after incorporation?", "What is FC-GPR?" (40px rows with → arrow). "PICK UP WHERE NORTHWIND LEFT OFF": Last conversation (i "What is SPICe+ Part A?") · Northwind’s Library (i "Explanations Northwind saved from Ask VCFO") · Monthly status brief (i "PDF · October 2026"). DECISION: "Pick up where you left off" = 1 item (board shows 3 links: conversation is the 1 item; Library + brief are shortcuts). Composer: input "Ask about Northwind’s setup…" (38px) + (i) "Northwind can see questions asked here. Ask VCFO explains; it doesn’t give legal advice. Northwind’s project lead confirms decisions." + 38px Send (40% opacity when empty). Peek image `vcfo-bot-peek.svg` 132×107 above the panel (white outline drop-shadows). Launcher becomes a navy close button. |
+| ☑ | CB-03 | `v7chat_thinking` (v=thinking) | Header gains a back button. User bubble "Where is my incorporation now?" (right, radius 12 12 4 12, light grey). Bot row: 28px avatar + typing dots + sr-only "Finding sources…" + 3-stage status list: ✓ "Checking Northwind’s project…" (ok-text) · spinner "Finding sources…" · dashed circle "Writing…" (subtle). |
+| ☑ | CB-04 | `v7chat_answer` (v=answer) | Avatar does `react` (.55s scale/rotate). Answer card: chip "✓ Reviewed by SBC" (ok-light) · "7 of 38 steps are complete. You're in SPICe+ Part B, on Registered Office Address.¹" · 2×2 phase grid (each `.tipw`, click → drill "Where Northwind’s incorporation is": SPICe+ Part A 5 · SPICe+ Part B 9 · Post-incorporation 11 · Registration 13): "DONE / SPICe+ Part A / 5 of 5" (grey-tint), "NORTHWIND IS HERE / SPICe+ Part B / 2 of 9" (primary border + primary-light), "NEXT / Post-incorporation / 0 of 11" (dashed), "NEXT / Registration / 0 of 13" (dashed) · gold-ruled "Why it matters to Northwind — Each phase unlocks the next, so this is the step that moves Northwind forward." · buttons "Open Incorporation →" (primary outline) / "Open Registered Office Address →" · "SOURCES ¹ Northwind’s project". Under the card: "Ask my lead" small button · "Helpful?" 👍 👎 (30px). DECISION: keep 👍/👎. |
+| ☑ | CB-05 | `v7chat_handoff` | Question "Can our registered office be a co-working space?" → card chip "AI answer · check with Northwind’s lead" + "I’m not certain about this one. Northwind’s project lead can answer it." + highlighted "Ask my lead". Hand-off form (border-top 3px primary): person row (36px photo placeholder, "Arjun Mehta" + (i) "Project Lead · replies by email", caption Project Lead) · label "Ask Northwind’s project lead" + (i) "The last 4 messages go with it, so they have the context." · textarea (3 rows, prefilled with the question) · Cancel (ghost) / primary "Send to lead". Sent state: green status strip "Sent to Northwind’s project lead. They’ll reply by email." + "Close". |
 
 Inconsistencies: CB-02 says "7 of 38 steps" (= 9-step SPICe+ Part B counted… prototype mixes 38/48 totals); runtime says "6 of 14 SPICe+". Phase 4 shown as 13 here vs 23 in the Steps card. See Q3.
 
@@ -615,12 +615,12 @@ Not routed in the prototype (design board). Real use: step detail pop-up opened 
 
 | Done | id | item | content |
 |---|---|---|---|
-| ☐ | SP-01 | Hero header | Navy gradient (115deg navy→navy-2 70%→navy-3), padding 16px 20px 14px, gold 3px underline: mono gold eyebrow "STEP 7 OF 14 · PART B" · 32px close (white 12%) · h2 metric 24px "Registered Office Address" + white (i) "Office address for the company, with proof of address and the owner's NOC." · chips: "Waiting on Northwind" (due-chip, min 116) · "Due 9 Oct · 3 days" (over-chip) · "Owner · Northwind" (white 16%). |
-| ☐ | SP-02 | Timeline (option A "Connected chips", picked) | 4 stage chips joined by 2px connectors: **Started** (ok-light, ✓ icon, "2 Oct", (i) "Rohan Kumar started this step on 2 Oct 2026.") —gradient ok→navy— **Submitted** (navy filled, gold pulsing dot, "Due 9 Oct", (i) "Waiting for Northwind. Due 9 Oct 2026, in 3 days.", 4px navy halo) —dashed— **Reviewed** (dashed border, hollow dot, "Arjun Mehta", (i) "Arjun Mehta, Project Lead, checks the documents.") —dashed— **Completed** ("Priya Raman", (i) "Priya Raman, Project Manager, signs off."). |
-| ☐ | SP-03 | Needed from Northwind | Label + count chip "2" (due-chip); amber box (due-light, 1px oklch(66% .17 48 / .35), radius 8): rows checkbox (due border) · "Utility bill for the office" (i "Electricity or water · Max 2 months old · Asked by Arjun Mehta · Due 9 Oct") · outline "⬆ Upload" (30px, min 88); "NOC from property owner" (i "Signed, on plain paper · Asked by Arjun Mehta · Due 9 Oct") · Upload. |
-| ☐ | SP-04 | Documents | Row (title "Open preview", clickable): 32px PDF badge · "Rent agreement" (i "Uploaded by Northwind on 2 Oct 2026.") · chip "Uploaded" (ok) · 28px 👁 Preview / ⬇ Download. Missing rows (dashed rows per DECISIONS "missing files as dashed rows"; here grey icon tile): "Utility bill" (i "Electricity or water · Max 2 months old") chip "Missing" (over) · "NOC from property owner" (i "Signed, on plain paper") Missing. DECISION rule 8: no "Not uploaded" text under a Missing badge. |
-| ☐ | SP-05 | What was provided | 2-column definition grid: Address (span 2) "4th Floor, Prestige Tech Park, Outer Ring Road, Bengaluru 560103" · State Karnataka · Premises Leased · Owner "—" (i "Not given yet. Northwind adds this when the step is completed.") · Proof of address "—" (same i). |
-| ☐ | SP-06 | Footer | Primary "Continue step →" (→ step page) · outline "🤖 Ask VCFO about this step" (opens chat) · outline "✉ Message Arjun (lead)". |
+| ☑ | SP-01 | Hero header | Navy gradient (115deg navy→navy-2 70%→navy-3), padding 16px 20px 14px, gold 3px underline: mono gold eyebrow "STEP 7 OF 14 · PART B" · 32px close (white 12%) · h2 metric 24px "Registered Office Address" + white (i) "Office address for the company, with proof of address and the owner's NOC." · chips: "Waiting on Northwind" (due-chip, min 116) · "Due 9 Oct · 3 days" (over-chip) · "Owner · Northwind" (white 16%). |
+| ☑ | SP-02 | Timeline (option A "Connected chips", picked) | 4 stage chips joined by 2px connectors: **Started** (ok-light, ✓ icon, "2 Oct", (i) "Rohan Kumar started this step on 2 Oct 2026.") —gradient ok→navy— **Submitted** (navy filled, gold pulsing dot, "Due 9 Oct", (i) "Waiting for Northwind. Due 9 Oct 2026, in 3 days.", 4px navy halo) —dashed— **Reviewed** (dashed border, hollow dot, "Arjun Mehta", (i) "Arjun Mehta, Project Lead, checks the documents.") —dashed— **Completed** ("Priya Raman", (i) "Priya Raman, Project Manager, signs off."). |
+| ☑ | SP-03 | Needed from Northwind | Label + count chip "2" (due-chip); amber box (due-light, 1px oklch(66% .17 48 / .35), radius 8): rows checkbox (due border) · "Utility bill for the office" (i "Electricity or water · Max 2 months old · Asked by Arjun Mehta · Due 9 Oct") · outline "⬆ Upload" (30px, min 88); "NOC from property owner" (i "Signed, on plain paper · Asked by Arjun Mehta · Due 9 Oct") · Upload. |
+| ☑ | SP-04 | Documents | Row (title "Open preview", clickable): 32px PDF badge · "Rent agreement" (i "Uploaded by Northwind on 2 Oct 2026.") · chip "Uploaded" (ok) · 28px 👁 Preview / ⬇ Download. Missing rows (dashed rows per DECISIONS "missing files as dashed rows"; here grey icon tile): "Utility bill" (i "Electricity or water · Max 2 months old") chip "Missing" (over) · "NOC from property owner" (i "Signed, on plain paper") Missing. DECISION rule 8: no "Not uploaded" text under a Missing badge. |
+| ☑ | SP-05 | What was provided | 2-column definition grid: Address (span 2) "4th Floor, Prestige Tech Park, Outer Ring Road, Bengaluru 560103" · State Karnataka · Premises Leased · Owner "—" (i "Not given yet. Northwind adds this when the step is completed.") · Proof of address "—" (same i). |
+| ☑ | SP-06 | Footer | Primary "Continue step →" (→ step page) · outline "🤖 Ask VCFO about this step" (opens chat) · outline "✉ Message Arjun (lead)". |
 
 Data: step slice from `checklist_state` (status, `clientSubmittedAt`, `reviewedAt/By`, `completedOn`), responses via `extractItemResponses` (`src/lib/checklist-responses.ts`), required docs/needs (NEW needs list), step files (`listDocuments` with `step_id` / milestone paths), schedule window. "Message Arjun" → NEW or existing messaging (`app/app/client/messages` folder exists) / `POST /api/ask/handoff`.
 
@@ -628,10 +628,10 @@ Data: step slice from `checklist_state` (status, `clientSubmittedAt`, `reviewedA
 
 | Done | id | item | content |
 |---|---|---|---|
-| ☐ | CP-01 | Header | "Compliances · FY 2026-27" + (i) "As of 8 Nov 2026" + ×. |
-| ☐ | CP-02 | Tabs | 5-tab pill: All 38 · Filed 1 · Due soon 3 · Overdue 1 · Upcoming 33 (opens on the clicked donut part; board default tab 1 = Filed). |
-| ☐ | CP-03 | Table | Filing · Period · Area · Due / filed (mono right) · Status chip: TDS Payment Oct 2026 Income tax 7 Nov 2026 Overdue · EPF Return & Payment Oct 2026 Payroll 15 Nov 2026 Due soon · ESI Payment … 15 Nov 2026 Due soon · PT Payment … 20 Nov 2026 Due soon · ADT-1 (auditor appointment) FY 2026-27 MCA "Filed 5 Nov 2026" Filed · FC-GPR Filing "Share allotment" FEMA 2 Dec 2026 Upcoming · TDS Payment Nov 2026 7 Dec · GSTR-1 Nov 2026 GST 11 Dec · GSTR-3B Nov 2026 20 Dec · Commencement (INC-20A) One-time MCA 22 Apr 2027 (Upcoming). |
-| ☐ | CP-04 | Footer | caption "Showing k of n · full list in Filings" / "Showing all n" + outline "Open Filings" (→ `filings`). |
+| ☑ | CP-01 | Header | "Compliances · FY 2026-27" + (i) "As of 8 Nov 2026" + ×. |
+| ☑ | CP-02 | Tabs | 5-tab pill: All 38 · Filed 1 · Due soon 3 · Overdue 1 · Upcoming 33 (opens on the clicked donut part; board default tab 1 = Filed). |
+| ☑ | CP-03 | Table | Filing · Period · Area · Due / filed (mono right) · Status chip: TDS Payment Oct 2026 Income tax 7 Nov 2026 Overdue · EPF Return & Payment Oct 2026 Payroll 15 Nov 2026 Due soon · ESI Payment … 15 Nov 2026 Due soon · PT Payment … 20 Nov 2026 Due soon · ADT-1 (auditor appointment) FY 2026-27 MCA "Filed 5 Nov 2026" Filed · FC-GPR Filing "Share allotment" FEMA 2 Dec 2026 Upcoming · TDS Payment Nov 2026 7 Dec · GSTR-1 Nov 2026 GST 11 Dec · GSTR-3B Nov 2026 20 Dec · Commencement (INC-20A) One-time MCA 22 Apr 2027 (Upcoming). |
+| ☑ | CP-04 | Footer | caption "Showing k of n · full list in Filings" / "Showing all n" + outline "Open Filings" (→ `filings`). |
 
 Data: `getFilings` (`GET /api/filings?engagementId=&fy=`), status buckets as 5.12.
 
@@ -652,13 +652,13 @@ Data: `getFilings` (`GET /api/filings?engagementId=&fy=`), status buckets as 5.1
 
 | Done | id | content |
 |---|---|---|
-| ☐ | TC-01 | Title "Request a timeline change" + (i) "Northwind Technologies India Pvt Ltd · client request". |
-| ☐ | TC-02 | Info strip (prog-light, 3px prog left border): "The change is a request. Priya Raman (manager) approves or rejects it." |
-| ☐ | TC-03 | Toolbar: Undo / Redo (30px icon buttons) · "Snap" + pill Day · Week · right chip "COI would move 4 days" (due-chip). |
-| ☐ | TC-04 | Chart (rows 40px): navy floating label "24 Oct 2026 · +4 days" above the dragged edge; ghost bars (1.5px dashed subtle, 8% tint) = before; after bars with 2px red outline = critical path; Phase 2 bar has 10px drag handles on both ends (white, primary ring, ew-resize). Legend: Before (dashed) · After (prog) · Critical path (red ring) · Today (red line). |
-| ☐ | TC-05 | Change table: Phase · Before (struck through) · After · Change chip: Phase 2 · Incorporation 25 Sep - 20 Oct → 25 Sep - 24 Oct "+4 days" · MCA review 20 Oct - 28 Oct → 24 Oct - 1 Nov "moved +4" · COI 28 Oct 2026 → 1 Nov 2026 "+4 days". |
-| ☐ | TC-06 | "Reason for the change" textarea (3 rows): "Office NOC from the landlord will arrive on 22 Oct." |
-| ☐ | TC-07 | Footer (i) "Nothing changes until SBC approves" · Cancel · primary "➤ Send request". |
+| ☑ | TC-01 | Title "Request a timeline change" + (i) "Northwind Technologies India Pvt Ltd · client request". |
+| ☑ | TC-02 | Info strip (prog-light, 3px prog left border): "The change is a request. Priya Raman (manager) approves or rejects it." |
+| ☑ | TC-03 | Toolbar: Undo / Redo (30px icon buttons) · "Snap" + pill Day · Week · right chip "COI would move 4 days" (due-chip). |
+| ☑ | TC-04 | Chart (rows 40px): navy floating label "24 Oct 2026 · +4 days" above the dragged edge; ghost bars (1.5px dashed subtle, 8% tint) = before; after bars with 2px red outline = critical path; Phase 2 bar has 10px drag handles on both ends (white, primary ring, ew-resize). Legend: Before (dashed) · After (prog) · Critical path (red ring) · Today (red line). |
+| ☑ | TC-05 | Change table: Phase · Before (struck through) · After · Change chip: Phase 2 · Incorporation 25 Sep - 20 Oct → 25 Sep - 24 Oct "+4 days" · MCA review 20 Oct - 28 Oct → 24 Oct - 1 Nov "moved +4" · COI 28 Oct 2026 → 1 Nov 2026 "+4 days". |
+| ☑ | TC-06 | "Reason for the change" textarea (3 rows): "Office NOC from the landlord will arrive on 22 Oct." |
+| ☑ | TC-07 | Footer (i) "Nothing changes until SBC approves" · Cancel · primary "➤ Send request". |
 
 #### 8.5 Timeline manager board (`v7p_timeline_manager`, 980px)
 Same as 8.4 with: title "Edit timeline" ((i) "… · manager edit"); no info strip; toolbar adds divider, "Zoom" pill Week · Month, chip "COI slipped by 4 days" (over-chip); "Change history" list (mono 110px time · text · actor): 6 Oct 2026 10:42 "Phase 2 end 20 Oct → 24 Oct (draft)" Priya Raman / 1 Oct 2026 16:05 "Phase 1 closed on 24 Sep" Priya Raman / 12 Sep 2026 11:20 "Timeline created" Priya Raman; footer (i) "On save: email and WhatsApp to admin, manager, lead and client" · Cancel · primary "Save changes".
@@ -667,19 +667,19 @@ Same as 8.4 with: title "Edit timeline" ((i) "… · manager edit"); no info str
 
 | Done | id | item | behaviour |
 |---|---|---|---|
-| ☐ | TE-01 | Model | Axis origin T0 = 12 Sep 2026, card span 57 days; "world" −42…+110 days (1 Aug → 31 Dec 2026). Phases: a "Phase 1 · Name Application" 12 Sep–24 Sep **done (locked)** ok colour; b "Phase 2 · Incorporation" 25 Sep–20 Oct navy-3; m "MCA review" 20 Oct–28 Oct oklch(70% .03 255); c "COI" 28 Oct milestone (diamond, gold). Saved state in `sessionStorage vcfo.tl.saved`, pending client request in `vcfo.tl.pending`, last mode in `vcfo.tl.mode`. |
-| ☐ | TE-02 | Dialog | Scrim rgba(8,20,40,.5) (fade .18s); `#tle` width min(1080px,100%), max-height 100dvh−32, radius 12, enters `translateY(10px) scale(.98)`→none .26s. Phone ≤767: bottom sheet (radius 14 14 0 0, max-height 92dvh), date column hidden, 40px buttons. |
-| ☐ | TE-03 | Header | h2 "Edit timeline" / "Request a timeline change" (client mode) + mode toggle (aria "Who is editing"): "Manager · direct edit" / "Client · change request" (pressed = navy) + 36px × (aria "Close editor"). In the real app the mode is the user's role (client → request; manager → direct) — no toggle. |
-| ☐ | TE-04 | Tools | "↶ Undo" (disabled when no history; 60-step history) · "Reset" (to saved, toast "Reset to the saved timeline") · hint "Drag a bar to move it · drag its edges to change dates · snaps to days|weeks · ctrl + scroll or pinch to zoom" · zoom group: − / range slider (log scale) / + / level label Days·Weeks·Months / "Fit". |
-| ☐ | TE-05 | Grid | 3 columns `170px | viewport | 150px` (1023px: 140/120; phone 96px + viewport): names (🔒 on done phase), lanes 52px with ruler 44px (month labels at the 1st, day/week ticks by zoom; weekends lighter), dashed ghost of the saved bar, the bar (26px, radius 5, shadow; done = striped + not-allowed), today red line + "Today 6 Oct" tag, right column "d Mon – d Mon" + change chip "+N d" (late red #b42318 on #fde8e6) / "−N d" (early green #0f7a55 on #e3f6ee). |
-| ☐ | TE-06 | Drag | Pointer drag on the bar moves it; on the 12px edge handles resizes start/end; snaps to 1 day (or 7 days when zoomed out <8 px/day); a floating navy read-out above the bar "d Mon – d Mon · N days" (visible on hover/focus/drag). Dragging adds a gold ring. Keyboard: bar is `role=slider` (aria-valuetext = read-out); ←/→ moves by the snap; Shift+←/→ changes the end. Done phase: toast "Phase 1 is done, so its dates are locked". |
-| ☐ | TE-07 | Cascade | A phase never starts before the previous one ends; when a phase grows/moves later, following phases shift by the same amount keeping their lengths; milestone follows. |
-| ☐ | TE-08 | Zoom/pan | ctrl/⌘ + wheel zooms around the cursor; wheel scrolls horizontally when zoomed in; mouse drag on empty lane pans; two-finger pinch zooms; "Fit" = 12 Sep → 8 Nov; min = whole world, max 48 px/day. |
-| ☐ | TE-09 | Summary | Grey box: "COI 28 Oct → 1 Nov" + pill "Slipped by 4 days" (late) / "Pulled in by N days" (early) / "No change to the COI date" (same) + hint when slipped "MCA review and the COI move with Phase 2. The client is told by email and WhatsApp." |
-| ☐ | TE-10 | Compare | Two boxes "BEFORE" / "AFTER" listing each phase and its dates. |
-| ☐ | TE-11 | Client reason | Client mode only: label "Why do you need this change?" + textarea placeholder "For example: our director is travelling until 14 Oct, so the KYC video call has to move." + error (hidden until needed) "Add a short reason so Northwind’s project manager can approve it." |
-| ☐ | TE-12 | Footer | Warning text — manager: "Saving updates the dashboard for everyone on Northwind."; client: "Priya Raman (Project Manager) approves requests. Northwind’s dates stay as they are until then." · Cancel · navy "Save timeline" / "Send request". |
-| ☐ | TE-13 | Commit | No change → toast "No changes to save". Client: reason required → store pending, close, add the pending chip to the card (TL-01), toast "Change request sent to Priya Raman" + Undo (removes the request). Manager: save, close, animate card bars, toast "Timeline saved · COI d Mon · slipped by N d" + Undo (restores previous). Esc / scrim / × close without saving. |
+| ☑ | TE-01 | Model | Axis origin T0 = 12 Sep 2026, card span 57 days; "world" −42…+110 days (1 Aug → 31 Dec 2026). Phases: a "Phase 1 · Name Application" 12 Sep–24 Sep **done (locked)** ok colour; b "Phase 2 · Incorporation" 25 Sep–20 Oct navy-3; m "MCA review" 20 Oct–28 Oct oklch(70% .03 255); c "COI" 28 Oct milestone (diamond, gold). Saved state in `sessionStorage vcfo.tl.saved`, pending client request in `vcfo.tl.pending`, last mode in `vcfo.tl.mode`. |
+| ☑ | TE-02 | Dialog | Scrim rgba(8,20,40,.5) (fade .18s); `#tle` width min(1080px,100%), max-height 100dvh−32, radius 12, enters `translateY(10px) scale(.98)`→none .26s. Phone ≤767: bottom sheet (radius 14 14 0 0, max-height 92dvh), date column hidden, 40px buttons. |
+| ☑ | TE-03 | Header | h2 "Edit timeline" / "Request a timeline change" (client mode) + mode toggle (aria "Who is editing"): "Manager · direct edit" / "Client · change request" (pressed = navy) + 36px × (aria "Close editor"). In the real app the mode is the user's role (client → request; manager → direct) — no toggle. |
+| ☑ | TE-04 | Tools | "↶ Undo" (disabled when no history; 60-step history) · "Reset" (to saved, toast "Reset to the saved timeline") · hint "Drag a bar to move it · drag its edges to change dates · snaps to days|weeks · ctrl + scroll or pinch to zoom" · zoom group: − / range slider (log scale) / + / level label Days·Weeks·Months / "Fit". |
+| ☑ | TE-05 | Grid | 3 columns `170px | viewport | 150px` (1023px: 140/120; phone 96px + viewport): names (🔒 on done phase), lanes 52px with ruler 44px (month labels at the 1st, day/week ticks by zoom; weekends lighter), dashed ghost of the saved bar, the bar (26px, radius 5, shadow; done = striped + not-allowed), today red line + "Today 6 Oct" tag, right column "d Mon – d Mon" + change chip "+N d" (late red #b42318 on #fde8e6) / "−N d" (early green #0f7a55 on #e3f6ee). |
+| ☑ | TE-06 | Drag | Pointer drag on the bar moves it; on the 12px edge handles resizes start/end; snaps to 1 day (or 7 days when zoomed out <8 px/day); a floating navy read-out above the bar "d Mon – d Mon · N days" (visible on hover/focus/drag). Dragging adds a gold ring. Keyboard: bar is `role=slider` (aria-valuetext = read-out); ←/→ moves by the snap; Shift+←/→ changes the end. Done phase: toast "Phase 1 is done, so its dates are locked". |
+| ☑ | TE-07 | Cascade | A phase never starts before the previous one ends; when a phase grows/moves later, following phases shift by the same amount keeping their lengths; milestone follows. |
+| ☑ | TE-08 | Zoom/pan | ctrl/⌘ + wheel zooms around the cursor; wheel scrolls horizontally when zoomed in; mouse drag on empty lane pans; two-finger pinch zooms; "Fit" = 12 Sep → 8 Nov; min = whole world, max 48 px/day. |
+| ☑ | TE-09 | Summary | Grey box: "COI 28 Oct → 1 Nov" + pill "Slipped by 4 days" (late) / "Pulled in by N days" (early) / "No change to the COI date" (same) + hint when slipped "MCA review and the COI move with Phase 2. The client is told by email and WhatsApp." |
+| ☑ | TE-10 | Compare | Two boxes "BEFORE" / "AFTER" listing each phase and its dates. |
+| ☑ | TE-11 | Client reason | Client mode only: label "Why do you need this change?" + textarea placeholder "For example: our director is travelling until 14 Oct, so the KYC video call has to move." + error (hidden until needed) "Add a short reason so Northwind’s project manager can approve it." |
+| ◐ | TE-12 | Footer | Warning text — manager: "Saving updates the dashboard for everyone on Northwind."; client: "Priya Raman (Project Manager) approves requests. Northwind’s dates stay as they are until then." · Cancel · navy "Save timeline" / "Send request". |
+| ◐ | TE-13 | Commit | No change → toast "No changes to save". Client: reason required → store pending, close, add the pending chip to the card (TL-01), toast "Change request sent to Priya Raman" + Undo (removes the request). Manager: save, close, animate card bars, toast "Timeline saved · COI d Mon · slipped by N d" + Undo (restores previous). Esc / scrim / × close without saving. |
 
 Backend: manager save → existing `setEngagementWindow` (`src/db/repositories/schedule.ts`, route `/api/engagements/[id]/schedule`, role check `canSetScheduleWindows`), store per-phase windows as step windows (first/last step of the phase) or add phase-level keys to `schedule` (NEW shape `schedule.phases[phaseId]`). Client request → NEW `engagement_change_requests` kind `timeline` (5.7) + manager approval UI (manager area). Audit on both. Notifications: email + WhatsApp (NEW notify event `timeline_changed`, templates in `src/lib/notify/templates.ts`, see `docs/context/notes/aws.md`).
 
@@ -781,10 +781,10 @@ Note the grid breakpoints are on VIEWPORT width (media queries), independent of 
 
 | Done | viewport | columns | areas | rows |
 |---|---|---|---|---|
-| ☐ | < 600 | `minmax(0,1fr)` | `"g" "a" "c1" "b" "c2"` | auto |
-| ☐ | 600–1179 | `repeat(2,minmax(0,1fr))` | `"g g" "a a" "c1 c2" "b b"` | auto |
-| ☐ | 1180–1799 | `minmax(0,2fr) minmax(0,1fr)` | `"g g" "a c1" "a c2" "b c2"` | `auto auto 1fr auto` |
-| ☐ | ≥ 1800 | `repeat(3,minmax(0,1fr))` | `"g g g" "a c1 c2" "b b c2"` | `auto auto 1fr` |
+| ☑ | < 600 | `minmax(0,1fr)` | `"g" "a" "c1" "b" "c2"` | auto |
+| ☑ | 600–1179 | `repeat(2,minmax(0,1fr))` | `"g g" "a a" "c1 c2" "b b"` | auto |
+| ☑ | 1180–1799 | `minmax(0,2fr) minmax(0,1fr)` | `"g g" "a c1" "a c2" "b c2"` | `auto auto 1fr auto` |
+| ☑ | ≥ 1800 | `repeat(3,minmax(0,1fr))` | `"g g g" "a c1 c2" "b b c2"` | `auto auto 1fr` |
 
 (a = Needs + Who holds it now; c1 = Alerts + SBC; b = Timeline + Steps; c2 = Docs + Activity.)
 
@@ -792,10 +792,10 @@ Note the grid breakpoints are on VIEWPORT width (media queries), independent of 
 
 | Done | viewport | columns | areas | rows |
 |---|---|---|---|---|
-| ☐ | < 600 | 1 | `"g" "a1" "c1" "a2" "c2" "f" "d" "e"` | auto |
-| ☐ | 600–1179 | `repeat(2,minmax(0,1fr))` | `"g g" "a1 a1" "c1 a2" "c1 c2" "f f" "d e"` | `auto auto auto 1fr` |
-| ☐ | 1180–1799 | `repeat(6,minmax(0,1fr))` | `"g g g g g g" "a1 a1 a1 a1 c1 c1" "a1 a1 a1 a1 c2 c2" "a2 a2 a2 a2 c2 c2" "f f f f f f" "d d d e e e"` | `auto auto 1fr auto` |
-| ☐ | ≥ 1800 | 6 | `"g g g g g g" "a1 a1 a2 a2 c1 c1" "a1 a1 c2 c2 c1 c1" "f f f f f f" "d d d e e e"` | `auto auto 1fr` |
+| ☑ | < 600 | 1 | `"g" "a1" "c1" "a2" "c2" "f" "d" "e"` | auto |
+| ☑ | 600–1179 | `repeat(2,minmax(0,1fr))` | `"g g" "a1 a1" "c1 a2" "c1 c2" "f f" "d e"` | `auto auto auto 1fr` |
+| ☑ | 1180–1799 | `repeat(6,minmax(0,1fr))` | `"g g g g g g" "a1 a1 a1 a1 c1 c1" "a1 a1 a1 a1 c2 c2" "a2 a2 a2 a2 c2 c2" "f f f f f f" "d d d e e e"` | `auto auto 1fr auto` |
+| ☑ | ≥ 1800 | 6 | `"g g g g g g" "a1 a1 a2 a2 c1 c1" "a1 a1 c2 c2 c1 c1" "f f f f f f" "d d d e e e"` | `auto auto 1fr` |
 
 (a1 = Needs + What is next; c1 = Alerts + SBC; a2 = Compliance status; c2 = Company IDs; f = Compliance by area + Registrations + Post-inc + Timeline + Steps; d = Docs; e = Activity.)
 
@@ -803,17 +803,17 @@ Note the grid breakpoints are on VIEWPORT width (media queries), independent of 
 
 | Done | rule | breakpoint |
 |---|---|---|
-| ☐ | Search button collapses to 36px icon | ≤1099 |
-| ☐ | Top bar gap 6 / padding 10; menu button shown; crumb hidden; logo 22px; all top-bar buttons ≥40px; `.vh-hide-sm` hidden; card `.btn` and pill buttons ≥40px; no card hover lift | ≤767 |
-| ☐ | `.vh-hide-xs` hidden (greeting "Report" label) | ≤479 |
-| ☐ | Greeting stats become a grid `repeat(auto-fill,minmax(118px,1fr))` gap 8px 12px, no separators; `.vh-gtop` wraps | ≤599 |
-| ☐ | `.vh-segwrap` pills (Compliance by area, Registrations) wrap, thumb hidden, active = navy bg | ≤767 |
-| ☐ | Tables scroll inside `.vh-x` (`overflow-x:auto;overscroll-behavior-x:contain`; table `min-width:var(--tmin,520px)`: Steps 560, Area 600, Registrations 720); timeline in `.vh-tl` scrolls with min-width 600 | all |
-| ☐ | Drill-down: width min(600px,100vw−24), max-height min(560px,100dvh−24); ≤640 pill wraps, date column hidden (`ddrow` → `minmax(0,1fr) 116px 16px`) | ≤640 |
-| ☐ | Pop-overs max min(280px,100vw−24); closed pop-overs `display:none` (no phantom scroll) | all |
-| ☐ | Coarse pointers: (i) gets an 11px invisible hit-area ring | `pointer:coarse` |
-| ☐ | `.vh-pbar` (52px fixed bar for full-screen pop-up boards), `.vh-under-bar{top:52px}`, `.vh-zoom{bottom:72px}` | ≤767 |
-| ☐ | Phone file swap (`mobile.html`) | <700 (prototype); real app: <768 single responsive page |
+| ☑ | Search button collapses to 36px icon | ≤1099 |
+| ☑ | Top bar gap 6 / padding 10; menu button shown; crumb hidden; logo 22px; all top-bar buttons ≥40px; `.vh-hide-sm` hidden; card `.btn` and pill buttons ≥40px; no card hover lift | ≤767 |
+| ☑ | `.vh-hide-xs` hidden (greeting "Report" label) | ≤479 |
+| ☑ | Greeting stats become a grid `repeat(auto-fill,minmax(118px,1fr))` gap 8px 12px, no separators; `.vh-gtop` wraps | ≤599 |
+| ☑ | `.vh-segwrap` pills (Compliance by area, Registrations) wrap, thumb hidden, active = navy bg | ≤767 |
+| ☑ | Tables scroll inside `.vh-x` (`overflow-x:auto;overscroll-behavior-x:contain`; table `min-width:var(--tmin,520px)`: Steps 560, Area 600, Registrations 720); timeline in `.vh-tl` scrolls with min-width 600 | all |
+| ☑ | Drill-down: width min(600px,100vw−24), max-height min(560px,100dvh−24); ≤640 pill wraps, date column hidden (`ddrow` → `minmax(0,1fr) 116px 16px`) | ≤640 |
+| ☑ | Pop-overs max min(280px,100vw−24); closed pop-overs `display:none` (no phantom scroll) | all |
+| ☑ | Coarse pointers: (i) gets an 11px invisible hit-area ring | `pointer:coarse` |
+| ☑ | `.vh-pbar` (52px fixed bar for full-screen pop-up boards), `.vh-under-bar{top:52px}`, `.vh-zoom{bottom:72px}` | ≤767 |
+| ☑ | Phone file swap (`mobile.html`) | <700 (prototype); real app: <768 single responsive page |
 
 #### 11.5 Card anatomy (desktop) — exact CSS
 
@@ -862,46 +862,52 @@ Full verbatim markup of every card is in Appendix B; the phone CSS in Appendix C
 
 | Done | need | provider |
 |---|---|---|
-| ☐ | One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/lib/use-client-overview.ts`), pure builders in `src/lib/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
-| ☐ | Company name, legal form, incorporation date, registered office | `overview.engagement` |
-| ☐ | Before/after switch | `overview.incorporated` |
-| ☐ | Phase progress (ring, Steps card chips, timeline %) | `overview.progress.byPhase` |
-| ☐ | Step list with gate state | `overview.milestones` + `src/data/checklist.ts` |
-| ☐ | CIN/PAN/TAN/PF/ESI codes | `overview.identifiers` |
-| ☐ | Upcoming filings (+90 days) | `overview.compliance.upcoming` |
-| ☐ | Full filings register / FY | `GET /api/filings` (`getFilings`), `useComplianceFilings` |
-| ☐ | Filing working windows | `compliance_instances.window_from/to`, `PATCH /api/filings/[id]/window` |
-| ☐ | Manager date windows (timeline, expected COI) | `engagements.schedule`, `src/lib/schedule-windows.ts`, `/api/engagements/[id]/schedule`, `setEngagementWindow` |
-| ☐ | Team (PM / PL names, email) | `overview.team` |
-| ☐ | Activity | `overview.activity` (audit events) / `GET /api/activity` |
-| ☐ | Documents + preview | `GET /api/documents`, `GET /api/documents/[id]/signed-url`, `GET /api/milestone-documents/signed-url`, deliverables |
-| ☐ | Document requests | `document_requests` + `GET/POST /api/requests`, `PATCH /api/requests/[id]` |
-| ☐ | Client change request on a step | `POST /api/client/change-requests` |
-| ☐ | Client approve step | `POST /api/client/steps/[stepId]/approve` |
-| ☐ | Ask VCFO (chat, suggestions, handoff, brief PDF, nudge, library) | `/api/ask/*`, `src/components/ask/*` |
-| ☐ | Notifications badge | `GET /api/notifications` |
-| ☐ | Shared CSS tokens | `src/components/client-portal/css-src/*` (`.cp`-scoped port of the prototype base CSS) |
+| ☑ | One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/lib/use-client-overview.ts`), pure builders in `src/lib/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
+| ☑ | Company name, legal form, incorporation date, registered office | `overview.engagement` |
+| ☑ | Before/after switch | `overview.incorporated` |
+| ☑ | Phase progress (ring, Steps card chips, timeline %) | `overview.progress.byPhase` |
+| ☑ | Step list with gate state | `overview.milestones` + `src/data/checklist.ts` |
+| ☑ | CIN/PAN/TAN/PF/ESI codes | `overview.identifiers` |
+| ☑ | Upcoming filings (+90 days) | `overview.compliance.upcoming` |
+| ☑ | Full filings register / FY | `GET /api/filings` (`getFilings`), `useComplianceFilings` |
+| ☑ | Filing working windows | `compliance_instances.window_from/to`, `PATCH /api/filings/[id]/window` |
+| ☑ | Manager date windows (timeline, expected COI) | `engagements.schedule`, `src/lib/schedule-windows.ts`, `/api/engagements/[id]/schedule`, `setEngagementWindow` |
+| ☑ | Team (PM / PL names, email) | `overview.team` |
+| ☑ | Activity | `overview.activity` (audit events) / `GET /api/activity` |
+| ☑ | Documents + preview | `GET /api/documents`, `GET /api/documents/[id]/signed-url`, `GET /api/milestone-documents/signed-url`, deliverables |
+| ☑ | Document requests | `document_requests` + `GET/POST /api/requests`, `PATCH /api/requests/[id]` |
+| ☑ | Client change request on a step | `POST /api/client/change-requests` |
+| ☑ | Client approve step | `POST /api/client/steps/[stepId]/approve` |
+| ☑ | Ask VCFO (chat, suggestions, handoff, brief PDF, nudge, library) | `/api/ask/*`, `src/components/ask/*` |
+| ☑ | Notifications badge | `GET /api/notifications` |
+| ☑ | Shared CSS tokens | `src/components/client-portal/css-src/*` (`.cp`-scoped port of the prototype base CSS) |
 
 #### 12.2 NEW backend pieces needed
 
 | Done | # | piece | for |
 |---|---|---|---|
-| ☐ | N1 | `overview.needs[]` — unified client needs (document requests with `step_id`/`compliance_instance_id`/`kind`/`due_date`, fill requests, rejected steps, sign items); columns on `document_requests`: `step_id text`, `compliance_instance_id uuid`, `kind text`, `due_date date`, `field_id text` | Needs card, Waiting-on count, Documents in x/y, step pop-up "Needed from …" |
-| ☐ | N2 | `overview.expectedCoiDate` (from `schedule.incorporation.to`) | greeting "Expected COI", timeline COI |
-| ☐ | N3 | `overview.alerts[]` builder (`buildAlerts`) | Important alerts |
-| ☐ | N4 | Include overdue filings in the runway (`status='overdue'` or past due not filed) + `overview.compliance.fyCounts` + area grouping | What is next hero, donut, compliance by area, stats |
-| ☐ | N5 | Firm work items visible to the client (`tasks.visible_to_client`, `tasks.progress_pct`) or derived per-step progress | What SBC is doing, "30%" captions |
-| ☐ | N6 | `engagement_change_requests.kind = 'timeline'` + manager approve flow + `timeline_changed` notify event; phase-level windows in `schedule` | Timeline editor, pending chip |
-| ☐ | N7 | Activity actor fields (`actorName`, `actorKind`) in `ClientOverviewActivity`; system events from the compliance job | Recent activity tabs |
-| ☐ | N8 | `identifiers.gstin` (+ iec, lei, pf/esi reg numbers) in `identifiersFromState` | Company IDs, Registrations |
-| ☐ | N9 | Masked PAN/TAN in the overview + `POST /api/client/identifiers/reveal` (password re-check, 3-try lock, audit) | Company IDs reveal / `v7p_ids_password` |
-| ☐ | N10 | `overview.registrations[]` builder + category/authority map + missing number fields for PT/S&E/Trade Licence/Trademark/MSME | Registrations card |
-| ☐ | N11 | Post-inc statutory window per step (N days, anchor date) + day counter | Post-incorporation setup |
+| ☑ | N1 | `overview.needs[]` — unified client needs (document requests with `step_id`/`compliance_instance_id`/`kind`/`due_date`, fill requests, rejected steps, sign items); columns on `document_requests`: `step_id text`, `compliance_instance_id uuid`, `kind text`, `due_date date`, `field_id text` | Needs card, Waiting-on count, Documents in x/y, step pop-up "Needed from …" |
+| ☑ | N2 | `overview.expectedCoiDate` (from `schedule.incorporation.to`) | greeting "Expected COI", timeline COI |
+| ☑ | N3 | `overview.alerts[]` builder (`buildAlerts`) | Important alerts |
+| ☑ | N4 | Include overdue filings in the runway (`status='overdue'` or past due not filed) + `overview.compliance.fyCounts` + area grouping | What is next hero, donut, compliance by area, stats |
+| ◐ | N5 | Firm work items visible to the client (`tasks.visible_to_client`, `tasks.progress_pct`) or derived per-step progress | What SBC is doing, "30%" captions |
+| ◐ | N6 | `engagement_change_requests.kind = 'timeline'` + manager approve flow + `timeline_changed` notify event; phase-level windows in `schedule` | Timeline editor, pending chip |
+| ◐ | N7 | Activity actor fields (`actorName`, `actorKind`) in `ClientOverviewActivity`; system events from the compliance job | Recent activity tabs |
+| ☑ | N8 | `identifiers.gstin` (+ iec, lei, pf/esi reg numbers) in `identifiersFromState` | Company IDs, Registrations |
+| ☑ | N9 | Masked PAN/TAN in the overview + `POST /api/client/identifiers/reveal` (password re-check, 3-try lock, audit) | Company IDs reveal / `v7p_ids_password` |
+| ◐ | N10 | `overview.registrations[]` builder + category/authority map + missing number fields for PT/S&E/Trade Licence/Trademark/MSME | Registrations card |
+| ◐ | N11 | Post-inc statutory window per step (N days, anchor date) + day counter | Post-incorporation setup |
 | ☐ | N12 | Credentials: tables `engagement_credentials` (+ `engagement_director_kyc`), `credential_otps`, `credential_access_grants`; repo `credentials.ts`; routes under `/api/engagements/[id]/credentials/*`; KMS/local encryption; OTP delivery to the manager (email + WhatsApp template); audit actions `credentials.*`; page `/app/client/credentials` | Credentials page |
-| ☐ | N13 | Report download wired to `/api/ask/brief` (exists) — only a front-end wire | Greeting Report |
-| ☐ | N14 | Portal URL map (front-end constant), file-type → badge colour map | ↗ links, doc badges |
+| ☑ | N13 | Report download wired to `/api/ask/brief` (exists) — only a front-end wire | Greeting Report |
+| ☑ | N14 | Portal URL map (front-end constant), file-type → badge colour map | ↗ links, doc badges |
 
 ---
+
+#### NEW backend pieces built by the Home builder
+- NEW tables (`src/db/schema-portal-home.ts`): `client_need_meta` (request_id pk → document_requests, engagement_id, step_id, compliance_instance_id, kind upload|fill|correct|sign, due_date, field_id, updated_at); `client_work_items` (id, engagement_id, step_id, title, assignee_id, progress_pct, ready_on, status active|done|hidden, created_by, timestamps); `client_timeline_requests` (id, engagement_id, task_id, requested_by(+name), reason, payload {phases, coiFrom, coiTo, slipDays}, status pending|approved|rejected|withdrawn, decided_by/at, decision_note, timestamps).
+- NEW repository `src/db/repositories/client-home.ts` (getClientHome aggregate, needUploadTarget / recordNeedUpload / undoNeedUpload, setNeedMeta, upsertWorkItem) + timeline functions in `client-change-requests.ts` (createClientTimelineRequest, withdrawClientTimelineRequest).
+- NEW routes: `GET /api/client/home`, `POST|DELETE /api/client/home/needs/[id]/upload`, `PATCH /api/client/home/needs/[id]` (staff), `POST /api/client/home/work-items` (staff), `POST /api/client/change-requests` now accepts `kind:'timeline'`, `DELETE /api/client/change-requests/[id]` (withdraw).
+- Shapes: `src/lib/client-home.ts`. UI: `src/components/client-portal/pages/home/*`, CSS `css-src/home-base.css`, `home-tle.css`, `home-m.css`.
 
 <!-- /area:home -->
 
