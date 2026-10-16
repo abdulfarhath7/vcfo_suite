@@ -391,9 +391,17 @@ function SbcCard({ p }: { p: ClientPortalContact }) {
             font: '700 18px Space Grotesk',
             boxShadow: `0 0 0 3px var(--panel),0 0 0 5px ${support ? 'var(--border)' : 'var(--gold)'}`,
             background: bg,
+            overflow: 'hidden',
           }}
         >
-          {support ? initialsOf(p.name).slice(0, 1) : p.initials}
+          {p.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 99 }} />
+          ) : support ? (
+            initialsOf(p.name).slice(0, 1)
+          ) : (
+            p.initials
+          )}
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
           <span className="chip" style={chip}>

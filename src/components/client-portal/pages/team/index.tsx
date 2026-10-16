@@ -19,7 +19,9 @@ function Area({ page, legacy }: { page: ReactNode; legacy: ReactNode }) {
   const { prefs } = useShellAppearance();
   useEffect(() => {
     if (!portal) return;
-    document.querySelector('.cp')?.setAttribute('data-reduce-motion', prefs.reduceMotion ? 'true' : 'false');
+    // app preference overrides; off → back to the OS setting the shell applies
+    const os = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelector('.cp')?.setAttribute('data-reduce-motion', prefs.reduceMotion || os ? 'true' : 'false');
   }, [portal, prefs.reduceMotion]);
   return <>{portal ? page : legacy}</>;
 }

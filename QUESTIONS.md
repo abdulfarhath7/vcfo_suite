@@ -105,7 +105,7 @@ Every choice the owner may want to change is one row: **area · question · what
 | Team | Cancel invite + Undo | Cancel removes the invitee's access at once (account to Removed clients if it has no other project); Undo restores access without a new email. Undo of "Send invite" = cancel (the email has already gone). | `cancelClientInvite` / `restoreClientInvite` |
 | Team | Gold "Northwind" chip on your own row (G7) | Kept as in the board: the company short name, not "You". | `TeamPage.tsx` people rows |
 | Team | Members can't invite | Invite button stays visible but `aria-disabled` with tooltip "Only the Primary contact can invite"; click toasts it. Resend/Cancel and Substitute-others are hidden for members. | `TeamPage.tsx` |
-| Team | SBC photos | Initials only (shell team carries no avatar URL). | needs `avatarUrl` on `ClientPortalContact` (shell) |
+| Team | SBC photos | Real photo from `ClientPortalContact.avatarUrl` (served by `/api/client/portal/team-photo/[id]`); initials when there is none. | `SbcCard` in `pages/team/TeamPage.tsx` |
 | Announcements | General filter (G9) | Prototype rule: General = everything that is not Deadline/Compliance, computed on the page; `src/lib/announcements.ts` untouched. | `F` in `AnnouncementsPage.tsx` |
 | Announcements | Official portals list | Real `VCFO_PORTAL_TASKS`, only rows with at least one official link; Setup = one-off heads, Recurring = Monthly/Quarterly/Half-yearly/Yearly. Counts are the real task counts (not 8/4). | `AnnouncementsPage.tsx` |
 | Announcements | Next-deadline "Open" target | `/app/client/compliances/filings?open=<complianceItemId>` — the Filings page must read `open`. | banner in `AnnouncementsPage.tsx` |
@@ -120,7 +120,7 @@ Every choice the owner may want to change is one row: **area · question · what
 | Settings | WhatsApp 6-digit code | Not built: the WhatsApp transport (`src/lib/notify/*`) has no verification template / event. The pop-up asks for number + consent and uses the existing opt-in; the stepper reads Number · Consent · Done. "Verified" chip shows only when `whatsapp_status = verified`, else "On". | add a `verify_code` NotifyEvent + Meta template, then a code step |
 | Settings | Preferences honoured by senders? | Stored in NEW `notification_prefs`; the email/WhatsApp dispatchers do not read them yet, and no weekly-summary job exists. | `send-email.ts` / `send-whatsapp.ts` should consult `getOwnNotificationPrefs`; Inngest Monday 09:00 IST digest |
 | Settings | "This device" | Browser + OS of the current device from the user agent; no city and no other-devices list (no session table). | needs a `user_sessions` table |
-| Settings | Reduce motion | Stored in the existing shell appearance prefs (localStorage); the team pages set `data-reduce-motion` on `.cp`, and only team-page CSS reacts. | shell should apply `data-reduce-motion` portal-wide |
+| Settings | Reduce motion | The shell sets `data-reduce-motion` on `.cp` from the OS setting; the Settings toggle (shell appearance prefs, localStorage) overrides it to on/off while a team page is open. | `Area` in `pages/team/index.tsx`, `SettingsPage.tsx` |
 | Settings | Password "changed …" | NEW `client_account_meta.password_changed_at`, stamped by NEW `/api/client/account/password`; hidden until the first change through the portal. | `src/db/repositories/notification-prefs.ts` |
 | Shared | Toasts | Pages use the shared portal toast (3.2 s, Undo) instead of the board's page toast `.tb-toast`. | `usePortal().toast` |
 <!-- /area:team -->

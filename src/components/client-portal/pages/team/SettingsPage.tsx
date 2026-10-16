@@ -130,7 +130,9 @@ export function SettingsPage() {
   const thIdx = themePref === 'dark' ? 1 : themePref === 'system' ? 2 : 0;
   const rm = appearance.prefs.reduceMotion;
   useEffect(() => {
-    document.querySelector('.cp')?.setAttribute('data-reduce-motion', rm ? 'true' : 'false');
+    // app preference overrides; off → back to the OS setting the shell applies
+    const os = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelector('.cp')?.setAttribute('data-reduce-motion', rm || os ? 'true' : 'false');
   }, [rm]);
 
   const isPrimary = team.data?.isPrimary;
