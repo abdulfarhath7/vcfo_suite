@@ -7,6 +7,10 @@ Built 2026-10-16 from `PLAN.md`. All data is fake. The look is taken from the fr
 the navy sliding pill, set-A status glyphs, option-4 icon tiles, a calendar with grid lines and today drawn as a
 whole highlighted box, and the smiling Ask VCFO bot. "NEW" badges mark features the code does not have yet.
 
+## Main canvas design (first page)
+
+The first canvas page, "Main canvas design", shows every board on one screen: one row per page in PLAN.md order, with a numbered label above each row, 80 px between boards and 120 px between rows. These boards are exact copies (`A_*.dc.html`) of the per-page boards. The per-page pages stay as they were, so existing links still work. **Edit the per-page board and re-copy it**, otherwise the two drift apart.
+
 ## Shared pieces
 
 - `Side.dc.html` is the sidebar and `Top.dc.html` is the top bar. Every page imports both, so a change to either
