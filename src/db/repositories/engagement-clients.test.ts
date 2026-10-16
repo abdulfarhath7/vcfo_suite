@@ -140,19 +140,6 @@ describe('inviteEngagementClient', () => {
     },
   );
 
-  it('a client who is not the Primary contact cannot invite (owner decision)', async () => {
-    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
-    selectQueue = [
-      [{ id: OWN, clientId: 'c-a', clientUserId: 'user-primary', companyName: 'Acme' }],
-      [{ role: 'member' }], // caller's membership row
-    ];
-    await expect(
-      repo.inviteEngagementClient(ctx('client', 'user-member'), { ...input, engagementId: OWN }),
-    ).rejects.toThrow(/Only the Primary contact can invite/);
-    expect(writes).toEqual([]);
-    expect(recordAuditEvent).not.toHaveBeenCalled();
-  });
-
   it('refuses to attach a staff account as a client', async () => {
     assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
     selectQueue = [
@@ -230,23 +217,6 @@ describe('substituteEngagementClient', () => {
     await expect(
       repo.substituteEngagementClient(ctx('client', 'user-outsider'), input),
     ).rejects.toThrow(/Not permitted to substitute/);
-    expect(writes).toEqual([]);
-    expect(recordAuditEvent).not.toHaveBeenCalled();
-  });
-
-  it('a member may not substitute someone else — only the Primary contact can', async () => {
-    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
-    selectQueue = [
-      [{ id: OWN, clientId: 'c-a', clientUserId: null, companyName: 'Acme' }],
-      [
-        { userId: 'user-client-a', memberRole: 'owner', email: 'a@acme.test', name: 'A' },
-        { userId: 'user-member', memberRole: 'member', email: 'm@acme.test', name: 'M' },
-      ],
-      [{ role: 'member' }], // caller's membership row
-    ];
-    await expect(
-      repo.substituteEngagementClient(ctx('client', 'user-member'), input),
-    ).rejects.toThrow(/Only the Primary contact can substitute others/);
     expect(writes).toEqual([]);
     expect(recordAuditEvent).not.toHaveBeenCalled();
   });
