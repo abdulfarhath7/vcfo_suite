@@ -26,7 +26,7 @@ import { stepHref } from './routes';
 
 type LogItem =
   | { r: 'u'; t: string }
-  | { r: 'a'; t: string; k?: 'ok' | 'nan'; h?: boolean; links?: { label: string; href: string }[] }
+  | { r: 'a'; t: string; k?: 'ok' | 'nan'; h?: boolean; links?: { label: string; href: string }[]; q?: string; mid?: string | null; fb?: 'up' | 'down' }
   | { r: 'w'; w: WhatsThisAnswer; k: 'ok' };
 
 const LOG_KEY = 'vcfo.chat';
@@ -92,6 +92,13 @@ export function AskLauncher() {
       /* ignore */
     }
   }, []);
+
+  /* first-visit bot note: once per client (client_portal_prefs.bot_note_seen_at) */
+  const showNote = Boolean(portal.prefs && !portal.prefs.botNoteSeen && !chatOpen);
+  const dismissNote = () => portal.savePrefs({ botNoteSeen: true });
+  useEffect(() => {
+    if (chatOpen && portal.prefs && !portal.prefs.botNoteSeen) portal.savePrefs({ botNoteSeen: true });
+  }, [chatOpen, portal]);
 
   const lead = shell?.team.find((p) => p.role === 'Project Lead') ?? shell?.team.find((p) => !p.support);
   const company = shell?.companyShort ?? 'your company';
@@ -208,7 +215,7 @@ export function AskLauncher() {
         const body = res.ok ? ((await res.json()) as { answer: { text: string; kind: 'ok' | 'nan' } | null }) : { answer: null };
         if (body.answer) {
           await delay(600);
-          save([...base, { r: 'a', t: body.answer.text, k: body.answer.kind }]);
+          save([...base, { r: 'a', t: body.answer.text, k: body.answer.kind, q }]);
           setThinking(false);
           setMoodReplay(body.answer.kind);
           return;
@@ -246,6 +253,8 @@ export function AskLauncher() {
         k: refusal ? 'nan' : 'ok',
         h: refusal,
         links: (last.answer.links ?? []).map((l) => ({ label: l.label, href: destHref(l.dest as never) })),
+        mid: last.messageId,
+        q: [...ask.thread].reverse().find((i) => i.kind === 'user')?.kind === 'user' ? ([...ask.thread].reverse().find((i) => i.kind === 'user') as { text: string }).text : undefined,
       };
       save([...readLog(), item]);
       setMoodReplay(refusal ? 'nan' : 'ok');
@@ -284,6 +293,20 @@ export function AskLauncher() {
     } catch {
       toast('Could not send it. Please try again.');
     }
+  };
+
+  const vote = (i: number, v: 'up' | 'down') => {
+    const l = readLog();
+    const m = l[i];
+    if (!m || m.r !== 'a' || m.fb) return;
+    l[i] = { ...m, fb: v };
+    save(l);
+    toast(v === 'up' ? 'Thanks — glad it helped' : 'Thanks — we will use this to improve the answer');
+    void fetch('/api/client/portal/feedback', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ vote: v, messageId: m.mid ?? undefined, question: m.q, answer: m.t }),
+    }).catch(() => undefined);
   };
 
   const lastK = [...log].reverse().find((m) => 'k' in m && m.k) as { k?: 'ok' | 'nan' } | undefined;
@@ -377,6 +400,25 @@ export function AskLauncher() {
                     </button>
                   </>
                 ) : null}
+                {m.k === 'ok' ? (
+                  <span className="vpc-fb" role="group" aria-label="Was this helpful?">
+                    <span>Helpful?</span>
+                    {(['up', 'down'] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        aria-label={v === 'up' ? 'Helpful' : 'Not helpful'}
+                        aria-pressed={m.fb === v}
+                        disabled={Boolean(m.fb)}
+                        onClick={() => vote(i, v)}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={v === 'down' ? { transform: 'rotate(180deg)' } : undefined}>
+                          <path d="M7 10v11H4V10Zm0 0 4-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17.2 21H7" />
+                        </svg>
+                      </button>
+                    ))}
+                  </span>
+                ) : null}
               </div>
             );
           })}
@@ -385,6 +427,7 @@ export function AskLauncher() {
               <i />
               <i />
               <i />
+              {ask?.busy && ask.status ? <span className="vpc-st">{ask.status}</span> : null}
             </div>
           ) : null}
         </div>
@@ -412,6 +455,32 @@ export function AskLauncher() {
           <button type="submit">Send</button>
         </form>
       </section>
+      {showNote ? (
+        <div className="vpl-note" role="status">
+          <div className="vpl-note-h">
+            <span>Hello. Ask me anything about {company}’s setup, or pick a question below.</span>
+            <button type="button" aria-label="Dismiss" onClick={dismissNote}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </div>
+          <div className="vpl-note-q">
+            {questions.slice(0, 2).map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => {
+                  dismissNote();
+                  openChat(q);
+                }}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div id="vp-launch" ref={launchRef} className={[yieldOn ? 'yield' : '', chatOpen ? 'open' : ''].filter(Boolean).join(' ')}>
         <span
           className="vpl-char"

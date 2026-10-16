@@ -19,3 +19,32 @@
 .cp .cp-search .list{padding-top:4px}
 /* phone drawer and chat lock the page under them */
 .cp.vp-chat-on{overscroll-behavior:contain}
+/* chat: 👍/👎 row (board v7chat_answer "Helpful?") and the Ask stream status line */
+.cp #vp-chat .vpc-fb{display:flex;align-items:center;gap:6px;margin-top:8px}
+.cp #vp-chat .vpc-fb>span{margin-right:2px;font-size:11.5px;color:var(--muted)}
+.cp #vp-chat .vpc-m.vpc-a .vpc-fb button{width:30px;height:30px;min-height:30px;margin:0;padding:0;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cp #vp-chat .vpc-m.vpc-a .vpc-fb button[aria-pressed=true]{background:var(--primary-light);color:var(--primary);border-color:oklch(54.6% 0.215 263 / .35)}
+.cp #vp-chat .vpc-fb button:disabled{cursor:default}
+.cp #vp-chat .vpc-st{margin-left:6px;font-size:12px;color:var(--muted)}
+/* first-visit note above the launcher (board v7chat_launcher .botup bubble, once per client) */
+.cp .vpl-note{position:fixed;right:var(--vpl-in);bottom:calc(var(--vpl-ph) + var(--vpl-in) + 14px);z-index:2147482500;width:300px;max-width:calc(100vw - 2 * var(--vpl-in));box-sizing:border-box;border-radius:10px;background:var(--panel);border:1px solid var(--border);box-shadow:0 12px 32px -12px oklch(21% 0.042 264 / .3);padding:12px 12px 10px;display:flex;flex-direction:column;gap:8px;font:500 13px/1.45 Manrope,system-ui,sans-serif;color:var(--fg);animation:v7up .35s cubic-bezier(.22,1,.36,1) .9s both}
+.cp .vpl-note-h{display:flex;gap:8px;align-items:flex-start}
+.cp .vpl-note-h span{flex:1;font-size:13px;line-height:1.45}
+.cp .vpl-note-h button{width:24px;height:24px;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;padding:0}
+.cp .vpl-note-q{display:flex;flex-wrap:wrap;gap:6px}
+.cp .vpl-note-q button{min-height:30px;padding:0 10px;border-radius:6px;border:1px solid oklch(54.6% 0.215 263 / .35);background:var(--primary-light);color:var(--primary);font:600 12px Manrope,sans-serif;cursor:pointer}
+/* a page with a sticky bottom action bar lifts the launcher: set --vp-launch-lift on .cp */
+.cp #vp-launch{bottom:var(--vp-launch-lift,0px)}
+/* page enter (proto.js vpIn: 0.26 s) */
+@keyframes cpPageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.cp .cp-page-in{animation:cpPageIn .26s cubic-bezier(.22,1,.36,1) both}
+@media (prefers-reduced-motion: reduce){.cp .cp-page-in,
+.cp .vpl-note{animation:none}}
+/* rule 16 — the bot speaks (prototype s/comp/index.html botSay(): .botsay .bface .bubble) */
+.cp .cp-botsay{display:flex;align-items:flex-end;gap:10px;text-align:left}
+.cp .cp-botsay .bface{border-radius:99px;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255));box-shadow:0 6px 16px -8px oklch(25% 0.06 258 / .45),0 0 0 1px var(--border);display:grid;place-items:center;flex:none;animation:v7bob 2.6s ease-in-out infinite;overflow:hidden}
+.cp .cp-botsay .bface svg{display:block}
+.cp .cp-botsay .bubble{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px 10px 10px 4px;padding:9px 12px;font:600 13px/1.4 Manrope;color:var(--fg);box-shadow:var(--shadow);max-width:300px}
+.cp .cp-botsay .bubble::before{content:"";position:absolute;left:-6px;bottom:10px;width:10px;height:10px;background:var(--panel);border-left:1px solid var(--border);border-bottom:1px solid var(--border);transform:rotate(45deg)}
+.cp .cp-botsay .btn-s{height:28px;padding:0 10px;font-size:12px}
+@media (prefers-reduced-motion: reduce){.cp .cp-botsay .bface{animation:none}}

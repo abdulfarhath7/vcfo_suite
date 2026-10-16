@@ -24,6 +24,10 @@ Every choice the owner may want to change is one row: **area · question · what
 | Ask VCFO | Which chat design? | The **runtime** chat FINAL users see (`#vp-chat`: header, peek, suggestions, What's this? card, hand-off). 👍/👎 (DECISIONS: keep) added under answers from the Ask VCFO model. | `AskLauncher.tsx` |
 | Ask VCFO | Suggested questions must work even when the Ask VCFO model is switched off | They are answered from the client's own data by NEW `/api/client/portal/answer` (no model). Typed questions go to Ask VCFO when it is on; otherwise the bot says it cannot answer and offers hand-off. | `src/lib/client-portal/answers.ts` |
 | Ask VCFO | Hand-off to the lead | NEW `/api/client/handoff` reuses the Ask VCFO T5 record (task on the lead + bell) but works with Ask VCFO off. The prototype's toast "Undo" is not offered: a sent question cannot be recalled. | `app/api/client/handoff/route.ts` |
+| Ask VCFO | 👍/👎 storage | NEW table `ask_answer_feedback` (vote, question, answer, optional own message id) via `/api/client/portal/feedback`. Nobody reads it in the UI yet. | `src/db/repositories/ask-feedback.ts`; add an admin report if wanted |
+| Ask VCFO | First-visit note | The board `v7chat_launcher` bubble ("Hello. Ask me anything…" + 2 questions) shows above the launcher until the client dismisses it or opens the chat — once per client (`client_portal_prefs.bot_note_seen_at`). | `showNote` in `AskLauncher.tsx` |
+| Shell | Not built on purpose (prototype-only) | N-02 fallback toasts on dead controls, R-08 the floating PROTOTYPE bar, S-20 phone fallback menu band, L-07 hiding robots drawn inside boards: they exist only to make the static prototype clickable; in the app every control is real and the top bar always has the phone menu button. | — |
+| Ask VCFO | "Expand to side panel" button (chat design boards only) | Not built: FINAL's runtime chat has no expand button. The staff app's push side panel stays staff-only. | add a button in `AskLauncher.tsx` header if wanted |
 <!-- /area:shell -->
 
 <!-- area:home -->

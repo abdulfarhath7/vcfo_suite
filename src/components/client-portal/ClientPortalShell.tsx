@@ -11,6 +11,7 @@
  */
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { usePathname } from 'next/navigation';
 import { AskProvider } from '@/components/ask/AskProvider';
 import { PortalProvider } from './PortalProvider';
 import { PortalSidebar } from './Sidebar';
@@ -18,6 +19,7 @@ import { PortalTopBar } from './TopBar';
 import { AskLauncher } from './AskLauncher';
 import { SearchPalette } from './SearchPalette';
 import { PortalIntro } from './PortalIntro';
+import { IconTips } from './IconTips';
 import './portal-css';
 
 export function ClientPortalShell({ children }: { children: ReactNode }) {
@@ -34,6 +36,7 @@ export function ClientPortalShell({ children }: { children: ReactNode }) {
 }
 
 function ShellBody({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const openSearch = useCallback(() => setSearchOpen(true), []);
   const annHead = useQuery({
@@ -53,9 +56,14 @@ function ShellBody({ children }: { children: ReactNode }) {
         <div className="cp-sidepad" data-vp="side" aria-hidden="true" />
         <div className="cp-main">
           <PortalTopBar onSearch={openSearch} hasAnnouncements={(annHead.data?.unread ?? 0) > 0} />
-          <main className="cp-page-host">{children}</main>
+          <main className="cp-page-host">
+            <div key={pathname} className="cp-page-in">
+              {children}
+            </div>
+          </main>
         </div>
       </div>
+      <IconTips />
       <AskLauncher />
       <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>

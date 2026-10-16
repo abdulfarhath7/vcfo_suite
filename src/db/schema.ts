@@ -1077,6 +1077,29 @@ export const announcementReads = pgTable(
     pk: primaryKey({ columns: [t.profileId, t.announcementId] }),
   }),
 );
+/**
+ * ASK VCFO ANSWER FEEDBACK (client portal v7, 👍/👎 under chat answers — DECISIONS:
+ * keep). Covers model answers (`message_id`) and the portal's quick answers
+ * (no message row: the question + answer text are kept). Owner-only.
+ */
+export const askAnswerFeedback = pgTable(
+  'ask_answer_feedback',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    messageId: uuid('message_id').references(() => askMessages.id, { onDelete: 'set null' }),
+    question: text('question').notNull().default(''),
+    answer: text('answer').notNull().default(''),
+    vote: text('vote').notNull(), // up | down
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    profileIdx: index('ask_answer_feedback_profile_idx').on(t.profileId, t.createdAt),
+  }),
+);
+
 export * from './schema-portal-home';
 export * from './schema-portal-incorporation';
 export * from './schema-portal-compliances';
