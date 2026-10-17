@@ -136,9 +136,9 @@
 .cp .cp-home-m .bob{animation:bob-home-m 2.6s ease-in-out infinite}
 @keyframes bob-home-m{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 /* sheet */
-.cp .cp-home-m .scrim{position:fixed;inset:0;z-index:60;background:oklch(20% .05 258 / .45);opacity:0;transition:opacity .2s;pointer-events:none}
+.cp .cp-home-m .scrim{position:fixed;inset:0;z-index:2147482550;background:oklch(20% .05 258 / .45);opacity:0;transition:opacity .2s;pointer-events:none}
 .cp .cp-home-m .scrim.on{opacity:1;pointer-events:auto}
-.cp .cp-home-m .sheet{visibility:hidden;position:fixed;left:50%;bottom:0;z-index:61;width:min(100%,560px);max-height:min(82vh,calc(100dvh - 24px));display:flex;flex-direction:column;background:light-dark(#fff, oklch(13% 0 89.9));border-radius:14px 14px 0 0;box-shadow:0 -16px 40px -20px oklch(15% .05 258 / .5);transform:translate(-50%,105%);transition:transform .38s var(--spring)}
+.cp .cp-home-m .sheet{visibility:hidden;position:fixed;left:50%;bottom:0;z-index:2147482551;width:min(100%,560px);max-height:min(82vh,calc(100dvh - 24px));display:flex;flex-direction:column;background:light-dark(#fff, oklch(13% 0 89.9));border-radius:14px 14px 0 0;box-shadow:0 -16px 40px -20px oklch(15% .05 258 / .5);transform:translate(-50%,105%);transition:transform .38s var(--spring)}
 .cp .cp-home-m .sheet.on{visibility:visible;transform:translate(-50%,0)}
 .cp .cp-home-m .sheet .grab{display:flex;justify-content:center;padding:8px 0 4px}.cp .cp-home-m .sheet .grab i{width:40px;height:4px;border-radius:2px;background:var(--border)}
 .cp .cp-home-m .sheet .sh{display:flex;align-items:center;gap:8px;padding:4px 14px 10px}
@@ -194,3 +194,4 @@
 .cp .cp-home-m .info .pop{display:block}
 .cp .cp-home-m .btn:active{transform:none}
 .cp .cp-home-m .mhome{position:relative}
+/* HM-03: a bottom sheet sits above everything, the Ask VCFO launcher and its greeting bubble included (#vp-launch is z 2147482500) */

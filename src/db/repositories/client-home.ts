@@ -195,6 +195,23 @@ async function loadActivity(ctx: AuthContext, dbId: string): Promise<HomeActivit
     });
 }
 
+/**
+ * System rows for the activity feed (prototype: "TDS Payment overdue · VCFO
+ * Suite"): every open filing whose due date has passed went overdue the day
+ * after it was due. Derived from compliance_instances, not stored.
+ */
+function withOverdueEvents(activity: HomeActivity[], filings: HomeFiling[], now: Date): HomeActivity[] {
+  const today = new Date(now.getTime() + 330 * 60_000).toISOString().slice(0, 10);
+  const sys: HomeActivity[] = filings
+    .filter((f) => !f.filedOn && f.status !== 'filed' && f.dueDate < today)
+    .map((f) => {
+      const at = new Date(Date.parse(`${f.dueDate}T00:00:00+05:30`) + 86_400_000).toISOString();
+      return { id: `sys:overdue:${f.id}`, at, label: `${f.title} overdue`, action: 'system.compliance_overdue', actorName: 'VCFO Suite', actorKind: 'system' } satisfies HomeActivity;
+    });
+  if (sys.length === 0) return activity;
+  return [...activity, ...sys].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 12);
+}
+
 async function loadFilings(dbId: string, now: Date, needs: HomeNeedRequest[]): Promise<ClientHome['filings']> {
   const fy = fyStartYearOf(now);
   const rows = await db
@@ -319,7 +336,7 @@ export async function getClientHome(
     requestCounts,
     work,
     docs,
-    activity,
+    activity: withOverdueEvents(activity, filings.rows, now),
     filings,
     identifiers: {
       cin: ids.cin,

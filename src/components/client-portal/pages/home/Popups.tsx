@@ -46,7 +46,13 @@ export function Dialog({
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const last = document.activeElement as HTMLElement | null;
-    const t = setTimeout(() => ref.current?.querySelector<HTMLElement>('button,[href],input,textarea')?.focus({ preventScroll: true }), 30);
+    // First focus goes to the close button, never to an (i) trigger — its
+    // popover opens on focus and would cover the tabs (HM-12).
+    const t = setTimeout(() => {
+      const root = ref.current;
+      const first = root?.querySelector<HTMLElement>('button[aria-label="Close"]') ?? root?.querySelector<HTMLElement>('button:not(.info>button),[href],input,textarea');
+      first?.focus({ preventScroll: true });
+    }, 30);
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !(e.target as HTMLElement)?.closest?.('.info.open')) {
         e.stopPropagation();

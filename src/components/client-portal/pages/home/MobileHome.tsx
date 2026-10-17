@@ -508,13 +508,13 @@ export function MobileHome({ h, onEditTimeline, phases, onOpenDocs }: { h: HomeD
         {needRows.length ? (
           needRows.map((n) => {
             const over = Boolean(n.due && n.due < today);
-            const sub = n.kind === 'correct' ? `Sent back${n.sub ? ` · ${n.sub}` : ''}` : n.stepN ? `Step ${n.stepN}${n.askedBy ? ` · asked by ${n.askedBy}` : ''}` : `${n.sub}${n.askedBy ? ` · asked by ${n.askedBy}` : ''}`;
+            const sub = n.kind === 'correct' ? `Sent back${n.note ? ` · ${n.note}` : n.sub ? ` · ${n.sub}` : ''}` : [n.area, n.askedBy ? `${n.area ? 'asked' : 'Asked'} by ${n.askedBy}` : ''].filter(Boolean).join(' · ') || n.sub;
             return (
               <div key={n.key} className="row" style={{ cursor: 'default' }}>
                 {n.due ? <Tile iso={n.due} kind={over ? 'over' : days(today, n.due) <= 7 ? 'due' : 'up'} /> : <span className="tile" style={{ background: 'var(--raised)', color: 'var(--fg)' }}>—</span>}
                 <span className="t">
                   <b>{n.title}</b>
-                  <span>{over ? `Overdue ${days(n.due!, today)} day${days(n.due!, today) === 1 ? '' : 's'}` : sub}</span>
+                  <span title={sub} style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{over && n.kind !== 'correct' ? `Overdue ${days(n.due!, today)} day${days(n.due!, today) === 1 ? '' : 's'}` : sub}</span>
                 </span>
                 <button className={`btn btn-sm ${over ? 'btn-n' : 'btn-o'}`} type="button" onClick={() => needAct(n)}>
                   {n.kind === 'correct' ? 'Fix' : NT.find((x) => x[0] === n.kind)![1]}
@@ -768,9 +768,17 @@ export function MobileHome({ h, onEditTimeline, phases, onOpenDocs }: { h: HomeD
     </Card>
   );
 
+  // Phone shows a short list (mobile.html#after): done, in progress and the
+  // next upcoming ones; the rest live in the Registrations sheet (HM-10).
+  const regsShown = [...h.regs.filter((r) => r.status !== 'Upcoming'), ...h.regs.filter((r) => r.status === 'Upcoming').slice(0, 2)];
   const regsCard = (
-    <Card id="regs" title="Registrations" info="Every registration with its portal ↗ and its proof 📎.">
-      {h.regs.map((r) => {
+    <Card
+      id="regs"
+      title="Registrations"
+      info="Every registration with its portal ↗ and its proof 📎."
+      foot={regsShown.length < h.regs.length ? [`All ${h.regs.length} registrations`, () => regDrill(regsShown.some((r) => r.status === 'Registered') ? 0 : 2)] : undefined}
+    >
+      {regsShown.map((r) => {
         const k: K = r.status === 'Registered' ? 'done' : r.status === 'In progress' ? 'sbc' : 'up';
         return (
           <div key={r.step.id} className="row" style={{ cursor: 'default' }}>

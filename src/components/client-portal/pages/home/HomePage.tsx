@@ -188,19 +188,23 @@ export function HomePage() {
           <div className="stag" style={{ gridArea: 'g' }}>
             <div style={d(0)}><GreetCard h={h} /></div>
           </div>
-          <div className="stag" style={{ gridArea: 'a1' }}>
-            <div style={d(1)}><NeedsCard h={h} onUpload={upload} /></div>
-            <div style={d(2)}><NextCard h={h} /></div>
+          <div className="vh-col vh-col-l">
+            <div className="stag" style={{ gridArea: 'a1' }}>
+              <div style={d(1)}><NeedsCard h={h} onUpload={upload} /></div>
+              <div style={d(2)}><NextCard h={h} /></div>
+            </div>
+            <div className="stag" style={{ gridArea: 'a2' }}>
+              <div style={d(5)}><CompCard h={h} onOpen={setComp} /></div>
+            </div>
           </div>
-          <div className="stag" style={{ gridArea: 'c1' }}>
-            <div style={d(3)}><AlertsCard h={h} /></div>
-            <div style={d(4)}><SbcCard h={h} /></div>
-          </div>
-          <div className="stag" style={{ gridArea: 'a2' }}>
-            <div style={d(5)}><CompCard h={h} onOpen={setComp} /></div>
-          </div>
-          <div className="stag" style={{ gridArea: 'c2' }}>
-            <div style={d(6)}><IdsCard h={h} onReveal={setReveal} onCoi={coiOpen} /></div>
+          <div className="vh-col vh-col-r">
+            <div className="stag" style={{ gridArea: 'c1' }}>
+              <div style={d(3)}><AlertsCard h={h} /></div>
+              <div style={d(4)}><SbcCard h={h} /></div>
+            </div>
+            <div className="stag" style={{ gridArea: 'c2' }}>
+              <div style={d(6)}><IdsCard h={h} onReveal={setReveal} onCoi={coiOpen} /></div>
+            </div>
           </div>
           <div className="stag" style={{ gridArea: 'f' }}>
             <div style={d(7)}><AreaCard h={h} /></div>
@@ -221,21 +225,25 @@ export function HomePage() {
           <div className="stag" style={{ gridArea: 'g' }}>
             <div style={d(0)}><GreetCard h={h} /></div>
           </div>
-          <div className="stag" style={{ gridArea: 'a' }}>
-            <div style={d(1)}><NeedsCard h={h} onUpload={upload} /></div>
-            <div style={d(2)}><CurrentCard h={h} onStep={setStep} /></div>
+          <div className="vh-col vh-col-l">
+            <div className="stag" style={{ gridArea: 'a' }}>
+              <div style={d(1)}><NeedsCard h={h} onUpload={upload} /></div>
+              <div style={d(2)}><CurrentCard h={h} onStep={setStep} /></div>
+            </div>
+            <div className="stag" style={{ gridArea: 'b' }}>
+              <div style={d(5)}><TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} /></div>
+              <div style={d(6)}><StepsCard h={h} /></div>
+            </div>
           </div>
-          <div className="stag" style={{ gridArea: 'c1' }}>
-            <div style={d(3)}><AlertsCard h={h} /></div>
-            <div style={d(4)}><SbcCard h={h} /></div>
-          </div>
-          <div className="stag" style={{ gridArea: 'b' }}>
-            <div style={d(5)}><TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} /></div>
-            <div style={d(6)}><StepsCard h={h} /></div>
-          </div>
-          <div className="stag" style={{ gridArea: 'c2' }}>
-            <div style={d(7)}><DocsCard h={h} onOpen={docsIdx} /></div>
-            <div style={d(8)}><ActivityCard h={h} /></div>
+          <div className="vh-col vh-col-r">
+            <div className="stag" style={{ gridArea: 'c1' }}>
+              <div style={d(3)}><AlertsCard h={h} /></div>
+              <div style={d(4)}><SbcCard h={h} /></div>
+            </div>
+            <div className="stag" style={{ gridArea: 'c2' }}>
+              <div style={d(7)}><DocsCard h={h} onOpen={docsIdx} /></div>
+              <div style={d(8)}><ActivityCard h={h} /></div>
+            </div>
           </div>
         </main>
       )}

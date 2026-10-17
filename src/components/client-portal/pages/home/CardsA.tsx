@@ -614,9 +614,6 @@ export function DocsCard({ h, onOpen }: { h: HomeData; onOpen: (i: number) => vo
                   <span className="rd-d">{dShort(d.date)}</span>
                 </span>
                 <span className="rd-a">
-                  <button type="button" className="rd-b" title="Preview" aria-label={`Preview ${d.name}`} onClick={() => onOpen(i)}>
-                    <Ico n="eye" size={15} sw={1.8} />
-                  </button>
                   <button type="button" className="rd-b" title="Download" aria-label={`Download ${d.name}`} onClick={() => void download(d)}>
                     <Ico n="download" size={15} sw={1.8} />
                   </button>

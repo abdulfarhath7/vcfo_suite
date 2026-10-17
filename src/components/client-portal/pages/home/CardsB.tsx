@@ -27,7 +27,6 @@ import {
   dayMon,
   days,
   filingName,
-  filingPortal,
   filingRow,
   groupOf,
   postIncDrill,
@@ -49,25 +48,7 @@ function plural(n: number, w: string) {
   return `${n} ${w}${n === 1 ? '' : 's'}`;
 }
 
-/** Rule 15: the small ↗ portal link after a name. */
-export function PortalLink({ href, label }: { href?: string; label: string }) {
-  if (!href) return null;
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`Open ${label}`}
-      data-tip={`Open ${label}`}
-      onClick={(e) => e.stopPropagation()}
-      style={{ width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--subtle)', flex: 'none' }}
-      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--navy-ink,var(--navy))')}
-      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--subtle)')}
-    >
-      <Ico n="ext" size={13} sw={2} />
-    </a>
-  );
-}
+/* Rule 15's ↗ portal links are phone-only (mobile.html); the desktop board has none (HM-13). */
 
 /* --------------------------------------------------------------- timeline */
 
@@ -354,7 +335,6 @@ export function NextCard({ h }: { h: HomeData }) {
             ? (() => {
                 const late = Math.max(1, days(hero.dueDate, h.today));
                 const [day, mon] = dayMon(hero.dueDate);
-                const portal = filingPortal(hero);
                 return (
                   <Tip
                     tip={`${hero.title} · overdue ${plural(late, 'day')}`}
@@ -368,7 +348,6 @@ export function NextCard({ h }: { h: HomeData }) {
                     <div style={{ flex: 1, minWidth: 150 }}>
                       <div style={{ display: 'flex', gap: '6px 8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span className="rt" style={{ fontSize: 14 }}>{filingName(hero)}</span>
-                        {portal ? <PortalLink href={portal[0]} label={portal[1]} /> : null}
                         <InfoPopover askAbout={filingName(hero)}>
                           {hero.owner === 'client'
                             ? `Waiting on ${h.company}${hero.needTitle ? ` · ${hero.needTitle}` : ''}${hero.needAskedBy ? ` · asked by ${hero.needAskedBy}` : ''}`
@@ -397,7 +376,6 @@ export function NextCard({ h }: { h: HomeData }) {
             const n = days(h.today, f.dueDate);
             const tone = n <= 7 ? 'due' : 'prog';
             const owner = ownerLabel(f);
-            const portal = filingPortal(f);
             return (
               <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: '1px solid var(--hair)' }}>
                 <Tip
@@ -411,7 +389,6 @@ export function NextCard({ h }: { h: HomeData }) {
                 <div style={{ flex: 1 }}>
                   <div className="rt" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     {f.title}
-                    {portal ? <PortalLink href={portal[0]} label={portal[1]} /> : null}
                     <InfoPopover askAbout={f.title}>
                       {[f.periodLabel, AREA_NAME[groupOf(f)], f.windowTo ? `SBC by ${dShort(f.windowTo)}` : null].filter(Boolean).join(' · ')}
                     </InfoPopover>
@@ -592,7 +569,6 @@ export function IdsCard({ h, onReveal, onCoi }: { h: HomeData; onReveal: (f: 'pa
                     <Ico n="copy" />
                   </button>
                 ) : null}
-                <PortalLink href={r.portal[0]} label={r.portal[1]} />
               </span>
             </div>
           ))}
@@ -797,7 +773,6 @@ export function RegCard({ h, onProof }: { h: HomeData; onProof: (r: RegRow) => v
                         >
                           {r.name}
                         </a>
-                        <PortalLink href={r.portal} label={`${r.authority} portal`} />
                       </span>
                     </td>
                     <td style={{ padding: '7px 8px' }}>{r.cat}</td>

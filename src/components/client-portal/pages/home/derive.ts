@@ -150,6 +150,20 @@ export interface NeedRow {
   askedBy?: string;
   href?: string;
   createdAt?: string;
+  /** Why it was asked / sent back (request detail or rejection note). */
+  note?: string;
+  /** Short "where" for the phone sub-line: "Step 7", "ADT-1", "Payroll" (may be empty). */
+  area: string;
+}
+
+function needArea(step: PortalStep | undefined, filing: HomeFiling | undefined): string {
+  if (step) {
+    if (step.phaseNo <= 2) return `Step ${step.n}`;
+    const code = /\(([^)]{2,12})\)\s*$/.exec(step.title)?.[1];
+    return code ?? step.title.replace(/\s+(Filing|Registration|Appointment)$/i, '');
+  }
+  if (filing) return groupOf(filing);
+  return '';
 }
 
 export function buildNeeds(model: PortalIncorporationModel, home: ClientHome | undefined, filingsById: Map<string, HomeFiling>): NeedRow[] {
@@ -170,6 +184,8 @@ export function buildNeeds(model: PortalIncorporationModel, home: ClientHome | u
       askedBy: r.requestedByName,
       href: step ? stepHref(step.id) : filing ? portalHref('compliances') : portalHref('documents'),
       createdAt: r.createdAt,
+      note: r.detail?.trim() || undefined,
+      area: needArea(step, filing),
     });
   }
   for (const s of model.steps) {
@@ -187,7 +203,7 @@ export function buildNeeds(model: PortalIncorporationModel, home: ClientHome | u
     } else if (isClientFillAwaitingClient(slice?.clientFillRequest)) {
       kind = 'fill';
     }
-    out.push({ key: `step:${s.id}`, title, sub: s.title, kind, due: s.due, stepId: s.id, stepN: s.n, href: stepHref(s.id) });
+    out.push({ key: `step:${s.id}`, title, sub: s.title, kind, due: s.due, stepId: s.id, stepN: s.n, href: stepHref(s.id), area: needArea(s, undefined), note: kind === 'correct' ? slice?.rejectionNote?.trim() || undefined : undefined });
   }
   return out;
 }
@@ -304,8 +320,23 @@ export function buildAlerts(
   const rows: AlertRow[] = [];
   let hero: AlertRow | undefined;
   if (!after) {
+    // Overdue needs first (the set the greeting's Overdue count holds): a
+    // sent-back correction, or any open need past its due date (HM-01).
+    const overdueNeed = needs
+      .filter((n) => (n.kind === 'correct' && n.key.startsWith('req:')) || (n.due && n.due < today))
+      .sort((a, b) => (a.kind === 'correct' ? 0 : 1) - (b.kind === 'correct' ? 0 : 1) || (a.due ?? '9999').localeCompare(b.due ?? '9999'))[0];
     const rejected = model.steps.find((s) => s.kind === 'you' && isReviewRejected(s.slice));
-    if (rejected) {
+    if (overdueNeed) {
+      hero = {
+        key: `needhero:${overdueNeed.key}`,
+        title: overdueNeed.kind === 'correct' ? `${overdueNeed.title} sent back` : `${overdueNeed.title} overdue`,
+        meta: `${overdueNeed.kind === 'correct' && overdueNeed.note ? overdueNeed.note : overdueNeed.sub} · waiting on ${company}`,
+        date: overdueNeed.due ?? ymd(overdueNeed.createdAt) ?? today,
+        tone: 'over',
+        href: overdueNeed.href ?? portalHref('documents'),
+        action: overdueNeed.kind === 'correct' ? 'Fix' : overdueNeed.kind === 'upload' ? 'Upload' : 'Open',
+      };
+    } else if (rejected) {
       const at = ymd(rejected.slice?.reviewedAt) ?? rejected.due ?? today;
       const note = rejected.slice?.rejectionNote?.trim();
       hero = {

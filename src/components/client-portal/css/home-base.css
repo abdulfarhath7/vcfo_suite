@@ -34,7 +34,12 @@
 .cp .cp-home .vh-menu:hover{background:var(--primary-light)}
 .cp .cp-home .vh-search{width:256px;padding:0 10px 0 12px}
 .cp .cp-home .vh-main{box-sizing:border-box;width:100%;max-width:1600px;margin-inline:auto;padding:clamp(12px,2vw,24px);display:grid;gap:16px;align-items:start;grid-template-columns:minmax(0,1fr)}
-.cp .cp-home .vh-main>.stag{display:flex;flex-direction:column;gap:16px;min-width:0}
+.cp .cp-home .vh-main>.stag,
+.cp .cp-home .vh-col>.stag{display:flex;flex-direction:column;gap:16px;min-width:0}
+/* Left / right card columns: plain grid items below 1180px and from 1800px
+   (display:contents), independent flex columns in the two-column board so a
+   tall right column never leaves a gap under the left one (prototype). */
+.cp .cp-home .vh-col{display:contents}
 .cp .cp-home .vh-b{grid-template-areas:"g" "a" "c1" "b" "c2"}
 .cp .cp-home .vh-a{grid-template-areas:"g" "a1" "c1" "a2" "c2" "f" "d" "e"}
 @media (min-width:600px){
@@ -44,6 +49,13 @@
 @media (min-width:1180px){
  .cp .cp-home .vh-b{grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-areas:"g g" "a c1" "a c2" "b c2";grid-template-rows:auto auto 1fr auto}
  .cp .cp-home .vh-a{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"g g g g g g" "a1 a1 a1 a1 c1 c1" "a1 a1 a1 a1 c2 c2" "a2 a2 a2 a2 c2 c2" "f f f f f f" "d d d e e e";grid-template-rows:auto auto 1fr auto}
+}
+@media (min-width:1180px) and (max-width:1799.98px){
+ .cp .cp-home .vh-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+ .cp .cp-home .vh-col-l{grid-area:L}
+ .cp .cp-home .vh-col-r{grid-area:R}
+ .cp .cp-home .vh-b{grid-template-areas:"g g" "L R";grid-template-rows:auto auto}
+ .cp .cp-home .vh-a{grid-template-areas:"g g g g g g" "L L L L R R" "f f f f f f" "d d d e e e";grid-template-rows:auto auto auto auto}
 }
 @media (min-width:1800px){
  .cp .cp-home .vh-b{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"g g g" "a c1 c2" "b b c2";grid-template-rows:auto auto 1fr}
