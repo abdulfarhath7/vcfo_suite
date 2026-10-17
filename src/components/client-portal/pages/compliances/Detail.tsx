@@ -92,9 +92,9 @@ export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; on
         <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--hair)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
           <div className="dtile" style={{ background: tileVar(s), width: 56, height: 62 }}>
             <b style={{ fontSize: 24 }}>{d.getUTCDate()}</b>
-            <small>
-              {MON[d.getUTCMonth()]} · {dow(f.dueDate)}
-            </small>
+            {/* month and weekday on their own lines: "OCT · SAT" does not fit the 56 px tile (CP-12) */}
+            <small>{MON[d.getUTCMonth()]}</small>
+            <small style={{ fontSize: 9.5, marginTop: 0, opacity: 0.75 }}>{dow(f.dueDate)}</small>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
@@ -132,7 +132,7 @@ export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; on
             </div>
           ) : null}
         </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--hair)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="det-ft" style={{ padding: '12px 20px', borderTop: '1px solid var(--hair)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="ask"
@@ -274,14 +274,16 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
                   </div>
                 ))
               ) : (
-                <span className="chip c-due" data-tip="SBC will upload the proof">
-                  Proof pending
-                </span>
+                // the header already carries the "Proof pending" chip (CP-15): say what will land here instead
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1px dashed var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: 12.5, fontWeight: 600 }}>
+                  {I.file(16)}
+                  <span style={{ flex: 1 }}>SBC will upload the challan / acknowledgement here.</span>
+                </div>
               )}
             </div>
           ) : null}
         </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--hair)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="det-ft" style={{ padding: '12px 20px', borderTop: '1px solid var(--hair)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="ask"

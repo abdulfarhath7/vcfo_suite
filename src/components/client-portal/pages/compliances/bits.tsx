@@ -444,7 +444,14 @@ export function useModal(ref: RefObject<HTMLElement | null>, closeFn: () => void
   useEffect(() => {
     const close = () => closeRef.current();
     const last = document.activeElement as HTMLElement | null;
-    const t = setTimeout(() => ref.current?.querySelector<HTMLElement>('[data-autofocus],button,a[href]')?.focus({ preventScroll: true }), 30);
+    // focus the dialog itself (not its first button): a focused ↗ portal button
+    // would open its tooltip over the title the moment the dialog appears (CP-13)
+    const t = setTimeout(() => {
+      const box = ref.current;
+      if (!box) return;
+      if (!box.hasAttribute('tabindex')) box.setAttribute('tabindex', '-1');
+      (box.querySelector<HTMLElement>('[data-autofocus]') ?? box).focus({ preventScroll: true });
+    }, 30);
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
@@ -456,7 +463,10 @@ export function useModal(ref: RefObject<HTMLElement | null>, closeFn: () => void
       if (!f.length) return;
       const first = f[0]!;
       const lastEl = f[f.length - 1]!;
-      if (e.shiftKey && document.activeElement === first) {
+      if (document.activeElement === ref.current) {
+        e.preventDefault();
+        (e.shiftKey ? lastEl : first).focus();
+      } else if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
         lastEl.focus();
       } else if (!e.shiftKey && document.activeElement === lastEl) {

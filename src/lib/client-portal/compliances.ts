@@ -141,6 +141,11 @@ export function fmtDMY(iso: string): string {
 export function dow(iso: string): string {
   return WD_SHORT[D(iso).getUTCDay()]!;
 }
+/** Date-tile sub-label: the weekday inside `refMonth` ("YYYY-MM"), else the
+ *  month ("Dec") so two "15" tiles from different months never look alike. */
+export function tileSub(iso: string, refMonth: string): string {
+  return iso.slice(0, 7) === refMonth ? dow(iso) : MON[Number(iso.slice(5, 7)) - 1]!;
+}
 /** "Thu 15 Oct" */
 export function fmtWDM(iso: string): string {
   return `${dow(iso)} ${fmtDM(iso)}`;

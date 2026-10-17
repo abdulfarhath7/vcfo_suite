@@ -89,7 +89,8 @@ function useFilingsState() {
     },
     [params, router, pathname],
   );
-  return { today, nowKey, curFy, fy, cadence, area, status, end, months, fullYear, filing, set };
+  const cadSet = cadP === cadence;
+  return { today, nowKey, curFy, fy, cadence, cadSet, area, status, end, months, fullYear, filing, set };
 }
 
 export function CompliancesFilings() {
@@ -114,10 +115,17 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
   const download = useDownload();
   const root = useRef<HTMLDivElement>(null);
   usePageTips(root);
-  const { fy, cadence, area, status, end, months, fullYear, set } = st;
+  const { fy, area, status, end, months, fullYear, set } = st;
   const q = useCompFilings(fy, after);
   const all = useMemo(() => (after ? q.data?.rows ?? [] : []), [after, q.data]);
   const start = stepMonth(end, -1);
+  // no ?cadence: open on the first cadence that has filings in the window, so the
+  // page never opens on an empty Monthly view when the register has none (CP-05)
+  const cadence: Cadence = useMemo(() => {
+    if (st.cadSet || !all.length) return st.cadence;
+    const inWin = (r: PortalFiling) => fullYear || (r.dueDate >= `${start}-01` && r.dueDate <= `${end}-31`);
+    return CADENCES.find((c) => all.some((r) => CAD_FREQ[c].includes(r.frequency.toLowerCase()) && inWin(r))) ?? st.cadence;
+  }, [st.cadSet, st.cadence, all, fullYear, start, end]);
   const winLabel = fullYear
     ? fyLabelOf(fy)
     : start.slice(0, 4) === end.slice(0, 4)

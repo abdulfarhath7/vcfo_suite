@@ -21,6 +21,7 @@ import {
   comingUp,
   daysBetween,
   dow,
+  tileSub,
   filterArea,
   fmtDM,
   fmtLong,
@@ -649,7 +650,7 @@ function NextDeadlineCard({
   const firstOver = over[0];
   const fyTitle = `Compliances · ${fyLabelOf(fyStartOfMonth(nowKey))}`;
   return (
-    <div className="card" style={{ background: 'var(--panel)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '16px 16px 14px', color: 'var(--fg)', overflow: 'hidden' }}>
+    <div className="card nd-card" style={{ background: 'var(--panel)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '16px 16px 14px', color: 'var(--fg)' }}>
       {next ? (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '800 11px Manrope', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--navy)' }}>
@@ -678,7 +679,7 @@ function NextDeadlineCard({
               <small style={{ font: '800 11px Manrope', letterSpacing: '.04em', opacity: 0.85 }}>{days === 1 ? 'DAY' : 'DAYS'}</small>
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, font: "700 18px 'Space Grotesk'", letterSpacing: '-.02em' }}>
+              <div className="nd-title" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, font: "700 18px 'Space Grotesk'", letterSpacing: '-.02em' }}>
                 {next.name} · {next.period} <PortalBtn f={next} />
                 <InfoPopover askAbout={`${next.name} · ${next.period}`} label="About this">
                   {next.name} for {next.period} · due {fmtWDM(next.dueDate)} · filed on the {portalFor(next)[0]}.
@@ -722,7 +723,7 @@ function NextDeadlineCard({
           role="button"
           tabIndex={0}
           aria-label={`Overdue · ${over.length} · show the list`}
-          style={{ margin: '14px -16px -14px', padding: '10px 16px', borderTop: '1px solid var(--hair)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}
+          style={{ margin: '14px -16px -14px', padding: '10px 16px', borderTop: '1px solid var(--hair)', borderRadius: '0 0 10px 10px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}
           onClick={() => openDrill({ kind: 'status', k: 'over', title: fyTitle, rows: railRows })}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -764,7 +765,7 @@ function ComingUp({ rows, onOpen }: { rows: PortalFiling[]; onOpen: (f: PortalFi
             <div key={d} className="ag-date">
               <div className="dtile" style={{ background: tileVar(s) }}>
                 <b>{Number(d.slice(8))}</b>
-                <small>{dow(d)}</small>
+                <small>{tileSub(d, today.slice(0, 7))}</small>
               </div>
               <div className="ag-items">
                 {list.map((r) => (

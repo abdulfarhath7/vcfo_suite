@@ -274,6 +274,8 @@
 .cp .cp-compliances .cal .day.s-ok:hover{background:light-dark(#f7f9fc, oklch(15.8% 0.005 258.3))}
 .cp .cp-compliances .cal .dt{min-width:24px;height:24px;border-radius:4px;font:700 13px Manrope,sans-serif}
 .cp .cp-compliances .cal .day.today{box-shadow:inset 0 0 0 2px var(--navy);background:light-dark(#eef2f8, oklch(19% 0.009 258.3))}
+/* today keeps its tint on a weekend / status day too (.we:not(.out) is more specific) */
+.cp .cp-compliances .cal .day.today:not(.out){background:light-dark(#eef2f8, oklch(19% 0.009 258.3))}
 .cp .cp-compliances .cal .day.today .tlabel{display:none}
 .cp .cp-compliances .cal .day.sel{box-shadow:inset 0 0 0 2px var(--primary);z-index:auto}
 .cp .cp-compliances .cal .day.today.sel{box-shadow:inset 0 0 0 2px var(--navy),inset 0 0 0 4px var(--primary)}
@@ -368,8 +370,6 @@
 .cp .cp-compliances .dpop .drow:focus-visible{outline:2px solid var(--navy);outline-offset:1px}
 .cp .cp-compliances .ag-it.clk{cursor:pointer;border-radius:6px}
 .cp .cp-compliances .ag-it.clk:hover .nm{color:var(--primary)}
-.cp .cp-compliances .tlv-b.lock.ro{cursor:default;opacity:1}
-.cp .cp-compliances .tlv-b.ro{cursor:pointer}
 .cp .cp-compliances .cm-root{min-height:0;overflow:visible;background:transparent}
 .cp .cp-compliances .cm-day{cursor:pointer;font:inherit;padding:0}
 .cp .cp-compliances .cm-day:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
@@ -390,3 +390,36 @@
 @media (prefers-reduced-motion: reduce){.cp .cp-compliances *,
 .cp .cp-compliances *::before,
 .cp .cp-compliances *::after{animation:none!important;transition:none!important}}
+
+/* ---------- fix pass (DIFF-REPORT CP rows) ---------- */
+/* CP-13: the dialog itself takes focus on open */
+.cp .cp-compliances .modal:focus,
+.cp .cp-compliances .dd:focus{outline:none}
+/* CP-08: Next deadline (i) pop-over: the card no longer clips; the pop-over
+   spans the title column below the title so it never runs off the card edge */
+.cp .cp-compliances .nd-card{overflow:visible}
+.cp .cp-compliances .nd-card .nd-title{position:relative}
+.cp .cp-compliances .nd-card .nd-title .info{position:static}
+.cp .cp-compliances .nd-card .nd-title .info .pop{left:0;right:0;width:auto;transform:translateY(-4px);font:500 12px/1.45 Manrope;letter-spacing:0}
+.cp .cp-compliances .nd-card .nd-title .info.open .pop,
+.cp .cp-compliances .nd-card .nd-title .info:focus-within .pop{transform:none}
+.cp .cp-compliances .nd-card .nd-title .info .pop::before{display:none}
+/* CP-04: phone donut keeps the legend beside the ring */
+@media (max-width:767px){
+  .cp .cp-compliances .donut{flex-wrap:nowrap;gap:12px!important}
+  .cp .cp-compliances .donut svg{width:84px}
+}
+/* CP-09: phone sheets: vertical focus track, footer stacked */
+@media (max-width:767px){
+  .cp .cp-compliances .modal .ft{flex-direction:column;align-items:stretch;padding:0}
+  .cp .cp-compliances .modal .ft-st{display:flex;align-items:center;gap:10px;width:auto;height:auto}
+  .cp .cp-compliances .modal .ft-st>:first-child{flex:none}
+  .cp .cp-compliances .modal .ft-l,
+.cp .cp-compliances .modal .ft>.ft-st:first-child .ft-l,
+.cp .cp-compliances .modal .ft>.ft-st:last-child .ft-l{position:static;transform:none;text-align:left;max-width:none;width:auto}
+  .cp .cp-compliances .modal .ft-line{flex:none;width:5px;min-width:0;height:14px;margin:4px 11.5px}
+  .cp .cp-compliances .modal .ft-line.todo{background:radial-gradient(circle,light-dark(oklch(80% 0.015 255), oklch(36% 0.015 255)) 2.2px,transparent 2.6px) 50% 0/5px 9px repeat-y}
+  .cp .cp-compliances .modal .ft-cur{min-width:0;max-width:none}
+  .cp .cp-compliances .det-ft>.ask{flex:1 1 100%!important}
+  .cp .cp-compliances .det-ft>.btn{flex:1 1 0}
+}

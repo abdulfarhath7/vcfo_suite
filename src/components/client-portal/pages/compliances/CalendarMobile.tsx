@@ -21,6 +21,7 @@ import {
   fyStartOfMonth,
   sortByDue,
   statusOf,
+  tileSub,
   tileVar,
   weekOf,
   worstStatus,
@@ -65,8 +66,11 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
   const areaIdx = Math.max(0, AREAS.findIndex((a) => a.id === area));
   const areaCounts = AREAS.map((a) => (a.id === 'all' ? fyRows.length : fyRows.filter((r) => r.area === a.id).length));
 
-  const from = week[0]! > today ? week[0]! : addDays(today, -1);
-  const agenda = selDay ? dates.get(selDay) ?? [] : areaRows.filter((r) => r.dueDate >= from).slice(0, 6);
+  // agenda (CP-07): this week from Monday (filed and overdue included), then what follows;
+  // in the current week every overdue filing from earlier weeks leads the list
+  const thisWeek = week[0]! <= today && today <= week[6]!;
+  const carried = thisWeek ? areaRows.filter((r) => r.dueDate < week[0]! && statusOf(r, today) === 'over') : [];
+  const agenda = selDay ? dates.get(selDay) ?? [] : [...carried, ...areaRows.filter((r) => r.dueDate >= week[0]!).slice(0, 6)];
   const detail = state.filing ? rows.find((r) => r.id === state.filing) ?? null : null;
   const mid = week[3]!;
   const label = `${MON[Number(mid.slice(5, 7)) - 1]} ${mid.slice(0, 4)}`;
@@ -208,7 +212,7 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
                 >
                   <div className="dtile" style={{ background: tileVar(s), width: 40, height: 44 }}>
                     <b style={{ fontSize: 16 }}>{Number(r.dueDate.slice(8))}</b>
-                    <small>{dow(r.dueDate)}</small>
+                    <small>{tileSub(r.dueDate, (week[3] ?? today).slice(0, 7))}</small>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
