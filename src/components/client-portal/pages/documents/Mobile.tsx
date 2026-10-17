@@ -93,7 +93,6 @@ export function DocsMobile({
   const filesHere = level.filter((e): e is Extract<TEntry, { kind: 'file' }> => e.kind === 'file').map((e) => e.node).filter((n) => n.status !== 'Missing');
   const shownCount = ql ? level.length : files.length;
   const allZip = files.filter((f) => f.node.status !== 'Missing').length;
-  const openReq = data.openRequests.length;
 
   const close = () => setSheet('');
   const startZip = (key: string, name: string, n: number) => {
@@ -108,9 +107,20 @@ export function DocsMobile({
   let sheetTitle = '';
   let items: SheetItem[] = [];
   if (sheet === 'root') {
+    // docs_a_mobile_menu root sheet: the whole tree as one ZIP + a link to it. Uploads start
+    // from a missing row's own sheet (upload only against open requests).
     sheetTitle = 'Documents';
-    items = [{ label: 'Download all (ZIP)', icon: I.zip, k: `${allZip} files`, act: () => startZip('all', `${data.companyShort} documents`, allZip) }];
-    if (openReq) items.push({ label: `Upload · ${openReq} requested`, icon: I.up, act: () => (close(), onUpload()) });
+    items = [
+      { label: 'Download folder as ZIP', icon: I.zip, k: `${allZip} files`, act: () => startZip('all', `${data.companyShort} documents`, allZip) },
+      {
+        label: 'Copy link to folder',
+        icon: I.link,
+        act: () => {
+          close();
+          void copyText(`${window.location.origin}/app/client/documents`).then((ok) => ok && zip.copied());
+        },
+      },
+    ];
   } else if (sheet) {
     const e = byId.get(sheet);
     if (e?.kind === 'folder') {
@@ -266,9 +276,9 @@ export function DocsMobile({
               const missing = f.status === 'Missing';
               return (
                 <div className="row" role="listitem" key={e.id}>
-                  <button type="button" className="main" onClick={() => (missing ? onUpload(f.requestId) : onOpenFile(f, filesHere))}>
+                  <button type="button" className="main" onClick={() => (missing ? setSheet(e.id) : onOpenFile(f, filesHere))}>
                     {missing ? (
-                      <span style={{ width: 24, display: 'flex', justifyContent: 'center', flex: 'none' }}>
+                      <span style={{ width: 20, display: 'flex', justifyContent: 'center', flex: 'none' }}>
                         <span style={{ width: 16, height: 16, borderRadius: 3, border: '1.5px dashed var(--due)', boxSizing: 'border-box' }} />
                       </span>
                     ) : (
@@ -317,6 +327,7 @@ export function DocsMobile({
         accept="image/*"
         capture="environment"
         hidden
+        style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = '';
@@ -327,7 +338,7 @@ export function DocsMobile({
       {sheet && items.length ? (
         <PagePortal>
           <div className="vdm">
-            <button type="button" aria-label="Close menu" onClick={close} style={{ position: 'fixed', inset: 0, border: 0, padding: 0, background: 'oklch(20% 0.05 258 / .45)', cursor: 'default', zIndex: 2147482300 }} />
+            <button type="button" aria-label="Close menu" data-notip="" onClick={close} style={{ position: 'fixed', inset: 0, border: 0, padding: 0, background: 'oklch(20% 0.05 258 / .45)', cursor: 'default', zIndex: 2147482300 }} />
             <div
               className="vdm-sheet"
               role="menu"

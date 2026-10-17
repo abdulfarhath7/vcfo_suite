@@ -32,6 +32,7 @@ export function MobilePreview({ node, company, onClose }: { node: DocNode; compa
   const [pages, setPages] = useState(1);
   const [page, setPage] = useState(0);
   const [failed, setFailed] = useState(false);
+  const [reload, setReload] = useState(0);
   const docx = useRef<HTMLDivElement>(null);
   const strip = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -80,7 +81,7 @@ export function MobilePreview({ node, company, onClose }: { node: DocNode; compa
       alive = false;
       if (obj) URL.revokeObjectURL(obj);
     };
-  }, [node.ref, mode]);
+  }, [node.ref, mode, reload]);
 
   const paperStyle = {
     width: 330,
@@ -126,8 +127,23 @@ export function MobilePreview({ node, company, onClose }: { node: DocNode; compa
             </div>
             <div style={{ flex: 1, minHeight: 0, background: 'light-dark(oklch(93.5% 0.01 255), oklch(22.8% 0.01 255))', padding: 16, display: 'flex', justifyContent: 'center', overflow: mode === 'docx' ? 'auto' : 'hidden' }}>
               {mode === 'none' || failed ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
-                  <div style={{ fontSize: 15, fontWeight: 700 }}>{failed ? 'Could not open this file' : 'Preview not available for this file type'}</div>
+                <div role={failed ? 'alert' : undefined} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
+                  {failed ? (
+                    <span style={{ width: 48, height: 48, borderRadius: 99, background: 'var(--over-light)', color: 'var(--over-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 20px Manrope' }}>!</span>
+                  ) : null}
+                  <div style={{ fontSize: 15, fontWeight: 700, color: failed ? 'var(--over-text)' : undefined }}>{failed ? 'Could not open this file' : 'Preview not available for this file type'}</div>
+                  {failed ? (
+                    <button
+                      type="button"
+                      className="btn btn-o"
+                      onClick={() => {
+                        setFailed(false);
+                        setReload((r) => r + 1);
+                      }}
+                    >
+                      Try again
+                    </button>
+                  ) : null}
                 </div>
               ) : mode === 'docx' ? (
                 <div data-paper className="vmp-paper" style={{ ...paperStyle, height: 'auto', maxHeight: 'none', padding: '28px 26px' }}>
@@ -159,7 +175,7 @@ export function MobilePreview({ node, company, onClose }: { node: DocNode; compa
                 </div>
               )}
             </div>
-            {mode === 'pdf' || mode === 'image' ? (
+            {(mode === 'pdf' || mode === 'image') && !failed ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', borderTop: '1px solid var(--hair)' }}>
                 {Array.from({ length: Math.min(pages, 10) }, (_, i) => (
                   <span key={i} style={{ width: i === page ? 18 : 6, height: 4, borderRadius: 2, background: i === page ? 'var(--navy)' : 'var(--border)', transition: 'width .2s' }} />

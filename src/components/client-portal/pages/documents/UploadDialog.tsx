@@ -38,6 +38,9 @@ export function UploadDialog({
   onUploaded: (r: { fileId: string; requestId: string; label: string }) => void;
 }) {
   const [sel, setSel] = useState<string>(initialRequestId && requests.some((r) => r.id === initialRequestId) ? initialRequestId : requests[0]?.id ?? '');
+  // Phone: a missing row's sheet opens the upload for that one request (docs_a_mobile_menu).
+  const [phone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width:700px)').matches);
+  const shown = phone && initialRequestId && requests.some((r) => r.id === initialRequestId) ? requests.filter((r) => r.id === initialRequestId) : requests;
   const [file, setFile] = useState<File | null>(initialFile ?? null);
   const [over, setOver] = useState(false);
   const [pct, setPct] = useState<number | null>(null);
@@ -161,7 +164,7 @@ export function UploadDialog({
                   For
                 </span>
                 <div className="vup-for" role="radiogroup" aria-labelledby="up-for" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 8 }}>
-                  {requests.map((r) => {
+                  {shown.map((r) => {
                     const on = r.id === sel;
                     return (
                       <button
@@ -301,6 +304,7 @@ export function UploadDialog({
                 ref={input}
                 type="file"
                 hidden
+                style={{ display: 'none' }}
                 accept={accept.exts.map((e) => `.${e}`).join(',')}
                 onChange={(e) => {
                   pick(e.target.files?.[0] ?? null);
@@ -308,7 +312,7 @@ export function UploadDialog({
                 }}
               />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--raised)' }}>
+            <div className="vup-foot" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--raised)' }}>
               <button type="button" className="btn btn-o" onClick={close}>
                 Cancel
               </button>

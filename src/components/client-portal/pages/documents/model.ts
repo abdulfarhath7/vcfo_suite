@@ -138,6 +138,15 @@ export function tagStyle(n: DocNode): CSSProperties {
   return TAG_STYLE[tagOf(n)];
 }
 
+/** docs_a_drill TS: the drill-down's solid marks (white type on the chip colour). */
+export function solidTagStyle(n: DocNode): CSSProperties {
+  const t = tagOf(n);
+  if (t === 'PDF') return { background: 'var(--over-chip)', color: '#fff' };
+  if (t === 'JPG' || t === 'PNG' || t === 'WEBP' || t === 'HEIC') return { background: 'var(--teal-chip)', color: '#fff' };
+  if (t === 'DOCX' || t === 'DOC') return { background: 'var(--prog-chip)', color: '#fff' };
+  return { background: 'var(--muted)', color: '#fff' };
+}
+
 export function tagTip(n: DocNode): string {
   return TAG_TIP[tagOf(n)];
 }

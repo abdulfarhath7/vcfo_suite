@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DocNode } from '@/lib/client-portal/documents';
 import { dayMonth } from './file-types';
 import { BotBubble, PagePortal } from './shared-ui';
-import { missingLabel, statusClass, STATUS_STYLE, tagStyle, tagText, tagTip, type StatusClass } from './model';
+import { solidTagStyle, statusClass, STATUS_STYLE, tagText, tagTip, type StatusClass } from './model';
 
 const TABS: Array<{ label: string; cls?: StatusClass }> = [
   { label: 'All' },
@@ -25,7 +25,8 @@ export interface DrillTarget {
   /** "Director KYC" */
   name: string;
   where: string;
-  linkText: string;
+  /** null: no link (the files are not in an Incorporation phase). */
+  linkText: string | null;
   onLink: () => void;
   files: DocNode[];
   tab: number;
@@ -95,17 +96,19 @@ export function DocsDrill({
               <span>
                 These documents are for {target.name} in {target.where}
               </span>
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  close();
-                  target.onLink();
-                }}
-                style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap' }}
-              >
-                {target.linkText}
-              </a>
+              {target.linkText ? (
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    close();
+                    target.onLink();
+                  }}
+                  style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap' }}
+                >
+                  {target.linkText}
+                </a>
+              ) : null}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 56, padding: '0 12px 0 18px', borderBottom: '1px solid var(--border)', flex: 'none' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -150,7 +153,7 @@ export function DocsDrill({
                         <span style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px dashed var(--due)', boxSizing: 'border-box' }} />
                       </span>
                     ) : (
-                      <span className="ft" role="img" aria-label={tagTip(f)} data-tip={tagTip(f)} style={tagStyle(f)}>
+                      <span className="ft" role="img" aria-label={tagTip(f)} data-tip={tagTip(f)} style={solidTagStyle(f)}>
                         {tagText(f)}
                       </span>
                     )}
@@ -166,7 +169,7 @@ export function DocsDrill({
                       {f.label}
                     </a>
                     <span className="mono" style={{ fontSize: 11.5, color: 'var(--subtle)' }}>
-                      {missing ? missingLabel(f) : dayMonth(f.date)}
+                      {missing ? (f.due ? `Due ${dayMonth(f.due)}` : 'No due date') : dayMonth(f.date)}
                     </span>
                     <span className="badge" style={STATUS_STYLE[f.status]}>
                       {f.status}

@@ -128,6 +128,28 @@ function indexedKey(objectKey: string): { bucket: StorageBucket; path: string } 
   return { bucket: ENGAGEMENT_DOCUMENTS_BUCKET, path: clean };
 }
 
+/**
+ * A request or file saved without a step: put it under the step its label
+ * clearly names (a utility bill is step "Registered Office Address", a DIR-2
+ * is "Director KYC") instead of the "Other documents" folder. Only plain,
+ * unambiguous names; anything else stays step-less.
+ */
+const LABEL_STEP: Array<[RegExp, string]> = [
+  [/utility bill|electricity bill|lease deed|rent agreement|\bnoc\b.*(owner|property|premises)|property owner/i, 'pre-14'],
+  [/\bdir-?2\b|director kyc/i, 'pre-6'],
+  [/signed board resolution|board resolution \(final\)/i, 'pre-3'],
+  [/subscriber sheet|\binc-?35\b|\binc-?9\b/i, 'pre-16'],
+  [/\bsh-?1\b|share certificate/i, 'post-5'],
+  [/\badt-?1\b|auditor consent/i, 'post-2'],
+  [/fc-?gpr|\bfirc\b/i, 'post-7'],
+];
+
+function stepFor(stepId: string | null | undefined, label: string): string | undefined {
+  if (stepId && getItem(stepId)) return stepId;
+  for (const [re, id] of LABEL_STEP) if (re.test(label) && getItem(id)) return id;
+  return undefined;
+}
+
 function noteFromDetail(detail: string | null): string | undefined {
   if (!detail) return undefined;
   const text = detail
@@ -289,8 +311,8 @@ export async function getClientDocuments(ctx: AuthContext): Promise<ClientDocume
         from: fromClient ? company : up?.name ? `SBC · ${up.name}` : 'SBC',
         fromSbc: !fromClient,
         date: d.createdAt,
-        stepId: d.stepId && getItem(d.stepId) ? d.stepId : undefined,
-        categoryId: categoryFor(d.stepId ?? undefined, `${label} ${d.category ?? ''}`),
+        stepId: stepFor(d.stepId, label),
+        categoryId: categoryFor(stepFor(d.stepId, label), `${label} ${d.category ?? ''}`),
         stale: isStaleProof(label, d.createdAt, now),
         source: 'index',
       });
@@ -356,7 +378,7 @@ export async function getClientDocuments(ctx: AuthContext): Promise<ClientDocume
   }
   const openRequests: OpenRequest[] = [];
   for (const { req, det, askedBy } of reqRows) {
-    const stepId = det?.stepId && getItem(det.stepId) ? det.stepId : undefined;
+    const stepId = stepFor(det?.stepId, req.title);
     const reqFiles = filesByReq.get(req.id) ?? [];
     const pending = req.status === 'pending';
     const due = det?.dueOn ?? undefined;

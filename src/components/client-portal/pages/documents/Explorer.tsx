@@ -9,7 +9,7 @@
  * ZIP / copy toast.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react';
-import type { ClientDocumentsPayload, DocNode } from '@/lib/client-portal/documents';
+import { OTHER_PHASE_ID, OTHER_PHASE_TITLE, type ClientDocumentsPayload, type DocNode } from '@/lib/client-portal/documents';
 import type { PortalIncorporationModel } from '@/lib/client-portal/step-model';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import { stepHref } from '@/components/client-portal/routes';
@@ -198,12 +198,15 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
   const drillFor = (f: TFolder, part: number) => {
     const kids = under(f.id).map((x) => x.node);
     const name = stripNo(f.label);
+    // docs_a_drill banner: "These documents are for <step> in Incorporation · Open Incorporation →".
+    // Step-less files ("Other documents") and categories are not in Incorporation: no phase link.
+    const other = f.phaseId === OTHER_PHASE_ID;
     onDrill({
       title: f.label,
       name,
-      where: f.level === 'cat' ? 'Documents' : 'Incorporation',
-      linkText: f.stepId ? 'Open step →' : 'Open Incorporation →',
-      onLink: () => go(f.stepId ? stepHref(f.stepId) : 'incorporation'),
+      where: f.level === 'cat' ? 'Documents' : other ? OTHER_PHASE_TITLE : 'Incorporation',
+      linkText: f.level === 'cat' || other ? null : 'Open Incorporation →',
+      onLink: () => go('incorporation'),
       files: kids,
       tab: part,
     });

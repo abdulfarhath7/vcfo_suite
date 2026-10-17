@@ -87,6 +87,8 @@ export const DOC_CATEGORIES: Array<{ id: DocCategoryId; name: string }> = [
 
 const STEP_CATEGORY: Record<string, DocCategoryId> = {
   'pre-1': 'c1',
+  'pre-2': 'c3',
+  'pre-3': 'c3',
   'pre-6': 'c1',
   'pre-7': 'c1',
   'pre-15': 'c1',
@@ -109,9 +111,10 @@ const STEP_CATEGORY: Record<string, DocCategoryId> = {
 
 /** Field-level overrides (a certificate filed on a records step, KYC on a capital step…). */
 const FIELD_CATEGORY: Array<[RegExp, DocCategoryId]> = [
-  [/pan|passport|aadhaar|kyc|photo|identity|dsc|din/i, 'c1'],
-  [/utility|electricity|rent|lease|noc|office|premises|address proof/i, 'c2'],
-  [/certificate|registration|lut|udyam|iec|gst/i, 'c4'],
+  // Word boundaries: "Reso-lut-ion" is not a LUT, "Ordinary" is not a DIN.
+  [/\bpan\b|passport|aadhaar|kyc|photo|identity|\bdsc\b|\bdin\b/i, 'c1'],
+  [/utility|electricity|rent|lease|\bnoc\b|office|premises|address proof/i, 'c2'],
+  [/certificate|registration|\blut\b|udyam|\biec\b|\bgst/i, 'c4'],
   [/firc|bank|statement|remittance|capital|kyc letter/i, 'c5'],
 ];
 

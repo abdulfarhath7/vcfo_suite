@@ -6,17 +6,17 @@
  * status brief, PDF brief, search, Recently read strip, shelves with planks,
  * books that lift and tilt, blue "Updated" ribbon, no-match bubble), the
  * recently-read drill (lib_recent_drill) and the empty library (lib_empty).
- * Data: saved items GET /api/ask/library, reading progress
+ * Data: saved items GET /api/client/library (not behind the Ask VCFO flag), reading progress
  * GET /api/client/library/reads (NEW), suggestions GET /api/client/library/topic.
  */
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { usePortal, usePortalOptional } from '@/components/client-portal/PortalProvider';
-import { fetchLibrary, type LibraryItemView } from '@/hooks/ask/ask-api';
+import type { LibraryItemView } from '@/hooks/ask/ask-api';
 import LegacyClientLibrary from '@/views/client/ask/ClientLibrary';
 import { BotFace, PagePortal, useDelayedLoading } from '../shared-ui';
-import { catOf, fetchReads, LIBRARY_KEY, readerHref, readTip, READS_KEY, SHELF_CATS, type LibraryRead } from './library-model';
+import { catOf, fetchLibrary, fetchReads, LIBRARY_KEY, libraryExportHref, readerHref, readTip, READS_KEY, SHELF_CATS, type LibraryRead } from './library-model';
 import '../../../css/library-shelf.css';
 
 export function LibraryPage() {
@@ -158,12 +158,12 @@ function LibraryInner() {
               <span className="chip" style={{ background: 'var(--primary-chip)', color: '#fff' }}>
                 {items.length} books
               </span>
-              {engagementId ? (
+              {engagementId && lib.data?.features?.statusBrief ? (
                 <a className="btn btn-o" href={`/api/ask/brief?engagementId=${encodeURIComponent(engagementId)}`}>
                   Monthly status brief
                 </a>
               ) : null}
-              <a className="btn btn-o" href={`/api/ask/library/export?ids=${encodeURIComponent(shownIds.join(','))}`} aria-disabled={!shownIds.length}>
+              <a className="btn btn-o" href={libraryExportHref(shownIds)} aria-disabled={!shownIds.length}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14" />
                 </svg>

@@ -1,3 +1,7 @@
+import type { AnswerDepth, AnswerEnvelope } from '@/data/ask/schema';
+import { dayMonth } from '../file-types';
+import type { LibraryItemView } from '@/hooks/ask/ask-api';
+
 /**
  * Library shelves (prototype s/docs/lib_shelf_a.dc.html `CAT`): fixed order,
  * colour, short label and glyph per real Ask VCFO category. Labour is not on
@@ -73,7 +77,7 @@ export interface LibraryRead {
 
 export function readTip(r: LibraryRead): string {
   if (r.progressPct >= 100) {
-    const d = new Date(r.finishedAt ?? r.lastReadAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const d = dayMonth(r.finishedAt ?? r.lastReadAt);
     return `Finished · read on ${d}`;
   }
   return `${r.progressPct}% read · ${r.sectionsRead} of ${r.sectionsTotal} sections`;
@@ -87,3 +91,53 @@ export async function fetchReads(): Promise<LibraryRead[]> {
 
 export const READS_KEY = ['client-portal', 'library-reads'] as const;
 export const LIBRARY_KEY = ['ask', 'library'] as const;
+
+/*
+ * Library data comes from /api/client/library/** — NOT the Ask VCFO routes,
+ * so saved books, reading progress and the reader work with Ask VCFO off.
+ */
+export interface LibraryFeatures {
+  askEnabled: boolean;
+  statusBrief: boolean;
+}
+
+async function json<T>(res: Response, fallback: string): Promise<T> {
+  if (!res.ok) {
+    let msg = fallback;
+    try {
+      msg = ((await res.json()) as { error?: string }).error ?? fallback;
+    } catch {
+      /* keep fallback */
+    }
+    throw new Error(msg);
+  }
+  return (await res.json()) as T;
+}
+
+export async function fetchLibrary(): Promise<{ items: LibraryItemView[]; features?: LibraryFeatures }> {
+  return json(await fetch('/api/client/library', { cache: 'no-store' }), 'Could not load your library');
+}
+
+export async function fetchLibraryItem(id: string): Promise<{ item: LibraryItemView; notice: string | null }> {
+  return json(await fetch(`/api/client/library/${encodeURIComponent(id)}`, { cache: 'no-store' }), 'Could not open this item');
+}
+
+export async function fetchTopicAnswer(
+  slug: string,
+  opts: { depth?: AnswerDepth; engagementId?: string | null } = {},
+): Promise<{ topic: { slug: string; title: string; category: string; version: number }; answer: AnswerEnvelope }> {
+  const params = new URLSearchParams();
+  if (opts.depth) params.set('depth', opts.depth);
+  if (opts.engagementId) params.set('engagementId', opts.engagementId);
+  return json(await fetch(`/api/client/library/topic/${encodeURIComponent(slug)}?${params}`), 'Could not load this explanation');
+}
+
+export async function saveToLibrary(body: { engagementId: string; topicSlug?: string; messageId?: string; answer?: AnswerEnvelope }): Promise<{ item: LibraryItemView }> {
+  return json(
+    await fetch('/api/client/library', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+    'Could not save to your library',
+  );
+}
+
+export const libraryExportHref = (ids: string[]) => `/api/client/library/export?ids=${encodeURIComponent(ids.join(','))}`;
+export const libraryItemExportHref = (id: string) => `/api/client/library/${encodeURIComponent(id)}/export`;

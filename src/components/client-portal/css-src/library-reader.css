@@ -69,3 +69,7 @@ html[data-theme="dark"] .seg>.thumb{background:var(--navy-3)}
 .vrd .btn:disabled{opacity:.6;cursor:default}
 .vrd-visual{border-radius:10px;background:var(--primary-light);padding:22px 20px}
 @media (prefers-reduced-motion: reduce){.lsk{animation:none}}
+
+/* ---- not-available state: bot bubble (rule 16, as the boards draw it) ---- */
+.vdoc-bubble{position:relative;max-width:320px;padding:10px 14px;border-radius:10px 10px 10px 2px;background:var(--panel);border:1px solid var(--border);box-shadow:0 8px 20px -12px oklch(21% 0.042 264 / .35);display:flex;flex-direction:column;align-items:flex-start}
+.vdoc-bot{display:inline-flex;overflow:hidden;align-items:flex-start;justify-content:center;flex:none;border-radius:99px;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255))}

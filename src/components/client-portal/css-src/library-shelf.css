@@ -2,6 +2,7 @@
 /* Verbatim: prototype s/docs/lib_shelf_a.dc.html (shelf), lib_recent_drill (.ld-root), lib_empty (.le-root),
    lib_reader (.vrd). Board :root token blocks are not copied (shared tokens + dark theme); the shell
    draws the sidebar, top bar and Ask VCFO launcher. */
+a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--primary-dark)}
 html:not([data-theme="dark"]){--violet-soft:oklch(92% 0.05 292);--violet-text:oklch(42% 0.16 292)}
 .chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px;white-space:nowrap}
 .mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
@@ -47,7 +48,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid oklch
 .vlib-segw{flex:1 1 680px;max-width:740px;min-width:0;overflow-x:auto;scrollbar-width:none;border-radius:8px}
 .vlib-segw::-webkit-scrollbar{display:none}
 .vlib-segw .seg{width:100%;min-width:680px;box-sizing:border-box}
-.vlib-q{flex:1 1 200px;min-width:0;box-sizing:border-box}
+.vlib-q{flex:1 1 100%;min-width:0;box-sizing:border-box}
 .vlib-recent{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
 .vlib-recent>h2{flex:none}
 .vlib-recent>.mini{flex:1 1 200px;max-width:360px;min-width:0;box-sizing:border-box}

@@ -71,19 +71,26 @@ export function previewMode(tag: FileTag): PreviewMode {
 }
 
 /** "24 Oct 2026" — the one date format of the Documents pages. */
-export function longDate(iso?: string | null): string {
-  if (!iso) return '—';
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function parseDay(iso?: string | null): Date | null {
+  if (!iso) return null;
   const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/* Fixed 3-letter months: en-GB toLocaleDateString renders "Sept". */
+export const MONTHS_SHORT = MONTHS;
+
+export function longDate(iso?: string | null): string {
+  const d = parseDay(iso);
+  return d ? `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}` : '—';
 }
 
 /** "12 Nov" */
 export function dayMonth(iso?: string | null): string {
-  if (!iso) return '—';
-  const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const d = parseDay(iso);
+  return d ? `${d.getDate()} ${MONTHS[d.getMonth()]}` : '—';
 }
 
 export function sizeLabel(bytes?: number | null): string | null {

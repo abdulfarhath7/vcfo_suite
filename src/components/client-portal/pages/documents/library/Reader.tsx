@@ -20,14 +20,13 @@ import { usePortalIncorporation, todayIST } from '@/components/client-portal/hoo
 import { portalHref, stepHref } from '@/components/client-portal/routes';
 import { VisualRenderer } from '@/components/ask/visuals/VisualRenderer';
 import { VisorHead } from '@/components/client-portal/Visor';
-import { fetchLibraryItem, fetchTopicAnswer, saveToLibrary } from '@/hooks/ask/ask-api';
 import LegacyClientLibraryItem from '@/views/client/ask/ClientLibraryItem';
 import LegacyClientLearnTopic from '@/views/client/ask/ClientLearnTopic';
 import { DocViewer, type ViewerDoc } from '../DocViewer';
-import { dayMonth } from '../file-types';
+import { dayMonth, MONTHS_SHORT } from '../file-types';
 import { STATUS_STYLE, tagStyle, tagText } from '../model';
-import { toViewerDoc, useClientDocuments } from '../shared-ui';
-import { categoryName, LIBRARY_KEY, READS_KEY } from './library-model';
+import { BotFace, toViewerDoc, useClientDocuments } from '../shared-ui';
+import { categoryName, fetchLibrary, fetchLibraryItem, fetchTopicAnswer, LIBRARY_KEY, libraryItemExportHref, READS_KEY, saveToLibrary } from './library-model';
 import '../../../css/library-reader.css';
 
 const DEPTHS: Array<{ label: string; d: AnswerDepth }> = [
@@ -124,6 +123,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
     queryKey: ['ask', 'library', 'item', params?.id],
     queryFn: () => fetchLibraryItem(params!.id!),
     enabled: mode === 'saved' && !!params?.id,
+    retry: false,
   });
   const item = itemQ.data?.item;
   const slug = mode === 'learn' ? params?.slug ?? '' : item?.topicSlug ?? '';
@@ -134,8 +134,9 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
   const topicQ = useQuery({
     queryKey: ['ask', 'topic', slug, curDepth, engagementId],
     queryFn: () => fetchTopicAnswer(slug, { depth: curDepth, engagementId }),
-    enabled: !!slug && (mode === 'learn' || (depth != null && depth !== savedDepth)),
+    enabled: !!slug && !!engagementId && (mode === 'learn' || (depth != null && depth !== savedDepth)),
     placeholderData: (p) => p,
+    retry: false,
   });
   const metaQ = useQuery({
     queryKey: ['client-portal', 'topic-meta', slug],
@@ -146,7 +147,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
     },
     enabled: !!slug,
   });
-  const libQ = useQuery({ queryKey: LIBRARY_KEY, queryFn: async () => (await import('@/hooks/ask/ask-api')).fetchLibrary() });
+  const libQ = useQuery({ queryKey: LIBRARY_KEY, queryFn: fetchLibrary });
   const filingsQ = useQuery({
     queryKey: ['client-portal', 'filings-for-reader', engagementId],
     queryFn: async () => {
@@ -162,7 +163,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
   usePortalCrumbs(['Library', title || 'Reading']);
   const category = mode === 'learn' ? topicQ.data?.topic.category ?? metaQ.data?.category ?? '' : item?.category ?? '';
   const savedItem = mode === 'learn' ? libQ.data?.items.find((x) => x.topicSlug === slug) : item;
-  const loading = mode === 'saved' ? itemQ.isLoading : topicQ.isLoading;
+  const loading = mode === 'saved' ? itemQ.isLoading : topicQ.isPending;
   const failed = mode === 'saved' ? itemQ.isError || (!itemQ.isLoading && !item) : topicQ.isError;
 
   /* ---------- reading progress ---------- */
@@ -308,13 +309,20 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
       <div className="cp-reader">
         <div className="vrd">
           <div className="vrd-col">
-            <main className="vrd-main" style={{ gridTemplateColumns: 'minmax(0,780px)' }}>
-              <div className="lerr" role="alert">
-                <span style={{ flex: 1 }}>{mode === 'saved' ? 'This book is not in your library any more.' : 'This explanation is not available.'}</span>
-                <Link className="btn btn-o" href={portalHref('knowledge-bank')}>
-                  Back to library
-                </Link>
-              </div>
+            <main className="vrd-main" style={{ gridTemplateColumns: 'minmax(0,1fr)' }}>
+              <section className="card" style={{ minHeight: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+                <div role="alert" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, textAlign: 'left' }}>
+                  <BotFace size={48} />
+                  <div className="vdoc-bubble">
+                    <span style={{ font: '600 13px/1.45 Manrope,sans-serif', color: 'var(--fg)' }}>
+                      {mode === 'saved' ? 'This book is not in your library any more.' : 'This explanation is not available yet.'}
+                    </span>
+                    <Link href={portalHref('knowledge-bank')} style={{ marginTop: 6, fontSize: 12, fontWeight: 700 }}>
+                      Back to library →
+                    </Link>
+                  </div>
+                </div>
+              </section>
             </main>
           </div>
         </div>
@@ -513,7 +521,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
                     </button>
                   )}
                   {savedItem ? (
-                    <a className="btn btn-o" href={`/api/ask/library/${encodeURIComponent(savedItem.id)}/export`}>
+                    <a className="btn btn-o" href={libraryItemExportHref(savedItem.id)}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14" />
                       </svg>
@@ -545,7 +553,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {projectCard.date ? (
                       <span style={{ width: 50, height: 54, borderRadius: 8, background: projectCard.done ? 'var(--ok-chip)' : 'var(--due-chip)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-                        <span style={{ font: '700 11px Manrope,sans-serif', letterSpacing: '.06em' }}>{new Date(`${projectCard.date.slice(0, 10)}T00:00:00`).toLocaleDateString('en-GB', { month: 'short' }).toUpperCase()}</span>
+                        <span style={{ font: '700 11px Manrope,sans-serif', letterSpacing: '.06em' }}>{MONTHS_SHORT[new Date(`${projectCard.date.slice(0, 10)}T00:00:00`).getMonth()]!.toUpperCase()}</span>
                         <span style={{ font: "600 20px/1 'Space Grotesk'" }}>{new Date(`${projectCard.date.slice(0, 10)}T00:00:00`).getDate()}</span>
                       </span>
                     ) : null}

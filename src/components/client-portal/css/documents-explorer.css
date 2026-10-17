@@ -5,6 +5,7 @@
    only the board-only folder colours are added for the light theme. The page frame (.vdoc / sidebar
    column / top bar) is the shell; .vdoc-main is sized to the viewport under the 52 px top bar. */
 .cp:not([data-theme="dark"]) .cp-documents{--folder:#0f2a4a;--folder-open:#1b4f94}
+.cp .cp-documents a{color:var(--primary);text-decoration:none;font-weight:700}.cp .cp-documents a:hover{color:var(--primary-dark)}
 .cp .cp-documents .mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
 .cp .cp-documents .badge{display:inline-flex;align-items:center;gap:4px;height:20px;border-radius:4px;padding:0 7px;font-size:11px;font-weight:700;white-space:nowrap;box-sizing:border-box}
 .cp .cp-documents .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 12px;border-radius:6px;font:600 12.5px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap;box-sizing:border-box}
@@ -132,3 +133,22 @@
 .cp .cp-documents .vdoc-bubble{position:relative;max-width:320px;padding:10px 14px;border-radius:10px 10px 10px 2px;background:var(--panel);border:1px solid var(--border);box-shadow:0 8px 20px -12px oklch(21% 0.042 264 / .35);display:flex;flex-direction:column;align-items:flex-start}
 .cp .cp-documents .vdoc-bot{display:inline-flex;overflow:hidden;align-items:flex-start;justify-content:center;flex:none;border-radius:99px;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255))}
 @media (prefers-reduced-motion: reduce){.cp .cp-documents .tr.glow{animation:none}}
+/* explorer card runs to the bottom of the viewport (docs_a_refined): the Ask VCFO pill floats over
+   its lower-right corner as on the board, so the page host's launcher spacer is cancelled here */
+@media (min-width:1000px){.cp .cp-documents .vdoc{height:calc(100dvh - 52px);margin-bottom:calc(-1 * var(--vp-launch-h,0px))}}
+/* tree tooltips stay inside the tree column (the shared [data-tip] bubble is centred, one line):
+   the progress tip wraps right-aligned over its bar, the row ⋮ tip right-aligns at the edge */
+.cp .cp-documents .pb:hover::after,
+.cp .cp-documents .pb:focus-visible::after,
+.cp .cp-documents .pb::after{left:auto;right:0;width:max-content;max-width:220px;white-space:normal;line-height:1.35;animation:none;box-shadow:none}
+.cp .cp-documents .pb::after{transform:translateY(3px)}.cp .cp-documents .pb:hover::after,
+.cp .cp-documents .pb:focus-visible::after{transform:none}
+.cp .cp-documents .pb:hover::before,
+.cp .cp-documents .pb:focus-visible::before,
+.cp .cp-documents .kb:hover::before,
+.cp .cp-documents .kb:focus-visible::before{content:none}
+.cp .cp-documents .kb.tip::after,
+.cp .cp-documents .kb.tip:hover::after,
+.cp .cp-documents .kb.tip:focus-visible::after{left:auto;right:0;animation:none}
+.cp .cp-documents .kb.tip::after{transform:translate(0,3px)}.cp .cp-documents .kb.tip:hover::after,
+.cp .cp-documents .kb.tip:focus-visible::after{transform:none}

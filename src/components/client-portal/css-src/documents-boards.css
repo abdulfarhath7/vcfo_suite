@@ -13,10 +13,10 @@
 .dd-root .badge{display:inline-flex;align-items:center;height:20px;border-radius:4px;padding:0 7px;font-size:11px;font-weight:700;white-space:nowrap}
 .dd-root .ib{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;cursor:pointer;padding:0}
 .dd-root .ib:hover{background:var(--primary-light);color:var(--navy-ink,var(--navy))}
-.dd-root .seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
+.dd-root .seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .dd-root .seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:6px;background:var(--navy);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
-.dd-root .seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:28px;border-radius:6px;font:500 12px Manrope,sans-serif;color:light-dark(oklch(50% 0.022 255), oklch(80% 0.015 255));cursor:pointer}
+.dd-root .seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:28px;padding:0 10px;white-space:nowrap;border-radius:6px;font:500 12px Manrope,sans-serif;color:light-dark(oklch(50% 0.022 255), oklch(80% 0.015 255));cursor:pointer}
 .dd-root .seg button.on{color:#fff}
 .dd-root .seg .c{font:600 10.5px "IBM Plex Mono",monospace;color:oklch(55% 0.022 255)}
 .dd-root .seg button.on .c{color:oklch(100% 0 0 / .72)}
@@ -52,6 +52,9 @@ html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
 @media (max-width:999px){.vds-root .vds-tree{width:auto!important;border-right:0!important;border-bottom:1px solid var(--border)}.vds-root .vds-body{flex-direction:column}.vds-root .vds-pane{min-height:320px}.vds-root .vds-hide-md{display:none!important}}
 @media (prefers-reduced-motion: reduce){.vds-root .sk,.vds-root .fl{animation:none}}
 
+/* phone upload dialog: footer clears the floating Ask VCFO pill */
+@media (max-width:700px){.vup .vup-foot{padding-bottom:calc(12px + var(--vp-launch-h,0px))!important}}
+
 /* ---------------- phone (docs_a_mobile) ---------------- */
 .vdm{position:relative;width:100%;min-height:calc(100dvh - 52px - var(--vp-launch-h,0px));background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px;display:flex;flex-direction:column}
 .vdm a{color:var(--primary);text-decoration:none;font-weight:700}
@@ -64,7 +67,7 @@ html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
 .vdm .row .main:active{background:var(--raised)}
 .vdm .ft{width:20px;min-width:20px;height:20px;padding:0;border-radius:6px;font:700 7px/20px "IBM Plex Mono",monospace;letter-spacing:-.02em;text-align:center;flex:none;box-sizing:border-box}
 .vdm .trk{display:flex;gap:1px;width:64px;height:4px;border-radius:2px;overflow:hidden;background:var(--hair)}
-.vdm .kb{width:44px;height:44px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;border-radius:6px;padding:0}
+.vdm .kb{width:44px;height:44px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;border-radius:6px;padding:0;opacity:1}
 .vdm-sheet button{display:flex;align-items:center;gap:12px;width:100%;height:52px;padding:0 20px;border:0;background:none;font:600 14px Manrope,sans-serif;color:var(--fg);text-align:left;cursor:pointer}
 .vdm-sheet button:active,.vdm-sheet button:focus-visible{background:var(--primary-light);outline:none}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}

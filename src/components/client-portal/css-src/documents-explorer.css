@@ -4,6 +4,7 @@
    only the board-only folder colours are added for the light theme. The page frame (.vdoc / sidebar
    column / top bar) is the shell; .vdoc-main is sized to the viewport under the 52 px top bar. */
 html:not([data-theme="dark"]){--folder:#0f2a4a;--folder-open:#1b4f94}
+a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--primary-dark)}
 .mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
 .badge{display:inline-flex;align-items:center;gap:4px;height:20px;border-radius:4px;padding:0 7px;font-size:11px;font-weight:700;white-space:nowrap;box-sizing:border-box}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 12px;border-radius:6px;font:600 12.5px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap;box-sizing:border-box}
@@ -118,3 +119,13 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
 .vdoc-bubble{position:relative;max-width:320px;padding:10px 14px;border-radius:10px 10px 10px 2px;background:var(--panel);border:1px solid var(--border);box-shadow:0 8px 20px -12px oklch(21% 0.042 264 / .35);display:flex;flex-direction:column;align-items:flex-start}
 .vdoc-bot{display:inline-flex;overflow:hidden;align-items:flex-start;justify-content:center;flex:none;border-radius:99px;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255))}
 @media (prefers-reduced-motion: reduce){.tr.glow{animation:none}}
+/* explorer card runs to the bottom of the viewport (docs_a_refined): the Ask VCFO pill floats over
+   its lower-right corner as on the board, so the page host's launcher spacer is cancelled here */
+@media (min-width:1000px){.vdoc{height:calc(100dvh - 52px);margin-bottom:calc(-1 * var(--vp-launch-h,0px))}}
+/* tree tooltips stay inside the tree column (the shared [data-tip] bubble is centred, one line):
+   the progress tip wraps right-aligned over its bar, the row ⋮ tip right-aligns at the edge */
+.pb:hover::after,.pb:focus-visible::after,.pb::after{left:auto;right:0;width:max-content;max-width:220px;white-space:normal;line-height:1.35;animation:none;box-shadow:none}
+.pb::after{transform:translateY(3px)}.pb:hover::after,.pb:focus-visible::after{transform:none}
+.pb:hover::before,.pb:focus-visible::before,.kb:hover::before,.kb:focus-visible::before{content:none}
+.kb.tip::after,.kb.tip:hover::after,.kb.tip:focus-visible::after{left:auto;right:0;animation:none}
+.kb.tip::after{transform:translate(0,3px)}.kb.tip:hover::after,.kb.tip:focus-visible::after{transform:none}

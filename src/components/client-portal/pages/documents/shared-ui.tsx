@@ -264,13 +264,6 @@ export function docLink(param: 'doc' | 'folder', id: string): string {
   return `${window.location.origin}/app/client/documents?${param}=${encodeURIComponent(id)}`;
 }
 
-const CHIP_TONE: Record<string, NonNullable<ViewerDoc['chip']>['tone']> = {
-  Final: 'ok',
-  Approved: 'ok',
-  'In review': 'prog',
-  Replaced: 'up',
-};
-
 export function toViewerDoc(n: DocNode, stepLabel?: string): ViewerDoc {
   const ref = n.ref ?? '';
   return {
@@ -281,7 +274,8 @@ export function toViewerDoc(n: DocNode, stepLabel?: string): ViewerDoc {
     contentType: n.contentType,
     sizeBytes: n.sizeBytes,
     meta: stepLabel,
-    chip: CHIP_TONE[n.status] ? { text: n.status, tone: CHIP_TONE[n.status]! } : undefined,
+    // v7x_doc_viewer header: type, name, ⓘ, n of N, Download, close — no status chip
+    // (the status badge lives in the explorer pane, navy for Final).
     uploadedAt: n.date,
     uploadedBy: n.from,
   };
