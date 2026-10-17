@@ -17,12 +17,12 @@
  * hand-off → /api/client/handoff.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAskOptional } from '@/components/ask/ask-context';
 import { AFTER_QUESTIONS, BEFORE_QUESTIONS } from '@/lib/client-portal/answers';
 import { usePortal, type WhatsThisAnswer } from './PortalProvider';
 import { VisorCharacter, VisorHead } from './Visor';
-import { stepHref } from './routes';
+import { activeKeyFor, stepHref } from './routes';
 
 type LogItem =
   | { r: 'u'; t: string }
@@ -93,8 +93,11 @@ export function AskLauncher() {
     }
   }, []);
 
-  /* first-visit bot note: once per client (client_portal_prefs.bot_note_seen_at) */
-  const showNote = Boolean(portal.prefs && !portal.prefs.botNoteSeen && !chatOpen);
+  /* first-visit bot note: once per client (client_portal_prefs.bot_note_seen_at),
+     and only on Home as in the prototype — on inner pages it would cover rows */
+  const pathname = usePathname();
+  const onHome = activeKeyFor(pathname ?? '') === 'home';
+  const showNote = Boolean(onHome && portal.prefs && !portal.prefs.botNoteSeen && !chatOpen);
   const dismissNote = () => portal.savePrefs({ botNoteSeen: true });
   useEffect(() => {
     if (chatOpen && portal.prefs && !portal.prefs.botNoteSeen) portal.savePrefs({ botNoteSeen: true });
