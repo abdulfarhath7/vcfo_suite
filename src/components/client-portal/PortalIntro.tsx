@@ -13,21 +13,54 @@
  * (skipped instantly, still marked seen). The app underneath is `inert` +
  * `aria-hidden` until the intro leaves; Skip / Esc jump to the finished logo.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePortal } from './PortalProvider';
 import './css/credentials-intro.css';
 
 const PLAYED_KEY = 'vcfo.introPlayed';
+/** This browser already knows the intro was seen (mirrors prefs.introSeen), so no cover is needed while prefs load. */
+const SEEN_KEY = 'vcfo.introSeen';
+
+/** Could the intro play here, before prefs are known? */
+function mayPlay(): boolean {
+  try {
+    if (localStorage.getItem('vcfo.skipIntro') === '1' || localStorage.getItem(SEEN_KEY) === '1' || sessionStorage.getItem(PLAYED_KEY) === '1') return false;
+  } catch {
+    /* private mode */
+  }
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  } catch {
+    /* old browser */
+  }
+  return true;
+}
 
 export function PortalIntro() {
   const { prefs, shell, savePrefs } = usePortal();
   const [show, setShow] = useState(false);
+  /* SH-17: the prototype intro starts on a white stage at load — cover the app while prefs load
+     when the intro may play, so the dashboard never flashes before it */
+  const [cover, setCover] = useState(false);
   const decided = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!decided.current && !prefs && mayPlay()) setCover(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- first mount only
+  }, []);
 
   useEffect(() => {
     if (decided.current || !shell || !prefs) return;
     decided.current = true;
-    if (prefs.introSeen) return;
+    setCover(false);
+    if (prefs.introSeen) {
+      try {
+        localStorage.setItem(SEEN_KEY, '1');
+      } catch {
+        /* private mode */
+      }
+      return;
+    }
     let off = false;
     try {
       off = localStorage.getItem('vcfo.skipIntro') === '1' || sessionStorage.getItem(PLAYED_KEY) === '1';
@@ -48,12 +81,18 @@ export function PortalIntro() {
     setShow(true);
   }, [shell, prefs, savePrefs]);
 
-  if (!show) return null;
+  if (!show)
+    return cover ? (
+      <div className="cp-intro" aria-hidden="true">
+        <div id="vi" />
+      </div>
+    ) : null;
   return (
     <IntroStage
       onDone={() => {
         try {
           sessionStorage.setItem(PLAYED_KEY, '1');
+          localStorage.setItem(SEEN_KEY, '1');
         } catch {
           /* private mode */
         }

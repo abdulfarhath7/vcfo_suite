@@ -11,6 +11,23 @@ import { usePortal } from './PortalProvider';
 import { crumbsFor, activeKeyFor } from './routes';
 import { BeforeAfterPill, useBreakpoint } from './Sidebar';
 
+const TRAIL_ICONS = {
+  home: <path d="M4.5 4.5h6v7h-6Z M13.5 4.5h6v4h-6Z M13.5 12.5h6v7h-6Z M4.5 15.5h6v4h-6Z" />,
+  folder: (
+    <>
+      <path className="duo" d="M3.5 8h17v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18Z" />
+      <path d="M3.5 18V6A1.5 1.5 0 0 1 5 4.5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5V18a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18Z" />
+    </>
+  ),
+  key: (
+    <>
+      <path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z" />
+      <path d="M16.5 7.5h.01" />
+    </>
+  ),
+  shield: <path d="M12 3.5 19 6v5.5c0 4.3-3 7.6-7 9-4-1.4-7-4.7-7-9V6Z M9 12l2 2 4-4" />,
+};
+
 export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => void; hasAnnouncements: boolean }) {
   const pathname = usePathname();
   const { shell, go, theme, toggleTheme, setDrawerOpen, crumbs } = usePortal();
@@ -20,6 +37,15 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
   const notif = shell?.badges.notifications ?? 0;
   const on = { background: 'var(--primary-light)', color: 'var(--primary)' };
   const off = { background: 'transparent', color: 'var(--muted)' };
+  /* trail tile per page, as each prototype board draws it (none on the incorporation boards);
+     Documents / Library / Credentials / Compliances trails start at the page, not "Home" */
+  const trailIcon: keyof typeof TRAIL_ICONS | null =
+    act === 'incorporation' ? null
+    : act === 'documents' || act === 'knowledge-bank' ? 'folder'
+    : act === 'credentials' ? 'key'
+    : act === 'compliances' || act === 'filings' ? 'shield'
+    : 'home';
+  const noHome = trailIcon === 'folder' || trailIcon === 'key' || trailIcon === 'shield';
   const themeLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
 
   useEffect(() => {
@@ -60,52 +86,62 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
           <img src="/client-portal/sbc-logo-top.webp" alt="SBC" style={{ height: 26, width: 'auto' }} />
         </a>
         <nav aria-label="Location" className="tbar-nav">
-          <span className="tbar-ic">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M4.5 4.5h6v7h-6Z M13.5 4.5h6v4h-6Z M13.5 12.5h6v7h-6Z M4.5 15.5h6v4h-6Z" />
-            </svg>
-          </span>
+          {trailIcon ? (
+            <span className="tbar-ic">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {TRAIL_ICONS[trailIcon]}
+              </svg>
+            </span>
+          ) : null}
           <ol className="tbar-ol">
             {crumbs && crumbs.length ? (
               <>
-                <li className="tbar-pre tbar-mid" style={{ color: 'var(--muted)', fontWeight: 500 }}>
-                  Home
-                </li>
+                {noHome ? null : (
+                  <li className="tbar-pre tbar-mid" style={{ color: 'var(--muted)', fontWeight: 500 }}>
+                    Home
+                  </li>
+                )}
                 {crumbs.slice(0, -1).map((c, i) => (
                   <Fragment key={`${c}-${i}`}>
-                    <li aria-hidden="true" className="tbar-pre tbar-mid" style={{ color: 'var(--subtle)' }}>
-                      /
-                    </li>
+                    {noHome && i === 0 ? null : (
+                      <li aria-hidden="true" className="tbar-pre tbar-mid" style={{ color: 'var(--subtle)' }}>
+                        /
+                      </li>
+                    )}
                     <li className="tbar-mid" style={{ color: 'var(--muted)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 28 }}>
                       {c}
                     </li>
                   </Fragment>
                 ))}
-                <li aria-hidden="true" className={crumbs.length > 1 ? 'tbar-mid' : 'tbar-pre tbar-mid'} style={{ color: 'var(--subtle)' }}>
-                  /
-                </li>
+                {noHome && crumbs.length === 1 ? null : (
+                  <li aria-hidden="true" className={crumbs.length > 1 ? 'tbar-mid' : 'tbar-pre tbar-mid'} style={{ color: 'var(--subtle)' }}>
+                    /
+                  </li>
+                )}
                 <li aria-current="page" className="tbar-cur" style={{ minWidth: 48 }}>
                   {crumbs[crumbs.length - 1]}
                 </li>
               </>
             ) : (
               <>
-            {act !== 'home' ? (
+            {act !== 'home' && !noHome ? (
               <li className="tbar-pre tbar-mid" style={{ color: 'var(--muted)', fontWeight: 500 }}>
                 Home
               </li>
             ) : null}
             {mid ? (
               <>
-                <li aria-hidden="true" className="tbar-pre tbar-mid" style={{ color: 'var(--subtle)' }}>
-                  /
-                </li>
+                {noHome ? null : (
+                  <li aria-hidden="true" className="tbar-pre tbar-mid" style={{ color: 'var(--subtle)' }}>
+                    /
+                  </li>
+                )}
                 <li className="tbar-mid" style={{ color: 'var(--muted)', fontWeight: 500 }}>
                   {mid}
                 </li>
               </>
             ) : null}
-            {act !== 'home' ? (
+            {act !== 'home' && (!noHome || mid) ? (
               <li aria-hidden="true" className={mid ? 'tbar-mid' : 'tbar-pre tbar-mid'} style={{ color: 'var(--subtle)' }}>
                 /
               </li>
@@ -118,11 +154,6 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
           </ol>
         </nav>
         <div className="tbar-r">
-          {bp === 'desktop' ? (
-            <div id="vp-ba-top" className="vp-ba-slot">
-              <BeforeAfterPill />
-            </div>
-          ) : null}
           <button type="button" className="tbar-srch" aria-label="Search (⌘K)" data-tip-below="" onClick={onSearch}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={{ flex: 'none', color: 'oklch(54.6% 0.215 263 / .8)' }}>
               <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
@@ -131,6 +162,11 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             <span className="kbd">⌘</span>
             <span className="kbd">K</span>
           </button>
+          {bp === 'desktop' ? (
+            <div id="vp-ba-top" className="vp-ba-slot">
+              <BeforeAfterPill />
+            </div>
+          ) : null}
           <button
             type="button"
             className="tbar-ib"
@@ -151,7 +187,7 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             type="button"
             className="tbar-ib"
             aria-label={notif ? `Notifications, ${notif} unread` : 'Notifications'}
-            style={act === 'notifications' ? on : off}
+            style={act === 'notifications' || notif > 0 ? on : off}
             data-tip-below=""
             onClick={() => go('notifications')}
           >
@@ -166,8 +202,6 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             className="tbar-ib tbar-theme"
             aria-label={themeLabel}
             aria-pressed={theme === 'dark'}
-            data-tip={themeLabel}
-            data-tip-below=""
             style={{ border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--muted)' }}
             onClick={toggleTheme}
           >

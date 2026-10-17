@@ -314,6 +314,16 @@ export function AskLauncher() {
 
   return (
     <>
+      {/* phone: the chat is a bottom sheet over a dimmed page (s/home/mobile.html scrim) */}
+      <div
+        id="vp-chat-scrim"
+        className={chatOpen ? 'on' : undefined}
+        aria-hidden="true"
+        onClick={() => {
+          closeChat();
+          pillRef.current?.focus({ preventScroll: true });
+        }}
+      />
       <section
         id="vp-chat"
         ref={winRef}
@@ -327,6 +337,10 @@ export function AskLauncher() {
         <span className="vpc-pk" aria-hidden="true" key={chatOpen ? 'open' : 'closed'}>
           <VisorCharacter variant="peek" />
         </span>
+        {/* phone: bottom-sheet grab handle (s/home/mobile.html .sheet .grab) */}
+        <div className="vpc-grab" aria-hidden="true">
+          <i />
+        </div>
         <div className="vpc-h">
           <span className="vpc-av">
             <VisorHead />
@@ -344,7 +358,10 @@ export function AskLauncher() {
               pillRef.current?.focus({ preventScroll: true });
             }}
           >
-            ×
+            <span className="vpc-xt">×</span>
+            <svg className="vpc-xi" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
           </button>
         </div>
         <div className="vpc-ms" aria-live="polite" ref={msgsRef}>

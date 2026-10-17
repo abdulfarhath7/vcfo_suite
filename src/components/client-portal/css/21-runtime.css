@@ -120,6 +120,33 @@
 .cp #vp-chat .vpc-sg button,
 .cp #vp-chat .vpc-m.vpc-a button,
 .cp #vp-chat .vpc-card button{min-height:40px;min-width:40px}.cp #vp-chat .vpc-h button{width:40px;height:40px}.cp #vp-chat input{height:44px;font-size:16px}.cp #vp-chat form button{height:44px}}
+/* phone: Ask VCFO opens as the white bottom sheet of s/home/mobile.html (.scrim/.sheet/.grab/.sh/.msg/.sug/.compose) — SH-04 */
+.cp #vp-chat .vpc-grab,
+.cp #vp-chat .vpc-xi,
+.cp #vp-chat-scrim{display:none}
+@media (max-width:767px){
+.cp #vp-chat-scrim{display:block;position:fixed;inset:0;z-index:2147482500;background:oklch(20% .05 258 / .45);opacity:0;pointer-events:none;transition:opacity .2s}
+.cp #vp-chat-scrim.on{opacity:1;pointer-events:auto}
+.cp.vp-chat-on #vp-launch{visibility:hidden}
+.cp #vp-chat{left:50%;right:auto;bottom:0;width:min(100%,560px);height:auto;min-height:0;max-height:min(82vh,calc(100dvh - 24px));border:0;border-radius:14px 14px 0 0;background:light-dark(#fff, oklch(13% 0 89.9));box-shadow:0 -16px 40px -20px oklch(15% .05 258 / .5);opacity:1;transform:translate(-50%,105%);transition:transform .38s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004),visibility .38s}
+.cp #vp-chat.on{transform:translate(-50%,0);transition:transform .38s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
+.cp #vp-chat .vpc-pk,
+.cp #vp-chat .vpc-av,
+.cp #vp-chat .vpc-h small,
+.cp #vp-chat .vpc-xt{display:none}
+.cp #vp-chat .vpc-grab{display:flex;justify-content:center;padding:8px 0 4px}.cp #vp-chat .vpc-grab i{width:40px;height:4px;border-radius:2px;background:var(--border)}
+.cp #vp-chat .vpc-h{gap:8px;padding:4px 14px 10px;background:none;color:var(--navy-ink,var(--navy));border-radius:0}
+.cp #vp-chat .vpc-h b{font:800 16px Manrope,system-ui,sans-serif}
+.cp #vp-chat .vpc-h button{width:44px;height:44px;margin-right:-8px;display:grid;place-items:center;background:none;color:var(--muted)}
+.cp #vp-chat .vpc-xi{display:block}
+.cp #vp-chat .vpc-ms{flex:0 1 auto;padding:0}
+.cp #vp-chat .vpc-m{margin:8px 14px;max-width:85%;font:500 13px/1.5 Manrope,system-ui,sans-serif}
+.cp #vp-chat .vpc-m.vpc-a{background:var(--raised)}
+.cp #vp-chat .vpc-sg{padding:4px 14px 10px;max-height:none;flex:none}
+.cp #vp-chat .vpc-sg button{min-height:40px;padding:0 10px;border-color:oklch(54.6% .215 263 / .35);background:var(--primary-light);color:var(--primary)}
+.cp #vp-chat form{padding:10px 14px;border-top-color:var(--hair);flex:none}
+.cp #vp-chat input{border-color:var(--border)}
+}
 @media (prefers-reduced-motion: reduce){.cp #vp-launch *,
 .cp #vp-chat .vpc-ty i,
 .cp #vp-chat .vpc-pk *{animation:none!important;transition:none!important}.cp #vp-launch .vpv-head,

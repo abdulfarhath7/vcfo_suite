@@ -167,9 +167,10 @@ html,body{background:var(--bg)}
 /* rule 17: every icon explains itself — navy tooltip (same look as rule 14), 120 ms */
 @keyframes tipin{from{opacity:0;transform:translate(-50%,3px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes tipin2{from{opacity:0}to{opacity:1}}
+/* portal: not inside the shell sidebar (.vps) — the prototype shell draws its own .vps-tip there (SH-01, SH-07) */
 [data-tip]{position:relative}
-[data-tip]:hover::after,[data-tip]:focus-visible::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);background:var(--navy);color:#fff;font:700 11.5px/1.25 Manrope,sans-serif;letter-spacing:0;text-transform:none;padding:5px 9px;border-radius:6px;white-space:nowrap;z-index:70;pointer-events:none;box-shadow:0 6px 16px -6px oklch(21% 0.042 264 / .5);animation:tipin .12s ease both}
-[data-tip]:hover::before,[data-tip]:focus-visible::before{content:"";position:absolute;left:50%;bottom:calc(100% + 5px);width:8px;height:8px;margin-left:-4px;background:var(--navy);transform:rotate(45deg);z-index:70;pointer-events:none;animation:tipin2 .12s ease both}
-[data-tip-below]:hover::after,[data-tip-below]:focus-visible::after{bottom:auto;top:calc(100% + 9px)}
-[data-tip-below]:hover::before,[data-tip-below]:focus-visible::before{bottom:auto;top:calc(100% + 5px)}
+[data-tip]:where(:not(.vps *)):hover::after,[data-tip]:where(:not(.vps *)):focus-visible::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);background:var(--navy);color:#fff;font:700 11.5px/1.25 Manrope,sans-serif;letter-spacing:0;text-transform:none;padding:5px 9px;border-radius:6px;white-space:nowrap;z-index:70;pointer-events:none;box-shadow:0 6px 16px -6px oklch(21% 0.042 264 / .5);animation:tipin .12s ease both}
+[data-tip]:where(:not(.vps *)):hover::before,[data-tip]:where(:not(.vps *)):focus-visible::before{content:"";position:absolute;left:50%;bottom:calc(100% + 5px);width:8px;height:8px;margin-left:-4px;background:var(--navy);transform:rotate(45deg);z-index:70;pointer-events:none;animation:tipin2 .12s ease both}
+[data-tip-below]:where(:not(.vps *)):hover::after,[data-tip-below]:where(:not(.vps *)):focus-visible::after{bottom:auto;top:calc(100% + 9px)}
+[data-tip-below]:where(:not(.vps *)):hover::before,[data-tip-below]:where(:not(.vps *)):focus-visible::before{bottom:auto;top:calc(100% + 5px)}
 @media (prefers-reduced-motion: reduce){[data-tip]::after,[data-tip]::before{animation:none!important}}

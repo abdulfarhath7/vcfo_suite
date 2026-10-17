@@ -34,7 +34,8 @@ export function IconTips() {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         const r = el.getBoundingClientRect();
-        tipAt(r.left + r.width / 2, r.top + 8, label);
+        // proto.js showTip: 32 px above the control, or 6 px below it when that would leave the viewport
+        tipAt(r.left + r.width / 2, r.top - 32 < 4 ? r.bottom - 12 : r.top + 8, label);
       }, 120);
     };
     document.addEventListener('mouseover', over);

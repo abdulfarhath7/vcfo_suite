@@ -19,11 +19,13 @@
 .cp .tbar-srch .kbd{font-size:11px}
 .cp .tbar-ib{position:relative;flex:none;width:36px;height:36px;border-radius:8px;border:0;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
 .cp .tbar-badge{position:absolute;top:3px;right:3px;min-width:16px;height:16px;padding:0 3px;box-sizing:border-box;border-radius:99px;background:var(--primary-fill,var(--primary));color:#fff;font:700 11px/1 Manrope,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--panel)}
-@media (max-width:1279px){.cp .tbar-srch{width:196px}}
-@media (max-width:959px){
+/* the search box folds to a 36 px icon below 1280 px (docs/topbar.dc.html, home 1024 board) */
+@media (max-width:1279px){
   .cp .tbar-srch{width:36px;padding:0;justify-content:center}
   .cp .tbar-srch .tbar-sl,
 .cp .tbar-srch .kbd{display:none}
+}
+@media (max-width:959px){
   .cp .tbar-pre{display:none}
 }
 @media (max-width:767px){
@@ -39,6 +41,19 @@
   .cp .tbar-srch,
 .cp .tbar-ib{width:40px;height:40px}
   .cp .tbar-srch{border-color:transparent;background:transparent;color:var(--muted)}
+  /* phone bar = s/home/mobile.html .bar (M-01): 56 px, 44 px buttons, 19 px muted icons, unread bell in primary */
+  .cp .tbar{height:56px;padding:0 6px;gap:4px;background:light-dark(oklch(100% 0 0 / .94), oklch(13% 0 0 / .94));-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom-color:var(--border)}
+  .cp .tbar-menu{width:44px;height:44px;margin-left:0;border-radius:6px;color:var(--muted)}
+  .cp .tbar-mw{gap:8px}
+  .cp .tbar-nav{gap:8px}
+  .cp .tbar-ol li.tbar-cur{font-weight:800;font-size:15px;color:var(--navy-ink,var(--navy))}
+  .cp .tbar-r{gap:0}
+  .cp .tbar-srch,
+.cp .tbar-ib{width:44px;height:44px;border-radius:6px;background:transparent!important}
+  .cp .tbar-srch svg,
+.cp .tbar-ib svg{width:19px;height:19px}
+  .cp .tbar-srch svg{color:var(--muted)!important}
+  .cp .tbar-badge{top:6px;right:5px;min-width:17px;height:17px}
 }
 
 /* sticky top bar (proto.js pinNav) */

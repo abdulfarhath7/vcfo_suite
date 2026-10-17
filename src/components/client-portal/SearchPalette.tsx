@@ -10,12 +10,33 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { getActiveCatalogItems } from '@/data/checklist';
 import { PORTAL_PATHS, PORTAL_TITLES, stepHref, type PortalRouteKey } from './routes';
+import { useBreakpoint } from './Sidebar';
+import { SHELL_PATHS } from './icons';
+
+/** Phone result-row glyph per group (shell icon set). */
+const GROUP_ICON: Record<Hit['group'], keyof typeof SHELL_PATHS> = { Pages: 'home', Steps: 'inc', Documents: 'docs', Filings: 'comp' };
+const PAGE_ICON: Partial<Record<PortalRouteKey, keyof typeof SHELL_PATHS>> = {
+  announcements: 'updates',
+  notifications: 'updates',
+  incorporation: 'inc',
+  'board-resolution': 'inc',
+  compliances: 'comp',
+  filings: 'comp',
+  documents: 'docs',
+  'knowledge-bank': 'lib',
+  credentials: 'person',
+  team: 'team',
+  audit: 'audit',
+  settings: 'gear',
+};
+const GROUP_SUB: Record<Hit['group'], string> = { Pages: 'Page', Steps: 'Incorporation', Documents: 'Document', Filings: 'Filing' };
 
 interface Hit {
   group: 'Pages' | 'Steps' | 'Documents' | 'Filings';
   title: string;
   meta?: string;
   href: string;
+  icon?: keyof typeof SHELL_PATHS;
 }
 
 const PAGE_KEYS = Object.keys(PORTAL_PATHS) as PortalRouteKey[];
@@ -25,6 +46,14 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const phone = useBreakpoint() === 'phone';
+  /* phone: the search is a bottom sheet; like the prototype's sheets it sends the launcher away (sheet-open) */
+  useEffect(() => {
+    if (!open || !phone) return;
+    const cp = document.querySelector('.cp');
+    cp?.classList.add('sheet-open');
+    return () => cp?.classList.remove('sheet-open');
+  }, [open, phone]);
   useEffect(() => {
     if (open) {
       setQ('');
@@ -46,7 +75,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
 
   const hits = useMemo<Hit[]>(() => {
     const term = q.trim().toLowerCase();
-    const pages: Hit[] = PAGE_KEYS.map((k) => ({ group: 'Pages' as const, title: PORTAL_TITLES[k], href: PORTAL_PATHS[k] }));
+    const pages: Hit[] = PAGE_KEYS.map((k) => ({ group: 'Pages' as const, title: PORTAL_TITLES[k], href: PORTAL_PATHS[k], icon: PAGE_ICON[k] }));
     const steps: Hit[] = getActiveCatalogItems().map((it, i) => ({
       group: 'Steps' as const,
       title: `Step ${i + 1} · ${it.title}`,
@@ -63,6 +92,78 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
     onClose();
     router.push(h.href);
   };
+  const onKey = (e: { key: string; preventDefault: () => void }) => {
+    if (e.key === 'Escape') onClose();
+    else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSel((s) => Math.min(hits.length - 1, s + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSel((s) => Math.max(0, s - 1));
+    } else if (e.key === 'Enter' && hits[sel]) go(hits[sel]!);
+  };
+  if (phone)
+    /* phone: s/home/mobile.html "Search" sheet (M-25) — grab, title + close, 44 px input, icon rows with a subtitle */
+    return (
+      <>
+        <div className="cp-ss-scrim" aria-hidden="true" onClick={onClose} />
+        <div className="cp-ssheet" role="dialog" aria-modal="true" aria-labelledby="cp-ss-t">
+          <div className="grab" aria-hidden="true">
+            <i />
+          </div>
+          <div className="sh">
+            <h3 id="cp-ss-t">Search</h3>
+            <button type="button" className="x" aria-label="Close" onClick={onClose}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+          <div className="in">
+            <input
+              ref={inputRef}
+              value={q}
+              placeholder="Search steps, filings, documents"
+              aria-label="Search"
+              onChange={(e) => {
+                setQ(e.target.value);
+                setSel(0);
+              }}
+              onKeyDown={onKey}
+            />
+          </div>
+          <div className="body" role="listbox" aria-label="Results">
+            {hits.length === 0 ? <div className="none">Nothing found.</div> : null}
+            {hits.map((h, i) => (
+              <a
+                key={`${h.group}-${h.href}-${i}`}
+                href={h.href}
+                className="row"
+                role="option"
+                aria-selected={i === sel}
+                onClick={(e) => {
+                  e.preventDefault();
+                  go(h);
+                }}
+              >
+                <span className="si" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={SHELL_PATHS[h.icon ?? GROUP_ICON[h.group]]} />
+                  </svg>
+                </span>
+                <span className="t">
+                  <b>{h.title}</b>
+                  <span>{h.meta ? `${GROUP_SUB[h.group]} · ${h.meta}` : GROUP_SUB[h.group]}</span>
+                </span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </a>
+            ))}
+          </div>
+        </div>
+      </>
+    );
   let lastGroup = '';
   return (
     <div id="vp-drill-scrim" className="on cp-search" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -80,16 +181,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
               setQ(e.target.value);
               setSel(0);
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') onClose();
-              else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                setSel((s) => Math.min(hits.length - 1, s + 1));
-              } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                setSel((s) => Math.max(0, s - 1));
-              } else if (e.key === 'Enter' && hits[sel]) go(hits[sel]!);
-            }}
+            onKeyDown={onKey}
           />
           <span className="kbd">Esc</span>
         </div>
