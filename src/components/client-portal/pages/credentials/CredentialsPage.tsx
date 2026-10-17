@@ -13,7 +13,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePortalOptional } from '@/components/client-portal/PortalProvider';
-import { BotSays } from '@/components/client-portal/shared';
 import { DocViewer, type ViewerDoc } from '@/components/client-portal/pages/documents/DocViewer';
 import {
   CRED_SRC_TIP,
@@ -848,18 +847,36 @@ function CredentialsInner() {
     );
   };
 
+  /* The Login band reads the Address sheet's Registered office row (same source
+     as that sheet); only when that row has no street-level parts does it fall
+     back to the step-7 free-text line the row's State/PIN were derived from. */
+  const bandAddress = (() => {
+    const reg = sheets?.address?.rows.find((r) => r.key === 'registered');
+    const val = (k: string) => (reg?.cells[k]?.v ?? '').trim();
+    const street = ['door', 'building', 'street', 'area', 'landmark', 'city'].map(val).filter(Boolean);
+    if (street.length) return [...street, ...['district', 'state', 'pin', 'country'].map(val).filter(Boolean)].join(', ');
+    return data?.registeredAddress ?? '';
+  })();
+
   const grid = (S: WireSheet) => {
     const nc = S.cols.length;
     const titles =
       S.id === 'login'
-        ? [`${companyName.toUpperCase()} - Login Credentials`, ...(data?.registeredAddress ? [`Address: ${data.registeredAddress}`] : [])]
+        ? [`${companyName.toUpperCase()} - Login Credentials`, ...(bandAddress ? [`Address: ${bandAddress}`] : [])]
         : S.id === 'kyc'
           ? [companyName.toUpperCase()]
           : [];
     const em = hasEdit('page') || hasEdit(`tab:${S.id}`);
     const addRowBtn = S.id === 'login' || S.id === 'other';
+    const noDirectors = S.id === 'kyc' && S.cols.length <= 1;
     return (
       <>
+        {noDirectors ? (
+          <div className="cr-empty cr-empty-kyc">
+            <CrBot />
+            <span className="cr-bub">Directors appear here after the Proposed Directors step, or use Add director.</span>
+          </div>
+        ) : null}
         <div className="cr-gridbox" tabIndex={0} role="region" aria-label={`${tabLabel(S.id)} sheet`} ref={gridRef}>
           <table className={`cr-t${S.id === 'kyc' ? ' kyc xl' : ''}${S.id === 'login' ? ' xl' : ''}${em ? ' cr-editmode' : ''}`}>
             <caption className="sr">
@@ -896,9 +913,10 @@ function CredentialsInner() {
                 <tr>
                   <td className="cr-empty-td" colSpan={nc + 1}>
                     <div className="cr-empty">
-                      <BotSays size={40} action="">
+                      <CrBot />
+                      <span className="cr-bub">
                         {S.id === 'other' ? `Nothing here yet. Add a row for any other login ${shell?.companyShort ?? 'your'}’s team uses.` : 'Nothing here yet.'}
-                      </BotSays>
+                      </span>
                     </div>
                   </td>
                 </tr>
@@ -1145,5 +1163,20 @@ function AccessLog({ engQ, onClose, onAudit }: { engQ: string; onClose: () => vo
         </footer>
       </div>
     </div>
+  );
+}
+
+/** The prototype's small Visor bot next to a navy `.cr-bub` pill (v7p_credentials.dc.html BOT). */
+function CrBot() {
+  return (
+    <svg viewBox="0 0 48 48" width="30" height="30" aria-hidden="true" focusable="false" style={{ flex: 'none' }}>
+      <line x1="24" y1="6" x2="24" y2="11" stroke="#1E40AF" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="24" cy="5" r="3" fill="#2DD4BF" />
+      <rect x="9" y="11" width="30" height="26" rx="10" fill="#4C8DF8" />
+      <rect x="14" y="17" width="20" height="13" rx="6" fill="#0B1736" />
+      <circle cx="19" cy="23" r="2.6" fill="#7DD3FC" />
+      <circle cx="29" cy="23" r="2.6" fill="#7DD3FC" />
+      <rect x="16" y="39" width="16" height="5" rx="2.5" fill="#1E40AF" />
+    </svg>
   );
 }

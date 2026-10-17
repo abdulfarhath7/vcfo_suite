@@ -121,6 +121,32 @@ function targetOf(n: AppNotification, ty: Ty): string {
   return portalHref('incorporation');
 }
 
+/**
+ * Who sent it (prototype "Arjun Mehta · 10:42"). The notifications table has no
+ * actor column, so: an SBC team member named in the title/body, else the
+ * system ("VCFO Suite") for automatic mails, deadlines and invite reminders,
+ * else "SBC" for staff actions (requests, reviews, announcements).
+ */
+function whoOf(n: AppNotification, ty: Ty, staff: string[]): { who: string; person: boolean } {
+  const text = `${n.title} ${n.body}`;
+  const hit = staff.find((name) => name && text.includes(name));
+  if (hit) return { who: hit, person: true };
+  if (ty === 'mail' || ty === 'deadline' || ty === 'team') return { who: 'VCFO Suite', person: false };
+  return { who: 'SBC', person: false };
+}
+
+/** The body's deep link (prototype `.nb a`): where the row leads, in words. */
+const LINK_LABEL: Record<Ty, string> = {
+  doc: 'Open the document',
+  back: 'Open the document',
+  step: 'Open the step',
+  time: 'See the timeline',
+  deadline: 'Open the filing',
+  mail: 'Email settings',
+  ann: 'Read it',
+  team: 'Open Team',
+};
+
 export function NotificationsPage() {
   const { go, toast, shell } = usePortal();
   const qc = useQueryClient();
@@ -148,14 +174,17 @@ export function NotificationsPage() {
     return d.toISOString().slice(0, 10);
   }, [today]);
 
+  const staffKey = (shell?.team ?? []).filter((c) => !c.support).map((c) => c.name).join('|');
+  const staff = useMemo(() => (staffKey ? staffKey.split('|') : []), [staffKey]);
   const N = useMemo(
     () =>
       (q.data?.notifications ?? []).map((n) => {
         const ty = typeOf(n);
         const g = groupOf(n.createdAt, today, monday);
-        return { n, ty, g, grp: T[ty][1], w: whenText(n.createdAt, g), href: targetOf(n, ty) };
+        const by = whoOf(n, ty, staff);
+        return { n, ty, g, grp: T[ty][1], w: whenText(n.createdAt, g), href: targetOf(n, ty), who: by.who, person: by.person };
       }),
-    [q.data, today, monday],
+    [q.data, today, monday, staff],
   );
   type Item = (typeof N)[number];
 
@@ -227,6 +256,22 @@ export function NotificationsPage() {
   const waOn = profile.data?.profile.whatsappOptIn ?? false;
   const company = shell?.companyShort ?? 'You';
 
+  const whoEl = (x: Item) =>
+    x.person ? (
+      <a
+        href={portalHref('team')}
+        className="nwho"
+        onClick={(e) => {
+          e.preventDefault();
+          go(portalHref('team'));
+        }}
+      >
+        {x.who}
+      </a>
+    ) : (
+      x.who
+    );
+
   const icon = (ty: Ty) => {
     const k = K[T[ty][0]];
     return (
@@ -282,10 +327,16 @@ export function NotificationsPage() {
                 ) : null}
               </BotBubble>
             ) : (
-              groups.map((g) => (
+              groups.map((g, gi) => (
                 <div key={g.label}>
-                  <div className="lbl" style={{ padding: '12px 16px 6px', color: 'var(--navy-ink,var(--navy))' }}>
+                  <div className="lbl tb-glbl" style={{ padding: '12px 16px 6px', color: 'var(--navy-ink,var(--navy))' }}>
                     {g.label}
+                    {gi === 0 && unreadIds.length > 0 ? (
+                      /* phone: "Mark all read" rides on the first group label, the header keeps only the pill */
+                      <button type="button" className="tb-m tb-markm" onClick={() => void markAll()}>
+                        Mark all read
+                      </button>
+                    ) : null}
                   </div>
                   {g.items.map((x) => {
                     const u = !x.n.read;
@@ -307,9 +358,20 @@ export function NotificationsPage() {
                               {x.n.title}
                             </a>
                           </span>
-                          {x.n.body ? <span className="nb">{x.n.body}</span> : null}
+                          <span className="nb">
+                            {x.n.body ? <>{x.n.body} · </> : null}
+                            <a
+                              href={x.href}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                open(x);
+                              }}
+                            >
+                              {LINK_LABEL[x.ty]}
+                            </a>
+                          </span>
                           <span className="mono tb-m" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                            {x.w}
+                            {whoEl(x)} · {x.w}
                           </span>
                         </div>
                         <span className="nkind">
@@ -317,8 +379,8 @@ export function NotificationsPage() {
                             {kind}
                           </span>
                         </span>
-                        <span className="mono tb-d" style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-                          {x.w}
+                        <span className="mono tb-d" style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {whoEl(x)} · {x.w}
                         </span>
                         {u ? (
                           <button
@@ -520,7 +582,7 @@ export function NotificationsPage() {
   );
 }
 
-function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string; href: string }>({
+function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string; href: string; who: string }>({
   drill,
   setDrill,
   items,
@@ -615,7 +677,9 @@ function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string;
                 <span className="rt" style={{ display: 'block' }}>
                   {x.n.title}
                 </span>
-                <span className="mono cap">{x.w}</span>
+                <span className="mono cap">
+                  {x.who} · {x.w}
+                </span>
               </span>
               <span className="chip" style={T[x.ty][3]}>
                 {T[x.ty][2]}

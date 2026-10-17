@@ -14,7 +14,7 @@ html .seg .cnt,html .kbd{font-size:11px}
 html .dtile .m{font-size:11px;letter-spacing:.06em}
 /* pop-ups fit the viewport */
 .tb-ov{position:fixed!important;inset:0;overflow:auto;padding:var(--ovt,12px) 12px 12px;box-sizing:border-box}
-.tb-ov.tb-top{--ovt:min(120px,12vh);align-items:flex-start!important}
+.tb-ov.tb-top{--ovt:min(140px,16vh);align-items:flex-start!important}
 .tb-ov>.dlg{max-width:calc(100vw - 24px);max-height:calc(100dvh - var(--ovt,12px) - 12px);overflow:auto;flex:none;box-sizing:border-box}
 @media (max-width:767px){
   .pg.tb-wrap{padding:16px 16px 104px}

@@ -52,6 +52,37 @@ async function myEngagementDbId(ctx: AuthContext): Promise<{ dbId: string; compa
   return { dbId: access.dbId, company: access.row.companyName };
 }
 
+/** Plain words for the audit verbs (prototype: "Step accepted", not "Checklist · Save"). */
+const CHECKLIST_LABEL: Record<string, string> = {
+  save: 'Step saved',
+  submit: 'Step submitted',
+  accept: 'Step accepted',
+  approve: 'Step accepted',
+  complete: 'Step accepted',
+  review: 'Step reviewed',
+  unlock: 'Step reopened',
+  reopen: 'Step reopened',
+};
+const TIMELINE_LABEL: Record<string, string> = {
+  'client.timeline_change_request': 'Change request sent',
+  'client.timeline_change_request_withdrawn': 'Change request withdrawn',
+  'client.timeline_change_approved': 'Timeline change approved',
+  'client.timeline_change_rejected': 'Timeline change declined',
+};
+const CREDENTIALS_LABEL: Record<string, string> = {
+  otp_requested: 'Code requested',
+  otp: 'Code verified',
+  otp_locked: 'Code attempts locked',
+  reveal: 'Values revealed',
+  preview: 'Row previewed',
+  lock: 'Values hidden',
+  edit: 'Credentials edited',
+  cell_updated: 'Credential updated',
+  row_added: 'Row added',
+  row_removed: 'Row removed',
+  undo: 'Change undone',
+};
+
 const EMAIL_RE = /[^\s<>()@,;:]+@[^\s<>()@,;:]+\.[a-z]{2,}/gi;
 const UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
 /** A client may see this audit action (same allowlist as the Audit page). */
@@ -121,8 +152,22 @@ function project(
   } else if (a.startsWith('checklist.')) {
     const id = str(m.itemId) || str(m.stepId);
     if (id) subject = step(id);
-    if (/reject|return|sent_back/.test(a)) node = 'back';
+    const verb = a.slice('checklist.'.length);
+    const back = /reject|return|sent_back|changes/.test(verb) || /reject|changes|sent_back/.test(str(m.decision) + str(m.status));
+    if (back) node = 'back';
+    else if (verb === 'save' || verb === 'submit') node = 'up';
+    action = back ? 'Changes asked' : (CHECKLIST_LABEL[verb] ?? 'Step updated');
     if (id) cta = { label: 'Open step', href: stepHref(id) };
+  } else if (a === 'client.need_uploaded' || a === 'client.need_upload_undone') {
+    cat = 'Documents';
+    node = a === 'client.need_uploaded' ? 'up' : 'back';
+    action = a === 'client.need_uploaded' ? 'Document uploaded' : 'Upload undone';
+    subject = scrub(r.summary.replace(/\s+uploaded$/i, '')) || subject;
+    cta = { label: 'Open Documents', href: '/app/client/documents' };
+  } else if (a.startsWith('client.timeline_change')) {
+    node = 'time';
+    action = TIMELINE_LABEL[a] ?? 'Timeline change';
+    cta = { label: 'Open Incorporation', href: '/app/client/incorporation' };
   } else if (a === 'board_resolution.finalize') {
     cat = 'Documents';
     action = 'Board resolution released';
@@ -218,6 +263,7 @@ function project(
     cta = { label: 'Email settings', href: '/app/client/settings#notifications' };
   } else if (a.startsWith('credentials.')) {
     cat = 'Credentials';
+    action = CREDENTIALS_LABEL[a.slice('credentials.'.length)] ?? 'Credentials updated';
     subject = 'Credentials access log';
     if (str(m.label)) facts = [{ k: 'Credential', v: str(m.label) }];
     cta = { label: 'Open Credentials', href: '/app/client/credentials' };

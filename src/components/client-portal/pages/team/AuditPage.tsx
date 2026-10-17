@@ -189,8 +189,8 @@ export function AuditPage() {
                           animation: 'grow .9s cubic-bezier(.2,.7,.2,1) backwards',
                           transition: 'opacity .15s',
                           height: Math.max(b.count * scale, 3),
-                          background: isToday ? 'var(--navy)' : b.count ? 'var(--navy-3)' : 'var(--border)',
-                          opacity: isToday || hv === i ? 1 : 0.55,
+                          background: !b.count ? 'var(--border)' : isToday ? 'var(--navy)' : 'var(--navy-3)',
+                          opacity: (isToday && b.count) || hv === i ? 1 : 0.55,
                         }}
                       />
                     </button>

@@ -142,7 +142,7 @@ export function SettingsPage() {
       <main className="pg tb-wrap tp-set">
         <div className="tb-g12">
           <div className="tb-s5">
-            <Hero p={p} company={company} isPrimary={isPrimary} setProfile={setProfile} />
+            <Hero p={p} company={shell?.companyShort || company} isPrimary={isPrimary} setProfile={setProfile} />
 
             <ProfileCard p={p} setProfile={setProfile} />
 

@@ -33,6 +33,7 @@ import {
 import '../../css/team-00-contract.css';
 import '../../css/team-ann.css';
 
+const PORTAL_CAP = 8;
 const READS_KEY = ['client-portal', 'announcement-reads'] as const;
 const UNREAD_KEY = ['client-portal', 'announcements-unread'] as const;
 
@@ -73,6 +74,7 @@ export function AnnouncementsPage() {
   const sk = useSkeleton(list.isLoading);
   const [tab, setTab] = useState(0);
   const [pt, setPt] = useState(0);
+  const [portalsAll, setPortalsAll] = useState(false);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   const all = useMemo(() => list.data?.announcements ?? [], [list.data]);
@@ -99,7 +101,10 @@ export function AnnouncementsPage() {
   const tasks = VCFO_PORTAL_TASKS.filter((t) => t.portalUrl || t.circularUrl);
   const setup = tasks.filter((t) => SETUP_HEADS.includes(t.head));
   const recurring = tasks.filter((t) => RECUR[t.head]);
-  const groups = (pt === 0 ? setup : recurring).reduce<Array<{ h: string; rows: VcfoPortalTask[] }>>((acc, t) => {
+  /* compact card (prototype shows ~8 rows): the first PORTAL_CAP rows, then "Show all" */
+  const plist = pt === 0 ? setup : recurring;
+  const capped = !portalsAll && plist.length > PORTAL_CAP;
+  const groups = (capped ? plist.slice(0, PORTAL_CAP) : plist).reduce<Array<{ h: string; rows: VcfoPortalTask[] }>>((acc, t) => {
     const h = RECUR[t.head] ?? t.head;
     const g = acc.find((x) => x.h === h);
     if (g) g.rows.push(t);
@@ -298,6 +303,11 @@ export function AnnouncementsPage() {
                   ))}
                 </div>
               ))}
+              {plist.length > PORTAL_CAP ? (
+                <button type="button" className="btn btn-g btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setPortalsAll((v) => !v)}>
+                  {capped ? `Show all ${plist.length}` : 'Show fewer'}
+                </button>
+              ) : null}
             </div>
           </section>
         </div>

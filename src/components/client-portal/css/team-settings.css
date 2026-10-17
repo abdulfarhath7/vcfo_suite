@@ -9,6 +9,16 @@
 .cp .cp-team .tp-set .tb-app{padding:12px 18px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}
 .cp .cp-team .tp-set .kv>*{min-width:0}
 .cp .cp-team .tp-set .tb-ch2 .mono.cap{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cp .cp-team .tp-set .kv .rt{overflow-wrap:anywhere}
+.cp .cp-team .tp-set .kv{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--hair)}
+.cp .cp-team .tp-set .kv:first-child{border-top:0}
+.cp .cp-team .tp-set .kv>.k{font-size:12px;font-weight:700;color:var(--muted)}
+.cp .cp-team .tp-set .mx{display:grid;grid-template-columns:34px minmax(0,1fr) 84px 84px;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--hair)}
+.cp .cp-team .tp-set .tb-err{color:var(--over-text);font-size:12px;font-weight:600}
+.cp .cp-team .tp-set .tb-menu{position:absolute;left:0;top:calc(100% + 8px);z-index:40;min-width:180px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px;display:flex;flex-direction:column}
+.cp .cp-team .tp-set .tb-menu button{display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border:0;background:none;border-radius:6px;font:600 13px Manrope;color:var(--fg);cursor:pointer;text-align:left}
+.cp .cp-team .tp-set .tb-menu button:hover,
+.cp .cp-team .tp-set .tb-menu button:focus-visible{background:var(--raised)}
+/* phone overrides last so they beat the base rules above (SR:59-75) */
 @media (max-width:767px){
   .cp .cp-team .tp-set .ph>.tb-segx{flex:1 1 100%}
   .cp .cp-team .tp-set .tb-seta{height:40px!important}
@@ -21,12 +31,3 @@
   .cp .cp-team .tp-set #profile>div:last-child,
 .cp .cp-team .tp-set #security>div:last-child{padding-left:14px!important;padding-right:14px!important}
 }
-.cp .cp-team .tp-set .kv{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--hair)}
-.cp .cp-team .tp-set .kv:first-child{border-top:0}
-.cp .cp-team .tp-set .kv>.k{font-size:12px;font-weight:700;color:var(--muted)}
-.cp .cp-team .tp-set .mx{display:grid;grid-template-columns:34px minmax(0,1fr) 84px 84px;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--hair)}
-.cp .cp-team .tp-set .tb-err{color:var(--over-text);font-size:12px;font-weight:600}
-.cp .cp-team .tp-set .tb-menu{position:absolute;left:0;top:calc(100% + 8px);z-index:40;min-width:180px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px;display:flex;flex-direction:column}
-.cp .cp-team .tp-set .tb-menu button{display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border:0;background:none;border-radius:6px;font:600 13px Manrope;color:var(--fg);cursor:pointer;text-align:left}
-.cp .cp-team .tp-set .tb-menu button:hover,
-.cp .cp-team .tp-set .tb-menu button:focus-visible{background:var(--raised)}

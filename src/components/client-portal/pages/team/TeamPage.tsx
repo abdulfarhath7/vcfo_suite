@@ -353,7 +353,13 @@ function SbcCard({ p }: { p: ClientPortalContact }) {
   const { toast } = usePortal();
   const support = p.support || p.role === 'SBC help desk';
   const role = support ? 'Customer support' : p.role;
-  const line = support ? [p.email, prettyPhone(p.phoneE164)].filter(Boolean).join(' · ') : (p.email ?? '');
+  /* The help desk name/email/phone come from CLIENT_SUPPORT_* env; when those are
+     unset the card still reads as a person card (no repeated "Customer support",
+     no missing contact line) so it keeps the height of the other two. */
+  const name = support && /^customer support$/i.test(p.name.trim()) ? 'SBC help desk' : p.name;
+  const line = support
+    ? [p.email, prettyPhone(p.phoneE164)].filter(Boolean).join(' · ') || 'Contact details coming soon'
+    : (p.email ?? '');
   const bg = support ? 'var(--navy-3)' : avatarColor(p.id);
   const chip = support
     ? { background: 'var(--prog-light)', color: 'var(--prog-text)' }
@@ -398,7 +404,7 @@ function SbcCard({ p }: { p: ClientPortalContact }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={p.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 99 }} />
           ) : support ? (
-            initialsOf(p.name).slice(0, 1)
+            initialsOf(name).slice(0, 1)
           ) : (
             p.initials
           )}
@@ -407,7 +413,7 @@ function SbcCard({ p }: { p: ClientPortalContact }) {
           <span className="chip" style={chip}>
             {role}
           </span>
-          <div style={{ font: '700 16px Manrope', marginTop: 6, color: 'var(--navy-ink,var(--navy))' }}>{p.name}</div>
+          <div style={{ font: '700 16px Manrope', marginTop: 6, color: 'var(--navy-ink,var(--navy))' }}>{name}</div>
           <div className="mono tb-line" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
             {line}
           </div>
@@ -631,8 +637,8 @@ function SubstituteDialog({
               {initialsOf(row.name)}
             </span>
             <div style={{ minWidth: 0 }}>
-              <div className="rt">{row.name}</div>
-              <div className="cap">
+              <div className="rt" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</div>
+              <div className="cap" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {row.k === 'p' ? 'Primary' : 'Member'} · {company}
               </div>
             </div>
@@ -655,8 +661,8 @@ function SubstituteDialog({
               {name.trim() ? initialsOf(name) : '?'}
             </span>
             <div style={{ minWidth: 0 }}>
-              <div className="rt">{name.trim() || 'New person'}</div>
-              <div className="cap">{row.k === 'p' ? 'New Primary' : 'New Member'}</div>
+              <div className="rt" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name.trim() || 'New person'}</div>
+              <div className="cap" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.k === 'p' ? 'New Primary' : 'New Member'}</div>
             </div>
           </div>
         </div>
