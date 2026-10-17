@@ -64,3 +64,6 @@
 /* no visible scrollbars anywhere; scrolling still works (prototype item 11) */
 .cp *{scrollbar-width:none}
 .cp *::-webkit-scrollbar{display:none;width:0;height:0}
+/* the `hidden` attribute always hides (browser rule; the reset above and the
+   boards' own display rules must not bring back file inputs or empty bars) */
+.cp [hidden]:where(:not([hidden=until-found])){display:none!important}

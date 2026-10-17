@@ -1,3 +1,4 @@
+import { companyShortName } from '@/lib/client-portal/company';
 import 'server-only';
 
 import PizZip from 'pizzip';
@@ -96,7 +97,7 @@ async function myEngagement(ctx: AuthContext): Promise<{ dbId: string; row: Enga
 }
 
 function shortCompany(name: string): string {
-  return name.replace(/\s+(India\s+)?(Private|Pvt\.?)\s+(Limited|Ltd\.?)$/i, '').trim() || name;
+  return companyShortName(name) || name;
 }
 
 function todayIST(): string {

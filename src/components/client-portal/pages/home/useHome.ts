@@ -4,6 +4,7 @@
  * Home data: the shared step model + ClientOverview + the Home aggregate
  * (`/api/client/home`), combined once and handed to every card.
  */
+import { companyShortName } from '@/lib/client-portal/company';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { usePortal } from '@/components/client-portal/PortalProvider';
@@ -46,7 +47,7 @@ export function useHome() {
   const overview = ov.data?.overview ?? undefined;
   const home = homeQ.data ?? undefined;
   const today = todayIST();
-  const company = shell?.companyShort || overview?.engagement.companyName.split(' ')[0] || 'You';
+  const company = shell?.companyShort || companyShortName(overview?.engagement.companyName) || 'You';
   const companyName = overview?.engagement.companyName ?? shell?.companyName ?? '';
 
   const derived = useMemo(() => {

@@ -28,6 +28,7 @@ import { getItem } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
 import { identifiersFromState } from '@/lib/client-overview';
 import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { displayName, displayPeriod } from '@/lib/client-portal/compliances';
 import {
   fyLabelOf,
   fyStartYearOf,
@@ -202,6 +203,8 @@ async function loadFilings(dbId: string, now: Date, needs: HomeNeedRequest[]): P
       dueDate: complianceInstances.dueDate,
       filedOn: complianceInstances.filedOn,
       periodLabel: complianceInstances.periodLabel,
+      periodStart: complianceInstances.periodStart,
+      periodEnd: complianceInstances.periodEnd,
       fyLabel: complianceInstances.fyLabel,
       status: complianceInstances.status,
       ownerId: complianceInstances.ownerId,
@@ -227,9 +230,12 @@ async function loadFilings(dbId: string, now: Date, needs: HomeNeedRequest[]): P
     const need = needByFiling.get(r.id);
     return {
       id: r.id,
-      title: r.particular,
+      title: displayName(r.particular),
       authority: r.authority,
-      periodLabel: r.periodLabel ?? undefined,
+      periodLabel: (() => {
+        const p = displayPeriod(r.periodStart, r.periodEnd, r.periodLabel, r.fyLabel, r.particular, r.dueDate);
+        return p === '—' ? undefined : p;
+      })(),
       fyLabel: r.fyLabel ?? undefined,
       dueDate: r.dueDate,
       filedOn: r.filedOn ?? undefined,

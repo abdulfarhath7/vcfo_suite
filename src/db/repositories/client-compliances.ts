@@ -156,7 +156,7 @@ export async function getPortalFilings(ctx: AuthContext, query: PortalFilingsQue
       freqLabel: freqLabel(r.frequency),
       dueDate: r.dueDate,
       filedOn: r.filedOn ?? null,
-      period: displayPeriod(r.periodStart, r.periodEnd, r.periodLabel, r.fyLabel),
+      period: displayPeriod(r.periodStart, r.periodEnd, r.periodLabel, r.fyLabel, r.particular, r.dueDate),
       periodLong: periodLong(r.periodStart, r.periodEnd),
       fyLabel: r.fyLabel ?? null,
       rawStatus: r.status,
@@ -439,7 +439,8 @@ export async function systemMarkComplianceReminderSent(id: string): Promise<void
 
 /** "GSTR-3B · Sep 2026 is due Tue 20 Oct" — used by the reminder email. */
 export function reminderLine(r: { particular: string; periodLabel: string | null; dueDate: string }): string {
-  return `${displayName(r.particular)}${r.periodLabel ? ` · ${r.periodLabel}` : ''} is due ${fmtDM(r.dueDate)}`;
+  const period = r.periodLabel ? displayPeriod(null, null, r.periodLabel, null, r.particular, r.dueDate) : '';
+  return `${displayName(r.particular)}${period && period !== '—' ? ` · ${period}` : ''} is due ${fmtDM(r.dueDate)}`;
 }
 
 /** HTTP status for an error thrown above (routes map it; unknown errors rethrow). */

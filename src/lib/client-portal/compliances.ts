@@ -230,7 +230,11 @@ export function areaOf(authority: string, complianceArea = ''): AreaCode {
 }
 
 export function displayName(particular: string): string {
-  return particular.replace(/\s+Filing\b/i, '').replace(/\s{2,}/g, ' ').trim();
+  return particular
+    .replace(/\s+Filing\b/i, '')
+    .replace(/^Advance Tax Payment\b/i, 'Advance tax')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 const AUTHORITY_NAME: Record<string, string> = {
@@ -258,7 +262,23 @@ export function freqLabel(f: string): string {
   return t ? t[0]!.toUpperCase() + t.slice(1) : '—';
 }
 
-export function displayPeriod(start: string | null, end: string | null, label: string | null, fyLabel: string | null): string {
+const QUARTER_MONTHS: Record<string, [number, number]> = { '1': [3, 5], '2': [6, 8], '3': [9, 11], '4': [0, 2] };
+
+/**
+ * The filing's period, never repeating the filing name. The register's
+ * `period_label` often is "<particular> <year>" ("Advance Tax Payment Q2 2027"),
+ * so it is only a last resort: period dates first, then months named in the
+ * particular ("MSME-1 (Apr–Sep)", "… Q2") placed by the due date, then the
+ * label with the particular stripped.
+ */
+export function displayPeriod(
+  start: string | null,
+  end: string | null,
+  label: string | null,
+  fyLabel: string | null,
+  particular?: string | null,
+  dueDate?: string | null,
+): string {
   if (start && end) {
     const s = D(start);
     const e = D(end);
@@ -266,12 +286,31 @@ export function displayPeriod(start: string | null, end: string | null, label: s
     const em = e.getUTCMonth();
     const sy = s.getUTCFullYear();
     const ey = e.getUTCFullYear();
-    if (sm === 3 && s.getUTCDate() === 1 && em === 2 && ey === sy + 1) return fyLabelOf(sy);
+    if (em === 2 && e.getUTCDate() === 31 && sm >= 3 && ey === sy + 1) return fyLabelOf(sy);
     if (sy === ey && sm === em) return `${MON[sm]} ${sy}`;
     if (sy === ey) return `${MON[sm]}–${MON[em]} ${sy}`;
     return `${MON[sm]} ${sy}–${MON[em]} ${ey}`;
   }
-  return label?.trim() || fyLabel?.trim() || '—';
+  const p = (particular ?? '').trim();
+  if (p && dueDate) {
+    const due = D(dueDate);
+    const months = p.match(/\(([A-Z][a-z]{2})\s*[–-]\s*([A-Z][a-z]{2})\)/);
+    const q = p.match(/\bQ([1-4])\b/);
+    let range: [number, number] | null = null;
+    if (months && MON.includes(months[1]!) && MON.includes(months[2]!)) range = [MON.indexOf(months[1]!), MON.indexOf(months[2]!)];
+    else if (q) range = QUARTER_MONTHS[q[1]!]!;
+    if (range) {
+      // the period ends before the due date: same year unless it ends after the due month
+      const y = range[1] > due.getUTCMonth() ? due.getUTCFullYear() - 1 : due.getUTCFullYear();
+      const y0 = range[0] > range[1] ? y - 1 : y;
+      return y0 === y ? `${MON[range[0]]}–${MON[range[1]]} ${y}` : `${MON[range[0]]} ${y0}–${MON[range[1]]} ${y}`;
+    }
+  }
+  let l = label?.trim() ?? '';
+  if (p && l.toLowerCase().startsWith(p.toLowerCase())) l = l.slice(p.length).trim();
+  const dn = p ? displayName(p) : '';
+  if (dn && l.toLowerCase().startsWith(dn.toLowerCase())) l = l.slice(dn.length).trim();
+  return l || fyLabel?.trim() || '—';
 }
 export function periodLong(start: string | null, end: string | null): string | null {
   if (!start || !end) return null;

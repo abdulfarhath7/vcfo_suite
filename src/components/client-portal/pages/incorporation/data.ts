@@ -6,6 +6,7 @@
  * the client overview (team, COI, deliverables) and `GET /api/client/incorporation`
  * (file requests, upload metadata, window setter, board-resolution people).
  */
+import { companyShortName } from '@/lib/client-portal/company';
 import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
@@ -278,12 +279,7 @@ export interface IncData {
 
 export function shortCompany(name?: string): string {
   if (!name) return 'Your company';
-  return (
-    name
-      .replace(/\s+(India\s+)?(Private|Pvt\.?)\s+(Limited|Ltd\.?)$/i, '')
-      .replace(/\s+(Technologies|Technology|Solutions|Services)$/i, '')
-      .trim() || name
-  );
+  return companyShortName(name) || name;
 }
 
 export function useIncData(): IncData {

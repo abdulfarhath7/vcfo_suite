@@ -1,3 +1,4 @@
+import { companyShortName } from '@/lib/client-portal/company';
 import 'server-only';
 
 import { and, eq, inArray, sql } from 'drizzle-orm';
@@ -181,7 +182,7 @@ export async function getClientPortalShell(ctx: AuthContext): Promise<ClientPort
     .where(eq(profiles.id, ctx.userId))
     .limit(1);
   const meName = meRow?.name?.trim() || ctx.name || ctx.email;
-  const shortCompany = row.companyName.replace(/\s+(India\s+)?(Private|Pvt\.?)\s+(Limited|Ltd\.?)$/i, '').trim();
+  const shortCompany = companyShortName(row.companyName);
 
   return {
     engagementId: appEngagementId(row.id),
