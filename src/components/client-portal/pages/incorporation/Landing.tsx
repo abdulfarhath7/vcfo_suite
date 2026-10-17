@@ -238,7 +238,7 @@ export default function IncorporationLanding() {
   const coiEnd = d.coiExpected;
   const daysLeft = coiEnd ? Math.max(0, days(today, coiEnd)) : null;
   const shown = useCountUp(showAfter ? null : daysLeft, !showAfter);
-  const you = model.steps.find((x) => kd(x) === 'you');
+  const you = model.steps.find((x) => kd(x) === 'you') ?? model.steps.find((x) => x.owner === 'client' && x.late && kd(x) !== 'done');
   const spice = model.spice;
   const all = model.all;
 
@@ -316,6 +316,27 @@ export default function IncorporationLanding() {
     viewer.open([{ id: `cert:${c.storagePath}`, name: c.name, url: () => signedUrlFor(c.storagePath), meta: 'Certificate of Incorporation' }], 0);
   };
 
+  /* Monthly status brief + Board resolution (DECISIONS 2026-10-12): compact
+     icon buttons in the tile's top row so the tile keeps the prototype height (IN-14). */
+  const tileBtns = (
+    <>
+      <button
+        type="button"
+        className="hbtn"
+        aria-haspopup="dialog"
+        aria-expanded={briefOpen}
+        aria-label="Monthly status brief"
+        data-tt="Monthly status brief"
+        data-notip=""
+        onClick={() => setBriefOpen(true)}
+      >
+        <Ic n="download" />
+        <span className="lt">Monthly status brief</span>
+      </button>
+      <BoardResolutionLink br={d.extras?.boardResolution ?? null} />
+    </>
+  );
+
   const coiTile = (
     <section className={`coi${coiEnd || showAfter ? '' : ' no-coi'}`} aria-label={showAfter ? 'Incorporated' : 'Days to COI'}>
       <div className="t1">
@@ -334,6 +355,7 @@ export default function IncorporationLanding() {
             </button>
             <InfoBtn label="About the incorporation date" spec={coiInfo} />
             <span className="tr1">
+              {tileBtns}
               {coiEnd ? <EarlyChip coi={d.coiDate!} end={coiEnd} /> : null}
               {ringBtn}
             </span>
@@ -366,12 +388,13 @@ export default function IncorporationLanding() {
             </button>
             <InfoBtn label="About days to COI" spec={coiInfo} />
             <span className="tr1">
+              {tileBtns}
               {you ? (
                 <a
                   href={stepHrefOf(you)}
                   className="chip risk"
                   aria-label={`At risk · step ${you.n} · ${you.title}`}
-                  data-tt={`Step ${you.n} is waiting on ${short}${you.due ? ` · due ${fmt(you.due)}` : ''}`}
+                  data-tt={`Step ${you.n} ${kd(you) === 'you' ? 'is waiting on' : 'is late for'} ${short}${you.due ? ` · due ${fmt(you.due)}` : ''}`}
                   data-notip=""
                   onClick={(e) => {
                     e.preventDefault();
@@ -415,22 +438,6 @@ export default function IncorporationLanding() {
           </span>
         )}
       </div>
-      <div className="hr" style={{ marginLeft: 0 }}>
-        <button
-          type="button"
-          className="hbtn"
-          aria-haspopup="dialog"
-          aria-expanded={briefOpen}
-          aria-label="Monthly status brief"
-          data-tt="Monthly status brief"
-          data-notip=""
-          onClick={() => setBriefOpen(true)}
-        >
-          <Ic n="download" />
-          <span className="lt">Monthly status brief</span>
-        </button>
-        <BoardResolutionLink br={d.extras?.boardResolution ?? null} />
-      </div>
       <button type="button" className="pill" aria-label={`${all.done} of ${all.total} steps done · ${all.pct}%`} onClick={drillAll}>
         <span>
           {all.done} / {all.total} steps
@@ -455,7 +462,7 @@ export default function IncorporationLanding() {
       if (!step) continue;
       rows.push({
         o: 'You',
-        t: `Upload ${r.label}${r.requestedByName ? ` · requested by ${firstName(r.requestedByName)}` : ''}`,
+        t: `Upload ${r.label.replace(/\s*\([^)]*\)/g, '')}${r.requestedByName ? ` · requested by ${firstName(r.requestedByName)}` : ''}`,
         dt: r.dueDate ? fmt(r.dueDate) : step.due ? fmt(step.due) : 'now',
         step,
       });
@@ -806,8 +813,9 @@ export default function IncorporationLanding() {
     const cfg: DrillConfig = {
       title: SEG_T[key],
       sub: `${s.reduce((t, q) => t + q[1], 0)}${docs ? ' documents' : ' steps'}`,
-      tabs: s.map((q) => ({ label: q[0], color: q[2], rows: q[3] })),
-      active: i,
+      // Only non-empty segment tabs (spec LS-05); the clicked one always stays.
+      tabs: s.map((q, j) => ({ label: q[0], color: q[2], rows: q[3], j })).filter((t) => t.rows.length || t.j === i).map(({ j: _j, ...t }) => t),
+      active: s.slice(0, i).filter((q) => q[3].length).length,
     };
     if (docs) cfg.link = { lead: 'Every document, with versions', text: 'Open Documents →', href: portalHref('documents'), where: 'Documents' };
     drill(cfg);

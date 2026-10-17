@@ -28,7 +28,7 @@ import { phaseHref } from '../../routes';
 import { useDocViewer } from '../documents/DocViewer';
 import { triggerDownload } from '../documents/file-types';
 import { Bmini, BotSay, Ic, IncFrame, Si, fmt, istDay } from './ui';
-import { INC_EXTRAS_KEY, firstName, stepHrefOf, useIncData } from './data';
+import { INC_EXTRAS_KEY, firstName, signedUrlFor, stepHrefOf, useIncData } from './data';
 
 export default function BoardPage() {
   const d = useIncData();
@@ -77,11 +77,20 @@ export default function BoardPage() {
     d.engagementId && doc?.signedStoragePath
       ? `/api/engagements/${d.engagementId}/board-resolution/download-signed?v=${encodeURIComponent(doc.signedUploadedAt ?? doc.signedStoragePath)}`
       : '';
+  // Steps 2–3 done but no finalized board-resolution file on record (older
+  // engagements): the page still shows the tracker and the signed copy from
+  // step 3, never "not ready yet" (IN-03).
+  const s3Path = useMemo(() => {
+    if (!s3) return '';
+    return String(extractItemResponses(s3.item, s3.slice).signedBoardResolutionUrl ?? '').trim();
+  }, [s3]);
+  const showBody = visible || s2?.kind === 'done';
   const drafted = istDay(doc?.draftedAt);
-  const released = istDay(doc?.finalizedAt);
-  const signed = istDay(doc?.signedUploadedAt);
+  const released = istDay(doc?.finalizedAt) ?? (s2?.kind === 'done' ? s2.doneOn : undefined);
+  const signed = istDay(doc?.signedUploadedAt) ?? istDay(s3?.slice?.clientSubmittedAt) ?? (s3Path && s3?.kind === 'done' ? s3.doneOn : undefined);
   const received = istDay(ex?.receivedAt) ?? (s3?.kind === 'done' ? s3.doneOn : undefined);
-  const signedName = doc?.signedStoragePath?.split('/').pop()?.replace(/^\d+-/, '') ?? 'signed copy';
+  const signedName = (doc?.signedStoragePath || s3Path).split('/').pop()?.replace(/^\d+-/, '') || 'signed copy';
+  const signedUrl = signedHref ? async () => signedHref : s3Path ? () => signedUrlFor(s3Path) : null;
 
   const replace = async (file: File) => {
     if (!d.engagementId) return;
@@ -104,6 +113,10 @@ export default function BoardPage() {
   };
 
   const openFull = () => {
+    if (!visible) {
+      if (signedUrl) viewer.open([{ id: 'br-signed', name: signedName, url: signedUrl, meta: 'Board resolution · signed copy' }], 0);
+      return;
+    }
     if (!downloadHref) return;
     const docs = [{ id: 'br-draft', name: BOARD_RESOLUTION_DOCX_FILENAME, url: async () => downloadHref, meta: 'Board resolution · draft', contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }];
     if (signedHref) docs.push({ id: 'br-signed', name: signedName, url: async () => signedHref, meta: 'Board resolution · signed copy', contentType: '' });
@@ -111,7 +124,7 @@ export default function BoardPage() {
   };
 
   const stages: Array<[string, string | undefined, boolean]> = [
-    ['Drafted', drafted ? `SBC · ${fmt(drafted)}` : 'SBC', Boolean(drafted || visible)],
+    ['Drafted', drafted ? `SBC · ${fmt(drafted)}` : 'SBC', Boolean(drafted || visible || released)],
     ['Released', released ? fmt(released) : undefined, Boolean(released)],
     ['Signed', signed ? `${d.short} · ${fmt(signed)}` : d.short, Boolean(signed)],
   ];
@@ -160,7 +173,7 @@ export default function BoardPage() {
                   ) : visible ? (
                     <span className="chip you">Waiting for the signed copy</span>
                   ) : null}
-                  {visible ? (
+                  {visible || signedUrl ? (
                     <span className="chip" style={{ background: 'rgba(255,255,255,.16)', color: '#fff' }}>
                       Certified true copy
                     </span>
@@ -195,7 +208,7 @@ export default function BoardPage() {
           </div>
         </section>
 
-        {!visible && loaded ? (
+        {!showBody && loaded ? (
           <section className="card" style={{ padding: 18 }}>
             <BotSay
               text="The board resolution is not ready yet. SBC drafts it from your details in step 1 and releases it here to sign."
@@ -205,7 +218,7 @@ export default function BoardPage() {
           </section>
         ) : null}
 
-        {visible ? (
+        {showBody ? (
           <>
             <section className="card trk" aria-label="Progress of the board resolution">
               <div className="lc">
@@ -256,19 +269,38 @@ export default function BoardPage() {
                 <div className="ch">
                   <h2 className="lbl">Preview</h2>
                   <span className="cnt">
-                    certified true copy · <span id="zv">{Math.round(zoom * 100)}%</span>
+                    {visible ? (
+                      <>
+                        certified true copy · <span id="zv">{Math.round(zoom * 100)}%</span>
+                      </>
+                    ) : (
+                      'signed copy'
+                    )}
                   </span>
                   <span className="sp" />
+                  {visible ? (
+                    <>
                   <button type="button" className="sq" aria-label="Zoom out" onClick={() => setZoom((z) => Math.max(0.6, Math.round((z - 0.1) * 10) / 10))}>
                     <Ic n="minus" />
                   </button>
                   <button type="button" className="sq" aria-label="Zoom in" onClick={() => setZoom((z) => Math.min(1.6, Math.round((z + 0.1) * 10) / 10))}>
                     <Ic n="plus" />
                   </button>
+                    </>
+                  ) : null}
                   <button type="button" className="sq" aria-label="Open full screen" onClick={openFull}>
                     <Ic n="maximize" />
                   </button>
                 </div>
+                {!visible ? (
+                  <div style={{ padding: '4px 18px 18px' }}>
+                    <BotSay
+                      text={signedUrl ? 'The Word draft is not on file here. The signed copy from step 3 is.' : 'The board resolution file is not on file here yet. Ask SBC for a copy.'}
+                      btn={signedUrl ? 'Open the signed copy' : undefined}
+                      onBtn={signedUrl ? () => viewer.open([{ id: 'br-signed', name: signedName, url: signedUrl, meta: 'Board resolution · signed copy' }], 0) : undefined}
+                    />
+                  </div>
+                ) : (
                 <div className="pvw">
                   <div className="paper live" data-paper="" style={{ transform: `scale(${zoom})` }}>
                     <div className="cp-tw">
@@ -283,14 +315,16 @@ export default function BoardPage() {
                     </div>
                   </div>
                 </div>
+                )}
               </section>
               <div className="scol">
                 <section className="card acc files" aria-label="Files">
                   <div className="ch">
                     <h2 className="lbl">Files</h2>
                     <span className="sp" />
-                    <span className="cnt">{signedHref ? '2 files' : '1 file'}</span>
+                    <span className="cnt">{(visible ? 1 : 0) + (signedUrl ? 1 : 0)} file{(visible ? 1 : 0) + (signedUrl ? 1 : 0) === 1 ? '' : 's'}</span>
                   </div>
+                  {visible ? (
                   <div className="file">
                     <span className="ft docx">DOCX</span>
                     <span className="tx">
@@ -317,7 +351,8 @@ export default function BoardPage() {
                       </button>
                     </span>
                   </div>
-                  {signedHref ? (
+                  ) : null}
+                  {signedUrl ? (
                     <div className="file">
                       <span className="ft pdf">{/\.docx?$/i.test(signedName) ? 'DOCX' : 'PDF'}</span>
                       <span className="tx">
@@ -333,7 +368,7 @@ export default function BoardPage() {
                           type="button"
                           className="sq"
                           aria-label="Preview Signed copy"
-                          onClick={() => viewer.open([{ id: 'br-signed', name: signedName, url: async () => signedHref, meta: 'Board resolution · signed copy' }], 0)}
+                          onClick={() => viewer.open([{ id: 'br-signed', name: signedName, url: signedUrl, meta: 'Board resolution · signed copy' }], 0)}
                         >
                           <Ic n="eye" />
                         </button>
@@ -341,9 +376,13 @@ export default function BoardPage() {
                           type="button"
                           className="sq"
                           aria-label={`Download ${signedName}`}
-                          onClick={() => {
-                            triggerDownload(signedHref, signedName);
-                            toast(`Download started · ${signedName}`);
+                          onClick={async () => {
+                            try {
+                              triggerDownload(await signedUrl(), signedName);
+                              toast(`Download started · ${signedName}`);
+                            } catch (e) {
+                              toast(e instanceof Error ? e.message : 'Could not download the file');
+                            }
                           }}
                         >
                           <Ic n="download" />
@@ -365,11 +404,11 @@ export default function BoardPage() {
                       if (f) void replace(f);
                     }}
                   >
-                    <button type="button" className="ut" aria-label={signedHref ? 'Replace the signed copy' : 'Upload the signed copy'} onClick={() => fileRef.current?.click()}>
-                      <Ic n={signedHref ? 'refresh-cw' : 'upload'} />
+                    <button type="button" className="ut" aria-label={signedUrl ? 'Replace the signed copy' : 'Upload the signed copy'} onClick={() => fileRef.current?.click()}>
+                      <Ic n={signedUrl ? 'refresh-cw' : 'upload'} />
                     </button>
                     <span className="tx">
-                      <b>{signedHref ? 'Replace signed copy' : 'Upload signed copy'}</b>
+                      <b>{signedUrl ? 'Replace signed copy' : 'Upload signed copy'}</b>
                       <span>
                         {busy ? (
                           'Uploading…'

@@ -50,3 +50,6 @@
 .cp .cp-incorporation .pill:focus-visible,
 .cp .cp-incorporation .stb:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .cp .cp-incorporation .no-coi .big b{font-size:clamp(20px,2.2vw,24px)}
+/* the real .docx page (816 px) is scaled to the paper's width, not clipped */
+.cp .cp-incorporation .pvw .paper.live .cp-tw{zoom:.684}
+@media (max-width:767px){.cp .cp-incorporation .pvw .paper.live{width:328px}.cp .cp-incorporation .pvw .paper.live .cp-tw{zoom:.4}}

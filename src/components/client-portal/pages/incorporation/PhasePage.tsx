@@ -320,14 +320,18 @@ export default function PhasePage({ phaseNo }: { phaseNo: number }) {
               <span>
                 {p.done} / {p.total} steps
               </span>
-              {p.state === 'done' && plan && doneEnd && doneEnd !== plan[1] ? (
-                doneEnd > plan[1] ? (
-                  <span className="e late">
-                    {days(plan[1], doneEnd)} day{days(plan[1], doneEnd) === 1 ? '' : 's'} late
-                  </span>
-                ) : (
-                  <span className="e early">{days(doneEnd, plan[1])} days early</span>
-                )
+              {p.state === 'done' && doneEnd ? (
+                (() => {
+                  const dl = plan ? days(plan[1], doneEnd) : 0;
+                  return (
+                    <span className={`e${dl > 0 ? ' late' : dl < 0 ? ' early' : ''}`}>
+                      Finished {fmt(doneEnd)}
+                      {dl > 0 ? ` · ${dl} day${dl === 1 ? '' : 's'} late` : dl < 0 ? ` · ${-dl} day${dl === -1 ? '' : 's'} early` : ''}
+                    </span>
+                  );
+                })()
+              ) : plan ? (
+                <span className="e">Ends {fmt(plan[1])}</span>
               ) : null}
             </span>
           </div>

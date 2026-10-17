@@ -149,7 +149,7 @@ export function StatusBrief({ d, onClose }: { d: IncData; onClose: () => void })
           <div className="sub-h">Waiting on {short}</div>
           {youSteps.length ? youSteps.map(row) : <BotSay text={`Nothing is waiting on ${short}.`} />}
           <div className="sub-h">In progress</div>
-          {act.map(row)}
+          {act.length ? act.map(row) : <BotSay text="Nothing in progress." />}
         </div>
         <div className="bf">
           <button

@@ -30,3 +30,6 @@
 /* focus rings (DESIGN-RULES a11y) */
 .btn:focus-visible,.sq:focus-visible,.ibtn:focus-visible,.lkb:focus-visible,.gbar:focus-visible,.lg:focus-visible,.nar .ib:focus-visible,.nabk:focus-visible,.naw:focus-visible,.wr:focus-visible,.rr:focus-visible,.pill:focus-visible,.stb:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .no-coi .big b{font-size:clamp(20px,2.2vw,24px)}
+/* the real .docx page (816 px) is scaled to the paper's width, not clipped */
+.pvw .paper.live .cp-tw{zoom:.684}
+@media (max-width:767px){.pvw .paper.live{width:328px}.pvw .paper.live .cp-tw{zoom:.4}}

@@ -183,7 +183,7 @@ export function StepTable({
         <span className="c-st">
           <span className={`chip ${k}`}>{KL[k]}</span>
         </span>
-        <span className="dt c-dt">{landing && k === 'next' ? '—' : dateCell(x, coi)}</span>
+        <span className="dt c-dt">{dateCell(x, coi)}</span>
         <span className="lkc c-lk">{lk}</span>
         {landing ? (
           <a

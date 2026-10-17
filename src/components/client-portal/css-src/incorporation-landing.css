@@ -48,3 +48,10 @@
 @media (max-width:767px){
   .lp .ob,.lp .stb{min-height:40px}
 }
+/* IN-14 · status brief + board resolution as compact icon buttons in the tile's top row */
+.lp .coi .tr1 .hbtn{position:relative;width:34px;height:34px;min-width:34px;padding:0;justify-content:center;align-self:flex-start;margin-top:6px}
+.lp .coi .tr1 .hbtn .lt{display:none}
+.lp .coi .tr1 .hbtn .rd{position:absolute;top:-5px;right:-5px;width:15px;height:15px;padding:0;border-radius:50%;justify-content:center;font-size:0;box-shadow:0 0 0 2px #133561}
+.lp .coi .tr1 .hbtn .rd svg{width:9px;height:9px}
+.lp .coi .tr1 .chip{align-self:flex-start;margin-top:12px}
+@media (max-width:767px){.lp .coi .tr1{gap:8px}.lp .coi .tr1 .hbtn{width:40px;height:40px;margin-top:3px}}

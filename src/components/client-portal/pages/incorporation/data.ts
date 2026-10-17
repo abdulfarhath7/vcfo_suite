@@ -96,7 +96,9 @@ export function dateCell(s: PortalStep, coiExpected?: string): string {
   if (k === 'done') return s.doneOn ? `Done ${fmt(s.doneOn)}` : 'Done';
   if (k === 'you' || k === 'prog') return s.due ? `Due ${fmt(s.due)}` : '—';
   if (k === 'with') return s.since ? `since ${fmt(s.since)}` : s.due ? `Due ${fmt(s.due)}` : '—';
-  return s.id === 'pre-12' && coiExpected ? `exp. ${fmt(coiExpected)}` : '—';
+  if (s.id === 'pre-12' && coiExpected) return `exp. ${fmt(coiExpected)}`;
+  // Gated steps that already have a planned window show it (as the rail's "Opens later · due …").
+  return s.due ? `Due ${fmt(s.due)}` : '—';
 }
 
 export function tipTxt(s: PortalStep, k: LK = kd(s)): string {

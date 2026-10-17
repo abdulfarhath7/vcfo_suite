@@ -57,11 +57,16 @@ interface Row {
   file?: string;
 }
 
-function answerRows(s: PortalStep, ownershipType: IncData['ownershipType']): Row[] {
+/**
+ * Read-only answer rows. Direct-flow steps show every field (client and lead
+ * fill the same form); other SBC steps list what they capture from the item's
+ * infoRequired (IN-11). File fields shown in the Documents card are left out (IN-04).
+ */
+function answerRows(s: PortalStep, ownershipType: IncData['ownershipType'], inDocs: Set<string>): Row[] {
   const responses = extractItemResponses(s.item, s.slice);
   const base = withoutUnusedDirectorSlots(
     s.item.id,
-    filterFieldsByViewer(fieldsForOwnership(s.item.id, getClientResponseFields(s.item), ownershipType), 'client'),
+    filterFieldsByViewer(fieldsForOwnership(s.item.id, getClientResponseFields(s.item), ownershipType), 'client', s.item.id),
     responses,
   );
   const fields = resolveFieldLabels(applyShowWhen(expandRepeatFields(base, responses), responses), responses);
@@ -71,13 +76,32 @@ function answerRows(s: PortalStep, ownershipType: IncData['ownershipType']): Row
     const raw = String(responses[f.id] ?? '').trim();
     const label = repeatFieldLabel(base, responses, f.id) ?? f.label;
     if (f.type === 'file') {
-      rows.push({ label, value: raw ? fileNameFromStoragePath(raw) : '—', file: raw && isMilestoneStoragePath(raw) ? raw : undefined });
+      if (inDocs.has(f.id)) continue;
+      // empty numbered slots ("Other attachment 1/2/3") read as one row
+      const m = !raw ? /^(.*\S)\s+\d+$/.exec(label) : null;
+      if (m) {
+        const prev = rows.at(-1);
+        if (prev && prev.value === '—' && (prev.label === `${m[1]}s` || prev.label === m[1])) {
+          prev.label = `${m[1]}s`;
+          continue;
+        }
+      }
+      rows.push({ label: m ? m[1] : label, value: raw ? fileNameFromStoragePath(raw) : '—', file: raw && isMilestoneStoragePath(raw) ? raw : undefined });
       continue;
     }
     let v = raw;
     if (raw && (f.type === 'select' || f.type === 'segmented')) v = f.options?.find((o) => o.value === raw)?.label ?? raw;
     if (raw && f.type === 'date' && /^\d{4}-\d{2}-\d{2}/.test(raw)) v = fmtL(raw.slice(0, 10));
     rows.push({ label, value: v || '—' });
+  }
+  if (!rows.some((r) => !/^remarks/i.test(r.label)) && s.owner !== 'client' && s.item.infoRequired.length) {
+    const done = kd(s) === 'done';
+    for (const q of s.item.infoRequired) {
+      rows.splice(rows.length - (rows.length && /^remarks/i.test(rows.at(-1)!.label) ? 1 : 0), 0, {
+        label: q.split(' — ')[0]!.replace(/\s*\((?:if any|attachment)\)\s*$/i, ''),
+        value: done ? `Provided${s.doneOn ? ` · ${fmt(s.doneOn)}` : ''}` : '—',
+      });
+    }
   }
   if (!rows.some((r) => /^remarks/i.test(r.label))) rows.push({ label: 'Remarks (optional)', value: '—' });
   return rows;
@@ -168,7 +192,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const item = useMemo(() => resolveChecklistItemFromStepParam(stepParam), [stepParam]);
   const s = item ? d.model.byId[item.id] : undefined;
   const phase = s ? d.model.phases[s.phaseNo - 1] : undefined;
-  usePortalCrumbs(s ? ['Incorporation', PHASE_PART[s.phaseNo] ?? `Phase ${s.phaseNo}`, `Step ${s.n} · ${s.title}`] : ['Incorporation', 'Step']);
+  usePortalCrumbs(s ? ['Incorporation', PHASE_PART[s.phaseNo] ?? `Phase ${s.phaseNo}`, s.title] : ['Incorporation', 'Step']);
   const catalog = useMemo(() => getActiveCatalogItems(), []);
   const ci = s ? catalog.findIndex((c) => c.id === s.id) : -1;
   const prev = ci > 0 ? d.model.byId[catalog[ci - 1]!.id] : undefined;
@@ -406,8 +430,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     );
   }
 
-  const rows = answerRows(s, d.ownershipType);
-  const released = k === 'done' || isStepReleasedToClient(s.slice);
+  const rows = answerRows(s, d.ownershipType, new Set([...requests.map((r) => r.fieldId), ...otherFiles.map((f) => f.fieldId)]));
+  const released = k === 'done' || isStepReleasedToClient(s.slice, s.id);
   const phl = PHL[s.phaseNo - 1]!;
   const tab = s.item.fields?.find((f) => f.section)?.section ?? s.title;
   const approvedOn = s.doneOn;
