@@ -53,13 +53,13 @@
 .cp #tle .bar.ms .hd{display:none}
 .cp #tle .read{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0f2a4a;color:#fff;font:700 11.5px Manrope;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s}
 .cp #tle .bar.drag .read,
-.cp #tle .bar:hover .read,
-.cp #tle .bar:focus .read{opacity:1}
+.cp #tle .bar.kb .read,
+.cp #tle .bar:hover .read{opacity:1}
 .cp #tle .bar.ms .read{transform:translateX(-50%) rotate(-45deg)}
 .cp #tle .today{position:absolute;top:44px;bottom:0;width:2px;margin-left:-1px;background:#d64545;pointer-events:none;z-index:2}
 .cp #tle .today:after{content:"Today 6 Oct";position:absolute;top:3px;left:4px;font:800 11px Manrope;color:#fff;background:#d64545;padding:1px 6px;border-radius:4px;white-space:nowrap}
 .cp #tle .sum{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 18px 0;padding:12px 14px;border-radius:8px;background:light-dark(#f5f7fa, oklch(16.7% 0.005 258.3))}
-.cp #tle .sum .big{font:800 15px Manrope}
+.cp #tle .sum .big{font:800 15px Manrope;color:light-dark(#0f1b2d, oklch(91.2% 0.028 258.3))}
 .cp #tle .sum .pill{font:800 12px Manrope;padding:3px 8px;border-radius:5px}
 .cp #tle .late{background:light-dark(#fde8e6, oklch(25.2% 0.066 24.1));color:#b42318}.cp #tle .early{background:light-dark(#e3f6ee, oklch(24.6% 0.064 168.7));color:#0f7a55}.cp #tle .same{background:light-dark(#eef1f5, oklch(19.4% 0.006 255.5));color:light-dark(#46546b, oklch(82.3% 0.029 260.2))}
 .cp #tle .cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 18px 0}
@@ -92,3 +92,9 @@
 @media (max-width:767px){.cp #tle .info-strip,
 .cp #tle .chgt{margin-left:12px;margin-right:12px;width:calc(100% - 24px)}}
 .cp #tle .today:after{content:attr(data-today)}
+
+.cp #tle,
+.cp #tle *{box-sizing:border-box}
+/* portal port: the Incorporation page has its own `.pill` (hero progress pill); keep the editor pill a plain chip there */
+.cp #tle .sum .pill{display:inline-block;width:auto;min-height:0;gap:0;border:0;cursor:default;text-align:left}
+.cp #tle .sum .pill:hover{filter:none}

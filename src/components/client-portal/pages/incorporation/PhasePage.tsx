@@ -63,7 +63,8 @@ function RailHero({ x, d, isPage }: { x: PortalStep; d: IncData; isPage: boolean
   const sl = subList(x);
   const dn = sl.filter((s) => s.s === 'done').length;
   const lbl = `${isPage ? (k === 'done' ? 'Done' : k === 'up' ? 'Upcoming' : 'Now') : 'Now'} · step ${x.n}`;
-  const labels = sl.length <= 4 && sl.every((s) => s.l.length <= 14);
+  // DECISIONS: focus track plus F's sub-step ticks — name every tick (up to 6).
+  const labels = sl.length <= 6;
   const sub = railSub(x, d.short);
   const st = (s: string) => (s === 'done' ? 'done' : s === 'now' ? 'in progress' : 'to do');
   return (
@@ -86,7 +87,7 @@ function RailHero({ x, d, isPage }: { x: PortalStep; d: IncData; isPage: boolean
           <Ic n="circle-help" />
         </button>
       </div>
-      <div className="subt">
+      <div className={`subt${labels && sl.length > 4 ? ' many' : ''}`}>
         {sl.map((s, i) => (
           <span
             key={`${s.l}-${i}`}

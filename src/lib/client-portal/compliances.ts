@@ -408,7 +408,8 @@ export function focusNodes(f: PortalFiling, companyShort: string, today: string)
   const prepDone = filed || Boolean(f.approvedOn) || (Boolean(f.draftDueOn) && f.draftDueOn! < today && f.rawStatus !== 'in-progress');
   const apprDone = filed || Boolean(f.approvedOn);
   const steps: { done: boolean; label: string; doneLabel: string; at: string | null; pending: string; tip: string; icon: TrackNode['icon']; you?: boolean }[] = [
-    { done: dataDone, label: 'Data received', doneLabel: filed ? 'Data' : 'Data received', at: f.dataReceivedOn, pending: 'waiting on you', tip: 'Waiting on you · send the data', icon: 'file', you: true },
+    // While pending this is the client's move: 'Send data', not a done-sounding 'Data received' (TL-21).
+    { done: dataDone, label: 'Send data', doneLabel: filed ? 'Data' : 'Data received', at: f.dataReceivedOn, pending: 'waiting on you', tip: 'Waiting on you · send the data', icon: 'file', you: true },
     {
       done: prepDone,
       label: 'SBC preparing',
@@ -423,7 +424,7 @@ export function focusNodes(f: PortalFiling, companyShort: string, today: string)
       label: `${companyShort} approves`,
       doneLabel: `${companyShort} approved`,
       at: f.approvedOn,
-      pending: f.approvalDueOn ? `by ${fmtDM(f.approvalDueOn)}` : '—',
+      pending: f.approvalDueOn ? `by ${fmtDM(f.approvalDueOn)}` : '',
       tip: f.approvalDueOn ? `Upcoming · waiting on ${companyShort} by ${fmtDM(f.approvalDueOn)}` : `Upcoming · waiting on ${companyShort}`,
       icon: 'person',
       you: true,

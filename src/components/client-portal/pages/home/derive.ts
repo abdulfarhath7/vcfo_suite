@@ -455,7 +455,8 @@ export function buildTimeline(model: PortalIncorporationModel, incorporationDate
   const aFrom = a.from ?? b.from;
   if (!aFrom) return null;
   const aTo = a.to && a.to >= aFrom ? a.to : aFrom;
-  const bFrom = b.from && b.from >= aTo ? b.from : aTo;
+  // Phase 2 follows straight on from a finished Phase 1 (prototype, TL-14).
+  const bFrom = a.done ? aTo : b.from && b.from >= aTo ? b.from : aTo;
   let bTo = b.to && b.to >= bFrom ? b.to : bFrom;
   if (bTo > coi) bTo = coi;
   const mcaOwn = mcaStep?.windowFrom && model.byId['pre-11']?.due !== model.coiExpected ? { from: mcaStep.windowFrom, to: mcaStep.kind === 'done' ? mcaStep.doneOn ?? mcaStep.due : mcaStep.due } : undefined;
@@ -472,10 +473,19 @@ export function buildTimeline(model: PortalIncorporationModel, incorporationDate
 
 export function timelineAxis(phases: TlPhase[], today: string): { t0: string; span: number; ticks: { iso: string; pct: number }[] } {
   const t0 = phases[0]!.from;
-  const end = [phases[3]!.to, today].sort().at(-1)!;
+  // When today is long past the COI, end the axis a little after it (the card
+  // then pins a 'Today →' chip at the right edge) so the bars keep their width.
+  const coiEnd = phases[3]!.to;
+  const end = today <= addDays(coiEnd, 21) ? [coiEnd, today].sort().at(-1)! : addDays(coiEnd, 14);
   const span = Math.max(14, days(t0, end) + 11);
   const ticks: { iso: string; pct: number }[] = [];
-  for (let n = 0; n <= span; n += 7) ticks.push({ iso: addDays(t0, n), pct: (n / span) * 100 });
+  // At most ~9 ticks (TL-06); never a tick hard against the right edge (TL-14).
+  const step = [7, 14, 21, 28, 56, 91, 182].find((st) => Math.floor(span / st) + 1 <= 9) ?? 364;
+  for (let n = 0; n <= span; n += step) {
+    const pct = (n / span) * 100;
+    if (pct > 96) break;
+    ticks.push({ iso: addDays(t0, n), pct });
+  }
   return { t0, span, ticks };
 }
 
@@ -587,6 +597,8 @@ export interface PostRow {
   dueDate?: string;
   day?: number;
   usedPct: number;
+  /** Days past the statutory due date (0 when not overdue). */
+  overDays: number;
   owner: 'client' | 'sbc';
   info: string;
 }
@@ -606,26 +618,34 @@ export function buildPostInc(model: PortalIncorporationModel, incorporationDate:
     const limit = m ? Number(m[1]) : undefined;
     const dueDate = anchor && limit ? addDays(anchor, limit) : s.due;
     const day = anchor ? Math.max(0, days(anchor, today)) : undefined;
-    const usedPct = limit && day != null ? Math.min(100, (day / limit) * 100) : 0;
+    const overDays = dueDate && dueDate < today ? days(dueDate, today) : 0;
+    const usedPct = overDays ? 100 : limit && day != null ? Math.min(100, (day / limit) * 100) : 0;
     open.push({
       step: s,
       limitDays: limit,
       dueDate,
       day: limit && day != null ? Math.min(day, limit) : day,
       usedPct,
+      overDays,
       owner: s.kind === 'you' || s.kind === 'prog' ? 'client' : 'sbc',
       info: `${text}${STEP_STATUS[s.kind] ? ` · ${STEP_STATUS[s.kind]![0].toLowerCase()}` : ''}`,
     });
   }
+  // Nearest deadline first (overdue at the top), undated last (TL-11).
+  open.sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'));
   return { open, done, dayN: anchor ? Math.max(0, days(anchor, today)) : undefined };
 }
 
 export function postIncDrill(open: PostRow[], done: PortalStep[], active: number): DrillConfig {
   const o = open.map<DrillRow>((p) => ({
     title: p.step.title,
-    meta: p.limitDays && p.day != null ? `day ${p.day} of ${p.limitDays} · ${dShort(p.dueDate)}` : dShort(p.dueDate),
-    chip: 'Open',
-    chipColor: chipBg(p.owner === 'client' ? 'due' : 'prog'),
+    meta: p.overDays
+      ? `overdue ${p.overDays} day${p.overDays === 1 ? '' : 's'} · due ${dShort(p.dueDate)}`
+      : p.limitDays && p.day != null
+        ? `day ${p.day} of ${p.limitDays} · ${dShort(p.dueDate)}`
+        : dShort(p.dueDate),
+    chip: p.overDays ? 'Overdue' : 'Open',
+    chipColor: chipBg(p.overDays ? 'over' : p.owner === 'client' ? 'due' : 'prog'),
     href: stepHref(p.step.id),
   }));
   const d = done.map<DrillRow>((s) => ({ title: s.title, meta: dShort(s.doneOn), chip: 'Completed', chipColor: chipBg('ok'), href: stepHref(s.id) }));

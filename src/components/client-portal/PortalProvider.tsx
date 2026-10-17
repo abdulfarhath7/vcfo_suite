@@ -441,9 +441,24 @@ function DrillDialog({
           )}
         </div>
         <div className="ft">
-          {rows.length < total
-            ? `Showing ${rows.length} of ${total} · the full list is in ${cfg.link?.where ?? 'the app'}`
-            : `Showing all ${total}`}
+          <span>
+            {rows.length < total
+              ? `Showing ${rows.length} of ${total} · the full list is in ${cfg.link?.where ?? 'the app'}`
+              : `Showing all ${total}`}
+          </span>
+          {cfg.link ? (
+            <a
+              href={cfg.link.href ?? '#'}
+              onClick={(e) => {
+                e.preventDefault();
+                close();
+                if (cfg.link?.href) go(cfg.link.href);
+                else cfg.link?.onClick?.();
+              }}
+            >
+              Open full list
+            </a>
+          ) : null}
         </div>
       </div>
     </div>

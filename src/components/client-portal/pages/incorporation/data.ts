@@ -119,7 +119,7 @@ export function railSub(s: PortalStep, short: string): string {
   if (k === 'you') return `Waiting on ${short}${s.due ? ` · due ${fmt(s.due)}` : ''}`;
   if (k === 'prog') return `In progress${s.due ? ` · due ${fmt(s.due)}` : ''}`;
   if (k === 'with') return `With ${short}’s project lead${s.since ? ` · since ${fmt(s.since)}` : ''}`;
-  return 'Opens later';
+  return s.due ? `Opens later · due ${fmt(s.due)}` : 'Opens later';
 }
 
 /** Prototype `short()`: a label cut to ~22 characters. */
@@ -202,6 +202,16 @@ export function phDoneEnd(p: PortalPhase): string | undefined {
  * COI to the latest step date in the phase (DECISIONS).
  */
 export function phPlan(p: PortalPhase, coi?: string): [string, string] | null {
+  if (p.no === 1) {
+    // Part A is judged against its own plan (the latest own step window in
+    // the phase), not the whole incorporation window ending at the COI (TL-05).
+    const own = p.steps.filter((s) => s.ownWindow && s.due);
+    if (own.length) {
+      const from = own.map((s) => s.windowFrom ?? s.due!).sort()[0]!;
+      const to = own.map((s) => s.due!).sort().at(-1)!;
+      return [from, to];
+    }
+  }
   if (p.no <= 2) {
     if (p.start && p.end) return [p.start, p.end];
     return null;
@@ -209,8 +219,14 @@ export function phPlan(p: PortalPhase, coi?: string): [string, string] | null {
   const dates = p.steps.map((s) => s.due ?? s.doneOn).filter(Boolean).sort() as string[];
   const end = dates.at(-1);
   const start = coi ?? p.start;
-  if (!start || !end) return null;
+  if (!start) return null;
+  // No step dates yet: a fixed planned stretch after the COI (prototype's hatched bar).
+  if (!end) return [start, addDays(start, p.no === 3 ? 30 : 45)];
   return start <= end ? [start, end] : [end, start];
+}
+
+function addDays(iso: string, n: number): string {
+  return new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 }
 
 /* ---------------- What's this? answers (OV-05) ---------------- */

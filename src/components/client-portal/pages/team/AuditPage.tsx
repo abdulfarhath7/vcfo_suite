@@ -319,7 +319,8 @@ export function AuditPage() {
                       </div>
                     </div>
                     <div style={{ position: 'relative' }}>
-                      <span className="tb-vl" />
+                      {/* the rail joins a day's events; a one-event day has nothing to join */}
+                      {d.items.length > 1 ? <span className="tb-vl" /> : null}
                       {d.items.map((e) => {
                         const open = openId === e.id;
                         return (

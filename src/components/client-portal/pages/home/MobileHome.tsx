@@ -493,7 +493,12 @@ export function MobileHome({ h, onEditTimeline, phases, onOpenDocs }: { h: HomeD
   function postRows(i: number): DRow[] {
     return i
       ? h.post.done.map((s) => ({ k: 'done', t: s.title, s: `Completed${s.doneOn ? ` · ${dShort(s.doneOn)}` : ''}`, route: stepHref(s.id) }))
-      : h.post.open.map((p) => ({ k: p.owner === 'client' ? 'you' : 'sbc', t: p.step.title, s: `${p.owner === 'client' ? company : 'SBC'} · ${dShort(p.dueDate)}`, route: stepHref(p.step.id) }));
+      : h.post.open.map((p) => ({
+          k: p.overDays ? 'late' : p.owner === 'client' ? 'you' : 'sbc',
+          t: p.step.title,
+          s: `${p.owner === 'client' ? company : 'SBC'} · ${p.overDays ? `overdue ${p.overDays} day${p.overDays === 1 ? '' : 's'} · ` : ''}${dShort(p.dueDate)}`,
+          route: stepHref(p.step.id),
+        }));
   }
 
   const needsCard = (
@@ -809,11 +814,17 @@ export function MobileHome({ h, onEditTimeline, phases, onOpenDocs }: { h: HomeD
               <b>{p.step.title}</b>
               <span>
                 {p.owner === 'client' ? company : 'SBC'} · {p.dueDate ? dShort(p.dueDate) : '—'}
-                {p.limitDays && p.day != null ? ` · day ${p.day} of ${p.limitDays}` : ''}
+                {p.overDays ? (
+                  <i style={{ color: 'var(--over-text)', fontWeight: 700, fontStyle: 'normal', display: 'inline' }}> · overdue {p.overDays} day{p.overDays === 1 ? '' : 's'}</i>
+                ) : p.limitDays && p.day != null ? (
+                  ` · day ${p.day} of ${p.limitDays}`
+                ) : (
+                  ''
+                )}
               </span>
               <span style={{ display: 'flex', marginTop: 5 }}>
                 <span className="pb">
-                  <i style={{ width: `${pct}%`, background: pct > 45 ? 'var(--due)' : 'var(--navy-3)' }} />
+                  <i style={{ width: `${pct}%`, background: p.overDays ? 'var(--over)' : pct > 45 ? 'var(--due)' : 'var(--navy-3)' }} />
                 </span>
               </span>
             </span>

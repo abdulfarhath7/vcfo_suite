@@ -23,6 +23,9 @@ import {
  *           engagement row / the filings register, both already scoped)
  *   write — manager on an owned engagement, admin, super_admin. A lead or
  *           client write throws here, whatever the UI showed.
+ *           Exception: setClientComplianceWindow() — a client may move the
+ *           planning window of their OWN company's unfiled filings (never a
+ *           due date, never another company's filing).
  */
 
 export type WindowInput = { from: string; to: string } | null;
@@ -118,4 +121,65 @@ export async function setComplianceInstanceWindow(
     metadata: { instanceId, window },
   });
   return updated;
+}
+
+/**
+ * A client moves / resizes the PLANNING window of one of their own company's
+ * filings (compliances Timeline view, TL-13 owner decision). The statutory
+ * due date is never touched. Rules, enforced here whatever the UI shows:
+ *   - role client only (firm staff use setComplianceInstanceWindow);
+ *   - the instance must belong to an engagement this client can read
+ *     (assertEngagementAccess: own company or invited member) — a foreign
+ *     instance reads as "not found" (no cross-tenant probing);
+ *   - a filed instance is locked;
+ *   - clearing is allowed only for a window this same client set (Undo of a
+ *     first move); a manager's window can be moved, never deleted.
+ */
+export async function setClientComplianceWindow(
+  ctx: AuthContext,
+  instanceId: string,
+  window: WindowInput,
+): Promise<{ id: string; windowFrom: string | null; windowTo: string | null }> {
+  if (ctx.role !== 'client') throw new Error('Only a client may use the client window route');
+  assertRange(window);
+  const [row] = await db
+    .select({
+      id: complianceInstances.id,
+      engagementId: complianceInstances.engagementId,
+      status: complianceInstances.status,
+      filedOn: complianceInstances.filedOn,
+      windowSetBy: complianceInstances.windowSetBy,
+      windowFrom: complianceInstances.windowFrom,
+    })
+    .from(complianceInstances)
+    .where(eq(complianceInstances.id, instanceId))
+    .limit(1);
+  if (!row) throw new Error('Compliance instance not found');
+  const access = await assertEngagementAccess(ctx, row.engagementId);
+  if (!access.ok) throw new Error('Compliance instance not found');
+  if (row.filedOn || row.status === 'filed') throw new Error('filed_locked');
+  if (!window && row.windowFrom && row.windowSetBy !== ctx.userId) throw new Error('clear_not_permitted');
+
+  const [updated] = await db
+    .update(complianceInstances)
+    .set({
+      windowFrom: window?.from ?? null,
+      windowTo: window?.to ?? null,
+      windowSetBy: window ? ctx.userId : null,
+      windowSetAt: window ? new Date() : null,
+    })
+    .where(eq(complianceInstances.id, instanceId))
+    .returning({
+      id: complianceInstances.id,
+      windowFrom: complianceInstances.windowFrom,
+      windowTo: complianceInstances.windowTo,
+    });
+
+  void recordAuditEvent(ctx, {
+    engagementId: row.engagementId,
+    action: window ? 'schedule.window.set' : 'schedule.window.cleared',
+    summary: window ? `Filing window moved ${window.from} → ${window.to}` : 'Filing window reset',
+    metadata: { instanceId, window, by: 'client' },
+  });
+  return updated!;
 }

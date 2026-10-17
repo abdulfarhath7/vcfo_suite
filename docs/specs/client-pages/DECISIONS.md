@@ -43,6 +43,7 @@ On 2026-10-09 the owner said "go with picks for everything else". Every open que
 | "You approve" step | Design now, build later |
 | Mobile calendar | Week strip + agenda |
 | Detail view | Calendar: pop-up · Filings: side panel |
+| Timeline view: can clients drag filing windows? | Yes, the planning window only (move / resize / ←→ / Undo); due dates stay fixed and filed windows are locked. Permission checked in the repository (own company only). Owner, 2026-10-17 (TL-13). |
 | Status chips filter the grid? | No. They open the drill-down only. |
 | Header | Compact donut, top right above Next deadline (owner pick) |
 | Next deadline card | A · Light card + navy accent (owner pick) |

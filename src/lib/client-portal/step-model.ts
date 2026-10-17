@@ -51,6 +51,8 @@ export interface PortalStep {
   doneOn?: string;
   due?: string;
   windowFrom?: string;
+  /** True when the window is the step's own (not the shared incorporation window). */
+  ownWindow?: boolean;
   /** With SBC since (best effort: submission / previous step done date). */
   since?: string;
   gate: ChecklistStepGate;
@@ -191,6 +193,7 @@ export function buildIncorporationModel(
         doneOn,
         due,
         windowFrom: ymd(win?.from),
+        ownWindow: !!schedule?.steps?.[item.id],
         since,
         gate,
         canOpen: gate.canOpen || kind === 'done',

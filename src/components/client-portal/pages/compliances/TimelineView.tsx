@@ -5,12 +5,18 @@
  * filing windows over the FY, lanes by area then filing, zoomable ruler
  * (− / slider / + / Fit, ctrl/⌘+wheel, pinch), drag-to-pan, red Today line.
  *
- * READ-ONLY for clients (owner rule: only managers write windows): bars do not
- * drag; click / Enter opens the filing. Windows come from
- * compliance_instances.window_from/to, else due − PREP days.
+ * Clients plan their own working windows as in the prototype (TL-13 owner
+ * decision, DECISIONS › Compliances): drag a bar to move it, drag its edges to
+ * resize, ←/→ moves (shift resizes), ↶ Undo + undo toast. The statutory due
+ * date (diamond) never moves; filed windows are locked. Saved through
+ * POST /api/client/compliances/:id/window (ownership checked in the
+ * repository). A click without a drag, or Enter, opens the filing. Windows
+ * come from compliance_instances.window_from/to, else due − PREP days.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePortal } from '../../PortalProvider';
+import { COMP_KEY } from './api';
 import {
   AREA_LABEL,
   AREA_ORDER,
@@ -31,6 +37,7 @@ type Lane = { ar: AreaCode } | { name: string; items: PortalFiling[] };
 
 export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number; rows: PortalFiling[]; today: string; onOpen: (f: PortalFiling) => void }) {
   const { toast } = usePortal();
+  const qc = useQueryClient();
   const W0 = Date.UTC(fyStart, 3, 1);
   const W1 = Date.UTC(fyStart + 1, 2, 31);
   const NDAYS = Math.round((W1 - W0) / DAY);
@@ -175,6 +182,158 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
     }
   };
 
+  /* ---------- client window editing (drag / resize / keys / undo) ---------- */
+  type Win = [number, number];
+  const [W, setW] = useState<Record<string, Win>>({});
+  const hist = useRef<{ id: string; prev: Win | null }[]>([]);
+  const [histN, setHistN] = useState(0);
+  const drag = useRef<{ r: PortalFiling; mode: 'move' | 'start' | 'end'; x0: number; s0: number; e0: number; moved: boolean; sn: number; prev: Win | null; locked: boolean } | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [read, setRead] = useState<{ x: number; y: number; t: string } | null>(null);
+  const snap = ppd && ppd < 7 ? 7 : 1;
+  const winOf = useCallback(
+    (r: PortalFiling): { s: number; e: number; due: number; set: boolean } => {
+      const due = dayN(r.dueDate);
+      const o = W[r.id];
+      if (o) return { s: o[0], e: o[1], due, set: true };
+      const set = Boolean(r.windowFrom && r.windowTo);
+      return set ? { s: dayN(r.windowFrom!), e: dayN(r.windowTo!), due, set } : { s: due - (PREP[r.frequency.toLowerCase()] ?? 5), e: due, due, set };
+    },
+    [W, dayN],
+  );
+  const iso = useCallback((n: number) => new Date(W0 + n * DAY).toISOString().slice(0, 10), [W0]);
+  const save = useCallback(
+    async (r: PortalFiling, w: Win | null, revert: Win | null | undefined) => {
+      try {
+        const res = await fetch(`/api/client/compliances/${r.id}/window`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(w ? { from: iso(w[0]), to: iso(w[1]) } : { from: null, to: null }),
+        });
+        if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'save_failed');
+        void qc.invalidateQueries({ queryKey: COMP_KEY });
+      } catch {
+        setW((m) => {
+          const n = { ...m };
+          if (revert) n[r.id] = revert;
+          else delete n[r.id];
+          return n;
+        });
+        toast(`Could not save the ${r.name} window. It is back where it was.`);
+      }
+    },
+    [iso, qc, toast],
+  );
+  const apply = useCallback(
+    (r: PortalFiling, w: Win | null) => {
+      setW((m) => {
+        const n = { ...m };
+        if (w) n[r.id] = w;
+        else delete n[r.id];
+        return n;
+      });
+    },
+    [],
+  );
+  const commit = useCallback(
+    (r: PortalFiling, prev: Win | null, next: Win, withToast: boolean) => {
+      hist.current.push({ id: r.id, prev });
+      setHistN(hist.current.length);
+      apply(r, next);
+      void save(r, next, prev);
+      if (withToast) {
+        const due = dayN(r.dueDate);
+        toast(`${r.name} window · ${nStr(next[0])} – ${nStr(next[1])}${next[1] > due ? ' · ends after the due date' : ''}`, { undo: () => undo() });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [apply, save, dayN, nStr, toast],
+  );
+  const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
+  function undo() {
+    const h = hist.current.pop();
+    setHistN(hist.current.length);
+    if (!h) return;
+    const r = byId.get(h.id);
+    if (!r) return;
+    apply(r, h.prev);
+    // back to the previous window (or clear a window this client created)
+    void save(r, h.prev, null);
+    toast('Undone');
+  }
+  const prevOf = (r: PortalFiling): Win | null => {
+    if (W[r.id]) return W[r.id]!;
+    return r.windowFrom && r.windowTo ? [dayN(r.windowFrom), dayN(r.windowTo)] : null;
+  };
+  const barDown = (e: React.PointerEvent, r: PortalFiling) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.stopPropagation();
+    const w = winOf(r);
+    const h = (e.target as HTMLElement).closest('.hd');
+    // a filed window is locked: the press still opens it on release
+    drag.current = { r, mode: h ? (h.getAttribute('data-h') === 'l' ? 'start' : 'end') : 'move', x0: e.clientX, s0: w.s, e0: w.e, moved: false, sn: snap, prev: prevOf(r), locked: Boolean(r.filedOn) };
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+  const barMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || !ppd || d.locked) return;
+    const dd = Math.round((e.clientX - d.x0) / ppd / d.sn) * d.sn;
+    if (!dd && !d.moved) return;
+    if (!d.moved) {
+      d.moved = true;
+      setDragId(d.r.id);
+    }
+    let s0 = d.s0;
+    let e0 = d.e0;
+    if (d.mode === 'move') {
+      s0 += dd;
+      e0 += dd;
+    } else if (d.mode === 'start') s0 = Math.min(e0 - 1, s0 + dd);
+    else e0 = Math.max(s0 + 1, e0 + dd);
+    s0 = Math.max(0, s0);
+    e0 = Math.min(NDAYS, e0);
+    apply(d.r, [s0, e0]);
+    const due = dayN(d.r.dueDate);
+    setRead({ x: e.clientX, y: e.clientY, t: `${nStr(s0)} – ${nStr(e0)} · ${e0 - s0} days${e0 > due ? ' · after the due date' : ''}` });
+  };
+  const barUp = (r: PortalFiling) => {
+    const d = drag.current;
+    drag.current = null;
+    setRead(null);
+    setDragId(null);
+    if (!d || d.r.id !== r.id) return;
+    if (!d.moved) {
+      onOpen(r);
+      return;
+    }
+    const w = W[r.id];
+    const next: Win = w ?? [d.s0, d.e0];
+    // swallow the click that follows the drag
+    const stop = (ev: Event) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+    };
+    window.addEventListener('click', stop, { capture: true, once: true });
+    setTimeout(() => window.removeEventListener('click', stop, { capture: true }), 0);
+    if (next[0] === d.s0 && next[1] === d.e0) return;
+    // drag already applied the live window; record history from the pre-drag state
+    commit(r, d.prev, next, true);
+  };
+  const barKey = (ev: React.KeyboardEvent, r: PortalFiling) => {
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      ev.preventDefault();
+      onOpen(r);
+      return;
+    }
+    if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+    if (r.filedOn) return;
+    ev.preventDefault();
+    const w = winOf(r);
+    const d = (ev.key === 'ArrowRight' ? 1 : -1) * snap;
+    const next: Win = ev.shiftKey ? [w.s, Math.max(w.s + 1, w.e + d)] : [Math.max(0, w.s + d), Math.min(NDAYS, w.e + d)];
+    commit(r, prevOf(r), next, false);
+  };
+
   const X = (n: number) => n * ppd;
   const level = ppd >= 20 ? 'Days' : ppd >= 7 ? 'Weeks' : 'Months';
   const ruler: React.ReactNode[] = [];
@@ -214,7 +373,10 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
   return (
     <div className="tlv">
       <div className="tlv-tools">
-        <span className="hint">Filing windows are set by SBC · drag to pan · ctrl + scroll or pinch to zoom</span>
+        <button type="button" className="btn btn-o btn-s" disabled={!histN} onClick={undo}>
+          ↶ Undo
+        </button>
+        <span className="hint">Drag a filing window to move it · drag its edges to resize · snaps to {snap === 7 ? 'weeks' : 'days'} · ctrl + scroll or pinch to zoom</span>
         <span className="tlv-z" role="group" aria-label="Zoom the timeline">
           <button type="button" aria-label="Zoom out" disabled={ppd <= minP + 0.01} onClick={() => zoomTo(ppd / 1.5)}>
             −
@@ -284,31 +446,40 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
                   }
                 >
                   {l.items.map((r) => {
-                    const due = dayN(r.dueDate);
-                    const set = Boolean(r.windowFrom && r.windowTo);
-                    const s = set ? dayN(r.windowFrom!) : due - (PREP[r.frequency.toLowerCase()] ?? 5);
-                    const e = set ? dayN(r.windowTo!) : due;
+                    const { s: ws, e: we, due, set } = winOf(r);
                     const st = statusOf(r, today);
-                    const late = e > due && !r.filedOn;
+                    const late = we > due && !r.filedOn;
                     const col = r.filedOn ? 'var(--ok)' : STC[st];
-                    const tip = `${r.name} · ${r.period} · window ${nStr(s)} – ${nStr(e)} · due ${nStr(due)}${r.filedOn ? ' · filed' : late ? ` · ends ${e - due} d after the due date` : ''}${set ? ' · set by SBC' : ''}`;
+                    const tip = `${r.name} · ${r.period} · window ${nStr(ws)} – ${nStr(we)} · due ${nStr(due)}${r.filedOn ? ' · filed' : late ? ` · ends ${we - due} d after the due date` : ''}`;
                     return (
                       <span key={r.id}>
                         <span
-                          className={`tlv-b ro${late ? ' late' : ''}${r.filedOn ? ' lock' : ''}`}
-                          role="button"
+                          className={`tlv-b${late ? ' late' : ''}${r.filedOn ? ' lock' : ''}${dragId === r.id ? ' drag' : ''}`}
+                          role="slider"
                           tabIndex={0}
                           aria-label={tip}
-                          data-tip={tip}
-                          style={{ left: X(s), width: Math.max(6, X(e - s)), background: col }}
-                          onClick={() => onOpen(r)}
-                          onKeyDown={(ev) => {
-                            if (ev.key === 'Enter' || ev.key === ' ') {
-                              ev.preventDefault();
-                              onOpen(r);
-                            }
+                          aria-valuetext={`${nStr(ws)} – ${nStr(we)}`}
+                          aria-valuenow={ws}
+                          data-tip={dragId ? undefined : tip}
+                          data-set={set ? '' : undefined}
+                          style={{ left: X(ws), width: Math.max(6, X(we - ws)), background: col }}
+                          onPointerDown={(e) => barDown(e, r)}
+                          onPointerMove={barMove}
+                          onPointerUp={() => barUp(r)}
+                          onPointerCancel={() => {
+                            drag.current = null;
+                            setRead(null);
+                            setDragId(null);
                           }}
-                        />
+                          onKeyDown={(ev) => barKey(ev, r)}
+                        >
+                          {r.filedOn ? null : (
+                            <>
+                              <span className="hd l" data-h="l" />
+                              <span className="hd r" data-h="r" />
+                            </>
+                          )}
+                        </span>
                         <span className="tlv-d" style={{ left: X(due), background: late ? 'var(--over)' : 'var(--navy)' }} />
                       </span>
                     );
@@ -320,6 +491,11 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
           </div>
         </div>
       </div>
+      {read ? (
+        <div className="tlv-read" style={{ left: read.x, top: read.y }}>
+          {read.t}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -391,6 +391,8 @@ a.rr:hover{background:var(--raised)}
 .subt .sb i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.3);position:relative;z-index:1}
 .subt .sb.on i{background:#2fd3a0}.subt .sb.cu i{background:var(--gold-2);box-shadow:0 0 0 3px rgba(230,196,110,.3)}
 .subt .sb span{font-size:11px;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.subt .sb span{white-space:normal;text-align:center;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;padding:0 1px;hyphens:auto}
+.subt.many .sb span{font-size:10px;letter-spacing:-.01em}
 .subn{margin-top:8px;font:500 11.5px var(--mono);color:rgba(255,255,255,.75)}
 .rmore{margin:6px 0 0;width:100%}
 /* needed from Northwind */

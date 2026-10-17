@@ -173,6 +173,10 @@ export function TimelineCard({
                       Today {dShort(h.today)}
                     </span>
                   </>
+                ) : todayPct > 100 ? (
+                  <span className="chip" style={{ position: 'absolute', right: 0, bottom: -20, background: 'var(--over-chip)', color: '#fff', padding: '0 6px' }}>
+                    Today {dShort(h.today)} →
+                  </span>
                 ) : null}
               </div>
               {phases.map((p, i) => {
@@ -180,7 +184,7 @@ export function TimelineCard({
                 const width = p.milestone ? 1.76 : Math.max(0.5, pct(p.to) - left);
                 return (
                   <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '150px minmax(0,1fr)', alignItems: 'center', height: 30 }}>
-                    <span className="rt" style={{ fontSize: 12 }}>{p.name}</span>
+                    <span className="rt" style={{ fontSize: 12, whiteSpace: 'normal', lineHeight: 1.2, paddingRight: 8 }}>{p.name}</span>
                     <div style={{ position: 'relative', height: 30 }}>
                       <Tip
                         tip={tipOf(p)}
@@ -862,15 +866,15 @@ export function PostIncCard({ h }: { h: HomeData }) {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
                 <Tip
-                  tip={`${p.step.title}${p.limitDays && p.day != null ? ` · day ${p.day} of ${p.limitDays}` : ''}${p.dueDate ? ` · due ${dShort(p.dueDate)}` : ''}`}
+                  tip={`${p.step.title}${p.overDays ? ` · overdue ${p.overDays} day${p.overDays === 1 ? '' : 's'}` : p.limitDays && p.day != null ? ` · day ${p.day} of ${p.limitDays}` : ''}${p.dueDate ? ` · due ${dShort(p.dueDate)}` : ''}`}
                   label={p.step.title}
                   onOpen={() => drill(1)}
                   style={{ flex: 1, position: 'relative', height: 10, borderRadius: 3, background: 'var(--raised)', boxShadow: 'inset 0 0 0 1px var(--border)' }}
                 >
-                  <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${p.usedPct.toFixed(1)}%`, borderRadius: 3, background: p.owner === 'client' ? 'var(--due)' : 'var(--prog)' }} />
+                  <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${p.usedPct.toFixed(1)}%`, borderRadius: 3, background: p.overDays ? 'var(--over)' : p.owner === 'client' ? 'var(--due)' : 'var(--prog)' }} />
                 </Tip>
-                <span className="mono cap" style={{ width: 'auto', minWidth: 80, textAlign: 'right', whiteSpace: 'nowrap', fontWeight: 600 }}>
-                  {p.limitDays && p.day != null ? `day ${p.day} of ${p.limitDays}` : 'no time limit'}
+                <span className="mono cap" style={{ width: 'auto', minWidth: 80, textAlign: 'right', whiteSpace: 'nowrap', fontWeight: 600, ...(p.overDays ? { color: 'var(--over-text)' } : null) }}>
+                  {p.overDays ? `overdue ${p.overDays} day${p.overDays === 1 ? '' : 's'}` : p.limitDays && p.day != null ? `day ${p.day} of ${p.limitDays}` : 'no time limit'}
                 </span>
               </div>
             </div>

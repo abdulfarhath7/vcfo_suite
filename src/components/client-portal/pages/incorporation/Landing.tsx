@@ -515,7 +515,14 @@ export default function IncorporationLanding() {
 
   /* ---------- Timeline (gantt) ---------- */
   const coiForPlan = d.coiDate ?? d.coiExpected;
-  const plans = useMemo(() => model.phases.map((p) => phPlan(p, coiForPlan)), [model.phases, coiForPlan]);
+  const plans = useMemo(() => {
+    const ps = model.phases.map((p) => phPlan(p, coiForPlan));
+    // Part B starts where Part A's plan ends (prototype PLAN[2]).
+    const a = ps[0];
+    const b = ps[1];
+    if (a && b && b[0] < a[1] && a[1] < b[1]) ps[1] = [a[1], b[1]];
+    return ps;
+  }, [model.phases, coiForPlan]);
   const axis: Axis | null = useMemo(() => {
     const ds = plans.flatMap((p) => (p ? [p[0], p[1]] : []));
     for (const p of model.phases) {
@@ -560,7 +567,9 @@ export default function IncorporationLanding() {
         lb.style.right = '';
         if (W - e >= lw + 18) lb.style.left = `${e + 14}px`;
         else if (a >= lw + 14) lb.style.right = `${W - a + 10}px`;
-        else simpleNow = true;
+        // Neither side has room (a long bar): sit the label on the bar's end
+        // rather than dropping the whole card to the phone layout.
+        else lb.style.right = `${Math.max(0, W - e) + 8}px`;
       });
     }
     if (simpleNow) {

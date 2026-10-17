@@ -16,7 +16,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import type { TimelinePhaseDates } from '@/lib/client-home';
 import { HOME_QUERY_KEY } from './useHome';
-import { Ico } from './ui';
 import { addDays, days, dShort, type TlPhase } from './derive';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -74,6 +73,7 @@ export function TimelineEditor({
   const [vpW, setVpW] = useState(700);
   const [ppd, setPpd] = useState<number | null>(null);
   const [dragI, setDragI] = useState<number | null>(null);
+  const [kbI, setKbI] = useState<number | null>(null);
   const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const minPpd = vpW / (W1 - W0);
@@ -367,10 +367,6 @@ export function TimelineEditor({
             ×
           </button>
         </div>
-        <div className="info-strip">
-          <Ico n="info" size={16} style={{ color: 'var(--prog-text)' }} />
-          <span className="rt" style={{ fontWeight: 500 }}>The change is a request. {mgr} (manager) approves or rejects it.</span>
-        </div>
         <div className="tools">
           <button type="button" className="btn" aria-label="Undo last change" disabled={!hist.length} onClick={undo}>
             ↶ Undo
@@ -430,7 +426,7 @@ export function TimelineEditor({
                     <div key={p.id} className="lane" style={laneBg}>
                       <span className="ghost" style={{ left: X(b0.s), width: b0.ms ? 18 : Math.max(1, b0.e - b0.s) * z, display: moved ? undefined : 'none', marginLeft: b0.ms ? -9 : undefined }} />
                       <span
-                        className={`bar${p.done ? ' lock' : ''}${p.ms ? ' ms' : ''}${dragI === i ? ' drag' : ''}`}
+                        className={`bar${p.done ? ' lock' : ''}${p.ms ? ' ms' : ''}${dragI === i ? ' drag' : ''}${kbI === i ? ' kb' : ''}`}
                         role="slider"
                         tabIndex={0}
                         aria-label={p.name}
@@ -438,7 +434,11 @@ export function TimelineEditor({
                         aria-valuenow={p.s}
                         style={{ background: p.color, left: X(p.s), width: p.ms ? undefined : Math.max(1, p.e - p.s) * z }}
                         onPointerDown={(e) => startDrag(e, i)}
-                        onKeyDown={(e) => onKey(e, i)}
+                        onKeyDown={(e) => {
+                          if (/^Arrow/.test(e.key)) setKbI(i);
+                          onKey(e, i);
+                        }}
+                        onBlur={() => setKbI((k) => (k === i ? null : k))}
                       >
                         <span className="hd l" data-h="l" aria-hidden="true" />
                         <span className="hd r" data-h="r" aria-hidden="true" />
@@ -456,7 +456,7 @@ export function TimelineEditor({
             {rows.map(({ p, b0 }) => {
               const dd = p.e - b0.e;
               return (
-                <div key={p.id}>
+                <div key={p.id} className="row">
                   <span className="d">
                     <b>{range(p)}</b>
                     {dd ? <span className={`chg ${dd > 0 ? 'late' : 'early'}`}>{`${dd > 0 ? '+' : ''}${dd} d`}</span> : null}
