@@ -1,29 +1,31 @@
 # Client portal: differences from the approved prototype
 
-Built portal (role `client`, `app/app/client/**`, branch `claude/multi-agent-chat-design-rhtbl4`) compared with `prototype/vcfo-client-portal-FINAL.html`, screen by screen at 1440 px and 390 px, on demo data. Compiled 2026-10-17. No app code was changed.
+Built portal (role `client`, `app/app/client/**`, branch `claude/multi-agent-chat-design-rhtbl4`) compared with `prototype/vcfo-client-portal-FINAL.html`, screen by screen at 1440 px and 390 px, on demo data. Compiled 2026-10-17 (no app code changed while compiling); the fix pass the same day updated every row's **Status**.
 
 Owner marks (Fix / Keep + note) are kept on the interactive report page (https://claude.ai/artifact/3HKLoYQn3hBKShFRdVS3f5, private until shared); this file is the static copy. Screenshot crops are in `diff-shots/` (`<ID>-app.webp`, `<ID>-proto.webp`).
 
+**Fix pass, 2026-10-17:** 143 rows fixed, 53 kept with a reason, 0 open. Every row has a **Status** line; `diff-shots/<ID>-fixed.webp` is the app after the fix.
+
 ## Summary
 
-| Area | High | Medium | Low | Info | Total |
-|---|---:|---:|---:|---:|---:|
-| Timelines | 4 | 9 | 9 | 4 | 26 |
-| Home | 3 | 7 | 10 | 6 | 26 |
-| Incorporation | 6 | 8 | 9 | 7 | 30 |
-| Compliances | 3 | 6 | 6 | 12 | 27 |
-| Documents & Library | 4 | 6 | 12 | 8 | 30 |
-| Team, updates, settings, credentials | 6 | 8 | 9 | 9 | 32 |
-| Shell, Ask VCFO, intro | 4 | 5 | 8 | 8 | 25 |
-| **All** | **30** | **49** | **63** | **54** | **196** |
+| Area | High | Medium | Low | Info | Total | Fixed | Kept | Open |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Timelines | 4 | 9 | 9 | 4 | 26 | 23 | 3 | 0 |
+| Home | 3 | 7 | 10 | 6 | 26 | 20 | 6 | 0 |
+| Incorporation | 6 | 8 | 9 | 7 | 30 | 23 | 7 | 0 |
+| Compliances | 3 | 6 | 6 | 12 | 27 | 15 | 12 | 0 |
+| Documents & Library | 4 | 6 | 12 | 8 | 30 | 23 | 7 | 0 |
+| Team, updates, settings, credentials | 6 | 8 | 9 | 9 | 32 | 22 | 10 | 0 |
+| Shell, Ask VCFO, intro | 4 | 5 | 8 | 8 | 25 | 17 | 8 | 0 |
+| **All** | **30** | **49** | **63** | **54** | **196** | **143** | **53** | **0** |
 
 ## Root causes worth fixing first
 
-- **Prototype stylesheets were merged into one scope, so class names collide.** Each prototype screen had its own CSS. The build concatenated them under `.cp` (scripts/cp-css.mjs), so the same class means different things on different pages. Examples: `.ic` paints every incorporation icon white on white (TL-03), `.card` stacks the compliance donut into a tall column, `.sub` shifts the Days-to-COI line, `.st` turns the approval bar into capitals, and `[data-tip]` draws a second tooltip on the 1024 px rail. Fix: scope each screen's CSS to its own page root (or prefix its class names) and re-check every page.
-- **The `hidden` attribute is ignored inside the portal.** The `.cp … {all:revert}` reset in css/00-tokens.css beats the browser's `[hidden]` rule. Raw 'Choose File' inputs therefore show on Home, Settings and the upload dialogs, and hidden submit buttons show as empty bars in Team and Settings dialogs. Fix: add `.cp [hidden]{display:none!important}`.
-- **The desktop incorporation gantt falls back to the phone layout.** Phases without planned dates are drawn full width, so their labels never fit and the whole chart switches to the stacked 'simple' mode at every width (TL-01, TL-02).
-- **The long company name is used where the prototype uses a short one.** 'Northwind Technologies' (and "…Technologies's") overflows owner chips, activity tabs, This-week chips, donut titles and the sidebar team label. Use a short display name everywhere the prototype says 'Northwind'.
-- **Filing period labels repeat the filing name.** Home and Compliances build the period from the register's particular, giving titles like 'Advance Tax Payment Q2 · Advance Tax Payment Q2 2026'. Use one period formatter (`displayPeriod`) everywhere.
+- **Prototype stylesheets were merged into one scope, so class names collide.** Each prototype screen had its own CSS. The build concatenated them under `.cp` (scripts/cp-css.mjs), so the same class means different things on different pages. Examples: `.ic` paints every incorporation icon white on white (TL-03), `.card` stacks the compliance donut into a tall column, `.sub` shifts the Days-to-COI line, `.st` turns the approval bar into capitals, and `[data-tip]` draws a second tooltip on the 1024 px rail. Fix: scope each screen's CSS to its own page root (or prefix its class names) and re-check every page. **Fixed:** scripts/cp-css.mjs now marks 10-base.css as the shared board base and excludes each base rule inside pages whose own prototype board defines that class (`:where(:not(.cp-<page> *))`, no added specificity).
+- **The `hidden` attribute is ignored inside the portal.** The `.cp … {all:revert}` reset in css/00-tokens.css beats the browser's `[hidden]` rule. Raw 'Choose File' inputs therefore show on Home, Settings and the upload dialogs, and hidden submit buttons show as empty bars in Team and Settings dialogs. Fix: add `.cp [hidden]{display:none!important}`. **Fixed:** `.cp [hidden]{display:none!important}` in css-src/00-tokens.css.
+- **The desktop incorporation gantt falls back to the phone layout.** Phases without planned dates are drawn full width, so their labels never fit and the whole chart switches to the stacked 'simple' mode at every width (TL-01, TL-02). **Fixed:** see TL-01/TL-02.
+- **The long company name is used where the prototype uses a short one.** 'Northwind Technologies' (and "…Technologies's") overflows owner chips, activity tabs, This-week chips, donut titles and the sidebar team label. Use a short display name everywhere the prototype says 'Northwind'. **Fixed:** one `companyShortName()` (src/lib/client-portal/company.ts) feeds `shell.companyShort` and every chip, tab and sentence.
+- **Filing period labels repeat the filing name.** Home and Compliances build the period from the register's particular, giving titles like 'Advance Tax Payment Q2 · Advance Tax Payment Q2 2026'. Use one period formatter (`displayPeriod`) everywhere. **Fixed:** `displayPeriod()` derives the period from dates or the particular and strips the filing name; Home and Compliances both use it.
 
 ## How it was run
 
@@ -43,11 +45,15 @@ Prototype at 1440 px: one row per phase with a shared date axis (15 Sep … 22 D
 **Fix:** src/components/client-portal/pages/incorporation/Landing.tsx layoutGantt(): phases with no planned dates (Post-incorporation, Registration) get width 100%, so their label never fits and the whole card is switched to `.simple`. Give unplanned phases a fixed hatched bar after the COI date as the prototype does (final-src/s/inc/incorporation.html), and only fall back to `.simple` below the prototype's phone breakpoint, never on desktop.  
 Screens: [app](diff-shots/TL-01-app.webp) · [prototype](diff-shots/TL-01-proto.webp)
 
+**Status:** Fixed — Desktop gantt keeps axis, Today line and dated bars; unplanned phases get a fixed stretch after COI; stacked layout only below the phone breakpoint. · [app after fix](diff-shots/TL-01-fixed.webp)
+
 ### TL-02 · After-COI gantt also collapses  (High)
 *Incorporation · landing (after COI) — Timeline gantt*  
 Prototype after COI: Part A and Part B as finished bars on the axis, Post-incorporation and Registration bars at their dates with 'Now · step' markers and the Today line. App: same full-width stacked layout as before COI; no axis, no Today line, Registration shows only an empty hatched band.  
 **Fix:** Same fix as the before-COI gantt in Landing.tsx (layoutGantt / phase plans). Post-incorporation plan = COI → latest statutory window; Registration plan = earliest → latest registration window.  
 Screens: [app](diff-shots/TL-02-app.webp) · [prototype](diff-shots/TL-02-proto.webp)
+
+**Status:** Fixed — Same layout after COI; Registration ends on its latest step date (DECISIONS). · [app after fix](diff-shots/TL-02-fixed.webp)
 
 ### TL-03 · Icons invisible: white on white  (High)
 *Incorporation · landing, phase, step pages — Icons (all incorporation screens)*  
@@ -55,11 +61,15 @@ Prototype shows the chevron on 'Steps', the arrow on 'Open', the back arrow, the
 **Fix:** CSS collision: css-src/10-base.css `.ic{…color:#fff}` (Home's who-holds circle) also matches the incorporation `<svg class="ic">` (incorporation-pages.css `.ic{width:16px;height:16px}`), and home-m.css has a third `.ic`. Scope each screen's stylesheet to its own page root in scripts/cp-css.mjs (e.g. `.cp .pg-inc .ic`) or rename the classes. Check every other duplicated class name the same way — this merge is a likely root cause of other drift.  
 Screens: [app](diff-shots/TL-03-app.webp) · [prototype](diff-shots/TL-03-proto.webp)
 
+**Status:** Fixed — Per-page CSS scoping (shared board base no longer leaks .ic into Incorporation); icons visible on landing, phase and step pages. · [app after fix](diff-shots/TL-03-fixed.webp)
+
 ### TL-04 · Missed statutory windows not shown as overdue  (High)
 *Home · after COI — Post-incorporation setup*  
 The prototype bar shows 'day N of limit', coloured by owner. The app caps 'day' at the limit, so steps whose window ended weeks ago (ADT-1, FC-GPR, MGT, INC-22, Name Board, due 3 Sep, day 74 since COI) look like a calm full blue bar 'day 30 of 30' with no overdue cue. The drill-down calls them just 'Open'.  
 **Fix:** derive.ts buildPostInc(): when today > dueDate and the step is not done, mark it overdue (tone 'over', bar var(--over), caption 'overdue N days'), and use the same in postIncDrill (chip 'Overdue'). CardsB.tsx PostIncCard + MobileHome post-inc rows.  
 Screens: [app](diff-shots/TL-04-app.webp) · [prototype](diff-shots/TL-04-proto.webp)
+
+**Status:** Fixed — Post-inc rows past their due date are overdue: red bar, 'overdue N days', 'Overdue' chip on desktop, phone and drill-down. · [app after fix](diff-shots/TL-04-fixed.webp)
 
 ### TL-05 · Part A says 'days early' instead of late  (Medium)
 *Incorporation · landing — Timeline · SPICe+ Part A row*  
@@ -67,11 +77,15 @@ Prototype compares Part A's finish with Part A's own planned end and shows '3 da
 **Fix:** Landing.tsx phase plans: Part A plan end = the latest step window in Phase 1 (or the name-approval window), not schedule.incorporation.to. Same for PhasePage.tsx 'days early' badge.  
 Screens: [app](diff-shots/TL-05-app.webp) · [prototype](diff-shots/TL-05-proto.webp)
 
+**Status:** Fixed — Part A measured against its own planned end (latest Part A step window); reads '3 days late' with the red tail; phase page same. · [app after fix](diff-shots/TL-05-fixed.webp)
+
 ### TL-06 · Axis crammed with weekly ticks  (Medium)
 *Home · after COI — Timeline card*  
 Prototype shows about 9 weekly ticks with the bars filling the card. App keeps a tick every 7 days for the whole span (19 Jun → 23 Oct = 19 labels), so labels crowd together and the four bars are squeezed into the left 40% of the card.  
 **Fix:** src/components/client-portal/pages/home/derive.ts timelineAxis(): pick the tick step (7 / 14 / 28 days, or months) so there are at most ~9 ticks; consider ending the axis a little after COI and pinning a 'Today →' chip at the right edge when today is far past COI.  
 Screens: [app](diff-shots/TL-06-app.webp) · [prototype](diff-shots/TL-06-proto.webp)
+
+**Status:** Fixed — At most ~9 ticks; axis ends 14 days after COI with a 'Today →' chip when today is far past COI. · [app after fix](diff-shots/TL-06-fixed.webp)
 
 ### TL-07 · Editor dialog far wider and top-aligned  (Medium)
 *Home / Incorporation · timeline editor — Request a timeline change dialog*  
@@ -79,11 +93,15 @@ Prototype: a centred dialog about 756 px wide with the page visible around it. A
 **Fix:** TimelineEditor.tsx / css-src/home-tle.css: max-width and vertical centring as in final-src/tl-editor.js (.tle dialog).  
 Screens: [app](diff-shots/TL-07-app.webp) · [prototype](diff-shots/TL-07-proto.webp)
 
+**Status:** Fixed — Editor dialog centred, same width as the prototype's client mode; no longer fills the screen. · [app after fix](diff-shots/TL-07-fixed.webp)
+
 ### TL-08 · Info banner overflows the screen  (Medium)
 *Home · timeline editor (phone 390) — Editor on phone*  
 Prototype's phone sheet fits the 390 px width. App's banner is wider than the sheet: its text is cut off at the right edge ('…approves' clipped).  
 **Fix:** TimelineEditor.tsx / home-tle.css: banner width 100% with box-sizing border-box (or remove the banner, see the row above).  
 Screens: [app](diff-shots/TL-08-app.webp) · [prototype](diff-shots/TL-08-proto.webp)
+
+**Status:** Fixed — Overflowing banner removed; editor uses border-box sizing on phone. · [app after fix](diff-shots/TL-08-fixed.webp)
 
 ### TL-09 · Drill-down pinned to the top  (Medium)
 *Home · timeline — Timeline phases drill-down*  
@@ -91,11 +109,15 @@ Prototype opens the 'Timeline phases' pop-up centred on screen. App opens it pin
 **Fix:** Shared drill-down in src/components/client-portal/shared.tsx (rule-14 pop-up): centre vertically like v7x_drilldown.dc.html and add the footer link.  
 Screens: [app](diff-shots/TL-09-app.webp) · [prototype](diff-shots/TL-09-proto.webp)
 
+**Status:** Fixed — Shared drill-down centred with the 'Open full list' footer link (fixed once for every page). · [app after fix](diff-shots/TL-09-fixed.webp)
+
 ### TL-10 · Sub-step ticks have no labels  (Medium)
 *Incorporation · phase page — Journey rail · Now card*  
 Prototype's Now card shows the step's sub-steps by name (Office addr. · State · NOC · Utility bill) with done / current colours. App shows six unlabelled grey dots and '0 of 6 sub-steps done'.  
 **Fix:** PhasePage.tsx focus-track Now card: label the ticks from the step's field groups (DECISIONS: 'Focus track plus F's sub-step ticks'), as in final-src/s/inc/phase.html.  
 Screens: [app](diff-shots/TL-10-app.webp) · [prototype](diff-shots/TL-10-proto.webp)
+
+**Status:** Fixed — Phase-page Now card labels each sub-step tick. · [app after fix](diff-shots/TL-10-fixed.webp)
 
 ### TL-11 · Open rows not sorted by deadline  (Medium)
 *Home · after COI — Post-incorporation setup*  
@@ -103,11 +125,15 @@ Prototype lists open items by nearest deadline (FC-GPR 2 Dec, MGT 23 Nov…). Th
 **Fix:** derive.ts buildPostInc(): sort `open` by dueDate (undated last) before returning; same list feeds the phone card and drill.  
 Screens: [app](diff-shots/TL-11-app.webp) · [prototype](diff-shots/TL-11-proto.webp)
 
+**Status:** Fixed — Open post-inc rows sorted by nearest deadline, undated last (desktop, phone, drill). · [app after fix](diff-shots/TL-11-fixed.webp)
+
 ### TL-12 · Track labels overlap in the side panel  (Medium)
 *Compliances Filings · side panel — Focus track*  
 In the prototype the 4 nodes have room and short labels. In the app's 520 px panel, the navy 'NOW · Data received' hero card plus 3 nodes squeeze the labels. 'SBC preparing' and 'Halcyon Payments approves' run into each other ('SBC preparingHalcyon Payments').  
 **Fix:** bits.tsx FocusTrack: give .ft-l a max-width equal to the gap or wrap labels (max-width:100px is per node but nodes sit closer than that). Shorten to '<company short> approves', or use the vertical track under 560 px.  
 Screens: [app](diff-shots/TL-12-app.webp) · [prototype](diff-shots/TL-12-proto.webp)
+
+**Status:** Fixed — Focus-track labels capped and wrapped, end labels aligned to the track edges. · [app after fix](diff-shots/TL-12-fixed.webp)
 
 ### TL-13 · Timeline view: read-only (prototype drags)  (Medium)
 *Compliances Calendar · Timeline view — Toolbar / bars*  
@@ -115,11 +141,15 @@ In the prototype, bars can be dragged (move) or edge-dragged (resize) with snapp
 **Fix:** Owner call. If client edits are wanted: add handles/drag + POST /api/filings/[id]/window permission for clients (TimelineView.tsx). Otherwise keep it and note it in DECISIONS.md.  
 Screens: [app](diff-shots/TL-13-app.webp) · [prototype](diff-shots/TL-13-proto.webp)
 
+**Status:** Fixed — Owner-delegated decision: clients can drag/resize/arrow-move filing planning windows with Undo, read-out and the prototype hint; due dates fixed, filed windows locked; repository-checked client route. Recorded in QUESTIONS.md and DECISIONS.md. · [app after fix](diff-shots/TL-13-fixed.webp)
+
 ### TL-14 · Phase bars not continuous; last tick clipped  (Low)
 *Home · before COI — Timeline card*  
 Prototype: Phase 2 starts right where Phase 1 ends, MCA review follows Phase 2, all ticks fit. App: Phase 2 starts at its first step window (a gap after 'Done 5 Oct'), and the right-most tick label ('18 Nov') is cut off at the card edge. Otherwise the card matches.  
 **Fix:** derive.ts buildTimeline(): start Phase 2 at Phase 1's done date when Phase 1 is done; timelineAxis(): don't place a tick within ~3% of the right edge.  
 Screens: [app](diff-shots/TL-14-app.webp) · [prototype](diff-shots/TL-14-proto.webp)
+
+**Status:** Fixed — Phase 2 starts where a finished Phase 1 ends; no tick label in the last 4% of the axis. · [app after fix](diff-shots/TL-14-fixed.webp)
 
 ### TL-15 · Phase label column wider  (Low)
 *Home · before / after COI — Timeline card · labels*  
@@ -127,11 +157,15 @@ Prototype uses a 150 px label column, so 'Phase 1 · Name Application' wraps to 
 **Fix:** Home timeline grid in CardsB.tsx / home-base.css: grid-template-columns:150px minmax(0,1fr) as in v7c_timeline_a.dc.html.  
 Screens: [app](diff-shots/TL-15-app.webp) · [prototype](diff-shots/TL-15-proto.webp)
 
+**Status:** Fixed — 150 px label column; labels wrap to two lines. · [app after fix](diff-shots/TL-15-fixed.webp)
+
 ### TL-16 · Date tooltip stuck on Phase 2  (Low)
 *Home / Incorporation · timeline editor — Editor chart*  
 Prototype (client mode, desktop) shows the date bubble only while a bar is dragged. App always shows '7 Oct – 29 Oct · 22 days' over the Phase 2 bar when the dialog opens, covering the 'Today' chip.  
 **Fix:** TimelineEditor.tsx: show the drag bubble only during pointer drag / keyboard move, as tl-editor.js does.  
 Screens: [app](diff-shots/TL-16-app.webp) · [prototype](diff-shots/TL-16-proto.webp)
+
+**Status:** Fixed — Date bubble only on hover, drag or keyboard move. · [app after fix](diff-shots/TL-16-fixed.webp)
 
 ### TL-17 · Extra blue info banner  (Low)
 *Home / Incorporation · timeline editor — Editor header*  
@@ -139,11 +173,15 @@ Prototype states who approves only in the footer line. App adds a blue banner 'T
 **Fix:** TimelineEditor.tsx: drop the banner (the footer already says it) or ask the owner to keep it.  
 Screens: [app](diff-shots/TL-17-app.webp) · [prototype](diff-shots/TL-17-proto.webp)
 
+**Status:** Fixed — Extra banner removed (DECISIONS 'warning stays visible' refers to the 'Change request pending' chip, unchanged). · [app after fix](diff-shots/TL-17-fixed.webp)
+
 ### TL-18 · Right-hand dates in light mono font  (Low)
 *Home / Incorporation · timeline editor — Editor · date column*  
 Prototype prints each phase's range ('12 Sep – 24 Sep') in bold sans. App uses the light monospace font.  
 **Fix:** home-tle.css: copy the prototype's date-column style from tl-editor.js.  
 Screens: [app](diff-shots/TL-18-app.webp) · [prototype](diff-shots/TL-18-proto.webp)
+
+**Status:** Fixed — Date column in the prototype's bold Manrope. · [app after fix](diff-shots/TL-18-fixed.webp)
 
 ### TL-19 · Rail shows numbers + 'Opens later'  (Low)
 *Incorporation · phase page — Journey rail · later steps*  
@@ -151,11 +189,15 @@ Prototype rail shows status icons, 'In progress · due 16 Oct' and dot progress 
 **Fix:** PhasePage.tsx: after the .ic CSS fix, re-check; show the due date for gated steps that have a window.  
 Screens: [app](diff-shots/TL-19-app.webp) · [prototype](diff-shots/TL-19-proto.webp)
 
+**Status:** Fixed — Rail icons visible; gated steps with a window read 'Opens later · due <date>'. · [app after fix](diff-shots/TL-19-fixed.webp)
+
 ### TL-20 · Owner chips cut off in step table  (Low)
 *Incorporation · landing — Timeline · expanded Steps*  
 Prototype's expanded phase table fits the owner chip. App truncates long owner names ('Northwind Techn…') and the chip overlaps the status column.  
 **Fix:** StepTable.tsx variant 'landing': use the short company name (shell.companyShort) in owner chips, like the prototype.  
 Screens: [app](diff-shots/TL-20-app.webp) · [prototype](diff-shots/TL-20-proto.webp)
+
+**Status:** Fixed — Owner chips use the short company name; nothing cut off. · [app after fix](diff-shots/TL-20-fixed.webp)
 
 ### TL-21 · Track shows 'Data received · waiting on you' and '—'  (Low)
 *Compliances Calendar · detail pop-up — Focus track content*  
@@ -163,11 +205,15 @@ The prototype track reads Data received (done, date) → NOW SBC preparing → N
 **Fix:** src/lib/client-portal/compliances.ts focusNodes(): name the pending first step 'Send data' or 'Data needed' while waiting, and leave the sub blank instead of '—'.  
 Screens: [app](diff-shots/TL-21-app.webp) · [prototype](diff-shots/TL-21-proto.webp)
 
+**Status:** Fixed — Pending first node reads 'Send data'; approve node blank instead of '—'. · [app after fix](diff-shots/TL-21-fixed.webp)
+
 ### TL-22 · Rail stub under single events  (Low)
 *Audit — Timeline rail*  
 Prototype rail joins events within a day and ends at the last event. In the app each one-event day draws a dangling vertical line below the node.  
 **Fix:** AuditPage.tsx .tb-vl: draw the rail only when the day has 2+ events (or end it at the last node) — css/team-audit.css.  
 Screens: [app](diff-shots/TL-22-app.webp) · [prototype](diff-shots/TL-22-proto.webp)
+
+**Status:** Fixed — Audit rail drawn only on days with 2+ events. · [app after fix](diff-shots/TL-22-fixed.webp)
 
 ### TL-23 · Manager/Client toggle is prototype-only  (Info)
 *Home / Incorporation · timeline editor — Mode toggle*  
@@ -175,11 +221,15 @@ Prototype opens the editor in 'Manager · direct edit' with a Manager / Client t
 **Fix:** None — app correct; the toggle is prototype scaffolding.  
 Screens: [app](diff-shots/TL-23-app.webp) · [prototype](diff-shots/TL-23-proto.webp)
 
+**Status:** Kept — Manager/Client toggle is prototype scaffolding; app correctly opens the client editor only.
+
 ### TL-24 · Phase 2 'Filed' = COI date (demo data)  (Info)
 *Home · after COI — Timeline card*  
 App shows 'Filed 4 Aug' and an MCA review bar with no length. The demo project's steps were completed after its COI date, so the app clamps Phase 2 to COI. Not a design difference.  
 **Fix:** None needed; demo data is inconsistent.  
 Screens: [app](diff-shots/TL-24-app.webp)
+
+**Status:** Kept — Demo data inconsistency (steps completed after the COI date), not a design difference.
 
 ### TL-25 · Phone timeline matches  (Info)
 *Home · phone 390 — Timeline card*  
@@ -187,11 +237,15 @@ Phone timeline card (bars, Today line, Edit, Open Incorporation link) matches th
 **Fix:** None.  
 Screens: [app](diff-shots/TL-25-app.webp) · [prototype](diff-shots/TL-25-proto.webp)
 
+**Status:** Kept — Phone timeline already matches the prototype.
+
 ### TL-26 · COI line faint in both  (Info)
 *Incorporation · timeline editor — Editor COI header*  
 When the editor is opened from Incorporation, the 'COI 8 Nov' heading is almost invisible. The prototype has the same fault, so it is not a difference, but worth fixing.  
 **Fix:** home-tle.css: give the COI heading the ink colour in the Incorporation context.  
 Screens: [app](diff-shots/TL-26-app.webp) · [prototype](diff-shots/TL-26-proto.webp)
+
+**Status:** Fixed — Incorporation .pill style no longer leaks into the editor; COI heading in ink colour. · [app after fix](diff-shots/TL-26-fixed.webp)
 
 
 ## Home
@@ -202,11 +256,15 @@ Prototype leads Important alerts with a red overdue hero ('Passport copy sent ba
 **Fix:** src/components/client-portal/pages/home/derive.ts buildAlerts(): the before-COI hero only looks at step-level isReviewRejected(); also build the hero from overdue needs (n.kind==='correct' or n.due < today), the same set overdueCount() in CardsA.tsx counts. Copy hero markup from s/home/v7c_alerts_b.dc.html.  
 Screens: [app](diff-shots/HM-01-app.webp) · [prototype](diff-shots/HM-01-proto.webp)
 
+**Status:** Fixed — Before-COI alerts lead with the overdue sent-back correction hero ('Passport copy … sent back · Overdue · Fix'), matching the header count. · [app after fix](diff-shots/HM-01-fixed.webp)
+
 ### HM-02 · Stray 'Choose File' input visible  (High)
 *Home · before COI / after COI — Page (below cards)*  
 The app shows a raw browser file input ('Choose File  No file chosen') under the Steps card at the bottom of Home (both states). The prototype has nothing there. The input has the hidden attribute, but its computed display is inline-block, so it still shows.  
 **Fix:** src/components/client-portal/pages/home/ui.tsx useNeedUpload() `field`: replace the `hidden` attribute with style={{display:'none'}} (or the sr-only class). Find and remove the CSS that makes [hidden] lose to display:inline-block.  
 Screens: [app](diff-shots/HM-02-app.webp)
+
+**Status:** Fixed — [hidden] always hides: no stray 'Choose File' under Steps. · [app after fix](diff-shots/HM-02-fixed.webp)
 
 ### HM-03 · Ask VCFO greeting bubble covers bottom sheets  (High)
 *Home · before COI · phone 390 / Home · after COI · phone 390 — Bottom sheets*  
@@ -214,11 +272,15 @@ On phone, opening any Home bottom sheet (alerts, steps, What SBC is doing, docum
 **Fix:** MobileHome.tsx sheet/scrim z-index must sit above the Ask launcher hint (#vp-chat / launcher bubble in css/21-runtime.css), or hide the hint while a sheet is open. Prototype: s/home/mobile.html .sheet.  
 Screens: [app](diff-shots/HM-03-app.webp) · [prototype](diff-shots/HM-03-proto.webp)
 
+**Status:** Fixed — Phone Home sheets and scrim sit above the Ask VCFO launcher and its greeting bubble. · [app after fix](diff-shots/HM-03-fixed.webp)
+
 ### HM-04 · Filing name repeats itself  (Medium)
 *Home · after COI — What is next / alerts / drills*  
 Prototype rows read '<filing> · <period>' ('TDS Payment · Oct 2026'). The app shows 'Advance Tax Payment Q2 · Advance Tax Payment Q2 2026' and 'MSME-1 Filing (Apr-Sep) · MSME-1 Filing (Apr-Sep) 2026' in What is next, its drill, the phone 'Due and overdue' sheet and the Compliance-by-area Period column, because the raw period_label already contains the title.  
 **Fix:** derive.ts filingName() and CardsB area table: format the period with displayPeriod(periodStart, periodEnd, periodLabel, fy) from src/lib/client-portal/compliances.ts (as the Compliances pages do). Return periodStart/periodEnd from src/db/repositories/client-home.ts, and drop the label when it starts with the title.  
 Screens: [app](diff-shots/HM-04-app.webp) · [prototype](diff-shots/HM-04-proto.webp)
+
+**Status:** Fixed — One period formatter: 'Advance tax Q2 · Jul–Sep 2026'. · [app after fix](diff-shots/HM-04-fixed.webp)
 
 ### HM-05 · Drill-down pinned to top, no 'Open full list'  (Medium)
 *Home · before COI / after COI — Drill-down pop-up*  
@@ -226,11 +288,15 @@ The prototype drill-down (ring, status chips, alerts, legend, post-inc bars) is 
 **Fix:** Popups.tsx (drill dialog from PortalProvider.drill): centre it (top:50%; transform:translate(-50%,-50%)) and add the footer link 'Open full list' → config.link.href. Prototype: s/home/v7x_drilldown.dc.html.  
 Screens: [app](diff-shots/HM-05-app.webp) · [prototype](diff-shots/HM-05-proto.webp)
 
+**Status:** Fixed — Shared drill-down centred with 'Open full list'. · [app after fix](diff-shots/HM-05-fixed.webp)
+
 ### HM-06 · Pop-up scrim leaves sidebar undimmed  (Medium)
 *Home · before COI / after COI — Pop-up scrim*  
 In the prototype every Home pop-up (drill-down, PAN/TAN password dialog) dims the whole screen, sidebar included. In the app the scrim covers only the main column and top bar, so the navy sidebar stays fully bright and looks clickable.  
 **Fix:** Popups.tsx / PortalProvider drill + password dialog: render the scrim in a portal on document.body with a z-index above the shell sidebar (.vps-*), or raise the scrim z-index.  
 Screens: [app](diff-shots/HM-06-app.webp) · [prototype](diff-shots/HM-06-proto.webp)
+
+**Status:** Fixed — Pop-up scrims cover the sidebar too. · [app after fix](diff-shots/HM-06-fixed.webp)
 
 ### HM-07 · Who tabs overflow the card  (Medium)
 *Home · before COI — Recent activity*  
@@ -238,11 +304,15 @@ Prototype seg 'All 4 · SBC 3 · Northwind 1' fits inside the card. In the app t
 **Fix:** CardsA.tsx Recent activity Seg (and MobileHome activity seg): use the short company label (shortCompany() in pages/incorporation/data.ts gives 'Northwind'), or let seg buttons shrink with ellipsis (min-width:0; overflow:hidden; text-overflow:ellipsis).  
 Screens: [app](diff-shots/HM-07-app.webp) · [prototype](diff-shots/HM-07-proto.webp)
 
+**Status:** Fixed — Short company name: Who tabs fit the card. · [app after fix](diff-shots/HM-07-fixed.webp)
+
 ### HM-08 · Document names cut off by owner label  (Medium)
 *Home · before COI — Recent documents*  
 Prototype rows show the full name ('Director 1 - passport', 'Signed Board Resolution') with a short owner 'Northwind'. In the app the long owner label 'Northwind Technologies' plus the extra preview icon squeeze the name to 'Director 1 …' / 'Signed Bo…'.  
 **Fix:** CardsA.tsx DocsCard row: show the short company name, let the owner label truncate before the file name does (owner flex-shrink, name flex:1 1 auto with min-width).  
 Screens: [app](diff-shots/HM-08-app.webp) · [prototype](diff-shots/HM-08-proto.webp)
+
+**Status:** Fixed — Short owner label and no 👁 button: document names have room. · [app after fix](diff-shots/HM-08-fixed.webp)
 
 ### HM-09 · Sheet tabs overlap each other  (Medium)
 *Home · before COI · phone 390 — Bottom sheet tabs*  
@@ -250,11 +320,15 @@ Phone 'Incorporation steps' sheet (ring, stat, step taps): the prototype tabs re
 **Fix:** MobileHome.tsx sheet seg: use the short company name, and make the tab strip horizontally scrollable or ellipsise labels (buttons min-width:0, overflow hidden). Prototype: s/home/mobile.html .sheet .seg.  
 Screens: [app](diff-shots/HM-09-app.webp) · [prototype](diff-shots/HM-09-proto.webp)
 
+**Status:** Fixed — Phone sheet tabs fit without overlap. · [app after fix](diff-shots/HM-09-fixed.webp)
+
 ### HM-10 · Phone lists all 23 registrations  (Medium)
 *Home · after COI · phone 390 — Registrations*  
 Prototype phone Registrations is a short list: registered rows with Proof, in-progress rows and the next upcoming one (6 rows). The app phone card lists every registration (23 rows, all 'Upcoming'), about 1,300px of scrolling between Company IDs and Post-incorporation.  
 **Fix:** MobileHome.tsx registrations card: show done + in progress + the next 1–2 upcoming, and put the rest behind the Registrations sheet / 'Open Incorporation' link, as in s/home/mobile.html#after.  
 Screens: [app](diff-shots/HM-10-app.webp) · [prototype](diff-shots/HM-10-proto.webp)
+
+**Status:** Fixed — Phone registrations: done + in progress + next 2, then 'All N registrations'. · [app after fix](diff-shots/HM-10-fixed.webp)
 
 ### HM-11 · Stat tile labels wrap to 3 lines  (Low)
 *Home · before COI · phone 390 — Greeting stats*  
@@ -262,11 +336,15 @@ Prototype phone hero tiles say 'Waiting on Northwind' on two lines. The app's 'W
 **Fix:** MobileHome.tsx hero stats (and CardsA GreetCard): use the short company name for 'Waiting on …', or clamp the label to 2 lines.  
 Screens: [app](diff-shots/HM-11-app.webp) · [prototype](diff-shots/HM-11-proto.webp)
 
+**Status:** Fixed — Stat tile labels fit on 2 lines. · [app after fix](diff-shots/HM-11-fixed.webp)
+
 ### HM-12 · Donut pop-up opens with tooltip open  (Low)
 *Home · after COI — Compliance status (donut)*  
 Clicking the donut centre opens the 'Compliances · FY 2026-27' table dialog with its (i) popover ('As of 17 Oct 2026 · Ask VCFO about this') already open, because focus lands on the info button. The popover covers the tabs. In the prototype the centre only shows a tooltip.  
 **Fix:** Popups.tsx compliance dialog: send initial focus to the dialog title or close button, not the InfoPopover trigger (or only open InfoPopover on click, not on focus).  
 Screens: [app](diff-shots/HM-12-app.webp) · [prototype](diff-shots/HM-12-proto.webp)
+
+**Status:** Fixed — Donut pop-up focuses Close first, so no tooltip opens on open. · [app after fix](diff-shots/HM-12-fixed.webp)
 
 ### HM-13 · Extra ↗ portal icons on desktop  (Low)
 *Home · after COI — Company IDs / What is next / Registrations*  
@@ -274,11 +352,15 @@ The desktop prototype has none of these. The app adds an external-link icon afte
 **Fix:** CardsB.tsx IdsCard / NextCard / RegistrationsCard: drop the ↗ on desktop (keep it on phone, where s/home/mobile.html has a ↗ button), or confirm with the owner.  
 Screens: [app](diff-shots/HM-13-app.webp) · [prototype](diff-shots/HM-13-proto.webp)
 
+**Status:** Fixed — Desktop ↗ portal icons removed as in the prototype (phone keeps them). · [app after fix](diff-shots/HM-13-fixed.webp)
+
 ### HM-14 · Extra 👁 preview button on desktop  (Low)
 *Home · before COI / after COI — Recent documents*  
 Prototype desktop rows show only a ⬇ download button (the row itself opens the preview). The app adds a 👁 Preview button on every row. The inventory (RD-03) says 'the board only shows ⬇; the row itself previews'.  
 **Fix:** CardsA.tsx DocsCard: remove the Preview icon button on desktop; keep row click → preview. Keep 👁+⬇ on phone (RD-06).  
 Screens: [app](diff-shots/HM-14-app.webp) · [prototype](diff-shots/HM-14-proto.webp)
+
+**Status:** Fixed — Desktop 👁 preview button removed; row click previews. · [app after fix](diff-shots/HM-14-fixed.webp)
 
 ### HM-15 · Drill tabs clipped at right edge  (Low)
 *Home · before COI — Drill-down pop-up*  
@@ -286,11 +368,15 @@ In the Incorporation steps drill, the app tab strip 'All 14 · Completed 6 · In
 **Fix:** Popups.tsx drill tabs: short company name in tab labels, and let the tab row scroll horizontally.  
 Screens: [app](diff-shots/HM-15-app.webp) · [prototype](diff-shots/HM-15-proto.webp)
 
+**Status:** Fixed — Drill tabs fit at the right edge. · [app after fix](diff-shots/HM-15-fixed.webp)
+
 ### HM-16 · Need sub-line format differs and wraps  (Low)
 *Home · after COI · phone 390 — Needs*  
 Prototype phone need rows read '<area> · asked by Priya Raman' ('Payroll · asked by…', 'FC-GPR · asked by…') on one line. The app shows 'Requested by SBC · asked by Sneha Kulkarni', which says the same thing twice and wraps to two lines.  
 **Fix:** MobileHome.tsx needs row sub (and derive.ts buildNeeds sub): use '<filing area or step> · asked by <name>'.  
 Screens: [app](diff-shots/HM-16-app.webp) · [prototype](diff-shots/HM-16-proto.webp)
+
+**Status:** Fixed — Need sub-line '<area> · asked by <name>' on one line. · [app after fix](diff-shots/HM-16-fixed.webp)
 
 ### HM-17 · Correction row loses sent-back reason  (Low)
 *Home · before COI · phone 390 — Needs · Correct tab*  
@@ -298,11 +384,15 @@ Prototype phone correction row: red tile, 'Passport copy — Meera Shah', sub 'S
 **Fix:** MobileHome.tsx needs row for kind 'correct': sub = 'Sent back · <rejection note>' (rejectionNote is already used in buildAlerts).  
 Screens: [app](diff-shots/HM-17-app.webp) · [prototype](diff-shots/HM-17-proto.webp)
 
+**Status:** Fixed — Correction row keeps 'Sent back · <reason>'. · [app after fix](diff-shots/HM-17-fixed.webp)
+
 ### HM-18 · Viewer toolbar lacks page counter  (Low)
 *Home · before COI / after COI — Document preview (from Recent documents)*  
 Prototype viewer bottom toolbar: 'Page 1 / 1 · − 100% +'. The app toolbar has only '− 100% +'.  
 **Fix:** Shared doc viewer used by Popups/DocsCard: add the page indicator. Prototype: s/home/v7x_doc_viewer.dc.html.  
 Screens: [app](diff-shots/HM-18-app.webp) · [prototype](diff-shots/HM-18-proto.webp)
+
+**Status:** Fixed — Viewer toolbar shows the page counter. · [app after fix](diff-shots/HM-18-fixed.webp)
 
 ### HM-19 · Show PAN sheet styling differs  (Low)
 *Home · after COI · phone 390 — PAN/TAN reveal sheet*  
@@ -310,11 +400,15 @@ Prototype phone 'Show PAN' sheet has a bordered square × and a navy 'Show PAN' 
 **Fix:** credentials/IDs password sheet used by MobileHome: match s/home/v7p_ids_password.dc.html (390) close-button style. The disabled-until-typed state is fine but should use the navy button at reduced opacity.  
 Screens: [app](diff-shots/HM-19-app.webp) · [prototype](diff-shots/HM-19-proto.webp)
 
+**Status:** Fixed — Show PAN sheet styled as the prototype (bordered ×, navy button disabled until typed); 'Forgot password?' kept as the real recovery path. · [app after fix](diff-shots/HM-19-fixed.webp)
+
 ### HM-20 · No system events in activity  (Low)
 *Home · after COI — Recent activity*  
 Prototype after-COI activity includes system rows like 'TDS Payment overdue · VCFO Suite' (red icon on phone). App activity has only people's actions. Check whether overdue and system events are written to the activity feed, or whether this is just the seed.  
 **Fix:** src/db/repositories/client-home.ts activity query / jobs that log compliance overdue events; CardsA ActivityCard already renders arbitrary actors.  
 Screens: [app](diff-shots/HM-20-app.webp) · [prototype](diff-shots/HM-20-proto.webp)
+
+**Status:** Fixed — System events (filings gone overdue) appear in activity. · [app after fix](diff-shots/HM-20-fixed.webp)
 
 ### HM-21 · Overdue hero button 'Open' vs 'Fill details'  (Info)
 *Home · after COI — Important alerts / What is next*  
@@ -322,11 +416,15 @@ Prototype's overdue hero shows 'Fill details' (client-owned TDS). The app shows 
 **Fix:** App correct; prototype is fake data.  
 Screens: [app](diff-shots/HM-21-app.webp) · [prototype](diff-shots/HM-21-proto.webp)
 
+**Status:** Kept — App correct; the prototype shows made-up data.
+
 ### HM-22 · Proto ring opens wrong sheet after COI  (Info)
 *Home · after COI · phone 390 — SETUP ring sheet*  
 Prototype phone after-COI ring opens the before-COI 'Incorporation steps' sheet. The app opens 'Post-incorporation setup', which matches the desktop ring and the SETUP label.  
 **Fix:** App correct; prototype is fake data.  
 Screens: [app](diff-shots/HM-22-app.webp) · [prototype](diff-shots/HM-22-proto.webp)
+
+**Status:** Kept — Prototype's own wiring fault (ring opens the wrong sheet after COI); app correct.
 
 ### HM-23 · Drill link target differs  (Info)
 *Home · after COI — What is next drill*  
@@ -334,11 +432,15 @@ Prototype What is next drill header says 'These items live in Incorporation · O
 **Fix:** App correct; prototype is fake data.  
 Screens: [app](diff-shots/HM-23-app.webp) · [prototype](diff-shots/HM-23-proto.webp)
 
+**Status:** Kept — App correct; drill link target follows the real route.
+
 ### HM-24 · Upcoming rows show no date  (Info)
 *Home · after COI — Registrations*  
 Prototype upcoming registrations show a target ('Dec 2026', 'Est. 12 Nov', 'By 2 Dec'). The app shows '—' for every row because the seeded Phase 4 steps have no due dates. derive.ts already renders 'Est.'/'By' when a due exists.  
 **Fix:** Data: seed due dates on Phase 4 steps. Optional: month-only format for far-off targets as in v7c_reg.  
 Screens: [app](diff-shots/HM-24-app.webp) · [prototype](diff-shots/HM-24-proto.webp)
+
+**Status:** Kept — Seed data has no registration due dates; 'Est.'/'By' shows when a date exists.
 
 ### HM-25 · Fewer holders and steps listed  (Info)
 *Home · before COI — Who holds it now / Steps around*  
@@ -346,11 +448,15 @@ Prototype shows 3 Northwind holders (steps 7–9) and 6 'steps around' rows (6�
 **Fix:** Not a design difference (seed data).  
 Screens: [app](diff-shots/HM-25-app.webp) · [prototype](diff-shots/HM-25-proto.webp)
 
+**Status:** Kept — Seed data only, not a design difference.
+
 ### HM-26 · App adds drill on progress bars  (Info)
 *Home · before COI — What SBC is doing*  
 Clicking an SBC progress bar opens a 'What SBC is doing' drill (In progress / Not started) in the app. The prototype bars only show a tooltip. Alert rows and step titles in the app are also links. These are extra interactions, not regressions.  
 **Fix:** None needed; confirm with the owner if strict parity is wanted (CardsA.tsx SbcCard / AlertsCard).  
 Screens: [app](diff-shots/HM-26-app.webp) · [prototype](diff-shots/HM-26-proto.webp)
+
+**Status:** Kept — Extra drill on progress bars is an added interaction, not a regression.
 
 
 ## Incorporation
@@ -361,11 +467,15 @@ Prototype: every step row ends with a (?) What's this button and a → open butt
 **Fix:** Scope the base rule (css/10-base.css line 28) to the Home tiles it was written for (e.g. `.cp .cp-home .ic`), or rename the incorporation icon class in pages/incorporation/ui.tsx `Ic` (e.g. `inc-ic`) and add `color:currentColor`. Same rule applies to every row below that mentions invisible icons.  
 Screens: [app](diff-shots/IN-01-app.webp) · [prototype](diff-shots/IN-01-proto.webp)
 
+**Status:** Fixed — Per-page CSS scoping: step-table row icons visible again. · [app after fix](diff-shots/IN-01-fixed.webp)
+
 ### IN-02 · Stroke icons white everywhere on white  (High)
 *All incorporation pages — Icons (global CSS collision)*  
 Same root cause seen on every page: the Steps chevron and Open → arrow on the landing, the (i) next to TIMELINE and PROGRESS, the back chevron and the What's this? (?) on step pages, the Request a change / Approve icons, the owner/⋮/(?) icons in the step-page phase list, the tab check on done steps, the × on the status-brief drawer and the focus-card (?) are all invisible. Prototype shows all of them in muted grey/primary.  
 **Fix:** css/10-base.css: `.cp .ic{...color:#fff}` collides with `Ic` in src/components/client-portal/pages/incorporation/ui.tsx. Fix once (scope or rename) and re-check the landing, phase, step and board pages.  
 Screens: [app](diff-shots/IN-02-app.webp) · [prototype](diff-shots/IN-02-proto.webp)
+
+**Status:** Fixed — Stroke icons visible on landing, phase, step and board pages. · [app after fix](diff-shots/IN-02-fixed.webp)
 
 ### IN-03 · Body says 'not ready' while hero says received  (High)
 *Board resolution · before COI — Page body*  
@@ -373,11 +483,15 @@ Prototype: under the hero a tracker (Drafted → Released → Signed → Receive
 **Fix:** pages/incorporation/BoardPage.tsx: when `s3.kind==='done'` (or ex.receivedAt) render the tracker and files from step 2/3 dates and attachments even without `doc.status==='finalized'`; only show the 'not ready yet' bot when step 2 is not done. Also seed a finalized board-resolution doc for the demo client.  
 Screens: [app](diff-shots/IN-03-app.webp) · [prototype](diff-shots/IN-03-proto.webp)
 
+**Status:** Fixed — Board page shows the tracker and the signed copy once steps 2–3 are done; 'Not ready yet' only before step 2. · [app after fix](diff-shots/IN-03-fixed.webp)
+
 ### IN-04 · No Documents card, drop zone or NOC request  (High)
 *Step 7 (pre-14) · before COI — Documents card*  
 Prototype: a DOCUMENTS card with (i), amber '1 of 2' chip, the request line 'No-objection certificate … requested by Arjun', a dashed amber NOC drop zone (upload button, 'Drop a file here or browse', 'Due 9 Oct') and the uploaded utility bill row with preview/download. App: no Documents card at all; 'No-objection certificate from the owner' and 'Copy of utility bill' appear as plain answer rows showing '—'. The card only renders when a lead document request exists (none in the seed), and file-type fields are not routed to it.  
 **Fix:** StepPage.tsx: build the Documents card from getStepAttachmentRequirements(item,…) (file fields) as well as document requests, and drop file-type fields from the answers `dl`. Seed an open NOC request on pre-14 for the demo client so the drop zone and Approve-blocking can be seen.  
 Screens: [app](diff-shots/IN-04-app.webp) · [prototype](diff-shots/IN-04-proto.webp)
+
+**Status:** Fixed — Step page has the Documents card with drop zones, count and due chips; requested files no longer listed as answers. · [app after fix](diff-shots/IN-04-fixed.webp)
 
 ### IN-05 · Owner chip overlaps the row text  (High)
 *Landing · before COI — This week card*  
@@ -385,11 +499,15 @@ Prototype: short owner chip 'Northwind' / 'SBC' in an 80 px column, then the tas
 **Fix:** pages/incorporation/Landing.tsx week rows: use the short client name (first word, as the prototype 'Northwind') and give `.week .own` `overflow:hidden;text-overflow:ellipsis` in incorporation-landing.css.  
 Screens: [app](diff-shots/IN-05-app.webp) · [prototype](diff-shots/IN-05-proto.webp)
 
+**Status:** Fixed — Owner chips use the short name and upload rows drop the bracketed part, so nothing overlaps. · [app after fix](diff-shots/IN-05-fixed.webp)
+
 ### IN-06 · Bar floats mid-page, buttons hidden  (High)
 *Step 7 (pre-14) · before COI — Approve & submit bar*  
 Prototype: the 'Awaiting Northwind's approval' bar is pinned to the bottom edge of the window with Request a change and Approve & submit on the right. App (1440): the bar sits right under the short content at y≈730 with empty page below it, and its buttons are covered by the auto-opened Ask VCFO greeting; the launcher is not lifted above the bar.  
 **Fix:** StepPage.tsx `.act`: give `.wrap.na` `min-height:calc(100dvh - topbar)` with the bar last (or use position:fixed inside main) so it always sits at the window bottom; set `--acth` so the Ask VCFO launcher/greeting sits above it (prototype `.has-act #vp-launch{bottom:var(--acth)}`).  
 Screens: [app](diff-shots/IN-06-app.webp) · [prototype](diff-shots/IN-06-proto.webp)
+
+**Status:** Fixed — Approval bar pinned to the bottom of the window with its buttons; launcher lifted above it. · [app after fix](diff-shots/IN-06-fixed.webp)
 
 ### IN-07 · Uses 'Northwind Technologies' instead of 'Northwind'  (Medium)
 *Landing / phase / step · before COI — Client name (short form)*  
@@ -397,11 +515,15 @@ Prototype uses the short name 'Northwind' in owner chips, donut titles ('Documen
 **Fix:** Derive the short name as the prototype does (first word of the company, or a stored short name) in the incorporation data builder (pages/incorporation/data.ts `d.short`), and use `’` only for names ending in s.  
 Screens: [app](diff-shots/IN-07-app.webp) · [prototype](diff-shots/IN-07-proto.webp)
 
+**Status:** Fixed — Short company name ('Northwind') everywhere. · [app after fix](diff-shots/IN-07-fixed.webp)
+
 ### IN-08 · Owner chip overflows into Status  (Medium)
 *Phase page · step 2 — Steps table owner column*  
 Prototype: 'Northwind' chip fits the Owner column. App: 'Northwind Techn' is cut and touches/overlaps the Status chip on every client-owned row.  
 **Fix:** PhasePage.tsx step table + incorporation-pages.css: short name, plus `overflow:hidden;text-overflow:ellipsis;max-width:100%` on the owner chip.  
 Screens: [app](diff-shots/IN-08-app.webp) · [prototype](diff-shots/IN-08-proto.webp)
+
+**Status:** Fixed — Owner chip fits its column on the phase page. · [app after fix](diff-shots/IN-08-fixed.webp)
 
 ### IN-09 · Company line indented 38 px  (Medium)
 *Landing · before COI — Days-to-COI tile*  
@@ -409,11 +531,15 @@ Prototype: 'Northwind Technologies India Pvt Ltd · expected Wed 28 Oct' starts 
 **Fix:** Add `padding-left:0;min-height:0` to `.cp .cp-incorporation .coi .sub` in incorporation-pages.css, or scope the base `.sub` rule.  
 Screens: [app](diff-shots/IN-09-app.webp) · [prototype](diff-shots/IN-09-proto.webp)
 
+**Status:** Fixed — Company line no longer indented (CSS scoping). · [app after fix](diff-shots/IN-09-fixed.webp)
+
 ### IN-10 · Label shouted in uppercase, wraps on phone  (Medium)
 *Step 7 (pre-14) · before COI — Approve & submit bar label*  
 Prototype: sentence case 'Awaiting Northwind's approval' (13.5 px bold). App: 'AWAITING NORTHWIND TECHNOLOGIES'S APPROVAL' in letter-spaced caps, because the base `.cp .st` (uppercase label style) matches the bar's `.st`; on 390 it wraps to two clipped lines ('AWA / APPI').  
 **Fix:** Rename the bar's `.st` class in StepPage.tsx or reset `text-transform:none;letter-spacing:normal` under `.cp-incorporation .act .st`.  
 Screens: [app](diff-shots/IN-10-app.webp) · [prototype](diff-shots/IN-10-proto.webp)
+
+**Status:** Fixed — Bar label in sentence case, fits one line on phone. · [app after fix](diff-shots/IN-10-fixed.webp)
 
 ### IN-11 · SBC-owned steps list only 'Remarks'  (Medium)
 *Step 10 (pre-7) / step 2 (pre-2) — Answers card rows*  
@@ -421,11 +547,15 @@ Prototype: step 10 lists what it captures (KYC review status, DSC messages ×2, 
 **Fix:** StepPage.tsx liveRows: for SBC-owned steps show the item's infoRequired labels (read-only, value '—' or 'Provided · date' when done) instead of filtering them away with filterFieldsByViewer; keep values hidden if needed, but keep the labels.  
 Screens: [app](diff-shots/IN-11-app.webp) · [prototype](diff-shots/IN-11-proto.webp)
 
+**Status:** Fixed — SBC-owned steps list their real 'info required' rows with 'Provided · date'. · [app after fix](diff-shots/IN-11-fixed.webp)
+
 ### IN-12 · '34 days early' measured against COI date  (Medium)
 *Phase 1 page — Progress card · early/late*  
 Prototype: phase 1 finished 1 Oct against its own plan end → 'Finished 1 Oct · 3 days late'. App: phase 1 (done 5 Oct) shows '34 days early', i.e. it compares with the whole incorporation window end (8 Nov), not phase 1's planned end. The same value appears on the landing Part A row.  
 **Fix:** PhasePage.tsx phase plan (`plan[1]` for phase 1): use phase 1's own planned window from engagement.schedule / step windows, not the COI window end.  
 Screens: [app](diff-shots/IN-12-app.webp) · [prototype](diff-shots/IN-12-proto.webp)
+
+**Status:** Fixed — Phase 1 judged against its own plan: 'Finished 6 Oct · 3 days late'. · [app after fix](diff-shots/IN-12-fixed.webp)
 
 ### IN-13 · Dates missing for not-started phases  (Medium)
 *Phase 3 / Phase 4 pages — Hero meta + key dates*  
@@ -433,11 +563,15 @@ Prototype: hero meta '0/23 · 28 Oct → 27 Dec · ends 27 Dec 2026', progress l
 **Fix:** PhasePage.tsx: when a phase has no stored window, derive start = expected COI and end = latest planned step date (prototype phEnd) as the prototype does, so the meta and chips always render.  
 Screens: [app](diff-shots/IN-13-app.webp) · [prototype](diff-shots/IN-13-proto.webp)
 
+**Status:** Fixed — Not-started phases show start/end dates and chips. · [app after fix](diff-shots/IN-13-fixed.webp)
+
 ### IN-14 · Extra 'Monthly status brief' button  (Medium)
 *Landing · before COI — Days-to-COI tile*  
 Prototype FINAL has no status-brief entry on the landing (the hero was removed; inventory §0.1 flags it for owner decision). App adds a 'Monthly status brief' outline button inside the navy tile (icon-only on phone), making the tile taller than the This week card and leaving it half empty.  
 **Fix:** Confirm with the owner; if kept, move it to the page-header area or a small icon button beside the (i) in Landing.tsx so the COI tile keeps the prototype height.  
 Screens: [app](diff-shots/IN-14-app.webp) · [prototype](diff-shots/IN-14-proto.webp)
+
+**Status:** Fixed — Status brief and board resolution kept (DECISIONS 2026-10-12) as compact icon buttons; tile back to prototype height. · [app after fix](diff-shots/IN-14-fixed.webp)
 
 ### IN-15 · Drawer close × invisible, empty 'In progress'  (Low)
 *Landing · before COI — Monthly status brief drawer*  
@@ -445,11 +579,15 @@ App drawer matches the spec (highlight, PHASES rows, WAITING ON…, Copy brief /
 **Fix:** StatusBrief.tsx: fix the icon class; hide the IN PROGRESS section or show the bot 'Nothing in progress.' when empty.  
 Screens: [app](diff-shots/IN-15-app.webp)
 
+**Status:** Fixed — Drawer close × and Copy icons visible; empty 'In progress' says 'Nothing in progress.' · [app after fix](diff-shots/IN-15-fixed.webp)
+
 ### IN-16 · Empty tabs shown with 0  (Low)
 *Landing · before COI — Donut drill pop-up*  
 Prototype drill renders only non-empty segment tabs (spec LS-05) — with seed data every tab is non-empty. App renders all four tabs including 'Submitted 0', 'Under review 0', 'Sent back 0', which lead to empty lists.  
 **Fix:** Drill builder in Landing.tsx (drillSeg): filter out tabs with count 0 (keep the active one).  
 Screens: [app](diff-shots/IN-16-app.webp) · [prototype](diff-shots/IN-16-proto.webp)
+
+**Status:** Fixed — Donut pop-up shows only tabs with items. · [app after fix](diff-shots/IN-16-fixed.webp)
 
 ### IN-17 · No document-request / approve rows  (Low)
 *Landing · before COI — This week card*  
@@ -457,11 +595,15 @@ Prototype rows mix task types: 'Upload NOC · requested by Arjun', 'Check & appr
 **Fix:** Landing.tsx week rows: add one row per open document request ('Upload <doc> · requested by <lead>') and an 'Check & approve step N' row for steps awaiting client approval.  
 Screens: [app](diff-shots/IN-17-app.webp) · [prototype](diff-shots/IN-17-proto.webp)
 
+**Status:** Fixed — 'This week' lists open document requests and the 'Check & approve' row. · [app after fix](diff-shots/IN-17-fixed.webp)
+
 ### IN-18 · 'Ends 28 Oct' / 'Finished …' text missing  (Low)
 *Phase page · step 2 — Progress card label*  
 Prototype progress label: '11% 1 / 9 steps Ends 28 Oct' (done phase: 'Finished 1 Oct · 3 days late'). App shows only '11% 1 / 9 steps' and, for phase 1, only the early/late part.  
 **Fix:** PhasePage.tsx progress label (around line 341): the Ends/Finished span is not rendering — check the condition on endD.  
 Screens: [app](diff-shots/IN-18-app.webp) · [prototype](diff-shots/IN-18-proto.webp)
+
+**Status:** Fixed — Phase label ends with 'Ends <date>' / 'Finished … · N days late'. · [app after fix](diff-shots/IN-18-fixed.webp)
 
 ### IN-19 · Crumb adds 'Step 7 ·' prefix  (Low)
 *Step pages — Breadcrumb*  
@@ -469,11 +611,15 @@ Prototype: Home / Incorporation / SPICe+ Part B / Registered Office Address. App
 **Fix:** Step page crumb in app/app/client/incorporation/step/[stepId]/page.tsx (or IncFrame): drop the 'Step N ·' prefix.  
 Screens: [app](diff-shots/IN-19-app.webp) · [prototype](diff-shots/IN-19-proto.webp)
 
+**Status:** Fixed — Step crumb has no 'Step N ·' prefix. · [app after fix](diff-shots/IN-19-fixed.webp)
+
 ### IN-20 · Banner says 'Completed · Delivered by SBC'  (Low)
 *Step 2 (pre-2) · done — Approved banner*  
 Prototype: 'Approved · Accepted after submission on 18 Sept 2026' for every done step. App: SBC-owned done steps show 'Completed · Delivered by SBC on 25 Sept 2026' (client steps keep 'Approved'). App wording is arguably more accurate; confirm with the owner.  
 **Fix:** StepPage.tsx (~line 629): keep, or switch to prototype wording if the owner wants one label.  
 Screens: [app](diff-shots/IN-20-app.webp) · [prototype](diff-shots/IN-20-proto.webp)
+
+**Status:** Kept — Factual: SBC-owned steps were delivered by SBC; the prototype's 'Accepted after submission' would be false (client never submitted them).
 
 ### IN-21 · Two-tone background under short pages  (Low)
 *Step pages (short content) — Page background*  
@@ -481,11 +627,15 @@ On short step pages (step 2, step 10) the app shows a lighter band starting belo
 **Fix:** Check `.wrap.na` / main min-height and background in incorporation-pages.css; let the page background fill the viewport.  
 Screens: [app](diff-shots/IN-21-app.webp) · [prototype](diff-shots/IN-21-proto.webp)
 
+**Status:** Fixed — One background colour down to the bottom on short pages. · [app after fix](diff-shots/IN-21-fixed.webp)
+
 ### IN-22 · Phone '← Phase 1 / Phase 3 →' bar unreadable  (Low)
 *Phase page · step 2 · phone — Prev/next phase bar*  
 Prototype phone shows a two-button bar '← Phase 1' / 'Phase 3 →' under the cards. App renders the bar but its arrows are invisible (icon collision) and it is covered by the auto-opened Ask VCFO greeting.  
 **Fix:** PhasePage.tsx `.pn` (line ~430): icon fix; Ask greeting should not auto-open over page content (shell).  
 Screens: [app](diff-shots/IN-22-app.webp) · [prototype](diff-shots/IN-22-proto.webp)
+
+**Status:** Fixed — Phone '← Phase 1 / Phase 3 →' bar readable with arrows. · [app after fix](diff-shots/IN-22-fixed.webp)
 
 ### IN-23 · Accordion matches; only chips/icons differ  (Low)
 *Landing · before COI — Phase accordion (Steps)*  
@@ -493,11 +643,15 @@ Opening Steps under SPICe+ Part B matches the prototype closely (header STEP/OWN
 **Fix:** See icon and short-name rows.  
 Screens: [app](diff-shots/IN-23-app.webp) · [prototype](diff-shots/IN-23-proto.webp)
 
+**Status:** Fixed — Accordion icons and owner chips match; gated steps with a window show 'Due <date>'. · [app after fix](diff-shots/IN-23-fixed.webp)
+
 ### IN-24 · Counts differ only by seed data  (Info)
 *Landing · before COI — Donut cards*  
 Prototype shows hand-picked document counts (12 from Northwind, 14 SBC) and 3 on-time steps; app shows 2 pending / 0 / 1 at risk from the real seed. Layout, colours, legend buttons and drill-downs match.  
 **Fix:** App correct; prototype is fake data.  
 Screens: [app](diff-shots/IN-24-app.webp) · [prototype](diff-shots/IN-24-proto.webp)
+
+**Status:** Kept — Counts differ only because the prototype uses made-up numbers.
 
 ### IN-25 · SPICe+ ring / All steps / Who drills match  (Info)
 *Landing · before COI — Drill-downs (ring, steps pill, who)*  
@@ -505,11 +659,15 @@ Clicking the SPICe+ ring, the '6 / 48 steps' pill and a 'Who's working on what' 
 **Fix:** No change.  
 Screens: [app](diff-shots/IN-25-app.webp) · [prototype](diff-shots/IN-25-proto.webp)
 
+**Status:** Kept — Already matches the prototype.
+
 ### IN-26 · Days-to-COI pop-over matches  (Info)
 *Landing · before COI — (i) info pop-over*  
 Same text, width, anchor and 'Ask VCFO about this' row as the prototype; only the date differs (data).  
 **Fix:** No change.  
 Screens: [app](diff-shots/IN-26-app.webp) · [prototype](diff-shots/IN-26-proto.webp)
+
+**Status:** Kept — Already matches the prototype.
 
 ### IN-27 · Chat behaviour matches prototype  (Info)
 *Step 7 (pre-14) · before COI — What's this? / Request a change*  
@@ -517,11 +675,15 @@ What's this? opens Ask VCFO with the step answer card (title, text, Why it matte
 **Fix:** Optional: route the action-bar Request a change to the existing change-request dialog in StepPage.tsx if the owner wants a real request.  
 Screens: [app](diff-shots/IN-27-app.webp) · [prototype](diff-shots/IN-27-proto.webp)
 
+**Status:** Kept — Already matches; 'Request a change' opens the real change-request dialog.
+
 ### IN-28 · Could not verify blocking in app  (Info)
 *Step 7 (pre-14) · before COI — NOC blocking on Approve*  
 Prototype: Approve & submit without the NOC shows toast 'Upload the NOC first · it is still needed from Northwind'. App code scrolls to and pulses the drop zone, but with no NOC request seeded there is no drop zone; not clicked in the app (it would submit).  
 **Fix:** Re-test after seeding an NOC request (see Documents card row).  
 Screens: [prototype](diff-shots/IN-28-proto.webp)
+
+**Status:** Fixed — Approve & submit blocked with 'Upload the … first' and the drop zone pulses (verified with a pending approval). · [app after fix](diff-shots/IN-28-fixed.webp)
 
 ### IN-29 · Step 8–10 statuses differ by seed  (Info)
 *Phase / step pages — Statuses and dates*  
@@ -529,11 +691,15 @@ Prototype has steps 8/9 In progress and 10 With SBC; the app seed has them Upcom
 **Fix:** App correct; prototype is fake data.  
 Screens: [app](diff-shots/IN-29-app.webp) · [prototype](diff-shots/IN-29-proto.webp)
 
+**Status:** Kept — Status differences come from seed data; prototype data is made up.
+
 ### IN-30 · MCA segment added  (Info)
 *Phase page · step 2 — Who's doing it*  
 Prototype phase page shows Northwind 5 / SBC 4 (steps 13–14 as SBC). App adds a violet MCA segment (2), matching the landing FINAL rule LOWN={13:'MCA',14:'MCA'}. Consistent with the landing; fine.  
 **Fix:** No change (or align the prototype phase page).  
 Screens: [app](diff-shots/IN-30-app.webp) · [prototype](diff-shots/IN-30-proto.webp)
+
+**Status:** Kept — MCA segment follows the landing's own rule (MCA review is a real phase owner).
 
 
 ## Compliances
@@ -544,11 +710,15 @@ The prototype shows a compact card: the 88 px donut on the left and the 4-row le
 **Fix:** css/compliances-board.css: add `.cp .cp-compliances .donut{flex-direction:row}` (or set flexDirection:'row' inline in src/components/client-portal/pages/compliances/DonutCard.tsx). Copy prototype donutCard() in s/comp/index.html I:780-786.  
 Screens: [app](diff-shots/CP-01-app.webp) · [prototype](diff-shots/CP-01-proto.webp)
 
+**Status:** Fixed — Per-page CSS scoping: the calendar donut is a compact row card again (~115 px). · [app after fix](diff-shots/CP-01-fixed.webp)
+
 ### CP-02 · Filings donut stacked; KPI row about 350 px tall  (High)
 *Compliances Filings · after COI — KPI row (donut + By area)*  
 In the prototype the KPI row is about 180 px tall: a compact donut with the legend beside it, next to the By-area bars. In the app the same `.card` column rule stacks the legend under the donut, and the By-area card stretches to match, leaving a large empty block. This happens at 1440, 1024 and 390.  
 **Fix:** Same fix as the calendar donut: force `.donut` to flex-direction:row in css/compliances-board.css (src/components/client-portal/pages/compliances/DonutCard.tsx is shared by both pages).  
 Screens: [app](diff-shots/CP-02-app.webp) · [prototype](diff-shots/CP-02-proto.webp)
+
+**Status:** Fixed — Per-page CSS scoping: Filings donut sits beside its legend; KPI row ~190 px. · [app after fix](diff-shots/CP-02-fixed.webp)
 
 ### CP-03 · Period repeats the filing name  (High)
 *Compliances Calendar · after COI — Next deadline card / every period label*  
@@ -556,11 +726,15 @@ The prototype title is 'GSTR-1 · Sep 2026': name plus a short period ('Sep 2026
 **Fix:** Build `period` in src/db/repositories/client-compliances.ts (or displayPeriod in src/lib/client-portal/compliances.ts) from period_start/period_end ('Sep 2026', 'Jul–Sep 2026', 'FY 2025-26'), as BUILD inventory §2 says. Do not reuse periodLabel.  
 Screens: [app](diff-shots/CP-03-app.webp) · [prototype](diff-shots/CP-03-proto.webp)
 
+**Status:** Fixed — One period formatter: 'GSTR-3B · Sep 2026', pop-up 'Apr–Sep 2026'; no repeated filing name. · [app after fix](diff-shots/CP-03-fixed.webp)
+
 ### CP-04 · Phone donut card is 3× too tall  (Medium)
 *Compliances Filings · phone 390 — KPI row (donut)*  
 On the phone the prototype keeps the donut and legend side by side in a 105 px card. The app stacks them (about 350 px), so the table starts below the first screen.  
 **Fix:** Same `.donut{flex-direction:row}` fix; keep `flex-wrap:wrap` at ≤767 so it wraps only when it really lacks room.  
 Screens: [app](diff-shots/CP-04-app.webp) · [prototype](diff-shots/CP-04-proto.webp)
+
+**Status:** Fixed — Phone donut no longer wraps (84 px ring, legend beside it). · [app after fix](diff-shots/CP-04-fixed.webp)
 
 ### CP-05 · Default 'Monthly' view is empty  (Medium)
 *Compliances Filings · after COI — Cadence pill default*  
@@ -568,11 +742,15 @@ In the prototype Monthly is selected but the table still lists every filing in S
 **Fix:** FilingsPage.tsx useFilingsState: default cadence to the first one with rows in the window (or add an 'All' option first). The seed's missing monthly obligations are a data matter (inventory §2.6).  
 Screens: [app](diff-shots/CP-05-app.webp) · [prototype](diff-shots/CP-05-proto.webp)
 
+**Status:** Fixed — Filings opens on the first cadence that has filings in the window (an explicit ?cadence still wins). · [app after fix](diff-shots/CP-05-fixed.webp)
+
 ### CP-06 · Date tiles lack month across months  (Medium)
 *Compliances Calendar · after COI — Coming up rail*  
 The prototype's Coming up holds only this month's dates, so 'WED 7' is clear. The app lists the next deadlines of the whole year ('31 SAT', '15 TUE', '15 MON'). Two '15' tiles with no month (Dec and Mar) are ambiguous.  
 **Fix:** CalendarPage.tsx ComingUp: when a date is not in the current month, show the month in the tile (e.g. '15 / DEC'), or limit the list to the current month as the prototype does (C-24).  
 Screens: [app](diff-shots/CP-06-app.webp) · [prototype](diff-shots/CP-06-proto.webp)
+
+**Status:** Fixed — Date tiles outside the current month show the month ('7 NOV'). · [app after fix](diff-shots/CP-06-fixed.webp)
 
 ### CP-07 · Phone agenda: no month, overdue missing  (Medium)
 *Compliances Calendar · phone 390 — Agenda under the week strip*  
@@ -580,11 +758,15 @@ The prototype agenda starts at this week and includes yesterday's filed and over
 **Fix:** CalendarMobile.tsx agenda: put overdue rows first (or include them), and add the month to tiles outside the current month.  
 Screens: [app](diff-shots/CP-07-app.webp) · [prototype](diff-shots/CP-07-proto.webp)
 
+**Status:** Fixed — Phone agenda starts Monday of the shown week; earlier overdue filings listed first; tiles show the month across months. · [app after fix](diff-shots/CP-07-fixed.webp)
+
 ### CP-08 · Info pop-over clipped by the card  (Medium)
 *Compliances Calendar · after COI — Next deadline (i) pop-over*  
 Clicking (i) opens a 280 px pop-over centred on the icon. The card's overflow:hidden cuts it off: the left side in the app ('SME-1 (Apr–… ep) 2026'), the right side in the prototype. The text is unreadable at the edge.  
 **Fix:** CalendarPage.tsx NextDeadlineCard: allow overflow (use overflow:visible and clip only the footer strip), or render InfoPopover (shared.tsx) in a portal with viewport clamping.  
 Screens: [app](diff-shots/CP-08-app.webp) · [prototype](diff-shots/CP-08-proto.webp)
+
+**Status:** Fixed — Next-deadline info pop-over no longer clipped by the card. · [app after fix](diff-shots/CP-08-fixed.webp)
 
 ### CP-09 · Phone sheet: track overlaps, footer squeezed  (Medium)
 *Compliances Filings · phone 390 — Side panel as bottom sheet*  
@@ -592,11 +774,15 @@ On the phone the sheet's focus track labels overlap ('SBC preparingHalcyon Payme
 **Fix:** Detail.tsx SidePanel/DetailModal: on ≤767 use a vertical focus track and stack the footer (Ask row full width, then buttons).  
 Screens: [app](diff-shots/CP-09-app.webp)
 
+**Status:** Fixed — Phone sheet uses the vertical focus track; footer stacks (Ask row full width, buttons below). · [app after fix](diff-shots/CP-09-fixed.webp)
+
 ### CP-10 · Today tint lost on weekend days  (Low)
 *Compliances Calendar · after COI — Month grid · today cell*  
 In the prototype, today is the whole cell outlined in navy and tinted #eef2f8. Today in the app is Sat 17 Oct: the navy outline shows, but the cell stays white. The rule `.cal .day.we:not(.out)` (white) is more specific than `.cal .day.today`. The same CSS sits in the prototype but never shows there because its today is a Thursday.  
 **Fix:** css/compliances-board.css: raise specificity, e.g. `.cp .cp-compliances .cal .day.today:not(.out)` with the #eef2f8 tint.  
 Screens: [app](diff-shots/CP-10-app.webp) · [prototype](diff-shots/CP-10-proto.webp)
+
+**Status:** Fixed — Today keeps its tint on weekend and status days. · [app after fix](diff-shots/CP-10-fixed.webp)
 
 ### CP-11 · Filed bars not faded/locked  (Low)
 *Compliances Calendar · Timeline view — Bars · filed*  
@@ -604,11 +790,15 @@ In the prototype a filed bar (TDS/TCS challan) is green at opacity .75 with a de
 **Fix:** css/compliances-board.css: drop the `.tlv-b.lock.ro{opacity:1}` override (keep .lock opacity .75).  
 Screens: [app](diff-shots/CP-11-app.webp) · [prototype](diff-shots/CP-11-proto.webp)
 
+**Status:** Fixed — Filed bars faded (.75) and locked. · [app after fix](diff-shots/CP-11-fixed.webp)
+
 ### CP-12 · Tile sub-label 'OCT · SAT' crammed  (Low)
 *Compliances Calendar · detail pop-up — Header date tile*  
 The 56×62 tile in the prototype wraps 'OCT · TUE' onto two short lines. In the app 'OCT · SAT' / 'SEP · WED' runs edge to edge (or wraps unevenly) inside the tile.  
 **Fix:** Detail.tsx DetailModal: put the month and weekday on separate lines or drop the weekday (e.g. small 'OCT' + tiny 'SAT').  
 Screens: [app](diff-shots/CP-12-app.webp) · [prototype](diff-shots/CP-12-proto.webp)
+
+**Status:** Fixed — Pop-up date tile shows month and weekday on separate lines. · [app after fix](diff-shots/CP-12-fixed.webp)
 
 ### CP-13 · Portal tooltip covers the title on open  (Low)
 *Compliances Calendar · detail pop-up / Filings panel — Initial focus*  
@@ -616,11 +806,15 @@ When the pop-up or panel opens, focus lands on the ↗ portal button, so its nav
 **Fix:** Detail.tsx useModal: focus the dialog container or the Close button first, and show focus tooltips only for :focus-visible from the keyboard.  
 Screens: [app](diff-shots/CP-13-app.webp) · [prototype](diff-shots/CP-13-proto.webp)
 
+**Status:** Fixed — Pop-ups focus the dialog box, not the ↗ button, so no tooltip covers the title on open. · [app after fix](diff-shots/CP-13-fixed.webp)
+
 ### CP-14 · Long month name overflows donut hole  (Low)
 *Compliances Calendar · Sep 2026 — Donut centre label*  
 The prototype's 'October' fits inside the 58 px hole. In the app, 'September' (and 'November', 'December') touches or overlaps the ring.  
 **Fix:** DonutCard.tsx: use the short month in the hole ('Sep') or shrink the font to 10 px for labels over 7 characters.  
 Screens: [app](diff-shots/CP-14-app.webp) · [prototype](diff-shots/CP-14-proto.webp)
+
+**Status:** Fixed — Long month names shrink to fit the donut hole. · [app after fix](diff-shots/CP-14-fixed.webp)
 
 ### CP-15 · 'Proof pending' shown twice  (Low)
 *Compliances Filings · side panel — Proof block*  
@@ -628,16 +822,22 @@ In the app a filed item with no proof shows the amber 'Proof pending' chip in th
 **Fix:** Detail.tsx SidePanel: in the PROOF section use a sentence ('SBC will upload the challan / acknowledgement here') or a bot line instead of a second chip.  
 Screens: [app](diff-shots/CP-15-app.webp) · [prototype](diff-shots/CP-15-proto.webp)
 
+**Status:** Fixed — No duplicate 'Proof pending': the proof section shows a dashed placeholder line instead. · [app after fix](diff-shots/CP-15-fixed.webp)
+
 ### CP-16 · Range is whole FY, not Sep–Mar  (Info)
 *Compliances Calendar · Timeline view — Range / lanes*  
 The prototype window is fixed from 1 Sep 2026 to 31 Mar 2027. The app covers the whole FY (1 Apr → 31 Mar), so you can pan back to April. Both start scrolled to the current month at about 2 months on screen, with the same ruler, Weeks/Days/Months levels, red Today tag, area header lanes and diamonds. The inventory recommends this.  
 **Fix:** None (App correct; prototype range is fake-data).  
 Screens: [app](diff-shots/CP-16-app.webp) · [prototype](diff-shots/CP-16-proto.webp)
 
+**Status:** Kept — App correct: full-FY range is the specified behaviour; the prototype's Sep–Mar range is demo data.
+
 ### CP-17 · Bar click opens detail (app only)  (Info)
 *Compliances Calendar · Timeline view — Bar interaction*  
 In the prototype a bar is a role=slider: click/drag edits the window and nothing opens. In the app a bar is a button: click or Enter opens the filing detail pop-up. A filed bar's tooltip ends with '· filed' and a set window with '· set by SBC'.  
 **Fix:** None. Keep it; it goes with the read-only decision.  
+
+**Status:** Kept — Clicking a bar opens the filing detail (works alongside the new drag; filed bars locked) — useful app behaviour, prototype simply unwired.
 
 ### CP-18 · Area counts switch to FY totals  (Info)
 *Compliances Calendar · Year / Timeline — Area pill counts*  
@@ -645,11 +845,15 @@ The prototype keeps the month counts on the area pill in every view (All 13). Th
 **Fix:** None (App correct; prototype counts are fixed demo values).  
 Screens: [app](diff-shots/CP-18-app.webp) · [prototype](diff-shots/CP-18-proto.webp)
 
+**Status:** Kept — App correct: Year/Timeline show real FY counts; prototype shows fixed demo values.
+
 ### CP-19 · Extra 'Tip: click any date' bubble  (Info)
 *Compliances Calendar · after COI — First-time tip*  
 The app shows a bot bubble 'Tip: click any date to see its filings. [Got it]' above the grid until it is dismissed. That pushes the month about 90 px down, so the last week no longer fits at 1440×900. The prototype has no tip on the live board. It is spec'd as E-06.  
 **Fix:** None (inventory E-06). Optionally overlay it on the grid instead of above it, so the whole month still fits at 1440×900 (owner layout note in calRedesign).  
 Screens: [app](diff-shots/CP-19-app.webp) · [prototype](diff-shots/CP-19-proto.webp)
+
+**Status:** Kept — The 'click any date' tip bubble is specified (inventory E-06), shown once.
 
 ### CP-20 · Donut says 0 overdue, card shows overdue  (Info)
 *Compliances Calendar · after COI — Overdue footer vs October donut*  
@@ -657,11 +861,15 @@ The October donut and its drill-down say 'Overdue 0 · Nothing overdue. Nice wor
 **Fix:** App correct; prototype is fake data. Optionally add 'carried over' rows to the month drill's Overdue tab.  
 Screens: [app](diff-shots/CP-20-app.webp) · [prototype](diff-shots/CP-20-proto.webp)
 
+**Status:** Kept — App correct: the overdue item falls in September; prototype numbers are demo data.
+
 ### CP-21 · No draft note; some facts empty  (Info)
 *Compliances Calendar · detail pop-up — Facts / gold note*  
 The prototype shows a gold 'SBC will send the draft for Northwind's approval by 17 Oct.' note and the period '1–30 Sep 2026'. The app shows the note only when draftDueOn is set (none in the seed), and Period falls back to the long label.  
 **Fix:** Data only (seed has no draft/period dates). Structure is in Detail.tsx.  
 Screens: [app](diff-shots/CP-21-app.webp) · [prototype](diff-shots/CP-21-proto.webp)
+
+**Status:** Kept — Data only: no draft dates in the seed; the gold note renders when draftDueOn is set.
 
 ### CP-22 · ARN, tax and proof cards absent (data)  (Info)
 *Compliances Filings · side panel — ARN / Tax paid / proof files*  
@@ -669,11 +877,15 @@ The prototype's filed GSTR-3B shows ARN, Tax paid, Filed by and two PDF cards wi
 **Fix:** Data only. Seed a filed instance with acknowledgement_no, amount_paid and a proof to demo the panel.  
 Screens: [app](diff-shots/CP-22-app.webp) · [prototype](diff-shots/CP-22-proto.webp)
 
+**Status:** Kept — Data only: ARN, tax and proof cards render when the data exists (ARN shows for DIR-3 KYC).
+
 ### CP-23 · Month abbreviation 'Sep' vs 'SEPT'  (Info)
 *Compliances Filings · after COI — Table date tiles*  
 Prototype tiles and 'Filed on' read 'SEPT' / '14 Sept' (en-IN locale). The app uses 'SEP' / '14 Sep'.  
 **Fix:** None. The app's 3-letter month is the cleaner choice.  
 Screens: [app](diff-shots/CP-23-app.webp) · [prototype](diff-shots/CP-23-proto.webp)
+
+**Status:** Kept — 'Sep' is the cleaner abbreviation (report's own recommendation).
 
 ### CP-24 · Row opens side panel (proto unwired)  (Info)
 *Compliances Filings · after COI — Row click*  
@@ -681,11 +893,15 @@ Clicking a table row in the live prototype does nothing; the side panel exists o
 **Fix:** None (App correct; follows inventory F-07).  
 Screens: [app](diff-shots/CP-24-app.webp) · [prototype](diff-shots/CP-24-proto.webp)
 
+**Status:** Kept — App correct: rows open the side panel (inventory F-07); prototype unwired.
+
 ### CP-25 · Tapping a day filters agenda (app only)  (Info)
 *Compliances Calendar · phone 390 — Week strip tap*  
 The prototype's phone strip is static. In the app, tapping a day outlines it and replaces the agenda with that day's filings, or the bot line 'Nothing is due on this day.'  
 **Fix:** None. It is an enhancement.  
 Screens: [app](diff-shots/CP-25-app.webp) · [prototype](diff-shots/CP-25-proto.webp)
+
+**Status:** Kept — Tapping a day to filter the agenda is an app enhancement, not a difference in design.
 
 ### CP-26 · Picker, pop-over, drill-down, Year view match  (Info)
 *Compliances Calendar · after COI — Month/Year picker, day pop-over, drill-down, year view*  
@@ -693,11 +909,15 @@ The month picker (3×4 grid, current month navy, Today footer) and year picker, 
 **Fix:** None.  
 Screens: [app](diff-shots/CP-26-app.webp) · [prototype](diff-shots/CP-26-proto.webp)
 
+**Status:** Kept — Already matches the prototype.
+
 ### CP-27 · Header, filters and table match  (Info)
 *Compliances Filings · after COI — Header / filters / table*  
 The FY stepper, Monthly/Quarterly/Annual pill, ⬇ Export (CSV download), Calendar link, area and status pills (with dots), the 'Sep – Oct 2026' window with ‹ › and Full year, column set, date tiles, ↗ portal links, 'N days late' / 'in N days', and the Proof column (— / Proof pending / Proof + ⬇) all match. The app also adds working 'Add to my calendar' (.ics) and 'Remind me' buttons in the side panel for unfiled items (not clicked here because they write).  
 **Fix:** None.  
 Screens: [app](diff-shots/CP-27-app.webp) · [prototype](diff-shots/CP-27-proto.webp)
+
+**Status:** Kept — Already matches the prototype.
 
 
 ## Documents & Library
@@ -708,11 +928,15 @@ Prototype dialog has only the dashed drop zone ('Drop files here or browse'). Ap
 **Fix:** src/components/client-portal/pages/documents/UploadDialog.tsx: the hidden <input type=file> is made visible because an unlayered 'input{display:inline-block}' rule beats the [hidden] rule. Use style={{display:'none'}} (or the vdoc-sr class) instead of relying on the hidden attribute.  
 Screens: [app](diff-shots/DC-01-app.webp) · [prototype](diff-shots/DC-01-proto.webp)
 
+**Status:** Fixed — No native 'Choose File' input in the upload dialog. · [app after fix](diff-shots/DC-01-fixed.webp)
+
 ### DC-02 · Native 'Choose File' input at bottom of board  (High)
 *Documents · phone 390 — Board*  
 Prototype phone board has nothing at the bottom besides the Ask VCFO launcher. App shows a raw 'Choose File  No file chosen' control across the bottom of every phone level (the camera input).  
 **Fix:** src/components/client-portal/pages/documents/Mobile.tsx camRef <input type=file hidden>: same [hidden] override; use style={{display:'none'}}.  
 Screens: [app](diff-shots/DC-02-app.webp) · [prototype](diff-shots/DC-02-proto.webp)
+
+**Status:** Fixed — No native file input at the bottom of the board (phone camera input hidden). · [app after fix](diff-shots/DC-02-fixed.webp)
 
 ### DC-03 · All phone ⋮ buttons are invisible  (High)
 *Documents · phone 390 — Board ⋮ menus*  
@@ -720,11 +944,15 @@ Prototype shows a bordered ⋮ button next to the filter and a ⋮ on every fold
 **Fix:** src/components/client-portal/css/documents-boards.css: add opacity:1 to '.cp .cp-documents .vdm .kb' (documents-explorer.css '.cp-documents .kb{opacity:0}' hover-reveal leaks into the phone board).  
 Screens: [app](diff-shots/DC-03-app.webp) · [prototype](diff-shots/DC-03-proto.webp)
 
+**Status:** Fixed — Phone ⋮ buttons visible. · [app after fix](diff-shots/DC-03-fixed.webp)
+
 ### DC-04 · Library breaks when Ask VCFO is off  (High)
 *Library · desktop — Whole page*  
 Prototype shows the bookshelf (or, with no books, the lib_empty board: book illustration, bot bubble, Ask VCFO button, 3 suggested questions). App shows only a red banner 'Could not load your library / Try again' because GET /api/ask/library returns 404 when Ask VCFO is disabled. Cause confirmed: the shelf loads from /api/ask/library, which returns 404 whenever ASK_VCFO_ENABLED is false (the default), so the whole Library page shows an error instead of the bookshelf or its empty state.  
 **Fix:** LibraryPage.tsx / library-model.ts: load the shelf from a client-portal route that does not depend on the Ask VCFO flag (or treat 404 as an empty shelf and show the prototype empty state lib_empty.dc.html). src/components/client-portal/pages/documents/library/LibraryPage.tsx: treat a 404 / feature-off AskApiError as the EmptyLibrary state (or hide the Library nav item when ASK_VCFO_ENABLED is off); app/api/ask/library/route.ts requireAsk.  
 Screens: [app](diff-shots/DC-04-app.webp) · [prototype](diff-shots/DC-04-proto.webp)
+
+**Status:** Fixed — Library no longer depends on ASK_VCFO_ENABLED: new /api/client/library routes (repository-scoped, role-checked, no feature flag) serve the shelf, reading progress, reader and PDF briefs. · [app after fix](diff-shots/DC-04-fixed.webp)
 
 ### DC-05 · Phone library also shows only error  (Medium)
 *Library · phone 390 — Whole page*  
@@ -732,11 +960,15 @@ Prototype phone library shows the empty board (illustration, bubble, Ask VCFO, s
 **Fix:** Same as desktop: LibraryPage.tsx error branch → EmptyLibrary when the Ask API is off.  
 Screens: [app](diff-shots/DC-05-app.webp) · [prototype](diff-shots/DC-05-proto.webp)
 
+**Status:** Fixed — Phone library loads with Ask VCFO off. · [app after fix](diff-shots/DC-05-fixed.webp)
+
 ### DC-06 · Missing rows not under their step  (Medium)
 *Documents · desktop — Tree · missing rows*  
 Prototype puts each missing (dashed) row inside the step it belongs to (e.g. 'Notarised lease deed' under 8 · Registered Office Address, 'Signed DIR-2' under 6 · Director KYC). App lumps all 4 open requests into a separate 'Other documents › Requested and shared files' folder, even 'Utility bill - office' which is clearly step 8.  
 **Fix:** Requests need a step: scripts/seed-demo.ts should set document_request_details.step_id; src/db/repositories/client-documents.ts could fall back to a label→step guess before using 'Other documents'. model.ts buildEntries keeps 'Other documents' only for genuinely step-less files.  
 Screens: [app](diff-shots/DC-06-app.webp) · [prototype](diff-shots/DC-06-proto.webp)
+
+**Status:** Fixed — Missing rows filed under their step (label-based step match); 'Other documents' only for files with no step. · [app after fix](diff-shots/DC-06-fixed.webp)
 
 ### DC-07 · Board resolutions filed under Certificates  (Medium)
 *Documents · desktop — By category view*  
@@ -744,11 +976,15 @@ Prototype 'By category' puts 'Board resolution (final)' in Company records. App 
 **Fix:** src/lib/client-portal/documents.ts FIELD_CATEGORY: use word boundaries (\blut\b, \bdin\b, \bnoc\b, \biec\b) and add 'pre-2'/'pre-3' → 'c3' to STEP_CATEGORY.  
 Screens: [app](diff-shots/DC-07-app.webp) · [prototype](diff-shots/DC-07-proto.webp)
 
+**Status:** Fixed — Board resolutions filed under Company records (word-boundary category matching). · [app after fix](diff-shots/DC-07-fixed.webp)
+
 ### DC-08 · 'Other documents' drill says 'in Incorporation'  (Medium)
 *Documents · desktop — Progress drill-down*  
 Prototype drill banner reads 'These documents are for <step> in <phase>' with a link to that phase. App drill for the 'Requested and shared files' folder says '…in Incorporation' with 'Open Incorporation →', although these files are not in any incorporation step.  
 **Fix:** Explorer.tsx where the DrillTarget is built: for the OTHER_PHASE_ID folder set where='Other documents' and drop or relabel the link.  
 Screens: [app](diff-shots/DC-08-app.webp) · [prototype](diff-shots/DC-08-proto.webp)
+
+**Status:** Fixed — 'Other documents' drill says 'in Other documents', no Incorporation link. · [app after fix](diff-shots/DC-08-fixed.webp)
 
 ### DC-09 · Phone upload dialog: footer hidden, all requests  (Medium)
 *Documents · phone 390 — Missing row tap → upload*  
@@ -756,11 +992,15 @@ Prototype phone: a missing row's ⋮ sheet offers Take photo / Choose file / Ope
 **Fix:** Mobile.tsx row onClick for missing: open the row sheet (items already built at ~line 130) instead of onUpload; UploadDialog.tsx on phone: limit to the tapped request and lift the footer above the launcher (hide launcher while dialog is open).  
 Screens: [app](diff-shots/DC-09-app.webp) · [prototype](diff-shots/DC-09-proto.webp)
 
+**Status:** Fixed — Phone upload dialog lists only the tapped request; footer above the launcher. · [app after fix](diff-shots/DC-09-fixed.webp)
+
 ### DC-10 · Phone rows too tall and over-indented  (Medium)
 *Documents · phone 390 — Board rows*  
 Prototype rows are about 57px with the folder icon 16px from the card edge. App rows are about 80px with the icon about 32px in, so only 3 rows fill the space the prototype uses for 3 rows plus whitespace, and the list feels sparse.  
 **Fix:** src/components/client-portal/css/documents-boards.css '.vdm .row .main': reset the explorer '.main' padding/height inherited from documents-explorer.css; match docs_a_mobile.dc.html row (padding 0 0 0 16px, min-height 56px).  
 Screens: [app](diff-shots/DC-10-app.webp) · [prototype](diff-shots/DC-10-proto.webp)
+
+**Status:** Fixed — Phone rows ~57 px with the prototype's indent. · [app after fix](diff-shots/DC-10-fixed.webp)
 
 ### DC-11 · Reader unreachable: 'explanation not available'  (Low)
 *Library reader — Reader page*  
@@ -768,11 +1008,15 @@ Prototype reader: navy hero with category/Reviewed/Updated chips, depth pill, ti
 **Fix:** Publish client topics (src/data/ask/topics/*.json status) and/or seed library items; Reader.tsx failed state could reuse the bot-bubble pattern. Re-review the reader once data exists.  
 Screens: [app](diff-shots/DC-11-app.webp) · [prototype](diff-shots/DC-11-proto.webp)
 
+**Status:** Fixed — Reader works with Ask VCFO off; 'not available' state has the bot bubble and 'Back to library'. · [app after fix](diff-shots/DC-11-fixed.webp)
+
 ### DC-12 · Explorer card doesn't fill viewport height  (Low)
 *Documents · desktop — Explorer card*  
 Prototype explorer card stretches to the bottom of the viewport (tree scrolls inside; Step/From/Date/File pinned at the bottom of the pane). App card stops at about y=790, leaving an empty band under it, and the pane meta floats mid-screen.  
 **Fix:** src/components/client-portal/css/documents-explorer.css: give .vdoc-main a fixed height (calc(100dvh - topbar)) and section flex:1 as in docs_a_refined.dc.html.  
 Screens: [app](diff-shots/DC-12-app.webp) · [prototype](diff-shots/DC-12-proto.webp)
+
+**Status:** Fixed — Explorer card fills the viewport height at ≥1000 px. · [app after fix](diff-shots/DC-12-fixed.webp)
 
 ### DC-13 · Tree tooltips clipped at column edge  (Low)
 *Documents · desktop — Tooltips*  
@@ -780,11 +1024,15 @@ Prototype progress-bar tooltip wraps to two lines and stays inside the tree ('Di
 **Fix:** documents-explorer.css .tip::after: allow wrapping (max-width ~260px, white-space normal) and keep overflow visible on .vdoc-tree, or right-align tips near the edge.  
 Screens: [app](diff-shots/DC-13-app.webp) · [prototype](diff-shots/DC-13-proto.webp)
 
+**Status:** Fixed — Tree tooltips wrap/align inside the column. · [app after fix](diff-shots/DC-13-fixed.webp)
+
 ### DC-14 · 'Requested' chip instead of due label  (Low)
 *Documents · desktop — Missing chips*  
 Prototype missing chips always read 'Due 12 Nov' (orange) or 'Overdue' (red), and the pane shows a Due date. App shows 'Requested' and Due '—' because seeded requests have no due date; drill rows then show 'Requested' text next to a 'Missing' badge.  
 **Fix:** Mostly seed data (scripts/seed-demo.ts: set dueOn on requests). model.ts missingLabel fallback 'Requested' is fine but consider 'No due date' in the drill date column (Drill.tsx).  
 Screens: [app](diff-shots/DC-14-app.webp) · [prototype](diff-shots/DC-14-proto.webp)
+
+**Status:** Fixed — Due label chips ('Overdue', 'Due 21 Oct') instead of 'Requested'; drill shows 'Due <date>'. · [app after fix](diff-shots/DC-14-fixed.webp)
 
 ### DC-15 · Drill status tabs stretch full width  (Low)
 *Documents · desktop — Progress drill-down*  
@@ -792,11 +1040,15 @@ Prototype drill status pill (All / Received / In review / Missing) is compact (a
 **Fix:** Drill.tsx .seg: display inline-grid / width:auto (copy docs_a_drill.dc.html sizing).  
 Screens: [app](diff-shots/DC-15-app.webp) · [prototype](diff-shots/DC-15-proto.webp)
 
+**Status:** Fixed — Drill status tabs compact, not full width. · [app after fix](diff-shots/DC-15-fixed.webp)
+
 ### DC-16 · Drill file tags pale, not solid  (Low)
 *Documents · desktop — Progress drill-down*  
 Prototype drill rows use solid file-type chips (white 'PDF' on red, 'JPG' on teal). App drill uses the pale tree tags.  
 **Fix:** Drill.tsx: use the solid tag style from docs_a_drill.dc.html (r.tStyle) instead of model.tagStyle.  
 Screens: [app](diff-shots/DC-16-app.webp) · [prototype](diff-shots/DC-16-proto.webp)
+
+**Status:** Fixed — Drill file tags solid as in the prototype. · [app after fix](diff-shots/DC-16-fixed.webp)
 
 ### DC-17 · Drill link 'Open step' vs 'Open Incorporation'  (Low)
 *Documents · desktop — Progress drill-down*  
@@ -804,11 +1056,15 @@ Prototype drill banner link reads 'Open Incorporation →' (the phase). App read
 **Fix:** Explorer.tsx DrillTarget.linkText: match prototype wording, or confirm the step deep-link is the intended improvement.  
 Screens: [app](diff-shots/DC-17-app.webp) · [prototype](diff-shots/DC-17-proto.webp)
 
+**Status:** Fixed — Drill link 'Open Incorporation →'. · [app after fix](diff-shots/DC-17-fixed.webp)
+
 ### DC-18 · Month shows 'Sept' instead of 'Sep'  (Low)
 *Documents · desktop — Dates*  
 Prototype dates use 3-letter months ('14 Sep', '24 Oct 2026'). App uses en-GB toLocaleDateString, which renders 'Sept' ('29 Sept 2026', '25 Sept') in the pane, drill, phone rows and preview sheet.  
 **Fix:** src/components/client-portal/pages/documents/file-types.ts longDate/dayMonth: format with a fixed month array (Jan…Dec).  
 Screens: [app](diff-shots/DC-18-app.webp) · [prototype](diff-shots/DC-18-proto.webp)
+
+**Status:** Fixed — Fixed month list: 'Sep', not 'Sept'. · [app after fix](diff-shots/DC-18-fixed.webp)
 
 ### DC-19 · Extra pale-green status chip in header  (Low)
 *Shared document viewer — Viewer header*  
@@ -816,11 +1072,15 @@ Prototype viewer header: type tag, file name, ⓘ, '1 of 4', Download, close. Ap
 **Fix:** DocViewer.tsx header chip: drop it, or use STATUS_STYLE colours from model.ts so 'Final' is navy everywhere.  
 Screens: [app](diff-shots/DC-19-app.webp) · [prototype](diff-shots/DC-19-proto.webp)
 
+**Status:** Fixed — No extra status chip in the viewer header for Documents/Library files. · [app after fix](diff-shots/DC-19-fixed.webp)
+
 ### DC-20 · Phone preview error lacks icon / retry  (Low)
 *Documents · phone 390 — Preview sheet*  
 Prototype phone preview sheet shows the page with 'Page 1 of 2 · swipe'. When the file fails, the app sheet shows only plain 'Could not open this file' text, without the red icon and 'Try again' button the desktop viewer has.  
 **Fix:** src/components/client-portal/pages/documents/MobilePreview.tsx: reuse the DocViewer error block (icon + Try again).  
 Screens: [app](diff-shots/DC-20-app.webp) · [prototype](diff-shots/DC-20-proto.webp)
+
+**Status:** Fixed — Phone preview error has the icon and 'Try again'. · [app after fix](diff-shots/DC-20-fixed.webp)
 
 ### DC-21 · Root sheet items differ from prototype  (Low)
 *Documents · phone 390 — Root ⋮ sheet*  
@@ -828,11 +1088,15 @@ Prototype root sheet: 'Download folder as ZIP · 13 files' and 'Copy link to fol
 **Fix:** Mobile.tsx root items (~line 112): confirm with owner; prototype has no Upload on the phone root and offers Copy link.  
 Screens: [app](diff-shots/DC-21-app.webp) · [prototype](diff-shots/DC-21-proto.webp)
 
+**Status:** Fixed — Phone root sheet offers 'Download folder as ZIP' and 'Copy link to folder' as the prototype. · [app after fix](diff-shots/DC-21-fixed.webp)
+
 ### DC-22 · Breadcrumb 'Home / Documents' vs 'Documents'  (Low)
 *Documents · desktop — Topbar trail*  
 Prototype topbar trail on Documents is the single crumb 'Documents' (folder icon). App shows 'Home / Documents' with a grid icon.  
 **Fix:** Shell topbar (src/components/client-portal/ topbar / usePortalCrumbs): drop the Home crumb for top-level pages per docs/topbar.dc.html. Likely shared with other pages.  
 Screens: [app](diff-shots/DC-22-app.webp) · [prototype](diff-shots/DC-22-proto.webp)
+
+**Status:** Fixed — Breadcrumb is the single 'Documents' crumb. · [app after fix](diff-shots/DC-22-fixed.webp)
 
 ### DC-23 · Preview pane works (re-checked)  (Info)
 *Documents · desktop — Preview pane*  
@@ -840,11 +1104,15 @@ On first capture the preview pane showed raw JSON because the review's local sto
 **Fix:** None (review environment issue).  
 Screens: [app](diff-shots/DC-23-app.webp) · [prototype](diff-shots/DC-23-proto.webp)
 
+**Status:** Kept — Re-checked: preview pane works (report environment issue).
+
 ### DC-24 · Viewer opens files (re-checked)  (Info)
 *Shared document viewer — Viewer body*  
 The shared viewer opens PDFs with page count, zoom and prev/next once the demo files are stored where the app expects them. Remaining small differences are in the viewer rows below.  
 **Fix:** None (review environment issue).  
 Screens: [app](diff-shots/DC-24-app.webp) · [prototype](diff-shots/DC-24-proto.webp)
+
+**Status:** Kept — Re-checked: viewer opens files (report environment issue).
 
 ### DC-25 · ZIP download works (re-checked)  (Info)
 *Documents · desktop — Download all (ZIP)*  
@@ -852,11 +1120,15 @@ Screens: [app](diff-shots/DC-24-app.webp) · [prototype](diff-shots/DC-24-proto.
 **Fix:** None (review environment issue).  
 Screens: [app](diff-shots/DC-25-app.webp) · [prototype](diff-shots/DC-25-proto.webp)
 
+**Status:** Kept — Re-checked: ZIP download works (report environment issue).
+
 ### DC-26 · Accepted types / size text differs  (Info)
 *Documents · desktop — Upload dialog*  
 Prototype: 'PDF · JPG · PNG · DOCX · up to 10 MB'. App: 'PDF · DOCX · JPG · PNG · WEBP · up to 50 MB' (from server config).  
 **Fix:** No change if 50 MB/WEBP is the real server limit; app is driven by data.accept.  
 Screens: [app](diff-shots/DC-26-app.webp) · [prototype](diff-shots/DC-26-proto.webp)
+
+**Status:** Kept — Accepted types/size text comes from the real server limits (50 MB, WEBP accepted).
 
 ### DC-27 · Replaced rows not verifiable (no seed)  (Info)
 *Documents · desktop — Replaced toggle*  
@@ -864,11 +1136,15 @@ Prototype 'Replaced' toggle adds italic greyed rows with an eye-off icon and the
 **Fix:** Seed one replaced upload in scripts/seed-demo.ts to verify Explorer.tsx hid rows.  
 Screens: [app](diff-shots/DC-27-app.webp) · [prototype](diff-shots/DC-27-proto.webp)
 
+**Status:** Kept — Data only: with replaced files seeded the toggle shows italic eye-off rows and the counter updates — behaviour already correct. · [app after fix](diff-shots/DC-27-fixed.webp)
+
 ### DC-28 · Bookshelf and recently-read not comparable  (Info)
 *Library · desktop — Bookshelf / Recently read*  
 Prototype shows category pill, '15 books' chip, Monthly status brief, PDF brief, search, Recently read strip with progress bars (drill-down) and shelves with planks. App has no saved items or reads for either client (and the API is off), so none of this could be checked.  
 **Fix:** Seed library items + client_library_reads and enable ASK_VCFO_ENABLED, then re-review LibraryPage.tsx against lib_shelf_a.dc.html / lib_recent_drill.dc.html.  
 Screens: [prototype](diff-shots/DC-28-proto.webp)
+
+**Status:** Fixed — Bookshelf and recently-read strip compared and aligned with lib_shelf_a. · [app after fix](diff-shots/DC-28-fixed.webp)
 
 ### DC-29 · Empty and loading states not reachable  (Info)
 *Documents · desktop — Empty / loading states*  
@@ -876,11 +1152,15 @@ Prototype has docs_a_empty and docs_a_loading boards. App seed always has docume
 **Fix:** Check States.tsx against docs_a_empty.dc.html / docs_a_loading.dc.html with an empty engagement.  
 Screens: [prototype](diff-shots/DC-29-proto.webp)
 
+**Status:** Kept — Empty/loading states are ports of docs_a_empty/docs_a_loading but cannot be reached with real data to compare.
+
 ### DC-30 · RUN letter filed under step 2  (Info)
 *Documents · desktop — Tree data*  
 App shows 'Name approval letter (RUN)' under 2 · Draft Board Resolution; that is how scripts/seed-demo.ts files it (stepId 'pre-2'). App correct for the data; seed is odd.  
 **Fix:** Optional: move the seed doc to step 5 (Name Approval) in scripts/seed-demo.ts.  
 Screens: [app](diff-shots/DC-30-app.webp)
+
+**Status:** Kept — Data only: the RUN letter files under Name Approval when its request carries that step. · [app after fix](diff-shots/DC-30-fixed.webp)
 
 
 ## Team, updates, settings, credentials
@@ -891,11 +1171,15 @@ Prototype hero is avatar + gold camera button + name/email/chips in one tidy row
 **Fix:** SettingsPage.tsx IdentityHero: the <input type=file hidden> is being displayed (a client-portal CSS rule beats the [hidden] attribute). Give it style={{display:'none'}} (or add `.cp [hidden]{display:none!important}` to css/10-base.css). Copy hero layout from settings_redesign.dc.html:90-94.  
 Screens: [app](diff-shots/TM-01-app.webp) · [prototype](diff-shots/TM-01-proto.webp)
 
+**Status:** Fixed — No native file input in the hero ([hidden] fix); hero chip uses the short name. · [app after fix](diff-shots/TM-01-fixed.webp)
+
 ### TM-02 · Hero overflows and clips on phone  (High)
 *Settings · phone 390 — Identity hero*  
 On 390 the app hero squeezes the name into 2 lines, wraps the email letter-by-letter and cuts the company chip off the right edge, with the file input still visible. Prototype keeps avatar + name/email/chips on one row inside the card.  
 **Fix:** Same fix as the hero file input (SettingsPage.tsx); also add minWidth:0 / overflow-wrap on the text column and let chips wrap.  
 Screens: [app](diff-shots/TM-02-app.webp) · [prototype](diff-shots/TM-02-proto.webp)
+
+**Status:** Fixed — Phone hero fits: name, email, 'Primary' and company chips on one row. · [app after fix](diff-shots/TM-02-fixed.webp)
 
 ### TM-03 · Matrix collapses on phone  (High)
 *Settings · phone 390 — Notification preference matrix*  
@@ -903,11 +1187,15 @@ Prototype phone matrix keeps the 'Tell me when' label column wide (labels on 1-2
 **Fix:** SettingsPage.tsx matrix + css/team-settings.css: at <=767px use grid `1fr 64px 64px` (hide the 34px icon column) as in settings_redesign.dc.html phone rules (SR:59-75).  
 Screens: [app](diff-shots/TM-03-app.webp) · [prototype](diff-shots/TM-03-proto.webp)
 
+**Status:** Fixed — Phone matrix rules now win (moved after the base rules): 1fr 60px 76px, labels wrap. · [app after fix](diff-shots/TM-03-fixed.webp)
+
 ### TM-04 · Every item typed as 'Step'  (High)
 *Notifications — Row type (icon + chip)*  
 Prototype shows '2 documents requested' as Request (blue file icon), 'Passport copy sent back' as Sent back (red chip). The app shows every row, including these two, with the green check icon and 'Step' chip, so Documents/Deadlines/Messages tabs and the donut are all 0.  
 **Fix:** NotificationsPage.tsx typeOf(): the notifications table has no kind column so `n.kind` is empty; fall back to title/description text for every kind (sent back/re-upload → back, 'requested' → doc, due/overdue → deadline) or add a kind column in the notifications repository.  
 Screens: [app](diff-shots/TM-04-app.webp) · [prototype](diff-shots/TM-04-proto.webp)
+
+**Status:** Fixed — Items typed by kind (Request, Sent back, Deadline, Team) with real tab counts. · [app after fix](diff-shots/TM-04-fixed.webp)
 
 ### TM-05 · 'Who' missing from rows  (High)
 *Notifications — Row who · time column*  
@@ -915,11 +1203,15 @@ Prototype right column reads 'Arjun Mehta · 10:42' / 'VCFO Suite · 09:00'. The
 **Fix:** NotificationsPage.tsx row + Drill: render `${who} · ${x.w}`; needs an actor name on AppNotification (notifications repository / table has no actor column today). Spec NT-05 (who·time 168px).  
 Screens: [app](diff-shots/TM-05-app.webp) · [prototype](diff-shots/TM-05-proto.webp)
 
+**Status:** Fixed — 'Who' shown on every row (SBC person, 'VCFO Suite' or 'SBC') on desktop, phone and drill. · [app after fix](diff-shots/TM-05-fixed.webp)
+
 ### TM-06 · Empty bar above dialog footer  (High)
 *Team · Invite / Hand-off / Substitute dialogs — Dialog body*  
 Prototype dialogs end cleanly after the role strip / checkbox. In the app an empty outlined bar (the hidden submit button) is drawn across the dialog just above the footer in Invite, Hand off your seat, Substitute and Settings 'Turn on WhatsApp'.  
 **Fix:** TeamPage.tsx InviteDialog/SubstituteDialog and SettingsPage.tsx WhatsAppDialog render `<button type="submit" hidden />`; a client-portal CSS rule overrides [hidden]. Use style={{display:'none'}} or add `.cp [hidden]{display:none!important}` in css/10-base.css.  
 Screens: [app](diff-shots/TM-06-app.webp) · [prototype](diff-shots/TM-06-proto.webp)
+
+**Status:** Fixed — No empty bar above dialog footers ([hidden] fix) in Invite, Hand off and WhatsApp dialogs. · [app after fix](diff-shots/TM-06-fixed.webp)
 
 ### TM-07 · Support card has no person or contact line  (Medium)
 *Team — SBC cards · Customer support*  
@@ -927,11 +1219,15 @@ Prototype support card shows a person name ('Farhat') and 'support@sbc.in · +91
 **Fix:** TeamPage.tsx SbcCard / shell team builder (usePortal().shell.team): pass the help-desk contact's name, email and phoneE164 into the support entry (TM-04).  
 Screens: [app](diff-shots/TM-07-app.webp) · [prototype](diff-shots/TM-07-proto.webp)
 
+**Status:** Fixed — Support card shows 'SBC help desk' with its contact line (or 'Contact details coming soon' when unset). · [app after fix](diff-shots/TM-07-fixed.webp)
+
 ### TM-08 · Body has no deep links  (Medium)
 *Notifications — Row body line*  
 Prototype body line is made of linked parts in primary blue ('Utility bill for the office · Board resolution', 'Open the document', 'GST portal ↗'). The app body is plain grey text with no links.  
 **Fix:** NotificationsPage.tsx `.nb`: render body parts with links (NT-05/NT-07); needs link data on the notification (href per part).  
 Screens: [app](diff-shots/TM-08-app.webp) · [prototype](diff-shots/TM-08-proto.webp)
+
+**Status:** Fixed — Each body ends with its deep link (Open the document, See the timeline, Open the filing …). · [app after fix](diff-shots/TM-08-fixed.webp)
 
 ### TM-09 · Raw 'Checklist · Save' labels  (Medium)
 *Audit — Event action labels*  
@@ -939,11 +1235,15 @@ Prototype actions are plain words ('Step accepted', 'Document uploaded'). The ap
 **Fix:** src/db/repositories/client-audit.ts project(): add labels for checklist.save ('Step saved'), *.checklist.complete ('Step accepted'), *.checklist.review ('Step reviewed') instead of formatAuditActionLabel fallback.  
 Screens: [app](diff-shots/TM-09-app.webp) · [prototype](diff-shots/TM-09-proto.webp)
 
+**Status:** Fixed — Plain labels for checklist, upload, timeline-change and credentials audit actions. · [app after fix](diff-shots/TM-09-fixed.webp)
+
 ### TM-10 · Client tab hidden on phone  (Medium)
 *Audit · phone 390 — Who filter pill*  
 Prototype phone shows all three who-tabs 'Everyone · SBC · Northwind' in a full-width pill. In the app only 'Everyone' and 'SBC' are visible; the 'Northwind Technologies' tab is pushed off-screen to the right.  
 **Fix:** AuditPage.tsx who Seg: use the short company label (first word, as the prototype 'Northwind') and equal 3-column grid; css/team-audit.css phone rule for `.tb-hd` pills.  
 Screens: [app](diff-shots/TM-10-app.webp) · [prototype](diff-shots/TM-10-proto.webp)
+
+**Status:** Fixed — Phone who-pill shows Everyone · SBC · <company> as three equal tabs. · [app after fix](diff-shots/TM-10-fixed.webp)
 
 ### TM-11 · Who pill much wider than prototype  (Medium)
 *Audit — Who filter pill (desktop)*  
@@ -951,11 +1251,15 @@ Prototype who-pill is compact (~240px) on the right. The app pill stretches to ~
 **Fix:** AuditPage.tsx line ~251: use companyShort first word (or shell short name) and `grid={false}` sizing like the prototype (AU-04).  
 Screens: [app](diff-shots/TM-11-app.webp) · [prototype](diff-shots/TM-11-proto.webp)
 
+**Status:** Fixed — Desktop who-pill compact with the short name. · [app after fix](diff-shots/TM-11-fixed.webp)
+
 ### TM-12 · Row eye (preview) icon missing  (Medium)
 *Credentials — Sheet rows · # column*  
 Prototype rows that hold secret values show an eye (preview row) icon next to the pencil in the # column. The app shows only the pencil on every row of Login Credentials / Directors KYC.  
 **Fix:** CredentialsPage.tsx row header (~line 819): render the row-preview eye button for rows with masked columns even when values are empty, as in v7p_credentials.dc.html.  
 Screens: [app](diff-shots/TM-12-app.webp) · [prototype](diff-shots/TM-12-proto.webp)
+
+**Status:** Fixed — Row eye (preview) icon shows next to the pencil on Login and Other credentials rows. · [app after fix](diff-shots/TM-12-fixed.webp)
 
 ### TM-13 · Portal card very long (49 tasks)  (Medium)
 *Announcements — Official portals card*  
@@ -963,11 +1267,15 @@ Prototype card is compact: Setup 8 (Incorporation, Registrations, FEMA) / Recurr
 **Fix:** AnnouncementsPage.tsx portals: inventory AN-09 accepts real counts, but cap the visible list (e.g. relevant heads only for this engagement, or max-height with scroll) to keep the compact card the prototype shows.  
 Screens: [app](diff-shots/TM-13-app.webp) · [prototype](diff-shots/TM-13-proto.webp)
 
+**Status:** Fixed — Portals card shows 8 rows then 'Show all N' / 'Show fewer'. · [app after fix](diff-shots/TM-13-fixed.webp)
+
 ### TM-14 · No code step in WhatsApp dialog  (Medium)
 *Settings — Turn on WhatsApp pop-up*  
 Prototype dialog steps are Number → Code → Done with six code boxes and 'Verify & turn on'. The app steps are Number → Consent → Done with no code entry and a plain 'Turn on' button.  
 **Fix:** SettingsPage.tsx WhatsAppDialog: documented as not live (no verification template, QUESTIONS.md). Keep tracking; when the template ships, copy the 6-digit field from settings_redesign.dc.html (ST-12).  
 Screens: [app](diff-shots/TM-14-app.webp) · [prototype](diff-shots/TM-14-proto.webp)
+
+**Status:** Kept — No WhatsApp verification template/backend exists yet (QUESTIONS.md Settings); faking a code step would mislead — the Number → Consent → Done flow stays until the OTP sender ships.
 
 ### TM-15 · From card caption wraps  (Low)
 *Team · Hand-off pop-up — From card*  
@@ -975,11 +1283,15 @@ Prototype 'from' card caption is one line 'Primary · Northwind'. The app uses t
 **Fix:** TeamPage.tsx SubstituteDialog: use the short company name in the caption and ellipsis the line.  
 Screens: [app](diff-shots/TM-15-app.webp) · [prototype](diff-shots/TM-15-proto.webp)
 
+**Status:** Fixed — Hand-off From/To captions on one line (short name, ellipsis). · [app after fix](diff-shots/TM-15-fixed.webp)
+
 ### TM-16 · Full company name instead of short  (Low)
 *Team / Audit / Settings — Company name in labels*  
 Prototype uses the short name everywhere ('People from Northwind', 'Northwind' chip, 'Sees everything on Northwind'). The app uses 'Northwind Technologies' in headings/chips/filters and 'Northwind Technologies India Pvt Ltd' in the Settings chip, causing wraps and clipping.  
 **Fix:** shell.companyShort is the full name; derive a short display name (first word, as the prototype) in PortalProvider and use it in TeamPage/AuditPage/SettingsPage.  
 Screens: [app](diff-shots/TM-16-app.webp) · [prototype](diff-shots/TM-16-proto.webp)
+
+**Status:** Fixed — Team, Audit, Settings and dialogs use the short company name. · [app after fix](diff-shots/TM-16-fixed.webp)
 
 ### TM-17 · Empty today bar drawn navy  (Low)
 *Audit — 14-day chart · today bar*  
@@ -987,11 +1299,15 @@ In the prototype today always has events. In the app today with 0 events is a 3p
 **Fix:** AuditPage.tsx bar colour: use var(--border) when count is 0, navy only when today has events.  
 Screens: [app](diff-shots/TM-17-app.webp) · [prototype](diff-shots/TM-17-proto.webp)
 
+**Status:** Fixed — Days with no events (incl. today) drawn in the border colour; navy only when today has events. · [app after fix](diff-shots/TM-17-fixed.webp)
+
 ### TM-18 · Empty bubble style differs  (Low)
 *Credentials — Other credentials empty state*  
 Prototype empty state is a dark navy one-line pill next to the bot. The app shows a white bordered bubble that wraps to two lines.  
 **Fix:** CredentialsPage.tsx empty sheet bubble: copy the navy pill styling from v7p_credentials.dc.html.  
 Screens: [app](diff-shots/TM-18-app.webp) · [prototype](diff-shots/TM-18-proto.webp)
+
+**Status:** Fixed — Empty sheet uses the prototype's small bot + navy pill bubble.
 
 ### TM-19 · Address band disagrees with Address sheet  (Low)
 *Credentials — Login Credentials header band*  
@@ -999,11 +1315,15 @@ The Login Credentials title band shows 'Address: WeWork Prestige Central, Bengal
 **Fix:** CredentialsPage.tsx: build the band from the same registered-office source as the Address sheet (or hide it when empty).  
 Screens: [app](diff-shots/TM-19-app.webp) · [prototype](diff-shots/TM-19-proto.webp)
 
+**Status:** Fixed — Login address band reads the Address sheet's Registered office row. · [app after fix](diff-shots/TM-19-fixed.webp)
+
 ### TM-20 · No empty hint when no directors  (Low)
 *Credentials — Directors KYC sheet*  
 With no directors yet the app shows only the Particulars column with no explanation. The prototype always has director columns; an empty sheet needs a hint like the other empty sheets.  
 **Fix:** CredentialsPage.tsx: when there are 0 director columns, show the bot bubble 'Directors appear here after step 8' with 'Add director'.  
 Screens: [app](diff-shots/TM-20-app.webp) · [prototype](diff-shots/TM-20-proto.webp)
+
+**Status:** Fixed — Empty-directors hint shown when there are no directors. · [app after fix](diff-shots/TM-20-fixed.webp)
 
 ### TM-21 · 'Mark all read' on its own row  (Low)
 *Notifications · phone 390 — Card header*  
@@ -1011,11 +1331,15 @@ The app adds 'Mark all read' (G1) which on phone drops to a separate row under t
 **Fix:** NotificationsPage.tsx .tb-mark: on phone put it as a small link at the right of the group label or inside the pill row.  
 Screens: [app](diff-shots/TM-21-app.webp) · [prototype](diff-shots/TM-21-proto.webp)
 
+**Status:** Fixed — Phone 'Mark all read' moved into the first group label row. · [app after fix](diff-shots/TM-21-fixed.webp)
+
 ### TM-22 · Dialog sits higher than spec  (Low)
 *Announcements — Detail pop-up position*  
 Prototype detail dialog is top-aligned at ~140px from the top. The app opens it at ~108px.  
 **Fix:** common.tsx Dialog `top` variant (tb-top --ovt): use min(140px,14vh) per AN-10.  
 Screens: [app](diff-shots/TM-22-app.webp) · [prototype](diff-shots/TM-22-proto.webp)
+
+**Status:** Fixed — Team dialogs open at the spec height (~140 px from the top). · [app after fix](diff-shots/TM-22-fixed.webp)
 
 ### TM-23 · Greeting bubble covers content  (Low)
 *Team / all pages · phone — Ask VCFO greeting*  
@@ -1023,11 +1347,15 @@ On every page the app auto-opens the Ask VCFO greeting bubble, which on 390 cove
 **Fix:** Shell launcher (src/components/client-portal Visor/launcher): do not auto-open the greeting on inner pages, or only once per session. (Shell area — flag to shell owner.)  
 Screens: [app](diff-shots/TM-23-app.webp) · [prototype](diff-shots/TM-23-proto.webp)
 
+**Status:** Fixed — The first-visit Ask VCFO note shows only on Home (still once per client, DECISIONS); inner pages show just the launcher. · [app after fix](diff-shots/TM-23-fixed.webp)
+
 ### TM-24 · Banner hidden before COI  (Info)
 *Announcements — Next-deadline banner*  
 Prototype shows 'Next deadline · GSTR-3B' on the before-COI company. The app hides the banner because a pre-incorporation company has no filings yet (G10). App correct; prototype is fake data.  
 **Fix:** None.  
 Screens: [app](diff-shots/TM-24-app.webp) · [prototype](diff-shots/TM-24-proto.webp)
+
+**Status:** Kept — App correct: a company before COI has no filings to announce; the prototype shows demo data.
 
 ### TM-25 · No feed items or kind variety  (Info)
 *Announcements — Latest list*  
@@ -1035,11 +1363,15 @@ Prototype mixes Deadline/MCA/Compliance/Tax/GST/Post-Incorp kinds and 'Official 
 **Fix:** Seed richer announcements to verify feed rows.  
 Screens: [app](diff-shots/TM-25-app.webp) · [prototype](diff-shots/TM-25-proto.webp)
 
+**Status:** Kept — Seed data only; the row structure matches.
+
 ### TM-26 · No WhatsApp/Email on author  (Info)
 *Announcements · detail — Author strip*  
 Prototype author strip has WhatsApp and Email buttons. The app's author is 'Scratch SBC' (not in the SBC team) so no buttons render. Seed data; logic hides them only when no contact.  
 **Fix:** None (seed announcements from a real team member to verify).  
 Screens: [app](diff-shots/TM-26-app.webp) · [prototype](diff-shots/TM-26-proto.webp)
+
+**Status:** Kept — Seed data: WhatsApp/Email buttons hide only when the author has no contact.
 
 ### TM-27 · Temp password instead of link  (Info)
 *Team — Invite pop-up · Sign-in*  
@@ -1047,11 +1379,15 @@ Prototype shows 'Set-password link by email · Expires in 7 days'. App shows 'Te
 **Fix:** None until set-password link ships.  
 Screens: [app](diff-shots/TM-27-app.webp) · [prototype](diff-shots/TM-27-proto.webp)
 
+**Status:** Kept — Owner decision (DECISIONS.md): temporary password until the set-password link ships.
+
 ### TM-28 · Prototype only toasts on Invite  (Info)
 *Team — Invite button*  
 In the routed prototype Invite only toasts 'Only the Primary contact can invite'; the app opens the Invite pop-up for the Primary (matches TM-02/TM-14 boards).  
 **Fix:** None.  
 Screens: [app](diff-shots/TM-28-app.webp) · [prototype](diff-shots/TM-28-proto.webp)
+
+**Status:** Kept — Prototype only toasts on Invite; the app does the real invite.
 
 ### TM-29 · Two Primary contacts in seed  (Info)
 *Team — People list*  
@@ -1059,11 +1395,15 @@ App lists two people both chipped 'Primary' (Northwind Client, Rohan Kumar). See
 **Fix:** Fix seed (one Primary).  
 Screens: [app](diff-shots/TM-29-app.webp) · [prototype](diff-shots/TM-29-proto.webp)
 
+**Status:** Kept — Seed data (fixed to one Primary).
+
 ### TM-30 · Auto-filled cells empty  (Info)
 *Credentials — Address / mail / mobile cells*  
 Prototype fills Address and Login mail/mobile cells with 'Auto · from registered office / client profile'. App cells are '—' because step 7 and the client profile have no data yet. App correct; prototype is fake data.  
 **Fix:** None.  
 Screens: [app](diff-shots/TM-30-app.webp) · [prototype](diff-shots/TM-30-proto.webp)
+
+**Status:** Kept — App correct: auto-filled cells come from real checklist data; prototype shows demo values.
 
 ### TM-31 · Demo code line only in prototype  (Info)
 *Credentials — OTP pop-up*  
@@ -1071,11 +1411,15 @@ Pop-up matches (title, caption, masked manager email, 6 boxes, Resend 0:30, Canc
 **Fix:** None.  
 Screens: [app](diff-shots/TM-31-app.webp) · [prototype](diff-shots/TM-31-proto.webp)
 
+**Status:** Kept — Demo-code line exists only in the prototype; showing a code would leak a secret.
+
 ### TM-32 · Phone, WhatsApp, 'changed' empty  (Info)
 *Settings — Profile / Security data*  
 Prototype shows phone, verified WhatsApp, 'changed 2 Sep' and 'Chrome on Windows · Hyderabad'. App shows '—', 'Not set up · Off', no changed date, 'Chrome on Linux'. Seed/profile data only; rows and chips render correctly.  
 **Fix:** None.  
 Screens: [app](diff-shots/TM-32-app.webp) · [prototype](diff-shots/TM-32-proto.webp)
+
+**Status:** Kept — Seed/profile data only.
 
 
 ## Shell, Ask VCFO, intro
@@ -1086,11 +1430,15 @@ Hovering or opening a rail group in the app paints a second, CSS-only tooltip: a
 **Fix:** css/10-base.css `.cp [data-tip]:hover::after/::before` leaks into the sidebar. Exclude the shell: e.g. `.cp :not(.vps) > [data-tip]` / add `.cp .vps [data-tip]::before,.cp .vps [data-tip]::after{content:none}` (the rail uses Sidebar.tsx's own .vps-tip like shell.js showTip).  
 Screens: [app](diff-shots/SH-01-app.webp) · [prototype](diff-shots/SH-01-proto.webp)
 
+**Status:** Fixed — The shared [data-tip] tooltip no longer applies inside the sidebar; rail icons show only the sidebar's own tooltip. · [app after fix](diff-shots/SH-01-fixed.webp)
+
 ### SH-02 · Stray 'Choose File' input visible  (High)
 *Home + Settings · all states — Page content*  
 App shows a native 'Choose File / No file chosen' control under the Home content (both before and after COI) and in the Settings profile hero next to the avatar. Prototype has nothing there. Checked all 12 portal pages: only Home and Settings show it.  
 **Fix:** Root cause: the reset `.cp :where(...){all:revert}` in css/00-tokens.css (src css-src/00-tokens.css) cancels the `hidden` attribute, so `<input type=file hidden>` (pages/home/ui.tsx:204, pages/team/SettingsPage.tsx:477) renders. Add `.cp [hidden]{display:none!important}` to 00-tokens.css (as was done for .vps-fly[hidden]).  
 Screens: [app](diff-shots/SH-02-app.webp)
+
+**Status:** Fixed — [hidden] always hides inside the portal: no stray file inputs on Home or Settings. · [app after fix](diff-shots/SH-02-fixed.webp)
 
 ### SH-03 · 'Choose File' shown inside Settings hero  (High)
 *Settings · 1440 — Profile hero*  
@@ -1098,11 +1446,15 @@ The hidden photo-upload input renders as a native file picker overlapping the av
 **Fix:** Same as above: css/00-tokens.css `[hidden]` fix; SettingsPage.tsx:477 input.  
 Screens: [app](diff-shots/SH-03-app.webp) · [prototype](diff-shots/SH-03-proto.webp)
 
+**Status:** Fixed — Same [hidden] fix: Settings hero is clean. · [app after fix](diff-shots/SH-03-fixed.webp)
+
 ### SH-04 · Phone chat is a tall panel, not a bottom sheet  (High)
 *Phone · 390 — Ask VCFO chat*  
 Prototype phone opens Ask VCFO as a white bottom sheet (grab handle, plain 'Ask VCFO' title + ×, page dimmed above). App opens the desktop window stretched to almost full height with the navy header and peeking robot.  
 **Fix:** AskLauncher.tsx: below 768px render the sheet variant (s/home/mobile.html #botBtn sheet, BUILD-INVENTORY L-08/C-12): handle, title row, messages, chips, composer; scrim behind.  
 Screens: [app](diff-shots/SH-04-app.webp) · [prototype](diff-shots/SH-04-proto.webp)
+
+**Status:** Fixed — Phone chat is a bottom sheet over a dimmed page (grab handle, title, ×), launcher hidden while open. · [app after fix](diff-shots/SH-04-fixed.webp)
 
 ### SH-05 · Before/After pill sits before Search  (Medium)
 *All pages · 1440 — Top bar · Before/After pill*  
@@ -1110,11 +1462,15 @@ Prototype order is Search ⌘K · Before/After · Announcements · Notifications
 **Fix:** src/components/client-portal/TopBar.tsx: move the `#vp-ba-top` slot after the `.tbar-srch` button (shell.js mountBA/placeTopSlot; BUILD-INVENTORY B-01/SH-02). Note T-01 in the inventory lists the old order; B-01 and the prototype runtime win.  
 Screens: [app](diff-shots/SH-05-app.webp) · [prototype](diff-shots/SH-05-proto.webp)
 
+**Status:** Fixed — Before/After pill sits after Search. · [app after fix](diff-shots/SH-05-fixed.webp)
+
 ### SH-06 · Search does not collapse to an icon at 1024  (Medium)
 *Tablet · 1024 — Top bar · Search*  
 Prototype collapses Search to a 36px icon button at ≤1099/≤1279 px. App keeps the full 'Search ⌘K' box at 1024, crowding the trail.  
 **Fix:** TopBar.tsx + css/20-shell.css: add the breakpoint rule hiding `.tbar-sl`/`.kbd` and making `.tbar-srch` 36×36 below 1280px (BUILD-INVENTORY S-01, §1.10; v7x_topbar.dc.html).  
 Screens: [app](diff-shots/SH-06-app.webp) · [prototype](diff-shots/SH-06-proto.webp)
+
+**Status:** Fixed — Search folds to an icon below 1280 px (tablet rail). · [app after fix](diff-shots/SH-06-fixed.webp)
 
 ### SH-07 · Group icon hidden while fly-out open  (Medium)
 *Tablet · 1024 — Icon rail · group fly-out open*  
@@ -1122,11 +1478,15 @@ With the Updates / Compliances fly-out open, the app's rail icon is half covered
 **Fix:** Same fix as above in css/10-base.css (scope the generic [data-tip] pseudo tooltip away from `.vps`).  
 Screens: [app](diff-shots/SH-07-app.webp) · [prototype](diff-shots/SH-07-proto.webp)
 
+**Status:** Fixed — Group rail icon stays visible while its fly-out is open. · [app after fix](diff-shots/SH-07-fixed.webp)
+
 ### SH-08 · Team label wraps: 'Northwind Technologies’s team'  (Medium)
 *All pages · 1440 — Sidebar · team label*  
 Prototype label is one line 'NORTHWIND’S TEAM' (short name). App uses 'NORTHWIND TECHNOLOGIES’S TEAM', which wraps to two lines and has the wrong possessive after 's'. Same short name feeds the chat header/greeting and account subtitle.  
 **Fix:** src/db/repositories/client-portal.ts:184 `shortCompany` only strips 'India Pvt Ltd'; incorporation/data.ts shortCompany() also strips Technologies/Solutions/Services — use one helper for shell.companyShort. In Sidebar.tsx:369 (and AskLauncher) use a possessive helper (name ends in s → ’).  
 Screens: [app](diff-shots/SH-08-app.webp) · [prototype](diff-shots/SH-08-proto.webp)
+
+**Status:** Fixed — Short company name: 'Northwind’s team' on one line. · [app after fix](diff-shots/SH-08-fixed.webp)
 
 ### SH-09 · Phone search: palette under the launcher, not a sheet  (Medium)
 *Phone · 390 — Search*  
@@ -1134,11 +1494,15 @@ Prototype phone Search opens a bottom sheet ('Search' title, 44px input 'Search 
 **Fix:** SearchPalette.tsx: on phone render as a bottom sheet (mobile.html M-25 styling) and raise its z-index above #vp-launch (or add `sheet-open` so the launcher hides, as proto does for sheets).  
 Screens: [app](diff-shots/SH-09-app.webp) · [prototype](diff-shots/SH-09-proto.webp)
 
+**Status:** Fixed — Phone search is a bottom sheet (title, close, 44 px input, 52 px rows) above the launcher. · [app after fix](diff-shots/SH-09-fixed.webp)
+
 ### SH-10 · Account subtitle cut off mid-word  (Low)
 *All pages · 1440 — Sidebar · account row*  
 Prototype: 'Northwind · Client' fits. App: 'Northwind Technologies · (' is truncated, losing 'Client'.  
 **Fix:** client-portal.ts roleLabel uses the long short-name; fixing companyShort (row above) fixes it. Sidebar.tsx account `.vps-nm small` keeps ellipsis.  
 Screens: [app](diff-shots/SH-10-app.webp) · [prototype](diff-shots/SH-10-proto.webp)
+
+**Status:** Fixed — Account subtitle uses the short name ('Northwind · Client'). · [app after fix](diff-shots/SH-10-fixed.webp)
 
 ### SH-11 · Chat subtitle wraps to two lines  (Low)
 *Ask VCFO chat · 1440 — Chat header + greeting*  
@@ -1146,11 +1510,15 @@ Prototype header subtitle 'Answers from Northwind’s project data' is one line.
 **Fix:** AskLauncher.tsx header/greeting use shell.companyShort — fixed by the companyShort/possessive fix.  
 Screens: [app](diff-shots/SH-11-app.webp) · [prototype](diff-shots/SH-11-proto.webp)
 
+**Status:** Fixed — Chat subtitle fits one line with the short name. · [app after fix](diff-shots/SH-11-fixed.webp)
+
 ### SH-12 · Phone top bar icons smaller/greyer  (Low)
 *Phone · 390 — Top bar*  
 Prototype: 56px bar, 20px dark search icon, bell in primary blue, 'Home' 800 weight navy. App: shorter bar, 14px blue search icon, grey bell, lighter title.  
 **Fix:** TopBar.tsx + css/20-shell.css phone rules: search icon 20px muted colour, 44px buttons, bell `color:var(--primary)` when unread, title 800 15px (BUILD-INVENTORY M-01).  
 Screens: [app](diff-shots/SH-12-app.webp) · [prototype](diff-shots/SH-12-proto.webp)
+
+**Status:** Fixed — Phone top bar matches mobile.html (56 px bar, 44 px buttons, 19 px icons, blue bell). · [app after fix](diff-shots/SH-12-fixed.webp)
 
 ### SH-13 · Bell not tinted when there are unread  (Low)
 *Home / Documents / Library / Incorporation · 1440 — Top bar · Notifications*  
@@ -1158,11 +1526,15 @@ Prototype tints the Notifications button primary-light with a blue bell whenever
 **Fix:** TopBar.tsx: use the `on` style when `notif > 0` (v7x_topbar.dc.html 'Notifications, 3 new' button; SH-02 'tinted primary-light').  
 Screens: [app](diff-shots/SH-13-app.webp) · [prototype](diff-shots/SH-13-proto.webp)
 
+**Status:** Fixed — Bell tinted whenever there are unread notifications. · [app after fix](diff-shots/SH-13-fixed.webp)
+
 ### SH-14 · Trail icon always the Home grid  (Low)
 *Documents / Library / Credentials / Compliances · 1440 — Top bar · location trail*  
 Prototype trail tile uses the page's own icon (folder for Documents/Library, key for Credentials, shield for Compliances) and shows just the page name. App always shows the Home grid icon and 'Home / <page>'.  
 **Fix:** TopBar.tsx `.tbar-ic`: pick the icon from routes.ts per active key (icons.tsx docs/lib/key/comp) as in each board's topbar trail; drop the 'Home /' prefix where the prototype has none.  
 Screens: [app](diff-shots/SH-14-app.webp) · [prototype](diff-shots/SH-14-proto.webp)
+
+**Status:** Fixed — Trail tile uses each page's own icon; 'Home /' dropped where the prototype drops it. · [app after fix](diff-shots/SH-14-fixed.webp)
 
 ### SH-15 · Step crumb leaf has 'Step 7 ·' prefix  (Low)
 *Incorporation step page · 1440 — Top bar · location trail*  
@@ -1170,11 +1542,15 @@ Prototype leaf is 'Registered Office Address'. App leaf is 'Step 7 · Registered
 **Fix:** TopBar.tsx crumbs from PortalProvider (`crumbs`) set by StepPage.tsx: pass the bare step title as the last crumb.  
 Screens: [app](diff-shots/SH-15-app.webp) · [prototype](diff-shots/SH-15-proto.webp)
 
+**Status:** Fixed — Step crumb leaf has no 'Step 7 ·' prefix (fixed with IN-19). · [app after fix](diff-shots/SH-15-fixed.webp)
+
 ### SH-16 · Theme tooltip runs off the right edge  (Low)
 *All pages · 1440 — Top bar · Theme tooltip*  
 Prototype clamps tooltips 8px inside the viewport. App's 'Switch to dark theme' tooltip is centred under the button and is cut off at the right edge ('Switch to dark th').  
 **Fix:** TopBar.tsx theme button uses the CSS pseudo tooltip (css/10-base.css [data-tip]); route it through IconTips/#vp-tip with edge clamping (proto.js tooltip, BUILD-INVENTORY N-03).  
 Screens: [app](diff-shots/SH-16-app.webp) · [prototype](diff-shots/SH-16-proto.webp)
+
+**Status:** Fixed — Theme tooltip stays 8 px inside the screen edge; top-bar tips sit below their controls. · [app after fix](diff-shots/SH-16-fixed.webp)
 
 ### SH-17 · Dashboard flashes before the intro  (Low)
 *First load · 1440 — Intro animation*  
@@ -1182,11 +1558,15 @@ Prototype intro starts on a white screen at load. App paints the dashboard first
 **Fix:** PortalIntro.tsx: render a white cover immediately while `prefs` is loading when intro may play (e.g. server-render intro_seen flag in the layout, or hide `.cp-body` until prefs resolve).  
 Screens: [app](diff-shots/SH-17-app.webp) · [prototype](diff-shots/SH-17-proto.webp)
 
+**Status:** Fixed — An intro cover hides the dashboard while preferences load, so it no longer flashes before the intro. · [app after fix](diff-shots/SH-17-fixed.webp)
+
 ### SH-18 · Robot hidden at rest on Home  (Info)
 *Home · 1440 — Ask VCFO avatar*  
 Prototype robot stands left of the Ask VCFO pill on Home. In the app it stays ducked because it would cover the eye/download icons of the Recent documents rows (which sit higher in the app's layout). This is the spec'd 'covers a control' rule.  
 **Fix:** No shell change; follows from the Home layout (home group). AskLauncher.tsx coversControl matches proto.js.  
 Screens: [app](diff-shots/SH-18-app.webp) · [prototype](diff-shots/SH-18-proto.webp)
+
+**Status:** Kept — Specified behaviour: the robot hides at rest when it would cover a control (follows from the Home layout).
 
 ### SH-19 · First-visit note shown (not in prototype runtime)  (Info)
 *Home · 1440 — Ask VCFO first-visit note*  
@@ -1194,11 +1574,15 @@ App shows the 'Hello. Ask me anything…' card with two chips above the launcher
 **Fix:** App correct per DECISIONS.md; prototype runtime omits it.  
 Screens: [app](diff-shots/SH-19-app.webp) · [prototype](diff-shots/SH-19-proto.webp)
 
+**Status:** Kept — Owner decision (DECISIONS.md): first-visit bot note shown once per client.
+
 ### SH-20 · Real command palette vs prototype toast  (Info)
 *All pages · 1440 — Search ⌘K*  
 Prototype Search only focuses the box (a toast in some boards); ⌘K does nothing. App opens a working palette (Pages + Documents, ↑↓ / Enter / Esc). The inventory (S-02) asks for the real palette.  
 **Fix:** App correct; prototype is visual only.  
 Screens: [app](diff-shots/SH-20-app.webp) · [prototype](diff-shots/SH-20-proto.webp)
+
+**Status:** Kept — Specified (inventory S-02): a real command palette; the prototype only toasts.
 
 ### SH-21 · App answers add Helpful? 👍/👎  (Info)
 *Ask VCFO chat · 1440 — Answer bubble*  
@@ -1206,11 +1590,15 @@ App answers show 'Helpful?' thumbs buttons; prototype answer bubble has none. DE
 **Fix:** App correct for thumbs. Optional: enrich lib/client-portal/answers.ts 'next step' text with needed items like the prototype QA.  
 Screens: [app](diff-shots/SH-21-app.webp) · [prototype](diff-shots/SH-21-proto.webp)
 
+**Status:** Kept — Owner decision (DECISIONS.md): keep 👍/👎 on answers.
+
 ### SH-22 · Next.js dev badge covers the avatar  (Info)
 *All pages · dev only — Account row*  
 In the app the Next.js dev-tools 'N' button sits over the account avatar (bottom-left) on every page and on phones over content. Not in the prototype; dev build only.  
 **Fix:** Dev only; optional `devIndicators: false` in next.config to keep screenshots clean.  
 Screens: [app](diff-shots/SH-22-app.webp) · [prototype](diff-shots/SH-22-proto.webp)
+
+**Status:** Kept — Next.js dev badge exists only in development builds, not in the portal.
 
 ### SH-23 · Drawer group open state remembered across devices  (Info)
 *Phone · 390 — Drawer*  
@@ -1218,14 +1606,20 @@ Prototype drawer starts with Updates/Compliances closed (per-browser). App remem
 **Fix:** Intended (prefs are DB-backed); no change.  
 Screens: [app](diff-shots/SH-23-app.webp) · [prototype](diff-shots/SH-23-proto.webp)
 
+**Status:** Kept — Intended: drawer group open state is a stored preference.
+
 ### SH-24 · Skeleton shows while next page loads  (Info)
 *Page change · 1440 — Page-enter*  
 Prototype screens appear fully drawn. App shows grey skeleton blocks for ~0.5s (Library) while data loads, then content fades in. Expected for live data.  
 **Fix:** No change needed.  
 Screens: [app](diff-shots/SH-24-app.webp) · [prototype](diff-shots/SH-24-proto.webp)
 
+**Status:** Kept — Expected loading skeleton while live data loads.
+
 ### SH-25 · Prototype boards differ in icon details  (Info)
 *Several pages · 1440 — Top bar · Announcements / Theme icons*  
 Some prototype boards draw an outline megaphone without the gold unread dot and a moon theme icon (Incorporation, Credentials); Home/Team boards use the gold-dot megaphone and sun like the app.  
 **Fix:** App consistent; prototype boards inconsistent.  
 Screens: [app](diff-shots/SH-25-app.webp) · [prototype](diff-shots/SH-25-proto.webp)
+
+**Status:** Kept — App is consistent; the prototype boards disagree with each other on icon details.
