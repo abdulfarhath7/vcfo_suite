@@ -80,6 +80,7 @@ export async function POST(request: Request, context: RouteContext) {
     const message = err instanceof Error ? err.message : 'approve_failed';
     const friendly: Record<string, string> = {
       step_not_awaiting_client_approval: 'This step is not waiting for your approval yet.',
+      step_has_no_approval: 'You submit this step yourself. There is nothing to approve.',
     };
     const status =
       message === 'Only the client may approve a step'

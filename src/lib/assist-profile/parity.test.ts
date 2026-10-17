@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildDocPackContext } from '@/lib/doc-pack/evaluate';
 import { director } from '@/lib/doc-pack/__tests__/fixtures';
 import { buildAssistProfile } from '@/lib/assist-profile/build';
-import { assistFullState, withSubscribers } from '@/lib/assist-profile/__tests__/fixtures';
+import { ASSIST_PRE1, assistFullState, withSubscribers } from '@/lib/assist-profile/__tests__/fixtures';
 
 /**
  * Parity: every key the profile emits is a key VCFO Assist actually reads.
@@ -183,6 +183,10 @@ const MAPPING_JS_PATHS = new Set([
  */
 const INFORMATIONAL_PATHS = new Set([
   'company.nicDescription',
+  // SPICe+ Part A takes one main division; the extra codes are for the lead's
+  // Preview until mapping.js learns the portal's "add NIC" rows.
+  'company.additionalNicCodes[].code',
+  'company.additionalNicCodes[].description',
   'company.capital.authorized',
   'company.capital.subscribed',
   'registeredOffice.country',
@@ -223,7 +227,14 @@ describe('assist profile ↔ mapping.js parity', () => {
   );
   const withIndividuals = buildAssistProfile(
     buildDocPackContext({
-      state: withSubscribers(assistFullState([director('e1', 'no', 'Alpha', { middleName: 'M' }), interests]), [
+      state: withSubscribers(
+        assistFullState([director('e1', 'no', 'Alpha', { middleName: 'M' }), interests], {
+          ...ASSIST_PRE1,
+          additionalNicCodes: 'n1',
+          'additionalNicCodes.n1.code': '62020',
+          'additionalNicCodes.n1.businessType': 'Computer consultancy',
+        }),
+        [
         { id: 's1', name: 'Gamma Director', shares: '10000' },
       ]),
       engagement: { companyName: 'Test Company India Private Limited', ownershipType: 'independent', companyType: 'domestic' },
@@ -236,6 +247,7 @@ describe('assist profile ↔ mapping.js parity', () => {
       expect.arrayContaining([
         'company.proposedNames[]',
         'company.nicCode',
+        'company.additionalNicCodes[].code',
         'registeredOffice.email',
         'directors[].firstName',
         'directors[].middleName',

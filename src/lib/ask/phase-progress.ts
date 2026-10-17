@@ -45,7 +45,7 @@ export function buildPhaseProgress(input: PhaseProgressInput): PhaseProgressRow[
     const name = PHASE_BY_ID[phase.id];
     if (!name) continue;
     const done = phase.items.filter((item) =>
-      isChecklistStepSequentiallyComplete(coerceStatusCode(state[item.id]?.status), state[item.id]),
+      isChecklistStepSequentiallyComplete(coerceStatusCode(state[item.id]?.status), state[item.id], item.id),
     ).length;
     const current = phase.items.find((item) => {
       const kind = getStepGate(gates, item.id).kind;

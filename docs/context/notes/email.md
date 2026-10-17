@@ -115,3 +115,14 @@ Gotchas already paid for once. Append when something costs more than a minute to
   accepted any address — only the UI was directory-bound.
 - Directory now returns inactive people too; To defaults to **Active**. Team
   filter uses `profiles.reports_to_manager_id`.
+
+## Pre-incorporation direct flow mail (2026-10-13)
+
+- `step_submitted` by a client → Resend to leads + managers (`{company}@sbctrack.in`, Reply-To
+  the client). By the lead → Resend to the clients, managers on CC (`directFlowEmailPlan`).
+- `step_waiting_on_lead` → Resend to leads only. `step_reopened` → no mail.
+- `pre-12` WhatsApp `coi_issued` now fires on `step_submitted` (the old Accept path is unused
+  for direct-flow steps). A WhatsApp failure still never touches the email path.
+- Board resolution "Send back" (`review_rejected` on `pre-2`): no client compose draft, no
+  client bell; Resend to the leads with the manager's note. "Approve and send to client" keeps
+  the existing `board_resolution_shared` compose to the client.

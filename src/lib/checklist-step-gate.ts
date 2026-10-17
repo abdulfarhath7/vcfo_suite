@@ -8,6 +8,11 @@ import {
 import { isClientSubmissionLocked } from '@/lib/checklist-item-lock';
 import { isLeadRequestPending, isReviewRejected } from '@/lib/checklist-item-review';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import {
+  isDirectFlowStep,
+  isDirectFlowStepComplete,
+  isWaitingOnLead,
+} from '@/lib/pre-inc-direct-flow';
 
 export type ChecklistStepGateKind = 'done' | 'active' | 'waiting' | 'locked';
 export type ChecklistGateViewer = 'client' | 'staff' | 'intern';
@@ -26,6 +31,7 @@ const WAITING_CLIENT = 'Waiting on the client…';
 const WAITING_LEAD = 'Waiting on your project lead…';
 const WAITING_MANAGER = 'Waiting on your manager…';
 const WAITING_YOUR_APPROVAL = 'Waiting on your approval…';
+const WAITING_FILLERS = 'Waiting on the client or the project lead…';
 
 export function checklistGateViewerFrom(
   variant: 'admin' | 'client',
@@ -79,8 +85,14 @@ function lockedMessage(title: string): string {
 export function isChecklistStepSequentiallyComplete(
   status: StatusCode,
   slice?: ChecklistItemStateSlice | null,
+  itemId?: string,
 ): boolean {
   if (status === 'not-applicable') return true;
+  // Pre-incorporation direct flow: Submit completes the step; old approval-era
+  // states are read through the policy module (section 3.12 of the spec).
+  if (itemId && isDirectFlowStep(itemId)) {
+    return isDirectFlowStepComplete(itemId, { ...(slice ?? {}), status });
+  }
   if (isReviewRejected(slice)) return false;
   if (isLeadRequestPending(slice)) return false;
 
@@ -91,6 +103,19 @@ export function isChecklistStepSequentiallyComplete(
   if (slice?.deliveredToClientAt?.trim()) return true;
   if (isClientSubmissionLocked(slice) && Boolean(slice?.clientSubmittedAt?.trim())) return true;
   return false;
+}
+
+/**
+ * The current direct-flow step: the client and the lead both fill it. After a
+ * client submit that stopped on lead-only fields it waits on the lead.
+ */
+function directFlowCurrentGate(viewer: ChecklistGateViewer, waitingOnLead: boolean): ChecklistStepGate {
+  if (viewer === 'intern') return { kind: 'active', canOpen: true, canEdit: true, message: null };
+  if (waitingOnLead) {
+    return { kind: 'waiting', canOpen: true, canEdit: false, message: WAITING_LEAD };
+  }
+  if (viewer === 'client') return { kind: 'active', canOpen: true, canEdit: true, message: null };
+  return { kind: 'waiting', canOpen: true, canEdit: false, message: WAITING_FILLERS };
 }
 
 export function gateDisplayStatus(
@@ -114,6 +139,7 @@ export function gateChecklistSteps(params: {
     isChecklistStepSequentiallyComplete(
       coerceStatusCode(state[item.id]?.status),
       state[item.id],
+      item.id,
     ),
   );
   const currentIndex = complete.findIndex((done) => !done);
@@ -125,12 +151,31 @@ export function gateChecklistSteps(params: {
     // N/A is settled wherever it sits in the sequence (an independent
     // company's board-resolution steps, say) — never "opens after".
     const notApplicable = state[item.id]?.status === 'not-applicable';
+    const directFlow = isDirectFlowStep(item.id);
     if (complete[index] && (notApplicable || currentIndex < 0 || index < currentIndex)) {
       out[item.id] = {
         kind: 'done',
         canOpen: true,
-        canEdit: viewer === 'staff',
+        // A manager reads a submitted direct-flow step; reopening is separate.
+        canEdit: viewer === 'staff' && !directFlow,
         message: null,
+      };
+      return;
+    }
+
+    if (directFlow && (currentIndex < 0 || index === currentIndex)) {
+      out[item.id] = directFlowCurrentGate(viewer, isWaitingOnLead(item.id, state[item.id]));
+      return;
+    }
+
+    if (directFlow && viewer === 'client') {
+      // The client may read ahead; the form stays read-only until it opens.
+      out[item.id] = {
+        kind: 'locked',
+        blockedByTitle: blockerTitle,
+        canOpen: true,
+        canEdit: false,
+        message: blockerTitle ? lockedMessage(blockerTitle) : 'This opens after the previous step is complete.',
       };
       return;
     }

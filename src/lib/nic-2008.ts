@@ -39,3 +39,38 @@ export function nicBusinessType(code: string | null | undefined): NicBusinessTyp
 }
 
 export const NIC_CODE_COUNT = BY_CODE.size;
+
+/** Repeat group of extra NIC codes on Part A (`pre-1`); see `checklist-responses.ts`. */
+export const ADDITIONAL_NIC_CODES_GROUP_ID = 'additionalNicCodes';
+
+export interface NicCodeLine {
+  code: string;
+  /** Stored business type, else the NIC-2008 description, else ''. */
+  description: string;
+}
+
+/**
+ * Every NIC code on a Part A record, main code first, then the additional ones
+ * in list order. Blank codes are skipped; a code outside NIC-2008 is kept with
+ * whatever description was stored, because the lead may know better than the
+ * table (unknown codes are a warning, not an error).
+ */
+export function readNicCodes(pre1: Record<string, string | undefined>): NicCodeLine[] {
+  const out: NicCodeLine[] = [];
+  const push = (rawCode: string | undefined, stored: string | undefined) => {
+    const code = (rawCode ?? '').trim();
+    if (!code) return;
+    const description = (stored ?? '').trim() || nicBusinessType(code)?.description || '';
+    out.push({ code, description });
+  };
+  push(pre1.nicCode, pre1.nicBusinessType);
+  const entryIds = (pre1[ADDITIONAL_NIC_CODES_GROUP_ID] ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+  for (const entryId of entryIds) {
+    const prefix = `${ADDITIONAL_NIC_CODES_GROUP_ID}.${entryId}`;
+    push(pre1[`${prefix}.code`], pre1[`${prefix}.businessType`]);
+  }
+  return out;
+}

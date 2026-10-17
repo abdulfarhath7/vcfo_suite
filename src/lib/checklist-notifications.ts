@@ -10,6 +10,7 @@ import {
   internEngagementStepPath,
 } from '@/lib/project-step-path';
 import type { Engagement } from '@/data/engagements';
+import { directFlowRoleLabel, isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
 
 const NOTIFICATION_KINDS = [
   'checklist.deliver',
@@ -126,7 +127,32 @@ export function diffChecklistForNotifications(
     const title = itemTitle(itemId);
     const href = notificationHref(ctx.viewerRole, ctx.engagement, itemId, 'checklist.deliver');
 
+    // Pre-incorporation direct flow: a submit is one event for everyone
+    // ("{step} submitted"), not a delivery, a review request or an accept.
+    const directFlow = isDirectFlowStep(itemId);
+    if (directFlow) {
+      const submittedNow =
+        !prevItem?.clientSubmittedAt?.trim() &&
+        Boolean(nextItem.clientSubmittedAt?.trim()) &&
+        nextItem.reviewedBy !== ctx.viewerUserId;
+      if (submittedNow) {
+        const who = nextItem.submittedByName?.trim();
+        out.push({
+          kind: 'checklist.submit',
+          title: `${title} submitted`,
+          body: who
+            ? `${who} (${directFlowRoleLabel(nextItem.submittedByRole)}) submitted this step for ${companyName}.`
+            : `This step was submitted for ${companyName}.`,
+          engagementId,
+          companyName,
+          itemId,
+          href: notificationHref(ctx.viewerRole, ctx.engagement, itemId, 'checklist.submit'),
+        });
+      }
+    }
+
     if (
+      !directFlow &&
       ctx.viewerRole === 'client' &&
       !prevItem?.deliveredToClientAt?.trim() &&
       nextItem.deliveredToClientAt?.trim()
@@ -165,6 +191,7 @@ export function diffChecklistForNotifications(
     }
 
     if (
+      !directFlow &&
       (ctx.viewerRole === 'admin' ||
         ctx.viewerRole === 'manager' ||
         ctx.viewerRole === 'intern') &&
@@ -188,6 +215,7 @@ export function diffChecklistForNotifications(
     // A manager accepting the LEAD's step is the delivery above, not a verdict
     // on anything the client sent — one toast, not two.
     if (
+      !directFlow &&
       ctx.viewerRole === 'client' &&
       nextItem.reviewSource !== 'lead_manager_request' &&
       prevItem?.reviewStatus !== nextItem.reviewStatus &&

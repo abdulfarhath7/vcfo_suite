@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   approvalCcEmails,
   collectManagerParties,
+  directFlowBellAudience,
+  directFlowEmailPlan,
   emailsStaffViaResend,
+  isBoardResolutionSendBack,
   inAppIncludesActor,
   opensClientOutgoingDraft,
   sendsFromActorMailbox,
@@ -173,5 +176,49 @@ describe('channel rules', () => {
     expect(inAppIncludesActor('board_resolution_shared')).toBe(true);
     expect(inAppIncludesActor('client_submitted')).toBe(false);
     expect(inAppIncludesActor('lead_requested_review')).toBe(false);
+  });
+});
+
+describe('pre-incorporation direct flow notifications (section 3.13)', () => {
+  const table: Array<{
+    event: Parameters<typeof directFlowBellAudience>[0];
+    itemId: string;
+    actorRole: string;
+    bell: string[];
+    email: 'staff' | 'clients' | 'none';
+  }> = [
+    { event: 'step_submitted', itemId: 'pre-13', actorRole: 'client', bell: ['client', 'lead', 'manager', 'admin'], email: 'staff' },
+    { event: 'step_submitted', itemId: 'pre-13', actorRole: 'intern', bell: ['client', 'lead', 'manager', 'admin'], email: 'clients' },
+    { event: 'step_waiting_on_lead', itemId: 'pre-1', actorRole: 'client', bell: ['lead', 'manager'], email: 'staff' },
+    { event: 'step_reopened', itemId: 'pre-13', actorRole: 'manager', bell: ['client', 'lead', 'manager', 'admin'], email: 'none' },
+    { event: 'lead_requested_review', itemId: 'pre-2', actorRole: 'intern', bell: ['manager', 'admin'], email: 'none' },
+    { event: 'board_resolution_shared', itemId: 'pre-2', actorRole: 'manager', bell: ['client', 'lead', 'manager', 'admin'], email: 'none' },
+    { event: 'review_rejected', itemId: 'pre-2', actorRole: 'manager', bell: ['lead'], email: 'none' },
+  ];
+
+  it.each(table)('$event on $itemId by $actorRole', ({ event, itemId, actorRole, bell, email }) => {
+    expect(directFlowBellAudience(event, itemId)).toEqual(bell);
+    expect(directFlowEmailPlan(event, actorRole)).toBe(email);
+  });
+
+  it('a client submit emails leads and managers; waiting-on-lead emails leads only', () => {
+    const submitted = staffEmailTargetsForEvent('step_submitted', recipients(), hrefs);
+    expect(submitted.map((t) => t.label).sort()).toEqual(['lead', 'manager']);
+    const waiting = staffEmailTargetsForEvent('step_waiting_on_lead', recipients(), hrefs);
+    expect(waiting.map((t) => t.label)).toEqual(['lead']);
+  });
+
+  it('sending the board resolution back never reaches the client', () => {
+    expect(isBoardResolutionSendBack('review_rejected', 'pre-2')).toBe(true);
+    expect(opensClientOutgoingDraft('review_rejected', 'pre-2')).toBe(false);
+    expect(directFlowBellAudience('review_rejected', 'pre-2')).not.toContain('client');
+    // Other steps keep the client correction mail.
+    expect(opensClientOutgoingDraft('review_rejected', 'post-1')).toBe(true);
+  });
+
+  it('leaves events outside the direct flow on their old rules', () => {
+    expect(directFlowBellAudience('client_submitted', 'post-1')).toBeNull();
+    expect(directFlowBellAudience('lead_requested_review', 'post-1')).toBeNull();
+    expect(directFlowBellAudience('review_rejected', 'post-1')).toBeNull();
   });
 });

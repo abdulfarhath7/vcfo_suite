@@ -39,6 +39,18 @@ import {
   redactChecklistStateForViewer,
 } from '@/lib/checklist-visibility';
 import { responseFieldIdsForItem } from '@/lib/checklist-responses';
+import {
+  canRoleEditField,
+  directReopenPatch,
+  directSubmitPatch,
+  isDirectFlowStep,
+  isDirectFlowStepComplete,
+  isWaitingOnLead,
+  lastEditedPatch,
+  stripLeadOnlyResponses,
+  waitingOnLeadPatch,
+} from '@/lib/pre-inc-direct-flow';
+import { validateStepAgainstState } from '@/lib/checklist-step-validation';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
 import { isFirmWideAdmin } from '@/lib/auth';
@@ -548,6 +560,97 @@ export async function submitChecklistItem(
   });
 }
 
+export type DirectSubmitOutcome =
+  | { outcome: 'submitted'; checklistState: EngagementChecklistState }
+  | { outcome: 'waiting_on_lead'; checklistState: EngagementChecklistState }
+  | {
+      outcome: 'invalid';
+      checklistState: EngagementChecklistState;
+      fieldErrors: Record<string, string>;
+    };
+
+/**
+ * Pre-incorporation direct flow: the client or the project lead submits a step
+ * and the submit completes it — no approval (see `pre-inc-direct-flow.ts`).
+ *
+ * 1. The sent answers merge onto the persisted row (a client's lead-only keys
+ *    are dropped first).
+ * 2. The merged answers run through the same validator the form uses.
+ * 3. An error on a field the caller may edit refuses the submit; only the
+ *    answers are saved.
+ * 4. A client whose only gaps are lead-only fields (the NIC codes) leaves the
+ *    step waiting on the lead.
+ * 5. Otherwise the step is complete.
+ */
+export async function submitDirectFlowStep(
+  ctx: AuthContext,
+  appEngagementId: string,
+  itemId: string,
+  responses: Record<string, string>,
+): Promise<DirectSubmitOutcome> {
+  if (!isDirectFlowStep(itemId)) throw new Error('step_not_direct_flow');
+  if (ctx.role !== 'client' && ctx.role !== 'intern') {
+    throw new Error('Only the client or the project lead may submit this step');
+  }
+  const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
+  if (!existing) throw new Error('Engagement not found or not permitted');
+
+  const persisted = checklistStateFromRow(existing);
+  const slice = persisted[itemId];
+  if (ctx.role === 'client') {
+    if (isDirectFlowStepComplete(itemId, slice)) throw new Error('step_already_submitted');
+    if (isWaitingOnLead(itemId, slice)) throw new Error('step_waiting_on_lead');
+  }
+
+  const sent = ctx.role === 'client' ? stripLeadOnlyResponses(itemId, responses) : responses;
+  const merged: Record<string, string> = { ...(slice?.responses ?? {}) };
+  for (const [key, value] of Object.entries(sent)) merged[key] = value;
+
+  const validation = validateStepAgainstState({
+    itemId,
+    responses: merged,
+    state: persisted,
+    engagement: toAppEngagement(existing),
+  });
+  const blocking: Record<string, string> = {};
+  for (const [key, message] of Object.entries(validation.errors)) {
+    if (canRoleEditField(ctx.role, itemId, key)) blocking[key] = message;
+  }
+
+  const now = new Date().toISOString();
+  const answers = {
+    ...(Object.keys(sent).length ? { responses: sent } : {}),
+    ...lastEditedPatch({ actorName: ctx.name, actorRole: ctx.role, now }),
+  };
+
+  if (Object.keys(blocking).length > 0) {
+    const checklistState = Object.keys(sent).length
+      ? await patchChecklistItem(ctx, appEngagementId, itemId, answers)
+      : persisted;
+    return { outcome: 'invalid', checklistState, fieldErrors: blocking };
+  }
+
+  if (Object.keys(validation.errors).length > 0) {
+    const checklistState = await patchChecklistItem(ctx, appEngagementId, itemId, {
+      ...answers,
+      ...waitingOnLeadPatch({ actorId: ctx.userId, actorName: ctx.name, now }),
+    });
+    return { outcome: 'waiting_on_lead', checklistState };
+  }
+
+  const checklistState = await patchChecklistItem(ctx, appEngagementId, itemId, {
+    ...answers,
+    ...directSubmitPatch({ actorId: ctx.userId, actorName: ctx.name, actorRole: ctx.role, now }),
+  });
+  // Moved here from the manager's Accept: the certificate step carries the
+  // date of incorporation onto the engagement.
+  const incorporationDate = checklistState[itemId]?.responses?.dateOfIncorporation?.trim();
+  if (itemId === 'pre-12' && incorporationDate && existing.incorporationDate !== incorporationDate) {
+    await updateEngagement(ctx, existing.id, { incorporationDate });
+  }
+  return { outcome: 'submitted', checklistState };
+}
+
 /** Manager/admin accept/reject a client (or lead) submission. Leads may not approve. */
 export async function reviewChecklistItem(
   ctx: AuthContext,
@@ -564,6 +667,9 @@ export async function reviewChecklistItem(
   }
   if (!isFirmWideAdmin(ctx.role) && ctx.role !== 'manager') {
     throw new Error('Only the project manager or admin may approve KYC / milestone reviews');
+  }
+  if (isDirectFlowStep(itemId)) {
+    throw new Error('step_has_no_approval');
   }
   const now = new Date().toISOString();
   if (action === 'accept') {
@@ -633,6 +739,9 @@ export async function requestClientFill(
   if (ctx.role !== 'intern') {
     throw new Error('Only the project lead may ask the client to fill a step');
   }
+  if (isDirectFlowStep(itemId)) {
+    throw new Error('step_has_no_approval');
+  }
   const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
   if (!existing) throw new Error('Engagement not found or not permitted');
   const current = checklistStateFromRow(existing)[itemId]?.clientFillRequest;
@@ -667,6 +776,9 @@ export async function decideClientFillRequest(
   if (!isFirmWideAdmin(ctx.role) && ctx.role !== 'manager') {
     throw new Error('Only the project manager or admin may decide a client fill request');
   }
+  if (isDirectFlowStep(itemId)) {
+    throw new Error('step_has_no_approval');
+  }
   const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
   if (!existing) throw new Error('Engagement not found or not permitted');
   const current = checklistStateFromRow(existing)[itemId]?.clientFillRequest;
@@ -697,6 +809,10 @@ export async function unlockChecklistFields(
 ): Promise<EngagementChecklistState> {
   if (ctx.role === 'client') {
     throw new Error('Clients may not unlock checklist fields');
+  }
+  if (isDirectFlowStep(itemId)) {
+    // "Reopen step": the whole step opens again for the client and the lead.
+    return patchChecklistItem(ctx, appEngagementId, itemId, directReopenPatch());
   }
   return patchChecklistItem(ctx, appEngagementId, itemId, {
     unlockedFields: unlockedFields.filter((id) => typeof id === 'string' && id.trim()),
@@ -1052,6 +1168,9 @@ export async function clientApproveStep(
   if (ctx.role !== 'client') {
     throw new Error('Only the client may approve a step');
   }
+  if (isDirectFlowStep(itemId)) {
+    throw new Error('step_has_no_approval');
+  }
   const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
   if (!existing) throw new Error('Engagement not found or not permitted');
 
@@ -1112,12 +1231,25 @@ export async function clientRequestStepChange(
   if (!existing) throw new Error('Engagement not found or not permitted');
 
   const persisted = checklistStateFromRow(existing);
+  const now = new Date().toISOString();
+
+  if (isDirectFlowStep(itemId)) {
+    // Direct flow: asking for a change reopens a submitted step for both parties.
+    if (!isDirectFlowStepComplete(itemId, persisted[itemId])) {
+      throw new Error('step_not_with_client');
+    }
+    const checklistState = await patchChecklistItem(ctx, appEngagementId, itemId, {
+      ...directReopenPatch(),
+      rejectionNote: trimmed,
+    });
+    return { checklistState, note: trimmed };
+  }
+
   const state = approvalStateOf(persisted[itemId]);
   if (state !== 'pending_client' && state !== 'client_approved') {
     throw new Error('step_not_with_client');
   }
 
-  const now = new Date().toISOString();
   const checklistState = await patchChecklistItem(
     ctx,
     appEngagementId,

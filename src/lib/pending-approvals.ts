@@ -1,8 +1,8 @@
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { isAwaitingReview } from '@/lib/checklist-item-review';
 import { isClientFillPending } from '@/lib/checklist-client-fill';
 import { primaryPhaseItems } from '@/lib/project-stuck';
+import { isAwaitingManagerDecision, isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
 
 export type PendingApprovalRow = {
   engagementId: string;
@@ -32,7 +32,7 @@ export function listPendingApprovals(
     const state = stateFor(eng);
     for (const item of primaryPhaseItems()) {
       const slice = state[item.id];
-      if (isAwaitingReview(slice)) {
+      if (isAwaitingManagerDecision(item.id, slice)) {
         out.push({
           engagementId: eng.id,
           companyName: eng.companyName,
@@ -41,7 +41,7 @@ export function listPendingApprovals(
           reviewSource: slice?.reviewSource,
         });
       }
-      if (isClientFillPending(slice?.clientFillRequest)) {
+      if (!isDirectFlowStep(item.id) && isClientFillPending(slice?.clientFillRequest)) {
         out.push({
           engagementId: eng.id,
           companyName: eng.companyName,
@@ -62,5 +62,6 @@ export function pendingApprovalKind(row: PendingApprovalRow): string {
   if (row.clientFill) {
     return `Send to client${row.clientFill.requestedByName ? ` · ${row.clientFill.requestedByName}` : ''}`;
   }
+  if (row.itemId === MANAGER_APPROVAL_STEP_ID) return 'Board resolution';
   return row.reviewSource === 'lead_manager_request' ? 'Lead request' : 'Client submit';
 }

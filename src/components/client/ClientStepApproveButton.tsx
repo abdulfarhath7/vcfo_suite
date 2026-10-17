@@ -9,6 +9,7 @@ import {
   isAwaitingClientApproval,
 } from '@/lib/checklist-step-approval';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
 
 /**
  * The client's sign-off on one step.
@@ -67,6 +68,9 @@ export function ClientStepApproveButton({
     },
     onError: (error) => toastError(errorMessage(error)),
   });
+
+  // Pre-incorporation steps have no client sign-off any more.
+  if (isDirectFlowStep(stepId) || stepId === MANAGER_APPROVAL_STEP_ID) return null;
 
   return (
     <Button

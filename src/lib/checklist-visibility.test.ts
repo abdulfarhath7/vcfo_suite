@@ -192,3 +192,28 @@ describe('redactChecklistSliceForViewer', () => {
     });
   });
 });
+
+describe('pre-incorporation direct flow visibility', () => {
+  const draft: ChecklistItemStateSlice = {
+    status: 'in-progress',
+    responses: { equityShares: 'yes' },
+    notes: 'staff only',
+  };
+
+  it('shares a draft with the firm and the client at all times', () => {
+    expect(isStepReleasedToFirm(draft, 'pre-13')).toBe(true);
+    expect(isStepReleasedToClient(draft, 'pre-13')).toBe(true);
+    expect(redactChecklistSliceForViewer('firm', draft, 'pre-13')).toEqual(draft);
+  });
+
+  it('still strips staff notes for the client', () => {
+    const forClient = redactChecklistSliceForViewer('client', draft, 'pre-13');
+    expect(forClient.responses).toEqual(draft.responses);
+    expect(forClient.notes).toBeUndefined();
+  });
+
+  it('keeps the board resolution step on the old rules', () => {
+    expect(isStepReleasedToClient(draft, 'pre-2')).toBe(false);
+    expect(redactChecklistStateForViewer('client', { 'pre-2': draft })['pre-2']?.responses).toBeUndefined();
+  });
+});

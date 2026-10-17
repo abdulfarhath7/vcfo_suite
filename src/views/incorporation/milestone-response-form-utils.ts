@@ -5,25 +5,7 @@ import { applyPre1EngagementDefaults } from '@/lib/checklist-pre1-validation';
 import { applyPre6PrefillFromPre1 } from '@/lib/pre6-prefill-from-pre1';
 import { mergeRegisteredOfficeIntoPre6 } from '@/lib/registered-office-responses';
 import type { Engagement } from '@/data/engagements';
-import {
-  validatePre1Responses,
-  type Pre1ValidationOptions,
-} from '@/lib/checklist-pre1-validation';
-import {
-  validatePre13Responses,
-  validatePre14Responses,
-  validatePre15Responses,
-  validatePre16Responses,
-} from '@/lib/checklist-part-b-validation';
 import { expandRepeatFieldsForDiff } from '@/lib/checklist-repeat';
-import { validatePre6Responses } from '@/lib/checklist-pre6-validation';
-import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
-import type { DirectorSlotContext } from '@/lib/incorp-director-slots';
-import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
-import { validatePre9Responses } from '@/lib/checklist-pre9-validation';
-import { validatePre10Responses } from '@/lib/checklist-pre10-validation';
-import { validatePre11Responses } from '@/lib/checklist-pre11-validation';
-import { validatePre12Responses } from '@/lib/checklist-pre12-validation';
 
 export type StaffSaveStatus = 'idle' | 'saved' | 'error';
 export const AUTO_SAVE_DEBOUNCE_MS = 600;
@@ -211,50 +193,15 @@ export function overlayTouchedFields(
   return out;
 }
 
-export function runStepValidation(
-  itemId: string,
-  isPre1: boolean,
-  isPre6: boolean,
-  pre1Draft: ChecklistItemResponses,
-  draft: ChecklistItemResponses,
-  pre1ResponsesForPre6: ChecklistItemResponses,
-  pre1SubmittedForPre6: boolean,
-  options?: Pre1ValidationOptions,
-  directorSlots?: DirectorSlotContext,
-): { ok: boolean; errors: Record<string, string>; warnings: Record<string, string> } {
-  if (isPre1) return validatePre1Responses(pre1Draft, options);
-  if (isPre6) {
-    if (!pre1SubmittedForPre6) {
-      return {
-        ok: false,
-        errors: {
-          _pre1Gate:
-            'Complete and submit Phase 1 Step 1 (proposed directors) before filling director KYC.',
-        },
-        warnings: {},
-      };
-    }
-    return validatePre6Responses(draft, pre1ResponsesForPre6);
-  }
-  if (itemId === 'pre-7') return validatePre7Responses(draft, directorSlots);
-  if (itemId === 'pre-8') return validatePre8Responses(draft, directorSlots);
-  if (itemId === 'pre-9') return validatePre9Responses(draft);
-  if (itemId === 'pre-10') return validatePre10Responses(draft);
-  if (itemId === 'pre-11') return validatePre11Responses(draft);
-  if (itemId === 'pre-12') return validatePre12Responses(draft);
-  if (itemId === 'pre-13') return validatePre13Responses(draft);
-  if (itemId === 'pre-14') return validatePre14Responses(draft);
-  if (itemId === 'pre-15') return validatePre15Responses(draft);
-  if (itemId === 'pre-16') return validatePre16Responses(draft);
-  return { ok: true, errors: {}, warnings: {} };
-}
-
 /**
  * Fields the form fills in from other answers and shows read-only — never
  * typed. The placeholder is what the row says until its inputs are complete.
  */
 const DERIVED_DISPLAY_FIELDS: Record<string, Record<string, string>> = {
-  'pre-1': { nicBusinessType: 'Enter a valid 5-digit NIC code above to fill this in' },
+  'pre-1': {
+    nicBusinessType: 'Enter a valid 5-digit NIC code above to fill this in',
+    'additionalNicCodes.businessType': 'Enter a valid 5-digit NIC code to fill this in',
+  },
   'pre-13': {
     equityTotal: 'Enter the number of shares and the nominal value to work this out',
     preferenceTotal: 'Enter the number of shares and the nominal value to work this out',
@@ -262,5 +209,11 @@ const DERIVED_DISPLAY_FIELDS: Record<string, Record<string, string>> = {
 };
 
 export function derivedDisplayPlaceholder(itemId: string, fieldId: string): string | null {
-  return DERIVED_DISPLAY_FIELDS[itemId]?.[fieldId] ?? null;
+  const direct = DERIVED_DISPLAY_FIELDS[itemId]?.[fieldId];
+  if (direct) return direct;
+  // Inside a repeat entry the template id is the last segment
+  // (`additionalNicCodes.<entry>.businessType`).
+  const [group, , templateId] = fieldId.split('.');
+  if (group && templateId) return DERIVED_DISPLAY_FIELDS[itemId]?.[`${group}.${templateId}`] ?? null;
+  return null;
 }

@@ -242,3 +242,17 @@ Gotchas already paid for once. Append when something costs more than a minute to
   `engagementId`) and `/api/documents/:id/signed-url`. Intern isolation is
   Path A in `listDocuments` / `getDocumentById` (assigned + membership only).
   No extra migration.
+
+## Missing-field display and direct submit (2026-10-13)
+
+- `SHOW_INTERN_FORM_ERROR_SUMMARY` is now true. Errors show for a tab only after the user
+  leaves it with Next, and for every tab after a failed Submit (then live on every change).
+  Tabs with errors carry a red dot + sr-only "Needs attention"; fields get `border-danger`,
+  `aria-invalid`, `aria-describedby`; each summary line opens the tab and focuses the field.
+- The client uses the same tabbed form and footer (Next / Submit) on direct-flow steps
+  (`directFlow` in the form view model). Submit on a direct-flow step calls
+  `submitDirectStep` (AppContext) instead of `internLeadManagerRequestPatch`; a server 422
+  lands in the same error display.
+- `pre-1` "Add NIC code" repeat (`additionalNicCodes`, max 9), main code labelled "Main NIC
+  code"; entries auto-fill their business type. The BR editor lists missing inputs as links
+  (`missingFieldRefs`) and has "Send for manager approval" instead of Finalize.

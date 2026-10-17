@@ -52,6 +52,7 @@ import {
   type EngagementChecklistState,
   type InternOption,
   submitChecklistItemInDb,
+  submitDirectStepInDb,
   setChecklistUnlockedFieldsInDb,
   reviewChecklistItemInDb,
   setClientFillRequestInDb,
@@ -1231,6 +1232,44 @@ export function useAppProviderValue(): AppContextValue {
             : err instanceof Error
               ? err.message
               : 'Could not submit answers. Try again.';
+        throw new Error(message, { cause: err });
+      }
+    },
+    submitDirectStep: async (scopeId, itemId, responses) => {
+      const engagement =
+        user?.role === 'client' ? findEngagementForClientUser(engagements, user) : resolveEngagementForScope(scopeId);
+      if (!engagement) {
+        throw new Error('Could not find this project. Refresh the page and try again.');
+      }
+      if (user?.role === 'client' && !engagementScopeIds(engagement, user.clientId).includes(scopeId)) {
+        throw new Error('Could not submit — project scope mismatch.');
+      }
+      const engagementId = engagement.id;
+      try {
+        const result = await submitDirectStepInDb(engagementId, itemId, responses);
+        if (result.checklistState) {
+          const saved = result.checklistState;
+          setDbChecklistState((prev) => ({ ...prev, [engagementId]: saved }));
+        }
+        void queryClient.invalidateQueries({ queryKey: ['doc-pack', engagementId] });
+        if (result.outcome === 'invalid') {
+          return { outcome: 'invalid', fieldErrors: result.fieldErrors };
+        }
+        suppressChecklistNotification(engagementId, itemId, 'checklist.submit');
+        pushActivity({
+          actor: user?.name || 'VCFO Team',
+          verb: result.outcome === 'waiting_on_lead' ? 'submitted their part of' : 'submitted',
+          target: checklistItemLabel(itemId),
+          engagementId,
+        });
+        return { outcome: result.outcome };
+      } catch (err) {
+        const message =
+          err instanceof ChecklistSaveError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Could not submit this step. Try again.';
         throw new Error(message, { cause: err });
       }
     },

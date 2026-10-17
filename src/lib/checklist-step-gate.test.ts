@@ -293,3 +293,65 @@ describe('checklistGateViewerFrom', () => {
     expect(checklistGateViewerFrom('admin', 'super_admin')).toBe('staff');
   });
 });
+
+describe('pre-incorporation direct flow gate', () => {
+  const NOW = '2026-10-12T10:00:00.000Z';
+  const done = { status: 'completed', reviewStatus: 'accepted' } as const;
+  const catalog = getActiveCatalogItems();
+  const pre1 = catalog.find((i) => i.id === 'pre-1')!;
+  const pre13 = catalog.find((i) => i.id === 'pre-13')!;
+  const before13: Record<string, ChecklistItemStateSlice> = {};
+  for (const item of catalog) {
+    if (item.id === 'pre-13') break;
+    before13[item.id] = { ...done };
+  }
+
+  it('opens the current step to the client and the lead, read-only to managers', () => {
+    expect(gateActiveCatalog({}, 'client')['pre-1']).toMatchObject({ kind: 'active', canEdit: true });
+    expect(gateActiveCatalog({}, 'intern')['pre-1']).toMatchObject({ kind: 'active', canEdit: true });
+    expect(gateActiveCatalog({}, 'staff')['pre-1']).toMatchObject({ canOpen: true, canEdit: false });
+  });
+
+  it('lets the client open a later step read-only', () => {
+    const later = gateActiveCatalog({}, 'client')['pre-13']!;
+    expect(later).toMatchObject({ kind: 'locked', canOpen: true, canEdit: false });
+    expect(later.message).toBe(`This opens after ${pre1.title} is complete.`);
+    expect(gateActiveCatalog({}, 'staff')['pre-13']).toMatchObject({ kind: 'locked', canOpen: false });
+  });
+
+  it('waits on the lead after a client submit that stopped on NIC codes', () => {
+    const state = { 'pre-1': { status: 'in-progress', waitingOnLeadAt: NOW } as ChecklistItemStateSlice };
+    expect(gateActiveCatalog(state, 'client')['pre-1']).toMatchObject({
+      kind: 'waiting',
+      canEdit: false,
+      message: 'Waiting on your project lead…',
+    });
+    expect(gateActiveCatalog(state, 'intern')['pre-1']).toMatchObject({ kind: 'active', canEdit: true });
+  });
+
+  it('a submitted step is done and the next one opens; managers read it', () => {
+    const state = { ...before13, [pre13.id]: { ...done } };
+    const gates = gateActiveCatalog(state, 'staff');
+    expect(gates['pre-13']).toMatchObject({ kind: 'done', canEdit: false });
+    expect(gateActiveCatalog(state, 'client')['pre-14']).toMatchObject({ kind: 'active', canEdit: true });
+  });
+
+  it('an old pending lead request reads complete, not waiting on the manager', () => {
+    const state = {
+      ...before13,
+      'pre-13': { status: 'in-progress', reviewStatus: 'reviewing', reviewSource: 'lead_manager_request' } as ChecklistItemStateSlice,
+    };
+    expect(isChecklistStepSequentiallyComplete('in-progress', state['pre-13'], 'pre-13')).toBe(true);
+    expect(gateActiveCatalog(state, 'client')['pre-13']!.kind).toBe('done');
+  });
+
+  it('reopening locks the steps after it again', () => {
+    const state = {
+      ...before13,
+      'pre-13': { status: 'in-progress' } as ChecklistItemStateSlice,
+      'pre-14': { ...done },
+    };
+    expect(gateActiveCatalog(state, 'client')['pre-14']).toMatchObject({ kind: 'locked', canEdit: false });
+    expect(sequentialLockMessage('pre-14', state)).toBe(`This opens after ${pre13.title} is complete.`);
+  });
+});

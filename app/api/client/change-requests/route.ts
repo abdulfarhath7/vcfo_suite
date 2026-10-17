@@ -10,6 +10,7 @@ import {
   clientRequestStepChange,
 } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
+import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
 
 /**
  * POST /api/client/change-requests — the client asks the firm to change
@@ -104,6 +105,17 @@ export async function POST(request: Request) {
         note,
       );
       checklistState = checklistStateForViewer(guard.ctx, reopened.checklistState);
+      if (isDirectFlowStep(stepId.trim())) {
+        // The client reopened a submitted step: every party hears it.
+        await notifyEngagementEvent({
+          engagementId: engagementId.trim(),
+          itemId: stepId.trim(),
+          event: 'step_reopened',
+          actorUserId: guard.ctx.userId,
+          actorName: guard.ctx.name,
+          actorRole: guard.ctx.role,
+        }).catch(() => null);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       if (message !== 'step_not_with_client') throw err;

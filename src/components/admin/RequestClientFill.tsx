@@ -23,6 +23,7 @@ import { isAdminOrManager } from '@/lib/auth';
 import { getItem } from '@/data/checklist';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
 
 /**
  * Lead action: ask the client to fill this step. It goes to the project manager
@@ -55,6 +56,7 @@ export function RequestClientFill({
   const isLead = user?.role === 'intern';
   const canDecide = isAdminOrManager(user?.role);
   if (!isLead && !canDecide) return null;
+  if (isDirectFlowStep(itemId) || itemId === MANAGER_APPROVAL_STEP_ID) return null;
 
   const item = getItem(itemId);
   if (!item) return null;

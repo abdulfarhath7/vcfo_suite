@@ -11,12 +11,12 @@ import { DashSection, DashDonut, DashLegendRow } from '@/components/dash/DashSec
 import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
 import { Activity, Users } from 'lucide-react';
 import { deriveStuckReason, primaryPhaseItems } from '@/lib/project-stuck';
-import { isAwaitingReview } from '@/lib/checklist-item-review';
 import { FirmProjectsPanel } from '@/views/admin/FirmProjectsPanel';
 import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern-work';
 import { initialsFromName } from '@/lib/auth';
+import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
 
 type ManagerOption = { id: string; name: string; email: string };
 
@@ -65,7 +65,7 @@ export default function FirmDashboard() {
     for (const eng of engagements) {
       const state = getStateForEngagement(eng);
       for (const item of primaryPhaseItems()) {
-        if (isAwaitingReview(state[item.id])) n += 1;
+        if (isAwaitingManagerDecision(item.id, state[item.id])) n += 1;
       }
     }
     return n;
@@ -90,7 +90,7 @@ export default function FirmDashboard() {
       const reason = deriveStuckReason(eng, state);
       if (reason !== 'on_track') row.stuck += 1;
       for (const item of primaryPhaseItems()) {
-        if (isAwaitingReview(state[item.id])) row.awaitingPm += 1;
+        if (isAwaitingManagerDecision(item.id, state[item.id])) row.awaitingPm += 1;
       }
       byManager.set(mid, row);
     }

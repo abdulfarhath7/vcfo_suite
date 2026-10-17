@@ -226,18 +226,31 @@ export function UploadedFilePreview(props: { storagePath: string; label: string 
   return <UploadedFilePreviewInner key={props.storagePath} {...props} />;
 }
 
-/** Intern step pages hide the aggregate banner. Set true to restore it. */
-export const SHOW_INTERN_FORM_ERROR_SUMMARY = false;
+/**
+ * The tab layout shows the summary after a failed Submit; each line opens the
+ * tab that holds the field. Set false to hide the aggregate banner again.
+ */
+export const SHOW_INTERN_FORM_ERROR_SUMMARY = true;
+
+const SUMMARY_LINES = 8;
 
 export function FormErrorSummary({
   errors,
   fields,
+  labelFor,
+  onSelect,
 }: {
   errors: Record<string, string>;
   fields: ChecklistField[];
+  /** Label for an error key (repeat entries included); falls back to the field list. */
+  labelFor?: (fieldId: string) => string;
+  /** When set, each line is a button that takes the user to the field. */
+  onSelect?: (fieldId: string) => void;
 }) {
   const entries = Object.entries(errors);
   if (!entries.length) return null;
+  const label = (fieldId: string) =>
+    labelFor?.(fieldId) ?? fields.find((f) => f.id === fieldId)?.label ?? fieldId;
   return (
     <div
       role="alert"
@@ -250,17 +263,25 @@ export function FormErrorSummary({
             {entries.length} item{entries.length === 1 ? '' : 's'} need attention before you continue
           </p>
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {entries.slice(0, 6).map(([fieldId, message]) => {
-              const field = fields.find((f) => f.id === fieldId);
-              return (
-                <li key={fieldId}>
-                  <span className="font-medium text-foreground">{field?.label ?? fieldId}:</span>{' '}
-                  {message}
-                </li>
-              );
-            })}
-            {entries.length > 6 && (
-              <li className="text-muted-foreground">+ {entries.length - 6} more</li>
+            {entries.slice(0, SUMMARY_LINES).map(([fieldId, message]) => (
+              <li key={fieldId}>
+                {onSelect ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelect(fieldId)}
+                    className="text-left underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
+                  >
+                    <span className="font-medium text-foreground">{label(fieldId)}:</span> {message}
+                  </button>
+                ) : (
+                  <>
+                    <span className="font-medium text-foreground">{label(fieldId)}:</span> {message}
+                  </>
+                )}
+              </li>
+            ))}
+            {entries.length > SUMMARY_LINES && (
+              <li className="text-muted-foreground">+ {entries.length - SUMMARY_LINES} more</li>
             )}
           </ul>
         </div>
@@ -274,7 +295,7 @@ export function InternSectionHeadingNav({
   selectedIndex,
   onSelect,
 }: {
-  sections: { title: string; complete: boolean }[];
+  sections: { title: string; complete: boolean; hasErrors?: boolean }[];
   selectedIndex: number;
   onSelect: (index: number) => void;
 }) {
@@ -379,10 +400,20 @@ export function InternSectionHeadingNav({
                 )}
               >
                 <span className="inline-flex items-center gap-1.5">
-                  {section.complete ? (
+                  {section.complete && !section.hasErrors ? (
                     <Check className="h-3 w-3 shrink-0 text-success" aria-hidden />
                   ) : null}
                   {section.title}
+                  {section.hasErrors ? (
+                    <>
+                      <span
+                        data-testid="section-error-dot"
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger"
+                        aria-hidden
+                      />
+                      <span className="sr-only">Needs attention</span>
+                    </>
+                  ) : null}
                 </span>
                 {selected ? (
                   <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" aria-hidden />

@@ -42,7 +42,8 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     compactChrome,
     cn,
     completedStructuredSections,
-    fieldErrors,
+    fieldLabelFor,
+    focusField,
     isClient,
     isPhase2StructuredStep,
     isPre1,
@@ -58,11 +59,13 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
     reviewBanner,
     reviewBannerIcon,
     sectionCompleteFlags,
+    sectionErrorFlags,
     sectionTabs,
     selectedSectionIndex,
     setSelectedSectionIndex,
     showStaffSaveFooter,
     structuredSectionLabels,
+    summaryErrors,
     visibleFields,
   } = p;
 
@@ -101,6 +104,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           sections={structuredSectionLabels.map((title, index) => ({
             title,
             complete: sectionCompleteFlags[index] ?? false,
+            hasErrors: sectionErrorFlags[index] ?? false,
           }))}
           selectedIndex={selectedSectionIndex}
           onSelect={setSelectedSectionIndex}
@@ -141,9 +145,14 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
         </output>
       )}
 
-      {Object.keys(fieldErrors).length > 0 &&
+      {Object.keys(summaryErrors).length > 0 &&
         (!internWorkspace || SHOW_INTERN_FORM_ERROR_SUMMARY) && (
-          <FormErrorSummary errors={fieldErrors} fields={visibleFields} />
+          <FormErrorSummary
+            errors={summaryErrors}
+            fields={visibleFields}
+            labelFor={fieldLabelFor}
+            onSelect={focusField}
+          />
         )}
 
       {!compactChrome && !internWorkspace && (

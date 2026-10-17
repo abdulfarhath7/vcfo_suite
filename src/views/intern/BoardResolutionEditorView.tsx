@@ -62,10 +62,20 @@ import { PageBackButton } from '@/components/shell/PageBackButton';
 
 
 
+import { getItem } from '@/data/checklist';
+import type { BoardResolutionMissingFieldRef } from '@/lib/api/board-resolution-errors';
+import { docPackStepPath } from '@/lib/doc-pack/paths';
+import { sectionSlug } from '@/lib/doc-pack/section-slug';
 import {
   BoardResolutionEditorDocPanel,
   type BoardResolutionEditorProps,
 } from '@/views/intern/BoardResolutionEditorDocPanel';
+
+/** "NIC code — Client Details, Business Description" */
+function missingFieldRefText(ref: BoardResolutionMissingFieldRef): string {
+  const where = [getItem(ref.stepId)?.title, ref.section].filter(Boolean).join(', ');
+  return where ? `${ref.label} — ${where}` : ref.label;
+}
 
 export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
   const router = useRouter();
@@ -85,6 +95,8 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
     signedDownloadHref,
     previewStorageCorrupt,
     handleFinalize,
+    withManager,
+    sentBackNote,
   } = p;
   return (
 
@@ -138,13 +150,23 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
         </div>
 
+        {withManager && !isFinalized ? (
+          <p role="status" className="mb-4 rounded-md border border-primary/30 bg-primary-light px-3 py-2 text-[12.5px] text-foreground">
+            The board resolution is with your manager. You can edit it again if they send it back.
+          </p>
+        ) : null}
+
+        {sentBackNote && !withManager && !isFinalized ? (
+          <p role="status" className="mb-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-[12.5px] text-foreground">
+            <span className="font-medium">Your manager sent this back:</span> {sentBackNote}
+          </p>
+        ) : null}
+
         {!hasPre1Data && !loading && (
 
           <p className="text-[12.5px] text-warning-text bg-warning/10 border border-warning/20 rounded-md px-3 py-2 mb-4">
 
-            Step 1 (Name Application) data is not available yet. The client must submit Step 1 before
-
-            you can generate the board resolution.{' '}
+            Submit Client Details first. The board resolution uses this data.{' '}
 
             <button
 
@@ -156,7 +178,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             >
 
-              Open Step 1
+              Open Client Details
 
             </button>
 
@@ -184,6 +206,26 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             <p className="mt-1 pl-6 text-text-secondary">{generateErrorDisplay.description}</p>
 
+            {generateErrorDisplay.missingFieldRefs?.length && generateError?.code === 'missing_fields' ? (
+              <ul className="mt-2 space-y-1 pl-6" aria-label="Missing information">
+                {generateErrorDisplay.missingFieldRefs.map((ref) => (
+                  <li key={`${ref.stepId}:${ref.fieldId}:${ref.label}`}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        router.push(
+                          docPackStepPath(eng, 'intern', ref.stepId, ref.section ? sectionSlug(ref.section) : undefined),
+                        )
+                      }
+                      className="text-left text-[12.5px] font-medium text-brand hover:underline"
+                    >
+                      {missingFieldRefText(ref)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
             {generateError?.code === 'step1_incomplete' && (
 
               <button
@@ -196,7 +238,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
               >
 
-                Go to Step 1 — Name Application
+                Open Client Details
 
               </button>
 
@@ -283,14 +325,13 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
           <AlertDialogHeader>
 
             <AlertDialogTitle>
-              {isFinalized ? 'Send board resolution to client?' : 'Finalize board resolution?'}
+              Send the board resolution for manager approval?
             </AlertDialogTitle>
 
             <AlertDialogDescription>
 
-              {isFinalized
-                ? 'This opens an email to the client from your linked Outlook mailbox. They can download the Word file, sign it, and upload the signed copy.'
-                : 'The client will receive the generated Word document to download, sign, and re-upload. You will not be able to edit this record after finalization.'}
+              Your manager reads the document and the Client Details it uses. When they approve it, the
+              client can download, sign and upload it. You cannot edit it while your manager decides.
 
             </AlertDialogDescription>
 
@@ -309,7 +350,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
               }}
             >
 
-              {busy === 'finalize' ? 'Finalizing…' : isFinalized ? 'Send to client' : 'Finalize'}
+              {busy === 'finalize' ? 'Sending…' : 'Send for manager approval'}
 
             </AlertDialogAction>
 

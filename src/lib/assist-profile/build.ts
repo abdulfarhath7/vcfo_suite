@@ -23,6 +23,7 @@ import {
   SUBSCRIPTION_WITNESS_FIELDS,
 } from '@/lib/incorporation-docs/subscription-sheet';
 import { getItem } from '@/data/checklist';
+import { readNicCodes } from '@/lib/nic-2008';
 import { getClientResponseFields } from '@/lib/checklist-responses';
 import { isRepeatField, repeatEntries } from '@/lib/checklist-repeat';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
@@ -223,6 +224,11 @@ function resolveCompany(ctx: DocPackContext, f: Findings): AssistCompany {
     f.miss({ key: 'company.nicCode', label: 'NIC code', stepId: 'pre-1', tabId: BUSINESS_TAB });
   }
   f.note('company.nicCode', NIC_POPUP_NOTE);
+  // `readNicCodes` puts the main code first; the rest are the extra entries.
+  const additionalNicCodes = readNicCodes(pre1)
+    .slice(nicCode ? 1 : 0)
+    .map(({ code, description }) => (description ? { code, description } : { code }));
+  if (additionalNicCodes.length) company.additionalNicCodes = additionalNicCodes;
 
   const capital = resolveCapital(ctx, f);
   if (capital) company.capital = capital;

@@ -62,6 +62,10 @@ describe('internGreeting / pace', () => {
 });
 
 describe('buildInternWorkItems', () => {
+  // Part A completes on Submit (pre-incorporation direct flow); the board
+  // resolution after it is the pre-incorporation step that keeps approval.
+  const PRE1_DONE = { 'pre-1': { status: 'completed' as const, reviewStatus: 'accepted' as const } };
+
   it('puts rejected, client-review, and deliver into the action KPI', () => {
     const rejectedEng = { ...engagement, id: 'eng-rej', companyName: 'Rejected Co' };
     const deliverEng = { ...engagement, id: 'eng-del', companyName: 'Deliver Co' };
@@ -71,13 +75,16 @@ describe('buildInternWorkItems', () => {
       now,
       getChecklistState: (e) => {
         if (e.id === 'eng-rej') {
-          return { 'pre-1': { status: 'in-progress', reviewStatus: 'rejected' } };
+          return { ...PRE1_DONE,
+          'pre-2': { status: 'in-progress', reviewStatus: 'rejected' } };
         }
         if (e.id === 'eng-del') {
-          return { 'pre-1': { status: 'in-progress', reviewStatus: 'accepted' } };
+          return { ...PRE1_DONE,
+          'pre-2': { status: 'in-progress', reviewStatus: 'accepted' } };
         }
         return {
-          'pre-1': {
+          ...PRE1_DONE,
+          'pre-2': {
             status: 'in-progress',
             reviewStatus: 'reviewing',
             reviewSource: 'client_submission',
@@ -90,13 +97,13 @@ describe('buildInternWorkItems', () => {
     expect(kpis.action.rejected).toBeGreaterThanOrEqual(1);
     expect(kpis.action.review).toBeGreaterThanOrEqual(1);
     expect(kpis.action.deliver).toBeGreaterThanOrEqual(1);
-    expect(items.find((i) => i.engagementId === 'eng-rej' && i.catalogId === 'pre-1')?.kind).toBe(
+    expect(items.find((i) => i.engagementId === 'eng-rej' && i.catalogId === 'pre-2')?.kind).toBe(
       'rejected',
     );
-    expect(items.find((i) => i.engagementId === 'eng-1' && i.catalogId === 'pre-1')?.kind).toBe(
+    expect(items.find((i) => i.engagementId === 'eng-1' && i.catalogId === 'pre-2')?.kind).toBe(
       'review',
     );
-    expect(items.find((i) => i.engagementId === 'eng-del' && i.catalogId === 'pre-1')?.kind).toBe(
+    expect(items.find((i) => i.engagementId === 'eng-del' && i.catalogId === 'pre-2')?.kind).toBe(
       'deliver',
     );
   });
@@ -107,7 +114,8 @@ describe('buildInternWorkItems', () => {
       internId: 'intern-a',
       now,
       getChecklistState: () => ({
-        'pre-1': {
+        ...PRE1_DONE,
+          'pre-2': {
           status: 'in-progress',
           reviewStatus: 'reviewing',
           reviewSource: 'lead_manager_request',
@@ -117,8 +125,8 @@ describe('buildInternWorkItems', () => {
     });
     const kpis = internWorkKpis(items, now);
     expect(kpis.waiting.manager).toBeGreaterThanOrEqual(1);
-    expect(items.find((i) => i.catalogId === 'pre-1')?.kind).toBe('waiting-manager');
-    expect(internWorkMatches(items.find((i) => i.catalogId === 'pre-1')!, { focus: 'waiting' }, now)).toBe(
+    expect(items.find((i) => i.catalogId === 'pre-2')?.kind).toBe('waiting-manager');
+    expect(internWorkMatches(items.find((i) => i.catalogId === 'pre-2')!, { focus: 'waiting' }, now)).toBe(
       true,
     );
   });

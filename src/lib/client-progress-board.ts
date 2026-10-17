@@ -14,6 +14,7 @@ import {
   isAwaitingReview,
 } from '@/lib/checklist-item-review';
 import type { BoardResolutionDoc } from '@/lib/board-resolution';
+import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/pre-inc-direct-flow';
 
 /** Client progress board traffic-light status (maps to green / yellow / red in UI). */
 export type ClientProgressTone = 'completed' | 'in-progress' | 'not-started';
@@ -61,6 +62,7 @@ function deriveClientOwnedStep(
   item: ChecklistItem,
   slice?: ChecklistItemStateSlice,
 ): ClientProgressTone {
+  if (isDirectFlowStep(item.id) && isDirectFlowStepComplete(item.id, slice)) return 'completed';
   if (!slice) {
     const { summary } = clientFieldProgress(item, undefined);
     return summary.hasAny ? 'in-progress' : 'not-started';
@@ -91,6 +93,7 @@ function deriveInternDeliveredStep(
   item: ChecklistItem,
   slice?: ChecklistItemStateSlice,
 ): ClientProgressTone {
+  if (isDirectFlowStep(item.id) && isDirectFlowStepComplete(item.id, slice)) return 'completed';
   if (isDeliveredToClient(slice) || slice?.status === 'completed') {
     return 'completed';
   }
@@ -110,6 +113,7 @@ function deriveInternDeliveredStep(
 
 function derivePre1(slice?: ChecklistItemStateSlice, item?: ChecklistItem): ClientProgressTone {
   if (!item) return 'not-started';
+  if (isDirectFlowStepComplete(item.id, slice)) return 'completed';
   if (slice?.status === 'completed' || isReviewAccepted(slice)) return 'completed';
   if (isReviewRejected(slice) || (slice?.unlockedFields?.length ?? 0) > 0) {
     return 'in-progress';

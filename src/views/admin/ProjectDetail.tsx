@@ -115,7 +115,7 @@ export default function ProjectDetail() {
   const catalog = getActiveCatalogItems();
   const totalSteps = catalog.length;
   const totalDone = catalog.filter((item) =>
-    isChecklistStepSequentiallyComplete(state[item.id]?.status ?? 'not-started', state[item.id]),
+    isChecklistStepSequentiallyComplete(state[item.id]?.status ?? 'not-started', state[item.id], item.id),
   ).length;
   const incorporationDate = eng.incorporationDate;
 

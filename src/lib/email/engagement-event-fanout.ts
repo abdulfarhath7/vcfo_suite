@@ -40,7 +40,11 @@ export type EngagementProcessEvent =
   /* Three-party step approval. */
   | 'step_awaiting_client_approval'
   | 'phase_approved'
-  | 'client_change_requested';
+  | 'client_change_requested'
+  /* Pre-incorporation direct flow (see `src/lib/pre-inc-direct-flow.ts`). */
+  | 'step_submitted'
+  | 'step_waiting_on_lead'
+  | 'step_reopened';
 
 export type StaffEmailTarget = {
   email: string;
@@ -136,8 +140,61 @@ export function emailsStaffViaResend(event: EngagementProcessEvent): boolean {
     // Both land on the lead AND the managers, so they go out over Resend
     // rather than a single actor's mailbox.
     event === 'phase_approved' ||
-    event === 'client_change_requested'
+    event === 'client_change_requested' ||
+    // A client's direct-flow submit; a staff submit goes to the clients
+    // instead (`directFlowEmailPlan`).
+    event === 'step_submitted' ||
+    event === 'step_waiting_on_lead'
   );
+}
+
+/** The board resolution being sent back to the lead: never a client's news. */
+export function isBoardResolutionSendBack(event: EngagementProcessEvent, itemId: string): boolean {
+  return event === 'review_rejected' && itemId.trim() === 'pre-2';
+}
+
+export type DirectFlowEmailPlan = 'staff' | 'clients' | 'none';
+
+/**
+ * Who gets mail for a direct-flow event (section 3.13 of the spec):
+ * - `step_submitted` by a client → leads and managers (Resend);
+ * - `step_submitted` by the lead → the clients, managers on CC;
+ * - `step_waiting_on_lead` → leads (Resend);
+ * - `step_reopened` → no mail, the bell is enough.
+ */
+export function directFlowEmailPlan(
+  event: EngagementProcessEvent,
+  actorRole: string | null | undefined,
+): DirectFlowEmailPlan {
+  if (event === 'step_submitted') return actorRole === 'client' ? 'staff' : 'clients';
+  if (event === 'step_waiting_on_lead') return 'staff';
+  return 'none';
+}
+
+/**
+ * Bell recipients for the direct-flow and board-resolution events. Returns
+ * null for every other event (their recipients stay in `notifyEngagementEvent`).
+ * The actor is removed by the caller.
+ */
+export function directFlowBellAudience(
+  event: EngagementProcessEvent,
+  itemId: string,
+): Array<'client' | 'lead' | 'manager' | 'admin'> | null {
+  switch (event) {
+    case 'step_submitted':
+    case 'step_reopened':
+      return ['client', 'lead', 'manager', 'admin'];
+    case 'step_waiting_on_lead':
+      return ['lead', 'manager'];
+    case 'board_resolution_shared':
+      return ['client', 'lead', 'manager', 'admin'];
+    case 'lead_requested_review':
+      return itemId.trim() === 'pre-2' ? ['manager', 'admin'] : null;
+    case 'review_rejected':
+      return itemId.trim() === 'pre-2' ? ['lead'] : null;
+    default:
+      return null;
+  }
 }
 
 /** Lead → manager approval asks: Graph from the lead's own mailbox when connected. */
@@ -146,7 +203,11 @@ export function sendsFromActorMailbox(event: EngagementProcessEvent): boolean {
 }
 
 /** Lead/manager → client: in-app compose + Graph Mail.Send. */
-export function opensClientOutgoingDraft(event: EngagementProcessEvent): boolean {
+export function opensClientOutgoingDraft(
+  event: EngagementProcessEvent,
+  itemId?: string,
+): boolean {
+  if (itemId && isBoardResolutionSendBack(event, itemId)) return false;
   return (
     event === 'review_accepted' ||
     event === 'review_rejected' ||
@@ -198,8 +259,9 @@ export function staffEmailTargetsForEvent(
   }
   // `phase_approved` and `client_change_requested` fall through to both loops:
   // the lead did the work and the manager approved it, so both need the news.
-  // A declined request is the lead's news, not the manager's own.
-  if (event !== 'client_fill_declined') {
+  // A declined request is the lead's news, not the manager's own; so is the
+  // client waiting on the lead's NIC codes.
+  if (event !== 'client_fill_declined' && event !== 'step_waiting_on_lead') {
     for (const manager of collectManagerParties(recipients)) {
       push(manager, hrefs.managerHref, 'manager');
     }

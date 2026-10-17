@@ -23,6 +23,8 @@ export function SegmentedPicker<T extends string>({
   onChange,
   ariaLabel,
   labelledBy,
+  ariaInvalid,
+  ariaDescribedBy,
   columns,
   size = 'md',
   className,
@@ -32,6 +34,10 @@ export function SegmentedPicker<T extends string>({
   onChange: (next: T) => void;
   ariaLabel?: string;
   labelledBy?: string;
+  /** Required answer missing or wrong — exposed as `aria-invalid` on the group. */
+  ariaInvalid?: boolean;
+  /** Id of the error text that describes the group. */
+  ariaDescribedBy?: string;
   /** Force a column count; defaults to one column per option. */
   columns?: number;
   size?: 'sm' | 'md';
@@ -93,6 +99,8 @@ export function SegmentedPicker<T extends string>({
       role="radiogroup"
       aria-label={ariaLabel}
       aria-labelledby={labelledBy}
+      aria-invalid={ariaInvalid || undefined}
+      aria-describedby={ariaDescribedBy}
       className={cn(
         'relative grid gap-1 rounded-lg bg-muted/40 p-1 ring-1 ring-border/80',
         className,

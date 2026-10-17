@@ -114,3 +114,49 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - `pre-14` seeds once from `engagement.subsidiaryRegisteredAddress` (else legacy pre-6 / pre-8) via `updateItem(..., { clientResponsesOnly: true })`, gated on the form being open (`contentReady`) so a partial checklist load cannot wipe a saved address.
 - `pre-16` submits validly with zero subscribers — "No subscribers to add" is a real terminal path, not a missing-field state. `minEntries: 0` + `emptyLabel`.
 - Pre-8 file labels carry MCA form numbers (INC-33 MOA, INC-34 AOA, INC-35 AGILE-PRO-S) but the field ids did not change; stored uploads and `PRE8_REQUIRED_FILE_IDS` keep resolving.
+
+## Pre-incorporation direct flow (2026-10-13)
+
+Spec `docs/specs/pre-inc-direct-flow/` (CONTEXT, AUDIT, REPORT).
+
+- **One policy module:** `src/lib/pre-inc-direct-flow.ts`. `DIRECT_FLOW_STEP_IDS` = every
+  active pre-incorporation step except `pre-2`. Lead-only fields: `pre-1` `nicCode`,
+  `nicBusinessType`, `additionalNicCodes` (and its dotted entry ids). Never write a step id
+  list for this rule anywhere else.
+- **Who edits:** client and project lead fill the same tabbed form and either submits;
+  manager / admin read and may "Reopen step". `filledBy: 'intern'` no longer hides a field on
+  a direct-flow step — lead-only fields show the client a read-only row "Your project lead
+  fills this." The server strips lead-only keys from client patches and submits.
+- **Submit** (`POST …/checklist/submit`, `submitDirectFlowStep`): merge → shared validator
+  (`src/lib/checklist-step-validation.ts`, the same function the form runs) → 422
+  `fieldErrors` for a field the caller can fix → client with only lead-only gaps gets
+  `waitingOnLeadPatch` (gate `waiting` for the client, `active` for the lead) → otherwise
+  `directSubmitPatch` (`completed`, `reviewStatus: 'accepted'`, `clientSubmittedAt`,
+  `deliveredToClientAt`, `submittedByName/Role`). `pre-12` copies the incorporation date here.
+- **Reopen:** the unlock route and the client's "Request a change" write `directReopenPatch`
+  (clears the submit stamps, no per-field unlock list — those cannot name repeat entry ids).
+- **Read-time rules for old data** live in `isDirectFlowStepComplete`: accepted / completed /
+  pending lead request / pending client submit read complete; rejected or reopened fields read
+  open; `approval` and `clientFillRequest` are ignored. `isChecklistStepSequentiallyComplete`
+  takes an optional `itemId` — pass it, or direct-flow steps read with the old rules.
+- **Visibility:** direct-flow steps are released to the firm and the client at all times;
+  `notes` is still stripped for the client. `pre-2` keeps the old rules.
+- **Gate:** client may open a later direct-flow step read-only ("This opens after … is
+  complete."); the server keeps `sequentialLockMessage`. Client writes to a submitted or
+  waiting step get 409.
+- **No approvals on direct-flow steps:** `RequestManagerApproval`, `ChecklistReviewActions`,
+  `RequestClientFill`, `ClientStepApproveButton` render nothing there; `reviewChecklistItem`,
+  `requestClientFill`, `decideClientFillRequest`, `clientApproveStep` throw
+  `step_has_no_approval`. Every "pending manager decision" reader goes through
+  `isAwaitingManagerDecision(itemId, slice)`.
+- **Board resolution (`pre-2`) is the one approval:** lead "Send for manager approval"
+  (submit route, lead + `pre-2` → `requestBoardResolutionApproval`: draft file must exist and
+  the generation checks must pass) → manager "Approve and send to client"
+  (`approveBoardResolution` = finalize + close `pre-2`; the finalize route is manager / admin /
+  super admin only and 409s when not pending; Approvals inbox Accept on `pre-2` calls the
+  same function) or "Send back" (note required, lead only hears it). While pending,
+  `saveBoardResolutionDraft` and the generate route refuse the lead. Manager UI:
+  `ManagerBoardResolutionReview` on the `pre-2` panel.
+- **Slice keys added** (all three edits in `checklist-state-key.ts`): `submittedByName`,
+  `submittedByRole`, `waitingOnLeadAt`, `waitingOnLeadByName`, `lastEditedAt`,
+  `lastEditedByName`, `lastEditedByRole`. "Last edited by …" shows under the step title.
