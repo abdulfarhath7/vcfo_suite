@@ -6,7 +6,7 @@ import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution/board-resolu
 import {
   isMilestoneStoragePath,
   MILESTONE_DOCUMENTS_BUCKET,
-} from '@/lib/milestone-document-storage';
+} from '@/lib/documents/milestone-document-storage';
 import { bucketKey, signedDownloadUrl, type StorageBucket } from '@/storage/s3';
 
 type RouteContext = { params: Promise<{ id: string }> };

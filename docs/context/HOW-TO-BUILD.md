@@ -141,8 +141,8 @@ in `src/components/client-portal/`; check that your change adds no new ones.
 
 ## Add a Vitest test and a Playwright spec
 
-1. Unit test: create `<file>.test.ts` beside the code (`src/lib/announcements.ts` would get
-   `src/lib/announcements.test.ts`). Globals and jsdom come from `vitest.config.mts`; `@/` resolves
+1. Unit test: create `<file>.test.ts` beside the code (`src/lib/notifications/announcements.ts` would get
+   `src/lib/notifications/announcements.test.ts`). Globals and jsdom come from `vitest.config.mts`; `@/` resolves
    to `src/` and `server-only` is stubbed.
 2. Run one file with `npx vitest run path/to/file.test.ts`; run all with `npm run test`.
 3. Component tests use Testing Library (setup in `src/test/setup.ts`).

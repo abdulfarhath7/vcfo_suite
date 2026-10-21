@@ -10,20 +10,20 @@ import {
   removeKnowledgeBankStorageObject,
   uploadKnowledgeBankFile,
   validateKnowledgeBankUploadFile,
-} from "@/lib/knowledge-bank-storage";
+} from "@/lib/knowledge-bank/knowledge-bank-storage";
 import { KNOWLEDGE_BANK_EXTENSIONS, resolveUploadContentType } from "@/lib/upload-limits";
 import { toastError, toastSuccess } from "@/lib/toast-errors";
 import { isAdminOrManager } from "@/lib/auth";
 import { isUuid } from "@/lib/slug";
 import {
   knowledgeBankFileMatchesQuery,
-} from "@/lib/knowledge-bank-search";
+} from "@/lib/knowledge-bank/knowledge-bank-search";
 import {
   isKnowledgeBankFolderEmpty,
   knowledgeBankChildFolders,
   knowledgeBankFilesInFolder,
   knowledgeBankFolderAncestors,
-} from "@/lib/knowledge-bank-folders";
+} from "@/lib/knowledge-bank/knowledge-bank-folders";
 import {
   initialKnowledgeBankUiState,
   knowledgeBankUiReducer,

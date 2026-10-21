@@ -5,7 +5,7 @@ import { db } from '@/db/client';
 import { auditEvents, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess, getMyEngagement } from '@/db/repositories/engagements';
-import { checklistItemLabel, formatAuditActionLabel } from '@/lib/audit-log';
+import { checklistItemLabel, formatAuditActionLabel } from '@/lib/audit/audit-log';
 import {
   istParts,
   type AuditCategory,

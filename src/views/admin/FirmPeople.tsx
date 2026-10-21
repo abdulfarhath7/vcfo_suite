@@ -50,8 +50,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
-import { adminProjectPath } from '@/lib/project-step-path';
-import { deriveStuckReason } from '@/lib/project-stuck';
+import { adminProjectPath } from '@/lib/projects/project-step-path';
+import { deriveStuckReason } from '@/lib/projects/project-stuck';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 

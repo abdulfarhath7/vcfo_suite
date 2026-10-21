@@ -9,7 +9,7 @@ import { Suspense, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getActiveCatalogItems } from '@/data/checklist';
-import { clientIncorporationStepPath } from '@/lib/project-step-path';
+import { clientIncorporationStepPath } from '@/lib/projects/project-step-path';
 import { usePortalOptional } from '../../PortalProvider';
 import { phaseHref } from '../../routes';
 import IncorporationLanding from './Landing';

@@ -4,7 +4,7 @@ import {
   createClientChangeRequest,
   createClientTimelineRequest,
 } from '@/db/repositories/client-change-requests';
-import type { TimelinePhaseDates } from '@/lib/client-home';
+import type { TimelinePhaseDates } from '@/lib/client/client-home';
 import {
   checklistStateForViewer,
   clientRequestStepChange,

@@ -2,7 +2,7 @@
 
 import { CheckCircle2 } from 'lucide-react';
 import { DashHero } from '@/components/dash/DashHero';
-import { heroStateLine, type ClientOverview } from '@/lib/client-overview';
+import { heroStateLine, type ClientOverview } from '@/lib/client/client-overview';
 import {
   LEGAL_FORM_LABEL,
   formatClientDayMonth,

@@ -3,7 +3,7 @@
 import { Mail } from 'lucide-react';
 import { AccentButton } from '@/components/noir';
 import { ClientCard } from '@/components/client/overview/ClientCard';
-import type { ClientOverviewTeamMember } from '@/lib/client-overview';
+import type { ClientOverviewTeamMember } from '@/lib/client/client-overview';
 import { initialsFromName } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 

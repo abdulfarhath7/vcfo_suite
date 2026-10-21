@@ -3,7 +3,7 @@ import 'server-only';
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { clientTimelineRequests, profiles, tasks } from '@/db/schema';
-import type { TimelinePhaseDates, TimelineRequestDto } from '@/lib/client-home';
+import type { TimelinePhaseDates, TimelineRequestDto } from '@/lib/client/client-home';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import { recordAuditEvent } from '@/db/repositories/audit-events';

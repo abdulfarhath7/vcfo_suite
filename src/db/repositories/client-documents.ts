@@ -26,14 +26,14 @@ import { checklist, getItem } from '@/data/checklist';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { repeatFieldLabel } from '@/lib/checklist/checklist-repeat';
 import { isStepReleasedTo } from '@/lib/checklist/checklist-visibility';
-import { checklistItemForFieldId } from '@/lib/vault-documents';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { checklistItemForFieldId } from '@/lib/documents/vault-documents';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import {
   fileNameFromStoragePath,
   isMilestoneStoragePath,
   MILESTONE_DOCUMENTS_BUCKET,
   uploadTimestampFromStoragePath,
-} from '@/lib/milestone-document-storage';
+} from '@/lib/documents/milestone-document-storage';
 import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution/board-resolution-storage';
 import {
   EXTENSION_TO_MIME,

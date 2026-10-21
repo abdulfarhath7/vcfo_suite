@@ -24,7 +24,7 @@ import type { IncorpDraftDocLink } from '@/lib/incorporation-docs/paths';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
 import { directorAudienceLabel, sortDirectorAudiences } from '@/lib/incorporation-docs/audiences';
 import type { IncorpDocKind } from '@/lib/incorporation-docs/types';
-import { fileNameFromStoragePath } from '@/lib/milestone-document-storage';
+import { fileNameFromStoragePath } from '@/lib/documents/milestone-document-storage';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import {
   INCORP_DOC_AUTOSAVE_DEBOUNCE_MS,

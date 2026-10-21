@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import type { OpenRequest } from '@/lib/client-portal/documents';
-import { validateMilestoneUploadFile } from '@/lib/milestone-document-storage';
+import { validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import { PagePortal } from './shared-ui';
 import { fileTag, TAG_STYLE } from './file-types';
 import { missingLabel, missingStyle } from './model';

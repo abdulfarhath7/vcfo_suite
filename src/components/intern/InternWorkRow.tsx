@@ -17,7 +17,7 @@ import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { InternWorkDenseLayout } from '@/components/intern/InternWorkDenseLayout';
 import { LeadCompanyPill } from '@/components/intern/LeadCompanyChip';
 import { CHIP_CLASS } from '@/components/common/IconChip';
-import type { InternWorkItem } from '@/lib/intern-work';
+import type { InternWorkItem } from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
 
 const KIND_ICON = {

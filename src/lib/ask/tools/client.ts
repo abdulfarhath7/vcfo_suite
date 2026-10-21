@@ -2,7 +2,7 @@ import { getActiveCatalogItems, getItem } from '@/data/checklist';
 import type { ProjectSnapshot } from '@/data/ask/schema';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { filingStatus } from '@/lib/filings';
+import { filingStatus } from '@/lib/compliance/filings';
 import { buildPhaseProgress } from '@/lib/ask/phase-progress';
 import { topicsForStep } from '@/lib/ask/topics';
 import { numberArg, type AskTool } from './types';

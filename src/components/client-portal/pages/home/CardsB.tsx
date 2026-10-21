@@ -11,7 +11,7 @@ import { BotSays } from '@/components/client-portal/shared';
 import { LinkButton } from '@/components/client-portal/LinkButton';
 import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig } from '@/components/client-portal/PortalProvider';
-import type { HomeFiling } from '@/lib/client-home';
+import type { HomeFiling } from '@/lib/client/client-home';
 import { useRevealedIdentifier } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
 import { CardHead, Ico, InfoPopover, Seg, Tip, copyText, ownerChipStyle } from './ui';
 import type { HomeData } from './useHome';

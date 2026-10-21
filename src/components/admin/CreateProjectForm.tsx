@@ -43,7 +43,7 @@ import {
   addEngagementLeadInDb,
   listEngagementClientsFromDb,
   removeEngagementLeadInDb,
-} from '@/lib/project-admin-db';
+} from '@/lib/projects/project-admin-db';
 
 export type CreateProjectFormProps = {
   onSuccess: (engagement: Engagement) => void;

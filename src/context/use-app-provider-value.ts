@@ -56,7 +56,7 @@ import {
   setChecklistUnlockedFieldsInDb,
   reviewChecklistItemInDb,
   setClientFillRequestInDb,
-} from '@/lib/engagements-db';
+} from '@/lib/projects/engagements-db';
 import {
   findEngagementForClientUser,
   engagementScopeIds,
@@ -73,9 +73,9 @@ import {
 import {
   isPersistedNotificationId,
   mergeNotificationsByCreatedAt,
-} from '@/lib/notification-dismiss';
-import { fingerprintHead, useInvalidateOnHeadChange } from '@/lib/live-poll';
-import { checklistItemLabel } from '@/lib/audit-log';
+} from '@/lib/notifications/notification-dismiss';
+import { fingerprintHead, useInvalidateOnHeadChange } from '@/lib/notifications/live-poll';
+import { checklistItemLabel } from '@/lib/audit/audit-log';
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {

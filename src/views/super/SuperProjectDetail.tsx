@@ -10,7 +10,7 @@ import { SuperProjectJourney } from '@/components/super/project/SuperProjectJour
 import { SuperProjectDocuments } from '@/components/super/project/SuperProjectDocuments';
 import { SuperProjectRail } from '@/components/super/project/SuperProjectRail';
 import { useSuperProject } from '@/lib/use-super-overview';
-import { SUPER_PROJECTS_HREF } from '@/lib/super-overview';
+import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
 
 /**
  * SUPER ADMIN PROJECT DETAIL (L2) — one engagement, end to end.

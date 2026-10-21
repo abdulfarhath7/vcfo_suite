@@ -1,4 +1,4 @@
-import { formatTimeline, type DeadlineRule } from '@/lib/deadlines';
+import { formatTimeline, type DeadlineRule } from '@/lib/projects/deadlines';
 
 export type Bucket = 'pre-inc' | 'post-inc' | 'fema' | 'statutory';
 export type StatusCode =

@@ -35,7 +35,7 @@ import {
   type InternWorkKindFilter,
   type InternWorkTag,
   type InternWorkView,
-} from '@/lib/intern-work';
+} from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 

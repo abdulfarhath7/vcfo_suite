@@ -70,7 +70,7 @@ These facts replace the older text in the Claude Project file `CLAUDE-CONTEXT.md
 | Repeat lists | `type: 'repeat'` exists. Storage: `responses[groupId] = "e1a2b3c4,e5f6a7b8"` and `responses["groupId.entryId.fieldId"]`. Used by `pre-15` `directors` and `pre-16` `subscribers`. | `src/lib/checklist/checklist-repeat.ts`, `src/views/incorporation/RepeatGroupEditor.tsx` |
 | Notifications | Bell rows are made on the server in `notifyEngagementEvent`. The `notifications` table has no actor column. The payload is JSON in `description`. | `src/lib/email/notify-engagement-event.ts`, `src/db/repositories/notifications.ts` |
 | Recipients | `resolveEngagementRecipients` returns all clients, leads, managers, firm admins and progress-CC addresses. | `src/db/repositories/engagement-recipients.ts` |
-| Client dashboard | Home is `/app/client/overview`. It shows no directors, capital or subscribers. | `src/views/client/Overview.tsx`, `src/lib/client-overview.ts`, `src/db/repositories/client-overview.ts` |
+| Client dashboard | Home is `/app/client/overview`. It shows no directors, capital or subscribers. | `src/views/client/Overview.tsx`, `src/lib/client/client-overview.ts`, `src/db/repositories/client-overview.ts` |
 | Data for the dashboard | Capital: `pre-1` `authorisedShareCapital`, `paidUpShareCapital`, `nominalValuePerEquityShare`. Share classes: `pre-13`. Directors: `readProposedDirectors(state)` in `src/lib/incorporation/proposed-directors.ts`. Subscribers: `pre-16` repeat group `subscribers`. | `src/lib/checklist/checklist-responses.ts` |
 
 ---
@@ -272,7 +272,7 @@ Hide these on a direct-flow step. Keep them on all other steps.
 
 Server: `requestClientFill`, `decideClientFillRequest`, `clientApproveStep` and `reviewChecklistItem` refuse a direct-flow step with a clear error.
 
-Every reader of a pending manager decision must use `isAwaitingManagerDecision(itemId, slice)`. It returns false for a direct-flow step. Readers: `src/lib/pending-approvals.ts`, `src/lib/project-stuck.ts`, `src/lib/intern-work.ts`, `src/lib/intern-dashboard.ts`, `src/lib/client-progress-board.ts`, `src/views/admin/FirmDashboard.tsx`, `src/lib/ask/tools/staff.ts`.
+Every reader of a pending manager decision must use `isAwaitingManagerDecision(itemId, slice)`. It returns false for a direct-flow step. Readers: `src/lib/projects/pending-approvals.ts`, `src/lib/projects/project-stuck.ts`, `src/lib/intern/intern-work.ts`, `src/lib/intern/intern-dashboard.ts`, `src/lib/client/client-progress-board.ts`, `src/views/admin/FirmDashboard.tsx`, `src/lib/ask/tools/staff.ts`.
 
 ### 3.12 Steps that are in approval now (old data)
 
@@ -313,7 +313,7 @@ New event `step_submitted` for a direct-flow step. It replaces `client_submitted
 |---|---|
 | Component | New `src/components/client/overview/ClientCompanySnapshot.tsx`, built with `ClientCard`. |
 | Position | In `src/views/client/Overview.tsx`, main column, first card, before `ClientPhaseBars`. Shown before and after incorporation. |
-| Data | Add `company` to `ClientOverview` in `src/lib/client-overview.ts`. Build it in `src/db/repositories/client-overview.ts` from the state after `checklistStateForViewer`. |
+| Data | Add `company` to `ClientOverview` in `src/lib/client/client-overview.ts`. Build it in `src/db/repositories/client-overview.ts` from the state after `checklistStateForViewer`. |
 | Design | Do the design-system audit in `docs/context/notes/design-system.md` first. Use existing tokens and `ClientCard`. No new colours. |
 
 ```ts

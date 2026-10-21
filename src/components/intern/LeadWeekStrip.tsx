@@ -17,7 +17,7 @@ import {
   ymdInIst,
   type InternWorkItem,
   type WeekChipKind,
-} from '@/lib/intern-work';
+} from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
 
 /* Four kinds, four tones, each named next to its swatch: danger for a statutory

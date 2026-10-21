@@ -12,7 +12,7 @@ import { formatPre1DateDisplay } from '@/lib/checklist/checklist-pre1-validation
 import { isDeliveredToClient, type ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import { ManagerBoardResolutionReview } from '@/components/incorporation/ManagerBoardResolutionReview';
-import { clientBoardResolutionPath } from '@/lib/project-step-path';
+import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 import { incorpDraftDocLinksFromResponses } from '@/lib/incorporation-docs/client';
 import {
   filterClientVisibleIncorpDrafts,

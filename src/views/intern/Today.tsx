@@ -17,7 +17,7 @@ import {
   internActionQueueByCompany,
   internWorkItemsForDay,
   ymdInIst,
-} from '@/lib/intern-work';
+} from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
 
 export default function InternToday() {

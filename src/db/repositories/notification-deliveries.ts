@@ -5,7 +5,7 @@ import { db } from '@/db/client';
 import { engagements, notificationDeliveries, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { managerOwnsEngagement } from '@/db/repositories/engagements';
 import { listLeadMemberEngagementIds } from '@/db/repositories/engagement-leads-membership';
 import type {

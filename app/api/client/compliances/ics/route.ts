@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { getPortalFilings } from '@/db/repositories/client-compliances';
-import { parseFyParam } from '@/lib/filings';
+import { parseFyParam } from '@/lib/compliance/filings';
 import { filingsIcs, fyLabelOf } from '@/lib/client-portal/compliances';
 
 /** GET /api/client/compliances/ics?fy=2026 — every unfiled deadline of the FY as one .ics. */

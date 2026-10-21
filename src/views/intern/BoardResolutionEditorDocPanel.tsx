@@ -45,7 +45,7 @@ import { type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/
 
 
 
-import { internBoardResolutionPath } from '@/lib/project-step-path';
+import { internBoardResolutionPath } from '@/lib/projects/project-step-path';
 
 
 

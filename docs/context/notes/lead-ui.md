@@ -39,7 +39,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   no Completed/In progress words.
   Now vs Waiting comes from sequential gates: `active` = intern-owned (“Your
   step”), `waiting` = client-owned (“Waiting on the client”). Open step uses
-  `internEngagementStepPath`. Helpers: `src/lib/intern-overview-progress.ts`.
+  `internEngagementStepPath`. Helpers: `src/lib/intern/intern-overview-progress.ts`.
   Registration panel rows are grouped under intern-only sub-headers (General,
   Customs, Foreign Trade, Labour, Local Compliance, IP/Brand, FEMA) by matching
   catalog titles; FEMA-bucket items nest here instead of a fifth top-level tab.
@@ -174,7 +174,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
 
 - Today (`/app/intern/today`) is one greeting hero (greeting + inline stats + today’s
   focus) plus week strip, action queue, phase progress, compliance health, waiting-on.
-  Stats deep-link into My work with `?focus=`. Helpers: `src/lib/intern-work.ts`.
+  Stats deep-link into My work with `?focus=`. Helpers: `src/lib/intern/intern-work.ts`.
   Appearance (hero/sidebar/motion) is localStorage `vcfo.shell.appearance`.
 - My work (`/app/intern/tasks`) is List / Board / Timeline of the same classified items
   (steps + filings + pending document requests). Nav badge = needs-action count.

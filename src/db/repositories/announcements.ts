@@ -16,7 +16,7 @@ import {
   type AnnouncementOrigin,
   type AnnouncementSource,
   type ParsedFeedItem,
-} from '@/lib/announcements';
+} from '@/lib/notifications/announcements';
 
 type AnnouncementRow = typeof announcements.$inferSelect;
 type SourceRow = typeof announcementSources.$inferSelect;

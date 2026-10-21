@@ -1,8 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import type { Announcement, AnnouncementSource } from '@/lib/announcements';
-import { fingerprintHead, useInvalidateOnHeadChange } from '@/lib/live-poll';
+import type { Announcement, AnnouncementSource } from '@/lib/notifications/announcements';
+import { fingerprintHead, useInvalidateOnHeadChange } from '@/lib/notifications/live-poll';
 
 async function readJson<T>(res: Response): Promise<T> {
   const data = (await res.json()) as T & { error?: string };

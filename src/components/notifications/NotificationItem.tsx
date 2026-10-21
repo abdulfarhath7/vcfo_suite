@@ -6,7 +6,7 @@ import type { AppNotification } from "@/lib/checklist/checklist-notifications";
 import {
   formatNotificationWhen,
   notificationHrefIsNavigable,
-} from "@/lib/notification-dismiss";
+} from "@/lib/notifications/notification-dismiss";
 import { cn } from "@/lib/utils";
 
 function statusDotClass(kind: AppNotification["kind"]): string | null {

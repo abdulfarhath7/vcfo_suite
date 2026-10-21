@@ -5,7 +5,7 @@ import { CalendarRange, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
-import { formatWindow, isValidWindowRange } from '@/lib/schedule-windows';
+import { formatWindow, isValidWindowRange } from '@/lib/projects/schedule-windows';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 

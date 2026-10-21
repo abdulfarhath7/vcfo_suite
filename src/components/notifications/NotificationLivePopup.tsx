@@ -8,11 +8,11 @@ import { Bell, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { useShellAppearance } from '@/lib/use-shell-appearance';
-import { measureGenieDock, type GenieBox } from '@/lib/genie-dock';
+import { measureGenieDock, type GenieBox } from '@/lib/notifications/genie-dock';
 import {
   formatNotificationWhen,
   notificationHrefIsNavigable,
-} from '@/lib/notification-dismiss';
+} from '@/lib/notifications/notification-dismiss';
 import {
   NOTIFICATION_BELL_SELECTOR,
   NOTIFICATION_BELL_TARGET_SELECTOR,
@@ -23,7 +23,7 @@ import {
   readNotificationPopupIds,
   selectNotificationPopups,
   type NotificationShowDetail,
-} from '@/lib/notification-popup';
+} from '@/lib/notifications/notification-popup';
 import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import { cn } from '@/lib/utils';
 

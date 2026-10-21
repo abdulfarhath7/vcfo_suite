@@ -8,7 +8,7 @@ import {
   PROPOSED_DIRECTORS_STEP_ID,
   readProposedDirectors,
 } from '@/lib/incorporation/proposed-directors';
-import type { EngagementChecklistState } from '@/lib/engagements-db';
+import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
 import { collectAcceptanceLetterMissingFields } from '@/lib/incorporation-docs/acceptance-letter';
 import { collectAuthorisationLetterMissingFields } from '@/lib/incorporation-docs/authorisation-letter';
 import { collectAoaMissingFields } from '@/lib/incorporation-docs/aoa';

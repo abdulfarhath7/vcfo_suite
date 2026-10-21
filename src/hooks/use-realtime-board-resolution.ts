@@ -1,6 +1,6 @@
 'use client';
 
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { usePollRefresh } from '@/hooks/use-poll-refresh';
 
 /** Refetch the board resolution when it may have changed elsewhere (visibility-aware poll). */

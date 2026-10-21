@@ -4,8 +4,8 @@ import { useEffect, useReducer } from 'react';
 import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import type { Engagement } from '@/data/engagements';
-import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
-import { clientBoardResolutionPath } from '@/lib/project-step-path';
+import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
+import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 
 interface ClientBoardResolutionCardProps {
   engagement: Engagement;

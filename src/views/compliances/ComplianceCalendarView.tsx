@@ -24,7 +24,7 @@ import {
   sortByDueDate,
   summarise,
   type FilingRow,
-} from '@/lib/filings';
+} from '@/lib/compliance/filings';
 import type { ComplianceFiling } from '@/data/compliance';
 import {
   ALL_COMPANIES,

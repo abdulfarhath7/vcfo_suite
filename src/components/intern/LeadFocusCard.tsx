@@ -19,7 +19,7 @@ import {
   createCustomInternFocus,
   isCustomInternFocus,
   type InternWorkItem,
-} from '@/lib/intern-work';
+} from '@/lib/intern/intern-work';
 import { useOwnFocusTodos } from '@/lib/use-personal-todos';
 import { cn } from '@/lib/utils';
 

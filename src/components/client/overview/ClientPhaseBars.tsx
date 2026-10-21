@@ -8,7 +8,7 @@ import { ClientJourneyTrack } from '@/components/client/overview/ClientJourneyTr
 import type {
   ClientOverviewMilestone,
   ClientOverviewProgress,
-} from '@/lib/client-overview';
+} from '@/lib/client/client-overview';
 import { PHASE_FILL, phaseTone } from '@/components/client/overview/client-overview-format';
 import { cn } from '@/lib/utils';
 

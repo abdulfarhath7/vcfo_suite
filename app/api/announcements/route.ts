@@ -8,7 +8,7 @@ import {
   getAnnouncementBoardHead,
   listAnnouncements,
 } from '@/db/repositories/announcements';
-import { canWriteAnnouncements } from '@/lib/announcements';
+import { canWriteAnnouncements } from '@/lib/notifications/announcements';
 
 const createSchema = z.object({
   title: z.string().trim().max(200).optional().default(''),

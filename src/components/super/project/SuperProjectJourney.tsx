@@ -6,7 +6,7 @@ import { DashSection } from '@/components/dash/DashSection';
 import { JourneyNode } from '@/components/incorporation/JourneyNode';
 import { TONE_BADGE } from '@/components/common/IconChip';
 import { phaseFill } from '@/components/super/overview/super-overview-format';
-import type { SuperEngagementDetail, SuperJourneyStep } from '@/lib/super-overview';
+import type { SuperEngagementDetail, SuperJourneyStep } from '@/lib/super/super-overview';
 import { cn } from '@/lib/utils';
 
 /**

@@ -18,7 +18,7 @@ import { initialsFromName, type AuthUser } from "@/lib/auth";
 import type { Client } from "@/data/client";
 import type { Engagement } from "@/data/engagements";
 import { getActiveCatalogItems } from "@/data/checklist";
-import { clientIncorporationStepPath } from "@/lib/project-step-path";
+import { clientIncorporationStepPath } from "@/lib/projects/project-step-path";
 import {
   gateActiveCatalog,
   isChecklistStepSequentiallyComplete,
@@ -26,8 +26,8 @@ import {
 import {
   internOverviewCurrentItemInPhase,
   internOverviewPhases,
-} from "@/lib/intern-overview-progress";
-import { formatDate } from "@/lib/deadlines";
+} from "@/lib/intern/intern-overview-progress";
+import { formatDate } from "@/lib/projects/deadlines";
 import { HexgridLoader } from "@/components/common/HexgridLoader";
 import { findEngagementForClientUser } from "@/lib/checklist/checklist-state-key";
 

@@ -8,7 +8,7 @@ import {
   PRE1_DIRECTOR_LAST_NAME_IDS,
 } from '@/lib/checklist/checklist-pre1-validation';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { BoardResolutionSaveError } from '@/lib/engagements-db';
+import { BoardResolutionSaveError } from '@/lib/projects/engagements-db';
 import { resolveDirectorDisplayName, resolveSignatoryDisplayName } from '@/lib/person-name';
 
 export const BOARD_RESOLUTION_ERROR_CODES = {

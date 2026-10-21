@@ -51,12 +51,12 @@ import {
   waitingOnLeadPatch,
 } from '@/lib/incorporation/pre-inc-direct-flow';
 import { validateStepAgainstState } from '@/lib/checklist/checklist-step-validation';
-import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-ids';
+import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 import { sequentialLockMessage } from '@/lib/checklist/checklist-step-gate';
-import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
-import { resolveCreateProjectManagerAssignment } from '@/lib/create-project-scope';
+import { normalizeEngagementSchedule } from '@/lib/projects/schedule-windows';
+import { resolveCreateProjectManagerAssignment } from '@/lib/projects/create-project-scope';
 import {
   ensureEngagementClientMember,
   listClientMemberEngagementIds,

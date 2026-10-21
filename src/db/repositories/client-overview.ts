@@ -13,8 +13,8 @@ import {
 } from '@/db/repositories/engagements';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { listAuditEvents } from '@/db/repositories/audit-events';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
-import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
+import { normalizeEngagementSchedule } from '@/lib/projects/schedule-windows';
 import {
   buildBallInCourt,
   buildCompanySnapshot,
@@ -31,7 +31,7 @@ import {
   type ClientOverviewComplianceItem,
   type ClientOverviewState,
   type ClientOverviewTeamMember,
-} from '@/lib/client-overview';
+} from '@/lib/client/client-overview';
 
 /**
  * CLIENT OVERVIEW REPOSITORY.

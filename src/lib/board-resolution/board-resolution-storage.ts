@@ -1,4 +1,4 @@
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import {
   EXTENSION_TO_MIME,
   maxUploadSizeError,

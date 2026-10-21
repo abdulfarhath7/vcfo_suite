@@ -86,7 +86,7 @@ import {
 } from '@/lib/checklist/checklist-state-key';
 import {
   uploadMilestoneDocument,
-} from '@/lib/milestone-document-storage';
+} from '@/lib/documents/milestone-document-storage';
 import { maxUploadSizeLabel } from '@/lib/upload-limits';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -112,8 +112,8 @@ import {
 } from '@/lib/incorporation-docs/client';
 import { IncorporationDraftDocLink } from '@/components/incorporation/IncorporationDraftDocLink';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
-import { internEngagementPath, internEngagementStepPath } from '@/lib/project-step-path';
-import { internFormNextTarget } from '@/lib/intern-overview-progress';
+import { internEngagementPath, internEngagementStepPath } from '@/lib/projects/project-step-path';
+import { internFormNextTarget } from '@/lib/intern/intern-overview-progress';
 import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 import { inferIndianState } from '@/lib/incorporation/countries';
@@ -125,7 +125,7 @@ import {
   LEAD_ONLY_FIELD_HELPER,
   stripLeadOnlyResponses,
 } from '@/lib/incorporation/pre-inc-direct-flow';
-import { clientIncorporationPath, clientIncorporationStepPath } from '@/lib/project-step-path';
+import { clientIncorporationPath, clientIncorporationStepPath } from '@/lib/projects/project-step-path';
 
 /** True when an error key belongs to one of these fields (repeat ids are dotted under the group). */
 function errorKeyInFields(key: string, fields: readonly ChecklistField[]): boolean {

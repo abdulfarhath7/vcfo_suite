@@ -5,7 +5,7 @@ import { DashSection } from '@/components/dash/DashSection';
 import { DashDataTable, type DashColumn } from '@/components/dash/DashDataTable';
 import { TONE_BADGE } from '@/components/common/IconChip';
 import { formatSuperDayMonth } from '@/components/super/overview/super-overview-format';
-import type { SuperDocument, SuperEngagementDetail } from '@/lib/super-overview';
+import type { SuperDocument, SuperEngagementDetail } from '@/lib/super/super-overview';
 import { cn } from '@/lib/utils';
 
 /**

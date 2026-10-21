@@ -85,7 +85,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   auto-filled in `setField` from `src/lib/incorporation/nic-2008.ts` (1,302 sub-classes, official MSME PDF
   parse — `src/data/nic-2008.json` is `[code, subclass, class]`). Unknown code = warning, not
   error. `nicBusinessType` renders read-only (like pre-5 expiry) and is stored in responses.
-- **Windows**: `src/lib/schedule-windows.ts` (`windowForStep`, `applyScheduleWindow`,
+- **Windows**: `src/lib/projects/schedule-windows.ts` (`windowForStep`, `applyScheduleWindow`,
   `formatWindow`, `canSetScheduleWindows`). Repo `src/db/repositories/schedule.ts`
   (`setEngagementWindow`, `setComplianceInstanceWindow`; manager/admin/super only, throws
   otherwise). Routes `POST /api/engagements/:id/schedule`, `POST /api/filings/:id/window`.

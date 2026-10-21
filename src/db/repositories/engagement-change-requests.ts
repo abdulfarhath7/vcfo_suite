@@ -4,22 +4,22 @@ import { db } from '@/db/client';
 import { engagementChangeRequests, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import type {
   ChangeRequestKind,
   ChangeRequestPreview,
   ChangeRequestStatus,
-} from '@/lib/project-change-request-types';
+} from '@/lib/projects/project-change-request-types';
 
 export type ChangeRequestRow = typeof engagementChangeRequests.$inferSelect;
 
-export { CHANGE_REQUEST_KINDS } from '@/lib/project-change-request-types';
+export { CHANGE_REQUEST_KINDS } from '@/lib/projects/project-change-request-types';
 export type {
   ChangeRequestKind,
   ChangeRequestPreview,
   ChangeRequestStatus,
-} from '@/lib/project-change-request-types';
+} from '@/lib/projects/project-change-request-types';
 
 /**
  * Managers may only file against projects they can already reach, so the

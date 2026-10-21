@@ -7,9 +7,9 @@ import { directorResponsesFromState } from '@/lib/incorporation/proposed-directo
 import type { ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
-import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
+import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import { isDeliveredToClient } from '@/lib/checklist/checklist-state-key';
-import { isInternEngagementPathname } from '@/lib/project-step-path';
+import { isInternEngagementPathname } from '@/lib/projects/project-step-path';
 
 
 

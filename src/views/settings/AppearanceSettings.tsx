@@ -4,7 +4,7 @@ import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { Check, Upload } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useApp } from '@/context/AppContext';
-import { internFirstName } from '@/lib/intern-work';
+import { internFirstName } from '@/lib/intern/intern-work';
 import {
   HERO_SOLIDS,
   MOTION_STYLES,

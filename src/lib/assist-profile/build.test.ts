@@ -18,7 +18,7 @@ import {
   assistFullState,
   withSubscribers,
 } from '@/lib/assist-profile/__tests__/fixtures';
-import type { EngagementChecklistState } from '@/lib/engagements-db';
+import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
 import type { DocPackEngagement } from '@/lib/doc-pack/types';
 
 const INDEPENDENT: DocPackEngagement = {

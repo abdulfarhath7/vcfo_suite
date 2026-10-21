@@ -5,7 +5,7 @@ import {
   type VcfoPortalGroup,
   type VcfoPortalHead,
   type VcfoPortalTask,
-} from '@/lib/announcement-portals';
+} from '@/lib/notifications/announcement-portals';
 import { cn } from '@/lib/utils';
 
 const RECURRING_HEADS = new Set<VcfoPortalHead>([

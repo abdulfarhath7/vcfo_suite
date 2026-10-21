@@ -1,6 +1,6 @@
 import type { IconChipTone } from '@/components/common/IconChip';
 import { CHART_STATUS, chartPhaseColor, type ChartColor } from '@/components/charts';
-import type { SuperEngagementSummary, SuperStateKey } from '@/lib/super-overview';
+import type { SuperEngagementSummary, SuperStateKey } from '@/lib/super/super-overview';
 
 /**
  * Display mapping for the super admin surface. Every tone here resolves to a

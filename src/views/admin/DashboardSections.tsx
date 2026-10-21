@@ -11,7 +11,7 @@ import { PhaseTimeline, type Phase } from '@/components/admin/PhaseTimeline';
 import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
 import { initialsFromName } from '@/lib/auth';
 import { SEO } from '@/components/SEO';
-import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import type { TaskInstance } from '@/data/engagements';
 import type { Engagement } from '@/data/engagements';

@@ -22,14 +22,14 @@ import {
 import type { OwnershipType } from '@/data/engagements';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowControl';
-import { setEngagementWindowInDb } from '@/lib/engagements-db';
+import { setEngagementWindowInDb } from '@/lib/projects/engagements-db';
 import {
   canSetScheduleWindows,
   formatWindow,
   isIncorporationWindowStep,
   windowForStep,
   type EngagementSchedule,
-} from '@/lib/schedule-windows';
+} from '@/lib/projects/schedule-windows';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { filterFieldsByViewer, hasResponseFormFields } from '@/lib/checklist/checklist-field-access';
 import { isStepReleasedToClient, isStepReleasedToFirm } from '@/lib/checklist/checklist-visibility';
@@ -37,7 +37,7 @@ import { getStepAttachmentRequirements } from '@/lib/checklist/checklist-step-at
 import {
   internOverviewPhaseForItem,
   internRegistrationHeadingGroups,
-} from '@/lib/intern-overview-progress';
+} from '@/lib/intern/intern-overview-progress';
 import {
   adminProjectPath,
   adminProjectStepPath,
@@ -47,7 +47,7 @@ import {
   internEngagementStepPath,
   isClientIncorporationStepPathname,
   isInternEngagementPathname,
-} from '@/lib/project-step-path';
+} from '@/lib/projects/project-step-path';
 import {
   engagementRouteParamFromParams,
   resolveChecklistItemFromStepParam,
@@ -75,7 +75,7 @@ import {
   getStepGate,
   type ChecklistStepGate,
 } from '@/lib/checklist/checklist-step-gate';
-import type { BoardResolutionProgressSnapshot } from '@/lib/client-progress-board';
+import type { BoardResolutionProgressSnapshot } from '@/lib/client/client-progress-board';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
 import {

@@ -11,7 +11,7 @@ import type {
 import {
   NOTIFICATION_HISTORY_LIMIT,
   NOTIFICATION_INBOX_LIMIT,
-} from '@/lib/notification-dismiss';
+} from '@/lib/notifications/notification-dismiss';
 
 /**
  * NOTIFICATIONS REPOSITORY — replaces vcfo.notifications localStorage.

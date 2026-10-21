@@ -1,5 +1,5 @@
 import { TONE_BADGE, TONE_BG, TONE_TEXT, type IconChipTone } from '@/components/common/IconChip';
-import type { InternChipTone } from '@/lib/intern-work';
+import type { InternChipTone } from '@/lib/intern/intern-work';
 
 function internIconTone(tone: InternChipTone): IconChipTone {
   return tone;

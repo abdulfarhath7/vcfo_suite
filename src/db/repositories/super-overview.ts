@@ -16,7 +16,7 @@ import { listDocuments } from '@/db/repositories/documents';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { listStaffPeople, type StaffPersonRow } from '@/db/repositories/profiles';
 import { listAuditEvents } from '@/db/repositories/audit-events';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import {
   buildJourney,
   buildSuperOverview,
@@ -30,7 +30,7 @@ import {
   type SuperOverview,
   type SuperOverviewState,
   type SuperTeamMember,
-} from '@/lib/super-overview';
+} from '@/lib/super/super-overview';
 
 /**
  * SUPER ADMIN OVERVIEW REPOSITORY.

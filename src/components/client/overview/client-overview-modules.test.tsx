@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'framer-motion';
 
-import { buildCompanySnapshot, buildProgress, type ClientOverview } from '@/lib/client-overview';
+import { buildCompanySnapshot, buildProgress, type ClientOverview } from '@/lib/client/client-overview';
 import { ClientOverviewHero } from '@/components/client/overview/ClientOverviewHero';
 import { ClientNextAction } from '@/components/client/overview/ClientNextAction';
 import { ClientPhaseBars } from '@/components/client/overview/ClientPhaseBars';
@@ -13,7 +13,7 @@ import { ClientDeliverables } from '@/components/client/overview/ClientDeliverab
 import { ClientEntityCard } from '@/components/client/overview/ClientEntityCard';
 import { ClientTeamCard } from '@/components/client/overview/ClientTeamCard';
 import { ClientActivityFeed } from '@/components/client/overview/ClientActivityFeed';
-import { buildMilestones } from '@/lib/client-overview';
+import { buildMilestones } from '@/lib/client/client-overview';
 
 function draw(ui: React.ReactElement) {
   return render(<LazyMotion features={domAnimation}>{ui}</LazyMotion>);

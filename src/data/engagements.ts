@@ -1,6 +1,6 @@
 import { checklist, StatusCode } from './checklist';
 import type { EntityLegalForm } from '@/lib/compliance/types';
-import type { EngagementSchedule } from '@/lib/schedule-windows';
+import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
 
 export type CompanyType = 'domestic' | 'foreign';
 /**

@@ -8,12 +8,12 @@ import {
   writeInternFocus,
   type InternFocusEntry,
   type InternWorkItem,
-} from '@/lib/intern-work';
+} from '@/lib/intern/intern-work';
 import {
   focusEntryToCreateBody,
   personalTodoToFocusEntry,
   type PersonalTodoDto,
-} from '@/lib/personal-todos';
+} from '@/lib/intern/personal-todos';
 
 const PERSONAL_TODOS_QUERY_KEY = ['personal-todos'] as const;
 

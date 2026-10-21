@@ -24,7 +24,7 @@ import { applyShowWhen, expandRepeatFields, isRepeatField, repeatFieldLabel, res
 import { withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
 import { approvalStateOf, clientApproveBlockedReason, isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
-import { fileNameFromStoragePath, isMilestoneStoragePath, validateMilestoneUploadFile } from '@/lib/milestone-document-storage';
+import { fileNameFromStoragePath, isMilestoneStoragePath, validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
 import { phaseHref, portalHref } from '../../routes';

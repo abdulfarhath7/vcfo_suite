@@ -11,7 +11,7 @@ import {
   formatSuperAgo,
   formatSuperDayMonth,
 } from '@/components/super/overview/super-overview-format';
-import type { SuperEngagementDetail } from '@/lib/super-overview';
+import type { SuperEngagementDetail } from '@/lib/super/super-overview';
 import { cn } from '@/lib/utils';
 
 /**

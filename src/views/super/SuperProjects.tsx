@@ -23,7 +23,7 @@ import {
   SUPER_PROJECTS_HREF,
   type SuperEngagementSummary,
   type SuperOverview,
-} from '@/lib/super-overview';
+} from '@/lib/super/super-overview';
 import { cn } from '@/lib/utils';
 
 /**

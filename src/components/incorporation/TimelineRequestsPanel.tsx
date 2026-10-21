@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import type { TimelineRequestDto } from "@/lib/client-home";
+import type { TimelineRequestDto } from "@/lib/client/client-home";
 import { Surface } from "@/components/noir/Surface";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

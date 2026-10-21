@@ -7,7 +7,7 @@ import {
   buildMilestones,
   buildProgress,
   type ClientOverview,
-} from '@/lib/client-overview';
+} from '@/lib/client/client-overview';
 
 const useClientOverview = vi.fn();
 

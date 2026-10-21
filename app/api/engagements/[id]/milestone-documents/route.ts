@@ -7,19 +7,19 @@ import {
 import { createDocument } from '@/db/repositories/documents';
 import { getItem } from '@/data/checklist';
 import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { isEngagementRouteParam } from '@/lib/slug';
 import {
   MILESTONE_DOCUMENTS_BUCKET,
   milestoneDocumentObjectPath,
   validateMilestoneUploadFile,
-} from '@/lib/milestone-document-storage';
+} from '@/lib/documents/milestone-document-storage';
 import {
   MILESTONE_DOCUMENT_EXTENSIONS,
   resolveUploadContentType,
 } from '@/lib/upload-limits';
 import { bucketKey, putObject } from '@/storage/s3';
-import { checklistItemForFieldId, vaultPhaseForItem } from '@/lib/vault-documents';
+import { checklistItemForFieldId, vaultPhaseForItem } from '@/lib/documents/vault-documents';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

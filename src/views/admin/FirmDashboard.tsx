@@ -10,11 +10,11 @@ import { DashHero } from '@/components/dash/DashHero';
 import { DashSection, DashDonut, DashLegendRow } from '@/components/dash/DashSection';
 import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
 import { Activity, Users } from 'lucide-react';
-import { deriveStuckReason, primaryPhaseItems } from '@/lib/project-stuck';
+import { deriveStuckReason, primaryPhaseItems } from '@/lib/projects/project-stuck';
 import { FirmProjectsPanel } from '@/views/admin/FirmProjectsPanel';
 import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
-import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern-work';
+import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
 import { initialsFromName } from '@/lib/auth';
 import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 

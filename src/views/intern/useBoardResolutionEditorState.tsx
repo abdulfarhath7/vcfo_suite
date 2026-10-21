@@ -42,10 +42,10 @@ import {
 
   saveBoardResolutionDraftInDb,
 
-} from '@/lib/engagements-db';
+} from '@/lib/projects/engagements-db';
 import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 
-import { internBoardResolutionPath, internEngagementStepPath } from '@/lib/project-step-path';
+import { internBoardResolutionPath, internEngagementStepPath } from '@/lib/projects/project-step-path';
 
 import {
 

@@ -8,9 +8,9 @@ import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/c
 import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
 import { approvalStateOf } from '@/lib/checklist/checklist-step-approval';
 import { isClientFillAwaitingClient } from '@/lib/checklist/checklist-client-fill';
-import { complianceGroupForAuthority, type ClientOverview, type ComplianceGroup } from '@/lib/client-overview';
+import { complianceGroupForAuthority, type ClientOverview, type ComplianceGroup } from '@/lib/client/client-overview';
 import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
-import type { ClientHome, HomeFiling, NeedKind, TimelinePhaseDates } from '@/lib/client-home';
+import type { ClientHome, HomeFiling, NeedKind, TimelinePhaseDates } from '@/lib/client/client-home';
 import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
 import { portalHref, stepHref } from '@/components/client-portal/routes';
 

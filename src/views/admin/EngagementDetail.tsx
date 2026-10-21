@@ -31,7 +31,7 @@ import {
   internEngagementPath,
   internEngagementStepPath,
   isInternEngagementPathname,
-} from '@/lib/project-step-path';
+} from '@/lib/projects/project-step-path';
 import {
   engagementRouteParamFromParams,
   resolveEngagementFromRouteParam,
@@ -53,7 +53,7 @@ import {
   internOverviewNow,
   internOverviewPhases,
   internPhaseStepCounts,
-} from '@/lib/intern-overview-progress';
+} from '@/lib/intern/intern-overview-progress';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
 import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
 import {

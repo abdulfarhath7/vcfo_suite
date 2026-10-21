@@ -1,4 +1,4 @@
-import type { EngagementChecklistState } from '@/lib/engagements-db';
+import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
 import { repeatFieldId } from '@/lib/checklist/checklist-repeat';
 import { COMPANY_PRE1, director, fullState, type FixtureDirector } from '@/lib/doc-pack/__tests__/fixtures';
 

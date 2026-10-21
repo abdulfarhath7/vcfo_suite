@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { internLeadManagerRequestPatch } from '@/lib/checklist/checklist-item-review';
-import { internWorkCta, type InternWorkItem } from '@/lib/intern-work';
+import { internWorkCta, type InternWorkItem } from '@/lib/intern/intern-work';
 import { useApp } from '@/context/AppContext';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';

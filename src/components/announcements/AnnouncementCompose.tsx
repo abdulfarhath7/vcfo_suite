@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { AnnouncementKindPicker } from '@/components/announcements/AnnouncementList';
 import { useApp } from '@/context/AppContext';
-import { addAnnouncementPopupIds, type AnnouncementKind } from '@/lib/announcements';
+import { addAnnouncementPopupIds, type AnnouncementKind } from '@/lib/notifications/announcements';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 

@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/button';
 import { CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_BADGE } from '@/components/common/IconChip';
 import { cn } from '@/lib/utils';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
-import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/project-stuck';
+import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
 import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
-import { adminProjectPath } from '@/lib/project-step-path';
+import { adminProjectPath } from '@/lib/projects/project-step-path';
 
 type ManagerOption = { id: string; name: string; email: string };
 

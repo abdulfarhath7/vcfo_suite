@@ -22,8 +22,8 @@ import {
   substituteClientInDb,
   createChangeRequestInDb,
   type EngagementClientRow,
-} from '@/lib/project-admin-db';
-import { changeRequestDiffValue } from '@/lib/project-change-request-types';
+} from '@/lib/projects/project-admin-db';
+import { changeRequestDiffValue } from '@/lib/projects/project-change-request-types';
 import { clientPasswordSchema, emailSchema, DEFAULT_CLIENT_TEMP_PASSWORD } from '@/lib/api/schemas';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';

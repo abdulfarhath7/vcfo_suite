@@ -3,10 +3,10 @@ import type { LegalForm, ProjectSnapshot } from '@/data/ask/schema';
 import { projectSnapshotSchema } from '@/data/ask/schema';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { buildProgress } from '@/lib/client-overview';
+import { buildProgress } from '@/lib/client/client-overview';
 import { PHASE_BY_ID } from '@/lib/ask/phase-progress';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
-import { formatWindow, normalizeEngagementSchedule, windowForStep } from '@/lib/schedule-windows';
+import { formatWindow, normalizeEngagementSchedule, windowForStep } from '@/lib/projects/schedule-windows';
 
 /** Only the engagement columns a snapshot may read — no ids, addresses or people. */
 export interface SnapshotEngagement {

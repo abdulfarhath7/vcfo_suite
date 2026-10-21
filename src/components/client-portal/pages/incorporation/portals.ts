@@ -1,8 +1,8 @@
 /**
  * Rule 15 — the official portal (↗) for a step, from its forms / title.
- * URLs reuse the announcement portal table (src/lib/announcement-portals.ts).
+ * URLs reuse the announcement portal table (src/lib/notifications/announcement-portals.ts).
  */
-import { EPFO, ESIC, FIRMS, FLAIR, GST_LOGIN, IT_FO, MCA_FO, STPI, TGCT } from '@/lib/announcement-portals';
+import { EPFO, ESIC, FIRMS, FLAIR, GST_LOGIN, IT_FO, MCA_FO, STPI, TGCT } from '@/lib/notifications/announcement-portals';
 import type { ChecklistItem } from '@/data/checklist';
 
 export interface PortalLink {

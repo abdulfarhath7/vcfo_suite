@@ -15,7 +15,7 @@ import {
   isPersistedNotificationId,
   parseNotificationIds,
   parseRestoreNotifications,
-} from '@/lib/notification-dismiss';
+} from '@/lib/notifications/notification-dismiss';
 
 function historyRequested(request: Request): boolean {
   const url = new URL(request.url);

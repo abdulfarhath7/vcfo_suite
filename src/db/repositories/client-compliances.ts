@@ -14,7 +14,7 @@ import {
 } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { listScopedEngagementIds } from '@/db/repositories/engagements';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { bucketKey, putObject, signedDownloadUrl, deleteObject } from '@/storage/s3';
 import {
   addDays,

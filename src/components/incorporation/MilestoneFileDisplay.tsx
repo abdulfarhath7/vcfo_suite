@@ -5,7 +5,7 @@ import { ExternalLink } from 'lucide-react';
 import {
   getMilestoneDocumentSignedUrl,
   fileNameFromStoragePath,
-} from '@/lib/milestone-document-storage';
+} from '@/lib/documents/milestone-document-storage';
 
 interface MilestoneFileDisplayProps {
   storagePath: string;

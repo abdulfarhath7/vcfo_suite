@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import type { FilingRow } from '@/lib/filings';
+import type { FilingRow } from '@/lib/compliance/filings';
 
 export interface FilingsResponse {
   rows: FilingRow[];

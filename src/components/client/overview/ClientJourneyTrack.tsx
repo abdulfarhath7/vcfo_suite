@@ -2,7 +2,7 @@
 
 import { Mono } from '@/components/noir';
 import { JourneyNode } from '@/components/incorporation/JourneyNode';
-import { journeyStations, type ClientOverviewMilestone } from '@/lib/client-overview';
+import { journeyStations, type ClientOverviewMilestone } from '@/lib/client/client-overview';
 import { formatClientDate, phaseTone } from '@/components/client/overview/client-overview-format';
 import { cn } from '@/lib/utils';
 

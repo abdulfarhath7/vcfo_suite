@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { ProgressRing, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
 import { useRouter } from 'next/navigation';
-import { internEngagementPath } from '@/lib/project-step-path';
+import { internEngagementPath } from '@/lib/projects/project-step-path';
 import { ArrowUpRight, Building2, UserSquare2 } from 'lucide-react';
 import { m, useReducedMotion } from 'framer-motion';
 import { cardHover, pressScale } from '@/lib/motion';

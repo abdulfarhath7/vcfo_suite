@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as RPointerEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePortal } from '@/components/client-portal/PortalProvider';
-import type { TimelinePhaseDates } from '@/lib/client-home';
+import type { TimelinePhaseDates } from '@/lib/client/client-home';
 import { HOME_QUERY_KEY } from './useHome';
 import { addDays, days, dShort, type TlPhase } from './derive';
 

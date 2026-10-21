@@ -20,16 +20,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { NoirCard } from '@/components/noir';
 import { EmptyStateIllustrated } from '@/components/noir/EmptyStateIllustrated';
-import type { AuditActionCategory, AuditEventRow } from '@/lib/audit-log';
+import type { AuditActionCategory, AuditEventRow } from '@/lib/audit/audit-log';
 import {
   formatActorDisplay,
   formatAuditActionLabel,
   formatAuditMetadata,
   getAuditActionCategory,
   getAuditTargetType,
-} from '@/lib/audit-log';
+} from '@/lib/audit/audit-log';
 import { mapDbRoleToAppRole, ROLE_UI_LABEL, type DbRole } from '@/lib/auth';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { cn } from '@/lib/utils';
 
 function formatWhen(iso: string): { relative: string; absolute: string } {

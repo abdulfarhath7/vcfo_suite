@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import type { SuperEngagementDetail, SuperOverview } from '@/lib/super-overview';
+import type { SuperEngagementDetail, SuperOverview } from '@/lib/super/super-overview';
 
 /**
  * The one read the super admin observatory makes. Views never touch `db` — this

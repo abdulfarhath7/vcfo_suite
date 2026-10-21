@@ -2,7 +2,7 @@
 
 import { BadgeCheck } from 'lucide-react';
 import { Mono } from '@/components/noir';
-import type { ClientOverviewEngagement, ClientOverviewIdentifiers } from '@/lib/client-overview';
+import type { ClientOverviewEngagement, ClientOverviewIdentifiers } from '@/lib/client/client-overview';
 import {
   LEGAL_FORM_LABEL,
   formatClientDate,

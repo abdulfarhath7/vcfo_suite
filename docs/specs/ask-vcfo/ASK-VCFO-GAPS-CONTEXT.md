@@ -43,7 +43,7 @@ npx vitest run --reporter=dot
 npm run lint
 ```
 
-**Preservation list:** every existing file under `src/lib/ask`, `src/components/ask`, `src/data/ask`, `app/api/ask` except the exact edits listed below; `src/lib/client-overview.ts` (`buildProgress`), `getIncorporationPhases`, `gateActiveCatalog`, `AskShellMount`, `route-guard.ts`, `destinations.ts` behaviour.
+**Preservation list:** every existing file under `src/lib/ask`, `src/components/ask`, `src/data/ask`, `app/api/ask` except the exact edits listed below; `src/lib/client/client-overview.ts` (`buildProgress`), `getIncorporationPhases`, `gateActiveCatalog`, `AskShellMount`, `route-guard.ts`, `destinations.ts` behaviour.
 
 ---
 

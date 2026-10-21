@@ -18,7 +18,7 @@ import {
   type CreateProjectInput,
   type InternOption,
   type UpdateEngagementInput,
-} from '@/lib/engagements-db';
+} from '@/lib/projects/engagements-db';
 import {
   type AppNotification,
   type NotificationKind,

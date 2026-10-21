@@ -24,7 +24,7 @@ import {
   type Announcement,
   type AnnouncementShowDetail,
   type GenieBox,
-} from '@/lib/announcements';
+} from '@/lib/notifications/announcements';
 import { cn } from '@/lib/utils';
 
 const sessionPopupQueue = new Map<string, Announcement[]>();

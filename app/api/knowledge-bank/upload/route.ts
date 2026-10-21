@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { requireAnyRole } from '@/auth/guards';
-import { knowledgeBankObjectPath } from '@/lib/knowledge-bank-storage';
+import { knowledgeBankObjectPath } from '@/lib/knowledge-bank/knowledge-bank-storage';
 import { resolveUploadContentType } from '@/lib/upload-limits';
 import { KNOWLEDGE_BANK_EXTENSIONS } from '@/lib/upload-limits';
 import { bucketKey, putObject } from '@/storage/s3';

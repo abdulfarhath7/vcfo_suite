@@ -21,7 +21,7 @@ import {
   writeAnnouncementReadIds,
   type Announcement,
   type AnnouncementSource,
-} from '@/lib/announcements';
+} from '@/lib/notifications/announcements';
 import { useAnnouncementSources, useAnnouncements } from '@/lib/use-announcements';
 import { AnnouncementComposeForm } from '@/components/announcements/AnnouncementCompose';
 import { AnnouncementRow } from '@/components/announcements/AnnouncementList';

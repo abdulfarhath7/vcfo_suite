@@ -5,7 +5,7 @@ import { db } from '@/db/client';
 import { engagementClients, engagementLeads, engagementManagers, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { listEngagements } from '@/db/repositories/engagements';
-import { LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
+import { LEGACY_ENGAGEMENT_IDS } from '@/lib/projects/legacy-engagement-ids';
 import { isUuid } from '@/lib/slug';
 import {
   kindForRole,

@@ -6,7 +6,7 @@ import { LayoutGroup, m, useReducedMotion } from 'framer-motion';
 import { LayoutGrid } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { initialsFromName } from '@/lib/auth';
-import { internEngagementPath, isInternEngagementPathname } from '@/lib/project-step-path';
+import { internEngagementPath, isInternEngagementPathname } from '@/lib/projects/project-step-path';
 import { fadeOpacity, sidebarPanelStagger } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';

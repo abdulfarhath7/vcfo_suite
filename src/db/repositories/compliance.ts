@@ -297,7 +297,7 @@ export async function systemListComplianceNudges(today: Date): Promise<
     dueDate: string;
   }>
 > {
-  const { ymdInIst, parseIstNoon } = await import('@/lib/intern-work');
+  const { ymdInIst, parseIstNoon } = await import('@/lib/intern/intern-work');
 
   const shift = (days: number): string => {
     const base = parseIstNoon(ymdInIst(today));

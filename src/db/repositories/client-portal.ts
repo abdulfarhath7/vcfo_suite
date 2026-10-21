@@ -13,8 +13,8 @@ import {
 } from '@/db/repositories/engagements';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { getNotificationInboxHead } from '@/db/repositories/notifications';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
-import { buildProgress, identifiersFromState } from '@/lib/client-overview';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
+import { buildProgress, identifiersFromState } from '@/lib/client/client-overview';
 import {
   CLIENT_PORTAL_DEFAULT_PREFS,
   normalizePortalPrefsPatch,

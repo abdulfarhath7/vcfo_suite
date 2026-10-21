@@ -14,7 +14,7 @@ import {
   INTERN_TASKS_PATH,
   type InternActionCompanyGroup,
   type InternWorkItem,
-} from '@/lib/intern-work';
+} from '@/lib/intern/intern-work';
 import { initialsFromName } from '@/lib/auth';
 import { CHIP_CLASS, CHIP_COLUMN_CLASS } from '@/components/common/IconChip';
 import { cn } from '@/lib/utils';

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Mono } from '@/components/noir';
 import { ClientCard } from '@/components/client/overview/ClientCard';
-import type { ClientOverviewActivity } from '@/lib/client-overview';
+import type { ClientOverviewActivity } from '@/lib/client/client-overview';
 import { formatClientDate } from '@/components/client/overview/client-overview-format';
 
 /**

@@ -6,7 +6,7 @@ import { Check, Clock } from 'lucide-react';
 import type { ComplianceFiling } from '@/data/compliance';
 import { DashDonut, DashLegendRow, DashSection } from '@/components/dash/DashSection';
 import { InternWorkDenseRow } from '@/components/intern/InternWorkRow';
-import { formatDueLabel, internWaitingItems, ymdFromIsoInIst, type InternWorkItem } from '@/lib/intern-work';
+import { formatDueLabel, internWaitingItems, ymdFromIsoInIst, type InternWorkItem } from '@/lib/intern/intern-work';
 
 /* The donut is a status chart, so it wears the status tokens: positive for filed,
    warning for due soon, danger for overdue, and the neutral line-strong for the

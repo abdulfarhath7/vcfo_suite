@@ -5,7 +5,7 @@ import { AnimatePresence, m, useReducedMotion, type Variants } from 'framer-moti
 import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Loader2, Lock, Unlock, Upload } from 'lucide-react';
 import { ease } from '@/lib/motion';
 import type { ChecklistField } from '@/data/checklist';
-import { getMilestoneDocumentSignedUrl } from '@/lib/milestone-document-storage';
+import { getMilestoneDocumentSignedUrl } from '@/lib/documents/milestone-document-storage';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

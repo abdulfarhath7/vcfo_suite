@@ -6,7 +6,7 @@
  * page (`stepTable`, phase.html: ↗·📎 column, (?) and → square buttons).
  */
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
-import { internRegistrationHeadingForTitle } from '@/lib/intern-overview-progress';
+import { internRegistrationHeadingForTitle } from '@/lib/intern/intern-overview-progress';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { getStepAttachmentRequirements } from '@/lib/checklist/checklist-step-attachments';
 import type { OwnershipType } from '@/data/engagements';

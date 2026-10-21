@@ -25,8 +25,8 @@ import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { getActiveCatalogItems } from '@/data/checklist';
 import { CLIENT_RESPONSE_FIELDS, extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { isRepeatField, repeatEntries } from '@/lib/checklist/checklist-repeat';
-import { identifiersFromState } from '@/lib/client-overview';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { identifiersFromState } from '@/lib/client/client-overview';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { decryptSecrets, encryptSecrets, hashOtp, newOtpCode, otpMatches } from '@/lib/credentials-crypto';
 import { sendEmail } from '@/lib/email/send-email';
 import {

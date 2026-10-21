@@ -17,7 +17,7 @@ import {
   isCreatedAtIstToday,
   isCreatedAtThisIstWeek,
   type NotificationHistoryGroup,
-} from '@/lib/notification-dismiss';
+} from '@/lib/notifications/notification-dismiss';
 import {
   notificationsInDirection,
   type NotificationDirection,

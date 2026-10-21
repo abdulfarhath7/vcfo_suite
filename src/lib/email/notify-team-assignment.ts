@@ -18,7 +18,7 @@ import {
   pushEmailSubject,
   type EmailDispatchResult,
 } from '@/lib/email/email-dispatch';
-import { adminProjectPath, internEngagementPath } from '@/lib/project-step-path';
+import { adminProjectPath, internEngagementPath } from '@/lib/projects/project-step-path';
 import { siteUrl } from '@/lib/site-url';
 
 export type TeamRoleLabel = 'project manager' | 'project lead';

@@ -7,9 +7,9 @@ import type { AuthContext } from '@/auth/guards';
 import { getItem } from '@/data/checklist';
 import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { expandRepeatFields, parseRepeatFieldId } from '@/lib/checklist/checklist-repeat';
-import { isMilestoneStoragePath } from '@/lib/milestone-document-storage';
+import { isMilestoneStoragePath } from '@/lib/documents/milestone-document-storage';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
-import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
+import { normalizeEngagementSchedule } from '@/lib/projects/schedule-windows';
 import {
   assertEngagementAccess,
   checklistStateForViewer,

@@ -3,15 +3,15 @@ import { and, desc, eq, inArray, lt, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditEvents } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
-import { checklistItemLabel } from '@/lib/audit-log';
-import type { AuditEventRow, RecordAuditEventInput } from '@/lib/audit-log';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
+import { checklistItemLabel } from '@/lib/audit/audit-log';
+import type { AuditEventRow, RecordAuditEventInput } from '@/lib/audit/audit-log';
 
 /**
- * AUDIT EVENTS REPOSITORY — the write/read half of src/lib/audit-log.ts.
+ * AUDIT EVENTS REPOSITORY — the write/read half of src/lib/audit/audit-log.ts.
  *
  * >>> ACCESS CONTROL (Path A) <<<
- * Predicate: `src/lib/audit-event-access.ts`.
+ * Predicate: `src/lib/audit/audit-event-access.ts`.
  *   admin / super_admin — unrestricted (firm-wide)
  *   manager — events whose engagement_id is in owned/assigned set
  *             (`manager_id` + `engagement_managers` + legacy admin_id).
@@ -95,7 +95,7 @@ export async function listAuditEvents(
 
   // Dynamic import avoids circular init with engagements → auditChecklistItemPatch.
   const { listScopedEngagementIds } = await import('@/db/repositories/engagements');
-  const { engagementDbId } = await import('@/lib/legacy-engagement-ids');
+  const { engagementDbId } = await import('@/lib/projects/legacy-engagement-ids');
 
   const conds = [];
   if (options.engagementId) {

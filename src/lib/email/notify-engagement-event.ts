@@ -44,7 +44,7 @@ import {
   clientIncorporationPath,
   internBoardResolutionPath,
   internEngagementStepPath,
-} from '@/lib/project-step-path';
+} from '@/lib/projects/project-step-path';
 import { siteUrl } from '@/lib/site-url';
 import { directFlowRoleLabel } from '@/lib/incorporation/pre-inc-direct-flow';
 

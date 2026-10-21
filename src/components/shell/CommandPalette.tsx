@@ -30,14 +30,14 @@ import {
   Search,
   FileText,
 } from "lucide-react";
-import { adminProjectPath, internEngagementPath } from "@/lib/project-step-path";
+import { adminProjectPath, internEngagementPath } from "@/lib/projects/project-step-path";
 import { useStaffBasePath } from "@/hooks/use-staff-base-path";
-import { internVisibleDocuments } from "@/lib/document-access";
+import { internVisibleDocuments } from "@/lib/documents/document-access";
 import {
   formatKnowledgeBankCommandHit,
   knowledgeBankFileMatchesQuery,
   knowledgeBankFilesFromResponse,
-} from "@/lib/knowledge-bank-search";
+} from "@/lib/knowledge-bank/knowledge-bank-search";
 import {
   collectIndexedVaultDocuments,
   collectVaultDocuments,
@@ -46,7 +46,7 @@ import {
   scopeVaultDocumentsToEngagements,
   vaultFileNameMatches,
   type IndexedDocumentRow,
-} from "@/lib/vault-documents";
+} from "@/lib/documents/vault-documents";
 import type { Role } from "@/lib/auth";
 
 type PaletteFileHit = {

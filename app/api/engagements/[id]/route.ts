@@ -30,7 +30,7 @@ import {
   ensureEngagementManager,
   removeEngagementManager,
 } from '@/db/repositories/engagement-managers-membership';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { emptyEmailDispatch } from '@/lib/email/email-dispatch';
 import { notifyTeamAssignment } from '@/lib/email/notify-team-assignment';

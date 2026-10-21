@@ -8,7 +8,7 @@ import { TopBar } from "./TopBar";
 import { AnnouncementLivePopup } from "@/components/announcements/AnnouncementLivePopup";
 import { NotificationLivePopup } from "@/components/notifications/NotificationLivePopup";
 import { ShellNavProvider } from "./shell-nav-context";
-import { isInternEngagementPathname } from "@/lib/project-step-path";
+import { isInternEngagementPathname } from "@/lib/projects/project-step-path";
 import { shellDesktopNavExpanded } from "@/components/shell/intern-sidebar";
 import { cn } from "@/lib/utils";
 import { AuthBootScreen } from "@/components/common/AuthBootScreen";

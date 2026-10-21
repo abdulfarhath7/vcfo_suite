@@ -10,8 +10,8 @@ import {
   MILESTONE_DOCUMENT_EXTENSIONS,
   SIGNED_BOARD_RESOLUTION_EXTENSIONS,
 } from '@/lib/upload-limits';
-import { validateKnowledgeBankUploadFile } from '@/lib/knowledge-bank-storage';
-import { validateMilestoneUploadFile } from '@/lib/milestone-document-storage';
+import { validateKnowledgeBankUploadFile } from '@/lib/knowledge-bank/knowledge-bank-storage';
+import { validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import { validateSignedBoardResolutionFile } from '@/lib/board-resolution/board-resolution-storage';
 
 function mockFile(name: string, type: string, size = 1024): File {

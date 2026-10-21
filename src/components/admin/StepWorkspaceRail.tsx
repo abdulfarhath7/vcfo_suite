@@ -17,7 +17,7 @@ import {
 import { getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
-import { fileNameFromStoragePath } from '@/lib/milestone-document-storage';
+import { fileNameFromStoragePath } from '@/lib/documents/milestone-document-storage';
 import { cn } from '@/lib/utils';
 import { withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
 import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';

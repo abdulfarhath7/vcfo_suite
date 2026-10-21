@@ -25,7 +25,7 @@ import {
   type DocPackShell,
 } from '@/lib/doc-pack/paths';
 import type { DocPackItem, DocPart, DocStatus } from '@/lib/doc-pack/types';
-import { isInternEngagementPathname } from '@/lib/project-step-path';
+import { isInternEngagementPathname } from '@/lib/projects/project-step-path';
 import { engagementRouteParamFromParams, resolveEngagementFromRouteParam } from '@/lib/slug';
 import { cn } from '@/lib/utils';
 

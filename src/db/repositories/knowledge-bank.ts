@@ -15,7 +15,7 @@ import {
   normalizeKnowledgeBankFolderName,
   type KnowledgeBankFolderNode,
   type KnowledgeBankFolderRecord,
-} from '@/lib/knowledge-bank-folders';
+} from '@/lib/knowledge-bank/knowledge-bank-folders';
 
 /**
  * KNOWLEDGE BANK REPOSITORY.

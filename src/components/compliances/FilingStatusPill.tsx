@@ -1,5 +1,5 @@
 import { TONE_BADGE } from '@/components/common/IconChip';
-import { FILING_STATUS_LABEL, FILING_STATUS_TONE, type FilingStatus } from '@/lib/filings';
+import { FILING_STATUS_LABEL, FILING_STATUS_TONE, type FilingStatus } from '@/lib/compliance/filings';
 import { cn } from '@/lib/utils';
 
 /**

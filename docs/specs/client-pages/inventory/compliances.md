@@ -11,7 +11,7 @@ Screenshots (v7, so they show the OLD rounded-tile calendar, a Today button and 
 Real app today:
 - Routes `app/app/client/compliances/page.tsx` (redirects to `/calendar`), `.../calendar/page.tsx` → `ComplianceCalendarPage`, `.../filings/page.tsx` → `FilingsPage`, both in `src/views/compliances/CompliancePages.tsx`.
 - Views `src/views/compliances/ComplianceCalendarView.tsx` (statutory grid + register calendar + month list) and `src/views/compliances/FilingsView.tsx` (FY stepper, cadence / status SegmentedPickers, Monthly/Quarterly/Annual tabs, DashDataTable, PeriodMatrix).
-- NOTE: there is **no `src/domain/compliance`** in this repo. The compliance domain lives in `src/lib/compliance/*` (generate-instances, fy-periods, incorporation-state, obligations-seed, types, compliance-store) and the register logic in `src/lib/filings.ts`.
+- NOTE: there is **no `src/domain/compliance`** in this repo. The compliance domain lives in `src/lib/compliance/*` (generate-instances, fy-periods, incorporation-state, obligations-seed, types, compliance-store) and the register logic in `src/lib/compliance/filings.ts`.
 - Data: `useFilings()` (`src/lib/use-filings.ts`) → `GET /api/filings` (`app/api/filings/route.ts`) → `getFilings(ctx, {engagementId?, fyStartYear?})` (`src/db/repositories/filings.ts`) over `compliance_instances ⨝ compliance_obligations ⨝ engagements` (`src/db/schema.ts:578`). Window write: `POST /api/filings/[id]/window` (manager roles only) → `setComplianceInstanceWindow` (`src/db/repositories/schedule.ts`).
 
 ---
@@ -252,20 +252,20 @@ Legend: **EXISTS** (use as is) · **ADAPT** (exists, needs a change) · **NEW** 
 ### 2.1 The row model
 
 Prototype row (I:406-420): `{id, due, area, name, period, filed, freq, auth}`; status derived (`status()` I:423).
-Real row: `FilingRow` (`src/lib/filings.ts:23-46`): `id, engagementId, companyName, compliance (obligation.compliance_area), particular, authority, frequency, dueDate, filedOn, periodLabel, fyLabel, rawStatus, obligationId, windowFrom, windowTo`. Delivered by `useFilings({fyStartYear})` → `/api/filings?fy=` → `getFilings()`.
+Real row: `FilingRow` (`src/lib/compliance/filings.ts:23-46`): `id, engagementId, companyName, compliance (obligation.compliance_area), particular, authority, frequency, dueDate, filedOn, periodLabel, fyLabel, rawStatus, obligationId, windowFrom, windowTo`. Delivered by `useFilings({fyStartYear})` → `/api/filings?fy=` → `getFilings()`.
 
 | prototype field | real source | status |
 |---|---|---|
 | `id` | `FilingRow.id` (compliance_instances.id) | EXISTS |
 | `due` | `FilingRow.dueDate` | EXISTS |
 | `name` | `FilingRow.particular` (e.g. "GSTR-3B Filing", "Form AOC-4", "Advance Tax Payment Q1") | ADAPT — the prototype shows short names ("GSTR-3B", "AOC-4 (financial statements)"). Add a display-name helper (strip " Filing"), or a `short_name` column on `compliance_obligations` (NEW, preferred; no form column exists — see TODO in `src/db/repositories/filings.ts:66-70`). |
-| `area` (MCA/GST/IT/PAY/FEMA) | `complianceGroupForAuthority(row.authority)` in `src/lib/client-overview.ts:265` → 'GST' \| 'Income tax' \| 'Payroll' \| 'MCA' \| 'FEMA' \| 'Other' | EXISTS (+ NEW tiny map group→short code MCA/GST/IT/PAY/FEMA and full-name tooltip). Decide where 'Other' goes (seed authorities IT, GST, MCA, EPFO, ESIC, RBI all map; none fall to Other today). |
-| `period` ("Sep 2026", "Jul–Sep 2026", "FY 2025-26") | `FilingRow.periodLabel` — formats vary: "Sep 2026" (monthly), "ITR FY 2025-26", "<particular> FY 2025-26", "<particular> 2026" (`src/lib/compliance/generate-instances.ts:109,132,161,172,182`) | ADAPT — select `period_start`/`period_end` too (columns exist, `schema.ts:589-590`, not selected in `getFilings`) and format consistently: same month → "Sep 2026"; multi-month → "Jul–Sep 2026"; FY → "FY 2025-26". Pure helper in `src/lib/filings.ts`. |
+| `area` (MCA/GST/IT/PAY/FEMA) | `complianceGroupForAuthority(row.authority)` in `src/lib/client/client-overview.ts:265` → 'GST' \| 'Income tax' \| 'Payroll' \| 'MCA' \| 'FEMA' \| 'Other' | EXISTS (+ NEW tiny map group→short code MCA/GST/IT/PAY/FEMA and full-name tooltip). Decide where 'Other' goes (seed authorities IT, GST, MCA, EPFO, ESIC, RBI all map; none fall to Other today). |
+| `period` ("Sep 2026", "Jul–Sep 2026", "FY 2025-26") | `FilingRow.periodLabel` — formats vary: "Sep 2026" (monthly), "ITR FY 2025-26", "<particular> FY 2025-26", "<particular> 2026" (`src/lib/compliance/generate-instances.ts:109,132,161,172,182`) | ADAPT — select `period_start`/`period_end` too (columns exist, `schema.ts:589-590`, not selected in `getFilings`) and format consistently: same month → "Sep 2026"; multi-month → "Jul–Sep 2026"; FY → "FY 2025-26". Pure helper in `src/lib/compliance/filings.ts`. |
 | `filed` | `FilingRow.filedOn` | EXISTS |
 | `freq` | `FilingRow.frequency` (lower-case: monthly \| quarterly \| half-yearly \| annual \| one-time) | EXISTS (capitalise for display) |
 | `auth` ("GSTN", "Income Tax Dept", "EPFO · ESIC", "RBI", "STPI", "State PT Dept") | `FilingRow.authority` (codes: IT, GST, MCA, EPFO, ESIC, RBI) | ADAPT — display map code → authority name. |
-| status ok/due/over/up | `filingStatus(row, now)` → 'filed' \| 'due-soon' \| 'overdue' \| 'upcoming' (`src/lib/filings.ts:147`) | ADAPT — **threshold mismatch**: real `DUE_SOON_DAYS = 14` (`filings.ts:140`); prototype = **7** ("Due in 7 days", tooltip "Due within 7 days", I:423, I:433). Owner call: change the constant (also affects staff views/tests) or add a `dueSoonDays` option. Statutory list uses 7 (`statutoryStatus`). Key names map: ok→filed, due→due-soon, over→overdue, up→upcoming. |
-| worst-of-day | — | NEW pure helper `worstStatus(rows)` (rank overdue > due-soon > upcoming > filed) in `src/lib/filings.ts`. |
+| status ok/due/over/up | `filingStatus(row, now)` → 'filed' \| 'due-soon' \| 'overdue' \| 'upcoming' (`src/lib/compliance/filings.ts:147`) | ADAPT — **threshold mismatch**: real `DUE_SOON_DAYS = 14` (`filings.ts:140`); prototype = **7** ("Due in 7 days", tooltip "Due within 7 days", I:423, I:433). Owner call: change the constant (also affects staff views/tests) or add a `dueSoonDays` option. Statutory list uses 7 (`statutoryStatus`). Key names map: ok→filed, due→due-soon, over→overdue, up→upcoming. |
+| worst-of-day | — | NEW pure helper `worstStatus(rows)` (rank overdue > due-soon > upcoming > filed) in `src/lib/compliance/filings.ts`. |
 | company (multi-company scope) | `FilingRow.companyName`, `scope.engagements`, `soleCompany`, `CompanyPicker` | EXISTS — client has one company → no picker (keep the existing rule). |
 
 ### 2.2 Calendar page
@@ -288,7 +288,7 @@ Real row: `FilingRow` (`src/lib/filings.ts:23-46`): `id, engagementId, companyNa
 | Coming up rail | month rows with due ≥ today−1, first 7, grouped by date | derive | EXISTS (derive). Recommend: unfiled + recently filed from today−1. |
 | Day pop-over rows | rows due that date | derive | EXISTS |
 | Proof chip / Proof pending | filed + has proof? | `compliance_instances.evidence_url` exists (`schema.ts:598`) but is **not selected** by `getFilings` and is one URL only | ADAPT/NEW — see §2.4. |
-| Portal ↗ | portal per filing | URLs exist as private constants in `src/lib/announcement-portals.ts:41-66` (GST_LOGIN, IT_FO, MCA_FO, EPFO, ESIC, TGCT, FIRMS, FLAIR, STPI); TRACES missing | **NEW** helper `portalFor(row)` (prefer obligation-level: add `portal_key`/`portal_url` column on `compliance_obligations`, seeded in `src/lib/compliance/obligations-seed.ts`; fallback rules from I:483-490). Export the constants rather than duplicating. |
+| Portal ↗ | portal per filing | URLs exist as private constants in `src/lib/notifications/announcement-portals.ts:41-66` (GST_LOGIN, IT_FO, MCA_FO, EPFO, ESIC, TGCT, FIRMS, FLAIR, STPI); TRACES missing | **NEW** helper `portalFor(row)` (prefer obligation-level: add `portal_key`/`portal_url` column on `compliance_obligations`, seeded in `src/lib/compliance/obligations-seed.ts`; fallback rules from I:483-490). Export the constants rather than duplicating. |
 | Detail pop-up facts: Authority, Frequency, Period, Penalty risk | | authority/frequency in FilingRow; period → period_start/end; `compliance_obligations.penalty_risk` exists (`schema.ts:555`) but not selected | ADAPT — add `penaltyRisk`, `periodStart`, `periodEnd` to `getFilings` select + `FilingRow`. |
 | Detail pop-up "12 days left" | due − today | derive | EXISTS |
 | Focus track (Data received → SBC preparing (since, who) → Northwind approves (by) → Filed) | workflow steps + dates + owner | `rawStatus` (`upcoming\|in-progress\|filed\|overdue`) and `owner_id` exist; no step dates, no approval | **NEW (build later per decision)** — `compliance_instance_events` (instance_id, step: data_received \| preparing \| sent_for_approval \| approved \| filed, at, by) or columns; owner display name via `profiles`. Show as design only until data exists — minimal honest version: Filed ✓ (filed_on) else "With SBC" if rawStatus=in-progress. |
@@ -329,7 +329,7 @@ Real row: `FilingRow` (`src/lib/filings.ts:23-46`): `id, engagementId, companyNa
 
 `obligations-seed.ts` (26 obligations) has no: Professional tax payment, TCS return/challan (separate), ECB-2, Softex, ITC-04, PF & ESI combined monthly (it has EPF monthly + ESI half-yearly). Demo screens will look sparser than the prototype; do not fabricate rows (notes: "Nothing here fabricates"). Adding obligations = seed change + `generate-instances` rules (owner call). Also notes: "the demo FY 2026-27 register has no monthly-frequency instances at all" — seed demo data must be fixed for a realistic pilot.
 
-### 2.6 Hooks / functions to add (pure, in `src/lib/filings.ts` or `src/lib/compliance-ui.ts`)
+### 2.6 Hooks / functions to add (pure, in `src/lib/compliance/filings.ts` or `src/lib/compliance-ui.ts`)
 
 `worstStatus`, `countByStatus`, `areaOf(row)` (wraps `complianceGroupForAuthority` → short code), `AREA_LABEL/AREA_FULL`, `displayName(row)`, `displayPeriod(row)`, `authorityName(code)`, `daysLeft(due, now)`, `nextDeadline(rows, now)`, `firstOverdue(rows, now)`, `comingUp(rows, now, n=7)`, `mondayMonthGrid(monthKey)`, `defaultWindow(row)` (PREP days), `portalFor(row)`. All with unit tests (golden rule 5).
 
@@ -1007,7 +1007,7 @@ Note: the empty week-strip day uses a hard-coded `#fff` — use `var(--panel)` f
 
 ## 4. Gaps, bugs and decisions to raise with the owner
 
-1. **Due-soon threshold** 7 days (prototype) vs 14 (`src/lib/filings.ts:140`).
+1. **Due-soon threshold** 7 days (prototype) vs 14 (`src/lib/compliance/filings.ts:140`).
 2. **Donut / rail month**: prototype rail is fixed to the demo month while the grid navigates. Recommend donut follows the viewed month; Next deadline + overdue strip always relative to today; Coming up = next 7 from today−1.
 3. **Client timeline editing**: prototype allows dragging windows (sessionStorage); real windows are manager-only. Recommend read-only for clients.
 4. **Proof files**: need the new proofs table + S3 + APIs (§2.4). Until then, filed rows show "Proof pending".

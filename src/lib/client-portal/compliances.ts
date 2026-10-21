@@ -7,7 +7,7 @@
  * overdue · up = upcoming. The portal's due-soon threshold is the prototype's
  * 7 days (QUESTIONS.md · compliances); staff views keep `filings.ts` (14 days).
  */
-import { complianceGroupForAuthority } from '@/lib/client-overview';
+import { complianceGroupForAuthority } from '@/lib/client/client-overview';
 import {
   EPFO,
   ESIC,
@@ -19,7 +19,7 @@ import {
   STPI,
   TGCT,
   TRACES,
-} from '@/lib/announcement-portals';
+} from '@/lib/notifications/announcement-portals';
 
 export const PORTAL_DUE_SOON_DAYS = 7;
 

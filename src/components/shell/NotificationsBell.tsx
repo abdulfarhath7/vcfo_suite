@@ -21,12 +21,12 @@ import {
   mergeNotificationsByCreatedAt,
   notificationsMatchingClearScope,
   type NotificationClearScope,
-} from "@/lib/notification-dismiss";
+} from "@/lib/notifications/notification-dismiss";
 import { roleNotificationsPath } from "@/lib/auth-routes";
 import {
   NOTIFICATION_GENIE_LAND_EVENT,
   requestNotificationPopup,
-} from "@/lib/notification-popup";
+} from "@/lib/notifications/notification-popup";
 import { toast } from "@/lib/toast-errors";
 import { cn } from "@/lib/utils";
 import { SegmentedPicker } from "@/components/admin/SegmentedPicker";

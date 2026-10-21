@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import type { IndexedDocumentRow } from '@/lib/vault-documents';
+import type { IndexedDocumentRow } from '@/lib/documents/vault-documents';
 
 interface DocumentsListResponse {
   ok?: boolean;

@@ -10,11 +10,11 @@ import {
   decideChangeRequestInDb,
   listChangeRequestsFromDb,
   type ChangeRequestDto,
-} from '@/lib/project-admin-db';
+} from '@/lib/projects/project-admin-db';
 import {
   CHANGE_REQUEST_KIND_LABEL,
   type ChangeRequestKind,
-} from '@/lib/project-change-request-types';
+} from '@/lib/projects/project-change-request-types';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 

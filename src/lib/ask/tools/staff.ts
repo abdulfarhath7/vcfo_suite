@@ -2,12 +2,12 @@ import { getActiveCatalogItems, getIncorporationPhases, getItem } from '@/data/c
 import type { Engagement } from '@/data/engagements';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import type { FilingRow } from '@/lib/filings';
-import { buildProgress } from '@/lib/client-overview';
-import { internOverviewPhaseTitle } from '@/lib/intern-overview-progress';
+import type { FilingRow } from '@/lib/compliance/filings';
+import { buildProgress } from '@/lib/client/client-overview';
+import { internOverviewPhaseTitle } from '@/lib/intern/intern-overview-progress';
 import { buildPhaseProgress } from '@/lib/ask/phase-progress';
-import { listPendingApprovals } from '@/lib/pending-approvals';
-import { deriveStuckReason, STUCK_LABEL } from '@/lib/project-stuck';
+import { listPendingApprovals } from '@/lib/projects/pending-approvals';
+import { deriveStuckReason, STUCK_LABEL } from '@/lib/projects/project-stuck';
 import { numberArg, type AskTool } from './types';
 
 /**

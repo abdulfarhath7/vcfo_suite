@@ -1,6 +1,6 @@
 import { getItem } from '@/data/checklist';
 import type { Role } from '@/lib/auth';
-import type { EngagementChecklistState } from '@/lib/engagements-db';
+import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   adminProjectStepPath,
@@ -8,7 +8,7 @@ import {
   internBoardResolutionPath,
   internEngagementPath,
   internEngagementStepPath,
-} from '@/lib/project-step-path';
+} from '@/lib/projects/project-step-path';
 import type { Engagement } from '@/data/engagements';
 import { directFlowRoleLabel, isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 

@@ -12,7 +12,7 @@ import {
   listEngagementClients,
 } from '@/db/repositories/engagement-clients';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 
 /**
  * CLIENT TEAM REPOSITORY (client portal v7 — Team page).

@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import type { ClientOverview } from '@/lib/client-overview';
+import type { ClientOverview } from '@/lib/client/client-overview';
 
 /**
  * The one read the client dashboard makes. Views never touch `db` — this hook

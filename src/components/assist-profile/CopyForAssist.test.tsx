@@ -6,7 +6,7 @@ import { assistFullState, NR } from '@/lib/assist-profile/__tests__/fixtures';
 import { director } from '@/lib/doc-pack/__tests__/fixtures';
 import { buildDocPackContext } from '@/lib/doc-pack/evaluate';
 import type { AssistProfileResult } from '@/lib/assist-profile/types';
-import type { EngagementChecklistState } from '@/lib/engagements-db';
+import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
 
 let data: AssistProfileResult | undefined;
 const refetch = vi.fn(async () => ({ data }));

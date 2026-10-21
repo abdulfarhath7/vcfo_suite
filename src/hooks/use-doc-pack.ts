@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { docPackApiPath } from '@/lib/doc-pack/paths';
 import type { DocPackSummary } from '@/lib/doc-pack/types';
-import { apiFetch } from '@/lib/engagements-db';
+import { apiFetch } from '@/lib/projects/engagements-db';
 
 export const DOC_PACK_QUERY_KEY = 'doc-pack';
 

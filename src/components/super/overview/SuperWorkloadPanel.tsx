@@ -9,7 +9,7 @@ import {
   type ChartRow,
   type ChartSeries,
 } from '@/components/charts';
-import type { SuperOverview } from '@/lib/super-overview';
+import type { SuperOverview } from '@/lib/super/super-overview';
 
 /**
  * Where the work actually sits. Horizontal bars because delivery leads have

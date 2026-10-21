@@ -22,11 +22,11 @@ import {
   scopeVaultDocumentsToEngagements,
   vaultSearchHits,
   type VaultDocument,
-} from '@/lib/vault-documents';
-import { internVisibleDocuments } from '@/lib/document-access';
+} from '@/lib/documents/vault-documents';
+import { internVisibleDocuments } from '@/lib/documents/document-access';
 import { getIndexedDocumentSignedUrl, useIndexedDocuments } from '@/lib/use-vault-documents';
-import { isMilestoneStoragePath } from '@/lib/milestone-document-storage';
-import { adminProjectPath, internEngagementPath } from '@/lib/project-step-path';
+import { isMilestoneStoragePath } from '@/lib/documents/milestone-document-storage';
+import { adminProjectPath, internEngagementPath } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import {
   ArrowUpRight,

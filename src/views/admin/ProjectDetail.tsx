@@ -16,7 +16,7 @@ import { useDocPack } from '@/hooks/use-doc-pack';
 import { docPackPagePath } from '@/lib/doc-pack/paths';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { getActiveCatalogItems } from '@/data/checklist';
-import { adminProjectPath, adminProjectStepPath } from '@/lib/project-step-path';
+import { adminProjectPath, adminProjectStepPath } from '@/lib/projects/project-step-path';
 import {
   gateActiveCatalog,
   isChecklistStepSequentiallyComplete,
@@ -24,15 +24,15 @@ import {
 import {
   internOverviewCurrentItemInPhase,
   internOverviewPhases,
-} from '@/lib/intern-overview-progress';
-import { formatDate } from '@/lib/deadlines';
+} from '@/lib/intern/intern-overview-progress';
+import { formatDate } from '@/lib/projects/deadlines';
 import { resolveEngagementFromRouteParam } from '@/lib/slug';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowControl';
 import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
-import { setEngagementWindowInDb } from '@/lib/engagements-db';
-import { canSetScheduleWindows } from '@/lib/schedule-windows';
+import { setEngagementWindowInDb } from '@/lib/projects/engagements-db';
+import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
 
 /**
  * STAFF PROJECT DETAIL (admin + manager) — the client's incorporation page,

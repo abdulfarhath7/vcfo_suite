@@ -7,8 +7,8 @@ import { DashSection } from '@/components/dash/DashSection';
 import { useApp } from '@/context/AppContext';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { pendingApprovalKind, usePendingApprovals } from '@/hooks/use-pending-approvals';
-import { checklistItemLabel } from '@/lib/audit-log';
-import { adminProjectStepPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { checklistItemLabel } from '@/lib/audit/audit-log';
+import { adminProjectStepPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 
 const MAX_ROWS = 6;
 

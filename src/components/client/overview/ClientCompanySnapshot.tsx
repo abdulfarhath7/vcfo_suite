@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import type { ClientCompanySnapshot as Snapshot } from '@/lib/client-overview';
+import type { ClientCompanySnapshot as Snapshot } from '@/lib/client/client-overview';
 import { ClientCard } from '@/components/client/overview/ClientCard';
 import { formatCount, formatInr } from '@/components/client/overview/client-overview-format';
 

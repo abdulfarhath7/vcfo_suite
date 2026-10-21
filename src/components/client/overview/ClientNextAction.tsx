@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ClientOverviewNextAction } from '@/lib/client-overview';
+import type { ClientOverviewNextAction } from '@/lib/client/client-overview';
 import { GlossaryText } from '@/components/ask/GlossaryTerm';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 

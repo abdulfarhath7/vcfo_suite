@@ -13,7 +13,7 @@ import {
 import {
   engagementDbId,
   LEGACY_ENGAGEMENT_IDS,
-} from '@/lib/legacy-engagement-ids';
+} from '@/lib/projects/legacy-engagement-ids';
 import { isAdminOrManager, isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
 import {
   canAccessPersonalTodos,
@@ -27,7 +27,7 @@ import {
   PERSONAL_TODO_STEP_PREFIX,
   personalTodoStepId,
   type PersonalTodoDto,
-} from '@/lib/personal-todos';
+} from '@/lib/intern/personal-todos';
 
 /**
  * TASKS REPOSITORY — replaces vcfo.tasks localStorage.

@@ -59,7 +59,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   prefix `milestone-documents/`.
 - Downloads use `/api/milestone-documents/signed-url?path=…` (role-scoped).
 - A 404 on upload almost always meant these routes were missing — they must stay
-  in sync with `src/lib/milestone-document-storage.ts`.
+  in sync with `src/lib/documents/milestone-document-storage.ts`.
 
 ## Project management: edit, delete, and manager change requests
 
@@ -73,7 +73,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   companyType, parentEntityName/Address/RegistrationNumber, subsidiaryLegalName/
   RegisteredAddress and clientName joined the existing set. `EditProjectDialog`
   sends only the fields that actually changed.
-- **Who may do what lives in `src/lib/project-edit-policy.ts`** — a pure,
+- **Who may do what lives in `src/lib/projects/project-edit-policy.ts`** — a pure,
   unit-tested table. Admins act directly on everything. A manager edits the
   low-risk fields of their own projects directly but must file a change request
   for the three high-risk actions: delete the project, change the client,
@@ -82,7 +82,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   drives the UI; the API routes remain the enforcement point.
 - **Approving a change request APPLIES it.** The manager's proposed values are
   stored on the row (`payload`) together with a frozen before/after (`preview`).
-  `applyChangeRequest()` in `src/lib/project-change-requests.ts` re-validates the
+  `applyChangeRequest()` in `src/lib/projects/project-change-requests.ts` re-validates the
   payload and executes it under the APPROVING ADMIN's context — that is what lets
   a manager's delete or PM reassignment succeed at all. If execution throws, the
   request is re-opened rather than left claiming a change that never happened.

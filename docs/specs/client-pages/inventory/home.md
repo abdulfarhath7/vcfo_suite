@@ -53,7 +53,7 @@ Wording rule visible in FINAL: the client is always addressed as the company nam
 | `home-chat` | v7_before#chat / mobile.html#chat | `/app/client/overview` + open Ask panel | real: `AskProvider` / `AskLauncher` open state (`src/components/ask/*`) |
 | `incorporation` | s/inc/incorporation.html | `/app/client/incorporation` | |
 | `inc-phase-a` / `inc-phase` / `inc-phase-3` / `inc-phase-4` | s/inc/phase.html#p=1..4 | `/app/client/incorporation?phase=pre-inc-phase-1` … (or a phase sub-route; incorporation agent decides) | Phase 1 Name Application, 2 Incorporation, 3 Post-Incorporation, 4 Registration |
-| `inc-step-N` (N = 1…48) | s/inc/step.html#n=N | `/app/client/incorporation/step/...` (folder `app/app/client/incorporation/step` exists) or `clientStepHref(stepId)` = `/app/client/incorporation?step=<id>` (src/lib/client-overview.ts) | N → checklist id table in 5.10 |
+| `inc-step-N` (N = 1…48) | s/inc/step.html#n=N | `/app/client/incorporation/step/...` (folder `app/app/client/incorporation/step` exists) or `clientStepHref(stepId)` = `/app/client/incorporation?step=<id>` (src/lib/client/client-overview.ts) | N → checklist id table in 5.10 |
 | `compliances` | s/comp/index.html#cal-redesign | `/app/client/compliances/calendar` (folder exists) | |
 | `filings` | s/comp/index.html#fil-redesign | `/app/client/compliances/filings` | |
 | `documents` | s/docs/docs_a_refined | `/app/client/documents` | |
@@ -176,9 +176,9 @@ Data → real app
 | ring % after | 64% = 7/11 | `overview.progress.byPhase` `post-inc-phase-3`. Existing. |
 | Waiting on Northwind | 4 | prototype = number of open items in "Needs from Northwind" (2 upload + 1 fill + 1 correct). Real `overview.ballInCourt.waitingOnClient` counts ACTIVE STEPS, not items → **NEW: item-level needs list (see 5.2); count = its length.** |
 | With SBC | 1 | `overview.ballInCourt.waitingOnFirm` (existing; step-level). |
-| Overdue | 1 | `overview.progress.byStatus.overdue` (steps) + overdue items; after COI also overdue `compliance_instances` (status `overdue`). Partially existing; needs one combined count (NEW derivation in `src/lib/client-overview.ts`). |
+| Overdue | 1 | `overview.progress.byStatus.overdue` (steps) + overdue items; after COI also overdue `compliance_instances` (status `overdue`). Partially existing; needs one combined count (NEW derivation in `src/lib/client/client-overview.ts`). |
 | Documents in | 4/6 | NEW: requested-documents fulfilled/total. Closest existing: `overview.documents.counts` (requested/submitted are STEP counts). Needs per-file requests (`document_requests` table + repo `src/db/repositories/document-requests.ts` exist; requests are not yet linked to steps → add `step_id`, `due_date`, `kind` columns, see 5.2). |
-| Expected COI | 28 Oct | engagement `schedule.incorporation.to` (manager-set window; `normalizeEngagementSchedule`, `src/lib/schedule-windows.ts`). DECISIONS: "Days to COI before COI count down to the manager-set incorporation window end". Not in overview payload → **add `expectedCoiDate` to `ClientOverview`** (repo already loads `row.schedule`). |
+| Expected COI | 28 Oct | engagement `schedule.incorporation.to` (manager-set window; `normalizeEngagementSchedule`, `src/lib/projects/schedule-windows.ts`). DECISIONS: "Days to COI before COI count down to the manager-set incorporation window end". Not in overview payload → **add `expectedCoiDate` to `ClientOverview`** (repo already loads `row.schedule`). |
 | Incorporated | 24 Oct | `overview.engagement.incorporationDate` (existing). |
 | Due soon | 3 | `overview.compliance.upcoming` filtered to due within 15 days and not filed (existing data, new derivation). |
 | Registrations | 5/13 | `overview.progress.byPhase['registration-phase-4']` gives done/23 (catalog has 23 phase-4 steps). The prototype's 13 = the curated registrations list of `v7c_reg` (section 5.15). Decide denominator (open question Q3). |
@@ -280,7 +280,7 @@ Data → real app
 | MOA & AOA drafts 10 Oct | SBC deliverable with a date: step `pre-9` SPICe+ Confirmation / incorporation docs (`app/api/engagements/[id]/incorporation-docs/share`) + schedule window. NEW: "dated item" derivation. |
 | Approved name expires 14 Oct | `pre-5` response `nameApprovalExpiryDate` (exists in `checklist-responses.ts`). Existing data, NEW derivation. |
 | TDS overdue / payroll / FC-GPR / SH-1 | `compliance_instances` (status, due_date) + post-inc statutory windows (5.17). |
-| Proposal | NEW pure function `buildAlerts(state, schedule, compliance, needs, now)` in `src/lib/client-overview.ts` → `overview.alerts[] {id,title,meta,date,severity:'over'|'due'|'prog',href}`. |
+| Proposal | NEW pure function `buildAlerts(state, schedule, compliance, needs, now)` in `src/lib/client/client-overview.ts` → `overview.alerts[] {id,title,meta,date,severity:'over'|'due'|'prog',href}`. |
 
 ---
 
@@ -322,7 +322,7 @@ Data → real app
 
 | field | source |
 |---|---|
-| phase windows | engagement `schedule` jsonb `{ incorporation?: Window, steps?: {[itemId]: Window} }` (`src/lib/schedule-windows.ts`; repo `setEngagementWindow` in `src/db/repositories/schedule.ts`; route `PUT/PATCH /api/engagements/[id]/schedule`). Phase window = min(from)/max(to) of its steps' windows (DECISIONS: "Phase end date = latest step date in the phase"). MCA review = windows of `pre-10`/`pre-11`; COI = `schedule.incorporation.to` (before) or `incorporationDate` (after). |
+| phase windows | engagement `schedule` jsonb `{ incorporation?: Window, steps?: {[itemId]: Window} }` (`src/lib/projects/schedule-windows.ts`; repo `setEngagementWindow` in `src/db/repositories/schedule.ts`; route `PUT/PATCH /api/engagements/[id]/schedule`). Phase window = min(from)/max(to) of its steps' windows (DECISIONS: "Phase end date = latest step date in the phase"). MCA review = windows of `pre-10`/`pre-11`; COI = `schedule.incorporation.to` (before) or `incorporationDate` (after). |
 | % in Phase 2 | `progress.byPhase` pct. |
 | "Last changed by …" | latest audit event of action `schedule.*` (`listAuditEvents`), or NEW `schedule_updated_by/at` inside the schedule jsonb. |
 | Client change request | **NEW**: `engagement_change_requests.kind` today = delete_project/change_client/change_manager (`src/db/repositories/engagement-change-requests.ts`, routes `/api/engagement-change-requests`). Add kind **`timeline`** with payload `{ phases:[{id,from,to}], coiFrom, coiTo, slipDays }`, `reason` (required), status pending→approved/rejected by the manager; on approve call `setEngagementWindow`. Pending request exposed in overview (`overview.timelineRequest`). Manager direct edit = existing schedule write (role-gated by `canSetScheduleWindows`). Notifications on save: "email and WhatsApp to admin, manager, lead and client" (manager board) → `notifyEngagementEvent` + WhatsApp templates (NEW event `timeline_changed`). |
@@ -490,7 +490,7 @@ Data → real app
 | CA-04 | Single-area tab | Summary line: metric 22px area name + caption "<n> filings this FY · f filed · d due soon · o overdue"; table Filing · Period · Due / filed · Status: MCA: ADT-1 (auditor appointment) FY 2026-27 "Filed 5 Nov 2026" Filed; Commencement (INC-20A) One-time 22 Apr 2027 Upcoming. GST: GSTR-1 Nov 2026 11 Dec 2026; GSTR-3B Nov 2026 20 Dec 2026. Income tax: TDS Payment Oct 2026 7 Nov 2026 Overdue; TDS Payment Nov 2026 7 Dec 2026 Upcoming. Payroll: EPF Return & Payment / ESI Payment Oct 2026 15 Nov 2026 Due soon; PT Payment 20 Nov 2026 Due soon. FEMA: FC-GPR Filing "Share allotment" 2 Dec 2026 Upcoming. Footer caption "Showing k of n · full list in Filings" or "Showing all n". |
 | CA-05 | Drills | 5 configs (one per area): tabs All · Filed · Due soon · Overdue · Upcoming with area totals; 20 openers (area × status 1..4). Link strip → Filings. |
 
-Data → real app: `compliance_instances` ⋈ `compliance_obligations` grouped by `complianceGroupForAuthority(authority)` (exists in `src/lib/client-overview.ts`: GST, Income tax, Payroll, MCA, FEMA, Other). Status buckets from `status` + due date. Source `GET /api/filings` / `getFilings` (existing, FY filter) → NEW grouping helper (pure). "Other" group is not in the design (5 areas) — fold or hide (Q5).
+Data → real app: `compliance_instances` ⋈ `compliance_obligations` grouped by `complianceGroupForAuthority(authority)` (exists in `src/lib/client/client-overview.ts`: GST, Income tax, Payroll, MCA, FEMA, Other). Status buckets from `status` + due date. Source `GET /api/filings` / `getFilings` (existing, FY filter) → NEW grouping helper (pure). "Other" group is not in the design (5 areas) — fold or hide (Q5).
 
 ---
 
@@ -864,7 +864,7 @@ Full verbatim markup of every card is in Appendix B; the phone CSS in Appendix C
 
 | need | provider |
 |---|---|
-| One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/lib/use-client-overview.ts`), pure builders in `src/lib/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
+| One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/lib/use-client-overview.ts`), pure builders in `src/lib/client/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
 | Company name, legal form, incorporation date, registered office | `overview.engagement` |
 | Before/after switch | `overview.incorporated` |
 | Phase progress (ring, Steps card chips, timeline %) | `overview.progress.byPhase` |
@@ -873,7 +873,7 @@ Full verbatim markup of every card is in Appendix B; the phone CSS in Appendix C
 | Upcoming filings (+90 days) | `overview.compliance.upcoming` |
 | Full filings register / FY | `GET /api/filings` (`getFilings`), `useComplianceFilings` |
 | Filing working windows | `compliance_instances.window_from/to`, `PATCH /api/filings/[id]/window` |
-| Manager date windows (timeline, expected COI) | `engagements.schedule`, `src/lib/schedule-windows.ts`, `/api/engagements/[id]/schedule`, `setEngagementWindow` |
+| Manager date windows (timeline, expected COI) | `engagements.schedule`, `src/lib/projects/schedule-windows.ts`, `/api/engagements/[id]/schedule`, `setEngagementWindow` |
 | Team (PM / PL names, email) | `overview.team` |
 | Activity | `overview.activity` (audit events) / `GET /api/activity` |
 | Documents + preview | `GET /api/documents`, `GET /api/documents/[id]/signed-url`, `GET /api/milestone-documents/signed-url`, deliverables |
@@ -912,7 +912,7 @@ Full verbatim markup of every card is in Appendix B; the phone CSS in Appendix C
 | Q1 | Prototype shows several client steps in progress at once (7 Waiting, 8 and 9 In progress) and step 10 with SBC, while the real gate (`src/lib/checklist/checklist-step-gate.ts`) is strictly sequential (one `active`, the rest `locked`). | Owner to confirm: either the Home shows "1 current + upcoming locked" (real data), or the gate relaxes for Phase 2 client steps. |
 | Q2 | PAN/TAN reveal uses the **account password, 60 s** on Home (`v7c_ids`, `v7p_ids_password`, phone sheet) but a **manager OTP, 10 min** on the Credentials page for the same PAN. | Pick one model (or keep both and say why). |
 | Q3 | Totals disagree: "6 of 14 SPICe+" (greeting, runtime chat) vs "7 of 38 steps" (chat board) vs 48 rows in the Steps card; Registration phase "0 of 23" (Steps) vs "0 of 13" (chat drill, Registrations card 13 rows, greeting "5/13"). | Use catalog counts (5/9/11/23 = 48) everywhere; registrations card = curated subset only if labelled so. |
-| Q4 | Steps card shows the playbook "Timeline" text ("2–3 working days"); `src/lib/client-overview.ts` says the working-days SLA is no longer shown (replaced by manager windows). | Show `formatWindow(windowForStep(...))` when set, else the playbook text? Owner call. |
+| Q4 | Steps card shows the playbook "Timeline" text ("2–3 working days"); `src/lib/client/client-overview.ts` says the working-days SLA is no longer shown (replaced by manager windows). | Show `formatWindow(windowForStep(...))` when set, else the playbook text? Owner call. |
 | Q5 | Compliance areas: design = 5 (MCA, GST, Income tax, Payroll, FEMA); real grouping adds "Other". | Fold Other into the closest area or show a 6th row only when non-empty. |
 | Q6 | Many desktop controls are unwired in the board (fallback toasts): needs Upload/Fill/Correct/Sign, Report, Documents →, COI →, Show PAN/TAN, Copy, donut parts/legend/centre, drill rows and "Open full list", SBC (after) link icons, registrations download. | Real targets are given per control in sections 5.x. |
 | Q7 | Empty Needs tab text is always "Nothing to sign." before COI (bug) and plain text instead of the bot bubble. | Use the bot bubble "Nothing to <verb> right now…". |

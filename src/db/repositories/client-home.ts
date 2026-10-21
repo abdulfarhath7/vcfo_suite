@@ -26,8 +26,8 @@ import { isClientVisibleAuditAction, scrubForClient } from '@/db/repositories/cl
 import { listAuditEvents, recordAuditEvent } from '@/db/repositories/audit-events';
 import { getItem } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
-import { identifiersFromState } from '@/lib/client-overview';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { identifiersFromState } from '@/lib/client/client-overview';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { displayName, displayPeriod } from '@/lib/client-portal/compliances';
 import {
   fyLabelOf,
@@ -43,7 +43,7 @@ import {
   type NeedKind,
   type TimelinePhaseDates,
   type TimelineRequestDto,
-} from '@/lib/client-home';
+} from '@/lib/client/client-home';
 
 /**
  * CLIENT HOME REPOSITORY — the aggregate behind `GET /api/client/home`

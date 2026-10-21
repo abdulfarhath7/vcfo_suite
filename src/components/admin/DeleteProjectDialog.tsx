@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { createChangeRequestInDb, deleteProjectInDb } from '@/lib/project-admin-db';
+import { createChangeRequestInDb, deleteProjectInDb } from '@/lib/projects/project-admin-db';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 
 /**

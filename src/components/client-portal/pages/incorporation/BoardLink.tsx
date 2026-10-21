@@ -1,7 +1,7 @@
 'use client';
 
 /** "Board resolution · Ready" header button (`.hbtn` + `.rd`, FINAL heroLanding) → the board page. */
-import { clientBoardResolutionPath } from '@/lib/project-step-path';
+import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 import type { IncorporationBoardResolution } from '@/lib/client-portal/incorporation-types';
 import { usePortal } from '../../PortalProvider';
 import { Ic, fmt, istDay } from './ui';

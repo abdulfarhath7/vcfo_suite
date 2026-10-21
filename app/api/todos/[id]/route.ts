@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
 import { deletePersonalTodo, updatePersonalTodo } from '@/db/repositories/tasks';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { canAccessPersonalTodos, INTERN_FOCUS_TITLE_MAX } from '@/lib/personal-todos';
+import { canAccessPersonalTodos, INTERN_FOCUS_TITLE_MAX } from '@/lib/intern/personal-todos';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

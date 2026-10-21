@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { assistProfileApiPath } from '@/lib/assist-profile/paths';
 import type { AssistProfileResult } from '@/lib/assist-profile/types';
-import { apiFetch } from '@/lib/engagements-db';
+import { apiFetch } from '@/lib/projects/engagements-db';
 
 export const ASSIST_PROFILE_QUERY_KEY = 'assist-profile';
 

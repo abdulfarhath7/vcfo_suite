@@ -20,7 +20,7 @@ import {
   uploadSignedBoardResolution,
   validateSignedBoardResolutionFile,
 } from '@/lib/board-resolution/board-resolution-storage';
-import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
+import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';

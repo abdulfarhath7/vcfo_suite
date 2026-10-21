@@ -6,7 +6,7 @@ import { engagementBoardResolutions } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 import { parseBoardResolutionRpcPayload } from '@/lib/board-resolution/board-resolution';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import {
   checklistStateFromRow,
   getEngagementById,

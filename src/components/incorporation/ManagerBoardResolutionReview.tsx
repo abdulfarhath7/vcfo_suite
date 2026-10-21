@@ -24,7 +24,7 @@ import {
 } from '@/lib/checklist/checklist-responses';
 import { isRepeatField, repeatEntries } from '@/lib/checklist/checklist-repeat';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { approveBoardResolutionInDb } from '@/lib/engagements-db';
+import { approveBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 
 /**

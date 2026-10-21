@@ -10,7 +10,7 @@ import { SEO } from '@/components/SEO';
 import { Surface, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
 import { Button } from '@/components/ui/button';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
-import { listDeletedProjects, restoreProjectInDb } from '@/lib/project-admin-db';
+import { listDeletedProjects, restoreProjectInDb } from '@/lib/projects/project-admin-db';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 

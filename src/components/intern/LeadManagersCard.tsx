@@ -9,7 +9,7 @@ import {
   internManagerComposeHref,
   resolveLeadManagers,
   type LeadManagerEngagement,
-} from '@/lib/lead-managers';
+} from '@/lib/intern/lead-managers';
 
 async function fetchInternDirectory(): Promise<DirectoryPerson[]> {
   const res = await fetch('/api/outlook/directory');

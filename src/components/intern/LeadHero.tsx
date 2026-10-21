@@ -7,7 +7,7 @@ import {
   internGreetingHour,
   internWorkPath,
   type InternWorkKpis,
-} from '@/lib/intern-work';
+} from '@/lib/intern/intern-work';
 
 /**
  * The lead dashboard's greeting card — the shared `DashHero` with the lead's

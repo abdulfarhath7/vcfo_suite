@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import { usePortalIncorporation, todayIST } from '@/components/client-portal/hooks';
 import { useClientOverview } from '@/lib/use-client-overview';
-import type { ClientHome } from '@/lib/client-home';
+import type { ClientHome } from '@/lib/client/client-home';
 import {
   buildAlerts,
   buildDocs,

@@ -9,7 +9,7 @@ import {
   formatSuperAgo,
   formatSuperDayMonth,
 } from '@/components/super/overview/super-overview-format';
-import type { SuperOverview } from '@/lib/super-overview';
+import type { SuperOverview } from '@/lib/super/super-overview';
 
 /**
  * The 318px rail, composed exactly like the lead dashboard's: a donut panel on

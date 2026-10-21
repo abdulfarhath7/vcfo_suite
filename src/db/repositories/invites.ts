@@ -9,7 +9,7 @@ import {
   assertEngagementAccess,
   listScopedEngagementIds,
 } from '@/db/repositories/engagements';
-import { LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
+import { LEGACY_ENGAGEMENT_IDS } from '@/lib/projects/legacy-engagement-ids';
 
 /**
  * INVITES REPOSITORY — replaces vcfo.invites localStorage.

@@ -5,12 +5,12 @@ import {
   systemMarkAnnouncementSourceFetch,
   systemUpsertFeedAnnouncements,
 } from '@/db/repositories/announcements';
-import { catalogCircularFeedCandidates } from '@/lib/announcement-portals';
+import { catalogCircularFeedCandidates } from '@/lib/notifications/announcement-portals';
 import {
   fetchOfficialFeedXml,
   parseRssOrAtom,
   type AnnouncementSource,
-} from '@/lib/announcements';
+} from '@/lib/notifications/announcements';
 
 export async function ingestAnnouncementSource(
   source: AnnouncementSource,

@@ -21,7 +21,7 @@ import {
   roleAnnouncementsPath,
   writeAnnouncementReadIds,
   type AnnouncementListFilter,
-} from "@/lib/announcements";
+} from "@/lib/notifications/announcements";
 import { AnnouncementComposeForm } from "@/components/announcements/AnnouncementCompose";
 import { AnnouncementRow } from "@/components/announcements/AnnouncementList";
 import { cn } from "@/lib/utils";

@@ -7,7 +7,7 @@ import { AdminDashboardView } from '@/views/admin/DashboardSections';
 import { checklist, type Bucket } from '@/data/checklist';
 import type { TaskInstance } from '@/data/engagements';
 import type { Phase } from '@/components/admin/PhaseTimeline';
-import { primaryPhaseItems } from '@/lib/project-stuck';
+import { primaryPhaseItems } from '@/lib/projects/project-stuck';
 import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 
 const PROCESS_KEYS = [

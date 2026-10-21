@@ -11,7 +11,7 @@ import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { getStepAttachmentRequirements } from '@/lib/checklist/checklist-step-attachments';
 import { isReviewRejected, isAwaitingReview } from '@/lib/checklist/checklist-item-review';
-import { clientBoardResolutionPath } from '@/lib/project-step-path';
+import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
 import { phaseHref, portalHref } from '../../routes';
 import { usePortal, type DrillConfig, type DrillRow } from '../../PortalProvider';

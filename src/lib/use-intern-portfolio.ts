@@ -7,12 +7,12 @@ import {
   engagementSetupProgressPercent,
   internQueueStats,
   prioritizeInternActions,
-} from '@/lib/intern-dashboard';
-import type { BoardResolutionProgressSnapshot } from '@/lib/client-progress-board';
+} from '@/lib/intern/intern-dashboard';
+import type { BoardResolutionProgressSnapshot } from '@/lib/client/client-progress-board';
 import { useComplianceFilings } from '@/hooks/use-compliance-filings';
 import { useFilings } from '@/lib/use-filings';
 import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
-import { buildInternWorkItems, internAssignedToEngagement, internWorkKpis } from '@/lib/intern-work';
+import { buildInternWorkItems, internAssignedToEngagement, internWorkKpis } from '@/lib/intern/intern-work';
 
 /** Intern-scoped engagements, checklist queue, and progress from AppContext. */
 export function useInternPortfolio() {

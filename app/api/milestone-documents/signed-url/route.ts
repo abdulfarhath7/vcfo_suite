@@ -5,8 +5,8 @@ import { checklistViewerForRole, isStepReleasedTo } from '@/lib/checklist/checkl
 import {
   isMilestoneStoragePath,
   MILESTONE_DOCUMENTS_BUCKET,
-} from '@/lib/milestone-document-storage';
-import { checklistItemForFieldId } from '@/lib/vault-documents';
+} from '@/lib/documents/milestone-document-storage';
+import { checklistItemForFieldId } from '@/lib/documents/vault-documents';
 import { bucketKey, signedDownloadUrl } from '@/storage/s3';
 
 /**

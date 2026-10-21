@@ -1,7 +1,7 @@
 /**
  * C2 "Explain this document": delivered-document field → topic slug.
  * Keys are the checklist field ids of `CLIENT_DELIVERABLE_FIELDS`
- * (src/lib/client-overview.ts). Only the document TYPE is looked up here —
+ * (src/lib/client/client-overview.ts). Only the document TYPE is looked up here —
  * a document's contents are never read or sent anywhere.
  */
 export const DOCUMENT_TOPICS: Readonly<Record<string, string>> = {

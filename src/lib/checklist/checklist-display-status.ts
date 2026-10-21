@@ -4,7 +4,7 @@ import {
   derivePreIncStepTone,
   type BoardResolutionProgressSnapshot,
   type ClientProgressTone,
-} from '@/lib/client-progress-board';
+} from '@/lib/client/client-progress-board';
 
 const NONE_BR: BoardResolutionProgressSnapshot = { status: 'none', hasDraftDoc: false };
 

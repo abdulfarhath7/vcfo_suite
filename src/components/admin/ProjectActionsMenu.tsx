@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { usePathname, useRouter } from 'next/navigation';
-import { adminProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { adminProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -47,9 +47,9 @@ import {
 import type { Engagement } from '@/data/engagements';
 import { ChangeClientDialog } from '@/components/admin/ChangeClientDialog';
 import { DeleteProjectDialog } from '@/components/admin/DeleteProjectDialog';
-import { createChangeRequestInDb } from '@/lib/project-admin-db';
-import { changeRequestDiffValue } from '@/lib/project-change-request-types';
-import { projectEditAccess } from '@/lib/project-edit-policy';
+import { createChangeRequestInDb } from '@/lib/projects/project-admin-db';
+import { changeRequestDiffValue } from '@/lib/projects/project-change-request-types';
+import { projectEditAccess } from '@/lib/projects/project-edit-policy';
 
 type DialogKind =
   | 'add-manager'

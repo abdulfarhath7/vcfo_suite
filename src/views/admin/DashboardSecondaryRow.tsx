@@ -6,7 +6,7 @@ import { CalendarDays } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
 import { toneForKey, TONE_BADGE } from '@/components/common/IconChip';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
-import { staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import type { AdminDashboardViewProps } from '@/views/admin/DashboardSections';
 
 /** Status dot color for a filing — overdue reads red, in-progress amber,

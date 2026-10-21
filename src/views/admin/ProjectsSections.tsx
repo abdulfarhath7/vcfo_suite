@@ -12,11 +12,11 @@ import { ArrowRight, Plus, Table as TableIcon, LayoutGrid, MapPin, Briefcase, Tr
 import { cn } from '@/lib/utils';
 import { Surface, StatusDot, Mono, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
 import { staggerKids, fadeUp } from '@/lib/motion';
-import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import type { Engagement } from '@/data/engagements';
-import { STUCK_LABEL } from '@/lib/project-stuck';
+import { STUCK_LABEL } from '@/lib/projects/project-stuck';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { useApp } from '@/context/AppContext';
 import { isFirmWideAdmin } from '@/lib/auth';
@@ -32,7 +32,7 @@ interface EnrichedItem {
   intern: { id: string; name: string; initials?: string } | undefined;
   leads?: Array<{ id: string; name: string; initials?: string }>;
   city: { name: string; x: number; y: number };
-  stuck: import('@/lib/project-stuck').StuckReason;
+  stuck: import('@/lib/projects/project-stuck').StuckReason;
 }
 
 export interface ProjectsViewProps {

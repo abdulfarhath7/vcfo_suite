@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useRouter } from 'next/navigation';
 import { ProjectsView } from '@/views/admin/ProjectsSections';
-import { deriveStuckReason } from '@/lib/project-stuck';
+import { deriveStuckReason } from '@/lib/projects/project-stuck';
 
 const CITIES: Array<{ name: string; x: number; y: number }> = [
   { name: 'Bengaluru', x: 360, y: 470 },

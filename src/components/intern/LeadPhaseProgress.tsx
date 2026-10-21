@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { TrendingUp } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
-import { internCompanyPhaseProgress } from '@/lib/intern-work';
+import { internCompanyPhaseProgress } from '@/lib/intern/intern-work';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { internToneBadge } from '@/components/intern/intern-tones';

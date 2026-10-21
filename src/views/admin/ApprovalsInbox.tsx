@@ -7,9 +7,9 @@ import { SEO } from '@/components/SEO';
 import { Surface, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
 import { ClipboardCheck } from 'lucide-react';
 import { pendingApprovalKind, usePendingApprovals } from '@/hooks/use-pending-approvals';
-import { checklistItemLabel } from '@/lib/audit-log';
+import { checklistItemLabel } from '@/lib/audit/audit-log';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
-import { adminProjectStepPath } from '@/lib/project-step-path';
+import { adminProjectStepPath } from '@/lib/projects/project-step-path';
 import { ProjectChangeRequestsPanel } from '@/views/admin/ProjectChangeRequestsPanel';
 
 export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' }) {

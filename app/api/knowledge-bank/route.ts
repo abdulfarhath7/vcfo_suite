@@ -8,8 +8,8 @@ import {
   knowledgeBankChildFolders,
   knowledgeBankFilesInFolder,
   knowledgeBankFolderAncestors,
-} from '@/lib/knowledge-bank-folders';
-import { isKnowledgeBankStoragePath } from '@/lib/knowledge-bank-storage';
+} from '@/lib/knowledge-bank/knowledge-bank-folders';
+import { isKnowledgeBankStoragePath } from '@/lib/knowledge-bank/knowledge-bank-storage';
 import { bucketKey, deleteObject } from '@/storage/s3';
 
 function knowledgeBankErrorStatus(message: string): number {

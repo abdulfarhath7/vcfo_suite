@@ -31,7 +31,7 @@ import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { AccentButton, EmptyStateIllustrated, Mono, NoirCard, Surface } from '@/components/noir';
 import { TONE_BADGE, type IconChipTone } from '@/components/common/IconChip';
-import { formatKnowledgeBankFileSize } from '@/lib/knowledge-bank-storage';
+import { formatKnowledgeBankFileSize } from '@/lib/knowledge-bank/knowledge-bank-storage';
 import type {
   KnowledgeBankDeleteTarget,
   KnowledgeBankFile,

@@ -149,7 +149,7 @@ export const engagements = pgTable(
     complianceQuestionnaire: jsonb('compliance_questionnaire').notNull().default({}),
     /**
      * Manager-set date windows: `{ incorporation?: Window, steps?: { [itemId]: Window } }`
-     * (`src/lib/schedule-windows.ts`). Its own column rather than a key inside
+     * (`src/lib/projects/schedule-windows.ts`). Its own column rather than a key inside
      * `checklist_state`, whose normaliser treats every top-level key as a step.
      */
     schedule: jsonb('schedule'),
@@ -400,7 +400,7 @@ export const knowledgeBankFiles = pgTable(
  * Reconciled against 20260529120000_audit_events.sql — note the actor
  * email/name are DENORMALISED onto the row so the log still reads correctly
  * after a profile is renamed or deleted, and `summary` is a required
- * human-readable sentence (formatAuditActionLabel in src/lib/audit-log.ts).
+ * human-readable sentence (formatAuditActionLabel in src/lib/audit/audit-log.ts).
  */
 export const auditEvents = pgTable(
   'audit_events',

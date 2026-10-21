@@ -9,7 +9,7 @@ import {
   parseAnnouncementKind,
   type Announcement,
   type AnnouncementKind,
-} from '@/lib/announcements';
+} from '@/lib/notifications/announcements';
 import { cn } from '@/lib/utils';
 
 export function formatAnnouncementWhen(iso: string): string {

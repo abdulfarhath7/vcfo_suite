@@ -161,7 +161,7 @@ Nothing here was tested in a browser or against a database (owner rule for this 
 | Team | Gold "Northwind" chip on your own row (G7) | Kept as in the board: the company short name, not "You". | `TeamPage.tsx` people rows |
 | Team | Members can't invite | Invite button stays visible but `aria-disabled` with tooltip "Only the Primary contact can invite"; click toasts it. Resend/Cancel and Substitute-others are hidden for members. | `TeamPage.tsx` |
 | Team | SBC photos | Real photo from `ClientPortalContact.avatarUrl` (served by `/api/client/portal/team-photo/[id]`); initials when there is none. | `SbcCard` in `pages/team/TeamPage.tsx` |
-| Announcements | General filter (G9) | Prototype rule: General = everything that is not Deadline/Compliance, computed on the page; `src/lib/announcements.ts` untouched. | `F` in `AnnouncementsPage.tsx` |
+| Announcements | General filter (G9) | Prototype rule: General = everything that is not Deadline/Compliance, computed on the page; `src/lib/notifications/announcements.ts` untouched. | `F` in `AnnouncementsPage.tsx` |
 | Announcements | Official portals list | Real `VCFO_PORTAL_TASKS`, only rows with at least one official link; Setup = one-off heads, Recurring = Monthly/Quarterly/Half-yearly/Yearly. Counts are the real task counts (not 8/4). | `AnnouncementsPage.tsx` |
 | Announcements | Next-deadline "Open" target | `/app/client/compliances/filings?open=<complianceItemId>` — the Filings page must read `open`. | banner in `AnnouncementsPage.tsx` |
 | Announcements | Author contact buttons in the detail pop-up | Shown only when the author is on the client's own SBC team (from the shell); otherwise hidden. Feed items show "Open on <host> ↗". | `AnnDetail` |

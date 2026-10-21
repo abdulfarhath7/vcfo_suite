@@ -8,7 +8,7 @@ import {
   getEngagementById,
   patchChecklistItem,
 } from '@/db/repositories/engagements';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 import { emptyEmailDispatch } from '@/lib/email/email-dispatch';

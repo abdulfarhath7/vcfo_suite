@@ -23,7 +23,7 @@ import {
   writeInternEngagementPhaseTab,
   type InternOverviewNow,
   type InternOverviewPhase,
-} from '@/lib/intern-overview-progress';
+} from '@/lib/intern/intern-overview-progress';
 import { cn } from '@/lib/utils';
 import { fadeSwap, fadeSwapReduced, fadeUp, fadeUpReduced } from '@/lib/motion';
 import { MotionActivePill } from '@/components/shell/MotionActivePill';

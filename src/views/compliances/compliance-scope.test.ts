@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Engagement } from '@/data/engagements';
-import type { FilingRow } from '@/lib/filings';
+import type { FilingRow } from '@/lib/compliance/filings';
 import {
   ALL_COMPANIES,
   isFilingStatusFilter,

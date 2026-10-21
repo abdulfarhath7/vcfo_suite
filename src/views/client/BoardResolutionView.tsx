@@ -22,7 +22,7 @@ import {
 import { maxUploadSizeLabel } from '@/lib/upload-limits';
 import {
   fetchBoardResolutionInDb,
-} from '@/lib/engagements-db';
+} from '@/lib/projects/engagements-db';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 

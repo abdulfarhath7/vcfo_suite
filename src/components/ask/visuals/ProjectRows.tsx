@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import type { Visual } from '@/data/ask/schema';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
-import { adminProjectPath } from '@/lib/project-step-path';
+import { adminProjectPath } from '@/lib/projects/project-step-path';
 import { cn } from '@/lib/utils';
 
 type ProjectRowsVisual = Extract<Visual, { type: 'projectRows' }>;

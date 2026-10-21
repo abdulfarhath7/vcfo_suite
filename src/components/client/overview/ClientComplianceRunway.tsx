@@ -8,7 +8,7 @@ import {
   COMPLIANCE_GROUP_ORDER,
   type ClientOverviewComplianceItem,
   type ComplianceGroup,
-} from '@/lib/client-overview';
+} from '@/lib/client/client-overview';
 import {
   formatClientDate,
   relativeDayLabel,

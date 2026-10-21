@@ -5,7 +5,7 @@ import { complianceInstances, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { assertEngagementAccess, getEngagementById } from '@/db/repositories/engagements';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import {
   applyScheduleWindow,
   canSetScheduleWindows,
@@ -13,7 +13,7 @@ import {
   normalizeEngagementSchedule,
   type EngagementSchedule,
   type ScheduleTarget,
-} from '@/lib/schedule-windows';
+} from '@/lib/projects/schedule-windows';
 
 /**
  * SCHEDULE REPOSITORY — manager-set date windows.

@@ -50,7 +50,7 @@ MCA portal Chrome extension (`src/lib/assist-profile/`, spec in
 - **Runtime flag for the launcher.** `/api/ask/status` reads
   `ASK_VCFO_ENABLED` at request time, so the flag flips without a rebuild.
 - **Pending approvals** logic moved from the hook into
-  `src/lib/pending-approvals.ts`; the Approvals inbox and Ask VCFO share it.
+  `src/lib/projects/pending-approvals.ts`; the Approvals inbox and Ask VCFO share it.
 - **"What's this?" placements:** client Overview next action, the step
   journey rail (open and locked rows), the step title, form section headers,
   field labels that name a glossary term, and compliance calendar / filings

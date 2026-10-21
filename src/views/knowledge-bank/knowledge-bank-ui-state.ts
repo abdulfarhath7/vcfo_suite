@@ -1,4 +1,4 @@
-import type { KnowledgeBankFolderRecord } from '@/lib/knowledge-bank-folders';
+import type { KnowledgeBankFolderRecord } from '@/lib/knowledge-bank/knowledge-bank-folders';
 
 export type KnowledgeBankFolder = KnowledgeBankFolderRecord;
 

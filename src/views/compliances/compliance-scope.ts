@@ -1,7 +1,7 @@
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
-import { filingStatus, type FilingRow, type FilingStatus } from '@/lib/filings';
+import { filingStatus, type FilingRow, type FilingStatus } from '@/lib/compliance/filings';
 
 /**
  * COMPLIANCE SCOPE for the shared compliance module.

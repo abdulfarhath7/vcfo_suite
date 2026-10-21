@@ -23,8 +23,8 @@ import { useFilings } from '@/lib/use-filings';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { ScheduleWindowControl, ScheduleWindowMeta } from '@/components/schedule/ScheduleWindowControl';
-import { setFilingWindowInDb } from '@/lib/engagements-db';
-import { canSetScheduleWindows } from '@/lib/schedule-windows';
+import { setFilingWindowInDb } from '@/lib/projects/engagements-db';
+import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
 import {
   FILING_STATUS_LABEL,
   buildMatrix,
@@ -46,7 +46,7 @@ import {
   sortByDueDate,
   type FilingRow,
   type FilingsCadence,
-} from '@/lib/filings';
+} from '@/lib/compliance/filings';
 import { cn } from '@/lib/utils';
 import {
   ALL_COMPANIES,

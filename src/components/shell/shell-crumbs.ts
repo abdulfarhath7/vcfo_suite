@@ -3,7 +3,7 @@ import { resolveChecklistItemFromStepParam, slugifyCompanyName } from '@/lib/slu
 import {
   internOverviewPhaseForItem,
   internRegistrationHeadingGroups,
-} from '@/lib/intern-overview-progress';
+} from '@/lib/intern/intern-overview-progress';
 import type { ChecklistItem } from '@/data/checklist';
 
 /** Section chip in the top-bar location trail. */

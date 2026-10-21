@@ -29,7 +29,7 @@ import { approvalStateOf } from '@/lib/checklist/checklist-step-approval';
 import { isClientFillAwaitingClient } from '@/lib/checklist/checklist-client-fill';
 import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
-import { windowForStep, type EngagementSchedule } from '@/lib/schedule-windows';
+import { windowForStep, type EngagementSchedule } from '@/lib/projects/schedule-windows';
 
 export type StepKind = 'done' | 'you' | 'prog' | 'with' | 'next' | 'up';
 export type StepOwner = 'client' | 'sbc' | 'mca';

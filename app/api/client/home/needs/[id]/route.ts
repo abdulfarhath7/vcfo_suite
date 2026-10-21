@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { setNeedMeta } from '@/db/repositories/client-home';
-import { isNeedKind } from '@/lib/client-home';
+import { isNeedKind } from '@/lib/client/client-home';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

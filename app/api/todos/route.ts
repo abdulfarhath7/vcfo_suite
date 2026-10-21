@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
 import { listPersonalTodos, upsertPersonalTodo } from '@/db/repositories/tasks';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { canAccessPersonalTodos, INTERN_FOCUS_TITLE_MAX } from '@/lib/personal-todos';
+import { canAccessPersonalTodos, INTERN_FOCUS_TITLE_MAX } from '@/lib/intern/personal-todos';
 
 const createSchema = z.object({
   entryId: z.string().trim().min(1).max(240).optional(),

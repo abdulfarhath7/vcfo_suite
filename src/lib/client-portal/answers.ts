@@ -3,7 +3,7 @@
  * (prototype proto.js `QA`). Built from the client's real overview, so they
  * work whether or not the Ask VCFO model is switched on. Pure.
  */
-import type { ClientOverview } from '@/lib/client-overview';
+import type { ClientOverview } from '@/lib/client/client-overview';
 import { getActiveCatalogItems, getIncorporationPhases } from '@/data/checklist';
 
 export const BEFORE_QUESTIONS = ['What is my next step?', 'Where is my incorporation now?', 'Which documents are missing?'] as const;

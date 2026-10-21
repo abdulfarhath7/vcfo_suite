@@ -1,5 +1,5 @@
 import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
-import type { EngagementChecklistState } from '@/lib/engagements-db';
+import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
 import { repeatFieldId } from '@/lib/checklist/checklist-repeat';
 
 /** Obviously fake directors only — the repo is public. */

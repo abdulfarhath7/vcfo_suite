@@ -8,7 +8,7 @@ import {
   getClientProfileForEngagement,
   getEngagementById,
 } from '@/db/repositories/engagements';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { fetchEngagementProgressCcEmails } from '@/lib/email/fetch-engagement-progress-cc';
 import { resolvePortalUrl, sendWelcomeEmail } from '@/lib/email/welcome-email';
 

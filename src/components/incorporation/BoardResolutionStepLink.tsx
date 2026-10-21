@@ -5,8 +5,8 @@ import { FileText } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { Engagement } from '@/data/engagements';
-import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
-import { internBoardResolutionPath } from '@/lib/project-step-path';
+import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
+import { internBoardResolutionPath } from '@/lib/projects/project-step-path';
 import { cn } from '@/lib/utils';
 
 interface BoardResolutionStepLinkProps {

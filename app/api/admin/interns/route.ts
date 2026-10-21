@@ -5,7 +5,7 @@ import { createInternBodySchema } from '@/lib/api/schemas';
 import { checkInternCreateRateLimit } from '@/lib/api/rate-limit';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { listInternOptions } from '@/db/repositories/profiles';
-import { createInternUser } from '@/lib/create-intern-user';
+import { createInternUser } from '@/lib/intern/create-intern-user';
 import {
   resolveInternWelcomeUrls,
   sendInternWelcomeEmail,
