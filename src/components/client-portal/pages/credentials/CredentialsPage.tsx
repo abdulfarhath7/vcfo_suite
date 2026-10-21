@@ -877,6 +877,8 @@ function CredentialsInner() {
             <span className="cr-bub">Directors appear here after the Proposed Directors step, or use Add director.</span>
           </div>
         ) : null}
+        {/* a scrolling region must take focus so keyboard users can scroll it (WCAG 2.1.1) */}
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable scroll container, see above */}
         <div className="cr-gridbox" tabIndex={0} role="region" aria-label={`${tabLabel(S.id)} sheet`} ref={gridRef}>
           <table className={`cr-t${S.id === 'kyc' ? ' kyc xl' : ''}${S.id === 'login' ? ' xl' : ''}${em ? ' cr-editmode' : ''}`}>
             <caption className="sr">
@@ -1123,7 +1125,7 @@ function AccessLog({ engQ, onClose, onAudit }: { engQ: string; onClose: () => vo
   const rows = q.data ?? [];
   return (
     <div id="cr-drawer">
-      <div className="cr-scrim" onClick={onClose} />
+      <div className="cr-scrim" role="presentation" onClick={onClose} />
       <div className="cr-drawer" role="dialog" aria-label="Access log">
         <header className="cr-dh">
           <span className="cr-tile">

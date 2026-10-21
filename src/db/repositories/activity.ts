@@ -3,6 +3,7 @@ import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { activity, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
+import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 import type { ActivityEvent } from '@/data/engagements';
 import {
   assertEngagementAccess,
@@ -13,8 +14,8 @@ import { LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
 /**
  * ACTIVITY REPOSITORY — replaces vcfo.activity localStorage.
  *
- * Access: admin all; manager via owned engagements; intern/client via scoped
- * engagements (plus global rows with null engagement_id for admin/manager).
+ * Access: super admin and admin all; manager via owned engagements; intern/client via scoped
+ * engagements (plus global rows with null engagement_id for super admin, admin and manager).
  */
 
 type Row = typeof activity.$inferSelect;
@@ -51,7 +52,7 @@ function toAppActivity(
 }
 
 async function scopedEngagementIds(ctx: AuthContext): Promise<string[] | 'all'> {
-  if (ctx.role === 'admin') return 'all';
+  if (isFirmWideAdmin(ctx.role)) return 'all';
   return listScopedEngagementIds(ctx);
 }
 
@@ -101,7 +102,7 @@ export async function createActivity(
     const access = await assertEngagementAccess(ctx, input.engagementId);
     if (!access.ok) throw new Error('Engagement not found or not permitted');
     dbEngagementId = access.dbId;
-  } else if (ctx.role !== 'admin' && ctx.role !== 'manager') {
+  } else if (!isAdminOrManager(ctx.role)) {
     throw new Error('Engagement required');
   }
 

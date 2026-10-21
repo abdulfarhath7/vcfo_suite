@@ -53,7 +53,7 @@ import {
 import { validateStepAgainstState } from '@/lib/checklist-step-validation';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
-import { isFirmWideAdmin } from '@/lib/auth';
+import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 import { sequentialLockMessage } from '@/lib/checklist-step-gate';
 import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
 import { resolveCreateProjectManagerAssignment } from '@/lib/create-project-scope';
@@ -842,7 +842,7 @@ export async function getClientProfileForEngagement(
   ctx: AuthContext,
   clientUserId: string,
 ): Promise<{ id: string; email: string; name: string | null } | null> {
-  if (ctx.role !== 'admin' && ctx.role !== 'manager') return null;
+  if (!isAdminOrManager(ctx.role)) return null;
   if (ctx.role === 'manager') {
     // Only a client on an engagement in this manager's scope (primary pointer
     // or engagement_clients membership); anything else reads as not found.

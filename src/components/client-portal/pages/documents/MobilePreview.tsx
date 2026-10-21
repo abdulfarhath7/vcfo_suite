@@ -97,7 +97,7 @@ export function MobilePreview({ node, company, onClose }: { node: DocNode; compa
   return (
     <PagePortal>
       <div className="vmp">
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2147482600, background: 'oklch(20% 0.05 258)', fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div role="presentation" style={{ position: 'fixed', inset: 0, zIndex: 2147482600, background: 'oklch(20% 0.05 258)', fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }} onClick={(e) => e.target === e.currentTarget && onClose()}>
           <div role="dialog" aria-modal="true" aria-label={`Preview: ${node.label}`} className="sheet" style={{ position: 'absolute', left: 0, right: 0, top: 28, bottom: 0, background: 'var(--panel)', borderRadius: '12px 12px 0 0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
               <span style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)' }} />

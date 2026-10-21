@@ -86,12 +86,11 @@ export function Seg({
       className={`seg${wrap ? ' vh-segwrap' : ''}`}
       role="tablist"
       aria-label={label}
-      onKeyDown={onKey}
       style={{ gridTemplateColumns: `repeat(${n},minmax(0,1fr))`, ...(full ? { width: '100%' } : {}) }}
     >
       <span className="thumb" style={{ width: `calc((100% - 4px)/${n})`, transform: `translateX(${value * 100}%)` }} />
       {tabs.map((t, i) => (
-        <button key={t.label} type="button" role="tab" aria-selected={i === value} tabIndex={i === value ? 0 : -1} className={i === value ? 'on' : ''} onClick={() => onChange(i)}>
+        <button key={t.label} type="button" role="tab" aria-selected={i === value} tabIndex={i === value ? 0 : -1} className={i === value ? 'on' : ''} onClick={() => onChange(i)} onKeyDown={onKey}>
           {t.label}
           {t.cnt != null ? <span className="cnt">{t.cnt}</span> : null}
         </button>

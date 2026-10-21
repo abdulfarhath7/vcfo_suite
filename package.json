@@ -4,8 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "npm run css:portal",
     "dev": "next dev",
+    "predev:lan": "npm run css:portal",
     "dev:lan": "next dev -H 0.0.0.0 -p 3000",
+    "prebuild": "npm run css:portal",
     "build": "next build",
     "start": "next start",
     "start:lan": "next start -H 0.0.0.0 -p 3000",
@@ -13,6 +16,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "css:portal": "node scripts/cp-css.mjs",
+    "tokens": "node scripts/design-tokens-css.mjs --write",
+    "tokens:check": "node scripts/design-tokens-check.mjs",
     "ask:topics:report": "node --conditions=react-server --import tsx scripts/ask-topics-report.ts",
     "ask:topics:publish": "node --conditions=react-server --import tsx scripts/ask-topics-publish.ts",
     "eval:live": "node --conditions=react-server --import tsx tests/ask/evals/run-live.ts",
@@ -78,7 +85,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.4",
     "@eslint/js": "^10.0.1",
     "@next/eslint-plugin-next": "^16.2.10",
     "@playwright/test": "^1.57.0",

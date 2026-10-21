@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { notifications } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
+import { isAdminOrManager } from '@/lib/auth';
 import type {
   AppNotification,
   NotificationKind,
@@ -126,9 +127,9 @@ export async function createNotification(
   ctx: AuthContext,
   input: Omit<AppNotification, 'id' | 'read' | 'createdAt'> & { userId?: string },
 ): Promise<AppNotification> {
-  // Admin/manager may create notifications for another user; otherwise force self.
+  // Super admin, admin and manager may create notifications for another user; otherwise force self.
   const userId =
-    (ctx.role === 'admin' || ctx.role === 'manager') && input.userId
+    isAdminOrManager(ctx.role) && input.userId
       ? input.userId
       : ctx.userId;
 

@@ -172,7 +172,7 @@ describe('getTaskById', () => {
     expect(await repo.getTaskById(ctx(role), 't-1')).toBeNull();
   });
 
-  it.each(['admin', 'manager'] as const)('%s can read an unscoped task', async (role) => {
+  it.each(['super_admin', 'admin', 'manager'] as const)('%s can read an unscoped task', async (role) => {
     results = [[taskRow(null)]];
     expect(await repo.getTaskById(ctx(role), 't-1')).not.toBeNull();
   });

@@ -87,11 +87,10 @@ function nameIndexes(staff: StaffPersonRow[]) {
 }
 
 /**
- * Filings across the approved engagement ids only. `listComplianceInstances`
- * is deliberately not used: its role branch tests `ctx.role === 'admin'`, so a
- * super admin would fall through to the client scope
- * (`src/db/repositories/compliance.ts`). Scoping by an explicit id list is both
- * correct here and narrower than a role branch.
+ * Filings across the approved engagement ids only. Scoping by an explicit id
+ * list is both correct here and narrower than a role branch. (The old
+ * `listComplianceInstances`, whose role branch forgot super admin, was removed
+ * from `compliance.ts` on 2026-09-13 and has no successor with that bug.)
  */
 async function loadFilings(
   scopedDbIds: string[],

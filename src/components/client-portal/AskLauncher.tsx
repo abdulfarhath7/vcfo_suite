@@ -327,6 +327,8 @@ export function AskLauncher() {
           pillRef.current?.focus({ preventScroll: true });
         }}
       />
+      {/* The onClick below is not an action: it only keeps clicks inside the chat from reaching the page's outside-click listeners. */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- see above */}
       <section
         id="vp-chat"
         ref={winRef}

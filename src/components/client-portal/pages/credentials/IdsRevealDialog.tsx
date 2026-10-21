@@ -252,7 +252,7 @@ export function IdsRevealDialog({
 
   const body = phone ? (
     <>
-      <div className="scrim" onClick={close} />
+      <div className="scrim" role="presentation" onClick={close} />
       <section className="sheet" role="dialog" aria-modal="true" aria-labelledby="ip-sh-t" ref={dlgRef}>
         <div className="grab">
           <i />
@@ -307,7 +307,7 @@ export function IdsRevealDialog({
     </>
   ) : (
     <>
-      <div className="ip-dim" onClick={close} />
+      <div className="ip-dim" role="presentation" onClick={close} />
       <div className="ip-wrap">
         <div role="dialog" aria-modal="true" aria-labelledby="ip-t" style={S_DLG} ref={dlgRef}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>

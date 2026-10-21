@@ -9,7 +9,7 @@
  * Data: /api/client/compliances?id=, /[id]/proofs, /[id]/proofs/[proofId],
  * /[id]/details (repository `client-compliances.ts`; writes are staff-only).
  */
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Paperclip } from "lucide-react";
@@ -61,6 +61,7 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
   const base = `/api/client/compliances/${encodeURIComponent(instanceId)}`;
   const fileRef = useRef<HTMLInputElement>(null);
   const [kind, setKind] = useState("acknowledgement");
+  const fid = useId();
   const [draft, setDraft] = useState<Details | null>(null);
 
   const proofs = useQuery({
@@ -136,13 +137,13 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
           <DialogTitle>{label} · proof and details</DialogTitle>
         </DialogHeader>
         <section className="space-y-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proofs (the client sees them)</h4>
-          {(proofs.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">No proof yet — the client sees “Proof pending” once filed.</p> : null}
-          <ul className="divide-y divide-border rounded-md border border-border">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Proofs (the client sees them)</h4>
+          {(proofs.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">No proof yet — the client sees “Proof pending” once filed.</p> : null}
+          <ul className="divide-y divide-line rounded-md border border-line">
             {(proofs.data ?? []).map((p) => (
               <li key={p.id} className="flex items-center gap-2 px-3 py-2 text-sm">
                 <span className="min-w-0 flex-1 truncate">{p.fileName}</span>
-                <span className="text-xs text-muted-foreground">{p.kind}</span>
+                <span className="text-xs text-ink-muted">{p.kind}</span>
                 {!p.legacy ? (
                   <Button size="sm" variant="ghost" onClick={() => remove.mutate(p.id)} disabled={remove.isPending}>
                     Remove
@@ -152,7 +153,7 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
             ))}
           </ul>
           <div className="flex items-center gap-2">
-            <select className="h-9 rounded-md border border-border bg-background px-2 text-sm" value={kind} onChange={(e) => setKind(e.target.value)}>
+            <select className="h-9 rounded-md border border-line bg-background px-2 text-sm" value={kind} onChange={(e) => setKind(e.target.value)}>
               <option value="acknowledgement">Acknowledgement</option>
               <option value="challan">Challan</option>
               <option value="certificate">Certificate</option>
@@ -174,18 +175,18 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
           </div>
         </section>
         <section className="mt-4 grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1 text-xs font-medium">
+          <label htmlFor={`${fid}-ack`} className="flex flex-col gap-1 text-xs font-medium">
             ARN / acknowledgement no.
-            <Input value={d.acknowledgementNo ?? ""} onChange={(e) => set("acknowledgementNo", e.target.value)} />
+            <Input id={`${fid}-ack`} value={d.acknowledgementNo ?? ""} onChange={(e) => set("acknowledgementNo", e.target.value)} />
           </label>
-          <label className="flex flex-col gap-1 text-xs font-medium">
+          <label htmlFor={`${fid}-paid`} className="flex flex-col gap-1 text-xs font-medium">
             Tax paid (₹)
-            <Input inputMode="decimal" value={d.amountPaid ?? ""} onChange={(e) => set("amountPaid", e.target.value)} />
+            <Input id={`${fid}-paid`} inputMode="decimal" value={d.amountPaid ?? ""} onChange={(e) => set("amountPaid", e.target.value)} />
           </label>
           {DATE_FIELDS.map(([k, l]) => (
-            <label key={k} className="flex flex-col gap-1 text-xs font-medium">
+            <label key={k} htmlFor={`${fid}-${k}`} className="flex flex-col gap-1 text-xs font-medium">
               {l}
-              <Input type="date" value={(d[k] as string | null | undefined) ?? ""} onChange={(e) => set(k, e.target.value)} />
+              <Input id={`${fid}-${k}`} type="date" value={(d[k] as string | null | undefined) ?? ""} onChange={(e) => set(k, e.target.value)} />
             </label>
           ))}
         </section>

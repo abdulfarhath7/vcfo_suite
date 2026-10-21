@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PgDialect } from 'drizzle-orm/pg-core';
+import { PgDialect, QueryBuilder } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';
 
 import type { AuthContext } from '@/auth/guards';
@@ -75,18 +75,35 @@ beforeEach(() => {
   lastWhere = undefined;
   selectRows = [];
   inserted = null;
-  const chain = {
-    from: () => chain,
-    innerJoin: () => chain,
-    where: (w: SQL) => {
-      lastWhere = w;
-      return chain;
-    },
-    orderBy: () => chain,
-    limit: () => Promise.resolve(selectRows),
-    then: (resolve: (v: unknown[]) => unknown) => resolve(selectRows),
-  };
-  dbSelect.mockImplementation(() => chain);
+  // One fresh chain per db.select() call. A chain that is embedded in another
+  // query (for example `notExists(db.select()...)`) must render as SQL, the way a
+  // real Drizzle select does; without `getSQL()` PgDialect would bind the mock
+  // object itself as a query parameter.
+  dbSelect.mockImplementation((fields?: Record<string, unknown>) => {
+    let fromTable: unknown;
+    let ownWhere: SQL | undefined;
+    const chain = {
+      from: (table: unknown) => {
+        fromTable = table;
+        return chain;
+      },
+      innerJoin: () => chain,
+      where: (w: SQL) => {
+        ownWhere = w;
+        lastWhere = w;
+        return chain;
+      },
+      orderBy: () => chain,
+      limit: () => Promise.resolve(selectRows),
+      then: (resolve: (v: unknown[]) => unknown) => resolve(selectRows),
+      getSQL: () => {
+        const qb = new QueryBuilder();
+        const base = (fields ? qb.select(fields as never) : qb.select()).from(fromTable as never);
+        return (ownWhere ? base.where(ownWhere) : base).getSQL();
+      },
+    };
+    return chain;
+  });
   dbInsert.mockImplementation(() => ({
     values: (values: Record<string, unknown>) => {
       inserted = values;
@@ -180,6 +197,22 @@ describe('client library', () => {
   it('lists only the caller’s items', async () => {
     await library.listLibraryItems(clientB);
     expect(whereParams()).toEqual([clientB.userId]);
+  });
+
+  it('the soft-removal filter only narrows the caller’s own items', async () => {
+    await library.listLibraryItems(clientB);
+    const { sql: text, params } = dialect.sqlToQuery(lastWhere!);
+    // profile_id = caller AND NOT EXISTS (a removal row for this item): the
+    // subquery joins on the item id only, so it can hide rows but never add any.
+    expect(text).toMatch(/"client_library_items"\."profile_id" = \$1 and not exists \(select/);
+    expect(text).toContain('"client_library_removals"."item_id" = "client_library_items"."id"');
+    expect(params).toEqual([clientB.userId]);
+    expect(params).not.toContain(clientA.userId);
+  });
+
+  it('a single item read is keyed on id AND the caller', async () => {
+    await expect(library.getLibraryItem(clientB, 'item-of-a')).resolves.toBeNull();
+    expect(whereParams()).toEqual(['item-of-a', clientB.userId]);
   });
 
   it('only a client saves; super admin preview is read-only', async () => {

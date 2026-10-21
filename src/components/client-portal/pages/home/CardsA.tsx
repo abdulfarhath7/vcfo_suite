@@ -10,6 +10,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { BotSays } from '@/components/client-portal/shared';
 import { VisorHead } from '@/components/client-portal/Visor';
+import { LinkButton } from '@/components/client-portal/LinkButton';
 import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
 import type { PortalStep } from '@/lib/client-portal/step-model';
@@ -261,17 +262,9 @@ export function CurrentCard({ h, onStep }: { h: HomeData; onStep: (s: PortalStep
               <div key={s.id} style={{ ...BOX, borderLeft: `3px solid var(--${st.tone === 'due' ? 'due' : 'prog'})` }}>
                 <div style={{ flex: 1, minWidth: 150 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <a
-                      href="#"
-                      className="rt"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onStep(s);
-                      }}
-                      style={{ color: 'inherit', ...(primary ? { fontWeight: 800 } : { fontWeight: 600 }) }}
-                    >
+                    <LinkButton className="rt" onClick={() => onStep(s)} style={{ color: 'inherit', ...(primary ? { fontWeight: 800 } : { fontWeight: 600 }) }}>
                       {s.title}
-                    </a>
+                    </LinkButton>
                     <Tip tip={st.tip} onOpen={() => drill(st.tab)} style={{ display: 'inline-flex' }}>
                       <span className="chip" style={solid(st.tone === 'due' ? 'due' : 'prog')}>
                         {st.label}
@@ -316,17 +309,9 @@ export function CurrentCard({ h, onStep }: { h: HomeData; onStep: (s: PortalStep
               return (
                 <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderTop: '1px solid var(--hair)' }}>
                   <span className="mono cap" style={{ width: 50, flex: 'none' }}>Step {s.n}</span>
-                  <a
-                    href="#"
-                    className="rt"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onStep(s);
-                    }}
-                    style={{ flex: 1, color: st.tone === 'up' ? 'var(--muted)' : 'inherit', fontWeight: cur ? 800 : 600 }}
-                  >
+                  <LinkButton className="rt" onClick={() => onStep(s)} style={{ flex: 1, color: st.tone === 'up' ? 'var(--muted)' : 'inherit', fontWeight: cur ? 800 : 600 }}>
                     {s.title}
-                  </a>
+                  </LinkButton>
                   <span className="chip" style={{ ...(s.owner === 'client' ? { background: 'var(--due-light)', color: 'var(--due-text)' } : { background: 'var(--prog-light)', color: 'var(--prog-text)' }), minWidth: 88, justifyContent: 'center' }}>
                     {s.owner === 'client' ? company : 'SBC'}
                   </span>

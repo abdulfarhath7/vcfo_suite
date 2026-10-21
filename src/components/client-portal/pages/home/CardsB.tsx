@@ -8,6 +8,7 @@
  */
 import { useState, type CSSProperties, type MouseEvent } from 'react';
 import { BotSays } from '@/components/client-portal/shared';
+import { LinkButton } from '@/components/client-portal/LinkButton';
 import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig } from '@/components/client-portal/PortalProvider';
 import type { HomeFiling } from '@/lib/client-home';
@@ -81,18 +82,10 @@ export function TimelineCard({
         </button>
       ) : null}
       {phases ? (
-        <a
-          className="btn btn-o"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            onEdit();
-          }}
-          style={{ height: 30, padding: '0 10px', fontSize: 12 }}
-        >
+        <LinkButton className="btn btn-o hover:!text-[color:var(--primary-dark)]" onClick={() => onEdit()} style={{ height: 30, padding: '0 10px', fontSize: 12 }}>
           <Ico n="pencil" size={13} />
           Edit
-        </a>
+        </LinkButton>
       ) : null}
     </>
   );
@@ -450,10 +443,10 @@ export function CompCard({ h, onOpen }: { h: HomeData; onOpen: (tab: number) => 
           right={<span className="chip" style={{ background: 'var(--up-light)', color: 'var(--up-text)', minWidth: 116, justifyContent: 'center' }}>{h.home?.filings.fyLabel ?? ''}</span>}
         />
         <div style={{ padding: '22px 16px 16px', display: 'flex', gap: 20, alignItems: 'center' }}>
-          <div style={{ position: 'relative', width: 140, height: 140, flex: 'none' }}>
+          <div role="group" aria-label={segs.map(([k, n]) => `${BUCKET_LABEL[k]} ${n}`).join(', ')} style={{ position: 'relative', width: 140, height: 140, flex: 'none' }}>
+            {/* slice hover and click are a mouse shortcut: the legend rows beside it open the same lists from the keyboard */}
             <div
-              role="img"
-              aria-label={segs.map(([k, n]) => `${BUCKET_LABEL[k]} ${n}`).join(', ')}
+              role="presentation"
               onMouseMove={(e) => {
                 const i = sliceAt(e);
                 h.portal.tipAt(e.clientX, e.clientY, i == null ? null : `${BUCKET_LABEL[segs[i]![0]]} · ${segs[i]![1]}`);
@@ -468,11 +461,9 @@ export function CompCard({ h, onOpen }: { h: HomeData; onOpen: (tab: number) => 
               }}
               style={{ width: 140, height: 140, borderRadius: 99, background: total ? `conic-gradient(${stops})` : 'var(--raised)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
-              <a
-                href="#"
+              <LinkButton
                 title="Show all"
                 onClick={(e) => {
-                  e.preventDefault();
                   e.stopPropagation();
                   onOpen(0);
                 }}
@@ -480,27 +471,23 @@ export function CompCard({ h, onOpen }: { h: HomeData; onOpen: (tab: number) => 
               >
                 <span className="metric" style={{ fontSize: 28, lineHeight: 1, color: 'var(--fg)' }}>{total}</span>
                 <span className="cap">this FY</span>
-              </a>
+              </LinkButton>
             </div>
           </div>
           <div style={{ flex: 1 }}>
             {segs.map(([k, n], i) => (
-              <a
+              <LinkButton
                 key={k}
-                href="#"
                 data-tip={`${BUCKET_LABEL[k]} · ${n}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onOpen(i + 1);
-                }}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', margin: '0 -8px', borderRadius: 6, color: 'var(--fg)', fontWeight: 500, ...(k === 'dueSoon' ? { background: 'var(--raised)' } : {}) }}
+                onClick={() => onOpen(i + 1)}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, width: 'calc(100% + 16px)', padding: '6px 8px', margin: '0 -8px', borderRadius: 6, color: 'var(--fg)', fontWeight: 500, ...(k === 'dueSoon' ? { background: 'var(--raised)' } : {}) }}
               >
                 <span style={{ width: 10, height: 10, borderRadius: 2, background: `var(--${BUCKET_TONE[k] === 'ok' ? 'ok' : BUCKET_TONE[k]})` }} />
                 <span className="rt" style={{ flex: 1, fontWeight: 500 }}>{BUCKET_LABEL[k]}</span>
                 <span className="mono" style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
                   {n} ({pctOf(n)}%)
                 </span>
-              </a>
+              </LinkButton>
             ))}
           </div>
         </div>
@@ -529,16 +516,9 @@ export function IdsCard({ h, onReveal, onCoi }: { h: HomeData; onReveal: (f: 'pa
           info="PAN and TAN need your password to show"
           right={
             onCoi ? (
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onCoi();
-                }}
-                style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}
-              >
+              <LinkButton onClick={() => onCoi()} style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
                 COI <Ico n="arrow" size={12} sw={2} />
-              </a>
+              </LinkButton>
             ) : null
           }
         />
@@ -785,18 +765,9 @@ export function RegCard({ h, onProof }: { h: HomeData; onProof: (r: RegRow) => v
                     <td style={{ padding: '7px 8px' }}>
                       {r.status === 'Registered' ? (
                         r.certPath ? (
-                          <a
-                            href="#"
-                            aria-label="Download certificate"
-                            title="Certificate"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              onProof(r);
-                            }}
-                            style={{ color: 'var(--primary)', display: 'flex' }}
-                          >
+                          <LinkButton aria-label="Download certificate" title="Certificate" className="w-full" onClick={() => onProof(r)} style={{ color: 'var(--primary)', display: 'flex' }}>
                             <Ico n="download" size={15} />
-                          </a>
+                          </LinkButton>
                         ) : (
                           <span className="chip" title="Filed, proof not uploaded yet" style={{ background: 'var(--due-light)', color: 'var(--due-text)', whiteSpace: 'nowrap' }}>
                             Proof pending

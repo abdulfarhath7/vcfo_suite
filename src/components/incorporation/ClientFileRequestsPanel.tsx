@@ -10,7 +10,7 @@
  *       DELETE /api/engagements/[id]/file-requests/[requestId]
  * (repository `client-incorporation.ts`, staff-only writes).
  */
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type { ChecklistItem } from "@/data/checklist";
@@ -25,6 +25,7 @@ export function ClientFileRequestsPanel({ engagementId, item }: { engagementId: 
   const fileFields = useMemo(() => (item.fields ?? []).filter((f) => f.type === "file"), [item]);
   const [fieldId, setFieldId] = useState(fileFields[0]?.id ?? "");
   const [label, setLabel] = useState("");
+  const fid = useId();
   const [note, setNote] = useState("");
   const [dueDate, setDueDate] = useState("");
 
@@ -81,16 +82,16 @@ export function ClientFileRequestsPanel({ engagementId, item }: { engagementId: 
   return (
     <Surface className="mt-5 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground">Request files from the client</h3>
-        <span className="text-xs text-muted-foreground">Shown on the client&apos;s step page; approval waits for them</span>
+        <h3 className="text-sm font-semibold text-ink">Request files from the client</h3>
+        <span className="text-xs text-ink-muted">Shown on the client&apos;s step page; approval waits for them</span>
       </div>
       {mine.length > 0 ? (
-        <ul className="mb-4 divide-y divide-border rounded-md border border-border">
+        <ul className="mb-4 divide-y divide-line rounded-md border border-line">
           {mine.map((r) => (
             <li key={r.id} className="flex items-center gap-3 px-3 py-2 text-sm">
               <span className="min-w-0 flex-1 truncate">
                 <span className="font-medium">{r.label}</span>
-                {r.dueDate ? <span className="text-muted-foreground"> · due {r.dueDate}</span> : null}
+                {r.dueDate ? <span className="text-ink-muted"> · due {r.dueDate}</span> : null}
               </span>
               {r.fulfilledAt ? (
                 <span className="text-xs font-semibold text-emerald-700">Uploaded{r.fileName ? ` · ${r.fileName}` : ""}</span>
@@ -114,10 +115,10 @@ export function ClientFileRequestsPanel({ engagementId, item }: { engagementId: 
           create.mutate();
         }}
       >
-        <label className="flex flex-col gap-1 text-xs font-medium text-foreground">
+        <label className="flex flex-col gap-1 text-xs font-medium text-ink">
           File
           <select
-            className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+            className="h-9 rounded-md border border-line bg-background px-2 text-sm"
             value={fieldId}
             onChange={(e) => setFieldId(e.target.value)}
           >
@@ -128,20 +129,20 @@ export function ClientFileRequestsPanel({ engagementId, item }: { engagementId: 
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-foreground">
+        <label htmlFor={`${fid}-label`} className="flex flex-col gap-1 text-xs font-medium text-ink">
           Name the client sees
-          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={fileFields.find((f) => f.id === fieldId)?.label} />
+          <Input id={`${fid}-label`} value={label} onChange={(e) => setLabel(e.target.value)} placeholder={fileFields.find((f) => f.id === fieldId)?.label} />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-foreground">
+        <label htmlFor={`${fid}-due`} className="flex flex-col gap-1 text-xs font-medium text-ink">
           Due
-          <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <Input id={`${fid}-due`} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </label>
         <Button type="submit" disabled={create.isPending || !fieldId}>
           Request
         </Button>
-        <label className="flex flex-col gap-1 text-xs font-medium text-foreground sm:col-span-4">
+        <label htmlFor={`${fid}-note`} className="flex flex-col gap-1 text-xs font-medium text-ink sm:col-span-4">
           Note (optional)
-          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Max 2 months old" />
+          <Input id={`${fid}-note`} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Max 2 months old" />
         </label>
       </form>
     </Surface>

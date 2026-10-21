@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { AuditNode, ClientAuditEvent, ClientAuditPage } from '@/lib/client-portal/audit';
 import { usePortal } from '../../PortalProvider';
+import { LinkButton } from '../../LinkButton';
 import { AskWhy, BotBubble, CloseBtn, Dialog, P, Seg, Svg, api, avatarColor, useIsPhone, useScrollAfterClose, useSkeleton } from './common';
 import '../../css/team-00-contract.css';
 import '../../css/team-audit.css';
@@ -473,16 +474,9 @@ function DayDrill({
         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)' }}
       >
         <span>These events live in the Audit log</span>
-        <a
-          href="#"
-          style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap' }}
-          onClick={(e) => {
-            e.preventDefault();
-            onLink();
-          }}
-        >
+        <LinkButton style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap' }} onClick={() => onLink()}>
           Show in the Audit log ↓
-        </a>
+        </LinkButton>
       </div>
       <div className="dlg-h">
         <div className="dtile" style={{ background: 'var(--navy)', color: '#fff' }}>

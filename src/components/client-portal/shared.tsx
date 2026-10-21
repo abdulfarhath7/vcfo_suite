@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { usePortal } from './PortalProvider';
 import { VisorHead } from './Visor';
+import { LinkButton } from './LinkButton';
 
 let openInfo: (() => void) | null = null;
 
@@ -62,11 +63,9 @@ export function InfoPopover({
       </button>
       <span className="pop" role="dialog">
         {children}
-        <a
-          className="ask"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
+        <LinkButton
+          className="ask w-full"
+          onClick={() => {
             setOpen(false);
             openChat(askAbout ? `Tell me about ${askAbout}` : 'Tell me more about this');
           }}
@@ -75,7 +74,7 @@ export function InfoPopover({
             <VisorHead style={{ width: 16, height: 20, marginTop: 2 }} />
           </span>
           Ask VCFO about this
-        </a>
+        </LinkButton>
       </span>
     </span>
   );

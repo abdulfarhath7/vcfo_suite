@@ -14,7 +14,7 @@ import {
   engagementDbId,
   LEGACY_ENGAGEMENT_IDS,
 } from '@/lib/legacy-engagement-ids';
-import { isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
+import { isAdminOrManager, isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
 import {
   canAccessPersonalTodos,
   canMutatePersonalTodo,
@@ -125,7 +125,7 @@ export async function getTaskById(
   if (row.engagementId) {
     const access = await assertEngagementAccess(ctx, row.engagementId);
     if (!access.ok) return null;
-  } else if (ctx.role !== 'admin' && ctx.role !== 'manager') {
+  } else if (!isAdminOrManager(ctx.role)) {
     return null;
   }
   return toAppTask(row);

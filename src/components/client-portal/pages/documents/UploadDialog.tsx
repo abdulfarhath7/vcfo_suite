@@ -145,6 +145,7 @@ export function UploadDialog({
       <div className="vup">
         <div
           className="vup-scrim"
+          role="presentation"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget && !uploading) close();
           }}
@@ -290,9 +291,8 @@ export function UploadDialog({
                   ) : (
                     <span style={{ fontSize: 14, fontWeight: 700 }}>
                       {req?.reupload ? 'Drop the new file here or ' : 'Drop files here or '}
-                      <a href="#" onClick={(e) => e.preventDefault()}>
-                        browse
-                      </a>
+                      {/* link-styled word only: the whole drop zone around it is the button that opens the picker */}
+                      <span className="font-bold text-[color:var(--primary)] hover:text-[color:var(--primary-dark)]">browse</span>
                     </span>
                   )}
                   <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)' }}>

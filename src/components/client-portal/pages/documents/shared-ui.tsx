@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import { VisorHead } from '@/components/client-portal/Visor';
+import { LinkButton } from '@/components/client-portal/LinkButton';
 import type { ClientDocumentsPayload, DocNode } from '@/lib/client-portal/documents';
 import type { ViewerDoc } from './DocViewer';
 import { fileUrl } from './model';
@@ -94,16 +95,12 @@ export function BotBubble({
           </button>
         ) : null}
         {ask ? (
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              openChat(question ?? (typeof children === 'string' ? `${ask}: ${children}` : ask));
-            }}
+          <LinkButton
+            onClick={() => openChat(question ?? (typeof children === 'string' ? `${ask}: ${children}` : ask))}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}
           >
             {ask}
-          </a>
+          </LinkButton>
         ) : null}
       </div>
     </div>

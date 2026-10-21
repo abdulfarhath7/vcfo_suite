@@ -121,7 +121,7 @@ describe('reads are self-scoped for every role', () => {
 });
 
 describe('create', () => {
-  it.each(['admin', 'manager'] as const)('%s may target another user', async (role) => {
+  it.each(['super_admin', 'admin', 'manager'] as const)('%s may target another user', async (role) => {
     results = [[row(OTHER_USER)]];
     await repo.createNotification(ctx(role), { ...notif, userId: OTHER_USER });
     expect((calls[0]!.values as { userId: string }).userId).toBe(OTHER_USER);

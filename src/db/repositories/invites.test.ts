@@ -83,14 +83,16 @@ beforeEach(() => {
 });
 
 describe('listInvites', () => {
-  it('admin lists all without a scope lookup', async () => {
+  // Regression (2026-10-22): super_admin used to fall through to the scoped
+  // lookup because the branch tested `ctx.role === 'admin'` only.
+  it.each(['admin', 'super_admin'] as const)('%s lists all without a scope lookup', async (role) => {
     results = [[inviteRow(OWN), inviteRow(OTHER)]];
-    expect(await listInvites(ctx('admin'))).toHaveLength(2);
+    expect(await listInvites(ctx(role))).toHaveLength(2);
     expect(listScopedEngagementIds).not.toHaveBeenCalled();
     expect(calls[0]!.where).toBeUndefined();
   });
 
-  it.each(['super_admin', 'manager', 'intern', 'client'] as const)(
+  it.each(['manager', 'intern', 'client'] as const)(
     '%s only sees invites on scoped engagements',
     async (role) => {
       await listInvites(ctx(role));

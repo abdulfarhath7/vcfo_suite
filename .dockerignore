@@ -18,3 +18,4 @@ e2e
 .playwright-mcp
 Dockerfile
 .dockerignore
+graphify-out

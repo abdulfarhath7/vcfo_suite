@@ -337,8 +337,8 @@ function IntroStage({ onDone, onGone }: { onDone: () => void; onGone: () => void
     setLayout();
     renderAt(0);
     try {
-      void document.fonts?.load('700 20px Poppins');
-      void document.fonts?.load('400 20px Poppins');
+      /* The intro draws in the app face (Public Sans via next/font); wait for it like any other font. */
+      void document.fonts?.ready;
     } catch {
       /* no font loading API */
     }
@@ -381,30 +381,30 @@ function IntroStage({ onDone, onGone }: { onDone: () => void; onGone: () => void
           <g id="vi-stack">
             <g id="vi-card0" opacity="0">
               <polygon className="shape" style={{ fill: 'var(--yellow)' }} />
-              <text className="cname" textAnchor="middle" fontFamily="Poppins, Segoe UI, sans-serif" fontWeight="600" fill="#3D2A00">
+              <text className="cname" textAnchor="middle" fontFamily="var(--font-sans), system-ui, sans-serif" fontWeight="600" fill="#3D2A00">
                 Incorporation
               </text>
             </g>
             <g id="vi-card1" opacity="0">
               <polygon className="shape" style={{ fill: 'var(--orange)' }} />
-              <text className="cname" textAnchor="middle" fontFamily="Poppins, Segoe UI, sans-serif" fontWeight="600" fill="#FFFFFF">
+              <text className="cname" textAnchor="middle" fontFamily="var(--font-sans), system-ui, sans-serif" fontWeight="600" fill="#FFFFFF">
                 Registrations
               </text>
             </g>
             <g id="vi-card2" opacity="0">
               <polygon className="shape" style={{ fill: 'var(--deep)' }} />
-              <text className="cname" textAnchor="middle" fontFamily="Poppins, Segoe UI, sans-serif" fontWeight="600" fill="#FFFFFF">
+              <text className="cname" textAnchor="middle" fontFamily="var(--font-sans), system-ui, sans-serif" fontWeight="600" fill="#FFFFFF">
                 Compliances
               </text>
               <g clipPath="url(#vi-vClip)">
-                <text id="vi-vee" textAnchor="middle" fontFamily="Poppins, Segoe UI, sans-serif" fontWeight="700" fill="#FFFFFF">
+                <text id="vi-vee" textAnchor="middle" fontFamily="var(--font-sans), system-ui, sans-serif" fontWeight="700" fill="#FFFFFF">
                   V
                 </text>
               </g>
             </g>
           </g>
           <g id="vi-word" clipPath="url(#vi-wordClip)">
-            <text id="vi-wordText" fontFamily="Poppins, Segoe UI, sans-serif" fontSize="100" letterSpacing="-2">
+            <text id="vi-wordText" fontFamily="var(--font-sans), system-ui, sans-serif" fontSize="100" letterSpacing="-2">
               <tspan fontWeight="700" style={{ fill: 'var(--ink)' }}>
                 VCFO
               </tspan>
@@ -414,7 +414,7 @@ function IntroStage({ onDone, onGone }: { onDone: () => void; onGone: () => void
             </text>
           </g>
           <g id="vi-byline" opacity="0">
-            <text id="vi-byText" fontFamily="Poppins, Segoe UI, sans-serif" fontSize="18" fontWeight="700" letterSpacing="3.5" style={{ fill: 'var(--ink)' }}>
+            <text id="vi-byText" fontFamily="var(--font-sans), system-ui, sans-serif" fontSize="18" fontWeight="700" letterSpacing="3.5" style={{ fill: 'var(--ink)' }}>
               BY
             </text>
             <image id="vi-sbc" href="/sbc-logo-light.png" width="72" height="21.2" />

@@ -290,7 +290,7 @@ export function OtpDialog({
 
   return (
     <div id="cr-otp">
-      <div className="cr-scrim" onClick={onClose} />
+      <div className="cr-scrim" role="presentation" onClick={onClose} />
       <div className="cr-dlg" id="cr-dlg" role="dialog" aria-modal="true" aria-labelledby="cr-dlg-t" ref={dlgRef}>
         <header className="cr-dh">
           <span className="cr-circ navy">

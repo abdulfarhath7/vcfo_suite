@@ -730,7 +730,7 @@ function Drawer() {
   }, [drawerOpen, setDrawerOpen]);
   return (
     <>
-      <div id="vp-drawer-scrim" className={drawerOpen ? 'on' : undefined} onClick={() => setDrawerOpen(false)} />
+      <div id="vp-drawer-scrim" className={drawerOpen ? 'on' : undefined} role="presentation" onClick={() => setDrawerOpen(false)} />
       <aside
         id="vp-drawer"
         ref={ref}

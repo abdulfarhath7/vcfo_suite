@@ -166,7 +166,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
     );
   let lastGroup = '';
   return (
-    <div id="vp-drill-scrim" className="on cp-search" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div id="vp-drill-scrim" className="on cp-search" role="presentation" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div id="vp-drill" role="dialog" aria-modal="true" aria-label="Search">
         <div className="cp-search-in">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">

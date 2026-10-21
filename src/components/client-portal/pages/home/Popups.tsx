@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { VisorHead } from '@/components/client-portal/Visor';
+import { LinkButton } from '@/components/client-portal/LinkButton';
 import { portalHref, stepHref } from '@/components/client-portal/routes';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
 import { isReviewAccepted } from '@/lib/checklist-item-review';
@@ -79,6 +80,7 @@ export function Dialog({
   }, [onClose]);
   return (
     <div
+      role="presentation"
       style={{ position: 'fixed', inset: 0, zIndex: 2147481000, background: 'oklch(20% 0.05 258 / 0.55)', display: 'flex', justifyContent: 'center', alignItems: top != null ? 'flex-start' : 'center', padding: top != null ? `${top}px 12px 12px` : 12, overflowY: 'auto' }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -303,18 +305,14 @@ export function StepPopup({
                       {[n.sub, n.askedBy ? `Asked by ${n.askedBy}` : null, n.due ? `Due ${dShort(n.due)}` : null].filter(Boolean).join(' · ')}
                     </InfoPopover>
                   </span>
-                  <a
-                    className="btn btn-o"
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onUpload(n);
-                    }}
+                  <LinkButton
+                    className="btn btn-o hover:!text-[color:var(--primary-dark)]"
+                    onClick={() => onUpload(n)}
                     style={{ height: 30, minWidth: 88, justifyContent: 'center', fontSize: 12 }}
                   >
                     <Ico n="upload" size={13} />
                     Upload
-                  </a>
+                  </LinkButton>
                 </div>
               ))}
             </div>
@@ -322,8 +320,10 @@ export function StepPopup({
         ) : null}
         <Section title="Documents">
           {docs.map((d, i) => (
+            // the whole row is a mouse shortcut for its own Preview button, which is the keyboard path
             <div
               key={d.id}
+              role="presentation"
               title="Open preview"
               onClick={(e) => {
                 if ((e.target as HTMLElement).closest('button,.info')) return;
@@ -411,12 +411,10 @@ export function StepPopup({
         >
           {s.owner === 'client' && s.kind !== 'done' ? 'Continue step' : 'Open step'} <Ico n="arrow" size={14} sw={2} />
         </a>
-        <a
-          className="btn btn-o"
-          href="#"
+        <LinkButton
+          className="btn btn-o hover:!text-[color:var(--primary-dark)]"
           style={{ gap: 6 }}
-          onClick={(e) => {
-            e.preventDefault();
+          onClick={() => {
             onClose();
             portal.openChat(`Tell me about ${s.title}`);
           }}
@@ -425,18 +423,11 @@ export function StepPopup({
             <VisorHead style={{ width: 18, height: 22, marginTop: 1 }} />
           </span>
           Ask VCFO about this step
-        </a>
-        <a
-          className="btn btn-o"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            setMsg((m) => (m == null ? `About ${s.title}: ` : m));
-          }}
-        >
+        </LinkButton>
+        <LinkButton className="btn btn-o hover:!text-[color:var(--primary-dark)]" onClick={() => setMsg((m) => (m == null ? `About ${s.title}: ` : m))}>
           <Ico n="msg" size={14} />
           Message {h.lead?.split(' ')[0] ?? 'your lead'} (lead)
-        </a>
+        </LinkButton>
       </div>
     </Dialog>
   );

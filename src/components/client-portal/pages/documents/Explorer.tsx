@@ -13,6 +13,8 @@ import { OTHER_PHASE_ID, OTHER_PHASE_TITLE, type ClientDocumentsPayload, type Do
 import type { PortalIncorporationModel } from '@/lib/client-portal/step-model';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import { stepHref } from '@/components/client-portal/routes';
+import { LinkButton } from '@/components/client-portal/LinkButton';
+import { onActivate } from '@/components/client-portal/a11y';
 import { fileTag, longDate, previewMode } from './file-types';
 import {
   buildEntries,
@@ -212,6 +214,13 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
     });
   };
 
+  /* A double click anywhere on a file row opens it in the viewer (delegated from the tree). */
+  const onTreeDoubleClick = (ev: MouseEvent<HTMLDivElement>) => {
+    const id = (ev.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]')?.dataset.id;
+    const e = rows.find((r) => r.e.id === id)?.e;
+    if (e?.kind === 'file' && e.node.status !== 'Missing') onPreview(e.node, viewerList());
+  };
+
   /* ---- WAI tree keys ---- */
   const onTreeKey = (ev: KeyboardEvent<HTMLDivElement>) => {
     if ((ev.target as HTMLElement).closest('.menu')) return;
@@ -336,7 +345,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
       </div>
 
       <div className="vdoc-body">
-        <div role="tree" aria-label="Folders and files" className="vdoc-tree" ref={treeRef} onKeyDown={onTreeKey}>
+        <div role="tree" aria-label="Folders and files" className="vdoc-tree" ref={treeRef} tabIndex={-1} onKeyDown={onTreeKey} onDoubleClick={onTreeDoubleClick}>
           {rows.map((r, i) => {
             const e = r.e;
             const f = e.kind === 'file' ? e.node : undefined;
@@ -360,7 +369,6 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                 aria-expanded={folder ? r.open : undefined}
                 aria-selected={selected}
                 className={`tr${selected ? ' sel' : ''}${f?.replaced ? ' hid' : ''}${f && glowId === f.id ? ' glow' : ''}`}
-                onDoubleClick={() => f && !missing && onPreview(f, viewerList())}
               >
                 <button type="button" className="main" tabIndex={tabbable ? 0 : -1} onFocus={() => setFocusId(e.id)} onClick={() => activate(e)}>
                   {Array.from({ length: r.depth }, (_, k) => (
@@ -418,13 +426,11 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                   {folder && folder.level === 'phase' ? <span className="cnt">{kids.filter((x) => !x.replaced).length}</span> : null}
                 </button>
                 {isBar ? (
-                  <a
+                  <LinkButton
                     className="pb"
-                    href="#"
                     data-tip={tip}
                     aria-label={`${tip}. Open the list`}
-                    onClick={(ev: MouseEvent<HTMLAnchorElement>) => {
-                      ev.preventDefault();
+                    onClick={(ev: MouseEvent<HTMLButtonElement>) => {
                       let part = 0;
                       const trk = (ev.currentTarget.querySelector('.trk') as HTMLElement | null)?.getBoundingClientRect();
                       if (ev.detail > 0 && trk && ev.clientX >= trk.left && ev.clientX <= trk.right) {
@@ -442,7 +448,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                     <span className="cnt">
                       {c.ok}/{c.tot}
                     </span>
-                  </a>
+                  </LinkButton>
                 ) : null}
                 <button
                   type="button"
@@ -465,6 +471,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                     className="menu"
                     role="menu"
                     aria-label="Actions"
+                    tabIndex={-1}
                     onKeyDown={(ev) => {
                       const items = [...ev.currentTarget.querySelectorAll<HTMLButtonElement>('button')];
                       const at = items.indexOf(document.activeElement as HTMLButtonElement);
@@ -667,15 +674,14 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
       <div className="vdoc-pv">
         {!missing ? (
           mode === 'pdf' || mode === 'image' ? (
-            <a
-              href="#"
+            <div
+              role="button"
+              tabIndex={0}
               aria-label="Open in viewer"
-              className="vdoc-page real"
+              className="vdoc-page real hover:!text-[color:var(--primary-dark)]"
               data-paper=""
-              onClick={(e) => {
-                e.preventDefault();
-                onPreview();
-              }}
+              onClick={() => onPreview()}
+              onKeyDown={onActivate(onPreview)}
             >
               {mode === 'pdf' ? (
                 <iframe key={n.id} title={`${n.label} — first page`} tabIndex={-1} loading="lazy" src={`${fileUrl(n.ref!)}#page=1&toolbar=0&navpanes=0&scrollbar=0&view=Fit`} />
@@ -683,17 +689,16 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
                 // eslint-disable-next-line @next/next/no-img-element
                 <img key={n.id} src={fileUrl(n.ref!)} alt="" loading="lazy" />
               )}
-            </a>
+            </div>
           ) : (
-            <a
-              href="#"
+            <div
+              role="button"
+              tabIndex={0}
               aria-label="Open in viewer"
-              className="vdoc-page"
+              className="vdoc-page hover:!text-[color:var(--primary-dark)]"
               data-paper=""
-              onClick={(e) => {
-                e.preventDefault();
-                onPreview();
-              }}
+              onClick={() => onPreview()}
+              onKeyDown={onActivate(onPreview)}
             >
               <span style={{ display: 'block', fontSize: 11, letterSpacing: '.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>{tagTip(n)}</span>
               <span style={{ display: 'block', font: "600 18px 'Space Grotesk'", marginTop: 10 }}>{n.label}</span>
@@ -701,16 +706,12 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
               {[92, 84, 95, 66].map((w, i) => (
                 <span key={w} style={{ display: 'block', height: 6, borderRadius: 3, background: 'light-dark(oklch(90% 0.01 255), oklch(28% 0.01 255))', width: `${w}%`, marginTop: i ? 9 : 18 }} />
               ))}
-            </a>
+            </div>
           )
         ) : (
-          <a
-            href="#"
+          <LinkButton
             className={`vdoc-drop${over ? ' over' : ''}`}
-            onClick={(e) => {
-              e.preventDefault();
-              onUpload();
-            }}
+            onClick={() => onUpload()}
             onDragOver={(e) => {
               e.preventDefault();
               setOver(true);
@@ -729,7 +730,7 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
                 Drop the file or <span style={{ color: 'var(--primary)' }}>browse</span>
               </span>
             )}
-          </a>
+          </LinkButton>
         )}
       </div>
       <div style={{ flex: 'none' }}>

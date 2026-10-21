@@ -4,6 +4,7 @@ import { db } from '@/db/client';
 import { documentRequestDetails, documentRequests } from '@/db/schema';
 import { getItem } from '@/data/checklist';
 import type { AuthContext } from '@/auth/guards';
+import { isFirmWideAdmin } from '@/lib/auth';
 import type { DocRequest } from '@/data/engagements';
 import {
   assertEngagementAccess,
@@ -14,7 +15,7 @@ import { LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
 /**
  * DOCUMENT REQUESTS REPOSITORY — replaces vcfo.requests localStorage.
  *
- * Access: admin all; manager via owned engagements; intern/client via scoped engagements.
+ * Access: super admin and admin all; manager via owned engagements; intern/client via scoped engagements.
  */
 
 type Row = typeof documentRequests.$inferSelect;
@@ -52,7 +53,7 @@ function toAppDocRequest(row: Row): DocRequest {
 }
 
 async function scopedEngagementIds(ctx: AuthContext): Promise<string[] | 'all'> {
-  if (ctx.role === 'admin') return 'all';
+  if (isFirmWideAdmin(ctx.role)) return 'all';
   return listScopedEngagementIds(ctx);
 }
 

@@ -14,6 +14,7 @@ import { ANNOUNCEMENT_KIND_LABEL, type Announcement } from '@/lib/announcements'
 import { VCFO_PORTAL_TASKS, type VcfoPortalTask } from '@/lib/announcement-portals';
 import { usePortal } from '../../PortalProvider';
 import { VisorHead } from '../../Visor';
+import { LinkButton } from '../../LinkButton';
 import { todayIST } from '../../hooks';
 import {
   AskWhy,
@@ -209,15 +210,11 @@ export function AnnouncementsPage() {
                 const feed = a.origin === 'feed';
                 const h = host(a);
                 return (
-                  <a
+                  <LinkButton
                     key={a.id}
-                    href="#"
-                    className={unread ? 'row unread' : 'row'}
+                    className={unread ? 'row unread w-full' : 'row w-full'}
                     style={{ color: 'inherit', fontWeight: 'inherit', textDecoration: 'none' }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      openAt(i);
-                    }}
+                    onClick={() => openAt(i)}
                   >
                     <div
                       className="dtile"
@@ -252,7 +249,7 @@ export function AnnouncementsPage() {
                       </span>
                     ) : null}
                     {unread ? <span className="udot" role="img" aria-label="Unread" data-tip="Unread" /> : null}
-                  </a>
+                  </LinkButton>
                 );
               })
             )}
@@ -432,12 +429,10 @@ function AnnDetail({
             ) : null}
           </div>
         )}
-        <a
-          className="ask"
-          href="#"
+        <LinkButton
+          className="ask w-full"
           style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}
-          onClick={(e) => {
-            e.preventDefault();
+          onClick={() => {
             onClose();
             openChat(`Tell me about ${a.title}`);
           }}
@@ -446,7 +441,7 @@ function AnnDetail({
             <VisorHead style={{ width: 18, height: 23, marginTop: 2 }} />
           </span>
           Ask VCFO about this
-        </a>
+        </LinkButton>
       </div>
       <div className="dlg-f" style={{ justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: 6 }}>

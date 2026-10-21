@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { InfoPopover } from '@/components/client-portal/shared';
+import { LinkButton } from '@/components/client-portal/LinkButton';
 import { fileTag, longDate, previewMode, sizeLabel, TAG_STYLE, triggerDownload } from './file-types';
 import '../../css/documents-viewer.css';
 
@@ -338,19 +339,15 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
           {i + 1} of {n}
         </span>
       ) : null}
-      <a
-        className="btn btn-o"
-        href="#"
+      <LinkButton
+        className="btn btn-o hover:!text-[color:var(--primary-dark)]"
         aria-label="Download"
         style={{ height: 32, padding: '0 10px', fontSize: 12.5, flex: 'none' }}
-        onClick={(e) => {
-          e.preventDefault();
-          void download();
-        }}
+        onClick={() => void download()}
       >
         {ICON_DL}
         <span className="vh-hide-sm">Download</span>
-      </a>
+      </LinkButton>
       <button
         ref={closeRef}
         type="button"
@@ -453,16 +450,9 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
           </svg>
         </span>
         <div style={{ fontSize: 15, fontWeight: 700 }}>Preview not available for this file type</div>
-        <a
-          className="btn btn-p"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            void download();
-          }}
-        >
+        <LinkButton className="btn btn-p" onClick={() => void download()}>
           {ICON_DL}Download
-        </a>
+        </LinkButton>
       </div>
     </div>
   ) : (
@@ -501,6 +491,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
     <div className="cp-docviewer" style={{ fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
       <div
         className="vh-under-bar dv-scrim"
+        role="presentation"
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) close();
         }}

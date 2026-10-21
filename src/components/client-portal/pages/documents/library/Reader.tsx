@@ -18,6 +18,7 @@ import type { AnswerDepth, AnswerEnvelope, Visual } from '@/data/ask/schema';
 import { usePortal, usePortalCrumbs, usePortalOptional } from '@/components/client-portal/PortalProvider';
 import { usePortalIncorporation, todayIST } from '@/components/client-portal/hooks';
 import { portalHref, stepHref } from '@/components/client-portal/routes';
+import { LinkButton } from '@/components/client-portal/LinkButton';
 import { VisualRenderer } from '@/components/ask/visuals/VisualRenderer';
 import { VisorHead } from '@/components/client-portal/Visor';
 import LegacyClientLibraryItem from '@/views/client/ask/ClientLibraryItem';
@@ -595,13 +596,10 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
                 <section className="card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <h2 style={{ margin: 0, font: '700 13px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))' }}>Documents for this</h2>
                   {relDocs.map((n, i) => (
-                    <a
+                    <LinkButton
                       key={n.id}
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setViewer({ docs: relDocs.map((x) => toViewerDoc(x)), i });
-                      }}
+                      className="w-full max-[767px]:min-h-[40px]"
+                      onClick={() => setViewer({ docs: relDocs.map((x) => toViewerDoc(x)), i })}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg)', fontWeight: 600 }}
                     >
                       <span className="mono" style={{ fontSize: 11, fontWeight: 600, padding: '2px 5px', borderRadius: 4, ...tagStyle(n) }}>
@@ -611,7 +609,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
                       <span className="chip" style={STATUS_STYLE[n.status]}>
                         {n.status}
                       </span>
-                    </a>
+                    </LinkButton>
                   ))}
                 </section>
               ) : null}

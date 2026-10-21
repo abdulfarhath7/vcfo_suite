@@ -80,8 +80,10 @@ export function chipTone(today: string, iso?: string): Tone {
 }
 
 export const chipBg = (t: Tone) => `var(--${t}-chip)`;
+/* Status chips are soft (docs/design/TOKENS.md): the tone's light ground with its
+   text-safe colour. The name stays so callers do not change; nothing is solid now. */
 export function solid(t: Tone): React.CSSProperties {
-  return { background: `var(--${t}-chip)`, color: '#fff' };
+  return { background: `var(--${t}-light)`, color: `var(--${t}-text)` };
 }
 
 /* -------------------------------------------------------------- steps */

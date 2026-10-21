@@ -370,6 +370,7 @@ function DrillDialog({
     <div
       id="vp-drill-scrim"
       className={on ? 'on' : undefined}
+      role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) close();
       }}

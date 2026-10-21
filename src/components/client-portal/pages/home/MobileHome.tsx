@@ -930,7 +930,7 @@ export function MobileHome({ h, onEditTimeline, phases, onOpenDocs }: { h: HomeD
           }
         }}
       />
-      <div className={`scrim${sheet ? ' on' : ''}`} onClick={closeSheet} />
+      <div className={`scrim${sheet ? ' on' : ''}`} role="presentation" onClick={closeSheet} />
       <section className={`sheet${sheet ? ' on' : ''}`} role="dialog" aria-modal="true" aria-labelledby="m-shT" aria-hidden={!sheet}>
         <div className="grab">
           <i />

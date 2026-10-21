@@ -3,6 +3,7 @@ import { desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { invites } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
+import { isFirmWideAdmin } from '@/lib/auth';
 import type { Invite } from '@/data/engagements';
 import {
   assertEngagementAccess,
@@ -13,7 +14,7 @@ import { LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
 /**
  * INVITES REPOSITORY — replaces vcfo.invites localStorage.
  *
- * Access: admin all; manager via owned engagements; intern via assigned
+ * Access: super admin and admin all; manager via owned engagements; intern via assigned
  * engagements; clients see invites for their own engagement.
  */
 
@@ -35,7 +36,7 @@ function toAppInvite(row: Row): Invite {
 }
 
 async function scopedEngagementIds(ctx: AuthContext): Promise<string[] | 'all'> {
-  if (ctx.role === 'admin') return 'all';
+  if (isFirmWideAdmin(ctx.role)) return 'all';
   return listScopedEngagementIds(ctx);
 }
 

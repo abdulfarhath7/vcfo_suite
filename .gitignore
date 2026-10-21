@@ -26,3 +26,14 @@ docs/mca-recordings/
 
 # Source workbooks with client PII (PAN, Aadhaar, DIN) — never commit
 *.xlsx
+
+# Generated knowledge graph from the graphify skill (42MB); rebuild with /graphify
+graphify-out/
+
+# Per-machine Claude Code permissions
+.claude/settings.local.json
+.playwright-mcp/
+
+# Client portal CSS is generated from css-src/ by scripts/cp-css.mjs
+# (npm run css:portal; runs automatically before dev and build)
+src/components/client-portal/css/

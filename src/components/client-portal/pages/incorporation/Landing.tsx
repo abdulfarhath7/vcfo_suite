@@ -557,7 +557,7 @@ export default function IncorporationLanding() {
     // measure in gantt mode
     c.classList.remove('simple');
     const W = gl.getBoundingClientRect().width;
-    let simpleNow = forceSimple || W < 500;
+    const simpleNow = forceSimple || W < 500;
     const ax = c.querySelector('.gax');
     const sp = (W * 7) / days(axis.ax0, axis.ax1);
     ax?.classList.toggle('e2', sp < 58 && sp >= 29);

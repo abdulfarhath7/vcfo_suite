@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DocNode } from '@/lib/client-portal/documents';
 import { dayMonth } from './file-types';
 import { BotBubble, PagePortal } from './shared-ui';
+import { LinkButton } from '@/components/client-portal/LinkButton';
 import { solidTagStyle, statusClass, STATUS_STYLE, tagText, tagTip, type StatusClass } from './model';
 
 const TABS: Array<{ label: string; cls?: StatusClass }> = [
@@ -81,6 +82,7 @@ export function DocsDrill({
       <div className="dd-root">
         <div
           className="dd-scrim"
+          role="presentation"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) close();
           }}
@@ -97,17 +99,15 @@ export function DocsDrill({
                 These documents are for {target.name} in {target.where}
               </span>
               {target.linkText ? (
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
+                <LinkButton
+                  onClick={() => {
                     close();
                     target.onLink();
                   }}
                   style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap' }}
                 >
                   {target.linkText}
-                </a>
+                </LinkButton>
               ) : null}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 56, padding: '0 12px 0 18px', borderBottom: '1px solid var(--border)', flex: 'none' }}>
@@ -157,17 +157,16 @@ export function DocsDrill({
                         {tagText(f)}
                       </span>
                     )}
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
+                    <LinkButton
+                      onClick={() => {
                         if (missing) onUpload(f);
                         else onPreview(f, previewable);
                       }}
-                      style={{ flex: 1, minWidth: 0, color: 'var(--fg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      style={{ flex: 1, minWidth: 0, color: 'var(--fg)', fontWeight: 600, overflow: 'hidden', whiteSpace: 'nowrap' }}
                     >
-                      {f.label}
-                    </a>
+                      {/* the ellipsis sits on an inner block: a button's own box does not reliably clip with one */}
+                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.label}</span>
+                    </LinkButton>
                     <span className="mono" style={{ fontSize: 11.5, color: 'var(--subtle)' }}>
                       {missing ? (f.due ? `Due ${dayMonth(f.due)}` : 'No due date') : dayMonth(f.date)}
                     </span>

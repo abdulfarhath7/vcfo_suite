@@ -17,6 +17,7 @@ import {
 import { createPortal } from 'react-dom';
 import { usePortal } from '../../PortalProvider';
 import { VisorHead } from '../../Visor';
+import { LinkButton } from '../../LinkButton';
 
 /* ------------------------------------------------------------------ */
 /* icons (paths copied from the boards)                                 */
@@ -277,16 +278,9 @@ export function BotBubble({
 export function AskWhy({ q }: { q: string }) {
   const { openChat } = usePortal();
   return (
-    <a
-      href="#"
-      style={{ fontSize: 12 }}
-      onClick={(e) => {
-        e.preventDefault();
-        openChat(q);
-      }}
-    >
+    <LinkButton style={{ fontSize: 12 }} onClick={() => openChat(q)}>
       Ask VCFO why
-    </a>
+    </LinkButton>
   );
 }
 
@@ -332,11 +326,9 @@ export function Info({
       </button>
       <span className="pop" role="tooltip" style={popStyle}>
         {children}
-        <a
-          className="ask"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
+        <LinkButton
+          className="ask w-full"
+          onClick={() => {
             setOpen(false);
             openChat(`Tell me about ${about}`);
           }}
@@ -345,7 +337,7 @@ export function Info({
             <VisorHead style={{ width: 16, height: 20, marginTop: 2 }} />
           </span>
           Ask VCFO about this
-        </a>
+        </LinkButton>
       </span>
     </span>
   );
@@ -428,6 +420,7 @@ export function Dialog({
     <TPortal tp={tp}>
       <div
         className={`ov tb-ov${top ? ' tb-top' : ''}${sheet ? ' tb-sheet' : ''}`}
+        role="presentation"
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}

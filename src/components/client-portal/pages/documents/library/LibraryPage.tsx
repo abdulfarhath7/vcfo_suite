@@ -16,6 +16,8 @@ import { usePortal, usePortalOptional } from '@/components/client-portal/PortalP
 import type { LibraryItemView } from '@/hooks/ask/ask-api';
 import LegacyClientLibrary from '@/views/client/ask/ClientLibrary';
 import { BotFace, PagePortal, useDelayedLoading } from '../shared-ui';
+import { LinkButton } from '@/components/client-portal/LinkButton';
+import { portalHref } from '@/components/client-portal/routes';
 import { catOf, fetchLibrary, fetchReads, LIBRARY_KEY, libraryExportHref, readerHref, readTip, READS_KEY, SHELF_CATS, type LibraryRead } from './library-model';
 import '../../../css/library-shelf.css';
 
@@ -37,16 +39,12 @@ function Bubble({ size, children, clear }: { size: number; children: React.React
             {clear.label}
           </button>
         ) : null}
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            openChat(typeof children === 'string' ? `Ask VCFO why: ${children}` : 'Why is my library like this?');
-          }}
+        <LinkButton
+          onClick={() => openChat(typeof children === 'string' ? `Ask VCFO why: ${children}` : 'Why is my library like this?')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}
         >
           Ask VCFO why
-        </a>
+        </LinkButton>
       </div>
     </div>
   );
@@ -190,20 +188,17 @@ function LibraryInner() {
                         <Link href={readerHref(r)} style={{ fontSize: 12.5, color: 'var(--fg)' }}>
                           {r.title}
                         </Link>
-                        <a
-                          className="pbar tip"
-                          href="#"
+                        {/* the extra utilities carry over what `.vlib-recent .mini a` gave this control as an anchor */}
+                        <LinkButton
+                          className="pbar tip w-full [overflow-wrap:anywhere] max-[767px]:!flex max-[767px]:items-center max-[767px]:!min-h-[40px]"
                           data-tip={tip}
                           aria-label={`${tip}. Open the reading list`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setDrill(r.progressPct >= 100 ? 2 : 1);
-                          }}
+                          onClick={() => setDrill(r.progressPct >= 100 ? 2 : 1)}
                         >
                           <span className="bar">
                             <span style={{ width: `${r.progressPct}%` }} />
                           </span>
-                        </a>
+                        </LinkButton>
                       </span>
                     </div>
                   );
@@ -300,12 +295,12 @@ export function RecentDrill({ reads, tab, onClose }: { reads: LibraryRead[]; tab
   return (
     <PagePortal page="library">
       <div className="ld-root">
-        <div className="ld-scrim" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+        <div className="ld-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && close()}>
           <div role="dialog" aria-modal="true" aria-label="Recently read" className="dlg" style={{ width: 600, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / .55)', overflow: 'hidden', fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
             <div className="dd-top" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)' }}>
               <span>These guides live in the Library</span>
               <a
-                href="#"
+                href={portalHref('knowledge-bank')}
                 onClick={(e) => {
                   e.preventDefault();
                   close();

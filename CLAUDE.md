@@ -1,142 +1,145 @@
-# CLAUDE.md — build instructions for Claude Code
+# CLAUDE.md — working instructions for Claude Code
 
-This repo is a **scaffold**. It was re-platformed from SBC-Track (Supabase) to
-the AWS-target stack (Postgres + Drizzle + Auth.js + S3), but it is **not yet
-verified to build** — the environment that scaffolded it had no network and
-could not run `npm install`, `tsc`, or the tests. Your job is to make it real
-and green, phase by phase, verifying each step.
+## What this is
 
-## Read this first
+VCFO Suite is a compliance cockpit for an Indian professional-services firm (SBC). It runs
+company incorporation end to end (client questionnaire, the 34-step SPICe+ checklist,
+generated MCA documents, board resolutions) and then the recurring compliance calendar.
+Five roles share one app: `super_admin`, `admin`, `manager`, `intern` (project lead) and
+`client`. Clients get their own portal shell; staff share the "noir" shell.
 
-`docs/context/` is the live working memory for this build — read it at the start of
-every session, and update it as you go:
+It is **not** a scaffold any more. Everything in `docs/context/STATE.md` marked done is built,
+typechecked and deployed to AWS App Runner (`app.sbctrack.in`). Read `docs/context/STATE.md`
+and `docs/STATUS.md` at the start of every session, and update `STATE.md` when you finish work.
 
-- `docs/context/STATE.md` — what is actually verified green right now, and what is
-  intentionally deferred
-- `docs/context/notes/` — gotchas already paid for once, one file per area
-  (`aws`, `checklist-workflow`, `compliance`, `data-access`, `design-system`,
-  `email`, `incorporation-docs`, `lead-ui`, `notifications`, `shell-ui`, `tooling`)
-- `docs/context/AWS-DEPLOY.md` — the AWS deploy checklist
-- `docs/specs/` — specs for features still in progress (`ask-vcfo`,
-  `assist-profile`, `doc-gaps`). Specs of finished features were removed on
-  2026-09-30; they are in git history.
+## Stack
 
-## Ground truth about this codebase
+Next.js 16 (App Router) · React 19 · TypeScript (non-strict) · Postgres via Drizzle ·
+Auth.js v5 · S3 (MinIO locally) · Inngest jobs · Resend or SES email · AWS End User Messaging
+for WhatsApp · Tailwind 3 with shadcn-style components · Vitest + Testing Library · Playwright.
+Terraform in `infra/` deploys App Runner + RDS + S3 + Secrets Manager + SES.
 
-- **~80% of the code is LIFTed unchanged** from the original: the 34-step
-  checklist (`src/data/checklist.ts`), all per-step validation modules and
-  their tests (`src/domain/checklist-*`), docx generation
-  (`src/domain/board-resolution-*`, `src/domain/incorporation-docs/`),
-  compliance math (`src/domain/compliance/`), UI components, and views.
-- **The new layer** is: `src/db/` (Drizzle + repositories = the seam),
-  `src/auth/` (Auth.js + guards), `src/storage/` (S3/MinIO), `src/jobs/`
-  (Inngest). These are written but untested.
-- **Access control = Path A**: enforced in the repository layer, NOT Postgres
-  RLS. The old RLS policies are the SPEC — see `src/db/repositories/README.md`
-  and `docs/context/notes/data-access.md`.
-- The original API routes are stashed in `app/api/_reference-supabase/` for
-  reference. Port them into real routes, then delete that folder.
-
-## Golden rules
-
-1. **The seam is sacred.** Only `src/db/repositories/*` may import `db`. Views,
-   domain logic, and routes call repositories. If you're tempted to import
-   `db` or `s3` in a component, stop — add a repository function instead.
-2. **Every repository takes an `AuthContext` and scopes by role.** Reproduce
-   the RLS table in `src/db/repositories/README.md`. Add a cross-tenant test
-   for each.
-3. **Don't touch the LIFTed domain code** unless a test fails. It's ported and
-   was already tested in the original.
-4. **Dev/prod parity.** Local uses Docker Postgres + MinIO; AWS uses RDS + S3.
-   Never hardcode endpoints — everything flows through env vars.
-5. **Verify each phase** with `npm run typecheck && npm run test` before moving
-   on. Don't stack unverified work.
-
-## Setup (do this first)
+## How to run
 
 ```bash
-cp .env.example .env.local          # then set AUTH_SECRET (openssl rand -base64 32)
+cp .env.example .env.local      # set AUTH_SECRET with: openssl rand -base64 32
 npm install
-npm run infra:up                    # start Postgres + MinIO in Docker
-npm run db:generate                 # generate Drizzle migration from schema.ts
-npm run db:migrate                  # apply to local Postgres
-npm run db:seed                     # create demo manager/intern/client + engagement
-npm run dev                         # http://localhost:3000
+npm run infra:up                # Docker Postgres (user vcfo) + MinIO; idempotent
+npm run db:migrate              # apply src/db/migrations (db:generate after schema edits)
+npm run db:seed                 # @vcfo.local logins; npm run db:seed-demo adds demo firms
+npm run dev                     # http://localhost:3000 (dev:lan binds 0.0.0.0 for phones)
+npm run check                   # the gate: typecheck, lint, test (fails fast)
+npm run e2e                     # Playwright, starts its own dev server
 ```
 
-If `npm install` surfaces version conflicts, resolve them minimally — prefer
-the versions in `package.json`; only bump when a peer-dep genuinely requires it.
+Demo logins are listed in `README.md` and `docs/context/STATE.md`. Gotchas for Docker, LAN
+access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 
-## Phased plan (do in order; verify each)
+## Folder map
 
-### Phase 0 — Make it compile & log in
-- `npm install`, resolve any type errors from the new `src/db`, `src/auth`,
-  `src/storage` files.
-- Fix import paths: LIFTed files that imported `@/lib/...` may now live under
-  `@/domain/...`. Update imports (or add `@/lib` path aliases) until `npm run
-  typecheck` passes.
-- Wire the login page (`app/login`) to Auth.js `signIn`.
-- **Exit:** you can log in as the seeded manager and land on the dashboard;
-  `npm run typecheck` passes.
+- `app/` — Next.js routes only. `app/app/{super,admin,manager,intern,client}` are thin shells
+  that render a view; `app/api/*` are the ~35 route handlers; `app/globals.css` holds tokens.
+- `src/views/` — the real page components, one folder per area and role.
+- `src/components/` — shared UI. `shell/` (staff sidebar, top bar), `dash/` (DashHero,
+  DashSection), `ui/` (shadcn primitives), `client-portal/` (the client shell and pages),
+  `intern/`, `charts/`, `incorporation/`, `compliances/`, `ask/`.
+- `src/lib/` — domain logic: checklist validation (`checklist-*`), docx generation
+  (`board-resolution-*`, `incorporation-docs/`), `compliance/`, `doc-pack/`, `ask/`, `email/`,
+  `notify/`. Tests sit next to the code as `*.test.ts`.
+- `src/data/` — pure data: `checklist.ts` (the 34 steps), obligations, NIC codes, Ask topics.
+- `src/db/` — the seam: Drizzle client, `schema*.ts`, `migrations/`, `repositories/`.
+- `src/auth/` — Auth.js config and role guards. `src/storage/` — S3 helpers.
+  `src/jobs/` — Inngest functions. `src/context/`, `src/hooks/` — client state.
+- `scripts/` — seeds, docx template builders, `cp-css.mjs`, `design-tokens-*.mjs`.
+- `docs/` — `context/` (live memory), `specs/` (feature specs and the client portal
+  prototype), `design/` (the design system), `STATUS.md` (branch status and refactor list).
+- `e2e/`, `tests/ask/` — Playwright specs and Ask VCFO evals. `infra/` — Terraform.
+  `public/templates/` — .docx templates. `certs/` — public RDS CA bundle (not a secret).
 
-### Phase 1 — Port the data surface behind the seam
-- Reconcile `src/db/schema.ts` against the real SQL in
-  `../SBC-Track-main/supabase/migrations/` (especially `compliance_*` and
-  board-resolution columns — marked TODO in schema.ts).
-- Implement the remaining repositories (documents, knowledge-bank, compliance,
-  board-resolution) following `engagements.ts`. Rewrite the Supabase-coupled
-  files stashed in `src/db/repositories/_rewrite-from-supabase/`.
-- Port the ~18 API routes from `app/api/_reference-supabase/` using
-  `app/api/engagements/route.ts` as the template. Delete the reference folder
-  when done.
-- Move file storage calls to `src/storage/s3.ts`.
-- **Exit:** manager + client run a full engagement end-to-end against local
-  Postgres + MinIO; tests green.
+## Golden rules (unchanged from the original build)
 
-### Phase 2 — Finish the localStorage last mile
-- The original kept tasks/requests/invites/activity/notifications in
-  localStorage. Tables already exist in `schema.ts`. Build their repositories
-  and replace the `read()/debouncedPersist()` calls in the ported
-  `use-app-provider-value` with TanStack Query hooks that call the API.
-- **Exit:** clear browser storage, lose nothing; work resumes on any machine.
+1. **The seam is sacred.** Only `src/db/repositories/*` may import `db`. Views, domain logic
+   and routes call repositories. Never import `db` or `s3` in a component.
+2. **Every repository takes an `AuthContext` and scopes by role.** The rules are in
+   `src/db/repositories/README.md` and `docs/context/notes/data-access.md`; access control
+   lives there, not in Postgres RLS.
+3. **Do not rewrite the ported domain code** (`src/lib/checklist-*`, the docx generators,
+   `src/lib/compliance/`, `src/data/checklist.ts`) unless a test fails or a spec asks for it.
+4. **Dev/prod parity.** Local uses Docker Postgres + MinIO; AWS uses RDS + S3. Everything
+   flows through env vars; never hardcode an endpoint.
+5. **Verify each phase** with `npm run typecheck && npm run test` before moving on.
+6. **Outbound messaging is additive.** Email (`EMAIL_PROVIDER=resend|ses`,
+   `src/lib/email/send-email.ts`) is the system of record. WhatsApp
+   (`src/lib/notify/send-whatsapp.ts`) is an outbound-only nudge; a WhatsApp failure must never
+   slow or block the email path. Setup and templates: `docs/context/notes/aws.md`.
+7. Do not reintroduce Supabase. Do not add Kubernetes, microservices or Lambda-everything.
+   Do not put secrets in the client bundle or commit `.env.local`. Do not bypass the seam
+   "for just one query".
+8. Write docs and comments in plain full sentences. Do not commit unless the owner asks.
 
-### Phase 3 — Jobs & email
-- Implement `src/jobs/compliance-generate.ts` using the LIFTed pure logic in
-  `src/domain/compliance/`. Retire any remaining `compliance-store` localStorage.
-- Consolidate email onto ONE DB-backed system (drop the hard-coded templates).
-  Keep Resend as the sender; locally, log to console when `RESEND_API_KEY` is
-  empty.
-- **Exit:** compliance digest fires via Inngest dev server; one email path.
+## Conventions
 
-### Phase 4 — Pilot hardening (local)
-- `npm run start:lan` to bind on 0.0.0.0 for office-WiFi access.
-- Make sure all 44 LIFTed tests plus new repository tests pass.
-- **Exit:** 10 people on the office WiFi can use it end-to-end.
+- **Design tokens.** `docs/design/design-tokens.json` is the source of truth.
+  `node scripts/design-tokens-css.mjs --write` regenerates the block between the
+  `@design-tokens` markers in `app/globals.css`; `node scripts/design-tokens-check.mjs` is the
+  contrast gate. Token names are semantic (`surface`, `line`, `ink`, `brand`, `highlight`,
+  `positive`/`warning`/`danger`/`info`, `side*`, `data-1..6`). Old names (`--primary`,
+  `--gold`, `--accent-*`, `--phase-*`, `--role-*`) are aliases until 2026-11-30. Rules and the
+  canonical-component table: `docs/context/notes/design-system.md`, `docs/design/COMPONENTS.md`.
+- **Client portal CSS.** Edit `src/components/client-portal/css-src/*.css`, then run
+  `node scripts/cp-css.mjs` to regenerate `css/` (scoped under `.cp`). Never edit `css/`.
+  `portal-css.ts` lists the cascade order.
+- **Component homes.** One greeting card (`DashHero`), one section card (`DashSection`), one
+  chip style (`IconChip`), one button set (`ui/button-variants.ts`). Never fork a primitive.
+- **Fonts and imports.** Public Sans for UI, IBM Plex Mono for identifiers (`app/layout.tsx`).
+  `@/` maps to `src/`; `scripts/` and `e2e/` sit outside the `tsconfig` include list.
 
-### Stage 2 (later) — AWS
-- See `infra/README.md` and `docs/context/AWS-DEPLOY.md`. It's a deployment +
-  env-var change, not a rewrite, because of the seam.
+## Where the context lives
 
-## Outbound messaging (already built)
+- `docs/context/STATE.md` — what is verified and deployed, what is deferred.
+- `docs/context/HOW-TO-BUILD.md` — recipes (page, route, repository, migration, job, UI) and a "Where is X?" table.
+- `docs/context/notes/*.md` — gotchas per area (aws, checklist-workflow, compliance,
+  data-access, design-system, email, incorporation-docs, lead-ui, notifications, shell-ui,
+  tooling). Append when something costs more than a minute.
+- `docs/context/AWS-DEPLOY.md` and `infra/README.md` — the deploy runbook.
+- `docs/specs/` — specs still in progress; finished specs are in git history. `QUESTIONS.md`
+  at the root lists the client portal v7 decisions the owner may still want to change.
 
-Email runs behind a provider switch; WhatsApp has one transport. Both are
-additive — never make one depend on the other:
+## Current branch: `design/design-system`
 
-- **Email:** `EMAIL_PROVIDER=resend|ses`, dispatcher `src/lib/email/send-email.ts`.
-- **WhatsApp:** AWS End User Messaging (Social) only, dispatcher
-  `src/lib/notify/send-whatsapp.ts` → `send-whatsapp-eum.ts`. Chosen so the
-  Meta message fee lands on the same AWS invoice as SES/RDS/S3. WhatsApp is
-  an outbound-only *nudge* channel — email stays the system of record, and a
-  WhatsApp skip or failure must never touch, slow or downgrade the email path.
+The branch applies the design system from `docs/design/` (brief in `BRIEF.md`, spec in
+`TOKENS.md`, audit in `AUDIT.md`). About 90 files are modified and uncommitted; they are the
+owner's in-progress work and must not be reverted or reformatted by a cleanup:
 
-Setup, the six templates, the out-of-band AWS/Meta checklist and the gotchas
-are in `docs/context/notes/aws.md`.
+- `app/globals.css`, `tailwind.config.ts`, `app/layout.tsx` — new token block, colour map
+  and fonts (Public Sans, IBM Plex Mono), with old names kept as aliases.
+- `src/components/client-portal/css-src/*` and the generated `css/*` — the portal's variables
+  now point at the shared tokens.
+- `src/components/{shell,intern,dash,common,auth,compliances,admin}/*`, `src/lib/shell-appearance.ts`,
+  `src/views/intern/Today.tsx`, `src/views/settings/AppearanceSettings.tsx` — migrated slices.
+- `scripts/seed-demo.ts` plus untracked `scripts/seed-demo-extras.ts` — demo data for every
+  portal surface (`seed-demo.ts` imports the extras file, so both ship together).
+- Untracked and intended for commit: `docs/design/`, `scripts/design-tokens-*.mjs`.
 
-## Things NOT to do
-- Don't reintroduce Supabase.
-- Don't add Kubernetes/microservices/Lambda-everything. App Runner + RDS + S3.
-- Don't put secrets in the client bundle or commit `.env.local`.
-- Don't bypass the repository seam for "just this one query."
+`BRIEF.md` constraints still hold: no new colour families, no changes to `src/data/checklist.ts`
+or repository code, no deleted routes, no logo changes, `cp-css.mjs` only for the token merge.
+
+## Next steps / known issues
+
+- Finish the migration slices in `docs/design/COMPONENTS.md` ("Still to move" column):
+  client portal home, Ask VCFO panel, admin and super dashboards (`AccentKpi` to `StatCard`),
+  then `src/lib/email/email-layout.ts` last with its own literal palette.
+- `npm run lint` fails with 74 errors (all `jsx-a11y` in `src/components/client-portal/pages/*`,
+  from the untested v7 portal build) and 262 warnings; typecheck is clean. Fix the portal
+  a11y errors in one pass before adding more portal code.
+- `CREDENTIALS_ENCRYPTION_KEY` is not set on App Runner yet, so portal credential features
+  throw in production until it is added.
+- Role checks in repositories must use the helpers in `src/lib/auth.ts` (`isFirmWideAdmin`,
+  `isAdminOrManager`); hand-written `role === 'admin'` checks dropped `super_admin` in seven
+  places until 2026-10-22. Portal repositories (`client-*`, `knowledge-bank`, `profiles`) still
+  lack cross-tenant tests.
+- Seeded demo passwords still exist on RDS; change or purge them before real users.
+- `docs/STATUS.md` holds the prioritised list of deeper refactors not yet done.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

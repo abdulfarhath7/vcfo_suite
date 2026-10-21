@@ -8,7 +8,7 @@
 import { Fragment, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { usePortal } from './PortalProvider';
-import { crumbsFor, activeKeyFor } from './routes';
+import { crumbsFor, activeKeyFor, portalHref } from './routes';
 import { BeforeAfterPill, useBreakpoint } from './Sidebar';
 
 const TRAIL_ICONS = {
@@ -73,7 +73,7 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
           <img className="vp-mlogo" src="/client-portal/vcfo-mark.webp" alt="VCFO Suite" />
         </span>
         <a
-          href="#"
+          href={portalHref('home')}
           aria-label="SBC home"
           className="tbar-logo"
           data-tip-below=""

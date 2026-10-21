@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { documents, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -152,11 +152,16 @@ export async function listDocuments(
     return mapJoinedRows(ctx, rows);
   }
 
+  // Files on a soft-deleted project stay hidden, as everywhere else that
+  // reads through `scopeFor()` or `assertEngagementAccess()`.
+  const notDeleted = isNull(engagements.deletedAt);
+
   if (isFirmWideAdmin(ctx.role)) {
     const rows = await db
       .select(joinedSelect)
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
+      .where(notDeleted)
       .orderBy(desc(documents.createdAt));
     return mapJoinedRows(ctx, rows);
   }
@@ -170,7 +175,7 @@ export async function listDocuments(
       .select(joinedSelect)
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
-      .where(roleScope)
+      .where(and(notDeleted, roleScope))
       .orderBy(desc(documents.createdAt));
     return mapJoinedRows(ctx, rows);
   }
@@ -186,7 +191,7 @@ export async function listDocuments(
       .select(joinedSelect)
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
-      .where(scope)
+      .where(and(notDeleted, scope))
       .orderBy(desc(documents.createdAt));
     return mapJoinedRows(ctx, rows);
   }
@@ -195,7 +200,7 @@ export async function listDocuments(
     .select(joinedSelect)
     .from(documents)
     .innerJoin(engagements, eq(engagements.id, documents.engagementId))
-    .where(and(eq(documents.sharedWithClient, true), clientEngagementScope(ctx)))
+    .where(and(notDeleted, eq(documents.sharedWithClient, true), clientEngagementScope(ctx)))
     .orderBy(desc(documents.createdAt));
   return mapJoinedRows(ctx, rows);
 }

@@ -359,7 +359,7 @@ export function TimelineEditor({
 
   const rows = ph.map((p, i) => ({ p, b0: base[i]! }));
   return (
-    <div id="tle-scrim" className={on ? 'on' : undefined} onMouseDown={(e) => e.target === e.currentTarget && close()}>
+    <div id="tle-scrim" className={on ? 'on' : undefined} role="presentation" onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <div id="tle" role="dialog" aria-modal="true" aria-labelledby="tle-t">
         <div className="h">
           <h2 id="tle-t">Request a timeline change</h2>

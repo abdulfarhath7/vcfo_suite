@@ -12,6 +12,37 @@ logic, and API routes call these functions; they never import `db` directly.
 
 `engagements.ts` is the reference implementation. Copy its shape.
 
+## How to add a repository method
+
+1. **Signature.** Make `ctx: AuthContext` (from `@/auth/guards`) the first argument. Only
+   `system*` helpers called by Inngest jobs may skip it, and they must say so in a comment.
+2. **Role checks.** Never compare `ctx.role === 'admin'` on its own. Use the shared helpers in
+   `src/lib/auth.ts`: `isFirmWideAdmin(role)` for "super admin or admin" (firm-wide reads) and
+   `isAdminOrManager(role)` for "super admin, admin or manager" (staff writes and unscoped
+   rows). A role list written out by hand forgets `super_admin` sooner or later; five
+   repositories did until 2026-10-22.
+3. **Row scope.** Reuse the engagement scope instead of rebuilding it:
+   - a list: `if (isFirmWideAdmin(ctx.role)) return all;` otherwise filter on
+     `listScopedEngagementIds(ctx)` and return `[]` without a query when it is empty
+     (`invites.ts`, `document-requests.ts`, `activity.ts`);
+   - one row or a write: load the row, then `assertEngagementAccess(ctx, row.engagementId)`
+     and return `null` (or throw) when it is not `ok`; write against `access.dbId`, never the
+     id the caller sent (`tasks.ts`, `documents.ts`);
+   - joins on `engagements`: add `isNull(engagements.deletedAt)` so soft-deleted projects
+     stay hidden, as `scopeFor()` does.
+4. **Refuse early.** If a role has no access at all (for example clients on a staff-only
+   table), throw or return before the first `db` call.
+5. **Cross-tenant test.** Add or extend `<file>.test.ts`. Mock `@/db/client` with the chain
+   stub from `document-requests.test.ts`, render the captured `WHERE` with `PgDialect`, and
+   assert for every role that another firm's engagement id never appears in the parameters,
+   that a foreign row reads as `null` / `[]`, and that a foreign write makes no `insert`,
+   `update` or `delete` call. Include `super_admin` in the firm-wide cases.
+6. **Docs.** Add or update the table row below, then run
+   `npx vitest run src/db/repositories/<file>.test.ts` and `npm run typecheck`.
+
+A longer walk-through that also covers routes and migrations is in
+`docs/context/HOW-TO-BUILD.md`.
+
 ## Access-control rules ported from RLS (Path A)
 
 Verified against the original SQL during Phase 1. Two rows in the first draft
@@ -47,7 +78,7 @@ Corrections from the first draft:
 `documents`, `tasks`, `document_requests`, `invites`, `activity`,
 `notifications`, `outlook_connections`, and `announcements` have no original SQL (they are new, replacing localStorage),
 so their rules are a product decision rather than a port. Default to:
-admin all, manager via owned engagements, intern via assigned engagement,
+super_admin and admin all, manager via owned engagements, intern via assigned engagement,
 client via own engagement. Personal todos (LeadFocusCard) reuse `tasks` with
 `engagement_id` null, `assigned_to` = owner, and `step_id` prefix `todo:`
 (`/api/todos`). Intern: own rows only. Manager: self + leads/co-managers on

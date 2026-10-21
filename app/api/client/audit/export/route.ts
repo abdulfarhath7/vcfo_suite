@@ -34,7 +34,7 @@ export async function GET(request: Request) {
           .join(','),
       ),
     ];
-    return new NextResponse(`﻿${lines.join('\n')}\n`, {
+    return new NextResponse(`\uFEFF${lines.join('\n')}\n`, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="audit-log-${new Date().toISOString().slice(0, 10)}.csv"`,
