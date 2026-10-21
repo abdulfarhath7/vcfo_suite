@@ -65,7 +65,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
 
 - **Soft delete only.** `DELETE /api/engagements/:id` sets `engagements.deleted_at`;
   nothing is destroyed. Every repository scope already filters on it
-  (`scopeFor()` in `engagements.ts`), so one write hides the project from staff
+  (`scopeFor()` in `engagements/scope.ts`), so one write hides the project from staff
   lists, the client portal, and direct GETs at once. `POST /api/engagements/:id/restore`
   clears it. `GET /api/admin/projects/deleted` is the recycle bin
   (`/app/admin/projects/recycle-bin`). All three are firm-admin only.

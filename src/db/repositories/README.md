@@ -10,7 +10,7 @@ logic, and API routes call these functions; they never import `db` directly.
    Postgres RLS policy for that table (see `docs/context/notes/data-access.md` for the rules as built).
 3. Add a test asserting cross-tenant access returns nothing.
 
-`engagements.ts` is the reference implementation. Copy its shape.
+`engagements/` is the reference implementation (`scope.ts` holds `scopeFor()`, `index.ts` re-exports the public API). Copy its shape; a small repository stays one file.
 
 ## How to add a repository method
 

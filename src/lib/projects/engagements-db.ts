@@ -28,7 +28,7 @@ import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
  *  2. The Postgres RPCs (submit/review/unlock checklist item, the board
  *     resolution state machine) were SECURITY DEFINER functions used to dodge
  *     RLS zero-row updates. Their logic now lives server-side in
- *     src/db/repositories/engagements.ts, behind the routes called here.
+ *     src/db/repositories/engagements/, behind the routes called here.
  *
  *  3. The `selectEngagementsWithFallback` / `preferLegacyEngagementSelect`
  *     machinery is GONE. It existed because a remote Supabase project might be

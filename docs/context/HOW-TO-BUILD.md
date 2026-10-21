@@ -87,7 +87,7 @@ in `src/components/client-portal/`; check that your change adds no new ones.
    argument. This folder is the only place that may import `db` from `@/db/client`.
 2. Branch on `ctx.role` and filter by the scoping keys (`ctx.userId`, `ctx.internId`,
    `ctx.clientId`). Refuse before querying when a role has no access (pattern: `createTask` in
-   `tasks.ts` throws for clients). `engagements.ts` is the reference shape.
+   `tasks.ts` throws for clients). `engagements/` is the reference shape.
 3. Add or update the row for the table in the access table in `src/db/repositories/README.md`.
 4. Test in `<table>.test.ts`: mock `@/db/client` with the chain stub used in
    `announcements.test.ts`, build a `ctx(role)` per role, and assert another firm's rows return
