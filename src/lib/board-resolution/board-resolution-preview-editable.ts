@@ -1,12 +1,12 @@
 import {
   BOARD_RESOLUTION_MERGE_FIELD_KEYS,
   type BoardResolutionMergeFields,
-} from '@/lib/board-resolution';
+} from '@/lib/board-resolution/board-resolution';
 import type {
   BoardResolutionParagraphAlignment,
   BoardResolutionParagraphPatch,
-} from '@/lib/board-resolution-docx-body';
-import { serializeBoardResolutionPatchContent } from '@/lib/board-resolution-docx-body';
+} from '@/lib/board-resolution/board-resolution-docx-body';
+import { serializeBoardResolutionPatchContent } from '@/lib/board-resolution/board-resolution-docx-body';
 
 /** Preview-only class — never written to stored .docx. */
 export const BR_MERGE_FIELD_HIGHLIGHT_CLASS = 'br-merge-field-highlight';

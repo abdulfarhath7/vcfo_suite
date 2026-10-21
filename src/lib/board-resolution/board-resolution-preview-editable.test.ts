@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { afterEach, describe, expect, it } from 'vitest';
-import type { BoardResolutionMergeFields } from '@/lib/board-resolution';
+import type { BoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 import {
   applyMergeFieldHighlights,
   BR_MERGE_FIELD_HIGHLIGHT_CLASS,
@@ -12,7 +12,7 @@ import {
   setPreviewParagraphAlignment,
   togglePreviewBold,
   unwrapMergeFieldHighlights,
-} from '@/lib/board-resolution-preview-editable';
+} from '@/lib/board-resolution/board-resolution-preview-editable';
 
 const sampleFields: BoardResolutionMergeFields = {
   PARENT_ENTITY_NAME: 'ABC Holdings LLC',

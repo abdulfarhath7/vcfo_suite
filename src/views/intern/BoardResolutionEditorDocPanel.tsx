@@ -37,7 +37,7 @@ import { Button } from '@/components/ui/button';
 
 
 
-import { type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution';
+import { type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 
 
 
@@ -57,7 +57,7 @@ import {
   type BoardResolutionApiErrorBody,
   type BoardResolutionErrorDisplay,
 } from '@/lib/api/board-resolution-errors';
-import type { BoardResolutionPreviewError } from '@/lib/board-resolution-preview-errors';
+import type { BoardResolutionPreviewError } from '@/lib/board-resolution/board-resolution-preview-errors';
 import type { Engagement } from '@/data/engagements';
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';

@@ -53,7 +53,7 @@ These facts replace the older text in the Claude Project file `CLAUDE-CONTEXT.md
 | Topic | Fact | Where |
 |---|---|---|
 | Active pre-incorporation steps | Part A: `pre-1` to `pre-5`. Part B: `pre-13`, `pre-14`, `pre-15`, `pre-16`, `pre-7`, `pre-9`, `pre-10`, `pre-11`, `pre-12`. `pre-6` and `pre-8` are legacy and are in no phase. | `src/data/checklist.ts` `PRE_INC_PHASES` |
-| NIC code | `nicCode` (5 digits, required) and `nicBusinessType` (derived) are in `pre-1`, section "Business Description". This is the "Name Application" phase. | `src/lib/checklist/checklist-responses.ts`, `src/lib/checklist/checklist-pre1-validation.ts`, `src/lib/nic-2008.ts` |
+| NIC code | `nicCode` (5 digits, required) and `nicBusinessType` (derived) are in `pre-1`, section "Business Description". This is the "Name Application" phase. | `src/lib/checklist/checklist-responses.ts`, `src/lib/checklist/checklist-pre1-validation.ts`, `src/lib/incorporation/nic-2008.ts` |
 | Client edit | The client cannot edit a step today. `isMilestoneFormReadOnly` returns true for `variant === 'client'`. | `src/lib/checklist/checklist-field-access.ts` |
 | Client fields | `filterFieldsByViewer` removes each `filledBy: 'intern'` field from the client form. | `src/lib/checklist/checklist-field-access.ts` |
 | Server | `POST /api/engagements/:id/checklist` accepts client `responses`. `POST …/checklist/submit` accepts only the client role. No server route does step validation. | `app/api/engagements/[id]/checklist/**` |
@@ -63,7 +63,7 @@ These facts replace the older text in the Claude Project file `CLAUDE-CONTEXT.md
 | Accept side effects | Manager Accept sets `status: 'completed'`, `deliveredToClientAt`, copies `dateOfIncorporation` from `pre-12` to the engagement, and starts the WhatsApp `coi_issued` message for `pre-12`. | `reviewChecklistItem`, `src/lib/email/notify-engagement-event.ts` |
 | BR | One row for each engagement in `engagement_board_resolutions`, status `draft` or `finalized`. The lead can finalize with no manager. Finalize releases the BR to the client. | `src/db/repositories/board-resolution.ts`, `app/api/engagements/[id]/board-resolution/finalize/route.ts` |
 | BR generation checks | Generation stops when `pre-1` is not submitted (`STEP1_INCOMPLETE`) or when a field is missing (`MISSING_FIELDS`). NIC code is not in the missing-field list. | `src/lib/api/board-resolution-errors.ts` |
-| BR and empty NIC | When `nicCode` is empty, the BR prints `DEFAULT_NIC_CODES` (62099 and 62020). This is a silent wrong value. | `src/lib/board-resolution.ts` `resolveNicCodesClause` |
+| BR and empty NIC | When `nicCode` is empty, the BR prints `DEFAULT_NIC_CODES` (62099 and 62020). This is a silent wrong value. | `src/lib/board-resolution/board-resolution.ts` `resolveNicCodesClause` |
 | BR for manager | A manager cannot open the BR editor. The `pre-2` panel shows status text only. | `src/components/incorporation/Phase1StepPanelRoutePanels.tsx` |
 | Form errors | Red border classes exist (`border-danger`). They show only after a failed lead Submit. Tabs have no error marker. `FormErrorSummary` is off in the tab layout (`SHOW_INTERN_FORM_ERROR_SUMMARY = false`). There is no `aria-invalid`. "Request manager approval" does no validation. | `src/views/incorporation/*` |
 | Validators | `runStepValidation` is an if-chain in `src/views/incorporation/milestone-response-form-utils.ts`. A copy is in `useMilestoneResponseFormState.tsx`. Steps with no validator return `ok: true`. | same |
@@ -71,7 +71,7 @@ These facts replace the older text in the Claude Project file `CLAUDE-CONTEXT.md
 | Notifications | Bell rows are made on the server in `notifyEngagementEvent`. The `notifications` table has no actor column. The payload is JSON in `description`. | `src/lib/email/notify-engagement-event.ts`, `src/db/repositories/notifications.ts` |
 | Recipients | `resolveEngagementRecipients` returns all clients, leads, managers, firm admins and progress-CC addresses. | `src/db/repositories/engagement-recipients.ts` |
 | Client dashboard | Home is `/app/client/overview`. It shows no directors, capital or subscribers. | `src/views/client/Overview.tsx`, `src/lib/client-overview.ts`, `src/db/repositories/client-overview.ts` |
-| Data for the dashboard | Capital: `pre-1` `authorisedShareCapital`, `paidUpShareCapital`, `nominalValuePerEquityShare`. Share classes: `pre-13`. Directors: `readProposedDirectors(state)` in `src/lib/proposed-directors.ts`. Subscribers: `pre-16` repeat group `subscribers`. | `src/lib/checklist/checklist-responses.ts` |
+| Data for the dashboard | Capital: `pre-1` `authorisedShareCapital`, `paidUpShareCapital`, `nominalValuePerEquityShare`. Share classes: `pre-13`. Directors: `readProposedDirectors(state)` in `src/lib/incorporation/proposed-directors.ts`. Subscribers: `pre-16` repeat group `subscribers`. | `src/lib/checklist/checklist-responses.ts` |
 
 ---
 
@@ -79,7 +79,7 @@ These facts replace the older text in the Claude Project file `CLAUDE-CONTEXT.md
 
 ### 3.1 One policy module
 
-Make `src/lib/pre-inc-direct-flow.ts` (pure, no imports from `src/db` or `src/views`). All other files read the policy from this module. Do not write a step id list in a second file.
+Make `src/lib/incorporation/pre-inc-direct-flow.ts` (pure, no imports from `src/db` or `src/views`). All other files read the policy from this module. Do not write a step id list in a second file.
 
 ```ts
 /** Steps that the client and the project lead fill and submit with no approval. */
@@ -234,7 +234,7 @@ Also change the `STEP1_INCOMPLETE` text to: "Submit Client Details first. The bo
 | Do not use the id `nicCodes` | `pre1.nicCodes` is an old free-text key that `resolveNicCodesClause` reads. |
 | Auto-fill | In `setField`, when the id is `additionalNicCodes.<entry>.code`, fill `additionalNicCodes.<entry>.businessType` from `nicBusinessType()`. Give the input `inputMode="numeric"`, `maxLength={5}`. |
 | Validation | Each code: 5 digits (error). Code not in NIC-2008 (warning). A code equal to the main code or to a second entry (error "This NIC code is already in the list."). |
-| Reader | Add `readNicCodes(pre1): Array<{ code: string; description: string }>` to `src/lib/nic-2008.ts`. Main code first. |
+| Reader | Add `readNicCodes(pre1): Array<{ code: string; description: string }>` to `src/lib/incorporation/nic-2008.ts`. Main code first. |
 | BR | `resolveNicCodesClause` joins all codes: `62011- Description, & 62020- Description` (same format as `DEFAULT_NIC_CODES`). |
 | Assist profile | `src/lib/assist-profile/build.ts` and `types.ts`: keep `company.nicCode`. Add `company.additionalNicCodes`. Update the parity test. |
 | Other documents | Search `src/lib/incorporation-docs/` and `src/lib/doc-pack/` for a NIC or main-object placeholder. If one exists, use `readNicCodes`. |
@@ -354,7 +354,7 @@ Commit: `docs(pre-inc): audit for direct flow`
 
 ### Phase 1 — Policy module and shared validation
 
-1. Add `src/lib/pre-inc-direct-flow.ts` with tests (`pre-inc-direct-flow.test.ts`).
+1. Add `src/lib/incorporation/pre-inc-direct-flow.ts` with tests (`pre-inc-direct-flow.test.ts`).
 2. Add `src/lib/checklist/checklist-step-validation.ts`. Move `runStepValidation`. Add the generic required check. Remove the copy in the hook.
 3. Add the new slice keys (rule 0.7).
 
@@ -468,6 +468,6 @@ Commit: `docs(pre-inc): record direct flow and close the spec`
 - Do not send an email or a bell row on autosave.
 - Do not remove the client sequence lock on the server.
 - Do not change approvals outside the pre-incorporation steps in section 3.1.
-- Do not write a step id list outside `src/lib/pre-inc-direct-flow.ts`.
+- Do not write a step id list outside `src/lib/incorporation/pre-inc-direct-flow.ts`.
 - Do not import `db` in a view, a component or a `src/lib` file.
 - Do not delete `pre-6`, `pre-8` or `reg-2` from the catalog.

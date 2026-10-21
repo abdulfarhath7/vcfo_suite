@@ -12,7 +12,7 @@ import {
   togglePreviewBold,
   type PreviewFormatSelectionState,
   type PreviewTextAlignment,
-} from '@/lib/board-resolution-preview-editable';
+} from '@/lib/board-resolution/board-resolution-preview-editable';
 import {
   buildIncorpDocPreviewError,
   type IncorpDocPreviewError,

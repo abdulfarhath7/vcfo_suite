@@ -4,7 +4,7 @@ import {
   PRE1_DEFAULT_NOMINAL_VALUE_PER_EQUITY_SHARE,
   PRE1_DEFAULT_PAID_UP_SHARE_CAPITAL,
 } from '@/lib/checklist/checklist-pre1-validation';
-import { formatIndianFigures, formatInrCapitalClause } from '@/lib/board-resolution';
+import { formatIndianFigures, formatInrCapitalClause } from '@/lib/board-resolution/board-resolution';
 import {
   REGISTERED_OFFICE_STATE_FIELD_ID,
   registeredOfficeCompleteAddress,

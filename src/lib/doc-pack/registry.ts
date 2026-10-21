@@ -1,5 +1,5 @@
 import { directorAudienceKind } from '@/lib/incorporation-docs/audiences';
-import { PROPOSED_DIRECTORS_STEP_ID } from '@/lib/proposed-directors';
+import { PROPOSED_DIRECTORS_STEP_ID } from '@/lib/incorporation/proposed-directors';
 import {
   anyDirectorName,
   authorisedShareCapital,

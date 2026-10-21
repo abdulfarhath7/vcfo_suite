@@ -7,12 +7,12 @@ import { requireRole } from '@/auth/guards';
 import {
   contentTypeForSignedBoardResolutionPath,
   validateSignedBoardResolutionFile,
-} from '@/lib/board-resolution-storage';
+} from '@/lib/board-resolution/board-resolution-storage';
 import { patchChecklistItem } from '@/db/repositories/engagements';
 import { setSignedBoardResolution } from '@/db/repositories/board-resolution';
 import { putSignedBoardResolution } from '@/storage/board-resolution';
 import { bucketKey, deleteObject } from '@/storage/s3';
-import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution-storage';
+import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution/board-resolution-storage';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

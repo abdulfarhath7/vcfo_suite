@@ -10,7 +10,7 @@ import {
   internEngagementStepPath,
 } from '@/lib/project-step-path';
 import type { Engagement } from '@/data/engagements';
-import { directFlowRoleLabel, isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import { directFlowRoleLabel, isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 
 const NOTIFICATION_KINDS = [
   'checklist.deliver',

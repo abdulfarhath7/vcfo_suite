@@ -1,5 +1,5 @@
 import { checklist } from '@/data/checklist';
-import type { BoardResolutionDoc } from '@/lib/board-resolution';
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 import { extractItemResponses, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
 import { directorsAccepted } from '@/lib/api/incorporation-docs-errors';
@@ -12,7 +12,7 @@ import {
   PROPOSED_DIRECTORS_STEP_ID,
   readProposedDirectors,
   type ProposedDirector,
-} from '@/lib/proposed-directors';
+} from '@/lib/incorporation/proposed-directors';
 import { DOC_PACK_REGISTRY } from '@/lib/doc-pack/registry';
 import type {
   DocDefinition,

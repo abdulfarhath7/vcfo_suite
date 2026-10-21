@@ -16,7 +16,7 @@ import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern-work';
 import { initialsFromName } from '@/lib/auth';
-import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
+import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 
 type ManagerOption = { id: string; name: string; email: string };
 

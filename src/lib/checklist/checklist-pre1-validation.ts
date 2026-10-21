@@ -4,7 +4,7 @@ import {
   ADDITIONAL_NIC_CODES_GROUP_ID,
   isNicCodeFormat,
   nicBusinessType,
-} from '@/lib/nic-2008';
+} from '@/lib/incorporation/nic-2008';
 
 const INDIA_PVT_SUFFIX = /india\s+private\s+limited\s*$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -146,7 +146,7 @@ const PRE1_REQUIRED_FILE_IDS = [
 /**
  * LEGACY — proposed directors moved to Part B `pre-15` (2026-09-16). These read
  * the old Part A slots (`director{n}*`) for engagements that still hold them;
- * see `src/lib/proposed-directors.ts`.
+ * see `src/lib/incorporation/proposed-directors.ts`.
  */
 export function parseDirectorCount(responses: ChecklistItemResponses): number {
   const raw = (responses.directorCount ?? String(PRE1_DEFAULT_DIRECTOR_COUNT)).trim();

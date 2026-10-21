@@ -2,7 +2,7 @@ import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isClientFillPending } from '@/lib/checklist/checklist-client-fill';
 import { primaryPhaseItems } from '@/lib/project-stuck';
-import { isAwaitingManagerDecision, isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import { isAwaitingManagerDecision, isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 
 export type PendingApprovalRow = {
   engagementId: string;

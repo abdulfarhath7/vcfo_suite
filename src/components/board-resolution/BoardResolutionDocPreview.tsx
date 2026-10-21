@@ -17,12 +17,12 @@ import {
   togglePreviewBold,
   type PreviewFormatSelectionState,
   type PreviewTextAlignment,
-} from '@/lib/board-resolution-preview-editable';
-import type { BoardResolutionMergeFields } from '@/lib/board-resolution';
+} from '@/lib/board-resolution/board-resolution-preview-editable';
+import type { BoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 import {
   buildBoardResolutionPreviewError,
   type BoardResolutionPreviewError,
-} from '@/lib/board-resolution-preview-errors';
+} from '@/lib/board-resolution/board-resolution-preview-errors';
 import { cn } from '@/lib/utils';
 import {
   BoardResolutionPreviewErrorPanel,

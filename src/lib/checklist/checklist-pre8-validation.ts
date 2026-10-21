@@ -1,5 +1,5 @@
 import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
-import { requiredIdsForDirectors, type DirectorSlotContext } from '@/lib/incorp-director-slots';
+import { requiredIdsForDirectors, type DirectorSlotContext } from '@/lib/incorporation/incorp-director-slots';
 
 const PRE8_REQUIRED_FILE_IDS = [
   'nrDirectorPassportSignedUrl',

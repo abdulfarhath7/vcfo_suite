@@ -6,7 +6,7 @@ import path from 'path';
 import Docxtemplater from 'docxtemplater';
 import PizZip from 'pizzip';
 
-import { patchDocumentBodyParagraphs } from '@/lib/board-resolution-docx-body';
+import { patchDocumentBodyParagraphs } from '@/lib/board-resolution/board-resolution-docx-body';
 import {
   sanitizeIncorpDocxBuffer,
   sanitizeIncorpDocumentXml,

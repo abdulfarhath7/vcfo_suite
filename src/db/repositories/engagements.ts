@@ -49,7 +49,7 @@ import {
   lastEditedPatch,
   stripLeadOnlyResponses,
   waitingOnLeadPatch,
-} from '@/lib/pre-inc-direct-flow';
+} from '@/lib/incorporation/pre-inc-direct-flow';
 import { validateStepAgainstState } from '@/lib/checklist/checklist-step-validation';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';

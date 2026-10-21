@@ -1,7 +1,7 @@
 import type { ChecklistField, ChecklistItem, ChecklistResponsibleRole } from '@/data/checklist';
 import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 
 export const RESPONSIBLE_ROLE_LABEL: Record<ChecklistResponsibleRole, string> = {
   client: 'Client',

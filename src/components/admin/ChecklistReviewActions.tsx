@@ -27,7 +27,7 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-ke
 import { isAdminOrManager } from '@/lib/auth';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
-import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 
 interface ChecklistReviewActionsProps {
   engagementId: string;

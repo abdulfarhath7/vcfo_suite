@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { checklist } from '@/data/checklist';
 import { validatePre8Responses } from '@/lib/checklist/checklist-pre8-validation';
 import { formatResponseSummary, getClientResponseFields } from '@/lib/checklist/checklist-responses';
-import { fieldsForDirectorAudiences, withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
+import { fieldsForDirectorAudiences, withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
 
 const pre8 = checklist.find((c) => c.id === 'pre-8')!;
 const fields = getClientResponseFields(pre8);

@@ -41,7 +41,7 @@ export type EngagementProcessEvent =
   | 'step_awaiting_client_approval'
   | 'phase_approved'
   | 'client_change_requested'
-  /* Pre-incorporation direct flow (see `src/lib/pre-inc-direct-flow.ts`). */
+  /* Pre-incorporation direct flow (see `src/lib/incorporation/pre-inc-direct-flow.ts`). */
   | 'step_submitted'
   | 'step_waiting_on_lead'
   | 'step_reopened';

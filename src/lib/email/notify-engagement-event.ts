@@ -46,7 +46,7 @@ import {
   internEngagementStepPath,
 } from '@/lib/project-step-path';
 import { siteUrl } from '@/lib/site-url';
-import { directFlowRoleLabel } from '@/lib/pre-inc-direct-flow';
+import { directFlowRoleLabel } from '@/lib/incorporation/pre-inc-direct-flow';
 
 export type { EmailDispatchResult };
 

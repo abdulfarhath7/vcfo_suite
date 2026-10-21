@@ -4,9 +4,9 @@ import {
   fetchBoardResolutionForApi,
 } from '@/lib/api/board-resolution-access';
 import { boardResolutionAuthErrorResponse } from '@/lib/api/board-resolution-errors';
-import { sanitizeBoardResolutionDocxBuffer } from '@/lib/board-resolution-docx';
+import { sanitizeBoardResolutionDocxBuffer } from '@/lib/board-resolution/board-resolution-docx';
 import { requireAnyRole } from '@/auth/guards';
-import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution-storage';
+import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution/board-resolution-storage';
 import { downloadBoardResolutionDocx } from '@/storage/board-resolution';
 
 type RouteContext = { params: Promise<{ id: string }> };

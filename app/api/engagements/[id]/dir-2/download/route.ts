@@ -4,9 +4,9 @@ import { assertEngagementBoardResolutionAccess } from '@/lib/api/board-resolutio
 import { requireAnyRole } from '@/auth/guards';
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
-import type { Dir2DirectorKind } from '@/lib/dir-2';
-import { dir2DownloadFilename } from '@/lib/dir-2';
-import { downloadDir2Docx } from '@/lib/dir-2-storage';
+import type { Dir2DirectorKind } from '@/lib/incorporation/dir-2';
+import { dir2DownloadFilename } from '@/lib/incorporation/dir-2';
+import { downloadDir2Docx } from '@/lib/incorporation/dir-2-storage';
 import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { repairIncorpDocxAtPath } from '@/lib/incorporation-docs/storage';

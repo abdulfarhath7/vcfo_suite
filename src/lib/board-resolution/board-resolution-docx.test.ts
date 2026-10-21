@@ -4,13 +4,13 @@ import path from 'path';
 import PizZip from 'pizzip';
 import { describe, expect, it } from 'vitest';
 
-import { dedupeXmlAttributes } from '@/lib/board-resolution-docx-body';
-import { DEFAULT_NIC_CODES } from '@/lib/board-resolution';
+import { dedupeXmlAttributes } from '@/lib/board-resolution/board-resolution-docx-body';
+import { DEFAULT_NIC_CODES } from '@/lib/board-resolution/board-resolution';
 import {
   patchBoardResolutionDocxBuffer,
   renderBoardResolutionDocxBuffer,
   sanitizeBoardResolutionDocxBuffer,
-} from '@/lib/board-resolution-docx';
+} from '@/lib/board-resolution/board-resolution-docx';
 
 function boardResolutionDocumentXml(docx: Buffer): string {
   return new PizZip(docx).file('word/document.xml')?.asText() ?? '';

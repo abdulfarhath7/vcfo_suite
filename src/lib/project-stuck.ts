@@ -1,7 +1,7 @@
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { checklist } from '@/data/checklist';
-import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
+import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 
 /** Why a Pre/Post incorporation project is stuck. */
 export type StuckReason =

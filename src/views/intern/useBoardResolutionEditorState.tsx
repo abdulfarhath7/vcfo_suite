@@ -30,9 +30,9 @@ import { type BoardResolutionDocPreviewHandle } from '@/components/board-resolut
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 
-import { buildBoardResolutionMergeFields, extractBoardResolutionInlineOverrides, type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution';
+import { buildBoardResolutionMergeFields, extractBoardResolutionInlineOverrides, type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 
-import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution-storage';
+import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution/board-resolution-storage';
 
 import {
 
@@ -61,7 +61,7 @@ import {
   formatBoardResolutionErrorDisplay,
   type BoardResolutionApiErrorBody,
 } from '@/lib/api/board-resolution-errors';
-import type { BoardResolutionPreviewError } from '@/lib/board-resolution-preview-errors';
+import type { BoardResolutionPreviewError } from '@/lib/board-resolution/board-resolution-preview-errors';
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 

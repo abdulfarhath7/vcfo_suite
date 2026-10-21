@@ -10,8 +10,8 @@ import {
   validateRepeatEntries,
   type RepeatField,
 } from '@/lib/checklist/checklist-repeat';
-import { hasIndiaResidentDirector, PROPOSED_DIRECTORS_GROUP_ID } from '@/lib/proposed-directors';
-import { isValidCinOrLlpin, PRE15_MAX_OTHER_INTERESTS } from '@/lib/other-company-interests';
+import { hasIndiaResidentDirector, PROPOSED_DIRECTORS_GROUP_ID } from '@/lib/incorporation/proposed-directors';
+import { isValidCinOrLlpin, PRE15_MAX_OTHER_INTERESTS } from '@/lib/incorporation/other-company-interests';
 
 /**
  * Validators for the restructured SPICe+ Part B steps. Each takes the step's

@@ -9,7 +9,7 @@ import { parseDirectorCount } from '@/lib/checklist/checklist-pre1-validation';
 import { pre6NrFieldPrefix, pre6ResidentFieldPrefix } from '@/lib/checklist/checklist-pre6-validation';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { resolveRegisteredOfficeResponses } from '@/lib/checklist/registered-office-responses';
-import { PRE15_INTEREST_PARTS, PRE15_MAX_OTHER_INTERESTS } from '@/lib/other-company-interests';
+import { PRE15_INTEREST_PARTS, PRE15_MAX_OTHER_INTERESTS } from '@/lib/incorporation/other-company-interests';
 import {
   audienceForDirectorFieldId,
   directorAudienceKey,

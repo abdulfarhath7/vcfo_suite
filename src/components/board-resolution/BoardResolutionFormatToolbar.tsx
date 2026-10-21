@@ -7,8 +7,8 @@ import {
   AlignRight,
   Bold,
 } from 'lucide-react';
-import type { BoardResolutionParagraphAlignment } from '@/lib/board-resolution-docx-body';
-import type { PreviewFormatSelectionState } from '@/lib/board-resolution-preview-editable';
+import type { BoardResolutionParagraphAlignment } from '@/lib/board-resolution/board-resolution-docx-body';
+import type { PreviewFormatSelectionState } from '@/lib/board-resolution/board-resolution-preview-editable';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 

@@ -26,7 +26,7 @@ Read on 2026-10-12 against `723829e` (the commit `CONTEXT.md` was written for).
 | Notifications | confirmed | `notifyEngagementEvent` makes bell rows server-side; payload JSON in `notifications.description`; no actor column. |
 | Recipients | confirmed | `resolveEngagementRecipients`. |
 | Client dashboard | confirmed | `/app/client/overview` → `src/views/client/Overview.tsx`; no directors / capital / subscribers. |
-| Dashboard data | confirmed | `readProposedDirectors(state)` in `src/lib/proposed-directors.ts`. |
+| Dashboard data | confirmed | `readProposedDirectors(state)` in `src/lib/incorporation/proposed-directors.ts`. |
 
 ## 2. Readers of approval state (non-test files)
 
@@ -34,7 +34,7 @@ Read on 2026-10-12 against `723829e` (the commit `CONTEXT.md` was written for).
 |---|---|
 | `reviewStatus` | `app/api/engagements/[id]/checklist/route.ts`, `src/context/AppContext.tsx`, `src/db/repositories/engagements.ts`, `src/lib/api/board-resolution-errors.ts`, `src/lib/api/incorporation-docs-errors.ts`, `src/lib/checklist/checklist-item-review.ts`, `src/lib/checklist/checklist-notifications.ts`, `src/lib/checklist/checklist-pre6-validation.ts`, `src/lib/checklist/checklist-responses.ts`, `src/lib/checklist/checklist-state-key.ts`, `src/lib/checklist/checklist-step-approval.ts`, `src/lib/checklist/checklist-visibility.ts`, `src/lib/email/lead-manager-request-notify.ts`, `src/lib/incorporation-docs/share.ts`, `src/lib/project-stuck.ts`, `src/views/incorporation/useMilestoneResponseFormState.tsx` |
 | `reviewSource` | `app/api/engagements/[id]/checklist/route.ts`, `src/components/admin/ChecklistReviewActions.tsx`, `src/components/admin/RequestManagerApproval.tsx`, `src/context/AppContext.tsx`, `src/context/use-app-provider-value.ts`, `src/db/repositories/engagements.ts`, `src/lib/ask/tools/staff.ts`, `src/lib/checklist/checklist-item-review.ts`, `src/lib/checklist/checklist-notifications.ts`, `src/lib/checklist/checklist-state-key.ts`, `src/lib/checklist/checklist-step-approval.ts`, `src/lib/checklist/checklist-visibility.ts`, `src/lib/email/lead-manager-request-notify.ts`, `src/lib/intern-work.ts`, `src/lib/pending-approvals.ts` |
-| `approval` (slice key) | `src/db/repositories/engagements.ts`, `src/lib/checklist/checklist-item-review.ts`, `src/lib/checklist/checklist-state-key.ts`, `src/lib/checklist/checklist-step-approval.ts`, `src/lib/email/engagement-event-fanout.ts`, `src/lib/registration-workflow.ts` |
+| `approval` (slice key) | `src/db/repositories/engagements.ts`, `src/lib/checklist/checklist-item-review.ts`, `src/lib/checklist/checklist-state-key.ts`, `src/lib/checklist/checklist-step-approval.ts`, `src/lib/email/engagement-event-fanout.ts`, `src/lib/incorporation/registration-workflow.ts` |
 | `clientFillRequest` | `app/api/engagements/[id]/checklist/route.ts`, `src/components/admin/RequestClientFill.tsx`, `src/context/AppContext.tsx`, `src/db/repositories/engagements.ts`, `src/lib/checklist/checklist-state-key.ts`, `src/lib/pending-approvals.ts` |
 | `isAwaitingReview` | `src/components/admin/ChecklistReviewActions.tsx`, `src/components/admin/RequestManagerApproval.tsx`, `src/components/admin/StepWorkspaceRail.tsx`, `src/lib/checklist/checklist-item-review.ts`, `src/lib/client-progress-board.ts`, `src/lib/intern-dashboard.ts`, `src/lib/pending-approvals.ts`, `src/lib/project-stuck.ts`, `src/lib/super-overview.ts`, `src/views/admin/Dashboard.tsx`, `src/views/admin/FirmDashboard.tsx` |
 | `isLeadRequestPending` | `src/lib/checklist/checklist-item-review.ts`, `src/lib/checklist/checklist-step-gate.ts` |

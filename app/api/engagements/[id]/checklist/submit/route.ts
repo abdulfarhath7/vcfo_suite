@@ -8,7 +8,7 @@ import {
   submitDirectFlowStep,
 } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
-import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 import {
   BOARD_RESOLUTION_WITH_MANAGER,
   requestBoardResolutionApproval,

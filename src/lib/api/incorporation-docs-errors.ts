@@ -7,7 +7,7 @@ import {
   directorResponsesFromState,
   PROPOSED_DIRECTORS_STEP_ID,
   readProposedDirectors,
-} from '@/lib/proposed-directors';
+} from '@/lib/incorporation/proposed-directors';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
 import { collectAcceptanceLetterMissingFields } from '@/lib/incorporation-docs/acceptance-letter';
 import { collectAuthorisationLetterMissingFields } from '@/lib/incorporation-docs/authorisation-letter';

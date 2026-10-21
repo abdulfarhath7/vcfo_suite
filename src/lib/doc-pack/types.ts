@@ -1,10 +1,10 @@
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
-import type { BoardResolutionDoc } from '@/lib/board-resolution';
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 import type { IncorpDocAudience, IncorpDocKind } from '@/lib/incorporation-docs/types';
 import type { IncorpDirectorAudience } from '@/lib/incorporation-docs/shared';
-import type { ProposedDirector } from '@/lib/proposed-directors';
+import type { ProposedDirector } from '@/lib/incorporation/proposed-directors';
 
 /**
  * PRE-INCORPORATION DOCUMENT PACK — pure read model.

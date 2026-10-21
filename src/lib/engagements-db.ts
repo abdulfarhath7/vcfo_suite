@@ -7,7 +7,7 @@ import {
 import {
   type BoardResolutionDoc,
   parseBoardResolutionRpcPayload,
-} from '@/lib/board-resolution';
+} from '@/lib/board-resolution/board-resolution';
 import { AppApiError, toastEmailDispatch } from '@/lib/toast-errors';
 import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
 import type { EngagementSchedule } from '@/lib/schedule-windows';

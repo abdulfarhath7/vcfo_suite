@@ -16,7 +16,7 @@ import {
   MANAGER_APPROVAL_STEP_ID,
   stripLeadOnlyResponses,
   waitingOnLeadPatch,
-} from '@/lib/pre-inc-direct-flow';
+} from '@/lib/incorporation/pre-inc-direct-flow';
 
 const NOW = '2026-10-12T10:00:00.000Z';
 

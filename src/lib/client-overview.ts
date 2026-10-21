@@ -22,7 +22,7 @@ import {
 } from '@/data/checklist';
 import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { isRepeatField, repeatEntries } from '@/lib/checklist/checklist-repeat';
-import { displayName, readProposedDirectors } from '@/lib/proposed-directors';
+import { displayName, readProposedDirectors } from '@/lib/incorporation/proposed-directors';
 import { clientIncorporationStepPath } from '@/lib/project-step-path';
 import { STEP_TAB_PARAM } from '@/lib/doc-pack/paths';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';

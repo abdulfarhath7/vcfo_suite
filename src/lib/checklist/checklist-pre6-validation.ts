@@ -7,7 +7,7 @@ import {
   PRE6_REGISTERED_OFFICE_SECTION,
   REGISTERED_OFFICE_FIELD_IDS,
 } from '@/lib/checklist/registered-office-responses';
-import { isValidCinOrLlpin } from '@/lib/other-company-interests';
+import { isValidCinOrLlpin } from '@/lib/incorporation/other-company-interests';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;

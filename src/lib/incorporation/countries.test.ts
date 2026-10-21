@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { COUNTRY_OPTIONS, countryWithArticle, INDIAN_STATE_OPTIONS, inferIndianState } from '@/lib/countries';
+import { COUNTRY_OPTIONS, countryWithArticle, INDIAN_STATE_OPTIONS, inferIndianState } from '@/lib/incorporation/countries';
 
 describe('countries', () => {
   it('prints the article only where legal text needs it', () => {

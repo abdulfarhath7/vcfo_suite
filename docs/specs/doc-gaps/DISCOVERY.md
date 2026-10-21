@@ -96,7 +96,7 @@ Catalog entry: `src/data/checklist.ts:302-316`. Fields: `src/lib/checklist/check
 
 ## 3. `pre-15` other company interests
 
-- Field builder: `pre15OtherInterestFields()` at `src/lib/checklist/checklist-responses.ts:34-46`, spread into the entry at :999. Up to `PRE15_MAX_OTHER_INTERESTS = 3` (`src/lib/other-company-interests.ts:11`). All parts appear only when `hasOtherCompanyInterest = yes` (:985).
+- Field builder: `pre15OtherInterestFields()` at `src/lib/checklist/checklist-responses.ts:34-46`, spread into the entry at :999. Up to `PRE15_MAX_OTHER_INTERESTS = 3` (`src/lib/incorporation/other-company-interests.ts:11`). All parts appear only when `hasOtherCompanyInterest = yes` (:985).
 - Ids per interest `i`:
   - `otherInterest{i}Company`
   - `otherInterest{i}Cin`

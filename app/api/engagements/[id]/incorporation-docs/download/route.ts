@@ -21,7 +21,7 @@ import {
   type IncorpDocKind,
 } from '@/lib/incorporation-docs/types';
 import { checklistStateFromRow } from '@/db/repositories/engagements';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

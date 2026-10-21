@@ -15,7 +15,7 @@ import {
   incorpDraftZipEntries,
 } from '@/lib/incorporation-docs/zip';
 import { checklistStateFromRow, toAppEngagement } from '@/db/repositories/engagements';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { BoardResolutionFormatToolbar } from '@/components/board-resolution/BoardResolutionFormatToolbar';
-import type { BoardResolutionParagraphAlignment } from '@/lib/board-resolution-docx-body';
-import type { PreviewFormatSelectionState } from '@/lib/board-resolution-preview-editable';
+import type { BoardResolutionParagraphAlignment } from '@/lib/board-resolution/board-resolution-docx-body';
+import type { PreviewFormatSelectionState } from '@/lib/board-resolution/board-resolution-preview-editable';
 
 const EMPTY_FORMAT_STATE: PreviewFormatSelectionState = {
   inPreview: false,

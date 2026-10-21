@@ -9,7 +9,7 @@ import {
   validatePre1Responses,
 } from '@/lib/checklist/checklist-pre1-validation';
 import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
-import { buildBoardResolutionMergeFields } from '@/lib/board-resolution';
+import { buildBoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 
 describe('isValidPre1Date', () => {
   it('accepts ISO YYYY-MM-DD dates', () => {

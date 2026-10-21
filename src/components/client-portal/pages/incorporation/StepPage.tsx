@@ -21,7 +21,7 @@ import { resolveChecklistItemFromStepParam } from '@/lib/slug';
 import { extractItemResponses, fieldsForOwnership, getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { filterFieldsByViewer } from '@/lib/checklist/checklist-field-access';
 import { applyShowWhen, expandRepeatFields, isRepeatField, repeatFieldLabel, resolveFieldLabels } from '@/lib/checklist/checklist-repeat';
-import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
+import { withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
 import { approvalStateOf, clientApproveBlockedReason, isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { fileNameFromStoragePath, isMilestoneStoragePath, validateMilestoneUploadFile } from '@/lib/milestone-document-storage';

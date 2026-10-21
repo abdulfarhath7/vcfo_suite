@@ -8,7 +8,7 @@ import { coerceStatusCode, type StatusCode } from '@/data/checklist';
 import {
   coerceRegistrationWorkflowStage,
   type RegistrationWorkflowStage,
-} from '@/lib/registration-workflow';
+} from '@/lib/incorporation/registration-workflow';
 
 export type ChecklistReviewStatus = 'reviewing' | 'accepted' | 'rejected';
 

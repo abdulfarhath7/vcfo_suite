@@ -5,12 +5,12 @@ import {
   PRE6_UTILITY_BILL_OPTIONS,
 } from '@/lib/checklist/checklist-pre6-validation';
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
-import { otherInterestsFromPre6, type OtherCompanyInterest } from '@/lib/other-company-interests';
+import { otherInterestsFromPre6, type OtherCompanyInterest } from '@/lib/incorporation/other-company-interests';
 import {
   DIRECTOR_IDENTITY_PROOF_OPTIONS,
   DIRECTOR_RESIDENCE_PROOF_OPTIONS,
   proofDocumentName,
-} from '@/lib/director-proofs';
+} from '@/lib/incorporation/director-proofs';
 import {
   directorAudienceKind,
   directorFieldPrefix,

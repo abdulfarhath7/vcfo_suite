@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DUPLICATE_NIC_CODE_MESSAGE, validatePre1Responses } from '@/lib/checklist/checklist-pre1-validation';
-import { NIC_CODE_COUNT, isNicCodeFormat, nicBusinessType, readNicCodes } from '@/lib/nic-2008';
+import { NIC_CODE_COUNT, isNicCodeFormat, nicBusinessType, readNicCodes } from '@/lib/incorporation/nic-2008';
 
 describe('nic-2008', () => {
   it('carries every NIC-2008 sub-class', () => {

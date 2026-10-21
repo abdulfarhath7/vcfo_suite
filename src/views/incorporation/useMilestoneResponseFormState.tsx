@@ -27,7 +27,7 @@ import {
   validateInternDelivery,
   type ChecklistItemResponses,
 } from '@/lib/checklist/checklist-responses';
-import { ADDITIONAL_NIC_CODES_GROUP_ID, nicBusinessType } from '@/lib/nic-2008';
+import { ADDITIONAL_NIC_CODES_GROUP_ID, nicBusinessType } from '@/lib/incorporation/nic-2008';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
 import {
@@ -64,10 +64,10 @@ import {
   getPre6VisibleFields,
   isPre1SubmittedForPre6,
 } from '@/lib/checklist/checklist-pre6-validation';
-import { fieldsForDirectorAudiences, type DirectorSlotContext } from '@/lib/incorp-director-slots';
+import { fieldsForDirectorAudiences, type DirectorSlotContext } from '@/lib/incorporation/incorp-director-slots';
 import { directorAudiencesFromPre6 } from '@/lib/incorporation-docs/audiences';
 import { isIncorpSlotSetFrozen } from '@/lib/incorporation-docs/share';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import {
   filterResponsesToEditableFields,
   isClientSubmissionLocked,
@@ -116,7 +116,7 @@ import { internEngagementPath, internEngagementStepPath } from '@/lib/project-st
 import { internFormNextTarget } from '@/lib/intern-overview-progress';
 import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
-import { inferIndianState } from '@/lib/countries';
+import { inferIndianState } from '@/lib/incorporation/countries';
 import { runStepValidation } from '@/lib/checklist/checklist-step-validation';
 import {
   canRoleEditField,
@@ -124,7 +124,7 @@ import {
   isLeadOnlyField,
   LEAD_ONLY_FIELD_HELPER,
   stripLeadOnlyResponses,
-} from '@/lib/pre-inc-direct-flow';
+} from '@/lib/incorporation/pre-inc-direct-flow';
 import { clientIncorporationPath, clientIncorporationStepPath } from '@/lib/project-step-path';
 
 /** True when an error key belongs to one of these fields (repeat ids are dotted under the group). */

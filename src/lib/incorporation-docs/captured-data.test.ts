@@ -22,8 +22,8 @@ import { renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
 import { validateIncorpDocsGeneration } from '@/lib/api/incorporation-docs-errors';
 import { repeatFieldId } from '@/lib/checklist/checklist-repeat';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
-import { isValidCinOrLlpin } from '@/lib/other-company-interests';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { isValidCinOrLlpin } from '@/lib/incorporation/other-company-interests';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 
 vi.mock('server-only', () => ({}));
 

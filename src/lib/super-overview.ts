@@ -31,7 +31,7 @@ import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/project-stuck';
 import { phaseKeyFromId, type PhaseColorKey } from '@/lib/phase-colors';
 import { stageDisplayLabel, type Stage } from '@/components/admin/create-project-form-utils';
-import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
+import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 
 export type SuperOverviewState = Record<string, ChecklistItemStateSlice | undefined>;
 

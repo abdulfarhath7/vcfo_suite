@@ -49,7 +49,7 @@ export interface ChecklistItemState {
   workflowStage?: 'collection' | 'filing' | 'approval';
   /** Lead → manager → client "please fill this step" request. */
   clientFillRequest?: ClientFillRequest;
-  /** Pre-incorporation direct flow stamps (see `src/lib/pre-inc-direct-flow.ts`). */
+  /** Pre-incorporation direct flow stamps (see `src/lib/incorporation/pre-inc-direct-flow.ts`). */
   submittedByName?: string;
   submittedByRole?: string;
   waitingOnLeadAt?: string;

@@ -2,13 +2,13 @@ import { addDays, format } from 'date-fns';
 import { checklist, type ChecklistField, type ChecklistItem } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
 import { PART_A_STEP_ID, partAFieldsFor } from '@/lib/checklist/part-a-sections';
-import { expandDirectorSlotFields, withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
-import { PRE15_MAX_OTHER_INTERESTS } from '@/lib/other-company-interests';
-import { COUNTRY_OPTIONS, INDIAN_STATE_OPTIONS } from '@/lib/countries';
+import { expandDirectorSlotFields, withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
+import { PRE15_MAX_OTHER_INTERESTS } from '@/lib/incorporation/other-company-interests';
+import { COUNTRY_OPTIONS, INDIAN_STATE_OPTIONS } from '@/lib/incorporation/countries';
 import {
   DIRECTOR_IDENTITY_PROOF_OPTIONS,
   DIRECTOR_RESIDENCE_PROOF_OPTIONS,
-} from '@/lib/director-proofs';
+} from '@/lib/incorporation/director-proofs';
 import {
   getPre1VisibleFields,
   parsePre1BoardResolutionDate,

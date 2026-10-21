@@ -11,7 +11,7 @@ import PizZip from 'pizzip';
 import {
   dedupeXmlAttributes,
   patchDocumentBodyParagraphs,
-} from '@/lib/board-resolution-docx-body';
+} from '@/lib/board-resolution/board-resolution-docx-body';
 
 import {
 
@@ -27,7 +27,7 @@ import {
 
   boardResolutionVariant,
 
-} from '@/lib/board-resolution';
+} from '@/lib/board-resolution/board-resolution';
 
 import type { NocVariant } from '@/lib/noc/variant';
 

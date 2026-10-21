@@ -8,7 +8,7 @@ import { checklist, type Bucket } from '@/data/checklist';
 import type { TaskInstance } from '@/data/engagements';
 import type { Phase } from '@/components/admin/PhaseTimeline';
 import { primaryPhaseItems } from '@/lib/project-stuck';
-import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
+import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 
 const PROCESS_KEYS = [
   { key: 'pre-inc', label: 'Pre-incorp', buckets: ['pre-inc'] as Bucket[] },

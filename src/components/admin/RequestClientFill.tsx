@@ -23,7 +23,7 @@ import { isAdminOrManager } from '@/lib/auth';
 import { getItem } from '@/data/checklist';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
-import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 
 /**
  * Lead action: ask the client to fill this step. It goes to the project manager

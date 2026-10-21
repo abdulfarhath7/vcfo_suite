@@ -1,5 +1,5 @@
 import { approvalStateOf } from '@/lib/checklist/checklist-step-approval';
-import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 import type { EngagementChecklistState } from '@/lib/checklist/checklist-index';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 

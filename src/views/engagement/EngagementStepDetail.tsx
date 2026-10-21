@@ -83,7 +83,7 @@ import {
   isDirectFlowStep,
   isDirectFlowStepComplete,
   isWaitingOnLead,
-} from '@/lib/pre-inc-direct-flow';
+} from '@/lib/incorporation/pre-inc-direct-flow';
 
 /** "Last edited by Kiran Rao (Client), 12 Oct 2026, 4:05 pm" — IST, like every other time in the app. */
 function lastEditedLine(slice: ChecklistItemStateSlice | undefined): string | null {

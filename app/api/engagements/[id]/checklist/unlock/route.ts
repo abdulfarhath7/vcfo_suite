@@ -4,7 +4,7 @@ import { requireAuth } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { checklistStateForViewer, unlockChecklistFields } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
-import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

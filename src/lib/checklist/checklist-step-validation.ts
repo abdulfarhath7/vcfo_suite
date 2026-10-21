@@ -30,11 +30,11 @@ import {
   missingRequiredEntryFields,
   validateRepeatEntries,
 } from '@/lib/checklist/checklist-repeat';
-import type { DirectorSlotContext } from '@/lib/incorp-director-slots';
+import type { DirectorSlotContext } from '@/lib/incorporation/incorp-director-slots';
 import { directorAudiencesFromPre6 } from '@/lib/incorporation-docs/audiences';
 import { isIncorpSlotSetFrozen } from '@/lib/incorporation-docs/share';
-import { directorResponsesFromState, type StepStateMap } from '@/lib/proposed-directors';
-import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import { directorResponsesFromState, type StepStateMap } from '@/lib/incorporation/proposed-directors';
+import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 
 /**
  * One step validator for the form and the server.

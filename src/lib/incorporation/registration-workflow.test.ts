@@ -3,7 +3,7 @@ import {
   coerceRegistrationWorkflowStage,
   REGISTRATION_WORKFLOW_STAGES,
   registrationWorkflowShortLabel,
-} from '@/lib/registration-workflow';
+} from '@/lib/incorporation/registration-workflow';
 import { coerceStatusCode, getPhaseItems, getPostIncPhases, getRegistrationPhases } from '@/data/checklist';
 
 describe('sheet alignment helpers', () => {

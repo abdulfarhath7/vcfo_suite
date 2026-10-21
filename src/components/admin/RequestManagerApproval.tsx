@@ -10,7 +10,7 @@ import {
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { getItem } from '@/data/checklist';
-import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 
 /** Lead action: mark any phase milestone as awaiting project manager review. */
 export function RequestManagerApproval({

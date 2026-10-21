@@ -5,7 +5,7 @@ import {
   resolveParentCountry,
   resolveParentJurisdiction,
   resolveParentState,
-} from '@/lib/parent-jurisdiction';
+} from '@/lib/incorporation/parent-jurisdiction';
 import { pickString } from '@/lib/incorporation-docs/shared';
 
 const US_STATE_NAMES =

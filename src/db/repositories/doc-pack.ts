@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { AuthContext } from '@/auth/guards';
 import type { Engagement } from '@/data/engagements';
-import type { BoardResolutionDoc } from '@/lib/board-resolution';
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import { isEngagementRouteParam } from '@/lib/slug';

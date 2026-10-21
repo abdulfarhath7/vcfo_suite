@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBoardResolutionPreviewError,
   isDocxXmlParseError,
-} from '@/lib/board-resolution-preview-errors';
+} from '@/lib/board-resolution/board-resolution-preview-errors';
 
 describe('isDocxXmlParseError', () => {
   it('detects duplicate xml:space attribute errors', () => {

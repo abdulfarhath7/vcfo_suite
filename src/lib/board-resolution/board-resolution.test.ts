@@ -14,8 +14,8 @@ import {
   generateBoardResolutionDraft,
   resolveCertificationPlace,
   stripDirectorSalutation,
-} from '@/lib/board-resolution';
-import { renderBoardResolutionDocxBuffer } from '@/lib/board-resolution-docx';
+} from '@/lib/board-resolution/board-resolution';
+import { renderBoardResolutionDocxBuffer } from '@/lib/board-resolution/board-resolution-docx';
 
 describe('stripDirectorSalutation', () => {
   it('removes common honorific prefixes', () => {

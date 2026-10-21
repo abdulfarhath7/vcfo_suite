@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
 import { documentIdParamSchema } from '@/lib/api/schemas';
 import { getDocumentById } from '@/db/repositories/documents';
-import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution-storage';
+import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution/board-resolution-storage';
 import {
   isMilestoneStoragePath,
   MILESTONE_DOCUMENTS_BUCKET,

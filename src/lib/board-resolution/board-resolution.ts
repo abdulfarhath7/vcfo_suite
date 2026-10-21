@@ -7,14 +7,14 @@ import {
   PRE1_DIRECTOR_INDIA_RESIDENT_IDS,
 } from '@/lib/checklist/checklist-pre1-validation';
 import { resolveDirectorDisplayName, resolveSignatoryDisplayName } from '@/lib/person-name';
-import { readNicCodes } from '@/lib/nic-2008';
+import { readNicCodes } from '@/lib/incorporation/nic-2008';
 import { resolveNocVariant, type NocVariant } from '@/lib/noc/variant';
 import {
   DEFAULT_PARENT_STATE,
   resolveParentCountry,
   resolveParentJurisdiction,
   resolveParentState,
-} from '@/lib/parent-jurisdiction';
+} from '@/lib/incorporation/parent-jurisdiction';
 
 export { DEFAULT_PARENT_STATE };
 

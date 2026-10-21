@@ -7,7 +7,7 @@ import { evaluateDocPack } from '@/lib/doc-pack/evaluate';
 import { FINALIZED_BR, director, fullState } from '@/lib/doc-pack/__tests__/fixtures';
 import { renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
 import { incorpDocDownloadFilename, incorpDraftDocSlotsFromResponses } from '@/lib/incorporation-docs/paths';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 
 /**
  * Parity: a document served by the pack is the document the Pre-7 panel

@@ -8,7 +8,7 @@ import {
   type BoardResolutionProgressSnapshot,
 } from '@/lib/client-progress-board';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
-import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
+import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 
 const NONE_BR: BoardResolutionProgressSnapshot = { status: 'none', hasDraftDoc: false };
 

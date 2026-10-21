@@ -34,7 +34,7 @@ import {
   MILESTONE_DOCUMENTS_BUCKET,
   uploadTimestampFromStoragePath,
 } from '@/lib/milestone-document-storage';
-import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution-storage';
+import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution/board-resolution-storage';
 import {
   EXTENSION_TO_MIME,
   MAX_UPLOAD_BYTES,

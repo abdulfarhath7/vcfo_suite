@@ -27,7 +27,7 @@ import { internEngagementPath, internEngagementStepPath } from '@/lib/project-st
 import { deriveStuckReason } from '@/lib/project-stuck';
 import { gateActiveCatalog } from '@/lib/checklist/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/incorporation/pre-inc-direct-flow';
 
 export type InternChipTone =
   | 'primary'

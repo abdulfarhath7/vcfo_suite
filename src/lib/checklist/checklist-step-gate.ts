@@ -12,7 +12,7 @@ import {
   isDirectFlowStep,
   isDirectFlowStepComplete,
   isWaitingOnLead,
-} from '@/lib/pre-inc-direct-flow';
+} from '@/lib/incorporation/pre-inc-direct-flow';
 
 export type ChecklistStepGateKind = 'done' | 'active' | 'waiting' | 'locked';
 export type ChecklistGateViewer = 'client' | 'staff' | 'intern';

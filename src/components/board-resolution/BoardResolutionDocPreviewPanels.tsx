@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertTriangle } from 'lucide-react';
-import type { BoardResolutionPreviewError } from '@/lib/board-resolution-preview-errors';
+import type { BoardResolutionPreviewError } from '@/lib/board-resolution/board-resolution-preview-errors';
 
 export type BoardResolutionDocPreviewMeta = {
   storagePath?: string | null;

@@ -8,7 +8,7 @@ import {
   type ChecklistItemResponses,
 } from '@/lib/checklist/checklist-responses';
 import { fileNameFromStoragePath } from '@/lib/milestone-document-storage';
-import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
+import { withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
 
 export type StepAttachmentRequirement = {
   fieldId: string;

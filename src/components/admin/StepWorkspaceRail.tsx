@@ -19,8 +19,8 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-ke
 import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import { fileNameFromStoragePath } from '@/lib/milestone-document-storage';
 import { cn } from '@/lib/utils';
-import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
-import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import { withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
+import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 
 const STATUS_TONE_DOT: Record<
   StatusCode,

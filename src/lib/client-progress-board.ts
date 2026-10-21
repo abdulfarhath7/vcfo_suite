@@ -13,8 +13,8 @@ import {
   isReviewRejected,
   isAwaitingReview,
 } from '@/lib/checklist/checklist-item-review';
-import type { BoardResolutionDoc } from '@/lib/board-resolution';
-import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/pre-inc-direct-flow';
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
+import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/incorporation/pre-inc-direct-flow';
 
 /** Client progress board traffic-light status (maps to green / yellow / red in UI). */
 export type ClientProgressTone = 'completed' | 'in-progress' | 'not-started';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildDir2MergeFields } from '@/lib/dir-2';
+import { buildDir2MergeFields } from '@/lib/incorporation/dir-2';
 
 const pre6Base = {
   nrDirectorFirstName: 'Justin',

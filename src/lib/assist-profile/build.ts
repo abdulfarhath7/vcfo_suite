@@ -3,9 +3,9 @@ import {
   PROPOSED_DIRECTORS_STEP_ID,
   readProposedDirectors,
   type ProposedDirector,
-} from '@/lib/proposed-directors';
+} from '@/lib/incorporation/proposed-directors';
 import { resolveRegisteredOfficeResponses } from '@/lib/checklist/registered-office-responses';
-import { PRE15_MAX_OTHER_INTERESTS } from '@/lib/other-company-interests';
+import { PRE15_MAX_OTHER_INTERESTS } from '@/lib/incorporation/other-company-interests';
 import { resolveProposedCompanyName } from '@/lib/incorporation-docs/shared';
 import {
   anyDirectorName,
@@ -23,7 +23,7 @@ import {
   SUBSCRIPTION_WITNESS_FIELDS,
 } from '@/lib/incorporation-docs/subscription-sheet';
 import { getItem } from '@/data/checklist';
-import { readNicCodes } from '@/lib/nic-2008';
+import { readNicCodes } from '@/lib/incorporation/nic-2008';
 import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { isRepeatField, repeatEntries } from '@/lib/checklist/checklist-repeat';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';

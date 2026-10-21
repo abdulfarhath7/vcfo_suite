@@ -10,7 +10,7 @@ import {
   clientRequestStepChange,
 } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
-import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 
 /**
  * POST /api/client/change-requests — the client asks the firm to change

@@ -4,7 +4,7 @@ import {
   directorResponsesFromState,
   directorsAsPre6Responses,
   readProposedDirectors,
-} from '@/lib/proposed-directors';
+} from '@/lib/incorporation/proposed-directors';
 
 const resident = {
   firstName: 'Asha', lastName: 'Rao', gender: 'female', indiaResident: 'yes', dob: '1985-04-02',

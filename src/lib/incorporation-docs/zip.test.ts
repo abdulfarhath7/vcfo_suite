@@ -9,7 +9,7 @@ import {
   incorpDraftsZipRoot,
   incorpDraftZipEntries,
 } from '@/lib/incorporation-docs/zip';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 
 const { pre6 } = directorResponsesFromState(
   fullState([director('e1', 'no', 'Alpha'), director('e2', 'yes', 'Beta'), director('e3', 'yes', 'Gamma')]),

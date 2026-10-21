@@ -4,8 +4,8 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { engagementBoardResolutions } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import type { BoardResolutionDoc } from '@/lib/board-resolution';
-import { parseBoardResolutionRpcPayload } from '@/lib/board-resolution';
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
+import { parseBoardResolutionRpcPayload } from '@/lib/board-resolution/board-resolution';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import {
   checklistStateFromRow,
@@ -16,8 +16,8 @@ import {
 } from '@/db/repositories/engagements';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { internLeadManagerRequestPatch, isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
-import { MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import { validateBoardResolutionGeneration } from '@/lib/api/board-resolution-errors';
 
 /** Lead edits while the manager decides are refused with this text. */

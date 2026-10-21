@@ -21,7 +21,7 @@ import {
   lastEditedPatch,
   MANAGER_APPROVAL_STEP_ID,
   stripLeadOnlyResponses,
-} from '@/lib/pre-inc-direct-flow';
+} from '@/lib/incorporation/pre-inc-direct-flow';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

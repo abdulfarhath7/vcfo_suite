@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import type { ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';

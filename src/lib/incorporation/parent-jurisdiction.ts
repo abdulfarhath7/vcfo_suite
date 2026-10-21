@@ -1,4 +1,4 @@
-import { countryWithArticle } from '@/lib/countries';
+import { countryWithArticle } from '@/lib/incorporation/countries';
 
 /**
  * Where the parent entity is incorporated — read by the board resolution and

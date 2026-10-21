@@ -82,7 +82,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   treats `parentEntityName/Address` as optional seeds. Generators still read
   `resolveParentEntity*` (Part A first, engagement row fallback).
 - **NIC**: `nicCode` (5 digits, required, `PRE1_BASE_REQUIRED_TEXT_IDS`), `nicBusinessType`
-  auto-filled in `setField` from `src/lib/nic-2008.ts` (1,302 sub-classes, official MSME PDF
+  auto-filled in `setField` from `src/lib/incorporation/nic-2008.ts` (1,302 sub-classes, official MSME PDF
   parse — `src/data/nic-2008.json` is `[code, subclass, class]`). Unknown code = warning, not
   error. `nicBusinessType` renders read-only (like pre-5 expiry) and is stored in responses.
 - **Windows**: `src/lib/schedule-windows.ts` (`windowForStep`, `applyScheduleWindow`,
@@ -119,7 +119,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
 
 Spec `docs/specs/pre-inc-direct-flow/` (CONTEXT, AUDIT, REPORT).
 
-- **One policy module:** `src/lib/pre-inc-direct-flow.ts`. `DIRECT_FLOW_STEP_IDS` = every
+- **One policy module:** `src/lib/incorporation/pre-inc-direct-flow.ts`. `DIRECT_FLOW_STEP_IDS` = every
   active pre-incorporation step except `pre-2`. Lead-only fields: `pre-1` `nicCode`,
   `nicBusinessType`, `additionalNicCodes` (and its dotted entry ids). Never write a step id
   list for this rule anywhere else.

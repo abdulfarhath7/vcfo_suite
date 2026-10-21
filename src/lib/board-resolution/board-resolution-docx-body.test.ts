@@ -14,7 +14,7 @@ import {
 
   splitBoardResolutionContent,
 
-} from '@/lib/board-resolution-docx-body';
+} from '@/lib/board-resolution/board-resolution-docx-body';
 
 
 

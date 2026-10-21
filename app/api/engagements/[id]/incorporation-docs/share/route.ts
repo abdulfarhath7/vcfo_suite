@@ -17,7 +17,7 @@ import {
 } from '@/lib/incorporation-docs/share';
 import { incorpDocRowKey } from '@/lib/incorporation-docs/paths';
 import { incorpDraftDocSlotsFromResponses } from '@/lib/incorporation-docs/paths';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import { draftUrlFieldFor, INCORP_DOC_KINDS } from '@/lib/incorporation-docs/types';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
 import type { IncorpDocKind } from '@/lib/incorporation-docs/types';

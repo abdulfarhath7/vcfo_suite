@@ -6,15 +6,15 @@ import PizZip from 'pizzip';
 import { requireAnyRole, type AuthContext } from '@/auth/guards';
 import { getDocPackInputs, type DocPackInputs } from '@/db/repositories/doc-pack';
 import { validateIncorpDocsGeneration, IncorpDocsError } from '@/lib/api/incorporation-docs-errors';
-import { sanitizeBoardResolutionDocxBuffer } from '@/lib/board-resolution-docx';
-import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution-storage';
+import { sanitizeBoardResolutionDocxBuffer } from '@/lib/board-resolution/board-resolution-docx';
+import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution/board-resolution-storage';
 import { evaluateDocPack, docPackItemByKey } from '@/lib/doc-pack/evaluate';
 import type { DocPackItem, DocPackSummary } from '@/lib/doc-pack/types';
 import { renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
 import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
 import { incorpDocDownloadFilename } from '@/lib/incorporation-docs/paths';
 import { downloadIncorpDocx } from '@/lib/incorporation-docs/storage';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import { slugifyCompanyName } from '@/lib/slug';
 import { downloadBoardResolutionDocx } from '@/storage/board-resolution';
 
