@@ -19,9 +19,9 @@ import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 
 const KIND_TONE: Record<ChangeRequestKind, string> = {
-  delete_project: 'bg-danger-light text-danger-text',
-  change_client: 'bg-accent-amber-soft text-accent-amber',
-  change_manager: 'bg-accent-violet-soft text-accent-violet',
+  delete_project: 'bg-danger-soft text-danger',
+  change_client: 'bg-surface-sunken text-ink-muted',
+  change_manager: 'bg-surface-sunken text-ink-muted',
 };
 
 function RequestDiff({ request }: { request: ChangeRequestDto }) {
@@ -31,10 +31,10 @@ function RequestDiff({ request }: { request: ChangeRequestDto }) {
     <dl className="mt-2 space-y-1">
       {fields.map((f) => (
         <div key={f.label} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12px]">
-          <dt className="text-text-tertiary">{f.label}</dt>
+          <dt className="text-ink-faint">{f.label}</dt>
           <dd className="flex min-w-0 flex-wrap items-baseline gap-1.5">
-            <span className="text-muted-foreground line-through">{f.from}</span>
-            <ArrowRight className="h-3 w-3 shrink-0 text-text-tertiary" aria-hidden />
+            <span className="text-ink-muted line-through">{f.from}</span>
+            <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" aria-hidden />
             <span className="font-semibold text-ink">{f.to}</span>
           </dd>
         </div>
@@ -94,9 +94,9 @@ export function ProjectChangeRequestsPanel({ scope }: { scope: 'firm' | 'manager
   if (requestsQuery.isLoading || requests.length === 0) return null;
 
   return (
-    <Surface className="mb-4 divide-y divide-border">
+    <Surface className="mb-4 divide-y divide-line">
       <div className="flex items-center gap-2.5 px-4 py-3">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-amber text-white">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-ink-faint text-white">
           <GitPullRequestArrow className="h-3.5 w-3.5" aria-hidden />
         </span>
         <Eyebrow>
@@ -114,8 +114,8 @@ export function ProjectChangeRequestsPanel({ scope }: { scope: 'firm' | 'manager
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={cn(
-                      'inline-flex rounded-full px-2 py-0.5 text-[10.5px] font-bold',
-                      KIND_TONE[kind] ?? 'bg-raised text-muted-foreground',
+                      'inline-flex rounded-sm px-2 py-0.5 text-[10.5px] font-semibold',
+                      KIND_TONE[kind] ?? 'bg-surface-sunken text-ink-muted',
                     )}
                   >
                     {CHANGE_REQUEST_KIND_LABEL[kind] ?? request.kind}
@@ -124,7 +124,7 @@ export function ProjectChangeRequestsPanel({ scope }: { scope: 'firm' | 'manager
                     {request.companyName ?? request.preview?.companyName ?? 'Project'}
                   </span>
                 </div>
-                <p className="mt-1 text-[11.5px] text-muted-foreground">
+                <p className="mt-1 text-[11.5px] text-ink-muted">
                   Asked by {request.requestedByName ?? 'a manager'}
                 </p>
                 <RequestDiff request={request} />

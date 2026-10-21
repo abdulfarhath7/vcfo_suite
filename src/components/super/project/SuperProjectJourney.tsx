@@ -38,10 +38,10 @@ export function SuperProjectJourney({ detail }: { detail: SuperEngagementDetail 
                 style={{ background: phaseFill(group.phaseId) }}
                 aria-hidden
               />
-              <h3 className="min-w-0 truncate text-[11px] font-extrabold uppercase tracking-[0.06em] text-ink">
+              <h3 className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-ink">
                 {group.phaseLabel}
               </h3>
-              <span className="ml-auto shrink-0 font-mono text-[10.5px] font-semibold text-text-tertiary">
+              <span className="ml-auto shrink-0 font-mono text-[10.5px] font-semibold text-ink-faint">
                 {done}/{group.steps.length}
               </span>
             </div>
@@ -76,9 +76,9 @@ function JourneyRow({ step, stepNumber }: { step: SuperJourneyStep; stepNumber: 
           title={step.title}
           className={cn(
             'block min-w-0 truncate text-[12.5px] leading-snug hover:underline',
-            step.kind === 'done' && 'font-bold text-ink',
-            open && 'font-extrabold text-ink',
-            step.kind === 'locked' && 'font-medium text-muted-foreground',
+            step.kind === 'done' && 'font-semibold text-ink',
+            open && 'font-semibold text-ink',
+            step.kind === 'locked' && 'font-medium text-ink-muted',
           )}
         >
           {step.title}
@@ -86,24 +86,24 @@ function JourneyRow({ step, stepNumber }: { step: SuperJourneyStep; stepNumber: 
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span
             className={cn(
-              'rounded-full px-1.5 py-px text-[9.5px] font-extrabold uppercase tracking-wide',
+              'rounded-sm px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wide',
               TONE_BADGE[STEP_TONE[step.kind]],
             )}
           >
             {STEP_LABEL[step.kind]}
           </span>
           {step.awaitingReview ? (
-            <span className={cn('rounded-full px-1.5 py-px text-[9.5px] font-extrabold uppercase tracking-wide', TONE_BADGE.pink)}>
+            <span className={cn('rounded-sm px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wide', TONE_BADGE.pink)}>
               PM review
             </span>
           ) : null}
           {step.rejected ? (
-            <span className={cn('rounded-full px-1.5 py-px text-[9.5px] font-extrabold uppercase tracking-wide', TONE_BADGE.danger)}>
+            <span className={cn('rounded-sm px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wide', TONE_BADGE.danger)}>
               Sent back
             </span>
           ) : null}
           {open ? (
-            <span className="text-[10.5px] font-bold text-muted-foreground">
+            <span className="text-[10.5px] font-semibold text-ink-muted">
               {step.owner === 'client' ? 'With the client' : 'With the firm'}
             </span>
           ) : null}

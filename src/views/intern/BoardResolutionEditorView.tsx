@@ -138,7 +138,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
           {isFinalized && (
 
-            <span className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full bg-success/10 text-success-text border border-success/20">
+            <span className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full bg-positive/10 text-positive border border-positive/20">
 
               <Lock className="w-3.5 h-3.5" />
 
@@ -151,20 +151,20 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
         </div>
 
         {withManager && !isFinalized ? (
-          <p role="status" className="mb-4 rounded-md border border-primary/30 bg-primary-light px-3 py-2 text-[12.5px] text-foreground">
+          <p role="status" className="mb-4 rounded-md border border-brand/30 bg-brand-soft px-3 py-2 text-[12.5px] text-ink">
             The board resolution is with your manager. You can edit it again if they send it back.
           </p>
         ) : null}
 
         {sentBackNote && !withManager && !isFinalized ? (
-          <p role="status" className="mb-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-[12.5px] text-foreground">
+          <p role="status" className="mb-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-[12.5px] text-ink">
             <span className="font-medium">Your manager sent this back:</span> {sentBackNote}
           </p>
         ) : null}
 
         {!hasPre1Data && !loading && (
 
-          <p className="text-[12.5px] text-warning-text bg-warning/10 border border-warning/20 rounded-md px-3 py-2 mb-4">
+          <p className="text-[12.5px] text-warning bg-warning/10 border border-warning/20 rounded-md px-3 py-2 mb-4">
 
             Submit Client Details first. The board resolution uses this data.{' '}
 
@@ -190,7 +190,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
           <div
 
-            className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-[13px] text-destructive"
+            className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-[13px] text-danger"
 
             role="alert"
 
@@ -198,13 +198,13 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             <p className="flex items-start gap-2 font-medium text-ink">
 
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
 
               {generateErrorDisplay.title}
 
             </p>
 
-            <p className="mt-1 pl-6 text-text-secondary">{generateErrorDisplay.description}</p>
+            <p className="mt-1 pl-6 text-ink-muted">{generateErrorDisplay.description}</p>
 
             {generateErrorDisplay.missingFieldRefs?.length && generateError?.code === 'missing_fields' ? (
               <ul className="mt-2 space-y-1 pl-6" aria-label="Missing information">
@@ -250,7 +250,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
         {isFinalized && doc?.signedStoragePath?.trim() && signedDownloadHref && (
 
-          <div className="mb-4 rounded-md border border-success/25 bg-success/10 px-4 py-3">
+          <div className="mb-4 rounded-md border border-positive/25 bg-positive/10 px-4 py-3">
 
             <p className="text-[13px] font-medium text-ink mb-1">
 
@@ -258,7 +258,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             </p>
 
-            <p className="text-[12px] text-text-secondary mb-3">
+            <p className="text-[12px] text-ink-muted mb-3">
 
               {doc.signedUploadedAt
 
@@ -298,13 +298,13 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             <p className="flex items-start gap-2 font-medium text-ink">
 
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-text" />
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
 
               Finalized, but the stored Word file needs repair
 
             </p>
 
-            <p className="mt-1 pl-6 text-text-secondary">
+            <p className="mt-1 pl-6 text-ink-muted">
 
               Inline editing stays locked after finalization. You can still use Apply latest template
 
@@ -342,7 +342,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
             <AlertDialogCancel disabled={busy === 'finalize'}>Cancel</AlertDialogCancel>
 
             <AlertDialogAction
-              className="bg-success text-success-foreground hover:bg-success/90 focus-visible:ring-success/40"
+              className="bg-positive text-on-brand hover:bg-positive/90 focus-visible:ring-positive/40"
               disabled={busy === 'finalize'}
               onClick={(e) => {
                 e.preventDefault();

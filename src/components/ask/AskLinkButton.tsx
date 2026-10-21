@@ -28,10 +28,10 @@ export function AskLinkButton({ link }: { link: AnswerLink }) {
         }
       }}
       className={cn(
-        'inline-flex min-h-[40px] items-center gap-1 rounded-[var(--radius-md)] px-3 text-[12.5px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+        'inline-flex min-h-[40px] items-center gap-1 rounded-[var(--radius-md)] px-3 text-[12.5px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40',
         link.primary
-          ? 'border border-primary/50 text-primary hover:bg-primary-light'
-          : 'border border-border text-foreground hover:bg-muted',
+          ? 'border border-brand/50 text-brand hover:bg-brand-soft'
+          : 'border border-line text-ink hover:bg-surface-sunken',
       )}
     >
       {link.label}

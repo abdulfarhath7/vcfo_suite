@@ -1,22 +1,18 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Public_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
-/** UI body — clean geometric sans (matches Graphite Violet card typography). */
-const fontSans = Manrope({
+/** One face for display and body (docs/design/TOKENS.md). --font-serif, the legacy
+ *  display hook, aliases --font-sans in globals.css until the .serif call sites move. */
+const fontSans = Public_Sans({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   variable: "--font-sans",
   display: "swap",
 });
 
-/** Display / titles — Space Grotesk (bound to --font-serif for existing class hooks). */
-const fontDisplay = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-serif",
-  display: "swap",
-});
-
+/** Identifiers only: CIN, PAN, DIN, GSTIN, file names, codes. */
 const fontMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
@@ -40,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${fontSans.variable} ${fontDisplay.variable} ${fontMono.variable}`}
+      className={`${fontSans.variable} ${fontMono.variable}`}
       suppressHydrationWarning
     >
       <body className={`${fontSans.className} font-sans antialiased`}>

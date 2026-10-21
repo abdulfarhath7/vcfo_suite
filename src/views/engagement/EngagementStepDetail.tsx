@@ -420,7 +420,7 @@ export default function EngagementStepDetail() {
   const stepTitleRow = (
     <div className="mb-4 flex min-w-0 items-center gap-1.5">
       <PageBackButton className="-ml-1.5" />
-      <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-foreground">
+      <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-ink">
         {item.title}
       </h1>
       <WhatsThisButton kind="step" refId={item.id} label={item.title} />
@@ -433,14 +433,14 @@ export default function EngagementStepDetail() {
   const stepMetaRow =
     editedLine || gateNotice || leadWaitingNotice ? (
       <div className="-mt-2 mb-4 space-y-2">
-        {editedLine ? <p className="text-[12px] text-muted-foreground">{editedLine}</p> : null}
+        {editedLine ? <p className="text-[12px] text-ink-muted">{editedLine}</p> : null}
         {gateNotice ? (
-          <p role="status" className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[13px] text-foreground">
+          <p role="status" className="rounded-md border border-line bg-surface-sunken/40 px-3 py-2 text-[13px] text-ink">
             {gateNotice}
           </p>
         ) : null}
         {leadWaitingNotice ? (
-          <p role="status" className="rounded-md border border-primary/30 bg-primary-light px-3 py-2 text-[13px] text-foreground">
+          <p role="status" className="rounded-md border border-brand/30 bg-brand-soft px-3 py-2 text-[13px] text-ink">
             {leadWaitingNotice}
           </p>
         ) : null}
@@ -516,7 +516,7 @@ export default function EngagementStepDetail() {
       {isClientRoute && !directFlow && (approvalLabel || !clientNothingYet) ? (
         <div className="mt-3 flex items-center justify-end gap-2">
           {approvalLabel ? (
-            <span className="mr-auto text-[12px] text-muted-foreground">{approvalLabel}</span>
+            <span className="mr-auto text-[12px] text-ink-muted">{approvalLabel}</span>
           ) : null}
           {/* While the firm holds the step (a change the client asked for is
               being made) only the status line remains — nothing to act on. */}
@@ -547,14 +547,14 @@ export default function EngagementStepDetail() {
   const internPhaseRail = internWorkspace && internPhase ? (
     <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
       <Surface className="p-3">
-        <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
           {internPhase.title}
         </p>
         {internPhase.id === 'registration-phase-4' ? (
           <div className="space-y-4">
             {internPhaseRailGroups.map((group) => (
               <div key={group.heading}>
-                <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
                   {group.heading}
                 </p>
                 <ChecklistJourneyRail
@@ -594,7 +594,7 @@ export default function EngagementStepDetail() {
       {internWorkspace ? (
         <div className="min-w-0">
           {checklistLoading && (
-            <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="mb-3 flex items-center gap-2 text-xs text-ink-muted">
               <HexgridLoader size="sm" />
               Syncing client answers…
             </div>
@@ -626,7 +626,7 @@ export default function EngagementStepDetail() {
 
           <div className="min-w-0">
             {checklistLoading && (
-              <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="mb-3 flex items-center gap-2 text-xs text-ink-muted">
                 <HexgridLoader size="sm" />
                 Syncing client answers…
               </div>

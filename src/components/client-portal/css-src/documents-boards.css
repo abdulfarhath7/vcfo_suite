@@ -9,20 +9,20 @@
    Board :root token blocks are not copied (shared tokens + dark theme). */
 
 /* ---------------- progress drill-down (docs_a_drill) ---------------- */
-.dd-root .mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+.dd-root .mono{font-family:var(--font-mono),monospace;font-feature-settings:"tnum"}
 .dd-root .badge{display:inline-flex;align-items:center;height:20px;border-radius:4px;padding:0 7px;font-size:11px;font-weight:700;white-space:nowrap}
 .dd-root .ib{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;cursor:pointer;padding:0}
 .dd-root .ib:hover{background:var(--primary-light);color:var(--navy-ink,var(--navy))}
 .dd-root .seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .dd-root .seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:6px;background:var(--navy);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
-.dd-root .seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:28px;padding:0 10px;white-space:nowrap;border-radius:6px;font:500 12px Manrope,sans-serif;color:light-dark(oklch(50% 0.022 255), oklch(80% 0.015 255));cursor:pointer}
+.dd-root .seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:28px;padding:0 10px;white-space:nowrap;border-radius:6px;font:500 12px var(--font-sans),sans-serif;color:light-dark(oklch(50% 0.022 255), oklch(80% 0.015 255));cursor:pointer}
 .dd-root .seg button.on{color:#fff}
-.dd-root .seg .c{font:600 10.5px "IBM Plex Mono",monospace;color:oklch(55% 0.022 255)}
+.dd-root .seg .c{font:600 10.5px var(--font-mono),monospace;color:oklch(55% 0.022 255)}
 .dd-root .seg button.on .c{color:oklch(100% 0 0 / .72)}
 .dd-root .row{display:flex;align-items:center;gap:10px;height:44px;padding:0 12px 0 16px;border-top:1px solid var(--hair);color:var(--fg)}
 .dd-root .row:hover{background:var(--raised)}
-.dd-root .ft{width:20px;min-width:20px;height:20px;padding:0;border-radius:6px;font:700 7px/20px "IBM Plex Mono",monospace;letter-spacing:-.02em;text-align:center;flex:none}
+.dd-root .ft{width:20px;min-width:20px;height:20px;padding:0;border-radius:6px;font:700 7px/20px var(--font-mono),monospace;letter-spacing:-.02em;text-align:center;flex:none}
 @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
 .dd-root .dlg{animation:pop .22s cubic-bezier(.22,1,.36,1) both}
 .dd-root button:focus-visible,.dd-root a:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .5);outline-offset:2px}
@@ -41,11 +41,11 @@ html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
 
 /* ---------------- states (docs_a_loading / docs_a_empty) ---------------- */
 @keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
-.vds-root{--sk:light-dark(oklch(93.5% 0.008 255), oklch(20% 0.008 260))}
+.vds-root{--sk:oklch(var(--surface-sunken))}
 .vds-root .sk{display:block;border-radius:4px;background:linear-gradient(90deg,var(--sk) 0,light-dark(oklch(96.5% 0.006 255), oklch(18.3% 0.006 255)) 40%,var(--sk) 80%) var(--sk);background-size:600px 100%;animation:sh 1.3s linear infinite}
 .vds-root .r{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px}
 .vds-root .re{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;color:var(--subtle);font-weight:600}
-.vds-root .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 12px;border-radius:6px;font:600 12.5px Manrope,sans-serif;border:1px solid transparent;text-decoration:none;white-space:nowrap;box-sizing:border-box;cursor:pointer}
+.vds-root .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 12px;border-radius:6px;font:600 12.5px var(--font-sans),sans-serif;border:1px solid transparent;text-decoration:none;white-space:nowrap;box-sizing:border-box;cursor:pointer}
 .vds-root .btn-n{background:var(--navy);color:#fff}.vds-root .btn-o{background:var(--panel);color:var(--fg);border-color:var(--border)}
 @keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 .vds-root .fl{animation:fl 3s ease-in-out infinite}
@@ -56,19 +56,19 @@ html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
 @media (max-width:700px){.vup .vup-foot{padding-bottom:calc(12px + var(--vp-launch-h,0px))!important}}
 
 /* ---------------- phone (docs_a_mobile) ---------------- */
-.vdm{position:relative;width:100%;min-height:calc(100dvh - 52px - var(--vp-launch-h,0px));background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px;display:flex;flex-direction:column}
+.vdm{position:relative;width:100%;min-height:calc(100dvh - 52px - var(--vp-launch-h,0px));background:var(--bg);font-family:var(--font-sans),system-ui,sans-serif;color:var(--fg);font-size:13px;display:flex;flex-direction:column}
 .vdm a{color:var(--primary);text-decoration:none;font-weight:700}
-.vdm .mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+.vdm .mono{font-family:var(--font-mono),monospace;font-feature-settings:"tnum"}
 .vdm .badge{display:inline-flex;align-items:center;height:20px;border-radius:4px;padding:0 7px;font-size:11px;font-weight:700;white-space:nowrap}
 .vdm .tbb{width:44px;height:44px;border-radius:6px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;padding:0}
 .vdm .row{display:flex;align-items:center;min-height:56px;border-top:1px solid var(--hair)}
 .vdm .row:first-child{border-top:0}
 .vdm .row .main{flex:1;min-width:0;min-height:56px;display:flex;align-items:center;gap:10px;padding:0 0 0 14px;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 .vdm .row .main:active{background:var(--raised)}
-.vdm .ft{width:20px;min-width:20px;height:20px;padding:0;border-radius:6px;font:700 7px/20px "IBM Plex Mono",monospace;letter-spacing:-.02em;text-align:center;flex:none;box-sizing:border-box}
+.vdm .ft{width:20px;min-width:20px;height:20px;padding:0;border-radius:6px;font:700 7px/20px var(--font-mono),monospace;letter-spacing:-.02em;text-align:center;flex:none;box-sizing:border-box}
 .vdm .trk{display:flex;gap:1px;width:64px;height:4px;border-radius:2px;overflow:hidden;background:var(--hair)}
 .vdm .kb{width:44px;height:44px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;border-radius:6px;padding:0;opacity:1}
-.vdm-sheet button{display:flex;align-items:center;gap:12px;width:100%;height:52px;padding:0 20px;border:0;background:none;font:600 14px Manrope,sans-serif;color:var(--fg);text-align:left;cursor:pointer}
+.vdm-sheet button{display:flex;align-items:center;gap:12px;width:100%;height:52px;padding:0 20px;border:0;background:none;font:600 14px var(--font-sans),sans-serif;color:var(--fg);text-align:left;cursor:pointer}
 .vdm-sheet button:active,.vdm-sheet button:focus-visible{background:var(--primary-light);outline:none}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 .vdm-sheet{animation:up .25s cubic-bezier(.22,1,.36,1) both}
@@ -79,8 +79,8 @@ html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
 
 /* ---------------- phone preview sheet (docs_mobile_preview) ---------------- */
 .vmp .chip{display:inline-flex;align-items:center;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px;white-space:nowrap}
-.vmp .mono{font-family:"IBM Plex Mono",monospace}
-.vmp .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:44px;padding:0 14px;border-radius:6px;font:600 13px Manrope,sans-serif;border:1px solid transparent;text-decoration:none;white-space:nowrap;cursor:pointer;box-sizing:border-box}
+.vmp .mono{font-family:var(--font-mono),monospace}
+.vmp .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:44px;padding:0 14px;border-radius:6px;font:600 13px var(--font-sans),sans-serif;border:1px solid transparent;text-decoration:none;white-space:nowrap;cursor:pointer;box-sizing:border-box}
 .vmp .btn-n{background:var(--navy);color:#fff}.vmp .btn-o{background:var(--panel);color:var(--fg);border-color:var(--border)}
 @keyframes sheet{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 .vmp .sheet{animation:sheet .28s cubic-bezier(.22,1,.36,1) both}
@@ -94,8 +94,8 @@ html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
 .vup .chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px;white-space:nowrap}
 .vup .lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-ink,var(--navy))}
 .vup .cap{font-size:11.5px;color:var(--muted)}
-.vup .mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
-.vup .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 12px;border-radius:6px;font:600 12.5px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box}
+.vup .mono{font-family:var(--font-mono),monospace;font-feature-settings:"tnum"}
+.vup .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 12px;border-radius:6px;font:600 12.5px var(--font-sans),sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;box-sizing:border-box}
 .vup .btn-n{background:var(--navy);color:#fff}.vup .btn-o{background:var(--panel);color:var(--fg);border-color:var(--border)}
 .vup .btn:disabled{opacity:.5;cursor:default}
 .vup .drop{border:1.5px dashed oklch(66% 0.17 48 / .55);border-radius:8px;background:light-dark(oklch(96.8% 0.04 55 / .5), oklch(23.9% 0.106 55 / 0.5));display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}

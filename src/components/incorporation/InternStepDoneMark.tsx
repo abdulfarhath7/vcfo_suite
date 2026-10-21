@@ -15,7 +15,7 @@ export function InternStepDoneMark({
 }) {
   const iconClass = cn(
     'h-4 w-4 shrink-0 justify-self-center',
-    done ? 'text-success' : 'text-muted-foreground',
+    done ? 'text-positive' : 'text-ink-muted',
     className,
   );
   if (done) {

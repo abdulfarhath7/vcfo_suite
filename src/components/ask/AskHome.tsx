@@ -8,10 +8,10 @@ import { AskNudgeCard } from './AskNudgeCard';
 
 function ProjectCard({ snapshot }: { snapshot: ProjectSnapshot }) {
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-panel p-3">
-      <p className="text-[12px] text-muted-foreground">Your project</p>
-      <p className="truncate text-[14px] font-semibold text-foreground">{snapshot.companyName}</p>
-      <p className="mt-1 text-[12.5px] text-muted-foreground">
+    <div className="rounded-[var(--radius)] border border-line bg-surface-raised p-3">
+      <p className="text-[12px] text-ink-muted">Your project</p>
+      <p className="truncate text-[14px] font-semibold text-ink">{snapshot.companyName}</p>
+      <p className="mt-1 text-[12.5px] text-ink-muted">
         {snapshot.currentPhase}
         {snapshot.currentStep ? ` · ${snapshot.currentStep.title}` : ''} · {snapshot.completedStepCount} of{' '}
         {snapshot.totalActiveSteps} steps done
@@ -33,22 +33,22 @@ export function AskHome({ compact = false }: { compact?: boolean }) {
     <div className="space-y-4">
       {!compact && (
         <div>
-          <h2 className="font-serif text-[20px] font-semibold text-foreground">
+          <h2 className="font-serif text-[20px] font-semibold text-ink">
             {ask.shell === 'client' ? 'What would you like to understand?' : 'What do you need to know?'}
           </h2>
-          <p className="text-[12.5px] text-muted-foreground">Pick a question or type your own.</p>
+          <p className="text-[12.5px] text-ink-muted">Pick a question or type your own.</p>
         </div>
       )}
       {!compact && <AskNudgeCard />}
       {snapshot && !compact && <ProjectCard snapshot={snapshot} />}
       {query.isError && (
-        <p role="alert" className="text-[12.5px] text-danger-text">
+        <p role="alert" className="text-[12.5px] text-danger">
           Could not load suggestions.
         </p>
       )}
       {groups.map((group) => (
         <section key={group} aria-label={group}>
-          {!compact && <h3 className="mb-1.5 text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">{group}</h3>}
+          {!compact && <h3 className="mb-1.5 text-[11.5px] font-medium uppercase tracking-wide text-ink-muted">{group}</h3>}
           <ul className={cn(compact ? 'flex gap-1.5 overflow-x-auto pb-1' : 'space-y-1.5')}>
             {suggestions
               .filter((s) => s.group === group)
@@ -59,7 +59,7 @@ export function AskHome({ compact = false }: { compact?: boolean }) {
                     disabled={ask.busy}
                     onClick={() => void ask.ask({ suggestionId: s.id, label: s.label })}
                     className={cn(
-                      'min-h-[44px] rounded-[var(--radius-md)] border border-border bg-panel px-3 text-left text-[13px] text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50',
+                      'min-h-[44px] rounded-[var(--radius-md)] border border-line bg-surface-raised px-3 text-left text-[13px] text-ink hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40 disabled:opacity-50',
                       compact ? 'whitespace-nowrap rounded-full' : 'w-full',
                     )}
                   >

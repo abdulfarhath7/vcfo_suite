@@ -85,7 +85,7 @@ export function PageHeader({
         className={cn(
           'mb-5',
           footer &&
-            'overflow-hidden rounded-2xl border border-border/70 bg-panel shadow-[0_8px_28px_-22px_oklch(22%_0.04_260_/_0.45)] sm:mb-6',
+            'overflow-hidden rounded-2xl border border-line/70 bg-surface-raised shadow-[0_8px_28px_-22px_oklch(22%_0.04_260_/_0.45)] sm:mb-6',
         )}
       >
         {heading}
@@ -105,12 +105,12 @@ export function PageHeader({
             ) : null}
             <div className="min-w-0">
               {showEyebrow ? (
-                <p className="mb-0.5 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                <p className="mb-0.5 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
                   {eyebrow}
                 </p>
               ) : null}
               {subtitle ? (
-                <div className="prose-narrow text-[13px] leading-relaxed text-muted-foreground">
+                <div className="prose-narrow text-[13px] leading-relaxed text-ink-muted">
                   {subtitle}
                 </div>
               ) : null}
@@ -123,7 +123,7 @@ export function PageHeader({
           ) : null}
         </div>
         {footer ? (
-          <div className="border-t border-border/70 bg-raised/20 px-5 py-4 sm:px-6">{footer}</div>
+          <div className="border-t border-line/70 bg-surface-sunken/20 px-5 py-4 sm:px-6">{footer}</div>
         ) : null}
       </header>
     );
@@ -132,27 +132,27 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        'mb-5 overflow-hidden rounded-2xl border border-border/70 bg-panel shadow-[0_8px_28px_-22px_oklch(22%_0.04_260_/_0.45)] sm:mb-6',
+        'mb-5 overflow-hidden rounded-2xl border border-line/70 bg-surface-raised shadow-[0_8px_28px_-22px_oklch(22%_0.04_260_/_0.45)] sm:mb-6',
       )}
     >
       <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-5">
         <div className="min-w-0">
           {showEyebrow ? (
-            <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
               {eyebrow}
             </p>
           ) : null}
           <div className="flex min-w-0 items-center gap-2">
             {backBtn}
             {showIcon && Icon ? (
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary-light text-primary">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand">
                 <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
               </span>
             ) : null}
             {heading}
           </div>
           {subtitle ? (
-            <div className="prose-narrow mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+            <div className="prose-narrow mt-1.5 text-[13px] leading-relaxed text-ink-muted">
               {subtitle}
             </div>
           ) : null}
@@ -163,7 +163,7 @@ export function PageHeader({
           </div>
         ) : null}
       </div>
-      {footer ? <div className="border-t border-border/70 bg-raised/20 px-5 py-4 sm:px-6">{footer}</div> : null}
+      {footer ? <div className="border-t border-line/70 bg-surface-sunken/20 px-5 py-4 sm:px-6">{footer}</div> : null}
     </header>
   );
 }

@@ -10,28 +10,11 @@ type GradientTextProps = {
   animationSpeed?: number;
 };
 
-/** React Bits–style gradient sweep text (brand orange defaults). */
-export default function GradientText({
-  children,
-  className = '',
-  colors = ['#EA580C', '#FB923C', '#C2410C', '#FDBA74'],
-  animationSpeed = 6,
-}: GradientTextProps) {
-  const gradientColors = [...colors, colors[0]].join(', ');
-
-  return (
-    <span
-      className={cn('inline-block bg-clip-text text-transparent', className)}
-      style={
-        {
-          backgroundImage: `linear-gradient(90deg, ${gradientColors})`,
-          backgroundSize: '300% 100%',
-          WebkitBackgroundClip: 'text',
-          animation: `mkt-gradient-shift ${animationSpeed}s ease infinite`,
-        } as React.CSSProperties
-      }
-    >
-      {children}
-    </span>
-  );
+/**
+ * Brand-coloured inline text. The animated gradient sweep is gone (no
+ * gradients on product or marketing surfaces); `colors` and `animationSpeed`
+ * stay in the props so callers compile.
+ */
+export default function GradientText({ children, className = '' }: GradientTextProps) {
+  return <span className={cn('inline-block text-brand', className)}>{children}</span>;
 }

@@ -34,7 +34,7 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
 
       <ProjectChangeRequestsPanel scope={scope} />
 
-      <Surface className="divide-y divide-border">
+      <Surface className="divide-y divide-line">
         <div className="px-4 py-3">
           <Eyebrow>Pending milestones</Eyebrow>
         </div>
@@ -54,11 +54,11 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
             >
               <div className="min-w-0">
                 <div className="text-[13px] font-medium truncate">{row.companyName}</div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-[11px] text-ink-muted">
                   {checklistItemLabel(row.itemId)} · {pendingApprovalKind(row)}
                 </div>
                 {row.clientFill?.note ? (
-                  <div className="mt-1 text-[11px] text-muted-foreground">{row.clientFill.note}</div>
+                  <div className="mt-1 text-[11px] text-ink-muted">{row.clientFill.note}</div>
                 ) : null}
               </div>
               <button

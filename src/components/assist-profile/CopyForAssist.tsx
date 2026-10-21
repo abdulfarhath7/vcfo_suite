@@ -52,7 +52,7 @@ export function CopyForAssist({ engagementId, hrefForMissing, className }: CopyF
 
   return (
     <div
-      className={cn('mb-3 rounded-lg border border-border bg-panel px-3 py-2 text-[12.5px]', className)}
+      className={cn('mb-3 rounded-lg border border-line bg-surface-raised px-3 py-2 text-[12.5px]', className)}
       role="region"
       aria-label="VCFO Assist profile"
     >
@@ -62,29 +62,29 @@ export function CopyForAssist({ engagementId, hrefForMissing, className }: CopyF
           Copy for Assist
         </AccentButton>
         {query.isError ? (
-          <span className="text-muted-foreground">{errorMessage(query.error, 'The profile could not be loaded.')}</span>
+          <span className="text-ink-muted">{errorMessage(query.error, 'The profile could not be loaded.')}</span>
         ) : !result ? (
-          <span className="text-muted-foreground" aria-busy>
+          <span className="text-ink-muted" aria-busy>
             Checking the profile…
           </span>
         ) : (
           <>
             <span
               className={cn(
-                'inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-medium',
-                fillable.length === 0 ? 'bg-success-light text-success-text' : 'bg-warning-light text-warning-text',
+                'inline-flex items-center rounded-sm px-2 py-0.5 text-[12px] font-medium',
+                fillable.length === 0 ? 'bg-positive-soft text-positive' : 'bg-warning-soft text-warning',
               )}
             >
               {fillable.length === 0 ? 'Nothing missing' : `${fillable.length} missing`}
             </span>
             {unsupplied.length > 0 ? (
-              <span className="text-muted-foreground">
+              <span className="text-ink-muted">
                 {unsupplied.length} {unsupplied.length === 1 ? 'field' : 'fields'} Suite cannot supply
               </span>
             ) : null}
             <button
               type="button"
-              className="ml-auto inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              className="ml-auto inline-flex items-center gap-1 font-medium text-brand hover:underline"
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
             >
@@ -96,27 +96,27 @@ export function CopyForAssist({ engagementId, hrefForMissing, className }: CopyF
       </div>
 
       {open && result ? (
-        <div className="mt-2 space-y-2 border-t border-dashed border-border pt-2">
+        <div className="mt-2 space-y-2 border-t border-dashed border-line pt-2">
           {fillable.length > 0 ? (
             <ul className="flex flex-wrap gap-1.5" aria-label="Missing in Suite">
               {fillable.map((input) => (
                 <li key={input.key}>
                   <Link
                     href={hrefForMissing(input)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-dashed border-warning bg-panel px-2 py-0.5 text-[12.5px] text-foreground hover:bg-warning-light"
+                    className="inline-flex items-center gap-1 rounded-lg border border-dashed border-warning bg-surface-raised px-2 py-0.5 text-[12.5px] text-ink hover:bg-warning-soft"
                   >
                     {missingInputLabel(input)}
-                    <span className="text-muted-foreground">in {stepTitle(input.stepId)}</span>
+                    <span className="text-ink-muted">in {stepTitle(input.stepId)}</span>
                   </Link>
                 </li>
               ))}
             </ul>
           ) : null}
           {unsupplied.length > 0 ? (
-            <ul className="space-y-0.5 text-muted-foreground" aria-label="Suite cannot supply">
+            <ul className="space-y-0.5 text-ink-muted" aria-label="Suite cannot supply">
               {unsupplied.map((input) => (
                 <li key={input.key}>
-                  <Link href={hrefForMissing(input)} className="text-foreground hover:underline">
+                  <Link href={hrefForMissing(input)} className="text-ink hover:underline">
                     {missingInputLabel(input)}
                   </Link>{' '}
                   — {input.reason}
@@ -125,7 +125,7 @@ export function CopyForAssist({ engagementId, hrefForMissing, className }: CopyF
             </ul>
           ) : null}
           {result.notes.length > 0 ? (
-            <ul className="space-y-0.5 text-muted-foreground" aria-label="Notes for the lead">
+            <ul className="space-y-0.5 text-ink-muted" aria-label="Notes for the lead">
               {result.notes.map((n, i) => (
                 <li key={`${n.key}-${i}`}>{n.note}</li>
               ))}

@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { AccentButton } from '@/components/noir';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const CONTACT_EMAIL = 'info@vcfosuite.com';
@@ -79,10 +79,10 @@ export function ContactForm() {
       </Field>
 
       <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-center sm:justify-between">
-        <AccentButton type="submit" size="lg" className="min-w-[10rem]">
+        <Button type="submit" size="lg" className="min-w-[10rem]">
           Open email draft
-        </AccentButton>
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        </Button>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">
           Uses your mail app · {CONTACT_EMAIL}
         </p>
       </div>
@@ -90,12 +90,12 @@ export function ContactForm() {
       {sent ? (
         <p
           data-state="open"
-          className="discrete-fade-up text-sm leading-relaxed text-muted-foreground"
+          className="discrete-fade-up text-sm leading-relaxed text-ink-muted"
           role="status"
         >
           If your mail app did not open, write to{' '}
           <a
-            className="font-medium text-blue-700 underline-offset-4 hover:underline"
+            className="font-medium text-brand underline-offset-4 hover:underline"
             href={`mailto:${CONTACT_EMAIL}`}
           >
             {CONTACT_EMAIL}
@@ -108,7 +108,7 @@ export function ContactForm() {
 }
 
 const fieldClass =
-  'w-full rounded-md border-0 border-b border-border bg-transparent px-0 py-3 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground/50 focus-visible:border-blue-500 focus-visible:ring-0';
+  'w-full rounded-none border-0 border-b border-line-strong bg-transparent px-0 py-3 text-sm text-ink outline-none transition-[border-color] duration-150 placeholder:text-ink-faint focus-visible:border-brand focus-visible:ring-0';
 
 function Field({
   label,
@@ -121,7 +121,7 @@ function Field({
 }) {
   return (
     <label className="block" htmlFor={htmlFor}>
-      <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+      <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.16em] text-ink-muted">
         {label}
       </span>
       {children}

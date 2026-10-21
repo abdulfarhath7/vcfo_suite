@@ -41,7 +41,7 @@ export function ClientPhaseBars({
       action={
         <Link
           href="/app/client/incorporation"
-          className="text-[11.5px] font-bold text-primary hover:underline"
+          className="text-[11.5px] font-semibold text-brand hover:underline"
         >
           Open checklist
         </Link>
@@ -58,8 +58,8 @@ export function ClientPhaseBars({
               <div className="mb-1 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12.5px]">
                 <b
                   className={cn(
-                    'min-w-0 truncate font-extrabold',
-                    isDone || isCurrent ? 'text-ink' : 'text-muted-foreground',
+                    'min-w-0 truncate font-semibold',
+                    isDone || isCurrent ? 'text-ink' : 'text-ink-muted',
                   )}
                 >
                   {phase.label}
@@ -67,7 +67,7 @@ export function ClientPhaseBars({
                 {isCurrent && (
                   <span
                     className={cn(
-                      'inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] font-extrabold',
+                      'inline-flex shrink-0 whitespace-nowrap rounded-sm px-2 py-0.5 text-[10.5px] font-semibold',
                       tone.soft,
                       tone.label,
                     )}
@@ -76,11 +76,11 @@ export function ClientPhaseBars({
                   </span>
                 )}
                 {isDone && (
-                  <span className="inline-flex shrink-0 whitespace-nowrap rounded-full bg-success-light px-2 py-0.5 text-[10.5px] font-extrabold text-success-text">
+                  <span className="inline-flex shrink-0 whitespace-nowrap rounded-sm bg-positive-soft px-2 py-0.5 text-[10.5px] font-semibold text-positive">
                     Complete
                   </span>
                 )}
-                <span className="mono ml-auto shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                <span className="mono ml-auto shrink-0 text-[11px] tabular-nums text-ink-muted">
                   {phase.done}/{phase.total}
                 </span>
               </div>
@@ -104,7 +104,7 @@ export function ClientPhaseBars({
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((open) => !open)}
-        className="mt-3 inline-flex items-center gap-1 text-[11.5px] font-bold text-primary hover:underline"
+        className="mt-3 inline-flex items-center gap-1 text-[11.5px] font-semibold text-brand hover:underline"
       >
         {expanded ? 'Hide milestones' : 'See every step'}
         <ChevronDown
@@ -114,7 +114,7 @@ export function ClientPhaseBars({
       </button>
 
       {expanded ? (
-        <div className="mt-3 border-t border-border pt-3">
+        <div className="mt-3 border-t border-line pt-3">
           <ClientJourneyTrack milestones={milestones} />
         </div>
       ) : null}

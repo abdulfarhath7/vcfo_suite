@@ -17,9 +17,9 @@ function Header({ onClose }: { onClose: () => void }) {
   const ask = useAskOptional()!;
   const client = ask.shell === 'client';
   return (
-    <div className="border-b border-border">
+    <div className="border-b border-line">
       {ask.preview && (
-        <div className="flex items-center gap-2 bg-phase-pre-soft px-4 py-1.5 text-[12px] text-phase-pre-text">
+        <div className="flex items-center gap-2 bg-brand-soft px-4 py-1.5 text-[12px] text-brand">
           Client view · {ask.preview.companyName}
           <button type="button" className="ml-auto underline" onClick={() => ask.setPreview(null)}>
             Exit preview
@@ -27,12 +27,12 @@ function Header({ onClose }: { onClose: () => void }) {
         </div>
       )}
       <div className="flex items-center gap-2.5 px-4 py-3">
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-muted text-foreground" aria-hidden>
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] bg-surface-sunken text-ink" aria-hidden>
           <MessageCircleQuestion className="h-4 w-4" strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-semibold text-foreground">Ask VCFO</p>
-          <p className="truncate text-[11.5px] text-muted-foreground">
+          <p className="text-[14px] font-semibold text-ink">Ask VCFO</p>
+          <p className="truncate text-[11.5px] text-ink-muted">
             {client ? 'Answers from verified sources' : 'Firm-wide · read only'}
           </p>
         </div>
@@ -42,7 +42,7 @@ function Header({ onClose }: { onClose: () => void }) {
             onClick={ask.reset}
             aria-label="Start a new conversation"
             title="New conversation"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-ink-muted hover:bg-surface-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
           >
             <RotateCcw className="h-4 w-4" />
           </button>
@@ -51,7 +51,7 @@ function Header({ onClose }: { onClose: () => void }) {
           type="button"
           onClick={onClose}
           aria-label="Close Ask VCFO"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] text-ink-muted hover:bg-surface-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
         >
           <X className="h-4 w-4" />
         </button>
@@ -67,7 +67,7 @@ function Body({ compactHome }: { compactHome: boolean }) {
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {ask.thread.length === 0 ? <AskHome /> : <AskThread />}
       </div>
-      <div className="space-y-2 border-t border-border px-4 pb-4 pt-3">
+      <div className="space-y-2 border-t border-line px-4 pb-4 pt-3">
         {ask.thread.length > 0 && compactHome && <AskHome compact />}
         <AskComposer />
       </div>
@@ -109,11 +109,11 @@ export function AskPanel() {
     return (
       <Dialog.Root open={open} onOpenChange={ask.setOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-foreground/30" />
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/30" />
           <Dialog.Content
             id="ask-panel"
             aria-describedby={undefined}
-            className="fixed inset-x-0 bottom-0 z-50 flex h-[85vh] flex-col rounded-t-[calc(var(--radius)+6px)] border-t border-border bg-panel shadow-xl focus:outline-none"
+            className="fixed inset-x-0 bottom-0 z-50 flex h-[85vh] flex-col rounded-t-[calc(var(--radius)+6px)] border-t border-line bg-surface-raised shadow-xl focus:outline-none"
           >
             <Dialog.Title className="sr-only">Ask VCFO</Dialog.Title>
             <div className="flex justify-center pt-2" aria-hidden>
@@ -134,7 +134,7 @@ export function AskPanel() {
           {mode === 'overlay' && (
             <m.div
               key="ask-scrim"
-              className="fixed inset-0 z-40 bg-foreground/15"
+              className="fixed inset-0 z-40 bg-ink/15"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -149,7 +149,7 @@ export function AskPanel() {
             ref={panelRef}
             role="complementary"
             aria-label="Ask VCFO"
-            className={cn('fixed inset-y-0 right-0 z-50 flex flex-col border-l border-border bg-panel shadow-xl')}
+            className={cn('fixed inset-y-0 right-0 z-50 flex flex-col border-l border-line bg-surface-raised shadow-xl')}
             style={{ width: ASK_PANEL_WIDTH }}
             initial={reduceMotion ? { opacity: 0 } : { x: ASK_PANEL_WIDTH }}
             animate={reduceMotion ? { opacity: 1 } : { x: 0 }}

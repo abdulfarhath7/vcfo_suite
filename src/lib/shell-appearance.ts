@@ -19,38 +19,33 @@ export type ShellAppearance = {
   reduceMotion: boolean;
 };
 
+/* The greeting card has one skin: the navy `side` token (docs/design/TOKENS.md).
+   The eight solids and six gradients it used to offer are gone; stored
+   preferences that still name them resolve to navy in `parseShellAppearance`. */
 export const HERO_SOLIDS = [
-  { id: 'midnight', label: 'Midnight', value: '#0F172A' },
-  { id: 'ocean', label: 'Ocean', value: '#0F3D5E' },
-  { id: 'indigo', label: 'Indigo', value: '#312E81' },
-  { id: 'slate', label: 'Slate', value: '#334155' },
-  { id: 'forest', label: 'Forest', value: '#134E4A' },
-  { id: 'violet', label: 'Violet', value: '#4C1D95' },
-  { id: 'ink', label: 'Ink', value: '#111827' },
-  { id: 'steel', label: 'Steel', value: '#1E293B' },
+  { id: 'navy', label: 'Navy', value: 'oklch(var(--side))' },
 ] as const;
 
+/* Two sidebar skins: navy (the default, the one weight on the screen) and white.
+   Opaque token fills only: a frosted rail re-blurs the page on every hover-peek
+   width frame. */
 export const SIDEBAR_SOLIDS = [
-  /* Opaque: theme-aware panel. Alpha + blur used to frost the page; a full-rail
-     backdrop-filter re-blurs on every hover-peek frame. Porcelain stays #F8FAFC. */
-  { id: 'glass', label: 'Glass', value: 'oklch(var(--panel))' },
-  { id: 'white', label: 'Porcelain', value: '#F8FAFC' },
-  { id: 'mist', label: 'Mist', value: '#EEF2FF' },
-  { id: 'ice', label: 'Ice', value: '#ECFEFF' },
-  { id: 'sage', label: 'Sage', value: '#F0FDFA' },
-  { id: 'midnight', label: 'Midnight', value: '#0F172A' },
-  { id: 'indigo', label: 'Indigo', value: '#1E1B4B' },
-  { id: 'slate', label: 'Slate', value: '#1E293B' },
+  { id: 'navy', label: 'Navy', value: 'oklch(var(--side))' },
+  { id: 'glass', label: 'White', value: 'oklch(var(--surface-raised))' },
 ] as const;
 
-export const SURFACE_GRADIENTS = [
-  { id: 'aurora', label: 'Aurora', value: 'linear-gradient(115deg, #1D4ED8 0%, #6D28D9 52%, #DB2777 100%)' },
-  { id: 'dusk', label: 'Dusk', value: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 55%, #4338CA 100%)' },
-  { id: 'tide', label: 'Tide', value: 'linear-gradient(120deg, #0E7490 0%, #2563EB 100%)' },
-  { id: 'orchid', label: 'Orchid', value: 'linear-gradient(125deg, #4F46E5 0%, #7C3AED 48%, #C026D3 100%)' },
-  { id: 'horizon', label: 'Horizon', value: 'linear-gradient(105deg, #0369A1 0%, #4F46E5 100%)' },
-  { id: 'glacier', label: 'Glacier', value: 'linear-gradient(160deg, #0F766E 0%, #1D4ED8 100%)' },
-] as const;
+/* No gradient skins any more. Kept as an empty list so older callers and stored
+   preferences keep type-checking; `parseShellAppearance` folds `gradient` into solid. */
+export const SURFACE_GRADIENTS: readonly { id: string; label: string; value: string }[] = [];
+
+const LIGHT_SIDEBAR_IDS = new Set(['glass', 'white', 'mist', 'ice', 'sage']);
+
+/* Maps the ids the old pickers wrote (midnight, ocean, mist, ...) onto the two
+   that exist now. */
+export function normaliseSolidId(role: 'hero' | 'sidebar', id: string): string {
+  if (role === 'hero') return 'navy';
+  return LIGHT_SIDEBAR_IDS.has(id) ? 'glass' : 'navy';
+}
 
 export const SURFACE_PRESETS = [
   {
@@ -94,17 +89,17 @@ export const MOTION_STYLES: { id: MotionStyle; label: string; hint: string }[] =
 ];
 
 const defaultHero: SurfaceAppearance = {
-  kind: 'gradient',
-  solidId: 'midnight',
-  gradientId: 'dusk',
+  kind: 'solid',
+  solidId: 'navy',
+  gradientId: '',
   presetId: 'linen',
   customDataUrl: null,
 };
 
 const defaultSidebar: SurfaceAppearance = {
   kind: 'solid',
-  solidId: 'glass',
-  gradientId: 'dusk',
+  solidId: 'navy',
+  gradientId: '',
   presetId: 'wash',
   customDataUrl: null,
 };
@@ -116,17 +111,24 @@ export const DEFAULT_SHELL_APPEARANCE: ShellAppearance = {
   reduceMotion: false,
 };
 
-function asSurface(raw: unknown, fallback: SurfaceAppearance): SurfaceAppearance {
+function asSurface(
+  raw: unknown,
+  fallback: SurfaceAppearance,
+  role: 'hero' | 'sidebar',
+): SurfaceAppearance {
   if (!raw || typeof raw !== 'object') return fallback;
   const row = raw as Partial<SurfaceAppearance>;
+  // A stored gradient preference becomes the solid skin: gradients left with the design system.
   const kind: SurfaceKind =
-    row.kind === 'solid' || row.kind === 'gradient' || row.kind === 'preset' || row.kind === 'custom'
-      ? row.kind
-      : fallback.kind;
+    row.kind === 'solid' || row.kind === 'gradient'
+      ? 'solid'
+      : row.kind === 'preset' || row.kind === 'custom'
+        ? row.kind
+        : fallback.kind;
   return {
     kind,
-    solidId: typeof row.solidId === 'string' ? row.solidId : fallback.solidId,
-    gradientId: typeof row.gradientId === 'string' ? row.gradientId : fallback.gradientId,
+    solidId: normaliseSolidId(role, typeof row.solidId === 'string' ? row.solidId : fallback.solidId),
+    gradientId: '',
     presetId: typeof row.presetId === 'string' ? row.presetId : fallback.presetId,
     customDataUrl: typeof row.customDataUrl === 'string' ? row.customDataUrl : fallback.customDataUrl,
   };
@@ -139,8 +141,8 @@ export function parseShellAppearance(raw: unknown): ShellAppearance {
     ? (row.motion as MotionStyle)
     : 'smooth';
   return {
-    hero: asSurface(row.hero, defaultHero),
-    sidebar: asSurface(row.sidebar, defaultSidebar),
+    hero: asSurface(row.hero, defaultHero, 'hero'),
+    sidebar: asSurface(row.sidebar, defaultSidebar, 'sidebar'),
     motion,
     reduceMotion: Boolean(row.reduceMotion),
   };
@@ -218,27 +220,17 @@ export function resolveSurface(surface: SurfaceAppearance, role: 'hero' | 'sideb
       image: true,
     };
   }
-  if (surface.kind === 'gradient') {
-    const g = SURFACE_GRADIENTS.find((row) => row.id === surface.gradientId) ?? SURFACE_GRADIENTS[0];
-    return {
-      background: g.value,
-      overlay: 'transparent',
-      ink: 'light',
-      image: false,
-    };
-  }
   if (role === 'sidebar') {
-    const value = findSolid(surface.solidId, SIDEBAR_SOLIDS, SIDEBAR_SOLIDS[0].value);
-    const dark = surface.solidId === 'midnight' || surface.solidId === 'indigo' || surface.solidId === 'slate';
+    const solidId = normaliseSolidId('sidebar', surface.solidId);
+    const value = findSolid(solidId, SIDEBAR_SOLIDS, SIDEBAR_SOLIDS[0].value);
     return {
       background: value,
       overlay: 'transparent',
-      ink: dark ? 'light' : 'dark',
+      ink: solidId === 'navy' ? 'light' : 'dark',
       image: false,
     };
   }
-  const value = findSolid(surface.solidId, HERO_SOLIDS, HERO_SOLIDS[0].value);
-  return { background: value, overlay: 'transparent', ink: 'light', image: false };
+  return { background: HERO_SOLIDS[0].value, overlay: 'transparent', ink: 'light', image: false };
 }
 
 export function compressImageFile(file: File, maxEdge = 1400, quality = 0.74): Promise<string> {

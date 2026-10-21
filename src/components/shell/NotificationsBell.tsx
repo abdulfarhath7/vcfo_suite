@@ -56,10 +56,10 @@ function offerUndoToast(message: string, onUndo: () => void) {
           maxWidth: "280px",
         }}
       >
-        <span className="min-w-0 text-[12px] leading-snug text-foreground">{message}</span>
+        <span className="min-w-0 text-[12px] leading-snug text-ink">{message}</span>
         <button
           type="button"
-          className="shrink-0 rounded px-1.5 py-0.5 text-[12px] font-semibold text-primary hover:bg-primary-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="shrink-0 rounded px-1.5 py-0.5 text-[12px] font-semibold text-brand hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
           onClick={() => {
             onUndo();
             toast.dismiss(t.id);
@@ -270,9 +270,9 @@ export function NotificationsBell() {
       <PopoverTrigger
         data-notifications-bell=""
         className={cn(
-          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:min-h-9 sm:min-w-9",
-          hasUnread && "bg-primary-light text-primary hover:bg-primary-light",
-          catching && "bg-primary-light text-primary",
+          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-brand-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40 sm:min-h-9 sm:min-w-9",
+          hasUnread && "bg-brand-soft text-brand hover:bg-brand-soft",
+          catching && "bg-brand-soft text-brand",
         )}
         aria-label={
           hasUnread
@@ -281,7 +281,7 @@ export function NotificationsBell() {
         }
       >
         {catching ? (
-          <span className="pointer-events-none absolute inset-1 rounded-lg bg-primary/20" aria-hidden />
+          <span className="pointer-events-none absolute inset-1 rounded-lg bg-brand/20" aria-hidden />
         ) : null}
         <m.span
           data-notifications-bell-target=""
@@ -292,7 +292,7 @@ export function NotificationsBell() {
           <Bell
             className={cn(
               "h-[18px] w-[18px] shrink-0",
-              hasUnread && "fill-primary/25",
+              hasUnread && "fill-brand/25",
             )}
             strokeWidth={hasUnread ? 2.25 : 2}
             aria-hidden
@@ -300,7 +300,7 @@ export function NotificationsBell() {
         </m.span>
         {hasUnread && (
           <span
-            className="absolute top-1 right-1 min-w-[15px] h-[15px] px-0.5 flex items-center justify-center rounded-full bg-role text-[9px] font-semibold text-role-foreground leading-none ring-2 ring-panel"
+            className="absolute top-1 right-1 min-w-[15px] h-[15px] px-0.5 flex items-center justify-center rounded-full bg-brand text-[9px] font-semibold text-brand leading-none ring-2 ring-panel"
             aria-hidden
           >
             {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
@@ -310,18 +310,18 @@ export function NotificationsBell() {
       <PopoverContent
         align="end"
         sideOffset={6}
-        className="flex w-[min(100vw-1.5rem,26rem)] max-h-[min(74vh,520px)] flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-panel p-0 text-foreground shadow-[0_12px_40px_-18px_oklch(22%_0.04_260_/_0.38)]"
+        className="flex w-[min(100vw-1.5rem,26rem)] max-h-[min(74vh,520px)] flex-col overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface-raised p-0 text-ink shadow-[0_12px_40px_-18px_oklch(22%_0.04_260_/_0.38)]"
         onPointerDownOutside={guardOutside}
         onInteractOutside={guardOutside}
       >
         <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-1.5">
-          <p className="p-0 text-[13px] font-bold leading-tight tracking-tight text-ink">
+          <p className="p-0 text-[13px] font-semibold leading-tight tracking-tight text-ink">
             Notifications
           </p>
           {hasUnread && (
             <button
               type="button"
-              className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1 text-[10px] font-medium text-ink-muted hover:text-ink"
               onClick={() => markAllNotificationsRead()}
             >
               <CheckCheck className="h-3 w-3" aria-hidden />
@@ -360,7 +360,7 @@ export function NotificationsBell() {
             {todayCount > 0 && (
               <button
                 type="button"
-                className="font-medium text-muted-foreground hover:text-primary"
+                className="font-medium text-ink-muted hover:text-brand"
                 onClick={() => handleClearScope("today")}
               >
                 Clear today
@@ -369,7 +369,7 @@ export function NotificationsBell() {
             {weekCount > 0 && (
               <button
                 type="button"
-                className="font-medium text-muted-foreground hover:text-primary"
+                className="font-medium text-ink-muted hover:text-brand"
                 onClick={() => handleClearScope("week")}
               >
                 Clear this week
@@ -377,7 +377,7 @@ export function NotificationsBell() {
             )}
             <button
               type="button"
-              className="font-medium text-muted-foreground hover:text-primary"
+              className="font-medium text-ink-muted hover:text-brand"
               aria-label={`Clear all ${filter} notifications`}
               onClick={() => handleClearScope("all")}
             >
@@ -386,9 +386,9 @@ export function NotificationsBell() {
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-t border-border px-1 py-1">
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-t border-line px-1 py-1">
           {filtered.length === 0 ? (
-            <p className="px-2 py-8 text-center text-[11px] text-muted-foreground">
+            <p className="px-2 py-8 text-center text-[11px] text-ink-muted">
               {emptyCopy}
             </p>
           ) : (
@@ -432,10 +432,10 @@ export function NotificationsBell() {
           )}
         </div>
 
-        <div className="border-t border-border px-3 py-2">
+        <div className="border-t border-line px-3 py-2">
           <Link
             href={historyHref}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-primary-dark"
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-brand hover:text-brand-strong"
             onClick={() => setOpen(false)}
           >
             <History className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />

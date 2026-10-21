@@ -34,9 +34,9 @@ export function JourneyNode({
     return (
       <span
         className={cn(
-          'relative z-[1] flex items-center justify-center rounded-full border border-success bg-success text-success-foreground shadow-sm journey-complete',
+          'relative z-[1] flex items-center justify-center rounded-full border border-positive bg-positive text-on-brand shadow-sm journey-complete',
           dim,
-          selected && 'ring-4 ring-primary/25',
+          selected && 'ring-4 ring-brand/25',
           className,
         )}
       >
@@ -49,9 +49,9 @@ export function JourneyNode({
     return (
       <span
         className={cn(
-          'relative z-[1] flex items-center justify-center rounded-full border-2 border-primary bg-primary font-bold text-primary-foreground shadow-sm journey-node-pulse',
+          'relative z-[1] flex items-center justify-center rounded-full border-2 border-brand bg-brand font-semibold text-on-brand shadow-sm journey-node-pulse',
           dim,
-          selected && 'ring-4 ring-primary/30',
+          selected && 'ring-4 ring-brand/30',
           className,
         )}
       >
@@ -64,9 +64,9 @@ export function JourneyNode({
     return (
       <span
         className={cn(
-          'relative z-[1] flex items-center justify-center rounded-full border border-border bg-panel text-warning-text shadow-sm',
+          'relative z-[1] flex items-center justify-center rounded-full border border-line bg-surface-raised text-warning shadow-sm',
           dim,
-          selected && 'ring-4 ring-primary/25',
+          selected && 'ring-4 ring-brand/25',
           className,
         )}
       >
@@ -78,9 +78,9 @@ export function JourneyNode({
   return (
     <span
       className={cn(
-        'relative z-[1] flex items-center justify-center rounded-full border border-dashed border-border bg-muted/40 text-muted-foreground',
+        'relative z-[1] flex items-center justify-center rounded-full border border-dashed border-line bg-surface-sunken/40 text-ink-muted',
         dim,
-        selected && 'ring-4 ring-primary/25',
+        selected && 'ring-4 ring-brand/25',
         className,
       )}
     >

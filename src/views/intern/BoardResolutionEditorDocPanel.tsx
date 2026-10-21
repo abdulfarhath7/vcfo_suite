@@ -159,7 +159,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
     <>
         {loading ? (
 
-          <div className="flex items-center gap-2 text-[12px] text-text-tertiary py-12">
+          <div className="flex items-center gap-2 text-[12px] text-ink-faint py-12">
 
             <HexgridLoader size="sm" />
 
@@ -182,7 +182,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                     </p>
                     {!isFinalized && saveStatusText && (
                       <p
-                        className="text-[11px] text-text-tertiary"
+                        className="text-[11px] text-ink-faint"
                         aria-live="polite"
                         aria-atomic="true"
                       >
@@ -236,7 +236,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                   </div>
                 </div>
 
-                <div className="mb-6 rounded-lg border border-primary/35 bg-primary/5 p-5">
+                <div className="mb-6 rounded-lg border border-brand/35 bg-brand/5 p-5">
 
                   <p className="text-[12px] uppercase tracking-wider text-blue-600 font-semibold mb-2">
 
@@ -244,7 +244,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                   </p>
 
-                  <p className="text-[13px] text-text-secondary mb-4 max-w-lg">
+                  <p className="text-[13px] text-ink-muted mb-4 max-w-lg">
 
                     {previewStorageCorrupt && isFinalized
                       ? 'The stored file could not be previewed. Re-generate or apply the latest template below to rebuild storage; the document stays finalized for the client.'
@@ -262,7 +262,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                       download={BOARD_RESOLUTION_DOCX_FILENAME}
 
-                      className="gold-sheen inline-flex items-center justify-center gap-2 rounded-md h-9 px-4 text-[13px] font-medium tracking-tight hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+                      className="gold-sheen inline-flex items-center justify-center gap-2 rounded-md h-9 px-4 text-[13px] font-medium tracking-tight hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-1 ring-line/40"
 
                     >
 
@@ -324,17 +324,17 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
             ) : (
 
-              <div className="mb-6 rounded-md border border-warning/25 bg-warning/10 px-4 py-4 text-[13px] text-warning-text">
+              <div className="mb-6 rounded-md border border-warning/25 bg-warning/10 px-4 py-4 text-[13px] text-warning">
 
                 <p className="flex items-start gap-2 font-medium text-ink mb-2">
 
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-text" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
 
                   Generate the Word document first
 
                 </p>
 
-                <p className="mb-4 pl-6 text-text-secondary">
+                <p className="mb-4 pl-6 text-ink-muted">
 
                   Inline editing and client release require a `.docx` from the board resolution
 
@@ -399,7 +399,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
             {doc?.finalizedAt && (
 
-              <p className="text-[11.5px] text-text-tertiary mt-4">
+              <p className="text-[11.5px] text-ink-faint mt-4">
 
                 Finalized{' '}
 

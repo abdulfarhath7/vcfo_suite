@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { Surface, Eyebrow } from '@/components/noir';
 import { Button } from '@/components/ui/button';
+import { CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_BADGE } from '@/components/common/IconChip';
+import { cn } from '@/lib/utils';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/project-stuck';
 import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
@@ -82,8 +84,8 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
             key={p}
             type="button"
             onClick={() => setPhase(p)}
-            className={`rounded-full px-3 py-1 text-[11px] border ${
-              phase === p ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'
+            className={`rounded-sm px-3 py-1 text-[11px] border ${
+              phase === p ? 'bg-brand text-on-brand border-brand' : 'border-line text-ink-muted'
             }`}
           >
             {p === 'all' ? 'All phases' : p === 'Pre-Incorporation' ? 'Pre-incorp' : 'Post-incorp'}
@@ -95,8 +97,8 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
               key={s}
               type="button"
               onClick={() => setStuck(s)}
-              className={`rounded-full px-3 py-1 text-[11px] border ${
-                stuck === s ? 'bg-raised text-foreground border-primary/40' : 'border-border text-muted-foreground'
+              className={`rounded-sm px-3 py-1 text-[11px] border ${
+                stuck === s ? 'bg-surface-sunken text-ink border-brand/40' : 'border-line text-ink-muted'
               }`}
             >
               {s === 'all' ? 'Any status' : STUCK_LABEL[s]}
@@ -104,17 +106,17 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
           ),
         )}
       </div>
-      <Surface className="divide-y divide-border">
+      <Surface className="divide-y divide-line">
         <div className="px-4 py-3">
           <Eyebrow>{rows.length} projects</Eyebrow>
         </div>
         {rows.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No projects match these filters.</p>
+          <p className="p-6 text-[13px] text-ink-muted">No projects match these filters.</p>
         ) : (
           rows.map(({ eng, reason }) => (
             <div
               key={eng.id}
-              className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-muted/40"
+              className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-surface-sunken/40"
             >
               <button
                 type="button"
@@ -122,13 +124,25 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
                 onClick={() => router.push(adminProjectPath(eng, '/app/admin'))}
               >
                 <div className="text-[13px] font-medium truncate">{eng.companyName}</div>
-                <div className="truncate text-[11px] text-muted-foreground">
+                <div className="truncate text-[11px] text-ink-muted">
                   {stageDisplayLabel(eng.stage)} · PM {managerName(eng.managerId ?? eng.adminId)} ·
                   Lead {leadNames(eng)} · {STUCK_LABEL[reason]}
                 </div>
               </button>
               <div className="flex shrink-0 items-center gap-2">
-                <div className="text-[11px] mono uppercase text-muted-foreground">{eng.health}</div>
+                <span
+                  className={cn(
+                    CHIP_CLASS,
+                    CHIP_COLUMN_CLASS,
+                    eng.health === 'on-track'
+                      ? TONE_BADGE.success
+                      : eng.health === 'overdue'
+                        ? TONE_BADGE.danger
+                        : TONE_BADGE.warning,
+                  )}
+                >
+                  {eng.health === 'on-track' ? 'On track' : eng.health === 'overdue' ? 'Overdue' : 'At risk'}
+                </span>
                 <ProjectActionsMenu engagement={eng} />
               </div>
             </div>

@@ -23,13 +23,60 @@ export default {
         ring: "oklch(var(--ring) / <alpha-value>)",
         background: "oklch(var(--background) / <alpha-value>)",
         foreground: "oklch(var(--foreground) / <alpha-value>)",
-        surface: "oklch(var(--surface) / <alpha-value>)",
 
-        /* Noir surfaces */
+        /* ---- Design tokens v1 (docs/design/TOKENS.md). Everything below this group is a
+           legacy alias that resolves to one of these and goes away on 2026-11-30. ---- */
+        surface: {
+          DEFAULT: "oklch(var(--surface) / <alpha-value>)",
+          raised: "oklch(var(--surface-raised) / <alpha-value>)",
+          sunken: "oklch(var(--surface-sunken) / <alpha-value>)",
+        },
+        line: {
+          DEFAULT: "oklch(var(--line) / <alpha-value>)",
+          strong: "oklch(var(--line-strong) / <alpha-value>)",
+        },
+        rule: "oklch(var(--rule) / <alpha-value>)",
         ink: {
           DEFAULT: "oklch(var(--ink) / <alpha-value>)",
-          soft: "oklch(var(--muted-paper) / <alpha-value>)",
+          muted: "oklch(var(--ink-muted) / <alpha-value>)",
+          faint: "oklch(var(--ink-faint) / <alpha-value>)",
+          soft: "oklch(var(--ink-muted) / <alpha-value>)" /* legacy name for ink-muted */,
         },
+        brand: {
+          DEFAULT: "oklch(var(--brand) / <alpha-value>)",
+          strong: "oklch(var(--brand-strong) / <alpha-value>)",
+          soft: "oklch(var(--brand-soft) / <alpha-value>)",
+          deep: "oklch(var(--brand-strong) / <alpha-value>)" /* legacy name for brand-strong */,
+        },
+        "on-brand": "oklch(var(--on-brand) / <alpha-value>)",
+        highlight: {
+          DEFAULT: "oklch(var(--highlight) / <alpha-value>)",
+          bright: "oklch(var(--highlight-bright) / <alpha-value>)",
+          soft: "oklch(var(--highlight-soft) / <alpha-value>)",
+        },
+        positive: {
+          DEFAULT: "oklch(var(--positive) / <alpha-value>)",
+          soft: "oklch(var(--positive-soft) / <alpha-value>)",
+        },
+        "focus-ring": "oklch(var(--focus-ring) / <alpha-value>)",
+        scrim: "var(--scrim)",
+        side: {
+          DEFAULT: "oklch(var(--side) / <alpha-value>)",
+          ink: "oklch(var(--side-ink) / <alpha-value>)",
+          muted: "oklch(var(--side-muted) / <alpha-value>)",
+          active: "oklch(var(--side-active) / <alpha-value>)",
+          line: "oklch(var(--side-line) / <alpha-value>)",
+        },
+        data: {
+          1: "oklch(var(--data-1) / <alpha-value>)",
+          2: "oklch(var(--data-2) / <alpha-value>)",
+          3: "oklch(var(--data-3) / <alpha-value>)",
+          4: "oklch(var(--data-4) / <alpha-value>)",
+          5: "oklch(var(--data-5) / <alpha-value>)",
+          6: "oklch(var(--data-6) / <alpha-value>)",
+        },
+
+        /* Noir surfaces (legacy) */
         panel: "oklch(var(--panel) / <alpha-value>)",
         raised: "oklch(var(--raised) / <alpha-value>)",
 
@@ -92,10 +139,6 @@ export default {
         },
         hairline: "oklch(var(--border) / <alpha-value>)",
 
-        brand: {
-          DEFAULT: "oklch(var(--brand) / <alpha-value>)",
-          deep: "oklch(var(--brand-deep) / <alpha-value>)",
-        },
         primary: {
           DEFAULT: "oklch(var(--primary) / <alpha-value>)",
           foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
@@ -134,17 +177,20 @@ export default {
         },
         warning: {
           DEFAULT: "oklch(var(--warning) / <alpha-value>)",
+          soft: "oklch(var(--warning-soft) / <alpha-value>)",
           foreground: "oklch(var(--warning-foreground) / <alpha-value>)",
           light: "oklch(var(--warning-light) / <alpha-value>)",
           text: "oklch(var(--warning-text) / <alpha-value>)",
         },
         danger: {
           DEFAULT: "oklch(var(--danger) / <alpha-value>)",
+          soft: "oklch(var(--danger-soft) / <alpha-value>)",
           light: "oklch(var(--danger-light) / <alpha-value>)",
           text: "oklch(var(--danger-text) / <alpha-value>)",
         },
         info: {
           DEFAULT: "oklch(var(--info) / <alpha-value>)",
+          soft: "oklch(var(--info-soft) / <alpha-value>)",
           foreground: "oklch(var(--info-foreground) / <alpha-value>)",
           light: "oklch(var(--info-light) / <alpha-value>)",
           text: "oklch(var(--info-text) / <alpha-value>)",
@@ -213,14 +259,33 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
+        lg: "var(--radius-lg)",
         md: "var(--radius-md)",
         sm: "var(--radius-sm)",
         xl: "var(--radius-xl)",
         "2xl": "var(--radius-2xl)",
         "3xl": "var(--radius-3xl)",
-        pill: "1rem",
-        card: "var(--radius)",
+        pill: "var(--radius-pill)",
+        card: "var(--radius-lg)",
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
+        float: "var(--shadow-float)",
+      },
+      spacing: {
+        "control-sm": "var(--control-sm)",
+        "control-md": "var(--control-md)",
+        "control-lg": "var(--control-lg)",
+        chip: "var(--chip-height)",
+        row: "var(--row-height)",
+        tile: "var(--tile)",
+        "icon-sm": "var(--icon-sm)",
+        "icon-md": "var(--icon-md)",
+        "icon-lg": "var(--icon-lg)",
+      },
+      minWidth: {
+        control: "var(--control-min-width)",
+        chip: "var(--chip-min-width)",
       },
       fontSize: {
         badge: "11px",

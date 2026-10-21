@@ -79,33 +79,33 @@ const STATUS_TONE: Record<
 > = {
   'not-started': {
     dot: 'muted',
-    cls: 'text-paper-subtle',
-    clsLight: 'text-text-tertiary',
+    cls: 'text-ink-subtle',
+    clsLight: 'text-ink-faint',
   },
   'in-progress': {
     dot: 'info',
     cls: 'text-info',
-    clsLight: 'text-info-text',
+    clsLight: 'text-info',
   },
   'awaiting-client': {
     dot: 'warning',
     cls: 'text-warning',
-    clsLight: 'text-warning-text',
+    clsLight: 'text-warning',
   },
   completed: {
     dot: 'success',
-    cls: 'text-success',
-    clsLight: 'text-success-text',
+    cls: 'text-positive',
+    clsLight: 'text-positive',
   },
   overdue: {
     dot: 'danger',
     cls: 'text-danger',
-    clsLight: 'text-danger-text',
+    clsLight: 'text-danger',
   },
   'not-applicable': {
     dot: 'muted',
-    cls: 'text-paper-subtle',
-    clsLight: 'text-text-tertiary',
+    cls: 'text-ink-subtle',
+    clsLight: 'text-ink-faint',
   },
 };
 
@@ -242,11 +242,11 @@ function StepDetailContentInner({
       'w-full flex items-center gap-3 px-3 py-2.5 border rounded-sm text-left transition-all',
       done
         ? isLight
-          ? 'border-brand/30 bg-primary-light/50'
-          : 'border-primary/40 bg-primary/5'
+          ? 'border-brand/30 bg-brand-soft/50'
+          : 'border-brand/40 bg-brand/5'
         : isLight
-          ? 'border-border hover:border-border/80 hover:bg-muted/40'
-          : 'border-hairline hover:border-hairline-strong',
+          ? 'border-line hover:border-line/80 hover:bg-surface-sunken/40'
+          : 'border-line hover:border-line-strong',
     );
 
   const tabTrigger = cn(
@@ -254,19 +254,19 @@ function StepDetailContentInner({
     'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
     'transition-colors',
     isLight
-      ? 'text-text-tertiary data-[state=active]:text-brand hover:text-ink'
-      : 'text-paper-muted data-[state=active]:text-blue-600 hover:text-paper',
+      ? 'text-ink-faint data-[state=active]:text-brand hover:text-ink'
+      : 'text-ink-muted data-[state=active]:text-blue-600 hover:text-ink',
   );
 
-  const emptyCopy = isLight ? 'text-text-tertiary' : 'text-paper-muted';
+  const emptyCopy = isLight ? 'text-ink-faint' : 'text-ink-muted';
   const bodyText = (done: boolean) =>
     isLight
       ? done
         ? 'text-ink'
-        : 'text-text-secondary'
+        : 'text-ink-muted'
       : done
-        ? 'text-paper'
-        : 'text-paper-muted';
+        ? 'text-ink'
+        : 'text-ink-muted';
 
   const viewProps = {
     item,

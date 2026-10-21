@@ -1,26 +1,26 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
+/* Buttons (docs/design/TOKENS.md, "Controls and chips"): three heights, one
+   minimum width so a row or column of buttons shares one size, labels never
+   wrap, 8px corners, weight 600. One primary per screen region. */
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-[color,background-color,box-shadow,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 active:scale-[0.98] motion-reduce:active:scale-100 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-semibold ring-offset-surface transition-[color,background-color,border-color,box-shadow,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-45 active:translate-y-px motion-reduce:active:translate-y-0 [&_svg]:pointer-events-none [&_svg]:size-icon-md [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-none hover:bg-primary-dark",
-        destructive:
-          "border border-destructive/30 bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        success: "bg-success text-success-foreground hover:bg-success/90 focus-visible:ring-success/40",
-        outline:
-          "border border-border bg-panel text-primary hover:bg-primary-light hover:border-primary/35",
-        secondary:
-          "border border-border bg-panel text-primary hover:bg-primary-light",
-        ghost: "bg-transparent text-primary hover:bg-primary-light",
-        link: "text-primary underline-offset-4 hover:underline",
+        default: "bg-brand text-on-brand hover:bg-brand-strong",
+        destructive: "bg-danger text-white hover:bg-danger/90",
+        success: "bg-positive text-on-brand hover:bg-positive/90",
+        outline: "border border-line-strong bg-surface-raised text-ink hover:bg-surface-sunken",
+        secondary: "border border-line-strong bg-surface-raised text-ink hover:bg-surface-sunken",
+        ghost: "bg-transparent text-ink-muted hover:bg-surface-sunken hover:text-ink",
+        link: "text-brand underline-offset-4 hover:text-brand-strong hover:underline",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        default: "h-control-md min-w-control px-3 text-[13px]",
+        sm: "h-control-sm min-w-control px-2.5 text-[12px]",
+        lg: "h-control-lg min-w-control px-4 text-[14px]",
+        icon: "h-control-md w-control-md",
       },
     },
     defaultVariants: {

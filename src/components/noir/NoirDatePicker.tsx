@@ -121,46 +121,46 @@ const noirCalendarClassNames = {
   // The caption and nav are drawn by NoirDatePicker's own header.
   month_caption: 'hidden',
   weekday:
-    'text-muted-foreground rounded-md w-9 font-mono text-[0.65rem] uppercase tracking-wider font-normal',
+    'text-ink-muted rounded-md w-9 font-mono text-[0.65rem] uppercase tracking-wider font-normal',
   day_button: cn(
     buttonVariants({ variant: 'ghost' }),
     'h-9 w-9 p-0 font-normal rounded-md transition-colors duration-150 motion-reduce:transition-none',
     'hover:bg-accent hover:text-accent-foreground',
     // react-day-picker marks the <td> selected, not the button, and the ghost
-    // variant's `text-primary` would otherwise paint blue on blue.
-    '[[aria-selected=true]_&]:text-primary-foreground',
-    '[[aria-selected=true]_&]:hover:bg-primary-dark [[aria-selected=true]_&]:hover:text-primary-foreground',
+    // variant's `text-brand` would otherwise paint blue on blue.
+    '[[aria-selected=true]_&]:text-on-brand',
+    '[[aria-selected=true]_&]:hover:bg-brand-strong [[aria-selected=true]_&]:hover:text-on-brand',
   ),
   selected:
-    'bg-primary text-primary-foreground hover:bg-primary-dark hover:text-primary-foreground focus:bg-primary-dark focus:text-primary-foreground',
-  today: 'bg-accent/80 text-accent-foreground ring-1 ring-primary/40 font-medium',
+    'bg-brand text-on-brand hover:bg-brand-strong hover:text-on-brand focus:bg-brand-strong focus:text-on-brand',
+  today: 'bg-accent/80 text-accent-foreground ring-1 ring-brand/40 font-medium',
   outside:
-    'text-muted-foreground opacity-40 aria-selected:bg-accent/50 aria-selected:text-muted-foreground',
-  disabled: 'text-muted-foreground opacity-40',
+    'text-ink-muted opacity-40 aria-selected:bg-accent/50 aria-selected:text-ink-muted',
+  disabled: 'text-ink-muted opacity-40',
 };
 
 const navButtonClass = cn(
   buttonVariants({ variant: 'outline' }),
-  'h-7 w-7 bg-panel p-0 border-border opacity-70 hover:opacity-100 hover:border-primary/40 hover:bg-accent',
-  'disabled:opacity-30 disabled:hover:bg-panel',
+  'h-7 w-7 bg-surface-raised p-0 border-line opacity-70 hover:opacity-100 hover:border-brand/40 hover:bg-accent',
+  'disabled:opacity-30 disabled:hover:bg-surface-raised',
 );
 
 const captionButtonClass = cn(
-  'inline-flex h-7 items-center gap-1 rounded-md px-2 text-sm font-medium text-foreground',
-  'hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-  '[&>svg]:size-3.5 [&>svg]:text-primary-dark',
+  'inline-flex h-7 items-center gap-1 rounded-md px-2 text-sm font-medium text-ink',
+  'hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40',
+  '[&>svg]:size-3.5 [&>svg]:text-brand-strong',
 );
 
 const gridCellClass = cn(
   buttonVariants({ variant: 'ghost' }),
   'h-9 w-full rounded-md px-0 font-normal transition-colors duration-150 motion-reduce:transition-none',
   'hover:bg-accent hover:text-accent-foreground',
-  'data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground data-[selected=true]:hover:bg-primary-dark',
-  'data-[current=true]:ring-1 data-[current=true]:ring-primary/40',
+  'data-[selected=true]:bg-brand data-[selected=true]:text-on-brand data-[selected=true]:hover:bg-brand-strong',
+  'data-[current=true]:ring-1 data-[current=true]:ring-brand/40',
 );
 
 const footerButtonClass =
-  'rounded-md px-2 py-1 text-xs font-medium text-primary-dark hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-40 disabled:hover:bg-transparent';
+  'rounded-md px-2 py-1 text-xs font-medium text-brand-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40 disabled:opacity-40 disabled:hover:bg-transparent';
 
 type CalendarView = 'days' | 'months' | 'years';
 
@@ -261,7 +261,7 @@ export function NoirDatePicker({
       <div
         className={cn(
           'milestone-form-input relative flex h-10 w-full items-center rounded-md border',
-          'focus-within:ring-2 focus-within:ring-ring/40',
+          'focus-within:ring-2 focus-within:ring-focus-ring/40',
           disabled && 'cursor-not-allowed opacity-50',
           className,
         )}
@@ -294,8 +294,8 @@ export function NoirDatePicker({
             }
           }}
           className={cn(
-            'h-full min-w-0 flex-1 bg-transparent pl-3 pr-1 text-sm text-foreground',
-            'placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed',
+            'h-full min-w-0 flex-1 bg-transparent pl-3 pr-1 text-sm text-ink',
+            'placeholder:text-ink-muted focus:outline-none disabled:cursor-not-allowed',
           )}
         />
         <PopoverTrigger asChild>
@@ -306,8 +306,8 @@ export function NoirDatePicker({
             aria-haspopup="dialog"
             aria-expanded={open}
             className={cn(
-              'mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-primary-dark',
-              'hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+              'mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-brand-strong',
+              'hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40',
               'disabled:cursor-not-allowed',
             )}
           >
@@ -318,7 +318,7 @@ export function NoirDatePicker({
       <PopoverContent
         align="end"
         className={cn(
-          'w-[284px] rounded-lg border-border bg-panel p-3 shadow-md',
+          'w-[284px] rounded-lg border-line bg-surface-raised p-3 shadow-md',
           'motion-reduce:animate-none motion-reduce:fade-in-0 motion-reduce:zoom-in-95',
         )}
       >
@@ -421,7 +421,7 @@ export function NoirDatePicker({
           />
         )}
 
-        <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
+        <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
           <button
             type="button"
             disabled={!value}

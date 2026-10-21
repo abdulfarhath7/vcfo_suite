@@ -40,13 +40,13 @@ export function PreIncorporationNotice({
     <Alert
       role="status"
       className={cn(
-        'flex items-center gap-3 border-info/20 border-l-[3px] border-l-info bg-info-light px-4 py-3 text-foreground',
+        'flex items-center gap-3 border-line bg-info-soft px-4 py-3 text-ink',
         className,
       )}
     >
-      <IconChip icon={Landmark} tone="info" className="border border-info/25 bg-panel" />
+      <IconChip icon={Landmark} tone="info" className="border border-line bg-surface-raised" />
       <div className="min-w-0 flex-1">
-        <p className="text-[10.5px] font-extrabold uppercase tracking-[0.07em] text-info-text">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-info">
           Compliance begins after incorporation
         </p>
         <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink">
@@ -71,7 +71,7 @@ export function PreIncorporationPortfolioNote({
 }) {
   if (count <= 0) return null;
   return (
-    <p className={cn('text-[11.5px] text-muted-foreground', className)}>
+    <p className={cn('text-[11.5px] text-ink-muted', className)}>
       {count === 1
         ? '1 engagement begins compliance after incorporation.'
         : `${count} engagements begin compliance after incorporation.`}

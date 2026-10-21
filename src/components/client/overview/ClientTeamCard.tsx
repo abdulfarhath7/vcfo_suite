@@ -39,11 +39,11 @@ export function ClientTeamCard({
   return (
     <ClientCard title="Your team">
       {team.length === 0 ? (
-        <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+        <p className="text-[12.5px] leading-relaxed text-ink-muted">
           Your project manager and lead are being assigned. Reach us at{' '}
           <a
             href={`mailto:${FIRM_EMAIL}`}
-            className="font-medium text-primary underline-offset-2 hover:underline"
+            className="font-medium text-brand underline-offset-2 hover:underline"
           >
             {FIRM_EMAIL}
           </a>{' '}
@@ -55,9 +55,9 @@ export function ClientTeamCard({
             <li key={member.id} className="flex min-w-0 items-center gap-2.5">
               <span
                 className={cn(
-                  'grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11.5px] font-extrabold',
+                  'grid h-9 w-9 shrink-0 place-items-center rounded-full text-[11.5px] font-semibold',
                   member.role === 'Project Manager'
-                    ? 'bg-primary-light text-primary-dark'
+                    ? 'bg-brand-soft text-brand-strong'
                     : 'bg-[oklch(var(--phase-post-soft))] text-[oklch(var(--phase-post-text))]',
                 )}
                 aria-hidden
@@ -65,10 +65,10 @@ export function ClientTeamCard({
                 {initialsFromName(member.name)}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] font-extrabold leading-tight text-ink">
+                <p className="truncate text-[12.5px] font-semibold leading-tight text-ink">
                   {member.name}
                 </p>
-                <p className="truncate text-[11px] leading-tight text-muted-foreground">
+                <p className="truncate text-[11px] leading-tight text-ink-muted">
                   {member.role}
                 </p>
               </div>
@@ -77,11 +77,11 @@ export function ClientTeamCard({
         </ul>
       )}
 
-      <div className="mt-3 border-t border-border pt-3">
+      <div className="mt-3 border-t border-line pt-3">
         <AccentButton
           variant="outline"
           size="sm"
-          className="min-h-11 w-full text-[12px] font-bold"
+          className="min-h-11 w-full text-[12px] font-semibold"
           onClick={() => {
             window.location.href = href;
           }}

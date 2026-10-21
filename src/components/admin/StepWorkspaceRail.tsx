@@ -87,7 +87,7 @@ function AttachmentSummary({
 
   return (
     <section>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
         Attachments
       </p>
       <ul className="mt-2 space-y-1.5">
@@ -95,8 +95,8 @@ function AttachmentSummary({
           const path = responses?.[field.id]?.trim();
           return (
             <li key={field.id} className="text-[12px] leading-snug">
-              <span className="text-foreground/90">{field.label}</span>
-              <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+              <span className="text-ink/90">{field.label}</span>
+              <span className="mt-0.5 block truncate text-[11px] text-ink-muted">
                 {path ? fileNameFromStoragePath(path) : 'Not uploaded'}
               </span>
             </li>
@@ -113,22 +113,22 @@ function RecentActivity({ activity }: { activity: ActivityEvent[] }) {
 
   return (
     <section>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
         Activity
       </p>
       <ul className="mt-2 space-y-2">
         {recent.map((event) => (
-          <li key={event.id} className="border-l border-border/80 pl-2.5 text-[12px] leading-snug">
-            <span className="text-foreground">{event.actor}</span>{' '}
-            <span className="text-muted-foreground">{event.verb}</span>
+          <li key={event.id} className="border-l border-line/80 pl-2.5 text-[12px] leading-snug">
+            <span className="text-ink">{event.actor}</span>{' '}
+            <span className="text-ink-muted">{event.verb}</span>
             {event.target ? (
               <>
                 {' '}
-                <span className="text-primary">{event.target}</span>
+                <span className="text-brand">{event.target}</span>
               </>
             ) : null}
             {event.at ? (
-              <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">
                 {event.at}
               </span>
             ) : null}
@@ -161,7 +161,7 @@ export function StepWorkspaceRail({
   return (
     <aside
       className={cn(
-        'rounded-2xl border border-border/70 bg-background px-4 py-4',
+        'rounded-2xl border border-line/70 bg-background px-4 py-4',
         className,
       )}
     >
@@ -169,7 +169,7 @@ export function StepWorkspaceRail({
         <section>
           {!hideStatus ? (
             <>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand">
                 Status
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -187,10 +187,10 @@ export function StepWorkspaceRail({
 
         {next ? (
           <section>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
               Next
             </p>
-            <p className="mt-1.5 text-[12.5px] leading-snug text-foreground/90">{next}</p>
+            <p className="mt-1.5 text-[12.5px] leading-snug text-ink/90">{next}</p>
           </section>
         ) : null}
 

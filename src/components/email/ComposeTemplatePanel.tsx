@@ -150,13 +150,13 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
       </div>
 
       {loading ? (
-        <p className="mt-6 text-[13px] text-muted-foreground">Loading templates…</p>
+        <p className="mt-6 text-[13px] text-ink-muted">Loading templates…</p>
       ) : templates.length === 0 ? (
-        <div className="mt-6 flex flex-col items-center rounded-xl border border-dashed border-primary/20 bg-primary-light/30 px-5 py-10 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 bg-panel">
+        <div className="mt-6 flex flex-col items-center rounded-xl border border-dashed border-brand/20 bg-brand-soft/30 px-5 py-10 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-brand/20 bg-surface-raised">
             <FileText className="h-5 w-5 text-brand" aria-hidden />
           </div>
-          <h3 className="font-serif text-lg text-foreground">No templates yet</h3>
+          <h3 className="font-serif text-lg text-ink">No templates yet</h3>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <AccentButton type="button" variant="outline" disabled>
               Choose a template
@@ -175,7 +175,7 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
                 <div
                   className={cn(
                     'rounded-xl border px-3 py-3',
-                    selected ? 'border-primary/40 bg-primary-light/40' : 'border-border bg-panel',
+                    selected ? 'border-brand/40 bg-brand-soft/40' : 'border-line bg-surface-raised',
                   )}
                 >
                   <button
@@ -185,10 +185,10 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
                   >
                     <span className="flex items-start justify-between gap-2">
                       <span className="min-w-0">
-                        <span className="block truncate text-[13.5px] font-medium text-foreground">
+                        <span className="block truncate text-[13.5px] font-medium text-ink">
                           {template.name}
                         </span>
-                        <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
+                        <span className="mt-0.5 block truncate text-[12px] text-ink-muted">
                           {template.subject}
                         </span>
                       </span>
@@ -285,13 +285,13 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
                 }
                 className="gap-2"
               >
-                <div className="flex items-start gap-2.5 rounded-lg border border-border px-3 py-2">
+                <div className="flex items-start gap-2.5 rounded-lg border border-line px-3 py-2">
                   <RadioGroupItem value="sbc" id="brand-sbc" className="mt-0.5" />
                   <Label htmlFor="brand-sbc" className="cursor-pointer font-normal">
                     <span className="block text-[13px] font-medium">SBC branded</span>
                   </Label>
                 </div>
-                <div className="flex items-start gap-2.5 rounded-lg border border-border px-3 py-2">
+                <div className="flex items-start gap-2.5 rounded-lg border border-line px-3 py-2">
                   <RadioGroupItem value="plain" id="brand-plain" className="mt-0.5" />
                   <Label htmlFor="brand-plain" className="cursor-pointer font-normal">
                     <span className="block text-[13px] font-medium">Plain</span>

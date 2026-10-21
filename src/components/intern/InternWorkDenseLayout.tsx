@@ -22,7 +22,7 @@ export function InternWorkDenseLayout({
         {leading}
         <div className="intern-work-dense-copy">
           <div className="intern-work-dense-title text-[12.5px] font-semibold leading-snug text-ink">{title}</div>
-          {subtitle ? <div className="intern-work-dense-sub text-[11px] text-muted-foreground">{subtitle}</div> : null}
+          {subtitle ? <div className="intern-work-dense-sub text-[11px] text-ink-muted">{subtitle}</div> : null}
         </div>
       </div>
       <div className="intern-work-dense-meta">

@@ -70,7 +70,7 @@ function ShellLocationTrail({
   return (
     <nav aria-label="Location" className="hidden min-w-0 flex-1 items-center gap-1.5 sm:flex">
       <span
-        className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-primary-light text-primary"
+        className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-surface-sunken text-ink"
         aria-hidden
       >
         <Icon className="h-3.5 w-3.5" strokeWidth={2} />
@@ -80,7 +80,7 @@ function ShellLocationTrail({
           <li key={`${seg.label}-${index}`} className="flex shrink-0 items-center gap-1">
             {index > 0 ? (
               <ChevronRight
-                className="h-3 w-3 shrink-0 text-muted-foreground/45"
+                className="h-3 w-3 shrink-0 text-ink-faint"
                 strokeWidth={2}
                 aria-hidden
               />
@@ -88,7 +88,7 @@ function ShellLocationTrail({
             {seg.href ? (
               <Link
                 href={seg.href}
-                className="whitespace-nowrap text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+                className="whitespace-nowrap text-[13px] text-ink-muted transition-colors hover:text-ink"
               >
                 {seg.label}
               </Link>
@@ -118,11 +118,11 @@ export function TopBar() {
   const profileHref = user ? roleSettingsPath(user.role) : "/";
 
   return (
-    <header className="relative flex h-[var(--shell-rail-height)] items-center gap-2 border-b border-border/60 bg-panel/90 px-2.5 backdrop-blur-2xl sm:gap-3 sm:px-4">
+    <header className="relative flex h-[var(--shell-rail-height)] items-center gap-2 border-b border-line bg-surface-raised px-2.5 sm:gap-3 sm:px-4">
       <button
         type="button"
         onClick={openMobile}
-        className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground lg:hidden"
+        className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink lg:hidden"
         aria-label="Open navigation"
       >
         <PanelLeft className="h-4 w-4" strokeWidth={1.75} />
@@ -131,7 +131,7 @@ export function TopBar() {
       <Link
         href={homeHref}
         aria-label={`${SBC_LOGO_LABEL} home`}
-        className="inline-flex shrink-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="inline-flex shrink-0 items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         <SbcLogo variant="navbar" decorative />
       </Link>
@@ -146,7 +146,7 @@ export function TopBar() {
           type="button"
           onClick={() => setCommandOpen(true)}
           className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-primary-light hover:text-foreground sm:hidden",
+            "flex h-control-md w-control-md items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink sm:hidden",
             commandOpen && "pointer-events-none opacity-0",
           )}
           aria-label="Search"
@@ -161,12 +161,12 @@ export function TopBar() {
             href={profileHref}
             aria-label="Profile"
             title="Profile"
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:px-2"
+            className="inline-flex h-control-md shrink-0 items-center gap-1.5 rounded-md px-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring sm:px-2"
           >
             <UserFace
               src={user.imageUrl}
               initials={user.initials}
-              className="h-6 w-6 bg-primary text-[9px] font-semibold text-primary-foreground"
+              className="h-6 w-6 bg-brand text-[9px] font-semibold text-on-brand"
             />
             <span className="hidden sm:inline">Profile</span>
           </Link>

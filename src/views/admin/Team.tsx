@@ -42,41 +42,41 @@ export default function Team() {
           <CreateInternForm />
         </Surface>
 
-        <Surface className="divide-y divide-border">
-          <div className="px-4 py-3 border-b border-border">
-            <p className="text-[11px] mono uppercase tracking-[0.14em] text-text-tertiary">
+        <Surface className="divide-y divide-line">
+          <div className="px-4 py-3 border-b border-line">
+            <p className="text-[11px] mono uppercase tracking-[0.14em] text-ink-faint">
               Active project leads
             </p>
           </div>
           {internsLoading ? (
-            <div className="p-8 flex justify-center text-text-tertiary">
+            <div className="p-8 flex justify-center text-ink-faint">
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           ) : roster.length === 0 ? (
-            <p className="p-6 text-[13px] text-text-tertiary">
+            <p className="p-6 text-[13px] text-ink-faint">
               No project leads yet.
             </p>
           ) : (
             roster.map((m) => (
               <div key={m.id} className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary-light text-brand text-[12px] font-semibold flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-brand-soft text-brand text-[12px] font-semibold flex items-center justify-center">
                   {m.initials}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-medium text-ink truncate">{m.name}</div>
-                  <div className="text-[11.5px] text-text-tertiary font-mono truncate">
+                  <div className="text-[11.5px] text-ink-faint font-mono truncate">
                     {m.id}
                   </div>
-                  <div className="text-[11.5px] text-text-tertiary mt-0.5">
+                  <div className="text-[11.5px] text-ink-faint mt-0.5">
                     {m.myEng} GCC projects · {m.open} open tasks
                   </div>
                 </div>
                 <div className="w-40 shrink-0">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="flex-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
                       <div className="h-full bg-brand" style={{ width: `${m.load}%` }} />
                     </div>
-                    <span className="text-[11px] text-text-tertiary tabular-nums w-10 text-right">
+                    <span className="text-[11px] text-ink-faint tabular-nums w-10 text-right">
                       {m.load}%
                     </span>
                   </div>

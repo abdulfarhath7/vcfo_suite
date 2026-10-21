@@ -34,7 +34,7 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
       action={
         <Link
           href="/app/client/documents"
-          className="text-[11.5px] font-bold text-primary hover:underline"
+          className="text-[11.5px] font-semibold text-brand hover:underline"
         >
           All documents
         </Link>
@@ -43,7 +43,7 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
       {/* Nothing issued: ONE calm line, and no donut. A ring reading "1 document"
           over a list saying there are none made the two fight each other. */}
       {deliverables.length === 0 ? (
-        <p className="text-[12.5px] text-muted-foreground">
+        <p className="text-[12.5px] text-ink-muted">
           Your certificates will appear here as they are issued.
         </p>
       ) : (
@@ -65,13 +65,13 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
                         <Icon className="h-4 w-4" aria-hidden />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="flex min-w-0 items-center gap-1 text-[12.5px] font-extrabold text-ink">
+                        <p className="flex min-w-0 items-center gap-1 text-[12.5px] font-semibold text-ink">
                           <span className="truncate">{doc.name}</span>
                           <WhatsThisButton compact feature="C2" kind="document" refId={doc.id} label={doc.name} />
                         </p>
                         <div className="mt-0.5 flex items-center gap-2">
                           {doc.issuedAt && (
-                            <Mono className="text-[10.5px] tabular-nums text-muted-foreground">
+                            <Mono className="text-[10.5px] tabular-nums text-ink-muted">
                               {formatClientDate(doc.issuedAt)}
                             </Mono>
                           )}
@@ -79,7 +79,7 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
                             storagePath={doc.storagePath}
                             label={doc.name}
                             variant="client"
-                            className="min-h-0 text-[11.5px] text-primary"
+                            className="min-h-0 text-[11.5px] text-brand"
                           />
                         </div>
                       </div>
@@ -104,7 +104,7 @@ export function ClientDeliverables({ documents }: { documents: ClientOverviewDoc
  * whose only row is one pending request should not meet an alarm-coloured ring.
  */
 const DONUT_SEGMENTS = [
-  { key: 'delivered', label: 'Issued to you', fill: 'oklch(var(--primary))' },
+  { key: 'delivered', label: 'Issued to you', fill: 'oklch(var(--brand))' },
   { key: 'submitted', label: 'Received from you', fill: 'oklch(var(--phase-post))' },
   { key: 'requested', label: 'Still needed', fill: 'oklch(var(--phase-pre))' },
 ] as const;
@@ -152,7 +152,7 @@ function DocStatusDonut({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="oklch(var(--raised))"
+            stroke="oklch(var(--surface-sunken))"
             strokeWidth={thickness}
           />
           {total > 0 &&
@@ -175,17 +175,17 @@ function DocStatusDonut({
             ))}
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span className="serif text-[1.35rem] font-bold leading-none tabular-nums text-ink">
+          <span className="serif text-[1.35rem] font-semibold leading-none tabular-nums text-ink">
             {total}
           </span>
-          <span className="mt-0.5 text-[8.5px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">
+          <span className="mt-0.5 text-[8.5px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
             {total === 1 ? 'document' : 'documents'}
           </span>
         </div>
       </div>
 
       {/* Legend beside the ring, same as the lead dashboard's compliance donut. */}
-      <figcaption className="flex min-w-0 flex-1 flex-col gap-1.5 text-[12px] font-bold text-muted-foreground lg:w-full lg:flex-none">
+      <figcaption className="flex min-w-0 flex-1 flex-col gap-1.5 text-[12px] font-semibold text-ink-muted lg:w-full lg:flex-none">
         {arcs.map((arc) => (
           <span key={arc.key} className="flex min-w-0 items-center gap-2">
             <i

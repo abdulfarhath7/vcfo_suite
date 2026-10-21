@@ -2,7 +2,9 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { Check, Plus, X } from 'lucide-react';
+import { Check, ListChecks, Plus, X } from 'lucide-react';
+import { DashSection } from '@/components/dash/DashSection';
+import { CHIP_CLASS } from '@/components/common/IconChip';
 import { internKindChipLabel, internToneBadge, KIND_TONE } from '@/components/intern/intern-tones';
 import {
   Command,
@@ -39,8 +41,8 @@ function QueuePinPopover({
           type="button"
           aria-label="Pin from queue"
           className={cn(
-            'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-semibold text-primary ring-1 ring-primary/20 transition-colors hover:bg-primary-light',
-            open && 'bg-primary-light',
+            'inline-flex h-control-sm shrink-0 items-center gap-1 rounded-md border border-line-strong bg-surface-raised px-2.5 text-[12px] font-semibold text-ink transition-colors hover:bg-surface-sunken',
+            open && 'bg-surface-sunken',
           )}
         >
           <Plus className="h-3 w-3" strokeWidth={2.4} />
@@ -52,17 +54,17 @@ function QueuePinPopover({
         side="bottom"
         sideOffset={8}
         collisionPadding={16}
-        className="w-[min(22rem,calc(100vw-2rem))] p-0 shadow-lg"
+        className="w-[min(22rem,calc(100vw-2rem))] p-0 shadow-float"
       >
         {pickable.length === 0 ? (
-          <p className="px-3 py-4 text-[13px] leading-snug text-muted-foreground">
+          <p className="px-3 py-4 text-[13px] leading-snug text-ink-muted">
             Nothing left to pin from the queue.
           </p>
         ) : (
           <Command className="rounded-md bg-transparent" loop>
             <CommandInput placeholder="Filter queue…" className="h-9 text-[13px]" />
             <CommandList className="max-h-64">
-              <CommandEmpty className="py-4 text-center text-[13px] text-muted-foreground">
+              <CommandEmpty className="py-4 text-center text-[13px] text-ink-muted">
                 No matching work items.
               </CommandEmpty>
               <CommandGroup className="p-1">
@@ -78,7 +80,7 @@ function QueuePinPopover({
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium text-ink">{item.title}</span>
-                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                      <span className="mt-0.5 block truncate text-[11px] text-ink-muted">
                         {item.companyName}
                       </span>
                     </span>
@@ -113,24 +115,32 @@ export function LeadFocusCard({
     setDraft('');
   };
 
+  const checkboxClass = (done: boolean) =>
+    cn(
+      'grid h-[18px] w-[18px] shrink-0 place-items-center rounded-sm border border-line-strong transition-colors',
+      done && 'border-brand bg-brand text-on-brand',
+    );
+  const removeClass =
+    'grid h-6 w-6 shrink-0 place-items-center rounded-md text-ink-faint transition-colors hover:bg-surface-sunken hover:text-ink';
+
   return (
-    <section className="surface h-fit min-w-0 overflow-hidden">
-      <div className="flex min-w-0 items-start justify-between gap-3 px-4 pt-3">
-        <div className="min-w-0">
-          <h2 className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">Todos</h2>
-        </div>
-        {items.length > 0 ? (
+    <DashSection
+      icon={ListChecks}
+      title="Todos"
+      className="h-fit"
+      bodyClassName="pt-2"
+      meta={
+        items.length > 0 ? (
           <QueuePinPopover
             open={picking}
             onOpenChange={setPicking}
             pickable={pickable}
             onPin={(item) => persist([...focus, { id: item.id, done: false, title: item.title }])}
           />
-        ) : null}
-      </div>
-
+        ) : undefined
+      }
+    >
       <form
-        className="px-4 pb-1 pt-2.5"
         onSubmit={(e) => {
           e.preventDefault();
           addCustom();
@@ -141,16 +151,16 @@ export function LeadFocusCard({
             ref={draftRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Type a todo…"
+            placeholder="Type a todo"
             aria-label="New todo"
             autoComplete="off"
             maxLength={200}
-            className="h-8 min-w-0 flex-1 rounded-lg bg-raised/70 px-2.5 text-[13px] text-ink outline-none ring-1 ring-border/80 placeholder:text-muted-foreground/80 focus:bg-panel focus:ring-primary/35"
+            className="h-control-md min-w-0 flex-1 rounded-md border border-line-strong bg-surface-raised px-2.5 text-[13px] text-ink outline-none placeholder:text-ink-faint focus:border-brand focus-visible:ring-2 focus-visible:ring-focus-ring"
           />
           <button
             type="submit"
             disabled={!draft.trim()}
-            className="inline-flex h-8 shrink-0 items-center rounded-lg bg-primary px-2.5 text-[12px] font-semibold text-primary-foreground transition-opacity disabled:opacity-35"
+            className="inline-flex h-control-md shrink-0 items-center rounded-md bg-brand px-3 text-[13px] font-semibold text-on-brand transition-colors hover:bg-brand-strong disabled:opacity-45"
           >
             Add
           </button>
@@ -158,65 +168,61 @@ export function LeadFocusCard({
       </form>
 
       {focus.length === 0 ? (
-        <div className="px-4 pb-3 pt-2">
-          <button
-            type="button"
-            onClick={() => draftRef.current?.focus()}
-            className="flex min-h-[3.25rem] w-full flex-col items-start justify-center rounded-xl border border-dashed border-border/80 px-3 py-2 text-left transition-colors hover:border-primary/35 hover:bg-primary-light/40"
-          >
-            <span className="text-[13px] font-semibold text-ink">Type a todo</span>
-            {items.length > 0 ? (
-              <span className="mt-0.5 text-[12px] text-muted-foreground">
-                Add what you need to get done — or pin work from the queue.
-              </span>
-            ) : null}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => draftRef.current?.focus()}
+          className="mt-2.5 flex min-h-[3.25rem] w-full flex-col items-start justify-center rounded-md border border-dashed border-line-strong px-3 py-2 text-left transition-colors hover:border-brand hover:bg-brand-soft/50"
+        >
+          <span className="text-[13px] font-semibold text-ink">Type a todo</span>
+          {items.length > 0 ? (
+            <span className="mt-0.5 text-[12px] text-ink-muted">
+              Add what you need to get done, or pin work from the queue.
+            </span>
+          ) : null}
+        </button>
       ) : null}
 
       {focus.length > 0 ? (
-        <div className="max-h-[min(20rem,46vh)] space-y-2 overflow-y-auto px-4 pb-3 pt-2.5">
+        <div className="mt-1.5 max-h-[min(20rem,46vh)] overflow-y-auto">
           {focus.map((entry) => {
             const item = byId.get(entry.id);
             if (item) {
               return (
                 <div
                   key={entry.id}
-                  className="group flex min-h-[3.5rem] items-start gap-2.5 rounded-xl bg-raised/60 px-3 py-2.5 ring-1 ring-border/70"
+                  className="group flex min-h-[3.25rem] items-start gap-2.5 border-t border-line py-2.5 first:border-0"
                 >
                   <button
                     type="button"
                     onClick={() =>
                       persist(focus.map((row) => (row.id === entry.id ? { ...row, done: !row.done } : row)))
                     }
-                    className={cn(
-                      'mt-0.5 grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border border-border transition-colors',
-                      entry.done && 'border-primary bg-primary text-primary-foreground',
-                    )}
+                    className={cn('mt-0.5', checkboxClass(entry.done))}
                     aria-label={entry.done ? 'Mark incomplete' : 'Mark done'}
                   >
                     {entry.done ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                   </button>
                   <Link href={item.href} className="min-w-0 flex-1 overflow-hidden">
-                    <span className={cn('block line-clamp-2 text-[13px] font-semibold leading-snug text-ink', entry.done && 'text-muted-foreground line-through')}>
+                    <span className={cn('block line-clamp-2 text-[13px] font-medium leading-snug text-ink', entry.done && 'text-ink-muted line-through')}>
                       {item.title}
                     </span>
                     <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="min-w-0 truncate text-[11px] text-muted-foreground">{item.companyName}</span>
+                      <span className="min-w-0 truncate text-[11px] text-ink-muted">{item.companyName}</span>
                       <span
                         className={cn(
-                          'inline-flex max-w-full shrink-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                          CHIP_CLASS,
+                          'max-w-full shrink-0 overflow-hidden text-ellipsis',
                           internToneBadge(KIND_TONE[entry.done ? 'done' : item.kind] ?? 'info'),
                         )}
                       >
-                        {entry.done ? 'done' : internKindChipLabel(item.kind)}
+                        {entry.done ? 'Done' : internKindChipLabel(item.kind)}
                       </span>
                     </span>
                   </Link>
                   <button
                     type="button"
                     onClick={() => persist(focus.filter((row) => row.id !== entry.id))}
-                    className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+                    className={removeClass}
                     aria-label="Remove from todos"
                   >
                     <X className="h-3 w-3" strokeWidth={2.2} />
@@ -230,28 +236,25 @@ export function LeadFocusCard({
             return (
               <div
                 key={entry.id}
-                className="group flex min-h-[2.75rem] items-center gap-2.5 rounded-xl bg-raised/60 px-3 py-2 ring-1 ring-border/70"
+                className="group flex min-h-[2.75rem] items-center gap-2.5 border-t border-line py-2 first:border-0"
               >
                 <button
                   type="button"
                   onClick={() =>
                     persist(focus.map((row) => (row.id === entry.id ? { ...row, done: !row.done } : row)))
                   }
-                  className={cn(
-                    'grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border border-border transition-colors',
-                    entry.done && 'border-primary bg-primary text-primary-foreground',
-                  )}
+                  className={checkboxClass(entry.done)}
                   aria-label={entry.done ? 'Mark incomplete' : 'Mark done'}
                 >
                   {entry.done ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                 </button>
-                <span className={cn('min-w-0 flex-1 truncate text-[13px] font-semibold text-ink', entry.done && 'text-muted-foreground line-through')}>
+                <span className={cn('min-w-0 flex-1 truncate text-[13px] font-medium text-ink', entry.done && 'text-ink-muted line-through')}>
                   {entry.title?.trim() || 'Untitled'}
                 </span>
                 <button
                   type="button"
                   onClick={() => persist(focus.filter((row) => row.id !== entry.id))}
-                  className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+                  className={removeClass}
                   aria-label="Remove from todos"
                 >
                   <X className="h-3 w-3" strokeWidth={2.2} />
@@ -261,6 +264,6 @@ export function LeadFocusCard({
           })}
         </div>
       ) : null}
-    </section>
+    </DashSection>
   );
 }

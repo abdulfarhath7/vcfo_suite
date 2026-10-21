@@ -56,7 +56,7 @@ export function ClientBoardResolutionCard({ engagement }: ClientBoardResolutionC
   return (
     <Link
       href={clientBoardResolutionPath()}
-      className="flex items-center gap-3 rounded-md border border-primary/30 bg-primary/5 px-4 py-3 mb-6 hover:border-primary/50 transition-colors"
+      className="flex items-center gap-3 rounded-md border border-brand/30 bg-brand/5 px-4 py-3 mb-6 hover:border-brand/50 transition-colors"
     >
       <FileText className="w-5 h-5 text-blue-600 shrink-0" />
       <div>

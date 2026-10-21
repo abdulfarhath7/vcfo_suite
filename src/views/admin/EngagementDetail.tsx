@@ -171,7 +171,7 @@ export default function EngagementDetail() {
 
   if (!eng) {
     return (
-      <div className="p-6 text-[13px] text-text-secondary">
+      <div className="p-6 text-[13px] text-ink-muted">
         This project isn’t in your portfolio — it may have been removed or you don’t have access.
       </div>
     );
@@ -217,15 +217,15 @@ export default function EngagementDetail() {
         key={it.id}
         type="button"
         onClick={openStep}
-        className="grid w-full grid-cols-[28px_1fr_auto_auto] items-center gap-3 border-b border-border px-4 py-3.5 text-left transition-colors last:border-0 hover:bg-raised/40 min-h-11"
+        className="grid w-full grid-cols-[28px_1fr_auto_auto] items-center gap-3 border-b border-line px-4 py-3.5 text-left transition-colors last:border-0 hover:bg-surface-sunken/40 min-h-11"
       >
-        <div className="text-[11px] text-text-tertiary tabular-nums">{displayOrder}</div>
+        <div className="text-[11px] text-ink-faint tabular-nums">{displayOrder}</div>
         <div className="min-w-0">
-          <div className={gate.canOpen ? 'text-[13px] text-ink truncate' : 'text-[13px] text-muted-foreground truncate'}>
+          <div className={gate.canOpen ? 'text-[13px] text-ink truncate' : 'text-[13px] text-ink-muted truncate'}>
             {it.title}
           </div>
           {gate.kind === 'waiting' && gate.message && (
-            <div className="mt-0.5 text-[11px] text-warning-text">{gate.message}</div>
+            <div className="mt-0.5 text-[11px] text-warning">{gate.message}</div>
           )}
           <MilestoneResponseRowSummary item={it} responses={responses} variant="admin" />
         </div>
@@ -233,7 +233,7 @@ export default function EngagementDetail() {
             unchanged, it just is not drawn as a lock-out. */}
         <ChecklistStatusPill status={displayStatus} />
         {gate.canOpen ? (
-          <ChevronRight className="w-3.5 h-3.5 text-text-tertiary" />
+          <ChevronRight className="w-3.5 h-3.5 text-ink-faint" />
         ) : (
           <span className="w-3.5 shrink-0" aria-hidden />
         )}
@@ -331,23 +331,23 @@ export default function EngagementDetail() {
           <Surface raised className="mb-5 flex flex-wrap items-center gap-6 p-6">
             <ProgressRing value={pct} size={64} />
             <div className="min-w-0 flex-1">
-              <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary-light px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+              <span className="inline-flex items-center rounded-sm border border-brand/25 bg-brand-soft px-2.5 py-0.5 text-[11px] font-semibold text-brand">
                 {eng.stage}
               </span>
               <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
                 <PageBackButton className="-ml-1.5" />
-                <h1 className="serif min-w-0 text-[32px] tracking-tight text-foreground">{eng.companyName}</h1>
+                <h1 className="serif min-w-0 text-[32px] tracking-tight text-ink">{eng.companyName}</h1>
                 {eng.clientEmail?.trim() ? (
                   <a
                     href={`mailto:${eng.clientEmail.trim()}`}
-                    className="ml-2 min-w-0 self-end truncate pb-1.5 text-[13px] text-muted-foreground hover:text-primary hover:underline"
+                    className="ml-2 min-w-0 self-end truncate pb-1.5 text-[13px] text-ink-muted hover:text-brand hover:underline"
                     title={`Email ${eng.companyName}`}
                   >
                     {eng.clientEmail.trim()}
                   </a>
                 ) : null}
               </div>
-              <div className="mt-1 text-[12.5px] text-muted-foreground">
+              <div className="mt-1 text-[12.5px] text-ink-muted">
                 Delivery owner · {intern?.name ?? 'Unassigned'}
                 {eTasks.length - done > 0
                   ? ` · Waiting on work · ${eTasks.length - done} remaining`
@@ -356,18 +356,18 @@ export default function EngagementDetail() {
             </div>
             <div className="grid grid-cols-2 gap-6 text-right">
               <div>
-                <div className="serif text-[26px] text-foreground">{done}</div>
-                <div className="text-[11px] text-muted-foreground">Complete</div>
+                <div className="serif text-[26px] text-ink">{done}</div>
+                <div className="text-[11px] text-ink-muted">Complete</div>
               </div>
               <div>
-                <div className="serif text-[26px] text-foreground">{eTasks.length - done}</div>
-                <div className="text-[11px] text-muted-foreground">Remaining</div>
+                <div className="serif text-[26px] text-ink">{eTasks.length - done}</div>
+                <div className="text-[11px] text-ink-muted">Remaining</div>
               </div>
             </div>
           </Surface>
 
           {checklistLoading && (
-            <div className="mb-4 flex items-center gap-2 text-[12px] text-text-tertiary">
+            <div className="mb-4 flex items-center gap-2 text-[12px] text-ink-faint">
               <HexgridLoader size="sm" />
               Syncing client answers…
             </div>
@@ -385,10 +385,10 @@ export default function EngagementDetail() {
                     );
                     return (
                       <div key={phase.id} className="surface overflow-hidden">
-                        <div className="border-b border-border bg-muted/25 px-4 py-2">
+                        <div className="border-b border-line bg-surface-sunken/25 px-4 py-2">
                           <div className="text-[12px] font-medium text-ink">{phase.title}</div>
                           {phase.subtitle && (
-                            <div className="text-[11px] text-text-tertiary">{phase.subtitle}</div>
+                            <div className="text-[11px] text-ink-faint">{phase.subtitle}</div>
                           )}
                         </div>
                         {rows}

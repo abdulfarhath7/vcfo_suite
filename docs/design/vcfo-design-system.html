@@ -1,0 +1,611 @@
+<title>VCFO Suite Design System</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a fixed left index, one long reading column of sections, every preview drawn from the tokens themselves so the theme toggle restyles the whole book. */
+:root{
+  --surface:#f7f9fc;--surface-raised:#ffffff;--surface-sunken:#eef2f7;--line:#e1e7ef;--line-strong:#7a8ca2;
+  --ink:#0f2a4a;--ink-muted:#4b5b70;--ink-faint:#7b8a9e;
+  --brand:#1b4f94;--brand-strong:#163f78;--brand-soft:#e8f0fa;--on-brand:#ffffff;
+  --highlight:#a8520f;--highlight-bright:#e07a1f;--highlight-soft:#fdf0e3;
+  --positive:#0f6e51;--positive-soft:#e1f3ec;--warning:#8a5a06;--warning-soft:#fbf0d9;
+  --danger:#b5302a;--danger-soft:#fbe7e5;--info:#0f6e8c;--info-soft:#e2f1f6;
+  --focus-ring:#3b82f6;--scrim:rgba(15,42,74,.55);
+  --side:#0f2a4a;--side-ink:#e9eff6;--side-muted:#9fb0c6;--side-active:#1d3d64;--side-line:#23405f;
+  --data-1:#2a78d6;--data-2:#eb6834;--data-3:#1baf7a;--data-4:#eda100;--data-5:#6250d6;--data-6:#008300;
+  --shadow-card:0 1px 2px rgba(15,42,74,.06),0 1px 1px rgba(15,42,74,.04);
+  --shadow-float:0 12px 32px -12px rgba(15,42,74,.28);
+  --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --surface:#0b1521;--surface-raised:#111d2c;--surface-sunken:#070e18;--line:#1f2d40;--line-strong:#56698a;
+  --ink:#e9eff6;--ink-muted:#a5b4c6;--ink-faint:#6f8097;
+  --brand:#6aa2e8;--brand-strong:#86b6ef;--brand-soft:#17304d;--on-brand:#0b1521;
+  --highlight:#f2a35b;--highlight-bright:#f08a3a;--highlight-soft:#3a2412;
+  --positive:#4fc99a;--positive-soft:#0f3328;--warning:#f0b84a;--warning-soft:#3b2a0a;
+  --danger:#f27b72;--danger-soft:#3d1512;--info:#5cc0dc;--info-soft:#0d2e3a;
+  --focus-ring:#86b6ef;--scrim:rgba(0,0,0,.65);
+  --side:#0b1521;--side-ink:#e9eff6;--side-muted:#8d9db3;--side-active:#17304d;--side-line:#1f2d40;
+  --data-1:#3987e5;--data-2:#d95926;--data-3:#199e70;--data-4:#c98500;--data-5:#9085e9;--data-6:#008300;
+  --shadow-card:0 1px 2px rgba(0,0,0,.5);--shadow-float:0 16px 40px -12px rgba(0,0,0,.7);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --surface:#0b1521;--surface-raised:#111d2c;--surface-sunken:#070e18;--line:#1f2d40;--line-strong:#56698a;
+  --ink:#e9eff6;--ink-muted:#a5b4c6;--ink-faint:#6f8097;
+  --brand:#6aa2e8;--brand-strong:#86b6ef;--brand-soft:#17304d;--on-brand:#0b1521;
+  --highlight:#f2a35b;--highlight-bright:#f08a3a;--highlight-soft:#3a2412;
+  --positive:#4fc99a;--positive-soft:#0f3328;--warning:#f0b84a;--warning-soft:#3b2a0a;
+  --danger:#f27b72;--danger-soft:#3d1512;--info:#5cc0dc;--info-soft:#0d2e3a;
+  --focus-ring:#86b6ef;--scrim:rgba(0,0,0,.65);
+  --side:#0b1521;--side-ink:#e9eff6;--side-muted:#8d9db3;--side-active:#17304d;--side-line:#1f2d40;
+  --data-1:#3987e5;--data-2:#d95926;--data-3:#199e70;--data-4:#c98500;--data-5:#9085e9;--data-6:#008300;
+  --shadow-card:0 1px 2px rgba(0,0,0,.5);--shadow-float:0 16px 40px -12px rgba(0,0,0,.7);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--ink);font:400 15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--brand);text-decoration:none}a:hover{color:var(--brand-strong);text-decoration:underline}
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:12px;height:52px;background:var(--surface-raised);border-bottom:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top .name{font-weight:600;font-size:14px}.top .name span{color:var(--ink-muted);font-weight:400}
+.top .sp{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg button{height:28px;padding:0 10px;border:0;background:var(--surface-raised);color:var(--ink-muted);font:600 12px var(--sans);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brand-soft);color:var(--brand)}
+.wrap{display:grid;grid-template-columns:200px minmax(0,1fr);gap:32px;max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 64px}
+nav.idx{position:sticky;top:76px;align-self:start;font-size:13px}
+nav.idx a{display:block;padding:4px 0;color:var(--ink-muted)}nav.idx a:hover{color:var(--ink);text-decoration:none}
+nav.idx .grp{margin:14px 0 4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+main{min-width:0}
+section{padding-block:32px;border-top:1px solid var(--line)}section:first-child{border-top:0;padding-top:0}
+h1{font-size:28px;line-height:34px;font-weight:600;letter-spacing:-.015em;margin:0 0 8px;text-wrap:balance}
+h2{font-size:22px;line-height:28px;font-weight:600;letter-spacing:-.01em;margin:0 0 6px;padding-bottom:10px;border-bottom:2px solid var(--ink);text-wrap:balance}
+h3{font-size:15px;line-height:20px;font-weight:600;margin:28px 0 8px}
+p{margin:0 0 10px;max-width:68ch}p.lead{font-size:17px;line-height:24px;color:var(--ink-muted);max-width:60ch}
+ul{padding-left:18px;margin:0 0 10px;max-width:70ch}li{margin:3px 0}
+code,.mono{font-family:var(--mono);font-size:12px}
+code{background:var(--surface-sunken);padding:1px 5px;border-radius:4px}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted)}
+.cover{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:start}
+.strip{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:18px}
+.strip i{display:block;height:34px;border-radius:6px;border:1px solid var(--line)}
+.card{background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-card)}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.sw{background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sw .chip{height:64px;display:flex;align-items:flex-end;padding:8px;gap:6px;border-bottom:1px solid var(--line)}
+.sw .chip b{font-size:12px;font-weight:600;padding:2px 6px;border-radius:4px}
+.sw .meta{padding:10px 12px}.sw .n{font-weight:600;font-size:13px}.sw .v{display:flex;gap:10px;margin:2px 0 6px;color:var(--ink-muted)}.sw .u{font-size:12px;line-height:1.45;color:var(--ink-muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);background:var(--surface-sunken);padding:8px 12px;border-bottom:2px solid var(--ink)}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface-raised)}
+.tbl table{min-width:560px}
+.type-row td:first-child{width:36%}
+.demo{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.demo.col{flex-direction:column;align-items:stretch}
+.demo .note{width:100%;font-size:12px;color:var(--ink-muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:84px;height:32px;padding:0 12px;border-radius:8px;border:1px solid transparent;background:var(--brand);color:var(--on-brand);font:600 13px var(--sans);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--brand-strong)}.btn.sm{height:28px;padding:0 10px;font-size:12px}.btn.lg{height:40px;padding:0 16px;font-size:14px}
+.btn.secondary{background:var(--surface-raised);border-color:var(--line-strong);color:var(--ink)}.btn.secondary:hover{background:var(--surface-sunken)}
+.btn.ghost{background:transparent;color:var(--ink-muted)}.btn.ghost:hover{background:var(--surface-sunken);color:var(--ink)}
+.btn.danger{background:var(--danger);color:#fff}.btn:disabled{opacity:.45;cursor:default}
+.pill{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:6px;font:600 11px/16px var(--sans);white-space:nowrap}
+.pill.col{min-width:88px;justify-content:center}
+.p-pos{background:var(--positive-soft);color:var(--positive)}.p-warn{background:var(--warning-soft);color:var(--warning)}.p-dan{background:var(--danger-soft);color:var(--danger)}
+.p-info{background:var(--info-soft);color:var(--info)}.p-brand{background:var(--brand-soft);color:var(--brand)}.p-hi{background:var(--highlight-soft);color:var(--highlight)}
+.p-neu{background:var(--surface-sunken);color:var(--ink-muted)}.p-count{background:var(--brand);color:var(--on-brand)}
+.inp{height:32px;width:100%;max-width:280px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface-raised);color:var(--ink);font:400 13px var(--sans)}
+.inp::placeholder{color:var(--ink-faint)}.inp:focus{border-color:var(--brand);outline:2px solid var(--focus-ring);outline-offset:2px}
+.field{display:grid;gap:6px;font-size:12px;color:var(--ink-muted)}.field b{color:var(--ink);font-weight:600}
+.sec{background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-card);min-width:0}
+.sec .hd{display:flex;align-items:center;gap:10px;padding:12px 16px 0}.sec .hd .tile{width:28px;height:28px;border-radius:8px;background:var(--surface-sunken);display:grid;place-items:center;color:var(--ink)}
+.sec .hd .t{flex:1;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}.sec .hd .m{font-size:11px;color:var(--ink-muted)}
+.sec .bd{padding:10px 16px 12px}
+.row{display:flex;align-items:center;gap:10px;min-height:40px;border-top:1px solid var(--line);font-size:13px}.row:first-child{border-top:0}
+.row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}.row .sub{font-size:11px;color:var(--ink-muted)}
+.av{width:26px;height:26px;border-radius:8px;background:var(--surface-sunken);color:var(--ink-muted);display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.stat{background:var(--surface-raised);border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow-card);min-width:0}
+.stat.pos{border-top-color:var(--positive)}.stat.warn{border-top-color:var(--warning)}.stat.dan{border-top-color:var(--danger)}
+.stat .fig{font-size:20px;line-height:24px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:6px}
+.stat .bars{display:flex;gap:4px;align-items:flex-end;height:20px;margin-top:10px}.stat .bars i{flex:1;border-radius:2px;background:var(--brand);opacity:.3}.stat .bars i:last-child{opacity:1}
+.stat.pos .bars i{background:var(--positive)}.stat.warn .bars i{background:var(--warning)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;width:100%}
+.hero{background:var(--side);color:var(--side-ink);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow-card);width:100%}
+.hero .when{font-size:12px;color:var(--side-muted)}.hero h4{margin:4px 0 0;font-size:28px;line-height:34px;font-weight:600;letter-spacing:-.015em}
+.hero .stats{display:flex;flex-wrap:wrap;gap:4px 0;margin-top:14px;padding-top:10px;border-top:1px solid var(--side-line)}
+.hero .stats span{display:inline-flex;align-items:baseline;gap:6px;padding:0 14px 0 0;font-size:11px;color:var(--side-muted)}.hero .stats span+span{border-left:1px solid var(--side-line);padding-left:14px}
+.hero .stats b{font-size:20px;line-height:24px;font-weight:600;color:var(--side-ink);font-variant-numeric:tabular-nums}.hero .stats b.hot{color:var(--highlight)}
+.side{background:var(--side);color:var(--side-ink);border-radius:10px;padding:10px;width:220px;max-width:100%;font-size:13px}
+.side .it{display:flex;align-items:center;gap:10px;min-height:36px;padding:0 10px;border-radius:8px;color:var(--side-muted)}
+.side .it.on{background:var(--side-active);color:var(--side-ink);font-weight:500;position:relative}.side .it.on::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--side-ink)}
+.side .it .cnt{margin-left:auto;background:var(--brand);color:var(--on-brand);border-radius:4px;padding:1px 6px;font:500 10px var(--mono)}
+.side .grp{padding:10px 10px 4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--side-muted)}
+.callout{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--info-soft);width:100%}
+.callout .tile{width:32px;height:32px;border-radius:8px;background:var(--surface-raised);border:1px solid var(--line);display:grid;place-items:center;color:var(--info);flex:none}
+.callout b{display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--info)}.callout span{font-size:13px}
+.prog{display:flex;gap:4px;height:8px;width:100%}.prog i{flex:1;border-radius:3px;background:var(--surface-sunken);overflow:hidden;position:relative}.prog i::after{content:"";position:absolute;inset:0;width:var(--w,0);background:var(--brand);border-radius:3px}
+.empty{padding:28px;text-align:center;color:var(--ink-muted);font-size:13px;width:100%;border:1px dashed var(--line-strong);border-radius:10px}
+.screen{display:grid;grid-template-columns:200px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-height:420px}
+.screen .side{border-radius:0;width:auto}
+.screen .pg{padding:14px;display:grid;gap:12px;align-content:start;min-width:0}
+.screen .two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px}
+.k{display:inline-block;min-width:84px}
+.ok{color:var(--positive);font-weight:600}.bad{color:var(--danger);font-weight:600}
+.dep{font-size:12px}.dep td{padding:6px 10px}
+.nope{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.nope .x{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-raised);font-size:13px}.nope .x b{display:block;color:var(--danger);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.scale{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}.scale div{text-align:center;font-size:11px;color:var(--ink-muted)}.scale i{display:block;background:var(--brand-soft);border:1px solid var(--brand);margin:0 auto 4px}
+.radii{display:flex;flex-wrap:wrap;gap:16px}.radii i{display:block;width:72px;height:48px;background:var(--surface-raised);border:1px solid var(--line-strong);margin-bottom:4px}
+.data{display:flex;gap:10px;flex-wrap:wrap}.data div{width:88px;font-size:11px;color:var(--ink-muted)}.data i{display:block;height:40px;border-radius:6px;margin-bottom:4px}
+.shadow-demo{display:flex;gap:24px;flex-wrap:wrap}.shadow-demo div{width:140px;height:70px;border-radius:10px;background:var(--surface-raised);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--ink-muted)}
+@media (max-width:860px){.wrap{grid-template-columns:1fr}nav.idx{position:static;display:flex;flex-wrap:wrap;gap:4px 14px}nav.idx .grp{width:100%;margin:8px 0 0}.cover{grid-template-columns:1fr}.screen{grid-template-columns:1fr}.screen .side{display:none}.screen .two{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.btn,.pill,.inp{transition:background-color .15s ease,color .15s ease,border-color .15s ease}}
+</style>
+
+<header class="top">
+  <span class="name">VCFO Suite <span>design system, v1</span></span>
+  <span class="sp"></span>
+  <span class="label" style="margin-right:6px">Theme</span>
+  <span class="seg" role="group" aria-label="Theme">
+    <button type="button" id="th-light" aria-pressed="false">Light</button>
+    <button type="button" id="th-system" aria-pressed="true">System</button>
+    <button type="button" id="th-dark" aria-pressed="false">Dark</button>
+  </span>
+</header>
+
+<div class="wrap">
+<nav class="idx" aria-label="Sections">
+  <div class="grp">Book</div>
+  <a href="#about">About</a><a href="#content">Content</a><a href="#foundations">Foundations</a><a href="#rules">Rules</a>
+  <div class="grp">Tokens</div>
+  <a href="#color">Colour</a><a href="#type">Type</a><a href="#space">Space, radius, size</a><a href="#charts">Charts</a>
+  <div class="grp">Components</div>
+  <a href="#buttons">Buttons</a><a href="#chips">Chips</a><a href="#inputs">Inputs</a><a href="#cards">Section card</a><a href="#stat">Stat card</a><a href="#table">Table</a><a href="#hero">Greeting card</a><a href="#sidebar">Sidebar</a><a href="#callout">Callout, progress, empty</a>
+  <div class="grp">Screens</div>
+  <a href="#screen-today">Lead Today</a><a href="#screen-client">Client home</a>
+  <div class="grp">Housekeeping</div>
+  <a href="#build">Build a dashboard</a><a href="#never">Never</a><a href="#deprecated">Deprecated names</a>
+</nav>
+
+<main>
+<section id="about">
+  <div class="cover">
+    <div>
+      <div class="label">Brand book</div>
+      <h1>VCFO Suite</h1>
+      <p class="lead">Incorporation and compliance for Indian companies, run by SBC for its clients. One blue for action, navy ink, one orange that means "this needs you", four status colours that always come with a word.</p>
+      <p>Everything on this page is drawn from the tokens in <code>docs/design/design-tokens.json</code>. Switch the theme above; every swatch, control and screen follows.</p>
+      <div class="strip" aria-hidden="true">
+        <i style="background:var(--side)"></i><i style="background:var(--brand)"></i><i style="background:var(--brand-soft)"></i><i style="background:var(--highlight-bright)"></i><i style="background:var(--positive)"></i><i style="background:var(--warning)"></i><i style="background:var(--danger)"></i><i style="background:var(--info)"></i>
+      </div>
+    </div>
+    <div class="hero" style="align-self:stretch">
+      <div class="when">Wednesday · 22 Oct 2026 · 09:14 am</div>
+      <h4>Good morning, Arjun</h4>
+      <div class="stats"><span><b>9</b> Action</span><span><b class="hot">2</b> Overdue</span><span><b>2</b> Waiting</span><span><b>4</b> This week</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="content">
+  <h2>Content</h2>
+  <p>Five people use the product: the <b>lead</b> (an SBC associate who runs a client's incorporation), the <b>manager</b>, the <b>firm admin</b>, the <b>super admin</b>, and the <b>client</b> (a founder, often on a phone). The sample data throughout is Northwind Analytics India Pvt Ltd and its lead, Arjun Mehta.</p>
+  <ul>
+    <li><b>Plain English.</b> Say what happened: "Waiting for Northwind", "Due 24 Oct", "11 of 14 steps done". No jargon, no "Submit", no exclamation marks, no emoji.</li>
+    <li><b>Sentence case</b> for titles, buttons, chips and labels. Table heads and section titles are set uppercase by the <code>label</code> style; write them in sentence case.</li>
+    <li><b>Buttons are verbs with their object</b>: "Approve ₹9,05,178", "Email manager", "Open incorporation". Two words where possible, never a wrapped label.</li>
+    <li><b>Dates are real dates</b>, <code>D Mon</code> ("24 Oct", "Wed 21 Oct 2026"); times as "10:42 am". Never "in 5 days" for a statutory deadline.</li>
+    <li><b>Money</b> carries the rupee sign and Indian grouping (₹9,05,178) in tabular figures, right-aligned in tables. Compact (₹24.6 L) only on dense overview tiles.</li>
+    <li><b>Identifiers</b> (CIN, PAN, DIN, GSTIN, file names) are set in the mono face. Nothing else is.</li>
+    <li><b>Status is a word.</b> A colour never carries meaning alone.</li>
+  </ul>
+</section>
+
+<section id="foundations">
+  <h2>Foundations</h2>
+  <h3>Colour</h3>
+  <p><code>surface</code> is the page, a cool off-white; cards are <code>surface-raised</code> inside a <code>line</code> hairline; wells and table heads are <code>surface-sunken</code>. Text is <code>ink</code>, a navy, never black; secondary text <code>ink-muted</code>; <code>ink-faint</code> only for placeholders, disabled and locked steps.</p>
+  <p><code>brand</code> is the one action colour: primary buttons, links, the active nav item, selection, progress, the current step. It is text-safe on every surface in both themes, so the same token is a fill, a link and 11px text. <code>brand-soft</code> is a selected row or the active nav ground.</p>
+  <p><code>highlight</code> is the one orange. It marks what needs the reader: the overdue figure in the greeting card, a nudge due, the "you" side of an owner chip. One orange moment per screen region. It is never a button and never page atmosphere.</p>
+  <p><code>positive</code>, <code>warning</code>, <code>danger</code> and <code>info</code> each have a <code>-soft</code> ground. Warning is amber, twenty degrees from the orange highlight, so "due soon" and "needs you" never look alike. Info is teal, so a note never looks like a button.</p>
+  <h3>Type</h3>
+  <p>Public Sans for everything, weights 400, 500 and 600. There is no 700; emphasis comes from size and colour. IBM Plex Mono for identifiers. The scale runs 11, 12, 13, 15, 20, 22, 28px.</p>
+  <h3>Shape</h3>
+  <p>Radii 6, 8, 10, 12. Chips and avatars are rounded rectangles; pills survive only as toggle knobs and progress rings. Borders before shadows: every card has a hairline and <code>shadow-card</code> only lifts it. <code>shadow-float</code> is for things that really float: menus, popovers, sheets. A 2px <code>rule</code> in ink sits under page heads and table heads.</p>
+  <h3>Weight</h3>
+  <p>The navy sidebar and the greeting card are the only heavy elements. They give the screen its weight so nothing else has to.</p>
+</section>
+
+<section id="rules">
+  <h2>Rules</h2>
+  <ul>
+    <li>Identity never gets a colour. A company, a person, a tag and a nav item are all neutral; only state is coloured.</li>
+    <li>Status chips are soft: tinted ground, text-safe colour, a word. No solid status fills.</li>
+    <li>Buttons in one row share one height; buttons or chips in one column share one width (84px, 88px). Labels never wrap.</li>
+    <li>One primary button and one orange moment per screen region.</li>
+    <li>Rows inside a card are hairline-separated. No cards inside cards.</li>
+    <li>No gradients, no coloured left borders, no blur, no circles except toggles and rings.</li>
+    <li>Hover goes one step darker or to a <code>surface-sunken</code> tint. Disabled is 45% opacity, never a different colour. Motion is 150ms ease on hover and toggles only.</li>
+    <li>Every interactive element gets the 2px <code>focus-ring</code> outline, offset 2px; it holds 3:1 on every surface including the navy sidebar.</li>
+  </ul>
+</section>
+
+<section id="color">
+  <h2>Colour tokens</h2>
+  <p>Light and dark are two values of one name. Every text token holds 4.5:1 on the grounds its note names, in both themes; the 52-pair check lives in <code>scripts/design-tokens-check.mjs</code>.</p>
+  <div class="swatches" id="swatches"></div>
+</section>
+
+<section id="type">
+  <h2>Type styles</h2>
+  <div class="tbl"><table id="type-table">
+    <thead><tr><th>Style</th><th>Size / line / weight</th><th>Use</th></tr></thead><tbody></tbody>
+  </table></div>
+</section>
+
+<section id="space">
+  <h2>Space, radius, size</h2>
+  <h3>Spacing, 4px base</h3>
+  <div class="scale" id="space-scale"></div>
+  <h3>Radius</h3>
+  <div class="radii" id="radii"></div>
+  <h3>Control sizes</h3>
+  <div class="tbl"><table id="size-table"><thead><tr><th>Token</th><th>Value</th><th>Use</th></tr></thead><tbody></tbody></table></div>
+  <h3>Shadows and rules</h3>
+  <div class="shadow-demo">
+    <div style="box-shadow:var(--shadow-card)">shadow-card</div>
+    <div style="box-shadow:var(--shadow-float)">shadow-float</div>
+    <div style="border-top:2px solid var(--ink)">rule 2px</div>
+    <div style="border-top:3px solid var(--positive)">stat-rule 3px</div>
+  </div>
+</section>
+
+<section id="charts">
+  <h2>Charts</h2>
+  <p>Six hues in a fixed order, assigned in sequence and never cycled. The set passes the colour-vision checks in both themes. Aqua and yellow sit below 3:1 on white, so light-mode charts that use them carry direct labels or a table view. A series that means good or bad wears the status tokens, never a data slot. Chart text is <code>ink</code> and <code>ink-muted</code>, never the series colour.</p>
+  <div class="data">
+    <div><i style="background:var(--data-1)"></i>data-1 blue</div><div><i style="background:var(--data-2)"></i>data-2 orange</div><div><i style="background:var(--data-3)"></i>data-3 aqua</div>
+    <div><i style="background:var(--data-4)"></i>data-4 yellow</div><div><i style="background:var(--data-5)"></i>data-5 violet</div><div><i style="background:var(--data-6)"></i>data-6 green</div>
+  </div>
+</section>
+
+<section id="buttons">
+  <h2>Buttons</h2>
+  <p>Three heights: 28 for table rows and dense toolbars, 32 by default, 40 for form primaries and every button on a phone. Every text button is at least 84px wide. One primary per region.</p>
+  <div class="demo">
+    <button class="btn">Approve</button><button class="btn secondary">Compare with v2</button><button class="btn ghost">Cancel</button><button class="btn danger">Reject</button><button class="btn" disabled>Approve</button>
+    <span class="note">Primary, secondary, ghost, danger, disabled (45% opacity).</span>
+  </div>
+  <div class="demo" style="margin-top:12px">
+    <button class="btn sm">Open step</button><button class="btn">Open step</button><button class="btn lg">Open step</button>
+    <span class="note">control-sm 28, control-md 32, control-lg 40. Same label, three contexts.</span>
+  </div>
+  <div class="demo col" style="margin-top:12px">
+    <div class="row"><span class="av">MH</span><span class="nm">Meridian Health India Pvt Ltd</span><span class="pill col p-warn">Filing due</span><button class="btn sm secondary">Open</button></div>
+    <div class="row"><span class="av">NA</span><span class="nm">Northwind Analytics India Pvt Ltd</span><span class="pill col p-brand">In progress</span><button class="btn sm secondary">Open</button></div>
+    <div class="row"><span class="av">KS</span><span class="nm">Kestrel Software</span><span class="pill col p-pos">Completed</span><button class="btn sm secondary">Open</button></div>
+    <span class="note">In a column, chips and buttons share one width so the column reads as one block.</span>
+  </div>
+</section>
+
+<section id="chips">
+  <h2>Chips</h2>
+  <p>22px high, 8px side padding, 6px corners, 11px at 600. Status: soft ground with the tone's text colour and a word. Owner: SBC is brand, the client is the highlight. Counts are a brand fill.</p>
+  <div class="demo">
+    <span class="pill p-pos">Completed</span><span class="pill p-brand">In progress</span><span class="pill p-warn">Waiting for Northwind</span><span class="pill p-dan">Overdue</span><span class="pill p-info">Note</span><span class="pill p-neu">Not started</span>
+    <span class="note">Status chips.</span>
+  </div>
+  <div class="demo" style="margin-top:12px">
+    <span class="pill p-brand">SBC</span><span class="pill p-hi">Northwind</span><span class="pill p-neu">MCA</span><span class="pill p-count">3</span><span class="pill p-neu"><span class="mono">U72900TG2026PTC184211</span></span>
+    <span class="note">Owner chips, a count chip, an identifier chip.</span>
+  </div>
+</section>
+
+<section id="inputs">
+  <h2>Inputs</h2>
+  <div class="demo col">
+    <label class="field"><b>Company name</b><input class="inp" id="in-1" placeholder="Northwind Analytics India Pvt Ltd"></label>
+    <label class="field"><b>CIN</b><input class="inp mono" id="in-2" placeholder="U72900TG2026PTC184211" style="font-family:var(--mono)"><span>21 characters, from the certificate of incorporation.</span></label>
+    <span class="note">Label above, helper below, line-strong border, brand border and the focus ring on focus. Error text goes under the field in danger with the word "Error" or the problem itself.</span>
+  </div>
+</section>
+
+<section id="cards">
+  <h2>Section card</h2>
+  <p>Every panel on every dashboard: a raised surface with a hairline, a neutral 28px icon tile, an 11px uppercase title, optional meta or a link on the right, hairline rows inside. The tile takes a status colour only when the section is about that status.</p>
+  <div class="demo col">
+    <div class="sec"><div class="hd"><span class="tile">⚡</span><span class="t">Action queue · by company</span><span class="m">6 open</span></div>
+      <div class="bd">
+        <div class="row"><span class="av">MH</span><span class="nm">Meridian Health India Pvt Ltd</span><span class="pill col p-warn">Filing due</span></div>
+        <div class="row"><span class="av">NA</span><span class="nm">Northwind Analytics India Pvt Ltd</span><span class="pill col p-brand">In progress</span></div>
+        <div class="row"><span class="av">KS</span><span class="nm">Kestrel Software</span><span class="pill col p-dan">2 overdue</span></div>
+      </div></div>
+  </div>
+</section>
+
+<section id="stat">
+  <h2>Stat card</h2>
+  <p>A KPI outside a greeting card: 3px top edge in its tone, label, 20px tabular figure, optional delta chip, optional six-bar trend strip (context, not a chart). Headline numbers that belong to the page stay in the greeting card.</p>
+  <div class="demo"><div class="grid3">
+    <div class="stat"><div class="label">Projects</div><div class="fig">24</div><div class="bars"><i style="height:40%"></i><i style="height:55%"></i><i style="height:50%"></i><i style="height:70%"></i><i style="height:80%"></i><i style="height:100%"></i></div></div>
+    <div class="stat pos"><div class="label">Steps completed</div><div class="fig">68% <span class="pill p-pos">+4</span></div><div class="bars"><i style="height:30%"></i><i style="height:45%"></i><i style="height:52%"></i><i style="height:60%"></i><i style="height:64%"></i><i style="height:100%"></i></div></div>
+    <div class="stat warn"><div class="label">Waiting on client</div><div class="fig">7 <span class="pill p-dan">−2</span></div><div style="font-size:11px;color:var(--ink-muted);margin-top:4px">3 past due date</div></div>
+  </div></div>
+</section>
+
+<section id="table">
+  <h2>Table</h2>
+  <p>Uppercase label heads on <code>surface-sunken</code> under a 2px rule, 40px rows, hairlines between, amounts right-aligned and tabular, identifiers in mono, chips at the column width.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Step</th><th>Owner</th><th>Status</th><th>Due</th><th style="text-align:right">Fee</th></tr></thead>
+    <tbody>
+      <tr><td>Draft board resolution</td><td><span class="pill col p-brand">SBC</span></td><td><span class="pill col p-pos">Completed</span></td><td>12 Oct</td><td class="num">₹4,500</td></tr>
+      <tr><td>Signed board resolution</td><td><span class="pill col p-hi">Northwind</span></td><td><span class="pill col p-warn">Waiting</span></td><td>13 Dec</td><td class="num">₹0</td></tr>
+      <tr><td>Name application</td><td><span class="pill col p-brand">SBC</span></td><td><span class="pill col p-neu">Not started</span></td><td>18 Dec</td><td class="num">₹1,000</td></tr>
+      <tr><td>DIN for two directors</td><td><span class="pill col p-brand">SBC</span></td><td><span class="pill col p-dan">Overdue</span></td><td>09 Oct</td><td class="num">₹1,26,000</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="hero">
+  <h2>Greeting card</h2>
+  <p>One component on every dashboard, lead to super admin: the date line, a 28px greeting, a ring on the right, a hairline, then the headline numbers as a stat strip. The overdue figure is the one orange on the card. No band of KPI cards under it.</p>
+  <div class="demo">
+    <div class="hero">
+      <div class="when">Wednesday · 22 Oct 2026 · 09:14 am</div>
+      <h4>Good morning, Anita</h4>
+      <div class="stats"><span><b>14</b> Projects</span><span><b class="hot">3</b> Need attention</span><span><b>5</b> Awaiting approval</span><span><b>9</b> On track</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="sidebar">
+  <h2>Sidebar</h2>
+  <p>Navy ground, <code>side-ink</code> labels, <code>side-muted</code> group titles. The active item sits on <code>side-active</code> with a 3px rail. Icons take the colour of their label; nothing in the nav has a colour of its own. In dark mode the sidebar matches the surface and a hairline separates it.</p>
+  <div class="demo">
+    <div class="side">
+      <div class="it on">▢ Today</div><div class="it">▤ Work <span class="cnt">9</span></div><div class="it">▣ Clients <span class="cnt">4</span></div><div class="it">✉ Email</div>
+      <div class="grp">Docs</div><div class="it">▥ Vault</div><div class="it">▦ Knowledge bank</div>
+      <div class="grp">Tools</div><div class="it">▧ Analytics</div><div class="it">▨ Audit</div>
+    </div>
+  </div>
+</section>
+
+<section id="callout">
+  <h2>Callout, progress, empty state</h2>
+  <div class="demo col">
+    <div class="callout"><span class="tile">i</span><div><b>Compliance begins after incorporation</b><span>Filings appear here once the certificate of incorporation is in. Until then this page lists what SBC is preparing.</span></div></div>
+    <div><div class="label" style="margin-bottom:6px">Phase progress · Northwind</div><div class="prog"><i style="--w:100%"></i><i style="--w:100%"></i><i style="--w:45%"></i><i style="--w:0%"></i></div><div style="font-size:11px;color:var(--ink-muted);margin-top:6px">Segments, left to right: Part A · Part B · Post-inc · Registration. One colour; the gaps mark the phases.</div></div>
+    <div class="empty">Nothing needs you right now.</div>
+    <span class="note">A callout is a soft ground inside a hairline with an icon tile, never a coloured left edge. Progress is one colour. Empty states say what will appear and, where there is one, the action that fills them.</span>
+  </div>
+</section>
+
+<section id="screen-today">
+  <h2>Lead Today</h2>
+  <p>The reference screen. Every other dashboard is built from the same parts in the same skeleton: shell, greeting card, a grid of section cards with a 318px side rail.</p>
+  <div class="screen">
+    <div class="side"><div class="it on">▢ Today</div><div class="it">▤ Work <span class="cnt">9</span></div><div class="it">▣ Clients <span class="cnt">4</span></div><div class="it">✉ Email</div><div class="grp">Docs</div><div class="it">▥ Vault</div><div class="it">▦ Knowledge bank</div></div>
+    <div class="pg">
+      <div class="hero"><div class="when">Wednesday · 22 Oct 2026 · 09:14 am</div><h4>Good morning, Arjun</h4><div class="stats"><span><b>9</b> Action</span><span><b class="hot">2</b> Overdue</span><span><b>2</b> Waiting</span><span><b>4</b> This week</span></div></div>
+      <div class="two">
+        <div class="sec"><div class="hd"><span class="tile">⚡</span><span class="t">Action queue · by company</span></div><div class="bd">
+          <div class="row"><span class="av">MH</span><span class="nm">Meridian Health India Pvt Ltd</span><span class="pill col p-warn">Filing due</span></div>
+          <div class="row"><span class="av">NA</span><span class="nm">Northwind Analytics India Pvt Ltd</span><span class="pill col p-brand">In progress</span></div>
+          <div class="row"><span class="av">KS</span><span class="nm">Kestrel Software</span><span class="pill col p-dan">2 overdue</span></div>
+          <div style="margin-top:8px;font-size:12px"><a href="#screen-today">View all work →</a></div>
+        </div></div>
+        <div class="sec"><div class="hd"><span class="tile">✓</span><span class="t">Compliance health</span></div><div class="bd">
+          <div class="row"><span class="nm">Filed</span><span class="pill col p-pos">11</span></div>
+          <div class="row"><span class="nm">Due soon</span><span class="pill col p-warn">2</span></div>
+          <div class="row"><span class="nm">Overdue</span><span class="pill col p-dan">1</span></div>
+          <div class="row"><span class="nm">Upcoming</span><span class="pill col p-neu">6</span></div>
+        </div></div>
+      </div>
+      <div class="sec"><div class="hd"><span class="tile">↗</span><span class="t">My companies · phase progress</span></div><div class="bd">
+        <div class="row"><span class="nm">Northwind Analytics India Pvt Ltd</span><span class="pill col p-brand">In progress</span></div><div class="prog" style="margin:4px 0 10px"><i style="--w:100%"></i><i style="--w:100%"></i><i style="--w:45%"></i><i style="--w:0%"></i></div>
+        <div class="row"><span class="nm">Meridian Health India Pvt Ltd</span><span class="pill col p-dan">Stuck</span></div><div class="prog" style="margin:4px 0 2px"><i style="--w:100%"></i><i style="--w:30%"></i><i style="--w:0%"></i><i style="--w:0%"></i></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="screen-client">
+  <h2>Client home</h2>
+  <p>The same system on the client's side: their company name in the greeting card, what they owe SBC first, who holds each step, and the steps around them. Owner chips tell the client and SBC apart; status chips tell the state.</p>
+  <div class="screen">
+    <div class="side"><div class="it on">▢ Home</div><div class="it">▤ Incorporation</div><div class="it">▣ Compliances</div><div class="it">▥ Documents</div><div class="it">▦ Library</div><div class="it">▧ Team</div></div>
+    <div class="pg">
+      <div class="hero"><div class="when">Wed 21 Oct 2026</div><h4>Northwind Analytics India Pvt Ltd</h4><div class="stats"><span><b class="hot">1</b> Waiting on Northwind</span><span><b>0</b> With SBC</span><span><b>0</b> Overdue</span><span><b>2/2</b> Documents in</span><span><b>13 Dec</b> Expected COI</span></div></div>
+      <div class="sec"><div class="hd"><span class="tile">☐</span><span class="t">Needs from Northwind</span><span class="m">1 item</span></div><div class="bd">
+        <div class="row"><span class="nm">Signed board resolution<div class="sub">Step 3 · due 13 Dec</div></span><span class="pill col p-hi">Northwind</span><span class="pill col p-warn">Waiting</span><button class="btn sm">Continue</button></div>
+      </div></div>
+      <div class="sec"><div class="hd"><span class="tile">≡</span><span class="t">Steps around Northwind</span></div><div class="bd">
+        <div class="row"><span class="sub k">Step 2</span><span class="nm">Draft board resolution</span><span class="pill col p-brand">SBC</span><span class="pill col p-pos">Completed</span></div>
+        <div class="row"><span class="sub k">Step 3</span><span class="nm">Signed board resolution</span><span class="pill col p-hi">Northwind</span><span class="pill col p-warn">Waiting</span></div>
+        <div class="row"><span class="sub k">Step 4</span><span class="nm">Name application</span><span class="pill col p-brand">SBC</span><span class="pill col p-neu">Not started</span></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="build">
+  <h2>Build a dashboard from this system</h2>
+  <p class="lead">This page is the brief. A session asked for a manager, admin or super admin screen reads it and builds the screen from the parts above, without a separate spec.</p>
+  <h3>Where the parts live</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>Import</th><th>Props that matter</th></tr></thead>
+    <tbody>
+      <tr><td>Shell (sidebar, top bar)</td><td class="mono">app/app/&lt;role&gt;/layout.tsx wraps every page in AppShell</td><td style="color:var(--ink-muted)">Nothing to pass. Nav items live in <span class="mono">src/components/shell/RoleSidebar.tsx</span>.</td></tr>
+      <tr><td>Greeting card</td><td class="mono">DashHero from @/components/dash/DashHero</td><td style="color:var(--ink-muted)"><span class="mono">title</span>, <span class="mono">subtitle</span>, <span class="mono">ring {value,total,caption}</span>, <span class="mono">stats [{label,value,href,hot}]</span>. <span class="mono">hot</span> paints the one orange figure.</td></tr>
+      <tr><td>Section card</td><td class="mono">DashSection from @/components/dash/DashSection</td><td style="color:var(--ink-muted)"><span class="mono">icon</span>, <span class="mono">title</span>, <span class="mono">meta</span>, <span class="mono">href</span>, <span class="mono">hrefLabel</span>, <span class="mono">tone</span> (neutral unless the section is about a status). Also <span class="mono">DashDonut</span>, <span class="mono">DashLegendRow</span>.</td></tr>
+      <tr><td>Stat card</td><td class="mono">StatCard from @/components/dash/StatCard</td><td style="color:var(--ink-muted)"><span class="mono">label</span>, <span class="mono">value</span>, <span class="mono">tone</span>, <span class="mono">icon</span>, <span class="mono">delta {value,label}</span>, <span class="mono">trend [n…]</span>, <span class="mono">href</span>.</td></tr>
+      <tr><td>Table</td><td class="mono">DashDataTable from @/components/dash/DashDataTable</td><td style="color:var(--ink-muted)"><span class="mono">columns [{key,header,width,align,mono,render}]</span>, <span class="mono">rows</span>, <span class="mono">rowKey</span>, <span class="mono">rowHref</span>, <span class="mono">mobile</span>, <span class="mono">bare</span> inside a DashSection.</td></tr>
+      <tr><td>Chips</td><td class="mono">CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_BADGE from @/components/common/IconChip</td><td style="color:var(--ink-muted)"><span class="mono">cn(CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_BADGE.success)</span>. Tones: primary, success, warning, danger, info, highlight, neutral. Or <span class="mono">Badge</span> from <span class="mono">@/components/ui/badge</span>.</td></tr>
+      <tr><td>Buttons, inputs</td><td class="mono">Button from @/components/ui/button; Input, Select, Textarea from @/components/ui</td><td style="color:var(--ink-muted)"><span class="mono">variant</span> default | secondary | ghost | destructive | link; <span class="mono">size</span> sm | default | lg | icon.</td></tr>
+      <tr><td>Icon tile</td><td class="mono">IconChip from @/components/common/IconChip</td><td style="color:var(--ink-muted)"><span class="mono">icon</span>, <span class="mono">tone</span> (neutral by default), <span class="mono">size</span> sm | md | lg.</td></tr>
+      <tr><td>Tokens</td><td class="mono">docs/design/design-tokens.json → scripts/design-tokens-css.mjs --write → app/globals.css; classes in tailwind.config.ts</td><td style="color:var(--ink-muted)">Use the class names on this page (<span class="mono">bg-surface-raised</span>, <span class="mono">text-ink-muted</span>, <span class="mono">border-line</span>, <span class="mono">bg-brand-soft</span>, <span class="mono">h-control-md</span>, <span class="mono">min-w-control</span>, <span class="mono">h-chip</span>, <span class="mono">shadow-card</span>). Never a hex or oklch literal.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>The skeleton</h3>
+  <p>Copy <code>src/views/intern/Today.tsx</code>. Every dashboard is this, with different sections:</p>
+<pre class="mono" style="background:var(--surface-sunken);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:12px;line-height:1.5;margin:0 0 12px">&lt;PageTransition&gt;
+  &lt;SEO title="…" path="…" /&gt;
+  &lt;div className="flex flex-col gap-3"&gt;
+    &lt;DashHero title={`Good ${greet}, ${first}`}
+              ring={{ value: onTrack, total: projects, caption: 'on track' }}
+              stats={[{ label: 'Projects', value: n, href }, { label: 'Need attention', value: m, href, hot: m &gt; 0 }, …]} /&gt;
+    &lt;div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]"&gt;
+      &lt;div className="flex min-w-0 flex-col gap-3"&gt;
+        &lt;DashSection icon={Zap} title="What needs you"&gt;…rows…&lt;/DashSection&gt;
+        &lt;DashSection icon={Briefcase} title="Projects" href="/app/admin/projects" hrefLabel="All projects"&gt;
+          &lt;DashDataTable bare columns={…} rows={…} rowKey={r =&gt; r.id} /&gt;
+        &lt;/DashSection&gt;
+      &lt;/div&gt;
+      &lt;div className="flex min-w-0 flex-col gap-3"&gt;
+        &lt;DashSection icon={Check} title="Portfolio health"&gt;…donut + legend…&lt;/DashSection&gt;
+        &lt;DashSection icon={Clock} title="Waiting on"&gt;…rows…&lt;/DashSection&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/PageTransition&gt;</pre>
+  <h3>Order of sections</h3>
+  <p>The screen answers questions in reading order: what needs me, what is late, what is coming, who is waiting, then the long lists. The headline numbers go in the greeting card as stats and never again as a band of tiles under it. The side rail holds the health donut and the waiting list.</p>
+  <h3>Rows and lists</h3>
+  <p>A row inside a section is <code>flex items-center gap-2.5 min-h-row border-t border-line first:border-0</code>: a neutral 26px tile with initials, the name at 13px/500, meta at 11px <code>ink-muted</code> under it, a chip at the column width, an optional 28px secondary button. More than eight rows: a <code>DashDataTable</code> or a link to the full page. A list with nothing in it says what will appear there.</p>
+  <h3>Before calling it done</h3>
+  <ul>
+    <li>Only tokens on this page; <code>rg "#[0-9a-f]{6}|oklch\([0-9]|accent-(amber|rose|violet|emerald|sky|teal|pink|cyan|lime)|border-l-|rounded-full px-|font-extrabold"</code> over the new files returns nothing.</li>
+    <li><code>npm run typecheck</code> green, <code>npx eslint --quiet</code> clean, <code>npm run test</code> passing.</li>
+    <li>Screenshots in light and dark at 1440px and 375px look like the two screens above.</li>
+    <li>One primary button and one orange moment per region; every status has a word; nothing identity-coloured.</li>
+  </ul>
+</section>
+
+<section id="never">
+  <h2>Never</h2>
+  <div class="nope">
+    <div class="x"><b>Identity colour</b>A different hue per company, person, tag or nav item. Everything that is not a state is neutral.</div>
+    <div class="x"><b>Solid status fills</b>White text on a green, orange or grey block. Status is a soft ground, a text-safe colour and a word.</div>
+    <div class="x"><b>Orange buttons</b>The highlight marks what needs the reader. It never sits beside a blue button as a second action colour.</div>
+    <div class="x"><b>Gradients and blur</b>No gradient on a product surface, no frosted bars, no hero skins. Flat tokens only.</div>
+    <div class="x"><b>Coloured left borders</b>A KPI card carries a 3px top edge in its tone. Notices use a soft ground inside a hairline.</div>
+    <div class="x"><b>Cards inside cards</b>Rows inside a panel are hairline-separated. One raised surface per panel.</div>
+    <div class="x"><b>Pills and circles</b>Chips, avatars and tiles are rounded rectangles. Only toggle knobs and progress rings are round.</div>
+    <div class="x"><b>Zig-zag columns</b>Chips and buttons in a column share one width and centred labels. Labels never wrap.</div>
+    <div class="x"><b>Weight 700 and 800</b>Public Sans stops at 600. Emphasis is size and colour.</div>
+  </div>
+</section>
+
+<section id="deprecated">
+  <h2>Deprecated names</h2>
+  <p>Old token and class names resolve to the new tokens until 30 November 2026, then they are deleted. The full map is in <code>docs/design/TOKENS.md</code>.</p>
+  <div class="tbl"><table class="dep">
+    <thead><tr><th>Old</th><th>New</th></tr></thead>
+    <tbody>
+      <tr><td><code>--primary</code>, <code>--brand</code>, <code>--blue-600</code>, <code>--gold</code>, <code>--orange-*</code>, <code>--role-accent</code>, <code>--ring</code></td><td><code>brand</code></td></tr>
+      <tr><td><code>--primary-light</code>, <code>--blue-50</code>, <code>--sidebar-active</code>, <code>--role-accent-soft</code></td><td><code>brand-soft</code></td></tr>
+      <tr><td><code>--accent-orange</code> (UI)</td><td><code>highlight</code></td></tr>
+      <tr><td><code>--accent-amber</code>, <code>-rose</code>, <code>-violet</code>, <code>-emerald</code>, <code>-sky</code>, <code>-teal</code>, <code>-pink</code>, <code>-cyan</code>, <code>-lime</code></td><td>removed; neutral chips, <code>data-1..6</code> for charts</td></tr>
+      <tr><td><code>--success*</code></td><td><code>positive</code>, <code>positive-soft</code></td></tr>
+      <tr><td><code>--danger-light</code>, <code>--error*</code>, <code>--destructive</code></td><td><code>danger</code>, <code>danger-soft</code></td></tr>
+      <tr><td><code>--phase-*</code></td><td><code>brand</code> current, <code>positive</code> done, <code>warning</code> waiting, <code>ink-faint</code> locked</td></tr>
+      <tr><td><code>--stat-gst</code> … <code>--stat-labour</code></td><td><code>data-1</code> … <code>data-6</code></td></tr>
+      <tr><td><code>--super-gold*</code>, hero gradient skins, Manrope, Space Grotesk, Poppins</td><td>removed</td></tr>
+      <tr><td>portal <code>--bg --panel --fg --muted --navy --gold --ok --due --over --prog --up</code></td><td><code>surface</code>, <code>surface-raised</code>, <code>ink</code>, <code>ink-muted</code>, <code>ink</code>/<code>brand</code>, <code>brand</code>, <code>positive</code>, <code>warning</code>, <code>danger</code>, <code>brand</code>, <code>ink-faint</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+</main>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var btns={light:document.getElementById('th-light'),system:document.getElementById('th-system'),dark:document.getElementById('th-dark')};
+  function set(mode){
+    if(mode==='system'){root.removeAttribute('data-theme');}else{root.setAttribute('data-theme',mode);}
+    Object.keys(btns).forEach(function(k){btns[k].setAttribute('aria-pressed',String(k===mode));});
+    try{localStorage.setItem('vcfo-ds-theme',mode);}catch(e){}
+    render();
+  }
+  Object.keys(btns).forEach(function(k){btns[k].addEventListener('click',function(){set(k);});});
+  var saved=null;try{saved=localStorage.getItem('vcfo-ds-theme');}catch(e){}
+  if(saved==='light'||saved==='dark'){set(saved);}else{var cur=root.getAttribute('data-theme');Object.keys(btns).forEach(function(k){btns[k].setAttribute('aria-pressed',String((cur||'system')===k));});}
+
+  var C=[
+    ['surface','#f7f9fc','#0b1521','Page canvas. Never pure white or black.','ink'],
+    ['surface-raised','#ffffff','#111d2c','Cards, tables, dialogs, popovers, the top bar.','ink'],
+    ['surface-sunken','#eef2f7','#070e18','Wells: table heads, inputs on cards, empty states, skeletons.','ink'],
+    ['line','#e1e7ef','#1f2d40','1px hairline rows and card frames.',null],
+    ['line-strong','#7a8ca2','#56698a','Input, checkbox and secondary-button borders. 3:1 on surfaces.',null],
+    ['ink','#0f2a4a','#e9eff6','Primary text and figures. Navy, never black.','on'],
+    ['ink-muted','#4b5b70','#a5b4c6','Secondary text, meta, helper text. 4.5:1 everywhere it is used.','on'],
+    ['ink-faint','#7b8a9e','#6f8097','Placeholders, disabled, locked steps, the Other series. 3:1, never body text.','on'],
+    ['brand','#1b4f94','#6aa2e8','The one action colour: buttons, links, active nav, selection, progress.','on'],
+    ['brand-strong','#163f78','#86b6ef','Hover and pressed brand; link hover.','on'],
+    ['brand-soft','#e8f0fa','#17304d','Selected rows, the current step, the active nav ground on the white sidebar.','brand'],
+    ['on-brand','#ffffff','#0b1521','Text on a brand fill: white in light, navy on the lighter dark-mode blue.',null],
+    ['highlight','#a8520f','#f2a35b','Text-safe orange. One moment per screen region. Never a button.','on'],
+    ['highlight-bright','#e07a1f','#f08a3a','Orange marks with no small text: a 3px edge, a dot beside a label.',null],
+    ['highlight-soft','#fdf0e3','#3a2412','Ground of small orange chips only. Never a large block.','highlight'],
+    ['positive','#0f6e51','#4fc99a','Done, filed, paid. Always with a word.','on'],
+    ['positive-soft','#e1f3ec','#0f3328','Ground of positive chips and added rows.','positive'],
+    ['warning','#8a5a06','#f0b84a','Due soon, waiting on someone, needs review. Amber, not orange.','on'],
+    ['warning-soft','#fbf0d9','#3b2a0a','Ground of warning chips and changed rows.','warning'],
+    ['danger','#b5302a','#f27b72','Overdue, failed, rejected, destructive actions.','on'],
+    ['danger-soft','#fbe7e5','#3d1512','Ground of danger chips and removed rows.','danger'],
+    ['info','#0f6e8c','#5cc0dc','Notes and internal-only bands. Teal, so it never reads as the brand.','on'],
+    ['info-soft','#e2f1f6','#0d2e3a','Ground of info callouts.','info'],
+    ['focus-ring','#3b82f6','#86b6ef','2px outline, 2px offset, on every interactive element. 3:1 on every surface.',null],
+    ['side','#0f2a4a','#0b1521','Sidebar and greeting-card ground. In dark mode it matches the surface.','side-ink'],
+    ['side-ink','#e9eff6','#e9eff6','Sidebar labels and icons, greeting-card text.',null],
+    ['side-muted','#9fb0c6','#8d9db3','Sidebar group titles and meta. 4.5:1 on side.',null],
+    ['side-active','#1d3d64','#17304d','Active sidebar item ground; hover ground on the navy sidebar.','side-ink'],
+    ['side-line','#23405f','#1f2d40','Sidebar hairlines and the greeting card’s rule.',null]
+  ];
+  function render(){
+    var dark=root.getAttribute('data-theme')==='dark'||(!root.getAttribute('data-theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var h='';
+    C.forEach(function(t){
+      var name=t[0],lv=t[1],dv=t[2],use=t[3],on=t[4];
+      var fg=on==='on'?'var(--surface-raised)':on?'var(--'+on+')':null;
+      var sample=fg?'<b style="background:'+(fg==='var(--surface-raised)'?'var(--surface-raised)':'transparent')+';color:'+(on==='on'?'var(--'+name+')':fg)+'">'+(on==='on'?'Aa':'Aa')+'</b>':'';
+      if(on==='on'){sample='<b style="background:var(--surface-raised);color:var(--'+name+')">Aa</b><b style="background:var(--'+name+');color:'+(name==='ink'||name==='brand'||name==='positive'||name==='warning'||name==='danger'||name==='info'||name==='highlight'?'var(--on-brand)':'var(--surface-raised)')+'">Aa</b>';}
+      h+='<div class="sw"><div class="chip" style="background:var(--'+name+')">'+sample+'</div><div class="meta"><div class="n">'+name+'</div><div class="v mono"><span>'+lv+'</span><span>'+dv+'</span>'+(dark?'<span>dark</span>':'<span>light</span>')+'</div><div class="u">'+use+'</div></div></div>';
+    });
+    document.getElementById('swatches').innerHTML=h;
+  }
+  render();
+  try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);}catch(e){}
+
+  var T=[
+    ['display-xl','28 / 34 / 600','One per screen: the greeting, the client’s company name.',28,'Good morning, Arjun'],
+    ['display','22 / 28 / 600','Page title, above a 2px rule.',22,'Compliance calendar'],
+    ['title','15 / 20 / 600','Card, dialog and drawer titles.',15,'Board resolution'],
+    ['heading','13 / 18 / 600','Group headers inside cards.',13,'Pre-incorporation'],
+    ['body','13 / 18 / 400','Default UI text, table cells.',13,'Eleven of fourteen filings are done.'],
+    ['body-lg','15 / 22 / 400','Client portal reading text, phone screens.',15,'Your incorporation is on track.'],
+    ['body-sm','12 / 16 / 400','Meta, captions, helper text.',12,'Updated 24 Oct, 10:42 am'],
+    ['label','11 / 16 / 600, +0.06em, uppercase','Section heads, table heads, stat labels. Written in sentence case.',11,'Due date'],
+    ['chip','11 / 16 / 600','Status and count chips. Sentence case.',11,'Due 24 Oct'],
+    ['figure','13 / 18 / 600, tabular','Amounts in tables, right-aligned.',13,'₹1,26,000'],
+    ['figure-lg','20 / 24 / 600, tabular','Totals and KPI figures.',20,'₹9,05,178'],
+    ['figure-xl','28 / 32 / 600, tabular','The hero stat.',28,'11 of 14'],
+    ['mono','12 / 16 / 500, IBM Plex Mono','CIN, PAN, DIN, GSTIN, file names.',12,'U72900TG2026PTC184211']
+  ];
+  var tb=document.querySelector('#type-table tbody'),th='';
+  T.forEach(function(r){var w=r[1].indexOf('400')>-1?400:r[1].indexOf('500')>-1?500:600;var fam=r[0]==='mono'?'var(--mono)':'var(--sans)';var tr=r[0]==='label'?'letter-spacing:.06em;text-transform:uppercase;':'';var tn=/figure|mono/.test(r[0])?'font-variant-numeric:tabular-nums;':'';
+    th+='<tr class="type-row"><td><span style="font:'+w+' '+r[4]+'px/1.2 '+fam+';'+tr+tn+'">'+r[5]+'</span><div class="mono" style="color:var(--ink-muted);margin-top:4px">'+r[0]+'</div></td><td class="mono">'+r[1]+'</td><td style="color:var(--ink-muted)">'+r[2]+'</td></tr>';});
+  tb.innerHTML=th;
+
+  var S=[['space-1',4,'Icon-to-label gap'],['space-2',8,'Between chips, inside inputs'],['space-3',12,'Table cells, panel gaps'],['space-4',16,'Card padding, mobile gutter'],['space-5',20,'Phone card padding, dialogs'],['space-6',24,'Section gaps, page margins'],['space-8',32,'Between page regions'],['space-12',48,'Top of auth pages']];
+  var sh='';S.forEach(function(s){sh+='<div><i style="width:'+s[1]+'px;height:'+s[1]+'px"></i>'+s[0]+'<br>'+s[1]+'px<br><span style="color:var(--ink-faint)">'+s[2]+'</span></div>';});
+  document.getElementById('space-scale').innerHTML=sh;
+  var R=[['radius-sm',6,'Chips, inputs, thumbnails'],['radius-md',8,'Buttons, nav items, tiles, avatars'],['radius-lg',10,'Cards, dialogs, popovers'],['radius-xl',12,'Sheets, the greeting card'],['radius-pill',999,'Toggle knobs and rings only']];
+  var rh='';R.forEach(function(r){rh+='<div style="font-size:11px;color:var(--ink-muted)"><i style="border-radius:'+r[1]+'px"></i>'+r[0]+' '+(r[1]===999?'':r[1]+'px')+'<br><span style="color:var(--ink-faint)">'+r[2]+'</span></div>';});
+  document.getElementById('radii').innerHTML=rh;
+  var Z=[['control-sm','28px','Buttons and inputs in table rows and dense toolbars'],['control-md','32px','Default button and input height'],['control-lg','40px','Form and dialog primaries; every button on a phone'],['control-min-width','84px','Minimum width of any text button'],['chip-height','22px','Every status, owner and count chip'],['chip-min-width','88px','Chips inside a table column'],['row-height','40px','Table rows'],['tile','32px','Icon tiles in section heads and list rows'],['icon-sm / md / lg','14 / 16 / 20px','In chips / in buttons and cells / in the sidebar']];
+  var zh='';Z.forEach(function(z){zh+='<tr><td class="mono">'+z[0]+'</td><td class="mono">'+z[1]+'</td><td style="color:var(--ink-muted)">'+z[2]+'</td></tr>';});
+  document.querySelector('#size-table tbody').innerHTML=zh;
+})();
+</script>

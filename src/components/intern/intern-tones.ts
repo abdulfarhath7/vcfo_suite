@@ -17,16 +17,19 @@ export function internToneText(tone: InternChipTone): string {
   return TONE_TEXT[internIconTone(tone)];
 }
 
+/* A kind is a state, so it wears a status tone (docs/design/TOKENS.md): in flight
+   is brand, waiting on someone is warning, late or rejected is danger, done is
+   positive. The word on the chip carries the detail. */
 export const KIND_TONE: Record<string, InternChipTone> = {
   rejected: 'danger',
   review: 'primary',
-  deliver: 'teal',
+  deliver: 'primary',
   overdue: 'danger',
-  'in-progress': 'sky',
-  'waiting-client': 'violet',
-  'waiting-manager': 'pink',
-  'waiting-request': 'cyan',
-  filing: 'cyan',
+  'in-progress': 'primary',
+  'waiting-client': 'warning',
+  'waiting-manager': 'warning',
+  'waiting-request': 'warning',
+  filing: 'warning',
   done: 'success',
 };
 

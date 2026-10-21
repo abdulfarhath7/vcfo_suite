@@ -47,9 +47,9 @@ export interface ProjectsViewProps {
 }
 
 const healthMap = {
-  'on-track': { label: 'On track', cls: 'bg-success-light text-success-text', dot: 'bg-success', tone: 'success' as const },
-  'at-risk':  { label: 'Needs review',  cls: 'bg-warning-light text-warning-text', dot: 'bg-warning', tone: 'warning' as const },
-  'overdue':  { label: 'Past due',  cls: 'bg-danger-light text-danger-text',   dot: 'bg-danger',  tone: 'danger'  as const },
+  'on-track': { label: 'On track', cls: 'bg-positive-soft text-positive', dot: 'bg-positive', tone: 'success' as const },
+  'at-risk':  { label: 'Needs review',  cls: 'bg-warning-soft text-warning', dot: 'bg-warning', tone: 'warning' as const },
+  'overdue':  { label: 'Past due',  cls: 'bg-danger-soft text-danger',   dot: 'bg-danger',  tone: 'danger'  as const },
 } as const;
 
 const PHASE_ORDER = ['Pre-Incorporation', 'Post-Incorporation', 'Operational Readiness'] as const;
@@ -90,7 +90,7 @@ export function ProjectsView(props: ProjectsViewProps) {
         actions={
           <div className="flex items-center gap-2">
             <LayoutGroup id="proj-view-switch">
-              <div className="inline-flex items-center rounded-md border border-border bg-card p-0.5">
+              <div className="inline-flex items-center rounded-md border border-line bg-card p-0.5">
                 {VIEWS.map((v) => {
                   const Icon = v.icon;
                   const active = view === v.id;
@@ -101,13 +101,13 @@ export function ProjectsView(props: ProjectsViewProps) {
                       onClick={() => setView(v.id)}
                       className={cn(
                         'relative inline-flex items-center gap-1.5 px-2.5 h-7 rounded-[5px] text-[12px] font-medium transition-colors',
-                        active ? 'text-ink' : 'text-text-tertiary hover:text-ink-soft',
+                        active ? 'text-ink' : 'text-ink-faint hover:text-ink-soft',
                       )}
                     >
                       {active && (
                         <motion.span
                           layoutId="proj-view-pill"
-                          className="absolute inset-0 rounded-[5px] bg-muted"
+                          className="absolute inset-0 rounded-[5px] bg-surface-sunken"
                           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         />
                       )}
@@ -121,7 +121,7 @@ export function ProjectsView(props: ProjectsViewProps) {
             {isFirmWideAdmin(user?.role) ? (
               <Link
                 href="/app/admin/projects/recycle-bin"
-                className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Deleted
@@ -183,17 +183,17 @@ export function ProjectsView(props: ProjectsViewProps) {
                     onKeyDown={(ev) => {
                       if (ev.key === 'Enter' || ev.key === ' ') router.push(adminProjectPath(e, projectBase));
                     }}
-                    className="flex w-full cursor-pointer flex-col gap-2.5 rounded-xl border border-border/80 bg-card px-3.5 py-3 text-left transition-colors hover:border-primary/30 hover:bg-primary-light/40"
+                    className="flex w-full cursor-pointer flex-col gap-2.5 rounded-xl border border-line/80 bg-card px-3.5 py-3 text-left transition-colors hover:border-brand/30 hover:bg-brand-soft/40"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2.5">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-light text-[11px] font-semibold text-brand">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-soft text-[11px] font-semibold text-brand">
                           {e.companyName.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <div className="truncate text-[13px] font-medium text-ink">{e.companyName}</div>
-                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-text-tertiary">
-                            <span className="inline-flex rounded-full border border-primary/20 bg-primary-light px-2 py-0.5 text-[10px] font-medium text-primary">
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-faint">
+                            <span className="inline-flex rounded-sm border border-brand/20 bg-brand-soft px-2 py-0.5 text-[10px] font-medium text-brand">
                               {stageDisplayLabel(e.stage)}
                             </span>
                             <span>· {STUCK_LABEL[stuck]}</span>
@@ -201,7 +201,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
-                        <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium', h.cls)}>
+                        <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-0.5 text-[10px] font-medium', h.cls)}>
                           <span className={cn('h-1.5 w-1.5 rounded-full', h.dot)} />
                           {h.label}
                         </span>
@@ -209,17 +209,17 @@ export function ProjectsView(props: ProjectsViewProps) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-sunken">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-primary to-primary-dark"
+                          className="h-full rounded-full bg-gradient-to-r from-brand to-primary-dark"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="w-8 text-right text-[11px] tabular-nums text-text-tertiary">{pct}%</span>
+                      <span className="w-8 text-right text-[11px] tabular-nums text-ink-faint">{pct}%</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11.5px] text-text-tertiary">
+                    <div className="flex items-center justify-between text-[11.5px] text-ink-faint">
                       <span className="truncate">{leadLabel}</span>
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-brand/70" />
                     </div>
                   </div>
                 );
@@ -229,7 +229,7 @@ export function ProjectsView(props: ProjectsViewProps) {
             {/* Desktop table */}
             <div className="hidden overflow-x-auto md:block">
             <div className="min-w-[720px]">
-            <div className="grid grid-cols-[1.6fr_1fr_1.2fr_1fr_120px_88px] gap-3 px-4 h-10 items-center bg-table-header text-[11px] uppercase tracking-wider text-text-tertiary border-b border-border">
+            <div className="grid grid-cols-[1.6fr_1fr_1.2fr_1fr_120px_88px] gap-3 px-4 h-10 items-center bg-surface-sunken text-[11px] uppercase tracking-wider text-ink-faint border-b border-line">
               <div>Company</div>
               <div>Setup phase</div>
               <div>Progress</div>
@@ -238,7 +238,7 @@ export function ProjectsView(props: ProjectsViewProps) {
               <div></div>
             </div>
             <motion.div
-              className="divide-y divide-border"
+              className="divide-y divide-line"
               initial="hidden"
               animate="show"
               variants={staggerKids(0.03)}
@@ -253,27 +253,27 @@ export function ProjectsView(props: ProjectsViewProps) {
                   <motion.div
                     key={e.id}
                     variants={fadeUp}
-                    className="w-full grid grid-cols-[1.6fr_1fr_1.2fr_1fr_120px_88px] gap-3 px-4 py-3 items-center hover:bg-muted/40 text-left group"
+                    className="w-full grid grid-cols-[1.6fr_1fr_1.2fr_1fr_120px_88px] gap-3 px-4 py-3 items-center hover:bg-surface-sunken/40 text-left group"
                   >
                     <button type="button" onClick={() => router.push(adminProjectPath(e, projectBase))} className="contents">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-md bg-primary-light text-brand text-[11px] font-semibold flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-md bg-brand-soft text-brand text-[11px] font-semibold flex items-center justify-center shrink-0">
                         {e.companyName.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
                       </div>
                       <div className="min-w-0">
                         <div className="text-[13px] font-medium text-ink truncate">{e.companyName}</div>
-                        <div className="text-[11px] text-text-tertiary">{STUCK_LABEL[stuck]}</div>
+                        <div className="text-[11px] text-ink-faint">{STUCK_LABEL[stuck]}</div>
                       </div>
                     </div>
                     <div className="truncate text-[12.5px] text-ink-soft">{stageDisplayLabel(e.stage)}</div>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="flex-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-primary to-primary-dark"
+                          className="h-full rounded-full bg-gradient-to-r from-brand to-primary-dark"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="text-[11px] text-text-tertiary tabular-nums w-8 text-right">{pct}%</span>
+                      <span className="text-[11px] text-ink-faint tabular-nums w-8 text-right">{pct}%</span>
                     </div>
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="w-6 h-6 rounded-full gold-sheen text-[10px] font-semibold flex items-center justify-center shrink-0">{intern?.initials}</span>
@@ -285,7 +285,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     </button>
                     <div className="flex items-center justify-end gap-1">
                       <ProjectActionsMenu engagement={e} />
-                      <button type="button" onClick={() => router.push(adminProjectPath(e, projectBase))} className="p-1.5 text-text-tertiary hover:text-ink">
+                      <button type="button" onClick={() => router.push(adminProjectPath(e, projectBase))} className="p-1.5 text-ink-faint hover:text-ink">
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -319,11 +319,11 @@ export function ProjectsView(props: ProjectsViewProps) {
                       <StatusDot tone="gold" size={6} />
                       <Eyebrow>{phase}</Eyebrow>
                     </div>
-                    <Mono className="text-[10.5px] text-text-tertiary">{items.length.toString().padStart(2, '0')}</Mono>
+                    <Mono className="text-[10.5px] text-ink-faint">{items.length.toString().padStart(2, '0')}</Mono>
                   </div>
-                  <Surface flat className="flex-1 p-2 space-y-2 bg-muted/20">
+                  <Surface flat className="flex-1 p-2 space-y-2 bg-surface-sunken/20">
                     {items.length === 0 && (
-                      <div className="h-full min-h-[200px] flex items-center justify-center text-[11.5px] text-text-tertiary italic">
+                      <div className="h-full min-h-[200px] flex items-center justify-center text-[11.5px] text-ink-faint italic">
                         No projects in this setup phase
                       </div>
                     )}
@@ -335,16 +335,16 @@ export function ProjectsView(props: ProjectsViewProps) {
                           layout
                           variants={fadeUp}
                           onClick={() => router.push(adminProjectPath(e, projectBase))}
-                          className="group w-full text-left rounded-md border border-border bg-card p-3 hover:border-hairline-strong hover:-translate-y-px transition-all"
+                          className="group w-full text-left rounded-md border border-line bg-card p-3 hover:border-line-strong hover:-translate-y-px transition-all"
                         >
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className="w-7 h-7 rounded-md bg-primary-light text-brand text-[10px] font-semibold flex items-center justify-center shrink-0">
+                              <div className="w-7 h-7 rounded-md bg-brand-soft text-brand text-[10px] font-semibold flex items-center justify-center shrink-0">
                                 {e.companyName.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
                               </div>
                               <div className="min-w-0">
                                 <div className="text-[12.5px] font-medium text-ink truncate">{e.companyName}</div>
-                                <div className="text-[10.5px] text-text-tertiary flex items-center gap-1">
+                                <div className="text-[10.5px] text-ink-faint flex items-center gap-1">
                                   <MapPin className="w-2.5 h-2.5" />{city.name}
                                 </div>
                               </div>
@@ -352,7 +352,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                             <StatusDot tone={h.tone} size={7} />
                           </div>
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                            <div className="flex-1 h-1 rounded-full bg-surface-sunken overflow-hidden">
                               <motion.div
                                 className="h-full bg-gradient-to-r from-gold to-gold/70"
                                 initial={{ width: 0 }}
@@ -360,14 +360,14 @@ export function ProjectsView(props: ProjectsViewProps) {
                                 transition={{ duration: 0.7, delay: 0.1 + i * 0.04 }}
                               />
                             </div>
-                            <Mono className="text-[10px] text-text-tertiary tabular-nums w-7 text-right">{pct}%</Mono>
+                            <Mono className="text-[10px] text-ink-faint tabular-nums w-7 text-right">{pct}%</Mono>
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                               <span className="w-5 h-5 rounded-full gold-sheen text-[9px] font-semibold flex items-center justify-center">{intern?.initials}</span>
-                              <span className="text-[10.5px] text-text-tertiary truncate max-w-[100px]">{intern?.name}</span>
+                              <span className="text-[10.5px] text-ink-faint truncate max-w-[100px]">{intern?.name}</span>
                             </div>
-                            <span className="text-[10px] text-text-tertiary uppercase tracking-wider">{h.label}</span>
+                            <span className="text-[10px] text-ink-faint uppercase tracking-wider">{h.label}</span>
                           </div>
                         </motion.button>
                       );

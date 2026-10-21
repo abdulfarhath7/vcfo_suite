@@ -37,7 +37,7 @@ export function SuperAttentionPanel({ overview }: { overview: SuperOverview }) {
       href={SUPER_ATTENTION_HREF}
     >
       {rows.length === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-muted-foreground">
+        <p className="py-3 text-center text-[12.5px] text-ink-muted">
           Nothing is stuck. Every project is moving.
         </p>
       ) : (
@@ -58,18 +58,18 @@ function AttentionRow({ summary }: { summary: SuperEngagementSummary }) {
     <Link
       href={summary.href}
       title={summary.companyName}
-      className="border-t border-border py-2.5 first:border-t-0 first:pt-0.5 last:pb-0.5"
+      className="border-t border-line py-2.5 first:border-t-0 first:pt-0.5 last:pb-0.5"
     >
       <div className="mb-1.5 flex min-w-0 items-center gap-2 text-[12.5px]">
-        <b className="min-w-0 truncate font-extrabold text-ink">{summary.companyName}</b>
+        <b className="min-w-0 truncate font-semibold text-ink">{summary.companyName}</b>
         {idle ? (
-          <span className="shrink-0 font-mono text-[10.5px] font-semibold text-text-tertiary">
+          <span className="shrink-0 font-mono text-[10.5px] font-semibold text-ink-faint">
             {idle}
           </span>
         ) : null}
         <span
           className={cn(
-            'ml-auto inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] font-extrabold',
+            'ml-auto inline-flex shrink-0 whitespace-nowrap rounded-sm px-2 py-0.5 text-[10.5px] font-semibold',
             TONE_BADGE[STATE_TONE[summary.stateKey]],
           )}
         >
@@ -81,7 +81,7 @@ function AttentionRow({ summary }: { summary: SuperEngagementSummary }) {
         {summary.phases.map((phase) => (
           <div
             key={phase.id}
-            className="relative overflow-hidden rounded-full bg-raised"
+            className="relative overflow-hidden rounded-full bg-surface-sunken"
             style={{ flex: Math.max(phase.total, 1) }}
           >
             <i
@@ -92,7 +92,7 @@ function AttentionRow({ summary }: { summary: SuperEngagementSummary }) {
         ))}
       </div>
 
-      <p className="mt-1.5 min-w-0 truncate text-[11.5px] font-semibold text-muted-foreground">
+      <p className="mt-1.5 min-w-0 truncate text-[11.5px] font-semibold text-ink-muted">
         {attentionReason(summary)}
         {summary.leadName ? ` · ${summary.leadName}` : ''}
       </p>

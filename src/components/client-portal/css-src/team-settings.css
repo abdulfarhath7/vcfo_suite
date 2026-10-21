@@ -13,7 +13,7 @@
 .tp-set .mx{display:grid;grid-template-columns:34px minmax(0,1fr) 84px 84px;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--hair)}
 .tp-set .tb-err{color:var(--over-text);font-size:12px;font-weight:600}
 .tp-set .tb-menu{position:absolute;left:0;top:calc(100% + 8px);z-index:40;min-width:180px;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px;display:flex;flex-direction:column}
-.tp-set .tb-menu button{display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border:0;background:none;border-radius:6px;font:600 13px Manrope;color:var(--fg);cursor:pointer;text-align:left}
+.tp-set .tb-menu button{display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border:0;background:none;border-radius:6px;font:600 13px var(--font-sans);color:var(--fg);cursor:pointer;text-align:left}
 .tp-set .tb-menu button:hover,.tp-set .tb-menu button:focus-visible{background:var(--raised)}
 /* phone overrides last so they beat the base rules above (SR:59-75) */
 @media (max-width:767px){

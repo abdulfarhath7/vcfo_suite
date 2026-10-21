@@ -51,7 +51,7 @@ const COLUMNS: DashColumn<SuperDocument>[] = [
     header: 'Category',
     width: 'minmax(0,0.8fr)',
     render: (row) => (
-      <span className="block min-w-0 truncate text-muted-foreground">{row.category ?? '—'}</span>
+      <span className="block min-w-0 truncate text-ink-muted">{row.category ?? '—'}</span>
     ),
   },
   {
@@ -59,7 +59,7 @@ const COLUMNS: DashColumn<SuperDocument>[] = [
     header: 'Step',
     width: 'minmax(0,0.7fr)',
     mono: true,
-    render: (row) => <span className="text-muted-foreground">{row.stepId ?? '—'}</span>,
+    render: (row) => <span className="text-ink-muted">{row.stepId ?? '—'}</span>,
   },
   {
     key: 'shared',
@@ -68,7 +68,7 @@ const COLUMNS: DashColumn<SuperDocument>[] = [
     render: (row) => (
       <span
         className={cn(
-          'inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-extrabold',
+          'inline-block whitespace-nowrap rounded-sm px-2.5 py-0.5 text-[11px] font-semibold',
           row.sharedWithClient ? TONE_BADGE.success : TONE_BADGE.neutral,
         )}
       >
@@ -89,8 +89,8 @@ const COLUMNS: DashColumn<SuperDocument>[] = [
 function DocumentMobileRow({ document }: { document: SuperDocument }) {
   return (
     <div className="min-w-0">
-      <p className="min-w-0 truncate text-[13px] font-extrabold text-ink">{document.fileName}</p>
-      <p className="mt-1 min-w-0 truncate text-[11.5px] font-semibold text-muted-foreground">
+      <p className="min-w-0 truncate text-[13px] font-semibold text-ink">{document.fileName}</p>
+      <p className="mt-1 min-w-0 truncate text-[11.5px] font-semibold text-ink-muted">
         {[document.category, document.stepId, formatSuperDayMonth(document.createdAt)]
           .filter(Boolean)
           .join(' · ')}

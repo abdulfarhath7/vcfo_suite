@@ -40,8 +40,8 @@ function ChecklistLockedHint({
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-3">
         <div className="flex gap-2.5">
-          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-          <p className="text-sm leading-relaxed text-foreground">{message}</p>
+          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
+          <p className="text-sm leading-relaxed text-ink">{message}</p>
         </div>
       </PopoverContent>
     </Popover>
@@ -79,7 +79,7 @@ function JourneyRailAttachmentMenu({ attachments }: { attachments: StepAttachmen
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-raised hover:text-foreground"
+          className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink"
           aria-label="Step actions"
           onClick={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
@@ -92,20 +92,20 @@ function JourneyRailAttachmentMenu({ attachments }: { attachments: StepAttachmen
           <DropdownMenuSubTrigger>Attachments required</DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-64 p-1.5">
             {attachments.length === 0 ? (
-              <p className="px-1.5 py-1 text-[12px] text-muted-foreground">None</p>
+              <p className="px-1.5 py-1 text-[12px] text-ink-muted">None</p>
             ) : (
               <ul className="space-y-1">
                 {attachments.map((file) => (
                   <li key={file.fieldId} className="flex items-start gap-2 px-1.5 py-1 text-[12px]">
                     {file.uploaded ? (
-                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
+                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-positive" aria-hidden />
                     ) : (
-                      <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                      <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden />
                     )}
                     <span className="min-w-0 leading-snug">
-                      <span className="block text-foreground">{file.label}</span>
+                      <span className="block text-ink">{file.label}</span>
                       {file.uploaded && file.fileName ? (
-                        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                        <span className="mt-0.5 block truncate text-[11px] text-ink-muted">
                           {file.fileName}
                         </span>
                       ) : null}
@@ -152,7 +152,7 @@ export function ChecklistJourneyRail({
             <span
               className={cn(
                 'absolute left-[1.125rem] top-9 bottom-[-0.35rem] w-px',
-                connectorSolid ? 'bg-success' : 'border-l border-dashed border-border',
+                connectorSolid ? 'bg-positive' : 'border-l border-dashed border-line',
               )}
               aria-hidden
             />
@@ -173,9 +173,9 @@ export function ChecklistJourneyRail({
                 <p
                   className={cn(
                     'min-w-0 text-[13px] font-medium leading-snug',
-                    visuallyLocked ? 'text-muted-foreground' : 'text-foreground',
-                    selected && 'text-foreground',
-                    gate.kind === 'active' && 'text-primary',
+                    visuallyLocked ? 'text-ink-muted' : 'text-ink',
+                    selected && 'text-ink',
+                    gate.kind === 'active' && 'text-brand',
                   )}
                 >
                   {item.title}
@@ -191,10 +191,10 @@ export function ChecklistJourneyRail({
                 </div>
               )}
               {gate.kind === 'waiting' && gate.message && (
-                <p className="mt-1 text-[11px] text-muted-foreground">{gate.message}</p>
+                <p className="mt-1 text-[11px] text-ink-muted">{gate.message}</p>
               )}
               {windowLabel ? (
-                <p className="mt-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                <p className="mt-0.5 font-mono text-[11px] tabular-nums text-ink-muted">
                   {windowLabel}
                 </p>
               ) : null}
@@ -204,9 +204,9 @@ export function ChecklistJourneyRail({
           const rowShell = cn(
             'relative flex w-full items-start text-left transition-colors',
             'gap-2 rounded-lg py-2.5 pl-2 pr-1',
-            selected && canSelect && !animateSelected && 'bg-primary-light/50',
+            selected && canSelect && !animateSelected && 'bg-brand-soft/50',
             visuallyLocked && 'opacity-70',
-            canSelect && 'hover:bg-raised/60',
+            canSelect && 'hover:bg-surface-sunken/60',
             gate.kind === 'active' && 'journey-unlock',
           );
 
@@ -215,7 +215,7 @@ export function ChecklistJourneyRail({
               <MotionActivePill
                 layoutId="intern-journey-selected"
                 reduced={reduceMotion}
-                className="absolute inset-0 rounded-lg bg-primary-light/50"
+                className="absolute inset-0 rounded-lg bg-brand-soft/50"
               />
             ) : null;
 

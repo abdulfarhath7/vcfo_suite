@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 const INLINE_VISIBLE_CC = 2;
 /** Shared pill chrome for inline CC chips, +N overflow, and Add. */
 const INLINE_CC_PILL =
-  'inline-flex h-6 shrink-0 items-center rounded-full border border-border/80 bg-raised/50 text-[10.5px] text-ink';
+  'inline-flex h-6 shrink-0 items-center rounded-full border border-line/80 bg-surface-sunken/50 text-[10.5px] text-ink';
 
 interface ProgressCcResponse {
   ok: boolean;
@@ -180,7 +180,7 @@ export function ProgressEmailCcSection({
     <div
       className={cn(
         INLINE_CC_PILL,
-        'min-w-0 gap-1 py-0 pl-2 pr-0.5 focus-within:border-primary',
+        'min-w-0 gap-1 py-0 pl-2 pr-0.5 focus-within:border-brand',
       )}
     >
       <input
@@ -209,14 +209,14 @@ export function ProgressEmailCcSection({
         disabled={saving}
         aria-label="Add CC email"
         aria-invalid={Boolean(inputError)}
-        className="h-full w-[9.5rem] bg-transparent p-0 font-mono text-[10.5px] text-ink outline-none placeholder:text-text-tertiary disabled:opacity-50"
+        className="h-full w-[9.5rem] bg-transparent p-0 font-mono text-[10.5px] text-ink outline-none placeholder:text-ink-faint disabled:opacity-50"
       />
       <button
         type="button"
         onClick={handleAdd}
         disabled={saving || !draft.trim()}
         aria-label="Confirm CC email"
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-text-tertiary hover:text-ink disabled:opacity-40"
+        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-ink-faint hover:text-ink disabled:opacity-40"
       >
         <Plus className="h-2.5 w-2.5" />
       </button>
@@ -227,7 +227,7 @@ export function ProgressEmailCcSection({
       onClick={() => setAdding(true)}
       disabled={saving}
       aria-label="Add CC email"
-      className={cn(INLINE_CC_PILL, 'gap-1 px-2 font-medium hover:bg-raised disabled:opacity-50')}
+      className={cn(INLINE_CC_PILL, 'gap-1 px-2 font-medium hover:bg-surface-sunken disabled:opacity-50')}
     >
       <Plus className="h-3 w-3" />
       Add
@@ -250,7 +250,7 @@ export function ProgressEmailCcSection({
           type="button"
           onClick={() => handleRemove(email)}
           disabled={saving}
-          className="shrink-0 text-text-tertiary hover:text-ink disabled:opacity-50"
+          className="shrink-0 text-ink-faint hover:text-ink disabled:opacity-50"
           aria-label={`Remove ${email}`}
         >
           <X className="h-2.5 w-2.5" />
@@ -262,7 +262,7 @@ export function ProgressEmailCcSection({
       <div className={cn('min-w-0', className)}>
         <div className="flex min-w-0 flex-nowrap items-center justify-end gap-1.5 overflow-hidden">
           <span
-            className="shrink-0 text-[9.5px] font-semibold uppercase tracking-[0.16em] text-text-tertiary"
+            className="shrink-0 text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink-faint"
             title={
               defaultCcConfigured
                 ? 'Firm default CC is always included.'
@@ -272,7 +272,7 @@ export function ProgressEmailCcSection({
             CC
           </span>
           {loading ? (
-            <span className="shrink-0 text-[11px] text-text-tertiary">Loading…</span>
+            <span className="shrink-0 text-[11px] text-ink-faint">Loading…</span>
           ) : (
             <>
               {visibleEmails.map(renderChip)}
@@ -281,7 +281,7 @@ export function ProgressEmailCcSection({
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className={cn(INLINE_CC_PILL, 'px-2 font-medium tabular-nums hover:bg-raised')}
+                      className={cn(INLINE_CC_PILL, 'px-2 font-medium tabular-nums hover:bg-surface-sunken')}
                       aria-label={`${hiddenEmails.length} more CC ${hiddenEmails.length === 1 ? 'address' : 'addresses'}`}
                     >
                       +{hiddenEmails.length}
@@ -292,7 +292,7 @@ export function ProgressEmailCcSection({
                       {hiddenEmails.map((email) => (
                         <li
                           key={email}
-                          className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 hover:bg-muted/50"
+                          className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1 hover:bg-surface-sunken/50"
                         >
                           <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-ink" title={email}>
                             {email}
@@ -301,7 +301,7 @@ export function ProgressEmailCcSection({
                             type="button"
                             onClick={() => handleRemove(email)}
                             disabled={saving}
-                            className="shrink-0 text-text-tertiary hover:text-ink disabled:opacity-50"
+                            className="shrink-0 text-ink-faint hover:text-ink disabled:opacity-50"
                             aria-label={`Remove ${email}`}
                           >
                             <X className="h-3 w-3" />
@@ -315,7 +315,7 @@ export function ProgressEmailCcSection({
                         setMoreOpen(false);
                         setAdding(true);
                       }}
-                      className={cn(INLINE_CC_PILL, 'mt-1.5 gap-1 px-2 font-medium hover:bg-raised')}
+                      className={cn(INLINE_CC_PILL, 'mt-1.5 gap-1 px-2 font-medium hover:bg-surface-sunken')}
                     >
                       <Plus className="h-3 w-3" />
                       Add
@@ -328,7 +328,7 @@ export function ProgressEmailCcSection({
           )}
         </div>
         {inputError ? (
-          <p className="mt-0.5 text-right text-[11px] text-destructive">{inputError}</p>
+          <p className="mt-0.5 text-right text-[11px] text-danger">{inputError}</p>
         ) : null}
       </div>
     );
@@ -336,17 +336,17 @@ export function ProgressEmailCcSection({
 
   return (
     <Surface className="p-5 mb-5">
-      <h2 className="text-[12px] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
+      <h2 className="text-[12px] uppercase tracking-wider text-ink-faint font-semibold mb-1">
         Progress email CC
       </h2>
       {defaultCcConfigured && (
-        <p className="text-[11.5px] text-text-tertiary mb-3 font-mono">
+        <p className="text-[11.5px] text-ink-faint mb-3 font-mono">
           Firm default CC included
         </p>
       )}
 
       {loading ? (
-        <p className="text-[12px] text-text-tertiary">Loading…</p>
+        <p className="text-[12px] text-ink-faint">Loading…</p>
       ) : (
         <>
           {emails.length > 0 && (
@@ -354,14 +354,14 @@ export function ProgressEmailCcSection({
               {emails.map((email) => (
                 <li
                   key={email}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-[12px] text-ink"
+                  className="inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface-sunken/40 px-3 py-1 text-[12px] text-ink"
                 >
                   <span className="font-mono">{email}</span>
                   <button
                     type="button"
                     onClick={() => handleRemove(email)}
                     disabled={saving}
-                    className="text-text-tertiary hover:text-ink disabled:opacity-50"
+                    className="text-ink-faint hover:text-ink disabled:opacity-50"
                     aria-label={`Remove ${email}`}
                   >
                     <X className="w-3.5 h-3.5" />
@@ -389,7 +389,7 @@ export function ProgressEmailCcSection({
                 className="h-9 text-[13px]"
               />
               {inputError && (
-                <p className="text-[11px] text-destructive mt-1">{inputError}</p>
+                <p className="text-[11px] text-danger mt-1">{inputError}</p>
               )}
             </div>
             <Button

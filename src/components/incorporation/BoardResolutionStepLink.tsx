@@ -90,17 +90,17 @@ export function BoardResolutionStepLink({
           className={cn(
             'shrink-0 rounded-sm border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide',
             status === 'finalized'
-              ? 'border-success/30 bg-success/10 text-success-text'
+              ? 'border-positive/30 bg-positive/10 text-positive'
               : status === 'draft'
                 ? 'border-blue-200 bg-blue-100 text-blue-700'
-                : 'border-border bg-raised/60 text-text-tertiary',
+                : 'border-line bg-surface-sunken/60 text-ink-faint',
           )}
         >
           {statusLabel}
         </span>
       )}
       {status === 'loading' && (
-        <span className="text-[10px] text-text-tertiary mono">…</span>
+        <span className="text-[10px] text-ink-faint mono">…</span>
       )}
     </Link>
   );

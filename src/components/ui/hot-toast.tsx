@@ -25,16 +25,16 @@ export type ToastSemanticVariant = "success" | "error" | "warning" | "info" | "l
 
 const semanticToastShell: Record<ToastSemanticVariant, CSSProperties> = {
   default: {
-    background: "oklch(var(--panel))",
-    color: "oklch(var(--foreground))",
-    border: "1px solid oklch(var(--border))",
+    background: "oklch(var(--surface-raised))",
+    color: "oklch(var(--ink))",
+    border: "1px solid oklch(var(--line))",
   },
   success: {
-    background: "oklch(var(--success-light))",
+    background: "oklch(var(--positive-soft))",
     color: "oklch(var(--success-text))",
-    border: "1px solid oklch(var(--success) / 0.2)",
+    border: "1px solid oklch(var(--positive) / 0.2)",
     borderLeftWidth: "3px",
-    borderLeftColor: "oklch(var(--success))",
+    borderLeftColor: "oklch(var(--positive))",
   },
   error: {
     background: "oklch(var(--danger-light))",
@@ -58,9 +58,9 @@ const semanticToastShell: Record<ToastSemanticVariant, CSSProperties> = {
     borderLeftColor: "oklch(var(--info))",
   },
   loading: {
-    background: "oklch(var(--panel))",
-    color: "oklch(var(--foreground))",
-    border: "1px solid oklch(var(--border))",
+    background: "oklch(var(--surface-raised))",
+    color: "oklch(var(--ink))",
+    border: "1px solid oklch(var(--line))",
     borderLeftWidth: "3px",
     borderLeftColor: "oklch(var(--blue-500))",
   },
@@ -74,11 +74,11 @@ export function getToastVariantStyle(variant: ToastSemanticVariant): CSSProperti
 type ToastIconVariant = "success" | "error" | "warning" | "info" | "loading";
 
 const variantIconStyles: Record<ToastIconVariant, { shell: string; icon: string }> = {
-  success: { shell: "border border-success/25 bg-panel/90", icon: "text-success-text" },
-  error: { shell: "border border-danger/25 bg-panel/90", icon: "text-danger-text" },
-  warning: { shell: "border border-warning/25 bg-panel/90", icon: "text-warning-text" },
-  info: { shell: "border border-info/25 bg-panel/90", icon: "text-info-text" },
-  loading: { shell: "border border-blue-200 bg-panel/90", icon: "text-brand" },
+  success: { shell: "border border-positive/25 bg-surface-raised/90", icon: "text-positive" },
+  error: { shell: "border border-danger/25 bg-surface-raised/90", icon: "text-danger" },
+  warning: { shell: "border border-warning/25 bg-surface-raised/90", icon: "text-warning" },
+  info: { shell: "border border-info/25 bg-surface-raised/90", icon: "text-info" },
+  loading: { shell: "border border-blue-200 bg-surface-raised/90", icon: "text-brand" },
 };
 
 function ToastStatusIcon({

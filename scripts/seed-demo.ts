@@ -37,6 +37,7 @@ import {
 import { getActiveCatalogItems } from '../src/data/checklist';
 import { systemGenerateComplianceInstances } from '../src/db/repositories/compliance';
 import type { ChecklistItemStateSlice } from '../src/lib/checklist-state-key';
+import { clearDemoExtras, seedDemoExtras } from './seed-demo-extras';
 
 const DEMO_EMAIL_DOMAIN = '@demo.vcfo.local';
 const DEMO_SLUG_PREFIX = 'demo-';
@@ -445,6 +446,8 @@ async function upsertPerson(spec: PersonSpec): Promise<string> {
 }
 
 async function clearPreviousDemoRows(): Promise<void> {
+  await clearDemoExtras();
+
   const oldEngagements = await db
     .select({ id: engagements.id })
     .from(engagements)
@@ -665,6 +668,25 @@ async function main() {
     }
     console.log(`  marked ${filed} filed, ${overdue} overdue`);
   }
+
+  await seedDemoExtras(
+    created.map(({ id, spec }) => ({
+      id,
+      slug: spec.slug,
+      companyName: spec.companyName,
+      clientName: spec.clientName,
+      stage: spec.stage,
+      done: spec.done,
+      startedDaysAgo: spec.startedDaysAgo,
+      incorporatedDaysAgo: spec.incorporatedDaysAgo,
+      leadKey: spec.leadKey,
+      managerKey: spec.managerKey,
+      clientKey: spec.clientKey,
+      clientScopeId: clientScope.get(spec.clientKey)!,
+    })),
+    ids,
+    [...ADMINS, ...MANAGERS, ...LEADS, ...CLIENTS],
+  );
 
   console.log('\nDone. Demo logins (all use the password below):');
   console.log(`  password: ${DEMO_PASSWORD}`);

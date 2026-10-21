@@ -48,23 +48,23 @@ export const SidebarComplianceMini = memo(function SidebarComplianceMini({
     <Link
       href={href}
       className={cn(
-        'mx-1 mb-2 block rounded-xl border p-2 transition-colors',
+        'mx-1 mb-2 block rounded-md border p-2 transition-colors',
         light
-          ? 'border-white/18 bg-white/8 hover:bg-white/12'
-          : 'border-border/60 bg-muted/30 hover:bg-blue-50/50',
+          ? 'border-side-line bg-side-active/60 hover:bg-side-active'
+          : 'border-line bg-surface-sunken hover:bg-brand-soft',
       )}
       title="Open compliance calendar"
     >
       <div className="mb-1.5 flex items-center justify-between px-0.5">
         <span
           className={cn(
-            'font-mono text-[9px] uppercase tracking-[0.14em]',
-            light ? 'text-white/88' : 'text-muted-foreground',
+            'text-[10px] font-semibold uppercase tracking-[0.06em]',
+            light ? 'text-side-muted' : 'text-ink-muted',
           )}
         >
           {now.toLocaleString('en-IN', { month: 'short' })} {year}
         </span>
-        <span className={cn('text-[9px]', light ? 'text-white/90' : 'text-blue-700/80')}>
+        <span className={cn('text-[10px] font-medium', light ? 'text-side-ink' : 'text-brand')}>
           {dueDays.size} due
         </span>
       </div>
@@ -79,16 +79,16 @@ export const SidebarComplianceMini = memo(function SidebarComplianceMini({
             <div
               key={day}
               className={cn(
-                'relative flex h-[18px] w-full items-center justify-center rounded-full text-[8.5px] tabular-nums leading-none',
-                isToday && 'font-bold',
-                isToday && (light ? 'bg-white text-primary' : 'bg-primary text-white'),
+                'relative flex h-[18px] w-full items-center justify-center rounded-sm text-[8.5px] tabular-nums leading-none',
+                isToday && 'font-semibold',
+                isToday && (light ? 'bg-side-ink text-side' : 'bg-brand text-on-brand'),
                 !isToday && hasDue && 'border bg-transparent font-semibold',
                 !isToday &&
                   hasDue &&
                   (light
-                    ? 'border-white/80 text-white'
-                    : 'border-primary/70 text-primary'),
-                !isToday && !hasDue && (light ? 'text-white/80' : 'text-foreground/75'),
+                    ? 'border-side-muted text-side-ink'
+                    : 'border-brand/70 text-brand'),
+                !isToday && !hasDue && (light ? 'text-side-muted' : 'text-ink-muted'),
               )}
             >
               {day}

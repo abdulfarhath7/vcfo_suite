@@ -18,7 +18,7 @@ import { TrustBadge } from './TrustBadge';
 import { VisualRenderer } from './visuals/VisualRenderer';
 
 const secondary =
-  'inline-flex min-h-[36px] items-center gap-1 rounded-[var(--radius-md)] border border-border px-2.5 text-[12px] font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50';
+  'inline-flex min-h-[36px] items-center gap-1 rounded-[var(--radius-md)] border border-line px-2.5 text-[12px] font-medium text-ink hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40 disabled:opacity-50';
 
 
 /**
@@ -54,35 +54,35 @@ export function AskAnswerCard({
   };
 
   return (
-    <article className="space-y-2.5 rounded-[var(--radius)] border border-border bg-panel p-3.5">
+    <article className="space-y-2.5 rounded-[var(--radius)] border border-line bg-surface-raised p-3.5">
       <div className="flex flex-wrap items-center gap-1.5">
         <TrustBadge answer={answer} firmName={ask.firmName} />
         {answer.depth !== 'normal' && (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+          <span className="rounded-sm bg-surface-sunken px-2 py-0.5 text-[11px] text-ink-muted">
             {answer.depth === 'simple' ? 'Simpler' : 'More detail'}
           </span>
         )}
       </div>
 
-      <p className="max-w-[60ch] text-[15px] leading-relaxed text-foreground">{answer.line}</p>
+      <p className="max-w-[60ch] text-[15px] leading-relaxed text-ink">{answer.line}</p>
 
       {answer.visual && <VisualRenderer visual={answer.visual} />}
 
       {answer.why && client && (
         <div>
-          <p className="text-[12px] font-semibold text-foreground">Why it matters to you</p>
-          <p className="text-[13px] text-muted-foreground">{answer.why}</p>
+          <p className="text-[12px] font-semibold text-ink">Why it matters to you</p>
+          <p className="text-[13px] text-ink-muted">{answer.why}</p>
         </div>
       )}
 
       {answer.citations.length > 0 && (
-        <p className="text-[11.5px] text-muted-foreground">
+        <p className="text-[11.5px] text-ink-muted">
           Source:{' '}
           {answer.citations.map((c, i) => (
             <span key={c.id}>
               {i > 0 && ' · '}
               {c.url ? (
-                <a href={c.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline">
+                <a href={c.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-brand underline-offset-2 hover:underline">
                   {c.label}
                   <ExternalLink className="h-3 w-3" aria-hidden />
                   <span className="sr-only">(opens in a new tab)</span>
@@ -107,7 +107,7 @@ export function AskAnswerCard({
         {canSave && (
           <button
             type="button"
-            className={cn(secondary, saved && 'border-success/40 text-success-text')}
+            className={cn(secondary, saved && 'border-positive/40 text-positive')}
             disabled={saving || saved}
             onClick={async () => {
               setSaving(true);
@@ -171,13 +171,13 @@ export function AskAnswerCard({
         )}
       </div>
       {saveError && (
-        <p role="alert" className="text-[12px] text-danger-text">
+        <p role="alert" className="text-[12px] text-danger">
           {saveError}
         </p>
       )}
 
       {answer.related && answer.related.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 border-t border-border pt-2">
+        <div className="flex flex-wrap gap-1.5 border-t border-line pt-2">
           {answer.related.slice(0, 2).map((slug) => {
             const topic = getTopic(slug);
             if (!topic) return null;
@@ -186,7 +186,7 @@ export function AskAnswerCard({
                 key={slug}
                 type="button"
                 onClick={() => void ask.showTopic(slug, undefined, topic.question)}
-                className="rounded-full bg-muted px-2.5 py-1 text-[12px] text-foreground hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="rounded-sm bg-surface-sunken px-2.5 py-1 text-[12px] text-ink hover:bg-surface-sunken/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
               >
                 {topic.question}
               </button>

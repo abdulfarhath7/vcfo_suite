@@ -29,7 +29,7 @@ export function ClientOverviewHero({ overview }: { overview: ClientOverview }) {
           <span aria-hidden>·</span>
           <span>{LEGAL_FORM_LABEL[engagement.legalForm]}</span>
           {engagement.domesticOrForeign === 'foreign' && (
-            <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+            <span className="rounded-sm bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/90">
               Foreign parent
             </span>
           )}

@@ -40,7 +40,7 @@ export function WhatsThisButton({
       aria-label={`What's this: ${label}`}
       title="What's this?"
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 rounded-full text-[11.5px] text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+        'inline-flex shrink-0 items-center gap-1 rounded-full text-[11.5px] text-ink-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40',
         compact ? 'h-7 w-7 justify-center' : 'min-h-[28px] px-1.5',
         className,
       )}

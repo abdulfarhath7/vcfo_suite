@@ -45,12 +45,12 @@ function RoleBadge({ role }: { role: DbRole }) {
   return (
     <span
       className={cn(
-        'inline-flex h-5 shrink-0 items-center rounded-full border px-2 text-[10.5px] font-medium uppercase tracking-wide',
-        appRole === 'super_admin' && 'border-primary/40 bg-primary-light text-primary-dark',
-        appRole === 'admin' && 'border-primary/25 bg-primary-light text-primary-dark',
-        appRole === 'manager' && 'border-role/30 bg-role-soft text-role-foreground',
-        appRole === 'intern' && 'border-info/20 bg-info-light text-info-text',
-        appRole === 'client' && 'border-success/20 bg-success-light text-success-text',
+        'inline-flex h-5 shrink-0 items-center rounded-sm border px-2 text-[10.5px] font-medium uppercase tracking-wide',
+        appRole === 'super_admin' && 'border-brand/40 bg-brand-soft text-brand-strong',
+        appRole === 'admin' && 'border-brand/25 bg-brand-soft text-brand-strong',
+        appRole === 'manager' && 'border-brand/30 bg-brand-soft text-brand',
+        appRole === 'intern' && 'border-info/20 bg-info-soft text-info',
+        appRole === 'client' && 'border-positive/20 bg-positive-soft text-positive',
       )}
     >
       {ROLE_UI_LABEL[appRole]}
@@ -117,18 +117,18 @@ function AuditFiltersBar({
   const categoryId = useId();
 
   return (
-    <div className="flex flex-col gap-3 border-b border-border bg-table-header/40 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center">
+    <div className="flex flex-col gap-3 border-b border-line bg-surface-sunken/40 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center">
       <div className="relative min-w-0 flex-1 sm:max-w-xs">
         <label htmlFor={searchId} className="sr-only">
           Search audit log
         </label>
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-tertiary" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
         <Input
           id={searchId}
           value={filters.search}
           onChange={(e) => onChange({ search: e.target.value })}
           placeholder="Search actions, actors, projects…"
-          className="h-9 border-hairline bg-panel pl-9 text-[13px]"
+          className="h-9 border-line bg-surface-raised pl-9 text-[13px]"
         />
       </div>
 
@@ -140,7 +140,7 @@ function AuditFiltersBar({
           value={filters.role}
           onValueChange={(v) => onChange({ role: v as AuditFilters['role'] })}
         >
-          <SelectTrigger id={roleId} className="h-9 w-[8.5rem] border-hairline bg-panel text-[12.5px]">
+          <SelectTrigger id={roleId} className="h-9 w-[8.5rem] border-line bg-surface-raised text-[12.5px]">
             <SelectValue placeholder="All roles" />
           </SelectTrigger>
           <SelectContent>
@@ -158,7 +158,7 @@ function AuditFiltersBar({
           value={filters.category}
           onValueChange={(v) => onChange({ category: v as AuditFilters['category'] })}
         >
-          <SelectTrigger id={categoryId} className="h-9 w-[9.5rem] border-hairline bg-panel text-[12.5px]">
+          <SelectTrigger id={categoryId} className="h-9 w-[9.5rem] border-line bg-surface-raised text-[12.5px]">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
@@ -172,7 +172,7 @@ function AuditFiltersBar({
         </Select>
       </div>
 
-      <p className="text-[11.5px] text-text-tertiary sm:ml-auto">
+      <p className="text-[11.5px] text-ink-faint sm:ml-auto">
         {shown === total ? (
           <span>{total} events</span>
         ) : (
@@ -205,16 +205,16 @@ function AuditEventRowView({
   const targetType = getAuditTargetType(ev.action);
 
   return (
-    <div className="border-b border-hairline/60 last:border-b-0">
+    <div className="border-b border-line/60 last:border-b-0">
       <m.div
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.015 * Math.min(index, 12) }}
-        className="grid grid-cols-1 gap-3 px-4 py-3.5 hover:bg-muted/30 sm:grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_minmax(0,1.15fr)_2rem] sm:items-start sm:gap-x-4"
+        className="grid grid-cols-1 gap-3 px-4 py-3.5 hover:bg-surface-sunken/30 sm:grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_minmax(0,1.15fr)_2rem] sm:items-start sm:gap-x-4"
       >
         <div className="min-w-0 sm:pt-0.5">
           <div className="text-[12px] font-medium text-ink">{when.relative}</div>
-          <time className="mono mt-0.5 block text-[10.5px] tabular-nums text-text-tertiary">
+          <time className="mono mt-0.5 block text-[10.5px] tabular-nums text-ink-faint">
             {when.absolute}
           </time>
         </div>
@@ -224,7 +224,7 @@ function AuditEventRowView({
           {ev.summary && ev.summary !== actionLabel && (
             <p className="mt-1 text-[12px] leading-snug text-ink-soft">{ev.summary}</p>
           )}
-          <span className="mono mt-1.5 inline-block text-[10px] text-text-tertiary sm:hidden">
+          <span className="mono mt-1.5 inline-block text-[10px] text-ink-faint sm:hidden">
             {ev.action}
           </span>
         </div>
@@ -237,20 +237,20 @@ function AuditEventRowView({
             {actorName || actorEmail || 'Unknown actor'}
           </div>
           {actorName && actorEmail && (
-            <div className="mono mt-0.5 truncate text-[10.5px] text-text-tertiary">{actorEmail}</div>
+            <div className="mono mt-0.5 truncate text-[10.5px] text-ink-faint">{actorEmail}</div>
           )}
         </div>
 
         {showTarget ? (
           <div className="min-w-0">
-            <span className="inline-flex h-5 items-center rounded-full border border-hairline bg-muted/50 px-2 text-[10.5px] font-medium text-ink-soft">
+            <span className="inline-flex h-5 items-center rounded-sm border border-line bg-surface-sunken/50 px-2 text-[10.5px] font-medium text-ink-soft">
               {targetType}
             </span>
             <div className="mt-1.5 truncate text-[12.5px] text-ink">
               {projectName ?? '—'}
             </div>
             {ev.engagement_id && (
-              <div className="mono mt-0.5 truncate text-[10px] text-text-tertiary">
+              <div className="mono mt-0.5 truncate text-[10px] text-ink-faint">
                 {ev.engagement_id.slice(0, 8)}…
               </div>
             )}
@@ -265,8 +265,8 @@ function AuditEventRowView({
               type="button"
               onClick={() => setExpanded((open) => !open)}
               className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-md border border-hairline text-text-tertiary transition-colors hover:bg-muted hover:text-ink',
-                expanded && 'bg-muted text-ink',
+                'flex h-7 w-7 items-center justify-center rounded-md border border-line text-ink-faint transition-colors hover:bg-surface-sunken hover:text-ink',
+                expanded && 'bg-surface-sunken text-ink',
               )}
               aria-expanded={expanded}
               aria-label={expanded ? 'Hide event details' : 'Show event details'}
@@ -280,14 +280,14 @@ function AuditEventRowView({
       </m.div>
 
       {expanded && metadataText && (
-        <div className="border-t border-hairline/50 bg-muted/20 px-4 py-3">
-          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-text-tertiary">
+        <div className="border-t border-line/50 bg-surface-sunken/20 px-4 py-3">
+          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-faint">
             Metadata
           </p>
           <pre className="mono max-h-40 overflow-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-ink-soft">
             {metadataText}
           </pre>
-          <p className="mono mt-2 text-[10px] text-text-tertiary">{ev.action}</p>
+          <p className="mono mt-2 text-[10px] text-ink-faint">{ev.action}</p>
         </div>
       )}
     </div>
@@ -352,7 +352,7 @@ function AuditTable({
           <div className="min-w-[52rem]">
             <div
               className={cn(
-                'grid gap-x-4 px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground bg-table-header border-b border-border',
+                'grid gap-x-4 px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-ink-muted bg-surface-sunken border-b border-line',
                 showTarget
                   ? 'grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_minmax(0,1.15fr)_2rem]'
                   : 'grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_2rem]',
@@ -549,7 +549,7 @@ export default function AuditLog() {
         title="Audit Log"
         actions={
           !globalLoading && eventCount > 0 ? (
-            <span className="mono rounded-full border border-hairline bg-panel px-3 py-1.5 text-[11px] text-text-tertiary">
+            <span className="mono rounded-sm border border-line bg-surface-raised px-3 py-1.5 text-[11px] text-ink-faint">
               {eventCount} recent events
             </span>
           ) : null
@@ -561,17 +561,17 @@ export default function AuditLog() {
         onValueChange={(v) => dispatch({ type: 'patch', patch: { tab: v as 'global' | 'project' } })}
         className="space-y-4"
       >
-        <TabsList className="h-auto w-full justify-start gap-1 rounded-none border-b border-hairline bg-transparent p-0">
+        <TabsList className="h-auto w-full justify-start gap-1 rounded-none border-b border-line bg-transparent p-0">
           <TabsTrigger
             value="global"
-            className="rounded-none border-b-2 border-transparent px-4 pb-2.5 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+            className="rounded-none border-b-2 border-transparent px-4 pb-2.5 data-[state=active]:border-brand data-[state=active]:bg-transparent"
           >
             <History className="mr-1.5 h-3.5 w-3.5" />
             Global logs
           </TabsTrigger>
           <TabsTrigger
             value="project"
-            className="rounded-none border-b-2 border-transparent px-4 pb-2.5 data-[state=active]:border-primary data-[state=active]:bg-transparent"
+            className="rounded-none border-b-2 border-transparent px-4 pb-2.5 data-[state=active]:border-brand data-[state=active]:bg-transparent"
           >
             By project
           </TabsTrigger>
@@ -580,7 +580,7 @@ export default function AuditLog() {
         <TabsContent value="global" className="mt-0">
           <NoirCard className="overflow-hidden p-0 shadow-layered-lg">
             {globalError && (
-              <div className="border-b border-warning/30 bg-warning-light px-4 py-3 text-sm text-warning-text">
+              <div className="border-b border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
                 {globalError}
               </div>
             )}
@@ -599,7 +599,7 @@ export default function AuditLog() {
 
         <TabsContent value="project" className="mt-0 space-y-3">
           <div className="flex flex-wrap items-center gap-3">
-            <label htmlFor={projectSelectId} className="text-[12px] text-paper-muted">
+            <label htmlFor={projectSelectId} className="text-[12px] text-ink-muted">
               Project
             </label>
             <Select
@@ -607,7 +607,7 @@ export default function AuditLog() {
               onValueChange={handleProjectChange}
               disabled={!sortedEngagements.length}
             >
-              <SelectTrigger id={projectSelectId} className="w-[min(100%,22rem)] border-hairline bg-panel">
+              <SelectTrigger id={projectSelectId} className="w-[min(100%,22rem)] border-line bg-surface-raised">
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
@@ -622,7 +622,7 @@ export default function AuditLog() {
 
           <NoirCard className="overflow-hidden p-0 shadow-layered-lg">
             {projectError && (
-              <div className="border-b border-warning/30 bg-warning-light px-4 py-3 text-sm text-warning-text">
+              <div className="border-b border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
                 {projectError}
               </div>
             )}

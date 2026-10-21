@@ -35,7 +35,7 @@ export function MilestoneResponseRowSummary({
       <p
         className={cn(
           'mt-1.5 text-xs',
-          isClient ? 'text-text-tertiary/80' : 'text-text-tertiary',
+          isClient ? 'text-ink-faint/80' : 'text-ink-faint',
           className,
         )}
       >
@@ -49,7 +49,7 @@ export function MilestoneResponseRowSummary({
       {isComplete && !hideStatus && (
         <span
           className={cn(
-            'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+            'inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
             isClient
               ? 'bg-emerald-500/15 text-emerald-700'
               : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80',
@@ -63,7 +63,7 @@ export function MilestoneResponseRowSummary({
         <p
           className={cn(
             'min-w-0 flex-1 text-xs leading-snug line-clamp-2',
-            isClient ? 'text-text-secondary' : 'text-muted-foreground',
+            isClient ? 'text-ink-muted' : 'text-ink-muted',
           )}
           title={summary}
         >

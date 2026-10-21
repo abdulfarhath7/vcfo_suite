@@ -136,7 +136,7 @@ function InternMyWorkInner() {
       <div className="mb-3 flex min-w-0 flex-wrap items-center gap-3">
         <PageBackCluster>
           <h1 className="sr-only">My work</h1>
-          <span className="text-xs font-bold text-text-tertiary">
+          <span className="text-xs font-semibold text-ink-faint">
             {kpis.openCount} open · {kpis.companyCount} {kpis.companyCount === 1 ? 'company' : 'companies'}
           </span>
         </PageBackCluster>
@@ -187,8 +187,8 @@ function FilterChip({ on, label, onClick }: { on: boolean; label: string; onClic
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-full border border-border bg-panel px-3.5 py-1.5 text-xs font-extrabold text-muted-foreground hover:border-border',
-        on && 'border-transparent bg-primary-light text-primary-dark',
+        'rounded-sm border border-line bg-surface-raised px-3.5 py-1.5 text-xs font-semibold text-ink-muted hover:border-line',
+        on && 'border-transparent bg-brand-soft text-brand-strong',
       )}
     >
       {label}
@@ -206,7 +206,7 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
   return (
     <>
       <div className="surface overflow-hidden">
-        <div className={cn('hidden xl:grid text-[10.5px] font-extrabold uppercase tracking-[0.07em] text-text-tertiary', LIST_COLS)}>
+        <div className={cn('hidden xl:grid text-[10.5px] font-semibold uppercase tracking-[0.07em] text-ink-faint', LIST_COLS)}>
           <div className="px-3.5 py-2.5">Step / filing</div>
           <div className="min-w-0 px-3.5 py-2.5">Company</div>
           <div className="min-w-0 px-3.5 py-2.5">State</div>
@@ -217,8 +217,8 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
           <div
             key={item.id}
             className={cn(
-              'border-t border-border text-[13px] font-semibold hover:bg-raised/70',
-              kb === i && 'bg-raised',
+              'border-t border-line text-[13px] font-semibold hover:bg-surface-sunken/70',
+              kb === i && 'bg-surface-sunken',
               item.kind === 'done' && 'opacity-70',
             )}
           >
@@ -234,7 +234,7 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
                 title={item.title}
                 className={cn(
                   'min-w-0 truncate px-3.5 py-3 hover:underline',
-                  item.kind === 'done' && 'text-text-tertiary line-through',
+                  item.kind === 'done' && 'text-ink-faint line-through',
                 )}
               >
                 {item.title}
@@ -246,7 +246,7 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
                 <span
                   title={item.why}
                   className={cn(
-                    'inline-block max-w-full truncate rounded-full px-2.5 py-0.5 text-[11px] font-extrabold',
+                    'inline-block max-w-full truncate rounded-sm px-2.5 py-0.5 text-[11px] font-semibold',
                     internToneBadge(KIND_TONE[item.kind] ?? 'info'),
                   )}
                 >
@@ -270,17 +270,17 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
 function BoardView({ items, now }: { items: InternWorkItem[]; now: Date }) {
   const cols = internWorkBoard(items, now);
   const meta: { key: keyof typeof cols; label: string; tone: string }[] = [
-    { key: 'action', label: 'Needs action', tone: 'bg-primary text-white' },
-    { key: 'progress', label: 'In progress', tone: 'bg-accent-violet text-white' },
-    { key: 'waiting', label: 'Waiting', tone: 'bg-accent-sky text-white' },
-    { key: 'done', label: 'Done this week', tone: 'bg-success text-white' },
+    { key: 'action', label: 'Needs action', tone: 'bg-brand text-white' },
+    { key: 'progress', label: 'In progress', tone: 'bg-ink-faint text-white' },
+    { key: 'waiting', label: 'Waiting', tone: 'bg-ink-faint text-white' },
+    { key: 'done', label: 'Done this week', tone: 'bg-positive text-white' },
   ];
   return (
     <>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         {meta.map((col) => (
           <div key={col.key} className="lead-board-col" data-col={col.key}>
-            <span className={cn('mb-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-extrabold', col.tone)}>
+            <span className={cn('mb-2.5 inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-[11.5px] font-semibold', col.tone)}>
               <i className="h-2 w-2 rounded-full bg-white" />
               {col.label} <span className="opacity-75">{cols[col.key].length}</span>
             </span>
@@ -325,7 +325,7 @@ function TimelineView({
       <section className="surface overflow-x-auto p-3.5">
         <div className="lead-tl">
           <div className="lead-tl-head">
-            <div className="min-w-0 px-2 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.07em] text-text-tertiary">
+            <div className="min-w-0 px-2 py-1 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
               Task
             </div>
             <div className="lead-tl-track">
@@ -339,10 +339,10 @@ function TimelineView({
                     key={ymd}
                     id={isSelected ? 'intern-tl-day' : undefined}
                     className={cn(
-                      'min-w-0 px-0.5 py-1 text-center text-[10.5px] font-extrabold leading-tight text-text-tertiary',
+                      'min-w-0 px-0.5 py-1 text-center text-[10.5px] font-semibold leading-tight text-ink-faint',
                       weekend && !isToday && 'opacity-45',
-                      isToday && 'rounded-md bg-primary text-white',
-                      isSelected && !isToday && 'rounded-md ring-2 ring-primary ring-offset-1 ring-offset-panel',
+                      isToday && 'rounded-md bg-brand text-white',
+                      isSelected && !isToday && 'rounded-md ring-2 ring-brand ring-offset-1 ring-offset-surface-raised',
                     )}
                   >
                     <span className="block truncate">{heading.weekday}</span>
@@ -355,7 +355,7 @@ function TimelineView({
           </div>
           {groups.map((group) => (
             <div key={group.id} className="lead-tl-company">
-              <p className="min-w-0 truncate px-2 pt-2 text-[10.5px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">
+              <p className="min-w-0 truncate px-2 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
                 {group.name}
               </p>
               {group.rows.map((row) => (
@@ -363,7 +363,7 @@ function TimelineView({
                   <Link
                     href={row.item.href}
                     title={row.item.title}
-                    className="min-w-0 truncate px-2 py-1.5 text-[12px] font-bold text-ink hover:underline"
+                    className="min-w-0 truncate px-2 py-1.5 text-[12px] font-semibold text-ink hover:underline"
                   >
                     {row.item.title}
                   </Link>
@@ -381,7 +381,7 @@ function TimelineView({
                       className={cn(
                         'lead-tl-bar',
                         internToneBg(TIMELINE_PRIORITY_TONE[row.priority]),
-                        row.priority === 'soon' ? 'text-warning-text' : 'text-white',
+                        row.priority === 'soon' ? 'text-warning' : 'text-white',
                         row.clippedStart && 'rounded-l-sm',
                         row.clippedEnd && 'rounded-r-sm',
                       )}
@@ -400,7 +400,7 @@ function TimelineView({
       </section>
       {gantt.later.length > 0 ? (
         <section className="surface p-3.5">
-          <h2 className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">
+          <h2 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
             Later / outside this fortnight
           </h2>
           <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -428,7 +428,7 @@ function TimelineWorkCard({
   return (
     <article
       className={cn(
-        'min-w-0 rounded-md border border-border bg-panel p-2 shadow-layered',
+        'min-w-0 rounded-md border border-line bg-surface-raised p-2 shadow-layered',
         item.kind === 'done' && 'opacity-70',
       )}
     >
@@ -436,9 +436,9 @@ function TimelineWorkCard({
         href={item.href}
         title={item.title}
         className={cn(
-          'block text-[12px] font-bold leading-snug text-ink hover:underline',
+          'block text-[12px] font-semibold leading-snug text-ink hover:underline',
           compact ? 'line-clamp-2' : 'truncate',
-          item.kind === 'done' && 'text-text-tertiary line-through',
+          item.kind === 'done' && 'text-ink-faint line-through',
         )}
       >
         {item.title}
@@ -447,14 +447,14 @@ function TimelineWorkCard({
         <LeadCompanyPill name={item.companyName} engagementId={item.engagementId} />
         <span
           className={cn(
-            'inline-flex max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] font-extrabold',
+            'inline-flex max-w-full truncate rounded-sm px-1.5 py-0.5 text-[10px] font-semibold',
             internToneBadge(tone),
           )}
         >
           {internKindChipLabel(item.kind)}
         </span>
       </div>
-      <div className="mt-1 font-mono text-[10.5px] font-semibold text-text-tertiary">
+      <div className="mt-1 font-mono text-[10.5px] font-semibold text-ink-faint">
         <span className={cn(item.isOverdue && internToneText('danger'))}>{formatDueLabel(item.dueAt, now)}</span>
       </div>
       <InternWorkCtaButton item={item} className="mt-1.5 w-full px-2 py-1 text-[10.5px]" />
@@ -466,7 +466,7 @@ function EmptyWork() {
   return (
     <div className="surface px-6 py-8 text-center">
       <p className="serif text-lg">Nothing in this view</p>
-      <p className="mt-1 text-sm text-muted-foreground">Clear a filter or pick another company.</p>
+      <p className="mt-1 text-sm text-ink-muted">Clear a filter or pick another company.</p>
     </div>
   );
 }

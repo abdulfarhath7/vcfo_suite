@@ -24,8 +24,8 @@ export function DashFilterChip({
       onClick={onClick}
       aria-pressed={on}
       className={cn(
-        'rounded-full border border-border bg-panel px-3.5 py-1.5 text-xs font-extrabold text-muted-foreground hover:border-border',
-        on && 'border-transparent bg-primary-light text-primary-dark',
+        'rounded-sm border border-line bg-surface-raised px-3.5 py-1.5 text-xs font-semibold text-ink-muted hover:border-line',
+        on && 'border-transparent bg-brand-soft text-brand-strong',
       )}
     >
       {label}

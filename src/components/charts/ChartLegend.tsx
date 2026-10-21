@@ -51,7 +51,7 @@ export function ChartLegend({
           </>
         );
         const rowClass =
-          'flex min-w-0 items-center gap-2 text-[11.5px] font-bold text-muted-foreground';
+          'flex min-w-0 items-center gap-2 text-[11.5px] font-semibold text-ink-muted';
         return (
           <li key={item.label} className="min-w-0">
             {item.href ? (

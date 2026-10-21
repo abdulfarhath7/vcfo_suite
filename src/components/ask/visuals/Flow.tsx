@@ -18,25 +18,25 @@ export function Flow({ visual }: { visual: FlowVisual }) {
             key={`${stage.label}-${i}`}
             className={cn(
               'flex min-w-0 flex-col gap-0.5 rounded-[var(--radius-md)] border px-2.5 py-2',
-              stage.state === 'here' && 'border-primary bg-primary-light',
-              stage.state === 'done' && 'border-border bg-muted',
-              stage.state === 'next' && 'border-dashed border-border bg-panel',
+              stage.state === 'here' && 'border-brand bg-brand-soft',
+              stage.state === 'done' && 'border-line bg-surface-sunken',
+              stage.state === 'next' && 'border-dashed border-line bg-surface-raised',
             )}
           >
             <span className="flex items-center gap-1 text-[10.5px] font-medium uppercase tracking-wide">
               {stage.state === 'done' ? (
-                <span className="inline-flex items-center gap-1 text-success-text">
+                <span className="inline-flex items-center gap-1 text-positive">
                   <Check className="h-3 w-3" strokeWidth={2.25} /> Done
                 </span>
               ) : stage.state === 'here' ? (
-                <span className="text-primary">You are here</span>
+                <span className="text-brand">You are here</span>
               ) : (
-                <span className="text-muted-foreground">Next</span>
+                <span className="text-ink-muted">Next</span>
               )}
             </span>
             {/* Wrap, never truncate: "SPICe+ Part A" and "SPICe+ Part B" must stay distinguishable. */}
-            <span className="break-words text-[12.5px] font-medium leading-snug text-foreground">{stage.label}</span>
-            {stage.sub && <span className="text-[11.5px] text-muted-foreground">{stage.sub}</span>}
+            <span className="break-words text-[12.5px] font-medium leading-snug text-ink">{stage.label}</span>
+            {stage.sub && <span className="text-[11.5px] text-ink-muted">{stage.sub}</span>}
           </li>
         ))}
       </ol>

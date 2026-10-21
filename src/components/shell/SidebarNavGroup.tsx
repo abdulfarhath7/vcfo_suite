@@ -25,18 +25,30 @@ export type SidebarNavLeaf = {
 
 export type SidebarInk = 'light' | 'dark';
 
-const PILL_CLASS =
-  'absolute inset-0 rounded-xl border border-role/25 bg-role-soft shadow-[inset_0_1px_0_oklch(100%_0_0/0.35)] dark:shadow-[inset_0_1px_0_oklch(100%_0_0/0.07)]';
-const RAIL_CLASS = 'absolute bottom-2 left-0 top-2 z-[2] w-[3px] rounded-full bg-role';
-const LEAF_PILL_CLASS =
-  'absolute inset-0 rounded-lg border border-role/20 bg-role-soft/80 shadow-[inset_0_1px_0_oklch(100%_0_0/0.28)] dark:shadow-[inset_0_1px_0_oklch(100%_0_0/0.06)]';
+/* Active item, per sidebar skin (docs/design/TOKENS.md). Navy skin: the pill is
+   side-active and the rail side-ink. White skin: brand-soft and brand. No
+   borders or inset highlights on the pill; the fill is the whole signal. */
+export function sidebarPillClass(ink: SidebarInk) {
+  return cn('absolute inset-0 rounded-md', ink === 'light' ? 'bg-side-active' : 'bg-brand-soft');
+}
+
 /* No translate — layoutId projection owns transform. */
-const LEAF_RAIL_CLASS = 'absolute bottom-1.5 left-0 top-1.5 z-[2] w-[2.5px] rounded-full bg-role';
+export function sidebarRailClass(ink: SidebarInk, leaf = false) {
+  return cn(
+    'absolute left-0 z-[2] rounded-full',
+    leaf ? 'bottom-1.5 top-1.5 w-[2.5px]' : 'bottom-2 top-2 w-[3px]',
+    ink === 'light' ? 'bg-side-ink' : 'bg-brand',
+  );
+}
+
+export function sidebarActiveTextClass(ink: SidebarInk) {
+  return ink === 'light' ? 'font-medium text-side-ink' : 'font-medium text-brand';
+}
 
 export function sidebarInactiveOnSkin(ink: SidebarInk, hoverSoft: string, fillHover = true) {
   return ink === 'light'
-    ? cn('text-white/90 hover:text-white', fillHover && 'hover:bg-white/12')
-    : cn('text-muted-foreground hover:text-foreground', fillHover && hoverSoft);
+    ? cn('text-side-muted hover:text-side-ink', fillHover && 'hover:bg-side-active')
+    : cn('text-ink-muted hover:text-ink', fillHover && hoverSoft);
 }
 
 export function sidebarNavTriggerClass({
@@ -55,13 +67,11 @@ export function sidebarNavTriggerClass({
 }) {
   return cn(
     'nav-item sidebar-nav-disclosure-trigger relative flex w-full items-center transition-colors',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
     stacked
-      ? 'min-h-[3.15rem] flex-col justify-center gap-0.5 rounded-lg px-0 py-1.5 text-[10px]'
-      : 'min-h-[42px] gap-2.5 rounded-xl px-2.5 text-[13px]',
-    active
-      ? 'font-medium text-role-foreground'
-      : sidebarInactiveOnSkin(ink, 'hover:bg-role-soft/50', fillHover),
+      ? 'min-h-[3.15rem] flex-col justify-center gap-0.5 rounded-md px-0 py-1.5 text-[10px]'
+      : 'min-h-[36px] gap-2.5 rounded-md px-2.5 text-[13px]',
+    active ? sidebarActiveTextClass(ink) : sidebarInactiveOnSkin(ink, 'hover:bg-surface-sunken', fillHover),
     !expanded && !stacked && 'justify-center px-0',
   );
 }
@@ -79,7 +89,7 @@ export function SidebarRailLabel({ children }: { children: ReactNode }) {
 export function SidebarRailBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <span className="mono absolute right-0.5 top-0.5 z-10 min-w-[0.95rem] rounded-full bg-role px-1 py-px text-center text-[9px] font-medium tabular-nums text-white">
+    <span className="mono absolute right-0.5 top-0.5 z-10 min-w-[0.95rem] rounded-sm bg-brand px-1 py-px text-center text-[9px] font-medium tabular-nums text-on-brand">
       {count > 99 ? '99+' : count}
     </span>
   );
@@ -92,7 +102,7 @@ export function isSidebarGroupActive(pathname: string, children: SidebarNavLeaf[
 export function SidebarNavCountBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <span className="relative z-10 mono min-w-[1.25rem] rounded-full bg-role px-1.5 py-0.5 text-center text-[10px] font-medium tabular-nums text-white">
+    <span className="relative z-10 mono min-w-[1.25rem] rounded-sm bg-brand px-1.5 py-0.5 text-center text-[10px] font-medium tabular-nums text-on-brand">
       {count > 99 ? '99+' : count}
     </span>
   );
@@ -113,10 +123,12 @@ function SidebarNavChevron({
       className={cn(
         'h-3.5 w-3.5 shrink-0 fill-none transition-transform duration-300 ease-out',
         active
-          ? 'text-role-foreground/80'
+          ? ink === 'light'
+            ? 'text-side-ink/80'
+            : 'text-brand/80'
           : ink === 'light'
-            ? 'text-white/80'
-            : 'text-muted-foreground',
+            ? 'text-side-muted'
+            : 'text-ink-muted',
         open && 'rotate-180',
       )}
       strokeWidth={1.75}
@@ -143,8 +155,8 @@ export function SidebarNavGroupRail({
           'relative border-l pl-2.5 before:absolute before:-left-px before:top-0 before:h-1.5 before:w-px',
         showRail &&
           (ink === 'light'
-            ? 'border-white/25 before:bg-white/40'
-            : 'border-primary/25 before:bg-primary/40'),
+            ? 'border-side-line before:bg-side-muted'
+            : 'border-line before:bg-line-strong'),
         className,
       )}
     >
@@ -191,21 +203,21 @@ function SidebarNavTriggerFace({
         <MotionActivePill
           layoutId={`${layoutIdPrefix}-active`}
           reduced={reduceMotion}
-          className={PILL_CLASS}
+          className={sidebarPillClass(ink)}
         />
       ) : null}
       {sectionActive && sidebarExpanded ? (
         <MotionActivePill
           layoutId={`${layoutIdPrefix}-rail`}
           reduced={reduceMotion}
-          className={RAIL_CLASS}
+          className={sidebarRailClass(ink)}
         />
       ) : null}
       <Icon
         className={cn(
           'relative z-10 shrink-0',
           stacked ? 'h-[1.15rem] w-[1.15rem]' : 'h-4 w-4',
-          sectionActive ? 'text-role-foreground' : iconTone,
+          sectionActive ? (ink === 'light' ? 'text-side-ink' : 'text-brand') : iconTone,
         )}
         strokeWidth={1.75}
       />
@@ -356,17 +368,25 @@ export function SidebarNavDisclosure({
           </button>
         </PopoverTrigger>
         {/* The flyout is portalled out of the rail, so the skin vars have to be
-            re-applied here or it paints plain `bg-panel` beside a themed rail. */}
+            re-applied here or it paints plain `bg-surface-raised` beside a themed rail. */}
         <PopoverContent
           side="right"
           align="start"
           sideOffset={12}
-          className="shell-sidebar-skin w-[16.25rem] overflow-hidden rounded-2xl border-border/50 p-2 shadow-[0_20px_56px_-28px_oklch(var(--shadow-ink)/0.32)]"
+          className={cn(
+            'shell-sidebar-skin w-[16.25rem] overflow-hidden rounded-lg p-2 shadow-float',
+            sidebar.ink === 'light' ? 'border-side-line' : 'border-line',
+          )}
           data-ink={sidebar.ink}
           style={surfaceCssVars(sidebar, 'sidebar')}
         >
           <div className="mb-1.5 flex items-center justify-between px-1.5 pt-0.5">
-            <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+            <span
+              className={cn(
+                'text-[11px] font-semibold uppercase tracking-[0.06em]',
+                sidebar.ink === 'light' ? 'text-side-muted' : 'text-ink-muted',
+              )}
+            >
               {label}
             </span>
             {flyoutAside}
@@ -460,11 +480,11 @@ function SidebarGroupRow({
       title={child.label}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'relative flex min-h-[2.35rem] items-center gap-2 rounded-lg py-1 pl-2.5 pr-1.5 transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+        'relative flex min-h-[2.25rem] items-center gap-2 rounded-md py-1 pl-2.5 pr-1.5 transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
         active
-          ? 'font-medium text-role-foreground'
-          : sidebarInactiveOnSkin(ink, 'hover:bg-role-soft/45', !followed),
+          ? sidebarActiveTextClass(ink)
+          : sidebarInactiveOnSkin(ink, 'hover:bg-surface-sunken', !followed),
       )}
       {...(hoverFollow ? sidebarHoverAttrs(itemId) : undefined)}
     >
@@ -473,20 +493,20 @@ function SidebarGroupRow({
         <MotionActivePill
           layoutId={`${layoutIdPrefix}-${groupId}-leaf-active`}
           reduced={reduceMotion}
-          className={LEAF_PILL_CLASS}
+          className={sidebarPillClass(ink)}
         />
       ) : null}
       {active ? (
         <MotionActivePill
           layoutId={`${layoutIdPrefix}-${groupId}-leaf-rail`}
           reduced={reduceMotion}
-          className={LEAF_RAIL_CLASS}
+          className={sidebarRailClass(ink, true)}
         />
       ) : null}
       <Icon
         className={cn(
           'relative z-10 h-3.5 w-3.5 shrink-0',
-          active ? 'text-role-foreground' : child.iconTone,
+          active ? (ink === 'light' ? 'text-side-ink' : 'text-brand') : child.iconTone,
         )}
         strokeWidth={1.75}
       />

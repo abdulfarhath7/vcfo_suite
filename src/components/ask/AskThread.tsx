@@ -28,7 +28,7 @@ export function AskThread() {
         }
         if (item.kind === 'error') {
           return (
-            <p key={item.id} role="alert" className="rounded-[var(--radius-md)] bg-danger-light px-3 py-2 text-[12.5px] text-danger-text">
+            <p key={item.id} role="alert" className="rounded-[var(--radius-md)] bg-danger-soft px-3 py-2 text-[12.5px] text-danger">
               {item.text}
             </p>
           );
@@ -36,14 +36,14 @@ export function AskThread() {
         if (item.answer.line === PREVIEW_CLIENT_LINE && ask.shell === 'super') {
           return (
             <div key={item.id} className="space-y-2">
-              <p className="text-[14px] text-foreground">{item.answer.line}</p>
+              <p className="text-[14px] text-ink">{item.answer.line}</p>
               <AskPreviewPicker />
             </div>
           );
         }
         return <AskAnswerCard key={item.id} answer={item.answer} messageId={item.messageId} lastQuestion={lastQuestion} />;
       })}
-      <p aria-live="polite" className="min-h-[1.25rem] text-[12px] text-muted-foreground">
+      <p aria-live="polite" className="min-h-[1.25rem] text-[12px] text-ink-muted">
         {ask.busy ? (ask.status ?? 'Working…') : ''}
       </p>
       <AskHandoffForm key={ask.handoffDraft ?? 'none'} />

@@ -48,10 +48,10 @@ export function TimelineRequestsPanel({ engagementId, canDecide }: { engagementI
   if (pending.length === 0) return null;
   return (
     <Surface className="mb-4 border-amber-300 p-4">
-      <h3 className="mb-2 text-sm font-semibold text-foreground">Client asked for a timeline change</h3>
+      <h3 className="mb-2 text-sm font-semibold text-ink">Client asked for a timeline change</h3>
       {pending.map((r) => (
         <div key={r.id} className="space-y-2 text-sm">
-          <p className="text-muted-foreground">
+          <p className="text-ink-muted">
             {r.requestedByName ?? "Client"}: “{r.reason}”{r.slipDays ? ` · COI moves ${r.slipDays > 0 ? "+" : ""}${r.slipDays} days` : ""}
           </p>
           <ul className="grid gap-1 sm:grid-cols-2">
@@ -72,7 +72,7 @@ export function TimelineRequestsPanel({ engagementId, canDecide }: { engagementI
               </Button>
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">Waiting for the project manager to decide.</p>
+            <p className="text-xs text-ink-muted">Waiting for the project manager to decide.</p>
           )}
         </div>
       ))}

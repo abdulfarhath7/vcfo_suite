@@ -1,18 +1,22 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
+/* The chip (docs/design/TOKENS.md, "Controls and chips"): 22px high, 8px side
+   padding, 6px corners, 11px/600 text. Status variants use a soft ground with a
+   text-safe colour; the word carries the state, never the colour alone. */
 export const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex h-chip items-center gap-1 whitespace-nowrap rounded-sm border border-transparent px-2 text-[11px] font-semibold leading-4 transition-colors focus:outline-none focus:ring-2 focus:ring-focus-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/90",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive: "border-transparent bg-danger-light text-danger-text",
-        outline: "text-foreground border-border",
-        success: "border-transparent bg-success-light text-success-text",
-        warning: "border-transparent bg-warning-light text-warning-text",
-        info: "border-transparent bg-info-light text-info-text",
-        soft: "border-primary/15 bg-primary-light text-primary",
+        default: "bg-brand text-on-brand",
+        secondary: "bg-surface-sunken text-ink-muted",
+        destructive: "bg-danger-soft text-danger",
+        outline: "border-line text-ink",
+        success: "bg-positive-soft text-positive",
+        warning: "bg-warning-soft text-warning",
+        info: "bg-info-soft text-info",
+        soft: "bg-brand-soft text-brand",
+        highlight: "bg-highlight-soft text-highlight",
       },
     },
     defaultVariants: {

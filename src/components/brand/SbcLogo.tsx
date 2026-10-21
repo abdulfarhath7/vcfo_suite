@@ -238,7 +238,7 @@ export function SbcLogo({
       <span
         className={cn(
           'font-medium tracking-tight leading-none',
-          tone === 'light' ? 'text-white' : 'text-foreground',
+          tone === 'light' ? 'text-white' : 'text-ink',
         )}
         style={{ fontSize: Math.max(13, Math.round(size * 0.44)) }}
       >

@@ -133,7 +133,7 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
       <div className="space-y-4">
         <div>
           <Label htmlFor="intern-name" className="text-[12px] flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-text-tertiary" /> Full name
+            <User className="w-3.5 h-3.5 text-ink-faint" /> Full name
           </Label>
           <Input
             id="intern-name"
@@ -150,7 +150,7 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
 
         <div>
           <Label htmlFor="intern-email" className="text-[12px] flex items-center gap-1.5">
-            <Mail className="w-3.5 h-3.5 text-text-tertiary" /> Work email
+            <Mail className="w-3.5 h-3.5 text-ink-faint" /> Work email
           </Label>
           <Input
             id="intern-email"
@@ -169,7 +169,7 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
 
         <div>
           <Label htmlFor="intern-phone" className="text-[12px] flex items-center gap-1.5">
-            <Phone className="w-3.5 h-3.5 text-text-tertiary" /> Phone (optional)
+            <Phone className="w-3.5 h-3.5 text-ink-faint" /> Phone (optional)
           </Label>
           <Input
             id="intern-phone"
@@ -184,7 +184,7 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
 
         <div>
           <Label htmlFor="intern-password" className="text-[12px] flex items-center gap-1.5">
-            <Lock className="w-3.5 h-3.5 text-text-tertiary" /> Temporary password
+            <Lock className="w-3.5 h-3.5 text-ink-faint" /> Temporary password
           </Label>
           <div className="relative mt-1.5">
             <Input
@@ -199,7 +199,7 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
             />
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-text-tertiary hover:text-ink"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ink-faint hover:text-ink"
               onClick={() => dispatch({ type: "toggle_show_password" })}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >

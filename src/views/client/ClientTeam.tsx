@@ -197,13 +197,13 @@ export default function ClientTeamPage() {
       />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-xl border border-border/70 bg-panel p-5">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Users className="h-4 w-4 text-role" aria-hidden />
+        <section className="rounded-xl border border-line/70 bg-surface-raised p-5">
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-ink">
+            <Users className="h-4 w-4 text-brand" aria-hidden />
             Clients on this project
           </div>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <p className="text-sm text-ink-muted">Loading…</p>
           ) : members.length === 0 ? (
             <EmptyStateIllustrated
               icon={Users}
@@ -215,14 +215,14 @@ export default function ClientTeamPage() {
               {members.map((m) => (
                 <li
                   key={m.userId}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line/60 px-3 py-2.5"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">{m.email}</p>
+                    <p className="text-sm font-medium text-ink">{m.name}</p>
+                    <p className="text-xs text-ink-muted">{m.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-raised px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-text-tertiary">
+                    <span className="rounded-sm bg-surface-sunken px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
                       {m.memberRole === "owner" ? "Primary" : "Member"}
                       {m.userId === user?.id ? " · you" : ""}
                     </span>
@@ -244,9 +244,9 @@ export default function ClientTeamPage() {
           )}
         </section>
 
-        <section className="rounded-xl border border-border/70 bg-panel p-5">
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
-            <UserPlus className="h-4 w-4 text-role" aria-hidden />
+        <section className="rounded-xl border border-line/70 bg-surface-raised p-5">
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-ink">
+            <UserPlus className="h-4 w-4 text-brand" aria-hidden />
             Invite another client
           </div>
           <form className="space-y-3" onSubmit={invite}>
@@ -300,13 +300,13 @@ export default function ClientTeamPage() {
               {replacingSelf ? "Substitute yourself" : "Substitute client"}
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Replace{" "}
-            <span className="font-medium text-foreground">
+            <span className="font-medium text-ink">
               {substituteTarget?.name} ({substituteTarget?.email})
             </span>{" "}
             with someone else on{" "}
-            <span className="font-medium text-foreground">{engagement?.companyName}</span>.
+            <span className="font-medium text-ink">{engagement?.companyName}</span>.
             {replacingSelf
               ? " You will lose access to this project after the handoff."
               : null}

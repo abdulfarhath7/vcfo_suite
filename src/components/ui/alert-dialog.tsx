@@ -57,7 +57,7 @@ function AlertDialogTitle({ ref, className, ...props }: React.ComponentPropsWith
 
 function AlertDialogDescription({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description> & { ref?: React.Ref<React.ElementRef<typeof AlertDialogPrimitive.Description>> }) {
   return (
-    <AlertDialogPrimitive.Description ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+    <AlertDialogPrimitive.Description ref={ref} className={cn("text-sm text-ink-muted", className)} {...props} />
   );
 }
 

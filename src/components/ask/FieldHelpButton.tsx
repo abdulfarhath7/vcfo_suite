@@ -21,7 +21,7 @@ export function FieldHelpButton({ stepId, fieldId, label }: { stepId: string; fi
         <button
           type="button"
           aria-label={`Why do we ask this: ${label}`}
-          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
         >
           <HelpCircle className="h-3.5 w-3.5" aria-hidden />
         </button>
@@ -30,10 +30,10 @@ export function FieldHelpButton({ stepId, fieldId, label }: { stepId: string; fi
         <Popover.Content
           side="top"
           sideOffset={6}
-          className="z-50 max-w-[260px] rounded-[var(--radius-md)] border border-border bg-popover p-3 text-popover-foreground shadow-lg"
+          className="z-50 max-w-[260px] rounded-[var(--radius-md)] border border-line bg-popover p-3 text-popover-foreground shadow-lg"
         >
           <p className="text-[12px] font-semibold">Why do we ask this?</p>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">{text}</p>
+          <p className="mt-0.5 text-[12.5px] text-ink-muted">{text}</p>
           <Popover.Arrow className="fill-popover" />
         </Popover.Content>
       </Popover.Portal>

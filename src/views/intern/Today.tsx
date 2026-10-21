@@ -61,7 +61,7 @@ export default function InternToday() {
               onSelectDay={selectDay}
             />
             {selectedDay ? (
-              <p className="px-0.5 text-[12px] font-semibold text-muted-foreground">
+              <p className="px-0.5 text-[12px] font-medium text-ink-muted">
                 Showing {formatIstWeekdayDay(selectedDay).label}
                 {selectedDay === todayYmd ? ' (today)' : ''}
                 {' · '}
@@ -69,7 +69,7 @@ export default function InternToday() {
                 {' · '}
                 <button
                   type="button"
-                  className="font-extrabold text-primary hover:underline"
+                  className="font-semibold text-brand hover:underline"
                   onClick={() => setSelectedDay(null)}
                 >
                   Show all

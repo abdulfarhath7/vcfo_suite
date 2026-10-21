@@ -45,19 +45,19 @@ export function ChecklistPhaseStepRow({
       type="button"
       onClick={() => onOpen(item)}
       className={cn(
-        'group grid min-h-11 w-full grid-cols-[28px_1fr_auto] items-center gap-3 border-b border-border px-4 py-3.5 text-left transition-colors last:border-0',
-        waiting && 'bg-warning-light/80 hover:bg-warning-light',
-        yourTurn && 'bg-primary-light/80 hover:bg-primary-light',
-        !waiting && !yourTurn && 'hover:bg-raised/40',
+        'group grid min-h-11 w-full grid-cols-[28px_1fr_auto] items-center gap-3 border-b border-line px-4 py-3.5 text-left transition-colors last:border-0',
+        waiting && 'bg-warning-soft/80 hover:bg-warning-soft',
+        yourTurn && 'bg-brand-soft/80 hover:bg-brand-soft',
+        !waiting && !yourTurn && 'hover:bg-surface-sunken/40',
       )}
     >
       <InternStepDoneMark done={gate.kind === 'done'} />
       <div className="min-w-0">
-        <div className={cn('text-[13px]', yourTurn ? 'font-medium text-primary' : 'text-ink')}>
+        <div className={cn('text-[13px]', yourTurn ? 'font-medium text-brand' : 'text-ink')}>
           {item.title}
         </div>
         {waiting && gate.message ? (
-          <div className="mt-0.5 text-[11px] text-warning-text">{gate.message}</div>
+          <div className="mt-0.5 text-[11px] text-warning">{gate.message}</div>
         ) : null}
         <MilestoneResponseRowSummary
           item={item}
@@ -76,7 +76,7 @@ export function ChecklistPhaseStepRow({
           </div>
         ) : null}
       </div>
-      <ChevronRight className="h-3.5 w-3.5 text-text-tertiary transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
+      <ChevronRight className="h-3.5 w-3.5 text-ink-faint transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
     </button>
   );
 }

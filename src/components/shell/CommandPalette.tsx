@@ -243,10 +243,10 @@ export function CommandPalette() {
         ref={rootRef}
         className="relative hidden min-w-[8rem] w-[min(100%,12.5rem)] max-w-xs shrink sm:block lg:w-[min(100%,16rem)]"
       >
-        <div className="flex h-9 items-center gap-2 rounded-xl border border-border/70 bg-raised/50 px-3 text-[13px] text-muted-foreground transition-colors hover:border-primary/30 hover:bg-raised hover:text-foreground">
-          <Search className="h-3.5 w-3.5 shrink-0 text-primary/80" strokeWidth={1.75} aria-hidden />
+        <div className="flex h-9 items-center gap-2 rounded-xl border border-line/70 bg-surface-sunken/50 px-3 text-[13px] text-ink-muted transition-colors hover:border-brand/30 hover:bg-surface-sunken hover:text-ink">
+          <Search className="h-3.5 w-3.5 shrink-0 text-brand/80" strokeWidth={1.75} aria-hidden />
           <input
-            className="h-9 min-w-0 flex-1 bg-transparent py-0 text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
+            className="h-9 min-w-0 flex-1 bg-transparent py-0 text-[13px] text-ink outline-none placeholder:text-ink-muted"
             placeholder="Search"
             aria-label="Search"
             aria-keyshortcuts="Meta+K Control+K"
@@ -270,12 +270,12 @@ export function CommandPalette() {
     >
       <Command
         key={idleKey}
-        className="overflow-visible rounded-none bg-transparent text-foreground"
+        className="overflow-visible rounded-none bg-transparent text-ink"
         shouldFilter
         loop
       >
-        <div className="flex h-9 items-center gap-2 rounded-xl border border-primary/35 bg-raised px-3 text-[13px] text-foreground shadow-[0_0_0_3px_oklch(var(--primary)_/_0.12)]">
-          <Search className="h-3.5 w-3.5 shrink-0 text-primary/80" strokeWidth={1.75} aria-hidden />
+        <div className="flex h-9 items-center gap-2 rounded-xl border border-brand/35 bg-surface-sunken px-3 text-[13px] text-ink shadow-[0_0_0_3px_oklch(var(--brand)_/_0.12)]">
+          <Search className="h-3.5 w-3.5 shrink-0 text-brand/80" strokeWidth={1.75} aria-hidden />
           <CommandInput
             ref={inputRef}
             showIcon={false}
@@ -286,15 +286,15 @@ export function CommandPalette() {
             aria-label="Search"
             aria-expanded
             aria-keyshortcuts="Meta+K Control+K"
-            className="h-9 py-0 text-[13px] text-foreground placeholder:text-muted-foreground"
+            className="h-9 py-0 text-[13px] text-ink placeholder:text-ink-muted"
           />
           {shortcutHint}
         </div>
 
         <CommandList
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[min(22rem,70vh)] overflow-y-auto overflow-x-hidden rounded-xl border border-border/70 bg-panel p-1 shadow-[0_16px_40px_-18px_oklch(22%_0.06_260_/_0.5)] ring-1 ring-primary/10"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[min(22rem,70vh)] overflow-y-auto overflow-x-hidden rounded-xl border border-line/70 bg-surface-raised p-1 shadow-[0_16px_40px_-18px_oklch(22%_0.06_260_/_0.5)] ring-1 ring-brand/10"
         >
-          <CommandEmpty className="py-6 text-center text-[13px] text-muted-foreground">
+          <CommandEmpty className="py-6 text-center text-[13px] text-ink-muted">
             Nothing matched. Try another term.
           </CommandEmpty>
           {vaultHits.length > 0 && (

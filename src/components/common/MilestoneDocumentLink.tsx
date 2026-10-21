@@ -43,7 +43,7 @@ function MilestoneDocumentLinkInner({
 
   if (loading) {
     return (
-      <span className={cn('text-sm italic text-text-tertiary', className)}>
+      <span className={cn('text-sm italic text-ink-faint', className)}>
         Loading…
       </span>
     );
@@ -51,7 +51,7 @@ function MilestoneDocumentLinkInner({
 
   if (!href) {
     return (
-      <span className={cn('text-sm text-text-tertiary', className)}>
+      <span className={cn('text-sm text-ink-faint', className)}>
         {display} (link unavailable)
       </span>
     );
@@ -80,7 +80,7 @@ export function MilestoneDocumentLink(props: MilestoneDocumentLinkProps) {
 
   if (!props.storagePath.trim()) {
     return (
-      <span className={cn('text-sm text-text-tertiary', props.className)}>
+      <span className={cn('text-sm text-ink-faint', props.className)}>
         {display} (link unavailable)
       </span>
     );

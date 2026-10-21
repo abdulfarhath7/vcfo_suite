@@ -16,7 +16,7 @@ export function IncorporationDraftsZipLink({
       href={buildIncorpDraftsZipUrl(engagementId)}
       download
       className={cn(
-        'inline-flex h-8 items-center rounded-md border border-border bg-panel px-3 text-[12px] font-medium text-primary hover:border-primary/35 hover:bg-primary-light',
+        'inline-flex h-8 items-center rounded-md border border-line bg-surface-raised px-3 text-[12px] font-medium text-brand hover:border-brand/35 hover:bg-brand-soft',
         className,
       )}
     >

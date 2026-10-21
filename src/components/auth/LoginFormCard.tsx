@@ -43,16 +43,17 @@ function AlertBanner({
   children: React.ReactNode;
   variant: 'error' | 'success' | 'info' | 'warning';
 }) {
+  /* Soft ground + text-safe colour + a hairline; the words carry the state. */
   const styles = {
-    error: 'border-l-danger bg-danger-light border-destructive/20 text-destructive',
-    success: 'border-l-success bg-success-light border-success/20 text-success-text',
-    info: 'border-l-border bg-raised border-border text-muted-foreground',
-    warning: 'border-l-warning bg-warning-light border-warning/20 text-warning-text',
+    error: 'border-line bg-danger-soft text-danger',
+    success: 'border-line bg-positive-soft text-positive',
+    info: 'border-line bg-surface-sunken text-ink-muted',
+    warning: 'border-line bg-warning-soft text-warning',
   };
   return (
     <p
       className={cn(
-        'mb-4 rounded-md border border-l-[3px] px-3 py-2.5 text-[12px] leading-relaxed',
+        'mb-4 rounded-md border px-3 py-2.5 text-[12px] leading-relaxed',
         styles[variant],
       )}
       role={variant === 'error' ? 'alert' : 'status'}

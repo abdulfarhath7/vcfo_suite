@@ -36,29 +36,29 @@ export function Pre1SectionCard({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="surface relative overflow-hidden bg-raised/50">
+    <section className="surface relative overflow-hidden bg-surface-sunken/50">
       <div className="accent-bar absolute left-0 top-3 bottom-3 w-[3px]" aria-hidden />
       <div className="pl-4 sm:pl-5">
-        <header className="border-b border-border/70 py-3.5 pr-4 sm:pr-5">
+        <header className="border-b border-line/70 py-3.5 pr-4 sm:pr-5">
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="flex w-full gap-3 items-start text-left min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-role/40 rounded-md"
+            className="flex w-full gap-3 items-start text-left min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded-md"
             aria-expanded={open}
           >
             <span
               className={cn(
                 'mono shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums',
-                complete ? 'bg-success-light text-success-text' : 'role-accent-bg text-role-foreground',
+                complete ? 'bg-positive-soft text-positive' : 'role-accent-bg text-brand',
               )}
               aria-hidden
             >
               {complete ? <Check className="w-3 h-3 inline" /> : String(index).padStart(2, '0')}
             </span>
             <span className="min-w-0 flex-1 pt-0.5">
-              <h3 className="text-base font-semibold leading-snug text-foreground">{title}</h3>
+              <h3 className="text-base font-semibold leading-snug text-ink">{title}</h3>
             </span>
-            <ChevronDown className={cn('w-4 h-4 shrink-0 text-muted-foreground transition-transform mt-1', open && 'rotate-180')} />
+            <ChevronDown className={cn('w-4 h-4 shrink-0 text-ink-muted transition-transform mt-1', open && 'rotate-180')} />
           </button>
         </header>
         {open && <div className="p-5 sm:p-6 pt-4 space-y-4">{children}</div>}
@@ -115,7 +115,7 @@ function FieldUnlockIconButton({
             key={iconKey}
             className={cn(
               'absolute inset-0 inline-flex items-center justify-center',
-              isUnlocked ? 'text-destructive' : 'text-success',
+              isUnlocked ? 'text-danger' : 'text-positive',
             )}
             variants={unlockIconVariants[iconKey]}
             initial={reducedMotion ? 'animate' : 'initial'}
@@ -185,15 +185,15 @@ function UploadedFilePreviewInner({
 
   if (loading) {
     return (
-      <div className="flex h-11 items-center gap-2 rounded-md border border-border bg-raised/50 px-2.5 py-1.5">
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">Loading preview…</span>
+      <div className="flex h-11 items-center gap-2 rounded-md border border-line bg-surface-sunken/50 px-2.5 py-1.5">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-ink-muted" />
+        <span className="text-xs text-ink-muted">Loading preview…</span>
       </div>
     );
   }
 
   return (
-    <div className="flex h-11 items-center gap-2 rounded-md border border-border bg-raised/50 px-2.5 py-1.5">
+    <div className="flex h-11 items-center gap-2 rounded-md border border-line bg-surface-sunken/50 px-2.5 py-1.5">
       {isImage && href ? (
         <Image
           src={href}
@@ -201,11 +201,11 @@ function UploadedFilePreviewInner({
           width={32}
           height={32}
           unoptimized
-          className="h-8 w-8 shrink-0 rounded-md object-cover border border-border"
+          className="h-8 w-8 shrink-0 rounded-md object-cover border border-line"
         />
       ) : (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-panel">
-          <Upload className="h-3.5 w-3.5 text-role" aria-hidden />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-line bg-surface-raised">
+          <Upload className="h-3.5 w-3.5 text-brand" aria-hidden />
         </div>
       )}
       <div className="min-w-0 flex-1">
@@ -218,8 +218,8 @@ function UploadedFilePreviewInner({
 export function UploadedFilePreview(props: { storagePath: string; label: string }) {
   if (!props.storagePath.trim()) {
     return (
-      <div className="flex h-11 items-center gap-2 rounded-md border border-border bg-raised/50 px-2.5 py-1.5">
-        <span className="text-xs text-muted-foreground">No file uploaded</span>
+      <div className="flex h-11 items-center gap-2 rounded-md border border-line bg-surface-sunken/50 px-2.5 py-1.5">
+        <span className="text-xs text-ink-muted">No file uploaded</span>
       </div>
     );
   }
@@ -254,15 +254,15 @@ export function FormErrorSummary({
   return (
     <div
       role="alert"
-      className="rounded-lg border border-danger/30 bg-danger-light/90 px-4 py-3"
+      className="rounded-lg border border-danger/30 bg-danger-soft/90 px-4 py-3"
     >
       <div className="flex gap-2 items-start">
         <AlertCircle className="h-4 w-4 text-danger shrink-0 mt-0.5" aria-hidden />
         <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">
+          <p className="text-sm font-medium text-ink">
             {entries.length} item{entries.length === 1 ? '' : 's'} need attention before you continue
           </p>
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <ul className="mt-2 space-y-1 text-xs text-ink-muted">
             {entries.slice(0, SUMMARY_LINES).map(([fieldId, message]) => (
               <li key={fieldId}>
                 {onSelect ? (
@@ -271,17 +271,17 @@ export function FormErrorSummary({
                     onClick={() => onSelect(fieldId)}
                     className="text-left underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
                   >
-                    <span className="font-medium text-foreground">{label(fieldId)}:</span> {message}
+                    <span className="font-medium text-ink">{label(fieldId)}:</span> {message}
                   </button>
                 ) : (
                   <>
-                    <span className="font-medium text-foreground">{label(fieldId)}:</span> {message}
+                    <span className="font-medium text-ink">{label(fieldId)}:</span> {message}
                   </>
                 )}
               </li>
             ))}
             {entries.length > SUMMARY_LINES && (
-              <li className="text-muted-foreground">+ {entries.length - SUMMARY_LINES} more</li>
+              <li className="text-ink-muted">+ {entries.length - SUMMARY_LINES} more</li>
             )}
           </ul>
         </div>
@@ -361,13 +361,13 @@ export function InternSectionHeadingNav({
   if (sections.length === 0) return null;
 
   const arrowClass =
-    'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-raised hover:text-foreground disabled:pointer-events-none disabled:opacity-30';
+    'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink disabled:pointer-events-none disabled:opacity-30';
 
   return (
-    <nav aria-label="Step sections" className="border-b border-border">
+    <nav aria-label="Step sections" className="border-b border-line">
       <div className="flex h-11 min-w-0 items-stretch">
         {overflow.overflowing ? (
-          <div className="flex w-9 shrink-0 items-center justify-center border-r border-border/60">
+          <div className="flex w-9 shrink-0 items-center justify-center border-r border-line/60">
             <button
               type="button"
               className={arrowClass}
@@ -396,12 +396,12 @@ export function InternSectionHeadingNav({
                 onClick={() => onSelect(index)}
                 className={cn(
                   'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-4 text-[13.5px] font-medium transition-colors',
-                  selected ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                  selected ? 'text-brand' : 'text-ink-muted hover:text-ink',
                 )}
               >
                 <span className="inline-flex items-center gap-1.5">
                   {section.complete && !section.hasErrors ? (
-                    <Check className="h-3 w-3 shrink-0 text-success" aria-hidden />
+                    <Check className="h-3 w-3 shrink-0 text-positive" aria-hidden />
                   ) : null}
                   {section.title}
                   {section.hasErrors ? (
@@ -416,14 +416,14 @@ export function InternSectionHeadingNav({
                   ) : null}
                 </span>
                 {selected ? (
-                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" aria-hidden />
+                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-brand" aria-hidden />
                 ) : null}
               </button>
             );
           })}
         </div>
         {overflow.overflowing ? (
-          <div className="flex w-9 shrink-0 items-center justify-center border-l border-border/60">
+          <div className="flex w-9 shrink-0 items-center justify-center border-l border-line/60">
             <button
               type="button"
               className={arrowClass}

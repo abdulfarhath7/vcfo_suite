@@ -20,10 +20,10 @@ const sizeMap: Record<Size, string> = {
 };
 
 const variantMap: Record<Variant, string> = {
-  solid: "bg-primary text-primary-foreground font-medium hover:bg-primary-dark shadow-none",
+  solid: "bg-brand text-on-brand font-medium hover:bg-brand-strong shadow-none",
   outline:
-    "bg-panel text-primary border border-border hover:bg-primary-light hover:border-primary/35",
-  ghost: "bg-transparent text-primary hover:bg-primary-light",
+    "bg-surface-raised text-brand border border-line hover:bg-brand-soft hover:border-brand/35",
+  ghost: "bg-transparent text-brand hover:bg-brand-soft",
 };
 
 /** Role-aware primary button — solid blue, cool outline, blue ghost. */
@@ -42,7 +42,7 @@ export function AccentButton({
   const reduceMotion = useReducedMotion();
   const classes = cn(
     "inline-flex items-center justify-center gap-2 rounded-md transition-colors",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/50",
     "disabled:opacity-40 disabled:pointer-events-none",
     "tracking-tight",
     variantMap[variant],

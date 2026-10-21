@@ -12,8 +12,8 @@ body{margin:0}
 #vp-side{height:100vh}
 @supports (height:100dvh){#vp-side,#vp-drawer{height:100dvh}}
 .cp-search .cp-search-in{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid light-dark(#e3e8ef, oklch(24.8% 0.011 256.7));color:#5a6b82}
-.cp-search .cp-search-in input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:600 15px Manrope,system-ui,sans-serif;color:light-dark(#0f1b2d, oklch(91.2% 0.028 258.3))}
-.cp-search .cp-search-g{padding:10px 0 4px;font:800 10.5px Manrope,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle)}
+.cp-search .cp-search-in input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:600 15px var(--font-sans),system-ui,sans-serif;color:light-dark(#0f1b2d, oklch(91.2% 0.028 258.3))}
+.cp-search .cp-search-g{padding:10px 0 4px;font:800 10.5px var(--font-sans),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle)}
 .cp-search .list{padding-top:4px}
 /* phone drawer and chat lock the page under them */
 html.vp-chat-on{overscroll-behavior:contain}
@@ -25,12 +25,12 @@ html.vp-chat-on{overscroll-behavior:contain}
 #vp-chat .vpc-fb button:disabled{cursor:default}
 #vp-chat .vpc-st{margin-left:6px;font-size:12px;color:var(--muted)}
 /* first-visit note above the launcher (board v7chat_launcher .botup bubble, once per client) */
-.vpl-note{position:fixed;right:var(--vpl-in);bottom:calc(var(--vpl-ph) + var(--vpl-in) + 14px);z-index:2147482500;width:300px;max-width:calc(100vw - 2 * var(--vpl-in));box-sizing:border-box;border-radius:10px;background:var(--panel);border:1px solid var(--border);box-shadow:0 12px 32px -12px oklch(21% 0.042 264 / .3);padding:12px 12px 10px;display:flex;flex-direction:column;gap:8px;font:500 13px/1.45 Manrope,system-ui,sans-serif;color:var(--fg);animation:v7up .35s cubic-bezier(.22,1,.36,1) .9s both}
+.vpl-note{position:fixed;right:var(--vpl-in);bottom:calc(var(--vpl-ph) + var(--vpl-in) + 14px);z-index:2147482500;width:300px;max-width:calc(100vw - 2 * var(--vpl-in));box-sizing:border-box;border-radius:10px;background:var(--panel);border:1px solid var(--border);box-shadow:0 12px 32px -12px oklch(21% 0.042 264 / .3);padding:12px 12px 10px;display:flex;flex-direction:column;gap:8px;font:500 13px/1.45 var(--font-sans),system-ui,sans-serif;color:var(--fg);animation:v7up .35s cubic-bezier(.22,1,.36,1) .9s both}
 .vpl-note-h{display:flex;gap:8px;align-items:flex-start}
 .vpl-note-h span{flex:1;font-size:13px;line-height:1.45}
 .vpl-note-h button{width:24px;height:24px;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;padding:0}
 .vpl-note-q{display:flex;flex-wrap:wrap;gap:6px}
-.vpl-note-q button{min-height:30px;padding:0 10px;border-radius:6px;border:1px solid oklch(54.6% 0.215 263 / .35);background:var(--primary-light);color:var(--primary);font:600 12px Manrope,sans-serif;cursor:pointer}
+.vpl-note-q button{min-height:30px;padding:0 10px;border-radius:6px;border:1px solid oklch(54.6% 0.215 263 / .35);background:var(--primary-light);color:var(--primary);font:600 12px var(--font-sans),sans-serif;cursor:pointer}
 /* a page with a sticky bottom action bar lifts the launcher: set --vp-launch-lift on .cp */
 #vp-launch{bottom:var(--vp-launch-lift,0px)}
 /* page enter (proto.js vpIn: 0.26 s) */
@@ -41,7 +41,7 @@ html.vp-chat-on{overscroll-behavior:contain}
 .cp-botsay{display:flex;align-items:flex-end;gap:10px;text-align:left}
 .cp-botsay .bface{border-radius:99px;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255));box-shadow:0 6px 16px -8px oklch(25% 0.06 258 / .45),0 0 0 1px var(--border);display:grid;place-items:center;flex:none;animation:v7bob 2.6s ease-in-out infinite;overflow:hidden}
 .cp-botsay .bface svg{display:block}
-.cp-botsay .bubble{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px 10px 10px 4px;padding:9px 12px;font:600 13px/1.4 Manrope;color:var(--fg);box-shadow:var(--shadow);max-width:300px}
+.cp-botsay .bubble{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px 10px 10px 4px;padding:9px 12px;font:600 13px/1.4 var(--font-sans);color:var(--fg);box-shadow:var(--shadow);max-width:300px}
 .cp-botsay .bubble::before{content:"";position:absolute;left:-6px;bottom:10px;width:10px;height:10px;background:var(--panel);border-left:1px solid var(--border);border-bottom:1px solid var(--border);transform:rotate(45deg)}
 .cp-botsay .btn-s{height:28px;padding:0 10px;font-size:12px}
 @media (prefers-reduced-motion: reduce){.cp-botsay .bface{animation:none}}
@@ -49,20 +49,20 @@ html.vp-chat-on{overscroll-behavior:contain}
 @keyframes cpSsIn{from{transform:translate(-50%,105%)}to{transform:translate(-50%,0)}}
 @keyframes cpSsFade{from{opacity:0}to{opacity:1}}
 .cp-ss-scrim{position:fixed;inset:0;z-index:2147482600;background:oklch(20% .05 258 / .45);animation:cpSsFade .2s both}
-.cp-ssheet{position:fixed;left:50%;bottom:0;z-index:2147482601;width:min(100%,560px);max-height:min(82vh,calc(100dvh - 24px));display:flex;flex-direction:column;box-sizing:border-box;background:light-dark(#fff, oklch(13% 0 89.9));border-radius:14px 14px 0 0;box-shadow:0 -16px 40px -20px oklch(15% .05 258 / .5);color:var(--fg);font:500 13px/1.45 Manrope,system-ui,sans-serif;transform:translate(-50%,0);animation:cpSsIn .38s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004) both}
+.cp-ssheet{position:fixed;left:50%;bottom:0;z-index:2147482601;width:min(100%,560px);max-height:min(82vh,calc(100dvh - 24px));display:flex;flex-direction:column;box-sizing:border-box;background:light-dark(#fff, oklch(13% 0 89.9));border-radius:14px 14px 0 0;box-shadow:0 -16px 40px -20px oklch(15% .05 258 / .5);color:var(--fg);font:500 13px/1.45 var(--font-sans),system-ui,sans-serif;transform:translate(-50%,0);animation:cpSsIn .38s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004) both}
 .cp-ssheet .grab{display:flex;justify-content:center;padding:8px 0 4px}.cp-ssheet .grab i{width:40px;height:4px;border-radius:2px;background:var(--border)}
 .cp-ssheet .sh{display:flex;align-items:center;gap:8px;padding:4px 6px 10px 14px}
-.cp-ssheet .sh h3{margin:0;font:800 16px Manrope,system-ui,sans-serif;color:var(--navy-ink,var(--navy));flex:1}
+.cp-ssheet .sh h3{margin:0;font:800 16px var(--font-sans),system-ui,sans-serif;color:var(--navy-ink,var(--navy));flex:1}
 .cp-ssheet .x{width:44px;height:44px;border:0;background:none;border-radius:6px;display:grid;place-items:center;color:var(--muted);cursor:pointer;padding:0}
 .cp-ssheet .in{padding:0 14px 10px}
-.cp-ssheet .in input{display:block;width:100%;box-sizing:border-box;height:44px;border-radius:8px;border:1px solid var(--border);padding:0 12px;font:500 16px Manrope,system-ui,sans-serif;background:var(--panel);color:var(--fg)}
+.cp-ssheet .in input{display:block;width:100%;box-sizing:border-box;height:44px;border-radius:8px;border:1px solid var(--border);padding:0 12px;font:500 16px var(--font-sans),system-ui,sans-serif;background:var(--panel);color:var(--fg)}
 .cp-ssheet .body{overflow:auto;overscroll-behavior:contain;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 .cp-ssheet .none{padding:12px 14px;color:var(--muted)}
 .cp-ssheet .row{box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border-top:1px solid var(--hair);color:inherit;font-weight:500;text-decoration:none}
 .cp-ssheet .row:active,.cp-ssheet .row[aria-selected=true]{background:var(--raised)}
 .cp-ssheet .row .si{width:22px;height:22px;border-radius:99px;flex:none;display:grid;place-items:center;background:var(--primary-light);color:var(--primary)}
 .cp-ssheet .row .t{flex:1;min-width:0}
-.cp-ssheet .row .t b{display:block;font:700 13.5px/1.3 Manrope,system-ui,sans-serif;overflow-wrap:anywhere}
+.cp-ssheet .row .t b{display:block;font:700 13.5px/1.3 var(--font-sans),system-ui,sans-serif;overflow-wrap:anywhere}
 .cp-ssheet .row .t span{font-size:11.5px;color:var(--muted)}
 .cp-ssheet .row>svg{flex:none;color:var(--muted)}
 @media (prefers-reduced-motion: reduce){.cp-ss-scrim,.cp-ssheet{animation:none}}

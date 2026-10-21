@@ -16,6 +16,7 @@ import { internKindChipLabel, internToneBadge, KIND_TONE } from '@/components/in
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { InternWorkDenseLayout } from '@/components/intern/InternWorkDenseLayout';
 import { LeadCompanyPill } from '@/components/intern/LeadCompanyChip';
+import { CHIP_CLASS } from '@/components/common/IconChip';
 import type { InternWorkItem } from '@/lib/intern-work';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +45,8 @@ function InternWorkKindChip({
   return (
     <span
       className={cn(
-        'inline-flex max-w-full shrink-0 items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] font-extrabold',
+        CHIP_CLASS,
+        'max-w-full shrink-0 overflow-hidden text-ellipsis',
         internToneBadge(KIND_TONE[kind] ?? 'info'),
         className,
       )}
@@ -77,7 +79,7 @@ export function InternWorkDenseRow({
             {showCompany ? item.companyName : null}
             {showCompany && item.windowLabel ? ' · ' : null}
             {item.windowLabel ? (
-              <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+              <span className="text-[11px] tabular-nums text-ink-muted">
                 {item.windowLabel}
               </span>
             ) : null}
@@ -89,8 +91,9 @@ export function InternWorkDenseRow({
         item.ageLabel ? (
           <span
             className={cn(
-              'inline-flex max-w-full overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] font-extrabold',
-              internToneBadge(item.kind === 'waiting-manager' ? 'danger' : 'info'),
+              CHIP_CLASS,
+              'max-w-full overflow-hidden text-ellipsis',
+              internToneBadge(item.kind === 'waiting-manager' ? 'danger' : 'neutral'),
             )}
           >
             {item.ageLabel}
@@ -106,11 +109,11 @@ export function InternWorkQueueRow({ item }: { item: InternWorkItem }) {
   const tone = KIND_TONE[item.kind] ?? 'info';
   const Icon = KIND_ICON[item.kind] ?? Zap;
   return (
-    <div className="border-t border-border px-3.5 py-2.5 text-[13px] transition-colors hover:bg-raised/60">
+    <div className="border-t border-line py-2.5 pl-9 text-[13px]">
       <InternWorkDenseRow
         item={item}
         leading={
-          <span className={cn('mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-sm', internToneBadge(tone))}>
+          <span className={cn('mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md', internToneBadge(tone))}>
             <Icon className="h-3 w-3" strokeWidth={2.4} />
           </span>
         }
@@ -123,7 +126,7 @@ export function InternWorkBoardCard({ item, dim }: { item: InternWorkItem; dim?:
   return (
     <div
       className={cn(
-        'rounded-md border border-border bg-panel p-2.5 shadow-layered',
+        'rounded-md border border-line bg-surface-raised p-2.5 shadow-card',
         dim && 'opacity-65',
       )}
     >
@@ -131,8 +134,8 @@ export function InternWorkBoardCard({ item, dim }: { item: InternWorkItem; dim?:
         href={item.href}
         title={item.title}
         className={cn(
-          'block line-clamp-2 text-[12.5px] font-bold leading-snug text-ink',
-          dim && 'text-text-tertiary line-through',
+          'block line-clamp-2 text-[12.5px] font-semibold leading-snug text-ink',
+          dim && 'text-ink-faint line-through',
         )}
       >
         {item.title}

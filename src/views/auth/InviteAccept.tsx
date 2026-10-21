@@ -6,9 +6,10 @@ import { m } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
 import { Mail, Shield, ArrowRight } from 'lucide-react';
-import { AccentButton, GoldDivider, GrainOverlay, Eyebrow, Mono, TrustBadge } from '@/components/noir';
+import { Eyebrow, Mono, TrustBadge } from '@/components/noir';
 import { SbcLogo } from '@/components/brand/SbcLogo';
 import { ease } from '@/lib/motion';
 
@@ -30,36 +31,35 @@ export default function InviteAccept() {
 
   if (!inv || !eng) {
     return (
-      <div className="public-lockup-theme min-h-screen grid place-items-center bg-blue-50/40 p-6" data-role="client">
+      <div className="public-lockup-theme min-h-screen grid place-items-center bg-surface p-6" data-role="client">
         <SEO title="Invite unavailable — VCFO Suite" description="This client portal invite is invalid or has expired." path={`/invite/${token}`} />
-        <GrainOverlay className="fixed inset-0 pointer-events-none opacity-30" />
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease }}
-          className="surface relative z-10 max-w-sm p-8 text-center"
+          className="relative z-10 max-w-sm rounded-lg border border-line bg-surface-raised p-8 text-center shadow-card"
         >
           <Eyebrow>Invite</Eyebrow>
-          <h1 className="display-md text-foreground mt-1">Invite unavailable</h1>
-          <GoldDivider className="mx-auto my-5 max-w-[48px]" />
-          <p className="text-[13px] text-muted-foreground leading-relaxed">
+          <h1 className="display-md text-ink mt-1">Invite unavailable</h1>
+          <div className="mx-auto my-5 h-px w-12 bg-brand" aria-hidden />
+          <p className="text-[13px] text-ink-muted leading-relaxed">
             This link is invalid or has expired. Ask your project team for a new client portal invite.
           </p>
-          <AccentButton type="button" size="lg" className="mt-6 w-full min-h-11" onClick={() => router.push('/login')}>
+          <Button type="button" size="lg" className="mt-6 w-full" onClick={() => router.push('/login')}>
             Back to sign in
             <ArrowRight className="w-4 h-4" />
-          </AccentButton>
+          </Button>
         </m.div>
       </div>
     );
   }
 
   return (
-    <div className="public-lockup-theme min-h-screen grid lg:grid-cols-[1fr_1.05fr] bg-blue-50/40" data-role="client">
+    <div className="public-lockup-theme min-h-screen grid lg:grid-cols-[1fr_1.05fr] bg-surface" data-role="client">
       <SEO title={`Join ${eng.companyName} — VCFO Suite`} description="Accept your invite to the VCFO Suite client portal." path={`/invite/${token}`} />
 
-      <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-blue-700 to-blue-800 text-white p-12 overflow-hidden">
-        <GrainOverlay className="opacity-10" />
+      {/* Navy side panel: `side` is the one fixed-dark surface, so the copy stays light in both themes. */}
+      <div className="relative hidden lg:flex flex-col justify-between bg-side text-side-ink p-12 overflow-hidden">
         <div className="relative z-10">
           <SbcLogo variant="lockup" size={36} surface="dark" decorative />
         </div>
@@ -70,75 +70,69 @@ export default function InviteAccept() {
           transition={{ duration: 0.6, ease, delay: 0.1 }}
           className="relative z-10 max-w-md"
         >
-          <Eyebrow className="mb-4 text-blue-100">You&apos;re invited</Eyebrow>
-          <h1 className="display-lg text-white">
-            Join <em className="italic text-blue-200">{eng.companyName}</em>
+          <Eyebrow className="mb-4 text-side-muted">You&apos;re invited</Eyebrow>
+          <h1 className="display-lg text-side-ink">
+            Join <em className="italic text-side-muted">{eng.companyName}</em>
           </h1>
-          <GoldDivider className="my-6 max-w-[60px] opacity-60" />
-          <p className="text-sm text-blue-50/90 leading-relaxed prose-narrow">
+          <div className="my-6 h-px w-[60px] bg-side-muted" aria-hidden />
+          <p className="text-sm text-side-muted leading-relaxed prose-narrow">
             Upload documents, respond to requests, and follow incorporation progress — all in one secure workspace shared with your engagement team.
           </p>
           <TrustBadge className="mt-5">Encrypted · read-only progress board</TrustBadge>
         </m.div>
 
-        <div className="relative z-10 flex items-center gap-4 text-[11px] text-blue-100/70">
+        <div className="relative z-10 flex items-center gap-4 text-[11px] text-side-muted">
           <Mono>Document vault</Mono>
-          <span className="h-1 w-1 rounded-full bg-blue-300/50" />
+          <span className="h-1 w-1 bg-side-muted" aria-hidden />
           <Mono>Action inbox</Mono>
         </div>
       </div>
 
       <div className="relative flex items-center justify-center p-6 lg:p-12">
-        <GrainOverlay className="fixed inset-0 pointer-events-none opacity-20 lg:hidden" />
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease }}
-          className="surface relative z-10 w-full max-w-[420px] p-8"
+          className="relative z-10 w-full max-w-[420px] rounded-lg border border-line bg-surface-raised p-8 shadow-card"
         >
           <div className="mb-6 lg:hidden">
             <SbcLogo variant="lockup" size={28} decorative />
           </div>
 
           <Eyebrow>Client portal</Eyebrow>
-          <h2 className="display-md text-foreground mt-1">Complete your profile</h2>
-          <p className="mt-2 text-[13px] text-muted-foreground">
-            Join <span className="font-medium text-foreground">{eng.companyName}</span> to collaborate with your engagement team.
+          <h2 className="display-md text-ink mt-1">Complete your profile</h2>
+          <p className="mt-2 text-[13px] text-ink-muted">
+            Join <span className="font-medium text-ink">{eng.companyName}</span> to collaborate with your engagement team.
           </p>
-          <GoldDivider className="my-6 max-w-[48px]" />
+          <div className="my-6 h-px w-12 bg-brand" aria-hidden />
 
-          <div className="mb-6 flex items-start gap-2.5 rounded-lg border border-blue-200 bg-blue-50/80 p-3">
-            <Mail className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+          <div className="mb-6 flex items-start gap-2.5 rounded-md border border-line bg-brand-soft p-3">
+            <Mail className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
             <div className="text-[12px]">
-              <div className="font-medium text-foreground">{inv.email}</div>
-              <div className="text-muted-foreground">Sent by your project team</div>
+              <div className="font-medium text-ink">{inv.email}</div>
+              <div className="text-ink-muted">Sent by your project team</div>
             </div>
           </div>
 
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <Label htmlFor="name" className="text-[11.5px] text-muted-foreground">Full name</Label>
+              <Label htmlFor="name" className="text-[11.5px] text-ink-muted">Full name</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1.5 h-11 text-[13px] bg-background border-input focus-visible:ring-ring"
+                className="mt-1.5 h-control-lg text-[13px] bg-surface-sunken border-line-strong focus-visible:ring-focus-ring"
                 // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
                 autoFocus
                 placeholder="e.g. Sarah Chen"
                 required
               />
             </div>
-            <AccentButton
-              type="submit"
-              size="lg"
-              className="w-full min-h-11 bg-success text-success-foreground hover:bg-success/90 hover:brightness-100 active:brightness-95"
-              disabled={!name.trim()}
-            >
+            <Button type="submit" variant="success" size="lg" className="w-full" disabled={!name.trim()}>
               <Shield className="w-3.5 h-3.5" />
               Join workspace
               <ArrowRight className="w-4 h-4" />
-            </AccentButton>
+            </Button>
           </form>
         </m.div>
       </div>

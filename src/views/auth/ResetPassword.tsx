@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
 import { SEO } from '@/components/SEO';
-import { AccentButton, GoldDivider, GrainOverlay, Eyebrow, Mono, TrustBadge } from '@/components/noir';
+import { Eyebrow, Mono, TrustBadge } from '@/components/noir';
+import { Button } from '@/components/ui/button';
 import { SbcLogo } from '@/components/brand/SbcLogo';
 import { ease } from '@/lib/motion';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
@@ -18,15 +19,15 @@ export default function ResetPassword() {
   const router = useRouter();
 
   return (
-    <div className="public-lockup-theme min-h-screen grid lg:grid-cols-[1fr_1.05fr] bg-background" data-role="admin">
+    <div className="public-lockup-theme min-h-screen grid lg:grid-cols-[1fr_1.05fr] bg-surface" data-role="admin">
       <SEO
         title="Password help — VCFO Suite"
         description="How to update your VCFO Suite password."
         path="/auth/reset-password"
       />
 
-      <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-blue-600 to-blue-700 text-white p-12 overflow-hidden">
-        <GrainOverlay className="opacity-10" />
+      {/* Navy side panel: `side` is the one fixed-dark surface, so the copy stays light in both themes. */}
+      <div className="relative hidden lg:flex flex-col justify-between bg-side text-side-ink p-12 overflow-hidden">
         <div className="relative z-10">
           <SbcLogo variant="lockup" size={36} surface="dark" decorative />
         </div>
@@ -37,19 +38,19 @@ export default function ResetPassword() {
           transition={{ duration: 0.6, ease, delay: 0.1 }}
           className="relative z-10 max-w-md"
         >
-          <Eyebrow className="mb-4 text-blue-100">Password help</Eyebrow>
-          <h1 className="display-lg text-white">
-            Use your <em className="italic text-blue-200">issued password</em>
+          <Eyebrow className="mb-4 text-side-muted">Password help</Eyebrow>
+          <h1 className="display-lg text-side-ink">
+            Use your <em className="italic text-side-muted">issued password</em>
           </h1>
-          <GoldDivider className="my-6 max-w-[60px] opacity-60" />
-          <p className="text-sm text-blue-50/90 leading-relaxed prose-narrow">
+          <div className="my-6 h-px w-[60px] bg-side-muted" aria-hidden />
+          <p className="text-sm text-side-muted leading-relaxed prose-narrow">
             Sign in with the temporary password from your welcome email, then ask your firm
             manager if you need a new one issued.
           </p>
           <TrustBadge className="mt-5">Pilot · manager-issued credentials</TrustBadge>
         </m.div>
 
-        <div className="relative z-10 text-[11px] text-blue-100/70">
+        <div className="relative z-10 text-[11px] text-side-muted">
           <Mono>Auth.js session</Mono>
         </div>
       </div>
@@ -58,26 +59,25 @@ export default function ResetPassword() {
         <div className="absolute right-4 top-4 z-20">
           <ThemeToggle />
         </div>
-        <GrainOverlay className="fixed inset-0 pointer-events-none opacity-20 lg:hidden" />
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease }}
-          className="auth-glass relative z-10 w-full max-w-md p-8"
+          className="relative z-10 w-full max-w-md rounded-lg border border-line bg-surface-raised p-8 shadow-card"
         >
           <Eyebrow>Reset</Eyebrow>
-          <h2 className="mt-1 text-[clamp(22px,4.5vw,32px)] font-serif leading-tight text-foreground">
+          <h2 className="mt-1 text-[clamp(22px,4.5vw,32px)] font-serif leading-tight text-ink">
             Email reset is not enabled
           </h2>
-          <GoldDivider className="my-6 max-w-[60px]" />
-          <p className="text-[13px] text-muted-foreground leading-relaxed">
+          <div className="my-6 h-px w-[60px] bg-brand" aria-hidden />
+          <p className="text-[13px] text-ink-muted leading-relaxed">
             This pilot uses Auth.js email/password accounts. There is no recovery link yet.
             Sign in with the password you were given, or contact your firm manager to have a
             temporary password re-issued.
           </p>
-          <AccentButton className="mt-8 w-full" onClick={() => router.push('/login')}>
+          <Button size="lg" className="mt-8 w-full" onClick={() => router.push('/login')}>
             Back to sign in
-          </AccentButton>
+          </Button>
         </m.div>
       </div>
     </div>

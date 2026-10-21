@@ -9,17 +9,17 @@ type GeometricEmptyProps = {
 export function GeometricEmpty({ variant = 'empty', className }: GeometricEmptyProps) {
   const stroke =
     variant === 'success'
-      ? 'oklch(var(--success))'
+      ? 'oklch(var(--positive))'
       : variant === 'waiting'
         ? 'oklch(var(--warning))'
         : variant === 'inbox'
-          ? 'oklch(var(--primary))'
-          : 'oklch(var(--muted-foreground) / 0.45)';
+          ? 'oklch(var(--brand))'
+          : 'oklch(var(--ink-muted) / 0.45)';
 
   return (
     <div className={cn('mx-auto flex h-20 w-20 items-center justify-center', className)} aria-hidden>
       <svg viewBox="0 0 80 80" className="h-full w-full">
-        <circle cx="40" cy="40" r="28" fill="oklch(var(--primary-light) / 0.65)" stroke={stroke} strokeWidth="1.25" />
+        <circle cx="40" cy="40" r="28" fill="oklch(var(--brand-soft) / 0.65)" stroke={stroke} strokeWidth="1.25" />
         <circle cx="40" cy="40" r="16" fill="none" stroke={stroke} strokeWidth="1" strokeDasharray="3 4" opacity="0.7" />
         {variant === 'success' && (
           <path d="M30 41 L37 48 L51 32" fill="none" stroke={stroke} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />

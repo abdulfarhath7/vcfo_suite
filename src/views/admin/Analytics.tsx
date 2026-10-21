@@ -6,17 +6,17 @@ import { BarChart3, Briefcase, CheckCircle2, Clock, Users } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
-import { AccentKpi } from '@/components/admin/AccentKpi';
+import { StatCard } from '@/components/dash/StatCard';
 import { SEO } from '@/components/SEO';
 import { checklist } from '@/data/checklist';
 
 const AnalyticsCompletionChart = dynamic(
   () => import('@/views/admin/AnalyticsCharts').then((m) => m.AnalyticsCompletionChart),
-  { ssr: false, loading: () => <div className="h-full animate-pulse rounded-md bg-muted/40" /> },
+  { ssr: false, loading: () => <div className="h-full animate-pulse rounded-md bg-surface-sunken/40" /> },
 );
 const AnalyticsDelayChart = dynamic(
   () => import('@/views/admin/AnalyticsCharts').then((m) => m.AnalyticsDelayChart),
-  { ssr: false, loading: () => <div className="h-full animate-pulse rounded-md bg-muted/40" /> },
+  { ssr: false, loading: () => <div className="h-full animate-pulse rounded-md bg-surface-sunken/40" /> },
 );
 
 const data6 = [
@@ -40,7 +40,7 @@ const data12 = [
 
 function SampleBadge() {
   return (
-    <span className="rounded-full bg-warning-light px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning-text">
+    <span className="rounded-sm bg-warning-soft px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning">
       Sample data
     </span>
   );
@@ -86,7 +86,7 @@ export default function Analytics() {
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as '6' | '12')}
-            className="h-9 px-3 rounded-md border border-border bg-surface text-[12.5px] text-ink"
+            className="h-9 px-3 rounded-md border border-line bg-surface text-[12.5px] text-ink"
           >
             <option value="6">Last 6 Months</option>
             <option value="12">Last 12 Months</option>
@@ -94,24 +94,24 @@ export default function Analytics() {
         }
       />
 
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <AccentKpi label="Projects" value={live.projects} tone="primary" icon={Briefcase} />
-        <AccentKpi
+      <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Projects" value={live.projects} tone="brand" icon={Briefcase} />
+        <StatCard
           label="Steps completed"
           value={`${live.pct}%`}
-          tone="success"
+          tone="positive"
           icon={CheckCircle2}
         />
-        <AccentKpi
+        <StatCard
           label="Waiting on client"
           value={live.awaitingClient}
           tone="warning"
           icon={Users}
         />
-        <AccentKpi
+        <StatCard
           label="Overdue steps"
           value={live.overdue}
-          tone={live.overdue > 0 ? 'warning' : 'success'}
+          tone={live.overdue > 0 ? 'warning' : 'positive'}
           icon={Clock}
         />
       </div>
@@ -122,7 +122,7 @@ export default function Analytics() {
             <div className="text-[13px] font-semibold text-ink">Compliance completion rate</div>
             <SampleBadge />
           </div>
-          <div className="text-[11.5px] text-text-tertiary mt-0.5 mb-3">Monthly actuals vs 95% target</div>
+          <div className="text-[11.5px] text-ink-faint mt-0.5 mb-3">Monthly actuals vs 95% target</div>
           <div className="h-[260px]">
             <AnalyticsCompletionChart data={data} />
           </div>
@@ -133,7 +133,7 @@ export default function Analytics() {
             <div className="text-[13px] font-semibold text-ink">Average filing delay</div>
             <SampleBadge />
           </div>
-          <div className="text-[11.5px] text-text-tertiary mt-0.5 mb-3">Days past statutory due date (benchmark 2d)</div>
+          <div className="text-[11.5px] text-ink-faint mt-0.5 mb-3">Days past statutory due date (benchmark 2d)</div>
           <div className="h-[260px]">
             <AnalyticsDelayChart data={data} />
           </div>

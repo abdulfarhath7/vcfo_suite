@@ -19,13 +19,13 @@ export function IncorporationPreviewErrorPanel({
   return (
     <div className="flex min-h-[220px] max-w-md flex-col items-start gap-3 p-8 text-left" role="alert">
       <div className="flex items-start gap-2">
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning-text" aria-hidden />
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gold">{previewLabel}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-strong">{previewLabel}</p>
           <p className="mt-1 text-[15px] font-medium text-ink">{error.title}</p>
-          <p className="mt-2 text-[13px] leading-relaxed text-text-secondary">{error.message}</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">{error.message}</p>
           {error.steps.length > 0 && (
-            <ul className="mt-2 space-y-1 text-[12px] leading-relaxed text-text-tertiary">
+            <ul className="mt-2 space-y-1 text-[12px] leading-relaxed text-ink-faint">
               {error.steps.map((step) => (
                 <li key={step}>{step}</li>
               ))}
@@ -38,7 +38,7 @@ export function IncorporationPreviewErrorPanel({
           type="button"
           onClick={() => void onRecover()}
           disabled={recovering}
-          className="rounded border border-primary/40 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-blue-700 hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded border border-brand/40 bg-brand/10 px-2.5 py-1 text-[11px] font-medium text-blue-700 hover:bg-brand/20 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {recovering ? 'Re-generating…' : 'Re-generate this draft'}
         </button>

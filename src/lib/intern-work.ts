@@ -35,6 +35,8 @@ export type InternChipTone =
   | 'success'
   | 'info'
   | 'warning'
+  | 'highlight'
+  | 'neutral'
   | 'amber'
   | 'orange'
   | 'rose'
@@ -227,10 +229,11 @@ function formatIstDayMonth(ymd: string): string {
 
 export type WeekChipKind = 'filing' | 'step' | 'nudge' | 'done';
 
+// A nudge due is the one orange moment on the week strip: it is the thing that needs the lead.
 export const WEEK_CHIP_TONE: Record<WeekChipKind, InternChipTone> = {
   filing: 'danger',
   step: 'primary',
-  nudge: 'pink',
+  nudge: 'highlight',
   done: 'success',
 };
 
@@ -822,10 +825,10 @@ function companyPill(items: InternWorkItem[]): { label: string; tone: InternChip
   const deliver = items.filter((i) => i.kind === 'deliver').length;
   if (deliver) return { label: 'deliver ready', tone: 'success' };
   const filingDue = items.filter((i) => i.source === 'filing' && i.kind !== 'done').length;
-  if (filingDue) return { label: 'filing due', tone: 'cyan' };
+  if (filingDue) return { label: 'filing due', tone: 'warning' };
   const overdue = items.filter((i) => i.isOverdue).length;
   if (overdue) return { label: `${overdue} overdue`, tone: 'danger' };
-  if (items.some((i) => i.kind === 'in-progress')) return { label: 'In progress', tone: 'sky' };
+  if (items.some((i) => i.kind === 'in-progress')) return { label: 'In progress', tone: 'primary' };
   return { label: `${items.length} open`, tone: 'info' };
 }
 
@@ -1131,7 +1134,7 @@ export function internTimelinePriority(
 export const TIMELINE_PRIORITY_TONE: Record<InternTimelinePriority, InternChipTone> = {
   overdue: 'danger',
   soon: 'warning',
-  ok: 'sky',
+  ok: 'primary',
   done: 'success',
 };
 

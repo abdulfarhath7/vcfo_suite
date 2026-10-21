@@ -22,13 +22,13 @@ export function DocPackPhasePill({
     <Link
       href={href}
       className={cn(
-        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-panel px-3 py-1 text-[12.5px] font-medium text-primary hover:bg-primary-light',
+        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm border border-line bg-surface-raised px-3 py-1 text-[12.5px] font-medium text-brand hover:bg-brand-soft',
         className,
       )}
       aria-label={`Documents, ${summary.counts.ready} of ${summary.total} ready`}
     >
       Documents
-      <Mono className={cn('font-semibold', allReady ? 'text-success-text' : 'text-warning-text')}>
+      <Mono className={cn('font-semibold', allReady ? 'text-positive' : 'text-warning')}>
         {summary.counts.ready} / {summary.total}
       </Mono>
     </Link>

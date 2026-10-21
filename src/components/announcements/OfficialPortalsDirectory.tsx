@@ -33,7 +33,7 @@ function ExternalHref({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:text-primary hover:underline"
+      className="inline-flex items-center gap-0.5 text-[11px] font-medium text-ink-muted transition-colors hover:text-brand hover:underline"
     >
       {children}
       <ArrowUpRight className="h-3 w-3" aria-hidden />
@@ -57,16 +57,16 @@ function GroupCard({ group, defaultOpen }: { group: VcfoPortalGroup; defaultOpen
   return (
     <details
       open={defaultOpen}
-      className="rounded-card border border-border/80 bg-raised/40 px-3.5 py-1 open:[&_summary_svg]:rotate-180"
+      className="rounded-card border border-line/80 bg-surface-sunken/40 px-3.5 py-1 open:[&_summary_svg]:rotate-180"
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-2 marker:content-none [&::-webkit-details-marker]:hidden">
         <span className="min-w-0 text-[12.5px] font-semibold tracking-tight text-ink">{group.head}</span>
-        <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+        <span className="flex shrink-0 items-center gap-1.5 text-ink-muted">
           <span className="tabular-nums text-[11px]">{group.tasks.length}</span>
           <ChevronDown className="h-3.5 w-3.5 transition-transform" aria-hidden />
         </span>
       </summary>
-      <ul className="mb-1.5 divide-y divide-border/70 border-t border-border/70">
+      <ul className="mb-1.5 divide-y divide-line/70 border-t border-line/70">
         {group.tasks.map((task) => (
           <TaskRow key={`${group.head}:${task.task}`} task={task} />
         ))}
@@ -87,7 +87,7 @@ function Band({
   if (groups.length === 0) return null;
   return (
     <section>
-      <h3 className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.07em] text-muted-foreground">
+      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
         {label}
       </h3>
       <div className={cn(columns ? 'grid gap-2.5 sm:grid-cols-2' : 'grid gap-2.5')}>
@@ -109,10 +109,10 @@ export function OfficialPortalsDirectory({ compact }: { compact?: boolean }) {
       <div className="space-y-4">
         {groups.map((group) => (
           <section key={group.head}>
-            <h3 className="text-[11px] font-extrabold uppercase tracking-[0.07em] text-muted-foreground">
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
               {group.head}
             </h3>
-            <ul className="mt-1 divide-y divide-border/70">
+            <ul className="mt-1 divide-y divide-line/70">
               {group.tasks.map((task) => (
                 <TaskRow key={`${group.head}:${task.task}`} task={task} />
               ))}

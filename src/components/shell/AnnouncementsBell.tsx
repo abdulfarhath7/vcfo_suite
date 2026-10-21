@@ -106,14 +106,14 @@ export function AnnouncementsBell() {
       <DropdownMenuTrigger
         data-announcements-bell=""
         className={cn(
-          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:min-h-9 sm:min-w-9",
-          unread > 0 && "bg-primary-light text-primary hover:bg-primary-light",
-          catching && "bg-primary-light text-primary",
+          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-brand-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40 sm:min-h-9 sm:min-w-9",
+          unread > 0 && "bg-brand-soft text-brand hover:bg-brand-soft",
+          catching && "bg-brand-soft text-brand",
         )}
         aria-label={unread > 0 ? `Announcements, ${unread} unread` : "Announcements"}
       >
         {catching ? (
-          <span className="pointer-events-none absolute inset-1 rounded-lg bg-primary/20" aria-hidden />
+          <span className="pointer-events-none absolute inset-1 rounded-lg bg-brand/20" aria-hidden />
         ) : null}
         <m.span
           data-announcements-bell-target=""
@@ -122,14 +122,14 @@ export function AnnouncementsBell() {
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
           <Megaphone
-            className={cn("h-[18px] w-[18px] shrink-0", unread > 0 && "fill-primary/20")}
+            className={cn("h-[18px] w-[18px] shrink-0", unread > 0 && "fill-brand/20")}
             strokeWidth={unread > 0 ? 2.25 : 2}
             aria-hidden
           />
         </m.span>
         {unread > 0 && (
           <span
-            className="absolute top-1 right-1 min-w-[15px] h-[15px] px-0.5 flex items-center justify-center rounded-full bg-role text-[9px] font-semibold text-role-foreground leading-none ring-2 ring-panel"
+            className="absolute top-1 right-1 min-w-[15px] h-[15px] px-0.5 flex items-center justify-center rounded-full bg-brand text-[9px] font-semibold text-brand leading-none ring-2 ring-panel"
             aria-hidden
           >
             {unread > 9 ? "9+" : unread}
@@ -138,19 +138,19 @@ export function AnnouncementsBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="flex w-[min(100vw-1.5rem,24rem)] max-h-[min(82vh,640px)] flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-panel p-0 text-foreground shadow-[0_12px_40px_-18px_oklch(22%_0.04_260_/_0.38)]"
+        className="flex w-[min(100vw-1.5rem,24rem)] max-h-[min(82vh,640px)] flex-col overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface-raised p-0 text-ink shadow-[0_12px_40px_-18px_oklch(22%_0.04_260_/_0.38)]"
       >
         <div className="flex items-start justify-between gap-3 px-3.5 pt-3 pb-2">
-          <p className="text-[13px] font-bold leading-tight tracking-tight text-ink">
+          <p className="text-[13px] font-semibold leading-tight tracking-tight text-ink">
             Announcements
             {unread > 0 ? (
-              <span className="ml-1.5 font-medium text-muted-foreground">· {unread} new</span>
+              <span className="ml-1.5 font-medium text-ink-muted">· {unread} new</span>
             ) : null}
           </p>
           {canWrite ? (
             <button
               type="button"
-              className="inline-flex shrink-0 items-center gap-0.5 text-[12px] font-semibold text-primary hover:text-primary-dark"
+              className="inline-flex shrink-0 items-center gap-0.5 text-[12px] font-semibold text-brand hover:text-brand-strong"
               aria-expanded={composing}
               onPointerDown={(event) => event.preventDefault()}
               onClick={(event) => {
@@ -186,11 +186,11 @@ export function AnnouncementsBell() {
           className="mx-3 mb-2.5"
         />
 
-        <div className="min-h-0 flex-1 overflow-y-auto border-t border-border">
+        <div className="min-h-0 flex-1 overflow-y-auto border-t border-line">
           {visible.length === 0 ? (
-            <p className="px-3.5 py-8 text-center text-[12px] text-muted-foreground">{emptyCopy}</p>
+            <p className="px-3.5 py-8 text-center text-[12px] text-ink-muted">{emptyCopy}</p>
           ) : (
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-line">
               {visible.map((item) => {
                 const isUnread = !readIds.has(item.id);
                 return (
@@ -208,14 +208,14 @@ export function AnnouncementsBell() {
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border px-3.5 py-2.5">
+        <div className="flex items-center justify-between gap-3 border-t border-line px-3.5 py-2.5">
           <Link
             href={boardHref}
-            className="text-[12px] font-semibold text-primary hover:underline"
+            className="text-[12px] font-semibold text-brand hover:underline"
           >
             View all announcements →
           </Link>
-          <span className="text-[11px] text-muted-foreground">Esc to close</span>
+          <span className="text-[11px] text-ink-muted">Esc to close</span>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

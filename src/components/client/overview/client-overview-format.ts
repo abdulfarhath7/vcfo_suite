@@ -49,7 +49,7 @@ export const PHASE_FILL: Record<PhaseColorKey, string> = {
   post: 'oklch(var(--phase-post))',
   fema: 'oklch(var(--phase-fema))',
   registration: 'oklch(var(--phase-registration))',
-  default: 'oklch(var(--primary))',
+  default: 'oklch(var(--brand))',
 };
 
 export function phaseTone(key: PhaseColorKey) {

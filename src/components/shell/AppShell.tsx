@@ -72,7 +72,7 @@ export function AppShell({
     <ShellNavProvider>
       <AskShellMount userRole={user.role}>
       <div
-        className="relative min-h-screen bg-[oklch(var(--background))] text-foreground"
+        className="relative min-h-screen bg-[oklch(var(--background))] text-ink"
         data-role={user.role}
         data-motion={prefs.motion}
         data-reduce-motion={reduceMotion ? "true" : "false"}

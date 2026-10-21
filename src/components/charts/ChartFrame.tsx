@@ -28,7 +28,7 @@ export function ChartFrame({
   if (loading) {
     return (
       <div
-        className={cn('w-full animate-pulse rounded-md bg-muted/40', className)}
+        className={cn('w-full animate-pulse rounded-md bg-surface-sunken/40', className)}
         style={{ height }}
         aria-hidden
       />
@@ -41,7 +41,7 @@ export function ChartFrame({
         className={cn('grid w-full place-items-center', className)}
         style={{ height }}
       >
-        <p className="text-[12.5px] text-muted-foreground">{emptyLabel}</p>
+        <p className="text-[12.5px] text-ink-muted">{emptyLabel}</p>
       </div>
     );
   }

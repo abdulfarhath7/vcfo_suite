@@ -264,11 +264,11 @@ export function IncorporationDocInlinePreview({
   return (
     <article
       className={cn(
-        'overflow-hidden rounded-md border border-border/60 bg-panel',
+        'overflow-hidden rounded-md border border-line/60 bg-surface-raised',
         className,
       )}
     >
-      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-hairline px-4 py-2.5">
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line px-4 py-2.5">
         <h4 className="text-[12px] font-medium leading-snug text-ink">{label}</h4>
       </header>
       {showDocxPreview ? (
@@ -286,7 +286,7 @@ export function IncorporationDocInlinePreview({
               />
               {incorpDocSaveStatusLabel(saveStatus) && (
                 <p
-                  className="text-[11px] text-text-tertiary"
+                  className="text-[11px] text-ink-faint"
                   aria-live="polite"
                   aria-atomic="true"
                 >
@@ -307,12 +307,12 @@ export function IncorporationDocInlinePreview({
           />
         </div>
       ) : docxPreviewPlaceholder ? (
-        <p className="border-t border-hairline px-4 py-3 text-[11px] leading-relaxed text-text-tertiary">
+        <p className="border-t border-line px-4 py-3 text-[11px] leading-relaxed text-ink-faint">
           {docxPreviewPlaceholder}
         </p>
       ) : null}
       {!editable && activeStoragePath.trim() && !showDocxPreview ? (
-        <footer className="border-t border-hairline px-4 py-3">
+        <footer className="border-t border-line px-4 py-3">
           <a
             href={apiDownloadUrl}
             download={fileName || undefined}
@@ -326,7 +326,7 @@ export function IncorporationDocInlinePreview({
         </footer>
       ) : null}
       {showDocActions && showDocxPreview && editable && activeStoragePath.trim() ? (
-        <footer className="flex flex-wrap items-center gap-2 border-t border-hairline bg-raised/30 px-4 py-3">
+        <footer className="flex flex-wrap items-center gap-2 border-t border-line bg-surface-sunken/30 px-4 py-3">
           <AccentButton
             type="button"
             size="sm"
@@ -350,9 +350,9 @@ export function IncorporationDocInlinePreview({
             aria-disabled={!previewReady || saveStatus === 'saving'}
             className={cn(
               'inline-flex h-9 min-h-[44px] items-center justify-center gap-2 rounded-md border px-3 text-xs tracking-tight sm:min-h-9',
-              'bg-transparent text-role-foreground role-accent-border',
-              'hover:role-accent-bg hover:border-role/50',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-role/40',
+              'bg-transparent text-brand role-accent-border',
+              'hover:role-accent-bg hover:border-brand/50',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
               (!previewReady || saveStatus === 'saving') && 'pointer-events-none opacity-50',
             )}
           >
@@ -560,11 +560,11 @@ function IncorporationDocGenerateRow({
   return (
     <article
       className={cn(
-        'overflow-hidden rounded-md border border-border/60 bg-panel',
+        'overflow-hidden rounded-md border border-line/60 bg-surface-raised',
         className,
       )}
     >
-      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-hairline px-4 py-2.5">
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line px-4 py-2.5">
         <h4 className="text-[12px] font-medium leading-snug text-ink">{label}</h4>
         <AccentButton
           type="button"
@@ -679,7 +679,7 @@ export function IncorporationDraftDocsGenerateList({
       {groups.map((group) =>
         group.heading ? (
           <section key={group.key} className="space-y-3" aria-label={group.heading}>
-            <p className="text-[11px] font-medium text-text-secondary">{group.heading}</p>
+            <p className="text-[11px] font-medium text-ink-muted">{group.heading}</p>
             {group.slots.map(renderRow)}
           </section>
         ) : (

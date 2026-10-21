@@ -212,14 +212,14 @@ function IncorporationDocxPreviewInner({
   return (
     <div
       className={cn(
-        'mx-auto w-fit max-w-none self-start overflow-visible rounded-lg border border-border/60 bg-white shadow-md',
+        'mx-auto w-fit max-w-none self-start overflow-visible rounded-lg border border-line/60 bg-white shadow-md',
         className,
       )}
     >
       <div className={cn('relative w-fit overflow-visible', status === 'loading' && 'min-h-[280px]')}>
         {status === 'loading' && (
           <div
-            className="absolute inset-0 z-10 flex min-h-[280px] items-center justify-center bg-panel text-muted-foreground"
+            className="absolute inset-0 z-10 flex min-h-[280px] items-center justify-center bg-surface-raised text-ink-muted"
             aria-hidden={status !== 'loading'}
           >
             <HexgridLoader size="sm" message="Rendering document…" />

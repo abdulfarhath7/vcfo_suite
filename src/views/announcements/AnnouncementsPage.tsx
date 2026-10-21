@@ -69,21 +69,21 @@ function LatestList({
 }) {
   return (
     <Surface flat className="overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border/80 px-4 py-3 sm:px-5">
+      <div className="flex items-center justify-between gap-3 border-b border-line/80 px-4 py-3 sm:px-5">
         <div>
           <h2 className="text-[13px] font-semibold tracking-tight text-ink">Latest</h2>
         </div>
         {!loading && items.length > 0 ? (
-          <span className="tabular-nums text-[12px] text-muted-foreground">{items.length}</span>
+          <span className="tabular-nums text-[12px] text-ink-muted">{items.length}</span>
         ) : null}
       </div>
       {loading ? (
-        <div className="divide-y divide-border/80" aria-busy="true" aria-label="Loading announcements">
+        <div className="divide-y divide-line/80" aria-busy="true" aria-label="Loading announcements">
           {['a', 'b', 'c', 'd'].map((key) => (
             <div key={key} className="px-4 py-4 sm:px-5">
-              <div className="h-3.5 w-16 animate-pulse rounded-full bg-raised" />
-              <div className="mt-2.5 h-4 w-[88%] animate-pulse rounded-md bg-raised" />
-              <div className="mt-2 h-3 w-40 animate-pulse rounded-md bg-raised" />
+              <div className="h-3.5 w-16 animate-pulse rounded-full bg-surface-sunken" />
+              <div className="mt-2.5 h-4 w-[88%] animate-pulse rounded-md bg-surface-sunken" />
+              <div className="mt-2 h-3 w-40 animate-pulse rounded-md bg-surface-sunken" />
             </div>
           ))}
         </div>
@@ -96,11 +96,11 @@ function LatestList({
           className="rounded-none border-0 bg-transparent shadow-none"
         />
       ) : (
-        <div className="divide-y divide-border/80">
+        <div className="divide-y divide-line/80">
           {items.map((item) => {
             const unread = !readIds.has(item.id);
             return (
-              <article key={item.id} className="flex items-stretch hover:bg-raised/40">
+              <article key={item.id} className="flex items-stretch hover:bg-surface-sunken/40">
                 <div className="min-w-0 flex-1">
                   <AnnouncementRow
                     item={item}
@@ -113,7 +113,7 @@ function LatestList({
                     type="button"
                     onClick={() => onRemove(item.id)}
                     aria-label="Remove announcement"
-                    className="inline-flex h-8 shrink-0 items-center gap-1 self-center rounded-md px-2 text-[12px] text-muted-foreground hover:bg-danger-light hover:text-danger-text"
+                    className="inline-flex h-8 shrink-0 items-center gap-1 self-center rounded-md px-2 text-[12px] text-ink-muted hover:bg-danger-soft hover:text-danger"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     <span className="sr-only sm:not-sr-only">Remove</span>
@@ -154,7 +154,7 @@ function FeedsSection({
   return (
     <Surface flat className="p-4 sm:p-5">
       <div className="flex items-start gap-2.5">
-        <span className="mt-0.5 grid h-7 w-7 place-items-center rounded-md bg-primary-light text-primary">
+        <span className="mt-0.5 grid h-7 w-7 place-items-center rounded-md bg-brand-soft text-brand">
           <Rss className="h-3.5 w-3.5" aria-hidden />
         </span>
         <div className="min-w-0">
@@ -163,7 +163,7 @@ function FeedsSection({
       </div>
       <div className="mt-4 grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
         <div>
-          <Label htmlFor="feed-name" className="text-[11px] text-muted-foreground">
+          <Label htmlFor="feed-name" className="text-[11px] text-ink-muted">
             Feed name
           </Label>
           <Input
@@ -175,7 +175,7 @@ function FeedsSection({
           />
         </div>
         <div>
-          <Label htmlFor="feed-url" className="text-[11px] text-muted-foreground">
+          <Label htmlFor="feed-url" className="text-[11px] text-ink-muted">
             RSS / Atom URL
           </Label>
           <Input
@@ -199,26 +199,26 @@ function FeedsSection({
           </AccentButton>
         </div>
       </div>
-      <div className="mt-3 divide-y divide-border/80 border-t border-border/80">
+      <div className="mt-3 divide-y divide-line/80 border-t border-line/80">
         {sources.length === 0 ? (
-          <p className="py-3 text-[12.5px] text-muted-foreground">No feeds yet.</p>
+          <p className="py-3 text-[12.5px] text-ink-muted">No feeds yet.</p>
         ) : (
           sources.map((source) => (
             <div key={source.id} className="flex flex-wrap items-center gap-2 py-2.5">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-medium">{source.name}</div>
-                <div className="truncate font-mono text-[11px] text-muted-foreground">{source.feedUrl}</div>
+                <div className="truncate font-mono text-[11px] text-ink-muted">{source.feedUrl}</div>
                 {source.lastError ? (
-                  <div className="mt-0.5 text-[12px] text-danger-text">{feedErrorMessage(source.lastError)}</div>
+                  <div className="mt-0.5 text-[12px] text-danger">{feedErrorMessage(source.lastError)}</div>
                 ) : source.lastFetchedAt ? (
-                  <div className="mt-0.5 text-[12px] text-muted-foreground">Last pulled successfully</div>
+                  <div className="mt-0.5 text-[12px] text-ink-muted">Last pulled successfully</div>
                 ) : null}
               </div>
               <button
                 type="button"
                 onClick={() => onPull(source.id)}
                 disabled={fetchingId === source.id}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-primary hover:bg-primary-light disabled:opacity-40"
+                className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-brand hover:bg-brand-soft disabled:opacity-40"
               >
                 <RefreshCw className={cn('h-3.5 w-3.5', fetchingId === source.id && 'animate-spin')} />
                 {fetchingId === source.id ? 'Pulling…' : 'Pull'}
@@ -226,7 +226,7 @@ function FeedsSection({
               <button
                 type="button"
                 onClick={() => onRemove(source.id)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] text-muted-foreground hover:bg-danger-light hover:text-danger-text"
+                className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] text-ink-muted hover:bg-danger-soft hover:text-danger"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Remove

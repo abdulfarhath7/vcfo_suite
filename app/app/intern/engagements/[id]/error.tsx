@@ -23,15 +23,15 @@ export default function InternEngagementError({
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center px-4">
       <AlertTriangle className="h-10 w-10 text-warning" aria-hidden />
       <div className="space-y-2 max-w-sm">
-        <p className="text-base font-semibold text-foreground">
+        <p className="text-base font-semibold text-ink">
           Couldn&apos;t load this engagement
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink-muted">
           A temporary error occurred. Try reloading — if it keeps happening,
           contact your manager.
         </p>
         {error.digest && (
-          <p className="font-mono text-[11px] text-muted-foreground">
+          <p className="font-mono text-[11px] text-ink-muted">
             Error ID: {error.digest}
           </p>
         )}

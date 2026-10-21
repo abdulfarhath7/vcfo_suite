@@ -88,7 +88,7 @@ function DropdownMenuLabel({ ref, className, inset, ...props }: React.ComponentP
 
 function DropdownMenuSeparator({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator> & { ref?: React.Ref<React.ElementRef<typeof DropdownMenuPrimitive.Separator>> }) {
   return (
-      <DropdownMenuPrimitive.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-muted", className)} {...props} />
+      <DropdownMenuPrimitive.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-surface-sunken", className)} {...props} />
   );
 }
 

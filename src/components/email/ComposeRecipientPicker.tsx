@@ -30,10 +30,10 @@ import { cn } from '@/lib/utils';
 const VISIBLE_CHIPS = 2;
 
 const CHIP =
-  'inline-flex h-7 max-w-[min(100%,18rem)] shrink-0 items-center gap-1 rounded-md border border-border/80 bg-raised/50 px-2 text-foreground hover:border-primary/40';
+  'inline-flex h-7 max-w-[min(100%,18rem)] shrink-0 items-center gap-1 rounded-md border border-line/80 bg-surface-sunken/50 px-2 text-ink hover:border-brand/40';
 
 const FIELD =
-  'box-border flex min-h-10 min-w-0 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-panel px-2 py-1 text-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/40';
+  'box-border flex min-h-10 min-w-0 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-surface-raised px-2 py-1 text-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40';
 
 function isInsideSelectPortal(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest('[data-radix-select-content]'));
@@ -151,7 +151,7 @@ export function ComposeRecipientPicker({
         <Popover open={open} onOpenChange={setOpen} modal={false}>
           <PopoverAnchor asChild>
             <div
-              className={cn(FIELD, 'flex-1', open && 'border-primary ring-2 ring-ring/40')}
+              className={cn(FIELD, 'flex-1', open && 'border-brand ring-2 ring-focus-ring/40')}
             >
               {shownChips.map((recipient) => (
                 <button
@@ -165,7 +165,7 @@ export function ComposeRecipientPicker({
                   onClick={() => removeRecipient(recipient)}
                 >
                   <span className="truncate font-mono text-[12.5px]">{recipientEmail(recipient)}</span>
-                  <X className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
+                  <X className="h-3 w-3 shrink-0 text-ink-muted" aria-hidden />
                 </button>
               ))}
               {overflowChips.length > 0 ? (
@@ -206,7 +206,7 @@ export function ComposeRecipientPicker({
                 aria-controls="mail-to-people"
                 autoComplete="off"
                 className={cn(
-                  'h-8 bg-transparent px-1 text-sm text-foreground outline-none placeholder:text-muted-foreground',
+                  'h-8 bg-transparent px-1 text-sm text-ink outline-none placeholder:text-ink-muted',
                   recipients.length === 0 ? 'min-w-[7rem] flex-1' : 'w-[6.5rem] shrink-0',
                 )}
               />
@@ -247,26 +247,26 @@ export function ComposeRecipientPicker({
                   type="button"
                   role="option"
                   aria-selected={false}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-muted/40"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-surface-sunken/40"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => commitTyped(query)}
                 >
-                  <AtSign className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  <AtSign className="h-4 w-4 shrink-0 text-brand" aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-medium text-foreground">
+                    <span className="block truncate text-[13px] font-medium text-ink">
                       Send to {trimmedQuery.toLowerCase()}
                     </span>
-                    <span className="block text-[11px] text-muted-foreground">
+                    <span className="block text-[11px] text-ink-muted">
                       Not in the directory — press Enter to add
                     </span>
                   </span>
                 </button>
               ) : null}
               {loading ? (
-                <p className="px-2 py-3 text-[13px] text-muted-foreground">Loading people…</p>
+                <p className="px-2 py-3 text-[13px] text-ink-muted">Loading people…</p>
               ) : visible.length === 0 ? (
                 offerTyped ? null : (
-                  <p className="px-2 py-3 text-[13px] text-muted-foreground">
+                  <p className="px-2 py-3 text-[13px] text-ink-muted">
                     {trimmedQuery.includes('@')
                       ? 'No one matches — finish typing the address to send outside the directory.'
                       : 'No one matches. Type a full email address to send outside the directory.'}
@@ -280,8 +280,8 @@ export function ComposeRecipientPicker({
                       key={person.userId}
                       htmlFor={`mail-to-person-${person.userId}`}
                       className={cn(
-                        'flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/40',
-                        checked && 'bg-primary-light/40',
+                        'flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-surface-sunken/40',
+                        checked && 'bg-brand-soft/40',
                       )}
                     >
                       <Checkbox
@@ -290,10 +290,10 @@ export function ComposeRecipientPicker({
                         onCheckedChange={() => handleToggle(person.userId)}
                       />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-medium text-foreground">
+                        <span className="block truncate text-[13px] font-medium text-ink">
                           {person.name}
                         </span>
-                        <span className="block truncate font-mono text-[11px] text-muted-foreground">
+                        <span className="block truncate font-mono text-[11px] text-ink-muted">
                           {person.email}
                         </span>
                       </span>
@@ -383,7 +383,7 @@ function OverflowChips({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className={cn(CHIP, 'max-w-none tabular-nums hover:bg-raised')}
+          className={cn(CHIP, 'max-w-none tabular-nums hover:bg-surface-sunken')}
           aria-label={`${recipients.length} more recipients`}
         >
           +{recipients.length}
@@ -401,7 +401,7 @@ function OverflowChips({
               </span>
               <button
                 type="button"
-                className="shrink-0 text-muted-foreground hover:text-foreground"
+                className="shrink-0 text-ink-muted hover:text-ink"
                 aria-label={`Remove ${recipientLabel(recipient)}`}
                 onClick={() => onRemove(recipient)}
               >

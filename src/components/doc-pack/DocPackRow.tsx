@@ -42,36 +42,36 @@ export function DocPackRow({ item, downloadUrl, hrefForMissing, hrefForStep, onP
         : 'Generated now';
 
   return (
-    <li className="grid grid-cols-1 gap-3 border-t border-border px-5 py-4 first:border-t-0 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.6fr)_auto] md:items-center md:gap-4">
+    <li className="grid grid-cols-1 gap-3 border-t border-line px-5 py-4 first:border-t-0 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.6fr)_auto] md:items-center md:gap-4">
       <div className="min-w-0">
-        <p className="text-[14px] font-semibold text-foreground">{docPackRowName(item)}</p>
-        <Mono className="mt-0.5 block text-[11.5px] text-muted-foreground">from {sources}</Mono>
+        <p className="text-[14px] font-semibold text-ink">{docPackRowName(item)}</p>
+        <Mono className="mt-0.5 block text-[11.5px] text-ink-muted">from {sources}</Mono>
       </div>
 
       <div className="min-w-0 text-[13px]">
         <DocStatusChip status={item.status} />
-        {provenance ? <span className="ml-2 text-[12px] text-muted-foreground">{provenance}</span> : null}
+        {provenance ? <span className="ml-2 text-[12px] text-ink-muted">{provenance}</span> : null}
         {item.missing.length > 0 ? (
           <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Missing inputs">
             {item.missing.map((input) => (
               <li key={input.key}>
                 <Link
                   href={hrefForMissing(input)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-dashed border-warning bg-panel px-2 py-0.5 text-[12.5px] text-foreground hover:bg-warning-light"
+                  className="inline-flex items-center gap-1 rounded-lg border border-dashed border-warning bg-surface-raised px-2 py-0.5 text-[12.5px] text-ink hover:bg-warning-soft"
                 >
                   {missingInputLabel(input)}
-                  <span className="text-muted-foreground">in {stepTitle(input.stepId)}</span>
+                  <span className="text-ink-muted">in {stepTitle(input.stepId)}</span>
                 </Link>
               </li>
             ))}
           </ul>
         ) : null}
         {item.blockedBy ? (
-          <p className="mt-1.5 text-[12.5px] text-muted-foreground">
+          <p className="mt-1.5 text-[12.5px] text-ink-muted">
             {item.blockedBy.gate === 'br-finalized' ? (
               <>
                 Opens once the board resolution is finalized in{' '}
-                <Link href={hrefForStep(item.blockedBy.stepId)} className="font-medium text-primary hover:underline">
+                <Link href={hrefForStep(item.blockedBy.stepId)} className="font-medium text-brand hover:underline">
                   {stepTitle(item.blockedBy.stepId)}
                 </Link>
                 .
@@ -79,7 +79,7 @@ export function DocPackRow({ item, downloadUrl, hrefForMissing, hrefForStep, onP
             ) : (
               <>
                 {item.blockedBy.label} in{' '}
-                <Link href={hrefForStep(item.blockedBy.stepId)} className="font-medium text-primary hover:underline">
+                <Link href={hrefForStep(item.blockedBy.stepId)} className="font-medium text-brand hover:underline">
                   {stepTitle(item.blockedBy.stepId)}
                 </Link>
                 .
@@ -105,7 +105,7 @@ export function DocPackRow({ item, downloadUrl, hrefForMissing, hrefForStep, onP
           <a
             href={downloadUrl}
             download
-            className="inline-flex h-9 min-h-[44px] items-center rounded-md border border-border bg-panel px-3 text-xs font-medium text-primary hover:border-primary/35 hover:bg-primary-light sm:min-h-9"
+            className="inline-flex h-9 min-h-[44px] items-center rounded-md border border-line bg-surface-raised px-3 text-xs font-medium text-brand hover:border-brand/35 hover:bg-brand-soft sm:min-h-9"
             aria-label={`Download ${docPackRowName(item)} as Word`}
           >
             <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden />

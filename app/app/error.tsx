@@ -32,13 +32,13 @@ export default function AppError({
     >
       <AlertTriangle className="h-10 w-10 text-blue-600" aria-hidden />
       <div className="space-y-2 max-w-sm">
-        <p className="text-base font-semibold text-foreground">Something went wrong</p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base font-semibold text-ink">Something went wrong</p>
+        <p className="text-sm text-ink-muted">
           A temporary error occurred. Try reloading — if it keeps happening,
           check your connection or contact support.
         </p>
         {error.digest && (
-          <p className="font-mono text-[11px] text-muted-foreground">
+          <p className="font-mono text-[11px] text-ink-muted">
             Error ID: {error.digest}
           </p>
         )}

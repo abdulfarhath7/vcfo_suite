@@ -26,7 +26,7 @@ export function EmptyStateIllustrated({
   return (
     <Surface
       className={cn(
-        "flex flex-col items-center border-dashed border-primary/20 bg-primary-light/30 px-6 py-12 text-center",
+        "flex flex-col items-center border-dashed border-brand/20 bg-brand-soft/30 px-6 py-12 text-center",
         className,
       )}
     >
@@ -37,9 +37,9 @@ export function EmptyStateIllustrated({
       ) : (
         <GeometricEmpty variant={art} className="mb-2" />
       )}
-      <h3 className="serif text-xl text-foreground">{title}</h3>
+      <h3 className="serif text-xl text-ink">{title}</h3>
       {description && (
-        <p className="prose-narrow mt-2 text-sm text-muted-foreground">{description}</p>
+        <p className="prose-narrow mt-2 text-sm text-ink-muted">{description}</p>
       )}
       {actionLabel && onAction && (
         <AccentButton className="mt-5 min-h-11" onClick={onAction}>

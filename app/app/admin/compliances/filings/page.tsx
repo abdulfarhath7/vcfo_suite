@@ -7,7 +7,7 @@ export const metadata = pageMetadata("Filings", "Statutory filing register");
 /** Route shell only. `?company=` / `?status=` / `?cadence=` / `?period=` / `?fy=` carry the state on refresh. */
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading filings…</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-ink-muted">Loading filings…</div>}>
       <FilingsPage basePath="/app/admin/compliances" />
     </Suspense>
   );

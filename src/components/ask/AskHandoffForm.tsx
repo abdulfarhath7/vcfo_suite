@@ -15,7 +15,7 @@ export function AskHandoffForm() {
 
   if (state === 'sent') {
     return (
-      <div role="status" className="flex items-center gap-2 rounded-[var(--radius-md)] bg-success-light px-3 py-2 text-[12.5px] text-success-text">
+      <div role="status" className="flex items-center gap-2 rounded-[var(--radius-md)] bg-positive-soft px-3 py-2 text-[12.5px] text-positive">
         <Check className="h-3.5 w-3.5" aria-hidden /> Sent to your project lead. They'll reply by email.
         <button type="button" className="ml-auto underline" onClick={() => ask.setHandoffDraft(null)}>
           Close
@@ -34,7 +34,7 @@ export function AskHandoffForm() {
 
   return (
     <form
-      className="space-y-2 rounded-[var(--radius-md)] border border-border bg-panel p-3"
+      className="space-y-2 rounded-[var(--radius-md)] border border-line bg-surface-raised p-3"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!text.trim()) return;
@@ -54,7 +54,7 @@ export function AskHandoffForm() {
         }
       }}
     >
-      <label htmlFor="ask-handoff" className="block text-[12.5px] font-medium text-foreground">
+      <label htmlFor="ask-handoff" className="block text-[12.5px] font-medium text-ink">
         Ask your project lead
       </label>
       <textarea
@@ -63,10 +63,10 @@ export function AskHandoffForm() {
         onChange={(e) => setText(e.target.value)}
         rows={3}
         maxLength={2000}
-        className="w-full resize-none rounded-[var(--radius-md)] border border-input bg-panel px-2.5 py-2 text-[13px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="w-full resize-none rounded-[var(--radius-md)] border border-input bg-surface-raised px-2.5 py-2 text-[13px] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
       />
       {error && (
-        <p role="alert" className="text-[12px] text-danger-text">
+        <p role="alert" className="text-[12px] text-danger">
           {error}
         </p>
       )}
@@ -74,14 +74,14 @@ export function AskHandoffForm() {
         <button
           type="button"
           onClick={() => ask.setHandoffDraft(null)}
-          className="min-h-[36px] rounded-[var(--radius-md)] px-3 text-[12.5px] text-muted-foreground hover:bg-muted"
+          className="min-h-[36px] rounded-[var(--radius-md)] px-3 text-[12.5px] text-ink-muted hover:bg-surface-sunken"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={state === 'sending' || !text.trim()}
-          className="min-h-[36px] rounded-[var(--radius-md)] border border-border px-3 text-[12.5px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+          className="min-h-[36px] rounded-[var(--radius-md)] border border-line px-3 text-[12.5px] font-medium text-ink hover:bg-surface-sunken disabled:opacity-50"
         >
           {state === 'sending' ? 'Sending…' : 'Send to lead'}
         </button>

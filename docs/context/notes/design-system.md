@@ -1,6 +1,38 @@
 # Design system: tokens and canonical components
 
-## Design tokens (cool blue primary)
+## Design tokens, v1 (2026-10-21)
+
+The system lives in `docs/design/`: `TOKENS.md` (the spec and the decisions),
+`design-tokens.json` (source of truth; `scripts/design-tokens-css.mjs --write`
+regenerates the block in `app/globals.css`), `COMPONENTS.md` (which component
+owns each pattern), `AUDIT.md` (what was wrong and the before counts), and
+`BRIEF.md` (the brief this was built from). `node scripts/design-tokens-check.mjs`
+is the contrast gate.
+
+The short version, which overrides everything in the "superseded" section below:
+
+- One face: Public Sans (`--font-sans`), weights 400/500/600. IBM Plex Mono for
+  identifiers only. `--font-serif` and `.serif` alias the sans until their
+  callers move to the type styles.
+- Colour tokens are semantic and themed: `surface`, `surface-raised`,
+  `surface-sunken`, `line`, `line-strong`, `ink`, `ink-muted`, `ink-faint`,
+  `brand` (action blue `#1b4f94`), `brand-strong`, `brand-soft`, `on-brand`,
+  `highlight` (the one orange, text-safe), `highlight-bright`, `highlight-soft`,
+  `positive`/`warning`/`danger`/`info` each with `-soft`, `focus-ring`, `scrim`,
+  `side*` (the navy sidebar and hero), `data-1..6` (charts only).
+- Old names (`--primary`, `--gold`, `--accent-*`, `--phase-*`, `--role-*`,
+  `--stat-*`, the portal's `--navy`/`--ok`/`--due`/`--over`...) are aliases of
+  the tokens above and are deleted on 2026-11-30.
+- Identity never gets a colour: companies, people, tags and nav items are
+  neutral. Status gets a soft ground, a text-safe colour and a word.
+- Chips are 22px, 6px corners, 84px/88px minimum width in columns; buttons are
+  28/32/40 high and at least 84px wide. No pills except toggles and rings.
+- Borders before shadows (`shadow-card`, `shadow-float` only), no gradients, no
+  coloured left borders, no cards inside cards, no blur.
+- The client portal CSS (`css-src/`) points its own variables at these tokens;
+  `node scripts/cp-css.mjs` rebuilds `css/` after any edit.
+
+## Superseded: the cool-blue notes from 2026-09 (history only; the rules above win)
 
 - **Primary is professional blue** (`--primary` / `--brand` / `--blue-*` ≈ `#2563EB`,
   hover `#1D4ED8`). Buttons, links, focus rings, current-step nodes, progress,

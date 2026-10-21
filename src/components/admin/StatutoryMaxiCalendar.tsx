@@ -153,7 +153,7 @@ export function StatutoryMaxiCalendar({
             >
               <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
             </button>
-            <h2 className="ml-1 text-[15px] font-bold tracking-tight text-ink">{monthLabel}</h2>
+            <h2 className="ml-1 text-[15px] font-semibold tracking-tight text-ink">{monthLabel}</h2>
             <button type="button" onClick={onJumpToday} className="stat-max-today">
               Today
             </button>

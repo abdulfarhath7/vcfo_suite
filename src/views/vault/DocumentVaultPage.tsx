@@ -74,11 +74,11 @@ function IndexedDocumentLink({
   }, [documentId]);
 
   if (loading) {
-    return <span className={cn('text-sm italic text-text-tertiary', className)}>Loading…</span>;
+    return <span className={cn('text-sm italic text-ink-faint', className)}>Loading…</span>;
   }
   if (!href) {
     return (
-      <span className={cn('text-sm text-text-tertiary', className)}>
+      <span className={cn('text-sm text-ink-faint', className)}>
         {fileName} (link unavailable)
       </span>
     );
@@ -137,14 +137,14 @@ function DocumentCard({
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-[13.5px] font-medium text-ink">{doc.fileName}</h3>
-            <p className="mt-0.5 truncate text-[11.5px] text-text-tertiary">
+            <p className="mt-0.5 truncate text-[11.5px] text-ink-faint">
               {location ?? doc.fieldLabel}
             </p>
           </div>
         </div>
 
-        <div className="mb-4 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-text-tertiary">
-          <span className={cn('inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[10.5px] font-medium', sectionTone)}>
+        <div className="mb-4 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-ink-faint">
+          <span className={cn('inline-flex max-w-full truncate rounded-sm px-2 py-0.5 text-[10.5px] font-medium', sectionTone)}>
             {location ? doc.companyName : doc.section}
           </span>
           <span aria-hidden className="text-border">
@@ -153,7 +153,7 @@ function DocumentCard({
           <Mono>{formatUploadDate(doc.uploadedAt)}</Mono>
         </div>
 
-        <div className="mt-auto border-t border-border pt-3">
+        <div className="mt-auto border-t border-line pt-3">
           <DocumentOpenLink doc={doc} />
         </div>
       </NoirCard>
@@ -179,15 +179,15 @@ function EntityPill({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-left transition-colors',
+        'inline-flex shrink-0 items-center gap-2 rounded-sm border px-3.5 py-2 text-left transition-colors',
         active
-          ? 'border-brand/25 bg-primary-light text-ink'
-          : 'border-border bg-panel text-ink-soft hover:border-primary/20 hover:bg-muted/40',
+          ? 'border-brand/25 bg-brand-soft text-ink'
+          : 'border-line bg-surface-raised text-ink-soft hover:border-brand/20 hover:bg-surface-sunken/40',
       )}
     >
-      <Building2 className={cn('h-3.5 w-3.5 shrink-0', active ? 'text-brand' : 'text-text-tertiary')} />
+      <Building2 className={cn('h-3.5 w-3.5 shrink-0', active ? 'text-brand' : 'text-ink-faint')} />
       <span className="max-w-[160px] truncate text-[12px] font-medium">{companyName}</span>
-      <Mono className="text-[10.5px] text-text-tertiary">{docCount}</Mono>
+      <Mono className="text-[10.5px] text-ink-faint">{docCount}</Mono>
       <span className="sr-only">{stage}</span>
     </button>
   );
@@ -212,16 +212,16 @@ function EntitySidebarItem({
       onClick={onClick}
       className={cn(
         'w-full rounded-md px-3 py-2.5 text-left transition-colors',
-        active ? 'bg-primary-light' : 'hover:bg-muted/50',
+        active ? 'bg-brand-soft' : 'hover:bg-surface-sunken/50',
       )}
     >
       <div className="flex items-center gap-2.5">
-        <Building2 className={cn('h-4 w-4 shrink-0', active ? 'text-brand' : 'text-text-tertiary')} />
+        <Building2 className={cn('h-4 w-4 shrink-0', active ? 'text-brand' : 'text-ink-faint')} />
         <span className="truncate text-[13px] font-medium text-ink">{companyName}</span>
       </div>
       <div className="mt-1.5 flex items-center justify-between pl-[26px]">
-        <span className="text-[11px] text-text-tertiary">{stage}</span>
-        <Mono className="text-[11px] text-text-tertiary">
+        <span className="text-[11px] text-ink-faint">{stage}</span>
+        <Mono className="text-[11px] text-ink-faint">
           {docCount} {docCount === 1 ? 'file' : 'files'}
         </Mono>
       </div>
@@ -246,10 +246,10 @@ function VaultPageSkeleton() {
         {Array.from({ length: 6 }).map((_, i) => (
           <NoirCard key={i} flat className="h-[180px] animate-pulse p-5">
             <div className="mb-3 flex gap-3">
-              <div className="h-10 w-10 rounded-md bg-muted" />
+              <div className="h-10 w-10 rounded-md bg-surface-sunken" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-3/4 rounded bg-muted" />
-                <div className="h-3 w-1/2 rounded bg-muted" />
+                <div className="h-4 w-3/4 rounded bg-surface-sunken" />
+                <div className="h-3 w-1/2 rounded bg-surface-sunken" />
               </div>
             </div>
           </NoirCard>
@@ -346,14 +346,14 @@ function DocumentVaultPageContent() {
           {Array.from({ length: 6 }).map((_, i) => (
             <NoirCard key={i} flat className="h-[180px] animate-pulse p-5">
               <div className="mb-3 flex gap-3">
-                <div className="h-10 w-10 rounded-md bg-muted" />
+                <div className="h-10 w-10 rounded-md bg-surface-sunken" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-3/4 rounded bg-muted" />
-                  <div className="h-3 w-1/2 rounded bg-muted" />
+                  <div className="h-4 w-3/4 rounded bg-surface-sunken" />
+                  <div className="h-3 w-1/2 rounded bg-surface-sunken" />
                 </div>
               </div>
               <div className="mt-auto space-y-2 pt-6">
-                <div className="h-3 w-2/3 rounded bg-muted" />
+                <div className="h-3 w-2/3 rounded bg-surface-sunken" />
               </div>
             </NoirCard>
           ))}
@@ -381,16 +381,16 @@ function DocumentVaultPageContent() {
               <div className="flex items-center gap-2.5">
                 <PageBackButton className="-ml-1.5" />
                 <div className="flex h-9 w-9 items-center justify-center rounded-md role-accent-bg">
-                  <Vault className="h-4 w-4 text-role" aria-hidden />
+                  <Vault className="h-4 w-4 text-brand" aria-hidden />
                 </div>
                 <div>
-                  <p className="text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">Documents</p>
+                  <p className="text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">Documents</p>
                   <p className="serif text-[22px] leading-none tabular-nums text-ink">{allDocs.length}</p>
                 </div>
               </div>
               <div className="hidden h-10 w-px bg-border sm:block" aria-hidden />
               <div className="hidden sm:block">
-                <p className="text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
+                <p className="text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">
                   {isIntern ? 'Clients' : 'Entities'}
                 </p>
                 <p className="serif text-[22px] leading-none tabular-nums text-ink">{entityGroups.length}</p>
@@ -410,7 +410,7 @@ function DocumentVaultPageContent() {
       ) : (
         <>
           <div className="mb-4 lg:hidden">
-            <p className="mb-2 text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
+            <p className="mb-2 text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">
               {isIntern ? 'Client' : 'Entity'}
             </p>
             <div className="-mx-1 overflow-x-auto pb-1">
@@ -431,12 +431,12 @@ function DocumentVaultPageContent() {
 
           <div className="grid gap-5 lg:grid-cols-[240px_1fr] lg:gap-6">
             <NoirCard flat className="hidden h-fit p-2 lg:block lg:sticky lg:top-4">
-              <p className="px-2 py-2 text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
+              <p className="px-2 py-2 text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">
                 {isIntern ? 'Clients' : 'Entities'}
               </p>
               <div className="space-y-0.5">
                 {filteredGroups.length === 0 ? (
-                  <p className="px-3 py-3 text-[12px] text-text-tertiary">No clients match this search.</p>
+                  <p className="px-3 py-3 text-[12px] text-ink-faint">No clients match this search.</p>
                 ) : (
                   filteredGroups.map((entity) => (
                     <EntitySidebarItem
@@ -456,7 +456,7 @@ function DocumentVaultPageContent() {
               {isSearching ? (
                 <div className="min-w-0">
                   <h2 className="serif text-[24px] leading-tight tracking-tight text-ink">Results</h2>
-                  <p className="mt-1 text-[12px] text-text-tertiary">
+                  <p className="mt-1 text-[12px] text-ink-faint">
                     <Mono>{searchHits.length}</Mono>
                     {' file'}
                     {searchHits.length === 1 ? '' : 's'}
@@ -469,7 +469,7 @@ function DocumentVaultPageContent() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   {/* The rail on the left already names the selected client. */}
                   <div className="min-w-0">
-                    <p className="text-[12px] text-text-tertiary">
+                    <p className="text-[12px] text-ink-faint">
                       <Mono>{selectedEntity.docCount}</Mono>
                       {' document'}
                       {selectedEntity.docCount === 1 ? '' : 's'}
@@ -483,7 +483,7 @@ function DocumentVaultPageContent() {
                       selectedEntity.slug ??
                         engagements.find((e) => e.id === selectedEntity.engagementId)?.slug,
                     )}
-                    className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-border px-3.5 text-[12px] font-medium text-brand transition-colors hover:border-brand/30 hover:bg-primary-light/50"
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line px-3.5 text-[12px] font-medium text-brand transition-colors hover:border-brand/30 hover:bg-brand-soft/50"
                   >
                     {isIntern ? 'Open client' : 'Open project'}
                     <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
@@ -492,9 +492,9 @@ function DocumentVaultPageContent() {
               ) : null}
 
               <Surface className="overflow-hidden">
-                <div className="border-b border-border px-4 py-3 sm:px-5">
+                <div className="border-b border-line px-4 py-3 sm:px-5">
                   <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-tertiary" />
+                    <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
                     <Input
                       value={q}
                       onChange={(e) => setQ(e.target.value)}
@@ -554,14 +554,14 @@ function DocumentVaultPageContent() {
                   <div className="space-y-10 px-4 py-5 sm:px-5">
                     {(selectedEntity.phases ?? []).map((phase) => (
                       <section key={phase.phaseKey} aria-labelledby={`phase-${phase.phaseKey}`}>
-                        <div className="mb-5 flex flex-wrap items-end justify-between gap-2 border-b border-border pb-3">
+                        <div className="mb-5 flex flex-wrap items-end justify-between gap-2 border-b border-line pb-3">
                           <h3
                             id={`phase-${phase.phaseKey}`}
                             className="serif text-[20px] leading-snug text-ink"
                           >
                             {phase.phaseLabel}
                           </h3>
-                          <Mono className="shrink-0 text-[11px] text-text-tertiary">
+                          <Mono className="shrink-0 text-[11px] text-ink-faint">
                             {phase.docCount} file{phase.docCount === 1 ? '' : 's'}
                           </Mono>
                         </div>
@@ -577,7 +577,7 @@ function DocumentVaultPageContent() {
                                   className="mb-6 last:mb-0"
                                 >
                                   {milestone.sections.length > 1 && (
-                                    <p className="mb-3 text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
+                                    <p className="mb-3 text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">
                                       {section.section}
                                     </p>
                                   )}

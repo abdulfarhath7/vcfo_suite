@@ -5,21 +5,22 @@ import { Calendar, CheckCircle2, FileCheck } from 'lucide-react';
 import { staggerKids, fadeUp, fadeUpReduced } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
+/* Status cards: a soft ground, a hairline, a text-safe glyph. No coloured edges. */
 const SHOWCASE_TONES = {
   success: {
-    card: 'border-l-success border-success/20 bg-success-light',
-    iconShell: 'border-success/25 bg-panel',
-    icon: 'text-success-text',
+    card: 'border-line bg-positive-soft',
+    iconShell: 'border-line bg-surface-raised',
+    icon: 'text-positive',
   },
   info: {
-    card: 'border-l-info border-info/20 bg-info-light',
-    iconShell: 'border-info/25 bg-panel',
-    icon: 'text-info-text',
+    card: 'border-line bg-info-soft',
+    iconShell: 'border-line bg-surface-raised',
+    icon: 'text-info',
   },
   warning: {
-    card: 'border-l-warning border-warning/20 bg-warning-light',
-    iconShell: 'border-warning/25 bg-panel',
-    icon: 'text-warning-text',
+    card: 'border-line bg-warning-soft',
+    iconShell: 'border-line bg-surface-raised',
+    icon: 'text-warning',
   },
 } as const;
 
@@ -76,7 +77,7 @@ export function LoginShowcase({ className }: { className?: string }) {
                     }
               }
               className={cn(
-                'flex items-center gap-2.5 rounded-lg border border-l-[3px] px-3 py-2 shadow-sm backdrop-blur-sm',
+                'flex items-center gap-2.5 rounded-md border px-3 py-2 shadow-card',
                 tone.card,
               )}
             >
@@ -89,8 +90,8 @@ export function LoginShowcase({ className }: { className?: string }) {
                 <item.icon className={cn('h-4 w-4', tone.icon)} strokeWidth={2} aria-hidden />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">{item.label}</p>
-                <p className="text-[11px] text-muted-foreground">{item.sub}</p>
+                <p className="text-[13px] font-medium text-ink">{item.label}</p>
+                <p className="text-[11px] text-ink-muted">{item.sub}</p>
               </div>
             </m.div>
           );

@@ -91,20 +91,20 @@ export function ChecklistReviewActions({
     <div
       className={cn(
         'space-y-3',
-        isLight ? 'surface px-4 py-4' : 'rounded-md border border-hairline bg-raised/40 px-3 py-3',
+        isLight ? 'surface px-4 py-4' : 'rounded-md border border-line bg-surface-sunken/40 px-3 py-3',
         className,
       )}
     >
       <p
         className={cn(
           'text-xs font-medium',
-          isLight ? 'text-foreground' : 'text-paper',
+          isLight ? 'text-ink' : 'text-ink',
         )}
       >
         {isLeadRequest ? 'Lead → manager approval' : 'KYC / client submission review'}
       </p>
       {statusLabel && (
-        <p className={cn('text-[11px]', isLight ? 'text-muted-foreground' : 'text-paper-muted')}>
+        <p className={cn('text-[11px]', isLight ? 'text-ink-muted' : 'text-ink-muted')}>
           {canApprove
             ? statusLabel
             : awaiting
@@ -153,7 +153,7 @@ export function ChecklistReviewActions({
                 size="sm"
                 disabled={busy !== null}
                 onClick={() => void runReview('accept')}
-                className="bg-success text-success-foreground hover:bg-success/90 hover:brightness-100 active:brightness-95"
+                className="bg-positive text-on-brand hover:bg-positive/90 hover:brightness-100 active:brightness-95"
               >
                 {busy === 'accept' ? 'Accepting…' : 'Accept'}
               </AccentButton>
@@ -186,7 +186,7 @@ export function ChecklistReviewActions({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={busy === 'reject'}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-danger text-white hover:bg-danger/90"
               disabled={busy === 'reject'}
               onClick={(e) => {
                 e.preventDefault();

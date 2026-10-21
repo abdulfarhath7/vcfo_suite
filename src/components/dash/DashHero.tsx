@@ -68,8 +68,8 @@ function DashHeroRing({
           textAnchor="middle"
           fill="white"
           fontSize="11"
-          fontWeight="700"
-          fontFamily="var(--font-serif)"
+          fontWeight="600"
+          fontFamily="var(--font-sans)"
         >
           {display ?? value}
         </text>
@@ -139,7 +139,7 @@ export function DashHero({
 
       <div className="relative z-[2]">
         <div className="flex items-center justify-between gap-3">
-          <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] font-medium tracking-[0.04em] text-white/65">
+          <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-medium text-side-muted">
             <ClientLocaleNowLabel />
             {meta}
           </p>
@@ -148,11 +148,11 @@ export function DashHero({
 
         <div className="mt-1 flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="serif min-w-0 break-words text-[1.7rem] font-semibold leading-[1.15] tracking-tight text-white [text-shadow:0_1px_16px_rgb(15_23_42_/_0.35)] sm:text-[1.95rem]">
+            <h1 className="min-w-0 break-words text-[22px] font-semibold leading-7 tracking-[-0.01em] text-side-ink sm:text-[28px] sm:leading-[34px] sm:tracking-[-0.015em]">
               {title}
             </h1>
             {subtitle ? (
-              <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[13px] leading-snug text-white/85">
+              <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[13px] leading-snug text-side-muted">
                 {subtitle}
               </p>
             ) : null}
@@ -171,32 +171,25 @@ export function DashHero({
 
       {stats && stats.length > 0 ? (
         <>
-          <div className="relative z-[2] mt-3.5 h-px bg-white/12" />
-          <div className="relative z-[2] mt-2.5 flex min-w-0 flex-wrap items-baseline gap-y-1 text-white">
+          <div className="relative z-[2] mt-3.5 h-px bg-side-line" />
+          <div className="relative z-[2] mt-2.5 flex min-w-0 flex-wrap items-baseline gap-y-1 text-side-ink">
             {stats.map((stat, i) => {
               const body = (
                 <>
                   <span
                     className={cn(
-                      'serif text-[1.05rem] font-semibold leading-none tabular-nums',
-                      stat.hot ? 'text-white' : 'text-white/95',
+                      'text-[20px] font-semibold leading-6 tabular-nums tracking-[-0.01em]',
+                      stat.hot ? 'text-highlight' : 'text-side-ink',
                     )}
                   >
                     {stat.value}
                   </span>
-                  <span
-                    className={cn(
-                      'text-[11px] font-medium tracking-wide',
-                      stat.hot ? 'text-white/90' : 'text-white/58',
-                    )}
-                  >
-                    {stat.label}
-                  </span>
+                  <span className="text-[11px] font-medium text-side-muted">{stat.label}</span>
                 </>
               );
               const statClass = cn(
                 'inline-flex items-baseline gap-1.5 py-0.5 pr-3.5 text-[12px]',
-                i > 0 && 'border-l border-white/20 pl-3.5',
+                i > 0 && 'border-l border-side-line pl-3.5',
                 stat.href && 'transition-opacity hover:opacity-80',
               );
               return stat.href ? (

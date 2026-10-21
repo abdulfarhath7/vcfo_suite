@@ -215,7 +215,7 @@ export function FilingsView({
           <FilingsSkeleton />
         ) : query.isError ? (
           <DashSection icon={FileSpreadsheet} title="Filings" tone="primary">
-            <p className="text-[12.5px] text-muted-foreground">
+            <p className="text-[12.5px] text-ink-muted">
               Could not load the register. Please try again in a moment.
             </p>
           </DashSection>
@@ -268,24 +268,24 @@ function FilingsHeader({
 }) {
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2">
-      <h1 className="serif min-w-0 flex-1 text-[22px] leading-tight tracking-tight text-foreground">
+      <h1 className="serif min-w-0 flex-1 text-[22px] leading-tight tracking-tight text-ink">
         Filings
       </h1>
-      <div className="flex shrink-0 items-center gap-1 rounded-full border border-border px-1 py-0.5">
+      <div className="flex shrink-0 items-center gap-1 rounded-sm border border-line px-1 py-0.5">
         <button
           type="button"
           aria-label="Previous financial year"
-          className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:bg-raised hover:text-foreground"
+          className="grid h-6 w-6 place-items-center rounded-full text-ink-muted hover:bg-surface-sunken hover:text-ink"
           onClick={() => onFyChange(fyStartYear - 1)}
         >
           <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
         </button>
-        <span className="mono px-1 text-[11.5px] font-bold tabular-nums text-ink">{fyLabel}</span>
+        <span className="mono px-1 text-[11.5px] font-semibold tabular-nums text-ink">{fyLabel}</span>
         <button
           type="button"
           aria-label="Next financial year"
           disabled={fyStartYear >= currentFyStartYear + 2}
-          className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:bg-raised hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+          className="grid h-6 w-6 place-items-center rounded-full text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:pointer-events-none disabled:opacity-30"
           onClick={() => onFyChange(fyStartYear + 1)}
         >
           <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -294,7 +294,7 @@ function FilingsHeader({
       {picker}
       <Link
         href={`${basePath}/calendar${calendarQuery}`}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1 text-[11px] font-bold text-primary hover:bg-primary-light"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-line px-3 py-1 text-[11px] font-semibold text-brand hover:bg-brand-soft"
       >
         <CalendarDays className="h-3.5 w-3.5" aria-hidden />
         Open calendar
@@ -370,7 +370,7 @@ function registerColumns(
       render: (row) => (
         <Link
           href={`${basePath}/calendar?date=${row.dueDate}`}
-          className="text-primary hover:underline"
+          className="text-brand hover:underline"
         >
           {formatFilingDate(row.dueDate)}
         </Link>
@@ -382,7 +382,7 @@ function registerColumns(
       width: 'minmax(0,0.8fr)',
       mono: true,
       render: (row) => (
-        <span className={row.filedOn ? 'text-ink' : 'text-muted-foreground'}>
+        <span className={row.filedOn ? 'text-ink' : 'text-ink-muted'}>
           {formatFilingDate(row.filedOn)}
         </span>
       ),
@@ -392,7 +392,7 @@ function registerColumns(
       header: 'Frequency',
       width: 'minmax(0,0.7fr)',
       render: (row) => (
-        <span className="capitalize text-muted-foreground">{row.frequency}</span>
+        <span className="capitalize text-ink-muted">{row.frequency}</span>
       ),
     },
     {
@@ -482,7 +482,7 @@ function RegisterTable({
               <GlossaryText text={row.particular} className="truncate" />
               <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
             </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
+            <p className="mt-0.5 text-[11px] text-ink-muted">
               {mode.company ? `${row.companyName} · ` : ''}
               {row.compliance} · due {formatFilingDate(row.dueDate)}
               {row.filedOn ? ` · filed ${formatFilingDate(row.filedOn)}` : ''}
@@ -540,7 +540,7 @@ function MonthlyTab({
         <button
           type="button"
           onClick={onToggleFullYear}
-          className="rounded-full border border-border px-2.5 py-0.5 text-[11px] font-bold text-primary hover:bg-primary-light"
+          className="rounded-sm border border-line px-2.5 py-0.5 text-[11px] font-semibold text-brand hover:bg-brand-soft"
         >
           {fullYear ? 'This month' : 'Full year'}
         </button>
@@ -558,24 +558,24 @@ function MonthlyTab({
         />
       ) : (
         <>
-          <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-2">
+          <div className="flex items-center justify-between gap-2 border-b border-line px-3.5 py-2">
             <button
               type="button"
               disabled={!canStepBack}
               onClick={() => onStepMonth(-1)}
-              className="inline-flex items-center gap-1 text-[11.5px] font-bold text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+              className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-ink-muted hover:text-ink disabled:pointer-events-none disabled:opacity-30"
             >
               <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
               Previous
             </button>
-            <span className="mono text-[11.5px] font-bold tabular-nums text-ink">
+            <span className="mono text-[11.5px] font-semibold tabular-nums text-ink">
               {monthLabelOf(monthKey)}
             </span>
             <button
               type="button"
               disabled={!canStepForward}
               onClick={() => onStepMonth(1)}
-              className="inline-flex items-center gap-1 text-[11.5px] font-bold text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+              className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-ink-muted hover:text-ink disabled:pointer-events-none disabled:opacity-30"
             >
               Next
               <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -676,7 +676,7 @@ function PeriodMatrix({
 }) {
   if (matrix.length === 0) {
     return (
-      <p className="px-3.5 py-6 text-center text-[12.5px] text-muted-foreground">
+      <p className="px-3.5 py-6 text-center text-[12.5px] text-ink-muted">
         {EMPTY_REGISTER}
       </p>
     );
@@ -686,8 +686,8 @@ function PeriodMatrix({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[44rem] border-collapse text-[12.5px]">
         <thead>
-          <tr className="text-[10.5px] font-extrabold uppercase tracking-[0.07em] text-text-tertiary">
-            <th scope="col" className="px-3.5 py-2.5 text-left font-extrabold">
+          <tr className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            <th scope="col" className="px-3.5 py-2.5 text-left font-semibold">
               Compliance
             </th>
             {columns.map((column) => (
@@ -695,13 +695,13 @@ function PeriodMatrix({
                 key={column.key}
                 scope="col"
                 className={cn(
-                  'px-2 py-2.5 text-center font-extrabold',
-                  column.emphasis && 'text-primary',
+                  'px-2 py-2.5 text-center font-semibold',
+                  column.emphasis && 'text-brand',
                 )}
               >
                 {column.label}
                 {column.sublabel ? (
-                  <span className="mt-0.5 block text-[9px] font-bold normal-case tracking-normal text-muted-foreground">
+                  <span className="mt-0.5 block text-[9px] font-semibold normal-case tracking-normal text-ink-muted">
                     {column.sublabel}
                   </span>
                 ) : null}
@@ -711,10 +711,10 @@ function PeriodMatrix({
         </thead>
         <tbody>
           {matrix.map((row) => (
-            <tr key={row.key} className="border-t border-border align-top">
+            <tr key={row.key} className="border-t border-line align-top">
               <th scope="row" className="px-3.5 py-3 text-left font-semibold text-ink">
                 <span className="block">{row.particular}</span>
-                <span className="mt-0.5 block text-[11px] font-medium text-muted-foreground">
+                <span className="mt-0.5 block text-[11px] font-medium text-ink-muted">
                   {row.companyName ? `${row.companyName} · ` : ''}
                   {row.compliance}
                 </span>
@@ -724,7 +724,7 @@ function PeriodMatrix({
                   key={columns[index]?.key ?? index}
                   className={cn(
                     'px-2 py-3 text-center',
-                    columns[index]?.emphasis && 'bg-primary-light/40',
+                    columns[index]?.emphasis && 'bg-brand-soft/40',
                   )}
                 >
                   {cell.status ? (
@@ -736,7 +736,7 @@ function PeriodMatrix({
                         <span
                           className={cn(
                             'mono text-[11px] tabular-nums',
-                            cell.filedOn ? 'text-success-text' : 'text-muted-foreground',
+                            cell.filedOn ? 'text-positive' : 'text-ink-muted',
                           )}
                         >
                           {formatFilingDate(cell.filedOn)}
@@ -746,7 +746,7 @@ function PeriodMatrix({
                       )}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    <span className="text-ink-muted">—</span>
                   )}
                 </td>
               ))}
@@ -763,7 +763,7 @@ function FilingsSkeleton() {
     <div className="surface overflow-hidden" aria-busy="true" aria-label="Loading filings">
       <div className="space-y-2 p-4">
         {Array.from({ length: 6 }, (_, index) => (
-          <div key={index} className="h-9 animate-pulse rounded-md bg-muted/40" />
+          <div key={index} className="h-9 animate-pulse rounded-md bg-surface-sunken/40" />
         ))}
       </div>
     </div>

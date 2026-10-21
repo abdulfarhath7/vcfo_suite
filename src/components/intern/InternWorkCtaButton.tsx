@@ -53,10 +53,10 @@ export function InternWorkCtaButton({
       type="button"
       onClick={(e) => void run(e)}
       className={cn(
-        'max-w-full shrink-0 whitespace-nowrap rounded-lg px-3 py-1 text-[11.5px] font-extrabold',
+        'inline-flex h-control-sm max-w-full shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2.5 text-[12px] font-semibold transition-colors',
         cta.variant === 'solid'
-          ? 'bg-primary text-white'
-          : 'border border-border text-muted-foreground hover:border-primary hover:text-primary-dark',
+          ? 'bg-brand text-on-brand hover:bg-brand-strong'
+          : 'border border-line-strong bg-surface-raised text-ink hover:bg-surface-sunken',
         className,
       )}
     >

@@ -29,9 +29,9 @@ export function ClientCompanySnapshot({ company }: { company: Snapshot }) {
           ) : (
             <ul className="space-y-1.5">
               {directors.map((director, index) => (
-                <li key={`${director.name}-${index}`} className="text-[13px] text-foreground">
+                <li key={`${director.name}-${index}`} className="text-[13px] text-ink">
                   <span className="font-semibold">{director.name}</span>
-                  <span className="block text-[11px] text-muted-foreground">
+                  <span className="block text-[11px] text-ink-muted">
                     {[
                       director.indiaResident === true
                         ? 'Resident in India'
@@ -95,10 +95,10 @@ export function ClientCompanySnapshot({ company }: { company: Snapshot }) {
           ) : (
             <ul className="space-y-1.5">
               {subscribers.map((subscriber, index) => (
-                <li key={`${subscriber.name}-${index}`} className="text-[13px] text-foreground">
+                <li key={`${subscriber.name}-${index}`} className="text-[13px] text-ink">
                   <span className="font-semibold">{subscriber.name}</span>
                   {subscriber.shares ? (
-                    <span className="block text-[11px] text-muted-foreground">
+                    <span className="block text-[11px] text-ink-muted">
                       {formatCount(subscriber.shares)} shares
                     </span>
                   ) : null}
@@ -125,7 +125,7 @@ function Block({
 }) {
   return (
     <section aria-label={title} className="min-w-0">
-      <h3 className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.06em] text-muted-foreground">
+      <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
         {title}
       </h3>
       {children}
@@ -139,12 +139,12 @@ function Block({
 function Row({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-semibold tabular-nums text-foreground">{value ?? '—'}</dd>
+      <dt className="text-ink-muted">{label}</dt>
+      <dd className="text-right font-semibold tabular-nums text-ink">{value ?? '—'}</dd>
     </div>
   );
 }
 
 function Empty({ children }: { children: ReactNode }) {
-  return <p className="text-[12.5px] text-muted-foreground">{children}</p>;
+  return <p className="text-[12.5px] text-ink-muted">{children}</p>;
 }

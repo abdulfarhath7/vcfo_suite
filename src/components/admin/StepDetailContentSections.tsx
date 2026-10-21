@@ -94,12 +94,12 @@ export function StepDetailContentView(props: any) {
           className={cn(
             'flex items-center gap-2 border px-3 py-2 rounded-md',
             isLight
-              ? 'mb-3 border-brand/30 bg-primary-light text-ink'
-              : 'mt-4 border-primary/40 bg-primary/5 rounded-sm',
+              ? 'mb-3 border-brand/30 bg-brand-soft text-ink'
+              : 'mt-4 border-brand/40 bg-brand/5 rounded-sm',
           )}
         >
-          <Sparkles className="w-3.5 h-3.5 text-gold" />
-          <span className={cn('text-[12px]', isLight ? 'text-ink' : 'text-paper')}>
+          <Sparkles className="w-3.5 h-3.5 text-brand-strong" />
+          <span className={cn('text-[12px]', isLight ? 'text-ink' : 'text-ink')}>
             All requirements met — step marked complete.
           </span>
         </motion.div>
@@ -184,7 +184,7 @@ export function StepDetailContentView(props: any) {
         <TabsList
           className={cn(
             'bg-transparent rounded-none h-auto p-0 w-full justify-start gap-1 mb-4',
-            isLight ? 'border-b border-border' : 'border-b border-hairline',
+            isLight ? 'border-b border-line' : 'border-b border-line',
           )}
         >
           {[
@@ -204,7 +204,7 @@ export function StepDetailContentView(props: any) {
                   <span
                     className={cn(
                       'tabular-nums',
-                      isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                      isLight ? 'text-ink-faint' : 'text-ink-subtle',
                     )}
                   >
                     {t.n}
@@ -246,7 +246,7 @@ export function StepDetailContentView(props: any) {
                         <Circle
                           className={cn(
                             'w-4 h-4 shrink-0',
-                            isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                            isLight ? 'text-ink-faint' : 'text-ink-subtle',
                           )}
                         />
                       )}
@@ -259,7 +259,7 @@ export function StepDetailContentView(props: any) {
                               : 'text-blue-500'
                             : isLight
                               ? 'text-ink'
-                              : 'text-paper',
+                              : 'text-ink',
                         )}
                       >
                         {f}
@@ -267,7 +267,7 @@ export function StepDetailContentView(props: any) {
                       <span
                         className={cn(
                           'text-[10px] mono uppercase tracking-[0.16em]',
-                          isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                          isLight ? 'text-ink-faint' : 'text-ink-subtle',
                         )}
                       >
                         {done ? 'Filed' : 'To file'}
@@ -304,7 +304,7 @@ export function StepDetailContentView(props: any) {
                           <Upload
                             className={cn(
                               'w-4 h-4 shrink-0 mt-0.5 transition-colors group-hover:text-blue-600',
-                              isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                              isLight ? 'text-ink-faint' : 'text-ink-subtle',
                             )}
                           />
                         )}
@@ -314,7 +314,7 @@ export function StepDetailContentView(props: any) {
                         <span
                           className={cn(
                             'text-[10px] mono uppercase tracking-[0.16em] shrink-0 mt-0.5',
-                            isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                            isLight ? 'text-ink-faint' : 'text-ink-subtle',
                           )}
                         >
                           {done ? 'On file' : 'Outstanding'}
@@ -340,11 +340,11 @@ export function StepDetailContentView(props: any) {
                   key={a.id}
                   className={cn(
                     'text-[12.5px] leading-relaxed border-l pl-3',
-                    isLight ? 'border-border' : 'border-hairline',
+                    isLight ? 'border-line' : 'border-line',
                   )}
                 >
-                  <span className={isLight ? 'text-ink' : 'text-paper'}>{a.actor}</span>{' '}
-                  <span className={isLight ? 'text-text-secondary' : 'text-paper-muted'}>
+                  <span className={isLight ? 'text-ink' : 'text-ink'}>{a.actor}</span>{' '}
+                  <span className={isLight ? 'text-ink-muted' : 'text-ink-muted'}>
                     {a.verb}
                   </span>{' '}
                   {a.target && (
@@ -353,7 +353,7 @@ export function StepDetailContentView(props: any) {
                   <div
                     className={cn(
                       'text-[10px] mono uppercase tracking-[0.14em] mt-1',
-                      isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                      isLight ? 'text-ink-faint' : 'text-ink-subtle',
                     )}
                   >
                     {a.at}
@@ -371,7 +371,7 @@ export function StepDetailContentView(props: any) {
           <Mono
             className={cn(
               'text-[10px] uppercase tracking-[0.18em] block',
-              isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+              isLight ? 'text-ink-faint' : 'text-ink-subtle',
             )}
           >
             Deadline · {item.deadline.kind.replace(/-/g, ' ')}
@@ -383,7 +383,7 @@ export function StepDetailContentView(props: any) {
             <Mono
               className={cn(
                 'text-[10px] uppercase tracking-[0.18em] mt-2 block',
-                isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                isLight ? 'text-ink-faint' : 'text-ink-subtle',
               )}
             >
               Deadline · {item.deadline.kind.replace(/-/g, ' ')}
@@ -399,7 +399,7 @@ export function StepDetailContentView(props: any) {
 
   if (isLight) {
     const internPageFooter = internFooterFallback ? (
-      <div className="sticky bottom-0 z-20 mt-4 border-t border-border/70 bg-panel/95 px-4 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-panel/80">
+      <div className="sticky bottom-0 z-20 mt-4 border-t border-line/70 bg-surface-raised/95 px-4 py-3 supports-[backdrop-filter]:bg-surface-raised/80">
         <div className="flex flex-wrap items-center gap-2">{internActionBar}</div>
       </div>
     ) : null;
@@ -482,14 +482,14 @@ export function StepDetailContentView(props: any) {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="space-y-3 px-6 pt-6 pb-4 text-left border-b border-hairline">
+      <header className="space-y-3 px-6 pt-6 pb-4 text-left border-b border-line">
         <div className="flex items-center justify-between">
           <Eyebrow>Step · {item.bucket.replace('-', ' ')}</Eyebrow>
-          <Mono className="text-[10px] uppercase tracking-[0.18em] text-paper-subtle">
+          <Mono className="text-[10px] uppercase tracking-[0.18em] text-ink-subtle">
             {String(preIncPhaseStep?.stepNumber ?? item.order).padStart(2, '0')} / {item.id}
           </Mono>
         </div>
-        <h1 className="serif leading-tight font-normal text-paper text-[22px]">{item.title}</h1>
+        <h1 className="serif leading-tight font-normal text-ink text-[22px]">{item.title}</h1>
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <ResponsibleRoleBadge role={item.responsibleRole} />
         </div>
@@ -504,15 +504,15 @@ export function StepDetailContentView(props: any) {
           )}
           {showLegacyChecklist && (
             <>
-              <span className="text-paper-subtle">·</span>
-              <Mono className="text-[10.5px] uppercase tracking-[0.18em] text-paper-muted">
+              <span className="text-ink-subtle">·</span>
+              <Mono className="text-[10.5px] uppercase tracking-[0.18em] text-ink-muted">
                 {totals.done}/{totals.total} items
               </Mono>
             </>
           )}
         </div>
         {showLegacyChecklist && (
-          <div className="relative h-[3px] overflow-hidden rounded-full mt-2 bg-raised">
+          <div className="relative h-[3px] overflow-hidden rounded-full mt-2 bg-surface-sunken">
             <motion.div
               className="absolute inset-y-0 left-0 bg-gradient-to-r from-gold to-gold-hi"
               initial={false}
@@ -550,7 +550,7 @@ export function StepDetailContentView(props: any) {
               </>
             )}
             {stepGate?.kind === 'waiting' && stepGate.message && (
-              <div className="rounded-lg border border-warning/30 bg-warning-light/60 px-3 py-2.5 text-sm text-warning-text">
+              <div className="rounded-lg border border-warning/30 bg-warning-soft/60 px-3 py-2.5 text-sm text-warning">
                 {stepGate.message}
               </div>
             )}
@@ -560,8 +560,8 @@ export function StepDetailContentView(props: any) {
         {legacyChecklist}
       </div>
 
-      <footer className="flex items-center justify-between gap-3 border-t border-hairline px-6 py-4 bg-panel">
-        <Mono className="text-[10.5px] uppercase tracking-[0.18em] text-paper-muted">
+      <footer className="flex items-center justify-between gap-3 border-t border-line px-6 py-4 bg-surface-raised">
+        <Mono className="text-[10.5px] uppercase tracking-[0.18em] text-ink-muted">
           {showLegacyChecklist ? `${totals.pct}% of requirements met` : ''}
         </Mono>
         <div className="flex items-center gap-2">

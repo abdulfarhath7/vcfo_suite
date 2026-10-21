@@ -27,19 +27,19 @@ export function DocSourceStrip({
   return (
     <p
       className={cn(
-        'mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border bg-panel px-3 py-2 text-[12.5px] text-muted-foreground',
+        'mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-line bg-surface-raised px-3 py-2 text-[12.5px] text-ink-muted',
         className,
       )}
     >
-      <FileText className="h-3.5 w-3.5 text-primary" aria-hidden />
+      <FileText className="h-3.5 w-3.5 text-brand" aria-hidden />
       <span>
-        <b className="font-semibold text-foreground">{fed.total}</b> {fed.total === 1 ? 'document uses' : 'documents use'}{' '}
+        <b className="font-semibold text-ink">{fed.total}</b> {fed.total === 1 ? 'document uses' : 'documents use'}{' '}
         this step&apos;s data
       </span>
       <span aria-hidden>·</span>
       <span>{parts.join(', ')}</span>
       <span aria-hidden>·</span>
-      <Link href={packHref} className="font-medium text-primary hover:underline">
+      <Link href={packHref} className="font-medium text-brand hover:underline">
         Open in document pack
       </Link>
     </p>

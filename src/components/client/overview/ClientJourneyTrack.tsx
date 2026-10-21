@@ -34,9 +34,9 @@ export function ClientJourneyTrack({ milestones }: { milestones: ClientOverviewM
               <p
                 className={cn(
                   'text-[12.5px] leading-snug',
-                  done && 'font-bold text-ink',
-                  active && 'font-extrabold text-ink',
-                  !done && !active && 'font-medium text-muted-foreground',
+                  done && 'font-semibold text-ink',
+                  active && 'font-semibold text-ink',
+                  !done && !active && 'font-medium text-ink-muted',
                 )}
               >
                 {station.label}
@@ -44,7 +44,7 @@ export function ClientJourneyTrack({ milestones }: { milestones: ClientOverviewM
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span
                   className={cn(
-                    'rounded-full px-1.5 py-px text-[9.5px] font-extrabold uppercase tracking-wide',
+                    'rounded-sm px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wide',
                     tone.soft,
                     tone.label,
                   )}
@@ -52,15 +52,15 @@ export function ClientJourneyTrack({ milestones }: { milestones: ClientOverviewM
                   {STATION_STATE[station.kind]}
                 </span>
                 {done && station.completedOn && (
-                  <Mono className="text-[10.5px] tabular-nums text-muted-foreground">
+                  <Mono className="text-[10.5px] tabular-nums text-ink-muted">
                     {formatClientDate(station.completedOn)}
                   </Mono>
                 )}
                 {station.kind === 'active' && (
-                  <span className="text-[10.5px] font-bold text-primary-dark">Your turn</span>
+                  <span className="text-[10.5px] font-semibold text-brand-strong">Your turn</span>
                 )}
                 {station.kind === 'waiting' && (
-                  <span className="text-[10.5px] font-bold text-muted-foreground">
+                  <span className="text-[10.5px] font-semibold text-ink-muted">
                     With your VCFO team
                   </span>
                 )}

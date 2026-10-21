@@ -60,9 +60,7 @@ function sidebarHoverGlassClass(ink: 'light' | 'dark') {
   return cn(
     /* Tint/ring only. Item-sized blur is tempting but layoutId re-samples it every frame. */
     'sidebar-hover-glass pointer-events-none absolute inset-0 z-[1] rounded-[inherit]',
-    ink === 'light'
-      ? 'bg-white/14 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] ring-1 ring-inset ring-white/20'
-      : 'bg-black/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] ring-1 ring-inset ring-black/[0.07] dark:bg-white/[0.10] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] dark:ring-white/12',
+    ink === 'light' ? 'bg-side-active' : 'bg-surface-sunken',
   );
 }
 

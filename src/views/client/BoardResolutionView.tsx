@@ -162,7 +162,7 @@ export default function BoardResolutionView() {
       />
 
       {loading ? (
-        <div className="flex items-center gap-2 text-[12px] text-text-tertiary py-8">
+        <div className="flex items-center gap-2 text-[12px] text-ink-faint py-8">
           <HexgridLoader size="sm" />
           Loading…
         </div>
@@ -183,7 +183,7 @@ export default function BoardResolutionView() {
             <a
               href={downloadHref}
               download={BOARD_RESOLUTION_DOCX_FILENAME}
-              className="gold-sheen inline-flex items-center justify-center gap-2 rounded-md h-11 px-5 text-[14px] font-medium tracking-tight hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+              className="gold-sheen inline-flex items-center justify-center gap-2 rounded-md h-11 px-5 text-[14px] font-medium tracking-tight hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-1 ring-line/40"
             >
               <Download className="w-4 h-4" />
               Download Word document (.docx)
@@ -226,7 +226,7 @@ export default function BoardResolutionView() {
           </div>
 
           {doc.signedUploadedAt && (
-            <p className="text-[11.5px] text-success-text mb-4 print:hidden">
+            <p className="text-[11.5px] text-positive mb-4 print:hidden">
               Signed copy uploaded{' '}
               {new Date(doc.signedUploadedAt).toLocaleDateString('en-IN', {
                 day: '2-digit',
@@ -238,7 +238,7 @@ export default function BoardResolutionView() {
             </p>
           )}
           {doc.finalizedAt && (
-            <p className="text-[11.5px] text-text-tertiary mt-6 print:hidden">
+            <p className="text-[11.5px] text-ink-faint mt-6 print:hidden">
               Released{' '}
               {new Date(doc.finalizedAt).toLocaleDateString('en-IN', {
                 day: '2-digit',

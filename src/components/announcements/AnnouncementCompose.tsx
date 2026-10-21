@@ -96,7 +96,7 @@ export function AnnouncementComposeForm({
             <button
               type="button"
               onClick={onClose}
-              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-raised hover:text-ink"
+              className="grid h-8 w-8 place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink"
               aria-label="Close composer"
             >
               <X className="h-4 w-4" />
@@ -105,11 +105,11 @@ export function AnnouncementComposeForm({
         </div>
       <div className={cn('grid gap-3', compact ? 'mt-2.5' : 'mt-3')}>
         <div>
-          <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Type</p>
+          <p className="mb-1.5 text-[11px] font-medium text-ink-muted">Type</p>
           <AnnouncementKindPicker value={kind} onChange={setKind} />
         </div>
         <div>
-          <Label htmlFor={messageId} className="text-[11px] text-muted-foreground">
+          <Label htmlFor={messageId} className="text-[11px] text-ink-muted">
             Message
           </Label>
           <Textarea
@@ -122,7 +122,7 @@ export function AnnouncementComposeForm({
           />
         </div>
         <div>
-          <Label htmlFor={linkId} className="text-[11px] text-muted-foreground">
+          <Label htmlFor={linkId} className="text-[11px] text-ink-muted">
             Source link <span className="font-normal">(optional)</span>
           </Label>
           <Input
@@ -144,7 +144,7 @@ export function AnnouncementComposeForm({
 
   if (bare) return form;
   if (compact) {
-    return <div className="border-b border-border bg-raised/25 px-3.5 py-3">{form}</div>;
+    return <div className="border-b border-line bg-surface-sunken/25 px-3.5 py-3">{form}</div>;
   }
 
   return (

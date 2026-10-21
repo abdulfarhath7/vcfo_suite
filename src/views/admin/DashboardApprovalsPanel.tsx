@@ -35,26 +35,26 @@ export function DashboardApprovalsPanel() {
       hrefLabel="All approvals"
     >
       {shown.length === 0 ? (
-        <p className="py-2 text-[12px] text-muted-foreground">
+        <p className="py-2 text-[12px] text-ink-muted">
           Requests from your leads and client submissions land here.
         </p>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="divide-y divide-line">
           {shown.map((row) => (
             <li key={`${row.engagementId}-${row.itemId}-${row.clientFill ? 'fill' : 'review'}`}>
               <Link
                 href={adminProjectStepPath({ id: row.engagementId, slug: row.slug }, row.itemId, projectBase)}
-                className="group flex items-center gap-3 py-2.5 transition-colors hover:bg-muted/30"
+                className="group flex items-center gap-3 py-2.5 transition-colors hover:bg-surface-sunken/30"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-primary">
+                  <span className="block truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-brand">
                     {row.companyName}
                   </span>
-                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                  <span className="mt-0.5 block truncate text-[11px] text-ink-muted">
                     {checklistItemLabel(row.itemId)} · {pendingApprovalKind(row)}
                   </span>
                 </span>
-                <span className="shrink-0 rounded-full bg-primary-light px-2.5 py-1 text-[11px] font-extrabold text-primary">
+                <span className="shrink-0 rounded-sm bg-brand-soft px-2.5 py-1 text-[11px] font-semibold text-brand">
                   Review
                 </span>
               </Link>

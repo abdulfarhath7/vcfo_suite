@@ -34,7 +34,7 @@ function SuperBallInCourtPanel({ overview }: { overview: SuperOverview }) {
   return (
     <DashSection icon={Scale} tone="primary" title="Ball in court" meta={`${open} open`}>
       {open === 0 && done === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-muted-foreground">
+        <p className="py-3 text-center text-[12.5px] text-ink-muted">
           No checklist work has started yet.
         </p>
       ) : (
@@ -49,9 +49,9 @@ function SuperBallInCourtPanel({ overview }: { overview: SuperOverview }) {
             centerCaption="open"
           />
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <DashLegendRow swatchClassName="bg-primary" label="With the firm" count={firm} />
-            <DashLegendRow swatchClassName="bg-accent-orange" label="With the client" count={client} />
-            <DashLegendRow swatchClassName="bg-success" label="Done" count={done} />
+            <DashLegendRow swatchClassName="bg-brand" label="With the firm" count={firm} />
+            <DashLegendRow swatchClassName="bg-highlight-bright" label="With the client" count={client} />
+            <DashLegendRow swatchClassName="bg-positive" label="Done" count={done} />
           </div>
         </div>
       )}
@@ -109,12 +109,12 @@ function SuperRunwayPanel({ overview }: { overview: SuperOverview }) {
           href={filing.href}
           className="mt-2.5 flex min-w-0 items-center gap-2.5"
         >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-raised text-[11px] font-extrabold tabular-nums text-ink">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-sunken text-[11px] font-semibold tabular-nums text-ink">
             {filing.dueDate.slice(8, 10)}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[12.5px] font-semibold text-ink">{filing.title}</span>
-            <span className="block truncate text-[11px] text-muted-foreground">
+            <span className="block truncate text-[11px] text-ink-muted">
               {filing.companyName} · {formatSuperDayMonth(filing.dueDate)}
             </span>
           </span>
@@ -137,7 +137,7 @@ function SuperActivityPanel({ overview }: { overview: SuperOverview }) {
       hrefLabel="Full log"
     >
       {entries.length === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-muted-foreground">
+        <p className="py-3 text-center text-[12.5px] text-ink-muted">
           Nothing has happened yet today.
         </p>
       ) : (
@@ -148,16 +148,16 @@ function SuperActivityPanel({ overview }: { overview: SuperOverview }) {
                 <p className="line-clamp-2 text-[12.5px] font-semibold leading-snug text-ink">
                   {entry.label}
                 </p>
-                <p className="mt-0.5 min-w-0 truncate text-[11px] text-muted-foreground">
+                <p className="mt-0.5 min-w-0 truncate text-[11px] text-ink-muted">
                   {[entry.companyName, entry.actor].filter(Boolean).join(' · ')}
-                  <span className="ml-1.5 font-mono text-[10.5px] text-text-tertiary">
+                  <span className="ml-1.5 font-mono text-[10.5px] text-ink-faint">
                     {formatSuperAgo(entry.at)}
                   </span>
                 </p>
               </>
             );
             return (
-              <li key={entry.id} className="border-t border-border py-2 first:border-t-0 first:pt-0.5">
+              <li key={entry.id} className="border-t border-line py-2 first:border-t-0 first:pt-0.5">
                 {entry.href ? (
                   <Link href={entry.href} className="block min-w-0">
                     {body}

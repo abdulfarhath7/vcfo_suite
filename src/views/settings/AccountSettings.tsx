@@ -269,7 +269,7 @@ export default function AccountSettings({ path }: Props) {
               }}
             />
 
-            <div className="overflow-hidden rounded-lg border border-border bg-panel">
+            <div className="overflow-hidden rounded-lg border border-line bg-surface-raised">
               <section className="px-5 py-5">
                 <SectionHead
                   title="Profile"
@@ -279,7 +279,7 @@ export default function AccountSettings({ path }: Props) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-8 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+                        className="h-8 gap-1.5 px-2 text-ink-muted hover:text-ink"
                         disabled={loading || !profile}
                         onClick={startEditProfile}
                       >
@@ -293,16 +293,16 @@ export default function AccountSettings({ path }: Props) {
                 {loading ? (
                   <div className="mt-1 space-y-0" aria-hidden>
                     <SettingsRow label="Full name">
-                      <span className="inline-block h-3.5 w-32 animate-pulse rounded bg-muted" />
+                      <span className="inline-block h-3.5 w-32 animate-pulse rounded bg-surface-sunken" />
                     </SettingsRow>
                     <SettingsRow label="Email">
-                      <span className="inline-block h-3.5 w-44 animate-pulse rounded bg-muted" />
+                      <span className="inline-block h-3.5 w-44 animate-pulse rounded bg-surface-sunken" />
                     </SettingsRow>
                     <SettingsRow label="Phone">
-                      <span className="inline-block h-3.5 w-20 animate-pulse rounded bg-muted" />
+                      <span className="inline-block h-3.5 w-20 animate-pulse rounded bg-surface-sunken" />
                     </SettingsRow>
                     <SettingsRow label="Role" last>
-                      <span className="inline-block h-3.5 w-24 animate-pulse rounded bg-muted" />
+                      <span className="inline-block h-3.5 w-24 animate-pulse rounded bg-surface-sunken" />
                     </SettingsRow>
                   </div>
                 ) : !editingProfile ? (
@@ -391,7 +391,7 @@ export default function AccountSettings({ path }: Props) {
                           disabled={!normalizeToE164(draftWhatsapp)}
                           className="mt-0.5"
                         />
-                        <span className="text-[12px] leading-snug text-muted-foreground">
+                        <span className="text-[12px] leading-snug text-ink-muted">
                           Send me WhatsApp updates about my engagement on this number.
                           Untick to withdraw, or reply STOP on WhatsApp at any time.
                         </span>
@@ -418,7 +418,7 @@ export default function AccountSettings({ path }: Props) {
                       </SettingsRow>
                     ) : null}
                     <SettingsRow label="Role" last>
-                      <span className="text-muted-foreground">{roleLabel}</span>
+                      <span className="text-ink-muted">{roleLabel}</span>
                     </SettingsRow>
                     <div className="flex justify-end gap-2 pt-4">
                       <Button
@@ -456,7 +456,7 @@ export default function AccountSettings({ path }: Props) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-8 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+                        className="h-8 gap-1.5 px-2 text-ink-muted hover:text-ink"
                         onClick={() => setEditingSecurity(true)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -469,7 +469,7 @@ export default function AccountSettings({ path }: Props) {
                 {!editingSecurity ? (
                   <div className="mt-1">
                     <SettingsRow label="Password" last>
-                      <span className="tracking-[0.18em] text-muted-foreground">••••••••</span>
+                      <span className="tracking-[0.18em] text-ink-muted">••••••••</span>
                     </SettingsRow>
                   </div>
                 ) : (
@@ -564,7 +564,7 @@ export default function AccountSettings({ path }: Props) {
           </div>
         </div>
 
-        <footer className="mt-10 flex justify-end border-t border-border/70 pt-6">
+        <footer className="mt-10 flex justify-end border-t border-line/70 pt-6">
           <Button
             type="button"
             variant="destructive"
@@ -696,23 +696,23 @@ function IdentityCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-panel px-5 py-5">
+    <div className="overflow-hidden rounded-lg border border-line bg-surface-raised px-5 py-5">
       <div className="flex items-center gap-4 sm:gap-5">
         <UserFace
           src={src}
           initials={loading ? '' : initials}
           alt=""
-          className="h-[4.5rem] w-[4.5rem] bg-primary-light text-[1.05rem] font-semibold tracking-tight text-primary ring-1 ring-primary/20 sm:h-20 sm:w-20 sm:text-[1.15rem]"
+          className="h-[4.5rem] w-[4.5rem] bg-brand-soft text-[1.05rem] font-semibold tracking-tight text-brand ring-1 ring-brand/20 sm:h-20 sm:w-20 sm:text-[1.15rem]"
         />
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <PageBackButton className="-ml-1.5" />
-            <h1 className="truncate font-serif text-[1.5rem] leading-none tracking-tight text-foreground sm:text-[1.75rem]">
+            <h1 className="truncate font-serif text-[1.5rem] leading-none tracking-tight text-ink sm:text-[1.75rem]">
               {name}
             </h1>
           </div>
-          <p className="mt-2 truncate font-mono text-[13px] text-muted-foreground">{email}</p>
-          <span className="mt-3 inline-flex rounded-md bg-primary-light px-2 py-0.5 text-[11px] font-semibold text-primary">
+          <p className="mt-2 truncate font-mono text-[13px] text-ink-muted">{email}</p>
+          <span className="mt-3 inline-flex rounded-md bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand">
             {roleLabel}
           </span>
         </div>
@@ -765,7 +765,7 @@ function IdentityCard({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8 text-muted-foreground hover:text-foreground"
+            className="h-8 text-ink-muted hover:text-ink"
             disabled={loading || busy !== null}
             onClick={() => void removePhoto()}
           >
@@ -862,13 +862,13 @@ function OutlookMailboxCard({
       {loading ? (
         <div className="mt-1">
           <SettingsRow label="Mailbox" last>
-            <span className="text-muted-foreground">Checking…</span>
+            <span className="text-ink-muted">Checking…</span>
           </SettingsRow>
         </div>
       ) : !configured ? (
         <div className="mt-1">
           <SettingsRow label="Mailbox" last>
-            <span className="text-muted-foreground">Not configured yet. Ask an admin.</span>
+            <span className="text-ink-muted">Not configured yet. Ask an admin.</span>
           </SettingsRow>
         </div>
       ) : (
@@ -877,11 +877,11 @@ function OutlookMailboxCard({
             <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
               {connected && msEmail ? (
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success" aria-hidden />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-positive" aria-hidden />
                   <span className="truncate font-mono text-[12px]">{msEmail}</span>
                 </span>
               ) : (
-                <span className="flex items-center gap-2 text-muted-foreground">
+                <span className="flex items-center gap-2 text-ink-muted">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-border" aria-hidden />
                   Not connected
                 </span>
@@ -936,9 +936,9 @@ function SectionHead({
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <h2 className="text-[15px] font-semibold tracking-tight text-foreground">{title}</h2>
+        <h2 className="text-[15px] font-semibold tracking-tight text-ink">{title}</h2>
         {description ? (
-          <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{description}</p>
+          <p className="mt-0.5 text-[12.5px] leading-snug text-ink-muted">{description}</p>
         ) : null}
       </div>
       {action}
@@ -961,14 +961,14 @@ function SettingsRow({
     <div
       className={cn(
         'grid gap-1 py-3 sm:grid-cols-[6.75rem_minmax(0,1fr)] sm:items-center sm:gap-4',
-        !last && 'border-b border-border/60',
+        !last && 'border-b border-line/60',
       )}
     >
       <div className="min-w-0">
-        <p className="text-[12.5px] text-muted-foreground">{label}</p>
-        {hint ? <p className="mt-0.5 text-[11px] text-muted-foreground/80">{hint}</p> : null}
+        <p className="text-[12.5px] text-ink-muted">{label}</p>
+        {hint ? <p className="mt-0.5 text-[11px] text-ink-muted/80">{hint}</p> : null}
       </div>
-      <div className="min-w-0 text-[13px] text-foreground">{children}</div>
+      <div className="min-w-0 text-[13px] text-ink">{children}</div>
     </div>
   );
 }

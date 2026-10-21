@@ -132,11 +132,11 @@ export default function ProjectDetail() {
           <div className="min-w-0">
             <div className="mb-1 flex min-w-0 items-center gap-1.5">
               <PageBackButton className="-ml-1.5" />
-              <h1 className="serif min-w-0 text-2xl tracking-tight text-foreground sm:text-3xl">
+              <h1 className="serif min-w-0 text-2xl tracking-tight text-ink sm:text-3xl">
                 {eng.companyName}
               </h1>
             </div>
-            <p className="font-mono text-[11px] tabular-nums text-text-tertiary">
+            <p className="font-mono text-[11px] tabular-nums text-ink-faint">
               {totalDone}/{totalSteps}
               {incorporationDate ? ` · ${formatDate(new Date(incorporationDate))}` : ''}
             </p>

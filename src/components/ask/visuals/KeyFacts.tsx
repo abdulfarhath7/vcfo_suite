@@ -8,8 +8,8 @@ export function KeyFacts({ visual }: { visual: KeyFactsVisual }) {
     <dl className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-[max-content_1fr]">
       {visual.facts.map((f) => (
         <div key={f.k} className="contents">
-          <dt className="text-[12px] font-medium text-muted-foreground">{f.k}</dt>
-          <dd className="text-[13px] text-foreground">{f.v}</dd>
+          <dt className="text-[12px] font-medium text-ink-muted">{f.k}</dt>
+          <dd className="text-[13px] text-ink">{f.v}</dd>
         </div>
       ))}
     </dl>

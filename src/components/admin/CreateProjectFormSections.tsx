@@ -84,7 +84,7 @@ type CreateProjectFieldErrorKey =
   | 'internId';
 
 const fieldLabelClass =
-  'flex items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground';
+  'flex items-center gap-1.5 text-[12.5px] font-medium text-ink-muted';
 const fieldControlClass = 'mt-2 h-11 px-3.5 text-[14px]';
 
 export type CreateProjectFormViewProps = {
@@ -176,7 +176,7 @@ function SectionTabs({
     <div
       role="tablist"
       aria-label="Project details"
-      className="flex gap-0.5 overflow-x-auto border-b border-border/70 px-2 sm:px-4"
+      className="flex gap-0.5 overflow-x-auto border-b border-line/70 px-2 sm:px-4"
     >
       {SECTION_TABS.map((tab) => {
         const isActive = tab.id === active;
@@ -192,12 +192,12 @@ function SectionTabs({
             className={cn(
               'relative inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3.5 py-3 text-[13px] font-medium transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-              isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+              isActive ? 'text-brand' : 'text-ink-muted hover:text-ink',
             )}
           >
             {done ? (
               <span
-                className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-success text-white"
+                className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-positive text-white"
                 aria-hidden
               >
                 <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
@@ -210,7 +210,7 @@ function SectionTabs({
               <motion.span
                 layoutId="create-section-tab-underline"
                 aria-hidden
-                className="absolute inset-x-2 bottom-0 h-[2.5px] rounded-full bg-primary"
+                className="absolute inset-x-2 bottom-0 h-[2.5px] rounded-full bg-brand"
                 transition={{ type: 'spring', stiffness: 420, damping: 36 }}
               />
             ) : null}
@@ -402,9 +402,9 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
 
       <fieldset disabled={submitting} className="m-0 min-w-0 space-y-4 border-0 p-0">
         {/* One card: name in the header, underline tabs inside, content below */}
-        <div className="overflow-hidden rounded-2xl border border-border/70 bg-panel">
+        <div className="overflow-hidden rounded-2xl border border-line/70 bg-surface-raised">
           <div className="px-5 pb-4 pt-5 sm:px-7 sm:pt-6">
-            <Label htmlFor="create-company-name" className="text-[12px] text-muted-foreground">
+            <Label htmlFor="create-company-name" className="text-[12px] text-ink-muted">
               Project name <span className="font-normal text-danger">*</span>
             </Label>
             {nameFieldVisible ? (
@@ -448,7 +448,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   {companyName}
                 </span>
                 <Pencil
-                  className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                  className="h-3.5 w-3.5 shrink-0 text-ink-muted opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
                   aria-hidden
                 />
               </button>
@@ -468,7 +468,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               <div>
                 <span
                   id="create-ownership-type-label"
-                  className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                  className="flex items-center gap-1.5 text-[12px] text-ink-muted"
                 >
                   <Network className="h-3.5 w-3.5" aria-hidden />
                   Ownership <span className="font-normal text-danger">*</span>
@@ -480,7 +480,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   labelledBy="create-ownership-type-label"
                   className="mt-2 max-w-xs"
                 />
-                <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                <p className="mt-1.5 text-[11.5px] text-ink-muted">
                   {OWNERSHIP_TYPES.find((opt) => opt.value === ownershipType)?.hint}
                   {independent ? ' — no parent or subsidiary details are asked.' : '.'}
                 </p>
@@ -490,7 +490,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               <div>
                 <span
                   id="create-company-type-label"
-                  className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                  className="flex items-center gap-1.5 text-[12px] text-ink-muted"
                 >
                   <Globe2 className="h-3.5 w-3.5" aria-hidden />
                   Subsidiary type <span className="font-normal text-danger">*</span>
@@ -502,7 +502,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   labelledBy="create-company-type-label"
                   className="mt-2 max-w-xs"
                 />
-                <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                <p className="mt-1.5 text-[11.5px] text-ink-muted">
                   {COMPANY_TYPES.find((opt) => opt.value === companyType)?.hint}
                 </p>
                 <FieldError id="create-company-type-error" message={fieldError('companyType')} />
@@ -513,7 +513,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               <div>
                 <span
                   id="create-parent-role-label"
-                  className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                  className="flex items-center gap-1.5 text-[12px] text-ink-muted"
                 >
                   <Handshake className="h-3.5 w-3.5" aria-hidden />
                   Parent&apos;s role <span className="font-normal text-danger">*</span>
@@ -529,7 +529,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   className="mt-2 max-w-xs"
                 />
                 {parentIndianRelationship ? (
-                  <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                  <p className="mt-1.5 text-[11.5px] text-ink-muted">
                     {
                       PARENT_INDIAN_RELATIONSHIPS.find(
                         (opt) => opt.value === parentIndianRelationship,
@@ -549,10 +549,10 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               <CreateProjectStartingPhasePicker stage={stage} onChange={setStage} />
 
               {needsParent ? (
-                <div className="space-y-5 rounded-xl border border-primary/20 bg-primary-light/50 p-4 sm:p-5">
+                <div className="space-y-5 rounded-xl border border-brand/20 bg-brand-soft/50 p-4 sm:p-5">
                   <div>
-                    <p className="text-[13px] font-medium text-foreground">Parent entity details</p>
-                    <p className="mt-1 text-[11.5px] text-muted-foreground">
+                    <p className="text-[13px] font-medium text-ink">Parent entity details</p>
+                    <p className="mt-1 text-[11.5px] text-ink-muted">
                       The company that owns this subsidiary. SPICe+ Part A is prefilled from
                       these details.
                     </p>
@@ -560,7 +560,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   <div>
                     <Label
                       htmlFor="create-parent-entity-name"
-                      className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                      className="flex items-center gap-1.5 text-[12px] text-ink-muted"
                     >
                       <Building2 className="h-3.5 w-3.5" aria-hidden />
                       Parent entity legal name <span className="font-normal text-danger">*</span>
@@ -585,7 +585,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   <div>
                     <Label
                       htmlFor="create-parent-entity-address"
-                      className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                      className="flex items-center gap-1.5 text-[12px] text-ink-muted"
                     >
                       <MapPin className="h-3.5 w-3.5" aria-hidden />
                       Parent entity registered address{' '}
@@ -614,14 +614,14 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               ) : null}
 
               {needsSubsidiary ? (
-                <div className="space-y-5 rounded-xl border border-primary/20 bg-primary-light/50 p-4 sm:p-5">
-                  <p className="text-[13px] font-medium text-foreground">
+                <div className="space-y-5 rounded-xl border border-brand/20 bg-brand-soft/50 p-4 sm:p-5">
+                  <p className="text-[13px] font-medium text-ink">
                     Subsidiary company details
                   </p>
                   <div>
                     <Label
                       htmlFor="create-subsidiary-legal-name"
-                      className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                      className="flex items-center gap-1.5 text-[12px] text-ink-muted"
                     >
                       <Building2 className="h-3.5 w-3.5" aria-hidden />
                       Subsidiary company legal name{' '}
@@ -648,7 +648,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                   <div>
                     <Label
                       htmlFor="create-subsidiary-registered-address"
-                      className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                      className="flex items-center gap-1.5 text-[12px] text-ink-muted"
                     >
                       <MapPin className="h-3.5 w-3.5" aria-hidden />
                       Subsidiary company registered address{' '}
@@ -681,7 +681,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               <div>
                 <span
                   id="create-entity-legal-form-label"
-                  className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                  className="flex items-center gap-1.5 text-[12px] text-ink-muted"
                 >
                   <Layers className="h-3.5 w-3.5" aria-hidden />
                   Entity legal form <span className="font-normal text-danger">*</span>
@@ -723,18 +723,18 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                               <div
                                 className={cn(
                                   fieldControlClass,
-                                  'flex w-full items-center rounded-md border border-border/80 bg-muted/30 px-3.5',
+                                  'flex w-full items-center rounded-md border border-line/80 bg-surface-sunken/30 px-3.5',
                                 )}
                               >
                                 <span className="flex flex-col items-start gap-0.5">
-                                  <span className="text-[13px] font-medium text-foreground">
+                                  <span className="text-[13px] font-medium text-ink">
                                     {lockedManager?.name ?? 'You'}
-                                    <span className="ml-2 text-[11px] font-normal text-muted-foreground">
+                                    <span className="ml-2 text-[11px] font-normal text-ink-muted">
                                       (you)
                                     </span>
                                   </span>
                                   {lockedManager?.email ? (
-                                    <span className="font-mono text-[11px] text-muted-foreground">
+                                    <span className="font-mono text-[11px] text-ink-muted">
                                       {lockedManager.email}
                                     </span>
                                   ) : null}
@@ -767,7 +767,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                                     <SelectItem key={m.id} value={m.id} className="py-2.5">
                                       <span className="flex flex-col items-start gap-0.5">
                                         <span className="text-[13px] font-medium">{m.name}</span>
-                                        <span className="font-mono text-[11px] text-muted-foreground">
+                                        <span className="font-mono text-[11px] text-ink-muted">
                                           {m.email}
                                         </span>
                                       </span>
@@ -781,7 +781,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="mt-0.5 h-11 w-11 shrink-0 text-muted-foreground hover:text-foreground"
+                                className="mt-0.5 h-11 w-11 shrink-0 text-ink-muted hover:text-ink"
                                 onClick={() => removeManagerAt(index)}
                                 aria-label="Remove manager"
                               >
@@ -847,12 +847,12 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                                     <span className="text-[13px] font-medium">
                                       {t.name}
                                       {index === 0 && id === t.id ? (
-                                        <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+                                        <span className="ml-1.5 text-[11px] font-normal text-ink-muted">
                                           primary
                                         </span>
                                       ) : null}
                                     </span>
-                                    <span className="font-mono text-[11px] text-muted-foreground">
+                                    <span className="font-mono text-[11px] text-ink-muted">
                                       {email ?? t.initials}
                                     </span>
                                   </span>
@@ -866,7 +866,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="mt-0.5 h-11 w-11 shrink-0 text-muted-foreground hover:text-foreground"
+                            className="mt-0.5 h-11 w-11 shrink-0 text-ink-muted hover:text-ink"
                             onClick={() => removeLeadAt(index)}
                             aria-label="Remove project lead"
                           >
@@ -905,7 +905,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                     <div>
                       <Label
                         htmlFor="edit-client-contact"
-                        className="flex items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground"
+                        className="flex items-center gap-1.5 text-[12.5px] font-medium text-ink-muted"
                       >
                         <User className="h-3.5 w-3.5" aria-hidden />
                         Client contact name
@@ -921,7 +921,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                     <div>
                       <Label
                         htmlFor="edit-client-email"
-                        className="text-[12.5px] font-medium text-muted-foreground"
+                        className="text-[12.5px] font-medium text-ink-muted"
                       >
                         Portal sign-in email
                       </Label>

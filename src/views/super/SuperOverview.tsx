@@ -64,7 +64,7 @@ export default function SuperOverview() {
         {seo}
         <div className="surface px-6 py-8 text-center">
           <p className="serif text-lg">The firm overview could not load</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-ink-muted">
             {query.error instanceof Error ? query.error.message : 'Something went wrong.'}
           </p>
           <AccentButton className="mt-4" variant="outline" onClick={() => void query.refetch()}>

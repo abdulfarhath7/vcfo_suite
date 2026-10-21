@@ -8,7 +8,7 @@ export function DocStatusChip({ status, className }: { status: DocStatus; classN
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[12.5px] font-semibold',
+        'inline-flex items-center gap-1.5 rounded-sm px-2.5 py-0.5 text-[12.5px] font-semibold',
         DOC_STATUS_CHIP_TONE[status],
         className,
       )}

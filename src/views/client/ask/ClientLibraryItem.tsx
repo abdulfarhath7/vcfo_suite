@@ -20,10 +20,10 @@ export default function ClientLibraryItem() {
   const [error, setError] = useState<string | null>(null);
   const query = useQuery({ queryKey: ['ask', 'library', id], queryFn: () => fetchLibraryItem(id), enabled: Boolean(id) });
 
-  if (query.isLoading) return <p className="p-6 text-[13px] text-muted-foreground">Loading…</p>;
+  if (query.isLoading) return <p className="p-6 text-[13px] text-ink-muted">Loading…</p>;
   if (query.isError || !query.data) {
     return (
-      <p role="alert" className="p-6 text-[13px] text-danger-text">
+      <p role="alert" className="p-6 text-[13px] text-danger">
         This item is not in your library.
       </p>
     );
@@ -57,12 +57,12 @@ export default function ClientLibraryItem() {
               setError((err as Error).message);
             }
           }}
-          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[13px] text-muted-foreground hover:bg-muted hover:text-danger-text"
+          className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-[13px] text-ink-muted hover:bg-surface-sunken hover:text-danger"
         >
           <Trash2 className="h-4 w-4" aria-hidden /> Remove from library
         </button>
         {error && (
-          <p role="alert" className="text-[12.5px] text-danger-text">
+          <p role="alert" className="text-[12.5px] text-danger">
             {error}
           </p>
         )}

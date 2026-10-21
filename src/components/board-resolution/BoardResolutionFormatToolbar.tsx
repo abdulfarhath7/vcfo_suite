@@ -41,17 +41,17 @@ export function BoardResolutionFormatToolbar({
   const toolbarDisabled = disabled || !formatState.inPreview;
 
   const iconButtonClass = cn(
-    'h-7 w-7 shrink-0 text-text-secondary hover:text-ink hover:bg-raised/80',
-    'disabled:opacity-50 disabled:text-text-secondary',
+    'h-7 w-7 shrink-0 text-ink-muted hover:text-ink hover:bg-surface-sunken/80',
+    'disabled:opacity-50 disabled:text-ink-muted',
   );
 
   const activeIconButtonClass =
-    'bg-primary/15 text-blue-600 ring-1 ring-gold/40 hover:bg-primary/15 hover:text-blue-600';
+    'bg-brand/15 text-blue-600 ring-1 ring-1 ring-line/40 hover:bg-brand/15 hover:text-blue-600';
 
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-md border border-border bg-panel p-0.5 shadow-sm',
+        'inline-flex items-center gap-0.5 rounded-md border border-line bg-surface-raised p-0.5 shadow-sm',
         className,
       )}
       role="toolbar"

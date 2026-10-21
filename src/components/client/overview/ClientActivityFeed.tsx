@@ -39,14 +39,14 @@ export function ClientActivityFeed({ activity }: { activity: ClientOverviewActiv
       action={
         <Link
           href="/app/client/audit"
-          className="text-[11.5px] font-bold text-primary hover:underline"
+          className="text-[11.5px] font-semibold text-brand hover:underline"
         >
           Full log
         </Link>
       }
     >
       {activity.length === 0 ? (
-        <p className="text-[12.5px] text-muted-foreground">Nothing yet.</p>
+        <p className="text-[12.5px] text-ink-muted">Nothing yet.</p>
       ) : (
         <ol className="space-y-2.5">
           {collapseRuns(activity)
@@ -54,17 +54,17 @@ export function ClientActivityFeed({ activity }: { activity: ClientOverviewActiv
             .map((event) => (
               <li key={event.id} className="flex min-w-0 gap-2.5">
                 <span
-                  className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary/40"
+                  className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand/40"
                   aria-hidden
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-[12.5px] leading-snug text-ink">
                     {event.label}
                     {event.count > 1 ? (
-                      <span className="ml-1.5 text-muted-foreground">×{event.count}</span>
+                      <span className="ml-1.5 text-ink-muted">×{event.count}</span>
                     ) : null}
                   </p>
-                  <Mono className="text-[10.5px] tabular-nums text-muted-foreground">
+                  <Mono className="text-[10.5px] tabular-nums text-ink-muted">
                     {formatClientDate(event.at)}
                   </Mono>
                 </div>

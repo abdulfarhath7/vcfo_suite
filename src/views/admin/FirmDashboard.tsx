@@ -141,18 +141,18 @@ export default function FirmDashboard() {
               <div className="flex min-w-0 items-center gap-3">
                 <DashDonut
                   segments={[
-                    { n: pulse.good, color: 'oklch(var(--success))' },
+                    { n: pulse.good, color: 'oklch(var(--positive))' },
                     { n: pulse.pending, color: 'oklch(var(--warning))' },
-                    { n: pendingApprovals, color: 'oklch(var(--accent-cyan))' },
+                    { n: pendingApprovals, color: 'oklch(var(--info))' },
                   ]}
                   centerLabel={pulse.total}
                   centerCaption="projects"
                 />
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <DashLegendRow swatchClassName="bg-success" label="On track" count={pulse.good} />
+                  <DashLegendRow swatchClassName="bg-positive" label="On track" count={pulse.good} />
                   <DashLegendRow swatchClassName="bg-warning" label="Stuck" count={pulse.pending} />
                   <DashLegendRow
-                    swatchClassName="bg-accent-cyan"
+                    swatchClassName="bg-ink-faint"
                     label="Awaiting PM"
                     count={pendingApprovals}
                   />
@@ -167,17 +167,17 @@ export default function FirmDashboard() {
               meta={managerStrip.length || undefined}
             >
               {managerStrip.length === 0 ? (
-                <p className="py-3 text-center text-[12.5px] text-muted-foreground">
+                <p className="py-3 text-center text-[12.5px] text-ink-muted">
                   No open Pre/Post projects.
                 </p>
               ) : (
-                <ul className="divide-y divide-border">
+                <ul className="divide-y divide-line">
                   {managerStrip.map((row) => {
                     const name = nameFor(row.managerId);
                     return (
                       <li key={row.managerId} className="flex min-w-0 items-center gap-2.5 py-2.5">
                         <span
-                          className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-extrabold ${TONE_BADGE[toneForKey(row.managerId)]}`}
+                          className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-semibold ${TONE_BADGE[toneForKey(row.managerId)]}`}
                         >
                           {initialsFromName(name).slice(0, 2)}
                         </span>
@@ -189,16 +189,16 @@ export default function FirmDashboard() {
                           ) : (
                             <Link
                               href={`/app/admin/people?managerId=${row.managerId}`}
-                              className="block truncate text-[12.5px] font-semibold text-ink hover:text-primary hover:underline"
+                              className="block truncate text-[12.5px] font-semibold text-ink hover:text-brand hover:underline"
                             >
                               {name}
                             </Link>
                           )}
-                          <span className="block text-[11px] text-muted-foreground">
+                          <span className="block text-[11px] text-ink-muted">
                             {row.open} open · {row.stuck} stuck · {row.awaitingPm} awaiting
                           </span>
                         </span>
-                        <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full bg-primary-light px-1.5 text-[11px] font-extrabold tabular-nums text-primary">
+                        <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-sm bg-brand-soft px-1.5 text-[11px] font-semibold tabular-nums text-brand">
                           {row.open}
                         </span>
                       </li>

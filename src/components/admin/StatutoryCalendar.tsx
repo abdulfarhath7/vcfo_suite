@@ -68,9 +68,9 @@ const SCOPES: { id: Scope; label: string }[] = [
 
 /** Status lane — reuses the app's existing status meanings, never category colour. */
 const STATUS_PILL: Record<StatutoryStatus, string> = {
-  overdue: 'bg-danger-light text-danger-text',
-  'due-soon': 'bg-accent-teal-soft text-accent-teal',
-  upcoming: 'bg-primary-light text-primary-dark',
+  overdue: 'bg-danger-soft text-danger',
+  'due-soon': 'bg-surface-sunken text-ink-muted',
+  upcoming: 'bg-brand-soft text-brand-strong',
 };
 
 function monthKey(d: Date): number {
@@ -498,7 +498,7 @@ export function StatutoryCalendar({
       <div className="flex flex-wrap items-center gap-3 px-1 pb-4">
         <div className="flex min-w-0 items-center gap-2.5">
           {title}
-          <span className="mono rounded-md bg-primary-light px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary">
+          <span className="mono rounded-md bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-brand">
             {FY_LABEL}
           </span>
         </div>
@@ -516,7 +516,7 @@ export function StatutoryCalendar({
           {trackerHref ? (
             <Link
               href={trackerHref}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-medium text-primary transition-colors hover:bg-primary-light"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-medium text-brand transition-colors hover:bg-brand-soft"
             >
               <ListChecks className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
               Filing tracker
@@ -525,7 +525,7 @@ export function StatutoryCalendar({
           <button
             type="button"
             onClick={() => applyMode('maximized')}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-panel px-2.5 text-[12.5px] font-medium text-primary transition-colors hover:border-primary/35 hover:bg-primary-light"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface-raised px-2.5 text-[12.5px] font-medium text-brand transition-colors hover:border-brand/35 hover:bg-brand-soft"
           >
             <Maximize2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
             Full screen
@@ -545,10 +545,10 @@ export function StatutoryCalendar({
       <div className="stat-cal-stage">
         <section className="surface stat-cal-list overflow-hidden">
           <div className="stat-cal-list-head">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-violet text-white">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-ink-faint text-white">
               <CalendarDays className="h-3.5 w-3.5" aria-hidden />
             </span>
-            <h3 className="min-w-0 flex-1 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
+            <h3 className="min-w-0 flex-1 truncate text-[11.5px] font-semibold uppercase tracking-[0.06em] text-ink">
               {monthName} · {deadlineLabel(monthCount)}
             </h3>
             <SegmentedPicker
@@ -587,7 +587,7 @@ export function StatutoryCalendar({
           <div className="stat-cal-nav-head">
             <p id={monthHeadingId} className="stat-cal-nav-month">
               {monthName}
-              <span className="ml-1.5 font-medium text-muted-foreground">{monthYear}</span>
+              <span className="ml-1.5 font-medium text-ink-muted">{monthYear}</span>
             </p>
             <div className="flex items-center gap-0.5">
               <button

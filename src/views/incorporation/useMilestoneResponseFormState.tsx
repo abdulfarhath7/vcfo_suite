@@ -930,7 +930,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   /** Lead-only field on the client's form: read-only, with a line saying who fills it. */
   const leadOnlyNote = (fieldId: string) =>
     isClient && directFlow && isLeadOnlyField(item.id, fieldId) ? (
-      <p className="text-[11px] text-muted-foreground">{LEAD_ONLY_FIELD_HELPER}</p>
+      <p className="text-[11px] text-ink-muted">{LEAD_ONLY_FIELD_HELPER}</p>
     ) : null;
 
   const toggleFieldUnlock = (fieldId: string) => {
@@ -1370,7 +1370,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     const value = (displayValues[field.id] ?? '').trim();
     const emptyLabel = empty === 'dash' ? '—' : 'Not provided yet';
     const emptyClass =
-      empty === 'dash' ? 'text-muted-foreground' : 'text-muted-foreground italic';
+      empty === 'dash' ? 'text-ink-muted' : 'text-ink-muted italic';
 
     if (field.type === 'file') {
       if (!value) return <p className={cn('text-sm', emptyClass)}>{emptyLabel}</p>;
@@ -1404,8 +1404,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       return (
         <div className="space-y-3">
           {entries.map((entry) => (
-            <div key={entry.id} className="rounded-lg border border-border/70 px-3 py-2">
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            <div key={entry.id} className="rounded-lg border border-line/70 px-3 py-2">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
                 {field.entryLabel ?? 'Entry'} {entry.index}
               </p>
               <dl className="milestone-record">
@@ -1424,7 +1424,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
     if ((field.type === 'select' || field.type === 'segmented') && field.options) {
       return (
-        <p className={cn('text-sm leading-relaxed', value ? 'text-foreground' : emptyClass)}>
+        <p className={cn('text-sm leading-relaxed', value ? 'text-ink' : emptyClass)}>
           {value ? (field.options.find((o) => o.value === value)?.label ?? value) : emptyLabel}
         </p>
       );
@@ -1432,7 +1432,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
     if (field.type === 'date') {
       return (
-        <p className={cn('text-sm leading-relaxed', value ? 'text-foreground' : emptyClass)}>
+        <p className={cn('text-sm leading-relaxed', value ? 'text-ink' : emptyClass)}>
           {value ? (formatPre1DateDisplay(value) ?? value) : emptyLabel}
         </p>
       );
@@ -1442,7 +1442,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
       <p
         className={cn(
           'text-sm leading-relaxed whitespace-pre-wrap',
-          value ? 'text-foreground' : emptyClass,
+          value ? 'text-ink' : emptyClass,
         )}
       >
         {value || emptyLabel}
@@ -1453,7 +1453,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const renderReadOnlyField = (field: ChecklistField, options?: { showUnlock?: boolean }) => (
     <div key={field.id} className={fieldShellClass(field, 'space-y-1.5')}>
       <div className="flex items-center justify-between gap-3">
-        <p className="flex-1 text-xs font-medium leading-snug text-muted-foreground">
+        <p className="flex-1 text-xs font-medium leading-snug text-ink-muted">
           {field.label}
         </p>
         <FieldUnlockControl
@@ -1500,7 +1500,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
           <div className="flex items-center justify-between gap-3">
             <Label
               htmlFor={`${item.id}-${field.id}`}
-              className="flex-1 text-xs font-medium leading-snug text-muted-foreground"
+              className="flex-1 text-xs font-medium leading-snug text-ink-muted"
             >
               {field.label}
               {field.required && <span className="text-danger ml-0.5" aria-hidden>*</span>}
@@ -1572,7 +1572,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
                   'text-[11px] tabular-nums',
                   wordCount != null && wordCount > field.maxWords
                     ? 'text-danger'
-                    : 'text-muted-foreground',
+                    : 'text-ink-muted',
                 )}
               >
                 {wordCount ?? 0} / {field.maxWords} words
@@ -1585,8 +1585,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             aria-label={field.label}
             {...invalidProps}
             className={cn(
-              'inline-flex max-w-full flex-wrap gap-1 rounded-lg border bg-raised/60 p-1',
-              error ? 'border-danger' : 'border-border',
+              'inline-flex max-w-full flex-wrap gap-1 rounded-lg border bg-surface-sunken/60 p-1',
+              error ? 'border-danger' : 'border-line',
             )}
           >
             {field.options.map((opt) => {
@@ -1601,8 +1601,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
                   className={cn(
                     'milestone-segment-option',
                     selected
-                      ? 'bg-panel text-foreground shadow-sm ring-1 ring-border'
-                      : 'text-slate-600 hover:bg-white/70 hover:text-foreground',
+                      ? 'bg-surface-raised text-ink shadow-sm ring-1 ring-line'
+                      : 'text-slate-600 hover:bg-white/70 hover:text-ink',
                   )}
                 >
                   {opt.label}
@@ -1706,16 +1706,16 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
               {uploadingField === field.id ? (
                 <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-blue-700" aria-hidden />
               ) : (
-                <Upload className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <Upload className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden />
               )}
-              <span className="inline-flex h-7 shrink-0 items-center rounded-md border border-border bg-raised px-2.5 text-xs font-medium text-foreground">
+              <span className="inline-flex h-7 shrink-0 items-center rounded-md border border-line bg-surface-sunken px-2.5 text-xs font-medium text-ink">
                 {uploadingField === field.id
                   ? 'Uploading…'
                   : draft[field.id]?.trim()
                     ? 'Replace file'
                     : 'Choose file'}
               </span>
-              <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+              <span className="min-w-0 truncate text-[11px] text-ink-muted">
                 PDF, DOCX, or image · max {maxUploadSizeLabel()}
               </span>
               <input
@@ -1738,7 +1738,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             <p
               className={cn(
                 'text-sm leading-relaxed',
-                draft[field.id]?.trim() ? 'text-foreground' : 'text-muted-foreground italic',
+                draft[field.id]?.trim() ? 'text-ink' : 'text-ink-muted italic',
               )}
             >
               {draft[field.id]?.trim()
@@ -1765,7 +1765,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             tabIndex={-1}
             aria-readonly="true"
             placeholder={derivedDisplayPlaceholder(item.id, field.id) ?? undefined}
-            className="milestone-form-input cursor-default bg-muted/40 text-foreground focus-visible:ring-0"
+            className="milestone-form-input cursor-default bg-surface-sunken/40 text-ink focus-visible:ring-0"
           />
         ) : (
           <Input
@@ -1872,8 +1872,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
             <p
               className={
                 recordLayout
-                  ? 'text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink'
-                  : 'text-base font-semibold text-foreground'
+                  ? 'text-[11.5px] font-semibold uppercase tracking-[0.06em] text-ink'
+                  : 'text-base font-semibold text-ink'
               }
             >
               {group.section}

@@ -9,20 +9,20 @@ export function TrustBadge({ answer, firmName }: { answer: AnswerEnvelope; firmN
   if (answer.origin === 'refusal') return null;
   if (answer.draft) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+      <span className="inline-flex items-center gap-1 rounded-sm bg-surface-sunken px-2 py-0.5 text-[11px] font-medium text-ink-muted">
         <FileClock className="h-3 w-3" aria-hidden /> Not yet reviewed · check with your lead
       </span>
     );
   }
   if (answer.origin === 'reviewed' || answer.origin === 'deterministic') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-success-light px-2 py-0.5 text-[11px] font-medium text-success-text">
+      <span className="inline-flex items-center gap-1 rounded-sm bg-positive-soft px-2 py-0.5 text-[11px] font-medium text-positive">
         <BadgeCheck className="h-3 w-3" aria-hidden /> Reviewed by {firmName}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+    <span className="inline-flex items-center gap-1 rounded-sm bg-surface-sunken px-2 py-0.5 text-[11px] font-medium text-ink-muted">
       <Sparkles className="h-3 w-3" aria-hidden /> AI answer · check with your lead
     </span>
   );

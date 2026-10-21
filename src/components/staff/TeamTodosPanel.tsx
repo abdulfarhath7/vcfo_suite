@@ -25,20 +25,20 @@ export function TeamTodosPanel({
   return (
     <section className="surface h-fit min-w-0 overflow-hidden">
       <div className="flex min-w-0 items-start justify-between gap-3 px-4 pt-3">
-        <h2 className="text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">Todos</h2>
+        <h2 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-ink">Todos</h2>
       </div>
 
       {query.isError ? (
-        <p className="px-4 pb-3 pt-2 text-[13px] text-muted-foreground">Couldn’t load todos.</p>
+        <p className="px-4 pb-3 pt-2 text-[13px] text-ink-muted">Couldn’t load todos.</p>
       ) : groups.length === 0 ? (
-        <p className="px-4 pb-3 pt-2 text-[13px] text-muted-foreground">No open todos.</p>
+        <p className="px-4 pb-3 pt-2 text-[13px] text-ink-muted">No open todos.</p>
       ) : (
         <div className="max-h-[min(24rem,50vh)] space-y-3 overflow-y-auto px-4 pb-3 pt-2">
           {groups.map((group) => (
             <div key={group.ownerId}>
               <div className="mb-1.5 flex min-w-0 items-baseline gap-2">
                 <p className="truncate text-[13px] font-semibold text-ink">{group.ownerName}</p>
-                <span className="shrink-0 text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                <span className="shrink-0 text-[10.5px] font-medium uppercase tracking-[0.04em] text-ink-muted">
                   {ROLE_UI_LABEL[group.ownerRole] ?? group.ownerRole}
                 </span>
               </div>
@@ -46,7 +46,7 @@ export function TeamTodosPanel({
                 {group.todos.map((todo) => (
                   <li
                     key={todo.id}
-                    className="rounded-xl bg-raised/60 px-3 py-2 text-[13px] font-medium text-ink ring-1 ring-border/70"
+                    className="rounded-xl bg-surface-sunken/60 px-3 py-2 text-[13px] font-medium text-ink ring-1 ring-line/70"
                   >
                     {todo.title}
                   </li>

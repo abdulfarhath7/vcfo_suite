@@ -106,11 +106,11 @@ export default function DocPackView() {
       <div className="mb-5">
         <div className="flex min-w-0 items-center gap-1.5">
           <PageBackButton className="-ml-1.5" />
-          <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-foreground">
+          <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-ink">
             Pre-incorporation documents
           </h1>
         </div>
-        <p className="mt-1 pl-8 text-[13px] text-muted-foreground">
+        <p className="mt-1 pl-8 text-[13px] text-ink-muted">
           {eng.companyName}. Generated from SPICe+ Part A and Part B. Regenerates on every download unless a
           version was attached to Pre-7.
         </p>
@@ -135,10 +135,10 @@ export default function DocPackView() {
               <span
                 key={status}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-full px-3 py-1 text-[13px]',
-                  status === 'ready' && 'bg-success-light text-success-text',
-                  status === 'needs-inputs' && 'bg-warning-light text-warning-text',
-                  status === 'waiting-release' && 'bg-muted text-muted-foreground',
+                  'inline-flex items-center gap-2 rounded-sm px-3 py-1 text-[13px]',
+                  status === 'ready' && 'bg-positive-soft text-positive',
+                  status === 'needs-inputs' && 'bg-warning-soft text-warning',
+                  status === 'waiting-release' && 'bg-surface-sunken text-ink-muted',
                 )}
               >
                 <DocStatusDot status={status} />
@@ -150,7 +150,7 @@ export default function DocPackView() {
                 <a
                   href={docPackZipUrl(eng.id)}
                   download
-                  className="inline-flex h-10 min-h-[44px] items-center rounded-md border border-border bg-panel px-4 text-sm font-medium text-primary hover:border-primary/35 hover:bg-primary-light sm:min-h-10"
+                  className="inline-flex h-10 min-h-[44px] items-center rounded-md border border-line bg-surface-raised px-4 text-sm font-medium text-brand hover:border-brand/35 hover:bg-brand-soft sm:min-h-10"
                 >
                   <Archive className="mr-2 h-4 w-4" aria-hidden />
                   Download ready ({readyCount}) as .zip
@@ -172,10 +172,10 @@ export default function DocPackView() {
                 aria-pressed={part === filter}
                 onClick={() => setPart(filter)}
                 className={cn(
-                  'rounded-full border px-3.5 py-1.5 text-[13px] transition-colors',
+                  'rounded-sm border px-3.5 py-1.5 text-[13px] transition-colors',
                   part === filter
-                    ? 'border-primary bg-primary-light font-semibold text-primary'
-                    : 'border-border bg-panel text-muted-foreground hover:bg-muted/40',
+                    ? 'border-brand bg-brand-soft font-semibold text-brand'
+                    : 'border-line bg-surface-raised text-ink-muted hover:bg-surface-sunken/40',
                 )}
               >
                 {PART_LABEL[filter]} ({countFor(filter)})
@@ -207,10 +207,10 @@ export default function DocPackView() {
           )}
 
           {summary.skippedDirectors.length > 0 ? (
-            <p className="mt-3 text-[12.5px] text-muted-foreground">
+            <p className="mt-3 text-[12.5px] text-ink-muted">
               Not in the pack yet: {summary.skippedDirectors.map((d) => d.displayName).join(', ')}.{' '}
               {summary.skippedDirectors[0]?.reason}.{' '}
-              <Link href={hrefForStep('pre-15')} className="text-primary hover:underline">
+              <Link href={hrefForStep('pre-15')} className="text-brand hover:underline">
                 Proposed Directors
               </Link>
             </p>

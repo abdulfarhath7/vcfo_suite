@@ -25,10 +25,10 @@ type SourceRow = {
 const TYPE_LABEL: Record<string, string> = { govt: 'Government', firm_pdf: 'Firm document', firm_note: 'Firm note' };
 const AUDIENCE_LABEL: Record<string, string> = { client: 'Clients', staff: 'Staff only', both: 'Clients and staff' };
 const STATUS_TONE: Record<SourceRow['status'], string> = {
-  processing: 'bg-muted text-muted-foreground',
-  ready: 'bg-success-light text-success-text',
-  failed: 'bg-danger-light text-danger-text',
-  archived: 'bg-muted text-muted-foreground',
+  processing: 'bg-surface-sunken text-ink-muted',
+  ready: 'bg-positive-soft text-positive',
+  failed: 'bg-danger-soft text-danger',
+  archived: 'bg-surface-sunken text-ink-muted',
 };
 const STATUS_LABEL: Record<SourceRow['status'], string> = {
   processing: 'Indexing',
@@ -44,7 +44,7 @@ async function readJson<T>(res: Response, fallback: string): Promise<T> {
 }
 
 const input =
-  'min-h-[40px] w-full rounded-[var(--radius-md)] border border-input bg-panel px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40';
+  'min-h-[40px] w-full rounded-[var(--radius-md)] border border-input bg-surface-raised px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40';
 
 /** Knowledge sources Ask VCFO retrieves from (Phase 7). Admin / super admin only. */
 export default function AskSources() {
@@ -86,7 +86,7 @@ export default function AskSources() {
         actions={
           <Link
             href="/app/admin/ask-vcfo/gaps"
-            className="inline-flex min-h-[40px] items-center rounded-[var(--radius-md)] border border-border px-3 text-[13px] font-medium text-foreground hover:bg-muted"
+            className="inline-flex min-h-[40px] items-center rounded-[var(--radius-md)] border border-line px-3 text-[13px] font-medium text-ink hover:bg-surface-sunken"
           >
             Question gaps
           </Link>
@@ -94,7 +94,7 @@ export default function AskSources() {
       />
 
       <form
-        className="mt-4 grid gap-3 rounded-[var(--radius)] border border-border bg-panel p-4 md:grid-cols-2"
+        className="mt-4 grid gap-3 rounded-[var(--radius)] border border-line bg-surface-raised p-4 md:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
           setError(null);
@@ -103,13 +103,13 @@ export default function AskSources() {
         }}
       >
         <div className="md:col-span-2">
-          <label htmlFor="src-title" className="text-[12.5px] font-medium text-foreground">
+          <label htmlFor="src-title" className="text-[12.5px] font-medium text-ink">
             Title
           </label>
           <input id="src-title" name="title" required maxLength={200} className={input} />
         </div>
         <div>
-          <label htmlFor="src-type" className="text-[12.5px] font-medium text-foreground">
+          <label htmlFor="src-type" className="text-[12.5px] font-medium text-ink">
             Source type
           </label>
           <select id="src-type" name="sourceType" className={input} defaultValue="firm_pdf">
@@ -119,7 +119,7 @@ export default function AskSources() {
           </select>
         </div>
         <div>
-          <label htmlFor="src-audience" className="text-[12.5px] font-medium text-foreground">
+          <label htmlFor="src-audience" className="text-[12.5px] font-medium text-ink">
             Used in answers for
           </label>
           <select id="src-audience" name="audience" className={input} defaultValue="staff">
@@ -129,19 +129,19 @@ export default function AskSources() {
           </select>
         </div>
         <div>
-          <label htmlFor="src-url" className="text-[12.5px] font-medium text-foreground">
+          <label htmlFor="src-url" className="text-[12.5px] font-medium text-ink">
             Source link (optional)
           </label>
           <input id="src-url" name="sourceUrl" type="url" className={input} placeholder="https://" />
         </div>
         <div>
-          <label htmlFor="src-date" className="text-[12.5px] font-medium text-foreground">
+          <label htmlFor="src-date" className="text-[12.5px] font-medium text-ink">
             Effective from (optional)
           </label>
           <input id="src-date" name="effectiveFrom" type="date" className={input} />
         </div>
         <fieldset className="md:col-span-2">
-          <legend className="text-[12.5px] font-medium text-foreground">Content</legend>
+          <legend className="text-[12.5px] font-medium text-ink">Content</legend>
           <div className="mt-1 flex gap-3 text-[13px]">
             <label className="inline-flex items-center gap-1.5">
               <input type="radio" name="kind" checked={kind === 'file'} onChange={() => setKind('file')} /> Upload a file
@@ -167,12 +167,12 @@ export default function AskSources() {
           <button
             type="submit"
             disabled={upload.isPending}
-            className="min-h-[40px] rounded-[var(--radius-md)] bg-primary px-4 text-[13px] font-medium text-primary-foreground hover:bg-primary-dark disabled:opacity-50"
+            className="min-h-[40px] rounded-[var(--radius-md)] bg-brand px-4 text-[13px] font-medium text-on-brand hover:bg-brand-strong disabled:opacity-50"
           >
             {upload.isPending ? 'Uploading…' : 'Add source'}
           </button>
           {error && (
-            <p role="alert" className="text-[12.5px] text-danger-text">
+            <p role="alert" className="text-[12.5px] text-danger">
               {error}
             </p>
           )}
@@ -180,27 +180,27 @@ export default function AskSources() {
       </form>
 
       <section className="mt-6" aria-label="Sources">
-        {list.isLoading && <p className="text-[13px] text-muted-foreground">Loading…</p>}
+        {list.isLoading && <p className="text-[13px] text-ink-muted">Loading…</p>}
         {list.isError && (
-          <p role="alert" className="text-[13px] text-danger-text">
+          <p role="alert" className="text-[13px] text-danger">
             Could not load sources.
           </p>
         )}
         {list.data && list.data.documents.length === 0 && (
-          <p className="text-[13px] text-muted-foreground">No sources yet. Reviewed topics still answer common questions.</p>
+          <p className="text-[13px] text-ink-muted">No sources yet. Reviewed topics still answer common questions.</p>
         )}
-        <ul className="divide-y divide-border overflow-hidden rounded-[var(--radius)] border border-border">
+        <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius)] border border-line">
           {list.data?.documents.map((doc) => (
-            <li key={doc.id} className="flex flex-wrap items-center gap-3 bg-panel px-4 py-3">
+            <li key={doc.id} className="flex flex-wrap items-center gap-3 bg-surface-raised px-4 py-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] font-medium text-foreground">{doc.title}</p>
-                <p className="text-[12px] text-muted-foreground">
+                <p className="truncate text-[13.5px] font-medium text-ink">{doc.title}</p>
+                <p className="text-[12px] text-ink-muted">
                   {TYPE_LABEL[doc.sourceType] ?? doc.sourceType} · {AUDIENCE_LABEL[doc.audience] ?? doc.audience}
                   {doc.effectiveFrom ? ` · effective ${doc.effectiveFrom}` : ''}
                 </p>
-                {doc.error && <p className="text-[12px] text-danger-text">{doc.error}</p>}
+                {doc.error && <p className="text-[12px] text-danger">{doc.error}</p>}
               </div>
-              <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', STATUS_TONE[doc.status])}>
+              <span className={cn('rounded-sm px-2 py-0.5 text-[11px] font-medium', STATUS_TONE[doc.status])}>
                 {STATUS_LABEL[doc.status]}
               </span>
               {doc.status !== 'archived' && (
@@ -209,7 +209,7 @@ export default function AskSources() {
                     <button
                       type="button"
                       onClick={() => act.mutate({ id: doc.id, action: 'retry' })}
-                      className="min-h-[36px] rounded-[var(--radius-md)] border border-border px-2.5 text-[12px] hover:bg-muted"
+                      className="min-h-[36px] rounded-[var(--radius-md)] border border-line px-2.5 text-[12px] hover:bg-surface-sunken"
                     >
                       {doc.status === 'failed' ? 'Retry' : 'Re-index'}
                     </button>
@@ -217,7 +217,7 @@ export default function AskSources() {
                   <button
                     type="button"
                     onClick={() => act.mutate({ id: doc.id, action: 'archive' })}
-                    className="min-h-[36px] rounded-[var(--radius-md)] px-2.5 text-[12px] text-muted-foreground hover:bg-muted"
+                    className="min-h-[36px] rounded-[var(--radius-md)] px-2.5 text-[12px] text-ink-muted hover:bg-surface-sunken"
                   >
                     Archive
                   </button>

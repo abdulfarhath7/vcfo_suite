@@ -122,7 +122,7 @@ export function HexgridLoader({
         })}
       </svg>
       {message ? (
-        <p className="mono max-w-[240px] text-center text-[12px] leading-snug text-muted-paper">
+        <p className="mono max-w-[240px] text-center text-[12px] leading-snug text-ink-muted">
           {message}
         </p>
       ) : null}

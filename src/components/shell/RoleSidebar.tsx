@@ -50,6 +50,8 @@ import {
   SidebarRailBadge,
   SidebarRailLabel,
   sidebarNavTriggerClass,
+  sidebarPillClass,
+  sidebarRailClass,
   type SidebarNavLeaf,
 } from '@/components/shell/SidebarNavGroup';
 import { cycleSidebarMode, shellDesktopNavExpanded, sidebarPinCopy } from '@/components/shell/intern-sidebar';
@@ -271,7 +273,7 @@ function SidebarNavBody({
         className={cn(
           'flex h-[var(--shell-rail-height)] shrink-0 items-center',
           expanded ? 'px-3.5' : 'justify-center px-1',
-          ink === 'light' ? 'border-b border-white/12' : 'border-b border-border/50',
+          ink === 'light' ? 'border-b border-side-line' : 'border-b border-line',
         )}
       >
         <Link
@@ -279,7 +281,7 @@ function SidebarNavBody({
           onClick={onNavigate}
           aria-label="VCFO Suite home"
           className={cn(
-            'flex min-w-0 items-center rounded-lg py-1 transition-colors hover:bg-primary-light/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+            'flex min-w-0 items-center rounded-md py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
             expanded ? 'gap-2.5 pr-1.5' : 'justify-center',
           )}
         >
@@ -287,7 +289,7 @@ function SidebarNavBody({
           <span
             className={cn(
               'truncate text-[13px] font-semibold tracking-tight',
-              ink === 'light' ? 'text-white' : 'text-foreground',
+              ink === 'light' ? 'text-side-ink' : 'text-ink',
               !expanded && 'hidden',
             )}
           >
@@ -365,21 +367,21 @@ function SidebarNavBody({
                 <MotionActivePill
                   layoutId={`${layoutIdPrefix}-active`}
                   reduced={reduceMotion}
-                  className="absolute inset-0 rounded-xl border border-role/25 bg-role-soft shadow-[inset_0_1px_0_oklch(100%_0_0/0.35)] dark:shadow-[inset_0_1px_0_oklch(100%_0_0/0.07)]"
+                  className={sidebarPillClass(ink)}
                 />
               )}
               {active && expanded && (
                 <MotionActivePill
                   layoutId={`${layoutIdPrefix}-rail`}
                   reduced={reduceMotion}
-                  className="absolute bottom-2 left-0 top-2 z-[2] w-[3px] rounded-full bg-role"
+                  className={sidebarRailClass(ink)}
                 />
               )}
               <it.icon
                 className={cn(
                   'relative z-10 shrink-0',
                   stacked ? 'h-[1.15rem] w-[1.15rem]' : 'h-4 w-4',
-                  active ? 'text-role-foreground' : it.iconTone,
+                  active ? (ink === 'light' ? 'text-side-ink' : 'text-brand') : it.iconTone,
                 )}
                 strokeWidth={1.75}
               />
@@ -406,7 +408,7 @@ function SidebarNavBody({
         </LayoutGroup>
       </nav>
 
-      <div className={cn('p-2', ink === 'light' ? 'border-t border-white/12' : 'border-t border-border/50')}>
+      <div className={cn('p-2', ink === 'light' ? 'border-t border-side-line' : 'border-t border-line')}>
         <div
           className={cn(
             'flex gap-1',
@@ -428,22 +430,22 @@ function SidebarNavBody({
             title="Account settings"
             aria-label="Account settings"
             className={cn(
-              'flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors',
-              ink === 'light' ? 'hover:bg-white/12' : 'hover:bg-role-soft/50',
+              'flex items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors',
+              ink === 'light' ? 'hover:bg-side-active' : 'hover:bg-surface-sunken',
               expanded ? 'min-w-0 flex-1' : 'justify-center',
             )}
           >
             <UserFace
               src={user.imageUrl}
               initials={user.initials}
-              className="gold-sheen h-8 w-8 text-[11px] font-semibold"
+              className="h-8 w-8 bg-brand text-[11px] font-semibold text-on-brand"
             />
             {expanded && (
               <div className="min-w-0 flex-1">
                 <div
                   className={cn(
                     'truncate text-xs font-medium',
-                    ink === 'light' ? 'text-white' : 'text-foreground',
+                    ink === 'light' ? 'text-side-ink' : 'text-ink',
                   )}
                 >
                   {user.name}
@@ -451,17 +453,12 @@ function SidebarNavBody({
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <span
                     className={cn(
-                      'mono truncate text-[9.5px] uppercase tracking-[0.16em]',
-                      ink === 'light' ? 'text-white/85' : 'text-muted-foreground',
+                      'truncate text-[11px] font-medium',
+                      ink === 'light' ? 'text-side-muted' : 'text-ink-muted',
                     )}
                   >
                     {ROLE_UI_LABEL[user.role]}
                   </span>
-                  {user.role === 'super_admin' && (
-                    <span className="super-gold-chip shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em]">
-                      Gold
-                    </span>
-                  )}
                 </div>
               </div>
             )}
@@ -487,8 +484,8 @@ function SidebarNavSectionBreak({
     >
       <span
         className={cn(
-          'h-px flex-1 rounded-full',
-          ink === 'light' ? 'bg-white/28' : 'bg-primary/22',
+          'h-px flex-1',
+          ink === 'light' ? 'bg-side-line' : 'bg-line',
         )}
       />
     </div>
@@ -527,13 +524,15 @@ function SidebarPinButton({
       aria-label={hint}
       data-sidebar-pin={mode}
       className={cn(
-        'flex h-8 shrink-0 items-center justify-center gap-1 rounded-lg text-[11px] font-medium transition-[color,background-color,opacity] duration-200',
+        'flex h-8 shrink-0 items-center justify-center gap-1 rounded-md text-[11px] font-medium transition-[color,background-color,opacity] duration-200',
         expanded ? 'px-2' : 'w-8 px-0',
         pinned
-          ? 'bg-role-soft/70 text-role-foreground'
+          ? ink === 'light'
+            ? 'bg-side-active text-side-ink'
+            : 'bg-brand-soft text-brand'
           : ink === 'light'
-            ? 'text-white/90 hover:bg-white/12 hover:text-white'
-            : 'text-muted-foreground hover:bg-role-soft/50 hover:text-foreground',
+            ? 'text-side-muted hover:bg-side-active hover:text-side-ink'
+            : 'text-ink-muted hover:bg-surface-sunken hover:text-ink',
         className,
       )}
     >
@@ -628,9 +627,9 @@ export function RoleSidebar() {
       onTransitionEnd={onWidthTransitionEnd}
       className={cn(
         'shell-sidebar-skin fixed inset-y-0 left-0 z-30 hidden flex-col overflow-hidden transition-[width] duration-300 ease-out lg:flex',
-        sidebar.ink === 'light' ? 'border-r border-white/12' : 'border-r border-border/50',
+        sidebar.ink === 'light' ? 'border-r border-side-line' : 'border-r border-line',
         expanded ? expandedWidth : stackedRail ? 'w-16' : 'w-14',
-        sidebarMode === 'auto' && peeking && 'z-40 shadow-[12px_0_32px_-16px_oklch(var(--shadow-ink)/0.35)]',
+        sidebarMode === 'auto' && peeking && 'z-40 shadow-float',
       )}
       data-ink={sidebar.ink}
       style={surfaceCssVars(sidebar, 'sidebar')}
@@ -659,7 +658,7 @@ export function MobileNavSheet() {
     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
       <SheetContent
         side="left"
-        className="shell-sidebar-skin flex h-full w-[min(18rem,88vw)] flex-col gap-0 border-border/60 bg-transparent p-0 sm:max-w-xs"
+        className="shell-sidebar-skin flex h-full w-[min(18rem,88vw)] flex-col gap-0 border-line bg-transparent p-0 sm:max-w-xs"
         data-ink={sidebar.ink}
         style={surfaceCssVars(sidebar, 'sidebar')}
       >

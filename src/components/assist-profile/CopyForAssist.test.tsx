@@ -39,7 +39,7 @@ describe('CopyForAssist', () => {
     data = resultFor(assistFullState());
     render(<CopyForAssist engagementId="eng-1" hrefForMissing={hrefForMissing} />);
     const chip = screen.getByText('Nothing missing');
-    expect(chip.className).toContain('bg-success-light');
+    expect(chip.className).toContain('bg-positive-soft');
     expect(screen.getByText(/fields? Suite cannot supply/)).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe('CopyForAssist', () => {
     });
     data = resultFor(assistFullState([NR, noPan]));
     render(<CopyForAssist engagementId="eng-1" hrefForMissing={hrefForMissing} />);
-    expect(screen.getByText('1 missing').className).toContain('bg-warning-light');
+    expect(screen.getByText('1 missing').className).toContain('bg-warning-soft');
     fireEvent.click(screen.getByRole('button', { name: /show details/i }));
     expect(screen.getByRole('link', { name: /Director 2 · PAN/ })).toHaveAttribute('href', '/step/pre-15?tab=directors');
     expect(screen.getByText(/Pick the NIC row/)).toBeInTheDocument();

@@ -21,14 +21,14 @@ export function LoadingScreen({ message = "Opening VCFO Suite…" }: { message?:
         <header className="mb-10 flex flex-col items-center gap-4">
           <SbcLogo variant="mark" size={48} decorative={false} />
           <Eyebrow className="mb-0">Compliance cockpit</Eyebrow>
-          <h1 className="serif display-md text-foreground">VCFO Suite</h1>
+          <h1 className="serif display-md text-ink">VCFO Suite</h1>
           <GoldDivider className="w-28" />
         </header>
 
         <HexgridLoader size="lg" silent />
 
         <div className="mt-10 flex w-full max-w-xs flex-col items-center gap-4">
-          <Mono className="text-[13px] leading-snug text-foreground">{message}</Mono>
+          <Mono className="text-[13px] leading-snug text-ink">{message}</Mono>
           <progress
             className="loading-progress h-0.5 w-full overflow-hidden rounded-full bg-border [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-border [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-[hsl(var(--hex-loader-primary)/0.55)] [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-[hsl(var(--hex-loader-primary)/0.55)]"
             aria-label="Loading"

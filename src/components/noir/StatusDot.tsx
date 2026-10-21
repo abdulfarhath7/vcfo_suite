@@ -4,7 +4,7 @@ export type DotTone = 'gold' | 'success' | 'warning' | 'danger' | 'info' | 'mute
 
 const toneMap: Record<DotTone, string> = {
   gold: 'bg-gold shadow-[0_0_8px_oklch(var(--gold)/0.6)]',
-  success: 'bg-success',
+  success: 'bg-positive',
   warning: 'bg-warning',
   danger: 'bg-danger',
   info: 'bg-info',

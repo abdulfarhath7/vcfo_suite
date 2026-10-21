@@ -56,7 +56,7 @@ export function PhaseCelebration({
         <p className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', phase.label)}>
           Phase complete
         </p>
-        <p className="text-sm font-semibold text-foreground">{phaseTitle}</p>
+        <p className="text-sm font-semibold text-ink">{phaseTitle}</p>
       </div>
       <span
         className={cn(

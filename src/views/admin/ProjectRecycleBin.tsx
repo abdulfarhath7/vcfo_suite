@@ -73,7 +73,7 @@ export default function ProjectRecycleBin() {
       {deletedQuery.isLoading ? (
         <HexgridLoader />
       ) : (
-        <Surface className="divide-y divide-border">
+        <Surface className="divide-y divide-line">
           <div className="px-4 py-3">
             <Eyebrow>In the bin · {projects.length}</Eyebrow>
           </div>
@@ -97,7 +97,7 @@ export default function ProjectRecycleBin() {
                     <div className="truncate text-[13px] font-semibold text-ink">
                       {project.companyName}
                     </div>
-                    <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                    <div className="mt-0.5 text-[11.5px] text-ink-muted">
                       {project.stage} · {deletedLabel(project.deletedAt)}
                     </div>
                   </div>

@@ -47,7 +47,7 @@ export function AnnouncementKindPicker({
           className={cn(
             'ann-kind transition-opacity',
             `ann-kind-${id}`,
-            value === id ? 'ring-1 ring-primary/40 ring-offset-1 ring-offset-panel' : 'opacity-70 hover:opacity-100',
+            value === id ? 'ring-1 ring-brand/40 ring-offset-1 ring-offset-surface-raised' : 'opacity-70 hover:opacity-100',
           )}
         >
           {ANNOUNCEMENT_KIND_LABEL[id]}
@@ -82,7 +82,7 @@ export function AnnouncementRow({
   const rowClass = cn(
     'unread-edge flex w-full min-w-0 items-center gap-2.5 text-left',
     compact ? 'px-3.5 py-2.5' : 'px-4 py-3.5 sm:px-5',
-    onActivate && 'cursor-pointer hover:bg-raised/30',
+    onActivate && 'cursor-pointer hover:bg-surface-sunken/30',
     className,
   );
 
@@ -100,19 +100,19 @@ export function AnnouncementRow({
         </p>
         <p className={cn('mt-0.5 flex min-w-0 items-center gap-1.5 leading-snug', meta)}>
           {unread ? (
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />
           ) : null}
-          <span className={cn('truncate', unread ? 'text-ink' : 'text-muted-foreground')}>{sentBy}</span>
+          <span className={cn('truncate', unread ? 'text-ink' : 'text-ink-muted')}>{sentBy}</span>
         </p>
         {showExtraTitle ? (
-          <p className="mt-1 text-[12.5px] text-muted-foreground">{item.title}</p>
+          <p className="mt-1 text-[12.5px] text-ink-muted">{item.title}</p>
         ) : null}
         {includeSource && item.sourceUrl ? (
           <a
             href={item.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative z-[1] mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
+            className="relative z-[1] mt-1.5 inline-flex items-center gap-1 text-[12px] font-medium text-brand hover:underline"
             onClick={(event) => event.stopPropagation()}
           >
             Source
@@ -122,7 +122,7 @@ export function AnnouncementRow({
       </div>
       <time
         dateTime={item.publishedAt}
-        className={cn('shrink-0 self-center tabular-nums text-muted-foreground', compact ? 'text-[11px]' : 'text-[12px]')}
+        className={cn('shrink-0 self-center tabular-nums text-ink-muted', compact ? 'text-[11px]' : 'text-[12px]')}
       >
         {formatAnnouncementWhen(item.publishedAt)}
       </time>

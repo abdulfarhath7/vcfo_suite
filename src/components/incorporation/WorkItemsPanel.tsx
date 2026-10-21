@@ -52,13 +52,13 @@ export function WorkItemsPanel({ engagementId }: { engagementId: string }) {
   const items = list.data ?? [];
   return (
     <Surface className="mt-4 p-4">
-      <h3 className="mb-1 text-sm font-semibold text-foreground">What SBC is doing (client Home)</h3>
-      <p className="mb-3 text-xs text-muted-foreground">The client sees these with % done. Without any, Home lists the steps SBC holds.</p>
+      <h3 className="mb-1 text-sm font-semibold text-ink">What SBC is doing (client Home)</h3>
+      <p className="mb-3 text-xs text-ink-muted">The client sees these with % done. Without any, Home lists the steps SBC holds.</p>
       {items.length ? (
-        <ul className="mb-3 divide-y divide-border rounded-md border border-border">
+        <ul className="mb-3 divide-y divide-line rounded-md border border-line">
           {items.map((it) => (
             <li key={it.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
-              <span className={`min-w-0 flex-1 truncate ${it.status === "done" ? "text-muted-foreground line-through" : ""}`}>{it.title}</span>
+              <span className={`min-w-0 flex-1 truncate ${it.status === "done" ? "text-ink-muted line-through" : ""}`}>{it.title}</span>
               <input
                 type="range"
                 min={0}
@@ -70,7 +70,7 @@ export function WorkItemsPanel({ engagementId }: { engagementId: string }) {
                 onKeyUp={(e) => save.mutate({ ...it, progressPct: Number((e.target as HTMLInputElement).value) })}
               />
               <span className="w-10 text-right font-mono text-xs">{it.progressPct}%</span>
-              <span className="w-24 font-mono text-xs text-muted-foreground">{it.readyOn ?? "—"}</span>
+              <span className="w-24 font-mono text-xs text-ink-muted">{it.readyOn ?? "—"}</span>
               <Button size="sm" variant="ghost" onClick={() => save.mutate({ ...it, status: it.status === "done" ? "active" : "done" })}>
                 {it.status === "done" ? "Reopen" : "Done"}
               </Button>

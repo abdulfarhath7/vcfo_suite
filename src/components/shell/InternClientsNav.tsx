@@ -20,15 +20,14 @@ import {
 import {
   SidebarNavDisclosure,
   SidebarNavGroupRail,
+  sidebarActiveTextClass,
   sidebarInactiveOnSkin,
+  sidebarPillClass,
+  sidebarRailClass,
   type SidebarInk,
 } from '@/components/shell/SidebarNavGroup';
 
 export const INTERN_CLIENTS_HREF = '/app/intern/clients';
-
-const CLIENT_PILL_CLASS =
-  'absolute inset-0 rounded-lg border border-role/20 bg-role-soft/80 shadow-[inset_0_1px_0_oklch(100%_0_0/0.28)] dark:shadow-[inset_0_1px_0_oklch(100%_0_0/0.06)]';
-const CLIENT_RAIL_CLASS = 'absolute bottom-1.5 left-0 top-1.5 z-[2] w-[2.5px] rounded-full bg-role';
 
 function isClientsSectionActive(pathname: string) {
   return pathname.startsWith(INTERN_CLIENTS_HREF) || isInternEngagementPathname(pathname);
@@ -93,11 +92,11 @@ const InternClientRow = memo(function InternClientRow({
       title={engagement.companyName}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'relative flex min-h-[2.35rem] items-center gap-2 rounded-lg py-1 pl-2.5 pr-1.5 transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+        'relative flex min-h-[2.25rem] items-center gap-2 rounded-md py-1 pl-2.5 pr-1.5 transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
         active
-          ? 'font-medium text-role-foreground'
-          : sidebarInactiveOnSkin(ink, 'hover:bg-role-soft/45', !followed),
+          ? sidebarActiveTextClass(ink)
+          : sidebarInactiveOnSkin(ink, 'hover:bg-surface-sunken', !followed),
       )}
       {...(hoverFollow ? sidebarHoverAttrs(itemId) : undefined)}
     >
@@ -106,19 +105,22 @@ const InternClientRow = memo(function InternClientRow({
         <MotionActivePill
           layoutId={`${layoutIdPrefix}-client-active`}
           reduced={reduceMotion}
-          className={CLIENT_PILL_CLASS}
+          className={sidebarPillClass(ink)}
         />
       ) : null}
       {active ? (
         <MotionActivePill
           layoutId={`${layoutIdPrefix}-client-rail`}
           reduced={reduceMotion}
-          className={CLIENT_RAIL_CLASS}
+          className={sidebarRailClass(ink, true)}
         />
       ) : null}
       <span
         aria-hidden
-        className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary-light text-[9px] font-semibold text-primary-dark"
+        className={cn(
+          'relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[9px] font-semibold',
+          ink === 'light' ? 'bg-side-active text-side-ink' : 'bg-brand-soft text-brand',
+        )}
       >
         {initials}
       </span>
@@ -128,12 +130,8 @@ const InternClientRow = memo(function InternClientRow({
         </span>
         <span
           className={cn(
-            'mt-px block truncate font-mono text-[9.5px] uppercase tracking-[0.08em]',
-            active
-              ? 'text-inherit opacity-80'
-              : ink === 'light'
-                ? 'text-white/80'
-                : 'text-muted-foreground/80',
+            'mt-px block truncate text-[11px] leading-tight',
+            active ? 'text-inherit opacity-80' : ink === 'light' ? 'text-side-muted' : 'text-ink-muted',
           )}
         >
           {subtitle}
@@ -168,11 +166,11 @@ function InternClientsViewAll({
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'relative mt-0.5 flex min-h-8 items-center gap-1.5 rounded-lg px-2 text-[11px] transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+        'relative mt-0.5 flex min-h-8 items-center gap-1.5 rounded-md px-2 text-[11px] transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
         active
-          ? 'font-medium text-role-foreground'
-          : sidebarInactiveOnSkin(ink, 'hover:bg-role-soft/40', !followed),
+          ? sidebarActiveTextClass(ink)
+          : sidebarInactiveOnSkin(ink, 'hover:bg-surface-sunken', !followed),
       )}
       {...(hoverFollow ? sidebarHoverAttrs(itemId) : undefined)}
     >
@@ -181,14 +179,14 @@ function InternClientsViewAll({
         <MotionActivePill
           layoutId={`${layoutIdPrefix}-client-active`}
           reduced={reduceMotion}
-          className={CLIENT_PILL_CLASS}
+          className={sidebarPillClass(ink)}
         />
       ) : null}
       {active ? (
         <MotionActivePill
           layoutId={`${layoutIdPrefix}-client-rail`}
           reduced={reduceMotion}
-          className={CLIENT_RAIL_CLASS}
+          className={sidebarRailClass(ink, true)}
         />
       ) : null}
       <LayoutGrid className="relative z-10 h-3 w-3 shrink-0 opacity-80" strokeWidth={1.75} />
@@ -225,7 +223,7 @@ function InternClientsPanel({
     <div className="space-y-1 py-0.5" aria-hidden>
       {Array.from({ length: 3 }, (_, i) => (
         <div key={i} className="flex min-h-[2.35rem] items-center gap-2 px-1">
-          <Skeleton className="h-6 w-6 shrink-0 rounded-full" />
+          <Skeleton className="h-6 w-6 shrink-0 rounded-md" />
           <div className="min-w-0 flex-1 space-y-1.5">
             <Skeleton className="h-2 w-[72%]" />
             <Skeleton className="h-1.5 w-[44%]" />
@@ -237,7 +235,7 @@ function InternClientsPanel({
     <p
       className={cn(
         'px-1 py-1.5 text-[11px] leading-snug',
-        ink === 'light' ? 'text-white/85' : 'text-muted-foreground',
+        ink === 'light' ? 'text-side-muted' : 'text-ink-muted',
       )}
     >
       No clients assigned
@@ -333,7 +331,14 @@ export function InternClientsNav({
       stacked={stacked}
       flyoutAside={
         count > 0 ? (
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground">{count}</span>
+          <span
+            className={cn(
+              'text-[11px] tabular-nums',
+              ink === 'light' ? 'text-side-muted' : 'text-ink-muted',
+            )}
+          >
+            {count}
+          </span>
         ) : null
       }
       panel={({ showRail, ink: panelInk, onNavigate: panelNav, hoverFollow: panelHover, open }) => (

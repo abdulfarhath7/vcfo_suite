@@ -102,7 +102,7 @@ export function SegmentedPicker<T extends string>({
       aria-invalid={ariaInvalid || undefined}
       aria-describedby={ariaDescribedBy}
       className={cn(
-        'relative grid gap-1 rounded-lg bg-muted/40 p-1 ring-1 ring-border/80',
+        'relative grid gap-1 rounded-lg bg-surface-sunken/40 p-1 ring-1 ring-line/80',
         className,
       )}
       style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
@@ -110,7 +110,7 @@ export function SegmentedPicker<T extends string>({
       {pill ? (
         <motion.div
           aria-hidden
-          className="pointer-events-none absolute z-0 rounded-md bg-primary shadow-sm"
+          className="pointer-events-none absolute z-0 rounded-md bg-brand shadow-sm"
           initial={false}
           animate={{ left: pill.left, top: pill.top, width: pill.width, height: pill.height }}
           transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.8 }}
@@ -133,7 +133,7 @@ export function SegmentedPicker<T extends string>({
               'relative z-[1] inline-flex items-center justify-center gap-1.5 rounded-md text-center font-medium transition-colors duration-200',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               size === 'sm' ? 'px-2 py-1 text-[12px]' : 'px-3 py-1.5 text-[12.5px]',
-              active ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+              active ? 'text-on-brand' : 'text-ink-muted hover:text-ink',
             )}
           >
             {opt.label}

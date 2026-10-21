@@ -50,50 +50,50 @@ export default function AskQuestionGaps() {
         actions={
           <Link
             href="/app/admin/ask-vcfo/sources"
-            className="inline-flex min-h-[40px] items-center rounded-[var(--radius-md)] border border-border px-3 text-[13px] font-medium text-foreground hover:bg-muted"
+            className="inline-flex min-h-[40px] items-center rounded-[var(--radius-md)] border border-line px-3 text-[13px] font-medium text-ink hover:bg-surface-sunken"
           >
             Sources
           </Link>
         }
       />
 
-      {query.isLoading && <p className="mt-4 text-[13px] text-muted-foreground">Loading…</p>}
+      {query.isLoading && <p className="mt-4 text-[13px] text-ink-muted">Loading…</p>}
       {query.isError && (
-        <p role="alert" className="mt-4 text-[13px] text-danger-text">
+        <p role="alert" className="mt-4 text-[13px] text-danger">
           Could not load question gaps. Please refresh the page.
         </p>
       )}
       {query.isSuccess && data === null && (
-        <p className="mt-4 text-[13px] text-muted-foreground">
+        <p className="mt-4 text-[13px] text-ink-muted">
           Question gaps are turned off. Your administrator can turn the feature on.
         </p>
       )}
       {data && (
         <div className="mt-4 space-y-3">
-          <p className="text-[12.5px] text-muted-foreground">
+          <p className="text-[12.5px] text-ink-muted">
             Last {data.days} days · {data.total} {data.total === 1 ? 'question' : 'questions'} without a reviewed answer.
             {data.showsCompanies ? '' : ' Client names are not shown.'}
           </p>
           {data.groups.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground">Nothing yet. Reviewed topics are covering what clients ask.</p>
+            <p className="text-[13px] text-ink-muted">Nothing yet. Reviewed topics are covering what clients ask.</p>
           ) : (
-            <ul className="divide-y divide-border overflow-hidden rounded-[var(--radius)] border border-border">
+            <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius)] border border-line">
               {data.groups.map((group) => (
-                <li key={`${group.question}-${group.lastAskedAt}`} className="flex flex-wrap items-start gap-3 bg-panel px-4 py-3">
-                  <span className="mt-0.5 inline-flex min-w-[2.25rem] justify-center rounded-full bg-muted px-2 py-0.5 font-mono text-[12px] text-foreground">
+                <li key={`${group.question}-${group.lastAskedAt}`} className="flex flex-wrap items-start gap-3 bg-surface-raised px-4 py-3">
+                  <span className="mt-0.5 inline-flex min-w-[2.25rem] justify-center rounded-sm bg-surface-sunken px-2 py-0.5 font-mono text-[12px] text-ink">
                     {group.count}
                     <span className="sr-only"> times asked</span>
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13.5px] font-medium text-foreground">{group.question}</p>
+                    <p className="text-[13.5px] font-medium text-ink">{group.question}</p>
                     {group.examples.length > 1 && (
-                      <ul className="mt-1 space-y-0.5 text-[12px] text-muted-foreground">
+                      <ul className="mt-1 space-y-0.5 text-[12px] text-ink-muted">
                         {group.examples.slice(1).map((example) => (
                           <li key={example}>Also: {example}</li>
                         ))}
                       </ul>
                     )}
-                    <p className="mt-1 text-[12px] text-muted-foreground">
+                    <p className="mt-1 text-[12px] text-ink-muted">
                       Last asked {formatDay(group.lastAskedAt)}
                       {group.generated > 0 ? ` · ${group.generated} AI answered` : ''}
                       {group.handoffs > 0 ? ` · ${group.handoffs} sent to a lead` : ''}
@@ -103,7 +103,7 @@ export default function AskQuestionGaps() {
                   <button
                     type="button"
                     onClick={() => downloadDraftTopic(group.question)}
-                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[var(--radius-md)] border border-border px-3 text-[12.5px] font-medium text-foreground hover:bg-muted"
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[var(--radius-md)] border border-line px-3 text-[12.5px] font-medium text-ink hover:bg-surface-sunken"
                   >
                     <FileDown className="h-4 w-4" aria-hidden /> Draft topic
                   </button>

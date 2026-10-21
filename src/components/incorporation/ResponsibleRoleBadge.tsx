@@ -24,8 +24,8 @@ export function ResponsibleRoleBadge({ role, className, iconOnly }: ResponsibleR
         'inline-flex items-center gap-1 rounded-full text-[10px] font-medium',
         iconOnly ? 'p-0.5' : 'px-2 py-0.5',
         role === 'client'
-          ? 'bg-raised/80 text-text-secondary'
-          : 'bg-info-light text-info-text',
+          ? 'bg-surface-sunken/80 text-ink-muted'
+          : 'bg-info-soft text-info',
         className,
       )}
       title={iconOnly ? label : undefined}

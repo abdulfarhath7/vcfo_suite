@@ -50,12 +50,12 @@ export default function SuperProjectDetail() {
         {seo}
         <div className="surface px-6 py-8 text-center">
           <p className="serif text-lg">That project is not here</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-ink-muted">
             It may have been removed, or the link is out of date.
           </p>
           <Link
             href={SUPER_PROJECTS_HREF}
-            className="mt-4 inline-flex rounded-full border border-border px-3.5 py-1.5 text-xs font-extrabold text-ink transition-colors hover:border-primary/40 hover:bg-primary-light/40 hover:text-primary"
+            className="mt-4 inline-flex rounded-sm border border-line px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-brand/40 hover:bg-brand-soft/40 hover:text-brand"
           >
             Back to all projects
           </Link>
@@ -70,7 +70,7 @@ export default function SuperProjectDetail() {
         {seo}
         <div className="surface px-6 py-8 text-center">
           <p className="serif text-lg">This project could not load</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-ink-muted">
             {query.error instanceof Error ? query.error.message : 'Something went wrong.'}
           </p>
           <AccentButton className="mt-4" variant="outline" onClick={() => void query.refetch()}>

@@ -48,9 +48,9 @@ function BallInCourtPanel({ detail }: { detail: SuperEngagementDetail }) {
           centerCaption="% done"
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <DashLegendRow swatchClassName="bg-primary" label="With the firm" count={ballInCourt.firm} />
-          <DashLegendRow swatchClassName="bg-accent-orange" label="With the client" count={ballInCourt.client} />
-          <DashLegendRow swatchClassName="bg-success" label="Done" count={steps.done} />
+          <DashLegendRow swatchClassName="bg-brand" label="With the firm" count={ballInCourt.firm} />
+          <DashLegendRow swatchClassName="bg-highlight-bright" label="With the client" count={ballInCourt.client} />
+          <DashLegendRow swatchClassName="bg-positive" label="Done" count={steps.done} />
           <DashLegendRow swatchClassName="bg-muted-foreground" label="Not open yet" count={steps.locked} />
         </div>
       </div>
@@ -76,13 +76,13 @@ function InspectPanel({ detail }: { detail: SuperEngagementDetail }) {
           <Link
             key={link.href}
             href={link.href}
-            className="flex min-w-0 items-center gap-3 rounded-xl border border-border/70 bg-panel p-2.5 transition-colors hover:border-primary/40 hover:bg-primary-light/40"
+            className="flex min-w-0 items-center gap-3 rounded-xl border border-line/70 bg-surface-raised p-2.5 transition-colors hover:border-brand/40 hover:bg-brand-soft/40"
           >
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12.5px] font-semibold text-ink">{link.label}</span>
-              <span className="block truncate text-[11px] text-muted-foreground">{link.hint}</span>
+              <span className="block truncate text-[11px] text-ink-muted">{link.hint}</span>
             </span>
-            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden />
           </Link>
         ))}
       </div>
@@ -109,25 +109,25 @@ function FilingsPanel({ detail }: { detail: SuperEngagementDetail }) {
         />
       ) : null}
       {filings.length === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-muted-foreground">
+        <p className="py-3 text-center text-[12.5px] text-ink-muted">
           No filings in the next 90 days.
         </p>
       ) : (
         <ul className="flex flex-col">
           {filings.map((filing) => (
-            <li key={filing.id} className="flex min-w-0 items-center gap-2.5 border-t border-border py-2 first:border-t-0 first:pt-0.5">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-raised text-[11px] font-extrabold tabular-nums text-ink">
+            <li key={filing.id} className="flex min-w-0 items-center gap-2.5 border-t border-line py-2 first:border-t-0 first:pt-0.5">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-sunken text-[11px] font-semibold tabular-nums text-ink">
                 {filing.dueDate.slice(8, 10)}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[12.5px] font-semibold text-ink">{filing.title}</span>
-                <span className="block truncate text-[11px] text-muted-foreground">
+                <span className="block truncate text-[11px] text-ink-muted">
                   {filing.authority} · {formatSuperDayMonth(filing.dueDate)}
                 </span>
               </span>
               <span
                 className={cn(
-                  'shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] font-extrabold',
+                  'shrink-0 whitespace-nowrap rounded-sm px-2 py-0.5 text-[10.5px] font-semibold',
                   TONE_BADGE[FILING_TONE[filing.status] ?? 'neutral'],
                 )}
               >
@@ -145,15 +145,15 @@ function TeamPanel({ detail }: { detail: SuperEngagementDetail }) {
   return (
     <DashSection icon={Users} tone="teal" title="Team" meta={detail.team.length || undefined}>
       {detail.team.length === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-muted-foreground">Nobody assigned yet.</p>
+        <p className="py-3 text-center text-[12.5px] text-ink-muted">Nobody assigned yet.</p>
       ) : (
         <ul className="flex flex-col">
           {detail.team.map((member) => (
-            <li key={member.id} className="min-w-0 border-t border-border py-2 first:border-t-0 first:pt-0.5">
-              <p className="min-w-0 truncate text-[12.5px] font-extrabold leading-tight text-ink">
+            <li key={member.id} className="min-w-0 border-t border-line py-2 first:border-t-0 first:pt-0.5">
+              <p className="min-w-0 truncate text-[12.5px] font-semibold leading-tight text-ink">
                 {member.name}
               </p>
-              <p className="min-w-0 truncate text-[11px] leading-tight text-muted-foreground">
+              <p className="min-w-0 truncate text-[11px] leading-tight text-ink-muted">
                 {member.role} · {member.email}
               </p>
             </li>
@@ -170,19 +170,19 @@ function ActivityPanel({ detail }: { detail: SuperEngagementDetail }) {
   return (
     <DashSection icon={Activity} tone="violet" title="Activity" href="/app/admin/audit-log" hrefLabel="Full log">
       {entries.length === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-muted-foreground">
+        <p className="py-3 text-center text-[12.5px] text-ink-muted">
           Nothing has happened on this project yet.
         </p>
       ) : (
         <ul className="flex flex-col">
           {entries.map((entry) => (
-            <li key={entry.id} className="min-w-0 border-t border-border py-2 first:border-t-0 first:pt-0.5">
+            <li key={entry.id} className="min-w-0 border-t border-line py-2 first:border-t-0 first:pt-0.5">
               <p className="line-clamp-2 text-[12.5px] font-semibold leading-snug text-ink">
                 {entry.label}
               </p>
-              <p className="mt-0.5 min-w-0 truncate text-[11px] text-muted-foreground">
+              <p className="mt-0.5 min-w-0 truncate text-[11px] text-ink-muted">
                 {entry.actor ?? 'System'}
-                <span className="ml-1.5 font-mono text-[10.5px] text-text-tertiary">
+                <span className="ml-1.5 font-mono text-[10.5px] text-ink-faint">
                   {formatSuperAgo(entry.at)}
                 </span>
               </p>

@@ -106,7 +106,7 @@ function SuperProjectsInner() {
         {seo}
         <div className="surface px-6 py-8 text-center">
           <p className="serif text-lg">The project list could not load</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-ink-muted">
             {query.error instanceof Error ? query.error.message : 'Something went wrong.'}
           </p>
           <AccentButton className="mt-4" variant="outline" onClick={() => void query.refetch()}>
@@ -126,7 +126,7 @@ function SuperProjectsInner() {
       <div className="mb-3 flex min-w-0 flex-wrap items-center gap-3">
         <PageBackCluster>
           <h1 className="sr-only">Projects</h1>
-          <span className="text-xs font-bold text-text-tertiary">
+          <span className="text-xs font-semibold text-ink-faint">
             {rows.length} of {overview.engagements.length}{' '}
             {overview.engagements.length === 1 ? 'project' : 'projects'}
           </span>
@@ -190,7 +190,7 @@ const COLUMNS: DashColumn<SuperEngagementSummary>[] = [
     header: 'Stage',
     width: 'minmax(0,0.8fr)',
     render: (row) => (
-      <span className={cn('inline-block max-w-full truncate rounded-full px-2.5 py-0.5 text-[11px] font-extrabold', TONE_BADGE.sky)}>
+      <span className={cn('inline-block max-w-full truncate rounded-sm px-2.5 py-0.5 text-[11px] font-semibold', TONE_BADGE.sky)}>
         {row.stageLabel}
       </span>
     ),
@@ -209,7 +209,7 @@ const COLUMNS: DashColumn<SuperEngagementSummary>[] = [
       <span
         title={attentionReason(row)}
         className={cn(
-          'inline-block max-w-full truncate rounded-full px-2.5 py-0.5 text-[11px] font-extrabold',
+          'inline-block max-w-full truncate rounded-sm px-2.5 py-0.5 text-[11px] font-semibold',
           TONE_BADGE[STATE_TONE[row.stateKey]],
         )}
       >
@@ -222,7 +222,7 @@ const COLUMNS: DashColumn<SuperEngagementSummary>[] = [
     header: 'Lead',
     width: 'minmax(0,0.9fr)',
     render: (row) => (
-      <span className="block min-w-0 truncate text-muted-foreground">
+      <span className="block min-w-0 truncate text-ink-muted">
         {row.leadName ?? 'Unassigned'}
       </span>
     ),
@@ -234,7 +234,7 @@ const COLUMNS: DashColumn<SuperEngagementSummary>[] = [
     render: (row) => (
       <span
         className={cn(
-          'inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-extrabold',
+          'inline-block whitespace-nowrap rounded-sm px-2.5 py-0.5 text-[11px] font-semibold',
           TONE_BADGE[HEALTH_TONE[row.health] ?? 'neutral'],
         )}
       >
@@ -249,7 +249,7 @@ const COLUMNS: DashColumn<SuperEngagementSummary>[] = [
     align: 'right',
     mono: true,
     render: (row) => (
-      <span className={cn(row.idleDays !== null && row.idleDays >= 14 && 'text-danger-text')}>
+      <span className={cn(row.idleDays !== null && row.idleDays >= 14 && 'text-danger')}>
         {row.idleDays === null ? '—' : row.idleDays === 0 ? 'today' : `${row.idleDays}d`}
       </span>
     ),
@@ -263,7 +263,7 @@ function ProgressTrack({ summary }: { summary: SuperEngagementSummary }) {
         {summary.phases.map((phase) => (
           <span
             key={phase.id}
-            className="relative block overflow-hidden rounded-full bg-raised"
+            className="relative block overflow-hidden rounded-full bg-surface-sunken"
             style={{ flex: Math.max(phase.total, 1) }}
           >
             <i
@@ -273,7 +273,7 @@ function ProgressTrack({ summary }: { summary: SuperEngagementSummary }) {
           </span>
         ))}
       </span>
-      <span className="mt-1 block font-mono text-[10.5px] font-semibold text-text-tertiary">
+      <span className="mt-1 block font-mono text-[10.5px] font-semibold text-ink-faint">
         {summary.progress.pct}% · {summary.progress.done}/{summary.progress.total}
       </span>
     </span>
@@ -285,12 +285,12 @@ function ProjectMobileRow({ summary }: { summary: SuperEngagementSummary }) {
   return (
     <div className="min-w-0">
       <div className="flex min-w-0 items-center gap-2">
-        <span className="min-w-0 flex-1 truncate text-[13px] font-extrabold text-ink">
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
           {summary.companyName}
         </span>
         <span
           className={cn(
-            'shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] font-extrabold',
+            'shrink-0 whitespace-nowrap rounded-sm px-2 py-0.5 text-[10.5px] font-semibold',
             TONE_BADGE[STATE_TONE[summary.stateKey]],
           )}
         >
@@ -300,7 +300,7 @@ function ProjectMobileRow({ summary }: { summary: SuperEngagementSummary }) {
       <div className="mt-1.5">
         <ProgressTrack summary={summary} />
       </div>
-      <p className="mt-1 min-w-0 truncate text-[11.5px] font-semibold text-muted-foreground">
+      <p className="mt-1 min-w-0 truncate text-[11.5px] font-semibold text-ink-muted">
         {attentionReason(summary)}
         {summary.leadName ? ` · ${summary.leadName}` : ''}
         {idle ? ` · ${idle}` : ''}

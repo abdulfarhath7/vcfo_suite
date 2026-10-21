@@ -64,7 +64,7 @@ export function ClientStepFieldPreview({
   return (
     // `.surface` so an unstarted step sits in the same card a filled one does.
     <div className="surface milestone-record-panel">
-      <p className="mb-3 text-[12.5px] text-muted-foreground">{intro}</p>
+      <p className="mb-3 text-[12.5px] text-ink-muted">{intro}</p>
       <dl className="milestone-record">
         {fields.map((field) => {
           const firmOwned = field.filledBy === 'intern';
@@ -77,7 +77,7 @@ export function ClientStepFieldPreview({
             <div key={field.id} className="milestone-record-row">
               <dt className="milestone-record-label">{field.label}</dt>
               <dd className="milestone-record-value">
-                <p className={showValue ? 'text-sm text-foreground' : 'text-sm text-muted-foreground'}>
+                <p className={showValue ? 'text-sm text-ink' : 'text-sm text-ink-muted'}>
                   {showValue ? raw : '—'}
                 </p>
               </dd>

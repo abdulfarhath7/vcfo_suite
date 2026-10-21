@@ -58,7 +58,7 @@ const LEAD_HOME = '/app/intern/today';
 function Settling({ label }: { label: string }) {
   return (
     <div className="surface p-4" aria-busy="true" aria-label={label}>
-      <div className="h-64 animate-pulse rounded-md bg-muted/40" />
+      <div className="h-64 animate-pulse rounded-md bg-surface-sunken/40" />
     </div>
   );
 }

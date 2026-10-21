@@ -14,7 +14,7 @@ import type { AdminDashboardViewProps } from '@/views/admin/DashboardSections';
 function filingDotClass(status: string): string {
   if (status === 'overdue') return 'bg-danger';
   if (status === 'in-progress') return 'bg-warning';
-  return 'bg-primary';
+  return 'bg-brand';
 }
 
 export function AdminDashboardFilingsPanel({
@@ -35,7 +35,7 @@ export function AdminDashboardFilingsPanel({
       hrefLabel="Calendar"
     >
       {dueSoon.length === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-muted-foreground">
+        <p className="py-3 text-center text-[12.5px] text-ink-muted">
           No filings due in the next 14 days.
         </p>
       ) : (
@@ -52,12 +52,12 @@ export function AdminDashboardFilingsPanel({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.03 * i }}
               onClick={() => router.push(calendarHref)}
-              className="group flex w-full min-w-0 items-center gap-2.5 border-t border-border py-2.5 text-left first:border-0 first:pt-0 last:pb-0"
+              className="group flex w-full min-w-0 items-center gap-2.5 border-t border-line py-2.5 text-left first:border-0 first:pt-0 last:pb-0"
             >
-              <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-raised">
+              <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-sunken">
                 <span className="flex flex-col items-center leading-none">
-                  <span className="text-[13px] font-extrabold tabular-nums text-ink">{day}</span>
-                  <span className="mt-0.5 text-[8px] font-bold uppercase tracking-wide text-muted-foreground">
+                  <span className="text-[13px] font-semibold tabular-nums text-ink">{day}</span>
+                  <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-ink-muted">
                     {month}
                   </span>
                 </span>
@@ -67,16 +67,16 @@ export function AdminDashboardFilingsPanel({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <span className="truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-primary">
+                  <span className="truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-brand">
                     {c.filing}
                   </span>
                   <span
-                    className={`inline-flex shrink-0 rounded-full px-2 py-px text-[9.5px] font-extrabold uppercase tracking-wide ${TONE_BADGE[toneForKey(c.authority)]}`}
+                    className={`inline-flex shrink-0 rounded-sm px-2 py-px text-[9.5px] font-semibold uppercase tracking-wide ${TONE_BADGE[toneForKey(c.authority)]}`}
                   >
                     {c.authority}
                   </span>
                 </span>
-                <span className="block truncate text-[11px] text-muted-foreground">
+                <span className="block truncate text-[11px] text-ink-muted">
                   {eng?.companyName}
                 </span>
               </span>

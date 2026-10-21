@@ -24,9 +24,9 @@ export function ClientNextAction({
   if (!nextAction) {
     return (
       <section className="surface relative overflow-hidden">
-        <span className="absolute inset-y-0 left-0 w-1 bg-success" aria-hidden />
+        <span className="absolute inset-y-0 left-0 w-1 bg-positive" aria-hidden />
         <div className="px-4 pb-4 pl-5 pt-4">
-          <p className="text-[12.5px] font-semibold text-muted-foreground">
+          <p className="text-[12.5px] font-semibold text-ink-muted">
             Nothing needed from you
           </p>
           <p className="serif text-[1.25rem] leading-tight tracking-tight text-ink">
@@ -42,7 +42,7 @@ export function ClientNextAction({
   return (
     <section className="surface relative overflow-hidden">
       <span
-        className={cn('absolute inset-y-0 left-0 w-1', correction ? 'bg-danger' : 'bg-primary')}
+        className={cn('absolute inset-y-0 left-0 w-1', correction ? 'bg-danger' : 'bg-brand')}
         aria-hidden
       />
       <div className="flex flex-col gap-3 px-4 pb-4 pl-5 pt-4 sm:flex-row sm:items-center">
@@ -50,7 +50,7 @@ export function ClientNextAction({
           <p
             className={cn(
               'text-[12.5px] font-semibold',
-              correction ? 'text-danger-text' : 'text-muted-foreground',
+              correction ? 'text-danger' : 'text-ink-muted',
             )}
           >
             {correction ? 'Corrections needed' : 'We need this from you'}
@@ -61,14 +61,14 @@ export function ClientNextAction({
             </h2>
             <WhatsThisButton kind="step" refId={nextAction.stepId} label={nextAction.title} className="mt-1" />
           </div>
-          <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
+          <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-ink-muted">
             {correction
               ? (nextAction.correctionNote ??
                 'Your project lead asked for an update — open the step and resubmit.')
               : <GlossaryText text={nextAction.description ?? 'Open the step to fill in the details we need to move forward.'} />}
           </p>
           {nextAction.windowLabel && !correction && (
-            <p className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+            <p className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-[11px] tabular-nums text-ink-muted">
               <Clock className="h-3 w-3" aria-hidden />
               {nextAction.windowLabel}
             </p>
@@ -80,9 +80,9 @@ export function ClientNextAction({
         <Link
           href={nextAction.href}
           className={cn(
-            'inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md px-4 text-[13px] font-bold tracking-tight transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-            'bg-primary text-primary-foreground hover:bg-primary-dark',
+            'inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md px-4 text-[13px] font-semibold tracking-tight transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/50',
+            'bg-brand text-on-brand hover:bg-brand-strong',
           )}
         >
           {correction ? 'Fix & resubmit' : 'Open this step'}

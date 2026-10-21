@@ -29,8 +29,8 @@ export function Surface({
   const reduceMotion = useReducedMotion();
   const classes = cn(
     flat ? (raised ? "surface-flat-raised" : "surface-flat") : raised ? "surface-raised" : "surface",
-    "border-border",
-    interactive && "surface-interactive transition-all duration-200 hover:border-primary/35 cursor-pointer",
+    "border-line",
+    interactive && "surface-interactive transition-all duration-200 hover:border-brand/35 cursor-pointer",
     className,
   );
 

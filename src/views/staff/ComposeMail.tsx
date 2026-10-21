@@ -196,7 +196,7 @@ export default function ComposeMail({ path }: Props) {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
         <Surface className="p-5 sm:p-6">
           <PageBackCluster forceBack className="mb-4">
-            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
               Outlook
             </h2>
           </PageBackCluster>
@@ -216,9 +216,9 @@ export default function ComposeMail({ path }: Props) {
               }
             />
             {!loadingStatus && configured && !connected ? (
-              <p className="pt-1 text-[12.5px] text-muted-foreground">
+              <p className="pt-1 text-[12.5px] text-ink-muted">
                 Connect Outlook in{' '}
-                <Link href={settingsHref} className="text-primary underline-offset-2 hover:underline">
+                <Link href={settingsHref} className="text-brand underline-offset-2 hover:underline">
                   Settings
                 </Link>
                 .
@@ -260,7 +260,7 @@ export default function ComposeMail({ path }: Props) {
               placeholder="Subject"
             />
             {appliedTemplate ? (
-              <p className="flex flex-wrap items-center gap-2 pt-1 text-[12.5px] text-muted-foreground">
+              <p className="flex flex-wrap items-center gap-2 pt-1 text-[12.5px] text-ink-muted">
                 Using {appliedTemplate.name} ({emailBrandingLabel(appliedTemplate.branding)})
                 <Button
                   type="button"

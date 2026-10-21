@@ -19,7 +19,7 @@ export function GlossaryTerm({ term, children }: { term: Term; children: string 
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
           onClick={(e) => e.stopPropagation()}
-          className="cursor-help underline decoration-dotted decoration-muted-foreground/70 underline-offset-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="cursor-help underline decoration-dotted decoration-muted-foreground/70 underline-offset-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
         >
           {children}
         </button>
@@ -30,14 +30,14 @@ export function GlossaryTerm({ term, children }: { term: Term; children: string 
           sideOffset={6}
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
-          className="z-50 max-w-[260px] rounded-[var(--radius-md)] border border-border bg-popover p-3 text-popover-foreground shadow-lg"
+          className="z-50 max-w-[260px] rounded-[var(--radius-md)] border border-line bg-popover p-3 text-popover-foreground shadow-lg"
         >
           <p className="text-[12.5px] font-semibold">{term.term}</p>
-          <p className="mt-0.5 text-[12.5px] text-muted-foreground">{term.short}</p>
+          <p className="mt-0.5 text-[12.5px] text-ink-muted">{term.short}</p>
           {ask?.enabled && ask.shell === 'client' && (
             <button
               type="button"
-              className="mt-2 text-[12px] font-medium text-primary underline-offset-2 hover:underline"
+              className="mt-2 text-[12px] font-medium text-brand underline-offset-2 hover:underline"
               onClick={(e) => {
                 e.stopPropagation();
                 setOpen(false);

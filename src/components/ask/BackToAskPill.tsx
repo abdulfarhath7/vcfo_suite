@@ -11,7 +11,7 @@ export function BackToAskPill() {
     <button
       type="button"
       onClick={() => ask.setOpen(true)}
-      className="fixed bottom-5 right-5 z-40 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-border bg-panel px-4 text-[13px] font-medium text-foreground shadow-lg hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+      className="fixed bottom-5 right-5 z-40 inline-flex min-h-[44px] items-center gap-2 rounded-sm border border-line bg-surface-raised px-4 text-[13px] font-medium text-ink shadow-lg hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
     >
       <MessageCircleQuestion className="h-4 w-4" aria-hidden /> Back to Ask VCFO
     </button>

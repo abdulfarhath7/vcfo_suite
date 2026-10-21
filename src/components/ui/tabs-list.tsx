@@ -8,7 +8,7 @@ function TabsList({ ref, className, ...props }: React.ComponentPropsWithoutRef<t
       <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
+      "inline-flex h-10 items-center justify-center rounded-md bg-surface-sunken p-1 text-ink-muted",
       className,
     )}
     {...props}

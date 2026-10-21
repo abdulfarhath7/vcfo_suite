@@ -117,12 +117,12 @@ export function ComplianceCalendarView({
 
       <div className="stat-cal-intern flex flex-col gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h1 className="serif min-w-0 flex-1 text-[22px] leading-tight tracking-tight text-foreground">
+          <h1 className="serif min-w-0 flex-1 text-[22px] leading-tight tracking-tight text-ink">
             Compliance calendar
           </h1>
           <Link
             href={`${basePath}/filings${companyQuery ? `?${companyQuery.slice(1)}` : ''}`}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1 text-[11px] font-bold text-primary hover:bg-primary-light"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-line px-3 py-1 text-[11px] font-semibold text-brand hover:bg-brand-soft"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden />
             Open filings
@@ -138,7 +138,7 @@ export function ComplianceCalendarView({
 
         {query.isPending ? (
           <div className="surface p-4" aria-busy="true" aria-label="Loading calendar">
-            <div className="h-64 animate-pulse rounded-md bg-muted/40" />
+            <div className="h-64 animate-pulse rounded-md bg-surface-sunken/40" />
           </div>
         ) : (
           <>
@@ -149,7 +149,7 @@ export function ComplianceCalendarView({
               <SummaryStat value={summary.filed} label="filed" />
               <Link
                 href={`${basePath}/filings?cadence=monthly&period=${monthKey}&fy=${fyStartYear}${companyQuery}`}
-                className="ml-auto text-[11.5px] font-bold text-primary hover:underline"
+                className="ml-auto text-[11.5px] font-semibold text-brand hover:underline"
               >
                 View this month&rsquo;s filings
               </Link>
@@ -171,7 +171,7 @@ export function ComplianceCalendarView({
                 meta={`${monthRows.length}`}
               >
                 {monthRows.length === 0 ? (
-                  <p className="text-[12.5px] text-muted-foreground">
+                  <p className="text-[12.5px] text-ink-muted">
                     Nothing falls due in this month.
                   </p>
                 ) : (
@@ -209,13 +209,13 @@ function SummaryStat({
   return (
     <span className="inline-flex items-baseline gap-1.5">
       <span
-        className={`serif text-[1.25rem] font-bold leading-none tabular-nums ${
-          hot ? 'text-danger-text' : 'text-ink'
+        className={`serif text-[1.25rem] font-semibold leading-none tabular-nums ${
+          hot ? 'text-danger' : 'text-ink'
         }`}
       >
         {value}
       </span>
-      <span className="text-[11.5px] font-medium text-muted-foreground">{label}</span>
+      <span className="text-[11.5px] font-medium text-ink-muted">{label}</span>
     </span>
   );
 }
@@ -237,20 +237,20 @@ function MonthRow({
   const monthKey = monthKeyOf(row.dueDate);
   return (
     <li className="flex min-w-0 items-start gap-2.5" data-ask-focus={row.id}>
-      <span className="mono grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-raised text-[11px] font-extrabold tabular-nums text-ink">
+      <span className="mono grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-sunken text-[11px] font-semibold tabular-nums text-ink">
         {row.dueDate.slice(8, 10)}
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-1">
           <Link
             href={`${basePath}/filings?cadence=monthly&period=${monthKey}${companyQuery}`}
-            className="block truncate text-[12.5px] font-semibold text-ink hover:text-primary"
+            className="block truncate text-[12.5px] font-semibold text-ink hover:text-brand"
           >
             {row.particular}
           </Link>
           <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
         </span>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-[11px] text-ink-muted">
           {showCompany ? `${row.companyName} · ` : ''}
           {row.compliance} · {formatFilingDate(row.dueDate)}
         </span>

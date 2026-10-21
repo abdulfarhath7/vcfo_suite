@@ -50,7 +50,7 @@ export default function ClientLibrary() {
             {shown.length > 0 ? (
             <a
               href={`/api/ask/library/export?${new URLSearchParams({ ids: shown.map((i) => i.id).join(',') })}`}
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[var(--radius-md)] border border-border px-3 text-[13px] font-medium text-foreground hover:bg-muted"
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[var(--radius-md)] border border-line px-3 text-[13px] font-medium text-ink hover:bg-surface-sunken"
             >
               <Download className="h-4 w-4" aria-hidden /> Download PDF brief
               </a>
@@ -59,9 +59,9 @@ export default function ClientLibrary() {
         }
       />
 
-      {query.isLoading && <p className="py-6 text-[13px] text-muted-foreground">Loading…</p>}
+      {query.isLoading && <p className="py-6 text-[13px] text-ink-muted">Loading…</p>}
       {query.isError && (
-        <p role="alert" className="py-6 text-[13px] text-danger-text">
+        <p role="alert" className="py-6 text-[13px] text-danger">
           Could not load your library. Please refresh the page.
         </p>
       )}
@@ -88,7 +88,7 @@ export default function ClientLibrary() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search your library"
-              className="min-h-[40px] w-full max-w-xs rounded-[var(--radius-md)] border border-input bg-panel px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="min-h-[40px] w-full max-w-xs rounded-[var(--radius-md)] border border-input bg-surface-raised px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
             />
             <div role="group" aria-label="Filter by category" className="flex flex-wrap gap-1.5">
               {[null, ...categories].map((c) => (
@@ -98,8 +98,8 @@ export default function ClientLibrary() {
                   aria-pressed={category === c}
                   onClick={() => setCategory(c)}
                   className={cn(
-                    'min-h-[36px] rounded-full border px-3 text-[12.5px]',
-                    category === c ? 'border-foreground/30 bg-muted font-medium text-foreground' : 'border-border text-muted-foreground hover:text-foreground',
+                    'min-h-[36px] rounded-sm border px-3 text-[12.5px]',
+                    category === c ? 'border-ink/30 bg-surface-sunken font-medium text-ink' : 'border-line text-ink-muted hover:text-ink',
                   )}
                 >
                   {c ? categoryLabel(c) : 'All'}
@@ -109,25 +109,25 @@ export default function ClientLibrary() {
           </div>
 
           {shown.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground">Nothing matches that search.</p>
+            <p className="text-[13px] text-ink-muted">Nothing matches that search.</p>
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {shown.map((item) => (
-                <li key={item.id} className="flex flex-col rounded-[var(--radius)] border border-border bg-panel p-4">
+                <li key={item.id} className="flex flex-col rounded-[var(--radius)] border border-line bg-surface-raised p-4">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{categoryLabel(item.category)}</span>
+                    <span className="rounded-sm bg-surface-sunken px-2 py-0.5 text-[11px] text-ink-muted">{categoryLabel(item.category)}</span>
                     {item.updated && (
-                      <span className="rounded-full bg-warning-light px-2 py-0.5 text-[11px] font-medium text-warning-text">Updated</span>
+                      <span className="rounded-sm bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning">Updated</span>
                     )}
                     {item.answer.visual && VISUAL_LABEL[item.answer.visual.type] && (
-                      <span className="ml-auto text-[11px] text-muted-foreground">{VISUAL_LABEL[item.answer.visual.type]}</span>
+                      <span className="ml-auto text-[11px] text-ink-muted">{VISUAL_LABEL[item.answer.visual.type]}</span>
                     )}
                   </div>
-                  <h2 className="mt-2 text-[15px] font-semibold text-foreground">{item.title}</h2>
-                  <p className="mt-1 line-clamp-2 flex-1 text-[13px] text-muted-foreground">{item.answer.line}</p>
+                  <h2 className="mt-2 text-[15px] font-semibold text-ink">{item.title}</h2>
+                  <p className="mt-1 line-clamp-2 flex-1 text-[13px] text-ink-muted">{item.answer.line}</p>
                   <Link
                     href={`/app/client/library/${item.id}`}
-                    className="mt-3 inline-flex min-h-[40px] items-center self-start rounded-[var(--radius-md)] border border-border px-3 text-[13px] font-medium text-foreground hover:bg-muted"
+                    className="mt-3 inline-flex min-h-[40px] items-center self-start rounded-[var(--radius-md)] border border-line px-3 text-[13px] font-medium text-ink hover:bg-surface-sunken"
                   >
                     Open<span className="sr-only"> {item.title}</span>
                   </Link>

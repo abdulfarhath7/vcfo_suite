@@ -52,14 +52,14 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
       {!formReadOnly && canEdit && legacyClientFooter && !submissionLocked && (
         <div
           className={cn(
-            'flex flex-wrap items-center gap-3 border-t border-border/70 pt-4',
+            'flex flex-wrap items-center gap-3 border-t border-line/70 pt-4',
             (isPre1 || isPhase2StructuredStep) && 'surface px-4 py-4 sm:px-5',
           )}
         >
           {autoSaveEnabled && (
             <div
               aria-live="polite"
-              className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-muted-foreground"
+              className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-ink-muted"
             >
               {(autoSaveStatus === 'pending' || autoSaveStatus === 'saving') && (
                 <>
@@ -123,9 +123,9 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
         <div
           className={cn(
             internNavFooter
-              ? 'border-t border-border px-5 py-3'
+              ? 'border-t border-line px-5 py-3'
               : cn(
-                  'sticky bottom-0 z-20 -mx-0.5 mt-4 border-t border-border/70 bg-panel/95 backdrop-blur-sm supports-[backdrop-filter]:bg-panel/80',
+                  'sticky bottom-0 z-20 -mx-0.5 mt-4 border-t border-line/70 bg-surface-raised/95 supports-[backdrop-filter]:bg-surface-raised/80',
                   (isPre1 || isPhase2StructuredStep) && 'px-4 py-3 sm:px-5',
                   !(isPre1 || isPhase2StructuredStep) && 'px-4 py-3',
                 ),
@@ -146,7 +146,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                   {internAutoSave ? (
                     <div
                       aria-live="polite"
-                      className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-muted-foreground"
+                      className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-ink-muted"
                     >
                       {(autoSaveStatus === 'pending' || autoSaveStatus === 'saving') && (
                         <>
@@ -176,7 +176,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                   ) : showStaffSaveFooter && staffSaveStatusText ? (
                     <span
                       aria-live="polite"
-                      className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+                      className="flex items-center gap-1.5 text-[11px] text-ink-muted"
                     >
                       {saving && <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden />}
                       {!saving && staffSaveStatus === 'saved' && (
@@ -236,7 +236,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               <>
             <div
               aria-live="polite"
-              className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-muted-foreground"
+              className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-ink-muted"
             >
               {showStaffSaveFooter && staffSaveStatusText && (
                 <>
@@ -276,14 +276,14 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
       {!formReadOnly && canEdit && legacyClientFooter && submissionLocked && !reviewAccepted && (
         <div
           className={cn(
-            'flex flex-wrap items-center gap-3 border-t border-border/70 pt-4',
+            'flex flex-wrap items-center gap-3 border-t border-line/70 pt-4',
             (isPre1 || isPhase2StructuredStep) && 'surface px-4 py-4 sm:px-5',
           )}
         >
           {autoSaveEnabled && unlockedFields.length > 0 && (
             <div
               aria-live="polite"
-              className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-muted-foreground"
+              className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-ink-muted"
             >
               {(autoSaveStatus === 'pending' || autoSaveStatus === 'saving') && (
                 <>

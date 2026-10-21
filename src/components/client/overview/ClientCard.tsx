@@ -15,12 +15,12 @@ export type ClientCardTone =
 
 /** Solid chip fills, same language as the lead dashboard's section headers. */
 const CHIP: Record<ClientCardTone, string> = {
-  primary: 'bg-primary text-primary-foreground',
-  success: 'bg-success text-white',
-  sky: 'bg-accent-sky text-white',
-  teal: 'bg-accent-teal text-white',
-  violet: 'bg-accent-violet text-white',
-  cyan: 'bg-accent-cyan text-white',
+  primary: 'bg-brand text-on-brand',
+  success: 'bg-positive text-white',
+  sky: 'bg-ink-faint text-white',
+  teal: 'bg-ink-faint text-white',
+  violet: 'bg-ink-faint text-white',
+  cyan: 'bg-ink-faint text-white',
   neutral: 'bg-muted-foreground text-white',
 };
 

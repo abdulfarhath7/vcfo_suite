@@ -72,16 +72,16 @@ export default function ClientDocuments() {
               <StaggerItem key={milestone.milestoneId}>
                 <section>
                   <Eyebrow className="mb-2">{milestone.milestoneTitle}</Eyebrow>
-                  <Surface className="divide-y divide-border overflow-hidden">
+                  <Surface className="divide-y divide-line overflow-hidden">
                     {milestone.sections.map((section) =>
                       section.docs.map((doc) => (
-                        <div key={doc.id} data-ask-focus={doc.id} className="flex min-h-11 items-center gap-3 border-l-[3px] border-l-phase-filing px-4 py-3.5 transition-colors hover:bg-primary-light/40">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-phase-filing-soft">
-                            <FileCheck2 className="h-4 w-4 shrink-0 text-phase-filing-text" />
+                        <div key={doc.id} data-ask-focus={doc.id} className="flex min-h-11 items-center gap-3 border-t border-line px-4 py-3.5 transition-colors first:border-t-0 hover:bg-surface-sunken/60">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft">
+                            <FileCheck2 className="h-4 w-4 shrink-0 text-brand" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-[13px] font-medium text-foreground">{doc.fieldLabel}</div>
-                            <div className="text-[11px] text-muted-foreground">
+                            <div className="truncate text-[13px] font-medium text-ink">{doc.fieldLabel}</div>
+                            <div className="text-[11px] text-ink-muted">
                               {section.section} · {formatUploadDate(doc.uploadedAt)}
                             </div>
                           </div>
@@ -113,17 +113,17 @@ export default function ClientDocuments() {
       {uploadedLegacy.length > 0 && (
         <>
           <Eyebrow className="mb-2">Document requests on file</Eyebrow>
-          <Surface className="mb-6 divide-y divide-border overflow-hidden">
+          <Surface className="mb-6 divide-y divide-line overflow-hidden">
             {uploadedLegacy.map((r) => (
               <div key={r.id} className="flex min-h-11 items-center gap-3 px-4 py-3.5">
-                <FileCheck2 className="h-4 w-4 text-success" />
+                <FileCheck2 className="h-4 w-4 text-positive" />
                 <div className="flex-1">
-                  <div className="text-[13px] text-foreground">{r.label}</div>
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-[13px] text-ink">{r.label}</div>
+                  <div className="text-[11px] text-ink-muted">
                     {r.fileName} · {r.uploadedAt}
                   </div>
                 </div>
-                <span className="rounded-full bg-success-light px-2 py-0.5 text-[11px] capitalize text-success-text">{r.status}</span>
+                <span className="rounded-sm bg-positive-soft px-2 py-0.5 text-[11px] capitalize text-positive">{r.status}</span>
               </div>
             ))}
           </Surface>
@@ -133,12 +133,12 @@ export default function ClientDocuments() {
       {pendingLegacy.length > 0 && (
         <>
           <Eyebrow className="mb-2">Still needed</Eyebrow>
-          <Surface className="divide-y divide-border overflow-hidden">
+          <Surface className="divide-y divide-line overflow-hidden">
             {pendingLegacy.map((r) => (
               <div key={r.id} className="flex min-h-11 items-center gap-3 px-4 py-3.5">
                 <FileText className="h-4 w-4 text-warning" />
-                <div className="flex-1 text-[13px] text-foreground">{r.label}</div>
-                <span className="rounded-full bg-warning-light px-2 py-0.5 text-[11px] text-warning-text">Upload required</span>
+                <div className="flex-1 text-[13px] text-ink">{r.label}</div>
+                <span className="rounded-sm bg-warning-soft px-2 py-0.5 text-[11px] text-warning">Upload required</span>
               </div>
             ))}
           </Surface>

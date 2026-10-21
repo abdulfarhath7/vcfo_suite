@@ -5,16 +5,17 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TONE_BG, type IconChipTone } from '@/components/common/IconChip';
+import { TONE_TEXT, type IconChipTone } from '@/components/common/IconChip';
 
 /**
- * Shared dashboard section card — the lead dashboard's card anatomy:
- * a `surface` panel headed by a solid color icon tile + small uppercase title,
- * optional right-side meta or "view all" link, content below.
+ * Shared dashboard section card, every role: a `surface` panel headed by a
+ * neutral icon tile and an 11px label-style title, optional right-side meta or
+ * "view all" link, content below. `tone` colours the glyph only, and only when
+ * the section means that status (overdue, waiting); the tile stays neutral.
  */
 export function DashSection({
   icon: Icon,
-  tone = 'primary',
+  tone = 'neutral',
   title,
   meta,
   href,
@@ -40,22 +41,22 @@ export function DashSection({
       <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 px-4 pt-3">
         <span
           className={cn(
-            'grid h-7 w-7 shrink-0 place-items-center rounded-lg text-white',
-            TONE_BG[tone],
+            'grid h-7 w-7 shrink-0 place-items-center rounded-md bg-surface-sunken',
+            tone === 'neutral' ? 'text-ink' : TONE_TEXT[tone],
           )}
         >
           <Icon className="h-3.5 w-3.5" aria-hidden />
         </span>
-        <h2 className="min-w-0 flex-1 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
+        <h2 className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-ink">
           {title}
         </h2>
         {meta ? (
-          <span className="shrink-0 text-[11.5px] font-semibold text-text-tertiary">{meta}</span>
+          <span className="shrink-0 text-[11px] font-medium text-ink-muted">{meta}</span>
         ) : null}
         {href ? (
           <Link
             href={href}
-            className="inline-flex shrink-0 items-center gap-1 text-[11.5px] font-bold text-primary hover:underline"
+            className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-brand hover:text-brand-strong hover:underline"
           >
             {hrefLabel ?? 'View all'}
             <ArrowUpRight className="h-3 w-3" aria-hidden />
@@ -112,9 +113,9 @@ export function DashDonut({
         y="20.5"
         textAnchor="middle"
         fontSize="8.5"
-        fontWeight="700"
+        fontWeight="600"
         fill="oklch(var(--ink))"
-        fontFamily="var(--font-serif)"
+        fontFamily="var(--font-sans)"
       >
         {centerLabel}
       </text>
@@ -123,7 +124,7 @@ export function DashDonut({
         y="27.5"
         textAnchor="middle"
         fontSize="4.2"
-        fill="oklch(var(--muted-foreground))"
+        fill="oklch(var(--ink-muted))"
         fontFamily="var(--font-sans)"
       >
         {centerCaption}
@@ -143,7 +144,7 @@ export function DashLegendRow({
   count: number;
 }) {
   return (
-    <span className="flex min-w-0 items-center gap-2 truncate text-[12px] font-bold text-muted-foreground">
+    <span className="flex min-w-0 items-center gap-2 truncate text-[12px] font-medium text-ink-muted">
       <i className={cn('inline-block h-2.5 w-2.5 shrink-0 rounded-sm', swatchClassName)} />
       {label} · {count}
     </span>

@@ -112,14 +112,14 @@ export function AdminDashboardView({
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Link
             href={`${projectBase}/approvals`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3.5 py-1.5 text-[12px] font-extrabold text-primary transition-opacity hover:opacity-80"
+            className="inline-flex items-center gap-1.5 rounded-sm bg-brand-soft px-3.5 py-1.5 text-[12px] font-semibold text-brand transition-opacity hover:opacity-80"
           >
             <Inbox className="h-3.5 w-3.5" aria-hidden />
             Approvals
           </Link>
           <Link
             href={newProjectHref}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[12px] font-extrabold text-white transition-opacity hover:opacity-90"
+            className="inline-flex items-center gap-1.5 rounded-sm bg-brand px-3.5 py-1.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             New project
@@ -145,16 +145,16 @@ export function AdminDashboardView({
             >
               <PhaseTimeline phases={portfolioPhases} variant="journey" />
 
-              <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                <span className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-muted-foreground">
+              <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
                   By project
                 </span>
-                <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-primary-light px-1.5 text-[11px] font-extrabold tabular-nums text-primary">
+                <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-sm bg-brand-soft px-1.5 text-[11px] font-semibold tabular-nums text-brand">
                   {engagements.length}
                 </span>
               </div>
 
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-line">
                 {engagements.map((e, i) => {
                   const eTasks = tasksByEngagement[e.id] ?? [];
                   const eDone = eTasks.filter((t) => t.status === 'completed').length;
@@ -172,46 +172,46 @@ export function AdminDashboardView({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.03 * i, duration: 0.24 }}
                       onClick={() => router.push(adminProjectPath(e, projectBase))}
-                      className="group flex w-full items-center gap-3 py-2.5 text-left transition-colors hover:bg-muted/30"
+                      className="group flex w-full items-center gap-3 py-2.5 text-left transition-colors hover:bg-surface-sunken/30"
                     >
                       <span
-                        className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-extrabold ${TONE_BADGE[toneForKey(e.id)]}`}
+                        className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-semibold ${TONE_BADGE[toneForKey(e.id)]}`}
                       >
                         {initialsFromName(e.companyName).slice(0, 2)}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-primary">
+                        <span className="block truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-brand">
                           {e.companyName}
                         </span>
-                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-muted">
                           <span
-                            className={`inline-flex rounded-full px-2 py-px text-[10px] font-extrabold ${TONE_BADGE[toneForKey(e.stage)]}`}
+                            className={`inline-flex rounded-sm px-2 py-px text-[10px] font-semibold ${TONE_BADGE[toneForKey(e.stage)]}`}
                           >
                             {stageDisplayLabel(e.stage)}
                           </span>
                           {intern && <span>{intern.name}</span>}
                           {stuck > 0 && (
-                            <span className="inline-flex items-center gap-1 font-semibold text-warning-text">
+                            <span className="inline-flex items-center gap-1 font-semibold text-warning">
                               <Clock className="h-3 w-3" aria-hidden />
                               {stuck} blocked
                             </span>
                           )}
                           {pendingClientActions > 0 &&
                             eTasks.some((t) => t.status === 'awaiting-client') && (
-                              <span className="font-semibold text-info-text">Client pending</span>
+                              <span className="font-semibold text-info">Client pending</span>
                             )}
                         </span>
                       </span>
                       <span className="hidden w-28 items-center gap-2 sm:flex">
-                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-sunken">
                           <m.span
                             initial={{ width: 0 }}
                             animate={{ width: `${epct}%` }}
                             transition={{ duration: 0.6, delay: 0.08 + 0.04 * i }}
-                            className="block h-full rounded-full bg-primary"
+                            className="block h-full rounded-full bg-brand"
                           />
                         </span>
-                        <span className="w-8 shrink-0 text-right text-[11px] font-bold tabular-nums text-muted-foreground">
+                        <span className="w-8 shrink-0 text-right text-[11px] font-semibold tabular-nums text-ink-muted">
                           {epct}%
                         </span>
                       </span>

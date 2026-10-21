@@ -473,18 +473,18 @@ export default function FirmPeople() {
           {onOpen ? (
             <button
               type="button"
-              className="min-w-0 flex-1 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-muted/40"
+              className="min-w-0 flex-1 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-surface-sunken/40"
               onClick={onOpen}
             >
               <div className="text-[13px] font-medium">{person.name}</div>
-              <div className="font-mono text-[11px] text-muted-foreground">{person.email}</div>
-              {meta ? <div className="mt-1 text-[11px] text-muted-foreground">{meta}</div> : null}
+              <div className="font-mono text-[11px] text-ink-muted">{person.email}</div>
+              {meta ? <div className="mt-1 text-[11px] text-ink-muted">{meta}</div> : null}
             </button>
           ) : (
             <div className="min-w-0 flex-1">
               <div className="text-[13px] font-medium">{person.name}</div>
-              <div className="font-mono text-[11px] text-muted-foreground">{person.email}</div>
-              {meta ? <div className="mt-1 text-[11px] text-muted-foreground">{meta}</div> : null}
+              <div className="font-mono text-[11px] text-ink-muted">{person.email}</div>
+              {meta ? <div className="mt-1 text-[11px] text-ink-muted">{meta}</div> : null}
             </div>
           )}
           <div className="flex shrink-0 items-center gap-1">
@@ -546,8 +546,8 @@ export default function FirmPeople() {
                 key={p.id}
                 href={adminProjectPath({ id: p.id, slug: p.slug }, staffBase)}
                 className={cn(
-                  'inline-flex max-w-48 items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[10.5px] transition-colors hover:border-primary/40 hover:text-foreground',
-                  p.stuck ? 'text-warning-text' : 'text-muted-foreground',
+                  'inline-flex max-w-48 items-center gap-1 rounded-sm border border-line bg-surface px-2 py-0.5 text-[10.5px] transition-colors hover:border-brand/40 hover:text-ink',
+                  p.stuck ? 'text-warning' : 'text-ink-muted',
                 )}
               >
                 <Briefcase className="h-2.5 w-2.5 shrink-0" aria-hidden />
@@ -555,7 +555,7 @@ export default function FirmPeople() {
               </Link>
             ))}
             {attachedProjects.length > 4 ? (
-              <span className="text-[10.5px] text-muted-foreground">
+              <span className="text-[10.5px] text-ink-muted">
                 +{attachedProjects.length - 4} more
               </span>
             ) : null}
@@ -578,9 +578,9 @@ export default function FirmPeople() {
         </DialogHeader>
         {assignTarget ? (
           <>
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[12px] text-ink-muted">
               Attach a project to{' '}
-              <span className="font-medium text-foreground">{assignTarget.name}</span> (
+              <span className="font-medium text-ink">{assignTarget.name}</span> (
               {ROLE_LABEL[assignTarget.role]}).{' '}
               {assignTarget.role === 'manager'
                 ? 'They take over as project manager.'
@@ -593,7 +593,7 @@ export default function FirmPeople() {
                 className="py-8"
               />
             ) : (
-              <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-border p-1">
+              <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-line p-1">
                 {portfolio.rows.map((c) => {
                   const attached = attachedToPerson(c, assignTarget);
                   const selected = assignProjectId === c.id;
@@ -608,23 +608,23 @@ export default function FirmPeople() {
                         attached
                           ? 'cursor-default opacity-50'
                           : selected
-                            ? 'bg-primary-light ring-1 ring-primary/40'
-                            : 'hover:bg-muted/40',
+                            ? 'bg-brand-soft ring-1 ring-brand/40'
+                            : 'hover:bg-surface-sunken/40',
                       )}
                     >
                       <div className="min-w-0">
                         <div className="truncate text-[13px] font-medium">{c.company}</div>
-                        <div className="truncate text-[11px] text-muted-foreground">
+                        <div className="truncate text-[11px] text-ink-muted">
                           Client {c.client} · PM {managerName(c.managerId)} · Lead{' '}
                           {leadName(c.leadId)} · {c.stage}
                         </div>
                       </div>
                       {attached ? (
-                        <span className="mono shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        <span className="mono shrink-0 text-[10px] uppercase tracking-wide text-ink-muted">
                           Assigned
                         </span>
                       ) : selected ? (
-                        <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                        <Check className="h-4 w-4 shrink-0 text-brand" aria-hidden />
                       ) : null}
                     </button>
                   );
@@ -668,13 +668,13 @@ export default function FirmPeople() {
         </DialogHeader>
         {emailTarget ? (
           <>
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[12px] text-ink-muted">
               Update the sign-in email for{' '}
-              <span className="font-medium text-foreground">{emailTarget.name}</span>. They will use
+              <span className="font-medium text-ink">{emailTarget.name}</span>. They will use
               this address next time they log in.
             </p>
             <div>
-              <Label htmlFor="people-change-email" className="text-[12px] text-muted-foreground">
+              <Label htmlFor="people-change-email" className="text-[12px] text-ink-muted">
                 New email
               </Label>
               <Input
@@ -797,7 +797,7 @@ export default function FirmPeople() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <Surface className="divide-y divide-border">
+          <Surface className="divide-y divide-line">
             <div className="px-4 py-3">
               <Eyebrow>Project leads</Eyebrow>
             </div>
@@ -818,7 +818,7 @@ export default function FirmPeople() {
             )}
           </Surface>
 
-          <Surface className="divide-y divide-border">
+          <Surface className="divide-y divide-line">
             <div className="flex items-center justify-between gap-2 px-4 py-3">
               <Eyebrow>Clients & projects</Eyebrow>
               {selectedManager ? (
@@ -845,10 +845,10 @@ export default function FirmPeople() {
                 <Link
                   key={c.id}
                   href={adminProjectPath({ id: c.id, slug: c.slug }, staffBase)}
-                  className="block px-4 py-3 hover:bg-muted/40"
+                  className="block px-4 py-3 hover:bg-surface-sunken/40"
                 >
                   <div className="truncate text-[13px] font-medium">{c.company}</div>
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-[11px] text-ink-muted">
                     Client {c.client} · Lead {leadName(c.leadId)} · {c.stage}
                     {c.stuck ? ' · needs attention' : ''}
                   </div>
@@ -892,7 +892,7 @@ export default function FirmPeople() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {isAdmin && (
-          <Surface className="divide-y divide-border">
+          <Surface className="divide-y divide-line">
             <div className="px-4 py-3">
               <Eyebrow>Admins</Eyebrow>
             </div>
@@ -915,7 +915,7 @@ export default function FirmPeople() {
         )}
 
         {isAdmin && (
-          <Surface className="divide-y divide-border">
+          <Surface className="divide-y divide-line">
             <div className="px-4 py-3">
               <Eyebrow>Managers</Eyebrow>
             </div>
@@ -945,7 +945,7 @@ export default function FirmPeople() {
           </Surface>
         )}
 
-        <Surface className="divide-y divide-border">
+        <Surface className="divide-y divide-line">
           <div className="px-4 py-3">
             <Eyebrow>Project leads</Eyebrow>
           </div>
@@ -974,7 +974,7 @@ export default function FirmPeople() {
           )}
         </Surface>
 
-        <Surface className="divide-y divide-border">
+        <Surface className="divide-y divide-line">
           <div className="px-4 py-3">
             <Eyebrow>Client accounts</Eyebrow>
           </div>
@@ -995,7 +995,7 @@ export default function FirmPeople() {
           )}
         </Surface>
 
-        <Surface className="divide-y divide-border lg:col-span-2">
+        <Surface className="divide-y divide-line lg:col-span-2">
           <div className="px-4 py-3">
             <Eyebrow>Removed clients</Eyebrow>
           </div>
@@ -1009,11 +1009,11 @@ export default function FirmPeople() {
             removedClients.map((c) => (
               <div key={c.id} className="px-4 py-3">
                 <div className="text-[13px] font-medium">{c.name}</div>
-                <div className="font-mono text-[11px] text-muted-foreground">{c.email}</div>
+                <div className="font-mono text-[11px] text-ink-muted">{c.email}</div>
                 {c.phone ? (
-                  <div className="font-mono text-[11px] text-muted-foreground">{c.phone}</div>
+                  <div className="font-mono text-[11px] text-ink-muted">{c.phone}</div>
                 ) : null}
-                <div className="mt-1 text-[11px] text-muted-foreground">
+                <div className="mt-1 text-[11px] text-ink-muted">
                   {c.removedReason ?? 'Removed from their last project'}
                   {c.removedAt ? ` · ${new Date(c.removedAt).toLocaleDateString()}` : ''}
                 </div>
@@ -1023,7 +1023,7 @@ export default function FirmPeople() {
         </Surface>
       </div>
 
-      <Surface className="mt-4 divide-y divide-border">
+      <Surface className="mt-4 divide-y divide-line">
         <div className="px-4 py-3">
           <Eyebrow>Clients & projects</Eyebrow>
         </div>
@@ -1038,15 +1038,15 @@ export default function FirmPeople() {
             <Link
               key={c.id}
               href={adminProjectPath({ id: c.id, slug: c.slug }, staffBase)}
-              className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-muted/40"
+              className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-surface-sunken/40"
             >
               <div className="min-w-0">
                 <div className="truncate text-[13px] font-medium">{c.company}</div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-[11px] text-ink-muted">
                   Client {c.client} · PM {managerName(c.managerId)} · Lead {leadName(c.leadId)}
                 </div>
               </div>
-              <div className="text-[11px] mono uppercase text-muted-foreground">
+              <div className="text-[11px] mono uppercase text-ink-muted">
                 {c.stage} · {c.health}
               </div>
             </Link>
@@ -1068,8 +1068,8 @@ export default function FirmPeople() {
                   onClick={() => dispatch({ type: 'patch', patch: { role: r } })}
                   className={`rounded-lg border px-2 py-1.5 text-[11px] ${
                     form.role === r
-                      ? 'border-primary bg-primary-light text-primary-dark'
-                      : 'border-border'
+                      ? 'border-brand bg-brand-soft text-brand-strong'
+                      : 'border-line'
                   }`}
                 >
                   {ROLE_LABEL[r]}

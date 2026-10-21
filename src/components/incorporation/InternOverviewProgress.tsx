@@ -50,33 +50,33 @@ export function InternNowStrip({
       animate="show"
       className={cn(
         'relative sticky top-[var(--shell-sticky-top)] z-10 mb-5 overflow-hidden',
-        'rounded-xl border border-border bg-background/95 px-4 py-3 shadow-sm backdrop-blur-md',
+        'rounded-xl border border-line bg-background/95 px-4 py-3 shadow-sm',
       )}
     >
       <span
         aria-hidden
         className={cn(
           'absolute inset-y-0 left-0 w-0.5',
-          now.waiting ? 'bg-warning' : 'bg-primary',
+          now.waiting ? 'bg-warning' : 'bg-brand',
         )}
       />
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <p className="min-w-0 text-[13px] leading-snug text-foreground">
-          <span className="font-medium text-muted-foreground">You are here</span>
-          <span className="text-muted-foreground"> · </span>
+        <p className="min-w-0 text-[13px] leading-snug text-ink">
+          <span className="font-medium text-ink-muted">You are here</span>
+          <span className="text-ink-muted"> · </span>
           <span className="font-medium">{now.phaseTitle}</span>
-          <span className="text-muted-foreground"> · </span>
+          <span className="text-ink-muted"> · </span>
           <span className="tabular-nums">
             {now.stepNumber} of {now.stepTotal}
           </span>
-          <span className="text-muted-foreground"> · </span>
+          <span className="text-ink-muted"> · </span>
           <span>{now.stepTitle}</span>
         </p>
         <div className="flex shrink-0 items-center gap-3">
           <span
             className={cn(
               'text-[12px] font-medium',
-              now.waiting ? 'text-warning-text' : 'text-primary',
+              now.waiting ? 'text-warning' : 'text-brand',
             )}
           >
             {now.waiting ? 'Waiting on the client' : 'Your step'}
@@ -180,7 +180,7 @@ export function InternPhaseEntryCards({
 const internPhaseTabTrigger = cn(
   'relative shrink-0 rounded-none bg-transparent px-3 py-2.5 text-[12px] font-medium',
   'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-  'text-text-tertiary transition-colors data-[state=active]:text-brand hover:text-ink',
+  'text-ink-faint transition-colors data-[state=active]:text-brand hover:text-ink',
 );
 
 export type InternPhaseTab = {
@@ -242,7 +242,7 @@ export function InternPhaseTabs({
       <LayoutGroup id={`intern-phase-tabs-${engagementId}`}>
       <TabsList
         aria-label="Incorporation phases"
-        className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0"
+        className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-line bg-transparent p-0"
       >
         {phases.map((phase) => {
           const active = value === phase.id;
@@ -261,11 +261,11 @@ export function InternPhaseTabs({
         })}
       </TabsList>
       </LayoutGroup>
-      <div className="flex flex-col items-stretch gap-2 border-b border-border bg-muted/25 px-4 py-2.5">
-        <span className="text-[11px] font-medium tabular-nums text-foreground">
+      <div className="flex flex-col items-stretch gap-2 border-b border-line bg-surface-sunken/25 px-4 py-2.5">
+        <span className="text-[11px] font-medium tabular-nums text-ink">
           {internPhaseProgressLabel(selected.done, selected.total)}
         </span>
-        <ProgressBar value={pct} className="h-1 bg-primary/25 [&>div]:bg-primary" />
+        <ProgressBar value={pct} className="h-1 bg-brand/25 [&>div]:bg-brand" />
       </div>
       <TabsContent value={value} className="mt-0 focus-visible:ring-0">
         <AnimatePresence mode="wait">
@@ -299,7 +299,7 @@ export function InternRegistrationGroupedRows({
         <div key={group.heading} role="group" aria-label={group.heading}>
           <h3
             className={cn(
-              'px-4 pb-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary',
+              'px-4 pb-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint',
               index === 0 ? 'pt-2.5' : 'pt-3',
             )}
           >

@@ -34,8 +34,8 @@ export function AskLauncher() {
       aria-keyshortcuts="Meta+J Control+J"
       title="Ask VCFO (⌘J / Ctrl+J)"
       className={cn(
-        'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-2 text-[13px] text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-        ask.open && 'bg-primary-light text-foreground',
+        'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-2 text-[13px] text-ink-muted transition-colors hover:bg-brand-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40',
+        ask.open && 'bg-brand-soft text-ink',
       )}
     >
       <MessageCircleQuestion className="h-4 w-4" strokeWidth={1.75} aria-hidden />

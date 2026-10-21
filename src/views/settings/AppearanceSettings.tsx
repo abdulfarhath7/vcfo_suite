@@ -9,7 +9,6 @@ import {
   HERO_SOLIDS,
   MOTION_STYLES,
   SIDEBAR_SOLIDS,
-  SURFACE_GRADIENTS,
   SURFACE_PRESETS,
   compressImageFile,
   surfaceCssVars,
@@ -24,7 +23,6 @@ import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 const KINDS: { id: SurfaceKind; label: string }[] = [
   { id: 'solid', label: 'Solid' },
-  { id: 'gradient', label: 'Gradient' },
   { id: 'preset', label: 'Images' },
   { id: 'custom', label: 'Upload' },
 ];
@@ -56,7 +54,7 @@ function Swatch({
         dense
           ? cn(
               'relative h-8 w-full overflow-hidden rounded-md ring-1 ring-black/10 transition-[transform,box-shadow] hover:-translate-y-px',
-              selected && 'ring-2 ring-primary ring-offset-1 ring-offset-popover',
+              selected && 'ring-2 ring-brand ring-offset-1 ring-offset-popover',
             )
           : 'appear-swatch group'
       }
@@ -89,7 +87,7 @@ function Swatch({
       <p
         className={cn(
           'truncate text-center text-[11px] tracking-tight',
-          selected ? 'font-medium text-foreground' : 'text-muted-foreground',
+          selected ? 'font-medium text-ink' : 'text-ink-muted',
         )}
       >
         {label}
@@ -111,8 +109,8 @@ function KindTabs({
     <div
       className={
         dense
-          ? 'flex rounded-lg bg-muted/60 p-0.5'
-          : 'grid grid-cols-4 rounded-md bg-muted/70 p-0.5'
+          ? 'flex rounded-lg bg-surface-sunken/60 p-0.5'
+          : 'grid grid-cols-4 rounded-md bg-surface-sunken/70 p-0.5'
       }
     >
       {KINDS.map((kind) => (
@@ -127,9 +125,9 @@ function KindTabs({
               : 'rounded-md px-2 py-1.5 text-[12px]',
             value === kind.id
               ? dense
-                ? 'bg-panel text-foreground shadow-sm'
-                : 'bg-panel text-foreground shadow-sm ring-1 ring-border/70'
-              : 'text-muted-foreground hover:text-foreground',
+                ? 'bg-surface-raised text-ink shadow-sm'
+                : 'bg-surface-raised text-ink shadow-sm ring-1 ring-line/70'
+              : 'text-ink-muted hover:text-ink',
           )}
         >
           {kind.label}
@@ -181,22 +179,6 @@ export function SurfacePicker({
         </div>
       ) : null}
 
-      {value.kind === 'gradient' ? (
-        <div className={dense ? 'grid grid-cols-3 gap-1.5' : 'grid grid-cols-2 gap-2.5 sm:grid-cols-3'}>
-          {SURFACE_GRADIENTS.map((g) => (
-            <Swatch
-              key={g.id}
-              dense={dense}
-              caption={!dense}
-              label={g.label}
-              selected={value.gradientId === g.id}
-              style={{ background: g.value, height: dense ? 36 : 64 }}
-              onClick={() => onChange({ kind: 'gradient', gradientId: g.id })}
-            />
-          ))}
-        </div>
-      ) : null}
-
       {value.kind === 'preset' ? (
         <div className={dense ? 'grid grid-cols-3 gap-1.5' : 'grid grid-cols-3 gap-2.5 sm:grid-cols-6'}>
           {SURFACE_PRESETS.map((preset) => (
@@ -225,9 +207,9 @@ export function SurfacePicker({
             onClick={() => fileRef.current?.click()}
             className={
               dense
-                ? 'relative flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ring-1 ring-border'
+                ? 'relative flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-sunken ring-1 ring-line'
                 : cn(
-                    'appear-swatch flex h-16 w-24 shrink-0 items-center justify-center text-muted-foreground',
+                    'appear-swatch flex h-16 w-24 shrink-0 items-center justify-center text-ink-muted',
                     value.customDataUrl && 'data-on',
                   )
             }
@@ -246,20 +228,20 @@ export function SurfacePicker({
             aria-label={value.customDataUrl ? 'Replace photo' : 'Upload photo'}
           >
             {!value.customDataUrl ? (
-              <Upload className={cn('text-muted-foreground', dense ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
+              <Upload className={cn('text-ink-muted', dense ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
             ) : null}
           </button>
           <div className="min-w-0">
-            <p className={cn('font-medium text-foreground', dense ? 'text-[12px]' : 'text-[13px]')}>
+            <p className={cn('font-medium text-ink', dense ? 'text-[12px]' : 'text-[13px]')}>
               Your image
             </p>
             {dense ? null : (
-              <p className="mt-0.5 text-[12px] text-muted-foreground">JPEG or PNG.</p>
+              <p className="mt-0.5 text-[12px] text-ink-muted">JPEG or PNG.</p>
             )}
             <button
               type="button"
               className={cn(
-                'font-semibold text-primary hover:underline',
+                'font-semibold text-brand hover:underline',
                 dense ? 'mt-0.5 text-[11.5px]' : 'mt-1.5 text-[12px]',
               )}
               onClick={() => fileRef.current?.click()}
@@ -290,9 +272,9 @@ export function AppearanceSettings() {
 
   return (
     <section id="appearance" className="scroll-mt-24">
-      <div className="overflow-hidden rounded-lg border border-border bg-panel">
+      <div className="overflow-hidden rounded-lg border border-line bg-surface-raised">
         <header className="px-5 py-4 sm:px-6">
-          <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Appearance</h2>
+          <h2 className="text-[15px] font-semibold tracking-tight text-ink">Appearance</h2>
         </header>
 
         <StudioBlock title="Greeting Card Appearance">
@@ -327,7 +309,7 @@ export function AppearanceSettings() {
         <StudioBlock title="Sidebar Appearance">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <div
-              className="shell-sidebar-skin relative h-[176px] w-[104px] shrink-0 overflow-hidden rounded-lg border border-border/70"
+              className="shell-sidebar-skin relative h-[176px] w-[104px] shrink-0 overflow-hidden rounded-lg border border-line/70"
               data-ink={sidebar.ink}
               style={surfaceCssVars(sidebar, 'sidebar')}
             >
@@ -353,9 +335,9 @@ export function AppearanceSettings() {
             ariaLabel="Animations"
             className="inline-grid"
           />
-          <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-4">
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-line/60 pt-4">
             <div>
-              <p className="text-[13px] font-medium text-foreground">Reduce motion</p>
+              <p className="text-[13px] font-medium text-ink">Reduce motion</p>
             </div>
             <Switch
               checked={prefs.reduceMotion}
@@ -381,10 +363,10 @@ function StudioBlock({
   children: ReactNode;
 }) {
   return (
-    <div className={cn('border-t border-border/70 px-5 py-5 sm:px-6', last && 'pb-6')}>
-      <h3 className="text-[13px] font-semibold tracking-tight text-foreground">{title}</h3>
+    <div className={cn('border-t border-line/70 px-5 py-5 sm:px-6', last && 'pb-6')}>
+      <h3 className="text-[13px] font-semibold tracking-tight text-ink">{title}</h3>
       {description ? (
-        <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{description}</p>
+        <p className="mt-0.5 text-[12.5px] leading-snug text-ink-muted">{description}</p>
       ) : null}
       <div className="mt-4">{children}</div>
     </div>

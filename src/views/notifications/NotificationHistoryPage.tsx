@@ -122,24 +122,24 @@ export default function NotificationHistoryPage() {
           icon={Bell}
           title="Could not load history"
           description="Refresh the page and try again."
-          className="border-primary/25 bg-primary-light/30"
+          className="border-brand/25 bg-brand-soft/30"
         />
       ) : filtered.length === 0 ? (
         <EmptyStateIllustrated
           icon={Bell}
           title="No notifications in this view"
-          className="border-primary/25 bg-primary-light/30"
+          className="border-brand/25 bg-brand-soft/30"
         />
       ) : (
         <div className="grid gap-4">
           {sections.map((section) => (
             <section key={section.id}>
               {section.label ? (
-                <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                   {section.label}
                 </h2>
               ) : null}
-              <Surface flat className="divide-y divide-border overflow-hidden p-0">
+              <Surface flat className="divide-y divide-line overflow-hidden p-0">
                 {section.items.map((item) => (
                   <div key={item.id} className="px-1">
                     <NotificationItem
@@ -152,7 +152,7 @@ export default function NotificationHistoryPage() {
                       }}
                     />
                     {selectedId === item.id ? (
-                      <p className="px-2 pb-2 text-[10px] text-text-tertiary">
+                      <p className="px-2 pb-2 text-[10px] text-ink-faint">
                         {formatNotificationTimestampIst(item.createdAt)} IST
                       </p>
                     ) : null}

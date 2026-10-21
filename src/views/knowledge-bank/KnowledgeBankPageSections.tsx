@@ -106,22 +106,22 @@ function FolderCard({
           onClick={() => onOpen(folder.id)}
           className="flex min-w-0 flex-1 items-start gap-3 text-left"
         >
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary-light text-primary">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-brand-soft text-brand">
             <Folder className="h-4 w-4" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-[13.5px] font-medium text-ink">{folder.name}</h3>
-            <p className="mt-0.5 text-[11.5px] text-text-tertiary">Folder</p>
+            <p className="mt-0.5 text-[11.5px] text-ink-faint">Folder</p>
           </div>
         </button>
         {canDelete && empty ? (
-          <div className="mt-auto flex items-center border-t border-border pt-3">
+          <div className="mt-auto flex items-center border-t border-line pt-3">
             <button
               type="button"
               onClick={() => onDelete(folder)}
               className={cn(
-                'inline-flex h-9 min-h-9 items-center justify-center gap-1.5 rounded-md border border-border px-3 text-xs',
-                'text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive',
+                'inline-flex h-9 min-h-9 items-center justify-center gap-1.5 rounded-md border border-line px-3 text-xs',
+                'text-ink-muted transition-colors hover:border-danger/40 hover:text-danger',
               )}
               aria-label={`Delete ${folder.name}`}
             >
@@ -171,13 +171,13 @@ function DocumentCard({
             )}
           >
             <FileText className="h-4 w-4" aria-hidden />
-            {ext && <span className="mt-0.5 text-[7.5px] font-bold uppercase leading-none">{ext}</span>}
+            {ext && <span className="mt-0.5 text-[7.5px] font-semibold uppercase leading-none">{ext}</span>}
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-[13.5px] font-medium text-ink">{file.title}</h3>
-            <p className="mt-0.5 truncate text-[11.5px] text-text-tertiary">{file.fileName}</p>
+            <p className="mt-0.5 truncate text-[11.5px] text-ink-faint">{file.fileName}</p>
             {showFolderPath ? (
-              <p className="mt-0.5 truncate text-[11px] text-primary/80">
+              <p className="mt-0.5 truncate text-[11px] text-brand/80">
                 {file.folderPath || 'Knowledge Bank'}
               </p>
             ) : null}
@@ -192,7 +192,7 @@ function DocumentCard({
           <div className="flex-1" />
         )}
 
-        <div className="mb-4 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-text-tertiary">
+        <div className="mb-4 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink-faint">
           <Mono>{formatKnowledgeBankFileSize(file.sizeBytes)}</Mono>
           <span aria-hidden>·</span>
           <Mono>{formatDate(file.createdAt)}</Mono>
@@ -200,7 +200,7 @@ function DocumentCard({
           <span className="truncate">{uploaderLabel(file)}</span>
         </div>
 
-        <div className="mt-auto flex items-center gap-2 border-t border-border pt-3">
+        <div className="mt-auto flex items-center gap-2 border-t border-line pt-3">
           <AccentButton
             type="button"
             variant="outline"
@@ -221,8 +221,8 @@ function DocumentCard({
               type="button"
               onClick={() => onDelete(file)}
               className={cn(
-                'inline-flex h-9 min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-border px-3 text-xs',
-                'text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive',
+                'inline-flex h-9 min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-line px-3 text-xs',
+                'text-ink-muted transition-colors hover:border-danger/40 hover:text-danger',
               )}
               aria-label={`Delete ${file.title}`}
             >
@@ -331,7 +331,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
       <PageHeader accent="sky" icon={BookOpen} title="Knowledge Bank" hideBack />
 
       <Surface className="mb-4 overflow-hidden">
-        <div className="flex flex-col gap-2 border-b border-border px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 border-b border-line px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
           <nav
             aria-label="Folder path"
             className="flex min-w-0 flex-wrap items-center gap-1 text-[13px]"
@@ -341,7 +341,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
               type="button"
               onClick={() => openFolder(null)}
               className={cn(
-                'rounded-md px-1.5 py-0.5 text-primary hover:bg-primary-light',
+                'rounded-md px-1.5 py-0.5 text-brand hover:bg-brand-soft',
                 !currentFolderId && 'font-medium text-ink',
               )}
             >
@@ -349,12 +349,12 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
             </button>
           {ancestors.map((folder, index) => (
             <span key={folder.id} className="inline-flex min-w-0 items-center gap-1">
-              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-text-tertiary" aria-hidden />
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden />
               <button
                 type="button"
                 onClick={() => openFolder(folder.id)}
                 className={cn(
-                  'max-w-[12rem] truncate rounded-md px-1.5 py-0.5 text-primary hover:bg-primary-light',
+                  'max-w-[12rem] truncate rounded-md px-1.5 py-0.5 text-brand hover:bg-brand-soft',
                   index === ancestors.length - 1 && 'font-medium text-ink',
                 )}
                 aria-current={index === ancestors.length - 1 ? 'page' : undefined}
@@ -383,8 +383,8 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
         </div>
         <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-role" aria-hidden />
-            <p className="text-[11px] uppercase tracking-[0.14em] text-text-tertiary">
+            <BookOpen className="h-4 w-4 text-brand" aria-hidden />
+            <p className="text-[11px] uppercase tracking-[0.14em] text-ink-faint">
               <span className="tabular-nums text-ink">
                 {libraryQuery.isLoading ? '…' : itemCount}
               </span>
@@ -392,7 +392,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
             </p>
           </div>
           <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-tertiary" />
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-faint" />
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -409,15 +409,15 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
           {Array.from({ length: 6 }).map((_, i) => (
             <NoirCard key={i} className="h-[220px] animate-pulse p-5">
               <div className="mb-3 flex gap-3">
-                <div className="h-10 w-10 rounded-md bg-muted" />
+                <div className="h-10 w-10 rounded-md bg-surface-sunken" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-3/4 rounded bg-muted" />
-                  <div className="h-3 w-1/2 rounded bg-muted" />
+                  <div className="h-4 w-3/4 rounded bg-surface-sunken" />
+                  <div className="h-3 w-1/2 rounded bg-surface-sunken" />
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="h-3 w-full rounded bg-muted" />
-                <div className="h-3 w-2/3 rounded bg-muted" />
+                <div className="h-3 w-full rounded bg-surface-sunken" />
+                <div className="h-3 w-2/3 rounded bg-surface-sunken" />
               </div>
             </NoirCard>
           ))}
@@ -512,7 +512,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
                 disabled={uploading}
                 onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
               />
-              <p className="text-[11px] text-text-tertiary">
+              <p className="text-[11px] text-ink-faint">
                 PDF, Office, text, or image · max {maxUploadSizeLabel()}
               </p>
             </div>
@@ -605,7 +605,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
                 e.preventDefault();
                 void confirmDelete();
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-danger text-white hover:bg-danger/90"
             >
               {deleting ? 'Deleting…' : 'Delete'}
             </AlertDialogAction>

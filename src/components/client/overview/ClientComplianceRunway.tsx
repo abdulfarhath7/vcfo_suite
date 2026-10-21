@@ -39,14 +39,14 @@ export function ClientComplianceRunway({
       action={
         <Link
           href="/app/client/compliances"
-          className="text-[11.5px] font-bold text-primary hover:underline"
+          className="text-[11.5px] font-semibold text-brand hover:underline"
         >
           All filings
         </Link>
       }
     >
       {upcoming.length === 0 ? (
-        <p className="text-[12.5px] text-muted-foreground">
+        <p className="text-[12.5px] text-ink-muted">
           {incorporated
             ? 'Nothing due in the next 90 days.'
             : 'Your compliance calendar begins once your Certificate of Incorporation is issued.'}
@@ -62,7 +62,7 @@ export function ClientComplianceRunway({
                 transition={{ delay: 0.05 * index, duration: 0.26, ease }}
                 className="flex items-center gap-3"
               >
-                <span className="w-[5rem] shrink-0 truncate text-[11.5px] font-extrabold text-ink">
+                <span className="w-[5rem] shrink-0 truncate text-[11.5px] font-semibold text-ink">
                   {group.group}
                 </span>
                 <div className="client-bar-track h-2.5 flex-1">
@@ -74,15 +74,15 @@ export function ClientComplianceRunway({
                     }}
                   />
                 </div>
-                <span className="mono w-5 shrink-0 text-right text-[11.5px] font-bold tabular-nums text-ink">
+                <span className="mono w-5 shrink-0 text-right text-[11.5px] font-semibold tabular-nums text-ink">
                   {group.items.length}
                 </span>
               </m.li>
             ))}
           </ul>
 
-          <div className="mt-3.5 border-t border-border pt-3">
-            <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
+          <div className="mt-3.5 border-t border-line pt-3">
+            <p className="mb-2 text-[11px] font-semibold text-ink-muted">
               Coming up · next 90 days
             </p>
             <ul className="space-y-2">
@@ -97,25 +97,25 @@ export function ClientComplianceRunway({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-baseline gap-1.5">
-                      <span className="min-w-0 truncate text-[12.5px] font-extrabold text-ink">
+                      <span className="min-w-0 truncate text-[12.5px] font-semibold text-ink">
                         {item.title}
                       </span>
                       {item.periodLabel && (
-                        <span className="shrink-0 text-[10.5px] font-semibold text-muted-foreground">
+                        <span className="shrink-0 text-[10.5px] font-semibold text-ink-muted">
                           {item.periodLabel}
                         </span>
                       )}
                     </div>
-                    <div className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[10.5px] text-muted-foreground">
-                      <span className="font-bold">{item.group}</span>
+                    <div className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-[10.5px] text-ink-muted">
+                      <span className="font-semibold">{item.group}</span>
                       <span aria-hidden>·</span>
                       <Mono className="tabular-nums">{formatClientDate(item.dueDate)}</Mono>
                       <span
                         className={cn(
-                          'ml-auto shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold',
+                          'ml-auto shrink-0 rounded-sm px-1.5 py-0.5 text-[10px] font-semibold',
                           item.status === 'filed'
-                            ? 'bg-success-light text-success-text'
-                            : 'bg-raised text-muted-foreground',
+                            ? 'bg-positive-soft text-positive'
+                            : 'bg-surface-sunken text-ink-muted',
                         )}
                       >
                         {relativeDayLabel(item.dueDate)}
@@ -126,7 +126,7 @@ export function ClientComplianceRunway({
               ))}
             </ul>
             {upcoming.length > 5 && (
-              <p className="mt-2 text-[11.5px] font-semibold text-muted-foreground">
+              <p className="mt-2 text-[11.5px] font-semibold text-ink-muted">
                 +{upcoming.length - 5} more in the window
               </p>
             )}
@@ -157,5 +157,5 @@ const GROUP_FILL: Record<ComplianceGroup, string> = {
   Payroll: 'oklch(var(--phase-post))',
   MCA: 'oklch(var(--phase-registration))',
   FEMA: 'oklch(var(--phase-fema))',
-  Other: 'oklch(var(--muted-foreground))',
+  Other: 'oklch(var(--ink-muted))',
 };
