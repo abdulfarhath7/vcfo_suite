@@ -6,7 +6,7 @@
  * (Address · Login Credentials · Registrations · Directors KYC · Other
  * credentials). Secret values stay masked; every Preview / Edit / Reveal asks
  * for a 6-digit OTP that goes to the client's Project Manager and opens a
- * 10-minute grant (server-enforced, `src/db/repositories/credentials.ts`).
+ * 10-minute grant (server-enforced, `src/db/repositories/credentials/`).
  * Every access lands in the Access log drawer and on the Audit page.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
