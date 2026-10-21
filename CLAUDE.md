@@ -43,13 +43,15 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 - `src/components/` — shared UI. `shell/` (staff sidebar, top bar), `dash/` (DashHero,
   DashSection), `ui/` (shadcn primitives), `client-portal/` (the client shell and pages),
   `intern/`, `charts/`, `incorporation/`, `compliances/`, `ask/`.
-- `src/lib/` — domain logic: checklist validation (`checklist-*`), docx generation
-  (`board-resolution-*`, `incorporation-docs/`), `compliance/`, `doc-pack/`, `ask/`, `email/`,
-  `notify/`. Tests sit next to the code as `*.test.ts`.
+- `src/lib/` — domain logic, one folder per area (one line each in `src/lib/README.md`):
+  `checklist/` (34-step validation and gating), `board-resolution/` and `incorporation-docs/`
+  (docx), `incorporation/`, `projects/`, `compliance/`, `doc-pack/`, `ask/`, `email/`, `notify/`.
+  Generic helpers (`utils.ts`, `auth.ts`, `slug.ts`) sit at the top; tests sit beside the code.
 - `src/data/` — pure data: `checklist.ts` (the 34 steps), obligations, NIC codes, Ask topics.
 - `src/db/` — the seam: Drizzle client, `schema*.ts`, `migrations/`, `repositories/`.
 - `src/auth/` — Auth.js config and role guards. `src/storage/` — S3 helpers.
-  `src/jobs/` — Inngest functions. `src/context/`, `src/hooks/` — client state.
+  `src/jobs/` — Inngest functions. `src/context/` — client state. `src/hooks/` — shared
+  React Query and UI hooks (`use-*.ts`; Ask hooks in `hooks/ask/`).
 - `scripts/` — seeds, docx template builders, `cp-css.mjs`, `design-tokens-*.mjs`.
 - `docs/` — `context/` (live memory), `specs/` (feature specs and the client portal
   prototype), `design/` (the design system), `STATUS.md` (branch status and refactor list).
@@ -63,7 +65,7 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 2. **Every repository takes an `AuthContext` and scopes by role.** The rules are in
    `src/db/repositories/README.md` and `docs/context/notes/data-access.md`; access control
    lives there, not in Postgres RLS.
-3. **Do not rewrite the ported domain code** (`src/lib/checklist-*`, the docx generators,
+3. **Do not rewrite the ported domain code** (`src/lib/checklist/`, the docx generators,
    `src/lib/compliance/`, `src/data/checklist.ts`) unless a test fails or a spec asks for it.
 4. **Dev/prod parity.** Local uses Docker Postgres + MinIO; AWS uses RDS + S3. Everything
    flows through env vars; never hardcode an endpoint.

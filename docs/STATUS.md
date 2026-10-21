@@ -87,10 +87,17 @@ About 85 source files carry the design-system work described in `docs/design/BRI
    `scripts/cp-css.mjs` from `css-src/`; generating it in a `prebuild`/`predev` npm script and
    ignoring the folder removes 21 duplicate files from every diff (the current branch carries
    both copies of each change).
-4. **Flatten `src/lib/` (184 entries at the top level).** Group the `checklist-*`,
-   `board-resolution-*` and `incorporation-*` modules into folders the way `compliance/`,
-   `doc-pack/` and `ask/` already are, and move their tests with them. `tsconfig` has
-   `strict: false`; turning on `strictNullChecks` folder by folder would be the next step.
+4. **Done 2026-10-22: `src/lib/` is grouped into folders.** The top level went from 184
+   entries (173 files, 11 folders) to 40 (17 files, 23 folders): `checklist/`,
+   `board-resolution/`, `incorporation/`, `projects/`, `documents/`, `knowledge-bank/`,
+   `notifications/`, `intern/`, `client/`, `super/`, `audit/`, `shell/` are new, `filings.ts`
+   joined `compliance/`, and the ten `use-*.ts` hooks moved to `src/hooks/`. Tests moved with
+   their modules; file names are unchanged and imports were rewritten mechanically (commits
+   `6d7bf71`, `1066f03`, `df26221`, `d1692d7`). `src/lib/README.md` has one line per folder.
+   The knip findings were acted on in `e10d1a5` (unused exports 175 to 11, types 27 to 1; see
+   `docs/refactor/knip-2026-10-22.md`), and the load-sensitive `doc-pack-parity` test was split
+   per document in `b9a8491`. Gate after: 0 type errors, 0 lint errors (246 warnings), 1925
+   tests. Next step: `tsconfig` has `strict: false`; turn on `strictNullChecks` folder by folder.
 5. **Done 2026-10-22: role-scope bugs and cross-tenant tests.** The `compliance.ts` bug was
    already gone (`5b7c50b`). Seven hand-written role checks that dropped `super_admin` were
    moved to the `src/lib/auth.ts` helpers, with 58 new tests. Still open: cross-tenant tests for

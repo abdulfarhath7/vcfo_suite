@@ -21,8 +21,14 @@ in `src/components/client-portal/`; check that your change adds no new ones.
 | Data access (the seam) | `src/db/repositories/*.ts`, rules in `src/db/repositories/README.md` and `docs/context/notes/data-access.md` |
 | Schema and migrations | `src/db/schema.ts` (re-exports `schema-portal-*.ts`), `src/db/migrations/`, `drizzle.config.ts` |
 | Seeds | `scripts/seed.ts` (`@vcfo.local` users), `scripts/seed-demo.ts` + `seed-demo-extras.ts` |
-| Domain logic | `src/lib/` (checklist, compliance, doc-pack, ask, client-portal), pure data in `src/data/` |
-| docx generation | `src/lib/board-resolution-*.ts`, `src/lib/incorporation-docs/`, `src/lib/doc-pack/registry.ts`, templates in `public/templates/`, template builders `scripts/prepare-*.mjs`, `scripts/incorp-docx-*.mjs` |
+| Domain logic | `src/lib/<area>/`, one line per folder in `src/lib/README.md`; pure data in `src/data/` |
+| Checklist rules (34 steps) | `src/lib/checklist/` (`checklist-step-gate.ts`, `checklist-responses.ts`, `checklist-pre*-validation.ts`), step data `src/data/checklist.ts` |
+| Projects (engagements) | `src/lib/projects/` (`engagements-db.ts`, `project-step-path.ts`, `schedule-windows.ts`, change requests), role views in `src/lib/intern/`, `src/lib/client/`, `src/lib/super/` |
+| Incorporation answers | `src/lib/incorporation/` (proposed directors, DIR-2, pre-inc direct flow, NIC-2008, countries) |
+| docx generation | `src/lib/board-resolution/`, `src/lib/incorporation-docs/`, `src/lib/doc-pack/registry.ts`, templates in `public/templates/`, template builders `scripts/prepare-*.mjs`, `scripts/incorp-docx-*.mjs` |
+| Compliance calendar | `src/lib/compliance/` (FY periods, instances, `filings.ts` register), obligations in `src/data/` |
+| Shell chrome | `src/lib/shell/` (`shell-appearance.ts`, `motion.ts`, `page-metadata.ts`, `brand.ts`) |
+| React hooks | `src/hooks/use-*.ts` (React Query fetchers and UI state), Ask hooks in `src/hooks/ask/` |
 | File storage (S3 / MinIO) | `src/storage/s3.ts` (`putObject`, `signedDownloadUrl`, `bucketKey`) |
 | Background jobs | `src/jobs/*.ts`, client `src/jobs/client.ts`, registered in `app/api/inngest/route.ts` |
 | Email | `src/lib/email/send-email.ts` (`sendEmail`), layout `email-layout.ts`, engagement events `notify-engagement-event.ts` |
