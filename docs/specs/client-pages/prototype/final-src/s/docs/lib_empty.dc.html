@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Library — empty state</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--primary:oklch(54.6% 0.215 263);--navy:#0f2a4a;--navy-2:#17396b;--gold:#c9a24b;--violet:oklch(54% 0.17 292);--violet-light:oklch(96.4% 0.032 292);--violet-chip:oklch(50% 0.17 292);--violet-soft:oklch(92% 0.05 292);--violet-text:oklch(42% 0.16 292);--shadow:0 1px 2px oklch(25% 0.04 264 / 0.04), 0 6px 18px -10px oklch(28% 0.06 264 / 0.18)}
+a{color:var(--primary);text-decoration:none;font-weight:700}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border-radius:6px;font:600 13px Manrope,sans-serif;border:1px solid transparent;text-decoration:none;white-space:nowrap;cursor:pointer}
+.btn-n{background:var(--navy);color:#fff}
+.q{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:var(--violet-light);color:var(--violet-text);box-shadow:inset 0 0 0 1px oklch(54% 0.17 292 / .25);font-size:12.5px}
+.bk{position:absolute;bottom:0;border-radius:3px 3px 0 0}
+@keyframes rise{from{transform:scaleY(.2)}to{transform:none}}
+.bk{transform-origin:bottom;animation:rise .6s cubic-bezier(.22,1,.36,1) both}
+@media (prefers-reduced-motion: reduce){.bk{animation:none}}
+</style>
+</helmet>
+<div style="position:relative;width:1440px;height:900px;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+  <div style="width:248px;flex:none;background:#0f2a4a"><dc-import name="side" active="5" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div style="flex:1;min-width:0">
+    <dc-import name="topbar" trail="Library" hint-size="100%,52px" style="display:block"></dc-import>
+    <main style="padding:24px;display:flex;flex-direction:column;gap:16px">
+      <h1 style="margin:0;font:700 22px Manrope,sans-serif;color:var(--navy-ink,var(--navy))">Library</h1>
+      <section class="card" style="min-height:580px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center">
+        <div aria-hidden="true" style="position:relative;width:200px;height:110px;border-bottom:3px solid var(--violet-soft)">
+          <span class="bk" style="left:30px;width:26px;height:78px;background:var(--violet-chip)"></span>
+          <span class="bk" style="left:60px;width:22px;height:94px;background:var(--navy);animation-delay:.08s"></span>
+          <span class="bk" style="left:86px;width:30px;height:64px;background:var(--violet-soft);animation-delay:.16s"></span>
+          <span class="bk" style="left:122px;width:24px;height:86px;background:var(--gold);animation-delay:.24s;transform:rotate(12deg);transform-origin:bottom left"></span>
+          
+        </div>
+        <div role="status" style="display:flex;align-items:flex-end;gap:10px;justify-content:center;text-align:left"><dc-import name="v7c_bot" state="idle" size="48" hint-size="48px,48px"></dc-import><div style="position:relative;max-width:320px;padding:10px 14px;border-radius:10px 10px 10px 2px;background:var(--panel);border:1px solid var(--border);box-shadow:0 8px 20px -12px oklch(21% 0.042 264 / .35);display:flex;flex-direction:column;align-items:flex-start"><span style="font:600 13px/1.45 Manrope,sans-serif;color:var(--fg)">Northwind’s library is empty. Save an answer from Ask VCFO and it lands here as a book.</span><a href="#" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:12px;font-weight:700;color:var(--primary)">Ask VCFO why</a></div></div>
+        <button type="button" class="btn btn-n">Ask VCFO</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px">
+          <a class="q" href="#">What is SPICe+?</a><a class="q" href="#">What happens after the COI?</a><a class="q" href="#">When do I need GST?</a>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

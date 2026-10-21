@@ -1,10 +1,9 @@
-import ClientDocuments from "@/views/client/Documents";
+import { DocumentsPage } from "@/components/client-portal/pages/documents/DocumentsPage";
 
 import { pageMetadata } from "@/lib/page-metadata";
 
 export const metadata = pageMetadata("Documents", "Your documents");
 
-
 export default function Page() {
-  return <ClientDocuments />;
+  return <DocumentsPage />;
 }

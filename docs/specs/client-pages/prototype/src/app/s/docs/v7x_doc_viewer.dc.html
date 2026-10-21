@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Document preview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);
+--primary:oklch(54.6% 0.215 263);--primary-dark:oklch(48.8% 0.217 264);--primary-light:oklch(96.6% 0.02 260);--primary-chip:oklch(52% 0.21 263);
+--navy:#0f2a4a;--navy-2:#17396b;--navy-3:#1b4f94;--gold:#c9a24b;--gold-soft:#fbf3df;--gold-text:#6e500f;
+--ok:oklch(56% 0.13 168);--ok-light:oklch(96% 0.028 170);--ok-text:oklch(39% 0.09 172);--ok-chip:oklch(50% 0.12 168);
+--due:oklch(66% 0.17 48);--due-light:oklch(96.8% 0.04 55);--due-text:oklch(48% 0.14 42);--due-chip:oklch(55% 0.17 42);
+--over:oklch(57% 0.2 22);--over-light:oklch(96.4% 0.026 18);--over-text:oklch(46% 0.17 20);--over-chip:oklch(52% 0.2 22);
+--prog:oklch(55% 0.16 252);--prog-light:oklch(96% 0.026 250);--prog-text:oklch(43% 0.13 254);--prog-chip:oklch(51% 0.17 252);
+--up:oklch(82% 0.018 255);--up-light:oklch(96.6% 0.007 255);--up-text:oklch(46% 0.028 258);--up-chip:oklch(54% 0.026 258);
+--violet:oklch(54% 0.17 292);--violet-light:oklch(96.4% 0.032 292);--violet-chip:oklch(50% 0.17 292);
+--sky:oklch(58% 0.12 228);--sky-light:oklch(96.4% 0.026 228);--sky-chip:oklch(49% 0.12 230);
+--teal:oklch(55% 0.1 195);--teal-light:oklch(96.4% 0.026 195);--teal-chip:oklch(47% 0.09 195);
+--gst:oklch(52% 0.15 148);--it:oklch(53% 0.16 252);--mca:oklch(50% 0.18 300);--fema:oklch(55% 0.19 12);--labour:oklch(50% 0.12 200);
+--cat-tax:oklch(58% 0.14 70);--cat-labour:oklch(50% 0.12 200);--cat-business:oklch(52% 0.17 292);--cat-ip:oklch(52% 0.13 230);--cat-fema:oklch(55% 0.19 12);
+--shadow:0 1px 2px oklch(25% 0.04 264 / 0.04), 0 6px 18px -10px oklch(28% 0.06 264 / 0.18)}
+a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--primary-dark)}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);min-width:0;display:flex;flex-direction:column;transition:transform .25s ease,box-shadow .25s ease;animation:up .5s cubic-bezier(.2,.7,.2,1) backwards}
+.card:hover{transform:translateY(-2px);box-shadow:0 2px 4px oklch(25% 0.04 264 / 0.05), 0 14px 28px -12px oklch(28% 0.08 264 / 0.25)}
+.card.t::before{content:"";position:absolute;left:18px;top:-1px;width:38px;height:3px;border-radius:0 0 3px 3px;background:var(--gold)}
+.ch{display:flex;align-items:center;gap:10px;padding:16px 18px 0;flex-wrap:wrap}
+.st{font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--navy);margin:0}
+.ic{width:30px;height:30px;border-radius:99px;display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
+.circ{width:44px;height:44px;border-radius:99px;display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
+.duo{fill:currentColor;stroke:none;opacity:.26}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;letter-spacing:.01em;line-height:16px;white-space:nowrap}
+.cap{font-size:11px;color:var(--muted)}
+.lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.rt{font-size:13px;font-weight:600;color:var(--fg)}
+.metric{font-family:"Space Grotesk",Manrope,sans-serif;font-weight:600;letter-spacing:-.035em;color:var(--fg);font-feature-settings:"tnum"}
+.mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border-radius:6px;font:600 13px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background-color .15s,box-shadow .15s,transform .15s}
+.btn:active{transform:scale(.98)}
+.btn-p{background:var(--primary);color:#fff;box-shadow:0 1px 2px oklch(30% 0.12 264 / 0.3), inset 0 1px 0 oklch(100% 0 0 / 0.16)}.btn-p:hover{background:var(--primary-dark);color:#fff}
+.btn-o{background:var(--panel);color:var(--fg);border-color:var(--border)}
+.bar{height:8px;border-radius:3px;background:var(--raised);overflow:hidden;flex:1}
+.bar>span{display:block;height:100%;border-radius:3px;transform-origin:left;animation:grow .9s cubic-bezier(.2,.7,.2,1) .2s backwards}
+.stack{flex:1;display:flex;gap:2px;height:14px;border-radius:4px;overflow:hidden;background:var(--raised)}
+.stack>span{transform-origin:left;animation:grow .9s cubic-bezier(.2,.7,.2,1) .2s backwards}
+.pct{font-size:11.5px;font-weight:800;width:36px;text-align:right;color:var(--fg);font-feature-settings:"tnum"}
+.go{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;margin-top:auto;padding:10px 18px 12px;border-top:1px solid var(--hair);color:var(--primary)}
+.av{border-radius:99px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none;color:#fff;box-shadow:0 0 0 2px var(--panel)}
+.kpi{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:14px 14px 0 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;transition:transform .25s ease;animation:up .5s cubic-bezier(.2,.7,.2,1) backwards}
+.kpi:hover{transform:translateY(-2px)}
+.kpi::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--ac)}
+.kpi .go{padding:9px 0 11px;margin:0}
+th{text-align:left;padding:8px;font-size:10.5px;font-weight:800;color:var(--subtle);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border)}
+td{white-space:nowrap;padding:9px 8px;border-top:1px solid var(--hair);vertical-align:middle}
+tbody tr:first-child td{border-top:0}
+.nv{position:relative;display:flex;align-items:center;gap:11px;min-height:38px;padding:0 10px;border-radius:8px;color:var(--muted);font-weight:600;font-size:13.5px}
+.nv:hover{background:var(--raised);color:var(--fg)}
+.nv.on{background:var(--primary-light);color:var(--navy);font-weight:800;box-shadow:inset 0 0 0 1px oklch(54.6% 0.215 263 / 0.18)}
+.nv.on::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:99px;background:var(--gold)}
+.sub{min-height:32px;padding-left:38px;font-size:13px}
+.tb{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;color:var(--muted);position:relative;background:none;border:0}
+.tb:hover{background:var(--primary-light);color:var(--fg)}
+.dtile{width:50px;height:54px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none}
+.box{width:22px;height:22px;border-radius:4px;border:2px solid var(--primary);flex:none;display:flex;align-items:center;justify-content:center;background:var(--panel)}
+.seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:4px;border-radius:8px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--border)}
+.seg>.thumb{position:absolute;top:4px;bottom:4px;left:4px;border-radius:6px;background:var(--primary-light);box-shadow:inset 0 0 0 1px oklch(54.6% 0.215 263 / 0.28),0 1px 2px oklch(28% 0.06 264 / 0.08);transition:transform .38s cubic-bezier(.3,1.3,.5,1)}
+.seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:28px;padding:0 12px;border-radius:6px;font:600 12px Manrope,sans-serif;color:var(--muted);cursor:pointer;white-space:nowrap}
+.seg button.on{color:var(--navy);font-weight:700}
+.seg .cnt{font:600 10.5px "IBM Plex Mono",monospace;color:var(--subtle)}
+.seg button.on .cnt{color:var(--primary)}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style><style>
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+.seg{padding:2px;border-radius:8px;background:oklch(96.5% 0.008 250);box-shadow:inset 0 0 0 1px var(--border)}
+.seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
+/* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
+[data-theme="dark"] .seg>.thumb{background:var(--navy-3)}
+.seg button{height:28px;padding:0 10px;border-radius:5px;font:500 12px Manrope,sans-serif;color:oklch(55% 0.022 255);transition:color .2s}
+.seg button:hover{color:oklch(45% 0.03 255)}
+.seg button.on{color:#fff;font-weight:500}
+.seg .cnt{color:oklch(55% 0.022 255)}
+.seg button.on .cnt{color:oklch(100% 0 0 / .72)}
+/* cardHover (y -2, 0.16 s) + shadow-layered-lg, pressScale 0.98, row hover, focus ring */
+.card{transition:transform .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1),border-color .16s}
+.card:hover{transform:translateY(-2px);border-color:oklch(54.6% 0.215 263 / .35);box-shadow:0 2px 4px oklch(32% 0.04 264 / .05),0 8px 22px -6px oklch(37.9% 0.146 266 / .1),0 16px 40px -12px oklch(37.9% 0.146 266 / .08)}
+.btn{transition:transform .12s cubic-bezier(.22,1,.36,1),background .15s}
+.btn:active{transform:scale(.98)}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:oklch(96.8% 0.006 250 / .7)}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .4);outline-offset:2px}
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:4px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--border);font:500 10px "IBM Plex Mono",monospace;color:var(--muted)}
+/* sidebar: active pill + 3 px rail slide with the same spring; hover glass */
+.snav a{position:relative;z-index:2}
+.snav a:hover{background:oklch(100% 0 0 / .07)}
+.spill,.srail{transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
+/* page enter: fadeUp (y 6, 0.2 s) staggered 0.06 s */
+@keyframes v7fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stag>*{animation:v7fade .2s cubic-bezier(.22,1,.36,1) both}
+/* Ask VCFO bot: pops up from the bottom, idle bob, reaction on answer */
+@keyframes v7up{from{opacity:0;transform:translateY(48px)}to{opacity:1;transform:none}}
+@keyframes v7bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes v7react{0%{transform:scale(.9)}45%{transform:scale(1.1) rotate(-4deg)}75%{transform:scale(.98)}100%{transform:none}}
+@keyframes v7think{0%,100%{opacity:.35}50%{opacity:1}}
+.botup{animation:v7up .45s cubic-bezier(.22,1,.36,1) .5s both}
+.bob{animation:v7bob 2.6s ease-in-out infinite}
+.react{animation:v7react .55s cubic-bezier(.22,1,.36,1) both}
+.dot1{animation:v7think 1s infinite}.dot2{animation:v7think 1s .2s infinite}.dot3{animation:v7think 1s .4s infinite}
+@media (prefers-reduced-motion: reduce){.seg>.thumb,.card,.btn,.spill,.srail{transition:none}.card:hover{transform:none}.stag>*,.botup,.bob,.react,.dot1,.dot2,.dot3{animation:none}}
+</style><style>
+.info{position:relative;display:inline-flex;vertical-align:middle;flex:none}
+.info>button{width:18px;height:18px;padding:0;border:0;border-radius:4px;background:none;color:oklch(62% 0.02 255);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:color .15s}
+.info>button:hover,.info:focus-within>button{color:var(--navy)}
+.info .pop{position:absolute;left:50%;top:calc(100% + 8px);z-index:40;width:max-content;min-width:200px;max-width:280px;box-sizing:border-box;padding:10px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--border);box-shadow:0 12px 32px -12px oklch(21% 0.042 264 / .35);font:500 12px/1.45 Manrope,sans-serif;color:var(--fg);text-align:left;white-space:normal;letter-spacing:0;text-transform:none;opacity:0;visibility:hidden;transform:translate(-50%,-4px);transition:opacity .15s,transform .15s,visibility .15s}
+.info .pop::before{content:"";position:absolute;left:50%;top:-6px;width:10px;height:10px;background:var(--panel);border-left:1px solid var(--border);border-top:1px solid var(--border);transform:translateX(-50%) rotate(45deg)}
+.info:focus-within .pop,.info.open .pop{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.info .pop .ask{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--hair);color:var(--primary);font-weight:700}
+.stag>*:focus-within,.card:focus-within,section:focus-within{position:relative;z-index:30}
+@media (prefers-reduced-motion: reduce){.info .pop{transition:none}}
+</style><style>@keyframes v7pulse{0%,100%{box-shadow:0 0 0 0 oklch(80% 0.12 85 / .7)}50%{box-shadow:0 0 0 5px oklch(80% 0.12 85 / 0)}}.pulse{animation:v7pulse 1.8s ease-in-out infinite}@media (prefers-reduced-motion: reduce){.pulse{animation:none}}</style>
+</helmet>
+<div style="font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+<div style="width:1440px;display:flex;flex-direction:column;gap:32px;background:var(--bg);padding-bottom:32px"><div style="position:relative;width:1440px;height:900px;overflow:hidden"><div style="position:absolute;left:0;top:0;width:1440px;pointer-events:none;z-index:0" aria-hidden="true"><dc-import name="docs_opt_a" hint-size="1440px,900px"></dc-import></div><div style="position:absolute;inset:0;background:oklch(20% 0.05 258 / 0.6);display:flex;align-items:center;justify-content:center;z-index:2"><div role="dialog" aria-modal="true" aria-label="Document preview" style="width:1152px;height:720px;display:flex;flex-direction:column;border-radius:12px;overflow:hidden;background:oklch(94% 0.008 255);box-shadow:0 30px 70px -20px oklch(15% 0.05 258 / .6)"><div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)"><span class="mono" style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;background:var(--over-light);color:var(--over-text)">PDF</span><div style="flex:1;min-width:0;display:flex;align-items:center;gap:4px;font-size:14px;font-weight:700">{{docFile}}<span class="info "><button type="button" aria-label="More information"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></button><span class="pop" role="tooltip">{{docMeta}} · Size [size]<a class="ask" href="#"><dc-import name="v7c_bot" state="idle" size="16" hint-size="16px,16px"></dc-import>Ask VCFO about this</a></span></span></div><span class="cap" style="margin-right:6px;font-weight:600">{{docPos}}</span><a class="btn btn-o" href="#" style="height:32px;padding:0 10px;font-size:12.5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path class="duo" d="M4.5 15h15v3.5A1.5 1.5 0 0 1 18 20H6a1.5 1.5 0 0 1-1.5-1.5Z"></path><path d="M4.5 15v3.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V15 M12 4.5V15 M7.8 10.8 12 15l4.2-4.2"></path></svg>Download</a><button type="button" aria-label="Close preview (Esc)" title="Close (Esc)" style="width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--fg);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div style="position:relative;flex:1;min-height:0;overflow:auto;display:flex;justify-content:center;padding:28px 72px 72px"><div style="position:relative;width:{{pageW}};aspect-ratio:1/1.414;background:#fff;box-shadow:0 4px 24px -8px oklch(21% 0.042 264 / .3);border-radius:2px;padding:48px 52px;box-sizing:border-box;transition:width .2s"><div style="font-size:9px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase">Sample · placeholder page</div><div class="metric" style="font-size:22px;margin-top:10px">{{docTitle}}</div><div class="cap" style="margin-top:4px">Northwind Technologies India Pvt Ltd · {{docDate}}</div><div style="height:7px;border-radius:3px;background:oklch(90% 0.01 255);width:92%;margin-top:10px"></div><div style="height:7px;border-radius:3px;background:oklch(90% 0.01 255);width:86%;margin-top:10px"></div><div style="height:7px;border-radius:3px;background:oklch(90% 0.01 255);width:95%;margin-top:10px"></div><div style="height:7px;border-radius:3px;background:oklch(90% 0.01 255);width:70%;margin-top:10px"></div><div style="height:7px;border-radius:3px;background:oklch(90% 0.01 255);width:88%;margin-top:10px"></div><div style="height:7px;border-radius:3px;background:oklch(90% 0.01 255);width:93%;margin-top:10px"></div><div style="height:7px;border-radius:3px;background:oklch(90% 0.01 255);width:60%;margin-top:10px"></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none"><span style="font:800 64px Manrope,sans-serif;color:oklch(90% 0.01 255);transform:rotate(-24deg);letter-spacing:.1em">SAMPLE</span></div></div><button type="button" aria-label="Previous document" onClick="{{prev}}" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:99px;border:1px solid var(--border);background:var(--panel);color:var(--fg);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px -4px oklch(21% 0.042 264 / .25)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;transform:rotate(180deg)"><path class="duo" d=""></path><path d="M9 6l6 6-6 6"></path></svg></button><button type="button" aria-label="Next document" onClick="{{next}}" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:99px;border:1px solid var(--border);background:var(--panel);color:var(--fg);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px -4px oklch(21% 0.042 264 / .25)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path class="duo" d=""></path><path d="M9 6l6 6-6 6"></path></svg></button><div style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:4px;border-radius:8px;background:var(--navy);color:#fff;box-shadow:0 8px 20px -8px oklch(15% 0.05 258 / .5)"><span style="padding:0 10px;font:600 12px Manrope,sans-serif">Page 1 / 1</span><span style="width:1px;height:18px;background:oklch(100% 0 0 / .2)"></span><button type="button" aria-label="Zoom out" onClick="{{zoomOut}}" style="width:30px;height:30px;border:0;border-radius:6px;background:transparent;color:#fff;font:700 16px Manrope;cursor:pointer">−</button><span style="min-width:48px;text-align:center;font:600 12px Manrope,sans-serif">{{zoomLabel}}</span><button type="button" aria-label="Zoom in" onClick="{{zoomIn}}" style="width:30px;height:30px;border:0;border-radius:6px;background:transparent;color:#fff;font:700 16px Manrope;cursor:pointer">+</button></div></div></div></div></div><div style="padding:0 32px;display:flex;flex-direction:column;gap:12px"><div class="lbl" style="color:var(--navy)">Unsupported file type</div><div role="dialog" aria-modal="true" aria-label="Document preview" style="width:860px;height:420px;display:flex;flex-direction:column;border-radius:12px;overflow:hidden;background:oklch(94% 0.008 255);box-shadow:0 30px 70px -20px oklch(15% 0.05 258 / .6)"><div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)"><span class="mono" style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;background:var(--prog-light);color:var(--prog-text)">DOCX</span><div style="flex:1;min-width:0;display:flex;align-items:center;gap:4px;font-size:14px;font-weight:700">Draft Board Resolution.docx<span class="info "><button type="button" aria-label="More information"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></button><span class="pop" role="tooltip">From SBC · 14 Sep 2026 · Size [size]<a class="ask" href="#"><dc-import name="v7c_bot" state="idle" size="16" hint-size="16px,16px"></dc-import>Ask VCFO about this</a></span></span></div><a class="btn btn-o" href="#" style="height:32px;padding:0 10px;font-size:12.5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path class="duo" d="M4.5 15h15v3.5A1.5 1.5 0 0 1 18 20H6a1.5 1.5 0 0 1-1.5-1.5Z"></path><path d="M4.5 15v3.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V15 M12 4.5V15 M7.8 10.8 12 15l4.2-4.2"></path></svg>Download</a><button type="button" aria-label="Close preview (Esc)" title="Close (Esc)" style="width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--fg);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center"><span style="width:64px;height:64px;border-radius:12px;background:var(--prog-light);color:var(--prog-text);display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path class="duo" d="M6 4.5h7.5L18 9v10.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1Z"></path><path d="M13.5 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5Z M13.5 3.5v5h5 M8.5 13h7 M8.5 16.5h4.5"></path></svg></span><div style="font-size:15px;font-weight:700">Preview not available for this file type</div><a class="btn btn-p" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path class="duo" d="M4.5 15h15v3.5A1.5 1.5 0 0 1 18 20H6a1.5 1.5 0 0 1-1.5-1.5Z"></path><path d="M4.5 15v3.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V15 M12 4.5V15 M7.8 10.8 12 15l4.2-4.2"></path></svg>Download</a></div></div></div></div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1420}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { i: 0, z: 100 }; }
+  renderVals() {
+    const s = this.state || {};
+    const D = [["Certificate of Incorporation", "24 Oct 2026", "SBC"], ["Board meeting minutes", "26 Oct 2026", "SBC"], ["GST certificate", "1 Nov 2026", "SBC"], ["Share capital FIRC", "2 Nov 2026", "You"]]; const i = s.i || 0; const d = D[i]; const z = s.z || 100;return { docFile: d[0] + '.pdf', docTitle: d[0], docDate: d[1], docMeta: 'From ' + d[2] + ' · ' + d[1], docPos: (i + 1) + ' of ' + D.length, prev: () => this.setState({ i: (i + D.length - 1) % D.length }), next: () => this.setState({ i: (i + 1) % D.length }), zoomIn: () => this.setState({ z: Math.min(150, z + 25) }), zoomOut: () => this.setState({ z: Math.max(50, z - 25) }), zoomLabel: z + '%', pageW: Math.round(460 * z / 100) + 'px' };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

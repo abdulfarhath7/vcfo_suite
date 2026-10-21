@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notifications, current</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+.oseg{display:inline-grid;grid-auto-flow:column;padding:3px;border-radius:10px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--border)}
+.oseg span{height:26px;padding:0 12px;display:flex;align-items:center;font-size:12px;font-weight:500;color:var(--muted);border-radius:7px}
+.oseg span.on{background:#fff;color:var(--fg);box-shadow:0 1px 2px oklch(21% 0.042 264 / .12)}
+.nrow{display:flex;align-items:flex-start;gap:8px;padding:6px 10px}
+.nrow+.nrow{border-top:1px solid var(--border)}
+</style>
+</helmet>
+<div class="old" style="position:relative;width:1440px;min-height:1000px;display:flex;background:var(--bg);color:var(--fg);font-size:13px">
+  <div style="width:248px;flex:none;background:#fff"><dc-import name="side_legacy" active="notif" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div style="flex:1;min-width:0">
+    <dc-import name="topbar" crumb="Notifications" mid="Updates" legacy="{{yes}}" active="notif" hint-size="100%,52px" style="display:block;width:100%"></dc-import>
+    <main style="padding:24px 32px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <span style="width:44px;height:44px;border-radius:12px;background:var(--sky-light);color:var(--sky);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4.5 1.8 6.5 1.8 6.5H4.7S6.5 14.5 6.5 10Z M10 19.5a2.2 2.2 0 0 0 4 0"></path></svg></span>
+        <h1 style="margin:0;font-size:26px;font-weight:600">Notifications</h1>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+        <div class="oseg"><span class="on">All</span><span>Today</span><span>This week</span><span>Earlier</span></div>
+        <div class="oseg"><span class="on">All</span><span>Received</span><span>Sent</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+          <section>
+            <h2 style="margin:0 0 8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">{{g.label}}</h2>
+            <div class="old-card" style="padding:0 4px">
+              <sc-for list="{{g.items}}" as="n" hint-placeholder-count="3">
+                <div class="nrow">
+                  <span style="margin-top:6px;width:6px;height:6px;border-radius:99px;flex:none;{{n.dot}}"></span>
+                  <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500">{{n.t}}</div><div style="font-size:11px;color:var(--muted);margin-top:1px">{{n.b}}</div><div style="font-size:10px;color:var(--subtle);margin-top:1px">{{n.w}}</div></div>
+                  <span aria-label="Clear from inbox" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--subtle)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13"></path></svg></span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+    </main>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const blue = 'background:var(--primary)', grey = 'background:var(--up)';
+    const groups = [
+      { label: 'Today', items: [
+        { t: '2 documents requested', b: 'Utility bill for the office · Board resolution', w: 'Arjun Mehta · 10:42', dot: blue },
+        { t: 'Passport copy sent back', b: 'Photo page is blurred. Please upload again.', w: 'Arjun Mehta · 09:15', dot: blue },
+        { t: 'Phase 2 end date moved to 28 Oct', b: 'Approved by Priya Raman', w: 'Priya Raman · 08:30', dot: blue } ] },
+      { label: 'Earlier this week', items: [
+        { t: 'Capital Structure accepted', b: 'Step 6 is complete', w: 'Priya Raman · Tue', dot: grey },
+        { t: 'Name approved by MCA', b: 'NORTHWIND TECHNOLOGIES INDIA PRIVATE LIMITED', w: 'Arjun Mehta · Tue', dot: grey },
+        { t: 'Email: Documents requested', b: 'Sent to rahul@northwind.in', w: 'VCFO Suite · Tue', dot: grey } ] },
+      { label: 'Earlier', items: [
+        { t: 'DIN allotted to both directors', b: 'Rahul Khanna · Meera Iyer', w: 'Arjun Mehta · 29 Sep', dot: grey },
+        { t: 'Email: Welcome to VCFO Suite', b: 'Sent to rahul@northwind.in', w: 'VCFO Suite · 2 Sep', dot: grey } ] }
+    ];
+    return { groups, yes: true };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A refined — mobile menu sheet open</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);--primary:oklch(54.6% 0.215 263);--primary-light:oklch(96.6% 0.02 260);--navy:#0f2a4a;--navy-2:#17396b;--gold:#c9a24b;
+--ok:oklch(56% 0.13 168);--ok-light:oklch(96% 0.028 170);--ok-text:oklch(39% 0.09 172);--ok-chip:oklch(50% 0.12 168);--due:oklch(66% 0.17 48);--due-chip:oklch(55% 0.17 42);--due-text:oklch(48% 0.14 42);--prog:oklch(55% 0.16 252);--prog-light:oklch(96% 0.026 250);--prog-text:oklch(43% 0.13 254);--prog-chip:oklch(51% 0.17 252);--over-chip:oklch(52% 0.2 22);--teal-chip:oklch(47% 0.09 195);
+--shadow:0 1px 2px oklch(25% 0.04 264 / 0.04), 0 6px 18px -10px oklch(28% 0.06 264 / 0.18)}
+a{color:var(--primary);text-decoration:none;font-weight:700}
+.mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+.badge{display:inline-flex;align-items:center;height:20px;border-radius:4px;padding:0 7px;font-size:11px;font-weight:700;white-space:nowrap}
+.tbb{width:44px;height:44px;border-radius:6px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer}
+.row{display:flex;align-items:center;min-height:56px;border-top:1px solid var(--hair)}
+.row:first-child{border-top:0}
+.row .main{flex:1;min-width:0;min-height:56px;display:flex;align-items:center;gap:10px;padding:0 0 0 14px;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.row .main:active{background:var(--raised)}
+.ft{font:700 7.5px/16px "IBM Plex Mono",monospace;width:24px;height:16px;border-radius:3px;color:#fff;text-align:center;flex:none}
+.trk{display:flex;gap:1px;width:64px;height:4px;border-radius:2px;overflow:hidden;background:var(--hair)}
+.kb{width:44px;height:44px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;border-radius:6px}
+.sheet button{display:flex;align-items:center;gap:12px;width:100%;height:52px;padding:0 20px;border:0;background:none;font:600 14px Manrope,sans-serif;color:var(--fg);text-align:left;cursor:pointer}
+.sheet button:active{background:var(--primary-light)}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.sheet{animation:up .25s cubic-bezier(.22,1,.36,1) both}
+@keyframes sl{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.lvl{animation:sl .2s cubic-bezier(.22,1,.36,1) both}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .5);outline-offset:-2px}
+@media (prefers-reduced-motion: reduce){.sheet,.lvl{animation:none}}
+/* "One shape": every mark in the tree is the same 20px rounded square */
+.ft{width:20px;min-width:20px;height:20px;padding:0;border-radius:6px;font:700 7px/20px "IBM Plex Mono",monospace;letter-spacing:-.02em}
+.sg{width:20px;height:20px;border-radius:6px}
+.ico:has(.fold){width:20px;height:20px;border-radius:6px;background:light-dark(oklch(94.5% 0.015 255), oklch(21.3% 0.01 255))}
+.ico:has(.fold) .fold{width:12px;height:12px}
+.ico>span{width:20px!important;height:20px!important;border-radius:6px!important}
+</style>
+</helmet>
+<div style="position:relative;width:390px;height:844px;overflow:hidden;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px;display:flex;flex-direction:column">
+  <header style="height:56px;flex:none;display:flex;align-items:center;gap:4px;padding:0 6px;background:var(--panel);border-bottom:1px solid var(--border)">
+    <button type="button" class="tbb" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+    <img src="vcfo-bin:b/58380a4992a06cfe5c18a947b721abdf.png" alt="SBC" style="height:24px;width:auto">
+    <span style="flex:1"></span>
+    <button type="button" class="tbb" aria-label="Notifications, 3 new" style="color:var(--primary)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4.5 1.8 6.5 1.8 6.5H4.7S6.5 14.5 6.5 10Z M10 19.5a2.2 2.2 0 0 0 4 0"></path></svg></button>
+  </header>
+  <div style="padding:12px 16px 0;display:flex;flex-direction:column;gap:10px;flex:none">
+    <div style="display:flex;align-items:center;gap:4px;min-height:44px">
+      <sc-if value="{{canBack}}" hint-placeholder-val="{{false}}"><button type="button" class="tbb" aria-label="Back to {{backLabel}}" onClick="{{back}}" style="margin-left:-10px;color:var(--navy-ink,var(--navy))"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"></path></svg></button></sc-if>
+      <div style="flex:1;min-width:0"><sc-if value="{{canBack}}" hint-placeholder-val="{{false}}"><div class="mono" style="font-size:10.5px;color:var(--subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{crumb}}</div></sc-if><h1 style="margin:0;font:700 19px/1.2 Manrope,sans-serif;color:var(--navy-ink,var(--navy));white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{title}}</h1></div>
+      <button type="button" class="kb" aria-label="More actions for {{title}}" aria-haspopup="menu" onClick="{{openHere}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="18.5" r="1.8"></circle></svg></button>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--subtle)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4"></path></svg><input type="search" aria-label="Filter documents" placeholder="Filter documents" style="flex:1;min-width:0;border:0;outline:0;background:none;font:500 14px Manrope,sans-serif"><span class="mono" style="font-size:11px">14/16</span></label>
+  </div>
+  <div style="flex:1;min-height:0;overflow:auto;padding:12px 16px 16px">
+    <div class="lvl" role="list" style="background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+        <div class="row" role="listitem">
+          <button type="button" class="main" onClick="{{r.tap}}">
+            <sc-if value="{{r.folder}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="M3 18.5V5.5A1.5 1.5 0 0 1 4.5 4h4.2l2 2.4h8.8A1.5 1.5 0 0 1 21 7.9v10.6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z" fill="#0f2a4a"></path><path d="M3 9.2h18" stroke="oklch(100% 0 0 / .35)" stroke-width="1.3"></path></svg></sc-if>
+            <sc-if value="{{r.file}}" hint-placeholder-val="{{false}}"><span class="ft" style="{{r.tStyle}}">{{r.type}}</span></sc-if>
+            <sc-if value="{{r.missing}}" hint-placeholder-val="{{false}}"><span style="width:24px;display:flex;justify-content:center;flex:none"><span style="width:16px;height:16px;border-radius:3px;border:1.5px dashed var(--due);box-sizing:border-box"></span></span></sc-if>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+              <span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.label}}</span>
+              <sc-if value="{{r.hasBar}}" hint-placeholder-val="{{false}}"><span style="display:flex;align-items:center;gap:8px"><span class="trk"><span style="background:var(--ok);{{r.wOk}}"></span><span style="background:var(--prog);{{r.wRv}}"></span><span style="background:var(--due);{{r.wMs}}"></span></span><span class="mono" style="font-size:11px;color:var(--subtle)">{{r.frac}}</span></span></sc-if>
+              <sc-if value="{{r.hasBadge}}" hint-placeholder-val="{{false}}"><span style="display:flex;align-items:center;gap:6px"><span class="badge" style="{{r.stStyle}}">{{r.status}}</span><span class="mono" style="font-size:11px;color:var(--subtle)">{{r.date}}</span></span></sc-if>
+            </span>
+            <sc-if value="{{r.folder}}" hint-placeholder-val="{{true}}"><span class="mono" style="font-size:11px;color:var(--subtle)">{{r.cnt}}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if>
+          </button>
+          <button type="button" class="kb" aria-label="More actions for {{r.label}}" aria-haspopup="menu" onClick="{{r.menu}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="18.5" r="1.8"></circle></svg></button>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <sc-if value="{{sheetOn}}" hint-placeholder-val="{{false}}">
+    <button type="button" aria-label="Close menu" onClick="{{closeSheet}}" style="position:absolute;inset:0;border:0;padding:0;background:oklch(20% 0.05 258 / .45);cursor:default"></button>
+    <div class="sheet" role="menu" aria-label="Actions for {{sheetTitle}}" style="position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-radius:12px 12px 0 0;padding:8px 0 20px;box-shadow:0 -16px 40px -20px oklch(15% 0.05 258 / .5)">
+      <div style="display:flex;justify-content:center;padding-bottom:6px"><span style="width:40px;height:4px;border-radius:2px;background:var(--border)"></span></div>
+      <div style="padding:6px 20px 10px;font:700 14px Manrope,sans-serif;color:var(--navy-ink,var(--navy));border-bottom:1px solid var(--hair)">{{sheetTitle}}</div>
+      <sc-for list="{{sheetItems}}" as="m" hint-placeholder-count="4"><button type="button" role="menuitem" onClick="{{m.act}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--navy-ink,var(--navy))"><path d="{{m.icon}}"></path></svg>{{m.label}}<span class="mono" style="margin-left:auto;font-size:11px;color:var(--subtle)">{{m.k}}</span></button></sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}">
+    <div role="status" style="position:absolute;left:16px;right:16px;bottom:20px;padding:10px 12px;border-radius:8px;background:var(--navy);color:#fff;display:flex;flex-direction:column;gap:8px;box-shadow:0 18px 40px -14px oklch(15% 0.05 258 / .65)">
+      <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;font-size:13px;font-weight:700">{{toastText}}</span><span class="mono" style="font-size:11px;opacity:.75">{{toastCount}}</span></div>
+      <sc-if value="{{toastBusy}}" hint-placeholder-val="{{true}}"><div style="height:4px;border-radius:2px;background:oklch(100% 0 0 / .18);overflow:hidden"><span style="display:block;height:100%;background:var(--gold);{{toastW}}"></span></div></sc-if>
+    </div>
+  </sc-if>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); const on = true; this.state = { path: on ? ['p2', 's6'] : [], sheet: on ? 's6' : '', toast: null }; }
+  componentDidMount() { const v = this.props && this.props.initSheet; if (v && v !== 'false' && !this.state.sheet) this.setState({ path: ['p2', 's6'], sheet: 's6' }); }
+  componentWillUnmount() { if (this.timer) clearInterval(this.timer); }
+  zip(name, total) {
+    if (this.timer) clearInterval(this.timer);
+    let n = 0; this.setState({ sheet: '', toast: { name, total, n: 0 } });
+    this.timer = setInterval(() => { n++; if (n >= total) { clearInterval(this.timer); this.timer = null; } this.setState({ toast: { name, total, n: Math.min(n, total) } }); }, 260);
+  }
+  renderVals() {
+    const s = this.state || {};
+    const F = { root: { label: 'Documents', kids: ['p1', 'p2', 'p3'] },
+      p1: { label: 'Phase 1 — Name application', kids: ['s3'] }, p2: { label: 'Phase 2 — Incorporation', kids: ['s6', 's8', 's17'] }, p3: { label: 'Phase 3 — Post-incorporation', kids: ['s21', 's22'] },
+      s3: { label: '3 · Signed Board Resolution', files: [['Board resolution (final)', 'PDF', 'Final', '18 Sep']] },
+      s6: { label: '6 · Director KYC', files: [['PAN card — Ravi Kumar', 'PDF', 'Approved', '14 Sep'], ['Passport — Meera Shah', 'PDF', 'Approved', '14 Sep'], ['Address proof — Ravi Kumar', 'PDF', 'Approved', '15 Sep'], ['Photograph — Meera Shah', 'JPG', 'Approved', '15 Sep'], ['Signed DIR-2 — Meera Shah', '', 'Missing', 'Due 12 Nov']] },
+      s8: { label: '8 · Registered Office Address', files: [['Utility bill — office', 'PDF', 'Approved', '22 Sep'], ['Rent agreement', 'DOCX', 'Approved', '23 Sep'], ['Notarised lease deed', '', 'Missing', 'Overdue']] },
+      s17: { label: '17 · Certificate of Incorporation', files: [['Certificate of Incorporation', 'PDF', 'Final', '24 Oct'], ['MoA and AoA (stamped)', 'PDF', 'Final', '24 Oct']] },
+      s21: { label: '21 · Share Capital Infusion', files: [['FIRC from the bank', 'PDF', 'Approved', '2 Nov'], ['Bank statement — Oct 2026', 'PDF', 'Approved', '3 Nov']] },
+      s22: { label: '22 · Share Certificates (SH-1)', files: [['Apostilled parent COI', 'PDF', 'In review', '6 Nov'], ['Share certificates SH-1', 'PDF', 'Final', '7 Nov']] } };
+    const allFiles = (id) => F[id].files ? F[id].files : F[id].kids.reduce((a, k) => a.concat(allFiles(k)), []);
+    const c = (st) => (st === 'Approved' || st === 'Final') ? 0 : st === 'In review' ? 1 : 2;
+    const TS = { PDF: 'background:var(--over-light);color:var(--over-text)', JPG: 'background:var(--teal-light);color:var(--teal-chip)', DOCX: 'background:var(--prog-light);color:var(--prog-text)' };
+    const ST = { Approved: 'background:var(--ok-light);color:var(--ok-text)', Final: 'background:var(--navy);color:#fff', 'In review': 'background:var(--prog-light);color:var(--prog-text)', Missing: 'background:var(--due-chip);color:#fff' };
+    const path = s.path || []; const cur = path.length ? path[path.length - 1] : 'root';
+    const node = F[cur];
+    let rows;
+    if (node.files) {
+      rows = node.files.map((f, i) => ({ folder: false, file: f[2] !== 'Missing', missing: f[2] === 'Missing', label: f[0], type: f[1], tStyle: TS[f[1]] || '', hasBadge: true, status: f[2], stStyle: ST[f[2]], date: f[3], hasBar: false, tap: () => {}, menu: () => this.setState({ sheet: cur + ':' + i }) }));
+    } else {
+      rows = node.kids.map((k) => { const fs = allFiles(k); const ok = fs.filter((f) => c(f[2]) === 0).length, rv = fs.filter((f) => c(f[2]) === 1).length, ms = fs.length - ok - rv; const step = !!F[k].files; return { folder: true, file: false, missing: false, label: F[k].label, cnt: step ? '' : fs.length, hasBar: step, hasBadge: false, frac: ok + '/' + fs.length, wOk: 'width:' + (ok / fs.length * 100) + '%', wRv: 'width:' + (rv / fs.length * 100) + '%', wMs: 'width:' + (ms / fs.length * 100) + '%', tap: () => this.setState({ path: path.concat([k]) }), menu: () => this.setState({ sheet: k }) }; });
+    }
+    const I = { zip: 'M6 3.5h8l4 4v13H6Z M10 3.5v2 M10 7.5v2 M10 11.5v2 M9 16h2v3H9Z', dl: 'M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14', eye: 'M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z', step: 'M4.5 4.5h15v15h-15Z M9 12h6 M12 9l3 3-3 3', link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', up: 'M12 15V4 M7.5 8.5 12 4l4.5 4.5 M5 19.5h14' };
+    let sheetTitle = '', sheetItems = [];
+    const close = () => this.setState({ sheet: '' });
+    if (s.sheet) {
+      if (s.sheet.indexOf(':') > 0) {
+        const [sid, idx] = s.sheet.split(':'); const f = F[sid].files[+idx]; sheetTitle = f[0];
+        sheetItems = f[2] === 'Missing' ? [{ label: 'Take photo', icon: 'M4.5 8.5h3l1.5-2h6l1.5 2h3v10h-15Z M12 10.5a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z', act: close }, { label: 'Choose file', icon: I.up, act: close }, { label: 'Open step ' + F[sid].label.split(' · ')[0], icon: I.step, act: close }, { label: 'Copy link', icon: I.link, act: close }]
+          : [{ label: 'Download', icon: I.dl, act: close }, { label: 'Preview', icon: I.eye, act: close }, { label: 'Open step ' + F[sid].label.split(' · ')[0], icon: I.step, act: close }, { label: 'Copy link', icon: I.link, act: close }];
+      } else {
+        const id = s.sheet; const n = allFiles(id).filter((f) => f[2] !== 'Missing').length; sheetTitle = F[id].label;
+        sheetItems = [{ label: 'Download folder as ZIP', k: n + ' files', icon: I.zip, act: () => this.zip(F[id].label.replace(/^\d+ · /, '') + '.zip', n) }, { label: 'Copy link to folder', icon: I.link, act: close }];
+      }
+    }
+    const t = s.toast;
+    return {
+      rows, title: node.label, canBack: path.length > 0, crumb: ['Documents'].concat(path.slice(0, -1).map((p) => F[p].label.split(' — ')[0])).join(' / '),
+      backLabel: path.length > 1 ? F[path[path.length - 2]].label : 'Documents', back: () => this.setState({ path: path.slice(0, -1) }),
+      openHere: () => this.setState({ sheet: cur }),
+      sheetOn: !!s.sheet, sheetTitle, sheetItems, closeSheet: close,
+      toastOn: !!t, toastBusy: !!(t && t.n < t.total), toastText: t ? (t.n < t.total ? 'Preparing ' + t.name + '…' : 'Downloaded ' + t.name) : '', toastCount: t ? (t.n < t.total ? t.n + ' of ' + t.total : t.total + ' files') : '', toastW: t ? 'width:' + (t.n / t.total * 100) + '%' : ''
+    };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

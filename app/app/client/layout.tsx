@@ -1,5 +1,5 @@
-import { AppShell } from "@/components/shell/AppShell";
+import { ClientPortalGate } from "@/components/client-portal/ClientPortalGate";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell requireRole="client">{children}</AppShell>;
+  return <ClientPortalGate>{children}</ClientPortalGate>;
 }

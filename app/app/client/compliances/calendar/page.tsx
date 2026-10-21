@@ -1,14 +1,14 @@
 import { Suspense } from "react";
-import { ComplianceCalendarPage } from "@/views/compliances/CompliancePages";
+import { ClientCompliancesCalendarRoute } from "@/components/client-portal/pages/compliances";
 import { pageMetadata } from "@/lib/page-metadata";
 
 export const metadata = pageMetadata("Calendar", "Compliance calendar");
 
-/** Route shell only. The shared view is identical in every shell; `AuthContext` decides the rows. */
+/** Client portal v7 calendar (?date= ?view= ?area= ?filing= carry the state on refresh). */
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading calendar…</div>}>
-      <ComplianceCalendarPage basePath="/app/client/compliances" />
+    <Suspense fallback={null}>
+      <ClientCompliancesCalendarRoute />
     </Suspense>
   );
 }

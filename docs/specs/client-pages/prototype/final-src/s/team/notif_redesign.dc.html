@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notifications, redesign</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+<style>body{margin:0}
+/* v7 responsive contract (team boards): phone <=767, tablet 768-1279 (72 px rail), desktop >=1280 */
+:root{--vp-side-w:248px}
+@media (max-width:1279px){:root{--vp-side-w:72px}}
+@media (max-width:767px){:root{--vp-side-w:0px}}
+.tb-root{position:relative;width:100%;min-height:100vh;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px}
+.tb-side{width:var(--vp-side-w,248px);flex:none;background:#0f2a4a;overflow:hidden;min-width:0}
+.tb-side>*{width:248px}
+.tb-main{flex:1;min-width:0}
+.pg.tb-wrap{width:100%;max-width:1600px;margin-inline:auto;box-sizing:border-box;padding:clamp(16px,2vw,24px) clamp(16px,2vw,24px) 96px}
+.tb-launch{position:absolute;right:0;top:870px}
+.tb-segx{max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;border-radius:8px;-webkit-overflow-scrolling:touch}
+.tb-segx::-webkit-scrollbar{display:none}
+.tb-segx>.seg{width:max-content;min-width:100%;box-sizing:border-box}
+.tb-m{display:none!important}
+/* no text under 11 px */
+html .lbl{font-size:11px}
+html .seg .cnt,html .kbd{font-size:11px}
+html .dtile .m{font-size:11px;letter-spacing:.06em}
+/* pop-ups fit the viewport */
+.tb-ov{position:fixed!important;inset:0;z-index:60!important;overflow:auto;padding:var(--ovt,12px) 12px 12px;box-sizing:border-box}
+.tb-ov.tb-top{--ovt:min(120px,12vh);align-items:flex-start!important}
+.tb-ov>.dlg{max-width:calc(100vw - 24px);max-height:calc(100dvh - var(--ovt,12px) - 12px);overflow:auto;flex:none;box-sizing:border-box}
+.tb-toast{position:fixed!important;left:calc(50% + var(--vp-side-w,248px) / 2)!important;bottom:24px;max-width:calc(100vw - 24px);box-sizing:border-box;z-index:61!important}
+@media (max-width:1279px){.tb-side>*{display:none!important}}
+@media (max-width:767px){
+  .tb-side{display:none}
+  .pg.tb-wrap{padding:16px 16px 104px}
+  .tb-d{display:none!important}
+  .tb-m{display:revert!important}
+  .tb-m.tb-flex{display:flex!important}
+  .tb-m.tb-iflex{display:inline-flex!important}
+  .tb-ov.tb-top{--ovt:12px;align-items:center!important}
+  .tb-toast{left:50%!important;bottom:96px}
+  .tb-hd>.tb-segx{flex:1 1 100%;margin-left:0!important}
+  /* touch targets >= 40 px */
+  html .btn,html .btn-sm{height:40px;min-height:40px}
+  html .ibtn{width:40px;height:40px}
+  html .seg button{height:40px}
+  html .tgl{position:relative}
+  html .tgl::before{content:"";position:absolute;left:-2px;right:-2px;top:-9px;bottom:-9px}
+  html .info>button{width:40px;height:40px;margin:-11px}
+}
+.tb-g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;align-items:start}
+.tb-s9{grid-column:span 9}.tb-s3{grid-column:span 3;display:flex;flex-direction:column;gap:16px}
+@media (max-width:959px){.tb-s9{grid-column:1 / -1}.tb-s3{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));align-items:start}}
+.tb-hd{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--hair);min-width:0}
+.tb-tl{display:flex;align-items:center;gap:4px 8px;flex-wrap:wrap;min-width:0}
+.dd-top{flex-wrap:wrap}
+@media (max-width:767px){.tb-pref{width:40px!important}.nt{padding:11px 0;margin:-11px 0}.udot.pulse{position:relative}.udot.pulse::before{content:"";position:absolute;inset:-16px}.tb-leg{min-height:40px}}
+/* the kind chip gets its own column, so the chips line up down the list instead of
+   sitting at a different x on every row (104px clears the widest, "Announcement").
+   the who/time column needs a fixed width too, or its varying length shifts the chips. */
+.nkind{flex:none;width:104px;display:flex;align-items:center}
+.tb-d{flex:none;width:168px;text-align:right}
+@media (max-width:520px){.nkind{width:auto;justify-content:flex-end}}
+</style>
+<style>
+/* v6 · notification icons: OPTION 4, Lucide glyph in a 32 px pale-tint tile (one renderer, see icon()) + working links in every row */
+.nic{position:relative;flex:none;width:32px;height:32px;display:grid;place-items:center;border-radius:8px}
+.nt{color:var(--fg);text-decoration:none}.nt:hover{color:var(--primary);text-decoration:underline;text-underline-offset:2px}
+.nb{display:block;font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nb a{color:var(--primary);font-weight:600;text-decoration:none}.nb a:hover{text-decoration:underline;text-underline-offset:2px}
+.nwho{color:var(--muted);font-weight:500;text-decoration:none}.nwho:hover{color:var(--primary);text-decoration:underline}
+</style>
+</helmet>
+<div class="tb-root">
+  <div class="tb-side" data-vp="side"><dc-import name="side" active="1" updates="{{sideCount}}" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div class="tb-main">
+    <dc-import name="topbar" crumb="Notifications" mid="Updates" active="notif" notif="{{unread}}" hint-size="100%,52px" style="display:block;width:100%"></dc-import>
+    <main class="pg tb-wrap">
+
+      <div class="tb-g12">
+        <section class="card tb-s9">
+          <div class="tb-hd">
+            <div class="tb-segx"><div class="seg" role="tablist" aria-label="Filter notifications" style="grid-template-columns:repeat(6,minmax(0,1fr))"><span class="thumb" style="width:calc((100% - 4px)/6);{{thumb}}"></span><sc-for list="{{tabs}}" as="t" hint-placeholder-count="6"><button type="button" role="tab" aria-selected="{{t.sel}}" onClick="{{t.pick}}" class="{{t.cls}}">{{t.label}}<span class="cnt">{{t.cnt}}</span></button></sc-for></div></div>
+          </div>
+          <sc-if value="{{isEmpty}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:56px 16px 64px">
+              <span class="react" style="display:flex;flex:none"><dc-import name="v7c_bot" state="answered" size="52" hint-size="52px,52px"></dc-import></span>
+              <div role="status" style="max-width:300px;background:var(--panel);border:1px solid var(--border);border-radius:10px 10px 10px 3px;padding:10px 12px;box-shadow:var(--shadow)">
+                <div class="rt" style="font-weight:700">All caught up. Nothing unread.</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button type="button" class="btn btn-o btn-sm" onClick="{{showAll}}">See all</button></div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+            <div>
+              <div class="lbl" style="padding:12px 16px 6px;color:var(--navy-ink,var(--navy))">{{g.label}}</div>
+              <sc-for list="{{g.items}}" as="n" hint-placeholder-count="3">
+                <div class="{{n.rowCls}}">
+                  <span class="nic" role="img" aria-label="{{n.tipText}}" style="{{n.icSt}}"><svg width="{{n.sz}}" height="{{n.sz}}" viewBox="0 0 24 24" fill="none" stroke="{{n.s1}}" stroke-width="{{n.w1}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.p1}}"></path></svg></span>
+                  <div style="flex:1;min-width:0">
+                    <span class="tb-tl"><a href="#" class="rt nt" data-go="{{n.go}}" style="{{n.tw}}">{{n.t}}</a></span>
+                    <span class="nb"><sc-for list="{{n.parts}}" as="p" hint-placeholder-count="2"><sc-if value="{{p.isLink}}" hint-placeholder-val="{{true}}"><a href="{{p.href}}" target="{{p.tgt}}" rel="noopener" data-go="{{p.go}}">{{p.t}}</a></sc-if><sc-if value="{{p.isText}}" hint-placeholder-val="{{false}}"><span>{{p.t}}</span></sc-if><span>{{p.sep}}</span></sc-for></span>
+                    <span class="mono tb-m" style="font-size:11px;color:var(--muted);margin-top:2px"><sc-if value="{{n.whoLink}}" hint-placeholder-val="{{true}}"><a href="#" data-go="{{n.whoGo}}" class="nwho">{{n.who}}</a></sc-if><sc-if value="{{n.whoText}}" hint-placeholder-val="{{false}}">{{n.who}}</sc-if> · {{n.w}}</span>
+                  </div>
+                  <span class="nkind"><span class="chip" style="{{n.chip}}">{{n.kind}}</span></span>
+                  <span class="mono tb-d" style="font-size:11px;color:var(--muted);white-space:nowrap"><sc-if value="{{n.whoLink}}" hint-placeholder-val="{{true}}"><a href="#" data-go="{{n.whoGo}}" class="nwho">{{n.who}}</a></sc-if><sc-if value="{{n.whoText}}" hint-placeholder-val="{{false}}">{{n.who}}</sc-if> · {{n.w}}</span>
+                  <sc-if value="{{n.unread}}" hint-placeholder-val="{{true}}"><button type="button" class="udot pulse" aria-label="Unread · mark as read" onClick="{{n.read}}" style="border:0;padding:0;cursor:pointer"></button></sc-if>
+                  <sc-if value="{{n.isRead}}" hint-placeholder-val="{{false}}"><span style="width:8px"></span></sc-if>
+                  <a href="#" class="ibtn" data-go="{{n.go}}" aria-label="Open {{n.t}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14 M12 5l7 7-7 7"></path></svg></a>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </section>
+
+        <div class="tb-s3">
+          <section class="card t" style="padding:16px;gap:12px;align-items:center">
+            <h2 class="st" style="align-self:flex-start">This month</h2>
+            <div style="position:relative;width:140px;height:140px">
+              <svg width="140" height="140" viewBox="0 0 140 140" aria-hidden="true" style="transform:rotate(-90deg);overflow:visible">
+                <circle cx="70" cy="70" r="54" fill="none" stroke="var(--raised)" stroke-width="18"></circle>
+                <circle cx="70" cy="70" r="54" fill="none" stroke="var(--due-chip)" stroke-width="{{s0.w}}" stroke-dasharray="{{s0.da}}" stroke-dashoffset="{{s0.off}}" onMouseEnter="{{s0.enter}}" onMouseLeave="{{leave}}" onClick="{{s0.open}}" style="cursor:pointer;transition:stroke-width .15s"></circle>
+                <circle cx="70" cy="70" r="54" fill="none" stroke="var(--prog-chip)" stroke-width="{{s1.w}}" stroke-dasharray="{{s1.da}}" stroke-dashoffset="{{s1.off}}" onMouseEnter="{{s1.enter}}" onMouseLeave="{{leave}}" onClick="{{s1.open}}" style="cursor:pointer;transition:stroke-width .15s"></circle>
+                <circle cx="70" cy="70" r="54" fill="none" stroke="oklch(70% 0.15 80)" stroke-width="{{s2.w}}" stroke-dasharray="{{s2.da}}" stroke-dashoffset="{{s2.off}}" onMouseEnter="{{s2.enter}}" onMouseLeave="{{leave}}" onClick="{{s2.open}}" style="cursor:pointer;transition:stroke-width .15s"></circle>
+                <circle cx="70" cy="70" r="54" fill="none" stroke="var(--sky-chip)" stroke-width="{{s3.w}}" stroke-dasharray="{{s3.da}}" stroke-dashoffset="{{s3.off}}" onMouseEnter="{{s3.enter}}" onMouseLeave="{{leave}}" onClick="{{s3.open}}" style="cursor:pointer;transition:stroke-width .15s"></circle>
+              </svg>
+              <button type="button" onClick="{{openAll}}" onMouseEnter="{{enterAll}}" onMouseLeave="{{leave}}" aria-label="Show all {{total}} notifications" style="position:absolute;inset:26px;border-radius:99px;border:0;background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font:inherit;color:inherit" data-tip="Show all {{total}} notifications"><span class="metric" style="font-size:30px;line-height:1">{{total}}</span><span class="cap">this month</span></button>
+              <sc-if value="{{hasTip}}" hint-placeholder-val="{{false}}"><span role="tooltip" style="position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);background:var(--navy);color:#fff;font:700 12px Manrope;padding:4px 9px;border-radius:6px;white-space:nowrap;z-index:5;box-shadow:0 6px 16px -6px oklch(21% 0.042 264 / .5)">{{tip}}<span style="position:absolute;left:50%;bottom:-4px;width:8px;height:8px;background:var(--navy);transform:translateX(-50%) rotate(45deg)"></span></span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;align-self:stretch">
+              <sc-for list="{{legend}}" as="l" hint-placeholder-count="4"><button type="button" class="tb-leg" onClick="{{l.open}}" onMouseEnter="{{l.enter}}" onMouseLeave="{{leave}}" style="display:flex;align-items:center;gap:8px;font:600 12px Manrope;color:var(--fg);border:0;background:none;padding:5px 6px;border-radius:6px;cursor:pointer;text-align:left;{{l.hl}}"><span style="width:10px;height:10px;border-radius:3px;{{l.c}}"></span><span style="flex:1">{{l.k}}</span><span class="mono">{{l.n}}</span></button></sc-for>
+            </div>
+          </section>
+          <section class="card" style="padding:14px 16px;gap:10px">
+            <h2 class="h3">Northwind gets these by</h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <span class="chip" style="background:var(--prog-light);color:var(--prog-text);padding:4px 8px">✓ Email</span>
+              <span class="chip" style="background:var(--ok-light);color:var(--ok-text);padding:4px 8px">✓ WhatsApp</span>
+            </div>
+            <a href="#" style="font-size:12px">Change in Settings →</a>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+  <sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast tb-toast"><span>All marked read</span><a href="#" onClick="{{undo}}">Undo</a></div></sc-if>
+  <div class="tb-launch"><dc-import name="launcher" hint-size="160px,130px"></dc-import></div>
+  <sc-if value="{{drillOpen}}" hint-placeholder-val="{{false}}">
+    <div class="ov tb-ov tb-top">
+      <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="nd-t" style="width:600px;display:flex;flex-direction:column"><div class="dd-top" style="display:flex;align-items:center;gap:8px;padding:9px 18px;background:var(--primary-light);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)"><span>{{dLinkLead}}</span><a href="#" data-go="{{dLinkGo}}" onClick="{{dLinkClick}}" style="margin-left:auto;font-weight:800;font-size:12.5px;white-space:nowrap">{{dLinkText}}</a></div>
+        <div class="dlg-h">
+          <span class="ic" style="background:var(--navy)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0 M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg></span>
+          <h2 id="nd-t" style="margin:0;font:700 16px Manrope;color:var(--navy-ink,var(--navy))">Notifications this month</h2>
+          <button type="button" class="ibtn" aria-label="Close" style="margin-left:auto;border:0" onClick="{{closeDrill}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18 M6 6l12 12"></path></svg></button>
+        </div>
+        <div style="padding:12px 18px 0"><div class="tb-segx"><div class="seg" role="tablist" aria-label="Filter by type" style="grid-template-columns:repeat(5,minmax(0,1fr))"><span class="thumb" style="width:calc((100% - 4px)/5);{{dthumb}}"></span><sc-for list="{{dtabs}}" as="t" hint-placeholder-count="5"><button type="button" role="tab" aria-selected="{{t.sel}}" onClick="{{t.pick}}" class="{{t.cls}}">{{t.label}}<span class="cnt">{{t.cnt}}</span></button></sc-for></div></div></div>
+        <div style="padding:8px 0 10px;max-height:min(420px,52dvh);overflow:auto">
+          <sc-for list="{{dItems}}" as="n" hint-placeholder-count="4">
+            <a href="#" class="row" data-go="{{n.go}}" style="color:inherit;font-weight:inherit;padding:10px 18px">
+              <span class="nic" role="img" aria-label="{{n.tipText}}" style="{{n.icSt}}"><svg width="{{n.sz}}" height="{{n.sz}}" viewBox="0 0 24 24" fill="none" stroke="{{n.s1}}" stroke-width="{{n.w1}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.p1}}"></path></svg></span>
+              <span style="flex:1;min-width:0"><span class="rt" style="display:block">{{n.t}}</span><span class="mono cap">{{n.who}} · {{n.w}}</span></span>
+              <span class="chip" style="{{n.chip}}">{{n.kind}}</span>
+              <span style="color:var(--primary);display:flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14 M12 5l7 7-7 7"></path></svg></span>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"tab":{"editor":"enum","options":[0,1,2,3,4,5],"default":0},"allRead":{"editor":"boolean","default":false},"drill":{"editor":"enum","options":["",0,1,2,3,4],"default":""},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = {}; }
+  renderVals() {
+    const s = this.state;
+    const tab = s.tab !== undefined ? s.tab : Number(this.props.tab ?? 0);
+    /* ====== notification icons: OPTION 4 (owner pick). Lucide 2 px glyph in a 32 px pale-tint tile, one glyph and one colour per type.
+       Glyphs are Lucide's own geometry (24 px grid, stroke 2, round caps and joins), merged into one path each.
+       To try another set: add a SETS entry and change ICON_SET. ====== */
+    const ICON_SET = 'OPTION4';
+    const SETS = {
+      OPTION4: {
+        document: { p1: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z M14 2v5a1 1 0 0 0 1 1h5 M10 9H8 M16 13H8 M16 17H8", col: 'oklch(54.6% 0.215 263)', tint: 'light-dark(oklch(96.6% 0.02 260), oklch(24% 0.058 260))' },      // file-text
+        step: { p1: "M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M16 9l-5.5 5.5L8 12", col: 'oklch(56% 0.13 168)', tint: 'light-dark(oklch(96% 0.028 170), oklch(24.4% 0.077 170))' },          // circle-check
+        deadline: { p1: "M16 14v2.2l1.6 1 M16 2v3 M21 7.338V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h2.338 M3 9h5.859 M8 2v3 M10 16a6 6 0 1 0 12 0a6 6 0 1 0 -12 0", col: 'oklch(55% 0.17 42)', tint: 'light-dark(oklch(96.8% 0.04 55), oklch(23.9% 0.106 55))' },     // calendar-clock
+        email: { p1: "M22 7l-8.991 5.727a2 2 0 0 1-2.009 0L2 7 M4 4H20a2 2 0 0 1 2 2V18a2 2 0 0 1 -2 2H4a2 2 0 0 1 -2 -2V6a2 2 0 0 1 2 -2z", col: 'oklch(54% 0.17 292)', tint: 'light-dark(oklch(96.4% 0.032 292), oklch(24.2% 0.087 292))' },               // mail
+        announcement: { p1: "M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14 M8 6v8", col: 'oklch(52% 0.17 40)', tint: 'light-dark(oklch(96.6% 0.04 45), oklch(24% 0.106 45))' },      // megaphone
+        team: { p1: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M16 3.128a4 4 0 0 1 0 7.744 M22 21v-2a4 4 0 0 0-3-3.87 M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0", col: 'oklch(49% 0.12 230)', tint: 'light-dark(oklch(96.4% 0.026 228), oklch(24.2% 0.072 228))' }                // users
+      }
+    };
+    const K = SETS[ICON_SET];
+    // notification kinds → icon type, filter group, chip, tooltip
+    const T = {
+      doc: ['document', 'Documents', 'Request', 'background:var(--due-light);color:var(--due-text)', 'Document request'],
+      back: ['document', 'Documents', 'Sent back', 'background:var(--over-light);color:var(--over-text)', 'Document sent back · fix needed'],
+      step: ['step', 'Steps', 'Step', 'background:var(--ok-light);color:var(--ok-text)', 'Step done'],
+      time: ['step', 'Steps', 'Timeline', 'background:var(--prog-light);color:var(--prog-text)', 'Timeline changed'],
+      deadline: ['deadline', 'Deadlines', 'Deadline', 'background:light-dark(oklch(96.8% 0.05 85), oklch(23.9% 0.12 85));color:light-dark(oklch(45% 0.12 70), oklch(82% 0.084 70))', 'Deadline coming up'],
+      mail: ['email', 'Messages', 'Email', 'background:var(--sky-light);color:var(--sky-chip)', 'Email sent to Northwind'],
+      ann: ['announcement', 'Messages', 'Announcement', 'background:light-dark(oklch(96.6% 0.04 55), oklch(24% 0.106 55));color:light-dark(oklch(48% 0.15 42), oklch(80.8% 0.105 42))', 'Announcement'],
+      team: ['team', 'Messages', 'Team', 'background:light-dark(oklch(96.5% 0.03 230), oklch(24.1% 0.082 230));color:light-dark(oklch(45% 0.11 235), oklch(82% 0.077 235))', 'Team change']
+    };
+    // one renderer for every set: tile background = tint, glyph stroke = type colour
+    const icon = (ty) => {
+      const k = K[T[ty][0]];
+      return { p1: k.p1, sz: 18, s1: k.col, w1: 2, icSt: 'background:' + k.tint };
+    };
+    const N = [
+      { id: 1, g: 0, ty: 'doc', t: '2 documents requested', b: [['Utility bill for the office', 'inc-step-7'], ['Board resolution', 'board-resolution']], who: 'Arjun Mehta', ini: 'AM', w: '10:42', u: true, go: 'documents' },
+      { id: 2, g: 0, ty: 'back', t: 'Passport copy sent back', b: [['Photo page is blurred. Please upload again.', ''], ['Open the document', 'doc-viewer']], who: 'Arjun Mehta', ini: 'AM', w: '09:15', u: true, go: 'documents' },
+      { id: 3, g: 0, ty: 'deadline', t: 'GSTR-1 due in 3 days', b: [['Sun 11 Oct · GST', 'filings'], ['GST portal ↗', 'https://www.gst.gov.in']], who: 'VCFO Suite', ini: 'VS', w: '09:00', u: false, go: 'filings' },
+      { id: 4, g: 0, ty: 'time', t: 'Phase 2 end date moved to 28 Oct', b: [['Approved by Priya Raman', 'team'], ['See the timeline', 'home']], who: 'Priya Raman', ini: 'PR', w: '08:30', u: true, go: 'inc-phase' },
+      { id: 5, g: 1, ty: 'step', t: 'Capital Structure accepted', b: [['Step 6 of 14 is complete', 'inc-step-6']], who: 'Priya Raman', ini: 'PR', w: 'Tue 6 Oct', u: false, go: 'inc-step-6' },
+      { id: 6, g: 1, ty: 'step', t: 'Name approved by MCA', b: [['NORTHWIND TECHNOLOGIES INDIA PRIVATE LIMITED', ''], ['Name approval letter', 'doc-viewer']], who: 'Arjun Mehta', ini: 'AM', w: 'Tue 6 Oct', u: false, go: 'inc-step-5' },
+      { id: 7, g: 1, ty: 'ann', t: 'MCA V3 portal down 11–12 Oct', b: [['Official feed', 'announcements'], ['mca.gov.in ↗', 'https://www.mca.gov.in']], who: 'SBC', ini: 'SBC', w: 'Wed 7 Oct', u: false, go: 'announcements' },
+      { id: 8, g: 1, ty: 'mail', t: 'Email sent: Documents requested', b: [['To rahul@northwind.in', ''], ['Email settings', 'settings']], who: 'VCFO Suite', ini: 'VS', w: 'Tue 6 Oct', u: false, go: 'documents' },
+      { id: 9, g: 2, ty: 'team', t: 'Meera Iyer joined the project', b: [['Director · invited by Northwind', 'team']], who: 'Meera Iyer', ini: 'MI', w: '2 Oct', u: false, go: 'team' },
+      { id: 10, g: 2, ty: 'step', t: 'DIN allotted to both directors', b: [['Rahul Khanna · Meera Iyer', ''], ['Step 4 · DIN', 'inc-step-4']], who: 'Arjun Mehta', ini: 'AM', w: '29 Sep', u: false, go: 'inc-step-4' },
+      { id: 11, g: 2, ty: 'mail', t: 'Email sent: Welcome to VCFO Suite', b: [['To rahul@northwind.in', ''], ['Open Home', 'home']], who: 'VCFO Suite', ini: 'VS', w: '2 Sep', u: false, go: 'home' }
+    ];
+    const PEOPLE = { 'Arjun Mehta': 1, 'Priya Raman': 1, 'Meera Iyer': 1 };
+    const parts = (n) => n.b.map((p, i) => ({ t: p[0], go: /^https?:/.test(p[1]) ? '' : p[1], href: /^https?:/.test(p[1]) ? p[1] : '#', tgt: /^https?:/.test(p[1]) ? '_blank' : '_self', isLink: !!p[1], isText: !p[1], sep: i < n.b.length - 1 ? ' · ' : '' }));
+    const read = s.read || {};
+    const allRead = s.allRead !== undefined ? s.allRead : Boolean(this.props.allRead);
+    const isU = (n) => n.u && !allRead && !read[n.id];
+    const unread = N.filter(isU).length;
+    const grp = (n) => T[n.ty][1];
+    const TABS = [['All', () => true], ['Unread', isU], ['Documents', (n) => grp(n) === 'Documents'], ['Steps', (n) => grp(n) === 'Steps'], ['Deadlines', (n) => grp(n) === 'Deadlines'], ['Messages', (n) => grp(n) === 'Messages']];
+    const tabs = TABS.map((t, i) => ({ label: t[0], cnt: N.filter(t[1]).length, cls: tab === i ? 'on' : '', sel: tab === i ? 'true' : 'false', pick: () => this.setState({ tab: i }) }));
+    const shown = N.filter(TABS[tab][1]);
+    const decorate = (n) => Object.assign({}, n, icon(n.ty), { kind: T[n.ty][2], chip: T[n.ty][3], tipText: T[n.ty][4], parts: parts(n), whoGo: PEOPLE[n.who] ? 'team' : '', whoLink: !!PEOPLE[n.who], whoText: !PEOPLE[n.who] });
+    const GL = ['Today', 'Earlier this week', 'Earlier'];
+    const groups = GL.map((label, gi) => ({ label, items: shown.filter((n) => n.g === gi).map((n) => {
+      const u = isU(n);
+      return Object.assign(decorate(n), { unread: u, isRead: !u, rowCls: u ? 'row unread' : 'row', tw: u ? 'font-weight:800;color:var(--fg)' : 'font-weight:600;color:var(--fg)',
+        read: () => this.setState({ read: Object.assign({}, read, { [n.id]: true }) }) });
+    }) })).filter((g) => g.items.length);
+    const cnt = (k) => N.filter((n) => grp(n) === k).length;
+    const tot = N.length;
+    // rule 14: hover → tooltip, click → drill-down pop-up with the clicked type pre-selected
+    const DT = ['All', 'Documents', 'Steps', 'Deadlines', 'Messages'];
+    const pd = this.props.drill;
+    const drill = s.drill !== undefined ? s.drill : (pd === undefined || pd === null || pd === '' ? null : Number(pd));
+    const hv = s.hv;
+    const C = 2 * Math.PI * 54;
+    let acc = 0;
+    const seg = (i) => {
+      const k = DT[i + 1], len = cnt(k) / tot * C, on = hv === i + 1;
+      const out = { w: on ? 24 : 18, da: Math.max(len - 2, 0) + ' ' + (C - len + 2), off: -acc,
+        enter: () => this.setState({ hv: i + 1 }), open: () => this.setState({ drill: i + 1, hv: undefined }) };
+      acc += len; return out;
+    };
+    const s0 = seg(0), s1 = seg(1), s2 = seg(2), s3 = seg(3);
+    const LC = ['background:var(--due-chip)', 'background:var(--prog-chip)', 'background:oklch(70% 0.15 80)', 'background:var(--sky-chip)'];
+    const legend = [1, 2, 3, 4].map((i) => ({ k: DT[i], n: cnt(DT[i]), c: LC[i - 1], hl: hv === i ? 'background:var(--raised)' : '',
+      enter: () => this.setState({ hv: i }), open: () => this.setState({ drill: i, hv: undefined }) }));
+    const hasTip = hv !== undefined && hv !== null;
+    const tip = hasTip ? (hv === 0 ? 'All · ' + tot : DT[hv] + ' · ' + cnt(DT[hv])) : '';
+    const dtabs = DT.map((l, i) => ({ label: l, cnt: i === 0 ? tot : cnt(l), cls: drill === i ? 'on' : '', sel: drill === i ? 'true' : 'false', pick: () => this.setState({ drill: i }) }));
+    const dItems = drill === null ? [] : N.filter((n) => drill === 0 || grp(n) === DT[drill]).map(decorate);
+    const LINK = [['These live in Northwind’s Notifications list', 'Show in the list ↓', ''], ['These items live in Documents', 'Open Documents →', 'documents'], ['These steps live in Incorporation', 'Open Incorporation →', 'incorporation'], ['These deadlines live in Compliances · Filings', 'Open Filings →', 'filings'], ['These messages live in Announcements', 'Open Announcements →', 'announcements']][drill || 0];
+    return {
+      tabs, groups, unread, sideCount: unread, isEmpty: groups.length === 0,
+      thumb: 'transform:translateX(' + (tab * 100) + '%)',
+      total: tot, s0, s1, s2, s3, legend, hasTip, tip,
+      leave: () => this.setState({ hv: undefined }),
+      enterAll: () => this.setState({ hv: 0 }), openAll: () => this.setState({ drill: 0, hv: undefined }),
+      drillOpen: drill !== null, dtabs, dItems, dthumb: 'transform:translateX(' + ((drill || 0) * 100) + '%)',
+      closeDrill: () => this.setState({ drill: null }), dLinkLead: LINK[0], dLinkText: LINK[1], dLinkGo: LINK[2], dLinkClick: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ drill: null }); setTimeout(() => window.scrollTo({ top: 200, behavior: 'smooth' }), 60); },
+      toast: Boolean(s.toast),
+      markAll: () => this.setState({ allRead: true, toast: true }),
+      undo: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ allRead: false, toast: false, read: {} }); },
+      showAll: () => this.setState({ tab: 0 })
+    };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

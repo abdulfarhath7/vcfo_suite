@@ -83,6 +83,8 @@ export function nextStepAnswer(snapshot: ProjectSnapshot): AnswerEnvelope {
   const item = getItem(step.id);
   const topic = topicsForStep(step.id).find((t) => resolveTopicForViewer(t.slug, applicabilityFromSnapshot(snapshot), 'client'));
   const yours = step.status === 'waiting on you';
+  // Same form-field check as the where-now answer — the catalog item has no fields.
+  const section = stepSection(step.id);
   const items =
     yours && item
       ? item.infoRequired.slice(0, 8).map((i) => clip(i))
@@ -106,8 +108,8 @@ export function nextStepAnswer(snapshot: ProjectSnapshot): AnswerEnvelope {
     links: yours
       ? [
           {
-            dest: { to: 'step', stepId: step.id, section: item?.fields?.some((f) => f.type === 'file') ? 'upload' : 'form' },
-            label: item?.fields?.some((f) => f.type === 'file') ? 'Upload documents now' : 'Open this step',
+            dest: { to: 'step', stepId: step.id, section },
+            label: section === 'upload' ? 'Upload documents now' : 'Open this step',
             primary: true,
           },
           { dest: { to: 'incorporation', focusStepId: step.id }, label: 'Open Incorporation' },

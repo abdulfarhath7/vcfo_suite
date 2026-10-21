@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Top bar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);--primary:oklch(54.6% 0.215 263);--primary-light:oklch(96.6% 0.02 260);--navy:#0f2a4a}
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:4px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--border);font:500 10px "IBM Plex Mono",monospace;color:var(--muted)}
+.duo{fill:currentColor;stroke:none;opacity:.26}
+.tbb{position:relative;width:36px;height:36px;border-radius:6px;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer}
+.tbb:hover{background:var(--primary-light);color:var(--fg)}
+button:focus-visible,a:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .4);outline-offset:2px}
+/* v7 responsive: phone <=767 shows the menu button; the search box folds to an icon below 1180 px */
+.vtb{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 16px;min-width:0}
+.vtb-menu{display:none}
+.vtb-srch{display:flex;align-items:center;gap:8px;width:clamp(180px,18vw,256px);height:36px;padding:0 10px 0 12px;border-radius:6px;border:1px solid light-dark(oklch(91.5% 0.012 255 / .7), oklch(25.4% 0.012 255 / 0.7));background:light-dark(oklch(96.8% 0.006 250 / .5), oklch(17.8% 0.006 250 / 0.5));color:var(--muted);font:500 13px Manrope,sans-serif;cursor:text;box-sizing:border-box}
+.kbd{font-size:11px}
+@media (max-width:1279px){.vtb-srch{width:36px;padding:0;justify-content:center}.vtb-srch .vtb-t,.vtb-srch .kbd{display:none}}
+@media (max-width:767px){
+  .vtb{gap:6px;padding:0 8px}
+  .vtb-menu{display:flex}
+  .vtb .tbb,.vtb-srch{width:40px;height:40px}
+  .vtb-logo img{height:22px!important}
+  .vtb-ci,.vtb-theme{display:none!important}
+  .vtb-act{gap:2px!important}
+}
+</style>
+</helmet>
+<header class="vtb" style="border-bottom:1px solid light-dark(oklch(91.5% 0.012 255 / .6), oklch(25.4% 0.012 255 / 0.6));background:light-dark(oklch(100% 0 0 / .9), oklch(13% 0 0 / 0.9));font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+  <button type="button" class="tbb vtb-menu" data-vp-menu aria-label="Open menu" onClick="{{openSide}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+  <a href="#" class="vtb-logo" aria-label="SBC home" style="display:flex;flex:none"><img src="vcfo-bin:b/58380a4992a06cfe5c18a947b721abdf.png" alt="SBC" style="height:26px;width:auto"></a>
+  <nav aria-label="Location" style="flex:1;min-width:0;display:flex;align-items:center;gap:6px">
+    <span class="vtb-ci" style="flex:none;width:24px;height:24px;border-radius:6px;background:var(--primary-light);color:var(--primary);display:grid;place-items:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="duo" d="M3.5 8h17v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18Z"></path><path d="M3.5 18V6A1.5 1.5 0 0 1 5 4.5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5V18a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18Z"></path></svg></span>
+    <ol style="display:flex;align-items:center;gap:4px;min-width:0;margin:0;padding:0;list-style:none;overflow:hidden">
+      <li style="font-size:13px;font-weight:{{w1}};color:{{c1}};white-space:nowrap">{{trail}}</li>
+      <sc-if value="{{hasLeaf}}" hint-placeholder-val="{{false}}"><li aria-hidden="true" style="color:var(--subtle)">/</li><li aria-current="page" style="min-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--fg)">{{leaf}}</li></sc-if>
+    </ol>
+  </nav>
+  <div class="vtb-act" style="margin-left:auto;flex:none;display:flex;align-items:center;gap:6px">
+    <button type="button" class="vtb-srch" aria-label="Search (⌘K)" style="{{searchStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="color:oklch(54.6% 0.215 263 / .8)"><path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4"></path></svg><span class="vtb-t" style="flex:1;text-align:left">Search</span><span class="kbd">⌘</span><span class="kbd">K</span></button>
+    <button type="button" class="tbb" aria-label="Announcements"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="duo" d="M4 10h3l8-4.5v13L7 14H4Z"></path><path d="M4 10h3l8-4.5v13L7 14H4Z M7 14l1.5 5.5H11L10 14 M18 9.5a3.5 3.5 0 0 1 0 5"></path></svg></button>
+    <button type="button" class="tbb" aria-label="Notifications, 3 new" style="background:var(--primary-light);color:var(--primary)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="duo" d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4.5 1.8 6.5 1.8 6.5H4.7S6.5 14.5 6.5 10Z"></path><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4.5 1.8 6.5 1.8 6.5H4.7S6.5 14.5 6.5 10Z M10 19.5a2.2 2.2 0 0 0 4 0"></path></svg><span style="position:absolute;top:4px;right:4px;min-width:17px;height:17px;padding:0 3px;box-sizing:border-box;border-radius:99px;background:var(--primary-fill,var(--primary));color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--panel)">3</span></button>
+    <button type="button" class="vtb-theme" aria-label="Switch to dark theme" style="width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="duo" d="M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7Z"></path><path d="M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7Z M12 3v2 M12 19v2 M3 12h2 M19 12h2 M5.6 5.6 7 7 M17 17l1.4 1.4 M5.6 18.4 7 17 M17 7l1.4-1.4"></path></svg></button>
+  </div>
+</header>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"trail":{"editor":"text","default":"Documents"},"leaf":{"editor":"text","default":""},"compact":{"editor":"boolean","default":false},"$preview":{"width":1192,"height":52}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const leaf = this.props.leaf ?? '';
+    const has = !!leaf;
+    return {
+      trail: this.props.trail ?? 'Documents', leaf, hasLeaf: has,
+      w1: has ? 500 : 600, c1: has ? 'var(--muted)' : 'var(--fg)',
+      searchStyle: this.props.compact ? 'display:none' : '',
+      openSide: (e) => { if (e && e.defaultPrevented) return; if (window.vcfoOpenSide) window.vcfoOpenSide(); else if (window.vcfoShell && window.vcfoShell.openDrawer) window.vcfoShell.openDrawer(); }
+    };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

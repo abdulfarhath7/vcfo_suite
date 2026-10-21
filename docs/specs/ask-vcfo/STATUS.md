@@ -64,9 +64,9 @@ Playwright `e2e/ask-vcfo*.spec.ts` 19 tests.
 - Phase names are "SPICe+ Part A / Part B" for every legal form, including an
   LLP, because the checklist catalog and its phases do not vary by form. Not
   changed without the owner.
-- "What is my next step?" always labels its link "Open this step": its upload
-  check reads the catalog item, which carries no fields. The where-now answer
-  uses the real form fields.
+- Fixed: "What is my next step?" now labels its link from the step's client form
+  fields (same check as the where-now answer), so an upload step says "Upload
+  documents now".
 - Without a model key, a free-text question gets "Ask VCFO is unavailable right
   now" rather than a refusal, because the guard is the model.
 - `public/llms.txt` still describes an unrelated product; it predates Ask VCFO.

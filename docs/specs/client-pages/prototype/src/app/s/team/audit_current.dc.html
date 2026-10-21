@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Audit, current</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+.ag{display:grid;grid-template-columns:minmax(7rem,8.5rem) minmax(0,2fr) minmax(0,1.35fr) minmax(0,1.15fr) 2rem;gap:16px;padding:14px 16px;align-items:start}
+.sel{height:36px;border:1px solid var(--border);border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:12.5px;color:var(--fg)}
+</style>
+</helmet>
+<div class="old" style="position:relative;width:1440px;min-height:1200px;display:flex;background:var(--bg);color:var(--fg);font-size:13px">
+  <div style="width:248px;flex:none;background:#fff"><dc-import name="side_legacy" active="audit" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div style="flex:1;min-width:0">
+    <dc-import name="topbar" crumb="Audit" legacy="{{yes}}" hint-size="100%,52px" style="display:block;width:100%"></dc-import>
+    <main style="padding:24px 32px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between"><h1 style="margin:0;font-size:26px;font-weight:600">Audit Log</h1><span class="mono" style="border:1px solid var(--border);border-radius:99px;padding:6px 12px;font-size:11px;color:var(--subtle);background:#fff">10 recent events</span></div>
+      <div style="display:flex;gap:4px;border-bottom:1px solid var(--border)"><span style="padding:0 16px 10px;border-bottom:2px solid var(--primary);font-weight:600">⟲ Global logs</span><span style="padding:0 16px 10px;color:var(--muted)">By project</span></div>
+      <section class="old-card" style="overflow:hidden;box-shadow:0 8px 22px -6px oklch(37.9% 0.146 266 / .1)">
+        <div style="display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);background:oklch(97.5% 0.006 255)">
+          <div class="sel" style="width:300px;color:var(--subtle)">⌕  Search actions, actors, projects…</div>
+          <div class="sel" style="width:136px">All roles <span>▾</span></div>
+          <div class="sel" style="width:152px">All types <span>▾</span></div>
+          <span style="margin-left:auto;font-size:11.5px;color:var(--subtle)">10 events</span>
+        </div>
+        <div class="ag" style="padding:10px 16px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:oklch(97% 0.006 255);border-bottom:1px solid var(--border)"><span>When</span><span>What happened</span><span>Who</span><span>Target</span><span></span></div>
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+          <div class="ag" style="border-bottom:1px solid var(--hair)">
+            <div><div style="font-size:12px;font-weight:500">{{r.rel}}</div><div class="mono" style="font-size:10.5px;color:var(--subtle);margin-top:2px">{{r.abs}}</div></div>
+            <div><div style="font-weight:500">{{r.a}}</div><div style="font-size:12px;color:var(--muted);margin-top:4px">{{r.s}}</div></div>
+            <div><span class="old-pill" style="{{r.rc}}">{{r.role}}</span><div style="font-size:12.5px;margin-top:6px">{{r.who}}</div><div class="mono" style="font-size:10.5px;color:var(--subtle)">{{r.em}}</div></div>
+            <div><span class="old-pill" style="text-transform:none;letter-spacing:0;border:1px solid var(--border)">{{r.tt}}</span><div style="font-size:12.5px;margin-top:6px">Northwind Technologies India Pvt Ltd</div><div class="mono" style="font-size:10px;color:var(--subtle)">3f9a12c4…</div></div>
+            <span style="width:28px;height:28px;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--subtle)">▾</span>
+          </div>
+        </sc-for>
+      </section>
+    </main>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const RC = { Manager: 'background:var(--violet-light);color:var(--violet-chip)', 'Project lead': 'background:var(--sky-light);color:var(--sky-chip)', Client: 'background:var(--ok-light);color:var(--ok-text)', System: '' };
+    const R = [
+      ['2h ago', '08 Oct 2026, 10:42', 'Documents requested', 'Utility bill for the office, Board resolution', 'Project lead', 'Arjun Mehta', 'arjun.mehta@sbc.in', 'Document'],
+      ['3h ago', '08 Oct 2026, 09:15', 'Document rejected', 'Passport copy: photo page is blurred', 'Project lead', 'Arjun Mehta', 'arjun.mehta@sbc.in', 'Document'],
+      ['4h ago', '08 Oct 2026, 08:30', 'checklist.timeline.approve', 'Phase 2 end date 24 Oct → 28 Oct', 'Manager', 'Priya Raman', 'priya.raman@sbc.in', 'Milestone'],
+      ['Yesterday', '07 Oct 2026, 18:20', 'Document uploaded', 'Passport copy', 'Client', 'Meera Iyer', 'meera@northwind.in', 'Document'],
+      ['Yesterday', '07 Oct 2026, 16:05', 'Timeline change requested', 'Phase 2 +4 days', 'Client', 'Rahul Khanna', 'rahul@northwind.in', 'Milestone'],
+      ['Yesterday', '07 Oct 2026, 11:30', 'email.sent', 'documents_requested → rahul@northwind.in', 'System', 'Unknown actor', '', 'Email'],
+      ['2 days ago', '06 Oct 2026, 15:10', 'Step accepted', 'Capital Structure', 'Manager', 'Priya Raman', 'priya.raman@sbc.in', 'Milestone'],
+      ['2 days ago', '06 Oct 2026, 12:00', 'Client invited', 'ananya@northwind.in', 'Client', 'Rahul Khanna', 'rahul@northwind.in', 'Team']
+    ];
+    const rows = R.map((r) => ({ rel: r[0], abs: r[1], a: r[2], s: r[3], role: r[4], who: r[5], em: r[6], tt: r[7], rc: RC[r[4]] }));
+    return { rows, yes: true };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

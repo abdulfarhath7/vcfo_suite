@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Audit, redesign</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+<style>body{margin:0}
+/* v7 responsive contract (team boards): phone <=767, tablet 768-1279 (72 px rail), desktop >=1280 */
+:root{--vp-side-w:248px}
+@media (max-width:1279px){:root{--vp-side-w:72px}}
+@media (max-width:767px){:root{--vp-side-w:0px}}
+.tb-root{position:relative;width:100%;min-height:100vh;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px}
+.tb-side{width:var(--vp-side-w,248px);flex:none;background:#0f2a4a;overflow:hidden;min-width:0}
+.tb-side>*{width:248px}
+.tb-main{flex:1;min-width:0}
+.pg.tb-wrap{width:100%;max-width:1600px;margin-inline:auto;box-sizing:border-box;padding:clamp(16px,2vw,24px) clamp(16px,2vw,24px) 96px}
+.tb-launch{position:absolute;right:0;top:870px}
+.tb-segx{max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;border-radius:8px;-webkit-overflow-scrolling:touch}
+.tb-segx::-webkit-scrollbar{display:none}
+.tb-segx>.seg{width:max-content;min-width:100%;box-sizing:border-box}
+.tb-m{display:none!important}
+/* no text under 11 px */
+html .lbl{font-size:11px}
+html .seg .cnt,html .kbd{font-size:11px}
+html .dtile .m{font-size:11px;letter-spacing:.06em}
+/* pop-ups fit the viewport */
+.tb-ov{position:fixed!important;inset:0;z-index:60!important;overflow:auto;padding:var(--ovt,12px) 12px 12px;box-sizing:border-box}
+.tb-ov.tb-top{--ovt:min(120px,12vh);align-items:flex-start!important}
+.tb-ov>.dlg{max-width:calc(100vw - 24px);max-height:calc(100dvh - var(--ovt,12px) - 12px);overflow:auto;flex:none;box-sizing:border-box}
+.tb-toast{position:fixed!important;left:calc(50% + var(--vp-side-w,248px) / 2)!important;bottom:24px;max-width:calc(100vw - 24px);box-sizing:border-box;z-index:61!important}
+@media (max-width:1279px){.tb-side>*{display:none!important}}
+@media (max-width:767px){
+  .tb-side{display:none}
+  .pg.tb-wrap{padding:16px 16px 104px}
+  .tb-d{display:none!important}
+  .tb-m{display:revert!important}
+  .tb-m.tb-flex{display:flex!important}
+  .tb-m.tb-iflex{display:inline-flex!important}
+  .tb-ov.tb-top{--ovt:12px;align-items:center!important}
+  .tb-toast{left:50%!important;bottom:96px}
+  .tb-hd>.tb-segx{flex:1 1 100%;margin-left:0!important}
+  /* touch targets >= 40 px */
+  html .btn,html .btn-sm{height:40px;min-height:40px}
+  html .ibtn{width:40px;height:40px}
+  html .seg button{height:40px}
+  html .tgl{position:relative}
+  html .tgl::before{content:"";position:absolute;left:-2px;right:-2px;top:-9px;bottom:-9px}
+  html .info>button{width:40px;height:40px;margin:-11px}
+}
+.tb-srch{position:relative;display:block;flex:0 1 240px;width:240px;max-width:100%;min-width:150px}
+.tb-14{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:6px}
+.tb-hd{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--hair);flex-wrap:wrap}
+.tb-hd .tb-segx+.tb-segx{margin-left:auto}
+.tb-day{display:grid;grid-template-columns:72px minmax(0,1fr);gap:16px;padding-top:14px}
+.tb-vl{position:absolute;left:79px;top:14px;bottom:14px;width:2px;background:var(--border)}
+.tb-ev{display:grid;grid-template-columns:52px 28px minmax(0,1fr) 190px 32px;gap:12px;align-items:center;padding:8px 0}
+.tb-facts{position:relative;margin:0 0 8px 92px;padding:12px 14px;border-radius:8px;background:var(--raised);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 16px}
+.tb-facts .rt{overflow-wrap:anywhere}
+.dd-top{flex-wrap:wrap}
+@media (max-width:959px){.tb-ev{grid-template-columns:48px 28px minmax(0,1fr) 150px 32px;gap:10px}.tb-vl{left:71px}.tb-facts{margin-left:86px}}
+@media (max-width:767px){
+  .tb-14{gap:3px}
+  .tb-hd .tb-segx+.tb-segx{margin-left:0}
+  .tb-day{grid-template-columns:minmax(0,1fr);gap:4px}
+  .tb-dayh{display:flex;align-items:center;gap:10px}
+  .tb-dayh .dtile{width:50px!important;height:52px!important}
+  .tb-dayh .cap{width:auto!important;margin:0!important;font-size:12px}
+  .tb-ev{grid-template-columns:44px 28px minmax(0,1fr) 40px;gap:4px 10px}
+  .tb-evw{grid-column:3 / -1;grid-row:2}
+  .tb-vl{left:67px}
+  .tb-facts{margin-left:0;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+  .ph .acts{flex:1 1 100%}
+  .tb-srch{flex:1 1 150px;width:auto;max-width:none}
+}
+</style>
+</helmet>
+<div class="tb-root">
+  <div class="tb-side" data-vp="side"><dc-import name="side" active="7" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div class="tb-main">
+    <dc-import name="topbar" crumb="Audit" hint-size="100%,52px" style="display:block;width:100%"></dc-import>
+    <main class="pg tb-wrap">
+      <div class="ph">
+        <div class="acts">
+          <label class="tb-srch"><span style="position:absolute;left:10px;top:10px;color:var(--subtle)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4"></path></svg></span><input class="inp" aria-label="Search the audit log" placeholder="Search" style="padding-left:32px"></label>
+          <button type="button" class="btn btn-o"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 15v3.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V15 M12 4.5V15 M7.8 10.8 12 15l4.2-4.2"></path></svg>Export</button>
+        </div>
+      </div>
+
+      <section class="card t" style="padding:14px 18px 12px;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px"><h2 class="st">Last 14 days</h2><span class="metric" style="font-size:20px;margin-left:auto">{{total}}</span><span class="cap">events</span></div>
+        <div class="tb-14" style="position:relative;align-items:end;height:64px">
+          <sc-for list="{{bars}}" as="b" hint-placeholder-count="14"><button type="button" onClick="{{b.open}}" onMouseEnter="{{b.enter}}" onMouseLeave="{{leave}}" disabled="{{b.empty}}" aria-label="{{b.tip}}" style="display:flex;flex-direction:column;justify-content:flex-end;height:100%;padding:0;border:0;background:none;cursor:pointer" data-tip="{{b.tip}}"><span style="display:block;width:100%;border-radius:3px 3px 0 0;transform-origin:bottom;animation:grow .9s cubic-bezier(.2,.7,.2,1) backwards;transition:opacity .15s;{{b.h}}"></span></button></sc-for>
+          <sc-if value="{{hasTip}}" hint-placeholder-val="{{false}}"><span role="tooltip" style="position:absolute;bottom:calc(100% + 4px);transform:translateX(-50%);background:var(--navy);color:#fff;font:700 12px Manrope;padding:4px 9px;border-radius:6px;white-space:nowrap;z-index:5;pointer-events:none;box-shadow:0 6px 16px -6px oklch(21% 0.042 264 / .5);{{tipPos}}">{{tip}}<span style="position:absolute;left:50%;bottom:-4px;width:8px;height:8px;background:var(--navy);transform:translateX(-50%) rotate(45deg)"></span></span></sc-if>
+        </div>
+        <div class="tb-14"><sc-for list="{{bars}}" as="b" hint-placeholder-count="14"><span class="mono" style="font-size:11px;text-align:center;{{b.lc}}">{{b.d}}</span></sc-for></div>
+      </section>
+
+      <section class="card">
+        <div class="tb-hd">
+          <div class="tb-segx"><div class="seg" role="tablist" aria-label="Filter by type" style="grid-template-columns:repeat({{nT}},minmax(0,1fr))"><span class="thumb" style="width:calc((100% - 4px)/{{nT}});{{thumb}}"></span><sc-for list="{{tabs}}" as="t" hint-placeholder-count="6"><button type="button" role="tab" onClick="{{t.pick}}" class="{{t.cls}}">{{t.label}}<span class="cnt">{{t.cnt}}</span></button></sc-for></div></div>
+          <div class="tb-segx"><div class="seg" role="tablist" aria-label="Filter by who" style="grid-template-columns:repeat(3,minmax(0,1fr))"><span class="thumb" style="width:calc((100% - 4px)/3);{{wthumb}}"></span><sc-for list="{{whos}}" as="t" hint-placeholder-count="3"><button type="button" role="tab" onClick="{{t.pick}}" class="{{t.cls}}">{{t.label}}</button></sc-for></div></div>
+        </div>
+        <div style="padding:6px 16px 16px">
+          <sc-if value="{{noDays}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;align-items:flex-end;justify-content:center;gap:10px;padding:40px 16px 24px">
+              <span style="display:flex;flex:none"><dc-import name="v7c_bot" state="idle" size="48" hint-size="48px,48px"></dc-import></span>
+              <div role="status" style="max-width:300px;background:var(--panel);border:1px solid var(--border);border-radius:10px 10px 10px 3px;padding:10px 12px;box-shadow:var(--shadow)">
+                <div class="rt" style="font-weight:700">Nothing matches these filters yet.</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:8px"><button type="button" class="btn btn-o btn-sm" onClick="{{clearFilters}}">Clear filters</button><a href="#" style="font-size:12px">Ask VCFO why</a></div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="3">
+            <div class="tb-day">
+              <div class="tb-dayh"><div class="dtile" style="width:60px;height:62px;{{d.tile}}"><span class="d">{{d.n}}</span><span class="m">{{d.m}}</span></div><div class="cap" style="text-align:center;width:60px;margin-top:4px;font-weight:700">{{d.wd}}</div></div>
+              <div style="position:relative">
+                <span class="tb-vl"></span>
+                <sc-for list="{{d.items}}" as="e" hint-placeholder-count="3">
+                  <div>
+                    <div class="tb-ev">
+                      <span class="mono" style="font-size:12px;font-weight:600;color:var(--navy-ink,var(--navy))">{{e.t}}</span>
+                      <span class="node" data-tip="{{e.tipText}}" aria-label="{{e.tipText}}" role="img" style="{{e.bg}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{e.icon}}" fill="{{e.fill}}"></path></svg></span>
+                      <div style="min-width:0"><span class="rt" style="font-weight:700">{{e.a}}</span><span style="color:var(--muted)"> · {{e.s}}</span></div>
+                      <div class="tb-evw" style="display:flex;align-items:center;gap:8px;min-width:0"><span class="av" style="width:24px;height:24px;font-size:11px;box-shadow:none;{{e.av}}">{{e.ini}}</span><span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{e.who}}</span><span class="chip" style="{{e.rc}}">{{e.role}}</span></div>
+                      <button type="button" class="ibtn" onClick="{{e.toggle}}" aria-expanded="{{e.exp}}" aria-label="Details" data-tip="Details"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="{{e.rot}}"><path d="M6 9l6 6 6-6"></path></svg></button>
+                    </div>
+                    <sc-if value="{{e.open}}" hint-placeholder-val="{{false}}">
+                      <div class="tb-facts">
+                        <sc-for list="{{e.facts}}" as="f" hint-placeholder-count="3"><div><div class="lbl">{{f.k}}</div><div class="rt" style="margin-top:3px">{{f.v}}</div></div></sc-for>
+                        <div style="grid-column:1 / -1;display:flex;gap:8px"><a href="#" class="btn btn-o btn-sm">{{e.cta}}</a></div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <div style="display:flex;justify-content:center;padding-top:16px"><button type="button" class="btn btn-o btn-sm">Load older</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="tb-launch"><dc-import name="launcher" hint-size="160px,130px"></dc-import></div>
+  <sc-if value="{{drillOpen}}" hint-placeholder-val="{{false}}">
+    <div class="ov tb-ov tb-top">
+      <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="ab-t" style="width:760px"><div class="dd-top" style="display:flex;align-items:center;gap:8px;padding:9px 18px;background:var(--primary-light);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)"><span>{{dLinkLead}}</span><a href="#" data-go="{{dLinkGo}}" onClick="{{dLinkClick}}" style="margin-left:auto;font-weight:800;font-size:12.5px;white-space:nowrap">{{dLinkText}}</a></div>
+        <div class="dlg-h">
+          <div class="dtile" style="background:var(--navy);color:#fff"><span class="d">{{dDay}}</span><span class="m">{{dMon}}</span></div>
+          <div style="flex:1;min-width:0"><h2 id="ab-t" style="margin:0;font:700 16px Manrope;color:var(--navy-ink,var(--navy))">{{dTitle}}</h2><div class="cap">{{dCount}}</div></div>
+          <button type="button" class="ibtn" aria-label="Close" style="border:0" onClick="{{closeDrill}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+        </div>
+        <div style="padding:12px 18px 0"><div class="tb-segx"><div class="seg" role="tablist" aria-label="Pick a day" style="grid-template-columns:repeat({{dN}},minmax(0,1fr))"><span class="thumb" style="width:calc((100% - 4px)/{{dN}});{{dthumb}}"></span><sc-for list="{{dtabs}}" as="t" hint-placeholder-count="10"><button type="button" role="tab" aria-selected="{{t.sel}}" onClick="{{t.pick}}" class="{{t.cls}}" style="padding:0 8px">{{t.label}}<span class="cnt">{{t.cnt}}</span></button></sc-for></div></div></div>
+        <div style="padding:8px 0 10px;max-height:min(420px,52dvh);overflow:auto">
+          <sc-for list="{{dItems}}" as="e" hint-placeholder-count="3">
+            <a href="#" class="row" style="color:inherit;font-weight:inherit;padding:10px 18px">
+              <span class="mono" style="width:44px;font-size:12px;font-weight:600;color:var(--navy-ink,var(--navy))">{{e.t}}</span>
+              <span class="node" data-tip="{{e.tipText}}" aria-label="{{e.tipText}}" role="img" style="box-shadow:none;{{e.bg}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{e.icon}}" fill="{{e.fill}}"></path></svg></span>
+              <span style="flex:1;min-width:0"><span class="rt" style="font-weight:700">{{e.a}}</span><span style="color:var(--muted)"> · {{e.s}}</span><span class="cap tb-m tb-flex" style="margin-top:3px;align-items:center;gap:6px"><span style="font-weight:600;color:var(--fg)">{{e.who}}</span><span class="chip" style="{{e.rc}}">{{e.role}}</span></span></span>
+              <span class="tb-d" style="font-size:12px;font-weight:600;white-space:nowrap">{{e.who}}</span>
+              <span class="chip tb-d" style="{{e.rc}}">{{e.role}}</span>
+              <span style="color:var(--primary);display:flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7 M9 7h8v8"></path></svg></span>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"tab":{"editor":"enum","options":[0,1,2,3,4],"default":0},"openId":{"editor":"int","default":0},"drillDay":{"editor":"enum","options":["",13,12,11,10],"default":""},"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = {}; }
+  renderVals() {
+    const s = this.state;
+    const tab = s.tab !== undefined ? s.tab : Number(this.props.tab ?? 0);
+    const who = s.who || 0;
+    const openId = s.openId !== undefined ? s.openId : Number(this.props.openId ?? 0);
+    // rule 18: status = set A solid glyphs
+    const IC = { req: 'M12 5.2a3.4 3.4 0 1 1 0 6.8a3.4 3.4 0 1 1 0-6.8Z M5.8 19.2a6.2 6.2 0 0 1 12.4 0Z', back: 'M12 6.5v7 M12 17.3h.01', up: 'M5.5 16 10 11.5l3 3 5.5-5.5 M14.5 9H18.5V13', ok: 'M6.5 12.5 10.5 16.5 17.5 8.5', time: 'M5.5 16 10 11.5l3 3 5.5-5.5 M14.5 9H18.5V13', mail: 'M5 5.5h14A1.5 1.5 0 0 1 20.5 7v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17V7A1.5 1.5 0 0 1 5 5.5Z M4.5 7.5l7.5 5.5 7.5-5.5', team: 'M9 12.5a3.5 3.5 0 1 0 0-7a3.5 3.5 0 1 0 0 7Z M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5 M18 8v6 M15 11h6' };
+    const TIP = { req: 'Waiting on Northwind', back: 'Sent back · fix needed', up: 'With SBC · to review', ok: 'Done', time: 'With SBC · timeline', mail: 'Email', team: 'Team change' };
+    const BG = { req: 'background:oklch(66% 0.17 55)', back: 'background:var(--over-chip)', up: 'background:oklch(55% 0.2 262)', ok: 'background:oklch(58% 0.15 155)', time: 'background:oklch(55% 0.2 262)', mail: 'background:var(--sky-chip)', team: 'background:var(--navy)' };
+    const PEOPLE = {
+      'Arjun Mehta': ['AM', 'background:oklch(55% 0.09 200)', 'Lead', 'sbc'], 'Priya Raman': ['PR', 'background:oklch(62% 0.08 40)', 'Manager', 'sbc'],
+      'Meera Iyer': ['MI', 'background:oklch(52% 0.13 330)', 'Client', 'you'], 'Northwind': ['RK', 'background:var(--primary-fill,var(--primary))', 'Client', 'you'], 'VCFO Suite': ['VS', 'background:var(--up);color:var(--fg)', 'System', 'sbc']
+    };
+    const E = [
+      { id: 1, day: 0, t: '10:42', ty: 'req', c: 'Documents', a: 'Documents requested', s: 'Utility bill, Board resolution', who: 'Arjun Mehta', facts: [['Items', '2'], ['Due', '12 Oct'], ['Step', '4 · Registered office']], cta: 'Open request' },
+      { id: 2, day: 0, t: '09:15', ty: 'back', c: 'Documents', a: 'Document sent back', s: 'Passport copy', who: 'Arjun Mehta', facts: [['Reason', 'Photo page is blurred'], ['Uploaded by', 'Meera Iyer'], ['File', 'passport_meera.pdf']], cta: 'Upload again' },
+      { id: 3, day: 0, t: '08:30', ty: 'time', c: 'Milestones', a: 'Timeline change approved', s: 'Phase 2 ends 28 Oct', who: 'Priya Raman', facts: [['Before', '24 Oct'], ['After', '28 Oct'], ['Slipped', '4 days']], cta: 'View timeline' },
+      { id: 4, day: 1, t: '18:20', ty: 'up', c: 'Documents', a: 'Document uploaded', s: 'Passport copy', who: 'Meera Iyer', facts: [['File', 'passport_meera.pdf'], ['Size', '240 KB'], ['Step', '3 · Director KYC']], cta: 'Preview file' },
+      { id: 5, day: 1, t: '16:05', ty: 'time', c: 'Milestones', a: 'Change request sent', s: 'Phase 2 +4 days', who: 'Northwind', facts: [['Reason', 'Directors travelling'], ['Asked', '24 → 28 Oct'], ['Status', 'Approved']], cta: 'View timeline' },
+      { id: 6, day: 1, t: '11:30', ty: 'mail', c: 'Email', a: 'Email sent', s: 'Documents requested', who: 'VCFO Suite', facts: [['To', 'Northwind'], ['Status', 'Delivered'], ['Also sent', 'WhatsApp nudge']], cta: 'View email' },
+      { id: 7, day: 2, t: '15:10', ty: 'ok', c: 'Milestones', a: 'Step accepted', s: 'Capital Structure', who: 'Priya Raman', facts: [['Step', '6 of 14'], ['Submitted', '4 Oct'], ['Turnaround', '2 days']], cta: 'Open step' },
+      { id: 8, day: 2, t: '12:00', ty: 'team', c: 'Team', a: 'Colleague invited', s: 'Ananya Rao', who: 'Northwind', facts: [['Invited', 'Ananya Rao'], ['Access', 'Member'], ['Status', 'Invite sent']], cta: 'Open Team' }
+    ];
+    const credsRows = () => { try { return (JSON.parse(localStorage.getItem('vcfo.credsAudit')) || []).map((r, i) => { const d = new Date(r.t); return { id: 500 + i, day: 0, t: String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), ty: 'ok', c: 'Credentials', a: r.x, s: 'Credentials access log', who: 'Northwind', facts: [], cta: 'Open Credentials' }; }); } catch (e) { return []; } };
+    E.push(...credsRows());
+    const DAYS = [['8', 'Oct', 'Today', 'background:var(--navy);color:#fff'], ['7', 'Oct', 'Wed', 'background:var(--primary-light);color:var(--navy)'], ['6', 'Oct', 'Tue', 'background:var(--primary-light);color:var(--navy)']];
+    const CATS = ['All', 'Documents', 'Milestones', 'Team', 'Email', 'Credentials'];
+    const WHO = ['Everyone', 'SBC', 'Northwind'];
+    const fc = (e) => tab === 0 || e.c === CATS[tab];
+    const fw = (e) => who === 0 || PEOPLE[e.who][3] === (who === 1 ? 'sbc' : 'you');
+    const tabs = CATS.map((l, i) => ({ label: l, cnt: E.filter((e) => (i === 0 || e.c === l) && fw(e)).length, cls: tab === i ? 'on' : '', pick: () => this.setState({ tab: i }) }));
+    const whos = WHO.map((l, i) => ({ label: l, cls: who === i ? 'on' : '', pick: () => this.setState({ who: i }) }));
+    const days = DAYS.map((d, di) => ({ n: d[0], m: d[1], wd: d[2], tile: d[3], items: E.filter((e) => e.day === di && fc(e) && fw(e)).map((e) => {
+      const p = PEOPLE[e.who]; const open = openId === e.id;
+      return { ...e, bg: BG[e.ty], icon: IC[e.ty], fill: e.ty === 'req' ? 'currentColor' : 'none', tipText: TIP[e.ty], ini: p[0], av: p[1], role: p[2],
+        rc: p[3] === 'sbc' ? 'background:var(--navy);color:#fff' : 'background:var(--gold-soft);color:var(--gold-text)',
+        open, exp: open ? 'true' : 'false', rot: open ? 'transform:rotate(180deg)' : '',
+        facts: e.facts.map((f) => ({ k: f[0], v: f[1] })),
+        toggle: () => this.setState({ openId: open ? 0 : e.id }) };
+    }) })).filter((d) => d.items.length);
+    // rule 14: the 14-day strip. Hover a bar → tooltip; click → that day's events, day pill pre-selected.
+    const L = ['25', '26', '27', '28', '29', '30', '1', '2', '3', '4', '5', '6', '7', '8'];
+    const M = ['Sep', 'Sep', 'Sep', 'Sep', 'Sep', 'Sep', 'Oct', 'Oct', 'Oct', 'Oct', 'Oct', 'Oct', 'Oct', 'Oct'];
+    const WD = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
+    const OLD = [
+      [10, '17:40', 'up', 'Document uploaded', 'Board resolution draft', 'Northwind'], [10, '10:05', 'ok', 'Step accepted', 'Registered office', 'Priya Raman'],
+      [7, '14:30', 'req', 'Documents requested', 'Director PAN, Aadhaar', 'Arjun Mehta'],
+      [7, '16:10', 'up', 'Document uploaded', 'PAN card', 'Northwind'], [7, '11:20', 'mail', 'Email sent', 'Step 5 accepted', 'VCFO Suite'],
+      [6, '18:00', 'ok', 'Step accepted', 'Director KYC', 'Priya Raman'], [6, '15:45', 'up', 'Document uploaded', 'Aadhaar card', 'Meera Iyer'], [6, '09:30', 'team', 'Colleague added', 'Dev Sharma', 'Northwind'],
+      [4, '12:15', 'ok', 'Name approved', 'MCA RUN', 'Arjun Mehta'],
+      [3, '16:50', 'time', 'Timeline set', 'Phase 2 ends 24 Oct', 'Priya Raman'], [3, '10:00', 'mail', 'Email sent', 'Welcome to Phase 2', 'VCFO Suite'],
+      [0, '11:00', 'req', 'Documents requested', 'Proof of address', 'Arjun Mehta']
+    ];
+    const ALL = E.map((e) => ({ ...e, di: 13 - e.day })).concat(OLD.map((o, k) => ({ id: 100 + k, di: o[0], t: o[1], ty: o[2], a: o[3], s: o[4], who: o[5] })));
+    const H = L.map((_, i) => ALL.filter((e) => e.di === i).length);
+    const hv = s.hv;
+    const pd = this.props.drillDay;
+    const dd = s.dd !== undefined ? s.dd : (pd === undefined || pd === null || pd === '' ? null : Number(pd));
+    const bars = H.map((h, i) => ({ d: L[i], empty: h === 0, tip: WD[i] + ' ' + L[i] + ' ' + M[i] + ' · ' + h + (h === 1 ? ' event' : ' events'),
+      h: 'height:' + Math.max(h * 14, 3) + 'px;background:' + (i === 13 ? 'var(--navy)' : h ? 'var(--navy-3)' : 'var(--border)') + ';opacity:' + (i === 13 || hv === i ? 1 : .55),
+      lc: i === 13 ? 'color:var(--navy-ink,var(--navy));font-weight:700' : 'color:var(--subtle)',
+      enter: () => this.setState({ hv: i }), open: () => { if (h) this.setState({ dd: i, hv: undefined }); } }));
+    const hasTip = hv !== undefined && hv !== null;
+    const active = L.map((_, i) => i).filter((i) => H[i] > 0).reverse();
+    const dtabs = active.map((i) => ({ label: L[i] + ' ' + M[i], cnt: H[i], cls: dd === i ? 'on' : '', sel: dd === i ? 'true' : 'false', pick: () => this.setState({ dd: i }) }));
+    const pos = Math.max(active.indexOf(dd), 0);
+    const dItems = dd === null ? [] : ALL.filter((e) => e.di === dd).map((e) => {
+      const p = PEOPLE[e.who];
+      return { ...e, bg: BG[e.ty], icon: IC[e.ty], fill: e.ty === 'req' ? 'currentColor' : 'none', tipText: TIP[e.ty], role: p[2], rc: p[3] === 'sbc' ? 'background:var(--navy);color:#fff' : 'background:var(--gold-soft);color:var(--gold-text)' };
+    });
+    return { tabs, whos, days, bars, nT: CATS.length, total: ALL.length, noDays: days.length === 0,
+      clearFilters: () => this.setState({ tab: 0, who: 0 }),
+      thumb: 'transform:translateX(' + (tab * 100) + '%)', wthumb: 'transform:translateX(' + (who * 100) + '%)',
+      hasTip, tip: hasTip ? bars[hv].tip : '', tipPos: hasTip ? 'left:calc(' + ((hv + 0.5) / 14 * 100) + '% )' : '',
+      leave: () => this.setState({ hv: undefined }),
+      drillOpen: dd !== null, dtabs, dN: active.length, dthumb: 'transform:translateX(' + (pos * 100) + '%)', dItems,
+      dDay: dd === null ? '' : L[dd], dMon: dd === null ? '' : M[dd],
+      dTitle: dd === null ? '' : (dd === 13 ? 'Today' : WD[dd]) + ', ' + (dd === null ? '' : L[dd] + ' ' + M[dd]),
+      dCount: dd === null ? '' : H[dd] + (H[dd] === 1 ? ' event' : ' events'),
+      closeDrill: () => this.setState({ dd: null }), dLinkLead: 'These events live in the Audit log', dLinkText: 'Show in the Audit log ↓', dLinkGo: '', dLinkClick: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ dd: null }); setTimeout(() => window.scrollTo({ top: 280, behavior: 'smooth' }), 60); } };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

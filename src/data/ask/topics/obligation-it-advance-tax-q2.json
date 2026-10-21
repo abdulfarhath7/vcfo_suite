@@ -1,0 +1,51 @@
+{
+  "slug": "obligation-it-advance-tax-q2",
+  "title": "Advance tax (Q2 instalment)",
+  "question": "What is the Q2 advance tax instalment, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "Advance tax means paying income tax during the year as profits are earned, instead of all at once after the year ends. This is the second of the year's four instalments.",
+    "simple": "The company pays part of its income tax for the year in advance, in four instalments.",
+    "detail": "Each instalment covers a growing share of the tax expected for the whole year, so the amount depends on an estimate of the year's profit. If the estimate changes, later instalments are adjusted to catch up. A company with little or no taxable profit in a year may have nothing to pay.",
+    "why": "Interest runs on any shortfall from the instalment date, so a low estimate early in the year costs money later."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Instalment of income tax paid during the year"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm works out the amount; the company pays it"
+      },
+      {
+        "k": "If it is missed",
+        "v": "Interest on the amount short-paid or paid late. A shortfall at year end carries further interest until the tax is paid."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "income-tax-act-1961-s208",
+      "label": "Income-tax Act 1961, section 208 (liability for advance tax)"
+    },
+    {
+      "id": "income-tax-act-1961-s211",
+      "label": "Income-tax Act 1961, section 211 (instalments)"
+    },
+    {
+      "id": "income-tax-act-1961-s234b-s234c",
+      "label": "Income-tax Act 1961, sections 234B and 234C (interest)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

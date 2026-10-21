@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upload flow</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);
+--primary:oklch(54.6% 0.215 263);--primary-dark:oklch(48.8% 0.217 264);--primary-light:oklch(96.6% 0.02 260);
+--navy:#0f2a4a;--navy-2:#17396b;--gold:#c9a24b;--gold-soft:#fbf3df;--gold-text:#6e500f;
+--ok:oklch(56% 0.13 168);--ok-light:oklch(96% 0.028 170);--ok-text:oklch(39% 0.09 172);--ok-chip:oklch(50% 0.12 168);
+--due:oklch(66% 0.17 48);--due-light:oklch(96.8% 0.04 55);--due-text:oklch(48% 0.14 42);--due-chip:oklch(55% 0.17 42);
+--over:oklch(57% 0.2 22);--over-light:oklch(96.4% 0.026 18);--over-text:oklch(46% 0.17 20);--over-chip:oklch(52% 0.2 22);
+--prog:oklch(55% 0.16 252);--prog-light:oklch(96% 0.026 250);--prog-text:oklch(43% 0.13 254);
+--shadow:0 1px 2px oklch(25% 0.04 264 / 0.04), 0 6px 18px -10px oklch(28% 0.06 264 / 0.18)}
+a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--primary-dark)}
+.card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
+.card.t::before{content:"";position:absolute;left:18px;top:-1px;width:38px;height:3px;border-radius:0 0 3px 3px;background:var(--gold)}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px;white-space:nowrap}
+.lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--navy)}
+.cap{font-size:11.5px;color:var(--muted)}
+.mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 12px;border-radius:6px;font:600 12.5px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap}
+.btn-n{background:var(--navy);color:#fff}.btn-o{background:var(--panel);color:var(--fg);border-color:var(--border)}
+.drop{border:1.5px dashed oklch(66% 0.17 48 / .55);border-radius:8px;background:oklch(96.8% 0.04 55 / .5);display:flex;align-items:center;gap:10px;padding:10px 12px}
+.ttl{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.bar{height:6px;border-radius:3px;background:var(--raised);overflow:hidden}
+@keyframes fill{from{width:8%}to{width:64%}}
+.bar>span{display:block;height:100%;border-radius:3px;background:var(--navy);width:64%;animation:fill 1.6s cubic-bezier(.2,.7,.2,1) infinite alternate}
+@keyframes toast{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.toast{animation:toast .3s cubic-bezier(.22,1,.36,1) .3s both}
+@keyframes glow{0%{background:var(--ok-light)}100%{background:var(--panel)}}
+.new{animation:glow 2.4s ease-out infinite}
+button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .4);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.bar>span,.toast,.new{animation:none}}
+</style>
+</helmet>
+<div style="width:1440px;height:900px;box-sizing:border-box;padding:32px;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="lbl">1 · Waiting</div>
+      <section class="card t" style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px">
+        <div class="ttl">Signed DIR-2 — Meera Shah<span style="flex:1"></span><span class="chip" style="background:var(--due-chip);color:#fff">Due 12 Nov</span></div>
+        <div class="drop"><span style="width:32px;height:32px;border-radius:99px;background:var(--panel);color:var(--due-text);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px oklch(66% 0.17 48 / .4)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4 M7.5 8.5 12 4l4.5 4.5 M5 19.5h14"></path></svg></span><span style="font-size:12.5px">Drop the file or <span style="color:var(--primary);font-weight:700">browse</span></span></div>
+      </section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="lbl">2 · Dragging a file over</div>
+      <section class="card t" style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px">
+        <div class="ttl">Signed DIR-2 — Meera Shah<span style="flex:1"></span><span class="chip" style="background:var(--due-chip);color:#fff">Due 12 Nov</span></div>
+        <div class="drop" style="border-style:solid;border-color:var(--navy);background:var(--primary-light);box-shadow:0 0 0 4px oklch(54.6% 0.215 263 / .12);justify-content:center;padding:18px 12px"><span style="width:32px;height:32px;border-radius:99px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4 M7.5 8.5 12 4l4.5 4.5 M5 19.5h14"></path></svg></span><span style="font-size:13px;font-weight:700;color:var(--navy)">Release to upload</span></div>
+      </section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="lbl">3 · Uploading</div>
+      <section class="card t" style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px">
+        <div class="ttl">Signed DIR-2 — Meera Shah<span style="flex:1"></span><span class="chip" style="background:var(--due-chip);color:#fff">Due 12 Nov</span></div>
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span class="mono" style="font-size:9px;font-weight:600;padding:1px 5px;border-radius:4px;background:var(--over-light);color:var(--over-text)">PDF</span><span style="flex:1;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">dir2-meera-signed.pdf</span><span class="mono cap">64%</span><button type="button" aria-label="Cancel upload" style="width:24px;height:24px;border-radius:6px;border:0;background:none;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+          <div class="bar"><span></span></div>
+        </div>
+      </section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="lbl">4 · Done — row moves to the list</div>
+      <section class="card" style="overflow:hidden">
+        <div class="new" style="display:flex;align-items:center;gap:10px;padding:10px 12px">
+          <span style="position:relative;width:28px;height:34px;flex:none;border-radius:4px;background:var(--over-light);box-shadow:inset 0 0 0 1px oklch(57% 0.2 22 / .35)"><span style="position:absolute;left:3px;right:3px;bottom:3px;border-radius:2px;background:var(--over-chip);color:#fff;font:700 7.5px/11px 'IBM Plex Mono',monospace;text-align:center">PDF</span></span>
+          <span style="flex:1;font-size:12.5px;font-weight:600">Signed DIR-2 — Meera Shah</span>
+          <span class="chip" style="background:var(--prog-light);color:var(--prog-text)">In review</span>
+        </div>
+      </section>
+      <div class="toast" role="status" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--navy);color:#fff;box-shadow:0 12px 28px -12px oklch(15% 0.05 258 / .6)">
+        <span style="width:22px;height:22px;border-radius:99px;background:var(--ok-chip);display:flex;align-items:center;justify-content:center;flex:none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
+        <span style="flex:1;font-size:12.5px;font-weight:600">Sent to Arjun for review</span>
+        <button type="button" style="border:0;background:none;color:var(--gold);font:800 12.5px Manrope,sans-serif;cursor:pointer;padding:4px 6px;border-radius:6px">Undo</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px;align-items:start">
+    <div style="grid-column:span 7;display:flex;flex-direction:column;gap:10px">
+      <div class="lbl">Upload button (top right) → small dialog</div>
+      <div role="dialog" aria-label="Upload a document" style="background:var(--panel);border-radius:12px;border:1px solid var(--border);box-shadow:0 24px 60px -20px oklch(15% 0.05 258 / 0.4);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)"><h2 style="margin:0;font:700 15px Manrope,sans-serif;color:var(--navy);flex:1">Upload a document</h2><button type="button" aria-label="Close" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:6px"><label for="up-for" style="font-size:12px;font-weight:700">For</label>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+              <button type="button" style="text-align:left;padding:10px 12px;border-radius:8px;border:2px solid var(--navy);background:var(--primary-light);font:700 12.5px Manrope,sans-serif;color:var(--navy);cursor:pointer">Notarised lease deed<span style="display:block;margin-top:4px"><span class="chip" style="background:var(--over-chip);color:#fff">Overdue</span></span></button>
+              <button type="button" style="text-align:left;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--panel);font:700 12.5px Manrope,sans-serif;color:var(--fg);cursor:pointer">Signed DIR-2 — Meera Shah<span style="display:block;margin-top:4px"><span class="chip" style="background:var(--due-chip);color:#fff">Due 12 Nov</span></span></button>
+              
+            </div>
+          </div>
+          <div style="border:1.5px dashed oklch(54.6% 0.215 263 / .45);border-radius:10px;background:oklch(96.6% 0.02 260 / .5);padding:28px;display:flex;flex-direction:column;align-items:center;gap:8px">
+            <span style="width:44px;height:44px;border-radius:99px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4 M7.5 8.5 12 4l4.5 4.5 M5 19.5h14"></path></svg></span>
+            <span style="font-size:14px;font-weight:700">Drop files here or <a href="#">browse</a></span>
+            <span class="mono" style="font-size:11px;color:var(--subtle)">PDF · JPG · PNG · DOCX · up to 10 MB</span>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border);background:var(--raised)"><button type="button" class="btn btn-o">Cancel</button><button type="button" class="btn btn-n">Upload</button></div>
+      </div>
+    </div>
+    <div style="grid-column:span 5;display:flex;flex-direction:column;gap:10px">
+      <div class="lbl">Error — file refused</div>
+      <section class="card t" style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px">
+        <div class="ttl">Notarised lease deed<span style="flex:1"></span><span class="chip" style="background:var(--over-chip);color:#fff">Overdue · 6 Nov</span></div>
+        <div role="alert" style="border:1.5px solid oklch(57% 0.2 22 / .5);border-radius:8px;background:var(--over-light);display:flex;align-items:center;gap:10px;padding:10px 12px">
+          <span style="width:28px;height:28px;border-radius:99px;background:var(--over-chip);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 7v6 M12 16.5h.01"></path></svg></span>
+          <span style="flex:1;font-size:12.5px;color:var(--over-text);font-weight:600">lease-deed-scan.heic · this file type can't be opened</span>
+          <button type="button" class="btn btn-o" style="height:28px;font-size:12px">Try again</button>
+        </div>
+      </section>
+      <div class="lbl" style="margin-top:12px">Re-upload asked by SBC</div>
+      <section class="card t" style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px">
+        <div class="ttl">Address proof — Ravi Kumar<span style="flex:1"></span><span class="chip" style="background:var(--over-chip);color:#fff">Re-upload</span></div>
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:6px;background:var(--raised);font-size:12px"><span class="mono" style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;background:var(--navy);color:#fff">AM</span><span>“Bill is older than 2 months. Please send the latest one.”</span></div>
+        <div class="drop"><span style="width:32px;height:32px;border-radius:99px;background:var(--panel);color:var(--due-text);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px oklch(66% 0.17 48 / .4)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4 M7.5 8.5 12 4l4.5 4.5 M5 19.5h14"></path></svg></span><span style="font-size:12.5px">Drop the new file or <span style="color:var(--primary);font-weight:700">browse</span></span></div>
+      </section>
+    </div>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

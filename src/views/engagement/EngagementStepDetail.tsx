@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientFileRequestsPanel } from "@/components/incorporation/ClientFileRequestsPanel";
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -639,11 +640,17 @@ export default function EngagementStepDetail() {
           {stepMetaRow}
           {internPhase ? (
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18.5rem)] lg:items-start">
-              <div className="min-w-0">{stepForm}</div>
+              <div className="min-w-0">
+                {stepForm}
+                {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
+              </div>
               {internPhaseRail}
             </div>
           ) : (
-            stepForm
+            <>
+              {stepForm}
+              {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
+            </>
           )}
         </div>
       ) : (
@@ -664,6 +671,7 @@ export default function EngagementStepDetail() {
             {stepTitleRow}
             {stepMetaRow}
             {stepForm}
+            {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
           </div>
         </div>
       )}

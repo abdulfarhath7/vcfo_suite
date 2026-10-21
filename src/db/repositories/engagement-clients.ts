@@ -71,6 +71,24 @@ async function reactivateRemovedClient(profileId: string): Promise<void> {
     .where(eq(profiles.id, profileId));
 }
 
+/**
+ * Primary contact = `engagements.client_user_id` or an `owner` membership row.
+ * Exported for the client portal Team page (`client-team.ts`).
+ */
+export async function isPrimaryClient(
+  userId: string,
+  engagementDbId: string,
+  clientUserId?: string | null,
+): Promise<boolean> {
+  if (clientUserId && clientUserId === userId) return true;
+  const [row] = await db
+    .select({ role: engagementClients.memberRole })
+    .from(engagementClients)
+    .where(and(eq(engagementClients.engagementId, engagementDbId), eq(engagementClients.userId, userId)))
+    .limit(1);
+  return row?.role === 'owner';
+}
+
 /** Engagement DB ids the user may access as a client collaborator. */
 export async function listClientMemberEngagementIds(userId: string): Promise<string[]> {
   const rows = await db
@@ -185,6 +203,11 @@ export async function inviteEngagementClient(
     .limit(1);
   if (!eng) throw new Error('Engagement not found or not permitted');
 
+  // Owner decision (client portal v7): only the Primary contact may invite.
+  if (ctx.role === 'client' && !(await isPrimaryClient(ctx.userId, access.dbId, eng.clientUserId))) {
+    throw new Error('Only the Primary contact can invite (not permitted)');
+  }
+
   const orgClientId = eng.clientId || generateClientId();
   const name = input.fullName?.trim() || email.split('@')[0] || 'Client';
 
@@ -198,6 +221,12 @@ export async function inviteEngagementClient(
   let createdNewUser = false;
 
   if (existing) {
+    // A client may only invite brand-new people (security review H1): attaching
+    // an existing account — possibly another company's client — to this
+    // engagement is staff-only. One generic error, no account-type hint.
+    if (ctx.role === 'client') {
+      throw new Error('invite_existing_account_not_allowed');
+    }
     if (existing.role !== 'client') {
       throw new Error('email_not_a_client');
     }
@@ -399,6 +428,14 @@ export async function substituteEngagementClient(
       members.some((m) => m.userId === ctx.userId) || eng.clientUserId === ctx.userId;
     if (!actorOnProject) {
       throw new Error('Not permitted to substitute clients');
+    }
+    // Client portal v7: a member may hand off their own seat; replacing
+    // someone else is the Primary contact's call (same rule as inviting).
+    if (
+      replaceUserId !== ctx.userId &&
+      !(await isPrimaryClient(ctx.userId, access.dbId, eng.clientUserId))
+    ) {
+      throw new Error('Only the Primary contact can substitute others (not permitted)');
     }
   }
 

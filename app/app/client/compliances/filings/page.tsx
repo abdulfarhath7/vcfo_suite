@@ -1,14 +1,14 @@
 import { Suspense } from "react";
-import { FilingsPage } from "@/views/compliances/CompliancePages";
+import { ClientCompliancesFilingsRoute } from "@/components/client-portal/pages/compliances";
 import { pageMetadata } from "@/lib/page-metadata";
 
 export const metadata = pageMetadata("Filings", "Statutory filing register");
 
-/** Route shell only. `?company=` / `?status=` / `?cadence=` / `?period=` / `?fy=` carry the state on refresh. */
+/** Client portal v7 filings (?fy= ?cadence= ?area= ?status= ?period= ?view=year ?filing=). */
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading filings…</div>}>
-      <FilingsPage basePath="/app/client/compliances" />
+    <Suspense fallback={null}>
+      <ClientCompliancesFilingsRoute />
     </Suspense>
   );
 }

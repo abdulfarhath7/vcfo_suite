@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Library — current</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);--primary:oklch(54.6% 0.215 263);--due-light:oklch(96.8% 0.04 55);--due-text:oklch(48% 0.14 42)}
+.ob{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:6px;border:1px solid var(--border);background:var(--panel);font:500 13px Manrope,sans-serif;color:var(--fg);text-decoration:none}
+.fp{min-height:36px;padding:0 12px;border-radius:99px;border:1px solid var(--border);background:none;font:500 12.5px Manrope,sans-serif;color:var(--muted)}
+.fp.on{border-color:oklch(21% 0.042 264 / .3);background:var(--raised);color:var(--fg)}
+.pill{border-radius:99px;padding:2px 8px;font-size:11px}
+</style>
+</helmet>
+<div style="position:relative;width:1440px;min-height:900px;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+  <div style="width:248px;flex:none;background:#0f2a4a"><dc-import name="side" active="5" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div style="flex:1;min-width:0">
+    <dc-import name="topbar" trail="Library" hint-size="100%,52px" style="display:block"></dc-import>
+    <main style="padding:24px 32px">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <span style="width:44px;height:44px;border-radius:10px;background:var(--raised);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20 M10 2v8l3-2 3 2V2"></path></svg></span>
+        <div style="flex:1"><h1 style="margin:0;font-size:26px;font-weight:600;line-height:1">Library</h1><p style="margin:6px 0 0;font-size:13px;color:var(--muted)">Explanations Northwind saved from Ask VCFO.</p></div>
+        <a class="ob" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z M14 3v5h5 M12 12v6 M9 15l3 3 3-3"></path></svg>Monthly status brief</a>
+        <a class="ob" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14"></path></svg>Download PDF brief</a>
+      </div>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+        <input type="search" aria-label="Search Northwind’s library" placeholder="Search Northwind’s library" style="min-height:40px;width:320px;box-sizing:border-box;border-radius:6px;border:1px solid var(--border);background:var(--panel);padding:0 12px;font:500 13px Manrope,sans-serif">
+        <button type="button" class="fp on">All</button><button type="button" class="fp">Incorporation</button><button type="button" class="fp">Foreign investment</button><button type="button" class="fp">Tax</button><button type="button" class="fp">Compliance</button>
+      </div>
+      <ul style="list-style:none;margin:16px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+        <sc-for list="{{items}}" as="i" hint-placeholder-count="6">
+          <li style="display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:var(--panel);padding:16px">
+            <div style="display:flex;align-items:center;gap:6px"><span class="pill" style="background:var(--raised);color:var(--muted)">{{i.cat}}</span><sc-if value="{{i.updated}}" hint-placeholder-val="{{false}}"><span class="pill" style="background:var(--due-light);color:var(--due-text);font-weight:500">Updated</span></sc-if><span style="margin-left:auto;font-size:11px;color:var(--muted)">{{i.visual}}</span></div>
+            <h2 style="margin:8px 0 0;font-size:15px;font-weight:600">{{i.title}}</h2>
+            <p style="margin:4px 0 0;font-size:13px;color:var(--muted);flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{i.line}}</p>
+            <a href="#" class="ob" style="margin-top:12px;align-self:flex-start">Open</a>
+          </li>
+        </sc-for>
+      </ul>
+    </main>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const I = [
+      ['Incorporation', 'What is SPICe+?', 'One MCA web form that registers the company and gets PAN, TAN, EPFO and ESIC in a single filing.', 'Flow', false],
+      ['Foreign investment', 'FC-GPR after share allotment', 'Report the shares issued to Northwind’s foreign parent to the RBI within 30 days of allotment.', 'Timeline', true],
+      ['Tax', 'When do I need GST registration?', 'Northwind needs GST once turnover crosses ₹20 lakh, or from day one if it exports services.', 'Key facts', false],
+      ['Compliance', 'Commencement of business (INC-20A)', 'File within 180 days of incorporation, after the share money reaches the company bank account.', 'Steps', false],
+      ['Incorporation', 'Why the board resolution needs an apostille', 'Foreign documents must be apostilled so MCA accepts them as genuine.', 'Next step', false],
+      ['Northwind’s project', 'What happens after the COI?', 'Open the bank account, bring in the share capital, then file the post-incorporation forms.', 'Steps', false]
+    ];
+    return { items: I.map((r) => ({ cat: r[0], title: r[1], line: r[2], visual: r[3], updated: r[4] })) };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

@@ -11,6 +11,7 @@ import {
   bigint,
   index,
   uniqueIndex,
+  primaryKey,
   customType,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
@@ -1040,3 +1041,78 @@ export const askClientPrefs = pgTable('ask_client_prefs', {
   lastNudgeAt: timestamp('last_nudge_at', { withTimezone: true }),
   dismissedUntil: timestamp('dismissed_until', { withTimezone: true }),
 });
+
+/**
+ * CLIENT PORTAL PREFERENCES (client portal v7). One row per client profile,
+ * read and written only by its owner (`ctx.userId`).
+ *
+ * - `viewState`: the Before / After incorporation pill. `auto` follows the
+ *   real COI state; `before` / `after` keep the other layout on screen.
+ * - `theme`: light, dark ("True black") or follow the system.
+ * - `navOpen`: which sidebar groups are expanded.
+ * - `introSeenAt`: the entry animation plays once per client.
+ * - `docGrouping`: Documents grouping ("step" or "category"), remembered.
+ * - `botNoteSeenAt`: first-visit Ask VCFO note, once per client.
+ */
+export const clientPortalPrefs = pgTable('client_portal_prefs', {
+  profileId: uuid('profile_id')
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: 'cascade' }),
+  viewState: text('view_state').notNull().default('auto'),
+  theme: text('theme').notNull().default('light'),
+  navOpen: jsonb('nav_open').$type<Record<string, boolean>>().notNull().default({}),
+  introSeenAt: timestamp('intro_seen_at', { withTimezone: true }),
+  docGrouping: text('doc_grouping').notNull().default('step'),
+  botNoteSeenAt: timestamp('bot_note_seen_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * ANNOUNCEMENT READS (client portal v7): which announcements a person has
+ * opened. Announcements are firm-wide; the read mark is per profile and only
+ * ever written for `ctx.userId`.
+ */
+export const announcementReads = pgTable(
+  'announcement_reads',
+  {
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    announcementId: uuid('announcement_id')
+      .notNull()
+      .references(() => announcements.id, { onDelete: 'cascade' }),
+    readAt: timestamp('read_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.profileId, t.announcementId] }),
+  }),
+);
+/**
+ * ASK VCFO ANSWER FEEDBACK (client portal v7, 👍/👎 under chat answers — DECISIONS:
+ * keep). Covers model answers (`message_id`) and the portal's quick answers
+ * (no message row: the question + answer text are kept). Owner-only.
+ */
+export const askAnswerFeedback = pgTable(
+  'ask_answer_feedback',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    messageId: uuid('message_id').references(() => askMessages.id, { onDelete: 'set null' }),
+    question: text('question').notNull().default(''),
+    answer: text('answer').notNull().default(''),
+    vote: text('vote').notNull(), // up | down
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    profileIdx: index('ask_answer_feedback_profile_idx').on(t.profileId, t.createdAt),
+  }),
+);
+
+export * from './schema-portal-home';
+export * from './schema-portal-incorporation';
+export * from './schema-portal-compliances';
+export * from './schema-portal-documents';
+export * from './schema-portal-team';
+export * from './schema-portal-credentials';

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Documents — option A, explorer tree</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);
+--primary:oklch(54.6% 0.215 263);--primary-dark:oklch(48.8% 0.217 264);--primary-light:oklch(96.6% 0.02 260);
+--navy:#0f2a4a;--navy-2:#17396b;--navy-3:#1b4f94;--gold:#c9a24b;--gold-soft:#fbf3df;--gold-text:#6e500f;
+--ok:oklch(56% 0.13 168);--ok-light:oklch(96% 0.028 170);--ok-text:oklch(39% 0.09 172);--ok-chip:oklch(50% 0.12 168);
+--due:oklch(66% 0.17 48);--due-light:oklch(96.8% 0.04 55);--due-text:oklch(48% 0.14 42);--due-chip:oklch(55% 0.17 42);
+--over-light:oklch(96.4% 0.026 18);--over-text:oklch(46% 0.17 20);--over-chip:oklch(52% 0.2 22);
+--prog-light:oklch(96% 0.026 250);--prog-text:oklch(43% 0.13 254);--prog-chip:oklch(51% 0.17 252);
+--teal-light:oklch(96.4% 0.026 195);--teal-chip:oklch(47% 0.09 195);
+--shadow:0 1px 2px oklch(25% 0.04 264 / 0.04), 0 6px 18px -10px oklch(28% 0.06 264 / 0.18)}
+a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--primary-dark)}
+.card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);min-width:0}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px;white-space:nowrap}
+.cap{font-size:11.5px;color:var(--muted)}
+.lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 12px;border-radius:6px;font:600 12.5px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-n{background:var(--navy);color:#fff}.btn-n:hover{background:var(--navy-2);color:#fff}
+.btn-o{background:var(--panel);color:var(--fg);border-color:var(--border)}.btn-o:hover{background:var(--raised);color:var(--fg)}
+.ex{background:#0d2440;color:oklch(88% 0.02 255);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.tg{height:22px;min-width:22px;padding:0 6px;border-radius:4px;border:1px solid oklch(100% 0 0 / .18);background:none;color:oklch(80% 0.02 255);font:700 10.5px "IBM Plex Mono",monospace;cursor:pointer}
+.tg.on{background:oklch(100% 0 0 / .14);color:#fff;border-color:oklch(66% 0.16 262 / .6)}
+.tr{position:relative;display:flex;align-items:center;gap:6px;width:100%;height:28px;padding:0 10px 0 8px;border:0;background:none;color:inherit;font:500 12.5px Manrope,sans-serif;text-align:left;cursor:pointer;box-sizing:border-box}
+.tr:hover{background:oklch(100% 0 0 / .06)}
+.tr.sel{background:var(--navy-3);color:#fff}
+.tr.sel::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+.tr.hid{color:oklch(62% 0.02 255);font-style:italic}
+.gd{width:14px;align-self:stretch;flex:none;border-left:1px solid oklch(100% 0 0 / .1);margin-left:6px}
+.fi{width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center}
+.tbadge{font:700 7.5px/10px "IBM Plex Mono",monospace;padding:1px 3px;border-radius:2px;color:#fff}
+.ib{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none;cursor:pointer}
+.ib:hover{background:var(--primary-light);color:var(--navy-ink,var(--navy))}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch(66% 0.16 262 / .7);outline-offset:1px}
+.info{position:relative;display:inline-flex;vertical-align:middle;flex:none}
+.info>button{width:18px;height:18px;padding:0;border:0;border-radius:4px;background:none;color:oklch(62% 0.02 255);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.info .pop{position:absolute;left:50%;top:calc(100% + 8px);z-index:40;width:max-content;min-width:200px;max-width:280px;box-sizing:border-box;padding:10px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--border);box-shadow:0 12px 32px -12px oklch(21% 0.042 264 / .35);font:500 12px/1.45 Manrope,sans-serif;color:var(--fg);opacity:0;visibility:hidden;transform:translate(-50%,-4px);transition:opacity .15s,transform .15s,visibility .15s}
+.info:focus-within .pop{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.info .pop .ask{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--hair);color:var(--primary);font-weight:700}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</helmet>
+<div style="position:relative;width:1440px;height:1000px;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+  <div style="width:248px;flex:none;background:#0f2a4a"><dc-import name="side" active="4" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <dc-import name="topbar" trail="Documents" hint-size="100%,52px" style="display:block"></dc-import>
+    <main style="flex:1;min-height:0;padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h1 style="margin:0;font:700 22px Manrope,sans-serif;color:var(--navy-ink,var(--navy))">Documents</h1>
+        <span class="info"><button type="button" aria-label="About this page"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg></button><span class="pop" role="tooltip">Folders follow the incorporation phases and steps. Select a file to preview it.<a class="ask" href="#"><dc-import name="v7c_bot" state="idle" size="16" hint-size="16px,16px"></dc-import>Ask VCFO about this</a></span></span>
+        <span style="flex:1"></span>
+        <a class="btn btn-o" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14"></path></svg>Download all</a>
+        <a class="btn btn-n" href="docs_upload.dc.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4 M7.5 8.5 12 4l4.5 4.5 M5 19.5h14"></path></svg>Upload</a>
+      </div>
+      <div style="flex:1;min-height:0;display:flex;gap:16px">
+        <nav class="ex" aria-label="Document explorer" style="width:340px;flex:none">
+          <div style="display:flex;align-items:center;gap:6px;padding:12px 12px 8px"><span style="font:800 10.5px Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#fff;flex:1">Explorer</span><button type="button" class="{{tgInfo}}" aria-pressed="{{infoOn}}" title="Show status" onClick="{{toggleInfo}}">i</button><button type="button" class="{{tgHid}}" aria-pressed="{{hidOn}}" title="Show replaced files" onClick="{{toggleHid}}">h</button></div>
+          <label style="margin:0 12px 8px;display:flex;align-items:center;gap:6px;height:30px;padding:0 8px;border-radius:6px;background:oklch(100% 0 0 / .07);box-shadow:inset 0 0 0 1px oklch(100% 0 0 / .12)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="color:oklch(72% 0.03 255)"><path d="M4 6h16 M7 12h10 M10 18h4"></path></svg><input type="search" aria-label="Filter files" placeholder="Filter" value="{{q}}" onInput="{{onQ}}" style="flex:1;min-width:0;border:0;outline:0;background:none;color:#fff;font:500 12.5px Manrope,sans-serif"><span class="mono" style="font-size:11px;color:oklch(72% 0.03 255)">{{countLabel}}</span></label>
+          <div role="tree" style="flex:1;overflow:auto;padding-bottom:10px">
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="14">
+              <button type="button" role="treeitem" aria-expanded="{{r.exp}}" aria-selected="{{r.selA}}" class="{{r.cls}}" onClick="{{r.click}}">
+                <sc-for list="{{r.guides}}" as="g" hint-placeholder-count="1"><span class="gd"></span></sc-for>
+                <span class="fi" style="color:oklch(72% 0.03 255)"><sc-if value="{{r.folder}}" hint-placeholder-val="{{true}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{r.chev}}"><path d="M9 6l6 6-6 6"></path></svg></sc-if></span>
+                <span class="fi"><sc-if value="{{r.folder}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 18V6A1.5 1.5 0 0 1 5 4.5h4l2 2.5h8a1.5 1.5 0 0 1 1.5 1.5V18a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18Z" fill="oklch(78% 0.08 245)"></path><path d="M3.5 9h17" stroke="oklch(62% 0.1 250)" stroke-width="1.2"></path></svg></sc-if><sc-if value="{{r.file}}" hint-placeholder-val="{{false}}"><span class="tbadge" style="{{r.tStyle}}">{{r.type}}</span></sc-if></span>
+                <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.label}}</span>
+                <sc-if value="{{r.showDot}}" hint-placeholder-val="{{false}}"><span title="{{r.dotTitle}}" style="width:8px;height:8px;border-radius:99px;flex:none;{{r.dot}}"></span></sc-if>
+                <sc-if value="{{r.isHidden}}" hint-placeholder-val="{{false}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-label="Replaced"><path d="M3 3l18 18 M10.6 6.1A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-2.6 3.3 M6.6 6.6C3.9 8.4 2.5 12 2.5 12s3.5 6 9.5 6a9 9 0 0 0 4.4-1.1 M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg></sc-if>
+                <sc-if value="{{r.folder}}" hint-placeholder-val="{{true}}"><span class="mono" style="font-size:10.5px;color:oklch(68% 0.03 255)">{{r.cnt}}</span></sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </nav>
+        <section class="card" style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)">
+            <span class="mono" style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;{{selIcon}}">{{selType}}</span>
+            <div style="flex:1;min-width:0"><div style="font:700 14px Manrope,sans-serif">{{selLabel}}</div><div class="mono" style="font-size:11px;color:var(--subtle);margin-top:1px">{{selPath}}</div></div>
+            <span class="chip" style="{{selStStyle}}">{{selStatus}}</span>
+            <a class="ib" href="v7x_doc_viewer.dc.html" aria-label="Open in viewer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z"></path></svg></a>
+            <a class="ib" href="#" aria-label="Download"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14"></path></svg></a>
+          </div>
+          <div style="flex:1;min-height:0;display:flex">
+            <div style="flex:1;background:light-dark(oklch(94% 0.008 255), oklch(22% 0.008 255));display:flex;justify-content:center;padding:24px;overflow:hidden">
+              <a href="v7x_doc_viewer.dc.html" aria-label="Open in viewer" style="position:relative;width:420px;height:594px;flex:none;background:light-dark(#fff, oklch(13% 0 89.9));box-shadow:0 4px 24px -8px oklch(21% 0.042 264 / .3);border-radius:2px;padding:40px 44px;box-sizing:border-box;color:var(--fg);font-weight:500;display:block">
+                <span style="display:block;font-size:9px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase">Sample · placeholder page</span>
+                <span style="display:block;font:600 20px 'Space Grotesk';margin-top:10px">{{selLabel}}</span>
+                <span class="cap" style="display:block;margin-top:4px">Northwind Technologies India Pvt Ltd</span>
+                <span style="display:block;height:7px;border-radius:3px;background:light-dark(oklch(90% 0.01 255), oklch(28% 0.01 255));width:92%;margin-top:18px"></span><span style="display:block;height:7px;border-radius:3px;background:light-dark(oklch(90% 0.01 255), oklch(28% 0.01 255));width:84%;margin-top:10px"></span><span style="display:block;height:7px;border-radius:3px;background:light-dark(oklch(90% 0.01 255), oklch(28% 0.01 255));width:95%;margin-top:10px"></span><span style="display:block;height:7px;border-radius:3px;background:light-dark(oklch(90% 0.01 255), oklch(28% 0.01 255));width:66%;margin-top:10px"></span>
+              </a>
+            </div>
+            <aside style="width:240px;flex:none;border-left:1px solid var(--border);padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+              <div class="lbl" style="margin-bottom:4px">Details</div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--hair)"><span class="cap" style="font-size:12.5px">Step</span><span style="font-weight:600">{{selStep}}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--hair)"><span class="cap" style="font-size:12.5px">From</span><span style="font-weight:600">{{selFrom}}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--hair)"><span class="cap" style="font-size:12.5px">Date</span><span class="mono" style="font-weight:600;font-size:12px">{{selDate}}</span></div>
+              <a href="#" class="btn btn-o" style="margin-top:auto;justify-content:flex-start"><dc-import name="v7c_bot" state="idle" size="18" hint-size="18px,18px"></dc-import>Ask VCFO about this</a>
+            </aside>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { open: { p1: true, s3: true, p2: true, s6: true, s8: true, s17: true, p3: true, s21: false, s22: true }, sel: 'f9', q: '', info: true, hid: false }; }
+  renderVals() {
+    const s = this.state || {};
+    const N = [
+      ['p1', null, 'Phase 1 — Name application'],
+      ['s3', 'p1', '3 · Signed Board Resolution'],
+      ['f1', 's3', 'board-resolution-final.pdf', 'PDF', 'Final', 'SBC', '18 Sep 2026'],
+      ['f2', 's3', 'draft-board-resolution-v1.docx', 'DOCX', 'Replaced', 'SBC', '12 Sep 2026', true],
+      ['p2', null, 'Phase 2 — Incorporation'],
+      ['s6', 'p2', '6 · Director KYC'],
+      ['f3', 's6', 'ravi-kumar-pan.pdf', 'PDF', 'Approved', 'Northwind', '14 Sep 2026'],
+      ['f4', 's6', 'meera-shah-passport.pdf', 'PDF', 'Approved', 'Northwind', '14 Sep 2026'],
+      ['f5', 's6', 'electricity-bill-aug.pdf', 'PDF', 'Re-upload', 'Northwind', '15 Sep 2026'],
+      ['f5b', 's6', 'electricity-bill-jun.pdf', 'PDF', 'Replaced', 'Northwind', '2 Sep 2026', true],
+      ['f6', 's6', 'meera-photo.jpg', 'JPG', 'Approved', 'Northwind', '15 Sep 2026'],
+      ['s8', 'p2', '8 · Registered Office Address'],
+      ['f7', 's8', 'office-electricity-sep.pdf', 'PDF', 'Approved', 'Northwind', '22 Sep 2026'],
+      ['f8', 's8', 'rent-agreement.docx', 'DOCX', 'Approved', 'Northwind', '23 Sep 2026'],
+      ['s17', 'p2', '17 · Certificate of Incorporation'],
+      ['f9', 's17', 'COI-Northwind.pdf', 'PDF', 'Final', 'SBC', '24 Oct 2026'],
+      ['f10', 's17', 'moa-aoa-northwind.pdf', 'PDF', 'Final', 'SBC', '24 Oct 2026'],
+      ['p3', null, 'Phase 3 — Post-incorporation'],
+      ['s21', 'p3', '21 · Share Capital Infusion'],
+      ['f11', 's21', 'firc-hdfc.pdf', 'PDF', 'Approved', 'Northwind', '2 Nov 2026'],
+      ['f12', 's21', 'hdfc-statement-oct.pdf', 'PDF', 'Approved', 'Northwind', '3 Nov 2026'],
+      ['s22', 'p3', '22 · Share Certificates (SH-1)'],
+      ['f13', 's22', 'parent-coi-apostille.pdf', 'PDF', 'In review', 'Northwind', '6 Nov 2026'],
+      ['f14', 's22', 'sh1-certificates.pdf', 'PDF', 'Final', 'SBC', '7 Nov 2026']
+    ];
+    const by = {}; N.forEach((n) => { by[n[0]] = n; });
+    const depth = (n) => { let d = 0, p = n[1]; while (p) { d++; p = by[p][1]; } return d; };
+    const TS = { PDF: 'background:var(--over-light);color:var(--over-text)', JPG: 'background:var(--teal-light);color:var(--teal-chip)', DOCX: 'background:var(--prog-light);color:var(--prog-text)' };
+    const ICON = { PDF: 'background:var(--over-light);color:var(--over-text)', JPG: 'background:var(--teal-light);color:var(--teal-chip)', DOCX: 'background:var(--prog-light);color:var(--prog-text)' };
+    const DOT = { Approved: 'background:var(--ok)', Final: 'background:var(--gold)', 'In review': 'background:oklch(66% 0.14 252)', 'Re-upload': 'background:oklch(64% 0.2 22)', Replaced: 'background:oklch(55% 0.02 255)' };
+    const ST = { Approved: 'background:var(--ok-light);color:var(--ok-text)', Final: 'background:var(--navy);color:#fff', 'In review': 'background:var(--prog-light);color:var(--prog-text)', 'Re-upload': 'background:var(--over-chip);color:#fff', Replaced: 'background:var(--raised);color:var(--muted)' };
+    const q = (s.q || '').trim().toLowerCase();
+    const isFile = (n) => n.length > 3;
+    const shownFile = (n) => (s.hid || !n[7]) && (!q || n[2].toLowerCase().includes(q));
+    const files = N.filter(isFile);
+    const desc = (id) => files.filter((f) => { let p = f[1]; while (p) { if (p === id) return true; p = by[p][1]; } return false; });
+    const rows = [];
+    N.forEach((n) => {
+      let p = n[1], vis = true;
+      while (p) { if (!q && !s.open[p]) vis = false; p = by[p][1]; }
+      if (!vis) return;
+      if (isFile(n) && !shownFile(n)) return;
+      if (!isFile(n) && desc(n[0]).filter(shownFile).length === 0) return;
+      const d = depth(n); const f = isFile(n); const open = q ? true : !!s.open[n[0]];
+      rows.push({
+        guides: Array.from({ length: d }, () => ({})), folder: !f, file: f, label: n[2], type: n[3] || '', tStyle: TS[n[3]] || '',
+        exp: f ? null : (open ? 'true' : 'false'), selA: s.sel === n[0] ? 'true' : 'false',
+        cls: 'tr' + (s.sel === n[0] ? ' sel' : '') + (n[7] ? ' hid' : ''),
+        chev: 'transition:transform .15s;transform:rotate(' + (open ? 90 : 0) + 'deg)',
+        cnt: f ? '' : desc(n[0]).filter(shownFile).length,
+        showDot: f && s.info && !n[7], dot: DOT[n[4]] || '', dotTitle: n[4] || '', isHidden: !!n[7],
+        click: () => f ? this.setState({ sel: n[0] }) : this.setState({ open: Object.assign({}, s.open, { [n[0]]: !s.open[n[0]] }) })
+      });
+    });
+    const sel = by[s.sel] || by.f9;
+    const stepNode = by[sel[1]]; const phase = by[stepNode[1]];
+    const nameOf = { 'COI-Northwind.pdf': 'Certificate of Incorporation' };
+    return {
+      rows, q: s.q || '', onQ: (e) => this.setState({ q: e.target.value }),
+      countLabel: files.filter(shownFile).length + '/' + files.length,
+      infoOn: s.info ? 'true' : 'false', hidOn: s.hid ? 'true' : 'false',
+      tgInfo: 'tg' + (s.info ? ' on' : ''), tgHid: 'tg' + (s.hid ? ' on' : ''),
+      toggleInfo: () => this.setState({ info: !s.info }), toggleHid: () => this.setState({ hid: !s.hid }),
+      selLabel: nameOf[sel[2]] || sel[2], selType: sel[3], selIcon: ICON[sel[3]], selPath: phase[2].split(' — ')[0] + ' / ' + stepNode[2] + ' / ' + sel[2],
+      selStatus: sel[4], selStStyle: ST[sel[4]], selStep: stepNode[2].split(' · ')[0], selFrom: sel[5], selDate: sel[6]
+    };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

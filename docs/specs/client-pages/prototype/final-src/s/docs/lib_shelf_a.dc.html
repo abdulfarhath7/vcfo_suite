@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Library — shelf A, classic shelves</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--bg:oklch(97.4% 0.006 255);--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);
+--primary:oklch(54.6% 0.215 263);--primary-light:oklch(96.6% 0.02 260);--navy:#0f2a4a;--navy-2:#17396b;--navy-3:#1b4f94;--gold:#c9a24b;--gold-soft:#fbf3df;--gold-text:#6e500f;
+--ok-text:oklch(39% 0.09 172);--prog-chip:oklch(51% 0.17 252);--violet:oklch(54.6% 0.215 263);--violet-light:oklch(96.6% 0.02 260);--violet-chip:oklch(48.8% 0.217 264);--violet-text:oklch(40% 0.17 264);
+--shadow:0 1px 2px oklch(25% 0.04 264 / 0.04), 0 6px 18px -10px oklch(28% 0.06 264 / 0.18)}
+a{color:var(--primary);text-decoration:none;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px;white-space:nowrap}
+.mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 12px;border-radius:6px;font:600 12.5px Manrope,sans-serif;border:1px solid transparent;text-decoration:none;white-space:nowrap}
+.btn-o{background:var(--panel);color:var(--fg);border-color:var(--border)}
+.seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
+.seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
+.seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:30px;padding:0 10px;border-radius:5px;font:500 12px Manrope,sans-serif;color:light-dark(oklch(50% 0.022 255), oklch(80% 0.015 255));cursor:pointer;white-space:nowrap;transition:color .2s}
+.seg button.on{color:#fff}
+.seg .cnt{font:600 11px "IBM Plex Mono",monospace;color:oklch(55% 0.022 255)}
+.seg button.on .cnt{color:oklch(100% 0 0 / .72)}
+.shelf{position:relative;display:flex;align-items:flex-end;gap:18px;padding:22px 28px 0;perspective:900px;min-height:186px}
+.plank{height:14px;border-radius:2px;background:linear-gradient(180deg,light-dark(oklch(86% 0.018 255), oklch(34.2% 0.018 255)),light-dark(oklch(80% 0.022 255), oklch(36% 0.022 255)));box-shadow:0 10px 18px -10px oklch(25% 0.05 258 / .55)}
+.book{position:relative;width:116px;height:164px;flex:none;box-sizing:border-box;padding:14px 10px 10px 20px;border-radius:2px 6px 6px 2px;background:var(--bc);color:#fff;display:flex;flex-direction:column;gap:8px;transform:rotateY(-16deg);transform-origin:left bottom;box-shadow:8px 4px 14px -6px oklch(20% 0.05 258 / .45),inset -2px 0 0 oklch(100% 0 0 / .08);transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s;font-weight:700}
+.book::before{content:"";position:absolute;left:0;top:0;bottom:0;width:11px;border-radius:2px 0 0 2px;background:linear-gradient(90deg,oklch(0% 0 0 / .32),oklch(100% 0 0 / .14) 55%,oklch(0% 0 0 / .18))}
+.book::after{content:"";position:absolute;right:-5px;top:5px;bottom:5px;width:5px;border-radius:0 2px 2px 0;background:repeating-linear-gradient(180deg,light-dark(oklch(97% 0.01 85), oklch(17.5% 0.01 85)) 0 2px,light-dark(oklch(90% 0.012 85), oklch(28% 0.01 85)) 2px 3px)}
+.book:hover,.book:focus-visible{transform:rotateY(0deg) translateY(-12px);box-shadow:12px 18px 26px -10px oklch(20% 0.05 258 / .45);color:#fff}
+.bk-band{position:absolute;left:11px;right:0;top:0;height:5px;background:var(--gold)}
+.bk-ic{width:28px;height:28px;border-radius:99px;background:oklch(100% 0 0 / .18);display:flex;align-items:center;justify-content:center}
+.bk-t{font:800 12.5px/1.25 Manrope,sans-serif;letter-spacing:-.005em}
+.bk-c{margin-top:auto;font:700 11px/1.2 Manrope,sans-serif;letter-spacing:.04em;text-transform:uppercase;opacity:.8}
+.rib{position:absolute;right:8px;top:0;width:14px;height:22px;background:var(--prog-chip);clip-path:polygon(0 0,100% 0,100% 100%,50% 74%,0 100%)}
+.mini{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 8px;border-radius:8px;background:var(--panel);border:1px solid var(--border);box-shadow:var(--shadow);color:var(--fg);min-width:230px}
+.mini .cv{width:30px;height:42px;border-radius:2px 4px 4px 2px;background:var(--bc);box-shadow:inset 4px 0 0 oklch(0% 0 0 / .25);flex:none}
+.bar{display:block;height:5px;border-radius:3px;background:var(--raised);overflow:hidden}
+.bar>span{display:block;height:100%;background:var(--primary-fill,var(--primary))}
+.pbar{display:block;padding:4px 0;border-radius:4px}.pbar:hover .bar{box-shadow:0 0 0 2px oklch(54.6% 0.215 263 / .25)}
+.tip{position:relative}.tip::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 6px);z-index:90;width:max-content;padding:6px 9px;border-radius:6px;background:var(--navy);color:#fff;font:600 11.5px Manrope,sans-serif;white-space:nowrap;opacity:0;visibility:hidden;transform:translate(-50%,3px);transition:opacity .12s .12s,transform .12s .12s,visibility .12s .12s;pointer-events:none}.tip:hover::after,.tip:focus-visible::after{opacity:1;visibility:visible;transform:translate(-50%,0)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .5);outline-offset:3px}
+@keyframes v7up{from{opacity:0;transform:translateY(48px)}to{opacity:1;transform:none}}
+@keyframes v7bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.botup{animation:v7up .45s cubic-bezier(.22,1,.36,1) .5s both}
+.bob{animation:v7bob 2.6s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}.book{transform:none}}
+</style>
+<style>
+/* v5 · covers: full titles at normal spacing (2 lines, then …); hover lifts and tilts the book instead of squeezing it */
+.book{width:128px;height:172px;padding:16px 12px 12px 22px;transform:none;transform-origin:20% 100%;transition:transform .42s cubic-bezier(.34,1.45,.5,1),box-shadow .3s cubic-bezier(.22,1,.36,1);will-change:transform}
+.book:hover,.book:focus-visible{transform:translate3d(0,-14px,0) rotate(-2.5deg);box-shadow:14px 24px 30px -12px oklch(20% 0.05 258 / .5),inset -2px 0 0 oklch(100% 0 0 / .08)}
+.book:active{transform:translate3d(0,-10px,0) rotate(-1.5deg) scale(.985)}
+.bk-t{font:700 13px/1.32 Manrope,sans-serif;letter-spacing:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;hyphens:auto}
+.book:hover .bk-t,.book:focus-visible .bk-t{-webkit-line-clamp:6}
+@media (prefers-reduced-motion: reduce){.book,.book:hover,.book:focus-visible{transition:none;transform:none}}
+/* ---------- v7 responsive (phone <=767 · tablet 768-1279 · desktop >=1280) ---------- */
+.vp-sidecol{width:var(--vp-side-w,248px);flex:none;overflow:hidden;background:#0f2a4a}
+@media (max-width:1279px){.vp-sidecol{width:var(--vp-side-w,72px)}}
+@media (max-width:767px){.vp-sidecol{width:var(--vp-side-w,0px);visibility:hidden}}
+.vlib{position:relative;width:100%;min-height:100vh;min-height:100dvh;display:flex;background:var(--bg);font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px}
+.vlib-col{flex:1;min-width:0}
+.vlib-main{width:100%;max-width:1600px;margin-inline:auto;box-sizing:border-box;padding:clamp(12px,1.6vw,20px) clamp(12px,1.8vw,24px) 96px;display:flex;flex-direction:column;gap:16px}
+.vlib-tools{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.vlib-segw{flex:1 1 680px;max-width:740px;min-width:0;overflow-x:auto;scrollbar-width:none;border-radius:8px}
+.vlib-segw::-webkit-scrollbar{display:none}
+.vlib-segw .seg{width:100%;min-width:680px;box-sizing:border-box}
+.vlib-q{flex:1 1 200px;min-width:0;box-sizing:border-box}
+.vlib-recent{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.vlib-recent>h2{flex:none}
+.vlib-recent>.mini{flex:1 1 200px;max-width:360px;min-width:0;box-sizing:border-box}
+@media (max-width:1279px){.vlib-recent>h2{flex-basis:100%}}
+.vlib-recent .mini a{overflow-wrap:anywhere}
+.shelf{flex-wrap:wrap;row-gap:40px;background:linear-gradient(180deg,transparent 172px,light-dark(oklch(86% 0.018 255), oklch(34.2% 0.018 255)) 172px,light-dark(oklch(80% 0.022 255), oklch(36% 0.022 255)) 185px,oklch(72% 0.02 255) 185px,oklch(72% 0.02 255) 186px,transparent 186px) 16px 22px/calc(100% - 32px) 212px repeat-y}
+@media (max-width:767px){
+  .vlib-segw{flex-basis:100%;max-width:none}
+  .vlib-segw .seg button{height:40px}
+  .vlib-tools .btn{height:40px;flex:1 1 auto}
+  .vlib-q{flex-basis:100%;height:44px!important}
+  .vlib-recent>h2{flex-basis:100%}
+  .vlib-recent>.mini{max-width:none}
+  .vlib-recent .mini a{display:flex;align-items:center;min-height:40px}
+  .vlib-recent .mini .pbar{min-height:28px}
+  .vlib-recent .mini .pbar .bar{flex:1}
+  .shelf{display:grid;grid-template-columns:repeat(auto-fill,128px);justify-content:center;align-items:end;padding:22px 12px 0;gap:40px 18px;background-position:6px 22px;background-size:calc(100% - 12px) 212px}
+  .vlib .plank{margin:0 6px!important}
+}
+</style>
+</helmet>
+<div class="vlib">
+  <div class="vp-sidecol" data-vp="side"><dc-import name="side" active="5" hint-size="248px,900px" style="display:block;width:248px"></dc-import></div>
+  <div class="vlib-col">
+    <dc-import name="topbar" trail="Library" hint-size="100%,52px" style="display:block"></dc-import>
+    <main class="vlib-main">
+      <div class="vlib-tools">
+        <div class="vlib-segw"><div class="seg" role="tablist" aria-label="Category"><span class="thumb" style="width:calc((100% - 4px)/6);{{thumb}}"></span><sc-for list="{{tabs}}" as="t" hint-placeholder-count="6"><button type="button" role="tab" aria-selected="{{t.sel}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}<span class="cnt">{{t.cnt}}</span></button></sc-for></div></div><span class="chip" style="background:var(--primary-chip);color:#fff">{{total}} books</span><a class="btn btn-o" href="#">Monthly status brief</a><a class="btn btn-o" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14"></path></svg>PDF brief</a>
+        <label class="vlib-q" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--subtle)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4"></path></svg><input type="search" aria-label="Search books" placeholder="Search books" value="{{q}}" onInput="{{onQ}}" style="flex:1;min-width:0;border:0;outline:0;background:none;font:500 13px Manrope,sans-serif"></label>
+      </div>
+
+      <section class="vlib-recent">
+        <h2 style="margin:0;font:800 11px Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-ink,var(--navy));width:110px">Recently read</h2>
+        <div class="mini" style="--bc:oklch(45% 0.16 14)"><span class="cv"></span><span style="flex:1;display:flex;flex-direction:column;gap:5px"><a href="lib_reader.dc.html" style="font-size:12.5px;color:var(--fg)">FC-GPR after share allotment</a><a class="pbar tip" href="lib_recent_drill.dc.html" data-tip="70% read · 2 of 3 sections" aria-label="70% read · 2 of 3 sections. Open the reading list"><span class="bar"><span style="width:70%"></span></span></a></span></div>
+        <div class="mini" style="--bc:var(--navy-3)"><span class="cv"></span><span style="flex:1;display:flex;flex-direction:column;gap:5px"><a href="lib_reader.dc.html" style="font-size:12.5px;color:var(--fg)">What is SPICe+?</a><a class="pbar tip" href="lib_recent_drill.dc.html" data-tip="Finished · read on 8 Nov" aria-label="Finished · read on 8 Nov. Open the reading list"><span class="bar"><span style="width:100%"></span></span></a></span></div>
+        <div class="mini" style="--bc:var(--navy)"><span class="cv" style="box-shadow:inset 4px 0 0 var(--gold)"></span><span style="flex:1;display:flex;flex-direction:column;gap:5px"><a href="lib_reader.dc.html" style="font-size:12.5px;color:var(--fg)">What happens after the COI?</a><a class="pbar tip" href="lib_recent_drill.dc.html" data-tip="35% read · 1 of 3 sections" aria-label="35% read · 1 of 3 sections. Open the reading list"><span class="bar"><span style="width:35%"></span></span></a></span></div>
+      </section>
+
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:6px 0 18px;display:flex;flex-direction:column;gap:6px">
+        <sc-for list="{{shelves}}" as="sh" hint-placeholder-count="3">
+          <section aria-label="{{sh.title}}">
+            <div style="display:flex;align-items:center;gap:8px;padding:14px 28px 0"><span style="width:10px;height:10px;border-radius:3px;{{sh.dot}}"></span><h2 style="margin:0;font:700 13px Manrope,sans-serif;color:var(--navy-ink,var(--navy))">{{sh.title}}</h2><span class="mono" style="font-size:11px;color:var(--subtle)">{{sh.count}}</span></div>
+            <div class="shelf">
+              <sc-for list="{{sh.books}}" as="b" hint-placeholder-count="4">
+                <a class="book" href="lib_reader.dc.html" style="{{b.style}}" aria-label="Open {{b.title}}">
+                  <span class="bk-band"></span>
+                  <sc-if value="{{b.updated}}" hint-placeholder-val="{{false}}"><span class="rib" title="Updated"></span></sc-if>
+                  <span class="bk-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.icon}}"></path></svg></span>
+                  <span class="bk-t">{{b.title}}</span>
+                  <span class="bk-c">{{b.short}}</span>
+                </a>
+              </sc-for>
+            </div>
+            <div class="plank" style="margin:0 16px"></div>
+          </section>
+        </sc-for>
+        <sc-if value="{{none}}" hint-placeholder-val="{{false}}"><div style="padding:40px 16px"><div role="status" style="display:flex;align-items:flex-end;gap:10px;justify-content:center;text-align:left"><dc-import name="v7c_bot" state="idle" size="40" hint-size="40px,40px"></dc-import><div style="position:relative;max-width:320px;padding:10px 14px;border-radius:10px 10px 10px 2px;background:var(--panel);border:1px solid var(--border);box-shadow:0 8px 20px -12px oklch(21% 0.042 264 / .35);display:flex;flex-direction:column;align-items:flex-start"><span style="font:600 13px/1.45 Manrope,sans-serif;color:var(--fg)">No book matches “{{q}}”.</span><button type="button" onClick="{{clearQ}}" style="margin-top:6px;padding:0;border:0;background:none;font:700 12px Manrope,sans-serif;color:var(--primary);cursor:pointer">Clear search</button><a href="#" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:12px;font-weight:700;color:var(--primary)">Ask VCFO why</a></div></div></div></sc-if>
+      </div>
+    </main>
+  </div>
+  <div style="position:absolute;top:0;right:0;width:min(420px,100%);height:min(900px,100vh);pointer-events:none;z-index:5"><div style="pointer-events:auto"><div class="botup" style="position:absolute;right:24px;bottom:24px;display:flex;flex-direction:column;align-items:center;gap:6px"><span style="background:var(--navy);color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:4px 10px">Ask VCFO</span><button type="button" aria-label="Open Ask VCFO" style="width:68px;height:68px;border-radius:99px;border:0;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255));box-shadow:0 10px 24px -8px oklch(25% 0.06 258 / 0.45),0 0 0 1px var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer"><span class="bob" style="display:flex"><dc-import name="v7c_bot" state="idle" size="50" hint-size="50px,50px"></dc-import></span></button></div></div></div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { c: 0, q: '' }; }
+  renderVals() {
+    const s = this.state || {};
+    const CAT = [
+      ['Incorporation', 'Incorp.', 'var(--navy-3)', 'M4 20h16 M6 20V8l6-4 6 4v12 M10 20v-5h4v5'],
+      ['Foreign investment', 'FDI', 'oklch(45% 0.16 14)', 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M3 12h18 M12 3c3 3.5 3 14.5 0 18 M12 3c-3 3.5-3 14.5 0 18'],
+      ['Tax', 'Tax', 'oklch(50% 0.12 62)', 'M6 3h12v18l-3-2-3 2-3-2-3 2Z M9 9h6 M9 13h6'],
+      ['Compliance', 'Compliance', 'oklch(42% 0.08 200)', 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6Z M8.5 12l2.5 2.5 4.5-4.5'],
+      ['Northwind’s project', 'Northwind’s project', 'var(--navy)', 'M5 21V4 M5 4h11l-2 4 2 4H5']
+    ];
+    const B = [
+      [0, 'What is SPICe+?'], [0, 'Why the board resolution needs an apostille'], [0, 'DSC and DIN for foreign directors'], [0, 'Rules for the company name'],
+      [1, 'FC-GPR after share allotment', true], [1, 'FDI: automatic or approval route'], [1, 'What a FIRC proves'],
+      [2, 'When do I need GST registration?'], [2, 'TDS basics for a new company'], [2, 'LUT for export of services'],
+      [3, 'Commencement of business (INC-20A)'], [3, 'Auditor appointment (ADT-1)'], [3, 'Northwind’s first-year filing calendar'],
+      [4, 'What happens after the COI?'], [4, 'Reading Northwind’s monthly status brief']
+    ];
+    const q = (s.q || '').trim().toLowerCase();
+    const shelves = CAT.map((c, i) => ({ title: c[0], dot: 'background:' + c[2], books: B.filter((b) => b[0] === i && (s.c === 0 || s.c - 1 === i) && (!q || b[1].toLowerCase().includes(q))).map((b) => ({ title: b[1], updated: !!b[2], short: c[1], icon: c[3], style: '--bc:' + c[2] })) })).filter((x) => x.books.length).map((x) => Object.assign(x, { count: x.books.length }));
+    const L = ['All', 'Incorporation', 'Foreign inv.', 'Tax', 'Compliance', 'Northwind’s project'];
+    return {
+      total: B.length,
+      tabs: L.map((l, i) => ({ label: l, cnt: i === 0 ? B.length : B.filter((b) => b[0] === i - 1).length, cls: s.c === i ? 'on' : '', sel: s.c === i ? 'true' : 'false', pick: () => this.setState({ c: i }) })),
+      thumb: 'transform:translateX(' + (s.c * 100) + '%)', shelves, none: shelves.length === 0, clearQ: () => this.setState({ q: '', c: 0 }), q: s.q || '', onQ: (e) => this.setState({ q: e.target.value })
+    };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

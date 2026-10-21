@@ -1,5 +1,5 @@
 {
-  "id": "c2683fc7-b637-4fa0-a3ea-b83bb4195ee3",
+  "id": "3c9153fd-cee6-41e6-8a37-2c3cbf15e98a",
   "prevId": "d35a2342-dbbf-466f-ae98-488ee0946eab",
   "version": "7",
   "dialect": "postgresql",
@@ -93,6 +93,73 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.announcement_reads": {
+      "name": "announcement_reads",
+      "schema": "",
+      "columns": {
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "announcement_id": {
+          "name": "announcement_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "announcement_reads_profile_id_profiles_id_fk": {
+          "name": "announcement_reads_profile_id_profiles_id_fk",
+          "tableFrom": "announcement_reads",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "announcement_reads_announcement_id_announcements_id_fk": {
+          "name": "announcement_reads_announcement_id_announcements_id_fk",
+          "tableFrom": "announcement_reads",
+          "tableTo": "announcements",
+          "columnsFrom": [
+            "announcement_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "announcement_reads_profile_id_announcement_id_pk": {
+          "name": "announcement_reads_profile_id_announcement_id_pk",
+          "columns": [
+            "profile_id",
+            "announcement_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -1174,6 +1241,86 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.client_portal_prefs": {
+      "name": "client_portal_prefs",
+      "schema": "",
+      "columns": {
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "view_state": {
+          "name": "view_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'auto'"
+        },
+        "theme": {
+          "name": "theme",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'light'"
+        },
+        "nav_open": {
+          "name": "nav_open",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "intro_seen_at": {
+          "name": "intro_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doc_grouping": {
+          "name": "doc_grouping",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'step'"
+        },
+        "bot_note_seen_at": {
+          "name": "bot_note_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "client_portal_prefs_profile_id_profiles_id_fk": {
+          "name": "client_portal_prefs_profile_id_profiles_id_fk",
+          "tableFrom": "client_portal_prefs",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -3848,18 +3995,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "variables": {
-          "name": "variables",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "retry_of": {
-          "name": "retry_of",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -3881,21 +4016,6 @@
           "columns": [
             {
               "expression": "engagement_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "notification_deliveries_retry_of_idx": {
-          "name": "notification_deliveries_retry_of_idx",
-          "columns": [
-            {
-              "expression": "retry_of",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3957,19 +4077,6 @@
           "tableTo": "profiles",
           "columnsFrom": [
             "recipient_profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "notification_deliveries_retry_of_notification_deliveries_id_fk": {
-          "name": "notification_deliveries_retry_of_notification_deliveries_id_fk",
-          "tableFrom": "notification_deliveries",
-          "tableTo": "notification_deliveries",
-          "columnsFrom": [
-            "retry_of"
           ],
           "columnsTo": [
             "id"

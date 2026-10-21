@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Team, invite pop-up</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position:relative;width:1440px;height:1000px;overflow:hidden;font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+  <dc-import name="team_redesign" hint-size="1440px,1000px" style="display:block;width:1440px"></dc-import>
+  <div class="ov">
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="inv-t">
+      <div class="dlg-h">
+        <span class="ic" style="background:var(--navy)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 12.5a3.5 3.5 0 1 0 0-7a3.5 3.5 0 1 0 0 7Z M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5 M18 8v6 M15 11h6"></path></svg></span>
+        <h2 id="inv-t" style="margin:0;font:700 16px Manrope;color:var(--navy)">Invite a colleague</h2>
+        <button type="button" class="ibtn" aria-label="Close" style="margin-left:auto;border:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+      </div>
+      <div class="dlg-b">
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <label class="fl">Name<input class="inp" value="Ananya Rao"></label>
+          <label class="fl">Work email<input class="inp" type="email" value="ananya@northwind.in"></label>
+        </div>
+        <div class="fl">
+          <span>Sign-in</span>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border)">
+            <span class="ic" style="background:var(--navy)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></span>
+            <span style="flex:1;min-width:0"><span class="rt" style="display:block">Set-password link by email</span><span class="cap">Expires in 7 days</span></span>
+            <button type="button" class="ibtn" aria-label="Copy the link" data-tip="Copy the link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h10v11H9Z M5 15V4h10"></path></svg></button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:var(--raised)">
+          <span class="chip" style="background:var(--raised);color:var(--muted);box-shadow:inset 0 0 0 1px var(--border)">Member</span>
+          <span style="font-size:12px;font-weight:600">Sees everything on Northwind. Cannot invite.</span>
+        </div>
+      </div>
+      <div class="dlg-f">
+        <button type="button" class="btn btn-g">Cancel</button>
+        <button type="button" class="btn btn-n"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12 20 4l-4 16-4-7Z M12 13l8-9"></path></svg>Send invite</button>
+      </div>
+    </div>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

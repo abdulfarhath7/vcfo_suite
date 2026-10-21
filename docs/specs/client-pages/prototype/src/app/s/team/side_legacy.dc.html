@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sidebar, current app</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="../../b/ecdc4c28c4511de8452c7a5f1e7f79e6.css">
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:248px;font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13.5px">
+<aside style="width:248px;min-height:900px;display:flex;flex-direction:column;background:#fff;border-right:1px solid var(--border);box-sizing:border-box">
+  <div style="height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--hair)">
+    <img src="../../b/026f23bfecd9ea31409d39ee3477d75a.png" alt="" style="width:24px;height:28px;object-fit:contain">
+    <span style="font-size:13px;font-weight:700;color:var(--fg)">VCFO Suite</span>
+  </div>
+  <nav aria-label="Main" style="display:flex;flex-direction:column;gap:2px;padding:12px 8px">
+    <sc-for list="{{items}}" as="it" hint-placeholder-count="12">
+      <a href="#" style="{{it.style}}"><span style="{{it.dot}}"></span><span style="flex:1">{{it.label}}</span><span style="font-size:10px;color:var(--subtle)">{{it.caret}}</span></a>
+    </sc-for>
+  </nav>
+</aside>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","ann","notif","team","audit","settings"],"default":"team"},"$preview":{"width":248,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const a = this.props.active ?? 'team';
+    const L = [
+      ['home', 'Home', 0, ''], ['updates', 'Updates', 0, '▾'], ['ann', 'Announcements', 1, ''], ['notif', 'Notifications', 1, ''],
+      ['inc', 'Incorporation', 0, ''], ['comp', 'Compliances', 0, '▸'], ['docs', 'Documents', 0, ''], ['lib', 'Library', 0, ''],
+      ['team', 'Team', 0, ''], ['audit', 'Audit', 0, '']
+    ];
+    const items = L.map((r) => {
+      const on = r[0] === a;
+      const base = 'position:relative;display:flex;align-items:center;gap:11px;height:36px;border-radius:12px;font-weight:500;padding:0 10px 0 ' + (r[2] ? '38px' : '10px') + ';';
+      const style = base + (on ? 'background:oklch(97.2% 0.014 255);color:oklch(48.8% 0.217 264);box-shadow:inset 0 0 0 1px oklch(54.6% 0.215 263 / .25);font-weight:600' : 'color:oklch(45% 0.03 255)');
+      const dot = 'width:16px;height:16px;border-radius:5px;flex:none;' + (r[2] ? 'display:none' : (on ? 'background:oklch(54.6% 0.215 263 / .35)' : 'background:oklch(90% 0.012 255)'));
+      return { label: r[1], style, dot, caret: r[3] };
+    });
+    return { items };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

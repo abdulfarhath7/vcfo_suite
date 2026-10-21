@@ -1,0 +1,43 @@
+{
+  "slug": "obligation-mca-dpt-3",
+  "title": "Form DPT-3",
+  "question": "What is Form DPT-3, and what if it is missed?",
+  "category": "compliance",
+  "audience": "client",
+  "appliesTo": {
+    "legalForms": [],
+    "residency": []
+  },
+  "body": {
+    "normal": "Form DPT-3 is a yearly return to the Registrar of Companies about money the company has received other than share capital, such as loans from directors or others, as at the end of the financial year.",
+    "simple": "A yearly report to the Registrar about loans and other money the company has received.",
+    "detail": "The return lists deposits and amounts that are not treated as deposits, such as loans from directors. Your firm checks the year-end balances to see what must be reported. Some figures may need an auditor's certificate.",
+    "why": "The Registrar uses it to check that the company has not taken public deposits it was not allowed to take."
+  },
+  "visual": {
+    "type": "keyFacts",
+    "facts": [
+      {
+        "k": "What it is",
+        "v": "Yearly return of deposits and other money received"
+      },
+      {
+        "k": "Who files it",
+        "v": "Your firm prepares and files it; you approve the figures"
+      },
+      {
+        "k": "If it is missed",
+        "v": "An additional fee for late filing, and penalties on the company and its officers for not filing."
+      }
+    ]
+  },
+  "citations": [
+    {
+      "id": "companies-rules-2014-dep-r16",
+      "label": "Companies (Acceptance of Deposits) Rules 2014, rule 16 (return of deposits)"
+    }
+  ],
+  "related": [],
+  "status": "draft",
+  "version": 1
+}

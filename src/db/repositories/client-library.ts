@@ -1,8 +1,8 @@
 import 'server-only';
 
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, notExists } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { clientLibraryItems } from '@/db/schema';
+import { clientLibraryItems, clientLibraryRemovals } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import { answerEnvelopeSchema, type AnswerEnvelope } from '@/data/ask/schema';
@@ -30,12 +30,19 @@ export interface SaveLibraryItemInput {
   messageId?: string | null;
 }
 
+/** Client portal v7: "Remove from library" is soft (Undo) — removed items are hidden everywhere. */
+function notRemoved() {
+  return notExists(
+    db.select({ x: clientLibraryRemovals.itemId }).from(clientLibraryRemovals).where(eq(clientLibraryRemovals.itemId, clientLibraryItems.id)),
+  );
+}
+
 export async function listLibraryItems(ctx: AuthContext): Promise<ClientLibraryRow[]> {
   assertAskRole(ctx);
   return db
     .select()
     .from(clientLibraryItems)
-    .where(eq(clientLibraryItems.profileId, ctx.userId))
+    .where(and(eq(clientLibraryItems.profileId, ctx.userId), notRemoved()))
     .orderBy(desc(clientLibraryItems.createdAt));
 }
 
@@ -44,7 +51,7 @@ export async function getLibraryItem(ctx: AuthContext, id: string): Promise<Clie
   const [row] = await db
     .select()
     .from(clientLibraryItems)
-    .where(and(eq(clientLibraryItems.id, id), eq(clientLibraryItems.profileId, ctx.userId)))
+    .where(and(eq(clientLibraryItems.id, id), eq(clientLibraryItems.profileId, ctx.userId), notRemoved()))
     .limit(1);
   return row ?? null;
 }
@@ -97,6 +104,8 @@ export async function saveLibraryItem(
         })
         .where(and(eq(clientLibraryItems.id, existing.id), eq(clientLibraryItems.profileId, ctx.userId)))
         .returning();
+      // saving a removed topic again brings it back
+      await db.delete(clientLibraryRemovals).where(eq(clientLibraryRemovals.itemId, existing.id));
       return updated ?? null;
     }
   }

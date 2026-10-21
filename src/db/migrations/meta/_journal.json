@@ -173,8 +173,22 @@
     {
       "idx": 24,
       "version": "7",
-      "when": 1791973770966,
-      "tag": "0024_whatsapp_delivery_variables",
+      "when": 1792169975932,
+      "tag": "0024_client_portal_v7",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792184697353,
+      "tag": "0025_client_portal_v7_pages",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792590686049,
+      "tag": "0026_whatsapp_delivery_variables",
       "breakpoints": true
     }
   ]

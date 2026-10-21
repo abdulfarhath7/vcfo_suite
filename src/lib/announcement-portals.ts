@@ -38,28 +38,30 @@ export type CatalogFeedCandidate = {
   feedUrl: string;
 };
 
-const MCA_FO = 'https://www.mca.gov.in/content/mca/global/en/foportal/fologin.html';
+export const MCA_FO = 'https://www.mca.gov.in/content/mca/global/en/foportal/fologin.html';
 const MCA_NOTIF = 'https://www.mca.gov.in/content/mca/global/en/acts-rules/notifications.html';
-const GST_LOGIN = 'https://services.gst.gov.in/services/login';
+export const GST_LOGIN = 'https://services.gst.gov.in/services/login';
 const CBIC_GST = 'https://cbic-gst.gov.in/hindi/central-tax-notifications.html';
-const EPFO = 'https://unifiedportal-emp.epfindia.gov.in/epfo/';
-const ESIC = 'https://portal.esic.gov.in/EmployerPortal/ESICInsurancePortal/Portal_Loginnew.aspx';
-const TGCT = 'https://www.tgct.gov.in/tgportal/';
+export const EPFO = 'https://unifiedportal-emp.epfindia.gov.in/epfo/';
+export const ESIC = 'https://portal.esic.gov.in/EmployerPortal/ESICInsurancePortal/Portal_Loginnew.aspx';
+export const TGCT = 'https://www.tgct.gov.in/tgportal/';
 const TGCT_NOTIF = 'https://www.tgct.gov.in/tgportal/AllActs/APPT/Gos_Notifications.aspx';
-const FIRMS = 'https://firms.rbi.org.in/firms/faces/pages/login.xhtml';
-const FLAIR = 'https://flair.rbi.org.in/fla/faces/pages/login.xhtml';
+export const FIRMS = 'https://firms.rbi.org.in/firms/faces/pages/login.xhtml';
+export const FLAIR = 'https://flair.rbi.org.in/fla/faces/pages/login.xhtml';
 const RBI_FEMA = 'https://www.rbi.org.in/scripts/NotificationUser.aspx?Id=11253';
 const RBI_FDI = 'https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=11200';
 const RBI_ODI = 'https://www.rbi.org.in/scripts/NotificationUser.aspx?Id=8305';
 const ICEGATE = 'https://www.icegate.gov.in/';
 const DGFT_IEC = 'https://www.dgft.gov.in/CP/?opt=iec-profile-management';
 const DGFT_NOTIF = 'https://www.dgft.gov.in/CP/?opt=notification';
-const STPI = 'https://stpionline.stpi.in/unit/jindex.php';
+export const STPI = 'https://stpionline.stpi.in/unit/jindex.php';
 const LABOUR_TS = 'https://labour.telangana.gov.in/home.do';
 const CDMA_TRADE = 'https://cdma.cgg.gov.in/cdma_trade/NewTrade/SaveNewTrade';
 const TRADEMARK = 'https://ipindiaonline.gov.in/trademarkefiling/user/frmLoginNew.aspx';
 const ICDR = 'https://icdr.ceir.gov.in/ivs/home_manufacturer.jsp';
-const IT_FO = 'https://www.incometax.gov.in/iec/foportal/';
+/** TRACES (TDS/TCS returns, challans, Form 16) — added for the client compliance portal links. */
+export const TRACES = 'https://www.tdscpc.gov.in/app/login.xhtml';
+export const IT_FO = 'https://www.incometax.gov.in/iec/foportal/';
 const IT_NOTIF = 'https://www.incometaxindia.gov.in/communications/notification';
 const MSME = 'https://team.msme.gov.in/app/login';
 /** Official LEI India LOU (CCIL). legalentityidentifier.in is a commercial agent, not the issuer. */

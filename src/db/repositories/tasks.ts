@@ -178,6 +178,18 @@ export async function updateTask(
     throw new Error('Clients may not update tasks');
   }
 
+  // Moving a task: the caller must also have access to the TARGET engagement.
+  let targetEngagementDbId: string | undefined;
+  if (patch.engagementId !== undefined) {
+    targetEngagementDbId = engagementDbId(patch.engagementId);
+    const currentDbId = existing.engagementId ? engagementDbId(existing.engagementId) : null;
+    if (targetEngagementDbId !== currentDbId) {
+      const target = await assertEngagementAccess(ctx, patch.engagementId);
+      if (!target.ok) return null;
+      targetEngagementDbId = target.dbId;
+    }
+  }
+
   const [row] = await db
     .update(tasks)
     .set({
@@ -188,9 +200,7 @@ export async function updateTask(
         ? { deadline: patch.dueAt ? new Date(patch.dueAt) : null }
         : {}),
       ...(patch.notes !== undefined ? { description: patch.notes ?? null } : {}),
-      ...(patch.engagementId !== undefined
-        ? { engagementId: engagementDbId(patch.engagementId) }
-        : {}),
+      ...(targetEngagementDbId !== undefined ? { engagementId: targetEngagementDbId } : {}),
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, id))

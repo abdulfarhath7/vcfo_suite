@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Library — recently read drill-down</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+
+
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+:root{--panel:oklch(100% 0 0);--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);--primary:oklch(54.6% 0.215 263);--primary-light:oklch(96.6% 0.02 260);--navy:#0f2a4a;--navy-3:#1b4f94;--gold:#c9a24b;--violet:oklch(54.6% 0.215 263);--ok-chip:oklch(50% 0.12 168)}
+a{color:var(--primary);text-decoration:none;font-weight:700}
+.mono{font-family:"IBM Plex Mono",monospace;font-feature-settings:"tnum"}
+.ib{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
+.seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:6px;background:var(--navy);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
+.seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:28px;border-radius:6px;font:500 12px Manrope,sans-serif;color:light-dark(oklch(50% 0.022 255), oklch(80% 0.015 255));cursor:pointer}
+.seg button.on{color:#fff}
+.seg .c{font:600 10.5px "IBM Plex Mono",monospace;color:oklch(55% 0.022 255)}
+.seg button.on .c{color:oklch(100% 0 0 / .72)}
+.row{display:flex;align-items:center;gap:12px;height:56px;padding:0 16px;border-top:1px solid var(--hair);color:var(--fg)}
+.row:hover{background:var(--raised)}
+.cv{width:30px;height:42px;border-radius:2px 4px 4px 2px;flex:none;box-shadow:inset 4px 0 0 oklch(0% 0 0 / .25)}
+.bar{width:140px;height:5px;border-radius:3px;background:var(--raised);overflow:hidden}
+.bar>span{display:block;height:100%;background:var(--primary-fill,var(--primary))}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+.dlg{animation:pop .22s cubic-bezier(.22,1,.36,1) both}
+button:focus-visible,a:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .5);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.dlg{animation:none}.seg>.thumb{transition:none}}
+</style>
+</helmet>
+<div style="position:relative;width:1440px;height:1000px;overflow:hidden;font-family:Manrope,system-ui,sans-serif;color:var(--fg);font-size:13px">
+  <div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none"><dc-import name="lib_shelf_a" hint-size="1440px,1000px"></dc-import></div>
+  <div style="position:absolute;inset:0;background:oklch(20% 0.05 258 / 0.55);display:flex;align-items:center;justify-content:center">
+    <div role="dialog" aria-modal="true" aria-label="Recently read" class="dlg" style="width:600px;background:var(--panel);border-radius:12px;box-shadow:0 24px 60px -20px oklch(15% 0.05 258 / .55);overflow:hidden"><div class="dd-top" style="display:flex;align-items:center;gap:8px;padding:9px 18px;background:var(--primary-light);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)"><span>These guides live in the Library</span><a href="#" data-go="knowledge-bank" style="margin-left:auto;font-weight:800;font-size:12.5px;white-space:nowrap">Open Library →</a></div>
+      <div style="display:flex;align-items:center;gap:10px;height:56px;padding:0 12px 0 18px;border-bottom:1px solid var(--border)">
+        <h2 style="margin:0;font:700 15px Manrope,sans-serif;color:var(--navy-ink,var(--navy));flex:1">Recently read</h2>
+        <a class="ib" href="lib_shelf_a.dc.html" aria-label="Close"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+      </div>
+      <div style="padding:12px 16px"><div class="seg" role="tablist" aria-label="Reading status"><span class="thumb" style="width:calc((100% - 4px)/3);{{thumb}}"></span><sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><button type="button" role="tab" aria-selected="{{t.sel}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}<span class="c">{{t.cnt}}</span></button></sc-for></div></div>
+      <div style="padding-bottom:6px">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+          <a class="row" href="lib_reader.dc.html">
+            <span class="cv" style="{{r.cv}}"></span>
+            <span style="flex:1;font-weight:700">{{r.title}}</span>
+            <span class="bar"><span style="{{r.w}}"></span></span>
+            <span class="mono" style="width:56px;text-align:right;font-size:11.5px;color:var(--subtle)">{{r.pct}}</span>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { t: 1 }; }
+  renderVals() {
+    const s = this.state || {};
+    const D = [['FC-GPR after share allotment', 70, 'background:oklch(45% 0.16 14)'], ['What happens after the COI?', 35, 'background:var(--navy);box-shadow:inset 4px 0 0 var(--gold)'], ['What is SPICe+?', 100, 'background:var(--navy-3)']];
+    const k = (d) => d[1] === 100 ? 2 : 1;
+    const list = D.filter((d) => s.t === 0 || k(d) === s.t);
+    return {
+      tabs: ['All', 'In progress', 'Finished'].map((l, i) => ({ label: l, cnt: i === 0 ? D.length : D.filter((d) => k(d) === i).length, cls: s.t === i ? 'on' : '', sel: s.t === i ? 'true' : 'false', pick: () => this.setState({ t: i }) })),
+      thumb: 'transform:translateX(' + (s.t * 100) + '%)',
+      rows: list.map((d) => ({ title: d[0], cv: d[2], w: 'width:' + d[1] + '%', pct: d[1] === 100 ? 'Done' : d[1] + '%' }))
+    };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>
