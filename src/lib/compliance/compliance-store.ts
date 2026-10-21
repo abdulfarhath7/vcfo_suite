@@ -8,7 +8,7 @@
  */
 import type { ComplianceFiling } from '@/data/compliance';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { extractTriggersFromChecklist } from '@/lib/compliance/extract-triggers';
 import { generateComplianceInstances } from '@/lib/compliance/generate-instances';
 import type { EntityLegalForm } from '@/lib/compliance/types';

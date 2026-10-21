@@ -19,7 +19,7 @@ import {
   downloadBoardResolutionDocx,
   uploadBoardResolutionDocx,
 } from '@/storage/board-resolution';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 export async function generateAndStoreBoardResolution(
   engagement: Engagement,

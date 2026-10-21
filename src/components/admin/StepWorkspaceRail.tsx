@@ -8,15 +8,15 @@ import { StatusDot } from '@/components/noir';
 import { Button } from '@/components/ui/button';
 import { STATUS_LABEL, type ChecklistItem, type StatusCode } from '@/data/checklist';
 import type { ActivityEvent } from '@/data/engagements';
-import { filterFieldsByViewer } from '@/lib/checklist-field-access';
+import { filterFieldsByViewer } from '@/lib/checklist/checklist-field-access';
 import {
   getInternReviewLabel,
   isAwaitingReview,
   isReviewAccepted,
-} from '@/lib/checklist-item-review';
-import { getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist-responses';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
+} from '@/lib/checklist/checklist-item-review';
+import { getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import { fileNameFromStoragePath } from '@/lib/milestone-document-storage';
 import { cn } from '@/lib/utils';
 import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';

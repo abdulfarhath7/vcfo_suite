@@ -49,7 +49,7 @@ export const BUCKET_LABEL: Record<Bucket, string> = {
  * `repeat` = an add/remove list of entries; `entryFields` is the per-entry
  * template (ids relative to the entry), stored as
  * `responses[id] = "entryId,entryId"` + `responses[`${id}.${entryId}.${fieldId}`]`.
- * See `src/lib/checklist-repeat.ts`.
+ * See `src/lib/checklist/checklist-repeat.ts`.
  */
 type ChecklistFieldType = 'text' | 'textarea' | 'select' | 'file' | 'date' | 'segmented' | 'repeat';
 

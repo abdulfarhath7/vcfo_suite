@@ -7,8 +7,8 @@ import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import {
   clientApproveBlockedReason,
   isAwaitingClientApproval,
-} from '@/lib/checklist-step-approval';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-step-approval';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
 
 /**

@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, Clock } from 'lucide-react';
-import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
+import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import { cn } from '@/lib/utils';
 
 type JourneyNodeProps = {

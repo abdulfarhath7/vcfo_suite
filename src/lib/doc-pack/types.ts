@@ -1,5 +1,5 @@
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
 import type { BoardResolutionDoc } from '@/lib/board-resolution';
 import type { IncorpDocAudience, IncorpDocKind } from '@/lib/incorporation-docs/types';

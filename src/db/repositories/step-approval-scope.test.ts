@@ -54,7 +54,7 @@ vi.mock('@/db/client', () => ({
 }));
 
 const { buildManagerApproval, buildClientApproval } = await import(
-  '@/lib/checklist-step-approval'
+  '@/lib/checklist/checklist-step-approval'
 );
 const { getActiveCatalogItems } = await import('@/data/checklist');
 const { clientApproveStep, clientRequestStepChange, submitDirectFlowStep } = await import(

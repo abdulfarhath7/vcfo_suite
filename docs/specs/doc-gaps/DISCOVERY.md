@@ -61,7 +61,7 @@ Workbook facts come from the firm's master Excel (`Incorporation_Excel.xlsx`), e
 
 ## 2. `pre-16` subscribers and per-director shares
 
-Catalog entry: `src/data/checklist.ts:302-316`. Fields: `src/lib/checklist-responses.ts:1008-1101`.
+Catalog entry: `src/data/checklist.ts:302-316`. Fields: `src/lib/checklist/checklist-responses.ts:1008-1101`.
 
 | Field id | Line | Type / shown when | Notes |
 |---|---|---|---|
@@ -78,7 +78,7 @@ Catalog entry: `src/data/checklist.ts:302-316`. Fields: `src/lib/checklist-respo
 | `shareholderAuthorizedPerson` | 1089 | step-level text, section `INC-35 nominee` | outside the repeat group |
 | `shareholderNominee` | 1096 | step-level text, section `INC-35 nominee` | name only |
 
-- **Reading:** `repeatEntries(responses, group)` (`src/lib/checklist-repeat.ts:125-133`) splits the comma-separated entry ids stored under `subscribers`. It maps each entry to `{ id, index, values }`, where each value comes from the key `subscribers.<entryId>.<fieldId>` (`repeatFieldId` `:40`). No generator or doc-pack code calls it for `pre-16`. The only readers are the validator (`checklist-part-b-validation.ts:139-160`), the form (`useMilestoneResponseFormState.tsx:678,868-872`) and the Assist profile, which does not emit subscribers (`src/lib/assist-profile/build.ts:468-485`).
+- **Reading:** `repeatEntries(responses, group)` (`src/lib/checklist/checklist-repeat.ts:125-133`) splits the comma-separated entry ids stored under `subscribers`. It maps each entry to `{ id, index, values }`, where each value comes from the key `subscribers.<entryId>.<fieldId>` (`repeatFieldId` `:40`). No generator or doc-pack code calls it for `pre-16`. The only readers are the validator (`checklist-part-b-validation.ts:139-160`), the form (`useMilestoneResponseFormState.tsx:678,868-872`) and the Assist profile, which does not emit subscribers (`src/lib/assist-profile/build.ts:468-485`).
 - **Gap: an individual subscriber has no KYC.** For `type = individual` the step captures only `name`, `shares` and `shareValue`. It has no father's name, address, DOB, occupation, nationality or residency flag, and the subscription sheet needs all of them. An individual `pre-16` subscriber who is *not* also a director cannot be rendered without new optional fields, or without a "same as director N" link.
 - **Gap: nominee shareholder.** `shareholderNominee` is a bare name. The resident sample sheet *is* the nominee's sheet, but no nominee KYC exists anywhere.
 - **`pre-15` has no per-director share field.** The entry fields at `checklist-responses.ts:891-1005` include no shares or designation field. The only `Designation` is on other interests (`otherInterest{i}Designation`) and on `pre-1.signatoryDesignation` (:117).
@@ -96,7 +96,7 @@ Catalog entry: `src/data/checklist.ts:302-316`. Fields: `src/lib/checklist-respo
 
 ## 3. `pre-15` other company interests
 
-- Field builder: `pre15OtherInterestFields()` at `src/lib/checklist-responses.ts:34-46`, spread into the entry at :999. Up to `PRE15_MAX_OTHER_INTERESTS = 3` (`src/lib/other-company-interests.ts:11`). All parts appear only when `hasOtherCompanyInterest = yes` (:985).
+- Field builder: `pre15OtherInterestFields()` at `src/lib/checklist/checklist-responses.ts:34-46`, spread into the entry at :999. Up to `PRE15_MAX_OTHER_INTERESTS = 3` (`src/lib/other-company-interests.ts:11`). All parts appear only when `hasOtherCompanyInterest = yes` (:985).
 - Ids per interest `i`:
   - `otherInterest{i}Company`
   - `otherInterest{i}Cin`

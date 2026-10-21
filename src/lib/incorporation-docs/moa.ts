@@ -1,15 +1,15 @@
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import {
   PRE1_DEFAULT_AUTHORISED_SHARE_CAPITAL,
   PRE1_DEFAULT_NOMINAL_VALUE_PER_EQUITY_SHARE,
   PRE1_DEFAULT_PAID_UP_SHARE_CAPITAL,
-} from '@/lib/checklist-pre1-validation';
+} from '@/lib/checklist/checklist-pre1-validation';
 import { formatIndianFigures, formatInrCapitalClause } from '@/lib/board-resolution';
 import {
   REGISTERED_OFFICE_STATE_FIELD_ID,
   registeredOfficeCompleteAddress,
   resolveRegisteredOfficeResponses,
-} from '@/lib/registered-office-responses';
+} from '@/lib/checklist/registered-office-responses';
 import { pickString, resolveProposedCompanyName } from '@/lib/incorporation-docs/shared';
 import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 

@@ -1,4 +1,4 @@
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 
 /**
  * DIRECTOR AUDIENCES — who a director-level incorporation draft is written for.

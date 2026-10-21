@@ -19,8 +19,8 @@ import {
 } from '@/lib/ask/topics';
 import { buildPhaseProgress, currentPhaseRow, type PhaseProgressRow } from '@/lib/ask/phase-progress';
 import { PREVIEW_CLIENT_LINE } from '@/lib/ask/preview';
-import { getClientResponseFields } from '@/lib/checklist-responses';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { atRisk, firmPulse, overdueAndDueSoon, pendingApprovals, waitingOnClient, type StaffData } from '@/lib/ask/tools/staff';
 
 /**

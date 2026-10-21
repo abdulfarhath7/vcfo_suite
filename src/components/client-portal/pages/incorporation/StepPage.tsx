@@ -18,12 +18,12 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useQueryClient } from '@tanstack/react-query';
 import { getActiveCatalogItems, type ChecklistField } from '@/data/checklist';
 import { resolveChecklistItemFromStepParam } from '@/lib/slug';
-import { extractItemResponses, fieldsForOwnership, getClientResponseFields } from '@/lib/checklist-responses';
-import { filterFieldsByViewer } from '@/lib/checklist-field-access';
-import { applyShowWhen, expandRepeatFields, isRepeatField, repeatFieldLabel, resolveFieldLabels } from '@/lib/checklist-repeat';
+import { extractItemResponses, fieldsForOwnership, getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import { filterFieldsByViewer } from '@/lib/checklist/checklist-field-access';
+import { applyShowWhen, expandRepeatFields, isRepeatField, repeatFieldLabel, resolveFieldLabels } from '@/lib/checklist/checklist-repeat';
 import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
-import { approvalStateOf, clientApproveBlockedReason, isAwaitingClientApproval } from '@/lib/checklist-step-approval';
-import { isStepReleasedToClient } from '@/lib/checklist-visibility';
+import { approvalStateOf, clientApproveBlockedReason, isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
+import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { fileNameFromStoragePath, isMilestoneStoragePath, validateMilestoneUploadFile } from '@/lib/milestone-document-storage';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';

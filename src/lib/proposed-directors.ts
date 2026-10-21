@@ -3,12 +3,12 @@ import {
   extractItemResponses,
   getClientResponseFields,
   type ChecklistItemResponses,
-} from '@/lib/checklist-responses';
-import { isRepeatField, repeatEntries, type RepeatEntry, type RepeatField } from '@/lib/checklist-repeat';
-import { parseDirectorCount } from '@/lib/checklist-pre1-validation';
-import { pre6NrFieldPrefix, pre6ResidentFieldPrefix } from '@/lib/checklist-pre6-validation';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { resolveRegisteredOfficeResponses } from '@/lib/registered-office-responses';
+} from '@/lib/checklist/checklist-responses';
+import { isRepeatField, repeatEntries, type RepeatEntry, type RepeatField } from '@/lib/checklist/checklist-repeat';
+import { parseDirectorCount } from '@/lib/checklist/checklist-pre1-validation';
+import { pre6NrFieldPrefix, pre6ResidentFieldPrefix } from '@/lib/checklist/checklist-pre6-validation';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { resolveRegisteredOfficeResponses } from '@/lib/checklist/registered-office-responses';
 import { PRE15_INTEREST_PARTS, PRE15_MAX_OTHER_INTERESTS } from '@/lib/other-company-interests';
 import {
   audienceForDirectorFieldId,

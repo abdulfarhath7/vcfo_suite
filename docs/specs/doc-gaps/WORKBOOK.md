@@ -8,7 +8,7 @@ root. Personal data (names, PAN, Aadhaar, DIN, email, mobile, addresses) is
 | File | What it is | Use for |
 |---|---|---|
 | `Incorporation Excel (2) (1).xlsx` | The firm's master workbook: one MASTER DATA sheet that auto-fills every per-director document | **Primary spec** for MBP-1, EPFO specimen card, shares subscribed (§1–§3 below) |
-| `SPICe-Requirements.xlsx` | Export of this repo's own checklist catalog (steps, fields, uploads), generated 2026-09-23 from `src/data/checklist.ts` + `src/lib/checklist-responses.ts` | Cross-check of field ids / step ids; not a new requirement |
+| `SPICe-Requirements.xlsx` | Export of this repo's own checklist catalog (steps, fields, uploads), generated 2026-09-23 from `src/data/checklist.ts` + `src/lib/checklist/checklist-responses.ts` | Cross-check of field ids / step ids; not a new requirement |
 | `MCA-SPICe-Portal-Fields.xlsx` | Every field, attachment and declaration on the MCA V3 portal (SPICe+ A/B, AGILE-PRO-S, INC-9, INC-33 e-MOA, INC-34 e-AOA), captured 2026-09-23 | Out of scope for doc-gaps; relevant to the VCFO Assist profile export |
 
 ---

@@ -1,6 +1,6 @@
 import { checklist } from '@/data/checklist';
 import type { BoardResolutionDoc } from '@/lib/board-resolution';
-import { extractItemResponses, type ChecklistItemResponses } from '@/lib/checklist-responses';
+import { extractItemResponses, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
 import { directorsAccepted } from '@/lib/api/incorporation-docs-errors';
 import { draftUrlFieldFor, type IncorpDocAudience } from '@/lib/incorporation-docs/types';

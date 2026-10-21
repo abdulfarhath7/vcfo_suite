@@ -7,10 +7,10 @@ import {
   computeMcaNameApprovalExpiryDate,
   extractItemResponses,
   type ChecklistItemResponses,
-} from '@/lib/checklist-responses';
-import { formatPre1DateDisplay } from '@/lib/checklist-pre1-validation';
-import { isDeliveredToClient, type ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { isLeadRequestPending } from '@/lib/checklist-item-review';
+} from '@/lib/checklist/checklist-responses';
+import { formatPre1DateDisplay } from '@/lib/checklist/checklist-pre1-validation';
+import { isDeliveredToClient, type ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import { ManagerBoardResolutionReview } from '@/components/incorporation/ManagerBoardResolutionReview';
 import { clientBoardResolutionPath } from '@/lib/project-step-path';
 import { incorpDraftDocLinksFromResponses } from '@/lib/incorporation-docs/client';
@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { IncorporationDraftsZipLink } from '@/components/incorporation/IncorporationDraftsZipLink';
 import { IncorporationDocsBulkShareBar } from '@/components/incorporation/IncorporationDocsBulkShareBar';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
-import { hasPre7OtherAttachments } from '@/lib/checklist-pre7-other-attachments';
+import { hasPre7OtherAttachments } from '@/lib/checklist/checklist-pre7-other-attachments';
 import {
   PanelShell,
   Pre7OtherAttachmentsList,

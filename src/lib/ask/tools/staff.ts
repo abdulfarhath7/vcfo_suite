@@ -1,7 +1,7 @@
 import { getActiveCatalogItems, getIncorporationPhases, getItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import { gateActiveCatalog, getStepGate } from '@/lib/checklist-step-gate';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import type { FilingRow } from '@/lib/filings';
 import { buildProgress } from '@/lib/client-overview';
 import { internOverviewPhaseTitle } from '@/lib/intern-overview-progress';

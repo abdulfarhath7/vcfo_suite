@@ -17,8 +17,8 @@ import {
   canRequestClientFill,
   clientFillLabel,
   isClientFillPending,
-} from '@/lib/checklist-client-fill';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-client-fill';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isAdminOrManager } from '@/lib/auth';
 import { getItem } from '@/data/checklist';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';

@@ -4,10 +4,10 @@
  * No React, no fetch. Every value here comes from data; nothing is invented.
  */
 import { getChecklistStepTimelineLabel, getItem } from '@/data/checklist';
-import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
-import { isReviewRejected } from '@/lib/checklist-item-review';
-import { approvalStateOf } from '@/lib/checklist-step-approval';
-import { isClientFillAwaitingClient } from '@/lib/checklist-client-fill';
+import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
+import { approvalStateOf } from '@/lib/checklist/checklist-step-approval';
+import { isClientFillAwaitingClient } from '@/lib/checklist/checklist-client-fill';
 import { complianceGroupForAuthority, type ClientOverview, type ComplianceGroup } from '@/lib/client-overview';
 import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientHome, HomeFiling, NeedKind, TimelinePhaseDates } from '@/lib/client-home';

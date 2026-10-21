@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { internLeadManagerRequestPatch } from '@/lib/checklist-item-review';
+import { internLeadManagerRequestPatch } from '@/lib/checklist/checklist-item-review';
 import { internWorkCta, type InternWorkItem } from '@/lib/intern-work';
 import { useApp } from '@/context/AppContext';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';

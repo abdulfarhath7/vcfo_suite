@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { attachedAtFromStoragePath, evaluateDocPack } from '@/lib/doc-pack/evaluate';
 import { DRAFT_BR, FINALIZED_BR, director, fullState } from '@/lib/doc-pack/__tests__/fixtures';
-import { repeatFieldId } from '@/lib/checklist-repeat';
+import { repeatFieldId } from '@/lib/checklist/checklist-repeat';
 
 const NR = director('e1', 'no', 'Alpha');
 const RESIDENT = director('e2', 'yes', 'Beta');

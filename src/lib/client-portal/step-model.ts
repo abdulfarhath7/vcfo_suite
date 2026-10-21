@@ -19,16 +19,16 @@
  *   up    · Upcoming                 locked
  *   late  (overlay)                  not done and past its window end / overdue
  *
- * The real gate (src/lib/checklist-step-gate.ts, LIFTed) is not changed: it
+ * The real gate (src/lib/checklist/checklist-step-gate.ts, LIFTed) is not changed: it
  * opens one step at a time. QUESTIONS.md › Incorporation records this.
  */
 import { coerceStatusCode, getIncorporationPhases, type ChecklistItem } from '@/data/checklist';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { gateActiveCatalog, getStepGate, type ChecklistStepGate } from '@/lib/checklist-step-gate';
-import { approvalStateOf } from '@/lib/checklist-step-approval';
-import { isClientFillAwaitingClient } from '@/lib/checklist-client-fill';
-import { isReviewRejected } from '@/lib/checklist-item-review';
-import { isStepReleasedToClient } from '@/lib/checklist-visibility';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { gateActiveCatalog, getStepGate, type ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
+import { approvalStateOf } from '@/lib/checklist/checklist-step-approval';
+import { isClientFillAwaitingClient } from '@/lib/checklist/checklist-client-fill';
+import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
+import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { windowForStep, type EngagementSchedule } from '@/lib/schedule-windows';
 
 export type StepKind = 'done' | 'you' | 'prog' | 'with' | 'next' | 'up';

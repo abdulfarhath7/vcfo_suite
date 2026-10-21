@@ -6,9 +6,9 @@ import { parseJsonBody } from '@/lib/api/parse-body';
 import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { normalizeChecklistItemSlice } from '@/lib/checklist-state-key';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { normalizeChecklistItemSlice } from '@/lib/checklist/checklist-state-key';
 import {
   allIncorpDraftSlotsGenerated,
   isIncorpSlotSetFrozen,

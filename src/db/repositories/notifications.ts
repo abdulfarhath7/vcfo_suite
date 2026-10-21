@@ -7,7 +7,7 @@ import { isAdminOrManager } from '@/lib/auth';
 import type {
   AppNotification,
   NotificationKind,
-} from '@/lib/checklist-notifications';
+} from '@/lib/checklist/checklist-notifications';
 import {
   NOTIFICATION_HISTORY_LIMIT,
   NOTIFICATION_INBOX_LIMIT,

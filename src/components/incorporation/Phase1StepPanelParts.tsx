@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { incorpDraftDocSlotsFromResponses, type IncorpDraftDocLink } from '@/lib/incorporation-docs/client';
 import { draftUrlFieldFor } from '@/lib/incorporation-docs/types';
 import type { IncorpDocKind } from '@/lib/incorporation-docs/types';
@@ -11,7 +11,7 @@ import {
   IncorporationDraftDocsPreviewList,
 } from '@/components/incorporation/IncorporationDocInlinePreview';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
-import { buildPre7OtherAttachmentLinks } from '@/lib/checklist-pre7-other-attachments';
+import { buildPre7OtherAttachmentLinks } from '@/lib/checklist/checklist-pre7-other-attachments';
 import type { OtherDraftDocLink } from '@/components/incorporation/phase1-step-panel-utils';
 
 export function PanelShell({

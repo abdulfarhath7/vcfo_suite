@@ -16,7 +16,7 @@ If `HEAD` is different, do the Phase 0 audit before you trust a file path or a l
 4. Each repository function takes an `AuthContext` and limits data by role.
 5. Never show the word "intern" to a user. The UI label is "Project Lead".
 6. No new database table. No migration. All new state goes into `engagements.checklist_state` (jsonb).
-7. A new key on a step slice has three mandatory edits in `src/lib/checklist-state-key.ts`: `ITEM_META_KEYS`, `ChecklistItemStateSlice`, and the object that `normalizeChecklistItemSlice` returns. If one edit is missing, the key is silently deleted on the next save.
+7. A new key on a step slice has three mandatory edits in `src/lib/checklist/checklist-state-key.ts`: `ITEM_META_KEYS`, `ChecklistItemStateSlice`, and the object that `normalizeChecklistItemSlice` returns. If one edit is missing, the key is silently deleted on the next save.
 8. Do not change post-incorporation, registration, FEMA or compliance behaviour. All new rules apply only to the step ids in section 3.
 9. Do not change `src/data/checklist.ts` step ids, order or phases.
 10. Do not show a board resolution draft to a client. Do not send an email or a notification on autosave.
@@ -53,13 +53,13 @@ These facts replace the older text in the Claude Project file `CLAUDE-CONTEXT.md
 | Topic | Fact | Where |
 |---|---|---|
 | Active pre-incorporation steps | Part A: `pre-1` to `pre-5`. Part B: `pre-13`, `pre-14`, `pre-15`, `pre-16`, `pre-7`, `pre-9`, `pre-10`, `pre-11`, `pre-12`. `pre-6` and `pre-8` are legacy and are in no phase. | `src/data/checklist.ts` `PRE_INC_PHASES` |
-| NIC code | `nicCode` (5 digits, required) and `nicBusinessType` (derived) are in `pre-1`, section "Business Description". This is the "Name Application" phase. | `src/lib/checklist-responses.ts`, `src/lib/checklist-pre1-validation.ts`, `src/lib/nic-2008.ts` |
-| Client edit | The client cannot edit a step today. `isMilestoneFormReadOnly` returns true for `variant === 'client'`. | `src/lib/checklist-field-access.ts` |
-| Client fields | `filterFieldsByViewer` removes each `filledBy: 'intern'` field from the client form. | `src/lib/checklist-field-access.ts` |
+| NIC code | `nicCode` (5 digits, required) and `nicBusinessType` (derived) are in `pre-1`, section "Business Description". This is the "Name Application" phase. | `src/lib/checklist/checklist-responses.ts`, `src/lib/checklist/checklist-pre1-validation.ts`, `src/lib/nic-2008.ts` |
+| Client edit | The client cannot edit a step today. `isMilestoneFormReadOnly` returns true for `variant === 'client'`. | `src/lib/checklist/checklist-field-access.ts` |
+| Client fields | `filterFieldsByViewer` removes each `filledBy: 'intern'` field from the client form. | `src/lib/checklist/checklist-field-access.ts` |
 | Server | `POST /api/engagements/:id/checklist` accepts client `responses`. `POST …/checklist/submit` accepts only the client role. No server route does step validation. | `app/api/engagements/[id]/checklist/**` |
-| Approvals today | Four mechanisms: lead request to manager (`lead_manager_request`), manager Accept / Reject (`reviewChecklistItem`), client Approve / Request a change (`approval` sub-state), "Request client to fill" (`clientFillRequest`). | `src/lib/checklist-item-review.ts`, `checklist-step-approval.ts`, `checklist-client-fill.ts`, `src/db/repositories/engagements.ts` |
-| Visibility | A lead draft is hidden from the firm until the lead requests approval. A step is hidden from the client until the manager accepts. | `src/lib/checklist-visibility.ts` |
-| Gate | `gateChecklistSteps` gives edit access to one owner party for each step. The lead can open and edit all steps. | `src/lib/checklist-step-gate.ts` |
+| Approvals today | Four mechanisms: lead request to manager (`lead_manager_request`), manager Accept / Reject (`reviewChecklistItem`), client Approve / Request a change (`approval` sub-state), "Request client to fill" (`clientFillRequest`). | `src/lib/checklist/checklist-item-review.ts`, `checklist-step-approval.ts`, `checklist-client-fill.ts`, `src/db/repositories/engagements.ts` |
+| Visibility | A lead draft is hidden from the firm until the lead requests approval. A step is hidden from the client until the manager accepts. | `src/lib/checklist/checklist-visibility.ts` |
+| Gate | `gateChecklistSteps` gives edit access to one owner party for each step. The lead can open and edit all steps. | `src/lib/checklist/checklist-step-gate.ts` |
 | Accept side effects | Manager Accept sets `status: 'completed'`, `deliveredToClientAt`, copies `dateOfIncorporation` from `pre-12` to the engagement, and starts the WhatsApp `coi_issued` message for `pre-12`. | `reviewChecklistItem`, `src/lib/email/notify-engagement-event.ts` |
 | BR | One row for each engagement in `engagement_board_resolutions`, status `draft` or `finalized`. The lead can finalize with no manager. Finalize releases the BR to the client. | `src/db/repositories/board-resolution.ts`, `app/api/engagements/[id]/board-resolution/finalize/route.ts` |
 | BR generation checks | Generation stops when `pre-1` is not submitted (`STEP1_INCOMPLETE`) or when a field is missing (`MISSING_FIELDS`). NIC code is not in the missing-field list. | `src/lib/api/board-resolution-errors.ts` |
@@ -67,11 +67,11 @@ These facts replace the older text in the Claude Project file `CLAUDE-CONTEXT.md
 | BR for manager | A manager cannot open the BR editor. The `pre-2` panel shows status text only. | `src/components/incorporation/Phase1StepPanelRoutePanels.tsx` |
 | Form errors | Red border classes exist (`border-danger`). They show only after a failed lead Submit. Tabs have no error marker. `FormErrorSummary` is off in the tab layout (`SHOW_INTERN_FORM_ERROR_SUMMARY = false`). There is no `aria-invalid`. "Request manager approval" does no validation. | `src/views/incorporation/*` |
 | Validators | `runStepValidation` is an if-chain in `src/views/incorporation/milestone-response-form-utils.ts`. A copy is in `useMilestoneResponseFormState.tsx`. Steps with no validator return `ok: true`. | same |
-| Repeat lists | `type: 'repeat'` exists. Storage: `responses[groupId] = "e1a2b3c4,e5f6a7b8"` and `responses["groupId.entryId.fieldId"]`. Used by `pre-15` `directors` and `pre-16` `subscribers`. | `src/lib/checklist-repeat.ts`, `src/views/incorporation/RepeatGroupEditor.tsx` |
+| Repeat lists | `type: 'repeat'` exists. Storage: `responses[groupId] = "e1a2b3c4,e5f6a7b8"` and `responses["groupId.entryId.fieldId"]`. Used by `pre-15` `directors` and `pre-16` `subscribers`. | `src/lib/checklist/checklist-repeat.ts`, `src/views/incorporation/RepeatGroupEditor.tsx` |
 | Notifications | Bell rows are made on the server in `notifyEngagementEvent`. The `notifications` table has no actor column. The payload is JSON in `description`. | `src/lib/email/notify-engagement-event.ts`, `src/db/repositories/notifications.ts` |
 | Recipients | `resolveEngagementRecipients` returns all clients, leads, managers, firm admins and progress-CC addresses. | `src/db/repositories/engagement-recipients.ts` |
 | Client dashboard | Home is `/app/client/overview`. It shows no directors, capital or subscribers. | `src/views/client/Overview.tsx`, `src/lib/client-overview.ts`, `src/db/repositories/client-overview.ts` |
-| Data for the dashboard | Capital: `pre-1` `authorisedShareCapital`, `paidUpShareCapital`, `nominalValuePerEquityShare`. Share classes: `pre-13`. Directors: `readProposedDirectors(state)` in `src/lib/proposed-directors.ts`. Subscribers: `pre-16` repeat group `subscribers`. | `src/lib/checklist-responses.ts` |
+| Data for the dashboard | Capital: `pre-1` `authorisedShareCapital`, `paidUpShareCapital`, `nominalValuePerEquityShare`. Share classes: `pre-13`. Directors: `readProposedDirectors(state)` in `src/lib/proposed-directors.ts`. Subscribers: `pre-16` repeat group `subscribers`. | `src/lib/checklist/checklist-responses.ts` |
 
 ---
 
@@ -196,7 +196,7 @@ Manager view of `pre-2` (new UI in `Phase1StepPanelRoutePanels.tsx`): reuse `Boa
 
 ### 3.6 Missing-field behaviour
 
-Make `src/lib/checklist-step-validation.ts`. Move `runStepValidation` there. The form hook and the server both import it. Delete the copy in the hook.
+Make `src/lib/checklist/checklist-step-validation.ts`. Move `runStepValidation` there. The form hook and the server both import it. Delete the copy in the hook.
 
 | Rule | Detail |
 |---|---|
@@ -242,7 +242,7 @@ Also change the `STEP1_INCOMPLETE` text to: "Submit Client Details first. The bo
 
 ### 3.9 Visibility
 
-In `src/lib/checklist-visibility.ts`: a direct-flow step is released to the firm and to the client at all times. Drafts are shared, because both parties fill the step.
+In `src/lib/checklist/checklist-visibility.ts`: a direct-flow step is released to the firm and to the client at all times. Drafts are shared, because both parties fill the step.
 
 - Keep the redaction of the slice key `notes` (staff notes) for the client.
 - `pre-2` keeps the current rules.
@@ -250,7 +250,7 @@ In `src/lib/checklist-visibility.ts`: a direct-flow step is released to the firm
 
 ### 3.10 Gate
 
-In `src/lib/checklist-step-gate.ts`, for a direct-flow step:
+In `src/lib/checklist/checklist-step-gate.ts`, for a direct-flow step:
 
 | Viewer | Current step | Later step |
 |---|---|---|
@@ -355,7 +355,7 @@ Commit: `docs(pre-inc): audit for direct flow`
 ### Phase 1 — Policy module and shared validation
 
 1. Add `src/lib/pre-inc-direct-flow.ts` with tests (`pre-inc-direct-flow.test.ts`).
-2. Add `src/lib/checklist-step-validation.ts`. Move `runStepValidation`. Add the generic required check. Remove the copy in the hook.
+2. Add `src/lib/checklist/checklist-step-validation.ts`. Move `runStepValidation`. Add the generic required check. Remove the copy in the hook.
 3. Add the new slice keys (rule 0.7).
 
 Preserve: all validator results for current test fixtures. `src/data/checklist.ts`.

@@ -1,8 +1,8 @@
 import type { Engagement } from '@/data/engagements';
 import { checklist } from '@/data/checklist';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   directorResponsesFromState,
   PROPOSED_DIRECTORS_STEP_ID,

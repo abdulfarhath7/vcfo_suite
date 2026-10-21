@@ -10,7 +10,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
-import { type SectionPendingItem } from '@/lib/milestone-section-completion';
+import { type SectionPendingItem } from '@/lib/checklist/milestone-section-completion';
 import {
   isImageStoragePath,
 } from '@/views/incorporation/milestone-response-form-utils';

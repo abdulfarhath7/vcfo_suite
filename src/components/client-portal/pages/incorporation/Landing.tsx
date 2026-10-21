@@ -6,11 +6,11 @@
  * step tables) · row 3 = four donuts. Wired to the real step model.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { isAwaitingClientApproval } from '@/lib/checklist-step-approval';
-import { isStepReleasedToClient } from '@/lib/checklist-visibility';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import { getStepAttachmentRequirements } from '@/lib/checklist-step-attachments';
-import { isReviewRejected, isAwaitingReview } from '@/lib/checklist-item-review';
+import { isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
+import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import { getStepAttachmentRequirements } from '@/lib/checklist/checklist-step-attachments';
+import { isReviewRejected, isAwaitingReview } from '@/lib/checklist/checklist-item-review';
 import { clientBoardResolutionPath } from '@/lib/project-step-path';
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
 import { phaseHref, portalHref } from '../../routes';

@@ -6,7 +6,7 @@ import {
 } from '@/db/repositories/engagements';
 import { createDocument } from '@/db/repositories/documents';
 import { getItem } from '@/data/checklist';
-import { getClientResponseFields } from '@/lib/checklist-responses';
+import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import { isEngagementRouteParam } from '@/lib/slug';
 import {

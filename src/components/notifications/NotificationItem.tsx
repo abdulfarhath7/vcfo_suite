@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight, Trash2 } from "lucide-react";
-import type { AppNotification } from "@/lib/checklist-notifications";
+import type { AppNotification } from "@/lib/checklist/checklist-notifications";
 import {
   formatNotificationWhen,
   notificationHrefIsNavigable,

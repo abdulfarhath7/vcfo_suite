@@ -25,7 +25,7 @@ import {
 } from '@/data/checklist';
 import { MilestoneResponseRowSummary } from '@/views/incorporation/MilestoneResponseRowSummary';
 import { ChecklistPhaseStepRow } from '@/components/incorporation/ChecklistPhaseStepRow';
-import { extractItemResponses } from '@/lib/checklist-responses';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import {
   adminProjectStepPath,
   internEngagementPath,
@@ -54,14 +54,14 @@ import {
   internOverviewPhases,
   internPhaseStepCounts,
 } from '@/lib/intern-overview-progress';
-import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
+import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
 import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
 import {
   checklistGateViewerFrom,
   gateActiveCatalog,
   gateDisplayStatus,
   getStepGate,
-} from '@/lib/checklist-step-gate';
+} from '@/lib/checklist/checklist-step-gate';
 import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
 import { PageBackButton } from '@/components/shell/PageBackButton';
 

@@ -19,7 +19,7 @@ Final gate: `tsc --noEmit` 0 errors · vitest 168 files / 1587 tests green (base
 ## What changed
 
 - **Policy** — `src/lib/pre-inc-direct-flow.ts`: step list, lead-only fields, role rules, submit / waiting / reopen / last-edited patches, read-time completion for old data, `isAwaitingManagerDecision`.
-- **Validation** — `src/lib/checklist-step-validation.ts` (`runStepValidation`, `requiredFieldErrors`, `validateStepAgainstState`); the form hook and `submitDirectFlowStep` both use it. The hook's copy of the if-chain is gone.
+- **Validation** — `src/lib/checklist/checklist-step-validation.ts` (`runStepValidation`, `requiredFieldErrors`, `validateStepAgainstState`); the form hook and `submitDirectFlowStep` both use it. The hook's copy of the if-chain is gone.
 - **Slice keys** — `submittedByName`, `submittedByRole`, `waitingOnLeadAt`, `waitingOnLeadByName`, `lastEditedAt`, `lastEditedByName`, `lastEditedByRole` (all three edits in `checklist-state-key.ts`; also on `AppContext`'s `ChecklistItemState`).
 - **NIC** — "Main NIC code" + `additionalNicCodes` repeat (max 9, auto business type, duplicate / format / unknown checks), `readNicCodes`, BR clause joins all codes, Assist profile `company.additionalNicCodes`, "Add NIC code" keeps the acronym.
 - **BR checks** — NIC code is a missing field; `missingFieldRefs` in the error and API body; editor lists each as a link to the step + tab; new `STEP1_INCOMPLETE` text.

@@ -10,7 +10,7 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackButton } from '@/components/shell/PageBackButton';
 import { ClientChangeRequestButton } from '@/components/client/ClientChangeRequestButton';
 import { ClientStepApproveButton } from '@/components/client/ClientStepApproveButton';
-import { stepApprovalLabel } from '@/lib/checklist-step-approval';
+import { stepApprovalLabel } from '@/lib/checklist/checklist-step-approval';
 import { SEO } from '@/components/SEO';
 import { StepDetailContent } from '@/components/admin/StepDetailContent';
 import { RedirectTo } from '@/components/routing/RedirectTo';
@@ -30,10 +30,10 @@ import {
   windowForStep,
   type EngagementSchedule,
 } from '@/lib/schedule-windows';
-import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
-import { filterFieldsByViewer, hasResponseFormFields } from '@/lib/checklist-field-access';
-import { isStepReleasedToClient, isStepReleasedToFirm } from '@/lib/checklist-visibility';
-import { getStepAttachmentRequirements } from '@/lib/checklist-step-attachments';
+import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import { filterFieldsByViewer, hasResponseFormFields } from '@/lib/checklist/checklist-field-access';
+import { isStepReleasedToClient, isStepReleasedToFirm } from '@/lib/checklist/checklist-visibility';
+import { getStepAttachmentRequirements } from '@/lib/checklist/checklist-step-attachments';
 import {
   internOverviewPhaseForItem,
   internRegistrationHeadingGroups,
@@ -66,7 +66,7 @@ import { ReopenStepButton } from '@/components/incorporation/ReopenStepButton';
 import { ASSIST_PROFILE_STEP_IDS } from '@/lib/assist-profile/paths';
 import { useDocPack } from '@/hooks/use-doc-pack';
 import { docPackPagePath, docPackStepPath, type DocPackShell } from '@/lib/doc-pack/paths';
-import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
+import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
 import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
 import {
   checklistGateViewerFrom,
@@ -74,10 +74,10 @@ import {
   gateDisplayStatus,
   getStepGate,
   type ChecklistStepGate,
-} from '@/lib/checklist-step-gate';
+} from '@/lib/checklist/checklist-step-gate';
 import type { BoardResolutionProgressSnapshot } from '@/lib/client-progress-board';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { findEngagementForClientUser } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
 import {
   directFlowRoleLabel,
   isDirectFlowStep,

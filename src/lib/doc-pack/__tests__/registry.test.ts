@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { checklist, getItem } from '@/data/checklist';
-import { getClientResponseFields } from '@/lib/checklist-responses';
-import { partAsectionsFor } from '@/lib/part-a-sections';
+import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import { partAsectionsFor } from '@/lib/checklist/part-a-sections';
 import { INCORP_DOC_KINDS } from '@/lib/incorporation-docs/types';
 import { buildDocPackContext } from '@/lib/doc-pack/evaluate';
 import { DOC_PACK_REGISTRY } from '@/lib/doc-pack/registry';

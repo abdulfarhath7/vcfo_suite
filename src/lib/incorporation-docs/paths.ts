@@ -15,7 +15,7 @@ import {
   type IncorpDirectorAudience,
   type IncorpDocAudience,
 } from '@/lib/incorporation-docs/audiences';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
 import { slugifyCompanyName } from '@/lib/slug';
 

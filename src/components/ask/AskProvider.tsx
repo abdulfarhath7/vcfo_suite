@@ -10,7 +10,7 @@ import {
 } from 'react';
 import type { AnswerDepth, AskShell } from '@/data/ask/schema';
 import { useApp } from '@/context/AppContext';
-import { findEngagementForClientUser } from '@/lib/checklist-state-key';
+import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
 import { canUseAsk, defaultShellForRole } from '@/lib/ask/access';
 import { fetchConversation, fetchTopicAnswer, streamChat } from '@/hooks/ask/ask-api';
 import { useAskStatus } from '@/hooks/ask/use-ask-status';

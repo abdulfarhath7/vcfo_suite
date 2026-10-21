@@ -2,7 +2,7 @@
 
 import { UserRound } from 'lucide-react';
 import type { ChecklistResponsibleRole } from '@/data/checklist';
-import { RESPONSIBLE_ROLE_LABEL } from '@/lib/checklist-field-access';
+import { RESPONSIBLE_ROLE_LABEL } from '@/lib/checklist/checklist-field-access';
 import { cn } from '@/lib/utils';
 
 interface ResponsibleRoleBadgeProps {

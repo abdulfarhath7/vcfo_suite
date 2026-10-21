@@ -1,7 +1,7 @@
 import { directorAudienceKind } from '@/lib/incorporation-docs/audiences';
-import { PART_A_SECTION } from '@/lib/part-a-sections';
+import { PART_A_SECTION } from '@/lib/checklist/part-a-sections';
 import { resolveSignatoryDisplayName } from '@/lib/person-name';
-import { resolveRegisteredOfficeResponses } from '@/lib/registered-office-responses';
+import { resolveRegisteredOfficeResponses } from '@/lib/checklist/registered-office-responses';
 import { PROPOSED_DIRECTORS_STEP_ID } from '@/lib/proposed-directors';
 import {
   resolveParentEntityAddress,
@@ -11,7 +11,7 @@ import { resolveProposedCompanyName } from '@/lib/incorporation-docs/shared';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
 import type { DocPackContext, DocPackDirector, RequiredInput } from '@/lib/doc-pack/types';
 import { parentCountryAnswer } from '@/lib/parent-jurisdiction';
-import { REGISTERED_OFFICE_STATE_FIELD_ID } from '@/lib/registered-office-responses';
+import { REGISTERED_OFFICE_STATE_FIELD_ID } from '@/lib/checklist/registered-office-responses';
 import {
   planSubscription,
   SUBSCRIBER_DETAILS_STEP_ID,

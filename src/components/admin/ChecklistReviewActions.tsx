@@ -22,8 +22,8 @@ import {
   isAwaitingReview,
   isReviewAccepted,
   isReviewRejected,
-} from '@/lib/checklist-item-review';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-item-review';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isAdminOrManager } from '@/lib/auth';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';

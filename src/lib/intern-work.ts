@@ -11,7 +11,7 @@ import {
   getReviewStatus,
   isReviewAccepted,
   isReviewRejected,
-} from '@/lib/checklist-item-review';
+} from '@/lib/checklist/checklist-item-review';
 import { computeDueDate } from '@/lib/deadlines';
 import {
   internOverviewCurrentItemInPhase,
@@ -25,8 +25,8 @@ import {
 } from '@/lib/intern-dashboard';
 import { internEngagementPath, internEngagementStepPath } from '@/lib/project-step-path';
 import { deriveStuckReason } from '@/lib/project-stuck';
-import { gateActiveCatalog } from '@/lib/checklist-step-gate';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { gateActiveCatalog } from '@/lib/checklist/checklist-step-gate';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/pre-inc-direct-flow';
 
 export type InternChipTone =

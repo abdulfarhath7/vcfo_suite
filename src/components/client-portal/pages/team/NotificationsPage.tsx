@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AppNotification } from '@/lib/checklist-notifications';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import { usePortal, PORTAL_SHELL_KEY } from '../../PortalProvider';
 import { portalHref } from '../../routes';
 import { BotBubble, CloseBtn, Dialog, P, Seg, Svg, api, useIsPhone, useScrollAfterClose, useSkeleton } from './common';

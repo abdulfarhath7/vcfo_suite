@@ -3,8 +3,8 @@
 import { ChevronRight } from 'lucide-react';
 import type { ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { InternStepDoneMark } from '@/components/incorporation/InternStepDoneMark';
 import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { MilestoneResponseRowSummary } from '@/views/incorporation/MilestoneResponseRowSummary';

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import type { AppNotification } from '@/lib/checklist-notifications';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import {
   NOTIFICATION_LIVE_POLL_MS,
   NOTIFICATION_LIVE_POPUP_CAP,

@@ -1,4 +1,4 @@
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import type { EngagementComplianceTriggers } from '@/lib/compliance/types';
 
 type ChecklistState = Record<string, ChecklistItemStateSlice>;

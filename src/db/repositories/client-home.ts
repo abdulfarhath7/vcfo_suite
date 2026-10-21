@@ -25,7 +25,7 @@ import { listDocuments } from '@/db/repositories/documents';
 import { isClientVisibleAuditAction, scrubForClient } from '@/db/repositories/client-audit';
 import { listAuditEvents, recordAuditEvent } from '@/db/repositories/audit-events';
 import { getItem } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { identifiersFromState } from '@/lib/client-overview';
 import { appEngagementId } from '@/lib/legacy-engagement-ids';
 import { displayName, displayPeriod } from '@/lib/client-portal/compliances';

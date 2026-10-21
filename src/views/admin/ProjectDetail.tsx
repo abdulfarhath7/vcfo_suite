@@ -20,7 +20,7 @@ import { adminProjectPath, adminProjectStepPath } from '@/lib/project-step-path'
 import {
   gateActiveCatalog,
   isChecklistStepSequentiallyComplete,
-} from '@/lib/checklist-step-gate';
+} from '@/lib/checklist/checklist-step-gate';
 import {
   internOverviewCurrentItemInPhase,
   internOverviewPhases,

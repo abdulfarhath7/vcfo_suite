@@ -1,8 +1,8 @@
 import { checklist, getItem, type ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
-import { repeatFieldLabel } from '@/lib/checklist-repeat';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import { repeatFieldLabel } from '@/lib/checklist/checklist-repeat';
 import { internRegistrationHeadingForTitle } from '@/lib/intern-overview-progress';
 import { appEngagementId, engagementIdAliases } from '@/lib/legacy-engagement-ids';
 import {

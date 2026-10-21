@@ -16,14 +16,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/context/AppContext';
 import { getItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import { isLeadRequestPending } from '@/lib/checklist-item-review';
+import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import {
   extractItemResponses,
   fieldsForOwnership,
   getClientResponseFields,
-} from '@/lib/checklist-responses';
-import { isRepeatField, repeatEntries } from '@/lib/checklist-repeat';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-responses';
+import { isRepeatField, repeatEntries } from '@/lib/checklist/checklist-repeat';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { approveBoardResolutionInDb } from '@/lib/engagements-db';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 

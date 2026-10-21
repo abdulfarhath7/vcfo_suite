@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DUPLICATE_NIC_CODE_MESSAGE, validatePre1Responses } from '@/lib/checklist-pre1-validation';
+import { DUPLICATE_NIC_CODE_MESSAGE, validatePre1Responses } from '@/lib/checklist/checklist-pre1-validation';
 import { NIC_CODE_COUNT, isNicCodeFormat, nicBusinessType, readNicCodes } from '@/lib/nic-2008';
 
 describe('nic-2008', () => {

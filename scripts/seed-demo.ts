@@ -36,7 +36,7 @@ import {
 } from '../src/db/schema';
 import { getActiveCatalogItems } from '../src/data/checklist';
 import { systemGenerateComplianceInstances } from '../src/db/repositories/compliance';
-import type { ChecklistItemStateSlice } from '../src/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '../src/lib/checklist/checklist-state-key';
 import { clearDemoExtras, seedDemoExtras } from './seed-demo-extras';
 
 const DEMO_EMAIL_DOMAIN = '@demo.vcfo.local';

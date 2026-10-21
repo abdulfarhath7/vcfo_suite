@@ -2,7 +2,7 @@ import {
   notificationDirection,
   type AppNotification,
   type NotificationKind,
-} from '@/lib/checklist-notifications';
+} from '@/lib/checklist/checklist-notifications';
 import { isPersistedNotificationId } from '@/lib/notification-dismiss';
 
 const NOTIFICATION_POPUP_PREFIX = 'vcfo.notifications.popup.';

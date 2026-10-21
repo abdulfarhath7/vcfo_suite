@@ -6,9 +6,9 @@ import { useApp } from '@/context/AppContext';
 import { directorResponsesFromState } from '@/lib/proposed-directors';
 import type { ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
-import { isDeliveredToClient } from '@/lib/checklist-state-key';
+import { isDeliveredToClient } from '@/lib/checklist/checklist-state-key';
 import { isInternEngagementPathname } from '@/lib/project-step-path';
 
 

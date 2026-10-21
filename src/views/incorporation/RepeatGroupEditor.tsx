@@ -3,14 +3,14 @@
 import type { ReactNode } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { ChecklistField } from '@/data/checklist';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import {
   applyShowWhen,
   expandRepeatEntry,
   repeatEntries,
   resolveFieldLabels,
   type RepeatField,
-} from '@/lib/checklist-repeat';
+} from '@/lib/checklist/checklist-repeat';
 import { Button } from '@/components/ui/button';
 
 /** Lower-case a noun for mid-sentence use, but keep an acronym ("NIC code" stays). */

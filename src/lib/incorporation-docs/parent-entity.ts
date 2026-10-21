@@ -1,4 +1,4 @@
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
   DEFAULT_PARENT_STATE,

@@ -10,7 +10,7 @@ import {
   markNotificationRead,
   restoreNotifications,
 } from '@/db/repositories/notifications';
-import type { AppNotification } from '@/lib/checklist-notifications';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import {
   isPersistedNotificationId,
   parseNotificationIds,

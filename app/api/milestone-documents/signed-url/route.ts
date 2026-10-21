@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { assertEngagementAccess, checklistStateFromRow } from '@/db/repositories/engagements';
-import { checklistViewerForRole, isStepReleasedTo } from '@/lib/checklist-visibility';
+import { checklistViewerForRole, isStepReleasedTo } from '@/lib/checklist/checklist-visibility';
 import {
   isMilestoneStoragePath,
   MILESTONE_DOCUMENTS_BUCKET,

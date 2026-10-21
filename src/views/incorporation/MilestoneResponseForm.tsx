@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import type { ChecklistItem } from '@/data/checklist';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { MilestoneResponseFormView } from './MilestoneResponseFormSections';
 import { useMilestoneResponseFormState } from './useMilestoneResponseFormState';
 

@@ -6,8 +6,8 @@ import { useApp } from '@/context/AppContext';
 import {
   internLeadManagerRequestPatch,
   isAwaitingReview,
-} from '@/lib/checklist-item-review';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-item-review';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { getItem } from '@/data/checklist';
 import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';

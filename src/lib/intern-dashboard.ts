@@ -1,13 +1,13 @@
 import { checklist, getActiveCatalogItems, type StatusCode } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
 import {
   buildClientProgressPhases,
   overallClientProgressPercent,
   type BoardResolutionProgressSnapshot,
 } from '@/lib/client-progress-board';
-import { gateActiveCatalog, getStepGate } from '@/lib/checklist-step-gate';
+import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
 import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
 
 const NONE_BR: BoardResolutionProgressSnapshot = { status: 'none', hasDraftDoc: false };

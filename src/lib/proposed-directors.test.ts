@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validatePre15Responses } from '@/lib/checklist-part-b-validation';
+import { validatePre15Responses } from '@/lib/checklist/checklist-part-b-validation';
 import {
   directorResponsesFromState,
   directorsAsPre6Responses,
@@ -92,7 +92,7 @@ describe('validatePre15Responses', () => {
 
 describe('Part B step validators — capital structure and registered office', async () => {
   const { validatePre13Responses, validatePre14Responses, shareClassTotal } = await import(
-    '@/lib/checklist-part-b-validation'
+    '@/lib/checklist/checklist-part-b-validation'
   );
 
   it('derives the class total from shares × nominal value', () => {
@@ -137,10 +137,10 @@ describe('Part B step validators — capital structure and registered office', a
 });
 
 describe('validatePre16Responses — subscriber details', async () => {
-  const { validatePre16Responses } = await import('@/lib/checklist-part-b-validation');
-  const { addRepeatEntry, resolveFieldLabels, expandRepeatEntry } = await import('@/lib/checklist-repeat');
+  const { validatePre16Responses } = await import('@/lib/checklist/checklist-part-b-validation');
+  const { addRepeatEntry, resolveFieldLabels, expandRepeatEntry } = await import('@/lib/checklist/checklist-repeat');
   const { getItem } = await import('@/data/checklist');
-  const { getClientResponseFields } = await import('@/lib/checklist-responses');
+  const { getClientResponseFields } = await import('@/lib/checklist/checklist-responses');
   const group = getClientResponseFields(getItem('pre-16')!).find((f) => f.id === 'subscribers')!;
   const sub = (values: Record<string, string>) => {
     const { patch, entryId } = addRepeatEntry({}, group as never);

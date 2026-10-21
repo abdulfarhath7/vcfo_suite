@@ -6,8 +6,8 @@ import {
   getPreIncPhases,
   getRegistrationPhases,
 } from '@/data/checklist';
-import { gateActiveCatalog } from '@/lib/checklist-step-gate';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { gateActiveCatalog } from '@/lib/checklist/checklist-step-gate';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   internNodeKind,
   internOverviewNow,

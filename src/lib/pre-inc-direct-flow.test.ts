@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getPreIncPhases } from '@/data/checklist';
-import { normalizeChecklistItemSlice, type ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { normalizeChecklistItemSlice, type ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   canRoleEditField,
   DIRECT_FLOW_STEP_IDS,

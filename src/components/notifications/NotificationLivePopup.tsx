@@ -24,7 +24,7 @@ import {
   selectNotificationPopups,
   type NotificationShowDetail,
 } from '@/lib/notification-popup';
-import type { AppNotification } from '@/lib/checklist-notifications';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import { cn } from '@/lib/utils';
 
 const sessionPopupQueue = new Map<string, AppNotification[]>();

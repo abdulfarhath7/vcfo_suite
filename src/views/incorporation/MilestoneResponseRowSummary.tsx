@@ -3,7 +3,7 @@ import type { ChecklistItem } from '@/data/checklist';
 import {
   formatResponseSummary,
   type ChecklistItemResponses,
-} from '@/lib/checklist-responses';
+} from '@/lib/checklist/checklist-responses';
 import { cn } from '@/lib/utils';
 
 interface MilestoneResponseRowSummaryProps {

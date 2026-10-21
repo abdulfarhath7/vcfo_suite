@@ -5,10 +5,10 @@ import { db } from '@/db/client';
 import { clientFileRequests, documents, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { getItem } from '@/data/checklist';
-import { getClientResponseFields } from '@/lib/checklist-responses';
-import { expandRepeatFields, parseRepeatFieldId } from '@/lib/checklist-repeat';
+import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import { expandRepeatFields, parseRepeatFieldId } from '@/lib/checklist/checklist-repeat';
 import { isMilestoneStoragePath } from '@/lib/milestone-document-storage';
-import { isStepReleasedToClient } from '@/lib/checklist-visibility';
+import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
 import {
   assertEngagementAccess,

@@ -1,11 +1,11 @@
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import {
   parseDirectorCount,
   parsePre1BoardResolutionDate,
   PRE1_DIRECTOR_GENDER_IDS,
   PRE1_DIRECTOR_INDIA_RESIDENT_IDS,
-} from '@/lib/checklist-pre1-validation';
+} from '@/lib/checklist/checklist-pre1-validation';
 import { resolveDirectorDisplayName, resolveSignatoryDisplayName } from '@/lib/person-name';
 import { readNicCodes } from '@/lib/nic-2008';
 import { resolveNocVariant, type NocVariant } from '@/lib/noc/variant';

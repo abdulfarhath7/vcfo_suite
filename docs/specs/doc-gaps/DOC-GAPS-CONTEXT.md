@@ -160,6 +160,6 @@ Commit: `chore(docs): parity test, discovery refresh, template cleanup`
 
 ## 12. Files you will touch (and not)
 
-**Touch:** `src/lib/incorporation-docs/{types,subscription-sheet,docx,paths,mbp1,epfo-specimen-signature}.ts` · `src/lib/doc-pack/{types,registry,inputs,evaluate}.ts` · `src/lib/api/{doc-pack,incorporation-docs-errors}.ts` · `src/components/doc-pack/*` (filtered rail card) · `src/views/engagement/EngagementStepDetail.tsx` (card on `post-1` / `reg-1`) · pack page view · `public/templates/` (3 new docx) · `src/lib/proposed-directors.ts` + `src/lib/checklist-responses.ts` (Phase 4 only) · tests beside each.
+**Touch:** `src/lib/incorporation-docs/{types,subscription-sheet,docx,paths,mbp1,epfo-specimen-signature}.ts` · `src/lib/doc-pack/{types,registry,inputs,evaluate}.ts` · `src/lib/api/{doc-pack,incorporation-docs-errors}.ts` · `src/components/doc-pack/*` (filtered rail card) · `src/views/engagement/EngagementStepDetail.tsx` (card on `post-1` / `reg-1`) · pack page view · `public/templates/` (3 new docx) · `src/lib/proposed-directors.ts` + `src/lib/checklist/checklist-responses.ts` (Phase 4 only) · tests beside each.
 
 **Do not touch:** `src/data/checklist.ts` step catalog entries (ids, order, gates) · `checklist-step-gate.ts` · board-resolution generate/finalize · `PRE7_REQUIRED_FILE_IDS` · email dispatcher / `notifyEngagementEvent` · any repository's role filter · Auth.js.

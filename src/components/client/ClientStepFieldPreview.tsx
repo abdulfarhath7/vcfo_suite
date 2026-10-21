@@ -6,9 +6,9 @@ import {
   fieldsForOwnership,
   getClientResponseFields,
   type ChecklistItemResponses,
-} from '@/lib/checklist-responses';
-import { isDeliveredToClient } from '@/lib/checklist-state-key';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-responses';
+import { isDeliveredToClient } from '@/lib/checklist/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
 
 /**

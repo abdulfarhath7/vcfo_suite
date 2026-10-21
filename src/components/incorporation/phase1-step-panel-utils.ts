@@ -1,4 +1,4 @@
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 
 export type OtherDraftDocLink = { path: string; label: string };
 

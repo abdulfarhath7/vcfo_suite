@@ -22,14 +22,14 @@ import { clientIncorporationStepPath } from "@/lib/project-step-path";
 import {
   gateActiveCatalog,
   isChecklistStepSequentiallyComplete,
-} from "@/lib/checklist-step-gate";
+} from "@/lib/checklist/checklist-step-gate";
 import {
   internOverviewCurrentItemInPhase,
   internOverviewPhases,
 } from "@/lib/intern-overview-progress";
 import { formatDate } from "@/lib/deadlines";
 import { HexgridLoader } from "@/components/common/HexgridLoader";
-import { findEngagementForClientUser } from "@/lib/checklist-state-key";
+import { findEngagementForClientUser } from "@/lib/checklist/checklist-state-key";
 
 const INCORPORATION_HREF = "/app/client/incorporation";
 

@@ -3,12 +3,12 @@ import { NextResponse } from 'next/server';
 import { assertEngagementBoardResolutionAccess } from '@/lib/api/board-resolution-access';
 import { requireAnyRole } from '@/auth/guards';
 import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import type { Dir2DirectorKind } from '@/lib/dir-2';
 import { dir2DownloadFilename } from '@/lib/dir-2';
 import { downloadDir2Docx } from '@/lib/dir-2-storage';
 import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { repairIncorpDocxAtPath } from '@/lib/incorporation-docs/storage';
 import { checklistStateFromRow } from '@/db/repositories/engagements';
 

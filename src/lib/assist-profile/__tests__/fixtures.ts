@@ -1,5 +1,5 @@
 import type { EngagementChecklistState } from '@/lib/engagements-db';
-import { repeatFieldId } from '@/lib/checklist-repeat';
+import { repeatFieldId } from '@/lib/checklist/checklist-repeat';
 import { COMPANY_PRE1, director, fullState, type FixtureDirector } from '@/lib/doc-pack/__tests__/fixtures';
 
 /** Obviously fake data only — the repo is public. Builds on the doc-pack fixtures. */

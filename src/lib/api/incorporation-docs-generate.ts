@@ -2,8 +2,8 @@ import 'server-only';
 
 import type { Engagement } from '@/data/engagements';
 import { checklist } from '@/data/checklist';
-import { extractItemResponses, type ChecklistItemResponses } from '@/lib/checklist-responses';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { extractItemResponses, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { directorResponsesFromState } from '@/lib/proposed-directors';
 import { patchIncorpDocxBuffer, renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';

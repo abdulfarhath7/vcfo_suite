@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { buildBoardResolutionMergeFields, type BoardResolutionDoc } from '@/lib/board-resolution';
 import {
   BOARD_RESOLUTION_DOCX_FILENAME,

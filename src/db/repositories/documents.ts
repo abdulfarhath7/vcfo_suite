@@ -5,8 +5,8 @@ import { db } from '@/db/client';
 import { documents, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { normalizeChecklistItemSlice } from '@/lib/checklist-state-key';
-import { checklistViewerForRole, isStepReleasedTo } from '@/lib/checklist-visibility';
+import { normalizeChecklistItemSlice } from '@/lib/checklist/checklist-state-key';
+import { checklistViewerForRole, isStepReleasedTo } from '@/lib/checklist/checklist-visibility';
 import { appEngagementId, engagementDbId } from '@/lib/legacy-engagement-ids';
 import {
   assertEngagementAccess,

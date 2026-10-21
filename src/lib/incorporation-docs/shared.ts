@@ -1,9 +1,9 @@
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import {
   PRE6_OCCUPATION_OPTIONS,
   PRE6_UTILITY_BILL_OPTIONS,
-} from '@/lib/checklist-pre6-validation';
+} from '@/lib/checklist/checklist-pre6-validation';
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
 import { otherInterestsFromPre6, type OtherCompanyInterest } from '@/lib/other-company-interests';
 import {

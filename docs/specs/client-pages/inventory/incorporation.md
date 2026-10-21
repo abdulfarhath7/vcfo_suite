@@ -176,7 +176,7 @@ Files: L = `final-src/s/inc/incorporation.html` (`x/incorporation.app.js`), P = 
 ## 2. DATA per screen → real app
 
 Legend: **EXISTS** = use as-is · **ADAPT** = exists, needs a new projection or field · **NEW** = build it (backend piece named).
-All data reaches client views through repositories behind `requireAuth()` + `AuthContext`, never `db` (CLAUDE.md rule 1). Client checklist state is already redacted per viewer by `checklistStateForViewer` → `redactChecklistStateForViewer('client', …)` (`src/lib/checklist-visibility.ts`).
+All data reaches client views through repositories behind `requireAuth()` + `AuthContext`, never `db` (CLAUDE.md rule 1). Client checklist state is already redacted per viewer by `checklistStateForViewer` → `redactChecklistStateForViewer('client', …)` (`src/lib/checklist/checklist-visibility.ts`).
 
 Note on paths: the brief says `src/domain/checklist*`. There is no `src/domain` in this tree; all checklist domain logic lives in `src/lib/checklist-*.ts`.
 
@@ -184,20 +184,20 @@ Note on paths: the brief says `src/domain/checklist*`. There is no `src/domain` 
 
 | Need | Real piece | Where |
 |---|---|---|
-| Engagement for signed-in client | `findEngagementForClientUser(engagements, user)`; `useApp().engagements`, `engagementsLoading`; server `getMyEngagement(ctx)` | `src/lib/checklist-state-key.ts`, `src/context/AppContext.tsx`, `src/db/repositories/engagements.ts:450` |
+| Engagement for signed-in client | `findEngagementForClientUser(engagements, user)`; `useApp().engagements`, `engagementsLoading`; server `getMyEngagement(ctx)` | `src/lib/checklist/checklist-state-key.ts`, `src/context/AppContext.tsx`, `src/db/repositories/engagements.ts:450` |
 | Checklist state | `useApp().getStateForEngagement(eng)`, `refreshEngagementChecklist(id)`; `GET /api/engagements/[id]/checklist` | `src/context/use-app-provider-value.ts`, `app/api/engagements/[id]/checklist/route.ts` |
 | 48 steps, phases, owners, forms, infoRequired, description, urgent | `getIncorporationPhases()`, `getActiveCatalogItems()`, `ChecklistItem.responsibleRole ('client'|'intern')`, `.forms`, `.infoRequired`, `.description`, `.urgent` | `src/data/checklist.ts` |
 | Client phase labels "SPICe+ Part A…" | `internOverviewPhaseTitle()` / `PHASE_LABEL` in client-overview | `src/lib/intern-overview-progress.ts:25`, `src/lib/client-overview.ts` |
-| Sequential gate (done/active/waiting/locked) | `gateActiveCatalog(state,'client')`, `getStepGate`, `isChecklistStepSequentiallyComplete`, `gateDisplayStatus` | `src/lib/checklist-step-gate.ts` |
-| Display status | `deriveChecklistDisplayStatus(itemId,item,slice,brSnapshot)` | `src/lib/checklist-display-status.ts` |
-| Approval sub-state | `approvalStateOf`, `isAwaitingClientApproval`, `stepApprovalLabel`, `clientApproveBlockedReason`, `phaseCompletedByApproval` | `src/lib/checklist-step-approval.ts` |
-| Client fill request | `isClientFillAwaitingClient`, `clientFillLabel` | `src/lib/checklist-client-fill.ts` |
-| Release / redaction | `isStepReleasedToClient`, `redactChecklistSliceForViewer` | `src/lib/checklist-visibility.ts` |
+| Sequential gate (done/active/waiting/locked) | `gateActiveCatalog(state,'client')`, `getStepGate`, `isChecklistStepSequentiallyComplete`, `gateDisplayStatus` | `src/lib/checklist/checklist-step-gate.ts` |
+| Display status | `deriveChecklistDisplayStatus(itemId,item,slice,brSnapshot)` | `src/lib/checklist/checklist-display-status.ts` |
+| Approval sub-state | `approvalStateOf`, `isAwaitingClientApproval`, `stepApprovalLabel`, `clientApproveBlockedReason`, `phaseCompletedByApproval` | `src/lib/checklist/checklist-step-approval.ts` |
+| Client fill request | `isClientFillAwaitingClient`, `clientFillLabel` | `src/lib/checklist/checklist-client-fill.ts` |
+| Release / redaction | `isStepReleasedToClient`, `redactChecklistSliceForViewer` | `src/lib/checklist/checklist-visibility.ts` |
 | Progress per phase / overall, ball in court, next action, milestones, documents counts, deliverables, incorporated flag, team | `getClientOverview(ctx)` → `GET /api/client/overview` → `useClientOverview()`; builders `buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildMilestones`, `buildDocumentCounts`, `buildDeliverables`, `identifiersFromState` | `src/db/repositories/client-overview.ts`, `app/api/client/overview/route.ts`, `src/lib/use-client-overview.ts`, `src/lib/client-overview.ts` |
 | Date windows | `engagement.schedule` (`EngagementSchedule {incorporation?, steps?}`), `windowForStep(schedule,itemId)`, `formatWindow`; write `PATCH /api/engagements/[id]/schedule` (manager/admin only) | `src/lib/schedule-windows.ts`, `src/db/repositories/schedule.ts`, `app/api/engagements/[id]/schedule/route.ts` |
 | Incorporation date | `engagements.incorporation_date` (`Engagement.incorporationDate`); CIN/PAN/TAN from pre-12 (`identifiersFromState`) | `src/db/schema.ts`, `src/lib/client-overview.ts` |
-| Step attachments (file fields + uploaded?) | `getStepAttachmentRequirements(item, responses, ownershipType)` | `src/lib/checklist-step-attachments.ts` |
-| Client-visible fields + answers | `getClientResponseFields(item)`, `filterFieldsByViewer(…,'client')`, `extractItemResponses(item,slice)` | `src/lib/checklist-responses.ts`, `src/lib/checklist-field-access.ts` |
+| Step attachments (file fields + uploaded?) | `getStepAttachmentRequirements(item, responses, ownershipType)` | `src/lib/checklist/checklist-step-attachments.ts` |
+| Client-visible fields + answers | `getClientResponseFields(item)`, `filterFieldsByViewer(…,'client')`, `extractItemResponses(item,slice)` | `src/lib/checklist/checklist-responses.ts`, `src/lib/checklist/checklist-field-access.ts` |
 | Upload a file to a field | `POST /api/engagements/[id]/milestone-documents` (multipart `fieldId`, `stepId`, `file`) → S3 via `putObject`; for a client it does NOT create a `documents` index row | `app/api/engagements/[id]/milestone-documents/route.ts` |
 | Signed URL / preview | `GET /api/milestone-documents/signed-url`, `GET /api/documents/[id]/signed-url` | `app/api/...` |
 | Client approve | `POST /api/client/steps/[stepId]/approve` {engagementId} → `clientApproveStep(ctx, …)`; phase-approved email; `ClientStepApproveButton` | `app/api/client/steps/[stepId]/approve/route.ts`, `src/db/repositories/engagements.ts:1039`, `src/components/client/ClientStepApproveButton.tsx` |

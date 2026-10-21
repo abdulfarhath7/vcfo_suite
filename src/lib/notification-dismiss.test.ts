@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AppNotification } from '@/lib/checklist-notifications';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import {
   formatNotificationWhen,
   groupNotificationsForHistory,
@@ -17,7 +17,7 @@ import {
   scopedDismissIds,
   ymdInNotificationTz,
 } from '@/lib/notification-dismiss';
-import { notificationsInDirection } from '@/lib/checklist-notifications';
+import { notificationsInDirection } from '@/lib/checklist/checklist-notifications';
 
 function note(
   patch: Partial<AppNotification> & Pick<AppNotification, 'id' | 'kind'>,

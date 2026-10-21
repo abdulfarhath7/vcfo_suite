@@ -38,7 +38,7 @@ Never show the word "intern" anywhere in UI, prompts that reach users, or answer
 1. **Repository seam is sacred.** Only `src/db/repositories/*` imports `db`. Ask VCFO tools call repositories with `AuthContext`. The model never sees SQL and never receives rows outside the caller's scope.
 2. **Ask VCFO is read-only.** It never sends email, never changes checklist state, never approves, never uploads. The only write it performs on the user's behalf is creating a request to the lead (explicit button press) and saving a library item.
 3. **Never show board resolution drafts to clients.** BR content is visible to a client only after `status=finalized`. Tools enforce this in the repository, not in the prompt.
-4. **Never invent steps, forms or rules.** Step names and ids come from `src/data/checklist.ts`. Do not edit `checklist.ts`, per-step validators, docx generators, gate logic (`src/lib/checklist-step-gate.ts`) or compliance math.
+4. **Never invent steps, forms or rules.** Step names and ids come from `src/data/checklist.ts`. Do not edit `checklist.ts`, per-step validators, docx generators, gate logic (`src/lib/checklist/checklist-step-gate.ts`) or compliance math.
 5. **Due dates come only from the compliance calendar and checklist data**, never from model text or knowledge-base prose. Validation enforces this (§6.6).
 6. **The bot explains; the firm decides.** Any request for a decision ("do we need GST?", "should we choose LLP?", "can we skip X?") gets an explanation plus a hand-off to the lead. Never a yes/no on the firm's behalf.
 7. **No secrets in the client bundle.** Anthropic/AWS credentials are server-only (`import "server-only"`), loaded from Secrets Manager under `/vcfo/ask-vcfo/*` in AWS and from `.env.local` locally.
@@ -711,7 +711,7 @@ npx vitest run --reporter=dot
 npm run lint
 ```
 
-**Preservation list (every phase — do not modify):** `src/data/checklist.ts`, per-step validators, docx generators, `src/lib/checklist-step-gate.ts`, compliance calendar math, `src/lib/email/send-email.ts`, `engagement-recipients.ts`, BR finalize flow, Auth.js config, existing role routing, `useStaffBasePath` behaviour, `adminProjectPath`.
+**Preservation list (every phase — do not modify):** `src/data/checklist.ts`, per-step validators, docx generators, `src/lib/checklist/checklist-step-gate.ts`, compliance calendar math, `src/lib/email/send-email.ts`, `engagement-recipients.ts`, BR finalize flow, Auth.js config, existing role routing, `useStaffBasePath` behaviour, `adminProjectPath`.
 
 ### Phase 0 — Recon (read-only) · CHECKPOINT at end
 

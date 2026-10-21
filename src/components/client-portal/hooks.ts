@@ -10,7 +10,7 @@
  */
 import { useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { findEngagementForClientUser } from '@/lib/checklist-state-key';
+import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
 import { buildIncorporationModel, type PortalIncorporationModel } from '@/lib/client-portal/step-model';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemState } from '@/context/AppContext';

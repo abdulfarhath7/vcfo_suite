@@ -1,11 +1,11 @@
 import type { ChecklistField } from '@/data/checklist';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
-import { computeMcaNameApprovalExpiryDate } from '@/lib/checklist-responses';
-import { applyPre1EngagementDefaults } from '@/lib/checklist-pre1-validation';
-import { applyPre6PrefillFromPre1 } from '@/lib/pre6-prefill-from-pre1';
-import { mergeRegisteredOfficeIntoPre6 } from '@/lib/registered-office-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import { computeMcaNameApprovalExpiryDate } from '@/lib/checklist/checklist-responses';
+import { applyPre1EngagementDefaults } from '@/lib/checklist/checklist-pre1-validation';
+import { applyPre6PrefillFromPre1 } from '@/lib/checklist/pre6-prefill-from-pre1';
+import { mergeRegisteredOfficeIntoPre6 } from '@/lib/checklist/registered-office-responses';
 import type { Engagement } from '@/data/engagements';
-import { expandRepeatFieldsForDiff } from '@/lib/checklist-repeat';
+import { expandRepeatFieldsForDiff } from '@/lib/checklist/checklist-repeat';
 
 export type StaffSaveStatus = 'idle' | 'saved' | 'error';
 export const AUTO_SAVE_DEBOUNCE_MS = 600;

@@ -28,7 +28,7 @@ import { type BoardResolutionDocPreviewHandle } from '@/components/board-resolut
 
 
 import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 
 import { buildBoardResolutionMergeFields, extractBoardResolutionInlineOverrides, type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution';
 
@@ -43,7 +43,7 @@ import {
   saveBoardResolutionDraftInDb,
 
 } from '@/lib/engagements-db';
-import { isLeadRequestPending } from '@/lib/checklist-item-review';
+import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 
 import { internBoardResolutionPath, internEngagementStepPath } from '@/lib/project-step-path';
 

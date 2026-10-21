@@ -9,11 +9,11 @@ import {
   patchChecklistItem,
 } from '@/db/repositories/engagements';
 import { engagementDbId } from '@/lib/legacy-engagement-ids';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 import { emptyEmailDispatch } from '@/lib/email/email-dispatch';
 import { leadManagerRequestNotifyPlan } from '@/lib/email/lead-manager-request-notify';
-import { leadWritablePatch } from '@/lib/checklist-item-review';
+import { leadWritablePatch } from '@/lib/checklist/checklist-item-review';
 import {
   isDirectFlowStep,
   isDirectFlowStepComplete,

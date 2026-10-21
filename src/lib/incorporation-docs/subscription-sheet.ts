@@ -1,8 +1,8 @@
 import { getItem } from '@/data/checklist';
 import { formatShareCountClause } from '@/lib/board-resolution';
-import { parsePre1BoardResolutionDate } from '@/lib/checklist-pre1-validation';
-import { getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist-responses';
-import { isRepeatField, repeatEntries, type RepeatEntry } from '@/lib/checklist-repeat';
+import { parsePre1BoardResolutionDate } from '@/lib/checklist/checklist-pre1-validation';
+import { getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import { isRepeatField, repeatEntries, type RepeatEntry } from '@/lib/checklist/checklist-repeat';
 import {
   directorAudienceKind,
   directorAudiencesFromPre6,

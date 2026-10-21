@@ -23,9 +23,9 @@ import { getBoardResolutionByEngagementId } from '@/db/repositories/board-resolu
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { checklist, getItem } from '@/data/checklist';
-import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
-import { repeatFieldLabel } from '@/lib/checklist-repeat';
-import { isStepReleasedTo } from '@/lib/checklist-visibility';
+import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import { repeatFieldLabel } from '@/lib/checklist/checklist-repeat';
+import { isStepReleasedTo } from '@/lib/checklist/checklist-visibility';
 import { checklistItemForFieldId } from '@/lib/vault-documents';
 import { appEngagementId } from '@/lib/legacy-engagement-ids';
 import {

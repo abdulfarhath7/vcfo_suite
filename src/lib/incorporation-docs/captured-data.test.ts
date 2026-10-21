@@ -2,7 +2,7 @@ import PizZip from 'pizzip';
 import { describe, expect, it, vi } from 'vitest';
 
 import { director, fullState } from '@/lib/doc-pack/__tests__/fixtures';
-import { validatePre15Responses } from '@/lib/checklist-part-b-validation';
+import { validatePre15Responses } from '@/lib/checklist/checklist-part-b-validation';
 import { pre15Responses } from '@/lib/doc-pack/__tests__/fixtures';
 import { renderDir8DocxBuffer, renderPanUndertakingDocxBuffer } from '@/lib/incorporation-docs/docx';
 import { buildDir2MergeFields } from '@/lib/incorporation-docs/dir2';
@@ -20,7 +20,7 @@ import {
 } from '@/lib/incorporation-docs/subscription-sheet';
 import { renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
 import { validateIncorpDocsGeneration } from '@/lib/api/incorporation-docs-errors';
-import { repeatFieldId } from '@/lib/checklist-repeat';
+import { repeatFieldId } from '@/lib/checklist/checklist-repeat';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
 import { isValidCinOrLlpin } from '@/lib/other-company-interests';
 import { directorResponsesFromState } from '@/lib/proposed-directors';

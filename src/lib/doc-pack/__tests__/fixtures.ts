@@ -1,6 +1,6 @@
 import type { BoardResolutionDoc } from '@/lib/board-resolution';
 import type { EngagementChecklistState } from '@/lib/engagements-db';
-import { repeatFieldId } from '@/lib/checklist-repeat';
+import { repeatFieldId } from '@/lib/checklist/checklist-repeat';
 
 /** Obviously fake directors only — the repo is public. */
 export interface FixtureDirector {

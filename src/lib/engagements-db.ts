@@ -3,7 +3,7 @@ import { engagementDbId } from '@/lib/legacy-engagement-ids';
 import {
   type ChecklistItemStateSlice,
   normalizeEngagementChecklistState,
-} from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-state-key';
 import {
   type BoardResolutionDoc,
   parseBoardResolutionRpcPayload,

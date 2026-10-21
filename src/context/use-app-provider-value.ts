@@ -16,7 +16,7 @@ import {
 } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Client } from '@/data/client';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { AppContextValue, ChecklistItemState } from '@/context/AppContext';
 import { applySidebarCollapsed } from '@/components/shell/intern-sidebar';
 import {
@@ -60,8 +60,8 @@ import {
 import {
   findEngagementForClientUser,
   engagementScopeIds,
-} from '@/lib/checklist-state-key';
-import { mergeChecklistIndexIntoState } from '@/lib/checklist-index';
+} from '@/lib/checklist/checklist-state-key';
+import { mergeChecklistIndexIntoState } from '@/lib/checklist/checklist-index';
 import { toastError, toastSuccess, errorMessage, toastEmailDispatch, EMAIL_DISPATCH_NOTIFICATIONS_EVENT } from '@/lib/toast-errors';
 import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
 import {
@@ -69,7 +69,7 @@ import {
   type NotificationKind,
   checklistNotifySuppressKey,
   diffChecklistForNotifications,
-} from '@/lib/checklist-notifications';
+} from '@/lib/checklist/checklist-notifications';
 import {
   isPersistedNotificationId,
   mergeNotificationsByCreatedAt,

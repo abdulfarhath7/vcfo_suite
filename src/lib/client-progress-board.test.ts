@@ -7,7 +7,7 @@ import {
   derivePreIncStepTone,
   type BoardResolutionProgressSnapshot,
 } from '@/lib/client-progress-board';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 const pre1 = getItem('pre-1')!;
 const pre3 = getItem('pre-3')!;

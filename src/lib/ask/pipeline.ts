@@ -19,7 +19,7 @@ import { assertAskRole, AskForbiddenError, shellAllowedForRole } from '@/lib/ask
 import { askConfig, askFeatures } from '@/lib/ask/config';
 import { contextAnswer } from '@/lib/ask/context-answer';
 import { sanitizeLinks, type DestinationScope } from '@/lib/ask/destinations';
-import { gateActiveCatalog } from '@/lib/checklist-step-gate';
+import { gateActiveCatalog } from '@/lib/checklist/checklist-step-gate';
 import { generateAnswer } from '@/lib/ask/generate';
 import { runGuard, type GuardResult } from '@/lib/ask/guard';
 import { getAskProvider } from '@/lib/ask/provider';

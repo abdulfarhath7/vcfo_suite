@@ -10,7 +10,7 @@ import {
   signedUploadFieldForIncorpDraft,
 } from '@/lib/incorporation-docs/share';
 import { incorpDraftDocSlotsFromResponses } from '@/lib/incorporation-docs/paths';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 describe('incorporation-docs share', () => {
   it('validates row keys', () => {

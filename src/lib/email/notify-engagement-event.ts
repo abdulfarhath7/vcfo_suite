@@ -34,7 +34,7 @@ import {
   sendEmail,
   type SendEmailResult,
 } from '@/lib/email/send-email';
-import type { NotificationKind } from '@/lib/checklist-notifications';
+import type { NotificationKind } from '@/lib/checklist/checklist-notifications';
 import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
 import { firstNameOf } from '@/lib/notify/templates';
 import type { NotifyEvent } from '@/lib/notify/types';

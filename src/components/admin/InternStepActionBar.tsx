@@ -4,7 +4,7 @@ import { RequestManagerApproval } from '@/components/admin/RequestManagerApprova
 import { RequestClientFill } from '@/components/admin/RequestClientFill';
 import { Button } from '@/components/ui/button';
 import type { ChecklistItem } from '@/data/checklist';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 export type InternStepActionBarProps = {
   engagementId: string;

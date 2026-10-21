@@ -11,8 +11,8 @@ import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { Eyebrow, EmptyStateIllustrated } from '@/components/noir';
 import { Button } from '@/components/ui/button';
 import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import { findEngagementForClientUser } from '@/lib/checklist-state-key';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
 import { buildBoardResolutionMergeFields, type BoardResolutionDoc } from '@/lib/board-resolution';
 import {
   BOARD_RESOLUTION_DOCX_FILENAME,

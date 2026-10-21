@@ -5,8 +5,8 @@ import {
   type Bucket,
   type ChecklistItem,
 } from '@/data/checklist';
-import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
-import { getStepGate } from '@/lib/checklist-step-gate';
+import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
+import { getStepGate } from '@/lib/checklist/checklist-step-gate';
 
 export type InternPhaseKind = 'done' | 'current' | 'locked';
 

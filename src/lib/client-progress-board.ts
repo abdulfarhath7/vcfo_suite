@@ -1,18 +1,18 @@
 import type { ChecklistItem } from '@/data/checklist';
 import { getChecklistStepTimelineLabel, getIncorporationPhases } from '@/data/checklist';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { isDeliveredToClient } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { isDeliveredToClient } from '@/lib/checklist/checklist-state-key';
 import {
   extractItemResponses,
   formatResponseSummary,
   type ChecklistItemResponses,
-} from '@/lib/checklist-responses';
+} from '@/lib/checklist/checklist-responses';
 import {
   getReviewStatus,
   isReviewAccepted,
   isReviewRejected,
   isAwaitingReview,
-} from '@/lib/checklist-item-review';
+} from '@/lib/checklist/checklist-item-review';
 import type { BoardResolutionDoc } from '@/lib/board-resolution';
 import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/pre-inc-direct-flow';
 

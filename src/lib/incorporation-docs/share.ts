@@ -1,4 +1,4 @@
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { incorpDocRowKey } from '@/lib/incorporation-docs/paths';
 import type { IncorpDraftDocLink, IncorpDraftDocSlot } from '@/lib/incorporation-docs/paths';
 import {
@@ -12,7 +12,7 @@ import {
   INCORP_DOC_KINDS,
   type IncorpDocKind,
 } from '@/lib/incorporation-docs/types';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 
 /** Row keys (`doc:audience`) released to the client portal (Pre-8 downloads). */
 function sharedIncorpDraftRowKeys(

@@ -1,7 +1,7 @@
 import {
   isNotificationKind,
   type AppNotification,
-} from '@/lib/checklist-notifications';
+} from '@/lib/checklist/checklist-notifications';
 
 /** Slide + fade duration for a dismissed notification row. */
 export const NOTIFICATION_ROW_EXIT_MS = 300;

@@ -15,9 +15,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { StepAttachmentRequirement } from '@/lib/checklist-step-attachments';
-import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
-import { gateDisplayStatus } from '@/lib/checklist-step-gate';
+import type { StepAttachmentRequirement } from '@/lib/checklist/checklist-step-attachments';
+import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
+import { gateDisplayStatus } from '@/lib/checklist/checklist-step-gate';
 import { toastInfo } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, Circle, Clock, MoreVertical } from 'lucide-react';

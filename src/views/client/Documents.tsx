@@ -9,7 +9,7 @@ import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink
 import { EmptyStateIllustrated, Surface, Eyebrow } from '@/components/noir';
 import { ClientBoardResolutionCard } from '@/components/client/ClientBoardResolutionCard';
 import { collectVaultDocuments, groupVaultDocuments } from '@/lib/vault-documents';
-import { findEngagementForClientUser } from '@/lib/checklist-state-key';
+import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
 import { FileCheck2, FileText, FolderOpen } from 'lucide-react';
 
 function formatUploadDate(iso: string | null): string {

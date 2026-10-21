@@ -26,7 +26,7 @@ import {
   INTERN_DELIVERY_STEP_IDS,
   validateInternDelivery,
   type ChecklistItemResponses,
-} from '@/lib/checklist-responses';
+} from '@/lib/checklist/checklist-responses';
 import { ADDITIONAL_NIC_CODES_GROUP_ID, nicBusinessType } from '@/lib/nic-2008';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
@@ -39,23 +39,23 @@ import {
   repeatEntries,
   repeatFieldLabel,
   resolveFieldLabels,
-} from '@/lib/checklist-repeat';
-import { shareClassTotal } from '@/lib/checklist-part-b-validation';
+} from '@/lib/checklist/checklist-repeat';
+import { shareClassTotal } from '@/lib/checklist/checklist-part-b-validation';
 import {
   REGISTERED_OFFICE_FIELD_IDS,
   REGISTERED_OFFICE_STATE_FIELD_ID,
   REGISTERED_OFFICE_SOURCE_FIELD_ID,
   REGISTERED_OFFICE_SOURCE_LABEL,
   resolveRegisteredOfficeResponses,
-} from '@/lib/registered-office-responses';
-import { filterFieldsByViewer, isMilestoneFormReadOnly } from '@/lib/checklist-field-access';
+} from '@/lib/checklist/registered-office-responses';
+import { filterFieldsByViewer, isMilestoneFormReadOnly } from '@/lib/checklist/checklist-field-access';
 import {
   applyPre1EngagementDefaults,
   countWords,
   formatPre1DateDisplay,
   getPre1VisibleFields,
   type Pre1ValidationOptions,
-} from '@/lib/checklist-pre1-validation';
+} from '@/lib/checklist/checklist-pre1-validation';
 import {
   getPre6DirectorNameOptions,
   getPre6DirectorSlotsFromPre1,
@@ -63,7 +63,7 @@ import {
   getPre6OtherCompanyInterestCount,
   getPre6VisibleFields,
   isPre1SubmittedForPre6,
-} from '@/lib/checklist-pre6-validation';
+} from '@/lib/checklist/checklist-pre6-validation';
 import { fieldsForDirectorAudiences, type DirectorSlotContext } from '@/lib/incorp-director-slots';
 import { directorAudiencesFromPre6 } from '@/lib/incorporation-docs/audiences';
 import { isIncorpSlotSetFrozen } from '@/lib/incorporation-docs/share';
@@ -72,18 +72,18 @@ import {
   filterResponsesToEditableFields,
   isClientSubmissionLocked,
   isFieldEditableForClient,
-} from '@/lib/checklist-item-lock';
+} from '@/lib/checklist/checklist-item-lock';
 import {
   canClientResubmit,
   getClientReviewBanner,
   internLeadManagerRequestPatch,
   isReviewAccepted,
-} from '@/lib/checklist-item-review';
+} from '@/lib/checklist/checklist-item-review';
 import {
   findEngagementForClientUser,
   engagementScopeIds,
   checklistStateKeyForEngagement,
-} from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-state-key';
 import {
   uploadMilestoneDocument,
 } from '@/lib/milestone-document-storage';
@@ -104,7 +104,7 @@ import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
 import {
   getSectionPendingItems,
   isSectionFieldsComplete,
-} from '@/lib/milestone-section-completion';
+} from '@/lib/checklist/milestone-section-completion';
 import { cn } from '@/lib/utils';
 import {
   incorpDocTargetFromDraftField,
@@ -117,7 +117,7 @@ import { internFormNextTarget } from '@/lib/intern-overview-progress';
 import { staffSaveStatusLabel, AUTO_SAVE_DEBOUNCE_MS, derivedDisplayPlaceholder, getChangedPartial, getMilestoneFormFieldLayout, groupFieldsBySection, internAutoSaveHint, internNamedSectionGroups, internSectionFooterAction, internSectionFooterLabel, internShowSaveButton, computeMilestoneDraftFromSaved, overlayTouchedFields, type AutoSaveStatus, type StaffSaveStatus } from '@/views/incorporation/milestone-response-form-utils';
 import { Pre1SectionCard, FieldUnlockControl, UploadedFilePreview } from '@/views/incorporation/MilestoneResponseFormParts';
 import { inferIndianState } from '@/lib/countries';
-import { runStepValidation } from '@/lib/checklist-step-validation';
+import { runStepValidation } from '@/lib/checklist/checklist-step-validation';
 import {
   canRoleEditField,
   isDirectFlowStep,

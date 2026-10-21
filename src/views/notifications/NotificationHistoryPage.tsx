@@ -21,7 +21,7 @@ import {
 import {
   notificationsInDirection,
   type NotificationDirection,
-} from '@/lib/checklist-notifications';
+} from '@/lib/checklist/checklist-notifications';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 const RANGE_FILTERS = [

@@ -3,8 +3,8 @@
 import { use, type SetStateAction } from 'react';
 import type { Client } from '@/data/client';
 import { StatusCode } from '@/data/checklist';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
-import type { ClientFillRequest } from '@/lib/checklist-state-key';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import type { ClientFillRequest } from '@/lib/checklist/checklist-state-key';
 import {
   Engagement,
   TaskInstance,
@@ -22,7 +22,7 @@ import {
 import {
   type AppNotification,
   type NotificationKind,
-} from '@/lib/checklist-notifications';
+} from '@/lib/checklist/checklist-notifications';
 import type { SidebarMode } from '@/components/shell/intern-sidebar';
 
 export type { SidebarMode };

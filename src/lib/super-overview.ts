@@ -8,7 +8,7 @@
  *   - every derivation here is unit-testable.
  *
  * Sequencing, health, and "who owns the next move" are NOT reimplemented.
- * `gateActiveCatalog` (`@/lib/checklist-step-gate`) and `deriveStuckReason`
+ * `gateActiveCatalog` (`@/lib/checklist/checklist-step-gate`) and `deriveStuckReason`
  * (`@/lib/project-stuck`) stay the single sources of truth, exactly as the
  * lead and client surfaces use them — so the three dashboards can never
  * disagree about the same engagement.
@@ -19,14 +19,14 @@ import {
   getActiveCatalogItems,
   getIncorporationPhases,
 } from '@/data/checklist';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   gateActiveCatalog,
   getStepGate,
   isChecklistStepSequentiallyComplete,
   type ChecklistStepGateKind,
-} from '@/lib/checklist-step-gate';
-import { isReviewRejected } from '@/lib/checklist-item-review';
+} from '@/lib/checklist/checklist-step-gate';
+import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/project-stuck';
 import { phaseKeyFromId, type PhaseColorKey } from '@/lib/phase-colors';

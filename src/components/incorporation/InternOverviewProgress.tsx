@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/common/ProgressBar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ChecklistItem } from '@/data/checklist';
-import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
+import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import {
   internEngagementPhaseTabDefault,
   internNodeKind,

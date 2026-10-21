@@ -1,5 +1,5 @@
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { filingStatus, type FilingRow, type FilingStatus } from '@/lib/filings';
 

@@ -7,8 +7,8 @@
  */
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
 import { internRegistrationHeadingForTitle } from '@/lib/intern-overview-progress';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import { getStepAttachmentRequirements } from '@/lib/checklist-step-attachments';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import { getStepAttachmentRequirements } from '@/lib/checklist/checklist-step-attachments';
 import type { OwnershipType } from '@/data/engagements';
 import { usePortal } from '../../PortalProvider';
 import type { ViewerDoc } from '../documents/DocViewer';

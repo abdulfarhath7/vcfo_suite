@@ -15,7 +15,7 @@ import {
   type EngagementChecklistState,
 } from '@/db/repositories/engagements';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { internLeadManagerRequestPatch, isLeadRequestPending } from '@/lib/checklist-item-review';
+import { internLeadManagerRequestPatch, isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import { MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
 import { directorResponsesFromState } from '@/lib/proposed-directors';
 import { validateBoardResolutionGeneration } from '@/lib/api/board-resolution-errors';

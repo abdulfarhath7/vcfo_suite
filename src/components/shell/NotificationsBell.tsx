@@ -13,7 +13,7 @@ import {
   notificationsInDirection,
   type AppNotification,
   type NotificationDirection,
-} from "@/lib/checklist-notifications";
+} from "@/lib/checklist/checklist-notifications";
 import {
   NOTIFICATION_ROW_EXIT_MS,
   NOTIFICATION_ROW_EXIT_STAGGER_MS,

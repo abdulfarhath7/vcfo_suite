@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { listPendingApprovals, pendingApprovalKind } from '@/lib/pending-approvals';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 const eng = { id: 'e1', companyName: 'Demo', slug: 'demo', stage: 'Pre-Incorporation' as const };
 const pendingLead: ChecklistItemStateSlice = {

@@ -31,7 +31,7 @@ All hard rules in `ASK-VCFO-CONTEXT.md` §0.3 still apply. The critical ones:
 1. Only `src/db/repositories/*` imports `db`. New tools call repositories or existing pure libs with the caller's `AuthContext`.
 2. Ask VCFO stays **read-only**. No sends, submits, approvals or uploads.
 3. Never read board-resolution content in Ask VCFO tools.
-4. Do not edit `src/data/checklist.ts`, step validators, docx generators, `src/lib/checklist-step-gate.ts`, compliance math, the email dispatcher, or BR finalize.
+4. Do not edit `src/data/checklist.ts`, step validators, docx generators, `src/lib/checklist/checklist-step-gate.ts`, compliance math, the email dispatcher, or BR finalize.
 5. Never use "Assist" in new names. VCFO Assist is the separate Chrome extension (`src/lib/assist-profile/`).
 6. **Never publish a topic automatically.** Only a named human reviewer publishes.
 7. Tokens, not hex. Light and dark mode both.

@@ -4,18 +4,18 @@ import { useMemo, useReducer, useRef } from 'react';
 import { ChecklistItem, getPreIncPhaseStep, StatusCode } from '@/data/checklist';
 import { TaskInstance, ActivityEvent } from '@/data/engagements';
 import { useApp } from '@/context/AppContext';
-import { type ChecklistItemResponses } from '@/lib/checklist-responses';
-import { hasResponseFormFields } from '@/lib/checklist-field-access';
+import { type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import { hasResponseFormFields } from '@/lib/checklist/checklist-field-access';
 import { cn } from '@/lib/utils';
 import { toastSuccess } from '@/lib/toast-errors';
-import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
+import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
 import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
 import {
   checklistGateViewerFrom,
   gateActiveCatalog,
   gateDisplayStatus,
   getStepGate,
-} from '@/lib/checklist-step-gate';
+} from '@/lib/checklist/checklist-step-gate';
 import { StepDetailContentView } from '@/components/admin/StepDetailContentSections';
 import {
   EMPTY_STEP_ACTIVITY,

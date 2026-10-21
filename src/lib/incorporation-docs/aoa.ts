@@ -1,5 +1,5 @@
-import { parseDirectorCount, PRE1_DIRECTOR_GENDER_IDS } from '@/lib/checklist-pre1-validation';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import { parseDirectorCount, PRE1_DIRECTOR_GENDER_IDS } from '@/lib/checklist/checklist-pre1-validation';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { stripDirectorSalutation } from '@/lib/board-resolution';
 import {
   directorField,

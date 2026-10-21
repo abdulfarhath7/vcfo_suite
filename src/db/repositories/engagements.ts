@@ -16,7 +16,7 @@ import {
   type ChecklistItemStateSlice,
   type ClientFillRequest,
   normalizeEngagementChecklistState,
-} from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-state-key';
 import {
   buildClientFillRequest,
   canRequestClientFill,
@@ -24,7 +24,7 @@ import {
   fulfillClientFillRequest,
   isClientFillPending,
   type ClientFillDecision,
-} from '@/lib/checklist-client-fill';
+} from '@/lib/checklist/checklist-client-fill';
 import {
   approvalStateOf,
   buildClientApproval,
@@ -32,13 +32,13 @@ import {
   buildManagerApproval,
   phaseCompletedByApproval,
   type ChecklistPhaseRef,
-} from '@/lib/checklist-step-approval';
-import { slimChecklistIndexState } from '@/lib/checklist-index';
+} from '@/lib/checklist/checklist-step-approval';
+import { slimChecklistIndexState } from '@/lib/checklist/checklist-index';
 import {
   checklistViewerForRole,
   redactChecklistStateForViewer,
-} from '@/lib/checklist-visibility';
-import { responseFieldIdsForItem } from '@/lib/checklist-responses';
+} from '@/lib/checklist/checklist-visibility';
+import { responseFieldIdsForItem } from '@/lib/checklist/checklist-responses';
 import {
   canRoleEditField,
   directReopenPatch,
@@ -50,11 +50,11 @@ import {
   stripLeadOnlyResponses,
   waitingOnLeadPatch,
 } from '@/lib/pre-inc-direct-flow';
-import { validateStepAgainstState } from '@/lib/checklist-step-validation';
+import { validateStepAgainstState } from '@/lib/checklist/checklist-step-validation';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
-import { sequentialLockMessage } from '@/lib/checklist-step-gate';
+import { sequentialLockMessage } from '@/lib/checklist/checklist-step-gate';
 import { normalizeEngagementSchedule } from '@/lib/schedule-windows';
 import { resolveCreateProjectManagerAssignment } from '@/lib/create-project-scope';
 import {

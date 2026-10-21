@@ -1,4 +1,4 @@
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 /** Fields the intern PATCH may send to request / retry manager-approval mail. */
 export type LeadManagerRequestPatchHint = {

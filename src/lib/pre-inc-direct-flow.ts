@@ -1,5 +1,5 @@
-import { isAwaitingReview, isLeadRequestPending } from '@/lib/checklist-item-review';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { isAwaitingReview, isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 /**
  * Pre-incorporation direct flow — the one place that says which steps skip

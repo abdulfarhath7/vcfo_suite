@@ -8,7 +8,7 @@
  *   - every derivation here is unit-testable.
  *
  * Sequencing is NOT reimplemented here. `gateActiveCatalog` from
- * `@/lib/checklist-step-gate` is the single source of truth for what is done /
+ * `@/lib/checklist/checklist-step-gate` is the single source of truth for what is done /
  * active / waiting / locked, so the overview stays a read-only reflection of
  * the same gate the wizard enforces.
  */
@@ -20,21 +20,21 @@ import {
   getItem,
   type ChecklistItem,
 } from '@/data/checklist';
-import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
-import { isRepeatField, repeatEntries } from '@/lib/checklist-repeat';
+import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import { isRepeatField, repeatEntries } from '@/lib/checklist/checklist-repeat';
 import { displayName, readProposedDirectors } from '@/lib/proposed-directors';
 import { clientIncorporationStepPath } from '@/lib/project-step-path';
 import { STEP_TAB_PARAM } from '@/lib/doc-pack/paths';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { formatWindow, windowForStep, type EngagementSchedule } from '@/lib/schedule-windows';
 import {
   gateActiveCatalog,
   getStepGate,
   isChecklistStepSequentiallyComplete,
   type ChecklistStepGateKind,
-} from '@/lib/checklist-step-gate';
-import { isReviewRejected } from '@/lib/checklist-item-review';
+} from '@/lib/checklist/checklist-step-gate';
+import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
 import { phaseKeyFromId, type PhaseColorKey } from '@/lib/phase-colors';
 
 export type ClientOverviewState = Record<string, ChecklistItemStateSlice | undefined>;

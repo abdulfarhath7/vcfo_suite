@@ -5,9 +5,9 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { AccentButton } from '@/components/noir';
 import { useApp } from '@/context/AppContext';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { IncorpDraftLabelOptions } from '@/lib/incorporation-docs/paths';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   allIncorpDraftSlotsGenerated,
   generatedIncorpDraftRowKeys,
