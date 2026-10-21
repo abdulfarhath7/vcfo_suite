@@ -49,6 +49,9 @@ function textOf(docx: Buffer): string {
     .trim();
 }
 
+/** Per-document budget; see the comment above the `it.each` below. */
+const RENDER_TIMEOUT_MS = 20_000;
+
 describe('document pack ↔ Pre-7 panel parity', () => {
   const checklistState = fullState([director('e1', 'no', 'Alpha'), director('e2', 'yes', 'Beta')]);
   const inputs = { dbId: 'eng-1', engagement: ENGAGEMENT, checklistState, brRow: FINALIZED_BR };
@@ -60,10 +63,20 @@ describe('document pack ↔ Pre-7 panel parity', () => {
     expect(incorpItems.map((item) => item.key).sort()).toEqual(slots);
   });
 
-  it('renders each document with the Pre-7 generator and inputs, under the Pre-7 filename', async () => {
+  it('marks every Pre-7 document ready and generated', () => {
+    expect(incorpItems.length).toBeGreaterThan(0);
     expect(incorpItems.every((item) => item.status === 'ready' && item.source === 'generated')).toBe(true);
-    for (const item of incorpItems) {
-      if (item.generate.kind !== 'incorp') continue;
+  });
+
+  // One case per document: each renders two .docx files, about 50 ms on an idle machine. The
+  // suite used to render all of them inside one test, which took about 2 s during `npm run test`
+  // and passed the 5 s default timeout when the machine was also busy (a `next dev` compile, a
+  // second test run). Split cases keep each render inside its own budget and name the document
+  // that fails; the explicit timeout leaves headroom for a loaded machine.
+  it.each(incorpItems.map((item) => [item.key, item] as const))(
+    'renders %s with the Pre-7 generator and inputs, under the Pre-7 filename',
+    async (_key, item) => {
+      if (item.generate.kind !== 'incorp') throw new Error(`${item.key} is not an incorp document`);
       const { doc } = item.generate;
 
       // Pre-7 panel path.
@@ -93,6 +106,7 @@ describe('document pack ↔ Pre-7 panel parity', () => {
       expect(fromPack.filename, item.key).toBe(panelFilename);
       expect(textOf(fromPack.buffer), item.key).toBe(textOf(fromPanel));
       expect(textOf(fromPack.buffer).length, item.key).toBeGreaterThan(50);
-    }
-  });
+    },
+    RENDER_TIMEOUT_MS,
+  );
 });
