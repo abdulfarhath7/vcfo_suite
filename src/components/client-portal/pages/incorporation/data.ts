@@ -10,7 +10,7 @@ import { companyShortName } from '@/lib/client-portal/company';
 import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
-import { useClientOverview } from '@/lib/use-client-overview';
+import { useClientOverview } from '@/hooks/use-client-overview';
 import { clientIncorporationStepPath } from '@/lib/projects/project-step-path';
 import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { filterFieldsByViewer } from '@/lib/checklist/checklist-field-access';

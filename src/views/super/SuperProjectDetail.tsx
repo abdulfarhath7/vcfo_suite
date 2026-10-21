@@ -9,7 +9,7 @@ import { AccentButton } from '@/components/noir/AccentButton';
 import { SuperProjectJourney } from '@/components/super/project/SuperProjectJourney';
 import { SuperProjectDocuments } from '@/components/super/project/SuperProjectDocuments';
 import { SuperProjectRail } from '@/components/super/project/SuperProjectRail';
-import { useSuperProject } from '@/lib/use-super-overview';
+import { useSuperProject } from '@/hooks/use-super-overview';
 import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
 
 /**

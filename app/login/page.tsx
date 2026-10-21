@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 import Login from "@/views/auth/Login";
 
 export const metadata = pageMetadata("Sign in", "Sign in to VCFO Suite");

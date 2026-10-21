@@ -1,6 +1,6 @@
 import InternToday from "@/views/intern/Today";
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Today", "Intern daily queue");
 

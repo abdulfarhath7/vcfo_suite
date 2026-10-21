@@ -1,6 +1,6 @@
 import { MarketingShell } from '@/components/marketing/MarketingShell';
 import { LandingPage } from '@/components/marketing/LandingPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata(
   'Home',

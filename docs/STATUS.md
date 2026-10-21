@@ -18,7 +18,7 @@ About 85 source files carry the design-system work described in `docs/design/BRI
 - Client portal variables mapped onto the shared tokens:
   `src/components/client-portal/css-src/*.css` and the generated `css/*.css`.
 - Call-site slices already migrated: the staff shell (`src/components/shell/*`,
-  `src/lib/shell-appearance.ts`), the lead Today screen (`src/views/intern/Today.tsx`,
+  `src/lib/shell/shell-appearance.ts`), the lead Today screen (`src/views/intern/Today.tsx`,
   `src/components/intern/*`), login (`src/components/auth/*`), callouts
   (`src/components/compliances/PreIncorporationNotice.tsx`), `src/components/dash/*`,
   `src/components/common/IconChip.tsx`, `src/components/ui/*-variants.ts`,

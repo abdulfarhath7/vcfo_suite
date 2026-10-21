@@ -1,6 +1,6 @@
 "use client";
 
-import { useInternPortfolio } from '@/lib/use-intern-portfolio';
+import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
 import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { internEngagementPath } from '@/lib/projects/project-step-path';
 import { ArrowUpRight, Building2, UserSquare2 } from 'lucide-react';
 import { m, useReducedMotion } from 'framer-motion';
-import { cardHover, pressScale } from '@/lib/motion';
+import { cardHover, pressScale } from '@/lib/shell/motion';
 
 export default function InternClients() {
   const { myEngagements, progressByEngagement } = useInternPortfolio();

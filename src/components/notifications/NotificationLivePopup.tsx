@@ -7,7 +7,7 @@ import { m, useReducedMotion } from 'framer-motion';
 import { Bell, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { measureGenieDock, type GenieBox } from '@/lib/notifications/genie-dock';
 import {
   formatNotificationWhen,

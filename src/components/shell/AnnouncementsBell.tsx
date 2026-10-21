@@ -10,7 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAnnouncements } from "@/lib/use-announcements";
+import { useAnnouncements } from "@/hooks/use-announcements";
 import {
   ANNOUNCEMENT_GENIE_LAND_EVENT,
   ANNOUNCEMENT_READ_EVENT,

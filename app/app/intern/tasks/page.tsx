@@ -1,6 +1,6 @@
 import InternMyWork from "@/views/intern/MyWork";
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("My work", "List, board, and timeline of your open steps and filings");
 

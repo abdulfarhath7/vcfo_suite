@@ -9,7 +9,7 @@ import { hasResponseFormFields } from '@/lib/checklist/checklist-field-access';
 import { cn } from '@/lib/utils';
 import { toastSuccess } from '@/lib/toast-errors';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
-import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
+import { useBoardResolutionProgress } from '@/hooks/use-board-resolution-progress';
 import {
   checklistGateViewerFrom,
   gateActiveCatalog,

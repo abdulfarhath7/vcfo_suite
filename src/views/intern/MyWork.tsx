@@ -11,7 +11,7 @@ import { InternWorkBoardCard, InternWorkDenseRow } from '@/components/intern/Int
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { LeadCompanyChip, LeadCompanyPill } from '@/components/intern/LeadCompanyChip';
 import { internKindChipLabel, internToneBadge, internToneBg, internToneText, KIND_TONE } from '@/components/intern/intern-tones';
-import { useInternPortfolio } from '@/lib/use-intern-portfolio';
+import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
 import {
   INTERN_WORK_VIEW_KEY,
   TIMELINE_PRIORITY_TONE,

@@ -376,7 +376,7 @@ function taking `AuthContext`, plus a cross-tenant test.
 | `/app/client/library` | `src/views/client/ask/ClientLibrary.tsx` | `useQuery(['ask','library'], fetchLibrary)` → `GET /api/ask/library` → `listLibraryItems(ctx)` (`src/db/repositories/client-library.ts:33`) → `toLibraryView` (`src/lib/ask/library.ts`) giving `{id,title,category,topicSlug,updated,savedAt,answer}`; `StatusBriefButton` → `/api/ask/brief`; export → `/api/ask/library/export?ids=`. |
 | `/app/client/library/[id]` | `src/views/client/ask/ClientLibraryItem.tsx` → `AskReader` | `fetchLibraryItem(id)` → `GET /api/ask/library/[id]` (`{item, notice}`); delete → `DELETE /api/ask/library/[id]` (`deleteLibraryItem` repo) then router push. Export `/api/ask/library/[id]/export`. |
 | `/app/client/learn/[slug]` | `src/views/client/ask/ClientLearnTopic.tsx` → `AskReader` | `fetchTopicAnswer(slug,{depth,engagementId})` → `GET /api/ask/topics/[slug]`; depth switch re-fetches; save → `POST /api/ask/library` (`saveToLibrary`). |
-| Staff vault (reference only) | `src/views/vault/DocumentVaultPage.tsx` | `useIndexedDocuments` (`src/lib/use-vault-documents.ts`) → `GET /api/documents`; `getIndexedDocumentSignedUrl` → `GET /api/documents/[id]/signed-url`. |
+| Staff vault (reference only) | `src/views/vault/DocumentVaultPage.tsx` | `useIndexedDocuments` (`src/hooks/use-vault-documents.ts`) → `GET /api/documents`; `getIndexedDocumentSignedUrl` → `GET /api/documents/[id]/signed-url`. |
 | Firm Knowledge Bank (staff) | `src/db/repositories/knowledge-bank.ts`, `app/api/knowledge-bank/**` | **Staff-only** (`requireAnyRole('admin','manager','intern')`). Not the client "Knowledge Bank": the client one is the Ask VCFO library (`client_library_items`) + topics (`src/data/ask/topics/*.json`). Do not expose firm KB files to clients. |
 
 ## 2.1 Documents — one unified "document node" model (NEW view-model, existing sources)
@@ -1726,7 +1726,7 @@ tbody tr:first-child td{border-top:0}
 .seg button.on .cnt{color:var(--primary)}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style><style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */

@@ -19,7 +19,7 @@ import {
   PreIncorporationNotice,
   PreIncorporationPortfolioNote,
 } from '@/components/compliances/PreIncorporationNotice';
-import { useFilings } from '@/lib/use-filings';
+import { useFilings } from '@/hooks/use-filings';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { ScheduleWindowControl, ScheduleWindowMeta } from '@/components/schedule/ScheduleWindowControl';

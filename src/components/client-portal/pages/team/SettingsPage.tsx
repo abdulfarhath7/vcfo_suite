@@ -9,7 +9,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import type { NotificationPrefs, NotificationPrefsPatch, WhatsAppCategory, EmailOptional } from '@/lib/client-portal/notification-prefs';
 import type { ClientTeamView } from '@/db/repositories/client-team';
 import { usePortal } from '../../PortalProvider';

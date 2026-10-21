@@ -13,7 +13,7 @@ import {
   formatClientDate,
   relativeDayLabel,
 } from '@/components/client/overview/client-overview-format';
-import { ease } from '@/lib/motion';
+import { ease } from '@/lib/shell/motion';
 import { cn } from '@/lib/utils';
 
 /**

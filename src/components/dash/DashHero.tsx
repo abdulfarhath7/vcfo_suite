@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
-import { surfaceCssVars } from '@/lib/shell-appearance';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
+import { surfaceCssVars } from '@/lib/shell/shell-appearance';
 import { DashHeroSettings } from '@/components/dash/DashHeroSettings';
 import { ClientLocaleNowLabel } from '@/hooks/use-client-locale-date';
 

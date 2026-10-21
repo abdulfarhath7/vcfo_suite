@@ -17,7 +17,7 @@ import {
   phaseFill,
   STATE_TONE,
 } from '@/components/super/overview/super-overview-format';
-import { useSuperOverview } from '@/lib/use-super-overview';
+import { useSuperOverview } from '@/hooks/use-super-overview';
 import {
   needsAttention,
   SUPER_PROJECTS_HREF,

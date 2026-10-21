@@ -1,6 +1,6 @@
 import { HomePage } from "@/components/client-portal/pages/home/HomePage";
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Home", "Your India entity at a glance");
 

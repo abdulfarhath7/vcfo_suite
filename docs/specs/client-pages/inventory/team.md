@@ -317,7 +317,7 @@ Legend: **EXISTS** = usable today; **PARTIAL** = exists but needs a change; **NE
 
 | UI element | Prototype value | Real source | Status / backend needed |
 |---|---|---|---|
-| List | 6 items | `useAnnouncements()` (`src/lib/use-announcements.ts`) → `GET /api/announcements` → `listAnnouncements` (`src/db/repositories/announcements.ts:67`, firm-wide, newest first, cap 80/120) → `Announcement {id,title,body,kind,origin,sourceName,sourceUrl,authorId,authorName,authorRole,publishedAt}`; live head poll every 4 s (`?head=1` → `getAnnouncementBoardHead`) | EXISTS |
+| List | 6 items | `useAnnouncements()` (`src/hooks/use-announcements.ts`) → `GET /api/announcements` → `listAnnouncements` (`src/db/repositories/announcements.ts:67`, firm-wide, newest first, cap 80/120) → `Announcement {id,title,body,kind,origin,sourceName,sourceUrl,authorId,authorName,authorRole,publishedAt}`; live head poll every 4 s (`?head=1` → `getAnnouncementBoardHead`) | EXISTS |
 | Kind chip text | Deadline, MCA, Compliance, Tax, GST, Post-Incorp | `ANNOUNCEMENT_KIND_LABEL` (`src/lib/notifications/announcements.ts`) | EXISTS (colours per AN-06) |
 | Date tile | 8 OCT | `publishedAt` in IST (`announcementYmdIst`) | EXISTS |
 | "From Priya Raman" / "Official feed" | | `announcementAttribution` returns "From VCFOSuite" for feed | PARTIAL: feed → "Official feed" |
@@ -334,7 +334,7 @@ Legend: **EXISTS** = usable today; **PARTIAL** = exists but needs a change; **NE
 
 | UI element | Prototype value | Real source | Status / backend needed |
 |---|---|---|---|
-| Rows (title, body, time, read) | 11 items | `useNotificationHistory()` (`src/lib/use-notification-history.ts`) → `GET /api/notifications?history=1` → `listNotifications(ctx,{includeDismissed:true})` → `AppNotification {id,kind,title,body,engagementId,companyName,itemId,href,createdAt,read,dismissedAt}` | EXISTS |
+| Rows (title, body, time, read) | 11 items | `useNotificationHistory()` (`src/hooks/use-notification-history.ts`) → `GET /api/notifications?history=1` → `listNotifications(ctx,{includeDismissed:true})` → `AppNotification {id,kind,title,body,engagementId,companyName,itemId,href,createdAt,read,dismissedAt}` | EXISTS |
 | Day groups | Today / Earlier this week / Earlier | `groupNotificationsForHistory` (`src/lib/notifications/notification-dismiss.ts`) | EXISTS |
 | Type → icon/chip/filter | doc, back, step, time, deadline, mail, ann, team | `NotificationKind` = checklist.deliver/submit/review/unlock, docs.share, request.created/uploaded, team.assigned/removed, email.sent/skipped/failed (`src/lib/checklist/checklist-notifications.ts:14-27`) | PARTIAL: map existing kinds → request.created → Request; checklist.review (rejected) / request sent back → Sent back; checklist.review (accepted)/deliver → Step; email.* → Email; team.* → Team. **NEW kinds**: `request.sent_back`, `timeline.changed`, `compliance.due` (deadline), `announcement.posted`, `team.joined` (+ producers: schedule/change-request approval, compliance digest job `src/jobs/compliance-generate.ts`, announcement create, invite accept) |
 | Body parts with deep links (idea #9) | "Utility bill for the office" → step 7 … | only one `href` per notification today | NEW: optional `links jsonb` column on `notifications` (`[{label, href, external?}]`) filled by producers; fallback to `body` text + `href` |
@@ -379,7 +379,7 @@ Legend: **EXISTS** = usable today; **PARTIAL** = exists but needs a change; **NE
 | Quiet hours | 9 pm – 8 am | none | NEW: in `notification_prefs`; WhatsApp sends during quiet hours are deferred (Inngest delay) or skipped with reason `quiet_hours` (add to `SkipReason`) |
 | Weekly summary · Monday 9 am | email | no digest for clients | NEW: Inngest cron (`src/jobs/`) Monday 09:00 IST, respects prefs |
 | Theme Light/Dark/System | pill | `next-themes`; `client_portal_prefs.theme` (schema only) | PARTIAL: persist via NEW portal-prefs repository |
-| Reduce motion | toggle | `useShellAppearance()` (`src/lib/use-shell-appearance.ts`, localStorage) `prefs.reduceMotion` | EXISTS (local; optionally add `reduce_motion` to `client_portal_prefs`) |
+| Reduce motion | toggle | `useShellAppearance()` (`src/hooks/use-shell-appearance.ts`, localStorage) `prefs.reduceMotion` | EXISTS (local; optionally add `reduce_motion` to `client_portal_prefs`) |
 | Sign out | (not on page) | `useApp().signOut()`; shell account row | EXISTS |
 
 ---
@@ -464,7 +464,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */

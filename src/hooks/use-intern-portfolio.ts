@@ -10,7 +10,7 @@ import {
 } from '@/lib/intern/intern-dashboard';
 import type { BoardResolutionProgressSnapshot } from '@/lib/client/client-progress-board';
 import { useComplianceFilings } from '@/hooks/use-compliance-filings';
-import { useFilings } from '@/lib/use-filings';
+import { useFilings } from '@/hooks/use-filings';
 import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
 import { buildInternWorkItems, internAssignedToEngagement, internWorkKpis } from '@/lib/intern/intern-work';
 

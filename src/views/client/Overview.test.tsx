@@ -11,12 +11,12 @@ import {
 
 const useClientOverview = vi.fn();
 
-vi.mock('@/lib/use-client-overview', () => ({
+vi.mock('@/hooks/use-client-overview', () => ({
   useClientOverview: () => useClientOverview(),
 }));
 
 /** The shell appearance hook reads localStorage + matchMedia; a stub keeps this a unit test. */
-vi.mock('@/lib/use-shell-appearance', () => ({
+vi.mock('@/hooks/use-shell-appearance', () => ({
   useShellAppearance: () => ({
     hero: {},
     motion: 'default',

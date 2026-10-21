@@ -6,7 +6,7 @@ import { SEO } from '@/components/SEO';
 import { Eyebrow, Mono, TrustBadge } from '@/components/noir';
 import { Button } from '@/components/ui/button';
 import { SbcLogo } from '@/components/brand/SbcLogo';
-import { ease } from '@/lib/motion';
+import { ease } from '@/lib/shell/motion';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 
 /**

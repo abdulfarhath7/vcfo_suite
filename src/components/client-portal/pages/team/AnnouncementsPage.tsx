@@ -8,8 +8,8 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAnnouncements } from '@/lib/use-announcements';
-import { useClientOverview } from '@/lib/use-client-overview';
+import { useAnnouncements } from '@/hooks/use-announcements';
+import { useClientOverview } from '@/hooks/use-client-overview';
 import { ANNOUNCEMENT_KIND_LABEL, type Announcement } from '@/lib/notifications/announcements';
 import { VCFO_PORTAL_TASKS, type VcfoPortalTask } from '@/lib/notifications/announcement-portals';
 import { usePortal } from '../../PortalProvider';

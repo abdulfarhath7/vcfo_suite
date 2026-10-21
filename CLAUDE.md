@@ -115,7 +115,7 @@ owner's in-progress work and must not be reverted or reformatted by a cleanup:
   and fonts (Public Sans, IBM Plex Mono), with old names kept as aliases.
 - `src/components/client-portal/css-src/*` and the generated `css/*` — the portal's variables
   now point at the shared tokens.
-- `src/components/{shell,intern,dash,common,auth,compliances,admin}/*`, `src/lib/shell-appearance.ts`,
+- `src/components/{shell,intern,dash,common,auth,compliances,admin}/*`, `src/lib/shell/shell-appearance.ts`,
   `src/views/intern/Today.tsx`, `src/views/settings/AppearanceSettings.tsx` — migrated slices.
 - `scripts/seed-demo.ts` plus untracked `scripts/seed-demo-extras.ts` — demo data for every
   portal surface (`seed-demo.ts` imports the extras file, so both ship together).

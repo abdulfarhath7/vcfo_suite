@@ -16,7 +16,7 @@
  * code or tests.
  */
 
-import { phaseKeyFromId, type PhaseColorKey } from '@/lib/phase-colors';
+import { phaseKeyFromId, type PhaseColorKey } from '@/lib/shell/phase-colors';
 
 /** A CSS colour built from a design token. */
 export type ChartColor = string;

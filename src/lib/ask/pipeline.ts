@@ -14,7 +14,7 @@ import {
   getAskConversationWithMessages,
 } from '@/db/repositories/ask-conversations';
 import { appendAskMessage } from '@/db/repositories/ask-messages';
-import { firmDisplayName } from '@/lib/brand';
+import { firmDisplayName } from '@/lib/shell/brand';
 import { assertAskRole, AskForbiddenError, shellAllowedForRole } from '@/lib/ask/access';
 import { askConfig, askFeatures } from '@/lib/ask/config';
 import { contextAnswer } from '@/lib/ask/context-answer';

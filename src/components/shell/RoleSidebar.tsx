@@ -57,9 +57,9 @@ import {
 import { cycleSidebarMode, shellDesktopNavExpanded, sidebarPinCopy } from '@/components/shell/intern-sidebar';
 import { MotionActivePill, SidebarHoverGlass, sidebarHoverAttrs, useSidebarHoverFollow } from '@/components/shell/MotionActivePill';
 import { roleHomePath, roleSettingsPath } from '@/lib/auth-routes';
-import { useInternPortfolio } from '@/lib/use-intern-portfolio';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
-import { surfaceCssVars } from '@/lib/shell-appearance';
+import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
+import { surfaceCssVars } from '@/lib/shell/shell-appearance';
 
 interface Item {
   to: string;

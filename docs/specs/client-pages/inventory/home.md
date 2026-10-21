@@ -171,7 +171,7 @@ Data → real app
 | field | example | source in real app |
 |---|---|---|
 | date | TUE 6 OCT 2026 | client clock; `src/hooks/use-client-locale-date.ts` |
-| company name | Northwind Technologies India Pvt Ltd | `overview.engagement.companyName` (GET `/api/client/overview`, `useClientOverview()` in `src/lib/use-client-overview.ts`, repo `getClientOverview` in `src/db/repositories/client-overview.ts`) |
+| company name | Northwind Technologies India Pvt Ltd | `overview.engagement.companyName` (GET `/api/client/overview`, `useClientOverview()` in `src/hooks/use-client-overview.ts`, repo `getClientOverview` in `src/db/repositories/client-overview.ts`) |
 | ring % before | 43% = 6/14 | `overview.progress.byPhase` → sum of phases `pre-inc-phase-1` + `pre-inc-phase-2` (done/total). Existing. |
 | ring % after | 64% = 7/11 | `overview.progress.byPhase` `post-inc-phase-3`. Existing. |
 | Waiting on Northwind | 4 | prototype = number of open items in "Needs from Northwind" (2 upload + 1 fill + 1 correct). Real `overview.ballInCourt.waitingOnClient` counts ACTIVE STEPS, not items → **NEW: item-level needs list (see 5.2); count = its length.** |
@@ -864,7 +864,7 @@ Full verbatim markup of every card is in Appendix B; the phone CSS in Appendix C
 
 | need | provider |
 |---|---|
-| One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/lib/use-client-overview.ts`), pure builders in `src/lib/client/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
+| One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/hooks/use-client-overview.ts`), pure builders in `src/lib/client/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
 | Company name, legal form, incorporation date, registered office | `overview.engagement` |
 | Before/after switch | `overview.incorporated` |
 | Phase progress (ring, Steps card chips, timeline %) | `overview.progress.byPhase` |
@@ -1002,7 +1002,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -2653,7 +2653,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -2788,7 +2788,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -2918,7 +2918,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -3081,7 +3081,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -3215,7 +3215,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -3347,7 +3347,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -3479,7 +3479,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */

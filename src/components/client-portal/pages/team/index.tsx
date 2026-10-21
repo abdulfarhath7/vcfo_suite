@@ -7,7 +7,7 @@
  */
 import { useEffect, type ReactNode } from 'react';
 import { usePortalOptional } from '../../PortalProvider';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { TeamPage } from './TeamPage';
 import { AnnouncementsPage } from './AnnouncementsPage';
 import { NotificationsPage } from './NotificationsPage';

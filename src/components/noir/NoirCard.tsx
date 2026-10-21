@@ -3,7 +3,7 @@
 import { HTMLAttributes } from "react";
 import { m, useReducedMotion } from "framer-motion";
 import { cn } from '@/lib/utils';
-import { cardHover } from '@/lib/motion';
+import { cardHover } from '@/lib/shell/motion';
 
 interface NoirCardProps extends HTMLAttributes<HTMLDivElement> {
   raised?: boolean;

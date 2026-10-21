@@ -14,7 +14,7 @@ import { SuperAttentionPanel } from '@/components/super/overview/SuperAttentionP
 import { SuperWorkloadPanel } from '@/components/super/overview/SuperWorkloadPanel';
 import { SuperSideRail } from '@/components/super/overview/SuperSideRail';
 import { SuperOverviewSkeleton } from '@/components/super/overview/SuperOverviewSkeleton';
-import { useSuperOverview } from '@/lib/use-super-overview';
+import { useSuperOverview } from '@/hooks/use-super-overview';
 import { SUPER_ATTENTION_HREF, SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
 

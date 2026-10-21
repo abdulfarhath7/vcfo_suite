@@ -24,7 +24,7 @@ import {
   type VaultDocument,
 } from '@/lib/documents/vault-documents';
 import { internVisibleDocuments } from '@/lib/documents/document-access';
-import { getIndexedDocumentSignedUrl, useIndexedDocuments } from '@/lib/use-vault-documents';
+import { getIndexedDocumentSignedUrl, useIndexedDocuments } from '@/hooks/use-vault-documents';
 import { isMilestoneStoragePath } from '@/lib/documents/milestone-document-storage';
 import { adminProjectPath, internEngagementPath } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';

@@ -40,7 +40,7 @@ in `src/components/client-portal/`; check that your change adds no new ones.
    TanStack Query; see `src/views/announcements/AnnouncementsPage.tsx`).
 2. Add a thin route file `app/app/<role>/<slug>/page.tsx` that exports `metadata` and renders the
    view, as `app/app/manager/announcements/page.tsx` does with `pageMetadata(...)` from
-   `src/lib/page-metadata.ts`. The role layout (`app/app/manager/layout.tsx`) already wraps it in
+   `src/lib/shell/page-metadata.ts`. The role layout (`app/app/manager/layout.tsx`) already wraps it in
    `AppShell requireRole="manager"`.
 3. Add the sidebar entry in `src/components/shell/RoleSidebar.tsx` (`{ to: \`${base}/slug\`, label, icon, iconTone }`).
 4. If it is a top-level destination, add the path to `SHELL_PRIMARY_PATHS` in

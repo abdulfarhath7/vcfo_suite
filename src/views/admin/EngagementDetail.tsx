@@ -55,7 +55,7 @@ import {
   internPhaseStepCounts,
 } from '@/lib/intern/intern-overview-progress';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
-import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
+import { useBoardResolutionProgress } from '@/hooks/use-board-resolution-progress';
 import {
   checklistGateViewerFrom,
   gateActiveCatalog,

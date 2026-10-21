@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { useInternPortfolio } from '@/lib/use-intern-portfolio';
+import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { LeadHero } from '@/components/intern/LeadHero';

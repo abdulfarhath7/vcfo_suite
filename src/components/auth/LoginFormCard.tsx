@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AccentButton, GoldDivider, Eyebrow } from '@/components/noir';
-import { springGentle, pressScale } from '@/lib/motion';
+import { springGentle, pressScale } from '@/lib/shell/motion';
 import { cn } from '@/lib/utils';
 
 export interface LoginFormCardProps {

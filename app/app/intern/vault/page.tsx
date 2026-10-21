@@ -1,5 +1,5 @@
 import DocumentVaultPage from '@/views/vault/DocumentVaultPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata('Document vault', 'Files across your assigned clients');
 

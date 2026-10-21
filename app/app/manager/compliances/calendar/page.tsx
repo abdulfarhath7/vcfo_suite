@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { ComplianceCalendarPage } from "@/views/compliances/CompliancePages";
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Calendar", "Compliance calendar");
 

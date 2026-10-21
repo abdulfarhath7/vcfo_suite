@@ -1,5 +1,5 @@
 import NotificationHistoryPage from '@/views/notifications/NotificationHistoryPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata(
   'Notification history',

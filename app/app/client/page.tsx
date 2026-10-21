@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Client portal", "Client home");
 

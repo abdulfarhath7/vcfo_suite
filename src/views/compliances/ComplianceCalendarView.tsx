@@ -11,7 +11,7 @@ import { DashSection } from '@/components/dash/DashSection';
 import { ComplianceCalendar } from '@/components/admin/ComplianceCalendar';
 import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { FilingStatusPill } from '@/components/compliances/FilingStatusPill';
-import { useFilings } from '@/lib/use-filings';
+import { useFilings } from '@/hooks/use-filings';
 import {
   filingStatus,
   financialYearForDate,

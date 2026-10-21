@@ -5,7 +5,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 // `m`, not `motion`: the app runs framer-motion in strict LazyMotion mode.
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { MessageCircleQuestion, RotateCcw, X } from 'lucide-react';
-import { ease } from '@/lib/motion';
+import { ease } from '@/lib/shell/motion';
 import { cn } from '@/lib/utils';
 import { AskComposer } from './AskComposer';
 import { AskHome } from './AskHome';

@@ -1,6 +1,6 @@
 import NotificationHistoryPage from '@/views/notifications/NotificationHistoryPage';
 import { ClientNotificationsEntry } from '@/components/client-portal/pages/team';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata(
   'Notification history',

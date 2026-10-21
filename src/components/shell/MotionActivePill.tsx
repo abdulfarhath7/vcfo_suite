@@ -9,7 +9,7 @@ import {
   type PointerEvent,
 } from 'react';
 import { m } from 'framer-motion';
-import { springSnappy } from '@/lib/motion';
+import { springSnappy } from '@/lib/shell/motion';
 import { cn } from '@/lib/utils';
 
 /** Shared-element highlight that slides between siblings (sidebar, rails, tabs). */

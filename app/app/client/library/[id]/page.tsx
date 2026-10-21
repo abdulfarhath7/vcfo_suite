@@ -1,6 +1,6 @@
 import { ReaderPage } from "@/components/client-portal/pages/documents/library/Reader";
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Library", "A saved explanation");
 

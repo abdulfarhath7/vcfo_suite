@@ -11,7 +11,7 @@ import { SEO } from '@/components/SEO';
 import { Mail, Shield, ArrowRight } from 'lucide-react';
 import { Eyebrow, Mono, TrustBadge } from '@/components/noir';
 import { SbcLogo } from '@/components/brand/SbcLogo';
-import { ease } from '@/lib/motion';
+import { ease } from '@/lib/shell/motion';
 
 export default function InviteAccept() {
   const params = useParams();

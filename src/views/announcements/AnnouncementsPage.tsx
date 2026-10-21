@@ -22,7 +22,7 @@ import {
   type Announcement,
   type AnnouncementSource,
 } from '@/lib/notifications/announcements';
-import { useAnnouncementSources, useAnnouncements } from '@/lib/use-announcements';
+import { useAnnouncementSources, useAnnouncements } from '@/hooks/use-announcements';
 import { AnnouncementComposeForm } from '@/components/announcements/AnnouncementCompose';
 import { AnnouncementRow } from '@/components/announcements/AnnouncementList';
 import { OfficialPortalsDirectory } from '@/components/announcements/OfficialPortalsDirectory';

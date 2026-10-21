@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { firmDisplayName } from '@/lib/brand';
+import { firmDisplayName } from '@/lib/shell/brand';
 import { askFeatures } from '@/lib/ask/config';
 import { briefFilename, renderStatusBriefPdf } from '@/lib/ask/pdf-brief';
 import { requireAsk } from '@/lib/ask/route-guard';

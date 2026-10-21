@@ -29,7 +29,7 @@ import {
 import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
-import { phaseKeyFromId, type PhaseColorKey } from '@/lib/phase-colors';
+import { phaseKeyFromId, type PhaseColorKey } from '@/lib/shell/phase-colors';
 import { stageDisplayLabel, type Stage } from '@/components/admin/create-project-form-utils';
 import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 

@@ -4,7 +4,7 @@ import {
   SIDEBAR_SOLIDS,
   parseShellAppearance,
   resolveSurface,
-} from '@/lib/shell-appearance';
+} from '@/lib/shell/shell-appearance';
 
 describe('parseShellAppearance', () => {
   it('returns defaults for garbage input', () => {

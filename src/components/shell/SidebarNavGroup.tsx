@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useEffect, useId, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
-import { fadeOpacity, sidebarPanelStagger, springGentle } from '@/lib/motion';
+import { fadeOpacity, sidebarPanelStagger, springGentle } from '@/lib/shell/motion';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
-import { surfaceCssVars } from '@/lib/shell-appearance';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
+import { surfaceCssVars } from '@/lib/shell/shell-appearance';
 import {
   MotionActivePill,
   SidebarHoverGlass,

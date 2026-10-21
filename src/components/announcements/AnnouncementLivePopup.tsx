@@ -6,8 +6,8 @@ import { m, useReducedMotion } from 'framer-motion';
 import { Megaphone, X } from 'lucide-react';
 import { AnnouncementKindChip, formatAnnouncementWhen } from '@/components/announcements/AnnouncementList';
 import { useApp } from '@/context/AppContext';
-import { useAnnouncements } from '@/lib/use-announcements';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+import { useAnnouncements } from '@/hooks/use-announcements';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import {
   ANNOUNCEMENT_BELL_SELECTOR,
   ANNOUNCEMENT_BELL_TARGET_SELECTOR,

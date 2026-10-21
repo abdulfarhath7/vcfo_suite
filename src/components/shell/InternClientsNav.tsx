@@ -7,7 +7,7 @@ import { LayoutGrid } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { initialsFromName } from '@/lib/auth';
 import { internEngagementPath, isInternEngagementPathname } from '@/lib/projects/project-step-path';
-import { fadeOpacity, sidebarPanelStagger } from '@/lib/motion';
+import { fadeOpacity, sidebarPanelStagger } from '@/lib/shell/motion';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Engagement } from '@/data/engagements';

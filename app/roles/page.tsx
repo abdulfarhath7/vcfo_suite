@@ -4,7 +4,7 @@ import { LandingRoles } from '@/components/marketing/sections/LandingRoles';
 import { LandingCta } from '@/components/marketing/sections/LandingCta';
 import Aurora from '@/components/auth/react-bits/Aurora';
 import { Eyebrow } from '@/components/noir';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata(
   'Roles',

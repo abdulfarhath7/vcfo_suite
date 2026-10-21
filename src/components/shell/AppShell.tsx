@@ -12,7 +12,7 @@ import { isInternEngagementPathname } from "@/lib/projects/project-step-path";
 import { shellDesktopNavExpanded } from "@/components/shell/intern-sidebar";
 import { cn } from "@/lib/utils";
 import { AuthBootScreen } from "@/components/common/AuthBootScreen";
-import { useShellAppearance } from "@/lib/use-shell-appearance";
+import { useShellAppearance } from "@/hooks/use-shell-appearance";
 import { AskPushColumn, AskShellMount } from "@/components/ask/AskShellMount";
 
 export function AppShell({

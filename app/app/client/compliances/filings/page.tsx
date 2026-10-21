@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { ClientCompliancesFilingsRoute } from "@/components/client-portal/pages/compliances";
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Filings", "Statutory filing register");
 

@@ -2,7 +2,7 @@
 
 import { m, useReducedMotion } from 'framer-motion';
 import { Calendar, CheckCircle2, FileCheck } from 'lucide-react';
-import { staggerKids, fadeUp, fadeUpReduced } from '@/lib/motion';
+import { staggerKids, fadeUp, fadeUpReduced } from '@/lib/shell/motion';
 import { cn } from '@/lib/utils';
 
 /* Status cards: a soft ground, a hairline, a text-safe glyph. No coloured edges. */

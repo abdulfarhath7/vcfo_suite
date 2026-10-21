@@ -1,4 +1,4 @@
-import { PHASE_CLASSES, type PhaseColorKey } from '@/lib/phase-colors';
+import { PHASE_CLASSES, type PhaseColorKey } from '@/lib/shell/phase-colors';
 import type { ClientLegalForm } from '@/lib/client/client-overview';
 
 /** en-IN so the dates read the way the filings do. */

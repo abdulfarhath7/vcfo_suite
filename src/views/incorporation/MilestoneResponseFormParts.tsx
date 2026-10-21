@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, m, useReducedMotion, type Variants } from 'framer-motion';
 import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Loader2, Lock, Unlock, Upload } from 'lucide-react';
-import { ease } from '@/lib/motion';
+import { ease } from '@/lib/shell/motion';
 import type { ChecklistField } from '@/data/checklist';
 import { getMilestoneDocumentSignedUrl } from '@/lib/documents/milestone-document-storage';
 import Image from 'next/image';

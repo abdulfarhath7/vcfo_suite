@@ -11,7 +11,7 @@ import { SEO } from '@/components/SEO';
 import { ArrowRight, Plus, Table as TableIcon, LayoutGrid, MapPin, Briefcase, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Surface, StatusDot, Mono, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
-import { staggerKids, fadeUp } from '@/lib/motion';
+import { staggerKids, fadeUp } from '@/lib/shell/motion';
 import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';

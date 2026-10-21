@@ -25,7 +25,7 @@ import {
   type InternOverviewPhase,
 } from '@/lib/intern/intern-overview-progress';
 import { cn } from '@/lib/utils';
-import { fadeSwap, fadeSwapReduced, fadeUp, fadeUpReduced } from '@/lib/motion';
+import { fadeSwap, fadeSwapReduced, fadeUp, fadeUpReduced } from '@/lib/shell/motion';
 import { MotionActivePill } from '@/components/shell/MotionActivePill';
 import { InternPhaseTickTrack } from '@/components/incorporation/InternPhaseTickTrack';
 import styles from './intern-engagement-overview.module.css';

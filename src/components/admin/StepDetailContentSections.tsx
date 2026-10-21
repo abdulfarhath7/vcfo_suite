@@ -24,7 +24,7 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { fadeUp, staggerKids } from '@/lib/motion';
+import { fadeUp, staggerKids } from '@/lib/shell/motion';
 
 const PHASE1_PANEL_IDS = [
   'pre-2',

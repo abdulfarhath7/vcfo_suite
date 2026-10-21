@@ -11,8 +11,8 @@ import {
   MOTION_STYLES,
   SIDEBAR_SOLIDS,
   type MotionStyle,
-} from '@/lib/shell-appearance';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+} from '@/lib/shell/shell-appearance';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { SurfacePicker } from '@/views/settings/AppearanceSettings';
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
-import { phaseClasses } from '@/lib/phase-colors';
+import { phaseClasses } from '@/lib/shell/phase-colors';
 import { cn } from '@/lib/utils';
 
 type PhaseCelebrationProps = {

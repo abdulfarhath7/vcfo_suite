@@ -6,7 +6,7 @@ import BlurText from '@/components/auth/react-bits/BlurText';
 import { LoginShowcase } from '@/components/auth/LoginShowcase';
 import { SbcLogo } from '@/components/brand/SbcLogo';
 import { Eyebrow, GrainOverlay } from '@/components/noir';
-import { springGentle } from '@/lib/motion';
+import { springGentle } from '@/lib/shell/motion';
 import { cn } from '@/lib/utils';
 
 interface LoginHeroProps {

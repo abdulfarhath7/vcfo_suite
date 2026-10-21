@@ -1,6 +1,6 @@
 import AdminDashboard from "@/views/admin/Dashboard";
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Dashboard", "Admin dashboard");
 

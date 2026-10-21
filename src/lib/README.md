@@ -1,0 +1,38 @@
+# src/lib
+
+Domain logic and helpers. Nothing here imports `db`; data access goes through
+`src/db/repositories/*`. Tests sit next to the code as `*.test.ts`. React hooks live in
+`src/hooks/`, not here.
+
+## Folders
+
+- `api/` — helpers shared by `app/api/**` route handlers (body parsing, schemas, generate and access checks).
+- `ask/` — Ask VCFO: retrieval, prompts, guards, PDF briefs and the tool calls it can make.
+- `assist-profile/` — builds the company profile that the vcfo_assist browser extension fills into MCA portals.
+- `audit/` — audit-log display formatting and the role rules for who sees which audit events.
+- `board-resolution/` — board resolution data model, docx generation, preview and storage keys.
+- `checklist/` — the 34-step SPICe+ checklist: per-step validation, gating, review, locks, responses and Part A sections.
+- `client/` — client overview, home (`/api/client/home`) and progress-board shapes, shared by the portal and the legacy client views.
+- `client-portal/` — the v7 client portal's pure models (answers, compliances, credentials, documents, steps).
+- `compliance/` — the recurring compliance calendar: FY periods, obligation instances and the filings register.
+- `doc-pack/` — the incorporation document pack registry, inputs and what blocks each document.
+- `documents/` — vault and milestone document visibility rules and storage keys.
+- `email/` — outbound email (`send-email.ts`, the system of record), layout and engagement event mail.
+- `incorporation/` — incorporation answers outside the checklist itself: directors, DIR-2, pre-inc direct flow, NIC-2008, countries.
+- `incorporation-docs/` — generators for the MCA incorporation documents (MOA, AOA, INC-9, DIR-2, DIR-8 and letters).
+- `intern/` — the project lead's (intern role) dashboard, work queue, managers and personal todos.
+- `knowledge-bank/` — knowledge bank folders, search and storage keys.
+- `noc/` — the parent company NOC (Pre-2 board resolution) templates and variants.
+- `notifications/` — in-app bell, announcements, popup cadence and the dock animation.
+- `notify/` — WhatsApp nudges (outbound only; never blocks email).
+- `outlook/` — Microsoft Outlook OAuth and token encryption for sending mail as a user.
+- `projects/` — engagements (projects): create scope, DB helpers, change requests, step paths, stuck rules, schedule windows, deadlines and pending approvals.
+- `shell/` — app chrome: shell appearance, brand name, motion presets, phase colours and page metadata.
+- `super/` — the super admin overview shape builder.
+
+## Top-level files
+
+Generic helpers used across areas: `utils.ts` (`cn`), `auth.ts` (role helpers such as
+`isFirmWideAdmin`), `auth-routes.ts`, `slug.ts`, `site-url.ts`, `person-name.ts`,
+`toast-errors.ts`, `upload-limits.ts`, `account-avatar.ts`, `credentials-crypto.ts`.
+`dev-allowed-origins.test.ts` checks `next.config.mjs`.

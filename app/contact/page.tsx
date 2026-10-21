@@ -3,7 +3,7 @@ import { ContactForm } from '@/components/marketing/ContactForm';
 import { MarketingShell } from '@/components/marketing/MarketingShell';
 import Aurora from '@/components/auth/react-bits/Aurora';
 import { Eyebrow } from '@/components/noir';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata(
   'Contact',

@@ -67,7 +67,7 @@ import { ASSIST_PROFILE_STEP_IDS } from '@/lib/assist-profile/paths';
 import { useDocPack } from '@/hooks/use-doc-pack';
 import { docPackPagePath, docPackStepPath, type DocPackShell } from '@/lib/doc-pack/paths';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
-import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
+import { useBoardResolutionProgress } from '@/hooks/use-board-resolution-progress';
 import {
   checklistGateViewerFrom,
   gateActiveCatalog,

@@ -169,7 +169,7 @@ Data → real app
 | Done | field | example | source in real app |
 |---|---|---|---|
 | ☑ | date | TUE 6 OCT 2026 | client clock; `src/hooks/use-client-locale-date.ts` |
-| ☑ | company name | Northwind Technologies India Pvt Ltd | `overview.engagement.companyName` (GET `/api/client/overview`, `useClientOverview()` in `src/lib/use-client-overview.ts`, repo `getClientOverview` in `src/db/repositories/client-overview.ts`) |
+| ☑ | company name | Northwind Technologies India Pvt Ltd | `overview.engagement.companyName` (GET `/api/client/overview`, `useClientOverview()` in `src/hooks/use-client-overview.ts`, repo `getClientOverview` in `src/db/repositories/client-overview.ts`) |
 | ☑ | ring % before | 43% = 6/14 | `overview.progress.byPhase` → sum of phases `pre-inc-phase-1` + `pre-inc-phase-2` (done/total). Existing. |
 | ☑ | ring % after | 64% = 7/11 | `overview.progress.byPhase` `post-inc-phase-3`. Existing. |
 | ☑ | Waiting on Northwind | 4 | prototype = number of open items in "Needs from Northwind" (2 upload + 1 fill + 1 correct). Real `overview.ballInCourt.waitingOnClient` counts ACTIVE STEPS, not items → **NEW: item-level needs list (see 5.2); count = its length.** |
@@ -862,7 +862,7 @@ Full verbatim markup of every card is in Appendix B; the phone CSS in Appendix C
 
 | Done | need | provider |
 |---|---|---|
-| ☑ | One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/lib/use-client-overview.ts`), pure builders in `src/lib/client/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
+| ☑ | One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/hooks/use-client-overview.ts`), pure builders in `src/lib/client/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
 | ☑ | Company name, legal form, incorporation date, registered office | `overview.engagement` |
 | ☑ | Before/after switch | `overview.incorporated` |
 | ☑ | Phase progress (ring, Steps card chips, timeline %) | `overview.progress.byPhase` |
@@ -1277,7 +1277,7 @@ Note on paths: the brief says `src/domain/checklist*`. There is no `src/domain` 
 | ☑ | Approval sub-state | `approvalStateOf`, `isAwaitingClientApproval`, `stepApprovalLabel`, `clientApproveBlockedReason`, `phaseCompletedByApproval` | `src/lib/checklist/checklist-step-approval.ts` |
 | ☑ | Client fill request | `isClientFillAwaitingClient`, `clientFillLabel` | `src/lib/checklist/checklist-client-fill.ts` |
 | ☑ | Release / redaction | `isStepReleasedToClient`, `redactChecklistSliceForViewer` | `src/lib/checklist/checklist-visibility.ts` |
-| ☑ | Progress per phase / overall, ball in court, next action, milestones, documents counts, deliverables, incorporated flag, team | `getClientOverview(ctx)` → `GET /api/client/overview` → `useClientOverview()`; builders `buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildMilestones`, `buildDocumentCounts`, `buildDeliverables`, `identifiersFromState` | `src/db/repositories/client-overview.ts`, `app/api/client/overview/route.ts`, `src/lib/use-client-overview.ts`, `src/lib/client/client-overview.ts` |
+| ☑ | Progress per phase / overall, ball in court, next action, milestones, documents counts, deliverables, incorporated flag, team | `getClientOverview(ctx)` → `GET /api/client/overview` → `useClientOverview()`; builders `buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildMilestones`, `buildDocumentCounts`, `buildDeliverables`, `identifiersFromState` | `src/db/repositories/client-overview.ts`, `app/api/client/overview/route.ts`, `src/hooks/use-client-overview.ts`, `src/lib/client/client-overview.ts` |
 | ☑ | Date windows | `engagement.schedule` (`EngagementSchedule {incorporation?, steps?}`), `windowForStep(schedule,itemId)`, `formatWindow`; write `PATCH /api/engagements/[id]/schedule` (manager/admin only) | `src/lib/projects/schedule-windows.ts`, `src/db/repositories/schedule.ts`, `app/api/engagements/[id]/schedule/route.ts` |
 | ☑ | Incorporation date | `engagements.incorporation_date` (`Engagement.incorporationDate`); CIN/PAN/TAN from pre-12 (`identifiersFromState`) | `src/db/schema.ts`, `src/lib/client/client-overview.ts` |
 | ☑ | Step attachments (file fields + uploaded?) | `getStepAttachmentRequirements(item, responses, ownershipType)` | `src/lib/checklist/checklist-step-attachments.ts` |
@@ -2058,7 +2058,7 @@ function taking `AuthContext`, plus a cross-tenant test.
 | ☑ | `/app/client/library` | `src/views/client/ask/ClientLibrary.tsx` | `useQuery(['ask','library'], fetchLibrary)` → `GET /api/ask/library` → `listLibraryItems(ctx)` (`src/db/repositories/client-library.ts:33`) → `toLibraryView` (`src/lib/ask/library.ts`) giving `{id,title,category,topicSlug,updated,savedAt,answer}`; `StatusBriefButton` → `/api/ask/brief`; export → `/api/ask/library/export?ids=`. |
 | ☑ | `/app/client/library/[id]` | `src/views/client/ask/ClientLibraryItem.tsx` → `AskReader` | `fetchLibraryItem(id)` → `GET /api/ask/library/[id]` (`{item, notice}`); delete → `DELETE /api/ask/library/[id]` (`deleteLibraryItem` repo) then router push. Export `/api/ask/library/[id]/export`. |
 | ☑ | `/app/client/learn/[slug]` | `src/views/client/ask/ClientLearnTopic.tsx` → `AskReader` | `fetchTopicAnswer(slug,{depth,engagementId})` → `GET /api/ask/topics/[slug]`; depth switch re-fetches; save → `POST /api/ask/library` (`saveToLibrary`). |
-| ☑ | Staff vault (reference only) | `src/views/vault/DocumentVaultPage.tsx` | `useIndexedDocuments` (`src/lib/use-vault-documents.ts`) → `GET /api/documents`; `getIndexedDocumentSignedUrl` → `GET /api/documents/[id]/signed-url`. |
+| ☑ | Staff vault (reference only) | `src/views/vault/DocumentVaultPage.tsx` | `useIndexedDocuments` (`src/hooks/use-vault-documents.ts`) → `GET /api/documents`; `getIndexedDocumentSignedUrl` → `GET /api/documents/[id]/signed-url`. |
 | ☑ | Firm Knowledge Bank (staff) | `src/db/repositories/knowledge-bank.ts`, `app/api/knowledge-bank/**` | **Staff-only** (`requireAnyRole('admin','manager','intern')`). Not the client "Knowledge Bank": the client one is the Ask VCFO library (`client_library_items`) + topics (`src/data/ask/topics/*.json`). Do not expose firm KB files to clients. |
 
 ### 2.1 Documents — one unified "document node" model (NEW view-model, existing sources)
@@ -2489,7 +2489,7 @@ Legend: **EXISTS** = usable today; **PARTIAL** = exists but needs a change; **NE
 
 | Done | UI element | Prototype value | Real source | Status / backend needed |
 |---|---|---|---|---|
-| ☑ | List | 6 items | `useAnnouncements()` (`src/lib/use-announcements.ts`) → `GET /api/announcements` → `listAnnouncements` (`src/db/repositories/announcements.ts:67`, firm-wide, newest first, cap 80/120) → `Announcement {id,title,body,kind,origin,sourceName,sourceUrl,authorId,authorName,authorRole,publishedAt}`; live head poll every 4 s (`?head=1` → `getAnnouncementBoardHead`) | EXISTS |
+| ☑ | List | 6 items | `useAnnouncements()` (`src/hooks/use-announcements.ts`) → `GET /api/announcements` → `listAnnouncements` (`src/db/repositories/announcements.ts:67`, firm-wide, newest first, cap 80/120) → `Announcement {id,title,body,kind,origin,sourceName,sourceUrl,authorId,authorName,authorRole,publishedAt}`; live head poll every 4 s (`?head=1` → `getAnnouncementBoardHead`) | EXISTS |
 | ☑ | Kind chip text | Deadline, MCA, Compliance, Tax, GST, Post-Incorp | `ANNOUNCEMENT_KIND_LABEL` (`src/lib/notifications/announcements.ts`) | EXISTS (colours per AN-06) |
 | ☑ | Date tile | 8 OCT | `publishedAt` in IST (`announcementYmdIst`) | EXISTS |
 | ☑ | "From Priya Raman" / "Official feed" | | `announcementAttribution` returns "From VCFOSuite" for feed | PARTIAL: feed → "Official feed" |
@@ -2506,7 +2506,7 @@ Legend: **EXISTS** = usable today; **PARTIAL** = exists but needs a change; **NE
 
 | Done | UI element | Prototype value | Real source | Status / backend needed |
 |---|---|---|---|---|
-| ☑ | Rows (title, body, time, read) | 11 items | `useNotificationHistory()` (`src/lib/use-notification-history.ts`) → `GET /api/notifications?history=1` → `listNotifications(ctx,{includeDismissed:true})` → `AppNotification {id,kind,title,body,engagementId,companyName,itemId,href,createdAt,read,dismissedAt}` | EXISTS |
+| ☑ | Rows (title, body, time, read) | 11 items | `useNotificationHistory()` (`src/hooks/use-notification-history.ts`) → `GET /api/notifications?history=1` → `listNotifications(ctx,{includeDismissed:true})` → `AppNotification {id,kind,title,body,engagementId,companyName,itemId,href,createdAt,read,dismissedAt}` | EXISTS |
 | ☑ | Day groups | Today / Earlier this week / Earlier | `groupNotificationsForHistory` (`src/lib/notifications/notification-dismiss.ts`) | EXISTS |
 | ☑ | Type → icon/chip/filter | doc, back, step, time, deadline, mail, ann, team | `NotificationKind` = checklist.deliver/submit/review/unlock, docs.share, request.created/uploaded, team.assigned/removed, email.sent/skipped/failed (`src/lib/checklist/checklist-notifications.ts:14-27`) | PARTIAL: map existing kinds → request.created → Request; checklist.review (rejected) / request sent back → Sent back; checklist.review (accepted)/deliver → Step; email.* → Email; team.* → Team. **NEW kinds**: `request.sent_back`, `timeline.changed`, `compliance.due` (deadline), `announcement.posted`, `team.joined` (+ producers: schedule/change-request approval, compliance digest job `src/jobs/compliance-generate.ts`, announcement create, invite accept) |
 | ◐ | Body parts with deep links (idea #9) | "Utility bill for the office" → step 7 … | only one `href` per notification today | NEW: optional `links jsonb` column on `notifications` (`[{label, href, external?}]`) filled by producers; fallback to `body` text + `href` | single href
@@ -2551,7 +2551,7 @@ Legend: **EXISTS** = usable today; **PARTIAL** = exists but needs a change; **NE
 | ◐ | Quiet hours | 9 pm – 8 am | none | NEW: in `notification_prefs`; WhatsApp sends during quiet hours are deferred (Inngest delay) or skipped with reason `quiet_hours` (add to `SkipReason`) | stored only
 | ◐ | Weekly summary · Monday 9 am | email | no digest for clients | NEW: Inngest cron (`src/jobs/`) Monday 09:00 IST, respects prefs | stored only, no job
 | ☑ | Theme Light/Dark/System | pill | `next-themes`; `client_portal_prefs.theme` (schema only) | PARTIAL: persist via NEW portal-prefs repository |
-| ☑ | Reduce motion | toggle | `useShellAppearance()` (`src/lib/use-shell-appearance.ts`, localStorage) `prefs.reduceMotion` | EXISTS (local; optionally add `reduce_motion` to `client_portal_prefs`) |
+| ☑ | Reduce motion | toggle | `useShellAppearance()` (`src/hooks/use-shell-appearance.ts`, localStorage) `prefs.reduceMotion` | EXISTS (local; optionally add `reduce_motion` to `client_portal_prefs`) |
 | ☑ | Sign out | (not on page) | `useApp().signOut()`; shell account row | EXISTS |
 
 ---

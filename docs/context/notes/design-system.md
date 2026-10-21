@@ -44,7 +44,7 @@ The short version, which overrides everything in the "superseded" section below:
   class names still resolve blue. Prefer `primary` / `blue-*` in new UI.
 - Phase washes (journey chips only, ~8–12% chroma): `--phase-pre` sky,
   `--phase-filing` teal, `--phase-post` teal-green, `--phase-fema` indigo,
-  `--phase-registration` violet-blue. Helper: `src/lib/phase-colors.ts`.
+  `--phase-registration` violet-blue. Helper: `src/lib/shell/phase-colors.ts`.
 - Status (chips/icons only, never page fill): teal-green done · coral waiting ·
   slate lock · rose/red overdue/error. Never khaki, ochre, or brown — waiting
   used to be muted gold and read as brown; it is now coral. Categorical
@@ -88,8 +88,8 @@ dashboard uses wins, and everything else is deprecated for new surfaces.
 | Page transition wrapper | `PageTransition` (wraps every view) + `SEO` | [src/components/shell/PageTransition.tsx](src/components/shell/PageTransition.tsx) |
 | Sidebar / shell / top bar | `AppShell` → `RoleSidebar` (`superAdminItems` nav array) + `TopBar` + `CommandPalette` | [src/components/shell/AppShell.tsx](src/components/shell/AppShell.tsx), [src/components/shell/RoleSidebar.tsx:156](src/components/shell/RoleSidebar.tsx#L156) |
 | Greeting card (hero) | `DashHero` — **the only one**. Clock line + settings popover on top, serif title with optional sub-line, ring, hairline, stat strip; hero skin, ambient motion and reduced motion from `useShellAppearance`. `LeadHero` and `ClientOverviewHero` are thin content wrappers around it. | [src/components/dash/DashHero.tsx](src/components/dash/DashHero.tsx), [src/components/dash/DashHeroSettings.tsx](src/components/dash/DashHeroSettings.tsx) |
-| Motion | `src/lib/motion.ts` — `cardHover`, `tweenShort`, `fadeUp`, `springSnappy`, `staggerKids`; `layoutId` pills via `MotionActivePill` | [src/lib/motion.ts](src/lib/motion.ts) |
-| Phase colours | `phaseKeyFromId` + `PHASE_CLASSES` + `--phase-*` tokens | [src/lib/phase-colors.ts](src/lib/phase-colors.ts) |
+| Motion | `src/lib/shell/motion.ts` — `cardHover`, `tweenShort`, `fadeUp`, `springSnappy`, `staggerKids`; `layoutId` pills via `MotionActivePill` | [src/lib/shell/motion.ts](src/lib/shell/motion.ts) |
+| Phase colours | `phaseKeyFromId` + `PHASE_CLASSES` + `--phase-*` tokens | [src/lib/shell/phase-colors.ts](src/lib/shell/phase-colors.ts) |
 | Spacing / radius / typography | Panel gap `gap-3`; panel padding `px-4 pt-3 pb-3 pt-2.5`; radius `var(--radius)`; type scale `10.5 / 11 / 11.5 / 12 / 12.5 / 13 px` with `font-extrabold` labels; serif display for numbers (`.serif`), Manrope UI, IBM Plex Mono for identifiers | [app/globals.css](app/globals.css) |
 
 ## Composition rules read off the lead dashboard

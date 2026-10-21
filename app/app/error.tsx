@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { m, useReducedMotion } from 'framer-motion';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { pageEnterReduced, pageEnter } from '@/lib/motion';
+import { pageEnterReduced, pageEnter } from '@/lib/shell/motion';
 
 export default function AppError({
   error,

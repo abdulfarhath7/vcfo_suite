@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 import AuditLog from "@/views/admin/AuditLog";
 
 export const metadata = pageMetadata("Audit log", "Firm audit trail");

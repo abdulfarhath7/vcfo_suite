@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 import FirmPeople from "@/views/admin/FirmPeople";
 
 export const metadata = pageMetadata("People", "Portfolio people overview");

@@ -1,6 +1,6 @@
 import InternClients from "@/views/intern/Clients";
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Clients", "Assigned clients");
 

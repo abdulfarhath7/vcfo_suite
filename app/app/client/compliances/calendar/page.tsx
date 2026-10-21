@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { ClientCompliancesCalendarRoute } from "@/components/client-portal/pages/compliances";
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Calendar", "Compliance calendar");
 

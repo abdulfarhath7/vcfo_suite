@@ -10,7 +10,7 @@ import {
   writeShellAppearance,
   type ShellAppearance,
   type SurfaceAppearance,
-} from '@/lib/shell-appearance';
+} from '@/lib/shell/shell-appearance';
 
 export function useShellAppearance() {
   const [prefs, setPrefs] = useState<ShellAppearance>(DEFAULT_SHELL_APPEARANCE);

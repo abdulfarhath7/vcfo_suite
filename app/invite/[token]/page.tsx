@@ -1,6 +1,6 @@
 import InviteAccept from "@/views/auth/InviteAccept";
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Accept invite", "Accept your VCFO Suite invitation");
 

@@ -9,7 +9,7 @@ import { ClientCard } from '@/components/client/overview/ClientCard';
 import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
 import type { ClientOverviewDocuments } from '@/lib/client/client-overview';
 import { formatClientDate } from '@/components/client/overview/client-overview-format';
-import { ease } from '@/lib/motion';
+import { ease } from '@/lib/shell/motion';
 
 const KIND_ICON: Record<string, LucideIcon> = {
   certificate: FileBadge,

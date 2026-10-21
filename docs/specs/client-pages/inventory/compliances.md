@@ -12,7 +12,7 @@ Real app today:
 - Routes `app/app/client/compliances/page.tsx` (redirects to `/calendar`), `.../calendar/page.tsx` → `ComplianceCalendarPage`, `.../filings/page.tsx` → `FilingsPage`, both in `src/views/compliances/CompliancePages.tsx`.
 - Views `src/views/compliances/ComplianceCalendarView.tsx` (statutory grid + register calendar + month list) and `src/views/compliances/FilingsView.tsx` (FY stepper, cadence / status SegmentedPickers, Monthly/Quarterly/Annual tabs, DashDataTable, PeriodMatrix).
 - NOTE: there is **no `src/domain/compliance`** in this repo. The compliance domain lives in `src/lib/compliance/*` (generate-instances, fy-periods, incorporation-state, obligations-seed, types, compliance-store) and the register logic in `src/lib/compliance/filings.ts`.
-- Data: `useFilings()` (`src/lib/use-filings.ts`) → `GET /api/filings` (`app/api/filings/route.ts`) → `getFilings(ctx, {engagementId?, fyStartYear?})` (`src/db/repositories/filings.ts`) over `compliance_instances ⨝ compliance_obligations ⨝ engagements` (`src/db/schema.ts:578`). Window write: `POST /api/filings/[id]/window` (manager roles only) → `setComplianceInstanceWindow` (`src/db/repositories/schedule.ts`).
+- Data: `useFilings()` (`src/hooks/use-filings.ts`) → `GET /api/filings` (`app/api/filings/route.ts`) → `getFilings(ctx, {engagementId?, fyStartYear?})` (`src/db/repositories/filings.ts`) over `compliance_instances ⨝ compliance_obligations ⨝ engagements` (`src/db/schema.ts:578`). Window write: `POST /api/filings/[id]/window` (manager roles only) → `setComplianceInstanceWindow` (`src/db/repositories/schedule.ts`).
 
 ---
 

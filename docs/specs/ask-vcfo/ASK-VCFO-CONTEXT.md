@@ -542,9 +542,9 @@ Panel structure: header (icon tile, "Ask VCFO", subline, close) · scrollable bo
 - Colour budget inside the panel: neutrals (slate) for surfaces, user bubble, chips and secondary buttons; **primary blue only on**: Send button, focus rings, the "You are here" stage, and link text. The Save button is a neutral outline; saved state is a teal-green check.
 - User bubble: `bg-muted` / slate-100 with foreground text (dark mode: slate-800 with near-white text).
 - Trust badges (U1): "Reviewed by {firmName}" (teal-green chip + check icon) for `origin=reviewed|deterministic`; "AI answer · check with your lead" (slate chip) for `origin=generated`. `firmName` comes from existing firm config, not hardcoded.
-- Phase colours in `Flow` / `NextStep` come from `src/lib/phase-colors.ts`. Status chips use the existing status tokens: coral waiting, teal-green done, rose overdue, slate locked.
+- Phase colours in `Flow` / `NextStep` come from `src/lib/shell/phase-colors.ts`. Status chips use the existing status tokens: coral waiting, teal-green done, rose overdue, slate locked.
 - Typography: Manrope UI, Space Grotesk for the panel greeting and reader H1, IBM Plex Mono for form codes (INC-20A, GSTR-3B) and ids.
-- Radius from `--radius`. Motion: panel slide 200 ms using existing `src/lib/motion.ts` presets; respect reduced motion. No `transform` on a `layoutId` host.
+- Radius from `--radius`. Motion: panel slide 200 ms using existing `src/lib/shell/motion.ts` presets; respect reduced motion. No `transform` on a `layoutId` host.
 - All colours via tokens; verify both themes. No raw hex in components.
 
 ### 7.5 Client answer card (order is fixed)

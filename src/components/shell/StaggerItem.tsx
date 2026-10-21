@@ -2,8 +2,8 @@
 
 import { m, useReducedMotion } from 'framer-motion';
 import { ReactNode } from 'react';
-import { fadeUp } from '@/lib/motion';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+import { fadeUp } from '@/lib/shell/motion';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 
 export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
   const osReduce = useReducedMotion();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fadeOpacity, sidebarPanelStagger, springSnappy } from '@/lib/motion';
+import { fadeOpacity, sidebarPanelStagger, springSnappy } from '@/lib/shell/motion';
 import { sidebarHoverIdFromNode } from '@/components/shell/MotionActivePill';
 
 describe('sidebarHoverIdFromNode', () => {

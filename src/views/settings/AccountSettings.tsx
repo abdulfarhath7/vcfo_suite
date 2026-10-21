@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { UserFace } from '@/components/common/UserFace';
 import { useApp } from '@/context/AppContext';
 import { ROLE_UI_LABEL, initialsFromName, type Role } from '@/lib/auth';
-import { compressImageFile } from '@/lib/shell-appearance';
+import { compressImageFile } from '@/lib/shell/shell-appearance';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 import { AppearanceSettings } from '@/views/settings/AppearanceSettings';

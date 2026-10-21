@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { ROLE_UI_LABEL } from '@/lib/auth';
 import { groupOpenPersonalTodosByOwner } from '@/lib/intern/personal-todos';
-import { usePersonalTodos } from '@/lib/use-personal-todos';
+import { usePersonalTodos } from '@/hooks/use-personal-todos';
 
 export function TeamTodosPanel({
   userId,

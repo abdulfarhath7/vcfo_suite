@@ -24,7 +24,7 @@ Every dashboard is the same skeleton: `AppShell` (navy sidebar, white top bar) a
 | Donut and legend | `DashDonut` + `DashLegendRow` | Private donuts | `LeadSideRail` now uses them |
 | Page header and back button | `PageBackCluster` / `PageBackButton` + `shell-crumbs.ts` | | |
 | Loading | Per-panel `Skeleton` blocks on `surface-sunken`; `HexgridLoader` for the boot screen | Full-screen spinners | |
-| Motion | `src/lib/motion.ts`; 150ms ease on hover and toggles; the hero's ambient twinkle only when the user picks it | | |
+| Motion | `src/lib/shell/motion.ts`; 150ms ease on hover and toggles; the hero's ambient twinkle only when the user picks it | | |
 
 ## Rules the owners enforce
 
@@ -42,7 +42,7 @@ Every dashboard is the same skeleton: `AppShell` (navy sidebar, white top bar) a
 - The nine categorical tone names on `IconChipTone` and `InternChipTone`.
 - `.gold-sheen`, `.shadow-layered-lg`, `.text-gold`, `.ring-gold` utilities in `globals.css`.
 - `--font-serif` and the `.serif` class (same face as `--font-sans`; move callers to the type styles).
-- `SURFACE_GRADIENTS` in `src/lib/shell-appearance.ts` (empty list).
+- `SURFACE_GRADIENTS` in `src/lib/shell/shell-appearance.ts` (empty list).
 - `src/components/admin/AccentKpi.tsx`, `src/components/intern/LeadMetricCard.tsx` once `StatCard` exists.
 
 ## Building a new dashboard

@@ -10,7 +10,7 @@ import { EmptyStateIllustrated, Surface } from '@/components/noir';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
 import { useApp } from '@/context/AppContext';
-import { useNotificationHistory } from '@/lib/use-notification-history';
+import { useNotificationHistory } from '@/hooks/use-notification-history';
 import {
   formatNotificationTimestampIst,
   groupNotificationsForHistory,

@@ -35,7 +35,7 @@ import {
   type ChecklistStepGateKind,
 } from '@/lib/checklist/checklist-step-gate';
 import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
-import { phaseKeyFromId, type PhaseColorKey } from '@/lib/phase-colors';
+import { phaseKeyFromId, type PhaseColorKey } from '@/lib/shell/phase-colors';
 
 export type ClientOverviewState = Record<string, ChecklistItemStateSlice | undefined>;
 

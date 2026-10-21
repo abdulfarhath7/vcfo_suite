@@ -1,6 +1,6 @@
 import EngagementDetailClient from '@/views/admin/EngagementDetailClient';
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Engagement", "Engagement detail");
 

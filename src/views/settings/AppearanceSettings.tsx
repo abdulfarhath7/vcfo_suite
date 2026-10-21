@@ -15,8 +15,8 @@ import {
   type MotionStyle,
   type SurfaceAppearance,
   type SurfaceKind,
-} from '@/lib/shell-appearance';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+} from '@/lib/shell/shell-appearance';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { toastError } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';

@@ -3,7 +3,7 @@
 import { ButtonHTMLAttributes } from "react";
 import { m, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { pressScale } from "@/lib/motion";
+import { pressScale } from "@/lib/shell/motion";
 
 type Variant = "solid" | "outline" | "ghost";
 type Size = "sm" | "md" | "lg";

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { canUseAsk } from '@/lib/ask/access';
 import { askConfig, askFeatures } from '@/lib/ask/config';
-import { firmDisplayName } from '@/lib/brand';
+import { firmDisplayName } from '@/lib/shell/brand';
 
 /**
  * GET /api/ask/status — whether the launcher should show for this user.

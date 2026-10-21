@@ -1,5 +1,5 @@
 import { BoardRoute } from '@/components/client-portal/pages/incorporation';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata('Board resolution', 'Board resolution documents');
 
