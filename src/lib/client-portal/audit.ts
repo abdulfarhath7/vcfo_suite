@@ -10,8 +10,6 @@ export type AuditNode = 'req' | 'back' | 'up' | 'ok' | 'time' | 'mail' | 'team';
 export type AuditCategory = 'Documents' | 'Milestones' | 'Team' | 'Email' | 'Credentials';
 export type AuditRoleLabel = 'Manager' | 'Lead' | 'SBC' | 'System' | 'Client';
 
-export const AUDIT_CATEGORIES: AuditCategory[] = ['Documents', 'Milestones', 'Team', 'Email', 'Credentials'];
-
 export interface ClientAuditEvent {
   id: string;
   /** ISO timestamp (keyset cursor). */

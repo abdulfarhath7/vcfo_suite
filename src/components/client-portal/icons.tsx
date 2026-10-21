@@ -55,7 +55,7 @@ export function ShellIcon({ name, size = 16, style }: { name: ShellIconName; siz
 }
 
 /** Lucide bodies (lucide-static, ISC). */
-export const LU = {
+const LU = {
   'layout-dashboard': '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
   'key-round': '<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><path d="M16.5 7.5h.01"/>',
   megaphone: '<path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14"/><path d="M8 6v8"/>',
@@ -88,40 +88,6 @@ export function Lu({ name, size = 16, style, className }: { name: LuName; size?:
       style={style}
       className={className}
       dangerouslySetInnerHTML={{ __html: LU[name] }}
-    />
-  );
-}
-
-/** Any raw SVG body (`<path …/>…`) on a 24 grid — for icons copied verbatim from a board. */
-export function RawSvg({
-  body,
-  size = 16,
-  strokeWidth = 2,
-  style,
-  className,
-  fill = 'none',
-}: {
-  body: string;
-  size?: number;
-  strokeWidth?: number;
-  style?: CSSProperties;
-  className?: string;
-  fill?: string;
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={fill}
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      style={style}
-      className={className}
-      dangerouslySetInnerHTML={{ __html: body }}
     />
   );
 }

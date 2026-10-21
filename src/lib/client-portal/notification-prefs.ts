@@ -1,15 +1,6 @@
-/**
- * Client notification preferences (Settings › Notifications) — pure types +
- * defaults shared by the repository, the API route and the page.
- *
- * Owner decision: email is LOCKED ON for documents, steps, deadlines and
- * timeline; optional for news (announcements, official feed) and the weekly
- * summary. WhatsApp is a nudge per category; no weekly summary on WhatsApp.
- */
 
-export const EMAIL_LOCKED = ['docs', 'steps', 'deadlines', 'timeline'] as const;
-export const EMAIL_OPTIONAL = ['announcements', 'feed', 'weeklyDigest'] as const;
-export const WHATSAPP_CATEGORIES = ['docs', 'steps', 'deadlines', 'timeline', 'announcements', 'feed'] as const;
+const EMAIL_OPTIONAL = ['announcements', 'feed', 'weeklyDigest'] as const;
+const WHATSAPP_CATEGORIES = ['docs', 'steps', 'deadlines', 'timeline', 'announcements', 'feed'] as const;
 
 export type EmailOptional = (typeof EMAIL_OPTIONAL)[number];
 export type WhatsAppCategory = (typeof WHATSAPP_CATEGORIES)[number];

@@ -108,7 +108,7 @@ export function avatarColor(seed: string): string {
   return AV[h % AV.length];
 }
 
-export const IST = 'Asia/Kolkata';
+const IST = 'Asia/Kolkata';
 export function dayMonth(iso: string): { d: string; m: string } {
   const dt = new Date(iso);
   return {
@@ -240,7 +240,7 @@ export function Seg({
 /* bot bubble (rule 16, board markup)                                   */
 /* ------------------------------------------------------------------ */
 
-export function Bot({ size = 48, answered = false }: { size?: number; answered?: boolean }) {
+function Bot({ size = 48, answered = false }: { size?: number; answered?: boolean }) {
   const head = Math.round(size * 0.74);
   return (
     <span className={`bface${answered ? ' ans' : ''}`} aria-hidden="true" style={{ width: size, height: size }}>
@@ -348,7 +348,7 @@ export function Info({
 /* ------------------------------------------------------------------ */
 
 /** Mount pop-ups at the portal root (outside animated/transformed ancestors), keeping the page scope. */
-export function TPortal({ children, tp }: { children: ReactNode; tp?: string }) {
+function TPortal({ children, tp }: { children: ReactNode; tp?: string }) {
   const [host, setHost] = useState<Element | null>(null);
   useEffect(() => setHost(document.querySelector('.cp')), []);
   if (!host) return null;

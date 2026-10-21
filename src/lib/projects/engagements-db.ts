@@ -569,16 +569,6 @@ export async function saveBoardResolutionDraftInDb(
   );
 }
 
-export async function finalizeBoardResolutionInDb(
-  appEngagementId: string,
-): Promise<BoardResolutionDoc> {
-  return boardResolutionMutation(
-    engagementPath(appEngagementId, '/board-resolution/finalize'),
-    { method: 'POST' },
-    'Finalize did not return board resolution.',
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Manager date windows
 // ---------------------------------------------------------------------------

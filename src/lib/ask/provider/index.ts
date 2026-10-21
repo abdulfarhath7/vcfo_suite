@@ -10,7 +10,7 @@ import { askConfig } from '@/lib/ask/config';
 export type LlmMessage = Anthropic.Beta.BetaMessageParam;
 export type LlmTool = Anthropic.Beta.BetaTool;
 export type LlmSystemBlock = Anthropic.Beta.BetaTextBlockParam;
-export type LlmContentBlock = Anthropic.Beta.BetaContentBlock;
+type LlmContentBlock = Anthropic.Beta.BetaContentBlock;
 
 export interface LlmRequest {
   model: string;
@@ -34,14 +34,6 @@ export interface LlmResult {
 export interface LlmProvider {
   readonly name: string;
   complete(req: LlmRequest): Promise<LlmResult>;
-}
-
-/** No credentials / misconfigured — callers answer "unavailable". */
-export class LlmUnavailableError extends Error {
-  constructor(message = 'Ask VCFO model provider is not configured') {
-    super(message);
-    this.name = 'LlmUnavailableError';
-  }
 }
 
 let override: LlmProvider | null | undefined;

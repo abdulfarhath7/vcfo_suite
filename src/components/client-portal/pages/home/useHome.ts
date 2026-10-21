@@ -23,7 +23,7 @@ import {
 
 export const HOME_QUERY_KEY = 'client-home';
 
-export function useHomeQuery(engagementId: string | undefined) {
+function useHomeQuery(engagementId: string | undefined) {
   return useQuery({
     queryKey: [HOME_QUERY_KEY, engagementId ?? 'mine'],
     queryFn: async (): Promise<ClientHome | null> => {

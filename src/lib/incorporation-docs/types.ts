@@ -193,7 +193,7 @@ export const INCORP_DOC_DEFINITIONS: Record<IncorpDocKind, IncorpDocDefinition> 
  * the parent authorises its representative and accepts the appointment. An
  * independent company has no parent, so they are never listed or generated.
  */
-export const SUBSIDIARY_ONLY_INCORP_DOCS: ReadonlySet<IncorpDocKind> = new Set([
+const SUBSIDIARY_ONLY_INCORP_DOCS: ReadonlySet<IncorpDocKind> = new Set([
   'authorisation-letter',
   'acceptance-letter',
 ]);

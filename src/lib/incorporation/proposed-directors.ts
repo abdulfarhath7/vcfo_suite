@@ -36,7 +36,7 @@ import {
  * every generator unchanged.
  */
 export const PROPOSED_DIRECTORS_STEP_ID = 'pre-15';
-export const REGISTERED_OFFICE_STEP_ID = 'pre-14';
+const REGISTERED_OFFICE_STEP_ID = 'pre-14';
 export const PROPOSED_DIRECTORS_GROUP_ID = 'directors';
 
 export type StepStateMap = Record<string, ChecklistItemStateSlice | undefined> | null | undefined;
@@ -49,7 +49,7 @@ export interface ProposedDirector {
   values: Record<string, string>;
 }
 
-export function proposedDirectorsGroup(): RepeatField | null {
+function proposedDirectorsGroup(): RepeatField | null {
   const item = getItem(PROPOSED_DIRECTORS_STEP_ID);
   const group = item ? getClientResponseFields(item).find((f) => f.id === PROPOSED_DIRECTORS_GROUP_ID) : undefined;
   return group && isRepeatField(group) ? group : null;
@@ -185,7 +185,7 @@ export function directorsAsPre6Responses(directors: ProposedDirector[]): Checkli
 }
 
 /** The directors in the legacy Part A slot shape (`director{n}*`). */
-export function directorsAsPre1Responses(directors: ProposedDirector[]): ChecklistItemResponses {
+function directorsAsPre1Responses(directors: ProposedDirector[]): ChecklistItemResponses {
   const out: ChecklistItemResponses = { directorCount: String(Math.min(Math.max(directors.length, 2), 4)) };
   directors.slice(0, 4).forEach((director, i) => {
     const n = i + 1;

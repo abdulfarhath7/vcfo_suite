@@ -1,4 +1,4 @@
-import { getActiveCatalogItems, getItem } from '@/data/checklist';
+import { getActiveCatalogItems } from '@/data/checklist';
 import type { ProjectSnapshot } from '@/data/ask/schema';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
@@ -37,7 +37,7 @@ export function stepExplainerContext(ctx: ClientToolContext, stepId: string) {
   };
 }
 
-export function upcomingCompliances(ctx: ClientToolContext, days: number) {
+function upcomingCompliances(ctx: ClientToolContext, days: number) {
   const today = ctx.now.toISOString().slice(0, 10);
   const horizon = new Date(ctx.now);
   horizon.setDate(horizon.getDate() + days);
@@ -99,8 +99,3 @@ export const CLIENT_TOOLS: Record<string, AskTool<ClientToolContext>> = {
     run: async (ctx, input) => upcomingCompliances(ctx, numberArg(input, 'days', 30, 90)),
   },
 };
-
-/** Step title lookup for the "next step" deterministic answer. */
-export function stepTitle(stepId: string): string | null {
-  return getItem(stepId)?.title ?? null;
-}

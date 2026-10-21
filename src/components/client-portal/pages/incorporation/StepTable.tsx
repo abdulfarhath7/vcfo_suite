@@ -46,7 +46,7 @@ export function stepFiles(s: PortalStep, ownershipType?: OwnershipType): StepFil
     .map((r) => ({ fieldId: r.fieldId, label: r.label, path: responses[r.fieldId]!.trim(), fileName: r.fileName ?? r.label }));
 }
 
-export function viewerDocsFor(s: PortalStep, files: StepFile[]): ViewerDoc[] {
+function viewerDocsFor(s: PortalStep, files: StepFile[]): ViewerDoc[] {
   return files.map((f) => ({
     id: `${s.id}:${f.fieldId}`,
     name: f.fileName,

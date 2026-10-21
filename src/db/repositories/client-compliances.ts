@@ -49,12 +49,12 @@ import {
  *    portal timeline is read-only for clients.
  */
 
-export class ComplianceNotFoundError extends Error {
+class ComplianceNotFoundError extends Error {
   constructor() {
     super('Filing not found');
   }
 }
-export class ComplianceForbiddenError extends Error {
+class ComplianceForbiddenError extends Error {
   constructor(msg = 'Only SBC staff can change filings') {
     super(msg);
   }

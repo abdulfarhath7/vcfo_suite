@@ -301,7 +301,3 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     generate: { kind: 'incorp', doc: 'aoa-subscription-sheet' },
   },
 ];
-
-export function docDefinition(id: string): DocDefinition | undefined {
-  return DOC_PACK_REGISTRY.find((d) => d.id === id);
-}

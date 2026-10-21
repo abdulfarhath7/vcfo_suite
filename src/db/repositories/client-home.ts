@@ -74,7 +74,6 @@ import {
  */
 
 const STAFF_ROLES = new Set(['super_admin', 'admin', 'manager', 'intern']);
-const DUE_SOON_DAYS = 15;
 const HIDDEN_AUDIT_ACTIONS = new Set([
   'board_resolution.draft',
   'board_resolution.update',
@@ -347,8 +346,6 @@ export async function getClientHome(
     timeline,
   };
 }
-
-export { DUE_SOON_DAYS };
 
 /* ----------------------------------------------------------------- writes */
 

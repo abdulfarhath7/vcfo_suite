@@ -91,13 +91,6 @@ export function isLegacyDirectorAudience(audience: IncorpDocAudience): boolean {
   return audience === 'company' || (LEGACY_DIRECTOR_AUDIENCES as readonly string[]).includes(audience);
 }
 
-/** Whether `fieldId` is a per-director field of `audience` (`nrDirector` must not match `nrDirector2*`). */
-export function fieldBelongsToAudience(fieldId: string, audience: IncorpDirectorAudience): boolean {
-  const prefix = directorFieldPrefix(audience);
-  if (!fieldId.startsWith(prefix)) return false;
-  return /^[A-Z]/.test(fieldId.slice(prefix.length));
-}
-
 /** The director audience a per-director field id belongs to, if any. */
 export function audienceForDirectorFieldId(fieldId: string): IncorpDirectorAudience | null {
   const match = /^(nrDirector|residentDirector)(\d*)(?=[A-Z])/.exec(fieldId);

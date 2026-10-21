@@ -266,7 +266,7 @@ function Book({ b, company }: { b: LibraryItemView; company: string }) {
   );
 }
 
-export function RecentDrill({ reads, tab, onClose }: { reads: LibraryRead[]; tab: number; onClose: () => void }) {
+function RecentDrill({ reads, tab, onClose }: { reads: LibraryRead[]; tab: number; onClose: () => void }) {
   const { go } = usePortal();
   const [t, setT] = useState(tab);
   const closeRef = useRef<HTMLButtonElement>(null);

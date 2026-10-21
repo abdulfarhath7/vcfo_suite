@@ -2,7 +2,7 @@ import type { AnswerDepth, AnswerEnvelope, AskShell, ProjectSnapshot } from '@/d
 
 /** Browser client for /api/ask/*. Every call surfaces a friendly error message. */
 
-export class AskApiError extends Error {
+class AskApiError extends Error {
   constructor(
     message: string,
     readonly status: number,

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { askConversations, askMessages } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -84,22 +84,4 @@ export async function getAskConversationWithMessages(
     .where(eq(askMessages.conversationId, conversation.id))
     .orderBy(asc(askMessages.createdAt));
   return { conversation, messages };
-}
-
-/** The caller's most recent conversation for a shell (+ engagement). */
-export async function getLatestAskConversation(
-  ctx: AuthContext,
-  shell: AskShell,
-  engagementDbId: string | null,
-): Promise<AskConversationRow | null> {
-  assertAskRole(ctx);
-  const conditions = [eq(askConversations.profileId, ctx.userId), eq(askConversations.shell, shell)];
-  if (engagementDbId) conditions.push(eq(askConversations.engagementId, engagementDbId));
-  const [row] = await db
-    .select()
-    .from(askConversations)
-    .where(and(...conditions))
-    .orderBy(desc(askConversations.lastMessageAt))
-    .limit(1);
-  return row ?? null;
 }

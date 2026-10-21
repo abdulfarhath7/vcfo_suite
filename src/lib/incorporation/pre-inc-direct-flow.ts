@@ -1,4 +1,4 @@
-import { isAwaitingReview, isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
+import { isAwaitingReview } from '@/lib/checklist/checklist-item-review';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 /**
@@ -36,7 +36,7 @@ export const DIRECT_FLOW_STEP_IDS: ReadonlySet<string> = new Set([
 export const MANAGER_APPROVAL_STEP_ID = 'pre-2';
 
 /** Fields that only the project lead can edit. The client reads them. */
-export const LEAD_ONLY_FIELD_IDS: Readonly<Record<string, readonly string[]>> = {
+const LEAD_ONLY_FIELD_IDS: Readonly<Record<string, readonly string[]>> = {
   'pre-1': ['nicCode', 'nicBusinessType', 'additionalNicCodes'],
 };
 
@@ -241,9 +241,4 @@ export function isAwaitingManagerDecision(
 ): boolean {
   if (isDirectFlowStep(itemId)) return false;
   return isAwaitingReview(slice);
-}
-
-/** `pre-2` sent by the lead and not yet approved or sent back. */
-export function isBoardResolutionPendingManager(slice?: ChecklistItemStateSlice | null): boolean {
-  return isLeadRequestPending(slice);
 }

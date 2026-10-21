@@ -6,13 +6,13 @@ import { docPackApiPath } from '@/lib/doc-pack/paths';
 import type { DocPackSummary } from '@/lib/doc-pack/types';
 import { apiFetch } from '@/lib/projects/engagements-db';
 
-export const DOC_PACK_QUERY_KEY = 'doc-pack';
+const DOC_PACK_QUERY_KEY = 'doc-pack';
 
-export function docPackQueryKey(engagementId: string): readonly [string, string] {
+function docPackQueryKey(engagementId: string): readonly [string, string] {
   return [DOC_PACK_QUERY_KEY, engagementId] as const;
 }
 
-export async function fetchDocPack(engagementId: string): Promise<DocPackSummary> {
+async function fetchDocPack(engagementId: string): Promise<DocPackSummary> {
   const body = await apiFetch<{ ok: true; pack: DocPackSummary }>(docPackApiPath(engagementId), {
     fallbackError: 'Could not load the document pack.',
   });

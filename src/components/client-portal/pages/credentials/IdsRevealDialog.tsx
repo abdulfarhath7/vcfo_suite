@@ -22,7 +22,7 @@ import { usePortalOptional } from '@/components/client-portal/PortalProvider';
 import { InfoPopover } from '@/components/client-portal/shared';
 import '../../css/credentials-ids.css';
 
-export const REVEAL_MS = 60_000;
+const REVEAL_MS = 60_000;
 
 /* ---------- revealed values, shared with the Company IDs card ---------- */
 type Revealed = Partial<Record<'pan' | 'tan', { value: string; until: number }>>;
@@ -41,14 +41,6 @@ function publish(field: 'pan' | 'tan', value: string) {
     revealed = next;
     emit();
   }, REVEAL_MS);
-  emit();
-}
-/** Hide a revealed value before its 60 s are up. */
-export function hideRevealedIdentifier(field: 'pan' | 'tan') {
-  if (timers[field]) clearTimeout(timers[field]);
-  const next = { ...revealed };
-  delete next[field];
-  revealed = next;
   emit();
 }
 function subscribe(l: () => void) {
@@ -383,5 +375,3 @@ export function IdsRevealDialog({
 
   return createPortal(<div className="cp-ids">{body}</div>, host);
 }
-
-export default IdsRevealDialog;

@@ -470,7 +470,7 @@ export interface ResolvedClientFile {
   contentType: string;
 }
 
-export async function resolveClientDocumentFile(ctx: AuthContext, ref: string): Promise<ResolvedClientFile | null> {
+async function resolveClientDocumentFile(ctx: AuthContext, ref: string): Promise<ResolvedClientFile | null> {
   const mine = await myEngagement(ctx);
   if (!mine) return null;
   const { dbId, row } = mine;

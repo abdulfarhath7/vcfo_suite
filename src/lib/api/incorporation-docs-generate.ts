@@ -49,7 +49,7 @@ export function parseIncorpDocKinds(docs: string[] | undefined): IncorpDocKind[]
   return docs as IncorpDocKind[];
 }
 
-export interface IncorpDocsRowFailure {
+interface IncorpDocsRowFailure {
   doc: IncorpDocKind;
   audience: IncorpDocAudience;
   error: string;

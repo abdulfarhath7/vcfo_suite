@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckCircle2, Loader2, Share2 } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { AccentButton } from '@/components/noir';
 import { useApp } from '@/context/AppContext';
@@ -149,26 +149,4 @@ export function IncorporationDocsBulkShareBar({
       )}
     </div>
   );
-}
-
-/** Register inline preview flush handlers keyed by `doc:director`. */
-export function useIncorpDocFlushRegistry() {
-  const mapRef = useRef<Map<string, () => Promise<boolean>> | null>(null);
-  if (mapRef.current === null) {
-    mapRef.current = new Map();
-  }
-
-  const register: IncorpDocFlushRegistrar = useCallback((key, flush) => {
-    const map = mapRef.current!;
-    if (flush) map.set(key, flush);
-    else map.delete(key);
-  }, []);
-
-  const flushAll = useCallback(async (): Promise<boolean> => {
-    const map = mapRef.current!;
-    const results = await Promise.all([...map.values()].map((flush) => flush()));
-    return results.every(Boolean);
-  }, []);
-
-  return { register, flushAll };
 }

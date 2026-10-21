@@ -140,7 +140,7 @@ export const SUBSCRIPTION_SHEET_ROW_KEYS = [
 // Who subscribes
 // ---------------------------------------------------------------------------
 
-export interface PlannedIndividual {
+interface PlannedIndividual {
   /** 1-based position on `pre-16`. */
   entryIndex: number;
   name: string;

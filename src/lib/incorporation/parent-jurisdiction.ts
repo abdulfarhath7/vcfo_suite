@@ -9,10 +9,10 @@ import { countryWithArticle } from '@/lib/incorporation/countries';
  * questions keep today's output: the last comma token of the parent address,
  * "USA" when there is none, and each document's own state default.
  */
-export const PARENT_COUNTRY_FIELD_ID = 'parentEntityCountry';
-export const PARENT_STATE_FIELD_ID = 'parentEntityState';
+const PARENT_COUNTRY_FIELD_ID = 'parentEntityCountry';
+const PARENT_STATE_FIELD_ID = 'parentEntityState';
 
-export const LEGACY_PARENT_JURISDICTION = 'the United States of America';
+const LEGACY_PARENT_JURISDICTION = 'the United States of America';
 export const DEFAULT_PARENT_STATE = 'Utah';
 const DEFAULT_CERTIFICATION_PLACE = 'USA';
 
@@ -25,7 +25,7 @@ export function parentCountryAnswer(pre1: Pre1): string {
 }
 
 /** Legacy fallback: the last comma token of the parent address, "USA" when absent. */
-export function parentCountryFromAddress(pre1: Pre1, engagement?: ParentEngagement): string {
+function parentCountryFromAddress(pre1: Pre1, engagement?: ParentEngagement): string {
   const address = (pre1.parentEntityAddress ?? '').trim() || (engagement?.parentEntityAddress ?? '').trim();
   if (address) {
     const parts = address.split(',').flatMap((part) => {

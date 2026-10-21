@@ -52,7 +52,7 @@ function directorDisplayName(
  * Director audiences to lay out slots for: the directors on file plus any
  * audience that already holds a stored draft, so nothing generated disappears.
  */
-export function incorpDirectorAudiences(
+function incorpDirectorAudiences(
   responses: ChecklistItemResponses,
   options?: IncorpDraftLabelOptions,
 ): IncorpDirectorAudience[] {

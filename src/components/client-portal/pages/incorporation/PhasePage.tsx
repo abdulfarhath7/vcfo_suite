@@ -37,7 +37,7 @@ import {
 import { StepTable } from './StepTable';
 import { RingSvg } from './Landing';
 
-export function PhaseBar({ p, plan, doneEnd, onClick }: { p: PortalPhase; plan: [string, string] | null; doneEnd?: string; onClick: () => void }) {
+function PhaseBar({ p, plan, doneEnd, onClick }: { p: PortalPhase; plan: [string, string] | null; doneEnd?: string; onClick: () => void }) {
   const cls = p.state === 'done' ? 's-done' : p.state === 'up' ? 's-up' : 's-active';
   const fill = p.state === 'done' ? 100 : Math.round((p.done / p.total) * 100);
   let late: React.ReactNode = null;
@@ -110,7 +110,7 @@ function RailHero({ x, d, isPage }: { x: PortalStep; d: IncData; isPage: boolean
   );
 }
 
-export function JourneyRail({ p, focus, d, isPage }: { p: PortalPhase; focus: string; d: IncData; isPage: boolean }) {
+function JourneyRail({ p, focus, d, isPage }: { p: PortalPhase; focus: string; d: IncData; isPage: boolean }) {
   const { go } = usePortal();
   const [all, setAll] = useState(false);
   const l = p.steps;

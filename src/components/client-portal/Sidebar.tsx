@@ -17,7 +17,7 @@ import type { ClientPortalContact } from '@/lib/client-portal/types';
 
 type Bp = 'phone' | 'tablet' | 'desktop';
 
-export function bpOf(w: number): Bp {
+function bpOf(w: number): Bp {
   return w <= 767 ? 'phone' : w < 1280 ? 'tablet' : 'desktop';
 }
 

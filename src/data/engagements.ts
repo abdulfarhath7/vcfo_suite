@@ -18,21 +18,6 @@ export type { EntityLegalForm };
  */
 export type ParentIndianRelationship = 'name_only' | 'investing';
 
-export const COMPANY_TYPE_LABEL: Record<CompanyType, string> = {
-  domestic: 'Domestic',
-  foreign: 'Foreign',
-};
-
-export const OWNERSHIP_TYPE_LABEL: Record<OwnershipType, string> = {
-  subsidiary: 'Subsidiary',
-  independent: 'Standalone',
-};
-
-export const PARENT_INDIAN_RELATIONSHIP_LABEL: Record<ParentIndianRelationship, string> = {
-  name_only: 'Name use only',
-  investing: 'Investing',
-};
-
 export function coerceOwnershipType(value: unknown): OwnershipType {
   return value === 'independent' ? 'independent' : 'subsidiary';
 }
@@ -66,7 +51,7 @@ export function normalizeParentIndianRelationship(e: {
 
 /**
  * Ownership as shown on headers and pickers. Standalone rows are stored as
- * `domestic`, so `COMPANY_TYPE_LABEL` alone cannot tell "Indian parent" from
+ * `domestic`, so `companyType` alone cannot tell "Indian parent" from
  * "no parent" — this can.
  */
 export function ownershipDisplayLabel(

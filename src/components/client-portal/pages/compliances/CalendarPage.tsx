@@ -61,7 +61,7 @@ type View = (typeof VIEWS)[number];
 const AREA_IDS = AREAS.map((a) => a.id);
 const TIP_KEY = 'vcfo.comp.tip.v1';
 
-export function useNarrow(px = 700): boolean {
+function useNarrow(px = 700): boolean {
   const [n, setN] = useState(false);
   useEffect(() => {
     const on = () => setN(window.innerWidth < px);

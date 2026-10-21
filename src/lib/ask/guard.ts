@@ -5,10 +5,10 @@ import type { AskShell } from '@/data/ask/schema';
 import type { LlmProvider, LlmTool } from '@/lib/ask/provider';
 
 /** Given to the guard verbatim (ASK-VCFO-CONTEXT §6.2). */
-export const IN_SCOPE_DEFINITION =
+const IN_SCOPE_DEFINITION =
   "Indian company setup and ongoing corporate compliance: company law and MCA filings, LLP incorporation, GST, TDS and corporate income tax basics, FEMA and RBI reporting for foreign investment, labour registrations (PF, ESI, Professional Tax, Shops and Establishments), import/export codes, trademarks, and anything about the user's own VCFO Suite project. Out of scope: programming, personal finance and investing, other countries' law, general knowledge, opinions, and anything unrelated to the project.";
 
-export const GUARD_INTENTS = [
+const GUARD_INTENTS = [
   'explain',
   'project_status',
   'ops_query',
@@ -18,7 +18,7 @@ export const GUARD_INTENTS = [
   'unsafe',
 ] as const;
 
-export const guardResultSchema = z.object({
+const guardResultSchema = z.object({
   intent: z.enum(GUARD_INTENTS),
   rewrittenQuery: z.string().trim().min(1).max(500),
   topicSlug: z.string().optional(),

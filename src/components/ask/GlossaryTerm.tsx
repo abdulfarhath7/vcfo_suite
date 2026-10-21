@@ -8,7 +8,7 @@ import { withGlossary } from '@/lib/ask/glossary-match';
 import { useAskOptional } from './ask-context';
 
 /** One underlined term: hover (desktop) or tap (mobile) shows a one-line card (F2). */
-export function GlossaryTerm({ term, children }: { term: Term; children: string }) {
+function GlossaryTerm({ term, children }: { term: Term; children: string }) {
   const ask = useAskOptional();
   const [open, setOpen] = useState(false);
   return (

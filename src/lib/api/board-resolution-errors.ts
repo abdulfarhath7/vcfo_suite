@@ -293,7 +293,7 @@ export function validateBoardResolutionGeneration(
   }
 }
 
-export const STEP1_INCOMPLETE_MESSAGE =
+const STEP1_INCOMPLETE_MESSAGE =
   'Submit Client Details first. The board resolution uses this data.';
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {

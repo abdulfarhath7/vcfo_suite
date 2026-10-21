@@ -4,7 +4,6 @@ import { extractItemResponses, type ChecklistItemResponses } from '@/lib/checkli
 import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
 import { directorsAccepted } from '@/lib/api/incorporation-docs-errors';
 import { draftUrlFieldFor, type IncorpDocAudience } from '@/lib/incorporation-docs/types';
-import { incorpDocRowKey } from '@/lib/incorporation-docs/paths';
 import {
   displayName,
   directorEntriesFromDirectors,
@@ -48,7 +47,7 @@ function responsesFor(state: EvaluateDocPackInput['state'], itemId: string): Che
  * `resident-2` …, see `directorEntriesFromDirectors`); anything else is
  * reported, not silently dropped.
  */
-export function renderableDirectors(directors: ProposedDirector[]): {
+function renderableDirectors(directors: ProposedDirector[]): {
   directors: DocPackDirector[];
   skipped: DocPackSkippedDirector[];
 } {
@@ -227,11 +226,6 @@ export function evaluateDocPack(input: EvaluateDocPackInput): DocPackSummary {
   for (const item of items) counts[item.status] += 1;
 
   return { items, counts, total: items.length, skippedDirectors: ctx.skippedDirectors };
-}
-
-/** Row key of a Pre-7 draft slot, for callers that map pack items back to share rows. */
-export function docPackItemRowKey(item: DocPackItem): string | null {
-  return item.generate.kind === 'incorp' ? incorpDocRowKey(item.generate.doc, item.audience) : null;
 }
 
 export function docPackItemByKey(summary: DocPackSummary, key: string): DocPackItem | undefined {

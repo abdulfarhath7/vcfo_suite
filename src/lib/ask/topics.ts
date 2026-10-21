@@ -109,7 +109,7 @@ export function isReviewed(topic: Topic): boolean {
 
 // ---------- Depth ----------
 
-export function topicTextForDepth(topic: Topic, depth: AnswerDepth): string {
+function topicTextForDepth(topic: Topic, depth: AnswerDepth): string {
   return topic.body[depth];
 }
 

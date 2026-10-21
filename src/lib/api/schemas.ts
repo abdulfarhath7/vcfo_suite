@@ -62,7 +62,7 @@ export const ownershipTypeSchema = z.enum(['subsidiary', 'independent']);
 export const parentIndianRelationshipSchema = z.enum(['name_only', 'investing']);
 
 /** Shown when an Indian subsidiary has no parent role chosen. */
-export const PARENT_INDIAN_RELATIONSHIP_REQUIRED =
+const PARENT_INDIAN_RELATIONSHIP_REQUIRED =
   'Choose whether the Indian parent lends its name or invests.';
 
 /** Indian legal form for compliance applicability. */

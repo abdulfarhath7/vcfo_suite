@@ -5,8 +5,8 @@
  */
 
 export type PortalViewState = 'auto' | 'before' | 'after';
-export type PortalTheme = 'light' | 'dark' | 'system';
-export type PortalDocGrouping = 'step' | 'category';
+type PortalTheme = 'light' | 'dark' | 'system';
+type PortalDocGrouping = 'step' | 'category';
 
 export interface ClientPortalPrefs {
   viewState: PortalViewState;

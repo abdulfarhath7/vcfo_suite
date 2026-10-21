@@ -81,7 +81,7 @@ export const PRE1_DIRECTOR_INDIA_RESIDENT_IDS = [
 
 const PRE1_MIN_DIRECTORS = 2;
 const PRE1_MAX_DIRECTORS = 4;
-export const PRE1_DEFAULT_DIRECTOR_COUNT = PRE1_MIN_DIRECTORS;
+const PRE1_DEFAULT_DIRECTOR_COUNT = PRE1_MIN_DIRECTORS;
 
 const PRE1_PARENT_HAS_TRADEMARK_ID = 'parentEntityHasTrademark' as const;
 const PRE1_PARENT_TRADEMARK_URL_ID = 'parentEntityTrademarkUrl' as const;
@@ -275,7 +275,7 @@ export const DUPLICATE_NIC_CODE_MESSAGE = 'This NIC code is already in the list.
  * NIC-2008 (warning), and not equal to the main code or an earlier entry
  * (error). Errors are keyed by the concrete id (`additionalNicCodes.<entry>.code`).
  */
-export function validateAdditionalNicCodes(responses: ChecklistItemResponses): {
+function validateAdditionalNicCodes(responses: ChecklistItemResponses): {
   errors: Record<string, string>;
   warnings: Record<string, string>;
 } {

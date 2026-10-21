@@ -140,7 +140,7 @@ export interface AskChunkHit {
 }
 
 /** Audiences a persona may read. Client persona never sees staff-only sources. */
-export function audiencesForPersona(persona: 'client' | 'staff'): AskDocumentAudience[] {
+function audiencesForPersona(persona: 'client' | 'staff'): AskDocumentAudience[] {
   return persona === 'client' ? ['client', 'both'] : ['client', 'staff', 'both'];
 }
 

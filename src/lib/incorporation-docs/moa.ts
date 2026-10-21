@@ -124,7 +124,7 @@ export function equityShareStructure(
 }
 
 /** Formatted equity share count for Clause V and the subscription sheets. */
-export function paidUpEquityShareCount(
+function paidUpEquityShareCount(
   pre1: ChecklistItemResponses,
   pre13: ChecklistItemResponses = {},
 ): string {
@@ -175,7 +175,7 @@ export function buildMoaClause5Fields(
 }
 
 /** Clause II state: the `pre-14` answer; the address guess stays only for older engagements. */
-export function registeredOfficeState(
+function registeredOfficeState(
   pre6: ChecklistItemResponses,
   pre8: ChecklistItemResponses = {},
 ): string {

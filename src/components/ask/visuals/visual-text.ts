@@ -19,32 +19,32 @@ export function flowText(v: FlowVisual): string {
     .join(' ');
 }
 
-export function stepsText(v: StepsVisual): string {
+function stepsText(v: StepsVisual): string {
   return v.items.map((s, i) => `Step ${i + 1}: ${s.label}${s.form ? `, form ${s.form}` : ''}.`).join(' ');
 }
 
-export function compareText(v: CompareVisual): string {
+function compareText(v: CompareVisual): string {
   return `${v.left.title}: ${v.left.points.join('; ')}. ${v.right.title}: ${v.right.points.join('; ')}.`;
 }
 
-export function timelineText(v: TimelineVisual): string {
+function timelineText(v: TimelineVisual): string {
   return v.events.map((e) => `${e.label}: ${e.when}${e.source === 'calendar' ? ' (from your calendar)' : ''}.`).join(' ');
 }
 
-export function keyFactsText(v: KeyFactsVisual): string {
+function keyFactsText(v: KeyFactsVisual): string {
   return v.facts.map((f) => `${f.k}: ${f.v}.`).join(' ');
 }
 
-export function nextStepText(v: NextStepVisual): string {
+function nextStepText(v: NextStepVisual): string {
   return `Next step: ${v.title}${v.dueLabel ? `, planned ${v.dueLabel}` : ''}. ${v.items.join('. ')}`;
 }
 
-export function projectRowsText(v: ProjectRowsVisual): string {
+function projectRowsText(v: ProjectRowsVisual): string {
   if (v.rows.length === 0) return 'No projects.';
   return v.rows.map((r) => `${r.name}: ${r.step}. ${r.meta}.${TONE_LABEL[r.tone] ? ` ${TONE_LABEL[r.tone]}.` : ''}`).join(' ');
 }
 
-export function metricsText(v: MetricsVisual): string {
+function metricsText(v: MetricsVisual): string {
   return v.items.map((m) => `${m.k}: ${m.v}.`).join(' ');
 }
 

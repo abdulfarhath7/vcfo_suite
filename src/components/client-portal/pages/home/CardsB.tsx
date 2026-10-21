@@ -22,7 +22,6 @@ import {
   BUCKET_TONE,
   BUCKETS,
   bucketOf,
-  chipBg,
   dLong,
   dShort,
   dayMon,
@@ -290,7 +289,7 @@ export function StepsCard({ h }: { h: HomeData }) {
 
 /* ---------------------------------------------------------- what is next */
 
-export function nextDrill(h: HomeData): DrillConfig {
+function nextDrill(h: HomeData): DrillConfig {
   const open = h.filings.filter((f) => bucketOf(f, h.today) !== 'filed');
   const over = open.filter((f) => bucketOf(f, h.today) === 'overdue');
   const n15 = open.filter((f) => f.dueDate >= h.today && days(h.today, f.dueDate) <= 15);
@@ -560,7 +559,7 @@ export function IdsCard({ h, onReveal, onCoi }: { h: HomeData; onReveal: (f: 'pa
 
 /* ------------------------------------------------------ compliance by area */
 
-export function areaDrill(h: HomeData, area: (typeof AREA_ORDER)[number], active: number): DrillConfig {
+function areaDrill(h: HomeData, area: (typeof AREA_ORDER)[number], active: number): DrillConfig {
   const list = h.filings.filter((f) => groupOf(f) === area);
   const by = (b: FilingBucket) => list.filter((f) => bucketOf(f, h.today) === b).map((f) => filingRow(f, h.today));
   return {
@@ -850,5 +849,3 @@ export function PostIncCard({ h }: { h: HomeData }) {
     </div>
   );
 }
-
-export { chipBg };

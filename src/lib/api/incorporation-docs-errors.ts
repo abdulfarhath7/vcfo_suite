@@ -331,7 +331,7 @@ function stepResponses(
 }
 
 /** True when the directors come from `pre-15` entries rather than the legacy slots. */
-export function directorsFromPre15(checklistState: EngagementChecklistState | null | undefined): boolean {
+function directorsFromPre15(checklistState: EngagementChecklistState | null | undefined): boolean {
   return readProposedDirectors(checklistState).some((d) => !d.id.startsWith('legacy-'));
 }
 

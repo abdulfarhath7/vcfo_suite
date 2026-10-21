@@ -25,7 +25,7 @@ import { AreaChip, Chip, FocusTrack, I, PortalBtn, ProofChip, useModal } from '.
 import { useComp } from './ctx';
 
 /** "Sep 2026" → "September 2026"; other period shapes unchanged. */
-export function longPeriod(p: string): string {
+function longPeriod(p: string): string {
   const m = /^([A-Z][a-z]{2}) (\d{4})$/.exec(p);
   if (!m) return p;
   const i = MON.indexOf(m[1]!);

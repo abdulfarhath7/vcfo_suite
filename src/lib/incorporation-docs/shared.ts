@@ -40,7 +40,7 @@ export interface IncorpMergeInput {
 }
 
 /** Pre-7 ids for the signing block every generated draft shares. */
-export const INCORP_SIGNING_DATE_FIELD = 'incorpDocsSigningDate';
+const INCORP_SIGNING_DATE_FIELD = 'incorpDocsSigningDate';
 export const INCORP_SIGNING_PLACE_FIELD = 'incorpDocsSigningPlace';
 
 /** The lead's signing date (ISO `YYYY-MM-DD` on pre-7), else today — exactly as before. */
@@ -157,7 +157,7 @@ function isResidentAudience(director: IncorpDirectorAudience): boolean {
   return directorAudienceKind(director) === 'resident';
 }
 
-export function documentPlaceForDirector(director: IncorpDirectorAudience): string {
+function documentPlaceForDirector(director: IncorpDirectorAudience): string {
   return isResidentAudience(director) ? 'India' : 'Foreign';
 }
 

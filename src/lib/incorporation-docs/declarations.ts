@@ -1,4 +1,3 @@
-import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { IncorpDirectorAudience, IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
   directorField,
@@ -36,11 +35,6 @@ export const DECLARATION_MERGE_FIELD_KEYS = [
   'DOCUMENT_DATE',
   'DOCUMENT_PLACE',
 ] as const satisfies readonly (keyof DeclarationMergeFields)[];
-
-/** Owner answer Q1: the ID & address declaration is only for a director who already holds a DIN. */
-export function directorHoldsDin(pre6: ChecklistItemResponses, director: IncorpDirectorAudience): boolean {
-  return Boolean(directorField(pre6, director, 'Din'));
-}
 
 export function buildDeclarationMergeFields(
   input: IncorpMergeInput & { overrides?: Partial<DeclarationMergeFields> },

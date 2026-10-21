@@ -4,7 +4,7 @@ import 'server-only';
  * Ask VCFO runtime configuration — env only, no model id hardcoded in logic
  * (defaults below are the documented fallbacks, ASK-VCFO-CONTEXT §10).
  */
-export type AskProviderName = 'anthropic' | 'bedrock';
+type AskProviderName = 'anthropic' | 'bedrock';
 
 export interface AskConfig {
   enabled: boolean;
@@ -25,8 +25,8 @@ function intEnv(name: string, fallback: number): number {
 }
 
 /** Phase 9 proposed features (§9A), each off unless ASK_VCFO_FEATURE_<ID>=true. */
-export const ASK_FEATURE_IDS = ['C1', 'C2', 'C3', 'C4', 'C5', 'A1'] as const;
-export type AskFeatureId = (typeof ASK_FEATURE_IDS)[number];
+const ASK_FEATURE_IDS = ['C1', 'C2', 'C3', 'C4', 'C5', 'A1'] as const;
+type AskFeatureId = (typeof ASK_FEATURE_IDS)[number];
 export type AskFeatures = Record<AskFeatureId, boolean>;
 
 export function askFeatures(): AskFeatures {

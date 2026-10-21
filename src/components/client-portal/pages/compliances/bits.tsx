@@ -98,7 +98,7 @@ const GLYPH: Record<GlyphKey, [string, string, string]> = {
   up: ['oklch(93% 0.008 255)', '', '#fff'],
   late: ['var(--over)', '<path d="M12 7.5v5.5M12 16.3v.2"/>', '#fff'],
 };
-export function Glyph({ k, size = 16, tip }: { k: GlyphKey; size?: number; tip?: string }) {
+function Glyph({ k, size = 16, tip }: { k: GlyphKey; size?: number; tip?: string }) {
   const [bg, path, fg] = GLYPH[k];
   return (
     <span
@@ -200,18 +200,6 @@ export function NameWithLinks({ f, dark }: { f: PortalFiling; dark?: boolean }) 
       {f.name}
       <PortalBtn f={f} dark={dark} />
     </span>
-  );
-}
-
-/* ------------------------------------------------------- date tile */
-
-export function DateTile({ iso, bg, w = 44, h = 48, big, small, style }: { iso?: string; bg: string; w?: number; h?: number; big: ReactNode; small: ReactNode; style?: CSSProperties }) {
-  void iso;
-  return (
-    <div className="dtile" style={{ background: bg, width: w, height: h, ...style }}>
-      <b style={w < 44 ? { fontSize: w <= 38 ? 15 : 16 } : w > 50 ? { fontSize: 24 } : undefined}>{big}</b>
-      <small>{small}</small>
-    </div>
   );
 }
 

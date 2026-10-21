@@ -15,7 +15,7 @@ import { buildIncorporationModel, type PortalIncorporationModel } from '@/lib/cl
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemState } from '@/context/AppContext';
 
-export function useMyEngagement(): {
+function useMyEngagement(): {
   engagement: Engagement | undefined;
   state: Record<string, ChecklistItemState>;
   loading: boolean;

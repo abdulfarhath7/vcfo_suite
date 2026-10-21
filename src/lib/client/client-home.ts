@@ -75,7 +75,7 @@ export interface HomeFiling {
   needAskedBy?: string;
 }
 
-export interface HomeIdentifiers {
+interface HomeIdentifiers {
   cin?: string;
   /** "AAKC••••1M" — never the clear value. */
   panMasked?: string;
@@ -135,8 +135,6 @@ export function fyStartYearOf(d: Date = new Date()): number {
 export function fyLabelOf(startYear: number): string {
   return `FY ${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
 }
-
-export const NEED_KINDS: NeedKind[] = ['upload', 'fill', 'correct', 'sign'];
 
 export function isNeedKind(v: unknown): v is NeedKind {
   return v === 'upload' || v === 'fill' || v === 'correct' || v === 'sign';

@@ -130,7 +130,7 @@ function currentStepFor(e: StaffEngagement) {
   return { stepId: item.id, title: item.title, phase: phase ? internOverviewPhaseTitle(phase.id, phase.title) : null };
 }
 
-export function projectSummary(data: StaffData, query: string) {
+function projectSummary(data: StaffData, query: string) {
   const q = query.trim().toLowerCase();
   if (!q) return { error: 'no_match' as const };
   const match =

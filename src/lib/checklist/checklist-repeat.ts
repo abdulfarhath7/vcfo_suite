@@ -14,7 +14,7 @@ import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses
  * land on row 1 after a remove or reorder. Concrete field ids are dotted;
  * the milestone-document upload route already allows dots in a field id.
  */
-export const REPEAT_SEP = '.';
+const REPEAT_SEP = '.';
 
 export type RepeatField = ChecklistField & { type: 'repeat'; entryFields: ChecklistField[] };
 
@@ -22,14 +22,14 @@ export function isRepeatField(field: ChecklistField): field is RepeatField {
   return field.type === 'repeat' && Array.isArray(field.entryFields);
 }
 
-export function repeatEntryIds(responses: ChecklistItemResponses, groupId: string): string[] {
+function repeatEntryIds(responses: ChecklistItemResponses, groupId: string): string[] {
   return (responses[groupId] ?? '')
     .split(',')
     .map((id) => id.trim())
     .filter(Boolean);
 }
 
-export function newRepeatEntryId(): string {
+function newRepeatEntryId(): string {
   const random =
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID().replace(/-/g, '').slice(0, 8)

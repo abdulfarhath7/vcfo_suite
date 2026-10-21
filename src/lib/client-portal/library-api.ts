@@ -32,7 +32,7 @@ function forbidden(error: unknown): NextResponse | null {
 }
 
 /** What the Library page may offer beside the saved books. */
-export function libraryFeatures() {
+function libraryFeatures() {
   const enabled = askConfig().enabled;
   return { askEnabled: enabled, statusBrief: enabled && askFeatures().C4 };
 }

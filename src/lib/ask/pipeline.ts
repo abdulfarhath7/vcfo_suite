@@ -72,7 +72,7 @@ export const chatRequestSchema = z.object({
 });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
 
-export const STATUS_LABELS = {
+const STATUS_LABELS = {
   project: 'Checking your project…',
   sources: 'Finding sources…',
   writing: 'Writing…',

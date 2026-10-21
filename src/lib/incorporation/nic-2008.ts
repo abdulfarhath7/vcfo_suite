@@ -10,7 +10,7 @@ import NIC_2008 from '@/data/nic-2008.json';
  * omission corrected against the surrounding code sequence). Pure lookup —
  * no fuzzy matching, no AI.
  */
-export const NIC_CODE_RE = /^\d{5}$/;
+const NIC_CODE_RE = /^\d{5}$/;
 
 export interface NicBusinessType {
   code: string;

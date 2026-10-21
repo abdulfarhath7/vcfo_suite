@@ -17,7 +17,7 @@ import { triggerDownload } from './file-types';
 
 export const DOCS_KEY = ['client-portal', 'documents'] as const;
 
-export async function fetchClientDocuments(): Promise<ClientDocumentsPayload> {
+async function fetchClientDocuments(): Promise<ClientDocumentsPayload> {
   const res = await fetch('/api/client/documents', { cache: 'no-store' });
   if (!res.ok) throw new Error(res.status === 404 ? 'none' : `documents ${res.status}`);
   return ((await res.json()) as { documents: ClientDocumentsPayload }).documents;

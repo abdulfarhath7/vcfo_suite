@@ -42,7 +42,7 @@ const LIGHT_SIDEBAR_IDS = new Set(['glass', 'white', 'mist', 'ice', 'sage']);
 
 /* Maps the ids the old pickers wrote (midnight, ocean, mist, ...) onto the two
    that exist now. */
-export function normaliseSolidId(role: 'hero' | 'sidebar', id: string): string {
+function normaliseSolidId(role: 'hero' | 'sidebar', id: string): string {
   if (role === 'hero') return 'navy';
   return LIGHT_SIDEBAR_IDS.has(id) ? 'glass' : 'navy';
 }

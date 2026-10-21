@@ -6,9 +6,9 @@
  */
 import { z } from 'zod';
 
-export const LEGAL_FORMS = ['company', 'llp', 'partnership', 'proprietorship'] as const;
-export const RESIDENCIES = ['domestic', 'foreign'] as const;
-export const TOPIC_CATEGORIES = [
+const LEGAL_FORMS = ['company', 'llp', 'partnership', 'proprietorship'] as const;
+const RESIDENCIES = ['domestic', 'foreign'] as const;
+const TOPIC_CATEGORIES = [
   'incorporation',
   'tax',
   'foreign-investment',
@@ -18,7 +18,7 @@ export const TOPIC_CATEGORIES = [
 ] as const;
 export const ASK_SHELLS = ['client', 'admin', 'super'] as const;
 export const ANSWER_DEPTHS = ['normal', 'simple', 'detail'] as const;
-export const ANSWER_ORIGINS = ['reviewed', 'generated', 'deterministic', 'refusal'] as const;
+const ANSWER_ORIGINS = ['reviewed', 'generated', 'deterministic', 'refusal'] as const;
 export const ANSWER_ACTIONS = [
   'save',
   'simpler',
@@ -32,7 +32,6 @@ export const ANSWER_ACTIONS = [
 
 export type LegalForm = (typeof LEGAL_FORMS)[number];
 export type Residency = (typeof RESIDENCIES)[number];
-export type TopicCategory = (typeof TOPIC_CATEGORIES)[number];
 export type AskShell = (typeof ASK_SHELLS)[number];
 export type AnswerDepth = (typeof ANSWER_DEPTHS)[number];
 export type AnswerOrigin = (typeof ANSWER_ORIGINS)[number];
@@ -42,7 +41,7 @@ const shortText = z.string().trim().min(1).max(160);
 
 // ---------- Visuals (§3.3) ----------
 
-export const flowStageStateSchema = z.enum(['done', 'here', 'next']);
+const flowStageStateSchema = z.enum(['done', 'here', 'next']);
 
 const flowVisualSchema = z.object({
   type: z.literal('flow'),
@@ -172,18 +171,17 @@ export const STAFF_VISUAL_TYPES: readonly VisualType[] = [
 
 // ---------- Topics (§3.2) ----------
 
-export const appliesToSchema = z.object({
+const appliesToSchema = z.object({
   legalForms: z.array(z.enum(LEGAL_FORMS)),
   residency: z.array(z.enum(RESIDENCIES)),
 });
 export type AppliesTo = z.infer<typeof appliesToSchema>;
 
-export const citationSchema = z.object({
+const citationSchema = z.object({
   id: z.string().trim().min(1),
   label: z.string().trim().min(1).max(200),
   url: z.string().url().optional(),
 });
-export type Citation = z.infer<typeof citationSchema>;
 
 export const TOPIC_BODY_LIMITS = { normal: 400, simple: 250 } as const;
 
@@ -229,7 +227,7 @@ export type Topic = z.infer<typeof topicSchema>;
 // ---------- Go-there links (§7.7) ----------
 
 /** The only link shapes an answer may carry. Navigate / focus / prefill — never act. */
-export const destinationSchema = z.discriminatedUnion('to', [
+const destinationSchema = z.discriminatedUnion('to', [
   // client
   z.object({ to: z.literal('incorporation'), focusStepId: z.string().min(1).optional() }),
   z.object({ to: z.literal('step'), stepId: z.string().min(1), section: z.enum(['upload', 'form']).optional() }),
@@ -262,7 +260,7 @@ export const MAX_ANSWER_LINKS = 2;
 
 // ---------- Answer envelope (§6.5) ----------
 
-export const answerCitationSchema = z.object({
+const answerCitationSchema = z.object({
   id: z.string().trim().min(1),
   label: z.string().trim().min(1).max(200),
   url: z.string().url().optional(),
@@ -297,7 +295,7 @@ export type AnswerEnvelope = z.infer<typeof answerEnvelopeSchema>;
 
 // ---------- Suggestions (§3.5) ----------
 
-export const STAFF_QUERIES = [
+const STAFF_QUERIES = [
   'waitingOnClient',
   'overdueAndDueSoon',
   'pendingApprovals',
@@ -335,7 +333,7 @@ export type GlossaryTerm = z.infer<typeof glossaryTermSchema>;
 
 // ---------- Project snapshot (§6.3) ----------
 
-export const ASK_PHASES = [
+const ASK_PHASES = [
   'SPICe+ Part A',
   'SPICe+ Part B',
   'Post-incorporation',

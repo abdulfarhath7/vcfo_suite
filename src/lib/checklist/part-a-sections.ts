@@ -61,7 +61,7 @@ const PARENT_ENTITY_SECTIONS: ReadonlySet<string> = new Set([
 /** Parent-entity fields that live inside an otherwise shared section. */
 const PARENT_ENTITY_FIELD_IDS: ReadonlySet<string> = new Set(['boardResolutionDate']);
 
-export function isParentEntityField(field: Pick<ChecklistField, 'id' | 'section'>): boolean {
+function isParentEntityField(field: Pick<ChecklistField, 'id' | 'section'>): boolean {
   return (
     (field.section !== undefined && PARENT_ENTITY_SECTIONS.has(field.section)) ||
     PARENT_ENTITY_FIELD_IDS.has(field.id)

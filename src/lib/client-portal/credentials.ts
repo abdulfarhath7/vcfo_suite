@@ -11,7 +11,7 @@
 
 export type CredSheet = 'address' | 'login' | 'reg' | 'kyc' | 'other';
 export type CredMode = 'preview' | 'edit' | 'reveal';
-export type ColKind = 'text' | 'sno' | 'status' | 'cert';
+type ColKind = 'text' | 'sno' | 'status' | 'cert';
 
 export const CRED_TABS: Array<[CredSheet, string]> = [
   ['address', 'Address'],
@@ -280,12 +280,6 @@ export interface CredentialsLogEntry {
   text: string;
 }
 
-/* ---------------- helpers ---------------- */
-
-export function cellKey(sheet: CredSheet | 'ids', row: string, col: string): string {
-  return `${sheet}|${row}|${col}`;
-}
-
 export function parseCellKey(key: string): { sheet: string; row: string; col: string } | null {
   const p = key.split('|');
   if (p.length !== 3 || !p[0] || !p[1] || !p[2]) return null;
@@ -335,7 +329,7 @@ export function colLetter(i: number): string {
 }
 
 /** Row name as the prototype shows it in captions and the access log. */
-export function rowName(sheet: WireSheet, rowKey: string): string {
+function rowName(sheet: WireSheet, rowKey: string): string {
   if (sheet.id === 'kyc') {
     const p = KYC_ROWS.find((x) => x.key === rowKey);
     return p ? `${p.indent ? 'Father ' : ''}${p.n}` : rowKey;
@@ -345,7 +339,7 @@ export function rowName(sheet: WireSheet, rowKey: string): string {
   return row?.cells[LABEL_COL]?.v || `Row ${i + 1}`;
 }
 
-export function directorName(sheet: WireSheet, colKey: string): string {
+function directorName(sheet: WireSheet, colKey: string): string {
   return sheet.cols.find((c) => c.key === colKey)?.n || 'New director';
 }
 

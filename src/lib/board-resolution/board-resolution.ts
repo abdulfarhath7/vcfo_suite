@@ -16,8 +16,6 @@ import {
   resolveParentState,
 } from '@/lib/incorporation/parent-jurisdiction';
 
-export { DEFAULT_PARENT_STATE };
-
 type BoardResolutionStatus = 'draft' | 'finalized';
 
 export interface BoardResolutionDoc {
@@ -374,7 +372,7 @@ function directorSalutation(gender: string | undefined): string {
 }
 
 /** One line per named director, salutation first; a placeholder when none is named yet. */
-export function formatDirectorBulletLines(
+function formatDirectorBulletLines(
   directors: Array<{ name: string; gender?: string | undefined }>,
 ): string {
   const lines = directors
@@ -385,7 +383,7 @@ export function formatDirectorBulletLines(
 }
 
 /** Every Part A proposed name joined with "and"; the first name's placeholder when none. */
-export function formatProposedNames(pre1: ChecklistItemResponses): string {
+function formatProposedNames(pre1: ChecklistItemResponses): string {
   const names = [pre1.proposedName1, pre1.proposedName2]
     .map((n) => (n ?? '').trim())
     .filter(Boolean)
@@ -425,7 +423,7 @@ export function resolveCertificationPlace(
  * to a document stored before the NIC check existed: a new generation cannot
  * reach here without a main NIC code (`collectBoardResolutionMissingFields`).
  */
-export function resolveNicCodesClause(pre1: ChecklistItemResponses): string {
+function resolveNicCodesClause(pre1: ChecklistItemResponses): string {
   const lines = readNicCodes(pre1).map(({ code, description }) =>
     description ? `${code}- ${description}` : code,
   );

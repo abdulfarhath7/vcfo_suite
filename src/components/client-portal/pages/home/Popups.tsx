@@ -29,7 +29,7 @@ import {
   type NeedRow,
 } from './derive';
 
-export function Dialog({
+function Dialog({
   onClose,
   label,
   width,

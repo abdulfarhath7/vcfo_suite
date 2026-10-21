@@ -183,7 +183,7 @@ export interface ClientOverview {
   company: ClientCompanySnapshot;
 }
 
-export interface ClientShareClass {
+interface ClientShareClass {
   kind: 'equity' | 'preference';
   quantity: string;
   nominalValue: string;

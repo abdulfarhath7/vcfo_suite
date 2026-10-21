@@ -2,7 +2,7 @@
  * Client portal route keys (the prototype's `routes.js` keys) → real app paths.
  * Every `data-go="key"` in the prototype becomes `portalHref(key)` here.
  */
-export const CP_BASE = '/app/client';
+const CP_BASE = '/app/client';
 
 export type PortalRouteKey =
   | 'home'

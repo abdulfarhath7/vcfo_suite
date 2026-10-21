@@ -22,7 +22,7 @@ import {
  */
 
 /** Steps whose director fields are expanded by `expandDirectorSlotFields`. */
-export const DIRECTOR_SLOT_STEP_IDS: ReadonlySet<string> = new Set(['pre-7', 'pre-8']);
+const DIRECTOR_SLOT_STEP_IDS: ReadonlySet<string> = new Set(['pre-7', 'pre-8']);
 
 export interface DirectorSlotContext {
   /** Director audiences on file (`directorAudiencesFromPre6`). Absent → the two legacy slots. */

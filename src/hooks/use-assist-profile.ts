@@ -6,9 +6,9 @@ import { assistProfileApiPath } from '@/lib/assist-profile/paths';
 import type { AssistProfileResult } from '@/lib/assist-profile/types';
 import { apiFetch } from '@/lib/projects/engagements-db';
 
-export const ASSIST_PROFILE_QUERY_KEY = 'assist-profile';
+const ASSIST_PROFILE_QUERY_KEY = 'assist-profile';
 
-export async function fetchAssistProfile(engagementId: string): Promise<AssistProfileResult> {
+async function fetchAssistProfile(engagementId: string): Promise<AssistProfileResult> {
   const body = await apiFetch<{ ok: true } & AssistProfileResult>(assistProfileApiPath(engagementId), {
     fallbackError: 'Could not load the Assist profile.',
   });

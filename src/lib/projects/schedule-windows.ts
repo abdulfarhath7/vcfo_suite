@@ -31,7 +31,7 @@ export type ScheduleTarget = { kind: 'incorporation' } | { kind: 'step'; itemId:
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-export function isIsoDate(value: unknown): value is string {
+function isIsoDate(value: unknown): value is string {
   return typeof value === 'string' && ISO_DATE_RE.test(value) && !Number.isNaN(Date.parse(value));
 }
 

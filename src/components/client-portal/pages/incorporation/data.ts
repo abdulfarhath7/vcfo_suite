@@ -66,8 +66,8 @@ export const INFO_WHY: Record<string, string> = {
 export type K = 'done' | 'you' | 'prog' | 'with' | 'up';
 export type LK = K | 'next';
 export const KL: Record<LK, string> = { done: 'Done', you: 'Waiting', prog: 'In progress', with: 'With SBC', up: 'Upcoming', next: 'Next' };
-export const KCOL: Record<K, string> = { done: '#15805f', you: '#c8620e', prog: '#0f2a4a', with: '#2453c7', up: '#8a97a8' };
-export const KORD: K[] = ['done', 'you', 'prog', 'with', 'up'];
+const KCOL: Record<K, string> = { done: '#15805f', you: '#c8620e', prog: '#0f2a4a', with: '#2453c7', up: '#8a97a8' };
+const KORD: K[] = ['done', 'you', 'prog', 'with', 'up'];
 
 /* ---------------- per-step helpers ---------------- */
 
@@ -125,7 +125,7 @@ export function railSub(s: PortalStep, short: string): string {
 }
 
 /** Prototype `short()`: a label cut to ~22 characters. */
-export function shortLabel(l: string): string {
+function shortLabel(l: string): string {
   const t = String(l).replace(/\s*\(.*$/, '').replace(/,.*$/, '').replace(/\s+—.*$/, '');
   return t.length > 22 ? `${t.slice(0, 20).replace(/\s+\S*$/, '')}…` : t;
 }
@@ -183,12 +183,6 @@ export function tabsFor(list: PortalStep[], coi?: string): Array<DrillTab & { k:
 export function idx(tabs: Array<{ k: string }>, k: string): number {
   const i = tabs.findIndex((t) => t.k === k);
   return i < 0 ? 0 : i;
-}
-
-/* ---------------- phases ---------------- */
-
-export function phState(p: PortalPhase): 'done' | 'up' | 'active' {
-  return p.state;
 }
 export function phKind(p: PortalPhase): GlyphKind {
   return p.state === 'done' ? 'done' : p.state === 'up' ? 'up' : 'prog';
@@ -295,7 +289,7 @@ export interface IncData {
   refresh: () => void;
 }
 
-export function shortCompany(name?: string): string {
+function shortCompany(name?: string): string {
   if (!name) return 'Your company';
   return companyShortName(name) || name;
 }

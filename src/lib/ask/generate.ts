@@ -35,7 +35,7 @@ const LINK_GUIDE = [
   'Links only open a page; they never submit, approve, upload or send. Use ids exactly as tools returned them.',
 ].join(' ');
 
-export const RENDER_ANSWER_TOOL: LlmTool = {
+const RENDER_ANSWER_TOOL: LlmTool = {
   name: RENDER_ANSWER,
   description: `Deliver the final answer to the user. Call exactly once, last.\n${VISUAL_GUIDE}`,
   input_schema: {
@@ -131,7 +131,7 @@ function escapeSource(text: string): string {
   return text.replace(/<\/?source[^>]*>/gi, '');
 }
 
-export function buildSystem(input: Pick<GenerateInput, 'shell' | 'firmName' | 'snapshot' | 'sources' | 'depth' | 'language' | 'decision'>): LlmSystemBlock[] {
+function buildSystem(input: Pick<GenerateInput, 'shell' | 'firmName' | 'snapshot' | 'sources' | 'depth' | 'language' | 'decision'>): LlmSystemBlock[] {
   const stable = [
     personaBlock(input.shell, input.firmName),
     RULES_BLOCK,

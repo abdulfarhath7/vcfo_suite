@@ -31,8 +31,8 @@ import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { windowForStep, type EngagementSchedule } from '@/lib/projects/schedule-windows';
 
-export type StepKind = 'done' | 'you' | 'prog' | 'with' | 'next' | 'up';
-export type StepOwner = 'client' | 'sbc' | 'mca';
+type StepKind = 'done' | 'you' | 'prog' | 'with' | 'next' | 'up';
+type StepOwner = 'client' | 'sbc' | 'mca';
 
 export interface PortalStep {
   /** 1-based number across all 48 steps (prototype `inc-step-N`). */
@@ -88,24 +88,6 @@ export interface PortalIncorporationModel {
   /** Manager-set incorporation window end (expected COI before COI). */
   coiExpected?: string;
 }
-
-export const STEP_KIND_LABEL: Record<StepKind, string> = {
-  done: 'Done',
-  you: 'Waiting',
-  prog: 'In progress',
-  with: 'With SBC',
-  next: 'Next',
-  up: 'Upcoming',
-};
-
-/** Prototype KCOL. */
-export const STEP_KIND_COLOR: Record<Exclude<StepKind, 'next'>, string> = {
-  done: '#15805f',
-  you: '#c8620e',
-  prog: '#0f2a4a',
-  with: '#2453c7',
-  up: '#8a97a8',
-};
 
 const MCA_STEPS = new Set(['pre-11', 'pre-12']);
 
@@ -248,12 +230,4 @@ export function buildIncorporationModel(
     counts,
     coiExpected: ymd(schedule?.incorporation?.to),
   };
-}
-
-/** "4 Oct" */
-export function shortDate(iso?: string): string {
-  if (!iso) return '—';
-  const d = new Date(`${iso.slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }

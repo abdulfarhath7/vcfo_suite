@@ -21,7 +21,7 @@ import {
   TRACES,
 } from '@/lib/notifications/announcement-portals';
 
-export const PORTAL_DUE_SOON_DAYS = 7;
+const PORTAL_DUE_SOON_DAYS = 7;
 
 export type CompStatus = 'ok' | 'due' | 'over' | 'up';
 export type AreaCode = 'MCA' | 'GST' | 'IT' | 'PAY' | 'FEMA';
@@ -118,7 +118,7 @@ export function todayIso(now: Date = new Date()): string {
 export function D(iso: string): Date {
   return new Date(`${iso.slice(0, 10)}T00:00:00Z`);
 }
-export function isoOf(d: Date): string {
+function isoOf(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 export function addDays(iso: string, n: number): string {
@@ -159,9 +159,6 @@ export function fmtLong(iso: string): string {
 export function fmtLongComma(iso: string): string {
   const d = D(iso);
   return `${WD_LONG[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
-}
-export function monthKeyOfIso(iso: string): string {
-  return iso.slice(0, 7);
 }
 export function monthLabel(key: string): string {
   const [y, m] = key.split('-');
@@ -450,7 +447,7 @@ export function focusNodes(f: PortalFiling, companyShort: string, today: string)
 
 /* --------------------------------------------------------------- csv / ics */
 
-export function csvEscape(v: string | number | null | undefined): string {
+function csvEscape(v: string | number | null | undefined): string {
   let s = v == null ? '' : String(v);
   // spreadsheet formula injection: a cell starting with = + - @ is text
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;

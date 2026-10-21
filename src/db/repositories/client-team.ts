@@ -37,7 +37,7 @@ export class ClientTeamError extends Error {
   }
 }
 
-export interface ClientTeamPerson {
+interface ClientTeamPerson {
   userId: string;
   name: string;
   email: string;

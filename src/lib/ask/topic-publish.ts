@@ -16,7 +16,7 @@ export class TopicPublishError extends Error {
   }
 }
 
-export const MIN_REVIEWER_CHARS = 3;
+const MIN_REVIEWER_CHARS = 3;
 
 function requireReviewer(reviewer: string | undefined): string {
   const name = (reviewer ?? '').trim();

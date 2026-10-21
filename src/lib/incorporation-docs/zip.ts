@@ -26,7 +26,7 @@ function safeSegment(value: string): string {
   return value.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'Director';
 }
 
-export function incorpDraftFolder(audience: IncorpDocAudience, pre6?: ChecklistItemResponses): string {
+function incorpDraftFolder(audience: IncorpDocAudience, pre6?: ChecklistItemResponses): string {
   if (audience === 'company') return 'Company';
   const name = pre6 ? resolvePre6DisplayNameForPrefix(pre6, directorFieldPrefix(audience)) : '';
   return safeSegment(name || directorAudienceLabel(audience));

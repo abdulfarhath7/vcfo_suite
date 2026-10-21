@@ -16,7 +16,7 @@ import { docUrl } from './derive';
 export { InfoPopover };
 
 /** Duo-tone board icon: [duo path, main path] exactly as the boards draw them. */
-export function Duo({ d, duo = '', size = 14, sw = 1.7, style }: { d: string; duo?: string; size?: number; sw?: number; style?: CSSProperties }) {
+function Duo({ d, duo = '', size = 14, sw = 1.7, style }: { d: string; duo?: string; size?: number; sw?: number; style?: CSSProperties }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none', ...style }}>
       <path className="duo" d={duo} />

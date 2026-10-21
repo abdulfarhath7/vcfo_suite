@@ -94,7 +94,7 @@ export function Own({ o, short }: { o: OwnKey; short: string }) {
   );
 }
 
-export const BOTI =
+const BOTI =
   '<rect x="15" y="2" width="2" height="5" rx="1" fill="#1e40af"/><circle cx="16" cy="3" r="2.2" fill="#2dd4bf"/><rect x="3" y="7" width="26" height="21" rx="9" fill="#2563eb"/><rect x="7" y="12" width="18" height="10" rx="5" fill="#0b1736"/><rect x="11" y="14.5" width="3" height="5" rx="1.5" fill="#7dd3fc"/><rect x="18" y="14.5" width="3" height="5" rx="1.5" fill="#7dd3fc"/>';
 
 export function Bmini({ style }: { style?: CSSProperties }) {
@@ -147,7 +147,7 @@ export function pd(s: string): Date {
   const a = s.slice(0, 10).split('-');
   return new Date(Date.UTC(+a[0]!, +a[1]! - 1, +a[2]!));
 }
-export function isoD(d: Date): string {
+function isoD(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 export function addD(s: string, k: number): string {
@@ -210,7 +210,7 @@ interface IncFrameValue {
 
 const IncFrameCtx = createContext<IncFrameValue | null>(null);
 
-export function useIncFrame(): IncFrameValue {
+function useIncFrame(): IncFrameValue {
   const v = useContext(IncFrameCtx);
   if (!v) throw new Error('useIncFrame outside IncFrame');
   return v;
@@ -412,7 +412,7 @@ export function IncFrame({ children, pending, title }: { children: ReactNode; pe
 }
 
 /** L1 skeleton: on only if still pending at 150 ms; once on, held at least 300 ms. */
-export function useSkeleton(pending: boolean): boolean {
+function useSkeleton(pending: boolean): boolean {
   const [on, setOn] = useState(false);
   const shownAt = useRef(0);
   useEffect(() => {

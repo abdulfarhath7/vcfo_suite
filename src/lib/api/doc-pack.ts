@@ -30,7 +30,7 @@ export const DOCX_CONTENT_TYPE =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 export const ZIP_CONTENT_TYPE = 'application/zip';
 
-export class DocPackError extends Error {
+class DocPackError extends Error {
   readonly status: number;
   readonly code: string;
   constructor(message: string, status: number, code: string) {
@@ -150,7 +150,7 @@ export async function renderDocPackItem(
   return { buffer, filename };
 }
 
-export function docPackZipFilename(engagement: { companyName: string; slug?: string }, now = new Date()): string {
+function docPackZipFilename(engagement: { companyName: string; slug?: string }, now = new Date()): string {
   const slug = engagement.slug?.trim() || slugifyCompanyName(engagement.companyName);
   const day = now.toISOString().slice(0, 10);
   return `${slug}-pre-incorporation-${day}.zip`;

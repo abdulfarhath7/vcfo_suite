@@ -4,7 +4,7 @@
  * re-running ingestion on the same text yields the same chunks.
  */
 
-export const CHUNK_MIN_CHARS = 1200;
+const CHUNK_MIN_CHARS = 1200;
 export const CHUNK_MAX_CHARS = 2000;
 
 export interface SourceChunk {

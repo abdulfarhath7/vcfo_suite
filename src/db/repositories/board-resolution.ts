@@ -265,7 +265,7 @@ export async function repairBoardResolutionStorage(
 }
 
 /** Finalize draft → client-visible board resolution. */
-export async function finalizeBoardResolution(
+async function finalizeBoardResolution(
   ctx: AuthContext,
   appOrDbId: string,
 ): Promise<BoardResolutionDoc> {

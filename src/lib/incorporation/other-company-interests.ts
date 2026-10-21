@@ -9,7 +9,7 @@
  */
 
 export const PRE15_MAX_OTHER_INTERESTS = 3;
-export const PRE6_MAX_OTHER_INTERESTS = 5;
+const PRE6_MAX_OTHER_INTERESTS = 5;
 
 export interface OtherCompanyInterest {
   company: string;

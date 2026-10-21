@@ -60,7 +60,7 @@ export function docxToText(bytes: Buffer): string {
 const PDF_PROMPT =
   'Transcribe the text of this document exactly, in reading order. Mark headings with "# ". Separate paragraphs with a blank line. Render tables as lines of "cell | cell". Do not summarise, add, translate or comment. Output only the transcription.';
 
-export async function pdfToText(bytes: Buffer, provider: LlmProvider, model: string): Promise<string> {
+async function pdfToText(bytes: Buffer, provider: LlmProvider, model: string): Promise<string> {
   const result = await provider.complete({
     model,
     maxTokens: 32000,

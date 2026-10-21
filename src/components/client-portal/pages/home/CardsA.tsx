@@ -11,7 +11,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import { BotSays } from '@/components/client-portal/shared';
 import { VisorHead } from '@/components/client-portal/Visor';
 import { LinkButton } from '@/components/client-portal/LinkButton';
-import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
+import { portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import { CardHead, Ico, InfoPopover, Seg, Tip, useDownload } from './ui';
@@ -470,7 +470,7 @@ export function buildSbcRows(h: HomeData): SbcRow[] {
     }));
 }
 
-export function sbcDrill(rows: SbcRow[], active: number, lead?: string): DrillConfig {
+function sbcDrill(rows: SbcRow[], active: number, lead?: string): DrillConfig {
   const r = (x: SbcRow): DrillRow => ({ title: x.title, meta: x.pct ? `${x.pct}%${lead ? ` · ${lead}` : ''}` : x.pct === 0 ? 'Not started yet' : x.ready ? `ready ${dShort(x.ready)}` : 'With SBC', chip: x.pct === 0 ? 'Not started' : 'In progress', chipColor: chipBg(x.pct === 0 ? 'up' : 'prog'), href: x.href });
   return {
     title: 'What SBC is doing',
@@ -663,5 +663,3 @@ export function ActivityCard({ h }: { h: HomeData }) {
     </div>
   );
 }
-
-export { phaseHref };

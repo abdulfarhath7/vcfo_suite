@@ -142,7 +142,7 @@ export function portalForField(fieldId: string): { label: string; url: string } 
 
 /** Stale-proof rule: dated proofs (bills, statements) older than 60 days. */
 const STALE_LABEL = /utility|electricity|telephone|phone bill|gas bill|water bill|bank statement|address proof/i;
-export const STALE_MAX_DAYS = 60;
+const STALE_MAX_DAYS = 60;
 
 export function isStaleProof(label: string, dateIso: string | undefined, today = new Date()): boolean {
   if (!dateIso || !STALE_LABEL.test(label)) return false;

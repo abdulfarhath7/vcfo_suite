@@ -22,7 +22,7 @@ export interface TFolder {
   zipKey: string;
 }
 
-export interface TFile {
+interface TFile {
   kind: 'file';
   id: string;
   parent: string;
@@ -31,7 +31,7 @@ export interface TFile {
 
 export type TEntry = TFolder | TFile;
 
-export const OTHER_STEP_ID = 'other-files';
+const OTHER_STEP_ID = 'other-files';
 
 export function buildEntries(nodes: DocNode[], model: PortalIncorporationModel, view: View): TEntry[] {
   const out: TEntry[] = [];
@@ -130,7 +130,7 @@ export function missingStyle(n: Pick<DocNode, 'overdue'>): CSSProperties {
   return n.overdue ? { background: 'var(--over-chip)', color: '#fff' } : { background: 'var(--due-chip)', color: '#fff' };
 }
 
-export function tagOf(n: DocNode): FileTag {
+function tagOf(n: DocNode): FileTag {
   return fileTag(n.fileName, n.contentType);
 }
 
