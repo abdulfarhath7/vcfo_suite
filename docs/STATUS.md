@@ -113,3 +113,20 @@ About 85 source files carry the design-system work described in `docs/design/BRI
 7. **Reconcile the three "what changed" files**: `QUESTIONS.md` at the repo root,
    `docs/specs/client-pages/DECISIONS.md` and `BUILD-REPORT.md` overlap. Keep one decision log
    under `docs/specs/client-pages/` and link it from `STATE.md`.
+
+8. **Done 2026-10-22: the largest hand-written files are split** (branch `refactor/claude-ready`, no
+   behavior change, one commit each; gate after every commit: 0 type errors, 0 lint errors, 1925
+   tests). Each original path still imports the same names. Lines before -> after (largest new file):
+   `useMilestoneResponseFormState.tsx` 1976 -> 261 (`milestone-form/`, 383) `36bb5c7`;
+   `use-app-provider-value.ts` 1431 -> 250 (`app-provider/`, 330) `7d546e6`;
+   `repositories/engagements.ts` 1268 -> `engagements/` folder (378) `474b03a`;
+   `repositories/credentials.ts` 1104 -> `credentials/` folder (342) `1a0c260`;
+   `CredentialsPage.tsx` 1184 -> 233 (`sheet-grid.tsx`, 468) `8567c9b`;
+   `FirmPeople.tsx` 1159 -> 366 (`firm-people/`, 419) `3fbcdd7`;
+   `CreateProjectFormSections.tsx` 1026 -> 298 (`CreateProjectEntitySection.tsx`, 284) `7919a5b`;
+   `MobileHome.tsx` 980 -> 100 (`useMobileHome.tsx`, 387) `98c2004`;
+   `AccountSettings.tsx` 974 -> 414 (`account/`, 277) `c0c15f0`.
+   Views use a state hook plus `create*` / `render*` factories called in the same render, so the
+   React tree is unchanged. CredentialsPage, FirmPeople, CreateProjectFormSections, MobileHome and
+   AccountSettings have no component tests, so those five splits rest on typecheck and lint and
+   were not checked in a browser.

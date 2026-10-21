@@ -48,10 +48,12 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
   (docx), `incorporation/`, `projects/`, `compliance/`, `doc-pack/`, `ask/`, `email/`, `notify/`.
   Generic helpers (`utils.ts`, `auth.ts`, `slug.ts`) sit at the top; tests sit beside the code.
 - `src/data/` — pure data: `checklist.ts` (the 34 steps), obligations, NIC codes, Ask topics.
-- `src/db/` — the seam: Drizzle client, `schema*.ts`, `migrations/`, `repositories/`.
+- `src/db/` — the seam: Drizzle client, `schema*.ts`, `migrations/`, `repositories/`. Large
+  repositories are folders (`engagements/`, `credentials/`) whose `index.ts` keeps the import path.
 - `src/auth/` — Auth.js config and role guards. `src/storage/` — S3 helpers.
-  `src/jobs/` — Inngest functions. `src/context/` — client state. `src/hooks/` — shared
-  React Query and UI hooks (`use-*.ts`; Ask hooks in `hooks/ask/`).
+  `src/jobs/` — Inngest functions. `src/context/` — client state (`app-provider/` holds the
+  provider's concerns). `src/hooks/` — shared React Query and UI hooks (`use-*.ts`; Ask
+  hooks in `hooks/ask/`).
 - `scripts/` — seeds, docx template builders, `cp-css.mjs`, `design-tokens-*.mjs`.
 - `docs/` — `context/` (live memory), `specs/` (feature specs and the client portal
   prototype), `design/` (the design system), `STATUS.md` (branch status and refactor list).
@@ -93,6 +95,9 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
   `portal-css.ts` lists the cascade order.
 - **Component homes.** One greeting card (`DashHero`), one section card (`DashSection`), one
   chip style (`IconChip`), one button set (`ui/button-variants.ts`). Never fork a primitive.
+- **Large views.** A big page keeps its JSX in the original file; state moves to a `use*` hook
+  and closure render helpers to `create*`/`render*` factories in a sibling folder (for example
+  `src/views/incorporation/milestone-form/`), so the rendered tree does not change.
 - **Fonts and imports.** Public Sans for UI, IBM Plex Mono for identifiers (`app/layout.tsx`).
   `@/` maps to `src/`; `scripts/` and `e2e/` sit outside the `tsconfig` include list.
 
