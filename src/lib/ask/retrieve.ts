@@ -64,7 +64,9 @@ export async function retrieveSources(
     chunks = hits.map((h) => ({
       id: h.id,
       kind: 'chunk',
-      label: h.documentTitle,
+      // Official updates carry their publication date, so the model can tell
+      // which of two disagreeing sources is newer (newer wins — see RULES_BLOCK).
+      label: h.publishedAt ? `${h.documentTitle} (official update, published ${h.publishedAt})` : h.documentTitle,
       text: [h.contextPrefix, h.text].filter(Boolean).join('\n'),
       url: h.sourceUrl,
     }));

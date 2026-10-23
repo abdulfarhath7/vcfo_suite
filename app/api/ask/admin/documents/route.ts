@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
+  countAskChunksByDocument,
   createAskDocument,
   listAskDocuments,
   setAskDocumentStorageKey,
@@ -7,6 +8,7 @@ import {
   type AskSourceType,
 } from '@/db/repositories/ask-documents';
 import { isFirmWideAdmin } from '@/lib/auth';
+import { feedLabel } from '@/lib/ask/feeds/registry';
 import { askSourceStoragePath, queueAskIngestion } from '@/lib/ask/ingest/run';
 import { sourceKindFor } from '@/lib/ask/ingest/extract';
 import { requireAsk } from '@/lib/ask/route-guard';
@@ -16,7 +18,7 @@ import { bucketKey, putObject } from '@/storage/s3';
 const SOURCE_TYPES: readonly AskSourceType[] = ['govt', 'firm_pdf', 'firm_note'];
 const AUDIENCES: readonly AskDocumentAudience[] = ['client', 'staff', 'both'];
 
-function view(row: Awaited<ReturnType<typeof listAskDocuments>>[number]) {
+function view(row: Awaited<ReturnType<typeof listAskDocuments>>[number], chunkCount = 0) {
   return {
     id: row.id,
     title: row.title,
@@ -28,6 +30,12 @@ function view(row: Awaited<ReturnType<typeof listAskDocuments>>[number]) {
     effectiveFrom: row.effectiveFrom,
     lastVerifiedAt: row.lastVerifiedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
+    /** Indexed pieces Ask VCFO can retrieve from this source (0 while indexing). */
+    chunkCount,
+    /** Official updates found by a watcher (null for admin uploads). */
+    feed: feedLabel(row.feedId),
+    publishedAt: row.publishedAt,
+    summary: row.summary,
   };
 }
 
@@ -37,7 +45,8 @@ export async function GET() {
   if (gate.ok === false) return gate.response;
   if (!isFirmWideAdmin(gate.ctx.role)) return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   try {
-    return NextResponse.json({ documents: (await listAskDocuments(gate.ctx)).map(view) });
+    const [documents, counts] = await Promise.all([listAskDocuments(gate.ctx), countAskChunksByDocument(gate.ctx)]);
+    return NextResponse.json({ documents: documents.map((row) => view(row, counts.get(row.id) ?? 0)) });
   } catch (error) {
     console.error('[ask-vcfo] sources list failed', error);
     return NextResponse.json({ error: 'Could not load sources' }, { status: 500 });

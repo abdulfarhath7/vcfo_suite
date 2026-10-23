@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Library } from 'lucide-react';
+import { FileText, Library, UploadCloud, X } from 'lucide-react';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { PageTransition } from '@/components/shell/PageTransition';
+import { ASK_SOURCE_ACCEPT, formatFileSize, titleFromFileName, validateSourceFile } from '@/lib/ask/source-file';
 import { cn } from '@/lib/utils';
 
 type SourceRow = {
@@ -20,7 +21,104 @@ type SourceRow = {
   effectiveFrom: string | null;
   lastVerifiedAt: string | null;
   createdAt: string;
+  /** Indexed pieces Ask VCFO can retrieve from this source. */
+  chunkCount?: number;
+  /** Official updates found by a watcher; null for admin uploads. */
+  feed?: { label: string; act: string } | null;
+  publishedAt?: string | null;
+  summary?: string | null;
 };
+
+type WatcherRun = {
+  feedId: string;
+  label: string;
+  listed: number;
+  added: number;
+  failed: number;
+  addedTitles: string[];
+  error: string | null;
+};
+
+type FeedsInfo = {
+  autoPublish: boolean;
+  watchers: Array<{ id: string; label: string; act: string; homeUrl: string }>;
+};
+
+/**
+ * Official updates: the government sources Ask VCFO watches, and a button that
+ * runs the same check the 6:30 IST job runs. New items are indexed like any
+ * upload; they start staff-only unless auto-publish is on.
+ */
+function OfficialUpdatesPanel({ onChecked }: { onChecked: () => void }) {
+  const info = useQuery({
+    queryKey: ['ask', 'feeds'],
+    queryFn: async () => readJson<FeedsInfo>(await fetch('/api/ask/admin/feeds'), 'Could not load the watched sources'),
+  });
+  const check = useMutation({
+    mutationFn: async () =>
+      readJson<{ results: WatcherRun[] }>(await fetch('/api/ask/admin/feeds', { method: 'POST' }), 'Could not check the official sources'),
+    onSuccess: () => onChecked(),
+  });
+  const results = check.data?.results;
+
+  return (
+    <section
+      aria-label="Official updates"
+      className="mt-4 rounded-[var(--radius)] border border-border bg-panel p-4"
+    >
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[14px] font-semibold text-foreground">Official updates</h2>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            Ask VCFO checks these government sources every morning at 6:30 IST and reads anything new.{' '}
+            {info.data?.autoPublish
+              ? 'New updates are used in client answers straight away.'
+              : 'New updates are used in staff answers at once, and in client answers after you publish them.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => check.mutate()}
+          disabled={check.isPending}
+          className="min-h-[40px] rounded-[var(--radius-md)] bg-primary px-4 text-[13px] font-medium text-primary-foreground hover:bg-primary-dark disabled:opacity-50"
+        >
+          {check.isPending ? 'Checking…' : 'Check for updates now'}
+        </button>
+      </div>
+      <ul className="mt-3 space-y-1.5">
+        {(info.data?.watchers ?? []).map((w) => {
+          const run = results?.find((r) => r.feedId === w.id);
+          return (
+            <li key={w.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]">
+              <span className="rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-medium text-primary">{w.act}</span>
+              <a href={w.homeUrl} target="_blank" rel="noreferrer" className="font-medium text-foreground hover:underline">
+                {w.label}
+              </a>
+              {run ? (
+                run.error ? (
+                  <span className="text-danger-text">Could not read it: {run.error}</span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {run.listed} listed · {run.added === 0 ? 'nothing new' : `${run.added} new, now being read`}
+                    {run.failed ? ` · ${run.failed} could not be downloaded (tried again next time)` : ''}
+                  </span>
+                )
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-3 text-[12px] text-muted-foreground">
+        Income Tax, MCA and the GST portal&apos;s news page refuse automated readers. Drop their PDFs in the box below.
+      </p>
+      {check.isError && (
+        <p role="alert" className="mt-2 text-[12.5px] text-danger-text">
+          {(check.error as Error).message}
+        </p>
+      )}
+    </section>
+  );
+}
 
 const TYPE_LABEL: Record<string, string> = { govt: 'Government', firm_pdf: 'Firm document', firm_note: 'Firm note' };
 const AUDIENCE_LABEL: Record<string, string> = { client: 'Clients', staff: 'Staff only', both: 'Clients and staff' };
@@ -46,11 +144,144 @@ async function readJson<T>(res: Response, fallback: string): Promise<T> {
 const input =
   'min-h-[40px] w-full rounded-[var(--radius-md)] border border-input bg-panel px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40';
 
+/**
+ * Drag-and-drop (or click to browse) for one source file. The chosen file is
+ * held in React state — a dropped file cannot be assigned to a plain
+ * `<input type="file">` — and the form appends it to the request itself.
+ * Owner, 2026-10-22: dragging a PDF onto the page did nothing before this.
+ */
+function SourceDropZone({
+  file,
+  onPick,
+  onClear,
+  disabled,
+}: {
+  file: File | null;
+  onPick: (file: File) => void;
+  onClear: () => void;
+  disabled?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+
+  const take = (list: FileList | null | undefined) => {
+    const first = list?.[0];
+    if (first) onPick(first);
+  };
+
+  if (file) {
+    return (
+      <div className="mt-2 flex items-center gap-3 rounded-[var(--radius-md)] border border-border bg-muted/40 px-3 py-2.5">
+        <FileText className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-medium text-foreground">{file.name}</p>
+          <p className="text-[12px] text-muted-foreground">{formatFileSize(file.size)} · ready to upload</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClear}
+          disabled={disabled}
+          aria-label={`Remove ${file.name}`}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Drop a PDF, DOCX, TXT or MD file here, or press Enter to choose one"
+      data-testid="source-drop-zone"
+      onClick={() => inputRef.current?.click()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          inputRef.current?.click();
+        }
+      }}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        setOver(true);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        if (!over) setOver(true);
+      }}
+      onDragLeave={(e) => {
+        // Only when leaving the zone itself, not a child element.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setOver(false);
+        take(e.dataTransfer.files);
+      }}
+      className={cn(
+        'mt-2 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[var(--radius-md)] border-2 border-dashed px-4 py-7 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+        over ? 'border-primary bg-primary-light' : 'border-border bg-muted/30 hover:border-primary/60 hover:bg-muted/50',
+      )}
+    >
+      <UploadCloud className={cn('h-7 w-7', over ? 'text-primary' : 'text-muted-foreground')} aria-hidden />
+      <p className="text-[13px] font-medium text-foreground">
+        {over ? 'Drop it here' : 'Drag and drop a file here, or click to choose'}
+      </p>
+      <p className="text-[12px] text-muted-foreground">PDF, DOCX, TXT or MD · one file at a time</p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ASK_SOURCE_ACCEPT}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={(e) => {
+          take(e.target.files);
+          e.target.value = '';
+        }}
+      />
+    </div>
+  );
+}
+
 /** Knowledge sources Ask VCFO retrieves from (Phase 7). Admin / super admin only. */
 export default function AskSources() {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [kind, setKind] = useState<'file' | 'note'>('file');
+  const [file, setFile] = useState<File | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  // A file dropped anywhere else on the page must not make the browser
+  // navigate to it (Chrome opens a dropped PDF in the tab).
+  useEffect(() => {
+    const block = (e: DragEvent) => {
+      if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
+    };
+    window.addEventListener('dragover', block);
+    window.addEventListener('drop', block);
+    return () => {
+      window.removeEventListener('dragover', block);
+      window.removeEventListener('drop', block);
+    };
+  }, []);
+
+  const pickFile = (next: File) => {
+    const problem = validateSourceFile(next);
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setError(null);
+    setFile(next);
+    setKind('file');
+    if (titleRef.current && !titleRef.current.value.trim()) {
+      titleRef.current.value = titleFromFileName(next.name);
+    }
+  };
   const list = useQuery({
     queryKey: ['ask', 'sources'],
     queryFn: async () => readJson<{ documents: SourceRow[] }>(await fetch('/api/ask/admin/documents'), 'Could not load sources'),
@@ -63,7 +294,7 @@ export default function AskSources() {
     onError: (err: Error) => setError(err.message),
   });
   const act = useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: 'retry' | 'archive' }) =>
+    mutationFn: async ({ id, action }: { id: string; action: 'retry' | 'archive' | 'publish' }) =>
       readJson(
         await fetch(`/api/ask/admin/documents/${id}`, {
           method: 'POST',
@@ -93,20 +324,38 @@ export default function AskSources() {
         }
       />
 
+      <OfficialUpdatesPanel onChecked={() => void queryClient.invalidateQueries({ queryKey: ['ask', 'sources'] })} />
+
       <form
         className="mt-4 grid gap-3 rounded-[var(--radius)] border border-border bg-panel p-4 md:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
           setError(null);
           const form = new FormData(e.currentTarget);
-          upload.mutate(form, { onSuccess: () => (e.target as HTMLFormElement).reset() });
+          form.delete('kind');
+          if (kind === 'file') {
+            if (!file) {
+              setError('Drop a file in the box, or click it to choose one.');
+              return;
+            }
+            form.delete('note');
+            form.set('file', file, file.name);
+          } else {
+            form.delete('file');
+          }
+          upload.mutate(form, {
+            onSuccess: () => {
+              (e.target as HTMLFormElement).reset();
+              setFile(null);
+            },
+          });
         }}
       >
         <div className="md:col-span-2">
           <label htmlFor="src-title" className="text-[12.5px] font-medium text-foreground">
             Title
           </label>
-          <input id="src-title" name="title" required maxLength={200} className={input} />
+          <input id="src-title" name="title" ref={titleRef} required maxLength={200} className={input} />
         </div>
         <div>
           <label htmlFor="src-type" className="text-[12.5px] font-medium text-foreground">
@@ -151,14 +400,7 @@ export default function AskSources() {
             </label>
           </div>
           {kind === 'file' ? (
-            <input
-              aria-label="File (PDF, DOCX, TXT or MD)"
-              name="file"
-              type="file"
-              accept=".pdf,.docx,.txt,.md"
-              required
-              className="mt-2 block text-[13px]"
-            />
+            <SourceDropZone file={file} onPick={pickFile} onClear={() => setFile(null)} disabled={upload.isPending} />
           ) : (
             <textarea aria-label="Note" name="note" required rows={6} className={cn(input, 'mt-2 py-2')} />
           )}
@@ -193,18 +435,51 @@ export default function AskSources() {
           {list.data?.documents.map((doc) => (
             <li key={doc.id} className="flex flex-wrap items-center gap-3 bg-panel px-4 py-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] font-medium text-foreground">{doc.title}</p>
-                <p className="text-[12px] text-muted-foreground">
-                  {TYPE_LABEL[doc.sourceType] ?? doc.sourceType} · {AUDIENCE_LABEL[doc.audience] ?? doc.audience}
-                  {doc.effectiveFrom ? ` · effective ${doc.effectiveFrom}` : ''}
+                <p className="truncate text-[13.5px] font-medium text-foreground">
+                  {doc.feed ? (
+                    <span className="mr-2 rounded-full bg-primary-light px-2 py-0.5 align-middle text-[11px] font-medium text-primary">
+                      Official update · {doc.feed.act}
+                    </span>
+                  ) : null}
+                  {doc.title}
                 </p>
+                <p className="text-[12px] text-muted-foreground">
+                  {doc.feed ? doc.feed.label : (TYPE_LABEL[doc.sourceType] ?? doc.sourceType)} ·{' '}
+                  {AUDIENCE_LABEL[doc.audience] ?? doc.audience}
+                  {doc.publishedAt
+                    ? ` · published ${doc.publishedAt}`
+                    : doc.effectiveFrom
+                      ? ` · effective ${doc.effectiveFrom}`
+                      : ''}
+                  {doc.sourceUrl ? (
+                    <>
+                      {' · '}
+                      <a href={doc.sourceUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                        open on the government site
+                      </a>
+                    </>
+                  ) : null}
+                </p>
+                {doc.summary && <p className="mt-1 text-[12.5px] text-foreground">What changed: {doc.summary}</p>}
                 {doc.error && <p className="text-[12px] text-danger-text">{doc.error}</p>}
               </div>
               <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', STATUS_TONE[doc.status])}>
                 {STATUS_LABEL[doc.status]}
+                {doc.status === 'ready' && typeof doc.chunkCount === 'number'
+                  ? ` · ${doc.chunkCount} piece${doc.chunkCount === 1 ? '' : 's'} read`
+                  : ''}
               </span>
               {doc.status !== 'archived' && (
                 <div className="flex gap-1.5">
+                  {doc.feed && doc.audience === 'staff' && doc.status === 'ready' && (
+                    <button
+                      type="button"
+                      onClick={() => act.mutate({ id: doc.id, action: 'publish' })}
+                      className="min-h-[36px] rounded-[var(--radius-md)] bg-primary px-2.5 text-[12px] font-medium text-primary-foreground hover:bg-primary-dark"
+                    >
+                      Publish to clients
+                    </button>
+                  )}
                   {(doc.status === 'failed' || doc.status === 'ready') && (
                     <button
                       type="button"

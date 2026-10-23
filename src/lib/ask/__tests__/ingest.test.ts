@@ -87,13 +87,15 @@ describe('ingestion job', () => {
     expect((replaceChunks.mock.calls[0]![1] as Array<{ contextPrefix: string | null }>)[0]!.contextPrefix).toBeNull();
   });
 
-  it('marks a PDF failed with a readable reason when no model is configured', async () => {
+  it('marks a PDF failed with a readable reason when it has no text layer and no model is configured', async () => {
     getDoc.mockResolvedValue({ ...doc, s3Key: 'knowledge-bank/ask-sources/doc-1/rules.pdf' });
+    // Not a parseable PDF: the text-layer reader gives up, and without a model
+    // there is no transcription fallback either.
     getObjectBuffer.mockResolvedValue(Buffer.from('%PDF-1.4'));
     expect((await runAskIngestion('doc-1')).status).toBe('failed');
     expect(setResult).toHaveBeenLastCalledWith('doc-1', {
       status: 'failed',
-      error: expect.stringContaining('PDF sources need the Ask VCFO model'),
+      error: expect.stringMatching(/not a readable PDF|needs the Ask VCFO model/),
     });
     expect(replaceChunks).not.toHaveBeenCalled();
   });

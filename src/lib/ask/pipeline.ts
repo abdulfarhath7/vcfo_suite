@@ -22,6 +22,7 @@ import { sanitizeLinks, type DestinationScope } from '@/lib/ask/destinations';
 import { gateActiveCatalog } from '@/lib/checklist-step-gate';
 import { generateAnswer } from '@/lib/ask/generate';
 import { runGuard, type GuardResult } from '@/lib/ask/guard';
+import { askSourceCoverage } from '@/db/repositories/ask-documents';
 import { getAskProvider } from '@/lib/ask/provider';
 import { checkAskRateLimit } from '@/lib/ask/rate-limit';
 import {
@@ -37,6 +38,7 @@ import { getSuggestion, resolveSuggestion } from '@/lib/ask/suggestions';
 import { CLIENT_TOOLS, type ClientToolContext } from '@/lib/ask/tools/client';
 import { loadStaffData } from '@/lib/ask/tools/staff-data';
 import { STAFF_TOOLS, type StaffData } from '@/lib/ask/tools/staff';
+import { getRecentOfficialUpdates } from '@/lib/ask/tools/updates';
 import {
   applicabilityFromSnapshot,
   isReviewed,
@@ -53,6 +55,36 @@ import { validateAnswer, withoutVisual } from '@/lib/ask/validate';
  * Every answer is persisted with usage; the model never sees data outside
  * the caller's scope because every tool reads through scoped repositories.
  */
+
+/** Share of a question's search terms one source chunk must hold to count as "about it". */
+export const SOURCE_SCOPE_MIN_SHARE = 0.6;
+/** …and never fewer than this many terms, so one shared word never widens scope. */
+export const SOURCE_SCOPE_MIN_TERMS = 2;
+
+/**
+ * Pure rule: is a question covered by the firm's sources? Measured 2026-10-22
+ * on real chunks: "Who owns VCFO Suite?" 2/3, "Which AWS service hosts …" 5/7,
+ * "SBC fee for INC-20A" 6/6 → covered; "Python script to sort a list" 2/5,
+ * "weather in Paris" 1/3 → not covered.
+ */
+export function isCoveredBySources(coverage: { terms: number; matched: number }): boolean {
+  if (coverage.terms === 0 || coverage.matched < SOURCE_SCOPE_MIN_TERMS) return false;
+  return coverage.matched / coverage.terms >= SOURCE_SCOPE_MIN_SHARE;
+}
+
+/**
+ * Does an uploaded firm source the asker may read cover this question?
+ * Audience rules are applied in the repository (a client never reaches staff
+ * sources). A failure means "no", so the guard's refusal stands.
+ */
+async function firmSourcesCover(ctx: AuthContext, query: string, persona: 'client' | 'staff'): Promise<boolean> {
+  try {
+    return isCoveredBySources(await askSourceCoverage(ctx, { query, persona }));
+  } catch (error) {
+    console.warn('[ask-vcfo] scope check against sources failed', error);
+    return false;
+  }
+}
 
 export const chatRequestSchema = z.object({
   conversationId: z.string().uuid().optional(),
@@ -294,6 +326,12 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     return;
   }
 
+  // The firm's own documents widen the scope (owner, 2026-10-22): a question
+  // the guard calls off-topic still gets an answer when an uploaded source
+  // the asker may read matches it. `unsafe` is never rescued.
+  if (guard.intent === 'off_topic' && (await firmSourcesCover(ctx, guard.rewrittenQuery, audience))) {
+    guard = { ...guard, intent: 'explain' };
+  }
   if (guard.intent === 'off_topic' || guard.intent === 'unsafe') {
     await finish(offTopicAnswer(shell), { guard, usage, startedAt });
     return;
@@ -326,7 +364,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     applicability,
   });
 
-  const tools =
+  const projectTools =
     shell === 'client'
       ? Object.values(CLIENT_TOOLS).map((t) => ({
           definition: t.definition,
@@ -336,6 +374,17 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
           definition: t.definition,
           run: async (input: Record<string, unknown>) => t.run(await loadStaff(), input),
         }));
+  // Both shells: the newest official updates (GST, RBI FEMA) the asker may read.
+  const tools = [
+    ...projectTools,
+    {
+      definition: getRecentOfficialUpdates.definition,
+      run: (input: Record<string, unknown>) => getRecentOfficialUpdates.run({ authCtx: ctx, persona: audience }, input),
+    },
+  ];
+  // Dates written in a retrieved source (a notification's "30th April, 2026")
+  // are evidence too, not only dates a tool returned.
+  const sourceTexts = sources.map((s) => `${s.label}\n${s.text}`);
 
   const allowedCitationIds = new Set<string>([
     ...sources.map((s) => s.id),
@@ -369,7 +418,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       decision,
       tools,
       validate: (raw, toolResultTexts) => {
-        const vctx = { shell, allowedCitationIds, toolResultTexts };
+        const vctx = { shell, allowedCitationIds, toolResultTexts: [...toolResultTexts, ...sourceTexts] };
         const full = validateAnswer(enrich(raw), vctx);
         if (full.ok === true) return full;
         // An invalid visual alone renders as text only (§3.3), without a retry.
@@ -392,7 +441,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     // T3: no render_answer call — the text becomes a plain answer, still checked.
     const fallback = validateAnswer(
       { line: result.textOnly.slice(0, 1200), citations: [], actions: [], origin: 'generated', depth },
-      { shell, allowedCitationIds, toolResultTexts: output.toolResultTexts },
+      { shell, allowedCitationIds, toolResultTexts: [...output.toolResultTexts, ...sourceTexts] },
     );
     answer = fallback.ok === true ? fallback.answer : uncertainAnswer();
   } else {

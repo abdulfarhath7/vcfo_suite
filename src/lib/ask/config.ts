@@ -14,6 +14,8 @@ export interface AskConfig {
   answerEffort: 'low' | 'medium' | 'high';
   rateLimit: { hour: number; day: number };
   retrievalTopK: number;
+  /** Official updates found by the watchers go straight into client answers (default: staff only until an admin publishes). */
+  feedsAutoPublish: boolean;
   bedrockRegion: string | null;
   /** Server-side refusal fallback (Claude API only). */
   refusalFallback: boolean;
@@ -49,6 +51,7 @@ export function askConfig(): AskConfig {
     answerEffort: effort === 'low' || effort === 'high' ? effort : 'medium',
     rateLimit: { hour: intEnv('ASK_VCFO_RATE_LIMIT_HOUR', 30), day: intEnv('ASK_VCFO_RATE_LIMIT_DAY', 200) },
     retrievalTopK: intEnv('ASK_VCFO_RETRIEVAL_TOP_K', 8),
+    feedsAutoPublish: process.env.ASK_VCFO_FEEDS_AUTO_PUBLISH === 'true',
     bedrockRegion: process.env.ASK_VCFO_BEDROCK_REGION?.trim() || null,
     refusalFallback: process.env.ASK_VCFO_REFUSAL_FALLBACK !== 'false',
   };

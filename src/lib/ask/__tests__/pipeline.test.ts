@@ -34,6 +34,8 @@ const defaultSnapshotLoad = () => ({
     filings: [],
 });
 vi.mock('@/lib/ask/retrieve', () => ({ retrieveSources: vi.fn(async () => []) }));
+// No uploaded source covers anything here, so off-topic questions stay refused.
+vi.mock('@/db/repositories/ask-documents', () => ({ askSourceCoverage: vi.fn(async () => ({ terms: 0, matched: 0 })) }));
 vi.mock('@/lib/ask/tools/staff-data', () => ({ loadStaffData: (...a: unknown[]) => loadStaffData(...a) }));
 
 const { runAskChat } = await import('@/lib/ask/pipeline');

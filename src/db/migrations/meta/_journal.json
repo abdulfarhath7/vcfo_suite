@@ -190,6 +190,13 @@
       "when": 1792590686049,
       "tag": "0026_whatsapp_delivery_variables",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792683886554,
+      "tag": "0027_ask_official_updates",
+      "breakpoints": true
     }
   ]
 }

@@ -1003,7 +1003,19 @@ export const askDocuments = pgTable('ask_documents', {
   /** Last ingestion failure, shown on the sources page with a retry. */
   error: text('error'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+  /**
+   * Official-update watchers (2026-10-22): which watcher found this source
+   * (`src/lib/ask/feeds/registry.ts`, e.g. `cbic-gst`), the publisher's own id
+   * for it (never downloaded twice), the date it was published, and a short
+   * "what changed" written at indexing. All null for a source an admin uploaded.
+   */
+  feedId: text('feed_id'),
+  externalId: text('external_id'),
+  publishedAt: date('published_at'),
+  summary: text('summary'),
+}, (t) => ({
+  feedExternalUq: uniqueIndex('ask_documents_feed_external_uq').on(t.feedId, t.externalId),
+}));
 
 /**
  * No `embedding` column in v1: local Postgres has no pgvector (Phase 0), and

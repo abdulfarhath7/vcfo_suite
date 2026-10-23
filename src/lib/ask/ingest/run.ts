@@ -4,7 +4,9 @@ import {
   systemGetAskDocument,
   systemReplaceAskChunks,
   systemSetAskDocumentResult,
+  systemSetAskDocumentSummary,
 } from '@/db/repositories/ask-documents';
+import { summarizeOfficialUpdate } from './summarize';
 import { getObjectBuffer } from '@/storage/s3';
 import { askConfig } from '@/lib/ask/config';
 import { getAskProvider } from '@/lib/ask/provider';
@@ -53,6 +55,16 @@ export async function runAskIngestion(documentId: string): Promise<{ status: 're
       doc.id,
       chunks.map((c, i) => ({ ordinal: c.ordinal, text: c.text, contextPrefix: prefixes[i] ?? null })),
     );
+    // Official updates get a two-sentence "what changed" for recent-update
+    // questions. Best effort: a failed summary never fails the indexing.
+    if (doc.feedId && provider) {
+      try {
+        const summary = await summarizeOfficialUpdate({ provider, model: config.models.contextualizer, title: doc.title, text });
+        await systemSetAskDocumentSummary(doc.id, summary);
+      } catch (error) {
+        console.warn('[ask-vcfo] update summary failed', documentId, error);
+      }
+    }
     await systemSetAskDocumentResult(doc.id, { status: 'ready' });
     return { status: 'ready', chunks: chunks.length };
   } catch (error) {
