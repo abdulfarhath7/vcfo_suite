@@ -200,7 +200,7 @@ export default function RegulatoryUpdates({ basePath }: { basePath: string }) {
                         Open review document
                       </a>
                     ) : null}
-                    {canDecide && u.reviewStatus === 'pending' && !stillReading ? (
+                    {canDecide && u.reviewStatus === 'pending' && u.status === 'ready' && !stillReading ? (
                       <>
                         <button
                           type="button"

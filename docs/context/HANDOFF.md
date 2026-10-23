@@ -57,6 +57,31 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
 
+## Session 2026-10-23 (evening) — the owner's portal list: EPFO, ESIC, DGFT watchers
+
+- **Owner's PDF of portals** (Income Tax, MCA, GST, PF, ESIC, Professional Tax, IEC/DGFT), each
+  probed from this machine. Added watchers (`src/lib/ask/feeds/`): **epfo** (WordPress notices
+  RSS `?post_type=notices&feed=rss2`; the old Circulars archive page stopped in 2025; PDF taken
+  from `content:encoded`, preferring the link named "circular"; tenders / empanelments /
+  postings dropped), **esic** (`/circulars` HTML table: branch · dated · subject PDFs · publish
+  date · console serial = id; internal postings dropped), **dgft** (`?opt=notification`,
+  `public-notice`, `circular` tables: number · year · description · date · PDF on
+  content.dgft.gov.in; nothing filtered). Shared helpers: `feeds/html.ts` (rows, cells, anchors,
+  dd-mm-yyyy), `feeds/govt-fetch.ts` (page / PDF reads with browser-like headers).
+- **RBI**: items with no feed text (PDF-only notices such as the FEMA compounding delegation)
+  now read the notice page and take the `rbidocs.rbi.org.in/rdocs/notification/PDFs/*.PDF`.
+- **Backlog horizon**: `MAX_AGE_DAYS = 60` in `poll.ts` — a watcher's archive (DGFT lists 400+
+  items, EPFO 1,900) must not flood the review queue; only items published in the last 60 days
+  are ever taken, 10 per source per run.
+- **Still manual**: Income Tax and MCA (403 to any program; the e-Gazette lists their
+  notifications and `https://egazette.gov.in/WriteReadData/<year>/<id>.pdf` serves the PDF by
+  gazette id, but its listing needs an ASP.NET session — a possible next step), the GST portal
+  news page (anti-robot), Telangana Commercial Taxes (PDFs without a dated list).
+- **Live run 2026-10-23**: EPFO 2, ESIC 1, DGFT 10, RBI 1 new items read and queued with review
+  PDFs (emails off). Manager page shows Approve / Reject only for `ready` rows.
+- Real accounts for the owner's testing (local DB): manager `pranay.k@sbcllp.in`, admin
+  `krishna@sbcllp.in`, super admin `abdulfarhath@sbcllp.in`, client `prithish@sbcllp.in`.
+
 ## Session 2026-10-23 (later) — manager review gate for official updates (branch `ask-vcfo-rag`)
 
 - **Branches**: portal work committed on `client-dashboard-v7` (`e5306e0`); all chatbot work lives

@@ -98,9 +98,10 @@ describe('pickNewItems (never download twice)', () => {
 
   it('skips known and repeated items, newest first, capped', () => {
     const listed = [item('a', '2026-01-01'), item('b', '2026-03-01'), item('b', '2026-03-01'), item('c', '2026-02-01')];
-    expect(pickNewItems(listed, new Set(['a']), 10).map((i) => i.externalId)).toEqual(['b', 'c']);
-    expect(pickNewItems(listed, new Set(), 1).map((i) => i.externalId)).toEqual(['b']);
-    expect(pickNewItems(listed, new Set(['a', 'b', 'c']), 10)).toEqual([]);
+    const now = new Date('2026-03-15T00:00:00Z');
+    expect(pickNewItems(listed, new Set(['a']), 10, now).map((i) => i.externalId)).toEqual(['b', 'c']);
+    expect(pickNewItems(listed, new Set(), 1, now).map((i) => i.externalId)).toEqual(['b']);
+    expect(pickNewItems(listed, new Set(['a', 'b', 'c']), 10, now)).toEqual([]);
   });
 });
 
@@ -153,5 +154,27 @@ describe('review PDF facts (pure helpers)', () => {
     expect(good.warning).toBeNull();
     expect(good.pieces).toBe(2);
     expect(good.words).toBeGreaterThan(100);
+  });
+});
+
+describe('isRecentEnough (archive horizon)', () => {
+  it('keeps items from the last 60 days and drops older archive entries', async () => {
+    const { isRecentEnough, pickNewItems } = await import('@/lib/ask/feeds/poll');
+    const now = new Date('2026-10-23T00:00:00Z');
+    expect(isRecentEnough('2026-10-01', now)).toBe(true);
+    expect(isRecentEnough('2026-09-01', now)).toBe(true);
+    expect(isRecentEnough('2026-04-30', now)).toBe(false);
+    expect(isRecentEnough('2025-12-01', now)).toBe(false);
+    expect(isRecentEnough('not-a-date', now)).toBe(false);
+    const item = (externalId: string, publishedAt: string) => ({ externalId, number: null, title: externalId, kind: 'Circular', publishedAt, publicUrl: 'https://x.gov.in' });
+    expect(pickNewItems([item('old', '2025-01-01'), item('new', '2026-10-20')], new Set(), 10, now).map((i) => i.externalId)).toEqual(['new']);
+  });
+});
+
+describe('RBI items with no feed text', () => {
+  it('counts only the body words, not the title line', async () => {
+    const { bodyWords } = await import('@/lib/ask/feeds/rbi');
+    expect(bodyWords('# Delegation of Compounding under FEMA\n\n')).toBe(0);
+    expect(bodyWords('# Title\n\nThe Reserve Bank hereby delegates the power to compound.')).toBe(9);
   });
 });

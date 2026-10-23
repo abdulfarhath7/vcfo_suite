@@ -31,6 +31,19 @@ export type FeedContent =
   | { kind: 'file'; bytes: Buffer; fileName: string; contentType: string }
   | { kind: 'text'; text: string };
 
+/**
+ * The source lists the item but will not hand its file to a program (a
+ * browser-only check in front of the PDF). The poller records it once as a
+ * failed source with this message, so a person can download the file from
+ * the link and drop it on the Sources page — and it is not retried.
+ */
+export class ManualFetchError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ManualFetchError';
+  }
+}
+
 export interface FeedWatcher {
   id: string;
   /** Short label for the admin ("CBIC · GST notifications and circulars"). */

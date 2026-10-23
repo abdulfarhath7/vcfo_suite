@@ -1,7 +1,8 @@
 import 'server-only';
 
 import { fetchOfficialFeedXml, parseRssOrAtom, type ParsedFeedItem } from '@/lib/announcements';
-import { toYmd, type FeedContent, type FeedItem, type FeedWatcher } from './types';
+import { fetchPdf, fetchText } from './govt-fetch';
+import { ManualFetchError, toYmd, type FeedContent, type FeedItem, type FeedWatcher } from './types';
 
 /**
  * Reserve Bank of India — notifications RSS (a real, published feed). Each
@@ -50,6 +51,12 @@ export function parseRbiItems(items: ParsedFeedItem[]): { items: FeedItem[]; bod
 
 let lastBodies = new Map<string, string>();
 
+/** Words after the "# title" line — what the feed actually gave us. */
+export function bodyWords(text: string): number {
+  const body = text.replace(/^#[^\n]*\n/, '');
+  return (body.match(/[A-Za-z0-9]+/g) ?? []).length;
+}
+
 export const rbiFemaWatcher: FeedWatcher = {
   id: 'rbi-fema',
   label: 'RBI · FEMA and foreign investment notifications',
@@ -62,7 +69,23 @@ export const rbiFemaWatcher: FeedWatcher = {
   },
   async fetch(item: FeedItem): Promise<FeedContent> {
     const text = lastBodies.get(item.externalId);
-    if (!text) throw new Error('RBI notice text is no longer in the feed; it will be retried on the next check.');
+    if (text === undefined) throw new Error('RBI notice text is no longer in the feed; it will be retried on the next check.');
+    // Some RBI items carry no text in the feed (the notice is only a PDF).
+    // Try the notice page's PDF; rbidocs.rbi.org.in answers programs with a
+    // browser check (checked 2026-10-23), so when that fails the item is
+    // recorded for a manual download instead of being retried every run.
+    if (bodyWords(text) < 40) {
+      try {
+        const page = await fetchText(item.publicUrl);
+        const pdf = /href="(https:\/\/rbidocs\.rbi\.org\.in\/rdocs\/notification\/PDFs\/[^"]+\.pdf)"/i.exec(page)?.[1];
+        if (pdf) return await fetchPdf(pdf, `${(item.number ?? item.externalId).replace(/\//g, '-')}.pdf`);
+      } catch (error) {
+        console.warn('[ask-feeds] RBI pdf not readable by a program', item.externalId, error);
+      }
+      throw new ManualFetchError(
+        'RBI publishes this notice only as a PDF behind a browser check. Open the link, download the PDF, and drop it on the Sources page.',
+      );
+    }
     return { kind: 'text', text };
   },
 };

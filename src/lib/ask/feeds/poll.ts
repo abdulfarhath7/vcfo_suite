@@ -9,10 +9,21 @@ import {
 import { askSourceStoragePath, queueAskIngestion } from '@/lib/ask/ingest/run';
 import { bucketKey, putObject } from '@/storage/s3';
 import { FEED_WATCHERS } from './registry';
-import type { FeedItem, FeedWatcher } from './types';
+import { ManualFetchError, type FeedItem, type FeedWatcher } from './types';
 
 /** Never take more than this many new items from one watcher in one run (a first run, or a backlog). */
 export const MAX_NEW_PER_WATCHER = 10;
+/**
+ * Ignore anything published longer ago than this. A source's archive can
+ * hold years of circulars; the review queue is for what is new, not history.
+ */
+export const MAX_AGE_DAYS = 60;
+
+export function isRecentEnough(publishedAt: string, now = new Date(), maxAgeDays = MAX_AGE_DAYS): boolean {
+  const published = new Date(`${publishedAt}T00:00:00Z`);
+  if (Number.isNaN(published.getTime())) return false;
+  return now.getTime() - published.getTime() <= maxAgeDays * 86_400_000;
+}
 
 export interface WatcherRunResult {
   feedId: string;
@@ -32,11 +43,12 @@ export interface WatcherRunResult {
  * Pure: which listed items are new, newest first, at most `max`. Kept apart so
  * the de-duplication rule has its own tests.
  */
-export function pickNewItems(listed: readonly FeedItem[], known: ReadonlySet<string>, max: number): FeedItem[] {
+export function pickNewItems(listed: readonly FeedItem[], known: ReadonlySet<string>, max: number, now = new Date()): FeedItem[] {
   const seen = new Set<string>();
   return [...listed]
     .filter((item) => {
       if (known.has(item.externalId) || seen.has(item.externalId)) return false;
+      if (!isRecentEnough(item.publishedAt, now)) return false;
       seen.add(item.externalId);
       return true;
     })
@@ -72,6 +84,20 @@ async function runWatcher(watcher: FeedWatcher): Promise<WatcherRunResult> {
       content = await watcher.fetch(item);
     } catch (error) {
       result.failed += 1;
+      if (error instanceof ManualFetchError) {
+        // Recorded once, with the instruction, so it shows in the review
+        // queue and is never retried.
+        const stub = await systemCreateFeedDocument({
+          feedId: watcher.id,
+          externalId: item.externalId,
+          title: item.title,
+          sourceUrl: item.publicUrl,
+          publishedAt: item.publishedAt,
+          audience: 'staff',
+        });
+        if (stub) await systemSetAskDocumentResult(stub.id, { status: 'failed', error: error.message });
+        continue;
+      }
       console.warn('[ask-feeds] download failed', watcher.id, item.externalId, error);
       continue;
     }
