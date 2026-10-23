@@ -1013,8 +1013,20 @@ export const askDocuments = pgTable('ask_documents', {
   externalId: text('external_id'),
   publishedAt: date('published_at'),
   summary: text('summary'),
+  /**
+   * Manager review of an official update (owner, 2026-10-23): a watcher's find
+   * is `pending` until a manager approves it; only `approved` sources are ever
+   * retrieved or listed by Ask VCFO. Admin uploads are `approved` on creation.
+   * `review_pdf_key` is the review document generated for the manager.
+   */
+  reviewStatus: text('review_status').notNull().default('approved'), // pending|approved|rejected
+  reviewedBy: uuid('reviewed_by').references(() => profiles.id, { onDelete: 'set null' }),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  reviewNote: text('review_note'),
+  reviewPdfKey: text('review_pdf_key'),
 }, (t) => ({
   feedExternalUq: uniqueIndex('ask_documents_feed_external_uq').on(t.feedId, t.externalId),
+  reviewStatusIdx: index('ask_documents_review_status_idx').on(t.reviewStatus),
 }));
 
 /**

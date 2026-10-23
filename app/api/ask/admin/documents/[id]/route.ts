@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getAskDocument, publishAskDocumentToClients, setAskDocumentStatus } from '@/db/repositories/ask-documents';
+import { getAskDocument, setAskDocumentStatus } from '@/db/repositories/ask-documents';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { queueAskIngestion } from '@/lib/ask/ingest/run';
 import { requireAsk } from '@/lib/ask/route-guard';
 
-/** POST /api/ask/admin/documents/[id] — { action: "retry" | "archive" | "publish" }. */
+/** POST /api/ask/admin/documents/[id] — { action: "retry" | "archive" }. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const gate = await requireAsk();
   if (gate.ok === false) return gate.response;
@@ -21,11 +21,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (action === 'archive') {
       await setAskDocumentStatus(gate.ctx, id, 'archived');
-      return NextResponse.json({ ok: true });
-    }
-    if (action === 'publish') {
-      // Official updates arrive staff-only; this lets clients' answers use it too.
-      await publishAskDocumentToClients(gate.ctx, id);
       return NextResponse.json({ ok: true });
     }
     if (action === 'retry') {

@@ -25,6 +25,10 @@ const NOTIFICATION_KINDS = [
   'email.sent',
   'email.skipped',
   'email.failed',
+  /** An official update (GST, RBI …) is waiting for a manager's review. */
+  'regulatory.review',
+  /** A manager approved an official update; everyone may now ask about it. */
+  'regulatory.approved',
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];

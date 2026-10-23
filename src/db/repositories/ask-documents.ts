@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { askChunks, askDocuments } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -91,7 +91,7 @@ export async function askSourceCoverage(
     })
     .from(askChunks)
     .innerJoin(askDocuments, eq(askDocuments.id, askChunks.documentId))
-    .where(and(eq(askDocuments.status, 'ready'), inArray(askDocuments.audience, audiencesForPersona(persona))));
+    .where(and(eq(askDocuments.status, 'ready'), inArray(askDocuments.audience, audiencesForPersona(persona)), approvedForReading()));
   return { terms: Number(row?.terms ?? 0), matched: Number(row?.matched ?? 0) };
 }
 
@@ -203,6 +203,8 @@ export async function systemCreateFeedDocument(input: CreateFeedDocumentInput): 
       externalId: input.externalId,
       audience: input.audience,
       status: 'processing',
+      // A watcher's find waits for a manager; nothing reads it until approved.
+      reviewStatus: 'pending',
     })
     .onConflictDoNothing({ target: [askDocuments.feedId, askDocuments.externalId] })
     .returning();
@@ -217,10 +219,129 @@ export async function systemSetAskDocumentSummary(id: string, summary: string | 
   await db.update(askDocuments).set({ summary: summary?.slice(0, 1200) ?? null }).where(eq(askDocuments.id, id));
 }
 
-/** Admin: let clients' answers use this source (official updates start staff-only). */
-export async function publishAskDocumentToClients(ctx: AuthContext, id: string): Promise<void> {
-  assertSourceAdmin(ctx);
-  await db.update(askDocuments).set({ audience: 'both' }).where(eq(askDocuments.id, id));
+// ---------- Manager review of official updates ----------
+
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+
+/**
+ * Only an admin upload or an approved official update may ever be read,
+ * searched or listed. Every reader query ANDs this in, so a pending or
+ * rejected update is invisible to the model and to every tool.
+ */
+function approvedForReading() {
+  return or(isNull(askDocuments.feedId), eq(askDocuments.reviewStatus, 'approved'));
+}
+
+/** Managers decide; admins and super admins may look. */
+function assertCanSeeReviews(ctx: AuthContext) {
+  if (ctx.role !== 'manager' && !isFirmWideAdmin(ctx.role)) {
+    throw new AskForbiddenError('Only managers and admins see regulatory updates');
+  }
+}
+
+export interface RegulatoryUpdateRow {
+  id: string;
+  feedId: string;
+  externalId: string | null;
+  title: string;
+  sourceUrl: string | null;
+  publishedAt: string | null;
+  summary: string | null;
+  status: string;
+  error: string | null;
+  reviewStatus: ReviewStatus;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  hasReviewPdf: boolean;
+  chunkCount: number;
+  createdAt: string;
+}
+
+function toRegulatoryUpdateRow(row: AskDocumentRow, chunkCount: number): RegulatoryUpdateRow {
+  return {
+    id: row.id,
+    feedId: row.feedId ?? '',
+    externalId: row.externalId,
+    title: row.title,
+    sourceUrl: row.sourceUrl,
+    publishedAt: row.publishedAt,
+    summary: row.summary,
+    status: row.status,
+    error: row.error,
+    reviewStatus: (row.reviewStatus as ReviewStatus) ?? 'pending',
+    reviewedBy: row.reviewedBy,
+    reviewedAt: row.reviewedAt?.toISOString() ?? null,
+    reviewNote: row.reviewNote,
+    hasReviewPdf: Boolean(row.reviewPdfKey),
+    chunkCount,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/** Every official update the watchers found, newest first, optionally one review state. */
+export async function listRegulatoryUpdates(
+  ctx: AuthContext,
+  input: { reviewStatus?: ReviewStatus; limit?: number } = {},
+): Promise<RegulatoryUpdateRow[]> {
+  assertCanSeeReviews(ctx);
+  const rows = await db
+    .select()
+    .from(askDocuments)
+    .where(
+      and(
+        sql`${askDocuments.feedId} is not null`,
+        input.reviewStatus ? eq(askDocuments.reviewStatus, input.reviewStatus) : undefined,
+      ),
+    )
+    .orderBy(desc(askDocuments.createdAt))
+    .limit(Math.max(1, Math.min(input.limit ?? 100, 300)));
+  if (rows.length === 0) return [];
+  const counts = await db
+    .select({ documentId: askChunks.documentId, n: sql<number>`count(*)::int` })
+    .from(askChunks)
+    .where(inArray(askChunks.documentId, rows.map((r) => r.id)))
+    .groupBy(askChunks.documentId);
+  const byDoc = new Map(counts.map((c) => [c.documentId, Number(c.n)]));
+  return rows.map((r) => toRegulatoryUpdateRow(r, byDoc.get(r.id) ?? 0));
+}
+
+export async function getRegulatoryUpdate(ctx: AuthContext, id: string): Promise<(RegulatoryUpdateRow & { reviewPdfKey: string | null }) | null> {
+  assertCanSeeReviews(ctx);
+  const [row] = await db.select().from(askDocuments).where(and(eq(askDocuments.id, id), sql`${askDocuments.feedId} is not null`)).limit(1);
+  return row ? { ...toRegulatoryUpdateRow(row, 0), reviewPdfKey: row.reviewPdfKey } : null;
+}
+
+/**
+ * The manager's decision (owner, 2026-10-23: managers only). Approving opens
+ * the update to every reader — staff and clients; rejecting keeps it out with
+ * the manager's reason. A decision on an already decided update is refused so
+ * two managers cannot flip it back and forth by accident.
+ */
+export async function reviewRegulatoryUpdate(
+  ctx: AuthContext,
+  id: string,
+  decision: 'approve' | 'reject',
+  note: string | null,
+): Promise<RegulatoryUpdateRow> {
+  if (ctx.role !== 'manager') throw new AskForbiddenError('Only a manager can approve or reject an official update');
+  const [row] = await db
+    .update(askDocuments)
+    .set({
+      reviewStatus: decision === 'approve' ? 'approved' : 'rejected',
+      reviewedBy: ctx.userId,
+      reviewedAt: new Date(),
+      reviewNote: note?.trim().slice(0, 2000) || null,
+      ...(decision === 'approve' ? { audience: 'both' as const } : {}),
+    })
+    .where(and(eq(askDocuments.id, id), sql`${askDocuments.feedId} is not null`, eq(askDocuments.reviewStatus, 'pending')))
+    .returning();
+  if (!row) throw new Error('This update is not waiting for review.');
+  return toRegulatoryUpdateRow(row, 0);
+}
+
+export async function systemSetAskDocumentReviewPdf(id: string, key: string): Promise<void> {
+  await db.update(askDocuments).set({ reviewPdfKey: key }).where(eq(askDocuments.id, id));
 }
 
 export interface RecentOfficialUpdate {
@@ -257,7 +378,7 @@ export async function listRecentOfficialUpdates(
     .where(
       and(
         eq(askDocuments.status, 'ready'),
-        inArray(askDocuments.audience, audiencesForPersona(persona)),
+        inArray(askDocuments.audience, audiencesForPersona(persona)), approvedForReading(),
         sql`${askDocuments.feedId} is not null`,
         sql`${askDocuments.publishedAt} >= ${since}`,
         input.feedIds?.length ? inArray(askDocuments.feedId, [...input.feedIds]) : undefined,
@@ -324,7 +445,7 @@ export async function searchAskChunks(
       .where(
         and(
           eq(askDocuments.status, 'ready'),
-          inArray(askDocuments.audience, audiencesForPersona(persona)),
+          inArray(askDocuments.audience, audiencesForPersona(persona)), approvedForReading(),
           match,
           excludeIds.length ? sql`${askChunks.id} not in (${sql.join(excludeIds.map((id) => sql`${id}`), sql`, `)})` : undefined,
         ),

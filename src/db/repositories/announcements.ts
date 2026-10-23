@@ -291,3 +291,39 @@ export async function systemUpsertFeedAnnouncements(
     });
   return { inserted: fresh.length };
 }
+
+/**
+ * An approved official update, posted to the Announcements board every role
+ * reads (system: called by the review decision, after a manager approved).
+ * Idempotent per source document through `externalId`.
+ */
+export async function systemCreateOfficialUpdateAnnouncement(input: {
+  documentId: string;
+  title: string;
+  body: string;
+  kind: AnnouncementKind;
+  sourceUrl: string | null;
+  publishedAt: Date;
+  sourceLabel: string;
+}): Promise<void> {
+  const externalId = `ask-document:${input.documentId}`;
+  const [existing] = await db
+    .select({ id: announcements.id })
+    .from(announcements)
+    .where(eq(announcements.externalId, externalId))
+    .limit(1);
+  if (existing) return;
+  await db.insert(announcements).values({
+    title: input.title.slice(0, 200),
+    body: input.body.slice(0, 8000),
+    kind: input.kind,
+    origin: 'feed',
+    sourceId: null,
+    externalId,
+    sourceUrl: input.sourceUrl,
+    authorId: null,
+    authorName: input.sourceLabel,
+    authorRole: null,
+    publishedAt: input.publishedAt,
+  });
+}

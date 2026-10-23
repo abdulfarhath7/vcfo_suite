@@ -27,6 +27,7 @@ type SourceRow = {
   feed?: { label: string; act: string } | null;
   publishedAt?: string | null;
   summary?: string | null;
+  reviewStatus?: 'pending' | 'approved' | 'rejected';
 };
 
 type WatcherRun = {
@@ -40,8 +41,18 @@ type WatcherRun = {
 };
 
 type FeedsInfo = {
-  autoPublish: boolean;
   watchers: Array<{ id: string; label: string; act: string; homeUrl: string }>;
+};
+
+const REVIEW_LABEL: Record<string, string> = {
+  pending: 'Waiting for manager review',
+  approved: 'Approved by a manager',
+  rejected: 'Rejected by a manager',
+};
+const REVIEW_TONE: Record<string, string> = {
+  pending: 'bg-warning/15 text-warning-text',
+  approved: 'bg-success-light text-success-text',
+  rejected: 'bg-danger-light text-danger-text',
 };
 
 /**
@@ -70,10 +81,12 @@ function OfficialUpdatesPanel({ onChecked }: { onChecked: () => void }) {
         <div className="min-w-0 flex-1">
           <h2 className="text-[14px] font-semibold text-foreground">Official updates</h2>
           <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-            Ask VCFO checks these government sources every morning at 6:30 IST and reads anything new.{' '}
-            {info.data?.autoPublish
-              ? 'New updates are used in client answers straight away.'
-              : 'New updates are used in staff answers at once, and in client answers after you publish them.'}
+            Ask VCFO checks these government sources every 30 minutes and reads anything new. Each new update
+            gets a review document and waits for a manager; only after a manager approves does Ask VCFO use it,
+            for staff and clients alike.{' '}
+            <Link href="/app/admin/regulatory-updates" className="text-primary hover:underline">
+              Open the review queue
+            </Link>
           </p>
         </div>
         <button
@@ -294,7 +307,7 @@ export default function AskSources() {
     onError: (err: Error) => setError(err.message),
   });
   const act = useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: 'retry' | 'archive' | 'publish' }) =>
+    mutationFn: async ({ id, action }: { id: string; action: 'retry' | 'archive' }) =>
       readJson(
         await fetch(`/api/ask/admin/documents/${id}`, {
           method: 'POST',
@@ -463,6 +476,11 @@ export default function AskSources() {
                 {doc.summary && <p className="mt-1 text-[12.5px] text-foreground">What changed: {doc.summary}</p>}
                 {doc.error && <p className="text-[12px] text-danger-text">{doc.error}</p>}
               </div>
+              {doc.feed && doc.reviewStatus ? (
+                <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', REVIEW_TONE[doc.reviewStatus] ?? 'bg-muted text-muted-foreground')}>
+                  {REVIEW_LABEL[doc.reviewStatus] ?? doc.reviewStatus}
+                </span>
+              ) : null}
               <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium', STATUS_TONE[doc.status])}>
                 {STATUS_LABEL[doc.status]}
                 {doc.status === 'ready' && typeof doc.chunkCount === 'number'
@@ -471,15 +489,6 @@ export default function AskSources() {
               </span>
               {doc.status !== 'archived' && (
                 <div className="flex gap-1.5">
-                  {doc.feed && doc.audience === 'staff' && doc.status === 'ready' && (
-                    <button
-                      type="button"
-                      onClick={() => act.mutate({ id: doc.id, action: 'publish' })}
-                      className="min-h-[36px] rounded-[var(--radius-md)] bg-primary px-2.5 text-[12px] font-medium text-primary-foreground hover:bg-primary-dark"
-                    >
-                      Publish to clients
-                    </button>
-                  )}
                   {(doc.status === 'failed' || doc.status === 'ready') && (
                     <button
                       type="button"

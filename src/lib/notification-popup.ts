@@ -27,6 +27,8 @@ export const NOTIFICATION_KIND_LABEL: Record<NotificationKind, string> = {
   'email.sent': 'Sent',
   'email.skipped': 'Skipped',
   'email.failed': 'Failed',
+  'regulatory.review': 'Review',
+  'regulatory.approved': 'Update',
 };
 
 export function notificationPopupStorageKey(userId: string): string {

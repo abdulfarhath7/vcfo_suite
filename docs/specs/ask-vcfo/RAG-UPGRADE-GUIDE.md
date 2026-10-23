@@ -150,6 +150,13 @@ new search returns the same `RetrievedSource[]` shape (`id`, `kind`, `label`,
   This is "freshness" in RAG terms: the knowledge base updates itself, and the newest
   source wins when two disagree.
 
+- **2026-10-23 (later) — manager review gate.** A found update is now `pending` until a
+  manager approves it on the Regulatory updates page, after reading a generated review PDF
+  (facts, what changed, amends, effective date, reading check, opening text). Nothing pending
+  or rejected is ever retrieved. Approval posts an Announcement and notifies clients and
+  staff. In RAG terms this is **human-in-the-loop curation of the knowledge base**: the
+  retriever only sees what a person has vouched for.
+
 ## Part 3 — The build plan, step by step (we do each step together)
 
 Each step says: what you learn, what gets built, how we both check it. Each step

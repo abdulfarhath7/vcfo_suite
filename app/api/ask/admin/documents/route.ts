@@ -36,6 +36,8 @@ function view(row: Awaited<ReturnType<typeof listAskDocuments>>[number], chunkCo
     feed: feedLabel(row.feedId),
     publishedAt: row.publishedAt,
     summary: row.summary,
+    /** Official updates: pending | approved | rejected (manager review). */
+    reviewStatus: row.reviewStatus,
   };
 }
 

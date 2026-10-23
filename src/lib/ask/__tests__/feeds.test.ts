@@ -129,3 +129,29 @@ describe('cleanSummary', () => {
     expect(cleanSummary('   ')).toBeNull();
   });
 });
+
+describe('review PDF facts (pure helpers)', () => {
+  it('finds the instruments a notification amends and its effective date', async () => {
+    const { amendedInstruments, effectiveFromPhrase, readingCheck } = await import('@/lib/ask/feeds/review-pdf');
+    const text =
+      'In exercise of the powers conferred, the Central Government hereby makes the following further amendments in the notification No. 1/2017-Central Tax (Rate), dated the 28th June, 2017. 2. This notification shall come into force on the 1st day of May, 2026.';
+    expect(amendedInstruments(text)).toEqual(['1/2017-Central Tax (Rate)']);
+    // Real CBIC wording (01/2026-Central Tax (Rate)): the issuer sits between "notification" and "No.".
+    const real =
+      'hereby makes the following further amendments in the notification of the Government of India, Ministry of Finance (Department of Revenue), No. 9/2025- Central Tax (Rate), published in the Gazette of India';
+    expect(amendedInstruments(real)).toEqual(['9/2025- Central Tax (Rate)']);
+    expect(effectiveFromPhrase(text)).toBe('1st day of May, 2026');
+    expect(effectiveFromPhrase('with effect from 1st April 2026 the rate')).toBe('1st April 2026');
+    expect(amendedInstruments('no references here')).toEqual([]);
+    expect(effectiveFromPhrase('no date here')).toBeNull();
+  });
+
+  it('warns the manager when very little text was read', async () => {
+    const { readingCheck } = await import('@/lib/ask/feeds/review-pdf');
+    expect(readingCheck('a b c', 1).warning).toMatch(/Very little text/);
+    const good = readingCheck('The registered office of the company shall be situated in the State of Karnataka. '.repeat(10), 2);
+    expect(good.warning).toBeNull();
+    expect(good.pieces).toBe(2);
+    expect(good.words).toBeGreaterThan(100);
+  });
+});

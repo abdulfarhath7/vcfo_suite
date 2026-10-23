@@ -6,7 +6,6 @@ import {
   systemSetAskDocumentResult,
   systemSetAskDocumentStorageKey,
 } from '@/db/repositories/ask-documents';
-import { askConfig } from '@/lib/ask/config';
 import { askSourceStoragePath, queueAskIngestion } from '@/lib/ask/ingest/run';
 import { bucketKey, putObject } from '@/storage/s3';
 import { FEED_WATCHERS } from './registry';
@@ -45,7 +44,7 @@ export function pickNewItems(listed: readonly FeedItem[], known: ReadonlySet<str
     .slice(0, max);
 }
 
-async function runWatcher(watcher: FeedWatcher, autoPublish: boolean): Promise<WatcherRunResult> {
+async function runWatcher(watcher: FeedWatcher): Promise<WatcherRunResult> {
   const result: WatcherRunResult = {
     feedId: watcher.id,
     label: watcher.label,
@@ -83,7 +82,8 @@ async function runWatcher(watcher: FeedWatcher, autoPublish: boolean): Promise<W
       title: item.title,
       sourceUrl: item.publicUrl,
       publishedAt: item.publishedAt,
-      audience: autoPublish ? 'both' : 'staff',
+      // Opened to everyone only when a manager approves (review gate).
+      audience: 'staff',
     });
     if (!doc) continue;
     // 3. Store the file in S3 (MinIO locally) under the same prefix uploads use.
@@ -110,10 +110,9 @@ async function runWatcher(watcher: FeedWatcher, autoPublish: boolean): Promise<W
 
 /** Check every watcher (or the named ones) once. Used by the daily job and the admin button. */
 export async function pollOfficialUpdates(feedIds?: readonly string[]): Promise<WatcherRunResult[]> {
-  const autoPublish = askConfig().feedsAutoPublish;
   const watchers = feedIds?.length ? FEED_WATCHERS.filter((w) => feedIds.includes(w.id)) : FEED_WATCHERS;
   const results: WatcherRunResult[] = [];
   // One source at a time: gentle on government servers, and simple to read in logs.
-  for (const watcher of watchers) results.push(await runWatcher(watcher, autoPublish));
+  for (const watcher of watchers) results.push(await runWatcher(watcher));
   return results;
 }

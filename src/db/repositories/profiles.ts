@@ -987,3 +987,29 @@ export async function systemListProfilesForMail(
       email: row.email,
     }));
 }
+
+// ---------- System fan-out helpers (official regulatory updates) ----------
+
+export interface NoticeRecipient {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * Active people in these roles — who to tell about a regulatory update: the
+ * managers who must review it, and everyone once it is approved. System-only
+ * (called after the triggering action was already authorised).
+ */
+export async function systemListActiveProfilesByRole(
+  roles: ReadonlyArray<'super_admin' | 'admin' | 'manager' | 'intern' | 'client'>,
+): Promise<NoticeRecipient[]> {
+  if (roles.length === 0) return [];
+  const rows = await db
+    .select({ id: profiles.id, name: profiles.name, email: profiles.email })
+    .from(profiles)
+    .where(and(inArray(profiles.role, [...roles]), eq(profiles.status, 'active')))
+    .orderBy(asc(profiles.email))
+    .limit(2000);
+  return rows.map((r) => ({ id: r.id, name: r.name?.trim() || r.email, email: r.email }));
+}

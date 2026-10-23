@@ -57,6 +57,42 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
 
+## Session 2026-10-23 (later) — manager review gate for official updates (branch `ask-vcfo-rag`)
+
+- **Branches**: portal work committed on `client-dashboard-v7` (`e5306e0`); all chatbot work lives
+  on **`ask-vcfo-rag`** (`bc419c1` + this session). Nothing pushed. Owner's plan: finish the
+  chatbot here, then PR into `abdulfarhath7/vcfo_suite` main (Farhath merges and deploys).
+- **Owner decisions (2026-10-23)**: approver = anyone with the Manager role (admins/super admins
+  may look, not decide); clients are notified on approval; watchers run every 30 minutes.
+- **Flow**: watcher finds item → saved `review_status='pending'` (migration **0028**: review_status,
+  reviewed_by/at, review_note, review_pdf_key) → ingestion reads it, writes the summary, renders a
+  **review PDF** (`src/lib/ask/feeds/review-pdf*.ts(x)`: facts, "amends", effective-from, reading
+  check, opening text) to S3 next to the source, bells + emails the managers
+  (`src/lib/regulatory/notify.ts`) → manager page **`/app/manager/regulatory-updates`** (admin
+  copy at `/app/admin/...`; view `src/views/manager/RegulatoryUpdates.tsx`; API
+  `/api/regulatory-updates`) → **Approve** sets approved + audience both, posts an Announcement
+  (`systemCreateOfficialUpdateAnnouncement`, externalId `ask-document:<id>`), bells everyone,
+  emails clients; **Reject** needs a reason and keeps it hidden.
+- **Gate in the repository**: every reader query (`searchAskChunks`, `askSourceCoverage`,
+  `listRecentOfficialUpdates`) ANDs `approvedForReading()` = upload OR approved. Proven live:
+  before approval the client got "can't see any recent GST updates"; after, the beverage-rate
+  answer with citation; a still-pending circular was not used even by an admin.
+- **Email kill switch**: `REGULATORY_NOTICE_EMAILS=off` (set in the owner's `.env.local` for
+  testing — the local DB holds real addresses: `pranay.k@sbcllp.in` is a real manager, and
+  `prithish@`, `gautham@`, `abdulfarhathmohd@` are real clients). Bells and announcements still
+  fire; emails log "email skipped". **No email was sent in testing.** Set it to `on` (or remove)
+  before real use. `ASK_VCFO_FEEDS_AUTO_PUBLISH` was removed — approval is the publish.
+- **Rule kept**: `staff.test.ts` forbids any file under `src/lib/ask` from naming an email
+  sender, so the notifier lives in `src/lib/regulatory/`, not under ask.
+- **Notification kinds** added: `regulatory.review`, `regulatory.approved` (label map updated).
+- **Dev server gotchas today**: Turbopack dropped `app/api/ask/admin/documents/[id]` from its
+  route table after a restart (HTML 404 with app-code time) — `touch` the file to re-register.
+  Earlier: PostCSS worker hang with a 4.3 GB `.next`; clear `.next` and kill leftover node workers.
+- **Not automatable (probed 2026-10-23)**: incometaxindia.gov.in and mca.gov.in answer 403 to
+  any program; GST portal news needs a browser. EPFO, ESIC, TGCT (Telangana PT) and DGFT pages
+  load — watchers for those are the next phase (about a day each).
+- Gate: typecheck 0, lint 0 errors on touched files, Ask tests 22 files green.
+
 ## Session 2026-10-23 — Ask VCFO watches official GST / RBI updates (uncommitted)
 
 - **What it does**: every morning at 6:30 IST (Inngest `ask-feeds`, `src/jobs/ask-feeds.ts`) and on

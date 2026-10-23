@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { askConfig } from '@/lib/ask/config';
 import { FEED_WATCHERS } from '@/lib/ask/feeds/registry';
 import { pollOfficialUpdates } from '@/lib/ask/feeds/poll';
 import { requireAsk } from '@/lib/ask/route-guard';
@@ -14,7 +13,6 @@ export async function GET() {
   if (gate.ok === false) return gate.response;
   if (!isFirmWideAdmin(gate.ctx.role)) return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   return NextResponse.json({
-    autoPublish: askConfig().feedsAutoPublish,
     watchers: FEED_WATCHERS.map((w) => ({ id: w.id, label: w.label, act: w.act, homeUrl: w.homeUrl })),
   });
 }
