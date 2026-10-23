@@ -50,6 +50,7 @@ const ACT_TO_ANNOUNCEMENT_KIND: Record<FeedAct, AnnouncementKind> = {
   'Companies Act': 'mca',
   'FEMA / RBI': 'compliance',
   Labour: 'compliance',
+  'Professional Tax': 'tax',
 };
 
 function actOf(doc: AskDocumentRow): FeedAct | null {

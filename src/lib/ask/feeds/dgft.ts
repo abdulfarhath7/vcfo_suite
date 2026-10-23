@@ -6,7 +6,8 @@ import type { FeedContent, FeedItem, FeedWatcher } from './types';
 
 /**
  * DGFT (Directorate General of Foreign Trade) — notifications, public
- * notices and circulars under "Regulatory Updates". Each is a server-rendered
+ * notices, circulars and trade notices under "Regulatory Updates" (the four
+ * lists the owner's portal page links to). Each is a server-rendered
  * table: Sl.No · Number · Year · Description · Date · (hidden created) ·
  * Attachment (PDF on content.dgft.gov.in). Checked 2026-10-23. Everything
  * here is trade policy an IEC holder may need, so nothing is filtered.
@@ -16,6 +17,7 @@ const LISTS = [
   { opt: 'notification', kind: 'Notification' },
   { opt: 'public-notice', kind: 'Public Notice' },
   { opt: 'circular', kind: 'Circular' },
+  { opt: 'trade-notice', kind: 'Trade Notice' },
 ] as const;
 
 export function parseDgftTable(html: string, kind: string): Array<FeedItem & { pdfUrl: string }> {
@@ -34,7 +36,7 @@ export function parseDgftTable(html: string, kind: string): Array<FeedItem & { p
       title: `DGFT ${kind} ${number} · ${description}`.slice(0, 300),
       kind,
       publishedAt: date,
-      publicUrl: `${BASE}?opt=${kind === 'Public Notice' ? 'public-notice' : kind.toLowerCase()}`,
+      publicUrl: `${BASE}?opt=${kind.toLowerCase().replace(/s+/g, '-')}`,
       pdfUrl: pdf.href,
     });
   }
@@ -45,7 +47,7 @@ let lastPdfUrls = new Map<string, string>();
 
 export const dgftWatcher: FeedWatcher = {
   id: 'dgft',
-  label: 'DGFT · foreign trade notifications, public notices and circulars',
+  label: 'DGFT · notifications, public notices, circulars and trade notices (Regulatory Updates)',
   act: 'Customs',
   homeUrl: `${BASE}?opt=regulatory-updates`,
   async list() {

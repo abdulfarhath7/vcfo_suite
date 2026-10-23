@@ -10,7 +10,7 @@
  */
 
 /** The law or regulator an update belongs to; shown on the Sources page and to the model. */
-export type FeedAct = 'GST' | 'Customs' | 'Income Tax' | 'Companies Act' | 'FEMA / RBI' | 'Labour';
+export type FeedAct = 'GST' | 'Customs' | 'Income Tax' | 'Companies Act' | 'FEMA / RBI' | 'Labour' | 'Professional Tax';
 
 export interface FeedItem {
   /** The publisher's own id — the de-duplication key (never downloaded twice). */

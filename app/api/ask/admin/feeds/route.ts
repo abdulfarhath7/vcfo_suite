@@ -19,15 +19,18 @@ export async function GET() {
 
 /**
  * POST /api/ask/admin/feeds — "Check for updates now": run every watcher once,
- * the same as the 6:30 IST job. New items are saved and sent to indexing; the
+ * the same as the 30-minute job. New items are saved and sent to indexing; the
  * response says what each source listed and what was added.
  */
-export async function POST() {
+export async function POST(request: Request) {
   const gate = await requireAsk();
   if (gate.ok === false) return gate.response;
   if (!isFirmWideAdmin(gate.ctx.role)) return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   try {
-    return NextResponse.json({ results: await pollOfficialUpdates() });
+    // Optional { feedIds: [...] } checks only those sources (the Sources page checks all).
+    const body = (await request.json().catch(() => null)) as { feedIds?: unknown } | null;
+    const feedIds = Array.isArray(body?.feedIds) ? body!.feedIds.filter((id): id is string => typeof id === 'string') : undefined;
+    return NextResponse.json({ results: await pollOfficialUpdates(feedIds) });
   } catch (error) {
     console.error('[ask-feeds] manual check failed', error);
     return NextResponse.json({ error: 'Could not check the official sources' }, { status: 500 });

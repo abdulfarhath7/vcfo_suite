@@ -57,6 +57,44 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
 
+## Session 2026-10-23 (late) — the owner's portals, read from the portals themselves
+
+Owner: the GST row's "Open source" went to taxinformation.cbic.gov.in, but the
+PDF lists services.gst.gov.in; "check those and from respective portals only
+I want those updates". Findings and what was built (details and the per-portal
+table in `docs/context/notes/ask-feeds.md`):
+
+- **GST portal.** The listed page (…/gstlaw/gstlawlist) is a page of links
+  whose own text sends you to CBIC for notifications — CBIC stays, relabelled
+  to say so. The portal's own "News and Updates" (advisories: GSTR-9/9C
+  enabled, e-invoicing for RCM, Council FAQs, multistate registration…) is now
+  read too: `gst-portal.ts`. The host serves an F5 anti-robot challenge to
+  programs; `browser-fetch.ts` drives headless Chrome (Playwright) and
+  returns the page's own JSON call. Local: installed Chrome. Production: the
+  alpine image has no browser — `ASK_FEEDS_BROWSER` + `apk add chromium`
+  (documented); until then that one watcher reports "needs a browser".
+  `playwright` added to `serverExternalPackages`.
+- **Income Tax.** incometaxindia.gov.in refuses programs *and* headless
+  Chrome. The department's e-filing portal (incometax.gov.in … latest-news)
+  lists the same CBDT notifications/circulars with PDFs on the same host:
+  `income-tax.ts`. Live: 7 items (Notifications 133, 134, 121, 120, 114 of
+  2026, Circular 07/2026 due-date extension, Notification 3 of 2026).
+- **Telangana Commercial Taxes.** Announcements list has PDFs but no dates:
+  `tgct.ts` dates an item the day it is first seen and says so in the title;
+  tenders/vacancies skipped. Live: 10 (jurisdiction reorganisation GOs,
+  TGST rule amendments). Profession Tax GO page: nothing since 2021.
+- **DGFT.** The listed "Regulatory Updates" hub links four tables; trade
+  notices added (same table shape). Live: 10 trade notices.
+- **MCA** still refuses everything (manual drop; e-Gazette by id works, its
+  listing needs a session).
+- Poll endpoint accepts `{ feedIds }` to check chosen sources.
+- `FeedAct` gained 'Professional Tax' (also mapped in
+  `src/lib/regulatory/notify.ts` — tsc enforces both).
+- Tests: `feeds-owner-portals.test.ts` (GST portal JSON, Income Tax rows,
+  Telangana list). Scratch: `owner-portals-e2e.mjs <feedIds…>` runs chosen
+  watchers as the demo admin.
+- The queue now holds ~62 pending real updates for the manager.
+
 ## Session 2026-10-23 (night) — Ask VCFO opened to managers (branch `ask-vcfo-rag`)
 
 Owner: "I need that chatbot in Pranay's portal also, it is not there." Farhath's

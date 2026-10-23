@@ -67,7 +67,7 @@ async function getJson(url: string): Promise<unknown> {
 
 export const cbicGstWatcher: FeedWatcher = {
   id: 'cbic-gst',
-  label: 'CBIC · GST notifications and circulars',
+  label: 'CBIC · GST notifications and circulars (the GST portal’s “GST Law” page links here)',
   act: 'GST',
   homeUrl: `${BASE}/content-page/explore-notification`,
   async list() {
