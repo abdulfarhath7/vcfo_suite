@@ -1,5 +1,10 @@
 import { approvalStateOf } from '@/lib/checklist-step-approval';
-import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import {
+  hasClientSubmittedIntake,
+  isClientIntakeStep,
+  isDirectFlowStep,
+  responsesForLeadBeforeClientSubmit,
+} from '@/lib/pre-inc-direct-flow';
 import type { EngagementChecklistState } from '@/lib/checklist-index';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 
@@ -97,7 +102,17 @@ export function redactChecklistSliceForViewer(
   itemId?: string,
 ): ChecklistItemStateSlice {
   if (itemId && isDirectFlowStep(itemId)) {
-    // Shared with everyone, minus the staff notes the client never reads.
+    // Client-intake step: the lead reads the client's answers only once the
+    // client has submitted. Before that the lead's copy keeps only the keys
+    // the lead may write (NIC codes, the board-resolution date), so nothing
+    // the client is still typing shows up on the lead's form.
+    if (viewer === 'lead' && isClientIntakeStep(itemId) && !hasClientSubmittedIntake(itemId, slice)) {
+      return {
+        ...slice,
+        responses: responsesForLeadBeforeClientSubmit(itemId, slice.responses ?? {}),
+      };
+    }
+    // Otherwise shared with everyone, minus the staff notes the client never reads.
     if (viewer !== 'client') return slice;
     const { notes: _notes, ...forClient } = slice;
     return forClient;
@@ -137,7 +152,8 @@ export function redactChecklistStateForViewer(
   viewer: ChecklistViewer,
   state: EngagementChecklistState,
 ): EngagementChecklistState {
-  if (viewer === 'lead') return state;
+  // The lead reads everything except a client-intake step the client has not
+  // submitted yet (see `redactChecklistSliceForViewer`).
   const out: EngagementChecklistState = {};
   for (const [itemId, slice] of Object.entries(state)) {
     out[itemId] = redactChecklistSliceForViewer(viewer, slice, itemId);

@@ -21,6 +21,7 @@ import {
   lastEditedPatch,
   MANAGER_APPROVAL_STEP_ID,
   stripLeadOnlyResponses,
+  stripResponsesNotEditableBy,
 } from '@/lib/pre-inc-direct-flow';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -117,6 +118,12 @@ export async function POST(request: Request, context: RouteContext) {
     }
     if (guard.ctx.role === 'intern') {
       patch = leadWritablePatch(patch);
+      if (directFlow && patch.responses) {
+        // Client-intake step: the lead writes only their own fields. Their
+        // copy of the step hides the client's answers, so anything else in
+        // the patch would be a wipe.
+        patch = { ...patch, responses: stripResponsesNotEditableBy('intern', itemId, patch.responses) };
+      }
       if (directFlow || itemId === MANAGER_APPROVAL_STEP_ID) {
         // No approval on a direct-flow step: a lead completes it through
         // Submit (which validates), never by stamping a review request here.

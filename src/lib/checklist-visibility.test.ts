@@ -217,3 +217,32 @@ describe('pre-incorporation direct flow visibility', () => {
     expect(redactChecklistStateForViewer('client', { 'pre-2': draft })['pre-2']?.responses).toBeUndefined();
   });
 });
+
+describe('client-intake steps: the lead sees the client’s answers only after they submit', () => {
+  const typing: ChecklistItemStateSlice = {
+    status: 'in-progress',
+    responses: { businessDescription: 'software', proposedName1: 'Acme India', nicCode: '62011' },
+    lastEditedByRole: 'client',
+  };
+
+  it('hides the client’s draft from the lead, keeping the lead’s own fields', () => {
+    const forLead = redactChecklistSliceForViewer('lead', typing, 'pre-1');
+    expect(forLead.responses).toEqual({ nicCode: '62011' });
+    expect(forLead.lastEditedByRole).toBe('client');
+    expect(redactChecklistStateForViewer('lead', { 'pre-1': typing })['pre-1']?.responses).toEqual({
+      nicCode: '62011',
+    });
+  });
+
+  it('shows everything to the lead once the client has submitted', () => {
+    const waiting = { ...typing, waitingOnLeadAt: '2026-10-12T10:00:00.000Z' };
+    expect(redactChecklistSliceForViewer('lead', waiting, 'pre-1')).toEqual(waiting);
+    const complete = { ...typing, status: 'completed' as const, reviewStatus: 'accepted' as const };
+    expect(redactChecklistSliceForViewer('lead', complete, 'pre-1')).toEqual(complete);
+  });
+
+  it('leaves lead-owned direct-flow steps and the firm’s view alone', () => {
+    expect(redactChecklistSliceForViewer('lead', typing, 'pre-4')).toEqual(typing);
+    expect(redactChecklistSliceForViewer('firm', typing, 'pre-1')).toEqual(typing);
+  });
+});

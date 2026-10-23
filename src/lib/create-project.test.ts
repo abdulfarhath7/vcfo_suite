@@ -128,18 +128,23 @@ describe('createProjectBodySchema — parent entity', () => {
     parentEntityAddress: '',
   };
 
-  it('requires the parent entity for a subsidiary at any starting phase', () => {
-    for (const stage of ['Pre-Incorporation', 'Post-Incorporation'] as const) {
-      const parsed = createProjectBodySchema.safeParse({
-        ...noParent,
-        stage,
-        subsidiaryLegalName: 'Acme India Private Limited',
-        subsidiaryRegisteredAddress: '1 MG Road, Bengaluru',
-      });
-      expect(parsed.success).toBe(false);
-      const messages = parsed.success ? [] : parsed.error.issues.map((i) => i.message);
-      expect(messages).toContain('parent_entity_name_required');
-      expect(messages).toContain('parent_entity_address_required');
+  it('requires the parent entity for a subsidiary that starts after Pre-Incorporation', () => {
+    const parsed = createProjectBodySchema.safeParse({
+      ...noParent,
+      stage: 'Post-Incorporation',
+      subsidiaryLegalName: 'Acme India Private Limited',
+      subsidiaryRegisteredAddress: '1 MG Road, Bengaluru',
+    });
+    expect(parsed.success).toBe(false);
+    const messages = parsed.success ? [] : parsed.error.issues.map((i) => i.message);
+    expect(messages).toContain('parent_entity_name_required');
+    expect(messages).toContain('parent_entity_address_required');
+  });
+
+  it('does not ask a Pre-Incorporation subsidiary — the client enters the parent in Part A', () => {
+    for (const stage of ['Pre-Incorporation', undefined] as const) {
+      const parsed = createProjectBodySchema.safeParse({ ...noParent, stage });
+      expect(parsed.success).toBe(true);
     }
   });
 

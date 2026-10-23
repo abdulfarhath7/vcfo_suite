@@ -160,3 +160,29 @@ Spec `docs/specs/pre-inc-direct-flow/` (CONTEXT, AUDIT, REPORT).
 - **Slice keys added** (all three edits in `checklist-state-key.ts`): `submittedByName`,
   `submittedByRole`, `waitingOnLeadAt`, `waitingOnLeadByName`, `lastEditedAt`,
   `lastEditedByName`, `lastEditedByRole`. "Last edited by …" shows under the step title.
+
+## Client-intake steps: the lead reads, the client fills (2026-10-21)
+
+- `CLIENT_INTAKE_STEP_IDS` (pre-1, pre-13..16) in `src/lib/pre-inc-direct-flow.ts` is the one
+  list. On these the lead may write only `LEAD_ONLY_FIELD_IDS` (NIC) + `LEAD_SHARED_FIELD_IDS`
+  (`boardResolutionDate`). `canRoleEditField` is the single rule; the form, the PATCH route
+  and `submitDirectFlowStep` all strip through `stripResponsesNotEditableBy` — never merge a
+  lead's `responses` without it, because the lead's copy of the step is redacted and would
+  write `''` over the client's answers.
+- Redaction for viewer `lead` lives in `redactChecklistSliceForViewer`; `hasClientSubmittedIntake`
+  decides when the curtain lifts (`waitingOnLeadAt`, `clientSubmittedAt`, or complete). The BR
+  generator and doc pack read the repository row directly, so they are not redacted.
+- A lead submit before the client's throws `step_waiting_on_client` (409, friendly text in the
+  submit route). Client gaps on a lead submit come back as field errors with
+  `CLIENT_HAS_NOT_FILLED_MESSAGE`, never as `waiting_on_lead`.
+- Client portal v7 (`src/components/client-portal/pages/incorporation/StepPage.tsx`): a
+  client-owned direct-flow step that is open mounts `MilestoneResponseForm` inside
+  `<div className="cp-tw">`. The portal CSS has `.cp :where(:not(.cp-tw, .cp-tw *, …)) { all: revert }`
+  — any Tailwind-styled island inside the portal needs `.cp-tw` or it renders unstyled.
+- Part A tabs: Signatory KYC uploads are fields of the "Authorized Signatory" section
+  (`checklist-responses.ts`); there is no `signatoryKyc` section any more.
+- Searchable select: `src/components/ui/searchable-select.tsx`; the checklist form switches to it
+  at `SEARCHABLE_SELECT_MIN_OPTIONS` (12) options.
+- Create project: `stageRequiresParentEntity` is false for Pre-Incorporation; the pre-1 submit
+  copies parent name / address / registration number onto `engagements` when empty
+  (`syncParentEntityFromPre1`).

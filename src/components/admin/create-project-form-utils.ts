@@ -37,13 +37,16 @@ export function stageRequiresSubsidiary(stage: Stage, ownershipType: OwnershipTy
 }
 
 /**
- * A subsidiary always names its parent at creation, whatever the starting
- * phase: the NOC, board resolutions and client overview need it from day one,
- * and SPICe+ Part A prefills from it rather than asking again. Stage is kept in
- * the signature so callers read the same as stageRequiresSubsidiary.
+ * A subsidiary that starts at Pre-Incorporation does NOT name its parent at
+ * creation: the client enters the parent entity in SPICe+ Part A (Foreign
+ * Entity tab) and the submit copies it onto the engagement (owner,
+ * 2026-10-21 — "parent entity: client, not the manager"). A subsidiary that
+ * starts later (Post-Incorporation, Operational Readiness) has no Part A to
+ * collect it, so the manager still provides it here: the NOC, board
+ * resolutions and client overview need it from day one.
  */
-export function stageRequiresParentEntity(_stage: Stage, ownershipType: OwnershipType = 'subsidiary'): boolean {
-  return ownershipType !== 'independent';
+export function stageRequiresParentEntity(stage: Stage, ownershipType: OwnershipType = 'subsidiary'): boolean {
+  return ownershipType !== 'independent' && stage !== 'Pre-Incorporation';
 }
 
 /**

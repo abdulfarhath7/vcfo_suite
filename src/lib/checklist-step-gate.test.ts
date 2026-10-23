@@ -306,10 +306,26 @@ describe('pre-incorporation direct flow gate', () => {
     before13[item.id] = { ...done };
   }
 
-  it('opens the current step to the client and the lead, read-only to managers', () => {
+  it('opens the current step to the client; the lead waits on the client (but can open it), managers read', () => {
     expect(gateActiveCatalog({}, 'client')['pre-1']).toMatchObject({ kind: 'active', canEdit: true });
-    expect(gateActiveCatalog({}, 'intern')['pre-1']).toMatchObject({ kind: 'active', canEdit: true });
+    // Part A is the client's to fill: the lead's gate reads "waiting on the client"
+    // until the client submits, while the step stays open for the NIC codes.
+    expect(gateActiveCatalog({}, 'intern')['pre-1']).toMatchObject({
+      kind: 'waiting',
+      canOpen: true,
+      canEdit: true,
+      message: 'Waiting on the client…',
+    });
     expect(gateActiveCatalog({}, 'staff')['pre-1']).toMatchObject({ canOpen: true, canEdit: false });
+  });
+
+  it('a lead-owned direct-flow step is active for the lead from the start', () => {
+    const state: Record<string, ChecklistItemStateSlice> = {};
+    for (const item of catalog) {
+      if (item.id === 'pre-4') break;
+      state[item.id] = { ...done };
+    }
+    expect(gateActiveCatalog(state, 'intern')['pre-4']).toMatchObject({ kind: 'active', canEdit: true });
   });
 
   it('lets the client open a later step read-only', () => {

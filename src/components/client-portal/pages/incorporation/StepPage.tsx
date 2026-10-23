@@ -24,6 +24,9 @@ import { applyShowWhen, expandRepeatFields, isRepeatField, repeatFieldLabel, res
 import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
 import { approvalStateOf, clientApproveBlockedReason, isAwaitingClientApproval } from '@/lib/checklist-step-approval';
 import { isStepReleasedToClient } from '@/lib/checklist-visibility';
+import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/pre-inc-direct-flow';
+import { useApp } from '@/context/AppContext';
+import { MilestoneResponseForm } from '@/views/incorporation/MilestoneResponseForm';
 import { fileNameFromStoragePath, isMilestoneStoragePath, validateMilestoneUploadFile } from '@/lib/milestone-document-storage';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
@@ -205,6 +208,24 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const otherFiles = files.filter((f) => !reqFields.has(f.fieldId));
   const awaiting = isAwaitingClientApproval(s?.slice);
   const meta = d.extras?.fileMeta ?? {};
+
+  /*
+   * Pre-incorporation direct flow: a client-owned step that is open to the
+   * client (Part A, Part B details, signed resolution, SPICe+ confirmation)
+   * is FILLED here — the same tabbed form the project lead uses (Next /
+   * Submit, autosave, type-to-search pickers) — not read as a record. The
+   * record view returns once the step is submitted, waits on the lead, or
+   * belongs to SBC.
+   */
+  const { engagements } = useApp();
+  const formEngagement = d.engagementId ? engagements.find((e) => e.id === d.engagementId) : undefined;
+  const fillable =
+    Boolean(s && formEngagement) &&
+    s!.owner === 'client' &&
+    isDirectFlowStep(s!.id) &&
+    (k === 'you' || k === 'prog') &&
+    !awaiting &&
+    !isDirectFlowStepComplete(s!.id, s!.slice);
 
   /* ---------- deferred approve with Undo (QUESTIONS: POST after the toast closes) ---------- */
   const [submitted, setSubmitted] = useState(false);
@@ -664,6 +685,22 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
                     </dl>
                   </div>
                 </>
+              ) : fillable && formEngagement ? (
+                <div className="nabd">
+                  <p className="nain">{liveIntro(s, d, prev)}</p>
+                  <div className="cp-tw cp-fill" style={{ padding: '0 20px 20px' }}>
+                    <MilestoneResponseForm
+                      key={`${s.id}-${formEngagement.id}`}
+                      item={s.item}
+                      clientId={formEngagement.clientId}
+                      engagementId={formEngagement.id}
+                      variant="client"
+                      open
+                      compactChrome
+                      sectionTabs
+                    />
+                  </div>
+                </div>
               ) : (
                 <div className="nabd">
                   <p className="nain">{liveIntro(s, d, prev)}</p>

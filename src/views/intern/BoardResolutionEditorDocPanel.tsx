@@ -112,6 +112,8 @@ export interface BoardResolutionEditorProps {
   loading: boolean;
   mergeFields: BoardResolutionMergeFields;
   pre1StepHref: string;
+  /** Part A's date of board resolution, formatted for display; null when not set. */
+  resolutionDateLabel: string | null;
   previewDownloadHref: string;
   previewReady: boolean;
   previewRef: React.RefObject<BoardResolutionDocPreviewHandle | null>;

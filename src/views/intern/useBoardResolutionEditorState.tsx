@@ -29,6 +29,7 @@ import { type BoardResolutionDocPreviewHandle } from '@/components/board-resolut
 
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist-responses';
+import { formatPre1DateDisplay } from '@/lib/checklist-pre1-validation';
 
 import { buildBoardResolutionMergeFields, extractBoardResolutionInlineOverrides, type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution';
 
@@ -649,6 +650,8 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
   );
 
   const pre1StepHref = eng ? internEngagementStepPath(eng, 'pre-1') : '';
+  /** The resolution date the client gave in Part A (the lead may change it there). */
+  const resolutionDateLabel = formatPre1DateDisplay(pre1Responses.boardResolutionDate) ?? null;
 
   const saveStatusText = saveStatusLabel(saveStatus);
 
@@ -855,6 +858,7 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
     loading,
     mergeFields,
     pre1StepHref,
+    resolutionDateLabel,
     previewDownloadHref,
     previewReady,
     previewRef,

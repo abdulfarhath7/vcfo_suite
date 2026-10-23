@@ -55,10 +55,17 @@ function renderForm() {
   );
 }
 
+// Part A is the client's to fill: the lead's Submit exists only once the
+// client has submitted their part (here: submitted with nothing filled, so
+// every tab still has gaps — the client's show as "not filled yet").
+const clientSubmitted = {
+  'pre-1': { status: 'in-progress', waitingOnLeadAt: '2026-10-12T10:00:00.000Z' },
+};
+
 beforeEach(() => {
   useApp.mockReturnValue({
-    getState: () => ({}),
-    getStateForEngagement: () => ({}),
+    getState: () => clientSubmitted,
+    getStateForEngagement: () => clientSubmitted,
     updateItem: vi.fn().mockResolvedValue(undefined),
     submitChecklistItem: vi.fn().mockResolvedValue(undefined),
     setUnlockedFields: vi.fn().mockResolvedValue(undefined),

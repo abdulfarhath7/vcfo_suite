@@ -25,6 +25,7 @@ const bodySchema = z.object({
 const FRIENDLY: Record<string, string> = {
   step_already_submitted: 'This step is already submitted. Ask for a change to edit it.',
   step_waiting_on_lead: 'Your project lead is finishing this step.',
+  step_waiting_on_client: 'Waiting for the client to fill and submit this step.',
   board_resolution_not_generated: 'Generate the board resolution first.',
   [BOARD_RESOLUTION_WITH_MANAGER]: BOARD_RESOLUTION_WITH_MANAGER,
 };

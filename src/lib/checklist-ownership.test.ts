@@ -83,11 +83,24 @@ describe('createProjectBodySchema ownership', () => {
     parentIndianRelationship: 'investing',
   };
 
-  it('defaults to a subsidiary and demands parent details at creation', () => {
-    const missing = createProjectBodySchema.safeParse(base);
-    expect(missing.success).toBe(false);
-    const result = createProjectBodySchema.safeParse({
+  it('defaults to a subsidiary; a Pre-Incorporation one takes its parent from Part A, a later start names it here', () => {
+    // Default stage is Pre-Incorporation: the client enters the parent in Part A.
+    const preInc = createProjectBodySchema.safeParse(base);
+    expect(preInc.success).toBe(true);
+    if (preInc.success) {
+      expect(preInc.data.ownershipType).toBe('subsidiary');
+      expect(preInc.data.parentEntityName).toBe('');
+    }
+    const later = {
       ...base,
+      stage: 'Post-Incorporation',
+      subsidiaryLegalName: 'Acme India Private Limited',
+      subsidiaryRegisteredAddress: '1 MG Road, Bengaluru',
+    };
+    const missingLater = createProjectBodySchema.safeParse(later);
+    expect(missingLater.success).toBe(false);
+    const result = createProjectBodySchema.safeParse({
+      ...later,
       parentEntityName: 'Acme Holdings',
       parentEntityAddress: '1 MG Road, Bengaluru',
     });
@@ -116,7 +129,6 @@ describe('partAsectionsFor', () => {
     const seen = new Set(all.map((f) => f.section).filter(Boolean));
     expect(new Set(dependent)).toEqual(seen);
     const independent = partAsectionsFor('independent');
-    expect(independent).not.toContain('Signatory KYC');
     expect(independent).not.toContain('Authorized Signatory');
     expect(independent).not.toContain('Foreign Entity');
     expect(independent).not.toContain('Foreign Entity Proof');
@@ -142,7 +154,13 @@ describe('Part A tab order (MCA portal)', () => {
   it('leads with the NIC code / business description, then proposed names; Submit is last', () => {
     const dependent = partAsectionsFor('subsidiary');
     expect(dependent.slice(0, 2)).toEqual(['Business Description', 'Proposed Company Names']);
-    expect(dependent.indexOf('Authorized Signatory')).toBeLessThan(dependent.indexOf('Signatory KYC'));
+    // The signatory's KYC uploads sit on the Authorized Signatory tab, not a tab of their own.
+    expect(dependent).not.toContain('Signatory KYC');
+    const kycFields = getClientResponseFields(pre1).filter((f) =>
+      ['passportUrl', 'drivingLicenseUrl', 'utilityBillUrl'].includes(f.id),
+    );
+    expect(kycFields).toHaveLength(3);
+    for (const field of kycFields) expect(field.section).toBe('Authorized Signatory');
     expect(dependent[dependent.length - 1]).toBe('Share Capital Details');
     const independent = partAsectionsFor('independent');
     expect(independent.slice(0, 2)).toEqual(['Business Description', 'Proposed Company Names']);

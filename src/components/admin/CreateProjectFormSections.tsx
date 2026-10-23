@@ -548,13 +548,20 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
 
               <CreateProjectStartingPhasePicker stage={stage} onChange={setStage} />
 
+              {!needsParent && ownershipType !== 'independent' ? (
+                <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-[12px] text-muted-foreground">
+                  Parent entity details are entered by the client in SPICe+ Part A (Foreign
+                  Entity tab) and copied here when they submit.
+                </p>
+              ) : null}
+
               {needsParent ? (
                 <div className="space-y-5 rounded-xl border border-primary/20 bg-primary-light/50 p-4 sm:p-5">
                   <div>
                     <p className="text-[13px] font-medium text-foreground">Parent entity details</p>
                     <p className="mt-1 text-[11.5px] text-muted-foreground">
-                      The company that owns this subsidiary. SPICe+ Part A is prefilled from
-                      these details.
+                      The company that owns this subsidiary. There is no SPICe+ Part A at this
+                      starting phase, so the parent is named here.
                     </p>
                   </div>
                   <div>

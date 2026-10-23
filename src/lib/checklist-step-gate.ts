@@ -9,6 +9,7 @@ import { isClientSubmissionLocked } from '@/lib/checklist-item-lock';
 import { isLeadRequestPending, isReviewRejected } from '@/lib/checklist-item-review';
 import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import {
+  hasClientSubmittedIntake,
   isDirectFlowStep,
   isDirectFlowStepComplete,
   isWaitingOnLead,
@@ -107,10 +108,21 @@ export function isChecklistStepSequentiallyComplete(
 
 /**
  * The current direct-flow step: the client and the lead both fill it. After a
- * client submit that stopped on lead-only fields it waits on the lead.
+ * client submit that stopped on lead-only fields it waits on the lead. On a
+ * client-intake step the lead waits on the client until they submit (the
+ * lead can still open it and pre-fill the NIC codes).
  */
-function directFlowCurrentGate(viewer: ChecklistGateViewer, waitingOnLead: boolean): ChecklistStepGate {
-  if (viewer === 'intern') return { kind: 'active', canOpen: true, canEdit: true, message: null };
+function directFlowCurrentGate(
+  viewer: ChecklistGateViewer,
+  waitingOnLead: boolean,
+  clientSubmitted: boolean,
+): ChecklistStepGate {
+  if (viewer === 'intern') {
+    if (!clientSubmitted) {
+      return { kind: 'waiting', canOpen: true, canEdit: true, message: WAITING_CLIENT };
+    }
+    return { kind: 'active', canOpen: true, canEdit: true, message: null };
+  }
   if (waitingOnLead) {
     return { kind: 'waiting', canOpen: true, canEdit: false, message: WAITING_LEAD };
   }
@@ -164,7 +176,11 @@ export function gateChecklistSteps(params: {
     }
 
     if (directFlow && (currentIndex < 0 || index === currentIndex)) {
-      out[item.id] = directFlowCurrentGate(viewer, isWaitingOnLead(item.id, state[item.id]));
+      out[item.id] = directFlowCurrentGate(
+        viewer,
+        isWaitingOnLead(item.id, state[item.id]),
+        hasClientSubmittedIntake(item.id, state[item.id]),
+      );
       return;
     }
 

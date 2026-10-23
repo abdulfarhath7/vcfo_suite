@@ -3,7 +3,12 @@ import { getPreIncPhases } from '@/data/checklist';
 import { normalizeChecklistItemSlice, type ChecklistItemStateSlice } from '@/lib/checklist-state-key';
 import {
   canRoleEditField,
+  CLIENT_INTAKE_STEP_IDS,
   DIRECT_FLOW_STEP_IDS,
+  hasClientSubmittedIntake,
+  isClientIntakeStep,
+  responsesForLeadBeforeClientSubmit,
+  stripResponsesNotEditableBy,
   directFlowRoleLabel,
   directReopenPatch,
   directSubmitPatch,
@@ -238,5 +243,55 @@ describe('directFlowRoleLabel', () => {
   it('never says intern', () => {
     expect(directFlowRoleLabel('intern')).toBe('Project Lead');
     expect(directFlowRoleLabel('client')).toBe('Client');
+  });
+});
+
+describe('client-intake steps (owner, 2026-10-21)', () => {
+  it('are the client-owned direct-flow intake forms', () => {
+    expect([...CLIENT_INTAKE_STEP_IDS].sort()).toEqual(['pre-1', 'pre-13', 'pre-14', 'pre-15', 'pre-16']);
+    for (const id of CLIENT_INTAKE_STEP_IDS) expect(isDirectFlowStep(id)).toBe(true);
+    expect(isClientIntakeStep('pre-4')).toBe(false);
+    expect(isClientIntakeStep('pre-2')).toBe(false);
+  });
+
+  it('the lead edits only the NIC codes and the board-resolution date on Part A', () => {
+    expect(canRoleEditField('intern', 'pre-1', 'nicCode')).toBe(true);
+    expect(canRoleEditField('intern', 'pre-1', 'additionalNicCodes.e1.code')).toBe(true);
+    expect(canRoleEditField('intern', 'pre-1', 'boardResolutionDate')).toBe(true);
+    expect(canRoleEditField('intern', 'pre-1', 'businessDescription')).toBe(false);
+    expect(canRoleEditField('intern', 'pre-1', 'proposedName1')).toBe(false);
+    expect(canRoleEditField('intern', 'pre-13', 'equityShares')).toBe(false);
+    // Lead-owned steps are untouched.
+    expect(canRoleEditField('intern', 'pre-4', 'anything')).toBe(true);
+    // The client's rights are unchanged.
+    expect(canRoleEditField('client', 'pre-1', 'businessDescription')).toBe(true);
+    expect(canRoleEditField('client', 'pre-1', 'nicCode')).toBe(false);
+  });
+
+  it('strips what a role may not write before a merge', () => {
+    const all = { businessDescription: 'software', nicCode: '62011', boardResolutionDate: '2026-10-12' };
+    expect(stripResponsesNotEditableBy('intern', 'pre-1', all)).toEqual({
+      nicCode: '62011',
+      boardResolutionDate: '2026-10-12',
+    });
+    expect(stripResponsesNotEditableBy('client', 'pre-1', all)).toEqual({
+      businessDescription: 'software',
+      boardResolutionDate: '2026-10-12',
+    });
+    expect(responsesForLeadBeforeClientSubmit('pre-1', all)).toEqual({
+      nicCode: '62011',
+      boardResolutionDate: '2026-10-12',
+    });
+    // Not a direct-flow step: nothing is stripped.
+    expect(stripResponsesNotEditableBy('intern', 'post-1', all)).toEqual(all);
+  });
+
+  it('knows when the client has submitted an intake step', () => {
+    expect(hasClientSubmittedIntake('pre-1', undefined)).toBe(false);
+    expect(hasClientSubmittedIntake('pre-1', { status: 'in-progress', responses: { proposedName1: 'x' } })).toBe(false);
+    expect(hasClientSubmittedIntake('pre-1', { status: 'in-progress', waitingOnLeadAt: NOW })).toBe(true);
+    expect(hasClientSubmittedIntake('pre-1', { status: 'completed', reviewStatus: 'accepted' })).toBe(true);
+    // Not an intake step: always "submitted" for this purpose.
+    expect(hasClientSubmittedIntake('pre-4', undefined)).toBe(true);
   });
 });

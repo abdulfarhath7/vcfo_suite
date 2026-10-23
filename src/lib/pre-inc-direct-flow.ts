@@ -43,8 +43,43 @@ export const LEAD_ONLY_FIELD_IDS: Readonly<Record<string, readonly string[]>> = 
 /** Whole steps that only the project lead can edit. Empty by owner decision. */
 export const LEAD_ONLY_STEP_IDS: ReadonlySet<string> = new Set();
 
+/**
+ * Client-intake steps (owner, 2026-10-21): direct-flow steps whose answers the
+ * CLIENT provides — Part A and the Part B detail forms. On these the project
+ * lead does not fill the client's part: the lead edits only the lead-only
+ * fields (the NIC codes) and the shared ones below, and sees the client's
+ * answers only once the client has submitted the step. Until then the lead's
+ * copy of the step is empty and reads "Waiting on the client". A step the
+ * lead owns (filing, name approval, KYC & DSC, …) stays shared from the first
+ * keystroke, as before.
+ *
+ * Keep this to steps whose catalog `responsibleRole` is `client`.
+ */
+export const CLIENT_INTAKE_STEP_IDS: ReadonlySet<string> = new Set([
+  'pre-1',
+  'pre-13',
+  'pre-14',
+  'pre-15',
+  'pre-16',
+]);
+
+/**
+ * Client fields the project lead may ALSO edit on a client-intake step. The
+ * board-resolution date is the lead's to change while drafting the resolution
+ * (owner: "change the date of board resolution").
+ */
+export const LEAD_SHARED_FIELD_IDS: Readonly<Record<string, readonly string[]>> = {
+  'pre-1': ['boardResolutionDate'],
+};
+
 /** Helper copy under a lead-only field on the client's form. */
 export const LEAD_ONLY_FIELD_HELPER = 'Your project lead fills this.';
+
+/** Helper copy under a client field on the lead's form of a client-intake step. */
+export const CLIENT_FILLS_FIELD_HELPER = 'The client fills this. It shows here once they submit.';
+
+/** Field error shown to the lead when the client's part is still empty. */
+export const CLIENT_HAS_NOT_FILLED_MESSAGE = 'The client has not filled this yet.';
 
 export type DirectFlowRoleLabel = 'Client' | 'Project Lead';
 
@@ -69,17 +104,34 @@ function isFirmRole(role: string): boolean {
   return role === 'manager' || role === 'admin' || role === 'super_admin';
 }
 
+/** A direct-flow step whose answers the client provides (see `CLIENT_INTAKE_STEP_IDS`). */
+export function isClientIntakeStep(itemId: string): boolean {
+  return isDirectFlowStep(itemId) && CLIENT_INTAKE_STEP_IDS.has(itemId);
+}
+
+/** A client field the lead may also edit on a client-intake step (root id or repeat entry). */
+export function isLeadSharedField(itemId: string, fieldId: string): boolean {
+  const ids = LEAD_SHARED_FIELD_IDS[itemId];
+  if (!ids?.length) return false;
+  const root = fieldId.split('.')[0] ?? fieldId;
+  return ids.includes(fieldId) || ids.includes(root);
+}
+
 /**
  * Who may write one field of one step.
  *
- * - Project lead: every field of every step (unchanged).
+ * - Project lead: every field of every step, except on a client-intake step,
+ *   where only the lead-only and lead-shared fields are theirs.
  * - Client: every field of a direct-flow step except the lead-only ones; never
  *   a field of any other step.
  * - Manager / admin: reads a direct-flow step (reopen is a separate action);
  *   other steps keep their current staff rules.
  */
 export function canRoleEditField(role: string, itemId: string, fieldId: string): boolean {
-  if (role === 'intern') return true;
+  if (role === 'intern') {
+    if (!isClientIntakeStep(itemId)) return true;
+    return isLeadOnlyField(itemId, fieldId) || isLeadSharedField(itemId, fieldId);
+  }
   if (role === 'client') return isDirectFlowStep(itemId) && !isLeadOnlyField(itemId, fieldId);
   if (isFirmRole(role)) return !isDirectFlowStep(itemId);
   return false;
@@ -95,6 +147,49 @@ export function stripLeadOnlyResponses(
     if (!isLeadOnlyField(itemId, key)) out[key] = value;
   }
   return out;
+}
+
+/**
+ * The responses one role may write on a direct-flow step: a client never sends
+ * a lead-only key; a lead on a client-intake step sends only their own keys.
+ * Both the form and the server apply this before a merge, so a lead's copy of
+ * the step (which hides the client's answers) can never wipe them.
+ */
+export function stripResponsesNotEditableBy(
+  role: string,
+  itemId: string,
+  responses: Record<string, string>,
+): Record<string, string> {
+  if (!isDirectFlowStep(itemId)) return responses;
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(responses)) {
+    if (canRoleEditField(role, itemId, key)) out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * Has the client submitted a client-intake step? True once the submit
+ * completed it or left it waiting on the lead; always true for any other step.
+ * Until then the lead reads the step without the client's answers.
+ */
+export function hasClientSubmittedIntake(
+  itemId: string,
+  slice?: ChecklistItemStateSlice | null,
+): boolean {
+  if (!isClientIntakeStep(itemId)) return true;
+  if (!slice) return false;
+  if (slice.waitingOnLeadAt?.trim()) return true;
+  if (slice.clientSubmittedAt?.trim()) return true;
+  return isDirectFlowStepComplete(itemId, slice);
+}
+
+/** A lead's view of a client-intake step before the client submits: only the lead's own keys. */
+export function responsesForLeadBeforeClientSubmit(
+  itemId: string,
+  responses: Record<string, string>,
+): Record<string, string> {
+  return stripResponsesNotEditableBy('intern', itemId, responses);
 }
 
 export function directFlowRoleLabel(role: string | null | undefined): DirectFlowRoleLabel {

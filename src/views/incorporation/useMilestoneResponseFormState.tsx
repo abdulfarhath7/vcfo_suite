@@ -99,6 +99,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+
+/** A select with this many options or more gets a type-to-filter picker. */
+const SEARCHABLE_SELECT_MIN_OPTIONS = 12;
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
 import {
@@ -123,7 +127,11 @@ import {
   isDirectFlowStep,
   isLeadOnlyField,
   LEAD_ONLY_FIELD_HELPER,
-  stripLeadOnlyResponses,
+  CLIENT_FILLS_FIELD_HELPER,
+  CLIENT_HAS_NOT_FILLED_MESSAGE,
+  hasClientSubmittedIntake,
+  isClientIntakeStep,
+  stripResponsesNotEditableBy,
 } from '@/lib/pre-inc-direct-flow';
 import { clientIncorporationPath, clientIncorporationStepPath } from '@/lib/project-step-path';
 
@@ -351,16 +359,26 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
    */
   const directFlow = isDirectFlowStep(item.id);
   const enforceClientLock = isClient && !directFlow;
-  /** What this viewer may send: a client never sends a lead-only field. */
+  /**
+   * What this viewer may send: a client never sends a lead-only field; a lead
+   * on a client-intake step sends only their own fields (their copy hides the
+   * client's answers until the client submits).
+   */
+  const actorRole = isClient ? 'client' : (user?.role ?? 'intern');
   const writableForViewer = useCallback(
     (partial: ChecklistItemResponses): ChecklistItemResponses =>
       filterResponsesToEditableFields(
         itemState,
-        isClient && directFlow ? stripLeadOnlyResponses(item.id, partial) : partial,
+        directFlow && (actorRole === 'client' || actorRole === 'intern')
+          ? stripResponsesNotEditableBy(actorRole, item.id, partial)
+          : partial,
         enforceClientLock,
       ),
-    [itemState, isClient, directFlow, item.id, enforceClientLock],
+    [itemState, actorRole, directFlow, item.id, enforceClientLock],
   );
+  /** Lead on a client-intake step: the client's fields are read-only on the lead's form. */
+  const leadOnIntakeStep = actorRole === 'intern' && isClientIntakeStep(item.id);
+  const clientSubmittedIntake = hasClientSubmittedIntake(item.id, itemState);
   const submissionLocked = isClientSubmissionLocked(itemState);
   const reviewBanner = isClient ? getClientReviewBanner(itemState) : null;
   const clientResubmit = canClientResubmit(itemState);
@@ -862,6 +880,19 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     internSectionNav ? internSectionGroups.length : 0,
   );
   const internSectionNextLabel = internSectionFooterLabel(internFooterAction);
+  /**
+   * Lead on a client-intake step: Submit is the lead's only once the client
+   * has submitted their part, and only if the step has a field of the lead's
+   * to fill (the NIC codes on Part A). Otherwise the client's submit already
+   * completes the step and the footer says what is being waited on.
+   */
+  const internSubmitBlockedText = (() => {
+    if (!leadOnIntakeStep) return null;
+    if (!clientSubmittedIntake) return 'Waiting for the client to fill and submit this step.';
+    const leadHasField = allFields.some((field) => canRoleEditField('intern', item.id, field.id));
+    if (!leadHasField) return 'The client submits this step. Nothing to add here.';
+    return null;
+  })();
 
   const router = useRouter();
   const navigateInternAfterLastTab = useCallback(() => {
@@ -926,12 +957,21 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
   const isFieldLockedForClient = (fieldId: string) =>
     (enforceClientLock && submissionLocked && !isFieldEditableForClient(itemState, fieldId)) ||
-    (isClient && directFlow && isLeadOnlyField(item.id, fieldId));
-  /** Lead-only field on the client's form: read-only, with a line saying who fills it. */
-  const leadOnlyNote = (fieldId: string) =>
-    isClient && directFlow && isLeadOnlyField(item.id, fieldId) ? (
-      <p className="text-[11px] text-muted-foreground">{LEAD_ONLY_FIELD_HELPER}</p>
-    ) : null;
+    (isClient && directFlow && isLeadOnlyField(item.id, fieldId)) ||
+    (leadOnIntakeStep && !canRoleEditField('intern', item.id, fieldId));
+  /**
+   * Who fills a field the viewer cannot edit: a lead-only field on the
+   * client's form, or a client field on the lead's form of an intake step.
+   */
+  const leadOnlyNote = (fieldId: string) => {
+    if (isClient && directFlow && isLeadOnlyField(item.id, fieldId)) {
+      return <p className="text-[11px] text-muted-foreground">{LEAD_ONLY_FIELD_HELPER}</p>;
+    }
+    if (leadOnIntakeStep && !clientSubmittedIntake && !canRoleEditField('intern', item.id, fieldId)) {
+      return <p className="text-[11px] text-muted-foreground">{CLIENT_FILLS_FIELD_HELPER}</p>;
+    }
+    return null;
+  };
 
   const toggleFieldUnlock = (fieldId: string) => {
     if (!showFieldUnlock || !submissionLocked) return;
@@ -1197,6 +1237,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     const blocking: Record<string, string> = {};
     for (const [key, message] of Object.entries(validation.errors)) {
       if (canRoleEditField(role, item.id, key)) blocking[key] = message;
+      // The lead cannot fill the client's part of an intake step: a gap there
+      // is shown as an error (the server answers the same way).
+      else if (leadOnIntakeStep) blocking[key] = CLIENT_HAS_NOT_FILLED_MESSAGE;
     }
     setFieldWarnings(validation.warnings);
 
@@ -1220,7 +1263,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
 
     setSubmitting(true);
     try {
-      const sent = isClient ? stripLeadOnlyResponses(item.id, submitDraft) : submitDraft;
+      const sent = stripResponsesNotEditableBy(role, item.id, submitDraft);
       const result = await submitDirectStep(scopeId, item.id, sent);
       if (result.outcome === 'invalid') {
         showErrors(result.fieldErrors ?? {});
@@ -1622,6 +1665,23 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
                 field.id === 'shareholderNominee')
                 ? getPre6DirectorNameOptions(draft, pre1Responses)
                 : field.options ?? [];
+            // Long lists (countries, states, nationalities) get a type-to-filter
+            // picker; short ones keep the plain select.
+            if (dynamicOptions.length >= SEARCHABLE_SELECT_MIN_OPTIONS) {
+              return (
+                <SearchableSelect
+                  id={`${item.id}-${field.id}`}
+                  value={draft[field.id] ?? ''}
+                  options={dynamicOptions}
+                  onValueChange={(v) => setField(field.id, v)}
+                  placeholder="Select…"
+                  searchPlaceholder={`Type to search ${field.label.toLowerCase()}…`}
+                  invalid={Boolean(error)}
+                  describedBy={error ? errorId : undefined}
+                  className={cn('milestone-form-input', error && 'border-danger')}
+                />
+              );
+            }
             return (
           <Select
             value={draft[field.id] ?? ''}
@@ -1811,7 +1871,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
      * untouched.
      */
     const recordLayout =
-      (isClient || formReadOnly) && group.fields.every((field) => fieldIsReadOnly(field.id));
+      (isClient || formReadOnly || leadOnIntakeStep) &&
+      group.fields.every((field) => fieldIsReadOnly(field.id));
 
     const fieldsBlock = recordLayout ? (
       <dl className="milestone-record">{group.fields.map(renderRecordRow)}</dl>
@@ -1929,6 +1990,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     internFooterAction,
     internSectionNav,
     internSectionNextLabel,
+    internSubmitBlockedText,
     isClient,
     directFlow,
     isPhase2StructuredStep,

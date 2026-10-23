@@ -112,7 +112,7 @@ export const createProjectBodySchema = z
     /** Required for Indian subsidiary; ignored (stored null) otherwise. */
     parentIndianRelationship: parentIndianRelationshipSchema.nullable().optional(),
     entityLegalForm: entityLegalFormSchema.default('company'),
-    /** Required for a subsidiary (any stage); ignored for a standalone company. */
+    /** Subsidiary starting after Pre-Incorporation: required; Pre-Incorporation takes it from Part A; standalone: ignored. */
     parentEntityName: z.string().trim().max(240).default(''),
     parentEntityAddress: z.string().trim().max(2000).default(''),
     clientEmail: emailSchema,
@@ -158,7 +158,9 @@ export const createProjectBodySchema = z
       });
     }
     if (independent) return;
-    // A subsidiary names its parent at creation; SPICe+ Part A prefills from it.
+    // A Pre-Incorporation subsidiary collects its parent through the client's
+    // SPICe+ Part A answers; one that starts later names it at creation.
+    if ((d.stage ?? 'Pre-Incorporation') === 'Pre-Incorporation') return;
     if (!d.parentEntityName.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

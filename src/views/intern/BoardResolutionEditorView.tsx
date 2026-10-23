@@ -89,6 +89,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
     loading,
     hasPre1Data,
     pre1StepHref,
+    resolutionDateLabel,
     generateErrorDisplay,
     generateError,
     doc,
@@ -159,6 +160,24 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
         {sentBackNote && !withManager && !isFinalized ? (
           <p role="status" className="mb-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-[12.5px] text-foreground">
             <span className="font-medium">Your manager sent this back:</span> {sentBackNote}
+          </p>
+        ) : null}
+        {hasPre1Data && !loading && !isFinalized ? (
+          <p className="mb-4 flex flex-wrap items-center gap-x-2 text-[12.5px] text-muted-foreground">
+            <span>
+              Date of board resolution:{' '}
+              <span className="font-medium text-foreground">{resolutionDateLabel ?? 'not set'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                router.push(docPackStepPath(eng, 'intern', 'pre-1', sectionSlug('Share Capital Details')))
+              }
+              className="font-medium text-brand hover:underline"
+            >
+              Change date
+            </button>
+            <span className="text-[11.5px]">Then use Re-generate from Pre-1.</span>
           </p>
         ) : null}
 
