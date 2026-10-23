@@ -24,7 +24,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   try {
     let snapshot = null;
     if (engagementId) {
-      if (gate.ctx.role === 'admin') return NextResponse.json({ error: 'Not available' }, { status: 403 });
+      // Project preview is for clients and super admin only (never admin or manager).
+      if (gate.ctx.role === 'admin' || gate.ctx.role === 'manager') return NextResponse.json({ error: 'Not available' }, { status: 403 });
       const loaded = await loadProjectSnapshot(gate.ctx, engagementId);
       if (!loaded) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
       snapshot = loaded.snapshot;

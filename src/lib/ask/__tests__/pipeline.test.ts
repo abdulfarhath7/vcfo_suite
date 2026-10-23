@@ -102,7 +102,7 @@ beforeEach(() => {
 afterEach(() => setAskProviderForTests(undefined));
 
 describe('role gate', () => {
-  it.each(['manager', 'intern'] as const)('rejects %s before any work', async (role) => {
+  it.each(['intern'] as const)('rejects %s before any work', async (role) => {
     const provider = mockProvider([]);
     setAskProviderForTests(provider);
     await expect(run(role, { shell: 'admin', message: 'hi' })).rejects.toBeInstanceOf(AskForbiddenError);

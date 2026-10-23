@@ -273,7 +273,7 @@ export const STAFF_TOOLS: Record<string, AskTool<StaffData>> = {
   getFirmPulse: {
     definition: {
       name: 'getFirmPulse',
-      description: 'Firm-wide counts: active projects, waiting on clients, pending approvals, overdue filings.',
+      description: 'Counts across the projects the asker can see (the whole firm for an admin, their own for a manager): active projects, waiting on clients, pending approvals, overdue filings.',
       strict: true,
       input_schema: EMPTY_SCHEMA,
     },

@@ -6,8 +6,9 @@ import { getFilings } from '@/db/repositories/filings';
 import type { StaffData } from './staff';
 
 /**
- * Firm-wide read for admin / super admin tools, through the same scoped
- * repositories the dashboards use (admin scope is firm-wide by role).
+ * Staff read for the admin shell, through the same scoped repositories the
+ * dashboards use: firm-wide for admin / super admin, own projects only for a
+ * manager (the repositories decide, not this file).
  */
 export async function loadStaffData(ctx: AuthContext, now: Date = new Date()): Promise<StaffData> {
   const [rows, index, filings] = await Promise.all([

@@ -28,7 +28,7 @@ A slide-over assistant inside VCFO Suite that:
 | `client` | Client | Yes | Teacher | Own engagement(s) only |
 | `admin` | Firm Admin | Yes | Operations assistant | Firm-wide |
 | `super_admin` | Super Admin | Yes | Operations assistant; client persona inside a client shell | Firm-wide; one engagement when previewing a client |
-| `manager` | Project Manager | **No** | — | API returns 403 |
+| `manager` | Project Manager | Yes (since 2026-10-23) | Operations assistant | Own projects only (repository scope) |
 | `intern` | Project Lead | **No** | — | API returns 403 |
 
 Never show the word "intern" anywhere in UI, prompts that reach users, or answers.

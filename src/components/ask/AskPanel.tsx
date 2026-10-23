@@ -10,12 +10,16 @@ import { cn } from '@/lib/utils';
 import { AskComposer } from './AskComposer';
 import { AskHome } from './AskHome';
 import { useAskOptional } from './ask-context';
+import { useApp } from '@/context/AppContext';
 import { AskThread } from './AskThread';
 import { ASK_PANEL_WIDTH, useAskLayoutMode } from './use-ask-layout';
 
 function Header({ onClose }: { onClose: () => void }) {
   const ask = useAskOptional()!;
+  const { user } = useApp();
   const client = ask.shell === 'client';
+  // A manager shares the staff shell, but the repositories scope it to their own projects.
+  const scopeLabel = user?.role === 'manager' ? 'Your projects · read only' : 'Firm-wide · read only';
   return (
     <div className="border-b border-border">
       {ask.preview && (
@@ -33,7 +37,7 @@ function Header({ onClose }: { onClose: () => void }) {
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold text-foreground">Ask VCFO</p>
           <p className="truncate text-[11.5px] text-muted-foreground">
-            {client ? 'Answers from verified sources' : 'Firm-wide · read only'}
+            {client ? 'Answers from verified sources' : scopeLabel}
           </p>
         </div>
         {ask.thread.length > 0 && (

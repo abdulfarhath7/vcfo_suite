@@ -57,6 +57,37 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
 
+## Session 2026-10-23 (night) — Ask VCFO opened to managers (branch `ask-vcfo-rag`)
+
+Owner: "I need that chatbot in Pranay's portal also, it is not there." Farhath's
+spec had locked managers out on purpose (ASK-VCFO-CONTEXT §0.2: manager → 403).
+The owner reversed that; Project Leads stay locked out.
+
+- One list decides everything: `ASK_ROLES` in `src/lib/ask/access.ts` now
+  includes `manager`. The launcher mount, `useAskStatus`, `requireAsk` on
+  every `/api/ask/*` route, the pipeline and the conversation store all read it.
+- A manager uses the **staff shell** (`defaultShellForRole('manager') === 'admin'`,
+  `shellAllowedForRole` allows only `admin`). Scope is **not** firm-wide: the
+  staff tools load through `listEngagements(ctx)` / `listChecklistIndex(ctx)` /
+  `getFilings(ctx)`, and the repositories limit a manager to their own
+  projects. Checked in Chrome as the demo manager (4 of the firm's 12
+  projects): both answers named only that manager's companies.
+- Panel header says "Your projects · read only" for a manager (`AskPanel.tsx`
+  reads the role from `useApp`); admins keep "Firm-wide · read only". The
+  `getFirmPulse` tool description no longer promises firm-wide counts.
+- Doors kept shut: client Library routes now use their own
+  `LIBRARY_ROLES` (client / admin / super) instead of `canUseAsk`; the
+  topics route's project preview refuses manager as well as admin; the
+  `/api/ask/admin/*` routes already required `isFirmWideAdmin`.
+- Tests: `access.test.ts` (new); `pipeline`, `route-guard`, `ask-panel`
+  tests now reject only `intern`. Spec table §0.2 updated.
+- Pranay (`pranay.k@sbcllp.in`, manager, 2 projects) sees the "Ask VCFO"
+  button bottom-right of every manager page after a reload. Dismiss the
+  announcement popup first; it sits above the button.
+- Not changed: the firm-pulse definition of "active" (the dashboard said
+  4 active projects, the answer said 3, because one is in the Compliance
+  stage). Pre-existing staff logic, not touched.
+
 ## Session 2026-10-23 (evening) — the owner's portal list: EPFO, ESIC, DGFT watchers
 
 - **Owner's PDF of portals** (Income Tax, MCA, GST, PF, ESIC, Professional Tax, IEC/DGFT), each

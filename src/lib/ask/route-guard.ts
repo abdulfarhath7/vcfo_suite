@@ -7,7 +7,7 @@ import { askConfig } from '@/lib/ask/config';
 
 /**
  * Every Ask VCFO route: feature flag (404 when off) → session (401) → role
- * (403 for managers and Project Leads).
+ * (403 for Project Leads).
  */
 export async function requireAsk(): Promise<{ ok: true; ctx: AuthContext } | { ok: false; response: NextResponse }> {
   if (!askConfig().enabled) {
