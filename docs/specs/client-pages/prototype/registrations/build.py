@@ -14,3 +14,10 @@ for k, v in rep.items():
     s = s.replace(k, v)
 open(os.path.join(here, 'vcfo-registrations-prototype.html'), 'w').write(s)
 print(len(s))
+
+# Artifact variant: the publisher adds its own doctype/head/body skeleton.
+import re
+a = re.sub(r'<!doctype html>\s*<html[^>]*>\s*<head>\s*', '', s, flags=re.I)
+a = a.replace('<meta charset="utf-8">\n', '').replace('<meta name="viewport" content="width=device-width,initial-scale=1">\n', '')
+a = re.sub(r'</head>\s*<body>\s*', '', a).replace('</body>\n</html>', '').replace('</body>', '').replace('</html>', '')
+open(os.path.join(here, 'artifact.html'), 'w').write(a)

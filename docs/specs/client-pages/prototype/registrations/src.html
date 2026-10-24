@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Registrations · VCFO Suite</title>
+<title>VCFO Suite Registrations</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <style>
 @font-face{font-family:Manrope;font-weight:500;font-display:swap;src:url(data:font/woff2;base64,__F_M500__) format("woff2")}
 @font-face{font-family:Manrope;font-weight:600;font-display:swap;src:url(data:font/woff2;base64,__F_M600__) format("woff2")}
 @font-face{font-family:Manrope;font-weight:700;font-display:swap;src:url(data:font/woff2;base64,__F_M700__) format("woff2")}
 @font-face{font-family:Manrope;font-weight:800;font-display:swap;src:url(data:font/woff2;base64,__F_M800__) format("woff2")}
 @font-face{font-family:"Space Grotesk";font-weight:700;font-display:swap;src:url(data:font/woff2;base64,__F_SG700__) format("woff2")}
-:root{
+:root{color-scheme:light;
 --bg:oklch(97.4% 0.006 255);--panel:#fff;--raised:oklch(96.6% 0.007 255);--border:oklch(92.2% 0.011 255);--hair:oklch(94.8% 0.007 255);
 --fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);
 --primary:oklch(54.6% 0.215 263);--primary-dark:oklch(48.8% 0.217 264);--primary-light:oklch(96.6% 0.02 260);
@@ -34,7 +35,8 @@ a{color:var(--primary);text-decoration:none;font-weight:700}
 svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
 /* top bar */
-.top{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;height:56px;display:flex;align-items:center;gap:14px;padding:0 20px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--navy);color:#fff;height:56px;display:flex;align-items:center;gap:14px;padding-block:0;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--navy)}
 .top img{height:26px;display:block}
 .top .sep{width:1px;height:22px;background:#ffffff2e}
 .top .co{font-weight:700;font-size:13px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -44,7 +46,7 @@ svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .seg button.on{background:#fff;color:var(--navy)}
 .seg .lbl{font-size:11px;color:#ffffff99;align-self:center;padding:0 8px 0 6px;font-weight:600}
 
-.wrap{max-width:1240px;margin:0 auto;padding:22px 24px 80px}
+.wrap{max-width:1240px;margin:0 auto;padding-block:22px 80px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
 .crumb{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:600;font-size:12px;margin-bottom:10px;flex-wrap:wrap}
 .crumb a{font-weight:700}
 .crumb svg.i{width:13px;height:13px;color:var(--subtle)}
@@ -206,7 +208,7 @@ h1{font-size:24px;line-height:1.2;margin:0;font-weight:800;letter-spacing:-.01em
 .fprog span{font-weight:700;font-size:12px;color:var(--muted);white-space:nowrap}
 
 .empty{padding:40px 18px;text-align:center;color:var(--muted);font-weight:600}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:11px 16px;border-radius:12px;font-weight:700;font-size:13px;box-shadow:0 12px 30px -12px #0008;opacity:0;pointer-events:none;transition:.25s;z-index:50;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 32px)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:11px 16px;border-radius:12px;font-weight:700;font-size:13px;box-shadow:0 12px 30px -12px #0008;opacity:0;pointer-events:none;transition:.25s;z-index:50;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 32px)}
 .toast.on{opacity:1;transform:translateX(-50%)}
 .toast svg.i{width:16px;height:16px;color:#7ee2b8}
 .view{animation:up .3s both}
@@ -216,8 +218,8 @@ h1{font-size:24px;line-height:1.2;margin:0;font-weight:800;letter-spacing:-.01em
  .flow{position:static;order:-1}
 }
 @media (max-width:640px){
- .wrap{padding:16px 16px 70px}
- .top{padding:0 12px;gap:10px}
+ .wrap{padding-block:16px 70px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+ .top{padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));gap:10px}
  .top .co,.top .sep,.seg .lbl{display:none}
  .top img{height:22px}
  h1{font-size:20px}
@@ -545,20 +547,23 @@ function viewReg(slug){
 
 /* ---------- router ---------- */
 const app=document.getElementById('app');
+let route='#/';
+(function(){const t=(location.hash||'').slice(1); if(CATS.some(c=>c.key===t)) route='#/g/'+t; else if(REG.some(r=>r.slug===t)) route='#/r/'+t;})();
+function nav(to){route=to;render();window.scrollTo({top:0});}
 function render(){
-  const h=location.hash||'#/';
+  const h=route;
   let m;
   if((m=h.match(/^#\/g\/([\w-]+)/))) app.innerHTML=viewGroup(m[1]);
   else if((m=h.match(/^#\/r\/([\w-]+)/))) app.innerHTML=viewReg(m[1]);
   else app.innerHTML=viewHome();
-  document.title = (app.querySelector('h1')?.textContent||'Registrations')+' · VCFO Suite';
+  
 }
-window.addEventListener('hashchange',()=>{render();window.scrollTo({top:0})});
 
 let tt; function toast(msg){const t=document.getElementById('toast');t.innerHTML=ic('check')+esc(msg);t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2400)}
 
 document.addEventListener('click',e=>{
-  const go=e.target.closest('[data-go]'); if(go){location.hash=go.dataset.go;return}
+  const go=e.target.closest('[data-go]'); if(go){nav(go.dataset.go);return}
+  const a=e.target.closest('a[href^="#/"]'); if(a){e.preventDefault();nav(a.getAttribute('href'));return}
   const rl=e.target.closest('[data-role]'); if(rl){state.role=rl.dataset.role;document.querySelectorAll('[data-role]').forEach(b=>b.classList.toggle('on',b===rl));render();toast('Previewing as '+(state.role==='lead'?'Lead':'Client'));return}
   const adv=e.target.closest('[data-adv]'); if(adv){state.at[adv.dataset.adv]++;render();toast('Step marked as done');return}
   const st=e.target.closest('[data-start]'); if(st){state.at[st.dataset.start]=0;render();toast('Registration started. The client has been asked for documents.');return}
