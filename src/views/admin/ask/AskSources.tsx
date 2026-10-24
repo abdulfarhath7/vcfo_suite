@@ -122,7 +122,7 @@ function OfficialUpdatesPanel({ onChecked }: { onChecked: () => void }) {
         })}
       </ul>
       <p className="mt-3 text-[12px] text-muted-foreground">
-        Income Tax, MCA and the GST portal&apos;s news page refuse automated readers. Drop their PDFs in the box below.
+        Every portal on the firm&apos;s list is watched (MCA through the Gazette of India). Anything else can be dropped in the box below.
       </p>
       {check.isError && (
         <p role="alert" className="mt-2 text-[12.5px] text-danger-text">

@@ -6,6 +6,7 @@ import { epfoWatcher } from './epfo';
 import { esicWatcher } from './esic';
 import { gstPortalWatcher } from './gst-portal';
 import { incomeTaxWatcher } from './income-tax';
+import { mcaGazetteWatcher } from './mca-egazette';
 import { rbiFemaWatcher } from './rbi';
 import { tgctWatcher } from './tgct';
 import type { FeedWatcher } from './types';
@@ -20,7 +21,7 @@ import type { FeedWatcher } from './types';
  *   Income Tax (incometaxindia.gov.in: refuses programs and headless Chrome)
  *     ✓ the department's e-filing portal "Latest News", same CBDT notifications + PDFs — `income-tax` (HTML)
  *   MCA (mca.gov.in: "Access Denied" to programs and headless Chrome)
- *     ✗ manual — drop the notification PDF on the Sources page (e-Gazette PDFs by id work; its listing needs a session)
+ *     ✓ the Gazette of India, searched by ministry in a real browser; PDFs by id — `mca-egazette`
  *   EPFO  ✓ notices feed, employer-relevant only                 — `epfo` (RSS)
  *   ESIC  ✓ circulars table, employer-relevant only              — `esic` (HTML)
  *   Telangana Commercial Taxes (tgct.gov.in)
@@ -32,6 +33,7 @@ export const FEED_WATCHERS: readonly FeedWatcher[] = [
   cbicGstWatcher,
   gstPortalWatcher,
   incomeTaxWatcher,
+  mcaGazetteWatcher,
   rbiFemaWatcher,
   epfoWatcher,
   esicWatcher,

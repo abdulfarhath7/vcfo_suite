@@ -11,7 +11,7 @@ Sources page button. New items wait in the manager's review queue.
 |---|---|---|
 | GST portal `services.gst.gov.in/services/gstlaw/gstlawlist` | Its "GST Law" page is a page of links; it sends you to CBIC for notifications. We read CBIC (`cbic.ts`, JSON) **and** the portal's own "News and Updates" advisories (`gst-portal.ts`) | CBIC: plain HTTPS with the Sectigo intermediate embedded (`govt-https.ts`). Portal news: **real browser only** (below) |
 | Income Tax `incometaxindia.gov.in` | Refuses programs and headless Chrome (Akamai "Access Denied"). The department's e-filing portal `incometax.gov.in/iec/foportal/latest-news` lists the same CBDT notifications/circulars with PDFs on the same host | plain HTTPS (`income-tax.ts`) |
-| MCA `mca.gov.in` | Refuses programs and headless Chrome. Manual: drop the PDF on the Sources page. e-Gazette serves PDFs by id (`egazette.gov.in/WriteReadData/<year>/<id>.pdf`) but its listing needs an ASP.NET session | manual |
+| MCA `mca.gov.in` | Refuses programs and headless Chrome. Every MCA notification is published in the Gazette of India: `mca-egazette.ts` drives the e-Gazette "Search by Ministry" click-through (session lives in the URL, so it must be a browser), reads the results table (subject · issue date · gazette id) and downloads the PDF by id: `egazette.gov.in/WriteReadData/<year>/<serial>.pdf`. Searches this month, plus last month in the first week. Ministry staff matters (service rules, tenure, appointments) are skipped | **real browser** (`mca-egazette.ts`) |
 | EPFO | Notices RSS `epfo.gov.in/?post_type=notices&feed=rss2`, employer-relevant only. The old `circulars.php` archive stopped in 2025 | RSS (`epfo.ts`) |
 | ESIC `esic.gov.in/circulars` | Circulars table, employer-relevant only | HTML (`esic.ts`) |
 | Telangana Commercial Taxes `tgct.gov.in/tgportal/` | "Announcements › View More" — PDF links **without dates**; dated the day first seen, the title says so. Profession Tax GO page: postback links, newest 2021 | HTML (`tgct.ts`) |
@@ -37,6 +37,14 @@ time, not bundled; it is installed by `npm ci` (a dependency of
 `@playwright/test`). Until that is done in production, the GST-portal
 watcher reports "needs a browser" on the Sources page and nothing else is
 affected.
+
+## The e-Gazette click-through (MCA)
+
+Home → "Search" postback → `#btnMinistry` → `#ddlMinistry` (each select is a
+postback, wait for navigation) → `#ddlmonth` → `#ddlyear` → `#ImgSubmitDetails`.
+A direct link to `SearchMenu.aspx` lands on `error.aspx`. The server log prints
+`[ask-feeds] e-Gazette Ministry of Corporate Affairs YYYY-MM: N gazette(s) listed`
+so "0 added" can be told apart from "nothing found".
 
 ## Other gotchas
 

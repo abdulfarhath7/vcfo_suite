@@ -242,7 +242,7 @@ describe('vCFO portal catalog', () => {
     expect(lei?.portalUrl).not.toMatch(/gclid|gad_|legalentityidentifier\.in/);
     const pf = VCFO_PORTAL_TASKS.find((row) => row.task === 'PF Registration');
     expect(pf?.portalUrl).toContain('epfindia.gov.in');
-    expect(pf?.circularUrl).toBeNull();
+    expect(pf?.circularUrl).toContain('epfo.gov.in');
     const patent = VCFO_PORTAL_TASKS.find((row) => row.task === 'Patent Registration');
     expect(patent?.portalUrl).toBeNull();
     expect(patent?.circularUrl).toBeNull();

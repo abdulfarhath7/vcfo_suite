@@ -39,13 +39,16 @@ export type CatalogFeedCandidate = {
 };
 
 export const MCA_FO = 'https://www.mca.gov.in/content/mca/global/en/foportal/fologin.html';
-const MCA_NOTIF = 'https://www.mca.gov.in/content/mca/global/en/acts-rules/notifications.html';
+// "Circular" links point at the pages on the firm's portal list (owner PDF, 2026-10-23) — where the updates are published.
+const MCA_NOTIF = 'https://www.mca.gov.in/content/mca/global/en/acts-rules/ebooks/notifications.html';
 export const GST_LOGIN = 'https://services.gst.gov.in/services/login';
-const CBIC_GST = 'https://cbic-gst.gov.in/hindi/central-tax-notifications.html';
+const GST_LAW = 'https://services.gst.gov.in/services/gstlaw/gstlawlist';
 export const EPFO = 'https://unifiedportal-emp.epfindia.gov.in/epfo/';
+const EPFO_UPDATES = 'https://www.epfo.gov.in/';
 export const ESIC = 'https://portal.esic.gov.in/EmployerPortal/ESICInsurancePortal/Portal_Loginnew.aspx';
+const ESIC_UPDATES = 'https://esic.gov.in/circulars';
 export const TGCT = 'https://www.tgct.gov.in/tgportal/';
-const TGCT_NOTIF = 'https://www.tgct.gov.in/tgportal/AllActs/APPT/Gos_Notifications.aspx';
+const TGCT_NOTIF = 'https://www.tgct.gov.in/tgportal/';
 export const FIRMS = 'https://firms.rbi.org.in/firms/faces/pages/login.xhtml';
 export const FLAIR = 'https://flair.rbi.org.in/fla/faces/pages/login.xhtml';
 const RBI_FEMA = 'https://www.rbi.org.in/scripts/NotificationUser.aspx?Id=11253';
@@ -53,7 +56,7 @@ const RBI_FDI = 'https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=11200';
 const RBI_ODI = 'https://www.rbi.org.in/scripts/NotificationUser.aspx?Id=8305';
 const ICEGATE = 'https://www.icegate.gov.in/';
 const DGFT_IEC = 'https://www.dgft.gov.in/CP/?opt=iec-profile-management';
-const DGFT_NOTIF = 'https://www.dgft.gov.in/CP/?opt=notification';
+const DGFT_NOTIF = 'https://www.dgft.gov.in/CP/?opt=regulatory-updates';
 export const STPI = 'https://stpionline.stpi.in/unit/jindex.php';
 const LABOUR_TS = 'https://labour.telangana.gov.in/home.do';
 const CDMA_TRADE = 'https://cdma.cgg.gov.in/cdma_trade/NewTrade/SaveNewTrade';
@@ -62,7 +65,7 @@ const ICDR = 'https://icdr.ceir.gov.in/ivs/home_manufacturer.jsp';
 /** TRACES (TDS/TCS returns, challans, Form 16) — added for the client compliance portal links. */
 export const TRACES = 'https://www.tdscpc.gov.in/app/login.xhtml';
 export const IT_FO = 'https://www.incometax.gov.in/iec/foportal/';
-const IT_NOTIF = 'https://www.incometaxindia.gov.in/communications/notification';
+const IT_NOTIF = 'https://www.incometaxindia.gov.in/Pages/communications/notifications.aspx';
 const MSME = 'https://team.msme.gov.in/app/login';
 /** Official LEI India LOU (CCIL). legalentityidentifier.in is a commercial agent, not the issuer. */
 const LEI = 'https://www.ccilindia-lei.co.in/';
@@ -88,9 +91,9 @@ function row(
 export const VCFO_PORTAL_TASKS: VcfoPortalTask[] = [
   row('Incorporation', 'Pre-Incorporation', MCA_FO, MCA_NOTIF),
   row('Incorporation', 'Post-Incorporation', MCA_FO, MCA_NOTIF),
-  row('Registrations', 'GST Registration', GST_LOGIN, CBIC_GST),
-  row('Registrations', 'PF Registration', EPFO, null),
-  row('Registrations', 'ESI Registration', ESIC, null),
+  row('Registrations', 'GST Registration', GST_LOGIN, GST_LAW),
+  row('Registrations', 'PF Registration', EPFO, EPFO_UPDATES),
+  row('Registrations', 'ESI Registration', ESIC, ESIC_UPDATES),
   row('Registrations', 'PT Registration', TGCT, TGCT_NOTIF),
   row('FEMA', 'FCGPR Filing', FIRMS, RBI_FEMA),
   row('FEMA', 'FDI Reporting', null, RBI_FDI),
@@ -99,7 +102,7 @@ export const VCFO_PORTAL_TASKS: VcfoPortalTask[] = [
   row('FEMA', 'FCTRS Filing', FIRMS, RBI_FEMA),
   row('Customs', 'ICEGATE Registrations', ICEGATE, null),
   row('Customs', 'IEC Registration', DGFT_IEC, DGFT_NOTIF),
-  row('Customs', 'LUT Filing', GST_LOGIN, CBIC_GST),
+  row('Customs', 'LUT Filing', GST_LOGIN, GST_LAW),
   row('Foreign Trade', 'Non-STPI Compliance', STPI, null),
   row('Labour', 'Shops & Establishments Registration', LABOUR_TS, null),
   row('Local Compliance', 'Trade Licence', CDMA_TRADE, null),
@@ -111,17 +114,17 @@ export const VCFO_PORTAL_TASKS: VcfoPortalTask[] = [
   row('Monthly Compliances', 'Salary Disbursement', null, null),
   row('Monthly Compliances', 'TDS Payment', IT_FO, IT_NOTIF),
   row('Monthly Compliances', 'TCS Payment', IT_FO, IT_NOTIF),
-  row('Monthly Compliances', 'GSTR-1', GST_LOGIN, CBIC_GST),
-  row('Monthly Compliances', 'GSTR-3B', GST_LOGIN, CBIC_GST),
-  row('Monthly Compliances', 'PF Compliance', EPFO, null),
-  row('Monthly Compliances', 'ESI Compliance', ESIC, null),
+  row('Monthly Compliances', 'GSTR-1', GST_LOGIN, GST_LAW),
+  row('Monthly Compliances', 'GSTR-3B', GST_LOGIN, GST_LAW),
+  row('Monthly Compliances', 'PF Compliance', EPFO, EPFO_UPDATES),
+  row('Monthly Compliances', 'ESI Compliance', ESIC, ESIC_UPDATES),
   row('Monthly Compliances', 'Professional Tax Compliance', TGCT, TGCT_NOTIF),
   row('Monthly Compliances', 'Books of Accounts Closure', null, null),
   row('Monthly Compliances', 'Monthly MIS Reporting', null, null),
   row('Quarterly Compliances', 'TDS Quarterly Return', IT_FO, null),
   row('Quarterly Compliances', 'Advance Tax Payment', IT_FO, IT_NOTIF),
   row('Quarterly Compliances', 'Quarterly Finance Review', null, null),
-  row('Quarterly Compliances', 'GST Compliance under QRMP Scheme', GST_LOGIN, CBIC_GST),
+  row('Quarterly Compliances', 'GST Compliance under QRMP Scheme', GST_LOGIN, GST_LAW),
   row('Half-yearly Compliances', 'MSME Form 1', MSME, MCA_NOTIF),
   row('Yearly Compliances', 'Annual Financial Review', null, null),
   row('Yearly Compliances', 'Financial Preparation', null, null),
@@ -130,8 +133,8 @@ export const VCFO_PORTAL_TASKS: VcfoPortalTask[] = [
   row('Yearly Compliances', 'Tax Audit', IT_FO, IT_NOTIF),
   row('Yearly Compliances', 'Form 3CEB', IT_FO, IT_NOTIF),
   row('Yearly Compliances', 'Form 3CEAA', IT_FO, IT_NOTIF),
-  row('Yearly Compliances', 'GSTR-9', GST_LOGIN, CBIC_GST),
-  row('Yearly Compliances', 'GSTR-9C', GST_LOGIN, CBIC_GST),
+  row('Yearly Compliances', 'GSTR-9', GST_LOGIN, GST_LAW),
+  row('Yearly Compliances', 'GSTR-9C', GST_LOGIN, GST_LAW),
   row('Yearly Compliances', 'AOC-4', MCA_FO, MCA_NOTIF),
   row('Yearly Compliances', 'MGT-7 / MGT-7A', MCA_FO, MCA_NOTIF),
   row('Yearly Compliances', 'Annual General Meeting', MCA_FO, MCA_NOTIF),

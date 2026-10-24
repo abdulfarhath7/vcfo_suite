@@ -57,6 +57,38 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
 
+## Session 2026-10-24 — the portal list, one road for every update (branch `ask-vcfo-rag`)
+
+Owner: resume the portals in the PDF's order; every update must reach the
+manager first; the Announcements page's portal links need a few changes.
+
+- **PDF order and state** (text extracted from the owner's PDF, scratch
+  `owner-pdf/portals.pdf`): Income Tax ✓ (e-filing news), MCA ✓ (new today,
+  below), GST ✓ (portal news + CBIC), PF ✓, ESIC ✓, Professional Tax ✓
+  (Telangana announcements), IEC/DGFT ✓. RBI FEMA stays as an extra.
+- **MCA via the Gazette of India.** `mca-egazette.ts`: e-Gazette "Search by
+  Ministry" click-through in headless Chrome (`withBrowserPage` added to
+  `browser-fetch.ts`), results table → items, PDF by gazette id (plain
+  download, text layer present). October 2026 held two gazettes, both the
+  ministry's own staff matters, which the filter drops — so the first live
+  run says "listed 0". The server log line gives the raw count.
+- **One road only.** The Announcements page's "Official RSS feeds" box (staff
+  could pull any allow-listed RSS straight onto the board, no review) is
+  gone, and the 6 am `announcement-feeds` cron is no longer registered in
+  `app/api/inngest/route.ts`. The API routes under `/api/announcements/sources`
+  still exist but nothing calls them. In its place `WatchedSourcesPanel`
+  lists the watched portals with a link to the role's review queue
+  (`GET /api/ask/admin/feeds` now also answers managers).
+- **Official portals directory** (`announcement-portals.ts`): "Circular"
+  links now point at the pages on the owner's list — GST law list on the GST
+  portal (was a CBIC Hindi page), MCA ebooks notifications, Income Tax
+  notifications page, EPFO home and ESIC circulars (were empty), Telangana
+  portal home (was the 2021 PT GO page), DGFT Regulatory Updates hub.
+- Tests: `feeds-mca-egazette.test.ts`; `announcements.test.ts` PF row
+  expectation updated.
+- Seen while testing: the owner (as the real manager) is approving items —
+  the board already shows approved DGFT / RBI / CBIC updates.
+
 ## Session 2026-10-23 (late) — the owner's portals, read from the portals themselves
 
 Owner: the GST row's "Open source" went to taxinformation.cbic.gov.in, but the

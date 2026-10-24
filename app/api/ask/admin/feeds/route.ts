@@ -7,11 +7,11 @@ import { requireAsk } from '@/lib/ask/route-guard';
 /** Watching government sources can take a while on a slow government server. */
 export const maxDuration = 300;
 
-/** GET /api/ask/admin/feeds — the official sources Ask VCFO watches (admin / super admin). */
+/** GET /api/ask/admin/feeds — the official sources Ask VCFO watches (staff who see the review queue: manager, admin, super admin). */
 export async function GET() {
   const gate = await requireAsk();
   if (gate.ok === false) return gate.response;
-  if (!isFirmWideAdmin(gate.ctx.role)) return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
+  if (gate.ctx.role !== 'manager' && !isFirmWideAdmin(gate.ctx.role)) return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   return NextResponse.json({
     watchers: FEED_WATCHERS.map((w) => ({ id: w.id, label: w.label, act: w.act, homeUrl: w.homeUrl })),
   });
