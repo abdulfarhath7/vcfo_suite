@@ -57,6 +57,39 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
 
+## Session 2026-10-26 — Ask VCFO DIN lookup, step 1 (branch `ask-vcfo-rag`, uncommitted)
+
+Owner: typing a DIN in the chat should return the director's **live** details
+(not stored data), like Surepass / Karza / Signzy / Zoop do.
+
+- **Road**: staff shells only. `pipeline.ts` step 3a, after the rate limit and
+  before the guard: `findDinInMessage` → `getDinProvider().lookup` →
+  `directorLookupAnswer` (deterministic, keyFacts visual, source + IST fetch
+  time as the citation). **No model call**: rule 9 (DPDP) forbids sending a
+  DIN or director name to the model. `withoutDirectorLookups` drops DIN turns
+  from the history later model calls receive.
+- **Providers** (`src/lib/director-lookup/`): `off` (default — reply points
+  to MCA → Master Data → View Director Master Data) and `mock` (DINs 99999901
+  active, 99999902 deactivated for KYC; never in production). No paid vendor
+  yet: owner to choose. Why MCA itself is not a source:
+  `docs/context/notes/director-lookup.md`.
+- Tests: `director-lookup.test.ts` (11) + 2 pipeline tests. Ask suite 26 files
+  / 203 green; tsc 0; eslint 0 on touched files.
+- **Next**: pick a vendor and get a trial key → one provider that maps its JSON;
+  a DB cache (one paid call per DIN per day); audit row per lookup.
+
+## Session 2026-10-26 — "no updates for two days": the timer was never running
+
+Owner asked whether the sites were quiet or the tool broken. Evidence: every
+row's `created_at` matched a manual "Check now" run; no Inngest dev server on
+:8288; the dev log had no cron runs. Started `npm run inngest:dev` (background)
+and registered the app; documented in `notes/ask-feeds.md` and in the job's
+comment. A manual check on 26 Oct (a Sunday after a weekend) found 1 new DGFT
+trade notice and the next 10 of the Telangana backlog; every other portal listed
+only items already held. Also confirmed to the owner, from the database, which
+website each stored update came from (CBIC, incometax.gov.in, e-Gazette and RBI
+are the four that are not literally on the PDF; owner to decide).
+
 ## Session 2026-10-24 — the portal list, one road for every update (branch `ask-vcfo-rag`)
 
 Owner: resume the portals in the PDF's order; every update must reach the

@@ -46,6 +46,17 @@ A direct link to `SearchMenu.aspx` lands on `error.aspx`. The server log prints
 `[ask-feeds] e-Gazette Ministry of Corporate Affairs YYYY-MM: N gazette(s) listed`
 so "0 added" can be told apart from "nothing found".
 
+## The 30-minute timer needs Inngest running
+
+The cron in `src/jobs/ask-feeds.ts` is executed by Inngest, not by Next. On
+the owner's laptop that means a second terminal: `npm run inngest:dev`
+(dev server on :8288; it discovers the app at `http://localhost:3000/api/inngest`,
+or `curl -X PUT` that URL to register). Found on 2026-10-26: nothing had
+arrived for two days because no Inngest server was running — every item so
+far had come from the Sources page button. In production, `INNGEST_EVENT_KEY`
++ `INNGEST_SIGNING_KEY` on App Runner do the same job (AWS-DEPLOY.md).
+Government portals also publish almost nothing on weekends.
+
 ## Other gotchas
 
 - `MAX_AGE_DAYS = 60` and `MAX_NEW_PER_WATCHER = 10` per check: DGFT and
