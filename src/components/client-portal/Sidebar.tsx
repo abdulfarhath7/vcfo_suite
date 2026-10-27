@@ -45,13 +45,31 @@ interface NavItem extends Partial<NavLeaf> {
   kids?: NavLeaf[];
 }
 
+/**
+ * Sidebar in priority order (K-15, rules R-32 and R-34): daily work first, then
+ * dated work, messages, documents, reports and settings. While the company is
+ * incorporating, Incorporation follows Home; once it is incorporated ("After"),
+ * Compliances follows Home. Inside Compliances the order is Calendar, Filings
+ * (R-33 puts Obligations first; the portal has no Obligations page yet).
+ */
 function useNav(): NavItem[] {
-  const { shell } = usePortal();
+  const { shell, after } = usePortal();
   const unread = shell?.badges.notifications ?? 0;
   const inc = shell ? `${shell.badges.spiceDone}/${shell.badges.spiceTotal}` : undefined;
   const docs = shell?.badges.documents ?? 0;
+  const incorporation: NavItem = { k: 'incorporation', t: 'Incorporation', i: 'building-2', badge: inc };
+  const compliances: NavItem = {
+    g: 'compliances',
+    t: 'Compliances',
+    i: 'calendar-check',
+    kids: [
+      { k: 'compliances', t: 'Calendar' },
+      { k: 'filings', t: 'Filings' },
+    ],
+  };
   return [
     { k: 'home', t: 'Home', i: 'layout-dashboard' },
+    ...(after ? [compliances, incorporation] : [incorporation, compliances]),
     {
       g: 'updates',
       t: 'Updates',
@@ -63,21 +81,11 @@ function useNav(): NavItem[] {
         { k: 'notifications', t: 'Notifications', badge: unread ? String(unread) : undefined, hot: unread > 0 },
       ],
     },
-    { k: 'incorporation', t: 'Incorporation', i: 'building-2', badge: inc },
-    {
-      g: 'compliances',
-      t: 'Compliances',
-      i: 'calendar-check',
-      kids: [
-        { k: 'compliances', t: 'Calendar' },
-        { k: 'filings', t: 'Filings' },
-      ],
-    },
     { k: 'documents', t: 'Documents', i: 'folder-open', badge: docs ? String(docs) : undefined },
     { k: 'knowledge-bank', t: 'Library', i: 'library' },
     { k: 'credentials', t: 'Credentials', i: 'key-round' },
-    { k: 'team', t: 'Team', i: 'users' },
     { k: 'audit', t: 'Audit', i: 'history' },
+    { k: 'team', t: 'Team', i: 'users' },
     { k: 'settings', t: 'Settings', i: 'settings' },
   ];
 }

@@ -130,13 +130,15 @@ function updatesGroup(base: string): NavGroupDef {
   };
 }
 
+/* Sidebars in priority order (K-15, rule R-32): daily work, dated work, messages,
+   documents, then reports and settings below the break. */
 const firmAdminItems: NavEntry[] = [
   { to: '/app/admin/dashboard', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-  updatesGroup('/app/admin'),
   { to: '/app/admin/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
-  { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   { to: '/app/admin/approvals', label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
+  { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   compliancesGroup('/app/admin'),
+  updatesGroup('/app/admin'),
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/admin'),
   NAV_TOOLS_BREAK,
@@ -147,23 +149,23 @@ const firmAdminItems: NavEntry[] = [
 
 const clientItems: NavEntry[] = [
   { to: '/app/client/overview', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-  updatesGroup('/app/client'),
   { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
   compliancesGroup('/app/client'),
+  updatesGroup('/app/client'),
   { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
   { to: '/app/client/library', label: 'Library', icon: BookMarked, iconTone: TONE.knowledge },
-  { to: '/app/client/team', label: 'Team', icon: Users, iconTone: TONE.people },
   { to: '/app/client/audit', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
+  { to: '/app/client/team', label: 'Team', icon: Users, iconTone: TONE.people },
 ];
 
 const superAdminItems: NavEntry[] = [
   { to: '/app/super/dashboard', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
   { to: '/app/super/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
-  updatesGroup('/app/super'),
   { to: '/app/admin/dashboard', label: 'Firm', icon: Building2, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
-  // Firm scope, like Firm / People / Email above — super has no compliance routes of its own.
+  // Firm scope, like Firm / People / Email: super has no compliance routes of its own.
   compliancesGroup('/app/admin'),
+  updatesGroup('/app/super'),
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   { to: '/app/admin/audit-log', label: 'Firm log', icon: HistoryIcon, iconTone: TONE.audit },
   { to: '/app/client/overview', label: 'Portal', icon: Inbox, iconTone: TONE.home },
@@ -215,12 +217,12 @@ function SidebarNavBody({
   const managerItems = useMemo<NavEntry[]>(
     () => [
       { to: `${staffBase}/dashboard`, label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-      updatesGroup(staffBase),
       { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
       { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
       { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
       { to: `${staffBase}/team`, label: 'Leads', icon: UserSquare2, iconTone: TONE.people },
       compliancesGroup(staffBase),
+      updatesGroup(staffBase),
       { to: `${staffBase}/mail`, label: 'Email', icon: Mail, iconTone: TONE.work },
       docsGroup(staffBase),
       NAV_TOOLS_BREAK,
@@ -243,10 +245,10 @@ function SidebarNavBody({
       { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
       { to: '/app/intern/tasks', label: 'Work', icon: Columns3, iconTone: TONE.work },
       { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
+      ...(leadHasCompliances ? [compliancesGroup('/app/intern')] : []),
+      updatesGroup('/app/intern'),
       { to: '/app/intern/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
       docsGroup('/app/intern', Archive),
-      updatesGroup('/app/intern'),
-      ...(leadHasCompliances ? [compliancesGroup('/app/intern')] : []),
       NAV_TOOLS_BREAK,
       { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
       { to: '/app/intern/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
