@@ -83,13 +83,15 @@ function Skeleton({ after }: { after: boolean }) {
   return (
     <div className="cp-home" aria-busy="true">
       <div className={`vh-main ${after ? 'vh-a' : 'vh-b'}`}>
-        <div className="stag" style={{ gridArea: 'g' }}>
+        <div className="stag vh-g">
           <div className="sk" style={{ height: 110, borderRadius: 10 }} />
         </div>
-        <div className="stag" style={{ gridArea: after ? 'a1' : 'a' }}>{[card(160, 'a'), card(220, 'b')]}</div>
-        <div className="stag" style={{ gridArea: 'c1' }}>{[card(180, 'c'), card(140, 'd')]}</div>
-        <div className="stag" style={{ gridArea: after ? 'f' : 'b' }}>{[card(160, 'e'), card(240, 'f')]}</div>
-        <div className="stag" style={{ gridArea: after ? 'd' : 'c2' }}>{[card(160, 'g')]}</div>
+        <div className="vh-col vh-col-l">
+          <div className="stag">{[card(220, 'a'), card(160, 'b'), card(160, 'c')]}</div>
+        </div>
+        <div className="vh-col vh-col-r">
+          <div className="stag">{[card(180, 'd'), card(140, 'e'), card(160, 'f')]}</div>
+        </div>
       </div>
     </div>
   );
@@ -183,70 +185,40 @@ export function HomePage() {
 
   return (
     <div className="cp-home">
-      {h.after ? (
-        <main className="vh-main vh-a">
-          <div className="stag" style={{ gridArea: 'g' }}>
-            <div style={d(0)}><GreetCard h={h} /></div>
+      {/* Client home (K-19): the greeting, then two independent columns, the left one
+          wide and the right one 360px. Timeline and Steps come first on the left. */}
+      <main className={`vh-main ${h.after ? 'vh-a' : 'vh-b'}`}>
+        <div className="stag vh-g">
+          <div style={d(0)}><GreetCard h={h} /></div>
+        </div>
+        <div className="vh-col vh-col-l">
+          <div className="stag">
+            <div style={d(1)}><TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} /></div>
+            <div style={d(2)}><StepsCard h={h} /></div>
+            <div style={d(3)}><NeedsCard h={h} onUpload={upload} /></div>
+            {h.after ? (
+              <>
+                <div style={d(4)}><NextCard h={h} /></div>
+                <div style={d(5)}><CompCard h={h} onOpen={setComp} /></div>
+                <div style={d(6)}><AreaCard h={h} /></div>
+                <div style={d(7)}><RegCard h={h} onProof={regProof} /></div>
+                <div style={d(8)}><PostIncCard h={h} /></div>
+              </>
+            ) : (
+              <div style={d(4)}><CurrentCard h={h} onStep={setStep} /></div>
+            )}
           </div>
-          <div className="vh-col vh-col-l">
-            <div className="stag" style={{ gridArea: 'a1' }}>
-              <div style={d(1)}><NeedsCard h={h} onUpload={upload} /></div>
-              <div style={d(2)}><NextCard h={h} /></div>
-            </div>
-            <div className="stag" style={{ gridArea: 'a2' }}>
-              <div style={d(5)}><CompCard h={h} onOpen={setComp} /></div>
-            </div>
+        </div>
+        <div className="vh-col vh-col-r">
+          <div className="stag">
+            <div style={d(2)}><AlertsCard h={h} /></div>
+            <div style={d(3)}><SbcCard h={h} /></div>
+            {h.after ? <div style={d(4)}><IdsCard h={h} onReveal={setReveal} onCoi={coiOpen} /></div> : null}
+            <div style={d(5)}><DocsCard h={h} onOpen={docsIdx} /></div>
+            <div style={d(6)}><ActivityCard h={h} /></div>
           </div>
-          <div className="vh-col vh-col-r">
-            <div className="stag" style={{ gridArea: 'c1' }}>
-              <div style={d(3)}><AlertsCard h={h} /></div>
-              <div style={d(4)}><SbcCard h={h} /></div>
-            </div>
-            <div className="stag" style={{ gridArea: 'c2' }}>
-              <div style={d(6)}><IdsCard h={h} onReveal={setReveal} onCoi={coiOpen} /></div>
-            </div>
-          </div>
-          <div className="stag" style={{ gridArea: 'f' }}>
-            <div style={d(7)}><AreaCard h={h} /></div>
-            <div style={d(8)}><RegCard h={h} onProof={regProof} /></div>
-            <div style={d(9)}><PostIncCard h={h} /></div>
-            <div style={d(10)}><TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} /></div>
-            <div style={d(11)}><StepsCard h={h} /></div>
-          </div>
-          <div className="stag" style={{ gridArea: 'd' }}>
-            <div style={d(12)}><DocsCard h={h} onOpen={docsIdx} /></div>
-          </div>
-          <div className="stag" style={{ gridArea: 'e' }}>
-            <div style={d(13)}><ActivityCard h={h} /></div>
-          </div>
-        </main>
-      ) : (
-        <main className="vh-main vh-b">
-          <div className="stag" style={{ gridArea: 'g' }}>
-            <div style={d(0)}><GreetCard h={h} /></div>
-          </div>
-          <div className="vh-col vh-col-l">
-            <div className="stag" style={{ gridArea: 'a' }}>
-              <div style={d(1)}><NeedsCard h={h} onUpload={upload} /></div>
-              <div style={d(2)}><CurrentCard h={h} onStep={setStep} /></div>
-            </div>
-            <div className="stag" style={{ gridArea: 'b' }}>
-              <div style={d(5)}><TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} /></div>
-              <div style={d(6)}><StepsCard h={h} /></div>
-            </div>
-          </div>
-          <div className="vh-col vh-col-r">
-            <div className="stag" style={{ gridArea: 'c1' }}>
-              <div style={d(3)}><AlertsCard h={h} /></div>
-              <div style={d(4)}><SbcCard h={h} /></div>
-            </div>
-            <div className="stag" style={{ gridArea: 'c2' }}>
-              <div style={d(7)}><DocsCard h={h} onOpen={docsIdx} /></div>
-              <div style={d(8)}><ActivityCard h={h} /></div>
-            </div>
-          </div>
-        </main>
-      )}
+        </div>
+      </main>
       {overlays}
     </div>
   );

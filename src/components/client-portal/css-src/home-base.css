@@ -32,30 +32,16 @@ th{font-size:11px}
 .vh-search{width:256px;padding:0 10px 0 12px}
 .vh-main{box-sizing:border-box;width:100%;max-width:1600px;margin-inline:auto;padding:clamp(12px,2vw,24px);display:grid;gap:16px;align-items:start;grid-template-columns:minmax(0,1fr)}
 .vh-main>.stag,.vh-col>.stag{display:flex;flex-direction:column;gap:16px;min-width:0}
-/* Left / right card columns: plain grid items below 1180px and from 1800px
-   (display:contents), independent flex columns in the two-column board so a
-   tall right column never leaves a gap under the left one (prototype). */
-.vh-col{display:contents}
-.vh-b{grid-template-areas:"g" "a" "c1" "b" "c2"}
-.vh-a{grid-template-areas:"g" "a1" "c1" "a2" "c2" "f" "d" "e"}
-@media (min-width:600px){
- .vh-b{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"g g" "a a" "c1 c2" "b b"}
- .vh-a{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"g g" "a1 a1" "c1 a2" "c1 c2" "f f" "d e";grid-template-rows:auto auto auto 1fr}
-}
+/* Client home (K-19): greeting on top, then two independent columns. From 1180px the
+   left column is wide and the right one is 360px; below that they stack. Each column
+   is its own flex stack, so a tall right column never leaves a gap on the left. */
+.vh-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.vh-g{grid-area:g}
+.vh-col-l{grid-area:L}
+.vh-col-r{grid-area:R}
+.vh-b,.vh-a{grid-template-columns:minmax(0,1fr);grid-template-areas:"g" "L" "R"}
 @media (min-width:1180px){
- .vh-b{grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-areas:"g g" "a c1" "a c2" "b c2";grid-template-rows:auto auto 1fr auto}
- .vh-a{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"g g g g g g" "a1 a1 a1 a1 c1 c1" "a1 a1 a1 a1 c2 c2" "a2 a2 a2 a2 c2 c2" "f f f f f f" "d d d e e e";grid-template-rows:auto auto 1fr auto}
-}
-@media (min-width:1180px) and (max-width:1799.98px){
- .vh-col{display:flex;flex-direction:column;gap:16px;min-width:0}
- .vh-col-l{grid-area:L}
- .vh-col-r{grid-area:R}
- .vh-b{grid-template-areas:"g g" "L R";grid-template-rows:auto auto}
- .vh-a{grid-template-areas:"g g g g g g" "L L L L R R" "f f f f f f" "d d d e e e";grid-template-rows:auto auto auto auto}
-}
-@media (min-width:1800px){
- .vh-b{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"g g g" "a c1 c2" "b b c2";grid-template-rows:auto auto 1fr}
- .vh-a{grid-template-areas:"g g g g g g" "a1 a1 a2 a2 c1 c1" "a1 a1 c2 c2 c1 c1" "f f f f f f" "d d d e e e";grid-template-rows:auto auto 1fr}
+ .vh-b,.vh-a{grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"g g" "L R";grid-template-rows:auto auto}
 }
 @media (max-width:1099px){
  .vh-search{width:36px;padding:0;justify-content:center}
