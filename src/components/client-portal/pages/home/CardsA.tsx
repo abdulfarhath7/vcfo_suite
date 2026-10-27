@@ -495,6 +495,9 @@ function sbcDrill(rows: SbcRow[], active: number, lead?: string): DrillConfig {
   };
 }
 
+/** Category colours for the What SBC is doing bars: blue, violet, teal, green. */
+const SBC_BAR = ['oklch(var(--brand))', 'oklch(var(--identity))', 'oklch(var(--info))', 'oklch(var(--positive-mid))'];
+
 export function SbcCard({ h }: { h: HomeData }) {
   const rows = buildSbcRows(h);
   return (
@@ -502,26 +505,24 @@ export function SbcCard({ h }: { h: HomeData }) {
       <section className="card">
         <CardHead title="What SBC is doing" />
         <div style={{ padding: '6px 16px 12px' }}>
-          {rows.map((r) => (
-            <div key={r.key} style={{ padding: '9px 0', borderTop: '1px solid var(--hair)' }}>
+          {/* K-23 (audit 160): bars in category colours; no info icons or link buttons.
+              The title opens the work item. */}
+          {rows.map((r, i) => (
+            <div key={r.key} style={{ padding: '9px 0', borderTop: i ? '1px solid var(--hair)' : 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="rt" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {r.title}
-                  <InfoPopover askAbout={r.title}>{r.info}</InfoPopover>
-                </span>
-                {r.pct != null ? <span className="pct">{r.pct}%</span> : null}
                 <a
+                  className="rt"
                   href={r.href}
                   onClick={(e) => {
                     e.preventDefault();
                     h.portal.go(r.href);
                   }}
-                  aria-label={r.linkLabel}
-                  title={r.linkLabel}
-                  style={{ width: 26, height: 26, borderRadius: 6, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}
+                  title={r.info}
+                  style={{ flex: 1, minWidth: 0, color: 'inherit', fontWeight: 600 }}
                 >
-                  <Ico n="link" size={13} sw={2} />
+                  {r.title}
                 </a>
+                {r.pct != null ? <span className="pct">{r.pct}%</span> : null}
               </div>
               <div style={{ marginTop: 6 }}>
                 <Tip
@@ -530,7 +531,7 @@ export function SbcCard({ h }: { h: HomeData }) {
                   style={{ display: 'block' }}
                 >
                   <div className="bar" style={{ height: 6 }}>
-                    <span style={{ width: `${r.pct ?? 100}%`, background: r.pct === 0 ? 'var(--up)' : r.pct == null ? 'var(--prog-light)' : 'var(--prog)' }} />
+                    <span style={{ width: `${r.pct ?? 100}%`, background: r.pct === 0 ? 'var(--up)' : SBC_BAR[i % SBC_BAR.length] }} />
                   </div>
                 </Tip>
               </div>
