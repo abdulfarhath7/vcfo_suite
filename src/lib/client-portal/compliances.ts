@@ -202,9 +202,13 @@ export function countByStatus(rows: PortalFiling[], today: string): Record<CompS
   for (const r of rows) c[statusOf(r, today)]++;
   return c;
 }
-/** Tile colour var: upcoming tiles are navy (the donut keeps --up grey). */
+/** Date tile ground (K-30, audit 162): a soft tint of the status, never a solid block. */
 export function tileVar(s: CompStatus): string {
-  return s === 'up' ? 'var(--navy)' : `var(${ST[s].v})`;
+  return `var(${ST[s].v}-light)`;
+}
+/** Date tile text: the status's text-safe colour, paired with tileVar. */
+export function tileInk(s: CompStatus): string {
+  return `var(${ST[s].v}-text)`;
 }
 export function sortByDue<T extends { dueDate: string; name?: string }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || (a.name ?? '').localeCompare(b.name ?? ''));

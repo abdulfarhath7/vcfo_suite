@@ -102,10 +102,10 @@ button{font-family:inherit}
 .day.s-over{background:var(--over-light);border-color:light-dark(oklch(85% 0.07 20), oklch(32% 0.1 20))}
 .day.s-due{background:var(--due-light);border-color:light-dark(oklch(87% 0.08 60), oklch(32% 0.1 60))}
 .day.s-ok{background:var(--ok-light);border-color:light-dark(oklch(86% 0.06 170), oklch(32% 0.1 170))}
-.day.s-up .dt{background:var(--navy);color:#fff}
-.day.s-over .dt{background:var(--over);color:#fff}
-.day.s-due .dt{background:var(--due);color:#fff}
-.day.s-ok .dt{background:var(--ok);color:#fff}
+.day.s-up .dt{background:var(--up-light);color:var(--up-text)}
+.day.s-over .dt{background:var(--over-light);color:var(--over-text)}
+.day.s-due .dt{background:var(--due-light);color:var(--due-text)}
+.day.s-ok .dt{background:var(--ok-light);color:var(--ok-text)}
 .day.today{box-shadow:0 0 0 2px var(--navy)}
 .day.today .tlabel{font:800 11px var(--font-sans);min-width:0;white-space:nowrap;color:var(--navy-ink,var(--navy));display:flex;align-items:center;gap:4px}
 .pulse{width:7px;height:7px;border-radius:99px;background:var(--gold);animation:pulse 1.8s ease-in-out infinite}
@@ -119,9 +119,9 @@ button{font-family:inherit}
 /* agenda */
 .ag-date{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--hair)}
 .ag-date:first-child{border-top:0}
-.dtile{width:44px;height:48px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:#fff}
+.dtile{width:44px;height:48px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:var(--fg)}
 .dtile b{font:700 18px/1 var(--font-sans)}
-.dtile small{font:800 11px var(--font-sans);opacity:.85;margin-top:2px}
+.dtile small{font:600 11px var(--font-sans);margin-top:2px}
 .ag-items{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .ag-it{display:flex;align-items:center;gap:8px;min-width:0}
 .ag-it .nm{font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
@@ -245,23 +245,24 @@ circle[data-dd]{transition:stroke-width .15s}circle[data-dd]:hover{stroke-width:
 /* --- FINAL calendar grid lines + year view (I:358-391) --- */
 /* ---------- calendar · grid lines (Calendar Date Separation, option 1) ----------
    one table: thin lines between every date, tinted weekday header, today = the whole navy-outlined box */
-.cal{gap:0;border:1px solid #9aa8bb;border-bottom:0;border-radius:8px;overflow:hidden;background:var(--panel)}
+.cal{gap:0;border:1px solid var(--hair);border-bottom:0;border-radius:8px;overflow:hidden;background:var(--panel)}
 .cal .dow{padding:7px 8px;background:oklch(var(--surface-sunken));border-bottom:1px solid #9aa8bb;color:var(--muted)}
 .cal .dow.we{color:var(--muted)}
-.cal .day{height:96px;border:0;border-radius:0;border-right:1px solid #9aa8bb;border-bottom:1px solid #9aa8bb;background:var(--panel);padding:7px 8px;transition:background .15s}
+.cal .day{height:96px;border:0;border-radius:0;border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);background:var(--panel);padding:7px 8px;transition:background .15s}
 .cal>:nth-child(7n){border-right:0}
-.cal .day:hover{transform:none;box-shadow:none;border-color:oklch(var(--line-strong));background:oklch(var(--surface))}
-.cal .day.out,.cal .day.out:hover{background:var(--panel);border-style:solid;border-color:oklch(var(--line-strong))}
+.cal .day:hover{transform:none;box-shadow:none;border-color:var(--hair);background:oklch(var(--surface))}
+.cal .day.out,.cal .day.out:hover{background:var(--panel);border-style:solid;border-color:var(--hair)}
 .cal .day.out .dt{color:#a9b4c4}
-.cal .day.we:not(.out),.cal .day.s-over,.cal .day.s-due,.cal .day.s-ok{background:var(--panel);border-color:oklch(var(--line-strong))}
+.cal .day.we:not(.out),.cal .day.s-over,.cal .day.s-due,.cal .day.s-ok{background:var(--panel);border-color:var(--hair)}
 .cal .day.we:not(.out):hover,.cal .day.s-over:hover,.cal .day.s-due:hover,.cal .day.s-ok:hover{background:oklch(var(--surface))}
 .cal .dt{min-width:24px;height:24px;border-radius:4px;font:700 13px var(--font-sans),sans-serif}
-.cal .day.today{box-shadow:inset 0 0 0 2px var(--navy);background:oklch(var(--surface-sunken))}
+.cal .day.today{box-shadow:none;background:var(--prog-light)}
+.cal .day.today .dt{color:var(--prog-text)}
 /* today keeps its tint on a weekend / status day too (.we:not(.out) is more specific) */
-.cal .day.today:not(.out){background:oklch(var(--surface-sunken))}
+.cal .day.today:not(.out){background:var(--prog-light)}
 .cal .day.today .tlabel{display:none}
 .cal .day.sel{box-shadow:inset 0 0 0 2px var(--primary);z-index:auto}
-.cal .day.today.sel{box-shadow:inset 0 0 0 2px var(--navy),inset 0 0 0 4px var(--primary)}
+.cal .day.today.sel{box-shadow:inset 0 0 0 2px var(--primary)}
 .cal .ev{height:20px;padding:0 6px 0 0;gap:6px;border-radius:3px;background:oklch(var(--surface-sunken));font-weight:600}
 .cal .ev i{border-radius:3px 0 0 3px}
 .cal .ev .a{display:none}

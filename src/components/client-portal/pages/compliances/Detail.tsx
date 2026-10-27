@@ -17,6 +17,7 @@ import {
   focusNodes,
   plural,
   statusOf,
+  tileInk,
   tileVar,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
@@ -90,7 +91,7 @@ export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; on
       <div className="modal cdet" role="dialog" aria-modal="true" aria-labelledby="comp-det-t" ref={ref}>
         <span className="sheet-grab" aria-hidden="true" />
         <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--hair)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-          <div className="dtile" style={{ background: tileVar(s), width: 56, height: 62 }}>
+          <div className="dtile" style={{ background: tileVar(s), color: tileInk(s), width: 56, height: 62 }}>
             <b style={{ fontSize: 24 }}>{d.getUTCDate()}</b>
             {/* month and weekday on their own lines: "OCT · SAT" does not fit the 56 px tile (CP-12) */}
             <small>{MON[d.getUTCMonth()]}</small>
@@ -187,7 +188,7 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
       <div className="modal fpan" role="dialog" aria-modal="true" aria-labelledby="comp-pan-t" ref={ref}>
         <span className="sheet-grab" aria-hidden="true" />
         <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--hair)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-          <div className="dtile" style={{ background: tileVar(s), width: 56, height: 62 }}>
+          <div className="dtile" style={{ background: tileVar(s), color: tileInk(s), width: 56, height: 62 }}>
             <b style={{ fontSize: 24 }}>{d.getUTCDate()}</b>
             <small>{MON[d.getUTCMonth()]}</small>
           </div>

@@ -31,6 +31,7 @@ import {
   sortByDue,
   statusOf,
   stepMonth,
+  tileInk,
   tileVar,
   todayIso,
   type AreaFilter,
@@ -397,7 +398,7 @@ function FilRow({
       }}
     >
       <td>
-        <div className="dtile" style={{ width: 38, height: 42, background: tileVar(s) }}>
+        <div className="dtile" style={{ width: 38, height: 42, background: tileVar(s), color: tileInk(s) }}>
           <b style={{ fontSize: 15 }}>{Number(r.dueDate.slice(8))}</b>
           <small>{MON[Number(r.dueDate.slice(5, 7)) - 1]}</small>
         </div>

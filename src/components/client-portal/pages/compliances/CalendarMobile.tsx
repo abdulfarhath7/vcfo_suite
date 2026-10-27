@@ -22,6 +22,7 @@ import {
   sortByDue,
   statusOf,
   tileSub,
+  tileInk,
   tileVar,
   weekOf,
   worstStatus,
@@ -210,7 +211,7 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
                   onClick={() => set({ filing: r.id })}
                   style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 56, background: 'light-dark(#fff, oklch(13% 0 89.9))', border: '1px solid var(--border)', borderRadius: 10, padding: 8 }}
                 >
-                  <div className="dtile" style={{ background: tileVar(s), width: 40, height: 44 }}>
+                  <div className="dtile" style={{ background: tileVar(s), color: tileInk(s), width: 40, height: 44 }}>
                     <b style={{ fontSize: 16 }}>{Number(r.dueDate.slice(8))}</b>
                     <small>{tileSub(r.dueDate, (week[3] ?? today).slice(0, 7))}</small>
                   </div>

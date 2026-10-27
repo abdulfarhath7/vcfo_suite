@@ -39,6 +39,7 @@ import {
   sortByDue,
   statusOf,
   stepMonth,
+  tileInk,
   tileVar,
   todayIso,
   worstStatus,
@@ -485,7 +486,7 @@ const DayPopover = forwardRef<
   return (
     <div className={`dpop${cls}`} ref={ref} style={style} role="dialog" aria-label={fmtLong(iso)}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <div className="dtile" style={{ background: tileVar(s), width: 40, height: 44 }}>
+        <div className="dtile" style={{ background: tileVar(s), color: tileInk(s), width: 40, height: 44 }}>
           <b style={{ fontSize: 16 }}>{d}</b>
           <small>{dow(iso)}</small>
         </div>
@@ -763,7 +764,7 @@ function ComingUp({ rows, onOpen }: { rows: PortalFiling[]; onOpen: (f: PortalFi
           const s = worstStatus(list, today);
           return (
             <div key={d} className="ag-date">
-              <div className="dtile" style={{ background: tileVar(s) }}>
+              <div className="dtile" style={{ background: tileVar(s), color: tileInk(s) }}>
                 <b>{Number(d.slice(8))}</b>
                 <small>{tileSub(d, today.slice(0, 7))}</small>
               </div>

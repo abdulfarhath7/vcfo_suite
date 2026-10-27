@@ -1971,6 +1971,7 @@ html[data-reduce-motion="true"] .discrete-panel {
 .stat-cal-cell:hover:not(.is-outside) {
   background: oklch(var(--muted));
 }
+/* Today in soft blue (K-30, audit 162), not a solid fill. */
 .stat-cal-cell[data-today="true"] .stat-cal-cell-num {
   display: inline-flex;
   align-items: center;
@@ -1978,8 +1979,8 @@ html[data-reduce-motion="true"] .discrete-panel {
   width: 1.35rem;
   height: 1.35rem;
   border-radius: 999px;
-  background: oklch(var(--primary));
-  color: oklch(var(--primary-foreground));
+  background: oklch(var(--brand-soft));
+  color: oklch(var(--brand));
   font-weight: 700;
 }
 .stat-cal-cell[data-selected="true"] {
@@ -2185,8 +2186,8 @@ html[data-reduce-motion="true"] .discrete-panel {
   width: 1.5rem;
   height: 1.3rem;
   border-radius: 999px;
-  background: oklch(var(--primary));
-  color: oklch(var(--primary-foreground));
+  background: oklch(var(--brand-soft));
+  color: oklch(var(--brand));
   font-weight: 700;
 }
 
