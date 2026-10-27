@@ -90,7 +90,7 @@ button{font:inherit;color:inherit}
 .ring:focus-visible,.hbtn:focus-visible,.hback:focus-visible{outline:2px solid var(--gold-2);outline-offset:2px}
 /* ---------- landing row 2 ---------- */
 .r2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:16px}
-.coi{position:relative;overflow:hidden;border-radius:12px;color:#fff;background:linear-gradient(120deg,#0f2a4a 0%,#173f74 100%);padding:clamp(16px,2vw,22px) clamp(16px,2vw,20px) 20px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--pop)}
+.coi{position:relative;overflow:hidden;border-radius:10px;color:#fff;background:var(--hero-gradient);padding:clamp(16px,2vw,22px) clamp(16px,2vw,20px) 20px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--pop)}
 .coi:after{content:none}
 .coi .t1{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
 .big{display:inline-flex;align-items:baseline;gap:10px;border:0;background:none;color:#fff;padding:0;cursor:pointer;text-align:left;border-radius:6px}
@@ -105,7 +105,9 @@ button{font:inherit;color:inherit}
 .pill{display:flex;align-items:center;gap:12px;width:100%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);border-radius:9px;padding:7px 12px;color:#fff;cursor:pointer;font:600 13.5px var(--font-sans),sans-serif;text-align:left}
 .pill:hover{background:rgba(255,255,255,.13)}
 .pill .tr{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;min-width:40px}
-.pill .tr i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#1fb488,#2fd3a0)}
+.pill .tr i{display:block;height:100%;border-radius:99px;background:oklch(var(--positive-mid))}
+.pill .tr-ph{display:flex;gap:3px;background:none;border-radius:0}
+.pill .tr-ph>span{height:100%;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;min-width:6px}
 .pill b{font:700 15px var(--disp)}
 .week{padding:14px 18px 12px}
 .week .ch{padding:0 0 8px}

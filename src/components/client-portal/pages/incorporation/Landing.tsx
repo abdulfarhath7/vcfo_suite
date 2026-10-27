@@ -33,7 +33,6 @@ import {
   pd,
   useCountUp,
   wd,
-  type InfoSpec,
 } from './ui';
 import {
   INFO_WHY,
@@ -276,40 +275,7 @@ export default function IncorporationLanding() {
     [drill, d.coiExpected],
   );
 
-  const coiInfo: InfoSpec = showAfter
-    ? {
-        title: 'About the incorporation date',
-        text: `${short} was incorporated on ${wd(d.coiDate!)} ${fmtY(d.coiDate!)}, the date on the Certificate of Incorporation. Every post-incorporation deadline counts from it.`,
-        answer: { title: 'Incorporation date', text: `The date on ${short}’s Certificate of Incorporation.`, why: INFO_WHY.coi, source: `VCFO Suite · ${short}’s incorporation project`, href: portalHref('incorporation') },
-      }
-    : {
-        title: 'Days to COI',
-        text: `Counts down to the end of the incorporation window ${short}’s manager set${coiEnd ? ` (${wd(coiEnd)} ${fmtY(coiEnd)})` : ''}. After the Certificate of Incorporation it shows the real incorporation date.`,
-        answer: {
-          title: 'Days to COI',
-          text: `Counts down to the end of the incorporation window ${short}’s manager set. After the Certificate of Incorporation it shows the real incorporation date.`,
-          why: INFO_WHY.coi,
-          source: `VCFO Suite · ${short}’s incorporation project`,
-          href: portalHref('incorporation'),
-        },
-      };
 
-  const ringBtn = (
-    <button
-      type="button"
-      className="ring"
-      aria-label={`SPICe+ progress · ${spice.pct}% · ${spice.done} of ${spice.total} steps done`}
-      data-tt={`SPICe+ · ${spice.done} of ${spice.total} steps done`}
-      data-notip=""
-      onClick={drillRing}
-    >
-      <span className="rw">
-        <RingSvg pct={spice.pct} />
-        <span className="pc">{spice.pct}%</span>
-      </span>
-      <small>SPICe+</small>
-    </button>
-  );
 
   const openCert = () => {
     if (!d.certificate) return;
@@ -354,11 +320,9 @@ export default function IncorporationLanding() {
               <b>{fmt(d.coiDate)}</b>
               <span>incorporated</span>
             </button>
-            <InfoBtn label="About the incorporation date" spec={coiInfo} />
             <span className="tr1">
               {tileBtns}
               {coiEnd ? <EarlyChip coi={d.coiDate!} end={coiEnd} /> : null}
-              {ringBtn}
             </span>
           </>
         ) : (
@@ -387,7 +351,6 @@ export default function IncorporationLanding() {
                 </>
               )}
             </button>
-            <InfoBtn label="About days to COI" spec={coiInfo} />
             <span className="tr1">
               {tileBtns}
               {you ? (
@@ -405,7 +368,6 @@ export default function IncorporationLanding() {
                   At risk · step {you.n}
                 </a>
               ) : null}
-              {ringBtn}
             </span>
           </>
         )}
@@ -443,8 +405,14 @@ export default function IncorporationLanding() {
         <span>
           {all.done} / {all.total} steps
         </span>
-        <span className="tr">
-          <i style={{ width: `${Math.max(all.pct, 2)}%` }} />
+        {/* One bar split by phase (K-26): each segment is as wide as its phase's step count
+            and fills with the steps done in that phase. */}
+        <span className="tr tr-ph">
+          {model.phases.map((p) => (
+            <span key={p.id} style={{ flex: `${p.total} 0 0` }}>
+              <i style={{ width: `${p.total ? Math.round((p.done / p.total) * 100) : 0}%` }} />
+            </span>
+          ))}
         </span>
         <b>{all.pct}%</b>
       </button>
