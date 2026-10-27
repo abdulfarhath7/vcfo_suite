@@ -51,19 +51,19 @@
 .vps .vps-me{position:relative;padding:8px 10px 12px;border-top:1px solid rgba(255,255,255,.1)}
 .vps .vps-meb{width:100%;display:flex;align-items:center;gap:10px;padding:6px;border-radius:8px;text-align:left;transition:background .15s}
 .vps .vps-mest{width:100%;display:flex;align-items:center;gap:10px;padding:6px;border-radius:8px}
-.vps .vps-mest .vps-nm{flex:1;min-width:0}.vps .vps-mest .vps-nm b{display:block;font-size:13px;font-weight:650}.vps .vps-mest .vps-nm small{display:block;font-size:11px;color:#a9b6c9}
-.vps .vps-out{flex:none;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;color:#a9b6c9;transition:background .15s,color .15s}
+.vps .vps-mest .vps-nm{flex:1;min-width:0}.vps .vps-mest .vps-nm b{display:block;font-size:13px;font-weight:650}.vps .vps-mest .vps-nm small{display:block;font-size:11px;color:oklch(var(--side-muted))}
+.vps .vps-out{flex:none;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;color:oklch(var(--side-muted));transition:background .15s,color .15s}
 .vps .vps-out:hover{background:rgba(255,255,255,.12);color:#fff}
 .vps .vps-out:focus-visible{outline:2px solid light-dark(#fff, oklch(22% 0 89.9));outline-offset:2px}
 .vps.vps-icons .vps-mest-rail{flex-direction:column;gap:6px;padding:0}
 .vps .vps-meb:hover,.vps .vps-meb[aria-current=page]{background:rgba(255,255,255,.08)}
 .vps .vps-a{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#2e5cff;font:800 11px var(--font-sans),sans-serif;color:#fff;flex:0 0 auto}
-.vps .vps-meb .vps-nm{flex:1;min-width:0}.vps .vps-meb .vps-nm b{display:block;font-size:13px;font-weight:650}.vps .vps-meb .vps-nm small{display:block;font-size:11px;color:#a9b6c9}
+.vps .vps-meb .vps-nm{flex:1;min-width:0}.vps .vps-meb .vps-nm b{display:block;font-size:13px;font-weight:650}.vps .vps-meb .vps-nm small{display:block;font-size:11px;color:oklch(var(--side-muted))}
 .vps .vps-meb .vps-cv{transform:rotate(-90deg)}.vps .vps-meb[aria-expanded=true] .vps-cv{transform:rotate(90deg)}
-.vps .vps-menu{position:absolute;left:10px;right:10px;bottom:calc(100% - 4px);padding:6px;border-radius:10px;background:light-dark(#fff, oklch(13% 0 89.9));color:light-dark(#0f1b2d, oklch(91.2% 0.028 258.3));box-shadow:var(--pop);transform-origin:50% 100%;transform:translateY(6px) scale(.97);opacity:0;visibility:hidden;transition:transform .2s cubic-bezier(.22,1,.36,1),opacity .15s}
+.vps .vps-menu{position:absolute;left:10px;right:10px;bottom:calc(100% - 4px);padding:6px;border-radius:10px;background:oklch(var(--surface-raised));color:oklch(var(--ink));box-shadow:var(--pop);transform-origin:50% 100%;transform:translateY(6px) scale(.97);opacity:0;visibility:hidden;transition:transform .2s cubic-bezier(.22,1,.36,1),opacity .15s}
 .vps .vps-menu.on{transform:none;opacity:1;visibility:visible}
-.vps .vps-menu button{width:100%;display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:7px;color:light-dark(#0f2a4a, oklch(88.7% 0.047 254.4))!important;font-weight:600}
-.vps .vps-menu button:hover{background:light-dark(#f1f4f8, oklch(18.1% 0.006 255.5))}
+.vps .vps-menu button{width:100%;display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:7px;color:oklch(var(--ink))!important;font-weight:600}
+.vps .vps-menu button:hover{background:oklch(var(--surface-sunken))}
 .vps .vps-menu button svg{color:#5b6b82}
 .vps .vps-sr,.vps.vps-icons .vps-i .vps-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 .vps.vps-icons .vps-logo{justify-content:center;height:58px;padding:0}
@@ -88,7 +88,7 @@
 @keyframes vpsfly{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
 .vps .vps-fh{padding:8px 10px 6px;font:800 11px/1.3 var(--font-sans),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#d8b25a}
 .vps .vps-fh.who{font:700 13.5px/1.3 var(--font-sans),sans-serif;letter-spacing:normal;text-transform:none;color:#fff}
-.vps .vps-fh.who small{display:block;margin-top:1px;font:500 12px/1.35 var(--font-sans),sans-serif;color:#a9b6c9}
+.vps .vps-fh.who small{display:block;margin-top:1px;font:500 12px/1.35 var(--font-sans),sans-serif;color:oklch(var(--side-muted))}
 .vps .vps-fi{position:relative;display:flex;align-items:center;gap:10px;width:100%;height:40px;padding:0 10px;border-radius:8px;font-size:13.5px;font-weight:600;color:#d5deea;text-align:left;white-space:nowrap;transition:background .15s,color .15s}
 .vps .vps-fi:hover{background:rgba(255,255,255,.08);color:#fff}
 .vps .vps-fi[aria-current=page]{background:rgba(255,255,255,.13);color:#fff;box-shadow:inset 3px 0 0 #6e96ff}
@@ -132,7 +132,7 @@
 #vp-drawer .vps-c button{width:40px;height:40px;border-radius:9px}
 #vp-drawer .vps-meb{min-height:48px}
 #vp-drawer .vps-menu button{height:44px}
-.vps.vps-mbar{top:0;left:0;right:0;width:auto;height:var(--vp-menu-offset,56px);z-index:44;flex-direction:row;align-items:center;gap:10px;padding:0 8px;overflow:visible;background:light-dark(#fff, oklch(13% 0 89.9));color:light-dark(#0f2a4a, oklch(88.7% 0.047 254.4));box-shadow:0 1px 0 #e3e8ef}
+.vps.vps-mbar{top:0;left:0;right:0;width:auto;height:var(--vp-menu-offset,56px);z-index:44;flex-direction:row;align-items:center;gap:10px;padding:0 8px;overflow:visible;background:oklch(var(--surface-raised));color:oklch(var(--ink));box-shadow:0 1px 0 #e3e8ef}
 .vps .vps-mb{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:oklch(var(--navy-fill));color:#fff}
 .vps .vps-mbl{display:block;height:28px;width:auto;max-width:120px;object-fit:contain}
 html[data-vp-menu-fallback] body{padding-top:var(--vp-menu-offset,56px)!important}

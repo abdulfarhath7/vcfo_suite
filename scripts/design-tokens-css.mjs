@@ -91,7 +91,7 @@ const ALIASES = `
 
 const block = [
   START,
-  '  :root {',
+  '  :root, [data-theme="light"] {',
   '    /* ---- Colour: OKLCH channel triplets, light theme ---- */',
   ...lines('light'),
   '',

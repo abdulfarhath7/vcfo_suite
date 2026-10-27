@@ -38,7 +38,7 @@ html .dtile .m{font-size:11px;letter-spacing:.06em}
 @keyframes tbsheet{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
 /* the rule-16 bubble used by the boards (bot + bubble) */
 .tb-bot{display:flex;align-items:flex-end;justify-content:center;gap:10px}
-.tb-bot .bface{border-radius:99px;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255));box-shadow:var(--pop),0 0 0 1px var(--border);display:grid;place-items:center;flex:none;overflow:hidden}
+.tb-bot .bface{border-radius:99px;background:oklch(var(--surface-sunken));box-shadow:var(--pop),0 0 0 1px var(--border);display:grid;place-items:center;flex:none;overflow:hidden}
 .tb-bot .bface.ans{box-shadow:var(--pop),0 0 0 2px oklch(72% 0.15 160 / .6)}
 .tb-bubble{max-width:300px;background:var(--panel);border:1px solid var(--border);border-radius:10px 10px 10px 3px;padding:10px 12px;box-shadow:var(--shadow)}
 @media (prefers-reduced-motion: reduce){.tb-ov.tb-sheet>.dlg{animation:none}}

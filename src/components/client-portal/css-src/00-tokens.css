@@ -1,6 +1,6 @@
 /* @cp-scope shared */
 /* Client portal design tokens. Light values: prototype b/ecdc…css :root.
-   Dark ("True black") values: prototype proto.js #vp-dark. Fonts: the
+   Dark values (slate, K-41): prototype proto.js #vp-dark. Fonts: the
    prototype's own woff2 files, served from /client-portal/fonts. */
 /* The prototype is plain HTML on browser defaults; the app's Tailwind
    preflight would change box sizes, image/svg display and form controls.
@@ -35,19 +35,15 @@ html[data-theme="dark"]{color-scheme:dark;
 --with:oklch(var(--owner-sbc));--with-light:oklch(var(--owner-sbc-soft));--with-text:oklch(var(--owner-sbc));
 --own-you:oklch(var(--owner-client-soft));--own-you-t:oklch(var(--owner-client));--own-sbc:oklch(var(--owner-sbc-soft));--own-sbc-t:oklch(var(--owner-sbc));
 --folder:oklch(var(--brand));--folder-open:oklch(var(--brand-strong));--sk:oklch(var(--surface-sunken));--cv:oklch(var(--surface-sunken));
---shadow:var(--shadow-card);--pop:var(--shadow-float);background:#000}
-html[data-theme="dark"] .vps{background:#000!important}
-html[data-theme="dark"] .vps:not(.vps-mbar){box-shadow:inset -1px 0 0 oklch(20% 0.008 260)}
-html[data-theme="dark"] .vps .vps-i[aria-current=page]{background:oklch(17% 0.02 260)}
-html[data-theme="dark"] .vps.vps-icons .vps-i .vps-b{box-shadow:0 0 0 2px #000}
+--shadow:var(--shadow-card);--pop:var(--shadow-float);background:var(--bg)}
+html[data-theme="dark"] .vps{background:oklch(var(--side))!important}
+html[data-theme="dark"] .vps:not(.vps-mbar){box-shadow:inset -1px 0 0 oklch(var(--side-line))}
+html[data-theme="dark"] .vps .vps-i[aria-current=page]{background:oklch(var(--side-active))}
+html[data-theme="dark"] .vps.vps-icons .vps-i .vps-b{box-shadow:0 0 0 2px oklch(var(--side))}
 html[data-theme="dark"] .tgl::after{background:oklch(92% 0.005 260)}
 html[data-theme="dark"] [data-paper]{color-scheme:light;background:#fff!important;color:oklch(21% 0.042 264);
 --fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);--hair:oklch(94.8% 0.007 255);
 --border:oklch(92.2% 0.011 255);--raised:oklch(96.6% 0.007 255);--panel:#fff;--navy:#0f2a4a;--navy-ink:#0f2a4a}
-html[data-theme="dark"] :is(.cr-card,.cr-ctile)[data-auth=mca]{--a:oklch(62% 0.15 278);--a-bg:oklch(24% 0.06 278);--a-fg:oklch(84% 0.08 278)}
-html[data-theme="dark"] :is(.cr-card,.cr-ctile)[data-auth=it]{--a:oklch(62% 0.1 200);--a-bg:oklch(23% 0.05 200);--a-fg:oklch(84% 0.07 200)}
-html[data-theme="dark"] :is(.cr-card,.cr-ctile)[data-auth=gst]{--a:oklch(62% 0.12 155);--a-bg:oklch(23% 0.05 155);--a-fg:oklch(84% 0.08 155)}
-html[data-theme="dark"] :is(.cr-card,.cr-ctile)[data-auth=oth]{--a:oklch(70% 0.13 72);--a-bg:oklch(25% 0.06 72);--a-fg:oklch(86% 0.09 75)}
 /* no visible scrollbars anywhere; scrolling still works (prototype item 11) */
 *{scrollbar-width:none}
 *::-webkit-scrollbar{display:none;width:0;height:0}
