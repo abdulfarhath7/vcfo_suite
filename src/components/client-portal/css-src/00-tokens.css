@@ -22,7 +22,7 @@ html[data-theme="dark"]{color-scheme:dark;
 --primary:oklch(var(--brand));--primary-dark:oklch(var(--brand-strong));--primary-light:oklch(var(--brand-soft));--primary-chip:oklch(var(--brand));
 --navy:oklch(var(--side-active));--navy-ink:oklch(var(--ink));--navy-2:oklch(var(--brand-strong));--navy-3:oklch(var(--brand));
 --navy-deep:oklch(var(--brand-soft));--navy-2-deep:oklch(var(--brand-soft));--navy-3-deep:oklch(var(--brand-soft));--primary-fill:oklch(var(--brand));--primary-fill-2:oklch(var(--brand-strong));
---gold:oklch(var(--gold));--gold-2:oklch(var(--gold));--gold-soft:oklch(var(--highlight-soft));--gold-text:oklch(var(--gold-text));
+--gold:oklch(var(--highlight-bright));--gold-2:oklch(var(--gold));--gold-soft:oklch(var(--highlight-soft));--gold-text:oklch(var(--highlight));
 --ok:oklch(var(--positive));--ok-light:oklch(var(--positive-soft));--ok-text:oklch(var(--positive));--ok-chip:oklch(var(--positive));--ok-mid:oklch(var(--positive-mid));
 --due:oklch(var(--warning));--due-light:oklch(var(--warning-soft));--due-text:oklch(var(--warning));--due-chip:oklch(var(--warning));--due-mid:oklch(var(--warning-mid));
 --over:oklch(var(--danger));--over-light:oklch(var(--danger-soft));--over-text:oklch(var(--danger));--over-chip:oklch(var(--danger));--over-mid:oklch(var(--danger-mid));

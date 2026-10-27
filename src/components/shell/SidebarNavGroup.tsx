@@ -37,7 +37,7 @@ export function sidebarRailClass(ink: SidebarInk, leaf = false) {
   return cn(
     'absolute left-0 z-[2] rounded-full',
     leaf ? 'bottom-1.5 top-1.5 w-[2.5px]' : 'bottom-2 top-2 w-[3px]',
-    ink === 'light' ? 'bg-gold' : 'bg-brand',
+    ink === 'light' ? 'bg-highlight-bright' : 'bg-brand',
   );
 }
 
