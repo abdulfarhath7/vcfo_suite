@@ -70,20 +70,23 @@ type PersonSpec = {
   reportsTo?: string;
 };
 
+/* The people the owner reviews in the prototype (K-35): Bharath is the lead, Pranay the
+   manager, Krishna the admin and Mithilesh the super admin (scripts/seed.ts). The keys,
+   and so the demo login emails, stay the same so saved logins and e2e specs keep working. */
 const ADMINS: PersonSpec[] = [
-  { key: 'admin-nadia', name: 'Nadia Fernandes', role: 'admin' },
+  { key: 'admin-nadia', name: 'Krishna', role: 'admin' },
   { key: 'admin-vikram', name: 'Vikram Rao', role: 'admin' },
 ];
 
 const MANAGERS: PersonSpec[] = [
-  { key: 'pm-anita', name: 'Anita Desai', role: 'manager' },
+  { key: 'pm-anita', name: 'Pranay', role: 'manager' },
   { key: 'pm-joseph', name: 'Joseph Mathew', role: 'manager' },
   { key: 'pm-leena', name: 'Leena Krishnan', role: 'manager' },
 ];
 
 const LEADS: PersonSpec[] = [
   { key: 'lead-arjun', name: 'Arjun Mehta', role: 'intern', scopeId: 'demo-lead-arjun', reportsTo: 'pm-anita' },
-  { key: 'lead-divya', name: 'Divya Nair', role: 'intern', scopeId: 'demo-lead-divya', reportsTo: 'pm-anita' },
+  { key: 'lead-divya', name: 'Bharath', role: 'intern', scopeId: 'demo-lead-divya', reportsTo: 'pm-anita' },
   { key: 'lead-rohan', name: 'Rohan Iyer', role: 'intern', scopeId: 'demo-lead-rohan', reportsTo: 'pm-joseph' },
   { key: 'lead-sneha', name: 'Sneha Kulkarni', role: 'intern', scopeId: 'demo-lead-sneha', reportsTo: 'pm-joseph' },
   { key: 'lead-tarun', name: 'Tarun Bose', role: 'intern', scopeId: 'demo-lead-tarun', reportsTo: 'pm-leena' },
