@@ -54,9 +54,19 @@ function LeadActionCompanyRow({
         >
           {group.companyName}
         </Link>
+        {/* K-32 (audit 173): the item count is a soft count chip; a zero shows nothing. */}
+        {group.items.length > 0 ? (
+          <span
+            className={cn('pointer-events-none relative z-10 ml-auto shrink-0', CHIP_CLASS, 'bg-surface-sunken text-ink-muted tabular-nums')}
+            aria-label={`${group.items.length} ${group.items.length === 1 ? 'item' : 'items'}`}
+          >
+            {group.items.length}
+          </span>
+        ) : null}
         <span
           className={cn(
-            'pointer-events-none relative z-10 ml-auto shrink-0',
+            'pointer-events-none relative z-10 shrink-0',
+            group.items.length > 0 ? null : 'ml-auto',
             CHIP_CLASS,
             CHIP_COLUMN_CLASS,
             internToneSolid(group.pill.tone),
