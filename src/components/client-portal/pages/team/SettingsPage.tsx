@@ -7,6 +7,7 @@
  * preference matrix + quiet hours: NEW `/api/client/notification-prefs`;
  * theme: `usePortal().savePrefs`; reduce motion: shell appearance (local).
  */
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useShellAppearance } from '@/hooks/use-shell-appearance';
@@ -152,9 +153,7 @@ export function SettingsPage() {
           <div className="tb-s7">
             <section id="notifications" className="card t">
               <div className="ch">
-                <span className="ic" style={{ background: 'var(--navy)' }}>
-                  <Svg d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4.5 1.8 6.5 1.8 6.5H4.7S6.5 14.5 6.5 10Z M10 19.5a2.2 2.2 0 0 0 4 0" join={false} />
-                </span>
+                <CardHeadTile title="Notifications" />
                 <h2 className="h3">Notifications</h2>
                 <Info label="About notifications" about="notification settings">
                   Email is {short}’s record and stays on for anything that needs action. WhatsApp is a quick nudge on top.
@@ -275,9 +274,7 @@ export function SettingsPage() {
 
             <section id="appearance" className="card">
               <div className="ch">
-                <span className="ic" style={{ background: 'var(--navy)' }}>
-                  <Svg d="M12 3.5a8.5 8.5 0 1 0 0 17c1 0 1.5-.7 1.5-1.5 0-1.2-1-1.6-1-2.6 0-.9.7-1.4 1.6-1.4H16a4.5 4.5 0 0 0 4.5-4.5c0-4-3.8-7-8.5-7Z M7.5 12h.01 M10 8h.01 M14.5 8h.01" />
-                </span>
+                <CardHeadTile title="Appearance" />
                 <h2 className="h3">Appearance</h2>
               </div>
               <div className="tb-app">
@@ -559,9 +556,7 @@ function ProfileCard({ p, setProfile }: { p?: Profile; setProfile: (x: Partial<P
   return (
     <section id="profile" className="card">
       <div className="ch" style={{ paddingBottom: 4 }}>
-        <span className="ic" style={{ background: 'var(--navy)' }}>
-          <Svg d="M12 12a4 4 0 1 0 0-8a4 4 0 1 0 0 8Z M4.5 20c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5" join={false} />
-        </span>
+        <CardHeadTile title="Profile" />
         <h2 className="h3">Profile</h2>
         {!edit ? (
           <button type="button" className="btn btn-g btn-sm" style={{ marginLeft: 'auto' }} disabled={!p} onClick={start}>
@@ -694,9 +689,7 @@ function SecurityCard({ changedAt, onChanged }: { changedAt: string | null; onCh
   return (
     <section id="security" className="card">
       <div className="ch" style={{ paddingBottom: 4 }}>
-        <span className="ic" style={{ background: 'var(--navy)' }}>
-          <Svg d="M6 10.5h12v9.5H6Z M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3" />
-        </span>
+        <CardHeadTile title="Security" />
         <h2 className="h3">Security</h2>
       </div>
       <div style={{ padding: '4px 18px 14px' }}>

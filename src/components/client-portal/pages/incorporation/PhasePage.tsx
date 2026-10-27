@@ -5,6 +5,7 @@
  * `renderPhase`): navy hero, Progress card, Steps table, Focus-track journey
  * rail, "Who's doing it", phone prev/next.
  */
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useMemo, useState } from 'react';
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
 import { phaseHref, portalHref } from '../../routes';
@@ -123,7 +124,8 @@ function JourneyRail({ p, focus, d, isPage }: { p: PortalPhase; focus: string; d
   return (
     <section className="card acc rail" aria-label={`Journey · Phase ${p.no}`}>
       <div className="ch">
-        <h2 className="lbl" style={{ fontSize: '11.5px' }}>
+        <CardHeadTile title={`${PH[p.no - 1]} · journey`} />
+<h2 className="lbl" style={{ fontSize: '11.5px' }}>
           {PH[p.no - 1]} · journey
         </h2>
         <span className="sp" />
@@ -301,7 +303,8 @@ export default function PhasePage({ phaseNo }: { phaseNo: number }) {
 
         <section className="card acc psum" aria-label="Phase progress">
           <div className="ch" style={{ padding: 0 }}>
-            <h2 className="lbl">
+            <CardHeadTile title="Progress" />
+<h2 className="lbl">
               Progress
               <InfoBtn
                 label="About this phase"
@@ -381,7 +384,8 @@ export default function PhasePage({ phaseNo }: { phaseNo: number }) {
           <div className="scol">
             <section className="card acc" aria-label="Steps">
               <div className="ch">
-                <h2 className="lbl">Steps</h2>
+                <CardHeadTile title="Steps" />
+<h2 className="lbl">Steps</h2>
                 <span className="sp" />
                 <span className="cnt">{p.total} steps</span>
               </div>
@@ -402,7 +406,8 @@ export default function PhasePage({ phaseNo }: { phaseNo: number }) {
             {focusStep ? <JourneyRail p={p} focus={focusStep.id} d={d} isPage={false} /> : null}
             <section className="card acc team" aria-label="Who’s doing it">
               <div className="ch">
-                <h2 className="lbl">Who’s doing it</h2>
+                <CardHeadTile title="Who’s doing it" />
+<h2 className="lbl">Who’s doing it</h2>
               </div>
               <div className="obar" role="group" aria-label={`Owners in Phase ${p.no}`}>
                 {O.filter((o) => o[1].length).map((o) => (

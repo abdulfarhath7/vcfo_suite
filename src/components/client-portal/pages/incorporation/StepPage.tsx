@@ -14,6 +14,7 @@
  * `POST /api/client/steps/:id/files`, with Undo). Answers stay read-only for
  * the client (DECISIONS › Incorporation).
  */
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getActiveCatalogItems, type ChecklistField } from '@/data/checklist';
@@ -473,7 +474,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     docsCount > 0 ? (
       <section className="card acc" id="docs" aria-label="Documents" ref={docsRef}>
         <div className="ch">
-          <h2 className="lbl">
+          <CardHeadTile title="Documents" />
+<h2 className="lbl">
             Documents
             <InfoBtn
               label="About these documents"

@@ -9,6 +9,7 @@
  * (`GET /api/engagements/:id/board-resolution`, download / download-signed /
  * upload-signed routes) and `GET /api/client/incorporation` for names.
  */
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
@@ -267,7 +268,8 @@ export default function BoardPage() {
             <div className="brg">
               <section className="card prv" aria-label="Preview">
                 <div className="ch">
-                  <h2 className="lbl">Preview</h2>
+                  <CardHeadTile title="Preview" />
+<h2 className="lbl">Preview</h2>
                   <span className="cnt">
                     {visible ? (
                       <>
@@ -320,7 +322,8 @@ export default function BoardPage() {
               <div className="scol">
                 <section className="card acc files" aria-label="Files">
                   <div className="ch">
-                    <h2 className="lbl">Files</h2>
+                    <CardHeadTile title="Files" />
+<h2 className="lbl">Files</h2>
                     <span className="sp" />
                     <span className="cnt">{(visible ? 1 : 0) + (signedUrl ? 1 : 0)} file{(visible ? 1 : 0) + (signedUrl ? 1 : 0) === 1 ? '' : 's'}</span>
                   </div>
@@ -440,7 +443,8 @@ export default function BoardPage() {
                 </section>
                 <section className="card acc team" aria-label="What happens with it">
                   <div className="ch">
-                    <h2 className="lbl">What happens with it</h2>
+                    <CardHeadTile title="What happens with it" />
+<h2 className="lbl">What happens with it</h2>
                   </div>
                   <BotSay
                     text={`${d.short}’s parent board authorises the India subsidiary. SBC drafts it, a director signs it, and it goes with the name application in step 4.`}

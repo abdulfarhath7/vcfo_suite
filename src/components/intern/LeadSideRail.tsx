@@ -1,8 +1,9 @@
 'use client';
 
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { Check, Clock } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { ComplianceFiling } from '@/data/compliance';
 import { DashDonut, DashLegendRow, DashSection } from '@/components/dash/DashSection';
 import { InternWorkDenseRow } from '@/components/intern/InternWorkRow';
@@ -73,13 +74,11 @@ export function LeadSideRail({
       </DashSection>
 
       <section className="surface overflow-hidden" data-intern-waiting-on>
-        <div className="flex min-w-0 items-center gap-2.5 px-4 pt-3">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-surface-sunken text-warning">
-            <Clock className="h-[15px] w-[15px]" strokeWidth={2} aria-hidden />
-          </span>
-          <h2 className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-ink">Waiting on</h2>
+        <div className="flex min-h-[52px] min-w-0 items-center gap-2.5 border-b border-line-soft px-4 py-2">
+          <CardHeadTile title="Waiting on" />
+          <h2 className="min-w-0 truncate text-[14.5px] font-semibold text-ink">Waiting on</h2>
         </div>
-        <div className="px-4 pb-3 pt-2.5">
+        <div className="px-4 pb-3 pt-3">
           {waiting.length === 0 ? (
             <p className="text-[12.5px] text-ink-muted">Nobody is blocking you.</p>
           ) : (

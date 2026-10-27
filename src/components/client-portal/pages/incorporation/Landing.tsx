@@ -5,6 +5,7 @@
  * row 1 = Days-to-COI tile + This week · row 2 = Timeline (gantt, accordion
  * step tables) · row 3 = four donuts. Wired to the real step model.
  */
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
@@ -494,7 +495,8 @@ export default function IncorporationLanding() {
   const weekCard = (
     <section className="card week" aria-label="This week">
       <div className="ch">
-        <h2 className="lbl">This week</h2>
+        <CardHeadTile title="This week" />
+<h2 className="lbl">This week</h2>
         <span className="cnt">{week.range}</span>
         <span className="wbot">
           <Bmini />
@@ -747,7 +749,8 @@ export default function IncorporationLanding() {
   const phasesCard = (
     <section className={`card acc phc${simple ? ' simple' : ''}`} id="phc" ref={cardRef}>
       <div className="ch">
-        <h2 className="lbl">
+        <CardHeadTile title="Timeline" />
+<h2 className="lbl">
           Timeline
           <InfoBtn
             label="About the timeline"

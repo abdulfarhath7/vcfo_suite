@@ -24,7 +24,8 @@ button{font:inherit;color:inherit}
 .card.acc:before{content:"";position:absolute;left:18px;top:-1px;width:30px;height:3px;border-radius:0 0 3px 3px;background:var(--gold)}
 .lbl{font:800 12.5px var(--font-sans),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-ink,var(--navy));margin:0;display:flex;align-items:center;gap:6px}
 .cnt{font:500 11.5px var(--mono);color:var(--subtle);white-space:nowrap}
-.ch{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 18px 10px}
+.ch{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:52px;box-sizing:border-box;border-bottom:1px solid var(--hair);padding:8px 18px;margin-bottom:10px}
+.ch .lbl{font:600 14.5px var(--font-sans),sans-serif;letter-spacing:0;text-transform:none;color:var(--fg)}
 .ch .sp{min-width:8px}
 .ibtn{width:24px;height:24px;border-radius:6px;border:0;background:none;color:var(--subtle);display:inline-grid;place-items:center;cursor:pointer;flex:none;padding:0}
 .ibtn:hover,.ibtn[aria-expanded=true]{background:var(--primary-light);color:var(--primary)}
@@ -117,7 +118,7 @@ button{font:inherit;color:inherit}
 .wr .dt{font:500 11.5px var(--mono);color:var(--muted);white-space:nowrap}
 /* ---------- phases card ---------- */
 .phc{padding-bottom:6px}
-.phc .ch{padding:16px 18px 6px}
+.phc .ch{padding:8px 18px}
 .gax,.phh{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr) auto;gap:14px;align-items:center}
 .gax{padding:2px 18px 8px;font:500 11px var(--mono);color:var(--subtle)}
 .gax .tl{position:relative;height:16px}
@@ -491,8 +492,8 @@ a.rr:hover{background:var(--raised)}
   .hbtn .lt{display:none}
   .hbtn{height:40px;min-width:40px;justify-content:center;padding:0 10px}
   .wt{height:36px}
-  .ch{padding:14px 14px 8px}
-  .phc .ch{padding:14px 14px 6px}
+  .ch{padding:8px 14px}
+  .phc .ch{padding:8px 14px}
   .phh{padding:12px 14px}
   .phb{padding:0 8px 10px}
   .ob{min-height:40px}

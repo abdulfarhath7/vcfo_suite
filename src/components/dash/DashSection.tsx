@@ -5,29 +5,31 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TONE_TEXT, type IconChipTone } from '@/components/common/IconChip';
+import { type IconChipTone } from '@/components/common/IconChip';
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 
 /**
- * Shared dashboard section card, every role: a `surface` panel headed by a
- * neutral icon tile and an 11px label-style title, optional right-side meta or
- * "view all" link, content below. `tone` colours the glyph only, and only when
- * the section means that status (overdue, waiting); the tile stays neutral.
+ * Shared dashboard section card, every role (K-06, rules R-15 and R-16): a
+ * surface panel with a 52px head, a hairline under it, a 28px tinted icon tile
+ * that comes from the title, and a 14.5px/600 sentence-case title. Optional
+ * right-side meta or "view all" link; content below. The `icon`, `tone` and
+ * `size` props are still accepted so callers compile, but the tile now follows
+ * the title so one kind of card looks the same on every portal.
  */
 export function DashSection({
-  icon: Icon,
-  tone = 'neutral',
   title,
   meta,
   href,
   hrefLabel,
   className,
   bodyClassName,
-  size = 'md',
   children,
 }: {
-  icon: LucideIcon;
-  /** `lg` for a page's first section: 13px sentence-case title instead of the 11px label. */
+  /** Kept for callers; the tile icon now comes from the title. */
+  icon?: LucideIcon;
+  /** Kept for callers; the tile tone now comes from the title. */
   size?: 'md' | 'lg';
+  /** Kept for callers; the tile tone now comes from the title. */
   tone?: IconChipTone;
   title: string;
   /** Small right-aligned text (counts, scope). */
@@ -41,23 +43,9 @@ export function DashSection({
 }) {
   return (
     <section className={cn('surface min-w-0 overflow-hidden', className)}>
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 px-4 pt-3">
-        <span
-          className={cn(
-            'grid h-7 w-7 shrink-0 place-items-center rounded-md',
-            tone === 'neutral' ? 'bg-brand-soft text-brand' : cn('bg-surface-sunken', TONE_TEXT[tone]),
-          )}
-        >
-          <Icon className="h-[15px] w-[15px]" strokeWidth={2} aria-hidden />
-        </span>
-        <h2
-          className={cn(
-            'min-w-0 flex-1 truncate font-semibold text-ink',
-            size === 'lg' ? 'text-[13px]' : 'text-[11px] uppercase tracking-[0.06em]',
-          )}
-        >
-          {title}
-        </h2>
+      <div className="flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-line-soft px-4 py-2">
+        <CardHeadTile title={title} />
+        <h2 className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-ink">{title}</h2>
         {meta ? (
           <span className="shrink-0 text-[11px] font-medium text-ink-muted">{meta}</span>
         ) : null}
@@ -71,7 +59,7 @@ export function DashSection({
           </Link>
         ) : null}
       </div>
-      <div className={cn('px-4 pb-3 pt-2.5', bodyClassName)}>{children}</div>
+      <div className={cn('px-4 pb-3 pt-3', bodyClassName)}>{children}</div>
     </section>
   );
 }

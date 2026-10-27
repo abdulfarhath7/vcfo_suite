@@ -1,5 +1,6 @@
 'use client';
 
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useMemo } from 'react';
 import { ROLE_UI_LABEL } from '@/lib/auth';
 import { groupOpenPersonalTodosByOwner } from '@/lib/intern/personal-todos';
@@ -24,8 +25,9 @@ export function TeamTodosPanel({
 
   return (
     <section className="surface h-fit min-w-0 overflow-hidden">
-      <div className="flex min-w-0 items-start justify-between gap-3 px-4 pt-3">
-        <h2 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-ink">Todos</h2>
+      <div className="flex min-h-[52px] min-w-0 items-center gap-2.5 border-b border-line-soft px-4 py-2">
+        <CardHeadTile title="Todos" />
+        <h2 className="text-[14.5px] font-semibold text-ink">Todos</h2>
       </div>
 
       {query.isError ? (

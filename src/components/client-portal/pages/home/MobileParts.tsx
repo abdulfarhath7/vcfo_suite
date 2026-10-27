@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { BotSays, InfoPopover } from '@/components/client-portal/shared';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import { dayMon } from './derive';
@@ -88,7 +89,8 @@ export function Card({ id, title, info, children, foot, right }: { id: string; t
   return (
     <section className="card t" id={`m-${id}`}>
       <div className="ch">
-        <h2>{title}</h2>
+        <CardHeadTile title={title} />
+<h2>{title}</h2>
         <InfoPopover askAbout={title} label="About this card">
           {info}
         </InfoPopover>

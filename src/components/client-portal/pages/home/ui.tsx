@@ -5,6 +5,7 @@
  * sliding pill (.seg + .thumb), chips, hover tooltip parts (.tipw + .tt),
  * the duo-tone SVGs copied from the boards, and the upload / download helpers.
  */
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useCallback, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { InfoPopover } from '@/components/client-portal/shared';
@@ -50,10 +51,13 @@ export function Ico({ n, size = 14, sw = 1.7, style }: { n: keyof typeof IC; siz
 }
 
 /** Card header row (inline style verbatim from every v7c board). */
+/* Card head (K-06, rules R-15 and R-16): 52px, a hairline under it, a 28px tile
+   that comes from the title and a 14.5px/600 title. */
 export function CardHead({ title, info, askAbout, right }: { title: string; info?: ReactNode; askAbout?: string; right?: ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 0' }}>
-      <h3 style={{ margin: 0, font: '600 13px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>{title}</h3>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 52, boxSizing: 'border-box', padding: '8px 16px', borderBottom: '1px solid var(--hair)' }}>
+      <CardHeadTile title={title} />
+      <h3 style={{ margin: 0, font: '600 14.5px var(--font-sans),sans-serif', color: 'var(--fg)' }}>{title}</h3>
       {info ? <InfoPopover askAbout={askAbout ?? title}>{info}</InfoPopover> : null}
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>{right}</div>
     </div>

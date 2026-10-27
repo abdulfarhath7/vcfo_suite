@@ -1,9 +1,10 @@
 "use client";
 
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { Bell, CalendarDays, ChevronLeft, ChevronRight, ListChecks, Maximize2 } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, ListChecks, Maximize2 } from 'lucide-react';
 import type { Engagement } from '@/data/engagements';
 import { useApp } from '@/context/AppContext';
 import { isFirmWideAdmin } from '@/lib/auth';
@@ -545,10 +546,8 @@ export function StatutoryCalendar({
       <div className="stat-cal-stage">
         <section className="surface stat-cal-list overflow-hidden">
           <div className="stat-cal-list-head">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-ink-faint text-white">
-              <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-            </span>
-            <h3 className="min-w-0 flex-1 truncate text-[11.5px] font-semibold uppercase tracking-[0.06em] text-ink">
+            <CardHeadTile title="Calendar" />
+            <h3 className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-ink">
               {monthName} · {deadlineLabel(monthCount)}
             </h3>
             <SegmentedPicker
