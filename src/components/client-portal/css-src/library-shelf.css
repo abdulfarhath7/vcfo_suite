@@ -39,6 +39,14 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid oklch
 .book:active{transform:translate3d(0,-10px,0) rotate(-1.5deg) scale(.985)}
 .bk-t{font:700 13px/1.32 var(--font-sans),sans-serif;letter-spacing:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:break-word;hyphens:auto}
 .book:hover .bk-t,.book:focus-visible .bk-t{-webkit-line-clamp:6}
+/* K-46 (audit 137): the spines slide in once on load, and the hovered book comes forward
+   while the rest dim. This is the page's one motion moment (rule R-41). */
+@keyframes bookIn{from{opacity:0;transform:translate3d(0,18px,0)}to{opacity:1;transform:none}}
+.shelf .book{animation:bookIn .5s cubic-bezier(.22,1,.36,1) backwards}
+.shelf .book:nth-child(2){animation-delay:.05s}.shelf .book:nth-child(3){animation-delay:.1s}.shelf .book:nth-child(4){animation-delay:.15s}.shelf .book:nth-child(5){animation-delay:.2s}.shelf .book:nth-child(n+6){animation-delay:.25s}
+.shelf .book{transition-property:transform,box-shadow,opacity,filter}
+.shelf:hover .book:not(:hover):not(:focus-visible){opacity:.55;filter:saturate(.7)}
+@media (prefers-reduced-motion: reduce){.shelf .book{animation:none}.shelf:hover .book:not(:hover){opacity:1;filter:none}}
 @media (prefers-reduced-motion: reduce){.book,.book:hover,.book:focus-visible{transition:none;transform:none}}
 /* ---------- v7 responsive (phone <=767 · tablet 768-1279 · desktop >=1280) ---------- */
 .vlib{position:relative;width:100%;min-height:calc(100dvh - 52px - var(--vp-launch-h,0px));display:flex;background:var(--bg);font-family:var(--font-sans),system-ui,sans-serif;color:var(--fg);font-size:13px}
