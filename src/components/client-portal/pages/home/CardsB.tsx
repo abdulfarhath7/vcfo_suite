@@ -203,7 +203,7 @@ export function StepsCard({ h }: { h: HomeData }) {
             </a>
           }
         />
-        <div style={{ padding: '12px 16px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '0 16px 4px', display: 'flex', flexDirection: 'column' }}>
           {model.phases.map((ph) => {
             const tone = ph.state === 'done' ? 'ok' : ph.state === 'active' ? 'prog' : 'up';
             return (
@@ -225,10 +225,12 @@ export function StepsCard({ h }: { h: HomeData }) {
                       Phase {ph.no} · {ph.name}
                     </a>
                   </span>
-                  <span className="chip" style={{ ...solid(tone), minWidth: 116, justifyContent: 'center' }}>
+                  <span className="stp-bar" aria-hidden="true">
+                    <i style={{ width: `${ph.total ? Math.round((ph.done / ph.total) * 100) : 0}%`, background: tone === 'ok' ? 'var(--ok-mid)' : 'var(--prog)' }} />
+                  </span>
+                  <span className="chip" style={{ ...solid(tone), width: 108, minWidth: 108, justifyContent: 'center' }}>
                     {ph.done} of {ph.total}
                   </span>
-                  <span className="mono cap">{ph.state === 'done' ? 'done' : ph.state === 'active' ? 'in progress' : 'upcoming'}</span>
                 </summary>
                 <div className="vh-x" style={{ '--tmin': '560px' } as CSSProperties}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -255,7 +257,7 @@ export function StepsCard({ h }: { h: HomeData }) {
                               <span className="chip" style={ownerChipStyle(s.owner === 'client' ? 'client' : 'sbc')}>{s.owner === 'client' ? company : 'SBC'}</span>
                             </td>
                             <td style={{ padding: '6px 8px' }}>
-                              <span className="chip" style={{ ...solid(t), minWidth: 116, justifyContent: 'center' }}>{label}</span>
+                              <span className="chip" style={{ ...solid(t), minWidth: 108, justifyContent: 'center' }}>{label}</span>
                             </td>
                             <td className="stp-tl" style={{ padding: '6px 8px' }}>{stepTimelineText(s)}</td>
                             <td style={{ padding: '4px 4px 4px 0', textAlign: 'right' }}>

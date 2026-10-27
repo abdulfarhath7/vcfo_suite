@@ -121,17 +121,22 @@ section.card>div:first-of-type{flex-wrap:wrap;row-gap:8px}
 @media (max-width:330px){.rd-s .rd-who{display:none}.rd-s .rd-sep{display:none}}
 /* every status chip is one width, so the column reads as a column and the cell
    beside it keeps the same x on every row */
-.stp-row>td:nth-child(4)>.chip{min-width:116px;justify-content:center}
+.stp-row>td:nth-child(4)>.chip{min-width:108px;justify-content:center}
 .stp-row>td:nth-child(3)>.chip{min-width:88px;justify-content:center}
 
 
-.stp-g{border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.stp-g>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;user-select:none;border-radius:8px;transition:background .15s}
+/* Steps (K-21, rule R-19): flat phase rows across the card, a hairline between rows, a 6px bar and a 108px count chip. */
+.stp-g{border:0;border-top:1px solid var(--hair);border-radius:0;overflow:hidden;margin:0 -16px;padding:0 16px}
+.stp-g:first-child{border-top:0}
+.stp-g[open]{background:oklch(var(--surface-sunken) / .45)}
+.stp-g>summary{list-style:none;display:flex;align-items:center;gap:12px;min-height:46px;padding:0;cursor:pointer;user-select:none;border-radius:0;transition:background .15s}
 .stp-g>summary::-webkit-details-marker{display:none}
-.stp-g>summary:hover{background:var(--raised)}
+.stp-g>summary:hover .stp-ph{color:var(--primary)}
 .stp-g>summary .stp-cv{transition:transform .25s cubic-bezier(.22,1,.36,1);color:var(--muted)}
 .stp-g[open]>summary .stp-cv{transform:rotate(90deg)}
-.stp-g[open]>summary{border-bottom:1px solid var(--hair);border-radius:8px 8px 0 0}
+.stp-g[open]>summary{border-bottom:1px solid var(--hair)}
+.stp-bar{flex:none;width:140px;height:6px;border-radius:3px;background:oklch(var(--upcoming-soft));overflow:hidden}
+.stp-bar>i{display:block;height:100%;border-radius:3px}
 .stp-g>.vh-x{margin:4px 0 6px}
 .stp-g[open]>.vh-x{animation:stpIn .28s cubic-bezier(.22,1,.36,1)}
 @keyframes stpIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
@@ -141,7 +146,7 @@ section.card>div:first-of-type{flex-wrap:wrap;row-gap:8px}
 .stp-go:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
 @media (prefers-reduced-motion: reduce){.stp-g>summary .stp-cv,.stp-go{transition:none}.stp-g[open]>.vh-x{animation:none}}
 
-.stp-tl{white-space:normal!important;font-size:11.5px;color:var(--muted);min-width:110px;max-width:190px;line-height:1.35}.stp-ph{color:inherit;font-weight:800}
+.stp-tl{white-space:normal!important;font-size:11.5px;color:var(--muted);min-width:110px;max-width:190px;line-height:1.35}.stp-ph{color:inherit;font-weight:600}
 
 /* owner character, static head. Moods: antenna colour (idle teal, answered green, cannot grey); thinking = antenna pulse + eyes scan. The smile never changes. */
 .vb-scan{animation:vbScan 1.3s ease-in-out infinite}
