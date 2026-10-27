@@ -34,8 +34,8 @@
     --brand-strong: 42.4% 0.107 254;
     --brand-soft: 94.9% 0.018 253;
     --on-brand: 100.0% 0.000 0;
-    --navy: 26.5% 0.046 254;
-    --navy-hover: 30.5% 0.053 254;
+    --navy-fill: 26.5% 0.046 254;
+    --navy-fill-hover: 30.5% 0.053 254;
     --on-navy: 100.0% 0.000 0;
     --highlight: 53.6% 0.133 51;
     --highlight-bright: 67.2% 0.155 51;
@@ -53,8 +53,8 @@
     --info-soft: 95.0% 0.020 201;
     --upcoming: 49.5% 0.041 264;
     --upcoming-soft: 95.1% 0.007 261;
-    --violet: 50.9% 0.156 292;
-    --violet-soft: 94.6% 0.023 299;
+    --identity: 50.9% 0.156 292;
+    --identity-soft: 94.6% 0.023 299;
     --on-status: 100.0% 0.000 0;
     --gold: 73.1% 0.115 85;
     --gold-text: 48.9% 0.093 82;
@@ -107,16 +107,16 @@
     --space-12: 48px;
 
     /* ---- Radius ---- */
-    --radius-sm: 6px;
+    --radius-sm: 5px;
     --radius-md: 8px;
     --radius-lg: 10px;
-    --radius-xl: 12px;
+    --radius-xl: 10px;
     --radius-pill: 999px;
     --radius: var(--radius-lg); --radius-2xl: var(--radius-xl); --radius-3xl: var(--radius-xl); /* legacy names */
 
     /* ---- Control sizes ---- */
-    --control-sm: 28px;
-    --control-md: 32px;
+    --control-sm: 30px;
+    --control-md: 36px;
     --control-lg: 40px;
     --control-min-width: 84px;
     --chip-height: 22px;
@@ -224,8 +224,8 @@
     --brand-strong: 77.1% 0.082 253;
     --brand-soft: 32.5% 0.039 255;
     --on-brand: 20.6% 0.021 255;
-    --navy: 26.5% 0.046 254;
-    --navy-hover: 30.5% 0.053 254;
+    --navy-fill: 26.5% 0.046 254;
+    --navy-fill-hover: 30.5% 0.053 254;
     --on-navy: 100.0% 0.000 0;
     --highlight: 77.9% 0.129 61;
     --highlight-bright: 69.3% 0.161 50;
@@ -243,8 +243,8 @@
     --info-soft: 34.4% 0.031 230;
     --upcoming: 72.4% 0.029 255;
     --upcoming-soft: 33.0% 0.025 256;
-    --violet: 80.1% 0.091 297;
-    --violet-soft: 34.3% 0.035 278;
+    --identity: 80.1% 0.091 297;
+    --identity-soft: 34.3% 0.035 278;
     --on-status: 19.3% 0.029 254;
     --gold: 81.1% 0.114 88;
     --gold-text: 84.6% 0.101 88;
@@ -426,10 +426,7 @@
     box-shadow: var(--shadow-card);
   }
   .dark .auth-glass {
-    box-shadow:
-      inset 0 1px 0 oklch(100% 0 0 / 0.05),
-      0 1px 2px oklch(0% 0 0 / 0.35),
-      0 24px 56px -12px oklch(0% 0 0 / 0.55);
+    box-shadow: var(--shadow-float);
   }
 
   .auth-input {
@@ -1483,9 +1480,7 @@ html[data-reduce-motion="true"] .discrete-panel {
   background: oklch(var(--panel));
   border: 1px solid oklch(var(--border));
   border-radius: var(--radius);
-  box-shadow:
-    0 1px 2px oklch(var(--shadow-ink) / 0.05),
-    0 5px 16px oklch(var(--shadow-ink) / 0.06);
+  box-shadow: var(--shadow-card);
 }
 .lead-metric::before {
   content: "";
@@ -1717,7 +1712,7 @@ html[data-reduce-motion="true"] .discrete-panel {
 .stat-cal-scope.is-on {
   background: oklch(var(--primary));
   color: oklch(var(--primary-foreground));
-  box-shadow: 0 1px 2px oklch(0% 0 0 / 0.12);
+  box-shadow: var(--shadow-card);
 }
 .stat-cal-scope.is-on:hover {
   color: oklch(var(--primary-foreground));
@@ -2338,7 +2333,7 @@ html[data-reduce-motion="true"] .discrete-panel {
 }
 .stat-max.is-nav-peek {
   left: 16.5rem;
-  box-shadow: -12px 0 32px -18px oklch(0% 0 0 / 0.55);
+  box-shadow: var(--shadow-float);
 }
 .stat-max-nav-hotzone {
   position: absolute;
@@ -2388,9 +2383,7 @@ html[data-reduce-motion="true"] .discrete-panel {
     linear-gradient(135deg, oklch(var(--primary) / 0.10), transparent 46%),
     radial-gradient(90% 130% at 100% 100%, oklch(var(--phase-registration) / 0.10), transparent 60%),
     oklch(var(--panel));
-  box-shadow:
-    0 1px 2px oklch(var(--shadow-ink) / 0.05),
-    0 12px 32px -20px oklch(var(--shadow-ink) / 0.34);
+  box-shadow: var(--shadow-card);
 }
 .client-idcard::after {
   content: "";

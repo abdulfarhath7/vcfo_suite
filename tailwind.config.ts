@@ -51,13 +51,13 @@ export default {
         },
         "on-brand": "oklch(var(--on-brand) / <alpha-value>)",
         navy: {
-          DEFAULT: "oklch(var(--navy) / <alpha-value>)",
-          hover: "oklch(var(--navy-hover) / <alpha-value>)",
+          DEFAULT: "oklch(var(--navy-fill) / <alpha-value>)",
+          hover: "oklch(var(--navy-fill-hover) / <alpha-value>)",
         },
         "on-navy": "oklch(var(--on-navy) / <alpha-value>)",
-        violet: {
-          DEFAULT: "oklch(var(--violet) / <alpha-value>)",
-          soft: "oklch(var(--violet-soft) / <alpha-value>)",
+        identity: {
+          DEFAULT: "oklch(var(--identity) / <alpha-value>)",
+          soft: "oklch(var(--identity-soft) / <alpha-value>)",
         },
         highlight: {
           DEFAULT: "oklch(var(--highlight) / <alpha-value>)",
@@ -288,6 +288,7 @@ export default {
         },
       },
       borderRadius: {
+        DEFAULT: "var(--radius-sm)",
         lg: "var(--radius-lg)",
         md: "var(--radius-md)",
         sm: "var(--radius-sm)",
@@ -297,9 +298,16 @@ export default {
         pill: "var(--radius-pill)",
         card: "var(--radius-lg)",
       },
+      /* Two shadows only (K-03): every Tailwind size resolves to one of them. */
       boxShadow: {
         card: "var(--shadow-card)",
         float: "var(--shadow-float)",
+        sm: "var(--shadow-card)",
+        DEFAULT: "var(--shadow-card)",
+        md: "var(--shadow-card)",
+        lg: "var(--shadow-float)",
+        xl: "var(--shadow-float)",
+        "2xl": "var(--shadow-float)",
       },
       backgroundImage: {
         hero: "var(--hero-gradient)",

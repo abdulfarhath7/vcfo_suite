@@ -150,7 +150,7 @@ export function UploadDialog({
             if (e.target === e.currentTarget && !uploading) close();
           }}
         >
-          <div className="vup-dlg" role="dialog" aria-modal="true" aria-label="Upload a document" style={{ background: 'var(--panel)', borderRadius: 12, border: '1px solid var(--border)', boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / 0.4)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
+          <div className="vup-dlg" role="dialog" aria-modal="true" aria-label="Upload a document" style={{ background: 'var(--panel)', borderRadius: 12, border: '1px solid var(--border)', boxShadow: 'var(--shadow-float)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
               <h2 style={{ margin: 0, font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', flex: 1 }}>Upload a document</h2>
               <button ref={closeRef} type="button" aria-label="Close" onClick={close} style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>

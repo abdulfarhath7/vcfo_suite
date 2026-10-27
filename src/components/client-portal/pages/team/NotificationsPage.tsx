@@ -489,7 +489,7 @@ export function NotificationsPage() {
                       borderRadius: 6,
                       whiteSpace: 'nowrap',
                       zIndex: 5,
-                      boxShadow: '0 6px 16px -6px oklch(21% 0.042 264 / .5)',
+                      boxShadow: 'var(--shadow-float)',
                     }}
                   >
                     {tip}

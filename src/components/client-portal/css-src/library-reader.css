@@ -16,7 +16,7 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .ib{width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
 .ib:hover{background:light-dark(oklch(96.4% 0.026 18), oklch(24.2% 0.072 18));color:var(--over-text)}
 .seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
-.seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
+.seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:var(--shadow);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 .seg button{position:relative;z-index:1;border:0;background:none;height:30px;padding:0 14px;border-radius:5px;font:500 12px var(--font-sans),sans-serif;color:light-dark(oklch(50% 0.022 255), oklch(80% 0.015 255));cursor:pointer;white-space:nowrap;transition:color .2s}
 .seg button.on{color:#fff}
 .node{display:flex;flex-direction:column;align-items:center;gap:8px;width:170px;text-align:center}
@@ -71,5 +71,5 @@ html[data-theme="dark"] .seg>.thumb{background:var(--navy-3)}
 @media (prefers-reduced-motion: reduce){.lsk{animation:none}}
 
 /* ---- not-available state: bot bubble (rule 16, as the boards draw it) ---- */
-.vdoc-bubble{position:relative;max-width:320px;padding:10px 14px;border-radius:10px 10px 10px 2px;background:var(--panel);border:1px solid var(--border);box-shadow:0 8px 20px -12px oklch(21% 0.042 264 / .35);display:flex;flex-direction:column;align-items:flex-start}
+.vdoc-bubble{position:relative;max-width:320px;padding:10px 14px;border-radius:10px 10px 10px 2px;background:var(--panel);border:1px solid var(--border);box-shadow:var(--pop);display:flex;flex-direction:column;align-items:flex-start}
 .vdoc-bot{display:inline-flex;overflow:hidden;align-items:flex-start;justify-content:center;flex:none;border-radius:99px;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255))}

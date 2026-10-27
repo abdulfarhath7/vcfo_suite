@@ -15,7 +15,7 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .tg{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);font:600 12px var(--font-sans),sans-serif;cursor:pointer}
 .tg.on{background:var(--primary-light);color:var(--navy-ink,var(--navy));border-color:oklch(54.6% 0.215 263 / .35)}
 .seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
-.seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:6px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
+.seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:6px;background:var(--navy);box-shadow:var(--shadow);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 .seg button{position:relative;z-index:1;border:0;background:none;height:26px;padding:0 12px;border-radius:6px;font:500 12px var(--font-sans),sans-serif;color:light-dark(oklch(50% 0.022 255), oklch(80% 0.015 255));cursor:pointer;white-space:nowrap;transition:color .2s}
 .seg button.on{color:#fff}
 .tr{position:relative;display:flex;align-items:center;height:36px;padding-right:6px;font-size:13px;color:var(--fg)}
@@ -44,7 +44,7 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .kb:hover,.kb.open{background:oklch(54.6% 0.215 263 / .12)}
 .tr.sel .kb:hover,.tr.sel .kb.open{background:oklch(100% 0 0 / .16)}
 .kb:focus-visible{opacity:1;outline:2px solid oklch(54.6% 0.215 263 / .5);outline-offset:-2px}
-.menu{position:absolute;right:6px;top:34px;z-index:70;width:236px;max-width:calc(100vw - 24px);box-sizing:border-box;padding:4px;border-radius:8px;background:var(--panel);border:1px solid var(--border);box-shadow:0 16px 36px -12px oklch(21% 0.042 264 / .4);color:var(--fg)}
+.menu{position:absolute;right:6px;top:34px;z-index:70;width:236px;max-width:calc(100vw - 24px);box-sizing:border-box;padding:4px;border-radius:8px;background:var(--panel);border:1px solid var(--border);box-shadow:var(--pop);color:var(--fg)}
 .menu button{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border:0;border-radius:6px;background:none;font:600 12.5px var(--font-sans),sans-serif;color:var(--fg);cursor:pointer;text-align:left}
 .menu button:hover,.menu button:focus-visible{background:var(--primary-light);color:var(--navy-ink,var(--navy));outline:none}
 .menu hr{border:0;border-top:1px solid var(--hair);margin:4px 2px}
@@ -53,7 +53,7 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .kv>span:first-child{color:var(--muted);font-weight:500}
 .kv>span:last-child{font-weight:600;min-width:0;text-align:right;overflow-wrap:anywhere}
 .kv>span:first-child{flex:none}
-.toast{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:80;width:min(360px,calc(100% - 24px));box-sizing:border-box;padding:10px 12px;border-radius:8px;background:var(--navy);color:#fff;box-shadow:0 18px 40px -14px oklch(15% 0.05 258 / .65);display:flex;flex-direction:column;gap:8px}
+.toast{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:80;width:min(360px,calc(100% - 24px));box-sizing:border-box;padding:10px 12px;border-radius:8px;background:var(--navy);color:#fff;box-shadow:var(--pop);display:flex;flex-direction:column;gap:8px}
 @keyframes tin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translateX(-50%)}}
 .toast{animation:tin .25s cubic-bezier(.22,1,.36,1) both}
 .tbar{height:4px;border-radius:2px;background:oklch(100% 0 0 / .18);overflow:hidden}
@@ -77,7 +77,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
 .vdoc-tree{width:clamp(300px,44%,440px);flex:none;border-right:1px solid var(--border);overflow:auto;padding:6px 0}
 .vdoc-pane{flex:1;min-width:0;display:flex;flex-direction:column}
 .vdoc-pv{flex:1;min-height:0;background:var(--raised);display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden}
-.vdoc-page{position:relative;width:min(340px,100%);max-height:100%;aspect-ratio:340/440;flex:none;background:light-dark(#fff, oklch(13% 0 89.9));box-shadow:0 4px 24px -8px oklch(21% 0.042 264 / .3);border-radius:2px;padding:34px 36px;box-sizing:border-box;color:var(--fg);font-weight:500;display:block;overflow:hidden}
+.vdoc-page{position:relative;width:min(340px,100%);max-height:100%;aspect-ratio:340/440;flex:none;background:light-dark(#fff, oklch(13% 0 89.9));box-shadow:var(--pop);border-radius:2px;padding:34px 36px;box-sizing:border-box;color:var(--fg);font-weight:500;display:block;overflow:hidden}
 .vdoc-drop{width:min(360px,100%);height:220px;box-sizing:border-box}
 @media (max-width:1279px){.vdoc-acts .btn{height:36px}}
 @media (max-width:999px){
@@ -116,7 +116,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
 .vdoc-page.real img{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
 .vdoc-drop.over{border-style:solid!important;border-color:var(--navy)!important;background:var(--primary-light)!important;box-shadow:0 0 0 4px oklch(54.6% 0.215 263 / .12)}
 .vdoc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.vdoc-bubble{position:relative;max-width:320px;padding:10px 14px;border-radius:10px 10px 10px 2px;background:var(--panel);border:1px solid var(--border);box-shadow:0 8px 20px -12px oklch(21% 0.042 264 / .35);display:flex;flex-direction:column;align-items:flex-start}
+.vdoc-bubble{position:relative;max-width:320px;padding:10px 14px;border-radius:10px 10px 10px 2px;background:var(--panel);border:1px solid var(--border);box-shadow:var(--pop);display:flex;flex-direction:column;align-items:flex-start}
 .vdoc-bot{display:inline-flex;overflow:hidden;align-items:flex-start;justify-content:center;flex:none;border-radius:99px;background:light-dark(oklch(97.2% 0.014 255), oklch(17.2% 0.01 255))}
 @media (prefers-reduced-motion: reduce){.tr.glow{animation:none}}
 /* explorer card runs to the bottom of the viewport (docs_a_refined): the Ask VCFO pill floats over

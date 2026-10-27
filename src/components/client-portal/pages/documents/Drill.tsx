@@ -92,7 +92,7 @@ export function DocsDrill({
             aria-modal="true"
             aria-label={`${target.name} documents`}
             className="dlg"
-            style={{ width: 640, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / .55)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}
+            style={{ width: 640, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: 'var(--shadow-float)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}
           >
             <div className="dd-top" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)', flex: 'none' }}>
               <span>

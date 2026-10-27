@@ -91,7 +91,7 @@ const S_DLG: CSSProperties = {
   overflow: 'hidden',
   background: 'var(--panel)',
   borderRadius: 12,
-  boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / 0.55)',
+  boxShadow: 'var(--shadow-float)',
   display: 'flex',
   flexDirection: 'column',
 };

@@ -28,7 +28,7 @@ html[data-theme="dark"]{color-scheme:dark;
 --over:oklch(var(--danger));--over-light:oklch(var(--danger-soft));--over-text:oklch(var(--danger));--over-chip:oklch(var(--danger));--over-mid:oklch(var(--danger-mid));
 --prog:oklch(var(--brand));--prog-light:oklch(var(--brand-soft));--prog-text:oklch(var(--brand));--prog-chip:oklch(var(--brand));
 --up:oklch(var(--upcoming));--up-light:oklch(var(--upcoming-soft));--up-text:oklch(var(--ink-muted));--up-chip:oklch(var(--upcoming));
---violet:oklch(var(--violet));--violet-light:oklch(var(--violet-soft));--violet-chip:oklch(var(--violet));--violet-text:oklch(var(--violet));--violet-soft:oklch(var(--violet-soft));
+--violet:oklch(var(--identity));--violet-light:oklch(var(--identity-soft));--violet-chip:oklch(var(--identity));--violet-text:oklch(var(--identity));--violet-soft:oklch(var(--identity-soft));
 --sky:oklch(var(--brand));--sky-light:oklch(var(--brand-soft));--sky-chip:oklch(var(--brand));
 --teal:oklch(var(--info));--teal-light:oklch(var(--info-soft));--teal-chip:oklch(var(--info));
 --you:oklch(var(--owner-client));--you-light:oklch(var(--owner-client-soft));--you-text:oklch(var(--owner-client));

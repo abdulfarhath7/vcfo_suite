@@ -98,7 +98,7 @@ const S_DLG: CSSProperties = {
   borderRadius: 12,
   overflow: 'hidden',
   background: 'light-dark(oklch(94% 0.008 255), oklch(22% 0.008 255))',
-  boxShadow: '0 30px 70px -20px oklch(15% 0.05 258 / .6)',
+  boxShadow: 'var(--shadow-float)',
 };
 const S_NAV: CSSProperties = {
   position: 'absolute',
@@ -114,7 +114,7 @@ const S_NAV: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   cursor: 'pointer',
-  boxShadow: '0 4px 12px -4px oklch(21% 0.042 264 / .25)',
+  boxShadow: 'var(--shadow-float)',
   zIndex: 2,
 };
 const S_ZB: CSSProperties = { width: 30, height: 30, border: 0, borderRadius: 6, background: 'transparent', color: '#fff', font: '600 16px var(--font-sans),sans-serif', cursor: 'pointer' };
@@ -386,7 +386,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
     flex: 'none',
     alignSelf: 'flex-start',
     background: 'light-dark(#fff, oklch(13% 0 89.9))',
-    boxShadow: '0 4px 24px -8px oklch(21% 0.042 264 / .3)',
+    boxShadow: 'var(--shadow-float)',
     borderRadius: 2,
     boxSizing: 'border-box',
     overflow: 'hidden',
@@ -463,7 +463,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         {navButtons}
         <div
           className="vh-zoom"
-          style={{ position: 'absolute', left: '50%', bottom: 16, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, padding: 4, borderRadius: 8, background: 'var(--navy)', color: '#fff', boxShadow: '0 8px 20px -8px oklch(15% 0.05 258 / .5)', zIndex: 2 }}
+          style={{ position: 'absolute', left: '50%', bottom: 16, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, padding: 4, borderRadius: 8, background: 'var(--navy)', color: '#fff', boxShadow: 'var(--shadow-float)', zIndex: 2 }}
         >
           {pages ? (
             <>

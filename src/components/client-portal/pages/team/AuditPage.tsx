@@ -212,7 +212,7 @@ export function AuditPage() {
                   whiteSpace: 'nowrap',
                   zIndex: 5,
                   pointerEvents: 'none',
-                  boxShadow: '0 6px 16px -6px oklch(21% 0.042 264 / .5)',
+                  boxShadow: 'var(--shadow-float)',
                   left: `calc(${((hv + 0.5) / 14) * 100}% )`,
                 }}
               >

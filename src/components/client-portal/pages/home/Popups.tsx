@@ -91,7 +91,7 @@ function Dialog({
         role="dialog"
         aria-modal="true"
         aria-label={label}
-        style={{ width: `min(${width}px, 100%)`, display: 'flex', flexDirection: 'column', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / 0.55)', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13, ...style }}
+        style={{ width: `min(${width}px, 100%)`, display: 'flex', flexDirection: 'column', background: 'var(--panel)', borderRadius: 12, boxShadow: 'var(--shadow-float)', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13, ...style }}
       >
         {children}
       </div>

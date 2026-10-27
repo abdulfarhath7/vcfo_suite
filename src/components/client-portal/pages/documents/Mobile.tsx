@@ -343,7 +343,7 @@ export function DocsMobile({
               className="vdm-sheet"
               role="menu"
               aria-label={`Actions for ${sheetTitle}`}
-              style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 2147482301, background: 'var(--panel)', borderRadius: '12px 12px 0 0', padding: '8px 0 76px', maxHeight: 'calc(100dvh - 24px)', overflow: 'auto', boxSizing: 'border-box', boxShadow: '0 -16px 40px -20px oklch(15% 0.05 258 / .5)' }}
+              style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 2147482301, background: 'var(--panel)', borderRadius: '12px 12px 0 0', padding: '8px 0 76px', maxHeight: 'calc(100dvh - 24px)', overflow: 'auto', boxSizing: 'border-box', boxShadow: 'var(--shadow-float)' }}
             >
               <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 6 }}>
                 <span style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)' }} />
@@ -366,7 +366,7 @@ export function DocsMobile({
       ) : null}
 
       {t ? (
-        <div role="status" aria-live="polite" style={{ position: 'fixed', left: 16, right: 16, bottom: 'calc(var(--vp-launch-h, 76px) + 8px)', zIndex: 2147482302, padding: '10px 12px', borderRadius: 8, background: 'var(--navy)', color: '#fff', display: 'flex', flexDirection: 'column', gap: 8, boxShadow: '0 18px 40px -14px oklch(15% 0.05 258 / .65)' }}>
+        <div role="status" aria-live="polite" style={{ position: 'fixed', left: 16, right: 16, bottom: 'calc(var(--vp-launch-h, 76px) + 8px)', zIndex: 2147482302, padding: '10px 12px', borderRadius: 8, background: 'var(--navy)', color: '#fff', display: 'flex', flexDirection: 'column', gap: 8, boxShadow: 'var(--shadow-float)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ flex: 1, fontSize: 13, fontWeight: 700 }}>{t.error ?? (t.copy ? 'Link copied' : t.done ? `Downloaded ${t.name}` : `Preparing ${t.name}…`)}</span>
             <span className="mono" style={{ fontSize: 11, opacity: 0.75 }}>

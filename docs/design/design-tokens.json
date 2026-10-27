@@ -1,6 +1,6 @@
 {
   "name": "VCFO Suite",
-  "version": 1.2,
+  "version": 1.3,
   "generated": "2026-10-27",
   "note": "Hex is the design value. oklch is the channel triplet for app/globals.css (oklch(var(--token) / <alpha-value>)). {ink} means the token aliases ink.",
   "color": {
@@ -180,7 +180,7 @@
         }
       },
       {
-        "name": "navy",
+        "name": "navy-fill",
         "value": {
           "light": "#15263b",
           "dark": "#15263b"
@@ -192,7 +192,7 @@
         }
       },
       {
-        "name": "navy-hover",
+        "name": "navy-fill-hover",
         "value": {
           "light": "#1b3049",
           "dark": "#1b3049"
@@ -408,7 +408,7 @@
         }
       },
       {
-        "name": "violet",
+        "name": "identity",
         "value": {
           "light": "#6a4fb6",
           "dark": "#c4b2f2"
@@ -420,7 +420,7 @@
         }
       },
       {
-        "name": "violet-soft",
+        "name": "identity-soft",
         "value": {
           "light": "#efeafb",
           "dark": "#34374b"
@@ -940,7 +940,7 @@
     "tokens": [
       {
         "name": "radius-sm",
-        "value": "6px",
+        "value": "5px",
         "usage": "Chips, inputs, checkboxes, thumbnails, table row highlights."
       },
       {
@@ -955,8 +955,8 @@
       },
       {
         "name": "radius-xl",
-        "value": "12px",
-        "usage": "Bottom sheets and the hero panel."
+        "value": "10px",
+        "usage": "Bottom sheets and the greeting band. Same as cards: the product has one large corner."
       },
       {
         "name": "radius-pill",
@@ -969,13 +969,13 @@
     "tokens": [
       {
         "name": "control-sm",
-        "value": "28px",
-        "usage": "Buttons and inputs inside table rows and dense toolbars; icon buttons in rows."
+        "value": "30px",
+        "usage": "Small buttons and inputs: inside table rows, card heads and dense toolbars; icon buttons in rows."
       },
       {
         "name": "control-md",
-        "value": "32px",
-        "usage": "Default button and input height on desktop."
+        "value": "36px",
+        "usage": "Default button and input height on desktop. One main (navy) button per card."
       },
       {
         "name": "control-lg",

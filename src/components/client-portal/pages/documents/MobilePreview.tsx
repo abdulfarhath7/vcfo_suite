@@ -89,7 +89,7 @@ export function MobilePreview({ node, company, onClose }: { node: DocNode; compa
     height: 466,
     maxHeight: '100%',
     background: 'light-dark(#fff, oklch(13% 0 89.9))',
-    boxShadow: '0 2px 6px oklch(25% 0.04 264 / .12),0 18px 40px -18px oklch(25% 0.06 264 / .35)',
+    boxShadow: 'var(--shadow-float)',
     boxSizing: 'border-box' as const,
     overflow: 'hidden',
   };

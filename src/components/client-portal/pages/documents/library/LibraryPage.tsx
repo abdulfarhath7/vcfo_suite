@@ -296,7 +296,7 @@ function RecentDrill({ reads, tab, onClose }: { reads: LibraryRead[]; tab: numbe
     <PagePortal page="library">
       <div className="ld-root">
         <div className="ld-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-          <div role="dialog" aria-modal="true" aria-label="Recently read" className="dlg" style={{ width: 600, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / .55)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
+          <div role="dialog" aria-modal="true" aria-label="Recently read" className="dlg" style={{ width: 600, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: 'var(--shadow-float)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
             <div className="dd-top" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)' }}>
               <span>These guides live in the Library</span>
               <a
