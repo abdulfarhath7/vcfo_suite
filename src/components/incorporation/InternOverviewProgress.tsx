@@ -26,7 +26,6 @@ import {
 } from '@/lib/intern/intern-overview-progress';
 import { cn } from '@/lib/utils';
 import { fadeSwap, fadeSwapReduced, fadeUp, fadeUpReduced } from '@/lib/shell/motion';
-import { MotionActivePill } from '@/components/shell/MotionActivePill';
 import { InternPhaseTickTrack } from '@/components/incorporation/InternPhaseTickTrack';
 import styles from './intern-engagement-overview.module.css';
 
@@ -177,11 +176,8 @@ export function InternPhaseEntryCards({
   );
 }
 
-const internPhaseTabTrigger = cn(
-  'relative shrink-0 rounded-none bg-transparent px-3 py-2.5 text-[12px] font-medium',
-  'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-  'text-ink-faint transition-colors data-[state=active]:text-brand hover:text-ink',
-);
+/* Phase tabs (K-09, rule R-11): small inline buttons, the picked tab navy. */
+const internPhaseTabTrigger = cn('shrink-0 rounded-md bg-transparent px-2.5 h-7 text-[12px] font-medium text-ink-muted transition-colors hover:text-ink data-[state=active]:bg-navy data-[state=active]:font-semibold data-[state=active]:text-on-navy data-[state=active]:shadow-none');
 
 export type InternPhaseTab = {
   id: string;
@@ -242,20 +238,12 @@ export function InternPhaseTabs({
       <LayoutGroup id={`intern-phase-tabs-${engagementId}`}>
       <TabsList
         aria-label="Incorporation phases"
-        className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-line bg-transparent p-0"
+        className="m-3 mb-2 h-auto justify-start"
       >
         {phases.map((phase) => {
-          const active = value === phase.id;
           return (
             <TabsTrigger key={phase.id} value={phase.id} className={internPhaseTabTrigger}>
               {internOverviewPhaseTitle(phase.id, phase.title)}
-              {active ? (
-                <MotionActivePill
-                  layoutId={`${engagementId}-phase-tab-underline`}
-                  reduced={reduceMotion}
-                  className="absolute left-2 right-2 -bottom-px h-[2px] bg-brand"
-                />
-              ) : null}
             </TabsTrigger>
           );
         })}

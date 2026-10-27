@@ -249,14 +249,8 @@ function StepDetailContentInner({
           : 'border-line hover:border-line-strong',
     );
 
-  const tabTrigger = cn(
-    'relative rounded-none bg-transparent px-3 py-2.5 text-[11px] mono uppercase tracking-[0.16em]',
-    'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-    'transition-colors',
-    isLight
-      ? 'text-ink-faint data-[state=active]:text-brand hover:text-ink'
-      : 'text-ink-muted data-[state=active]:text-blue-600 hover:text-ink',
-  );
+  /* Step tabs (K-09, rule R-11): small inline buttons, the picked tab navy. */
+  const tabTrigger = cn('shrink-0 rounded-md bg-transparent px-2.5 h-7 text-[12px] font-medium text-ink-muted transition-colors hover:text-ink data-[state=active]:bg-navy data-[state=active]:font-semibold data-[state=active]:text-on-navy data-[state=active]:shadow-none');
 
   const emptyCopy = isLight ? 'text-ink-faint' : 'text-ink-muted';
   const bodyText = (done: boolean) =>

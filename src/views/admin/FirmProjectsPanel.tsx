@@ -85,7 +85,7 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
             type="button"
             onClick={() => setPhase(p)}
             className={`rounded-sm px-3 py-1 text-[11px] border ${
-              phase === p ? 'bg-brand text-on-brand border-brand' : 'border-line text-ink-muted'
+              phase === p ? 'bg-navy text-on-navy border-navy' : 'border-line text-ink-muted'
             }`}
           >
             {p === 'all' ? 'All phases' : p === 'Pre-Incorporation' ? 'Pre-incorp' : 'Post-incorp'}

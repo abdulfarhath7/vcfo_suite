@@ -65,25 +65,20 @@ tbody tr:first-child td{border-top:0}
 .tb:hover{background:var(--primary-light);color:var(--fg)}
 .dtile{width:50px;height:54px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none}
 .box{width:22px;height:22px;border-radius:4px;border:2px solid var(--primary);flex:none;display:flex;align-items:center;justify-content:center;background:var(--panel)}
-.seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:4px;border-radius:8px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--border)}
-.seg>.thumb{position:absolute;top:4px;bottom:4px;left:4px;border-radius:6px;background:var(--primary-light);box-shadow:inset 0 0 0 1px oklch(54.6% 0.215 263 / 0.28),var(--shadow);transition:transform .38s cubic-bezier(.3,1.3,.5,1)}
-.seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:28px;padding:0 12px;border-radius:6px;font:600 12px var(--font-sans),sans-serif;color:var(--muted);cursor:pointer;white-space:nowrap}
-.seg button.on{color:var(--navy-ink,var(--navy));font-weight:700}
-.seg .cnt{font:600 10.5px var(--font-sans),sans-serif;color:var(--subtle)}
-.seg button.on .cnt{color:var(--primary)}
+/* Tabs (K-09, rule R-11): small inline buttons on a quiet track. The picked tab is navy
+   with white text. No sliding highlight. Tabs do not wrap; a long row scrolls. */
+.seg{position:relative;display:inline-flex;align-items:center;gap:2px;flex-wrap:nowrap;max-width:100%;overflow-x:auto;padding:2px;border-radius:8px;background:oklch(var(--surface-sunken));box-shadow:inset 0 0 0 1px var(--border)}
+.seg>.thumb,.seg>.th{display:none}
+.seg button{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;border:0;background:none;height:28px;padding:0 10px;border-radius:6px;font:500 12px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));cursor:pointer;white-space:nowrap}
+.seg button:hover{color:oklch(var(--ink))}
+.seg button.on,.seg button[aria-selected=true],.seg button[aria-pressed=true]{background:oklch(var(--navy-fill));color:#fff;font-weight:600}
+.seg .cnt{font:600 11px var(--font-sans),sans-serif;color:oklch(var(--ink-faint))}
+.seg button.on .cnt,.seg button[aria-selected=true] .cnt,.seg button[aria-pressed=true] .cnt{color:oklch(100% 0 0 / .72)}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 
 /* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
-.seg{padding:2px;border-radius:8px;background:oklch(var(--surface-sunken));box-shadow:inset 0 0 0 1px var(--border)}
-.seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:var(--shadow);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
-/* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
-[data-theme="dark"] .seg>.thumb{background:var(--navy-3)}
-.seg button{height:28px;padding:0 10px;border-radius:5px;font:500 12px var(--font-sans),sans-serif;color:oklch(55% 0.022 255);transition:color .2s}
-.seg button:hover{color:oklch(var(--ink-muted))}
-.seg button.on{color:#fff;font-weight:500}
-.seg .cnt{color:oklch(55% 0.022 255)}
-.seg button.on .cnt{color:oklch(100% 0 0 / .72)}
+/* (v7.1 sliding-pill rules removed by K-09; see the tab rules above) */
 /* cardHover (y -2, 0.16 s) + shadow-layered-lg, pressScale 0.98, row hover, focus ring */
 .card{transition:transform .16s cubic-bezier(.22,1,.36,1),box-shadow .16s cubic-bezier(.22,1,.36,1),border-color .16s}
 .card:hover{transform:translateY(-2px);border-color:oklch(54.6% 0.215 263 / .35);box-shadow:var(--shadow),var(--pop)}
@@ -109,7 +104,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{
 .bob{animation:v7bob 2.6s ease-in-out infinite}
 .react{animation:v7react .55s cubic-bezier(.22,1,.36,1) both}
 .dot1{animation:v7think 1s infinite}.dot2{animation:v7think 1s .2s infinite}.dot3{animation:v7think 1s .4s infinite}
-@media (prefers-reduced-motion: reduce){.seg>.thumb,.card,.btn,.spill,.srail{transition:none}.card:hover{transform:none}.stag>*,.botup,.bob,.react,.dot1,.dot2,.dot3{animation:none}}
+@media (prefers-reduced-motion: reduce){.card,.btn,.spill,.srail{transition:none}.card:hover{transform:none}.stag>*,.botup,.bob,.react,.dot1,.dot2,.dot3{animation:none}}
 
 
 .info{position:relative;display:inline-flex;vertical-align:middle;flex:none}

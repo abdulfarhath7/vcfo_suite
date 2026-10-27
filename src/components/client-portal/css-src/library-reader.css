@@ -15,10 +15,10 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .btn-ok{background:var(--ok-light);color:var(--ok-text);border-color:oklch(56% 0.13 168 / .35)}
 .ib{width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
 .ib:hover{background:oklch(var(--surface-sunken));color:var(--over-text)}
-.seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:oklch(var(--surface-sunken));box-shadow:inset 0 0 0 1px var(--border)}
-.seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:var(--shadow);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
+.seg{position:relative;display:inline-flex;gap:2px;flex-wrap:nowrap;padding:2px;border-radius:8px;background:oklch(var(--surface-sunken));box-shadow:inset 0 0 0 1px var(--border)}
+.seg>.thumb{display:none}
 .seg button{position:relative;z-index:1;border:0;background:none;height:30px;padding:0 14px;border-radius:5px;font:500 12px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));cursor:pointer;white-space:nowrap;transition:color .2s}
-.seg button.on{color:#fff}
+.seg button.on{background:oklch(var(--navy-fill));color:#fff}
 .node{display:flex;flex-direction:column;align-items:center;gap:8px;width:170px;text-align:center}
 .dot{width:40px;height:40px;border-radius:99px;display:flex;align-items:center;justify-content:center;font:700 13px var(--font-sans),sans-serif}
 .lnk{flex:1;height:3px;border-radius:2px;margin-top:19px}
@@ -60,7 +60,7 @@ a:focus-visible,button:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .
   .vrd-side a{min-height:40px}
 }
 
-html[data-theme="dark"] .seg>.thumb{background:var(--navy-3)}
+html[data-theme="dark"] .seg>.thumb{display:none}
 /* ---- app additions ---- */
 @keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
 .lsk{display:block;border-radius:4px;background:linear-gradient(90deg,oklch(var(--line)) 0,oklch(var(--surface-sunken)) 40%,oklch(var(--line)) 80%);background-size:600px 100%;animation:sh 1.3s linear infinite}

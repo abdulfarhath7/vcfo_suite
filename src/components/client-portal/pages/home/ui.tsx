@@ -2,7 +2,7 @@
 
 /**
  * Home primitives — the prototype's repeated markup as React: card header,
- * sliding pill (.seg + .thumb), chips, hover tooltip parts (.tipw + .tt),
+ * tabs (.seg), chips, hover tooltip parts (.tipw + .tt),
  * the duo-tone SVGs copied from the boards, and the upload / download helpers.
  */
 import { CardHeadTile } from '@/components/common/CardHeadTile';
@@ -64,7 +64,7 @@ export function CardHead({ title, info, askAbout, right }: { title: string; info
   );
 }
 
-/** The sliding pill (`.seg` + `.thumb`), spring motion from the shared base. */
+/** Tabs (`.seg`, K-09): small inline buttons; the picked tab is navy. No sliding pill. */
 export function Seg({
   tabs,
   value,
@@ -90,9 +90,8 @@ export function Seg({
       className={`seg${wrap ? ' vh-segwrap' : ''}`}
       role="tablist"
       aria-label={label}
-      style={{ gridTemplateColumns: `repeat(${n},minmax(0,1fr))`, ...(full ? { width: '100%' } : {}) }}
+      style={full ? { width: '100%' } : undefined}
     >
-      <span className="thumb" style={{ width: `calc((100% - 4px)/${n})`, transform: `translateX(${value * 100}%)` }} />
       {tabs.map((t, i) => (
         <button key={t.label} type="button" role="tab" aria-selected={i === value} tabIndex={i === value ? 0 : -1} className={i === value ? 'on' : ''} onClick={() => onChange(i)} onKeyDown={onKey}>
           {t.label}

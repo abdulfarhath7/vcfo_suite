@@ -183,8 +183,7 @@ export function StepDetailContentView(props: any) {
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         <TabsList
           className={cn(
-            'bg-transparent rounded-none h-auto p-0 w-full justify-start gap-1 mb-4',
-            isLight ? 'border-b border-line' : 'border-b border-line',
+            'h-auto justify-start mb-4',
           )}
         >
           {[
@@ -195,7 +194,6 @@ export function StepDetailContentView(props: any) {
             { v: 'activity' as const, icon: ActivityIcon, label: 'Activity', n: stepActivity.length },
           ].map((t) => {
             const Icon = t.icon;
-            const active = tab === t.v;
             return (
               <TabsTrigger key={t.v} value={t.v} className={tabTrigger}>
                 <span className="flex items-center gap-2">
@@ -210,16 +208,6 @@ export function StepDetailContentView(props: any) {
                     {t.n}
                   </span>
                 </span>
-                {active && (
-                  <motion.span
-                    layoutId={isLight ? 'step-tab-underline-page' : 'step-tab-underline'}
-                    className={cn(
-                      'absolute left-2 right-2 -bottom-px h-[2px]',
-                      isLight ? 'bg-brand' : 'bg-gold',
-                    )}
-                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                )}
               </TabsTrigger>
             );
           })}

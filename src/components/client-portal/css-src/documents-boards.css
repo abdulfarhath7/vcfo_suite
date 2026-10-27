@@ -13,11 +13,11 @@
 .dd-root .badge{display:inline-flex;align-items:center;height:20px;border-radius:4px;padding:0 7px;font-size:11px;font-weight:700;white-space:nowrap}
 .dd-root .ib{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;cursor:pointer;padding:0}
 .dd-root .ib:hover{background:var(--primary-light);color:var(--navy-ink,var(--navy))}
-.dd-root .seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:2px;border-radius:8px;background:oklch(var(--surface-sunken));box-shadow:inset 0 0 0 1px var(--border)}
-.dd-root .seg>.thumb{position:absolute;top:2px;bottom:2px;left:2px;border-radius:6px;background:var(--navy);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
-html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
+.dd-root .seg{position:relative;display:inline-flex;gap:2px;flex-wrap:nowrap;padding:2px;border-radius:8px;background:oklch(var(--surface-sunken));box-shadow:inset 0 0 0 1px var(--border)}
+.dd-root .seg>.thumb{display:none}
+html[data-theme="dark"] .dd-root .seg>.thumb{display:none}
 .dd-root .seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:28px;padding:0 10px;white-space:nowrap;border-radius:6px;font:500 12px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));cursor:pointer}
-.dd-root .seg button.on{color:#fff}
+.dd-root .seg button.on{background:oklch(var(--navy-fill));color:#fff}
 .dd-root .seg .c{font:600 10.5px var(--font-sans),sans-serif;color:oklch(55% 0.022 255)}
 .dd-root .seg button.on .c{color:oklch(100% 0 0 / .72)}
 .dd-root .row{display:flex;align-items:center;gap:10px;height:44px;padding:0 12px 0 16px;border-top:1px solid var(--hair);color:var(--fg)}
@@ -37,7 +37,7 @@ html[data-theme="dark"] .dd-root .seg>.thumb{background:var(--navy-3)}
  .dd-root .ib{width:40px;height:40px}
  .dd-root .row .mono{display:none}
 }
-@media (prefers-reduced-motion: reduce){.dd-root .dlg{animation:none!important}.dd-root .seg>.thumb{transition:none}}
+@media (prefers-reduced-motion: reduce){.dd-root .dlg{animation:none!important}.dd-root .seg>.thumb{display:none}}
 
 /* ---------------- states (docs_a_loading / docs_a_empty) ---------------- */
 @keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
