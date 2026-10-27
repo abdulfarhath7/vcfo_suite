@@ -27,7 +27,8 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .ic{width:30px;height:30px;border-radius:99px;display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
 .circ{width:44px;height:44px;border-radius:99px;display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
 .duo{fill:currentColor;stroke:none;opacity:.26}
-.chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;letter-spacing:.01em;line-height:16px;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:5px;box-sizing:border-box;height:22px;border-radius:5px;padding:0 8px;font-size:11px;font-weight:600;letter-spacing:.01em;line-height:22px;white-space:nowrap}
+.chip[style*="--dot"]::before{content:"";width:6px;height:6px;border-radius:99px;background:var(--dot);flex:none}
 .cap{font-size:11px;color:var(--muted)}
 .lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .rt{font-size:13px;font-weight:600;color:var(--fg)}

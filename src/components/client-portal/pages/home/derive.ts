@@ -80,10 +80,16 @@ export function chipTone(today: string, iso?: string): Tone {
 }
 
 export const chipBg = (t: Tone) => `var(--${t}-chip)`;
-/* Status chips are soft (docs/design/TOKENS.md): the tone's light ground with its
-   text-safe colour. The name stays so callers do not change; nothing is solid now. */
+/* Status chips are soft (K-04, rule R-13): the tone's light ground, its text-safe
+   colour and a 6px dot in the tone's mid colour (drawn by .chip[style*="--dot"]).
+   The name stays so callers do not change; nothing is solid now. */
+const CHIP_DOT: Partial<Record<Tone, string>> = { ok: 'var(--ok-mid)', due: 'var(--due-mid)', over: 'var(--over-mid)' };
 export function solid(t: Tone): React.CSSProperties {
-  return { background: `var(--${t}-chip)`, color: 'oklch(var(--on-status))' };
+  return {
+    background: `var(--${t}-light)`,
+    color: `var(--${t}-text, var(--${t}))`,
+    ['--dot' as string]: CHIP_DOT[t] ?? `var(--${t})`,
+  } as React.CSSProperties;
 }
 
 /* -------------------------------------------------------------- steps */

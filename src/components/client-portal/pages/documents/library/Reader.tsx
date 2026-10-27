@@ -365,15 +365,12 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
                     {categoryName(category, company)}
                   </span>
                   {reviewed ? (
-                    <span className="chip" style={{ background: 'var(--ok-chip)', color: '#fff', minWidth: 116, justifyContent: 'center' }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M5 12.5l4.5 4.5L19 7.5" />
-                      </svg>
+                    <span className="chip" style={{ background: 'var(--ok-light)', color: 'var(--ok-text)', ['--dot' as string]: 'var(--ok-mid)', minWidth: 116, justifyContent: 'center' }}>
                       Reviewed by SBC
                     </span>
                   ) : null}
                   {updatedChip ? (
-                    <span className="chip" data-tip="Updated since you saved it" style={{ background: 'var(--prog-chip)', color: '#fff', minWidth: 116, justifyContent: 'center' }}>
+                    <span className="chip" data-tip="Updated since you saved it" style={{ background: 'var(--prog-light)', color: 'var(--prog-text)', ['--dot' as string]: 'var(--prog)', minWidth: 116, justifyContent: 'center' }}>
                       {updatedDate ? `Updated ${updatedDate}` : 'Updated'}
                     </span>
                   ) : null}

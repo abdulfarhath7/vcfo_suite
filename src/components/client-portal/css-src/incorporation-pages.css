@@ -40,9 +40,9 @@ button{font:inherit;color:inherit}
 .sq svg{width:15px;height:15px}
 /* chips */
 .chip{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:700;white-space:nowrap;line-height:1.5}
-.chip.done{background:oklch(var(--positive));color:oklch(var(--on-status))}.chip.you{background:oklch(var(--owner-client-soft));color:oklch(var(--owner-client))}.chip.with{background:oklch(var(--owner-sbc-soft));color:oklch(var(--owner-sbc))}.chip.prog{background:oklch(var(--brand));color:oklch(var(--on-status))}
+.chip.done{background:oklch(var(--positive-soft));color:oklch(var(--positive))}.chip.done::before{content:"";width:6px;height:6px;border-radius:99px;background:oklch(var(--positive-mid));flex:none}.chip.you{background:oklch(var(--owner-client-soft));color:oklch(var(--owner-client))}.chip.with{background:oklch(var(--owner-sbc-soft));color:oklch(var(--owner-sbc))}.chip.prog{background:oklch(var(--brand-soft));color:oklch(var(--brand))}.chip.prog::before{content:"";width:6px;height:6px;border-radius:99px;background:oklch(var(--brand));flex:none}
 .chip.up{background:oklch(var(--surface-raised));color:var(--muted);box-shadow:inset 0 0 0 1px var(--up)}
-.chip.risk{background:oklch(var(--warning));color:oklch(var(--on-status))}.chip.late{background:oklch(var(--danger));color:oklch(var(--on-status))}
+.chip.risk{background:oklch(var(--warning-soft));color:oklch(var(--warning))}.chip.risk::before{content:"";width:6px;height:6px;border-radius:99px;background:oklch(var(--warning-mid));flex:none}.chip.late{background:oklch(var(--danger-soft));color:oklch(var(--danger))}.chip.late::before{content:"";width:6px;height:6px;border-radius:99px;background:oklch(var(--danger-mid));flex:none}
 .own{display:inline-block;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:800;text-align:center;line-height:1.6;white-space:nowrap}
 .own.You{background:var(--own-you);color:var(--own-you-t)}.own.SBC{background:var(--own-sbc);color:var(--own-sbc-t)}.own.MCA{background:var(--violet-light);color:var(--violet)}
 /* status glyphs · set A solid (rule 18) */

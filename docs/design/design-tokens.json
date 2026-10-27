@@ -994,8 +994,8 @@
       },
       {
         "name": "chip-min-width",
-        "value": "88px",
-        "usage": "Chips inside a table column, so the column reads as one block and labels sit centred. Chips in running text hug their content."
+        "value": "108px",
+        "usage": "Status chips inside a table column are 108px wide, so the column reads as one block and labels sit centred. Chips in running text hug their content."
       },
       {
         "name": "row-height",

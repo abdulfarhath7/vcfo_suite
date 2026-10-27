@@ -16,7 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import type { TimelinePhaseDates } from '@/lib/client/client-home';
 import { HOME_QUERY_KEY } from './useHome';
-import { addDays, days, dShort, type TlPhase } from './derive';
+import { addDays, days, dShort, solid, type TlPhase } from './derive';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -496,7 +496,7 @@ export function TimelineEditor({
                       <td className="mono" style={{ padding: '7px 8px', fontSize: 12, color: 'var(--muted)', textDecoration: 'line-through' }}>{range(b0)}</td>
                       <td className="mono" style={{ padding: '7px 8px', fontSize: 12, fontWeight: 600 }}>{range(p)}</td>
                       <td style={{ padding: '7px 8px', textAlign: 'right' }}>
-                        <span className="chip" style={{ background: dd > 0 ? 'var(--over-chip)' : 'var(--ok-chip)', color: '#fff' }}>
+                        <span className="chip" style={dd > 0 ? solid('over') : solid('ok')}>
                           {ds === dd && !p.ms && p.id !== 'p2' ? `moved ${dd > 0 ? '+' : ''}${dd}` : `${dd > 0 ? '+' : ''}${dd} days`}
                         </span>
                       </td>

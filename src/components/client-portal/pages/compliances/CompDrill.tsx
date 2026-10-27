@@ -19,7 +19,7 @@ import {
   type CompStatus,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
-import { AreaChip, I, NameWithLinks, ProofChip, SOLID, Seg, useModal } from './bits';
+import { AreaChip, I, NameWithLinks, ProofChip, SOFT_DOT, SOFT_TEXT, SOLID, Seg, useModal } from './bits';
 
 export interface DrillState {
   kind: 'status' | 'area';
@@ -146,7 +146,7 @@ export function CompDrill({
                           {r.filedOn ? `Filed ${fmtDM(r.filedOn)}` : fmtDM(r.dueDate)}
                         </td>
                         <td>
-                          <span className="chip" style={{ background: SOLID[st], color: '#fff' }}>
+                          <span className="chip" style={{ background: SOLID[st], color: SOFT_TEXT[st], ['--dot' as string]: SOFT_DOT[st] } as React.CSSProperties}>
                             {ST[st].l}
                           </span>
                         </td>

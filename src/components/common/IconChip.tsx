@@ -136,27 +136,29 @@ export const TONE_BADGE: Record<IconChipTone, string> = {
 };
 
 /**
- * The one chip shape: 22px high, 8px side padding, 6px corners, 11px/600 text.
+ * The one chip shape: 22px high, 8px side padding, 5px corners, 11px/600 text.
  * `CHIP_COLUMN_CLASS` adds the fixed minimum width and centred label for chips
  * that sit in a table column, so the column reads as one block.
  */
 export const CHIP_CLASS =
-  'inline-flex h-chip items-center gap-1 whitespace-nowrap rounded-sm px-2 text-[11px] font-semibold leading-4';
-export const CHIP_COLUMN_CLASS = 'min-w-chip justify-center';
+  'inline-flex h-chip items-center gap-1.5 whitespace-nowrap rounded-sm px-2 text-[11px] font-semibold leading-4';
+export const CHIP_COLUMN_CLASS = 'w-[var(--chip-min-width)] min-w-chip justify-center';
 
 /**
- * Two intensities of colour (docs/design/TOKENS.md v1.1). A STATE is a solid
- * fill with on-status text: done, in progress, waiting or due, overdue,
- * upcoming. An OWNER or a tag is a soft tint (TONE_BADGE above, TONE_OWNER
- * below). Never a solid owner chip, never a soft state chip in a status column.
+ * One intensity for a state (K-04, rule R-13): a soft chip with a 6px dot in
+ * the state's mid colour. Done, in progress, waiting or due, overdue and
+ * upcoming all use this shape; never a solid block. The names TONE_SOLID and
+ * internToneSolid stay so callers do not change. An OWNER or a tag is a soft
+ * tint without a dot (TONE_BADGE above, TONE_OWNER below).
  */
 export type StatusKey = 'done' | 'progress' | 'waiting' | 'overdue' | 'upcoming';
+const DOT_BEFORE = "before:inline-block before:h-1.5 before:w-1.5 before:shrink-0 before:rounded-full before:content-['']";
 export const TONE_SOLID: Record<StatusKey, string> = {
-  done: 'bg-positive text-on-status',
-  progress: 'bg-brand text-on-status',
-  waiting: 'bg-warning text-on-status',
-  overdue: 'bg-danger text-on-status',
-  upcoming: 'bg-upcoming text-on-status',
+  done: `bg-positive-soft text-positive ${DOT_BEFORE} before:bg-positive-mid`,
+  progress: `bg-brand-soft text-brand ${DOT_BEFORE} before:bg-brand`,
+  waiting: `bg-warning-soft text-warning ${DOT_BEFORE} before:bg-warning-mid`,
+  overdue: `bg-danger-soft text-danger ${DOT_BEFORE} before:bg-danger-mid`,
+  upcoming: `bg-upcoming-soft text-upcoming ${DOT_BEFORE} before:bg-upcoming`,
 };
 /** Solid chip colours keyed by the IconChipTone names callers already use. */
 export const TONE_SOLID_BY_TONE: Partial<Record<IconChipTone, string>> = {

@@ -138,8 +138,10 @@ export function Chip({ s }: { s: CompStatus }) {
     </span>
   );
 }
-/** Drill-down table chip: solid fill, white text. */
-export const SOLID: Record<CompStatus, string> = { ok: 'var(--ok-chip)', due: 'var(--due-chip)', over: 'var(--over-chip)', up: 'oklch(54% 0.026 258)' };
+/** Drill-down table chip: soft ground, text-safe colour and a 6px dot (K-04). */
+export const SOLID: Record<CompStatus, string> = { ok: 'var(--ok-light)', due: 'var(--due-light)', over: 'var(--over-light)', up: 'var(--up-light)' };
+export const SOFT_TEXT: Record<CompStatus, string> = { ok: 'var(--ok-text)', due: 'var(--due-text)', over: 'var(--over-text)', up: 'var(--up-text)' };
+export const SOFT_DOT: Record<CompStatus, string> = { ok: 'var(--ok-mid)', due: 'var(--due-mid)', over: 'var(--over-mid)', up: 'var(--up)' };
 
 export function AreaChip({ a }: { a: AreaCode }) {
   return (

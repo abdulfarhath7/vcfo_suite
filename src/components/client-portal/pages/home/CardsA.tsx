@@ -316,7 +316,7 @@ export function CurrentCard({ h, onStep }: { h: HomeData; onStep: (s: PortalStep
                     {s.owner === 'client' ? company : 'SBC'}
                   </span>
                   <Tip tip={st.tip} onOpen={() => drill(st.tab)} style={{ display: 'inline-flex' }}>
-                    <span className="chip" style={{ ...(st.tone === 'up' ? { background: 'var(--up-light)', color: 'var(--up-text)' } : solid(st.tone)), minWidth: 116, justifyContent: 'center' }}>
+                    <span className="chip" style={{ ...solid(st.tone), minWidth: 108, justifyContent: 'center' }}>
                       {st.label}
                     </span>
                   </Tip>
