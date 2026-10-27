@@ -55,11 +55,12 @@ export function Ico({ n, size = 14, sw = 1.7, style }: { n: keyof typeof IC; siz
    that comes from the title and a 14.5px/600 title. */
 export function CardHead({ title, info, askAbout, right }: { title: string; info?: ReactNode; askAbout?: string; right?: ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 52, boxSizing: 'border-box', padding: '8px 16px', borderBottom: '1px solid var(--hair)' }}>
+    <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 10, minHeight: 52, boxSizing: 'border-box', padding: '8px 16px', borderBottom: '1px solid var(--hair)' }}>
       <CardHeadTile title={title} />
-      <h3 style={{ margin: 0, font: '600 14.5px var(--font-sans),sans-serif', color: 'var(--fg)' }}>{title}</h3>
+      {/* Card heads never wrap: the title gives way before the tabs do. */}
+      <h3 style={{ margin: 0, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', font: '600 14.5px var(--font-sans),sans-serif', color: 'var(--fg)' }}>{title}</h3>
       {info ? <InfoPopover askAbout={askAbout ?? title}>{info}</InfoPopover> : null}
-      <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>{right}</div>
+      <div style={{ marginLeft: 'auto', display: 'flex', flex: 'none', gap: 6, alignItems: 'center' }}>{right}</div>
     </div>
   );
 }

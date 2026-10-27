@@ -346,7 +346,7 @@ export function AlertsCard({ h }: { h: HomeData }) {
   const win = tab === 0 ? 15 : 30;
   const list = rows.filter((a) => days(h.today, a.date) <= win);
   const open = (active: number) => h.portal.drill({ ...alertsDrill(hero, rows, h.today, h.after), active });
-  const tile = (a: AlertRow): CSSProperties => ({ position: 'relative', width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', flex: 'none', background: `var(--${a.tone})` });
+  const tile = (a: AlertRow): CSSProperties => ({ position: 'relative', width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: `var(--${a.tone}-text)`, flex: 'none', background: `var(--${a.tone}-light)` });
   return (
     <div style={{ width: '100%', boxSizing: 'border-box', ...S }}>
       <section className="card">
@@ -359,13 +359,20 @@ export function AlertsCard({ h }: { h: HomeData }) {
             <Tip
               tip={`${hero.title.replace(/ (sent back|is late|overdue.*)$/, '')} · overdue ${plural(Math.max(1, days(hero.date, h.today)), 'day')}`}
               onOpen={() => open(1)}
-              style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 14px', padding: '12px 14px', borderRadius: 8, background: 'var(--over-light)', border: '1px solid oklch(57% 0.2 22 / 0.3)', marginBottom: 6 }}
+              style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 14px', padding: '10px 16px', margin: '0 -16px', borderRadius: 0, background: 'var(--over-light)' }}
             >
-              <Ico n="octagon" size={22} style={{ color: 'var(--over-text)' }} />
+              {(() => {
+                const [hd, hm] = dayMon(hero.date);
+                return (
+                  <span style={{ width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 'none', background: 'var(--panel)', color: 'var(--over-text)' }}>
+                    <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: 'inherit' }}>{hd}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600 }}>{hm}</span>
+                  </span>
+                );
+              })()}
               <div style={{ flex: 1, minWidth: 150 }}>
                 <div style={{ display: 'flex', gap: '6px 8px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <span className="rt" style={{ fontSize: 14 }}>{hero.title}</span>
-                  <InfoPopover askAbout={hero.title}>{hero.meta}</InfoPopover>
                   <span className="chip" style={solid('over')}>Overdue</span>
                 </div>
               </div>
@@ -386,12 +393,12 @@ export function AlertsCard({ h }: { h: HomeData }) {
             const [day, mon] = dayMon(a.date);
             const inner = (
               <>
-                <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: '#fff' }}>{day}</span>
-                <span style={{ fontSize: 11, fontWeight: 800 }}>{mon}</span>
+                <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: 'inherit' }}>{day}</span>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>{mon}</span>
               </>
             );
             return (
-              <div key={a.key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: '1px solid var(--hair)' }}>
+              <div key={a.key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', margin: '0 -16px', borderTop: '1px solid var(--hair)' }}>
                 {h.after ? (
                   <Tip tip={`${a.title} · ${day} ${mon}`} onOpen={() => open(days(h.today, a.date) <= 15 ? 2 : 3)} style={tile(a)}>
                     {inner}
@@ -411,11 +418,10 @@ export function AlertsCard({ h }: { h: HomeData }) {
                     >
                       {a.title}
                     </a>
-                    <InfoPopover askAbout={a.title}>{a.meta}</InfoPopover>
                   </div>
                 </div>
-                <span className="chip" style={{ width: 92, justifyContent: 'center', ...solid(a.tone) }}>
-                  {days(h.today, a.date) === 0 ? 'Today' : `In ${plural(days(h.today, a.date), 'day')}`}
+                <span className="chip" style={{ width: 108, justifyContent: 'center', ...solid(a.tone) }}>
+                  {days(h.today, a.date) === 0 ? 'Today' : a.tone === 'over' ? 'Overdue' : a.tone === 'due' ? 'Due soon' : 'Upcoming'}
                 </span>
               </div>
             );

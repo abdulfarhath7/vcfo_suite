@@ -333,20 +333,15 @@ export function NextCard({ h }: { h: HomeData }) {
                   <Tip
                     tip={`${hero.title} · overdue ${plural(late, 'day')}`}
                     onOpen={() => drill(1)}
-                    style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 14px', padding: '12px 14px', borderRadius: 8, background: 'var(--over-light)', border: '1px solid oklch(57% 0.2 22 / 0.3)', marginBottom: 6 }}
+                    style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 14px', padding: '10px 16px', margin: '0 -16px', borderRadius: 0, background: 'var(--over-light)' }}
                   >
-                    <div style={{ textAlign: 'left' }}>
-                      <span className="metric" style={{ fontSize: 30, lineHeight: 1, color: 'var(--over-text)' }}>{day}</span>
-                      <div className="lbl" style={{ color: 'var(--over-text)' }}>{mon}</div>
-                    </div>
+                    <span style={{ width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 'none', background: 'var(--panel)', color: 'var(--over-text)' }}>
+                      <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: 'inherit' }}>{day}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600 }}>{mon}</span>
+                    </span>
                     <div style={{ flex: 1, minWidth: 150 }}>
                       <div style={{ display: 'flex', gap: '6px 8px', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span className="rt" style={{ fontSize: 14 }}>{filingName(hero)}</span>
-                        <InfoPopover askAbout={filingName(hero)}>
-                          {hero.owner === 'client'
-                            ? `Waiting on ${h.company}${hero.needTitle ? ` · ${hero.needTitle}` : ''}${hero.needAskedBy ? ` · asked by ${hero.needAskedBy}` : ''}`
-                            : 'With SBC'}
-                        </InfoPopover>
                         <span className="chip" style={solid('over')}>Overdue {plural(late, 'day')}</span>
                       </div>
                     </div>
@@ -371,21 +366,18 @@ export function NextCard({ h }: { h: HomeData }) {
             const tone = n <= 7 ? 'due' : 'prog';
             const owner = ownerLabel(f);
             return (
-              <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: '1px solid var(--hair)' }}>
+              <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', margin: '0 -16px', borderTop: '1px solid var(--hair)' }}>
                 <Tip
                   tip={`${f.title} · ${day} ${mon}`}
                   onOpen={() => drill(n <= 15 ? 2 : 3)}
-                  style={{ position: 'relative', width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', flex: 'none', background: `var(--${tone})` }}
+                  style={{ position: 'relative', width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: `var(--${tone}-text)`, flex: 'none', background: `var(--${tone}-light)` }}
                 >
-                  <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: '#fff' }}>{day}</span>
-                  <span style={{ fontSize: 11, fontWeight: 800 }}>{mon}</span>
+                  <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: 'inherit' }}>{day}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600 }}>{mon}</span>
                 </Tip>
                 <div style={{ flex: 1 }}>
                   <div className="rt" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     {f.title}
-                    <InfoPopover askAbout={f.title}>
-                      {[f.periodLabel, AREA_NAME[groupOf(f)], f.windowTo ? `SBC by ${dShort(f.windowTo)}` : null].filter(Boolean).join(' · ')}
-                    </InfoPopover>
                   </div>
                 </div>
                 {owner ? (
