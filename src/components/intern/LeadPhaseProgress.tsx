@@ -12,8 +12,8 @@ import { cn } from '@/lib/utils';
 
 const PHASE_LABELS = ['Part A', 'Part B', 'Post-inc', 'Registration'];
 
-/* Progress is one colour. The phases used to have a hue each; now the gaps
-   between segments mark the phases and the state chip carries the status. */
+/* Progress is one colour (blue, green once a phase is done). Each phase is its own
+   6px bar with its count under it, so no legend line is needed. */
 export function LeadPhaseProgress({
   engagements,
   getState,
@@ -61,17 +61,19 @@ export function LeadPhaseProgress({
                   {chip}
                 </span>
               </div>
-              <div className="flex h-2 gap-1">
-                {row.phases.map((phase) => (
-                  <div
-                    key={phase.id}
-                    className="relative overflow-hidden rounded-[3px] bg-upcoming-soft"
-                    style={{ flex: Math.max(phase.total, 1) }}
-                  >
-                    <i
-                      className="absolute inset-y-0 left-0 rounded-[3px] bg-brand"
-                      style={{ width: `${phase.pct}%` }}
-                    />
+              {/* K-33 (audit 173): a 6px bar per phase with its count under it. */}
+              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${row.phases.length}, minmax(0, 1fr))` }}>
+                {row.phases.map((phase, i) => (
+                  <div key={phase.id} className="min-w-0">
+                    <div className="relative h-1.5 overflow-hidden rounded-[3px] bg-upcoming-soft">
+                      <i
+                        className={cn('absolute inset-y-0 left-0 rounded-[3px]', phase.pct >= 100 ? 'bg-positive-mid' : 'bg-brand')}
+                        style={{ width: `${phase.pct}%` }}
+                      />
+                    </div>
+                    <p className="mt-1 truncate text-[11px] tabular-nums text-ink-muted">
+                      {PHASE_LABELS[i] ?? phase.title} · {phase.done}/{phase.total}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -79,9 +81,6 @@ export function LeadPhaseProgress({
           );
         })
       )}
-      <p className="mt-2 text-[11px] text-ink-muted">
-        Segments, left to right: {PHASE_LABELS.join(' · ')}.
-      </p>
     </DashSection>
   );
 }
