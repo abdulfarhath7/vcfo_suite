@@ -7,6 +7,7 @@
  * (v7c_sbc_b / _a), Recent documents (v7c_docs_b / _a), Recent activity
  * (v7c_activity_b / _a). Markup, class names and inline styles verbatim.
  */
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { BotSays } from '@/components/client-portal/shared';
 import { VisorHead } from '@/components/client-portal/Visor';
@@ -52,36 +53,39 @@ export function GreetCard({ h }: { h: HomeData }) {
   const { portal, after, model, company } = h;
   const post = model.phases[2];
   const ring = after
-    ? { pct: post && post.total ? Math.round((post.done / post.total) * 100) : 0, label: 'SETUP', tip: `Setup · ${post?.done ?? 0} of ${post?.total ?? 0} done` }
-    : { pct: model.spice.pct, label: 'SPICE+', tip: `Incorporation · ${model.spice.done} of ${model.spice.total} SPICe+ steps` };
+    ? { pct: post && post.total ? Math.round((post.done / post.total) * 100) : 0, label: 'Setup', tip: `Setup · ${post?.done ?? 0} of ${post?.total ?? 0} done` }
+    : { pct: model.spice.pct, label: 'SPICe+', tip: `Incorporation · ${model.spice.done} of ${model.spice.total} SPICe+ steps` };
   const openRing = () =>
     portal.drill(after ? postIncDrill(h.post.open, h.post.done, 1) : spiceStepsDrill(model, company, 0));
   const regsDone = h.regs.filter((r) => r.status === 'Registered').length;
-  const stats: { v: string | number; label: string; color?: string }[] = after
+  const stats: { v: string | number; label: string; hot?: boolean; open?: () => void; tip?: string }[] = after
     ? [
-        { v: h.needs.length, label: `Waiting on ${company}`, color: 'oklch(86% 0.09 60)' },
-        { v: overdueCount(h), label: 'Overdue', color: 'oklch(84% 0.09 20)' },
-        { v: h.buckets.dueSoon, label: 'Due soon', color: 'oklch(86% 0.09 60)' },
+        { v: h.needs.length, label: `Waiting on ${company}` },
+        { v: overdueCount(h), label: 'Overdue', hot: overdueCount(h) > 0 },
+        { v: h.buckets.dueSoon, label: 'Due soon' },
         { v: `${regsDone}/${h.regs.length}`, label: 'Registrations' },
         ...(h.overview?.engagement.incorporationDate ? [{ v: dShort(h.overview.engagement.incorporationDate), label: 'Incorporated' }] : []),
+        { v: `${ring.pct}%`, label: ring.label, open: openRing, tip: ring.tip },
       ]
     : [
-        { v: h.needs.length, label: `Waiting on ${company}`, color: 'oklch(86% 0.09 60)' },
+        { v: h.needs.length, label: `Waiting on ${company}` },
         { v: model.counts.with, label: 'With SBC' },
-        { v: overdueCount(h), label: 'Overdue', color: 'oklch(84% 0.09 20)' },
+        { v: overdueCount(h), label: 'Overdue', hot: overdueCount(h) > 0 },
         ...(h.home && h.home.requestCounts.total > 0 ? [{ v: `${h.home.requestCounts.fulfilled}/${h.home.requestCounts.total}`, label: 'Documents in' }] : []),
         ...(model.coiExpected ? [{ v: dShort(model.coiExpected), label: 'Expected COI' }] : []),
+        { v: `${ring.pct}%`, label: ring.label, open: openRing, tip: ring.tip },
       ];
+  /* Greeting (K-07, rules R-17 and R-18): a navy band with the date, the name and
+     the actions, then a white number strip. Each number has a 30px tile from its
+     label, 12px gap, and the label above the number. The old ring is the last
+     number in the strip and still opens the steps. */
   return (
     <div style={{ width: '100%', boxSizing: 'border-box', ...S }}>
-      <section
-        className="vh-greet"
-        style={{ position: 'relative', borderRadius: 10, padding: '12px clamp(14px,2vw,18px) 10px', background: 'linear-gradient(115deg,var(--navy-deep,var(--navy)) 0%,var(--navy-2-deep,var(--navy-2)) 60%,var(--navy-3-deep,var(--navy-3)) 100%)', color: '#fff', overflow: 'hidden' }}
-      >
-        <div className="vh-gtop" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <section className="vh-greet" style={{ position: 'relative', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)', overflow: 'hidden' }}>
+        <div className="vh-gtop" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px clamp(14px,2vw,20px)', background: 'var(--hero-gradient)', color: '#fff' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="mono" style={{ fontSize: 11, opacity: 0.65 }}>{dHeader(h.today)}</div>
-            <h1 className="metric" style={{ margin: '2px 0 0', fontSize: 'clamp(19px,calc(15px + 0.6vw),24px)', lineHeight: 1.15, color: '#fff' }}>{h.companyName}</h1>
+            <div style={{ fontSize: 12, color: 'oklch(var(--side-muted))' }}>{dHeader(h.today)}</div>
+            <h1 style={{ margin: '2px 0 0', font: '600 20px/1.25 var(--font-sans),sans-serif', color: '#fff' }}>{h.companyName}</h1>
           </div>
           {h.engagementId ? (
             <a
@@ -96,28 +100,30 @@ export function GreetCard({ h }: { h: HomeData }) {
               <span className="vh-hide-xs">Report</span>
             </a>
           ) : null}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Tip
-              tip={ring.tip}
-              variant="l w"
-              onOpen={openRing}
-              style={{ width: 46, height: 46, borderRadius: 99, background: `conic-gradient(var(--gold) 0 ${ring.pct}%,oklch(100% 0 0 / 0.16) ${ring.pct}% 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <div style={{ width: 37, height: 37, borderRadius: 99, background: 'var(--navy-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '600 11px var(--font-sans)' }}>{ring.pct}%</div>
-            </Tip>
-            <span style={{ fontSize: 11, letterSpacing: '.1em', opacity: 0.7, marginTop: 2, whiteSpace: 'nowrap' }}>{ring.label}</span>
-          </div>
         </div>
-        <div style={{ height: 1, background: 'oklch(100% 0 0 / 0.14)', margin: '8px 0 7px' }} />
-        <div className="vh-stats" style={{ display: 'flex', flexWrap: 'wrap' }}>
-          {stats.map((s) => (
-            <div key={s.label} className="vh-stat" style={{ display: 'flex', alignItems: 'baseline', gap: 6, paddingRight: 16, marginRight: 16, borderRight: '1px solid oklch(100% 0 0 / 0.14)' }}>
-              <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: s.color ?? '#fff' }}>{s.v}</span>
-              <span style={{ fontSize: 11.5, opacity: 0.75 }}>{s.label}</span>
-            </div>
-          ))}
+        <div className="vh-stats" style={{ display: 'flex', flexWrap: 'wrap', padding: '0 clamp(14px,2vw,20px)' }}>
+          {stats.map((st, i) => {
+            const body = (
+              <>
+                <CardHeadTile title={st.label} size={30} />
+                <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <span style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{st.label}</span>
+                  <span style={{ font: '600 20px/1.2 var(--font-sans),sans-serif', color: st.hot ? 'var(--over-text)' : 'var(--fg)' }}>{st.v}</span>
+                </span>
+              </>
+            );
+            const box: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px 12px 0', marginRight: i < stats.length - 1 ? 24 : 0, borderRight: i < stats.length - 1 ? '1px solid var(--border)' : 0 };
+            return st.open ? (
+              <Tip key={st.label} tip={st.tip ?? st.label} onOpen={st.open} style={box}>
+                {body}
+              </Tip>
+            ) : (
+              <div key={st.label} className="vh-stat" style={box}>
+                {body}
+              </div>
+            );
+          })}
         </div>
-        <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, background: 'linear-gradient(90deg,var(--gold),oklch(78% 0.1 85 / 0) 70%)' }} />
       </section>
     </div>
   );

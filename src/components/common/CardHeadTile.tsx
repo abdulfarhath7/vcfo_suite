@@ -40,20 +40,21 @@ const ICONS: Record<CardHeadIconName, LucideIcon> = {
 };
 
 /**
- * The 28px tinted icon tile before every card title (K-06, rule R-16). The icon
+ * The 28px tinted icon tile before every card title (K-06, rule R-16), and the
+ * 30px tile before each greeting number (K-07, rule R-18). The icon
  * and tone come from the title, so the same kind of card looks the same on every
  * portal. Inline token styles keep it working inside the client portal's CSS
  * reset as well as in the staff shell.
  */
-export function CardHeadTile({ title, className }: { title: string; className?: string }) {
+export function CardHeadTile({ title, className, size = 28 }: { title: string; className?: string; size?: 28 | 30 }) {
   const { icon, tone } = cardHeadIcon(title);
   const Icon = ICONS[icon];
   const t = CARD_HEAD_TONE_TOKENS[tone];
   const style: CSSProperties = {
     display: 'inline-grid',
     placeItems: 'center',
-    width: 28,
-    height: 28,
+    width: size,
+    height: size,
     flex: 'none',
     borderRadius: 8,
     background: `oklch(var(--${t.bg}))`,
