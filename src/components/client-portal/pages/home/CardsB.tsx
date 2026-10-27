@@ -6,7 +6,7 @@
  * Company IDs (v7c_ids), Compliance by area (v7c_area), Registrations
  * (v7c_reg), Post-incorporation setup (v7c_postinc).
  */
-import { useState, type CSSProperties, type MouseEvent } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { BotSays } from '@/components/client-portal/shared';
 import { LinkButton } from '@/components/client-portal/LinkButton';
 import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
@@ -383,7 +383,7 @@ export function NextCard({ h }: { h: HomeData }) {
                 {owner ? (
                   <span className="chip" style={solid(f.owner === 'client' ? 'due' : 'prog')}>{owner}</span>
                 ) : null}
-                <span className="chip" style={{ width: 92, justifyContent: 'center', ...solid(tone) }}>{n === 0 ? 'Today' : `In ${plural(n, 'day')}`}</span>
+                <span className="chip" style={{ width: 108, justifyContent: 'center', ...solid(tone) }}>{n === 0 ? 'Today' : tone === 'due' ? 'Due soon' : 'Upcoming'}</span>
               </div>
             );
           })}
@@ -400,89 +400,56 @@ export function NextCard({ h }: { h: HomeData }) {
 
 /* -------------------------------------------------------- compliance donut */
 
+/* Compliance status (K-24, rules R-25 and R-06): the total and one stacked bar with a
+   legend. No donut and no info icon. Each bar segment and legend row opens its list. */
 export function CompCard({ h, onOpen }: { h: HomeData; onOpen: (tab: number) => void }) {
   const total = h.filings.length;
   const b = h.buckets;
   const segs: [FilingBucket, number][] = BUCKETS.map((k) => [k, b[k]]);
-  let acc = 0;
-  const stops = segs
-    .map(([k, n]) => {
-      const a = acc;
-      acc += total ? (n / total) * 100 : 0;
-      return `var(--${k === 'filed' ? 'ok' : k === 'dueSoon' ? 'due' : k === 'overdue' ? 'over' : 'up'}) ${a.toFixed(1)}% ${acc.toFixed(1)}%`;
-    })
-    .join(',');
-  const sliceAt = (e: MouseEvent<HTMLDivElement>): number | null => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - r.left - r.width / 2;
-    const y = e.clientY - r.top - r.height / 2;
-    const dist = Math.hypot(x, y);
-    if (dist < 49 || dist > 70 || !total) return null;
-    const ang = ((Math.atan2(x, -y) * 180) / Math.PI + 360) % 360;
-    let c = 0;
-    for (let i = 0; i < segs.length; i++) {
-      c += (segs[i]![1] / total) * 360;
-      if (ang <= c) return i;
-    }
-    return null;
-  };
+  const colour = (k: FilingBucket) => `var(--${k === 'filed' ? 'ok-mid' : k === 'dueSoon' ? 'due-mid' : k === 'overdue' ? 'over-mid' : 'up'})`;
   const pctOf = (n: number) => (total ? Math.round((n / total) * 100) : 0);
   return (
     <div style={W}>
       <section className="card">
         <CardHead
           title="Compliance status"
-          info="Hover a slice for its count · click a slice, a legend row or the centre to see the list"
-          right={<span className="chip" style={{ background: 'var(--up-light)', color: 'var(--up-text)', minWidth: 116, justifyContent: 'center' }}>{h.home?.filings.fyLabel ?? ''}</span>}
+          right={<span className="chip" style={{ background: 'var(--up-light)', color: 'var(--up-text)', minWidth: 108, justifyContent: 'center' }}>{h.home?.filings.fyLabel ?? ''}</span>}
         />
-        <div style={{ padding: '22px 16px 16px', display: 'flex', gap: 20, alignItems: 'center' }}>
-          <div role="group" aria-label={segs.map(([k, n]) => `${BUCKET_LABEL[k]} ${n}`).join(', ')} style={{ position: 'relative', width: 140, height: 140, flex: 'none' }}>
-            {/* slice hover and click are a mouse shortcut: the legend rows beside it open the same lists from the keyboard */}
-            <div
-              role="presentation"
-              onMouseMove={(e) => {
-                const i = sliceAt(e);
-                h.portal.tipAt(e.clientX, e.clientY, i == null ? null : `${BUCKET_LABEL[segs[i]![0]]} · ${segs[i]![1]}`);
-              }}
-              onMouseLeave={() => h.portal.tipAt(0, 0, null)}
-              onClick={(e) => {
-                const i = sliceAt(e);
-                if (i != null) {
-                  h.portal.tipAt(0, 0, null);
-                  onOpen(i + 1);
-                }
-              }}
-              style={{ width: 140, height: 140, borderRadius: 99, background: total ? `conic-gradient(${stops})` : 'var(--raised)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+        <div style={{ padding: '14px 16px 16px' }}>
+          <LinkButton title="Show all" onClick={() => onOpen(0)} style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6, color: 'var(--fg)' }}>
+            <span className="metric" style={{ fontSize: 28, lineHeight: 1, color: 'var(--fg)' }}>{total}</span>
+            <span className="cap">filings this FY</span>
+          </LinkButton>
+          <div role="group" aria-label={segs.map(([k, n]) => `${BUCKET_LABEL[k]} ${n}`).join(', ')} style={{ display: 'flex', gap: 2, height: 12, margin: '12px 0 10px', borderRadius: 4, overflow: 'hidden', background: 'var(--raised)' }}>
+            {total
+              ? segs.map(([k, n], i) =>
+                  n ? (
+                    <button
+                      key={k}
+                      type="button"
+                      aria-label={`${BUCKET_LABEL[k]} · ${n}`}
+                      data-tip={`${BUCKET_LABEL[k]} · ${n}`}
+                      onClick={() => onOpen(i + 1)}
+                      style={{ flex: `${n} 0 0`, minWidth: 4, height: '100%', border: 0, padding: 0, background: colour(k), cursor: 'pointer' }}
+                    />
+                  ) : null,
+                )
+              : null}
+          </div>
+          {segs.map(([k, n], i) => (
+            <LinkButton
+              key={k}
+              data-tip={`${BUCKET_LABEL[k]} · ${n}`}
+              onClick={() => onOpen(i + 1)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: 'calc(100% + 16px)', padding: '6px 8px', margin: '0 -8px', borderRadius: 6, color: 'var(--fg)', fontWeight: 500 }}
             >
-              <LinkButton
-                title="Show all"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpen(0);
-                }}
-                style={{ width: 98, height: 98, borderRadius: 99, background: 'var(--panel)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--fg)' }}
-              >
-                <span className="metric" style={{ fontSize: 28, lineHeight: 1, color: 'var(--fg)' }}>{total}</span>
-                <span className="cap">this FY</span>
-              </LinkButton>
-            </div>
-          </div>
-          <div style={{ flex: 1 }}>
-            {segs.map(([k, n], i) => (
-              <LinkButton
-                key={k}
-                data-tip={`${BUCKET_LABEL[k]} · ${n}`}
-                onClick={() => onOpen(i + 1)}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, width: 'calc(100% + 16px)', padding: '6px 8px', margin: '0 -8px', borderRadius: 6, color: 'var(--fg)', fontWeight: 500, ...(k === 'dueSoon' ? { background: 'var(--raised)' } : {}) }}
-              >
-                <span style={{ width: 10, height: 10, borderRadius: 2, background: `var(--${BUCKET_TONE[k] === 'ok' ? 'ok' : BUCKET_TONE[k]})` }} />
-                <span className="rt" style={{ flex: 1, fontWeight: 500 }}>{BUCKET_LABEL[k]}</span>
-                <span className="mono" style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  {n} ({pctOf(n)}%)
-                </span>
-              </LinkButton>
-            ))}
-          </div>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: colour(k) }} />
+              <span className="rt" style={{ flex: 1, fontWeight: 500 }}>{BUCKET_LABEL[k]}</span>
+              <span className="mono" style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {n} ({pctOf(n)}%)
+              </span>
+            </LinkButton>
+          ))}
         </div>
       </section>
     </div>
