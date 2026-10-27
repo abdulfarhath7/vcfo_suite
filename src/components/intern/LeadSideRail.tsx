@@ -43,7 +43,7 @@ export function LeadSideRail({
               { n: filed, color: 'oklch(var(--positive))' },
               { n: dueSoon, color: 'oklch(var(--warning))' },
               { n: overdue, color: 'oklch(var(--danger))' },
-              { n: upcoming, color: 'oklch(var(--line-strong))' },
+              { n: upcoming, color: 'oklch(var(--upcoming))' },
             ]}
             centerLabel={filed + dueSoon + overdue + upcoming}
             centerCaption="filings"
@@ -52,7 +52,7 @@ export function LeadSideRail({
             <DashLegendRow swatchClassName="bg-positive" label="Filed" count={filed} />
             <DashLegendRow swatchClassName="bg-warning" label="Due soon" count={dueSoon} />
             <DashLegendRow swatchClassName="bg-danger" label="Overdue" count={overdue} />
-            <DashLegendRow swatchClassName="bg-line-strong" label="Upcoming" count={upcoming} />
+            <DashLegendRow swatchClassName="bg-upcoming" label="Upcoming" count={upcoming} />
           </div>
         </div>
         {nextFilings.map((f) => (
@@ -75,7 +75,7 @@ export function LeadSideRail({
       <section className="surface overflow-hidden" data-intern-waiting-on>
         <div className="flex min-w-0 items-center gap-2.5 px-4 pt-3">
           <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-surface-sunken text-warning">
-            <Clock className="h-3.5 w-3.5" aria-hidden />
+            <Clock className="h-[15px] w-[15px]" strokeWidth={2} aria-hidden />
           </span>
           <h2 className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-ink">Waiting on</h2>
         </div>

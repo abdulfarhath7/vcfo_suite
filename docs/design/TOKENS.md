@@ -232,3 +232,53 @@ Conflicts, resolved in favour of the brief: `design-taste-frontend` discourages 
 ## Prototype v8 (1)
 
 `~/Downloads/Lead Dashboard (1).html` differs from v8 in two ways. Every lead screen gained one rule: chips and buttons inside table cells and list rows get `min-width: 84px` with a centred label, so columns line up. That rule is now `chip-min-width` and `control-min-width`. The Work screen also gained a time-block editor (drag handles on calendar blocks and a "Change time" popover with 15-minute steppers). That is a feature, not a system change; it is noted for the Work slice in step 4.
+
+## v1.1, 22 October: simple but colourful
+
+v1 over-corrected: it took the colour out of the status chips, the hero and the brand marks, so the app read flat next to the prototype. v1.1 puts colour back where the prototype puts it, under rules. Everything v1 fixed stays fixed.
+
+### Two intensities
+
+- A **state** is a solid chip: the fill is the status colour, the text is `on-status` (white in light, navy in dark). Five states: `positive` done or filed, `brand` in progress, `warning` waiting or due (the prototype's orange, `#be4400`), `danger` overdue or stuck, `upcoming` not started or queued (`#656f7e`). In a column every state chip takes `chip-min-width` and centres its label.
+- An **owner** or a **tag** is a soft tint with a text-safe colour: `owner-client` on `owner-client-soft` (orange), `owner-sbc` (blue), `owner-mca` (teal), `owner-manager` (violet); tags and counts stay neutral or brand. Never a solid owner chip, never a soft state chip in a status column.
+- A state mentioned inline (a link, a sentence) may wear the soft tint with a 6px dot in the solid colour, the SBC-Track pattern.
+- In a dense list (more than about eight rows, a full-page table) a state is the word alone in its colour at 600 with no ground, the LeetCode pattern (`STATE_WORD_CLASS` + `TONE_TEXT`). Three forms, one rule: the busier the list, the lighter the mark.
+
+### Gold, the brand mark
+
+`gold` (`#c9a24b` light, `#e0bd66` dark) is only ever a mark: the progress ring on the greeting card, the ring around the current step, the sidebar's active rail, a card's top tab. Not an underline: a gold rule under the greeting read as a yellow line and was removed. It holds 3:1 on navy, not on white, so it never carries text. `gold-text` (`#7a5a12` / `#e8c97d`) is the one gold that touches words.
+
+### The one gradient
+
+`hero-gradient`, navy to blue at 115 degrees (`#0f2a4a` to `#17396b` to `#1b4f94`; dark `#0b1521` to `#17304d`), is the greeting card's ground and the only gradient in the product. The hot figure on it is `#ff9b8f` in light (the prototype's pale red) and `highlight` in dark.
+
+### Other changes
+
+- `warning` moves from amber (hue 73) to the prototype's orange (hue 41). It no longer clashes with `highlight`; the two differ in lightness and in job (warning is a state, highlight a figure or mark).
+- Every dark `-soft` ground is two points lighter so chips read against `surface-raised`.
+- Secondary buttons drop the `line-strong` border for `line` plus `shadow-card`.
+- `DashSection` takes `size="lg"` (13px sentence-case title) for a page's first section.
+- `StatCard` takes `tinted` (soft fill of its tone behind the 3px edge).
+- Charts on a dashboard use the five state colours or one brand ramp; `data-1..6` is for analytics pages only.
+
+### What this takes from the references
+
+- **Prototype v8:** solid state chips at one column width; soft owner tints; the gradient greeting card with the gold underline and gold ring; 8px status dots on the week strip; the action heatmap; the 22px health bar; grey section tiles and white cards so colour sits only in small marks.
+- **SBC-Track (sbcllp/SBC-Track):** status triples at matched lightness; the dot inside a soft chip; tinted KPI tiles; layered low-alpha shadows; the sliding active nav pill; colour only where it carries meaning.
+- **LeetCode (problemset, read live on 22 October):** colour sits in words and small icons, never in blocks. Difficulty is a coloured word (teal `hsl(180 74% 42%)`, yellow `hsl(43 100% 50%)`, red `hsl(0 91% 59%)`) with no chip ground; topic chips are neutral pills with a coloured 14px icon; counts are neutral grey badges; long tables stripe every second row; text is an opacity ladder on one neutral (our `ink`, `ink-muted`, `ink-faint`); surfaces are three flat layers; the brand orange appears only on the logo and one button; radius 8px. Taken: the coloured-word form of a state for dense lists, striped table rows, neutral count badges outside the sidebar, colour in icons rather than fills.
+- **Left behind:** the prototype's inline hex values and gold fills; SBC-Track's warm cream ground, serif figures, orange brand and raw Tailwind badges.
+
+The token source is `scripts/design-tokens-source.mjs` (`node scripts/design-tokens-source.mjs > docs/design/design-tokens.json`, then `node scripts/design-tokens-css.mjs --write`). The contrast gate has 75 pairs, 0 failures.
+
+## v1.2, 23 October: rules from the prototype review
+
+The owner reviewed the clickable prototype (v9, built by `docs/specs/landing-page/src/proto-fix/patch.mjs`) on 22 and 23 October. These decisions came out of it; the design book (`vcfo-design-system.html`, v1.2) shows each one.
+
+- **Client colours.** Each client company owns one colour for good, so a project lead running eight companies knows a company by its colour before reading the name. The set has eight hues, each with a dot colour, a soft tile ground and a dark tile text: violet `#7c3aed`, indigo `#4f46e5`, green `#16a34a`, slate `#64748b`, pink `#db2777`, teal `#0d9488`, sky `#0284c7`, amber `#a16207`. They appear as the 8px dot beside the company name and the 26px initials tile, on every screen. People, tags and nav items stay neutral, and a client colour never stands in for a state. This replaces the v1 rule that identity never gets a colour. The set is not in `design-tokens.json` yet.
+- **No page titles.** The breadcrumb and the active nav item name the page. The first row of a page is its controls, starting at the left edge; actions sit on the right.
+- **Navigation that works.** Every breadcrumb segment except the current page is a link. Back returns to the previous screen and never leaves the product; on the first screen it does nothing.
+- **One table look, grids included.** Sunken head under the 2px ink rule, 40px rows, a hairline between rows. A grid (heatmap, phase progress, clients by filings) is the same table; each cell holds a 28px box with 6px corners, 6px from its neighbours. Done green, current brand blue, due or waiting orange, overdue red, next dashed, not applicable hatched.
+- **Account row.** Every portal ends the sidebar with the person and a Sign out button. Settings is a nav item. The active nav rail is gold on both portals, and only the active child is highlighted, not its parent.
+- **Gold.** No card tabs or stubs any more; gold is the greeting card ring, the current-step ring and the nav rail.
+- **One Ask VCFO launcher**, the visor character beside a navy pill with a teal dot, on the landing page and in both portals.
+- **Smaller rules.** "New" is one neutral tag; counts are neutral badges, red only for an overdue count; mono only on identifiers; statutory deadlines show a real date, never "in N days".

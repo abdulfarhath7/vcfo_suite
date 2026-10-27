@@ -95,24 +95,27 @@ export default function Analytics() {
       />
 
       <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Projects" value={live.projects} tone="brand" icon={Briefcase} />
+        <StatCard label="Projects" value={live.projects} tone="brand" icon={Briefcase} tinted />
         <StatCard
           label="Steps completed"
           value={`${live.pct}%`}
           tone="positive"
           icon={CheckCircle2}
+          tinted
         />
         <StatCard
           label="Waiting on client"
           value={live.awaitingClient}
           tone="warning"
           icon={Users}
+          tinted
         />
         <StatCard
           label="Overdue steps"
           value={live.overdue}
-          tone={live.overdue > 0 ? 'warning' : 'positive'}
+          tone={live.overdue > 0 ? 'danger' : 'positive'}
           icon={Clock}
+          tinted
         />
       </div>
 

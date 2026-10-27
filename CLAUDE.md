@@ -29,7 +29,7 @@ npm run db:migrate              # apply src/db/migrations (db:generate after sch
 npm run db:seed                 # @vcfo.local logins; npm run db:seed-demo adds demo firms
 npm run dev                     # http://localhost:3000 (dev:lan binds 0.0.0.0 for phones)
 npm run check                   # the gate: typecheck, lint, test (fails fast)
-npm run e2e                     # Playwright, starts its own dev server
+npm run e2e:smoke               # every page, every role (needs db:seed-demo); npm run e2e = all specs
 ```
 
 Demo logins are listed in `README.md` and `docs/context/STATE.md`. Gotchas for Docker, LAN

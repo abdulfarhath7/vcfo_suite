@@ -18,6 +18,7 @@ export type IconChipTone =
   | 'danger'
   | 'info'
   | 'highlight'
+  | 'upcoming'
   | 'role'
   | 'neutral'
   | 'emerald'
@@ -42,6 +43,7 @@ const TONE: Record<IconChipTone, { shell: string; icon: string }> = {
   danger: { shell: 'bg-danger-soft', icon: 'text-danger' },
   info: { shell: 'bg-info-soft', icon: 'text-info' },
   highlight: { shell: 'bg-highlight-soft', icon: 'text-highlight' },
+  upcoming: { shell: 'bg-upcoming-soft', icon: 'text-upcoming' },
   role: { shell: 'bg-brand-soft', icon: 'text-brand' },
   neutral: NEUTRAL,
   emerald: NEUTRAL,
@@ -72,6 +74,7 @@ export const TONE_BG: Record<IconChipTone, string> = {
   danger: 'bg-danger',
   info: 'bg-info',
   highlight: 'bg-highlight-bright',
+  upcoming: 'bg-upcoming',
   role: 'bg-brand',
   neutral: 'bg-ink-faint',
   emerald: 'bg-ink-faint',
@@ -94,6 +97,7 @@ export const TONE_TEXT: Record<IconChipTone, string> = {
   danger: 'text-danger',
   info: 'text-info',
   highlight: 'text-highlight',
+  upcoming: 'text-upcoming',
   role: 'text-brand',
   neutral: 'text-ink-muted',
   emerald: 'text-ink-muted',
@@ -116,6 +120,7 @@ export const TONE_BADGE: Record<IconChipTone, string> = {
   danger: 'bg-danger-soft text-danger',
   info: 'bg-info-soft text-info',
   highlight: 'bg-highlight-soft text-highlight',
+  upcoming: 'bg-upcoming-soft text-upcoming',
   role: 'bg-brand-soft text-brand',
   neutral: 'bg-surface-sunken text-ink-muted',
   emerald: 'bg-surface-sunken text-ink-muted',
@@ -138,6 +143,45 @@ export const TONE_BADGE: Record<IconChipTone, string> = {
 export const CHIP_CLASS =
   'inline-flex h-chip items-center gap-1 whitespace-nowrap rounded-sm px-2 text-[11px] font-semibold leading-4';
 export const CHIP_COLUMN_CLASS = 'min-w-chip justify-center';
+
+/**
+ * Two intensities of colour (docs/design/TOKENS.md v1.1). A STATE is a solid
+ * fill with on-status text: done, in progress, waiting or due, overdue,
+ * upcoming. An OWNER or a tag is a soft tint (TONE_BADGE above, TONE_OWNER
+ * below). Never a solid owner chip, never a soft state chip in a status column.
+ */
+export type StatusKey = 'done' | 'progress' | 'waiting' | 'overdue' | 'upcoming';
+export const TONE_SOLID: Record<StatusKey, string> = {
+  done: 'bg-positive text-on-status',
+  progress: 'bg-brand text-on-status',
+  waiting: 'bg-warning text-on-status',
+  overdue: 'bg-danger text-on-status',
+  upcoming: 'bg-upcoming text-on-status',
+};
+/** Solid chip colours keyed by the IconChipTone names callers already use. */
+export const TONE_SOLID_BY_TONE: Partial<Record<IconChipTone, string>> = {
+  success: TONE_SOLID.done,
+  primary: TONE_SOLID.progress,
+  warning: TONE_SOLID.waiting,
+  danger: TONE_SOLID.overdue,
+  upcoming: TONE_SOLID.upcoming,
+  neutral: TONE_SOLID.upcoming,
+  info: TONE_SOLID.progress,
+};
+export type OwnerKey = 'client' | 'sbc' | 'mca' | 'manager';
+export const TONE_OWNER: Record<OwnerKey, string> = {
+  client: 'bg-owner-client-soft text-owner-client',
+  sbc: 'bg-owner-sbc-soft text-owner-sbc',
+  mca: 'bg-owner-mca-soft text-owner-mca',
+  manager: 'bg-owner-manager-soft text-owner-manager',
+};
+/**
+ * The third form of a state, for dense lists (LeetCode's Easy / Medium / Hard): the word
+ * alone in its colour at 600, no ground. `cn(STATE_WORD_CLASS, TONE_TEXT.success)`.
+ */
+export const STATE_WORD_CLASS = 'text-[12px] font-semibold whitespace-nowrap';
+/** A 6px dot inside a soft chip, in the state's solid colour (SBC-Track style). */
+export const CHIP_DOT_CLASS = 'inline-block h-1.5 w-1.5 shrink-0 rounded-sm';
 
 const SIZE: Record<IconChipSize, { shell: string; icon: string }> = {
   sm: { shell: 'h-6 w-6 rounded-md', icon: 'h-3.5 w-3.5' },

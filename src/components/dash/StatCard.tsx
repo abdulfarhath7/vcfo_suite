@@ -33,6 +33,16 @@ const ICON: Record<StatCardTone, string> = {
   neutral: 'text-ink-muted',
 };
 
+const TINT: Record<StatCardTone, string> = {
+  brand: 'bg-brand-soft',
+  positive: 'bg-positive-soft',
+  warning: 'bg-warning-soft',
+  danger: 'bg-danger-soft',
+  info: 'bg-info-soft',
+  highlight: 'bg-highlight-soft',
+  neutral: 'bg-surface-sunken',
+};
+
 const BAR: Record<StatCardTone, string> = {
   brand: 'bg-brand',
   positive: 'bg-positive',
@@ -52,6 +62,7 @@ export function StatCard({
   delta,
   trend,
   href,
+  tinted = false,
   className,
 }: {
   label: string;
@@ -65,6 +76,8 @@ export function StatCard({
   /** Up to six values, oldest first; the last one draws solid, the rest faint. Context, not a chart. */
   trend?: number[];
   href?: string;
+  /** Soft fill of the tone (SBC-Track KPI style) in addition to the top edge. */
+  tinted?: boolean;
   className?: string;
 }) {
   const max = trend && trend.length ? Math.max(1, ...trend) : 1;
@@ -108,7 +121,8 @@ export function StatCard({
     </>
   );
   const shell = cn(
-    'block rounded-lg border border-line border-t-[3px] bg-surface-raised p-4 shadow-card',
+    'block rounded-lg border border-line border-t-[3px] p-4 shadow-card',
+    tinted ? TINT[tone] : 'bg-surface-raised',
     EDGE[tone],
     href && 'transition-shadow hover:shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
     className,

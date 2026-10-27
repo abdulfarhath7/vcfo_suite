@@ -22,18 +22,18 @@ html[data-theme="dark"]{color-scheme:dark;
 --primary:oklch(var(--brand));--primary-dark:oklch(var(--brand-strong));--primary-light:oklch(var(--brand-soft));--primary-chip:oklch(var(--brand));
 --navy:oklch(var(--side-active));--navy-ink:oklch(var(--ink));--navy-2:oklch(var(--brand-strong));--navy-3:oklch(var(--brand));
 --navy-deep:oklch(var(--brand-soft));--navy-2-deep:oklch(var(--brand-soft));--navy-3-deep:oklch(var(--brand-soft));--primary-fill:oklch(var(--brand));--primary-fill-2:oklch(var(--brand-strong));
---gold:oklch(var(--brand));--gold-2:oklch(var(--brand-strong));--gold-soft:oklch(var(--highlight-soft));--gold-text:oklch(var(--highlight));
+--gold:oklch(var(--gold));--gold-2:oklch(var(--gold));--gold-soft:oklch(var(--highlight-soft));--gold-text:oklch(var(--gold-text));
 --ok:oklch(var(--positive));--ok-light:oklch(var(--positive-soft));--ok-text:oklch(var(--positive));--ok-chip:oklch(var(--positive));
 --due:oklch(var(--warning));--due-light:oklch(var(--warning-soft));--due-text:oklch(var(--warning));--due-chip:oklch(var(--warning));
 --over:oklch(var(--danger));--over-light:oklch(var(--danger-soft));--over-text:oklch(var(--danger));--over-chip:oklch(var(--danger));
 --prog:oklch(var(--brand));--prog-light:oklch(var(--brand-soft));--prog-text:oklch(var(--brand));--prog-chip:oklch(var(--brand));
---up:oklch(var(--ink-faint));--up-light:oklch(var(--surface-sunken));--up-text:oklch(var(--ink-muted));--up-chip:oklch(var(--ink-faint));
+--up:oklch(var(--upcoming));--up-light:oklch(var(--upcoming-soft));--up-text:oklch(var(--ink-muted));--up-chip:oklch(var(--upcoming));
 --violet:oklch(var(--brand));--violet-light:oklch(var(--brand-soft));--violet-chip:oklch(var(--brand));--violet-text:oklch(var(--brand));--violet-soft:oklch(var(--brand-soft));
 --sky:oklch(var(--brand));--sky-light:oklch(var(--brand-soft));--sky-chip:oklch(var(--brand));
 --teal:oklch(var(--info));--teal-light:oklch(var(--info-soft));--teal-chip:oklch(var(--info));
---you:oklch(var(--highlight));--you-light:oklch(var(--highlight-soft));--you-text:oklch(var(--highlight));
---with:oklch(var(--brand));--with-light:oklch(var(--brand-soft));--with-text:oklch(var(--brand));
---own-you:oklch(var(--highlight-soft));--own-you-t:oklch(var(--highlight));--own-sbc:oklch(var(--brand-soft));--own-sbc-t:oklch(var(--brand));
+--you:oklch(var(--owner-client));--you-light:oklch(var(--owner-client-soft));--you-text:oklch(var(--owner-client));
+--with:oklch(var(--owner-sbc));--with-light:oklch(var(--owner-sbc-soft));--with-text:oklch(var(--owner-sbc));
+--own-you:oklch(var(--owner-client-soft));--own-you-t:oklch(var(--owner-client));--own-sbc:oklch(var(--owner-sbc-soft));--own-sbc-t:oklch(var(--owner-sbc));
 --folder:oklch(var(--brand));--folder-open:oklch(var(--brand-strong));--sk:oklch(var(--surface-sunken));--cv:oklch(var(--surface-sunken));
 --shadow:var(--shadow-card);--pop:var(--shadow-float);background:#000}
 html[data-theme="dark"] .vps{background:#000!important}

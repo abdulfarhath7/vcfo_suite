@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
 import { CalendarDays } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
-import { toneForKey, TONE_BADGE } from '@/components/common/IconChip';
+import { CHIP_CLASS, TONE_BADGE, TONE_OWNER } from '@/components/common/IconChip';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import type { AdminDashboardViewProps } from '@/views/admin/DashboardSections';
@@ -71,7 +71,7 @@ export function AdminDashboardFilingsPanel({
                     {c.filing}
                   </span>
                   <span
-                    className={`inline-flex shrink-0 rounded-sm px-2 py-px text-[9.5px] font-semibold uppercase tracking-wide ${TONE_BADGE[toneForKey(c.authority)]}`}
+                    className={`${CHIP_CLASS} shrink-0 ${/mca|roc/i.test(c.authority) ? TONE_OWNER.mca : TONE_BADGE.neutral}`}
                   >
                     {c.authority}
                   </span>

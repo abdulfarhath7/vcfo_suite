@@ -2,10 +2,10 @@
 
 import { useEffect, useId, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Zap } from 'lucide-react';
+import { ChevronDown, ListTodo } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
 import { InternWorkQueueRow } from '@/components/intern/InternWorkRow';
-import { internToneBadge } from '@/components/intern/intern-tones';
+import { internToneSolid } from '@/components/intern/intern-tones';
 import {
   internActionQueueByCompany,
   internQueueCompanyHref,
@@ -59,7 +59,7 @@ function LeadActionCompanyRow({
             'pointer-events-none relative z-10 ml-auto shrink-0',
             CHIP_CLASS,
             CHIP_COLUMN_CLASS,
-            internToneBadge(group.pill.tone),
+            internToneSolid(group.pill.tone),
           )}
         >
           {group.pill.label}
@@ -114,7 +114,7 @@ export function LeadActionQueue({
 
   return (
     <DashSection
-      icon={Zap}
+      icon={ListTodo}
       title="Action queue · by company"
       className="h-fit"
       bodyClassName={cn(dense && 'max-h-[min(34rem,70vh)] overflow-y-auto')}

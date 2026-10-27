@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super admin · Incorporation</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="practice" sub="Incorporation" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Incorporation" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <section class="card" data-card="inc-pipe">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18 M5 21V7l7-4 7 4v14 M9 21v-6h6v6"></path></svg></span><h2 class="st">Incorporation pipeline</h2><span class="cnt">{{nInc}}</span></div>
+        <div class="pipe" style="align-items: stretch">
+          <sc-for list="{{stages}}" as="p" hint-placeholder-count="4">
+            <div class="ps" style="cursor: default"><b>{{p.n}}</b><span>{{p.label}}</span>
+              <sc-for list="{{p.cl}}" as="c" hint-placeholder-count="2"><span class="nm" style="margin-top: 8px; font-size: 12px; color: #0f2a4a"><span class="ct" style="{{c.ct}}; width: 22px; height: 22px; font-size: 9.5px">{{c.k}}</span>{{c.name}}</span></sc-for>
+            </div>
+            <sc-if value="{{p.arrow}}" hint-placeholder-val="{{false}}"><span class="arw" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span></sc-if>
+          </sc-for>
+        </div>
+      </section>
+      <div class="cols2">
+        <section class="card" data-card="inc-days">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20a10 10 0 1 0 0 20 M12 6v6l4 2"></path></svg></span><h2 class="st">Days in each stage · this year</h2></div>
+          <table class="tbl"><thead><tr><th>Stage</th><th style="text-align: right">Target</th><th style="text-align: right">Average</th><th>Slowest now</th></tr></thead>
+            <tbody><sc-for list="{{days}}" as="d" hint-placeholder-count="4"><tr><td><b style="font-weight: 600">{{d.label}}</b></td><td style="text-align: right">{{d.target}} days</td><td style="text-align: right; {{d.avgSt}}">{{d.avg}} days</td><td>{{d.slow}}</td></tr></sc-for></tbody></table>
+        </section>
+        <section class="card" data-card="inc-coi">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z M16 2v4 M8 2v4 M3 10h18"></path></svg></span><h2 class="st">Expected certificates</h2></div>
+          <sc-for list="{{coi}}" as="c" hint-placeholder-count="8">
+            <div class="it" data-go="super-overview" style="cursor: pointer"><span class="ct" style="{{c.ct}}">{{c.k}}</span><span style="flex: 1; min-width: 0"><b style="font-weight: 600; display: block">{{c.name}}</b><span class="sub">{{c.step}} · {{c.mgr}}</span></span><span class="pb" style="width: 90px"><sc-for list="{{c.segs}}" as="g" hint-placeholder-count="4"><span style="{{g.st}}"></span></sc-for></span><b style="font-weight: 600; width: 64px; text-align: right">{{c.date}}</b><span class="chip sol" style="{{c.hlS}}">{{c.hl}}</span></div>
+          </sc-for>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const M = (id) => A.ALLMGR[id] || { name: '', ini: '' };
+    const AD = (id) => A.ADMINS[id] || { name: '', ini: '' };
+    const ct = (k) => byK[k] ? 'background:' + byK[k].soft + ';color:' + byK[k].ink : 'background:#eef2f7;color:#4b5b70';
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const dd = s.dd || '';
+
+    const inc = all.filter(c => c.stage === 'inc');
+    const STG = [['name', 'Name approval'], ['spice', 'SPICe+ forms'], ['mca', 'MCA review'], ['coi', 'Certificate (COI)']];
+    const stages = STG.map(([k, label], i) => { const l = inc.filter(c => c.pipe === k); return { n: l.length, label, arrow: i < STG.length - 1, cl: l.map(c => ({ k: c.k, name: c.name, ct: ct(c.k) })) }; });
+    const days = [['Name approval', 5, 6, 'Banyan Wellness, 24 days'], ['SPICe+ forms', 10, 9, 'Saltmarsh Ventures, 14 days'], ['MCA review', 7, 12, 'Monsoon Labs, 15 days'], ['Certificate (COI)', 3, 2, 'None waiting']]
+      .map(([label, target, avg, slow]) => ({ label, target, avg, slow, avgSt: avg > target ? 'color:#b5302a;font-weight:600' : 'color:#0f6e51;font-weight:600' }));
+    const EXP = { ML: ['30 Oct', 30], OL: ['4 Nov', 35], SV: ['6 Nov', 37], NT: ['9 Nov', 40], QM: ['12 Nov', 43], LA: ['26 Nov', 57], BW: ['2 Dec', 63], JB: ['9 Dec', 70] };
+    const coi = inc.slice().sort((a, b) => EXP[a.k][1] - EXP[b.k][1]).map(c => ({ k: c.k, name: c.name, ct: ct(c.k), step: c.code + ' ' + c.step, mgr: M(c.mgr).name, segs: A.phaseBar(c.phases), date: EXP[c.k][0], hl: A.HEALTH[c.health][0], hlS: 'background:' + A.HEALTH[c.health][1] }));
+    return { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }), nInc: inc.length, stages, days, coi };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

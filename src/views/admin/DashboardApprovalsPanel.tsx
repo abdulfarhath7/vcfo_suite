@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ClipboardCheck } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
+import { CHIP_CLASS, CHIP_DOT_CLASS, TONE_BADGE } from '@/components/common/IconChip';
 import { useApp } from '@/context/AppContext';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { pendingApprovalKind, usePendingApprovals } from '@/hooks/use-pending-approvals';
@@ -54,7 +55,8 @@ export function DashboardApprovalsPanel() {
                     {checklistItemLabel(row.itemId)} · {pendingApprovalKind(row)}
                   </span>
                 </span>
-                <span className="shrink-0 rounded-sm bg-brand-soft px-2.5 py-1 text-[11px] font-semibold text-brand">
+                <span className={`${CHIP_CLASS} shrink-0 ${TONE_BADGE.warning}`}>
+                  <i className={`${CHIP_DOT_CLASS} bg-warning`} aria-hidden />
                   Review
                 </span>
               </Link>

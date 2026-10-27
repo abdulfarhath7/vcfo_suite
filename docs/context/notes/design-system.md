@@ -23,8 +23,13 @@ The short version, which overrides everything in the "superseded" section below:
 - Old names (`--primary`, `--gold`, `--accent-*`, `--phase-*`, `--role-*`,
   `--stat-*`, the portal's `--navy`/`--ok`/`--due`/`--over`...) are aliases of
   the tokens above and are deleted on 2026-11-30.
-- Identity never gets a colour: companies, people, tags and nav items are
-  neutral. Status gets a soft ground, a text-safe colour and a word.
+- Two things carry colour: a state and a client company. Each client keeps one
+  colour from the eight-hue client set on every screen (dot and initials tile;
+  owner decision, 2026-10-22). People, tags and nav items are neutral. Status
+  gets a solid chip, a soft tint or a coloured word, always with a word.
+- Pages have no title (the breadcrumb and nav name them); breadcrumb segments
+  are links; Back returns to the previous screen. Grids use the table rows with
+  28px, 6px-corner cells. Full list: `docs/design/TOKENS.md`, "v1.2".
 - Chips are 22px, 6px corners, 84px/88px minimum width in columns; buttons are
   28/32/40 high and at least 84px wide. No pills except toggles and rings.
 - Borders before shadows (`shadow-card`, `shadow-float` only), no gradients, no

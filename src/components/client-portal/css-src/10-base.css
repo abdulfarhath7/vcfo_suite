@@ -4,12 +4,12 @@
 body{margin:0;-webkit-font-smoothing:antialiased}
 :root{--bg:oklch(var(--surface));--panel:oklch(var(--surface-raised));--raised:oklch(var(--surface-sunken));--border:oklch(var(--line));--hair:oklch(var(--line));--fg:oklch(var(--ink));--muted:oklch(var(--ink-muted));--subtle:oklch(var(--ink-faint));
 --primary:oklch(var(--brand));--primary-dark:oklch(var(--brand-strong));--primary-light:oklch(var(--brand-soft));--primary-chip:oklch(var(--brand));
---navy:oklch(var(--ink));--navy-2:oklch(var(--brand-strong));--navy-3:oklch(var(--brand));--gold:oklch(var(--brand));--gold-soft:oklch(var(--highlight-soft));--gold-text:oklch(var(--highlight));
+--navy:oklch(var(--ink));--navy-2:oklch(var(--brand-strong));--navy-3:oklch(var(--brand));--gold:oklch(var(--gold));--gold-soft:oklch(var(--highlight-soft));--gold-text:oklch(var(--gold-text));
 --ok:oklch(var(--positive));--ok-light:oklch(var(--positive-soft));--ok-text:oklch(var(--positive));--ok-chip:oklch(var(--positive));
 --due:oklch(var(--warning));--due-light:oklch(var(--warning-soft));--due-text:oklch(var(--warning));--due-chip:oklch(var(--warning));
 --over:oklch(var(--danger));--over-light:oklch(var(--danger-soft));--over-text:oklch(var(--danger));--over-chip:oklch(var(--danger));
 --prog:oklch(var(--brand));--prog-light:oklch(var(--brand-soft));--prog-text:oklch(var(--brand));--prog-chip:oklch(var(--brand));
---up:oklch(var(--ink-faint));--up-light:oklch(var(--surface-sunken));--up-text:oklch(var(--ink-muted));--up-chip:oklch(var(--ink-faint));
+--up:oklch(var(--upcoming));--up-light:oklch(var(--upcoming-soft));--up-text:oklch(var(--ink-muted));--up-chip:oklch(var(--upcoming));
 --violet:oklch(var(--brand));--violet-light:oklch(var(--brand-soft));--violet-chip:oklch(var(--brand));
 --sky:oklch(var(--brand));--sky-light:oklch(var(--brand-soft));--sky-chip:oklch(var(--brand));
 --teal:oklch(var(--info));--teal-light:oklch(var(--info-soft));--teal-chip:oklch(var(--info));
@@ -177,5 +177,5 @@ html,body{background:var(--bg)}
 
 /* Design system chip shape (docs/design/TOKENS.md): 22px, 6px corners, 600 weight; in a table column every chip takes the same minimum width so the column reads as one block (prototype v8 (1) rule). */
 .chip{height:var(--chip-height);padding:0 8px;border-radius:var(--radius-sm);font-weight:600;box-sizing:border-box}
-td .chip,.row>.chip,.td>.chip,.sr .chip,.ql .chip{min-width:var(--chip-min-width);justify-content:center}
+td .chip,.row>.chip,.td>.chip,.sr .chip,.ql .chip{min-width:116px;justify-content:center}
 .row>.btn,td .btn,.td>.btn{min-width:var(--control-min-width);justify-content:center;box-sizing:border-box}

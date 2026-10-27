@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super admin · Reports</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="reports" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Reports" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <div class="ds-bar">
+        <span class="seg2" role="group" aria-label="Month"><button type="button" aria-pressed="false" onClick="{{noMonth}}">September</button><button type="button" aria-pressed="true">October</button></span>
+        <span class="mut" style="font-size: 12px">Partner report · prepared on 16 Oct 2026, final on 1 Nov</span>
+        <button type="button" class="btn btnp" style="margin-left: auto" onClick="{{download}}">Download PDF</button>
+      </div>
+      <article class="page" data-card="report">
+        <header style="display: flex; align-items: flex-start; gap: 14px; border-bottom: 2px solid #0f2a4a; padding-bottom: 14px"><div style="flex: 1"><span class="mut" style="font-size: 12px; letter-spacing: .06em; text-transform: uppercase">SBC · monthly partner report</span><h1>October 2026</h1></div><img src="vcfo-bin:b/58380a4992a06cfe5c18a947b721abdf.png" alt="SBC" style="height: 34px; width: auto"></header>
+        <section><h3>The month in numbers</h3><div class="kg"><sc-for list="{{nums}}" as="k" hint-placeholder-count="8"><div><b class="money" style="{{k.st}}">{{k.n}}</b><em>{{k.label}}</em></div></sc-for></div></section>
+        <section><h3>Clients</h3><p style="margin: 0">{{clientsLine}}</p></section>
+        <section><h3>Managers</h3><table class="tbl"><thead><tr><th>Manager</th><th>Admin</th><th style="text-align: right">Clients</th><th style="text-align: right">On time</th><th style="text-align: right">Days to COI</th></tr></thead><tbody><sc-for list="{{mgrs}}" as="m" hint-placeholder-count="4"><tr><td>{{m.name}}</td><td>{{m.adm}}</td><td style="text-align: right">{{m.n}}</td><td style="text-align: right">{{m.on}}%</td><td style="text-align: right">{{m.d}}</td></tr></sc-for></tbody></table></section>
+        <section><h3>Top risks for November</h3><ol style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px"><sc-for list="{{risks}}" as="r" hint-placeholder-count="4"><li>{{r.t}}</li></sc-for></ol></section>
+        <footer class="mut" style="font-size: 11.5px; border-top: 1px solid #e1e7ef; padding-top: 10px">Prepared by VCFO Suite from the firm's records. Figures to 16 Oct are actuals; the rest of the month is planned.</footer>
+      </article>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const M = (id) => A.ALLMGR[id] || { name: '', ini: '' };
+    const AD = (id) => A.ADMINS[id] || { name: '', ini: '' };
+    const ct = (k) => byK[k] ? 'background:' + byK[k].soft + ';color:' + byK[k].ink : 'background:#eef2f7;color:#4b5b70';
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const dd = s.dd || '';
+
+    const billed = A.FEES.reduce((a, f) => a + f[1], 0), coll = A.FEES.reduce((a, f) => a + f[2], 0);
+    const past = A.FIL.filter(f => f[0] < 16 || f[4] === 'o'), onTime = A.FIL.filter(f => f[4] === 'f').length, late = A.FIL.filter(f => f[4] === 'l').length;
+    const paid = A.FIL.filter(f => f[4] === 'l').reduce((a, f) => a + f[5], 0);
+    let regDone = 0; Object.keys(A.REG).forEach(k => { regDone += A.REG[k].split('').filter(v => v === 'd').length; });
+    const nums = [[all.length, 'Active clients', ''], ['2 won · 0 lost', 'Client movement', ''], ['3', 'Certificates (COI) issued', ''], ['34 days', 'Average days to COI · target 30', 'color:#be4400'],
+      [Math.round(onTime / Math.max(1, past.length) * 100) + '%', 'Filings on time (' + late + ' late)', ''], ['6', 'Registrations completed', '']]
+      .map(([n, label, st]) => ({ n, label, st }));
+    const fees = A.FEES.map(f => ({ name: f[0], b: A.rupees(f[1]), c: A.rupees(f[2]), p: Math.round(f[2] / f[1] * 100) + '%' }));
+    const mgrs = Object.keys(A.ALLMGR).map(id => ({ name: M(id).name, adm: AD(A.adminOf(id)).name, n: A.allStats(id).clients.length, on: A.ALLMGR[id].onTime, d: A.DAYS[id] + ' days' }));
+    const risks = A.RISKS.slice().sort((a, b) => b[5] - a[5] || b[4] - a[4]).slice(0, 4).map(r => ({ t: r[1] + (byK[r[2]] ? ' · ' + byK[r[2]].name : '') }));
+    return { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }), nums, fees, mgrs, risks,
+      clientsLine: 'Lotus Dental (incorporation) and Aurora Paints (monthly compliance) signed this month. No client left. Monsoon Labs and Banyan Wellness are stuck at MCA and need partner attention.',
+      download: () => toast('Downloaded SBC-partner-report-October-2026.pdf · this is a prototype'), noMonth: () => toast('September is final; the prototype shows October') };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

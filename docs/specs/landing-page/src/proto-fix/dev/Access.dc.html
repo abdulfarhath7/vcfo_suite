@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Developer · Access</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+<script src="./devdata.js"></script>
+<script src="./confirm.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+/*@dev-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="access" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Access" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <section class="card" data-card="secrets">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11V7a5 5 0 0 1 10 0v4 M5 11h14v10H5z"></path></svg></span><h2 class="st">Secrets and API keys</h2></div>
+        <div class="sc"><table class="tbl" style="min-width: 900px"><thead><tr><th>Name</th><th>Stored in</th><th>Value</th><th>Created</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+          <tbody><sc-for list="{{secrets}}" as="x" hint-placeholder-count="10"><tr><td class="mono2">{{x.name}}</td><td>{{x.where}}</td><td class="mono2">{{x.mask}}</td><td>{{x.created}}</td><td style="{{x.eSt}}">{{x.exp}}</td><td><span class="chip" style="{{x.cs}}; color: #fff; min-width: 84px">{{x.sl}}</span></td>
+            <td style="text-align: right"><button type="button" class="btn" data-dev-confirm="{{x.act}}" data-what="{{x.what}}" data-before="{{x.mask}}" data-after="New value" data-toast="{{x.toast}}">{{x.act}}</button></td></tr></sc-for></tbody></table></div>
+      </section>
+      <div class="cols2">
+        <section class="card" data-card="signin">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"></path></svg></span><h2 class="st">Sign-in methods</h2></div>
+          <sc-for list="{{signin}}" as="x" hint-placeholder-count="3"><div class="kv"><span><b style="font-weight: 600; display: block">{{x.m}}</b><span class="sub">{{x.d}}</span></span><b style="font-weight: 600">{{x.n}} people</b></div></sc-for>
+          <div class="kv"><span><b style="font-weight: 600; display: block">Require the two-step check for staff</b><span class="sub">Every admin, manager and project lead</span></span><button type="button" class="sw3" role="switch" aria-checked="true" aria-label="Require the two-step check" data-dev-confirm="Turn off the two-step check for staff" data-what="Staff would sign in with a password only" data-before="On" data-after="Off" data-danger data-toast="Two-step check stays on · this is a prototype"></button></div>
+        </section>
+        <section class="card" data-card="sessions">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8"></path></svg></span><h2 class="st">Signed in now</h2><span class="cnt">{{nSess}}</span></div>
+          <sc-for list="{{sess}}" as="x" hint-placeholder-count="6"><div class="it"><span class="pt">{{x.ini}}</span><span style="flex: 1; min-width: 0"><b style="font-weight: 600; display: block">{{x.name}} · {{x.role}}</b><span class="sub">{{x.dev}} · {{x.when}}</span></span><button type="button" class="btn" data-dev-confirm="Sign out" data-what="{{x.what}}" data-before="Signed in" data-after="Signed out" data-toast="{{x.toast}}" data-danger>Sign out</button></div></sc-for>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = window.DEV, A = window.ADM, s = this.state || {}, set = (o) => this.setState(o), dd = s.dd || '';
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:devaudit', () => this.setState({ t: Date.now() })); }
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const ST = { ok: ['Working', '#0f6e51'], warn: ['Needs attention', '#be4400'], down: ['Down', '#b5302a'], connected: ['Connected', '#0f6e51'], attention: ['Needs attention', '#be4400'], off: ['Not connected', '#656f7e'], missing: ['Missing', '#b5302a'], fail: ['Failed', '#b5302a'], skip: ['Skipped', '#be4400'], pending: ['Waiting for approval', '#be4400'], approved: ['Approved', '#0f6e51'], pass: ['Passing', '#0f6e51'] };
+    const chip = (k) => 'background:' + (ST[k] || ST.ok)[1];
+    const base = { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }) };
+
+    const secrets = D.SECRETS.map(x => { const days = x[3];
+      return { name: x[0], where: x[1], created: x[2], mask: x[4] === 'missing' ? 'Not set' : '••••••••' + (x[0].length * 7 % 90 + 10),
+        exp: days === null ? 'No expiry' : (days === 0 ? 'Now' : 'In ' + days + ' days'), eSt: days !== null && days <= 30 ? 'color:#b5302a;font-weight:600' : (days !== null && days <= 60 ? 'color:#be4400;font-weight:600' : ''),
+        sl: x[4] === 'missing' ? 'Missing' : (x[4] === 'warn' ? 'Needs attention' : 'Working'), cs: chip(x[4] === 'missing' ? 'missing' : (x[4] === 'warn' ? 'warn' : 'ok')),
+        act: x[4] === 'missing' ? 'Set' : (x[0] === 'Demo user passwords' ? 'Purge' : 'Rotate'), what: (x[4] === 'missing' ? 'Set ' : (x[0] === 'Demo user passwords' ? 'Remove ' : 'Rotate ')) + x[0] + (x[1] === 'App Runner' ? ' on App Runner and redeploy' : ''),
+        toast: x[0] + (x[4] === 'missing' ? ' set' : ' rotated') + ' · this is a prototype' }; });
+    const signin = D.SIGNIN.map(x => ({ m: x[0], n: x[1], d: x[2] }));
+    const sess = D.SESSIONS.map(x => ({ name: x[0], role: x[1], dev: x[2], when: x[3], ini: x[0] === 'Pranay' ? 'PN' : (x[0] === 'Bharath' ? 'BH' : (x[0] === 'Farhath' ? 'FA' : A.ini(x[0]))), what: 'Sign ' + x[0] + ' out of ' + x[2], toast: x[0] + ' signed out · this is a prototype' }));
+    return Object.assign(base, { secrets, signin, sess, nSess: sess.length });
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

@@ -17,6 +17,18 @@ export const badgeVariants = cva(
         info: "bg-info-soft text-info",
         soft: "bg-brand-soft text-brand",
         highlight: "bg-highlight-soft text-highlight",
+        upcoming: "bg-upcoming-soft text-upcoming",
+        /* solid state chips: the word and the fill carry the state */
+        "solid-success": "bg-positive text-on-status",
+        "solid-progress": "bg-brand text-on-status",
+        "solid-waiting": "bg-warning text-on-status",
+        "solid-overdue": "bg-danger text-on-status",
+        "solid-upcoming": "bg-upcoming text-on-status",
+        /* owner chips: soft tints, never solid */
+        "owner-client": "bg-owner-client-soft text-owner-client",
+        "owner-sbc": "bg-owner-sbc-soft text-owner-sbc",
+        "owner-mca": "bg-owner-mca-soft text-owner-mca",
+        "owner-manager": "bg-owner-manager-soft text-owner-manager",
       },
     },
     defaultVariants: {

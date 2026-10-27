@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { Surface, Eyebrow } from '@/components/noir';
 import { Button } from '@/components/ui/button';
-import { CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_BADGE } from '@/components/common/IconChip';
+import { CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_SOLID } from '@/components/common/IconChip';
 import { cn } from '@/lib/utils';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
@@ -135,10 +135,10 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
                     CHIP_CLASS,
                     CHIP_COLUMN_CLASS,
                     eng.health === 'on-track'
-                      ? TONE_BADGE.success
+                      ? TONE_SOLID.done
                       : eng.health === 'overdue'
-                        ? TONE_BADGE.danger
-                        : TONE_BADGE.warning,
+                        ? TONE_SOLID.overdue
+                        : TONE_SOLID.waiting,
                   )}
                 >
                   {eng.health === 'on-track' ? 'On track' : eng.health === 'overdue' ? 'Overdue' : 'At risk'}

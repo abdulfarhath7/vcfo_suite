@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super admin · Growth</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="growth" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Growth" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <div class="kg">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4"><div class="card" style="padding: 14px 16px"><b class="money" style="display: block; font-size: 22px; font-weight: 600; {{k.st}}">{{k.n}}</b><em style="font-style: normal; font-size: 12px; color: #4b5b70">{{k.label}}</em></div></sc-for>
+      </div>
+      <section class="card" data-card="g-pipe">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8z"></path></svg></span><h2 class="st">Sales pipeline</h2></div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 0 16px 16px">
+          <sc-for list="{{cols}}" as="c" hint-placeholder-count="3"><div class="kcol"><h3><span>{{c.label}} · {{c.n}}</span></h3>
+            <sc-for list="{{c.items}}" as="i" hint-placeholder-count="3"><div class="kc"><b>{{i.name}}</b><span class="sub">{{i.svc}}</span><span style="display: flex; justify-content: space-between; font-size: 12px"><span class="mut">{{i.who}} · {{i.days}}</span></span>
+              <sc-if value="{{i.unassigned}}" hint-placeholder-val="{{false}}"><button type="button" class="btn btnp" data-admin-assign="client" style="height: 28px; margin-top: 4px">Assign a manager</button></sc-if></div></sc-for></div></sc-for>
+        </div>
+      </section>
+      <section class="card" data-card="g-cap">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8"></path></svg></span><h2 class="st">Capacity · can the team take more?</h2></div>
+        <div class="rows" style="gap: 12px"><sc-for list="{{capRows}}" as="m" hint-placeholder-count="4"><div class="hbar" style="grid-template-columns: 140px minmax(0,1fr) 150px"><span>{{m.name}}</span><span class="trk" style="height: 10px"><span style="{{m.bar}}"></span></span><span style="text-align: right; {{m.st}}">{{m.txt}}</span></div></sc-for></div>
+        <div class="foot"><b style="font-weight: 600">{{capLine}}</b></div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const M = (id) => A.ALLMGR[id] || { name: '', ini: '' };
+    const AD = (id) => A.ADMINS[id] || { name: '', ini: '' };
+    const ct = (k) => byK[k] ? 'background:' + byK[k].soft + ';color:' + byK[k].ink : 'background:#eef2f7;color:#4b5b70';
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const dd = s.dd || '';
+
+    const ST = [['enquiry', 'Enquiry'], ['proposal', 'Proposal sent'], ['won', 'Won']];
+    const cols = ST.map(([k, label]) => { const l = A.SALES.filter(x => x[0] === k);
+      return { label, n: l.length, total: A.rupees(l.reduce((a, x) => a + x[3], 0)), items: l.map(x => ({ name: x[1], svc: x[2], fee: A.rupees(x[3]), who: AD(x[4]).name, days: x[5] + 'd', unassigned: x[1] === 'Lotus Dental' })) }; });
+    const pipeVal = A.SALES.filter(x => x[0] !== 'won').reduce((a, x) => a + x[3], 0);
+    const caps = Object.keys(A.ALLMGR).map(id => { const n = A.allStats(id).clients.length; return { id, name: M(id).name, n, free: Math.max(0, A.CAP - n) }; });
+    const capRows = caps.map(c => ({ name: c.name, bar: 'width:' + Math.min(100, c.n / A.CAP * 100) + '%;background:' + (c.n > A.CAP * .8 ? '#be4400' : '#1b4f94'),
+      txt: c.n + ' of ' + A.CAP + ' · room for ' + c.free, st: c.free <= 2 ? 'color:#be4400;font-weight:600' : '' }));
+    const free = caps.reduce((a, c) => a + c.free, 0);
+    const kpis = [['2', 'New engagements in October (3 in September)', ''], ['7', 'Prospects in the pipeline', 'color:#1b4f94'], ['40%', 'Proposals won this quarter', ''], [free + ' clients', 'Room across the managers', 'color:#0f6e51']]
+      .map(([n, label, st]) => ({ n, label, st }));
+    return { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }), kpis, cols, capRows, cap: A.CAP,
+      capLine: 'The team can take ' + free + ' more clients; Arjun Mehta and Priya Raman have the most room. Lotus Dental is won and waiting for a manager.' };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

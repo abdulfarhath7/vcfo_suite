@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 const LEGEND: { kind: WeekChipKind; label: string; swatch: string }[] = [
   { kind: 'filing', label: 'Statutory filing', swatch: 'bg-danger' },
   { kind: 'step', label: 'Step deadline', swatch: 'bg-brand' },
-  { kind: 'nudge', label: 'Nudge due', swatch: 'bg-highlight-bright' },
+  { kind: 'nudge', label: 'Nudge due', swatch: 'bg-warning' },
   { kind: 'done', label: 'Done', swatch: 'bg-positive' },
 ];
 
@@ -92,23 +92,24 @@ export function LeadWeekStrip({
                 {total === 0 ? (
                   <span className="sr-only">No items</span>
                 ) : (
-                  <span className="flex max-w-full flex-wrap items-center justify-center gap-0.5">
-                    {WEEK_CHIP_KIND_ORDER.map((kind) => {
-                      const n = counts[kind];
-                      if (!n) return null;
-                      return (
-                        <span
-                          key={kind}
-                          className={cn(
-                            'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-sm px-1 text-[10px] font-semibold tabular-nums text-on-brand',
-                            internToneBg(WEEK_CHIP_TONE[kind]),
-                          )}
-                        >
-                          {n}
-                        </span>
-                      );
-                    })}
-                  </span>
+                  <>
+                    <span className="flex max-w-full flex-wrap items-center justify-center gap-1" aria-hidden>
+                      {chips.map((c, i) => (
+                        <i
+                          key={`${c.kind}-${i}`}
+                          className={cn('inline-block h-2 w-2 rounded-sm', internToneBg(WEEK_CHIP_TONE[c.kind]))}
+                        />
+                      ))}
+                    </span>
+                    <span
+                      className={cn(
+                        'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-sm px-1 text-[10px] font-semibold tabular-nums text-on-status',
+                        counts.done === total ? 'bg-positive' : 'bg-brand',
+                      )}
+                    >
+                      {total}
+                    </span>
+                  </>
                 )}
               </button>
             </div>

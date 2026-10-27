@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fees (client)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<style>
+.cfe{background:#fff;border:1px solid #e1e7ef;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;font-family:Public Sans,system-ui,sans-serif;color:#0f2a4a;font-size:13px}
+.cfe h3{margin:0;font:700 13px Public Sans,sans-serif;display:flex;align-items:center;gap:8px}
+.cfe-st{margin-left:auto;display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:600;background:#ffeedc;color:#9b3b08}
+.cfe-big{display:flex;align-items:baseline;gap:10px}
+.cfe-big .cfe-amt{font-size:22px;font-weight:600;line-height:1.15}
+.cfe-big span{font-size:12px;color:#4b5b70}
+.cfe-r{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:6px 0;border-top:1px solid #eef2f7}
+.cfe-r span:first-child{color:#4b5b70}
+.cfe-r b{font-weight:600}
+.cfe-a{display:flex;gap:8px}
+.cfe-a button{height:32px;padding:0 12px;border-radius:6px;font:600 12.5px Public Sans,sans-serif;cursor:pointer;border:1px solid #c9d3df;background:#fff;color:#0f2a4a}
+.cfe-a button.p{background:#1b4f94;border-color:#1b4f94;color:#fff}
+.cfe-a button:focus-visible{outline:2px solid #1b4f94;outline-offset:2px}
+</style>
+</helmet>
+<section class="cfe" data-card="fees" aria-label="Fees">
+  <h3>Fees<span class="cfe-st" style="{{stS}}">{{st}}</span></h3>
+  <div class="cfe-big"><div class="cfe-amt">{{amt}}</div><span>{{sub}}</span></div>
+  <sc-for list="{{rows}}" as="r" hint-placeholder-count="2"><div class="cfe-r"><span>{{r.l}}</span><b>{{r.v}}</b></div></sc-for>
+  <div class="cfe-a"><button type="button" class="p" onClick="{{pay}}">Pay now</button><button type="button" onClick="{{inv}}">Invoice</button></div>
+</section>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"after":{"editor":"text","default":"0"},"$preview":{"width":420,"height":220}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const after = String(this.props.after ?? '0') === '1';
+    const toast = (t) => { if (window.vcfoToast) window.vcfoToast(t); };
+    const rows = after ? [['Invoice', 'SBC/2026/0441 · 5 Nov'], ['For', 'Monthly compliance · October'], ['Paid this year', '₹1,20,000']]
+      : [['Invoice', 'SBC/2026/0388 · 5 Oct'], ['For', 'Incorporation · second instalment'], ['Paid so far', '₹20,000 of ₹65,000']];
+    return { amt: '₹45,000', sub: after ? 'due 20 Nov' : 'due 20 Oct', st: 'Due', stS: '', rows: rows.map(([l, v]) => ({ l, v })),
+      pay: () => toast('Opens Razorpay: pay ₹45,000 by UPI, card or net banking'), inv: () => toast('Opens the invoice PDF') };
+  }
+}
+</script>
+</body>
+</html>

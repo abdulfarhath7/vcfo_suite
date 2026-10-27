@@ -9,14 +9,14 @@ Every dashboard is the same skeleton: `AppShell` (navy sidebar, white top bar) a
 | Pattern | Owner | Replaces | Still to move |
 |---|---|---|---|
 | Shell: sidebar, top bar, mobile sheet | `src/components/shell/AppShell.tsx`, `RoleSidebar.tsx`, `TopBar.tsx`, `SidebarNavGroup.tsx` | Per-role tints (`role-*` classes), the hero and sidebar skin pickers' gradients | Nothing; every role already renders this shell |
-| Greeting card with the headline numbers | `src/components/dash/DashHero.tsx` (`LeadHero` and `ClientOverviewHero` are thin wrappers) | `LeadMetricCard`, any band of KPI cards under a hero | `src/components/admin/AccentKpi.tsx` (coloured left borders) should become hero stats or a `StatCard` with a 3px top edge |
+| Greeting card with the headline numbers | `src/components/dash/DashHero.tsx` (`LeadHero` and `ClientOverviewHero` are thin wrappers): `hero-gradient` ground, gold underline, gold ring, hot figure in pale red | `LeadMetricCard`, any band of KPI cards under a hero | `src/components/admin/AccentKpi.tsx` (coloured left borders) should become hero stats or a `StatCard` with a 3px top edge |
 | Section card | `src/components/dash/DashSection.tsx` (`.surface` + neutral icon tile + label title + optional meta or link) | Hand-rolled `<section className="surface">` headers with coloured tiles | `src/components/intern/LeadSideRail.tsx` keeps one manual section for the `data-intern-waiting-on` hook; client and admin views still hand-roll headers |
 | KPI tile outside a hero | To add: `StatCard` (`surface-raised`, `label` + `figure-lg`, 3px `stat-rule` top edge in its tone, optional six-bar trend strip) | `AccentKpi`, `KpiNumber` | Admin and super dashboards |
-| Status chip | `CHIP_CLASS` + `TONE_BADGE` in `src/components/common/IconChip.tsx`; `Badge` in `src/components/ui/badge.tsx` for standalone use; `CHIP_COLUMN_CLASS` inside table columns | Pill chips (`rounded-full px-2.5 py-0.5 font-extrabold`), solid status fills, identity-coloured chips (`toneForKey`) | Client portal CSS chips (`.chip`), admin tables |
+| Status chip | `CHIP_CLASS` + `TONE_SOLID` (state, solid, in cards and short columns) or `TONE_OWNER` (owner, soft) or `TONE_BADGE` (tag, soft) in `src/components/common/IconChip.tsx`; `STATE_WORD_CLASS` + `TONE_TEXT` for a state in a dense list (coloured word, no ground); `CHIP_DOT_CLASS` for the inline soft-plus-dot form; `Badge` variants `solid-*` and `owner-*` in `badge-variants.ts`; `CHIP_COLUMN_CLASS` inside columns | Pill chips, identity-coloured chips (`toneForKey`) | Client portal CSS chips follow the same split (`.chip.done` solid, `.chip.you` soft) |
 | Icon tile | `IconChip` (neutral by default, status tone only when the tile means that status) | Coloured tiles per section | Callers passing categorical tones get neutral automatically |
 | Buttons | `Button` + `button-variants.ts`: `default` (brand), `secondary`/`outline` (line-strong border), `ghost`, `destructive`, `link`; sizes `sm` 28 / `default` 32 / `lg` 40, all at least 84px wide | Ad hoc `<button className="rounded-lg bg-primary ...">` | `InternWorkCtaButton` matches by hand; portal `.btn` / `.btnp` in CSS |
 | Inputs | shadcn `Input`, `Textarea`, `Select` with `line-strong` border, `control-md` height, `focus-ring` outline | Inputs styled with `ring-1 ring-border` | Lead todo input matches by hand; portal `.inp` in CSS |
-| Table | To add: `DataTable` (uppercase `label` heads on `surface-sunken`, `row-height` rows, `line` hairlines, right-aligned `figure` amounts, chips in columns at `chip-min-width`) | Per-view tables | Filings, audit log, people, projects |
+| Table | `DashDataTable` (`src/components/dash/DashDataTable.tsx`): uppercase `label` heads on `surface-sunken`, `row-height` rows striped every second row, `line` hairlines, right-aligned `figure` amounts, a state as a coloured word in long lists and as a chip at `chip-min-width` in short ones | Per-view tables | Filings, audit log, people |
 | List rows inside a card | `border-t border-line py-2.5 first:border-0` (see `LeadActionQueue`, `LeadFocusCard`) | Cards inside cards (`rounded-xl ring-1 ring-border` rows) | Any view still nesting `.surface` blocks |
 | Empty state | In-panel one-liner `text-[12px] text-ink-muted`; full-page `.surface px-6 py-8 text-center`; illustrated `EmptyStateIllustrated` | | |
 | Callout | shadcn `Alert` + `IconChip tone="info"` on an `info-soft` ground with a `line` frame | Coloured left-border notices (`LoginFormCard`, `LoginShowcase`, `PreIncorporationNotice`) | Those three files |
@@ -29,16 +29,16 @@ Every dashboard is the same skeleton: `AppShell` (navy sidebar, white top bar) a
 ## Rules the owners enforce
 
 - A section is a `DashSection`. Its tile is neutral; a status tone colours the glyph only when the section is about that status.
-- A status is a chip with a word. `TONE_BADGE[tone]` + `CHIP_CLASS`; in a table column add `CHIP_COLUMN_CLASS`. Identity (a company, a person, a tag) is never a colour.
+- A state is a solid chip with a word: `TONE_SOLID.done | progress | waiting | overdue | upcoming` + `CHIP_CLASS`; in a column add `CHIP_COLUMN_CLASS`. An owner is a soft chip: `TONE_OWNER.client | sbc | mca | manager`. A company, a person or a tag is never a colour of its own.
 - Buttons in one row share one height; buttons or chips in one column share one width. Labels are two words and never wrap.
 - One primary button and one orange moment per screen region.
 - Rows inside a card are hairline-separated, never cards.
-- The sidebar and the hero are the only navy surfaces. Everything else is `surface` and `surface-raised` with a `line` frame.
+- The sidebar and the hero are the only navy surfaces; the hero is the one gradient; gold appears only as a mark (greeting card ring, current-step ring, sidebar rail). Everything else is `surface` and `surface-raised` with a `line` frame.
 - No gradients, no coloured left borders, no blur, no pills except toggles and progress rings.
 
 ## Deprecated, delete on 2026-11-30
 
-- `CATEGORICAL_TONES` and `toneForKey` in `IconChip.tsx` (always neutral now).
+- `CATEGORICAL_TONES` and `toneForKey` in `IconChip.tsx` (always neutral now). Client companies get colour from the eight-hue client set instead (TOKENS.md, v1.2); that set needs a home in `design-tokens.json` and one helper keyed by engagement, not by name.
 - The nine categorical tone names on `IconChipTone` and `InternChipTone`.
 - `.gold-sheen`, `.shadow-layered-lg`, `.text-gold`, `.ring-gold` utilities in `globals.css`.
 - `--font-serif` and the `.serif` class (same face as `--font-sans`; move callers to the type styles).

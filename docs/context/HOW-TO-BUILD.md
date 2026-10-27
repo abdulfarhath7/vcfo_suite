@@ -155,6 +155,9 @@ in `src/components/client-portal/`; check that your change adds no new ones.
 4. Browser spec: add `e2e/<feature>.spec.ts`. Sign in with the helpers and demo users in
    `e2e/helpers/login.ts` (needs `npm run db:seed-demo`). Tag phone-only tests `@mobile`.
 5. Run `npm run e2e` (it reuses a running dev server) or `npx playwright test e2e/<feature>.spec.ts`.
+6. After any UI or backend change, run `npm run e2e:smoke`. It signs in as every demo role and opens
+   every main page, failing on an error boundary, a Next.js error overlay, a console error or a
+   bounce to login. When you add a page, add its path to `ROUTES` in `e2e/smoke.spec.ts`.
 
 ## Deploy
 

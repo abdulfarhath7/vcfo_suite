@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super admin · Clients</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="clients" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Clients" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <div class="ds-bar">
+        <!--scrim-->
+        <span class="cnt" style="height: 28px; padding: 0 10px; font-size: 12px">{{nRows}} of {{nAll}} clients</span>
+        <!--dd:dA:Admin-->
+        <!--dd:dM:Manager-->
+        <!--dd:dS:Stage-->
+        <sc-if value="{{anyF}}" hint-placeholder-val="{{false}}"><button type="button" class="lnk" onClick="{{clearF}}">Clear</button></sc-if>
+        <button type="button" class="btn btnp" data-admin-assign="client" style="margin-left: auto">Assign client</button>
+      </div>
+      <section class="card" data-card="all-clients">
+        <div class="sc">
+          <table class="tbl" style="min-width: 1180px">
+            <thead><tr><th>Client</th><th>Now at</th><th>Progress</th><th>Admin</th><th>Manager</th><th>Stage</th><th>Next</th><th>Health</th></tr></thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="17">
+                <tr class="go" data-go="super-overview" title="Open {{r.name}}">
+                  <td><span class="nm"><span class="ct" style="{{r.ct}}">{{r.k}}</span><b>{{r.name}}</b></span></td>
+                  <td><b style="font-weight: 600">{{r.step}}</b><span class="sub"><span class="mono">{{r.code}}</span> · {{r.lead}}</span></td>
+                  <td><span style="display: flex; align-items: center; gap: 8px"><span class="pb"><sc-for list="{{r.segs}}" as="g" hint-placeholder-count="4"><span style="{{g.st}}" title="{{g.tip}}"></span></sc-for></span><span class="mut" style="font-size: 12px">{{r.pct}}</span></span></td>
+                  <td>{{r.adm}}</td>
+                  <td><span class="nm"><span class="pt">{{r.mIni}}</span>{{r.mgr}}</span></td>
+                  <td><span class="chip" style="{{r.stS}}; min-width: 104px">{{r.stage}}</span></td>
+                  <td>{{r.next}}</td>
+                  <td><span class="chip sol" style="{{r.hlS}}">{{r.hl}}</span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <sc-if value="{{noRows}}" hint-placeholder-val="{{false}}"><div class="empty">No client matches these filters. Clear a filter to see more.</div></sc-if>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const M = (id) => A.ALLMGR[id] || { name: '', ini: '' };
+    const AD = (id) => A.ADMINS[id] || { name: '', ini: '' };
+    const ct = (k) => byK[k] ? 'background:' + byK[k].soft + ';color:' + byK[k].ink : 'background:#eef2f7;color:#4b5b70';
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const dd = s.dd || '';
+
+    const SO = { stuck: 0, over: 1, due: 2, wait: 3, run: 4, none: 5 };
+    const dues = {}; A.DUES.forEach(d => { dues[d[0]] = d; });
+    const rowOf = (c) => ({ k: c.k, name: c.name, ct: ct(c.k), stage: c.stage === 'inc' ? 'Incorporating' : 'Compliance', stS: c.stage === 'inc' ? 'background:#ffeedc;color:#9b3b08' : 'background:#e1f3ec;color:#0f6e51',
+      step: c.step, code: c.code, pct: c.pct + '%', segs: A.phaseBar(c.phases), mgr: M(c.mgr).name, mIni: M(c.mgr).ini, adm: AD(c.admin).name, lead: c.lead,
+      ball: c.ball + ' · ' + c.days + 'd', ballS: A.OWN[c.ball], next: c.next, hl: A.HEALTH[c.health][0], hlS: 'background:' + A.HEALTH[c.health][1],
+      fee: dues[c.k] ? A.rupees(dues[c.k][1]) : '-', feeSt: dues[c.k] && dues[c.k][2] > 60 ? 'color:#b5302a;font-weight:600' : '' });
+    const fA = s.fA || '', fM = s.fM || '', fS = s.fS || '';
+    const pick = all.filter(c => (!fA || c.admin === fA) && (!fM || c.mgr === fM) && (!fS || c.stage === fS)).sort((a, b) => SO[a.health] - SO[b.health] || a.name.localeCompare(b.name));
+    const rows = pick.map(rowOf);
+    return Object.assign({ mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }), rows, nRows: rows.length, nAll: all.length, noRows: !rows.length,
+      anyF: !!(fA || fM || fS), clearF: () => set({ fA: '', fM: '', fS: '' }), ddAny: !!dd, ddClose: () => set({ dd: '' }) },
+      A.dd('dA', dd, 'a', 'fA', fA, Object.keys(A.ADMINS).map(id => [id, AD(id).name]), 'All admins', set),
+      A.dd('dM', dd, 'm', 'fM', fM, Object.keys(A.ALLMGR).filter(id => !fA || A.ADMINS[fA].mgrs.indexOf(id) > -1).map(id => [id, M(id).name]), 'All managers', set),
+      A.dd('dS', dd, 's', 'fS', fS, [['inc', 'Incorporating'], ['cmp', 'Compliance']], 'All stages', set));
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

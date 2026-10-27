@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Registration or obligation</title>
+<script src="./support.js"></script>
+<script src="./regcat.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+.it{font-family:Roboto,Public Sans,system-ui,sans-serif;color:#0f2a4a;font-size:13px;display:flex;flex-direction:column;gap:16px}
+.it-back{font-size:12.5px;font-weight:600;color:#1b4f94;text-decoration:none;align-self:flex-start}
+.it-band{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:#fff;border:1px solid #e1e7ef;border-radius:10px;padding:14px 18px}
+.it-ring{width:52px;height:52px;flex:none;position:relative}
+.it-ring svg{display:block}
+.it-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:600}
+.it-tt{min-width:200px;flex:1}
+.it-tt h1{margin:0;font-size:18px;font-weight:600;letter-spacing:-.01em}
+.it-tt small{display:block;font-size:12px;color:#4b5b70;margin-top:2px}
+.it-f{display:flex;flex-direction:column;gap:2px;padding-left:16px;border-left:1px solid #e1e7ef;min-width:96px}
+.it-f em{font-style:normal;font-size:11.5px;color:#4b5b70}
+.it-f b{font-weight:600;font-size:13px;white-space:nowrap}
+.it-av{display:flex;padding-left:10px}
+.it-av span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:600;border:2px solid #fff;margin-left:-10px;transition:margin .2s;cursor:default}
+.it-av:hover span{margin-left:2px}
+.it-btn{height:34px;padding:0 14px;border-radius:6px;border:1px solid #1b4f94;background:#1b4f94;color:#fff;font:600 13px inherit;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.it-btn.ok{background:#0f6e51;border-color:#0f6e51}
+.it-btn2{height:28px;padding:0 10px;border-radius:6px;border:1px solid #c9d3df;background:#fff;color:#0f2a4a;font:600 12px inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.it-btn:focus-visible,.it-btn2:focus-visible{outline:2px solid #1b4f94;outline-offset:2px}
+.it-spin{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:itspin .7s linear infinite}
+@keyframes itspin{to{transform:rotate(360deg)}}
+.it-body{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:1180px){.it-body{grid-template-columns:minmax(0,1fr) 320px}}
+.it-main,.it-rail{display:flex;flex-direction:column;gap:16px;min-width:0}
+.it-card{background:#fff;border:1px solid #e1e7ef;border-radius:10px;overflow:hidden}
+.it-ch{display:flex;align-items:center;gap:8px;padding:12px 16px}
+.it-ch h2{margin:0;font-size:14px;font-weight:600}
+.it-ch .sub{margin-left:auto;font-size:12px;color:#4b5b70}
+.th{display:grid;grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr);column-gap:10px;padding:0 16px 16px}
+.th-h{font-size:12px;font-weight:600;padding:0 0 6px;color:#4b5b70}
+.th-row{display:contents}
+.th-c{border:1px solid #e1e7ef;border-radius:8px;padding:8px 10px;background:#fbfcfe;margin:6px 0;font-size:12.5px}
+.th-c b{display:block;font-weight:600}
+.th-c small{display:block;font-size:11.5px;color:#4b5b70}
+.th-c.me{border-left:3px solid #1b4f94;border-radius:0 8px 8px 0}
+.th-c.au{border-right:3px solid #8593a6;border-radius:8px 0 0 8px}
+.th-c.next{border-style:dashed;background:#fff;color:#4b5b70}
+.th-t{align-self:center;justify-self:center;width:60px;border:1px solid #c9d3df;border-radius:8px;text-align:center;padding:3px 0;background:#fff;position:relative;margin:6px 0}
+.th-t i{display:block;font-style:normal;font-size:10.5px;color:#4b5b70}
+.th-t b{display:block;font-size:13px;font-weight:600}
+.th-t.au{background:#15263b;border-color:#15263b;color:#fff}
+.th-t.au i{color:#9fb2c8}
+.th-t.now{border-style:dashed}
+.th-t.late{border-color:#b5302a;color:#b5302a}
+.th-e{visibility:hidden;min-height:1px}
+.dl{display:flex;flex-direction:column}
+.dl-r{display:flex;align-items:center;gap:10px;padding:8px 16px;border-top:1px solid #eef2f7;min-height:40px;flex-wrap:wrap}
+.dl-r .nm{flex:1;min-width:180px;font-weight:600;font-size:12.5px}
+.dl-r .nm small{display:block;font-weight:400;font-size:11.5px;color:#4b5b70}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:104px;height:22px;border-radius:5px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.drop{flex-basis:100%;border:1.5px dashed #a8b4c4;border-radius:8px;padding:10px;text-align:center;font-size:12px;color:#4b5b70;cursor:pointer;background-image:linear-gradient(#eef2f7 1px,transparent 1px),linear-gradient(90deg,#eef2f7 1px,transparent 1px);background-size:14px 14px}
+.drop:hover{border-color:#1b4f94;color:#1b4f94}
+.pop{flex-basis:100%;display:flex;gap:6px;align-items:center;background:#f7f9fc;border:1px solid #e1e7ef;border-radius:8px;padding:8px}
+.pop input{flex:1;min-width:0;height:30px;border:1px solid #c9d3df;border-radius:6px;padding:0 8px;font:inherit}
+.pop .err{flex-basis:100%;font-size:12px;color:#b5302a}
+.kv{display:grid;grid-template-columns:180px minmax(0,1fr);gap:10px;align-items:center;padding:7px 16px;border-top:1px solid #eef2f7}
+.kv span{font-size:12px;color:#4b5b70}
+.kv input{height:30px;border:1px solid #c9d3df;border-radius:6px;padding:0 8px;font:inherit;color:#0f2a4a;min-width:0}
+.kv b{font-weight:500}
+.kv .mono{font:500 12px IBM Plex Mono,monospace}
+.ft{display:flex;align-items:center;gap:8px;justify-content:flex-end;padding:10px 16px;border-top:1px solid #eef2f7;background:#fbfcfe}
+.ft small{margin-right:auto;font-size:11.5px;color:#4b5b70}
+.rl{padding:0 16px 14px;font-size:12.5px;line-height:1.55;color:#24364d}
+.rl a{color:#1b4f94;font-weight:600;text-decoration:none}
+.li{display:flex;align-items:center;gap:8px;padding:7px 16px;border-top:1px solid #eef2f7;font-size:12.5px;color:inherit;text-decoration:none}
+.li:hover{background:#f7f9fc}
+.li .r{margin-left:auto;font-size:12px;color:#4b5b70;white-space:nowrap}
+.ck{display:flex;align-items:center;gap:8px;padding:6px 16px;border-top:1px solid #eef2f7;font-size:12.5px}
+.ck input{width:15px;height:15px;margin:0;accent-color:#0f6e51}
+.code{border-bottom:1px dashed #a8b4c4;cursor:help}
+.as-r{display:flex;align-items:center;gap:10px;padding:8px 16px;border-top:1px solid #eef2f7;font-size:12.5px}
+.as-r b{display:block;font-weight:600}
+.as-r small{display:block;font-size:11.5px;color:#4b5b70}
+.as-i{width:16px;height:16px;border-radius:50%;border:1.5px solid #a8b4c4;flex:none;box-sizing:border-box}
+.as-i.ok{border-color:#0f6e51;background:#0f6e51;position:relative}
+.as-i.ok::after{content:"";position:absolute;left:4.5px;top:1.5px;width:3px;height:7px;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+.as-i.run{border-color:#1b4f94;border-top-color:transparent;animation:itspin .8s linear infinite}
+.as-shot{width:64px;height:40px;border-radius:4px;border:1px solid #d5dce6;background:linear-gradient(#eef2f8 0 9px,#fff 9px);font-size:9px;color:#4b5b70;display:grid;place-items:center;padding-top:6px;box-sizing:border-box;flex:none}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:#eef2f8;color:#1f3b5c;font-size:12px;font-weight:600;text-align:left;padding:7px 16px}
+.tbl td{border-top:1px solid #eef2f7;padding:7px 16px;font-size:12.5px;height:36px}
+@media (prefers-reduced-motion:reduce){.it-spin{animation:none}.it-av span{transition:none}}
+</style>
+</helmet>
+<div class="it">
+  <a href="#" class="it-back" data-go="{{backGo}}">← {{backT}}</a>
+  <section class="it-band" data-card="deadline-band">
+    <div class="it-ring" title="{{ringTip}}"><svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="22" fill="none" stroke="#e6eaf0" stroke-width="5"></circle><circle cx="26" cy="26" r="22" fill="none" stroke="{{ringC}}" stroke-width="5" stroke-linecap="round" stroke-dasharray="{{ringDash}}" transform="rotate(-90 26 26)"></circle></svg><b style="{{ringTs}}">{{ringT}}</b></div>
+    <div class="it-tt"><h1>{{name}}</h1><small><span class="code" title="{{formTip}}">{{form}}</span> · {{auth}} · {{team}}</small></div>
+    <sc-for list="{{facts}}" as="f" hint-placeholder-count="3"><div class="it-f"><em>{{f.k}}</em><b style="{{f.st}}">{{f.v}}</b></div></sc-for>
+    <div class="it-av" aria-label="People on it"><sc-for list="{{people}}" as="p" hint-placeholder-count="3"><span style="{{p.st}}" title="{{p.tip}}">{{p.ini}}</span></sc-for></div>
+    <button type="button" class="{{actCls}}" onClick="{{act}}"><sc-if value="{{busy}}" hint-placeholder-val="{{false}}"><span class="it-spin" aria-hidden="true"></span></sc-if>{{actT}}</button>
+  </section>
+  <div class="it-body">
+    <div class="it-main">
+      <section class="it-card" data-card="thread">
+        <div class="it-ch"><h2>{{threadT}}</h2><span class="sub">{{threadSub}}</span></div>
+        <div class="th">
+          <div class="th-h" style="border-bottom:2px solid #8593a6">{{authT}}</div><div></div><div class="th-h" style="border-bottom:2px solid #1b4f94">SBC, for {{clientShort}}</div>
+          <sc-for list="{{events}}" as="e" hint-placeholder-count="5"><div class="{{e.lc}}"><b>{{e.lt}}</b><small>{{e.ls}}</small></div><div class="{{e.tcls}}"><i>{{e.wd}}</i><b>{{e.d}}</b></div><div class="{{e.rc}}"><b>{{e.rt}}</b><small>{{e.rs}}</small></div></sc-for>
+        </div>
+      </section>
+      <sc-if value="{{hasAssist}}" hint-placeholder-val="{{false}}"><section class="it-card" data-card="assist">
+        <div class="it-ch"><h2>File with VCFO Assist</h2><span class="sub">{{assistSub}}</span></div>
+        <sc-for list="{{asSteps}}" as="a" hint-placeholder-count="5"><div class="as-r"><span class="{{a.ic}}" aria-hidden="true"></span><span style="flex:1;min-width:0"><b>{{a.t}}</b><small>{{a.s}}</small></span><sc-if value="{{a.shot}}" hint-placeholder-val="{{false}}"><span class="as-shot" title="Screenshot of this page">{{a.p}}</span></sc-if></div></sc-for>
+        <div class="ft"><small>{{assistNote}}</small><button type="button" class="it-btn" onClick="{{assistGo}}">{{assistBtn}}</button></div>
+      </section></sc-if>
+      <section class="it-card" data-card="from-client">
+        <div class="it-ch"><h2>From the client</h2><span class="sub">{{fromSub}}</span></div>
+        <div class="dl"><sc-for list="{{docs}}" as="d" hint-placeholder-count="4">
+          <div class="dl-r"><span class="nm">{{d.t}}<small>{{d.s}}</small></span><span class="pill" style="{{d.ps}}">{{d.pl}}</span>
+            <sc-if value="{{d.canAccept}}" hint-placeholder-val="{{false}}"><button type="button" class="it-btn2" onClick="{{d.accept}}">Accept</button><button type="button" class="it-btn2" onClick="{{d.ask}}">Ask again</button></sc-if>
+            <sc-if value="{{d.needUpload}}" hint-placeholder-val="{{false}}"><div class="drop" onClick="{{d.upload}}">Drop the file here or <b style="color:#1b4f94">browse</b></div></sc-if>
+            <sc-if value="{{d.asking}}" hint-placeholder-val="{{false}}"><div class="pop"><input placeholder="What should the client fix? (for example: stamp missing on page 2)" value="{{d.reason}}" onInput="{{d.onReason}}" aria-label="Reason"><button type="button" class="it-btn2" onClick="{{d.send}}">Send</button><button type="button" class="it-btn2" onClick="{{d.cancel}}">Cancel</button><sc-if value="{{d.err}}" hint-placeholder-val="{{false}}"><span class="err">Enter a reason first</span></sc-if></div></sc-if>
+          </div>
+        </sc-for></div>
+        <sc-for list="{{details}}" as="k" hint-placeholder-count="4"><div class="kv"><span>{{k.k}}</span><sc-if value="{{k.edit}}" hint-placeholder-val="{{false}}"><input value="{{k.v}}" aria-label="{{k.k}}"></sc-if><sc-if value="{{k.ro}}" hint-placeholder-val="{{true}}"><b>{{k.v}}</b></sc-if></div></sc-for>
+        <div class="ft"><small>{{detailNote}}</small><sc-if value="{{clientView}}" hint-placeholder-val="{{false}}"><button type="button" class="it-btn" onClick="{{submit}}">{{submitT}}</button></sc-if></div>
+      </section>
+      <section class="it-card" data-card="filled-by-sbc">
+        <div class="it-ch"><h2>Filled by SBC</h2><span class="sub">{{sbcSub}}</span></div>
+        <sc-for list="{{sbc}}" as="k" hint-placeholder-count="3"><div class="kv"><span>{{k.k}}</span><sc-if value="{{k.edit}}" hint-placeholder-val="{{false}}"><input class="mono" value="{{k.v}}" aria-label="{{k.k}}"></sc-if><sc-if value="{{k.ro}}" hint-placeholder-val="{{true}}"><b class="mono">{{k.v}}</b></sc-if></div></sc-for>
+      </section>
+      <sc-if value="{{isOb}}" hint-placeholder-val="{{false}}"><section class="it-card" data-card="past-periods">
+        <div class="it-ch"><h2>Past periods</h2></div>
+        <table class="tbl"><thead><tr><th>Period</th><th>Filed on</th><th>Reference</th><th>Status</th></tr></thead><tbody><sc-for list="{{past}}" as="p" hint-placeholder-count="3"><tr><td>{{p.p}}</td><td>{{p.d}}</td><td style="font-family:IBM Plex Mono,monospace;font-size:12px">{{p.r}}</td><td><span class="pill" style="{{p.ps}}">{{p.pl}}</span></td></tr></sc-for></tbody></table>
+      </section></sc-if>
+    </div>
+    <div class="it-rail">
+      <section class="it-card"><div class="it-ch"><h2>About</h2></div><div class="rl">{{about}} <a href="#" data-go="{{kbGo}}">Read the SBC SOP</a></div></section>
+      <section class="it-card"><div class="it-ch"><h2>{{whyT}}</h2></div><div class="rl">{{why}}</div></section>
+      <sc-if value="{{hasPen}}" hint-placeholder-val="{{false}}"><section class="it-card"><div class="it-ch"><h2>If filed late</h2></div><div class="rl">{{pen}} <span style="color:#4b5b70">(the law's penalty)</span></div></section></sc-if>
+      <sc-if value="{{hasStarts}}" hint-placeholder-val="{{false}}"><section class="it-card"><div class="it-ch"><h2>What it starts</h2></div><sc-for list="{{starts}}" as="o" hint-placeholder-count="2"><a href="#" class="li" data-pick-item="{{o.pick}}" data-go="{{o.go}}">{{o.t}}<span class="r">{{o.r}}</span></a></sc-for></section></sc-if>
+      <section class="it-card"><div class="it-ch"><h2>{{renT}}</h2></div><div class="rl">{{ren}}</div></section>
+      <sc-if value="{{staffView}}" hint-placeholder-val="{{true}}"><section class="it-card"><div class="it-ch"><h2>Before filing</h2><span class="sub">Staff only</span></div><sc-for list="{{review}}" as="c" hint-placeholder-count="4"><label class="ck"><input type="checkbox" checked="{{c.on}}">{{c.t}}</label></sc-for></section></sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["reg","ob"],"default":"reg"},"who":{"editor":"enum","options":["client","staff"],"default":"client"},"$preview":{"width":1200,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const R = window.RC, s = this.state || {}, set = (o) => this.setState(o), toast = (t) => { if (window.vcfoToast) window.vcfoToast(t); };
+    const staff = (this.props.who ?? 'client') === 'staff', p = R.pick() || {}, kind = p.kind || this.props.kind || 'reg', isOb = kind === 'ob';
+    const after = R.after(), k = p.k || 'NT', cname = (R.STAFF.find(x => x[0] === k) || ['NT', 'Northwind Technologies'])[1];
+    const item = isOb ? R.ob(p.id || 'gstr1') : R.reg(p.id || 'gst');
+    const pill = (c) => 'color:' + c + ';background:color-mix(in srgb,' + c + ' 12%,#fff)';
+    // State of this item for this client.
+    let st, done, dateV, num;
+    if (isOb) { st = staff ? ['run', 'wait', 'done', 'bad'][(k.charCodeAt(0) + item.id.length) % 4] : (after ? item.st : 'none'); done = { done: item.steps.length, run: 1, wait: 0, none: 0, bad: 1 }[st]; dateV = after || staff ? item.next : 'After the certificate'; num = ''; }
+    else if (staff) { st = R.staffState(k, item.id); done = { done: item.steps.length, run: 2, wait: 1, none: 0, na: 0 }[st]; dateV = st === 'done' ? '2 Oct 2026' : 'Expected 30 Oct'; num = st === 'done' ? 'On file' : ''; }
+    else { const c = R.CLIENT[item.id] || ['none', '', '', 0, '']; st = c[0]; done = c[3]; dateV = c[1]; num = c[2]; if (!after && !staff && st !== 'na') { st = 'none'; done = 0; dateV = 'After the certificate'; num = ''; } }
+    const S = isOb ? R.OST : R.ST, stc = S[st] || S.none;
+    // The deadline band.
+    const total = item.steps.length, frac = total ? done / total : 0, C = 138.2;
+    const ringC = st === 'done' ? '#0f6e51' : st === 'bad' ? '#b5302a' : st === 'wait' ? '#be4400' : '#1b4f94';
+    const facts = [[isOb ? 'Next due' : (st === 'done' ? 'Granted' : 'Expected'), dateV, st === 'bad' ? 'color:#b5302a' : ''], [isOb ? 'Frequency' : 'Number', isOb ? R.FR[item.fr] : (num || '-'), ''], ['Status', stc[0], 'color:' + stc[1]]].map(([k2, v, st2]) => ({ k: k2, v, st: st2 }));
+    const P = R.PEOPLE, people = [[cname.split(' ')[0] === 'Northwind' ? P.client : [cname.split(' ')[0] + ' contact', cname.slice(0, 2).toUpperCase(), 'Client · ' + cname], '#ffeedc', '#9b3b08'], [P.lead, '#e8f0fa', '#1b4f94'], [P.mgr, '#e1f3ec', '#0f6e51']]
+      .map(([pp, bg, fg]) => ({ ini: pp[1], tip: pp[0] + ' · ' + pp[2], st: 'background:' + bg + ';color:' + fg }));
+    const busy = !!s.busy, okDone = !!s.ok;
+    const actT = busy ? 'Working' : okDone ? 'Done' : (staff ? (st === 'done' ? 'Download certificate' : 'Mark next step done') : (st === 'wait' ? 'Upload documents' : st === 'done' ? (isOb ? 'Download acknowledgement' : 'Download certificate') : 'Check my details'));
+    const act = () => { if (busy) return; set({ busy: true }); if (window.vcfoStatus) window.vcfoStatus([(staff ? 'Saving · ' : 'Sending · ') + item.name], staff ? 'Saved · ' + cname.split(' ')[0] : 'Sent to SBC'); setTimeout(() => { this.setState({ busy: false, ok: true }); toast(staff ? item.name + ' · ' + cname + ': next step marked done' : 'Saved · Bharath is told'); setTimeout(() => this.setState({ ok: false }), 2200); }, 900); };
+    // The two-sided thread: the authority on the left, SBC on the right, dates on the spine.
+    const base = isOb ? [1, 3, 6, 8, 10] : [24, 26, 26, 28, 30, 31];
+    const MON = isOb ? 'Nov' : 'Oct', WD = ['Sat', 'Mon', 'Thu', 'Sat', 'Mon', 'Tue', 'Wed'];
+    const dayLabel = (i) => { const d = base[i] || (base[base.length - 1] + i); return d > 31 ? [(d - 31) + ' Nov', WD[i % 7]] : [d + ' ' + MON, WD[i % 7]]; };
+    const events = [];
+    item.steps.forEach(([side, label], i) => {
+      if (i > done) return;
+      const isNext = i === done, [d, wd] = dayLabel(i), au = side === 'a';
+      if (isNext && st === 'done') return;
+      const t = isNext ? (st === 'wait' ? 'Waiting on ' + cname.split(' ')[0] : 'Next: ' + label) : label;
+      const sub = isNext ? (st === 'wait' ? 'Documents asked on ' + d : 'Expected ' + d) : (au ? item.auth : (i === 0 ? 'Checked by ' + P.lead[0] : 'Filed by ' + P.lead[0]));
+      const cls = 'th-c' + (isNext ? ' next' : '');
+      events.push({ lc: au ? cls + ' au' : 'th-e', lt: au ? t : '', ls: au ? sub : '', rc: au ? 'th-e' : cls + ' me', rt: au ? '' : t, rs: au ? '' : sub,
+        tcls: 'th-t' + (au ? ' au' : '') + (isNext ? ' now' : '') + (isNext && st === 'wait' ? ' late' : ''), d: isNext ? 'Today' : d, wd: isNext ? (staff ? 'Fri' : 'Sun') : wd });
+    });
+    if (!events.length) events.push({ lc: 'th-e', lt: '', ls: '', rc: 'th-c next me', rt: 'Starts after the certificate', rs: 'SBC opens it the day the certificate arrives', tcls: 'th-t now', d: '28 Oct', wd: 'Wed' });
+    // From the client: documents and details.
+    const asked = s.asked || {}, reasons = s.reasons || {}, errs = s.errs || {}, accepted = s.accepted || {};
+    const docs = (isOb ? item.from : item.docs).map((t, i) => {
+      let dst = st === 'done' || st === 'run' || st === 'bad' ? 'ok' : st === 'wait' ? (i < 2 ? 'ok' : (i === 2 ? 'review' : 'asked')) : 'notyet';
+      if (accepted[i]) dst = 'ok';
+      const L = { ok: ['Accepted', '#0f6e51'], review: ['To review', '#1b4f94'], asked: ['Asked', '#be4400'], notyet: ['Not asked yet', '#656f7e'] }[dst];
+      const sub = dst === 'ok' ? (staff ? 'Uploaded by ' + (i % 3 === 2 ? P.lead[0] + ' for the client' : cname.split(' ')[0]) + ' · ' + (20 + i) + ' Oct' : 'Accepted by ' + P.lead[0]) : dst === 'review' ? 'Uploaded today' : dst === 'asked' ? 'Asked on 5 Nov · reminder on 9 Nov' : 'SBC will ask when this starts';
+      return { t, s: sub, pl: L[0], ps: pill(L[1]),
+        canAccept: staff && dst === 'review' && !asked[i], needUpload: !staff && dst === 'asked',
+        upload: () => toast('Opens the file picker · or scan the QR with your phone'), accept: () => { set({ accepted: Object.assign({}, accepted, { [i]: 1 }) }); toast('Accepted: ' + t); },
+        ask: () => set({ asked: Object.assign({}, asked, { [i]: 1 }) }), asking: !!asked[i], reason: reasons[i] || '', err: !!errs[i],
+        onReason: (e) => set({ reasons: Object.assign({}, reasons, { [i]: e.target.value }), errs: Object.assign({}, errs, { [i]: 0 }) }),
+        send: () => { if (!(reasons[i] || '').trim()) { set({ errs: Object.assign({}, errs, { [i]: 1 }) }); return; } set({ asked: Object.assign({}, asked, { [i]: 0 }) }); toast('Asked again: ' + t + ' · ' + cname.split(' ')[0] + ' is told on email and WhatsApp'); },
+        cancel: () => set({ asked: Object.assign({}, asked, { [i]: 0 }) }) };
+    });
+    const det = isOb ? [['Period', 'October 2026'], ['Prepared from', 'Tally export uploaded 3 Nov']] : item.details;
+    const details = det.map(([k2, v]) => ({ k: k2, v, edit: !staff && st !== 'done', ro: staff || st === 'done' }));
+    const sbc = item.sbc.map(([k2, v]) => ({ k: k2, v: st === 'done' || v === '-' ? v : (st === 'none' ? '-' : v), edit: staff && st !== 'done', ro: !staff || st === 'done' }));
+    // Past periods for an obligation.
+    const past = isOb ? [['Sep 2026', '11 Oct 2026', 'AA2910250913X', 'done'], ['Aug 2026', '10 Sep 2026', 'AA2909250811K', 'done'], ['Jul 2026', '14 Aug 2026', 'AA2908250722P', 'bad']].map(([pp, d, r, s2]) => ({ p: pp, d, r, pl: s2 === 'done' ? 'Filed' : 'Filed late', ps: pill(s2 === 'done' ? '#0f6e51' : '#be4400') })) : [];
+    const starts = isOb ? [] : item.starts.map(id => { const o = R.ob(id); return { t: o.name, r: R.FR[o.fr], pick: 'ob|' + o.id + '|' + k, go: staff ? 'lead-obligation' : 'obligation' }; });
+    const why = isOb ? (item.by ? 'Started when the ' + R.reg(item.by).name + ' was granted. Due ' + item.due + '.' : 'Applies to every company. Due ' + item.due + '.')
+      : (st === 'na' ? 'Not needed for ' + cname + ': ' + ((R.CLIENT[item.id] || [])[4] || 'set by the manager') + '.' : 'Applies to ' + cname + ' because: ' + ((R.CLIENT[item.id] || [])[4] || item.rule) + '. Rule: ' + item.rule + '.');
+    const REV = isOb ? ['Figures match the books', 'Prior period carried forward', 'Client approved the summary', 'Challan details checked'] : ['Entity type and state checked', 'Every document accepted', 'Details match the documents', 'Manager approval if needed'];
+    const FORMS = { 'GST REG-01': 'GST registration application, filed in two parts (A and B) on the GST portal.', 'GST RFD-11': 'Letter of undertaking to export without paying IGST.', 'Form A': 'Shops and Establishment registration form (Karnataka).', 'TM-A': 'Trademark application form.', 'FC-GPR': 'Foreign currency gross provisional return, filed on RBI FIRMS.' };
+    // VCFO Assist: the extension fills the government portal; each page is kept as a screenshot.
+    const AS = ['Sign in to the ' + (isOb ? item.law : item.auth) + ' portal', 'Open ' + (isOb ? item.name + ' for October' : item.form), 'Fill the details from VCFO', 'Attach the accepted documents', 'Submit and read back the reference'];
+    const ak = s.ak == null ? -1 : s.ak, running = ak >= 0 && ak < AS.length, ran = ak >= AS.length;
+    const asSteps = AS.map((t, i) => ({ t, s: i < ak ? 'Done · ' + (10 + i) + ':0' + (2 + i) + ' am' : i === ak ? 'Working on it' : 'Waiting', ic: 'as-i' + (i < ak ? ' ok' : i === ak ? ' run' : ''), shot: i < ak, p: (isOb ? item.law : item.auth).split(' ')[0] + ' · p' + (i + 1) }));
+    const assistGo = () => { if (running) return; if (ran) { toast('Opens the replay: 5 screenshots, in Audit'); return; } let n = 0; this.setState({ ak: 0 });
+      const iv = setInterval(() => { n++; this.setState({ ak: n }); if (n >= AS.length) { clearInterval(iv); toast('Filed by VCFO Assist · replay kept in Audit'); } }, 900);
+      if (window.vcfoStatus) window.vcfoStatus(AS.map((t, i) => t + ' · ' + (i + 1) + ' of ' + AS.length), 'Filed · reference read back'); };
+    return { hasAssist: staff && st !== 'done' && st !== 'na', asSteps, assistGo, assistBtn: ran ? 'View replay' : running ? 'Filing' : 'Start filing', assistSub: 'Runs in your browser on the portal',
+      assistNote: ran ? 'Replay kept in Audit · 5 screenshots' : 'You see each step; nothing is submitted without the last step',
+      backGo: staff ? (isOb ? 'lead-obligations' : 'lead-registrations') : (isOb ? 'obligations' : 'registrations'), backT: isOb ? 'Obligations' : 'Registrations',
+      name: item.name + (staff ? ' · ' + cname : ''), form: isOb ? item.law : item.form, formTip: isOb ? 'The law this filing comes from.' : (FORMS[item.form] || 'The form SBC files for this registration.'),
+      auth: isOb ? R.FR[item.fr] : item.auth, team: isOb ? (item.by ? 'Started by ' + R.reg(item.by).name : 'Every company') : item.team,
+      ringC, ringDash: Math.round(frac * C) + ' ' + C, ringT: st === 'done' ? '✓' : st === 'bad' ? '-3d' : (done + '/' + total), ringTs: st === 'bad' ? 'color:#b5302a' : '', ringTip: done + ' of ' + total + ' steps done',
+      facts, people, busy, actT, act, actCls: 'it-btn' + (okDone ? ' ok' : ''),
+      threadT: isOb ? 'This period' : 'Steps', threadSub: isOb ? 'October 2026' : done + ' of ' + total + ' done', authT: isOb ? item.law + ' portal' : item.auth, clientShort: cname.split(' ')[0], events,
+      fromSub: staff ? 'Uploaded by the client or by the lead for them' : 'Prefilled from what SBC already has. Check, fill the gaps and submit.',
+      docs, details, clientView: !staff && st !== 'done' && st !== 'na', submitT: s.sent ? 'Submitted' : 'Submit details', submit: () => { set({ sent: true }); toast('Submitted · Bharath is told'); },
+      detailNote: staff ? 'Confirmed by ' + cname.split(' ')[0] + ' on 24 Oct' : (st === 'done' ? 'Locked after filing' : 'You can change these until SBC files'),
+      sbc, sbcSub: staff ? 'Click a value to edit' : 'Read only', isOb, past,
+      about: isOb ? item.name + ' is filed ' + R.FR[item.fr].toLowerCase() + ': ' + item.due + '.' : item.about, kbGo: staff ? 'lead-knowledge-bank' : 'knowledge-bank',
+      whyT: isOb ? 'Why it applies' : (st === 'na' ? 'Not needed' : 'Applies because'), why, hasPen: isOb, pen: isOb ? item.pen : '',
+      hasStarts: starts.length > 0, starts, renT: isOb ? 'Due rule' : 'Renewal', ren: isOb ? item.due : item.renew + (item.renew !== 'None' ? '. Reminders at 60, 30 and 7 days.' : ''),
+      staffView: staff, review: REV.map((t, i) => ({ t, on: i < (st === 'done' ? 4 : done > 1 ? 2 : 0) })) };
+  }
+}
+</script>
+</body>
+</html>

@@ -47,7 +47,7 @@ const ALIASES = `
     --blue-400: var(--brand); --blue-500: var(--brand); --blue-600: var(--brand);
     --blue-700: var(--brand-strong); --blue-800: var(--brand-strong); --blue-900: var(--brand-strong);
     --blue-brand: var(--brand); --blue-muted: var(--brand-soft);
-    --gold: var(--brand); --gold-hi: var(--brand); --gold-deep: var(--brand-strong);
+    --gold-hi: var(--brand); --gold-deep: var(--brand-strong); /* --gold itself is the brand mark token now */
     --orange-50: var(--brand-soft); --orange-100: var(--brand-soft); --orange-200: var(--line); --orange-300: var(--line-strong);
     --orange-400: var(--brand); --orange-500: var(--brand); --orange-600: var(--brand);
     --orange-700: var(--brand-strong); --orange-800: var(--brand-strong); --orange-900: var(--brand-strong);

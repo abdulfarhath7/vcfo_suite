@@ -233,7 +233,7 @@ export type WeekChipKind = 'filing' | 'step' | 'nudge' | 'done';
 export const WEEK_CHIP_TONE: Record<WeekChipKind, InternChipTone> = {
   filing: 'danger',
   step: 'primary',
-  nudge: 'highlight',
+  nudge: 'warning',
   done: 'success',
 };
 
@@ -823,9 +823,9 @@ function companyPill(items: InternWorkItem[]): { label: string; tone: InternChip
   const rejected = items.filter((i) => i.kind === 'rejected').length;
   if (rejected) return { label: `${rejected} rejected`, tone: 'danger' };
   const deliver = items.filter((i) => i.kind === 'deliver').length;
-  if (deliver) return { label: 'deliver ready', tone: 'success' };
+  if (deliver) return { label: 'Deliver ready', tone: 'success' };
   const filingDue = items.filter((i) => i.source === 'filing' && i.kind !== 'done').length;
-  if (filingDue) return { label: 'filing due', tone: 'warning' };
+  if (filingDue) return { label: 'Filing due', tone: 'warning' };
   const overdue = items.filter((i) => i.isOverdue).length;
   if (overdue) return { label: `${overdue} overdue`, tone: 'danger' };
   if (items.some((i) => i.kind === 'in-progress')) return { label: 'In progress', tone: 'primary' };

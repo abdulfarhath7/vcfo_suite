@@ -58,6 +58,28 @@ export default {
           DEFAULT: "oklch(var(--positive) / <alpha-value>)",
           soft: "oklch(var(--positive-soft) / <alpha-value>)",
         },
+        upcoming: {
+          DEFAULT: "oklch(var(--upcoming) / <alpha-value>)",
+          soft: "oklch(var(--upcoming-soft) / <alpha-value>)",
+        },
+        "on-status": "oklch(var(--on-status) / <alpha-value>)",
+        gold: {
+          DEFAULT: "oklch(var(--gold) / <alpha-value>)",
+          text: "oklch(var(--gold-text) / <alpha-value>)",
+          /* legacy names, still blue aliases in globals.css until 2026-11-30 */
+          hi: "oklch(var(--gold-hi) / <alpha-value>)",
+          deep: "oklch(var(--gold-deep) / <alpha-value>)",
+        },
+        owner: {
+          client: "oklch(var(--owner-client) / <alpha-value>)",
+          "client-soft": "oklch(var(--owner-client-soft) / <alpha-value>)",
+          sbc: "oklch(var(--owner-sbc) / <alpha-value>)",
+          "sbc-soft": "oklch(var(--owner-sbc-soft) / <alpha-value>)",
+          mca: "oklch(var(--owner-mca) / <alpha-value>)",
+          "mca-soft": "oklch(var(--owner-mca-soft) / <alpha-value>)",
+          manager: "oklch(var(--owner-manager) / <alpha-value>)",
+          "manager-soft": "oklch(var(--owner-manager-soft) / <alpha-value>)",
+        },
         "focus-ring": "oklch(var(--focus-ring) / <alpha-value>)",
         scrim: "var(--scrim)",
         side: {
@@ -87,12 +109,6 @@ export default {
           subtle: "oklch(var(--subtle-paper) / <alpha-value>)",
         },
 
-        /* Gold aliases → blue (deprecated names, blue values) */
-        gold: {
-          DEFAULT: "oklch(var(--gold) / <alpha-value>)",
-          hi: "oklch(var(--gold-hi) / <alpha-value>)",
-          deep: "oklch(var(--gold-deep) / <alpha-value>)",
-        },
         blue: {
           DEFAULT: "oklch(var(--blue-600) / <alpha-value>)",
           50: "oklch(var(--blue-50) / <alpha-value>)",
@@ -271,6 +287,9 @@ export default {
       boxShadow: {
         card: "var(--shadow-card)",
         float: "var(--shadow-float)",
+      },
+      backgroundImage: {
+        hero: "var(--hero-gradient)",
       },
       spacing: {
         "control-sm": "var(--control-sm)",

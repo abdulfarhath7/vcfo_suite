@@ -24,6 +24,7 @@
     "ask:topics:publish": "node --conditions=react-server --import tsx scripts/ask-topics-publish.ts",
     "eval:live": "node --conditions=react-server --import tsx tests/ask/evals/run-live.ts",
     "e2e": "playwright test",
+    "e2e:smoke": "playwright test e2e/smoke.spec.ts --reporter=list",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

@@ -6,7 +6,7 @@ import { DashSection } from '@/components/dash/DashSection';
 import { internCompanyPhaseProgress } from '@/lib/intern/intern-work';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { internToneBadge } from '@/components/intern/intern-tones';
+import { internToneSolid } from '@/components/intern/intern-tones';
 import { CHIP_CLASS, CHIP_COLUMN_CLASS } from '@/components/common/IconChip';
 import { cn } from '@/lib/utils';
 
@@ -52,10 +52,10 @@ export function LeadPhaseProgress({
                     CHIP_CLASS,
                     CHIP_COLUMN_CLASS,
                     row.stuck
-                      ? internToneBadge('danger')
+                      ? internToneSolid('danger')
                       : complete
-                        ? internToneBadge('success')
-                        : internToneBadge('primary'),
+                        ? internToneSolid('success')
+                        : internToneSolid('primary'),
                   )}
                 >
                   {chip}
@@ -65,7 +65,7 @@ export function LeadPhaseProgress({
                 {row.phases.map((phase) => (
                   <div
                     key={phase.id}
-                    className="relative overflow-hidden rounded-[3px] bg-surface-sunken"
+                    className="relative overflow-hidden rounded-[3px] bg-upcoming-soft"
                     style={{ flex: Math.max(phase.total, 1) }}
                   >
                     <i

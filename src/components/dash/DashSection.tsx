@@ -22,9 +22,12 @@ export function DashSection({
   hrefLabel,
   className,
   bodyClassName,
+  size = 'md',
   children,
 }: {
   icon: LucideIcon;
+  /** `lg` for a page's first section: 13px sentence-case title instead of the 11px label. */
+  size?: 'md' | 'lg';
   tone?: IconChipTone;
   title: string;
   /** Small right-aligned text (counts, scope). */
@@ -41,13 +44,18 @@ export function DashSection({
       <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 px-4 pt-3">
         <span
           className={cn(
-            'grid h-7 w-7 shrink-0 place-items-center rounded-md bg-surface-sunken',
-            tone === 'neutral' ? 'text-ink' : TONE_TEXT[tone],
+            'grid h-7 w-7 shrink-0 place-items-center rounded-md',
+            tone === 'neutral' ? 'bg-brand-soft text-brand' : cn('bg-surface-sunken', TONE_TEXT[tone]),
           )}
         >
-          <Icon className="h-3.5 w-3.5" aria-hidden />
+          <Icon className="h-[15px] w-[15px]" strokeWidth={2} aria-hidden />
         </span>
-        <h2 className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-ink">
+        <h2
+          className={cn(
+            'min-w-0 flex-1 truncate font-semibold text-ink',
+            size === 'lg' ? 'text-[13px]' : 'text-[11px] uppercase tracking-[0.06em]',
+          )}
+        >
           {title}
         </h2>
         {meta ? (

@@ -1,0 +1,1742 @@
+<!doctype html>
+<html lang="en-IN"{{DEMO_ATTR}}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>VCFO Suite: your complete compliance companion</title>
+<meta name="description" content="VCFO Suite: your complete compliance companion. Incorporation, registrations and the statutory calendar for India companies, on one record shared by the firm and the client.">
+<link rel="icon" type="image/webp" href="{{IMG:icon}}">
+{{FONTS}}
+<script>
+/* The logo reveal plays on every load, from the top of the page, and never under reduced motion. */
+(function () {
+  try {
+    var d = document.documentElement;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    d.classList.add('pre-reveal', 'reveal-logo');
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    if (location.hash) history.replaceState(history.state, '', location.pathname + location.search);
+    scrollTo(0, 0);
+  } catch (e) {}
+})();
+</script>
+<style>
+/* ------------------------------------------------------------------
+   VCFO Suite landing page prototype, version 2.
+   Dark theme of docs/design/design-tokens.json locked for the whole page.
+   Public Sans for text, IBM Plex Mono for labels and identifiers.
+   Every diagram is drawn from the real checklist (src/data/checklist.ts),
+   the post-incorporation clocks and the statutory calendar in the repo.
+   ------------------------------------------------------------------ */
+:root {
+  --surface: #0b1521; --raised: #111d2c; --sunken: #070e18;
+  --line: #1f2d40; --line-strong: #56698a; --line-soft: rgba(233, 239, 246, 0.07);
+  --ink: #e9eff6; --ink-muted: #a5b4c6; --ink-faint: #6f8097;
+  --brand: #6aa2e8; --brand-strong: #86b6ef; --brand-soft: #17304d; --on-brand: #0b1521;
+  --highlight: #f2a35b; --highlight-bright: #f08a3a; --highlight-soft: #3a2412;
+  --positive: #4fc99a; --positive-soft: #0f3328;
+  --warning: #f0b84a; --warning-soft: #3b2a0a;
+  --danger: #f27b72; --danger-soft: #3d1512;
+  --info: #5cc0dc; --info-soft: #0d2e3a;
+  --d1: #3987e5; --d2: #d95926; --d3: #199e70; --d4: #c98500; --d5: #9085e9;
+  --focus: #86b6ef;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-float: 0 24px 60px -20px rgba(0, 0, 0, 0.75);
+  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px;
+  --font: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --container: 1280px; --gutter: 24px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: clip; }
+body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+h1, h2, h3, h4, p, ul, ol { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+svg text { font-family: var(--font); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-sm); }
+.container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
+.icon { width: 16px; height: 16px; flex: 0 0 auto; display: inline-block; }
+.icon svg { width: 100%; height: 100%; display: block; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* Type */
+.h1 { font-size: clamp(2.4rem, 5.4vw, 4rem); line-height: 1.04; letter-spacing: -0.025em; font-weight: 600; }
+.h2 { font-size: clamp(1.8rem, 3.2vw, 2.65rem); line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; max-width: 24ch; }
+.h3 { font-size: 18px; line-height: 1.35; font-weight: 600; }
+.lead { font-size: 19px; line-height: 1.55; color: var(--ink-muted); max-width: 56ch; }
+.body { font-size: 16px; line-height: 1.65; color: var(--ink-muted); max-width: 58ch; }
+.mono { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+.section { position: relative; padding: 112px 0; overflow-x: clip; scroll-margin-top: 68px; }
+.section-head { margin-bottom: 56px; }
+.section-head .body { margin-top: 18px; }
+.stage { display: inline-flex; align-items: center; gap: 10px; height: 28px; padding: 0 12px 0 6px; border-radius: 999px; border: 1px solid var(--line-soft); background: var(--raised); font-size: 12px; font-weight: 600; color: var(--ink-muted); margin-bottom: 20px; }
+.stage b { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 999px; background: var(--brand); color: var(--on-brand); font-family: var(--mono); font-size: 11px; font-weight: 500; }
+.stage.loop b { background: var(--positive); }
+.caption { margin-top: 20px; font-size: 14px; color: var(--ink-muted); display: flex; align-items: flex-start; gap: 10px; max-width: 70ch; }
+.caption .icon { color: var(--brand); margin-top: 3px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 20px; min-width: 84px; border-radius: 10px; font-size: 15px; font-weight: 600; line-height: 1; white-space: nowrap; transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--brand); color: var(--on-brand); box-shadow: 0 0 0 0 rgba(106, 162, 232, 0); }
+.btn-primary:hover { background: var(--brand-strong); box-shadow: 0 8px 30px -8px rgba(106, 162, 232, 0.55); }
+.btn-secondary { background: rgba(255, 255, 255, 0.03); color: var(--ink); border: 1px solid var(--line-strong); }
+.btn-secondary:hover { background: var(--raised); border-color: var(--ink-faint); }
+.btn-ghost { color: var(--ink-muted); padding: 0 14px; }
+.btn-ghost:hover { color: var(--ink); }
+.btn-sm { height: 36px; padding: 0 14px; font-size: 14px; border-radius: var(--r-md); }
+
+/* Cards and pills */
+.card { background: var(--raised); border: 1px solid var(--line-soft); border-radius: var(--r-xl); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), var(--shadow-card); }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: var(--r-sm); font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; }
+.pill-positive { background: var(--positive-soft); color: var(--positive); }
+.pill-warning { background: var(--warning-soft); color: var(--warning); }
+.pill-danger { background: var(--danger-soft); color: var(--danger); }
+.pill-brand { background: var(--brand-soft); color: var(--brand); }
+.pill-highlight { background: var(--highlight-soft); color: var(--highlight); }
+.pill-neutral { background: var(--sunken); color: var(--ink-muted); border: 1px solid var(--line); }
+.who { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px 0 4px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+.who i { width: 14px; height: 14px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-family: var(--mono); font-size: 8px; }
+.who-you { background: var(--highlight-soft); color: var(--highlight); } .who-you i { background: var(--highlight); color: var(--sunken); }
+.who-sbc { background: var(--brand-soft); color: var(--brand); } .who-sbc i { background: var(--brand); color: var(--sunken); }
+.who-mca { background: var(--info-soft); color: var(--info); } .who-mca i { background: var(--info); color: var(--sunken); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: var(--r-sm); font-size: 12.5px; font-weight: 500; background: var(--sunken); border: 1px solid var(--line); color: var(--ink-muted); white-space: nowrap; }
+.chip.more { color: var(--brand); border-color: transparent; background: var(--brand-soft); }
+
+/* Glows: soft atmosphere, never on cards */
+.glow { position: absolute; pointer-events: none; border-radius: 999px; filter: blur(2px); }
+.glow-brand { background: radial-gradient(closest-side, rgba(106, 162, 232, 0.16), rgba(106, 162, 232, 0)); }
+.glow-info { background: radial-gradient(closest-side, rgba(92, 192, 220, 0.10), rgba(92, 192, 220, 0)); }
+
+/* Nav */
+.nav { position: sticky; top: 0; z-index: 30; background: rgba(11, 21, 33, 0.92); border-bottom: 1px solid var(--line-soft); transition: box-shadow 200ms ease, border-color 200ms ease; }
+.nav.scrolled { border-bottom-color: var(--line); box-shadow: 0 10px 30px -20px rgba(0, 0, 0, 0.8); }
+.nav-row { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 16px; }
+.nav-logo img { height: 30px; width: auto; }
+.nav-links { display: flex; align-items: center; gap: 2px; }
+.nav-links a { padding: 8px 12px; border-radius: var(--r-md); font-size: 14px; font-weight: 500; color: var(--ink-muted); transition: color 150ms ease, background-color 150ms ease; }
+.nav-links a:hover { color: var(--ink); background: var(--brand-soft); }
+.nav-actions { display: flex; align-items: center; gap: 8px; }
+.nav-toggle { display: none; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: var(--r-md); border: 1px solid var(--line-strong); }
+.nav-toggle .icon { width: 18px; height: 18px; }
+.nav-toggle .ic-close, .nav.open .nav-toggle .ic-menu { display: none; }
+.nav.open .nav-toggle .ic-close { display: block; }
+.nav-mobile { display: none; border-top: 1px solid var(--line); padding: 8px 0 16px; }
+.nav-mobile a { display: block; padding: 12px 8px; font-size: 16px; font-weight: 500; color: var(--ink); border-bottom: 1px solid var(--line); }
+.nav.open .nav-mobile { display: block; }
+
+/* Hero: copy on the left, the product on the right bleeding to the viewport edge */
+.hero { position: relative; overflow: hidden; padding: 64px 0 88px; }
+.hero .glow-a { width: 1100px; height: 700px; left: 62%; top: -40px; transform: translateX(-50%); }
+.hero .glow-b { width: 700px; height: 500px; left: 72%; top: 260px; }
+/* round 3 (owner pick, Aceternity): a soft spotlight and slow beams behind the hero; Haikei-style peaks on sign-in */
+.hero-beams { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.hero-beams path { fill: none; stroke: #6aa2e8; stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 160 1400; animation: beam 9s linear infinite; }
+.hero-beams path:nth-child(2) { animation-delay: -3s; stroke-opacity: .55; }
+.hero-beams path:nth-child(3) { animation-delay: -6s; stroke-opacity: .35; }
+.hero-beams .spot { fill: url(#spotG); }
+@keyframes beam { from { stroke-dashoffset: 1560; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) { .hero-beams path { animation: none; stroke-dasharray: none; stroke-opacity: .15; } }
+.hero > .container, .hero > .wrap, .hero-grid { position: relative; z-index: 1; }
+.chooser-card { position: relative; overflow: hidden; }
+.chooser-card::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 90px; pointer-events: none; opacity: .5; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 90' preserveAspectRatio='none'%3E%3Cpath d='M0 60 L50 40 L100 55 L160 30 L220 50 L280 26 L340 48 L420 34 L420 90 L0 90Z' fill='%236aa2e8' fill-opacity='.08'/%3E%3Cpath d='M0 74 L70 56 L130 70 L200 52 L260 66 L330 50 L420 62 L420 90 L0 90Z' fill='%236aa2e8' fill-opacity='.1'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat; }
+.chooser-card > * { position: relative; z-index: 1; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
+.hero-copy { position: relative; text-align: left; }
+.kicker { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 24px; }
+.hero-copy .h1 { font-size: clamp(2.3rem, 4.7vw, 3.7rem); }
+.hero-copy .h1 .swap-line { display: block; color: var(--brand); white-space: nowrap; }
+.swap { display: inline; }
+.swap::after { content: ""; display: inline-block; width: 0.07em; height: 0.9em; margin-left: 0.08em; background: var(--brand); vertical-align: -0.06em; border-radius: 1px; }
+@media (prefers-reduced-motion: no-preference) {
+  .swap::after { animation: caret 1s steps(2, start) infinite; }
+  @keyframes caret { to { opacity: 0; } }
+}
+@media (prefers-reduced-motion: reduce) { .swap::after { display: none; } }
+.hero-copy .lead { margin: 24px 0 0; max-width: 38ch; font-size: 18px; }
+.hero-ctas { display: flex; gap: 12px; margin-top: 34px; flex-wrap: wrap; }
+.hero-shot { position: relative; width: 100%; }
+.hero-shot .frame { transform: perspective(1800px) rotateY(-4deg); transform-origin: left center; }
+.frame { border: 1px solid var(--line); border-radius: var(--r-xl); overflow: hidden; background: var(--raised); box-shadow: var(--shadow-float); }
+.frame img { width: 100%; }
+.hero-shot .frame { border-color: rgba(106, 162, 232, 0.35); box-shadow: 0 0 0 1px rgba(106, 162, 232, 0.08), 0 40px 100px -30px rgba(0, 0, 0, 0.9), 0 0 120px -20px rgba(106, 162, 232, 0.25); }
+.float { position: absolute; z-index: 2; display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px 10px 10px; border-radius: var(--r-lg); background: var(--raised); border: 1px solid var(--line); box-shadow: var(--shadow-float); font-size: 13px; color: var(--ink); white-space: nowrap; }
+.float .mono { font-size: 10px; }
+.float-a { left: -28px; top: 28px; }
+.float-b { right: -20px; bottom: 36px; }
+.float .t { display: flex; flex-direction: column; gap: 2px; line-height: 1.2; }
+
+/* Facts */
+.facts { position: relative; overflow-x: clip; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: linear-gradient(180deg, rgba(17, 29, 44, 0.6), rgba(17, 29, 44, 0)); }
+.facts-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+.fact { padding: 36px 24px 36px 0; }
+.fact + .fact { padding-left: 24px; border-left: 1px solid var(--line-soft); }
+.fact .num { font-size: 44px; line-height: 1; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.fact .what { margin-top: 12px; font-size: 14px; line-height: 1.5; color: var(--ink-muted); }
+
+/* Journey diagram */
+.journey { position: relative; margin-top: 8px; }
+.journey svg { width: 100%; height: auto; display: block; overflow: visible; }
+.journey .line { fill: none; stroke: var(--line-strong); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1400; stroke-dashoffset: 1400; }
+.journey.in .line { stroke-dashoffset: 0; transition: stroke-dashoffset 2.2s var(--ease); }
+.journey .line-glow { fill: none; stroke: var(--brand); stroke-width: 6; stroke-linecap: round; opacity: 0.18; stroke-dasharray: 1400; stroke-dashoffset: 1400; filter: blur(3px); }
+.journey.in .line-glow { stroke-dashoffset: 0; transition: stroke-dashoffset 2.2s var(--ease); }
+.journey .node { opacity: 0; transform: translateY(10px); transition: opacity 600ms var(--ease), transform 600ms var(--ease); transition-delay: calc(var(--i) * 220ms + 500ms); }
+.journey.in .node { opacity: 1; transform: none; }
+.journey .node circle.c { fill: var(--raised); stroke: var(--brand); stroke-width: 2; }
+.journey .node circle.halo { fill: var(--brand); opacity: 0.12; }
+.journey .node.coi path.d { fill: var(--raised); stroke: var(--highlight); stroke-width: 2; }
+.journey .node.loop circle.c { stroke: var(--positive); }
+.journey .node text.n { fill: var(--ink); font-family: var(--mono); font-size: 13px; font-weight: 500; text-anchor: middle; }
+.journey .node text.t { fill: var(--ink); font-size: 14px; font-weight: 600; text-anchor: middle; }
+.journey .node text.s { fill: var(--ink-muted); font-size: 12px; text-anchor: middle; }
+.journey .node text.w { fill: var(--ink-faint); font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-anchor: middle; }
+.journey-list { display: none; }
+.journey .pulse { fill: none; stroke: var(--brand); stroke-width: 2; opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .journey.in .pulse { animation: pulse 2.6s ease-out infinite; animation-delay: 2.4s; }
+  @keyframes pulse { 0% { r: 20; opacity: 0.45; } 100% { r: 40; opacity: 0; } }
+}
+
+/* Story: sticky diagram beside scrolling steps (the Solcis pattern) */
+.story { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; }
+.story-steps { display: grid; gap: 8px; }
+.story-step { padding: 28px 0 28px 28px; border-left: 2px solid var(--line); min-height: 52vh; display: flex; flex-direction: column; justify-content: center; transition: border-color 300ms ease; }
+.story-step:first-child { min-height: 40vh; }
+.story-step .h3 { color: var(--ink-faint); transition: color 300ms ease; font-size: 22px; letter-spacing: -0.01em; }
+.story-step p { margin-top: 10px; font-size: 15px; line-height: 1.6; color: var(--ink-faint); max-width: 44ch; transition: color 300ms ease; }
+.story-step .whos { display: flex; gap: 6px; margin-top: 14px; opacity: 0.45; transition: opacity 300ms ease; }
+.story-step.is-active { border-color: var(--brand); }
+.story-step.is-active .h3 { color: var(--ink); }
+.story-step.is-active p { color: var(--ink-muted); }
+.story-step.is-active .whos { opacity: 1; }
+.story-stage { position: sticky; top: 100px; }
+.stage-panel { padding: 24px; }
+.stage-panel svg { width: 100%; height: auto; display: block; }
+.swim .col-h { fill: var(--sunken); stroke: var(--line); }
+.swim .col-t { fill: var(--ink-muted); font-size: 12px; font-weight: 600; text-anchor: middle; letter-spacing: 0.04em; }
+.swim .lane { stroke: var(--line-soft); stroke-dasharray: 2 6; }
+.swim .doc { fill: var(--raised); stroke: var(--line-strong); stroke-width: 1.2; }
+.swim .doc-l { stroke: var(--ink-faint); stroke-width: 2; stroke-linecap: round; }
+.swim .lbl { fill: var(--ink); font-size: 12px; font-weight: 600; }
+.swim .sub { fill: var(--ink-muted); font-size: 10.5px; }
+.swim .arrow { stroke: var(--brand); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+.swim .arrow.back { stroke: var(--highlight); marker-end: url(#ah2); }
+.swim .badge { fill: var(--positive-soft); stroke: var(--positive); }
+.swim .badge-t { fill: var(--positive); font-size: 11px; font-weight: 600; text-anchor: middle; }
+.swim .cert { fill: var(--raised); stroke: var(--positive); stroke-width: 1.5; }
+.swim .cert-glow { fill: var(--positive); opacity: 0; }
+.swim .tick { fill: none; stroke: var(--positive); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sg { opacity: 0.14; transform: translateY(8px); transition: opacity 500ms var(--ease), transform 500ms var(--ease); }
+.sg.done, .sg.cur { transform: none; }
+.sg.done { opacity: 0.55; }
+.sg.cur { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .sg.cur .arrow { stroke-dasharray: 5 5; animation: ants 1.1s linear infinite; }
+  .sg.cur .cert-glow { animation: certglow 2.4s ease-in-out infinite; }
+  @keyframes ants { to { stroke-dashoffset: -20; } }
+  @keyframes certglow { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.22; } }
+}
+
+/* Timeline (post-incorporation) */
+.tl { position: relative; margin-top: 24px; --axis-y: 190px; height: 540px; }
+.tl .axis { position: absolute; left: 0; right: 0; top: var(--axis-y); height: 2px; background: var(--line); border-radius: 2px; }
+.tl .axis-fill { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, var(--brand), var(--positive)); border-radius: 2px; }
+.tl.in .axis-fill { width: 100%; transition: width 2.4s var(--ease); }
+.tl .tick { position: absolute; top: 10px; transform: translateX(-50%); font-family: var(--mono); font-size: 11px; color: var(--ink-faint); letter-spacing: 0.04em; white-space: nowrap; }
+.tl .tick::before { content: ""; position: absolute; left: 50%; top: -14px; width: 1px; height: 8px; background: var(--line-strong); }
+.pin { position: absolute; width: 212px; transform: translateX(-50%); opacity: 0; transition: opacity 600ms var(--ease), transform 600ms var(--ease); transition-delay: calc(var(--i) * 160ms + 300ms); }
+.pin.up { bottom: calc(100% - var(--axis-y) + 26px); }
+.pin.down { top: calc(var(--axis-y) + 26px); }
+.tl.in .pin { opacity: 1; }
+.pin .stem { position: absolute; left: 50%; width: 1px; height: 24px; background: var(--line-strong); }
+.pin.first { transform: translateX(-16%); } .pin.first .stem, .pin.first .dot { left: 16%; }
+.pin.last { transform: translateX(-84%); } .pin.last .stem, .pin.last .dot { left: 84%; }
+.pin.up .stem { bottom: -24px; } .pin.down .stem { top: -24px; }
+.pin .dot { position: absolute; left: 50%; width: 10px; height: 10px; border-radius: 999px; background: var(--brand); transform: translateX(-50%); box-shadow: 0 0 0 4px var(--surface); }
+.pin.up .dot { bottom: -31px; } .pin.down .dot { top: -31px; }
+.pin.coi .dot { background: var(--highlight-bright); width: 12px; height: 12px; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
+.pin.last .dot { background: var(--positive); }
+.pin .pc { padding: 12px 14px; }
+.pin .pc .mono { display: block; margin-bottom: 4px; }
+.pin .pc b { display: block; font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+.pin .pc span { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-muted); line-height: 1.4; }
+.pin ul { margin-top: 8px; display: grid; gap: 4px; }
+.pin li { font-size: 12px; color: var(--ink-muted); display: flex; gap: 6px; align-items: flex-start; }
+.pin li .icon { width: 12px; height: 12px; color: var(--positive); margin-top: 3px; }
+.tl-list { display: none; }
+
+/* Hub (registrations) */
+.hub { position: relative; aspect-ratio: 2 / 1; margin-top: 16px; }
+.hub svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hub .wire { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 600; stroke-dashoffset: 600; opacity: 0.8; }
+.hub.in .wire { stroke-dashoffset: 0; transition: stroke-dashoffset 1.6s var(--ease); transition-delay: calc(var(--i) * 120ms); }
+.hub .centre { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 220px; text-align: center; padding: 20px 18px; z-index: 2; }
+.hub .centre .ring1, .hub .centre .ring2 { position: absolute; left: 50%; top: 50%; width: 100%; height: 100%; border-radius: var(--r-xl); border: 1px solid var(--brand); transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .hub.in .centre .ring1 { animation: ringout 3s ease-out infinite; }
+  .hub.in .centre .ring2 { animation: ringout 3s ease-out infinite; animation-delay: 1.5s; }
+  @keyframes ringout { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+}
+.hub .centre b { display: block; font-size: 16px; }
+.hub .centre .mono { display: block; margin-top: 6px; }
+.cluster { position: absolute; width: 230px; transform: translate(-50%, -50%); padding: 14px; opacity: 0; transition: opacity 600ms var(--ease); transition-delay: calc(var(--i) * 140ms + 400ms); }
+.hub.in .cluster { opacity: 1; }
+.cluster header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.cluster header .tile { width: 26px; height: 26px; border-radius: var(--r-sm); display: inline-flex; align-items: center; justify-content: center; }
+.cluster header .tile .icon { width: 14px; height: 14px; }
+.cluster header b { font-size: 13px; }
+.cluster header > span:last-child { font-family: var(--mono); font-size: 10px; color: var(--ink-faint); margin-left: auto; }
+.cluster .chips { gap: 6px; }
+.cluster .chip { height: 24px; font-size: 11.5px; padding: 0 8px; }
+.c-tax .tile { background: rgba(57, 135, 229, 0.18); color: var(--d1); }
+.c-lab .tile { background: rgba(201, 133, 0, 0.18); color: var(--d4); }
+.c-trade .tile { background: rgba(25, 158, 112, 0.18); color: var(--d3); }
+.c-ip .tile { background: rgba(144, 133, 233, 0.18); color: var(--d5); }
+.c-rbi .tile { background: rgba(217, 89, 38, 0.18); color: var(--d2); }
+.c-tax { left: 14%; top: 22%; } .c-lab { left: 86%; top: 22%; } .c-trade { left: 14%; top: 78%; } .c-rbi { left: 86%; top: 78%; } .c-ip { left: 50%; top: 92%; }
+
+/* Compliance ring */
+.comply-grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 56px; align-items: center; }
+.ring-wrap { position: relative; }
+.ring-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+.ring-wrap .month { fill: var(--ink-faint); font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-anchor: middle; }
+.ring-wrap .track { fill: none; stroke: var(--line); stroke-width: 1; }
+.ring-wrap .dot { opacity: 0; transition: opacity 500ms ease; transition-delay: calc(var(--i) * 12ms + 300ms); }
+.ring-wrap.in .dot { opacity: 1; }
+.ring-wrap .dot:hover { stroke: var(--ink); stroke-width: 2; }
+.ring-wrap .hand { stroke: var(--ink); stroke-width: 1.5; stroke-linecap: round; opacity: 0.8; transform-origin: 260px 260px; }
+.ring-wrap .hand-cap { fill: var(--ink); }
+.ring-wrap .ctr-t { fill: var(--ink); font-size: 22px; font-weight: 600; text-anchor: middle; letter-spacing: -0.01em; }
+.ring-wrap .ctr-s { fill: var(--ink-muted); font-size: 12px; text-anchor: middle; }
+@media (prefers-reduced-motion: no-preference) {
+  .ring-wrap .hand-g { transform-origin: 260px 260px; animation: sweep 24s linear infinite; }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+}
+.legend { display: grid; gap: 14px; margin-top: 28px; }
+.legend li { display: grid; grid-template-columns: 12px 1fr; gap: 12px; align-items: start; font-size: 14px; color: var(--ink-muted); line-height: 1.5; }
+.legend li i { width: 12px; height: 12px; border-radius: 3px; margin-top: 5px; }
+.legend li b { color: var(--ink); font-weight: 600; }
+.nudge { margin-top: 32px; padding: 18px 20px; display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: center; }
+.nudge .box { text-align: center; }
+.nudge .box .icon { width: 20px; height: 20px; color: var(--brand); margin: 0 auto 6px; }
+.nudge .box b { display: block; font-size: 13px; }
+.nudge .box span { display: block; font-size: 11.5px; color: var(--ink-muted); line-height: 1.35; margin-top: 2px; }
+.nudge .arr { position: relative; width: 36px; height: 2px; background: var(--line-strong); border-radius: 2px; }
+.nudge .arr::after { content: ""; position: absolute; right: -2px; top: -3px; border: 4px solid transparent; border-left: 6px solid var(--line-strong); }
+.nudge .arr i { position: absolute; top: -3px; left: 0; width: 8px; height: 8px; border-radius: 999px; background: var(--brand); opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .nudge .arr i { animation: travel 2.4s ease-in-out infinite; }
+  .nudge .arr.b i { animation-delay: 1.2s; }
+  @keyframes travel { 0% { left: 0; opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { left: 28px; opacity: 0; } }
+}
+
+/* Logo reveal: the hero's opening beat, ending on the navbar logo */
+html.pre-reveal .hero-grid { visibility: hidden; }
+html.pre-reveal .hero .enter { animation-play-state: paused; }
+html.reveal-logo .nav-logo img { opacity: 0; }
+.nav-logo img { transition: opacity 220ms ease; }
+#reveal { position: fixed; z-index: 35; display: grid; place-items: center; pointer-events: none; }
+#reveal svg { display: block; width: min(88%, 1000px); height: auto; max-height: 90%; overflow: visible; transform-origin: 0 0; }
+#reveal.glide svg { transition: transform 720ms cubic-bezier(0.65, 0, 0.35, 1); }
+#reveal.fast svg { transition-duration: 320ms; }
+#reveal.gone { opacity: 0; transition: opacity 180ms ease; }
+#reveal svg text { font-family: Poppins, system-ui, sans-serif; }
+
+/* Live prototype: deep links, the app layer and the role chooser (merged build only) */
+.demo-only { display: none !important; }
+html.signed-in [data-app] { cursor: pointer; }
+html.signed-in .frame[data-app], html.signed-in .panel[data-app], html.signed-in .ring-wrap[data-app] { position: relative; }
+html.signed-in .frame[data-app]::after, html.signed-in .panel[data-app]::after, html.signed-in .ring-wrap[data-app]::after {
+  content: "Open live screen"; position: absolute; top: 14px; right: 14px; z-index: 2; height: 30px; padding: 0 12px; display: inline-flex; align-items: center;
+  border-radius: 999px; background: var(--brand); color: var(--on-brand); font: 600 12.5px/1 var(--font); box-shadow: var(--shadow-float);
+  opacity: 0; transform: translateY(-4px); transition: opacity 180ms ease, transform 180ms ease; pointer-events: none;
+}
+html.signed-in .frame[data-app]:hover::after, html.signed-in .frame[data-app]:focus-visible::after,
+html.signed-in .panel[data-app]:hover::after, html.signed-in .panel[data-app]:focus-visible::after,
+html.signed-in .ring-wrap[data-app]:hover::after, html.signed-in .ring-wrap[data-app]:focus-visible::after { opacity: 1; transform: none; }
+html.signed-in .frame[data-app], html.signed-in .panel[data-app] { transition: border-color 180ms ease, box-shadow 180ms ease; }
+html.signed-in .frame[data-app]:hover, html.signed-in .panel[data-app]:hover { border-color: var(--brand) !important; }
+html.signed-in .card[data-app], html.signed-in .fact[data-app], html.signed-in .chip[data-app], html.signed-in .float[data-app], html.signed-in .qs li[data-app], html.signed-in .journey-list li[data-app] { transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease; }
+html.signed-in .card[data-app]:hover, html.signed-in .float[data-app]:hover { border-color: var(--brand); }
+html.signed-in .chip[data-app]:hover, html.signed-in .qs li[data-app]:hover { border-color: var(--brand); color: var(--ink); background: var(--brand-soft); }
+html.signed-in .fact[data-app]:hover .num { color: var(--brand); }
+html.signed-in .float[data-app] { pointer-events: auto; }
+html.signed-in .journey .node[data-app]:hover circle.c, html.signed-in .journey .node[data-app]:focus-visible circle.c { stroke: var(--brand-strong); stroke-width: 3; }
+html.signed-in .journey .node[data-app]:hover text.t { fill: var(--brand-strong); }
+html.signed-in .journey .node[data-app]:focus { outline: none; }
+.step-open { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; font-size: 13.5px; font-weight: 600; color: var(--brand); }
+.step-open:hover { color: var(--brand-strong); }
+.step-open .icon { width: 14px; height: 14px; }
+.live-hint { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 14px; color: var(--ink-muted); }
+.live-hint .icon { color: var(--brand); }
+
+.app { position: fixed; inset: 0; z-index: 60; display: grid; grid-template-rows: 44px 1fr; background: var(--surface); visibility: hidden; opacity: 0; pointer-events: none; }
+.app.on { visibility: visible; opacity: 1; pointer-events: auto; transition: opacity 240ms ease; }
+.app-strip { display: flex; align-items: center; gap: 14px; padding: 0 12px; background: #0b1521; border-bottom: 1px solid var(--line); color: var(--ink); }
+.app-back { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 8px; border-radius: var(--r-md); font-size: 13.5px; font-weight: 600; color: var(--ink); border: 1px solid var(--line-strong); }
+.app-back:hover { background: var(--brand-soft); border-color: var(--brand); }
+.app-title { font-size: 13.5px; font-weight: 500; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.app-hint { margin-left: auto; white-space: nowrap; }
+.app-hint kbd { font-family: var(--mono); font-size: 10.5px; color: var(--ink-muted); border: 1px solid var(--line-strong); border-radius: 4px; padding: 1px 5px; margin: 0 2px; }
+.app-view { position: relative; min-height: 0; }
+.app-view iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+.app-curtain { position: absolute; inset: 0; z-index: 1; display: grid; place-content: center; justify-items: center; gap: 18px; background: var(--surface); transition: opacity 320ms ease; }
+.app.ready .app-curtain { opacity: 0; pointer-events: none; }
+.app-curtain img { height: 40px; width: auto; }
+.app-curtain p { font-size: 14px; color: var(--ink-muted); }
+.app-curtain .bar { position: relative; width: 168px; height: 2px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.app-curtain .bar i { position: absolute; inset: 0 auto 0 0; width: 40%; border-radius: 2px; background: var(--brand); animation: load 1.1s ease-in-out infinite; }
+@keyframes load { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+@media (max-width: 639px) { .app-hint { display: none; } }
+html.app-open { overflow: hidden; }
+
+.chooser { position: fixed; inset: 0; z-index: 55; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.65); opacity: 0; transition: opacity 200ms ease; }
+.chooser.on { opacity: 1; }
+.chooser[hidden] { display: none; }
+.chooser-card { position: relative; width: min(640px, 100%); padding: 28px; }
+.chooser-card h2 { font-size: 22px; letter-spacing: -0.01em; }
+.chooser-card > p { margin-top: 6px; font-size: 14.5px; color: var(--ink-muted); }
+.chooser-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 22px; }
+.chooser-opt { display: grid; gap: 10px; text-align: left; padding: 10px 10px 14px; border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--sunken); transition: border-color 160ms ease, transform 160ms ease; }
+.chooser-opt:hover, .chooser-opt:focus-visible { border-color: var(--brand); transform: translateY(-2px); }
+.chooser-opt img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; border-radius: var(--r-md); border: 1px solid var(--line); background: #fff; }
+.chooser-opt b { display: block; padding: 0 4px; font-size: 15px; }
+.chooser-opt span { display: block; padding: 0 4px; font-size: 13px; color: var(--ink-muted); line-height: 1.45; }
+.chooser-x { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-md); color: var(--ink-muted); }
+.chooser-x:hover { color: var(--ink); background: var(--sunken); }
+@media (max-width: 639px) { .chooser-card { padding: 22px 18px; } }
+.login { width: min(420px, 100%); display: grid; gap: 14px; }
+.login .login-logo { height: 32px; width: auto; }
+.login h2 { margin-top: 6px; }
+.login > p { margin: -6px 0 4px; font-size: 14px; color: var(--ink-muted); }
+.login-f { display: grid; gap: 6px; font-size: 13px; }
+.login-f b { font-weight: 600; color: var(--ink); }
+.login-f input { height: 40px; padding: 0 12px; border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--sunken); color: var(--ink); font: 400 15px var(--font); }
+.login-f input:focus { outline: 2px solid var(--focus); outline-offset: 2px; border-color: var(--brand); }
+.login-err { font-size: 13px; color: var(--danger); margin: -4px 0 0 !important; }
+.login-go { width: 100%; margin-top: 4px; }
+.login-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: center; padding-top: 12px; border-top: 1px solid var(--line); }
+.login-quick span { grid-column: 1 / -1; font-size: 12px; color: var(--ink-muted); }
+.login-foot { font-size: 13px; color: var(--ink-muted); line-height: 1.6; margin: 2px 0 0 !important; }
+
+/* Ask VCFO guide: scripted answers for visitors, with links into the live prototype */
+.guide { position: fixed; right: 20px; bottom: 0; z-index: 25; display: flex; align-items: flex-end; gap: 4px; pointer-events: none; }
+html.pre-reveal .guide, html.app-open .guide { display: none; }
+/* The same character as the portal's launcher: it grips the bottom edge of the viewport beside the pill. */
+.guide-char { display: block; flex: none; width: clamp(96px, 4.5vw + 72px, 148px); height: calc(clamp(96px, 4.5vw + 72px, 148px) * 200 / 340); overflow: hidden; }
+.guide-char img { display: block; width: 100%; height: auto; }
+.guide-pill { pointer-events: auto; flex: none; display: inline-flex; align-items: center; gap: 7px; height: 40px; margin: 0 0 18px; padding: 0 14px 0 12px; border-radius: 8px; background: #0f2a4a; color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.14); font: 600 13px/1 var(--font); white-space: nowrap; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.6); transition: background-color 160ms ease, transform 160ms ease; }
+.guide-pill:hover { background: #17396b; }
+.guide-pill:active { transform: scale(0.97); }
+.guide-pill .dot { width: 8px; height: 8px; border-radius: 999px; background: #2dd4bf; box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.22); }
+.guide.open .guide-pill, .guide.open .guide-char { display: none; }
+.guide-panel { pointer-events: auto; margin-bottom: 20px; }
+.guide-panel { width: min(380px, calc(100vw - 24px)); max-height: min(620px, calc(100vh - 110px)); display: flex; flex-direction: column; overflow: hidden; border-radius: var(--r-xl); box-shadow: var(--shadow-float); }
+.guide-panel[hidden] { display: none; }
+.guide-head { display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 16px; border-bottom: 1px solid var(--line); background: var(--sunken); }
+.guide-head img { width: 38px; height: 38px; }
+.guide-head b { display: block; font-size: 15px; }
+.guide-head span { display: block; font-size: 12.5px; color: var(--ink-muted); }
+.guide-x { margin-left: auto; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-md); color: var(--ink-muted); }
+.guide-x:hover { color: var(--ink); background: var(--raised); }
+.guide-log { flex: 1; min-height: 220px; overflow-y: auto; padding: 16px; display: grid; gap: 10px; align-content: start; overscroll-behavior: contain; }
+.msg { max-width: 88%; padding: 10px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.msg.bot { justify-self: start; background: var(--sunken); border: 1px solid var(--line); color: var(--ink); border-top-left-radius: 4px; }
+.msg.me { justify-self: end; background: var(--brand-soft); color: var(--ink); border-top-right-radius: 4px; }
+.msg .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.msg .acts .btn { height: 32px; padding: 0 12px; font-size: 13px; border-radius: var(--r-md); min-width: 0; }
+.msg.typing { display: inline-flex; gap: 4px; padding: 12px 14px; }
+.msg.typing i { width: 6px; height: 6px; border-radius: 999px; background: var(--ink-faint); animation: blink 900ms ease-in-out infinite; }
+.msg.typing i:nth-child(2) { animation-delay: 150ms; } .msg.typing i:nth-child(3) { animation-delay: 300ms; }
+@keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+.guide-qs { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--line); max-height: 172px; overflow-y: auto; flex: none; }
+.guide-qs button { height: 32px; padding: 0 12px; border-radius: var(--r-md); border: 1px solid var(--line-strong); font-size: 13px; font-weight: 500; color: var(--ink); text-align: left; white-space: nowrap; }
+.guide-qs button:hover, .guide-qs button:focus-visible { border-color: var(--brand); background: var(--brand-soft); }
+@media (max-width: 639px) {
+  .guide { right: 12px; left: 12px; justify-content: flex-end; }
+  .guide-char { width: 84px; height: calc(84px * 200 / 340); }
+  .guide-pill { margin-bottom: 12px; }
+  .guide-panel { width: 100%; max-height: calc(100vh - 90px); margin-bottom: 12px; }
+  .guide-qs button { white-space: normal; height: auto; min-height: 32px; padding: 6px 12px; }
+}
+
+/* Compliance calendar UI */
+.cal-ui { margin-top: 64px; }
+.cal-ui .h3 { margin-bottom: 16px; }
+.cal-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.cal-two figure { margin: 0; padding: 10px 10px 4px; }
+.cal-two .frame { border-radius: var(--r-lg); box-shadow: none; }
+.cal-two figcaption { padding: 12px 6px 8px; font-size: 13.5px; line-height: 1.5; color: var(--ink-muted); }
+.cal-two figcaption b { color: var(--ink); font-weight: 600; }
+
+/* Record lanes */
+.split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: center; }
+.facts-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; margin-top: 32px; }
+.facts-mini div { border-top: 1px solid var(--line); padding-top: 12px; }
+.facts-mini .mono { display: block; margin-bottom: 6px; }
+.facts-mini p { font-size: 14px; color: var(--ink-muted); line-height: 1.5; }
+.lanes { position: relative; height: 500px; border: 1px solid var(--line-soft); border-radius: var(--r-xl); background: var(--sunken); overflow: hidden; }
+.lane { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.lane:nth-child(1) { left: 14%; } .lane:nth-child(2) { left: 32%; } .lane:nth-child(3) { left: 50%; } .lane:nth-child(4) { left: 68%; } .lane:nth-child(5) { left: 86%; }
+.boundary { position: absolute; left: 0; right: 0; top: 56%; height: 1px; background: var(--line-strong); }
+.boundary-label { position: absolute; top: calc(56% - 24px); left: 16px; background: var(--sunken); padding: 0 6px; }
+.boundary-label.right { left: auto; right: 16px; color: var(--positive); }
+.rec, .out { position: absolute; transform: translate(-50%, 0); white-space: nowrap; }
+.rec { top: 20px; background: var(--raised); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 12px; box-shadow: var(--shadow-card); }
+.rec .mono { display: block; font-size: 10px; margin-bottom: 2px; }
+.rec .t { font-size: 13px; font-weight: 500; color: var(--ink); }
+.out { top: calc(56% + 18px); }
+.rec.l1, .out.l1 { left: 14%; } .rec.l2, .out.l2 { left: 32%; } .rec.l3, .out.l3 { left: 50%; } .rec.l4, .out.l4 { left: 68%; } .rec.l5, .out.l5 { left: 86%; }
+@media (prefers-reduced-motion: no-preference) {
+  .rec { animation: drop 9s var(--ease) infinite; opacity: 0; }
+  .out { animation: out 9s var(--ease) infinite; opacity: 0; }
+  .l1 { animation-delay: 0s; } .l2 { animation-delay: 1.8s; } .l3 { animation-delay: 3.6s; } .l4 { animation-delay: 5.4s; } .l5 { animation-delay: 7.2s; }
+  @keyframes drop { 0% { opacity: 0; transform: translate(-50%, -12px); } 7% { opacity: 1; transform: translate(-50%, 0); } 44% { opacity: 1; transform: translate(-50%, 204px); } 50% { opacity: 0; transform: translate(-50%, 222px); } 100% { opacity: 0; transform: translate(-50%, 222px); } }
+  @keyframes out { 0%, 47% { opacity: 0; transform: translate(-50%, -8px); } 53% { opacity: 1; transform: translate(-50%, 4px); } 86% { opacity: 1; transform: translate(-50%, 150px); } 95% { opacity: 0; transform: translate(-50%, 172px); } 100% { opacity: 0; transform: translate(-50%, 172px); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rec, .out { opacity: 1; }
+  .rec.l1 { transform: translate(-50%, 0); } .rec.l2 { transform: translate(-50%, 44px); } .rec.l3 { transform: translate(-50%, 88px); } .rec.l4 { transform: translate(-50%, 132px); } .rec.l5 { transform: translate(-50%, 176px); }
+  .out.l1 { transform: translate(-50%, 0); } .out.l2 { transform: translate(-50%, 36px); } .out.l3 { transform: translate(-50%, 72px); } .out.l4 { transform: translate(-50%, 108px); } .out.l5 { transform: translate(-50%, 144px); }
+}
+
+/* Portals */
+.tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--raised); border: 1px solid var(--line-soft); border-radius: var(--r-lg); }
+.tab { height: 36px; padding: 0 16px; border-radius: var(--r-md); font-size: 13.5px; font-weight: 600; color: var(--ink-muted); min-width: 84px; transition: background-color 150ms ease, color 150ms ease; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { background: var(--brand-soft); color: var(--brand); }
+.tab-head { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 40px; margin-bottom: 24px; }
+.tab-desc { display: grid; }
+.tab-desc > div { grid-area: 1 / 1; }
+.tab-desc > div[hidden] { display: none; }
+.tab-desc p { font-size: 15px; color: var(--ink-muted); max-width: 58ch; }
+.tab-desc ul { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; }
+.tab-desc li { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--ink); }
+.tab-desc li .icon { width: 14px; height: 14px; color: var(--positive); }
+.tabpanel { display: grid; }
+.tabpanel .frame { grid-area: 1 / 1; aspect-ratio: 2000 / 1146; }
+.tabpanel .frame[hidden] { display: none; }
+.tabpanel .frame img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+
+/* Ask, trust, faq, cta, footer */
+.ask { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 64px; align-items: center; }
+.ask .panel { max-width: 380px; border-radius: var(--r-xl); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow-float); background: var(--raised); }
+.qs { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
+.qs li { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: var(--r-md); border: 1px solid var(--line-strong); font-size: 13.5px; font-weight: 500; color: var(--ink); }
+.qs .icon { color: var(--brand); width: 14px; height: 14px; }
+.trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 48px; }
+.trust > div { padding: 24px; }
+.trust .tile { width: 36px; height: 36px; border-radius: var(--r-md); background: var(--sunken); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--brand); margin-bottom: 18px; }
+.trust .h3 { font-size: 16px; }
+.trust p { margin-top: 8px; font-size: 14px; line-height: 1.55; color: var(--ink-muted); }
+.faq { max-width: 760px; }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq details:first-of-type { border-top: 1px solid var(--line); }
+.faq summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 0; font-size: 17px; font-weight: 600; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary .icon { color: var(--ink-faint); transition: transform 240ms var(--ease); }
+.faq details[open] summary .icon { transform: rotate(180deg); }
+.faq .a { padding: 0 0 22px; font-size: 15px; line-height: 1.65; color: var(--ink-muted); max-width: 62ch; }
+.cta { text-align: center; padding: 140px 0; overflow: hidden; }
+.cta .glow-a { width: 900px; height: 600px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.cta .big { position: relative; font-size: clamp(2.1rem, 4.6vw, 3.6rem); line-height: 1.12; letter-spacing: -0.025em; font-weight: 600; }
+.cta .big span { display: block; opacity: 0; transform: translateY(14px); transition: opacity 700ms var(--ease), transform 700ms var(--ease); transition-delay: calc(var(--i) * 140ms); }
+.cta .in .big span { opacity: 1; transform: none; }
+.cta .big .last { color: var(--ink-muted); font-weight: 500; }
+.cta .cta-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 44px; position: relative; }
+.footer { border-top: 1px solid var(--line); padding: 56px 0 32px; }
+.footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; }
+.footer-logo img { height: 34px; width: auto; }
+.footer-logo p { margin-top: 16px; font-size: 14px; color: var(--ink-muted); max-width: 28ch; }
+.footer .mono { display: block; margin-bottom: 12px; }
+.footer ul { display: grid; gap: 10px; }
+.footer li a { font-size: 14px; color: var(--ink-muted); }
+.footer li a:hover { color: var(--ink); }
+.footer-bottom { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-faint); }
+
+/* Motion: entry, scroll reveal, scroll-driven extras */
+@media (prefers-reduced-motion: no-preference) {
+  .enter { opacity: 0; transform: translateY(16px); animation: enter 800ms var(--ease) forwards; }
+  .enter.d1 { animation-delay: 60ms; } .enter.d2 { animation-delay: 180ms; } .enter.d3 { animation-delay: 300ms; } .enter.d4 { animation-delay: 480ms; }
+  @keyframes enter { to { opacity: 1; transform: none; } }
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity 800ms var(--ease), transform 800ms var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal [data-stagger] { opacity: 0; transform: translateY(14px); transition: opacity 700ms var(--ease), transform 700ms var(--ease); transition-delay: calc(var(--i) * 90ms + 120ms); }
+  .reveal.in [data-stagger] { opacity: 1; transform: none; }
+  .hero .glow-a { animation: drift 16s ease-in-out infinite alternate; }
+  .hero .glow-b { animation: drift 22s ease-in-out infinite alternate-reverse; }
+  @keyframes drift { from { translate: -40px 0; scale: 1; } to { translate: 40px 20px; scale: 1.08; } }
+  .float { animation: floaty 7s ease-in-out infinite; }
+  .float-b { animation-delay: 1.6s; }
+  @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  .card-hover { transition: translate 200ms var(--ease), border-color 200ms ease; }
+  .card-hover:hover { translate: 0 -2px; border-color: var(--line-strong); }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .section .glow { animation: glowdrift linear both; animation-timeline: view(); }
+    @keyframes glowdrift { from { translate: 0 60px; } to { translate: 0 -60px; } }
+  }
+}
+
+/* Responsive */
+@media (max-width: 1023px) {
+  .nav-links { display: none; }
+  .nav-actions .btn-ghost { display: none; }
+  .nav-toggle { display: inline-flex; }
+  .facts-grid { grid-template-columns: 1fr 1fr; }
+  .fact:nth-child(3) { padding-left: 0; border-left: 0; border-top: 1px solid var(--line-soft); }
+  .fact:nth-child(4) { border-top: 1px solid var(--line-soft); }
+  .hero-grid { grid-template-columns: 1fr; gap: 36px; }
+  .hero-shot .frame { transform: none; }
+  .story { grid-template-columns: 1fr; gap: 32px; }
+  .story-stage { position: static; order: -1; }
+  .story-step { min-height: 0; padding: 18px 0 18px 20px; }
+  .story-step:first-child { min-height: 0; }
+  .story-step .h3, .story-step p { color: var(--ink); }
+  .story-step p { color: var(--ink-muted); }
+  .story-step .whos { opacity: 1; }
+  .sg { opacity: 1 !important; }
+  .split, .ask, .comply-grid { grid-template-columns: 1fr; gap: 40px; }
+  .cal-two { grid-template-columns: 1fr; }
+  .trust { grid-template-columns: 1fr 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .tab-head { grid-template-columns: 1fr; gap: 16px; }
+  .float-a { left: 8px; } .float-b { right: 8px; }
+}
+@media (max-width: 1023px) {
+  .journey svg { display: none; }
+  .journey-list { display: grid; gap: 0; position: relative; padding-left: 28px; }
+  .journey-list::before { content: ""; position: absolute; left: 9px; top: 12px; bottom: 12px; width: 2px; background: var(--line-strong); border-radius: 2px; }
+  .journey-list li { position: relative; padding: 10px 0 18px; }
+  .journey-list li::before { content: attr(data-n); position: absolute; left: -28px; top: 10px; width: 20px; height: 20px; border-radius: 999px; background: var(--raised); border: 2px solid var(--brand); color: var(--ink); font-family: var(--mono); font-size: 10px; display: flex; align-items: center; justify-content: center; }
+  .journey-list li.coi::before { border-color: var(--highlight); border-radius: 3px; transform: rotate(45deg); content: ""; }
+  .journey-list li.loop::before { border-color: var(--positive); content: "∞"; }
+  .journey-list b { display: block; font-size: 15px; }
+  .journey-list span { display: block; font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
+  .tl { display: none; }
+  .tl-list { display: grid; gap: 10px; margin-top: 24px; }
+  .tl-list li { padding: 14px 16px; }
+  .tl-list li .mono { display: block; margin-bottom: 4px; }
+  .tl-list li b { font-size: 14px; }
+  .tl-list li span { display: block; font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
+}
+@media (max-width: 767px) {
+  .hub { aspect-ratio: auto; display: grid; gap: 12px; }
+  .hub svg.wires { display: none; }
+  .hub .centre, .cluster { position: static; transform: none; width: auto; opacity: 1; }
+  .hub .centre .ring1, .hub .centre .ring2 { display: none; }
+}
+@media (max-width: 639px) {
+  :root { --gutter: 16px; }
+  .section { padding: 72px 0; }
+  .hero { padding: 48px 0 64px; }
+  .hero-copy .h1 .swap-line { white-space: normal; }
+  .hero-ctas .btn { width: 100%; }
+  .float { display: none; }
+  .facts-grid { grid-template-columns: 1fr; }
+  .fact { padding: 20px 0; border-left: 0 !important; padding-left: 0 !important; }
+  .fact + .fact { border-top: 1px solid var(--line-soft); }
+  .lanes { height: 440px; }
+  .lane:nth-child(1), .lane:nth-child(5), .l1, .l5 { display: none; }
+  .lane:nth-child(2), .rec.l2, .out.l2 { left: 20%; } .lane:nth-child(4), .rec.l4, .out.l4 { left: 80%; }
+  .rec .t { font-size: 12px; }
+  .trust { grid-template-columns: 1fr; }
+  .nudge { grid-template-columns: 1fr; gap: 14px; }
+  .nudge .arr { width: 2px; height: 28px; margin: 0 auto; }
+  .nudge .arr::after { right: -3px; top: auto; bottom: -4px; border: 4px solid transparent; border-top: 6px solid var(--line-strong); }
+  .nudge .arr i { display: none; }
+  .cta { padding: 90px 0; }
+  .footer-grid { grid-template-columns: 1fr; }
+  .stage-panel { padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<header class="nav" id="top">
+  <div class="container nav-row">
+    <a class="nav-logo" href="#top" aria-label="VCFO Suite by SBC, home">
+      <img src="{{IMG:logo-dark}}" alt="VCFO Suite by SBC" width="138" height="30">
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#journey">How it works</a>
+      <a href="#incorporate">Incorporation</a>
+      <a href="#comply">Compliance</a>
+      <a href="#portals">Portals</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-ghost btn-sm" href="https://app.sbctrack.in/login" data-app="choose">Sign in</a>
+      <a class="btn btn-primary btn-sm" href="https://app.sbctrack.in/contact">Book a demo</a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-mobile" aria-label="Menu">
+        <span class="icon ic-menu">{{ICON:menu}}</span>
+        <span class="icon ic-close">{{ICON:x}}</span>
+      </button>
+    </div>
+  </div>
+  <div class="nav-mobile container" id="nav-mobile">
+    <a href="#journey">How it works</a>
+    <a href="#incorporate">Incorporation</a>
+    <a href="#comply">Compliance</a>
+    <a href="#portals">Portals</a>
+    <a href="#faq">FAQ</a>
+    <a href="https://app.sbctrack.in/login" data-app="choose">Sign in</a>
+  </div>
+</header>
+
+<main>
+
+<!-- Hero -->
+<section class="hero">
+  <svg class="hero-beams" viewBox="0 0 1440 800" preserveAspectRatio="none" aria-hidden="true"><defs><radialGradient id="spotG" cx="30%" cy="0%" r="60%"><stop offset="0" stop-color="#6aa2e8" stop-opacity=".18"/><stop offset="1" stop-color="#6aa2e8" stop-opacity="0"/></radialGradient></defs><ellipse class="spot" cx="420" cy="0" rx="700" ry="420"/><path d="M-40 640 C 320 420, 760 700, 1480 260"/><path d="M-40 700 C 380 520, 820 760, 1480 380"/><path d="M-40 560 C 260 360, 700 620, 1480 160"/></svg>
+  <div class="glow glow-brand glow-a"></div>
+  <div class="glow glow-info glow-b"></div>
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <p class="kicker enter d1">Incorporate. Register. Comply.</p>
+      <h1 class="h1 enter d2">Your complete <span class="swap-line"><span class="swap" data-words="compliance,incorporation,registration">compliance</span></span> companion.</h1>
+      <p class="lead enter d3">One record from the first form to every filing after. Your firm runs it. Your clients see it.</p>
+      <div class="hero-ctas enter d4">
+        <a class="btn btn-primary" href="https://app.sbctrack.in/contact">Book a demo <span class="icon">{{ICON:arrow-right}}</span></a>
+        <a class="btn btn-secondary site-only" href="#journey">See how it works</a>
+        <button class="btn btn-secondary demo-only" type="button" data-app="choose">Try it live <span class="icon">{{ICON:mouse-pointer-click}}</span></button>
+      </div>
+    </div>
+    <div class="hero-shot enter d4">
+      <div class="float float-a" aria-hidden="true" data-app="filings" data-app-label="Open the filings screen"><span class="pill pill-positive">Filed</span><span class="t"><span>GSTR-3B, September</span><span class="mono">Acknowledgement attached</span></span></div>
+      <div class="float float-b" aria-hidden="true" data-app="inc-step-7" data-app-label="Open step 7, registered office address"><span class="pill pill-highlight">Needs you</span><span class="t"><span>Utility bill for the office</span><span class="mono">Due 9 Oct</span></span></div>
+      <div class="frame" data-app="incorporation" data-app-label="Open the incorporation screen">
+        <img src="{{IMG:hero}}" alt="VCFO Suite client portal, incorporation view for Northwind Technologies India Pvt Ltd: 22 days to the Certificate of Incorporation, 6 of 25 steps done, this week's tasks and the SPICe+ timeline." width="2400" height="1375" fetchpriority="high">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Facts -->
+<section class="facts" aria-label="What the product tracks">
+  <div class="container">
+    <div class="facts-grid reveal">
+      <div class="fact" data-stagger style="--i:0" data-app="incorporation"><div class="num" data-count="25">0</div><p class="what">steps in every incorporation, from the name application to the post-incorporation filings. Registrations have their own page.</p></div>
+      <div class="fact" data-stagger style="--i:1" data-app="inc-phase-4"><div class="num" data-count="23">0</div><p class="what">registrations and RBI reportings after the certificate, from PAN and GST to FC-GPR.</p></div>
+      <div class="fact" data-stagger style="--i:2" data-app="compliances"><div class="num" data-count="6">0</div><p class="what">regulators on one statutory calendar: MCA, GST, Income tax, Payroll, FEMA and Labour.</p></div>
+      <div class="fact" data-stagger style="--i:3" data-app="audit"><div class="num" data-count="1">0</div><p class="what">record that the client, the parent entity and the firm all read, with the same status words.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Journey -->
+<section class="section" id="journey">
+  <div class="glow glow-brand" style="width:800px;height:500px;right:-200px;top:0"></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="h2">What happens to a company, start to finish.</h2>
+      <p class="body">Four stages happen once. The calendar repeats every year. The firm runs every step; the client sees every step, with who holds it and when it is due.</p>
+    </div>
+    <div class="journey reveal" data-reveal="journey">
+      <svg viewBox="-30 0 1180 230" role="img" aria-label="The journey: name and papers, incorporation, certificate of incorporation, the first 180 days, registrations, then compliance every year.">
+        <path class="line-glow" d="M 60 130 C 162 130 162 80 264 80 S 366 130 468 130 S 570 80 672 80 S 774 130 876 130 S 978 80 1080 80"/>
+        <path class="line" d="M 60 130 C 162 130 162 80 264 80 S 366 130 468 130 S 570 80 672 80 S 774 130 876 130 S 978 80 1080 80"/>
+        <g class="node" style="--i:0" data-app="inc-phase-a">
+          <circle class="halo" cx="60" cy="130" r="30"/><circle class="c" cx="60" cy="130" r="18"/><text class="n" x="60" y="135">1</text>
+          <text class="t" x="60" y="178">Name and papers</text><text class="s" x="60" y="196">5 steps, about 2 weeks</text><text class="w" x="60" y="214">CLIENT + FIRM</text>
+        </g>
+        <g class="node" style="--i:1" data-app="inc-phase">
+          <circle class="halo" cx="264" cy="80" r="30"/><circle class="c" cx="264" cy="80" r="18"/><text class="n" x="264" y="85">2</text>
+          <text class="t" x="264" y="30">Incorporation</text><text class="s" x="264" y="48">11 steps, SPICe+ with MCA</text><text class="w" x="264" y="14">FIRM + MCA</text>
+        </g>
+        <g class="node coi" style="--i:2" data-app="inc-step-14">
+          <circle class="pulse" cx="468" cy="130" r="20"/>
+          <path class="d" d="M 468 112 L 486 130 L 468 148 L 450 130 Z"/>
+          <text class="t" x="468" y="178">Certificate of Incorporation</text><text class="s" x="468" y="196">CIN, PAN and TAN arrive</text><text class="w" x="468" y="214">DAY 0</text>
+        </g>
+        <g class="node" style="--i:3" data-app="inc-phase-3">
+          <circle class="halo" cx="672" cy="80" r="30"/><circle class="c" cx="672" cy="80" r="18"/><text class="n" x="672" y="85">3</text>
+          <text class="t" x="672" y="30">The first 180 days</text><text class="s" x="672" y="48">11 steps with statutory clocks</text><text class="w" x="672" y="14">FIRM</text>
+        </g>
+        <g class="node" style="--i:4" data-app="inc-phase-4">
+          <circle class="halo" cx="876" cy="130" r="30"/><circle class="c" cx="876" cy="130" r="18"/><text class="n" x="876" y="135">4</text>
+          <text class="t" x="876" y="178">Registrations</text><text class="s" x="876" y="196">23 items, only the ones that apply</text><text class="w" x="876" y="214">FIRM</text>
+        </g>
+        <g class="node loop" style="--i:5" data-app="compliances">
+          <circle class="halo" cx="1080" cy="80" r="30"/><circle class="c" cx="1080" cy="80" r="18"/>
+          <path d="M 1072 80 a 8 8 0 1 1 3 6.3" fill="none" stroke="#4fc99a" stroke-width="2" stroke-linecap="round"/><path d="M 1075 84 l 0 4 l -4 0" fill="none" stroke="#4fc99a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <text class="t" x="1080" y="30">Compliance, every year</text><text class="s" x="1080" y="48">monthly, quarterly, annual</text><text class="w" x="1080" y="14">FIRM + CLIENT</text>
+        </g>
+      </svg>
+      <ol class="journey-list">
+        <li data-n="1" data-app="inc-phase-a"><b>Name and papers</b><span>5 steps, about 2 weeks. Client and firm.</span></li>
+        <li data-n="2" data-app="inc-phase"><b>Incorporation</b><span>11 steps, SPICe+ with MCA. Firm and MCA.</span></li>
+        <li class="coi" data-app="inc-step-14"><b>Certificate of Incorporation</b><span>Day 0. CIN, PAN and TAN arrive.</span></li>
+        <li data-n="3" data-app="inc-phase-3"><b>The first 180 days</b><span>11 steps with statutory clocks. The firm.</span></li>
+        <li data-n="4" data-app="inc-phase-4"><b>Registrations</b><span>23 items, only the ones that apply. The firm.</span></li>
+        <li class="loop" data-app="compliances"><b>Compliance, every year</b><span>Monthly, quarterly and annual filings. Firm and client.</span></li>
+      </ol>
+    </div>
+    <p class="caption reveal"><span class="icon">{{ICON:circle-dot}}</span>Every node on this line is a page in the portal, and every step on that page shows the same three things: who holds it, when it is due, and the document that proves it.</p>
+  </div>
+</section>
+
+<!-- Incorporation story -->
+<section class="section" id="incorporate">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="stage"><b>1</b>Stages 1 and 2</span>
+      <h2 class="h2">From a name on a wish list to a certificate from MCA.</h2>
+      <p class="body">Sixteen steps pass between the client, the firm and the Ministry of Corporate Affairs. The diagram follows one document at a time. Scroll, and watch it move.</p>
+    </div>
+    <div class="story" data-story>
+      <div class="story-steps">
+        <div class="story-step" data-step="1">
+          <h3 class="h3">The client tells you about the company</h3>
+          <p>Names they like, the directors, the share capital, the registered office and the parent company. One questionnaire, answered once. Every document after this is generated from it.</p>
+          <div class="whos"><span class="who who-you"><i>C</i>Client</span><span class="who who-sbc"><i>F</i>Firm reviews</span></div>
+          <button class="step-open demo-only" type="button" data-app="inc-step-1">Open this step in the portal <span class="icon">{{ICON:arrow-up-right}}</span></button>
+        </div>
+        <div class="story-step" data-step="2">
+          <h3 class="h3">A board resolution, drafted and signed</h3>
+          <p>You draft the resolution from their answers. The client prints it on the parent letterhead, signs, and uploads. The project lead checks it the same day.</p>
+          <div class="whos"><span class="who who-sbc"><i>F</i>Firm drafts</span><span class="who who-you"><i>C</i>Client signs</span></div>
+          <button class="step-open demo-only" type="button" data-app="inc-step-2">Open this step in the portal <span class="icon">{{ICON:arrow-up-right}}</span></button>
+        </div>
+        <div class="story-step" data-step="3">
+          <h3 class="h3">The name is reserved with MCA</h3>
+          <p>You file the name application. MCA usually answers within a week, and the approved name is held for 20 days while the rest is prepared.</p>
+          <div class="whos"><span class="who who-sbc"><i>F</i>Firm files</span><span class="who who-mca"><i>M</i>MCA approves</span></div>
+          <button class="step-open demo-only" type="button" data-app="inc-step-4">Open this step in the portal <span class="icon">{{ICON:arrow-up-right}}</span></button>
+        </div>
+        <div class="story-step" data-step="4">
+          <h3 class="h3">Documents generated, signed with a digital signature</h3>
+          <p>The memorandum, the articles, each director's consent (DIR-2) and declaration (INC-9), the subscriber sheets: all generated, not retyped. Directors get a digital signature and sign.</p>
+          <div class="whos"><span class="who who-sbc"><i>F</i>Firm generates</span><span class="who who-you"><i>C</i>Directors sign</span></div>
+          <button class="step-open demo-only" type="button" data-app="inc-step-10">Open this step in the portal <span class="icon">{{ICON:arrow-up-right}}</span></button>
+        </div>
+        <div class="story-step" data-step="5">
+          <h3 class="h3">SPICe+ filed, certificate issued</h3>
+          <p>You file SPICe+ Part B with AGILE-PRO-S. If MCA raises remarks, you answer them. Then the Certificate of Incorporation arrives with the CIN, PAN and TAN, and the clock for stage 3 starts.</p>
+          <div class="whos"><span class="who who-sbc"><i>F</i>Firm files</span><span class="who who-mca"><i>M</i>MCA issues</span></div>
+          <button class="step-open demo-only" type="button" data-app="inc-step-12">Open this step in the portal <span class="icon">{{ICON:arrow-up-right}}</span></button>
+        </div>
+      </div>
+      <div class="story-stage">
+        <div class="card stage-panel">
+          <svg class="swim" viewBox="0 0 600 560" role="img" aria-label="Swimlane diagram with three columns, Client, Firm and MCA, showing how documents move between them during incorporation.">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6aa2e8"/></marker>
+              <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#f2a35b"/></marker>
+            </defs>
+            <!-- columns -->
+            <rect class="col-h" x="20" y="14" width="160" height="34" rx="8"/><text class="col-t" x="100" y="36">CLIENT</text>
+            <rect class="col-h" x="220" y="14" width="160" height="34" rx="8"/><text class="col-t" x="300" y="36">FIRM</text>
+            <rect class="col-h" x="420" y="14" width="160" height="34" rx="8"/><text class="col-t" x="500" y="36">MCA</text>
+            <line class="lane" x1="100" y1="60" x2="100" y2="548"/><line class="lane" x1="300" y1="60" x2="300" y2="548"/><line class="lane" x1="500" y1="60" x2="500" y2="548"/>
+            <!-- step 1: questionnaire -->
+            <g class="sg s1">
+              <rect class="doc" x="30" y="72" width="140" height="58" rx="8"/>
+              <line class="doc-l" x1="46" y1="90" x2="140" y2="90"/><line class="doc-l" x1="46" y1="102" x2="118" y2="102"/><line class="doc-l" x1="46" y1="114" x2="130" y2="114"/>
+              <text class="lbl" x="100" y="148" text-anchor="middle">Company details</text>
+              <path class="arrow" d="M 176 101 L 222 101"/>
+              <rect class="doc" x="228" y="83" width="144" height="36" rx="8"/>
+              <text class="lbl" x="300" y="105" text-anchor="middle">Firm reviews</text>
+            </g>
+            <!-- step 2: board resolution -->
+            <g class="sg s2">
+              <rect class="doc" x="225" y="166" width="150" height="48" rx="8"/>
+              <text class="lbl" x="300" y="186" text-anchor="middle">Board resolution</text><text class="sub" x="300" y="202" text-anchor="middle">drafted from the answers</text>
+              <path class="arrow back" d="M 219 190 L 181 190"/>
+              <rect class="doc" x="25" y="166" width="150" height="48" rx="8"/>
+              <text class="lbl" x="100" y="186" text-anchor="middle">Signed, uploaded</text><text class="sub" x="100" y="202" text-anchor="middle">on letterhead</text>
+              <circle class="badge" cx="171" cy="168" r="9"/><path class="tick" d="M 167 168 l 3 3 l 5.5 -6"/>
+            </g>
+            <!-- step 3: name reservation -->
+            <g class="sg s3">
+              <rect class="doc" x="225" y="242" width="150" height="48" rx="8"/>
+              <text class="lbl" x="300" y="262" text-anchor="middle">Name application</text><text class="sub" x="300" y="278" text-anchor="middle">RUN, Part A</text>
+              <path class="arrow" d="M 381 266 L 419 266"/>
+              <rect class="badge" x="425" y="242" width="150" height="48" rx="8"/>
+              <text class="badge-t" x="500" y="262">Name approved</text><text class="sub" x="500" y="278" text-anchor="middle">held for 20 days</text>
+            </g>
+            <!-- step 4: generated documents + DSC -->
+            <g class="sg s4">
+              <rect class="doc" x="231" y="318" width="150" height="48" rx="8" transform="rotate(-5 306 342)"/>
+              <rect class="doc" x="228" y="321" width="150" height="48" rx="8" transform="rotate(-2.5 303 345)"/>
+              <rect class="doc" x="225" y="324" width="150" height="48" rx="8"/>
+              <text class="lbl" x="300" y="344" text-anchor="middle">MOA, AOA, DIR-2</text><text class="sub" x="300" y="360" text-anchor="middle">INC-9, declarations</text>
+              <path class="arrow back" d="M 219 348 L 181 348"/>
+              <rect class="doc" x="25" y="324" width="150" height="48" rx="8"/>
+              <text class="lbl" x="100" y="344" text-anchor="middle">Signed with DSC</text><text class="sub" x="100" y="360" text-anchor="middle">each director</text>
+              <circle class="badge" cx="171" cy="326" r="9"/><path class="tick" d="M 167 326 l 3 3 l 5.5 -6"/>
+            </g>
+            <!-- step 5: SPICe+ and certificate -->
+            <g class="sg s5">
+              <rect class="doc" x="225" y="400" width="150" height="48" rx="8"/>
+              <text class="lbl" x="300" y="420" text-anchor="middle">SPICe+ Part B</text><text class="sub" x="300" y="436" text-anchor="middle">with AGILE-PRO-S</text>
+              <path class="arrow" d="M 381 424 L 500 424 L 500 456"/>
+              <rect class="cert-glow" x="418" y="460" width="164" height="88" rx="14"/>
+              <rect class="cert" x="428" y="468" width="144" height="72" rx="10"/>
+              <text class="lbl" x="500" y="492" text-anchor="middle">Certificate</text>
+              <text class="sub" x="500" y="508" text-anchor="middle">of Incorporation</text>
+              <text class="sub" x="500" y="526" text-anchor="middle" style="font-family: var(--mono); font-size: 10px; letter-spacing: .06em">CIN · PAN · TAN</text>
+              <circle class="badge" cx="568" cy="470" r="9"/><path class="tick" d="M 564 470 l 3 3 l 5.5 -6"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Post-incorporation timeline -->
+<section class="section" id="after">
+  <div class="glow glow-info" style="width:700px;height:500px;left:-200px;top:20%"></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="stage"><b>3</b>Stage 3</span>
+      <h2 class="h2">The first 180 days after the certificate.</h2>
+      <p class="body">Eleven steps, most with a statutory clock. They start the day the certificate arrives; the portal counts the days and nudges before each one runs out.</p>
+    </div>
+    <div class="tl reveal" data-reveal="tl" aria-label="Timeline of the first 180 days after incorporation">
+      <div class="axis"><div class="axis-fill"></div>
+        <span class="tick" style="left:0%">DAY 0</span><span class="tick" style="left:16.7%">30</span><span class="tick" style="left:33.3%">60</span><span class="tick" style="left:50%">90</span><span class="tick" style="left:66.7%">120</span><span class="tick" style="left:83.3%">150</span><span class="tick" style="left:100%">180</span>
+      </div>
+      <div class="pin coi up first" style="left:0%;--i:0"><div class="card pc" data-app="inc-step-14"><span class="mono">Day 0</span><b>Certificate of Incorporation</b><span>The company exists. Every clock below starts today.</span></div><span class="stem"></span><span class="dot"></span></div>
+      <div class="pin down" style="left:16.7%;--i:1"><div class="card pc" data-app="inc-step-15"><span class="mono">Within 30 days</span><b>Five things at once</b><ul><li><span class="icon">{{ICON:check}}</span>First board meeting</li><li><span class="icon">{{ICON:check}}</span>Auditor appointed (ADT-1)</li><li><span class="icon">{{ICON:check}}</span>Registered office confirmed (INC-22)</li><li><span class="icon">{{ICON:check}}</span>Letterhead and name board</li><li><span class="icon">{{ICON:check}}</span>Nominee shareholder forms</li></ul></div><span class="stem"></span><span class="dot"></span></div>
+      <div class="pin up" style="left:33.3%;--i:2"><div class="card pc" data-app="inc-step-19"><span class="mono">Within 60 days</span><b>Share certificates (SH-1)</b><span>Issued to every subscriber once the capital is in.</span></div><span class="stem"></span><span class="dot"></span></div>
+      <div class="pin down" style="left:56%;--i:3"><div class="card pc" data-app="inc-step-17"><span class="mono">No statutory clock</span><b>Bank account, then capital</b><span>The account opens when the bank clears KYC. The subscription money comes in from the parent.</span></div><span class="stem"></span><span class="dot"></span></div>
+      <div class="pin up" style="left:78%;--i:4"><div class="card pc" data-app="inc-step-22"><span class="mono">30 days after shares are allotted</span><b>FC-GPR to the RBI</b><span>For foreign capital. Reported through the FIRMS portal.</span></div><span class="stem"></span><span class="dot"></span></div>
+      <div class="pin down last" style="left:100%;--i:5"><div class="card pc" data-app="inc-step-20"><span class="mono">Within 180 days</span><b>Capital in, commencement filed (INC-20A)</b><span>The company may start business. Stage 4 begins.</span></div><span class="stem"></span><span class="dot"></span></div>
+    </div>
+    <ol class="tl-list reveal">
+      <li class="card" data-app="inc-step-14"><span class="mono">Day 0</span><b>Certificate of Incorporation</b><span>Every clock starts today.</span></li>
+      <li class="card" data-app="inc-step-15"><span class="mono">Within 30 days</span><b>First board meeting, auditor (ADT-1), registered office (INC-22), letterhead and name board, nominee shareholder forms</b></li>
+      <li class="card" data-app="inc-step-19"><span class="mono">Within 60 days</span><b>Share certificates (SH-1)</b><span>Issued once the capital is in.</span></li>
+      <li class="card" data-app="inc-step-17"><span class="mono">No statutory clock</span><b>Bank account, then capital</b><span>Opens when the bank clears KYC.</span></li>
+      <li class="card" data-app="inc-step-22"><span class="mono">30 days after allotment</span><b>FC-GPR to the RBI</b><span>For foreign capital.</span></li>
+      <li class="card" data-app="inc-step-20"><span class="mono">Within 180 days</span><b>Commencement filed (INC-20A)</b><span>The company may start business.</span></li>
+    </ol>
+    <p class="caption reveal"><span class="icon">{{ICON:timer}}</span>Each pin is a step in the portal with a due date computed from the certificate date. The client sees the same countdown the project lead sees.</p>
+  </div>
+</section>
+
+<!-- Registrations hub -->
+<section class="section" id="register">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="stage"><b>4</b>Stage 4</span>
+      <h2 class="h2">Every registration the company needs, and none it does not.</h2>
+      <p class="body">Twenty-three registrations and reportings sit behind five regulators. The firm switches on the ones that apply to the company, and each becomes a step with an owner and a date.</p>
+    </div>
+    <div class="hub reveal" data-reveal="hub">
+      <svg class="wires" viewBox="0 0 1120 560" preserveAspectRatio="none" aria-hidden="true">
+        <path class="wire" style="--i:0" d="M 560 280 C 460 280 300 123 157 123"/>
+        <path class="wire" style="--i:1" d="M 560 280 C 660 280 820 123 963 123"/>
+        <path class="wire" style="--i:2" d="M 560 280 C 460 280 300 437 157 437"/>
+        <path class="wire" style="--i:3" d="M 560 280 C 660 280 820 437 963 437"/>
+        <path class="wire" style="--i:4" d="M 560 280 L 560 515"/>
+      </svg>
+      <div class="card centre"><span class="ring1"></span><span class="ring2"></span><b>Your company</b><span class="mono">CIN · PAN · TAN</span></div>
+      <div class="card cluster c-tax card-hover" data-app="inc-phase-4" style="--i:0"><header><span class="tile"><span class="icon">{{ICON:receipt-indian-rupee}}</span></span><b>Tax</b><span>4</span></header><div class="chips"><span class="chip">PAN and TAN</span><span class="chip" data-app="inc-step-26">GST</span><span class="chip" data-app="inc-step-34">LUT for exports</span><span class="chip" data-app="inc-step-29">Professional tax</span></div></div>
+      <div class="card cluster c-lab card-hover" data-app="inc-phase-4" style="--i:1"><header><span class="tile"><span class="icon">{{ICON:users}}</span></span><b>Labour</b><span>5</span></header><div class="chips"><span class="chip" data-app="inc-step-27">PF</span><span class="chip" data-app="inc-step-28">ESI</span><span class="chip" data-app="inc-step-36">Shops and Establishment</span><span class="chip" data-app="inc-step-37">CLRA</span><span class="chip" data-app="inc-step-38">POSH committee</span></div></div>
+      <div class="card cluster c-trade card-hover" data-app="inc-phase-4" style="--i:2"><header><span class="tile"><span class="icon">{{ICON:factory}}</span></span><b>Trade</b><span>6</span></header><div class="chips"><span class="chip" data-app="inc-step-33">IEC</span><span class="chip" data-app="inc-step-32">ICEGATE</span><span class="chip" data-app="inc-step-39">Trade licence</span><span class="chip" data-app="inc-step-31">MSME</span><span class="chip" data-app="inc-step-30">LEI</span><span class="chip" data-app="inc-step-35">STPI</span></div></div>
+      <div class="card cluster c-rbi card-hover" data-app="inc-phase-4" style="--i:3"><header><span class="tile"><span class="icon">{{ICON:globe}}</span></span><b>RBI and FEMA</b><span>5</span></header><div class="chips"><span class="chip" data-app="inc-step-44">FC-GPR</span><span class="chip" data-app="inc-step-45">FDI reporting</span><span class="chip" data-app="inc-step-46">ODI reporting</span><span class="chip" data-app="inc-step-47">FLA return</span><span class="chip" data-app="inc-step-48">FC-TRS</span></div></div>
+      <div class="card cluster c-ip card-hover" data-app="inc-phase-4" style="--i:4"><header><span class="tile"><span class="icon">{{ICON:stamp}}</span></span><b>Intellectual property</b><span>3</span></header><div class="chips"><span class="chip" data-app="inc-step-40">Trademark</span><span class="chip" data-app="inc-step-41">Trademark renewal</span><span class="chip" data-app="inc-step-42">Patent</span></div></div>
+    </div>
+    <p class="caption reveal"><span class="icon">{{ICON:list-checks}}</span>A software subsidiary with no exports never sees IEC or ICEGATE. A company with no foreign capital never sees FC-GPR. The checklist is cut to the company.</p>
+  </div>
+</section>
+
+<!-- Compliance ring -->
+<section class="section" id="comply">
+  <div class="glow glow-brand" style="width:900px;height:600px;left:-300px;top:10%"></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="stage loop"><b>∞</b>Every year</span>
+      <h2 class="h2">Then the calendar takes over.</h2>
+      <p class="body">A private company files something almost every week of the year. Every filing on this ring has a due date, an owner and a nudge in the portal. Nothing depends on someone remembering.</p>
+    </div>
+    <div class="comply-grid">
+      <div class="ring-wrap reveal" data-reveal="ring" data-app="compliances" data-app-label="Open the compliance calendar">
+        <svg id="ring" viewBox="0 0 520 520" role="img" aria-label="A year ring from April to March with dots for every statutory filing: GST, income tax, MCA, labour and RBI."></svg>
+      </div>
+      <div class="reveal">
+        <h3 class="h3">What a financial year looks like</h3>
+        <ul class="legend">
+          <li><i style="background:var(--d3)"></i><span><b>GST.</b> GSTR-1 by the 11th and GSTR-3B by the 20th, every month. GSTR-9 once a year.</span></li>
+          <li><i style="background:var(--d1)"></i><span><b>Income tax.</b> TDS paid by the 7th each month, TDS returns each quarter, advance tax in June, September, December and March, Form 16 in June.</span></li>
+          <li><i style="background:var(--d5)"></i><span><b>MCA.</b> MBP-1 and DIR-8 in April, MSME-1 twice a year, DPT-3 in June, DIR-3 KYC in September, AOC-4 and MGT-7 after the annual general meeting.</span></li>
+          <li><i style="background:var(--d4)"></i><span><b>Labour.</b> Professional tax by the 10th, PF and ESI by the 15th, every month.</span></li>
+          <li><i style="background:var(--d2)"></i><span><b>RBI.</b> The FLA return by 15 July for every company with foreign capital.</span></li>
+        </ul>
+        <div class="card nudge" aria-label="How a nudge works" data-app="notifications" data-app-label="Open notifications">
+          <div class="box"><span class="icon">{{ICON:calendar-days}}</span><b>Due date</b><span>from the calendar</span></div>
+          <div class="arr a"><i></i></div>
+          <div class="box"><span class="icon">{{ICON:bell-ring}}</span><b>Nudge</b><span>email is the record, WhatsApp the reminder</span></div>
+          <div class="arr b"><i></i></div>
+          <div class="box"><span class="icon">{{ICON:circle-check}}</span><b>Filed</b><span>acknowledgement attached</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cal-ui">
+      <div class="reveal">
+        <h3 class="h3">The same year, inside the portal</h3>
+        <div class="frame" data-app="compliances" data-app-label="Open the compliance calendar">
+          <img src="{{IMG:cal-client}}" alt="Client compliance calendar for Northwind Technologies: October grid with TDS, GST, PF and ESI dates, the next deadline GSTR-1 in 3 days, and the coming-up list with status words." width="2000" height="1146">
+        </div>
+        <p class="caption"><span class="icon">{{ICON:calendar-days}}</span>What the client sees: one month at a time, filtered by regulator, with the next deadline counting down and every filing after it in a list.</p>
+      </div>
+      <div class="cal-two reveal">
+        <figure class="card" data-stagger style="--i:0">
+          <div class="frame" data-app="filings" data-app-label="Open the filings screen"><img src="{{IMG:cal-filings}}" alt="Client filings view for a quarter: donut of filed, due soon, overdue and upcoming, bars by area, and a table with due date, filing, frequency, status and proof." width="1600" height="732"></div>
+          <figcaption><b>Filings, with proof.</b> Each row carries its due date, frequency, status word and the acknowledgement once filed. Overdue is a word in red, never a surprise.</figcaption>
+        </figure>
+        <figure class="card" data-stagger style="--i:1">
+          <div class="frame" data-app="lead-compliances" data-app-label="Open the project lead calendar"><img src="{{IMG:cal-lead}}" alt="Project lead's statutory calendar: October deadlines listed by day across GST, income tax and labour, with a month picker and a legend by regulator." width="1600" height="917"></div>
+          <figcaption><b>The firm's side.</b> The project lead sees every statutory date across every company, grouped by day, with a reminder button on each.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- The record -->
+<section class="section" id="record">
+  <div class="container">
+    <div class="split">
+      <div class="reveal">
+        <h2 class="h2">Every step has an owner, a date and a proof.</h2>
+        <p class="body" style="margin-top:16px">Work enters as a step, a filing or a document request. The firm reviews it. It leaves as a status word with a date behind it, and the client reads the same word the firm reads.</p>
+        <div class="facts-mini">
+          <div data-stagger style="--i:0"><span class="mono">Owner</span><p>The client, the firm or MCA. Never "someone".</p></div>
+          <div data-stagger style="--i:1"><span class="mono">Due date</span><p>Statutory where the law sets one, agreed where it does not.</p></div>
+          <div data-stagger style="--i:2"><span class="mono">Document</span><p>The upload, the generated form or the filed acknowledgement.</p></div>
+          <div data-stagger style="--i:3"><span class="mono">Audit entry</span><p>Who changed what, and when. Clients can read their own trail.</p></div>
+        </div>
+      </div>
+      <div class="lanes reveal" aria-hidden="true">
+        <div class="lane"></div><div class="lane"></div><div class="lane"></div><div class="lane"></div><div class="lane"></div>
+        <div class="boundary"></div>
+        <span class="mono boundary-label">Firm review</span>
+        <span class="mono boundary-label right">On record</span>
+        <div class="rec l1"><span class="mono">Step</span><span class="t">KYC review and DSC</span></div>
+        <div class="rec l2"><span class="mono">Filing</span><span class="t">GSTR-3B, Sept</span></div>
+        <div class="rec l3"><span class="mono">Document</span><span class="t">Proof of address</span></div>
+        <div class="rec l4"><span class="mono">Filing</span><span class="t">ADT-1 appointment</span></div>
+        <div class="rec l5"><span class="mono">Step</span><span class="t">Subscriber details</span></div>
+        <div class="out l1"><span class="pill pill-brand">In progress</span></div>
+        <div class="out l2"><span class="pill pill-positive">Filed 20 Oct</span></div>
+        <div class="out l3"><span class="pill pill-highlight">Needs you</span></div>
+        <div class="out l4"><span class="pill pill-warning">Due 14 Nov</span></div>
+        <div class="out l5"><span class="pill pill-positive">Completed</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Portals -->
+<section class="section" id="portals">
+  <div class="glow glow-info" style="width:800px;height:500px;right:-250px;top:30%"></div>
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="h2">Three portals. One engagement.</h2>
+      <p class="body">The whole firm for the partner, oversight for the admin, overview for the manager, focus for the project lead, clarity for the client. Nobody forwards a spreadsheet.</p>
+      <p class="live-hint demo-only"><span class="icon">{{ICON:mouse-pointer-click}}</span>Every screen on this page opens the live prototype. Click one.</p>
+    </div>
+    <div class="reveal">
+      <div class="tab-head">
+        <div class="tabs" role="tablist" aria-label="Portals">
+          <button class="tab" role="tab" id="tab-client" aria-selected="true" aria-controls="panel-client" data-tab="client">Client</button>
+          <button class="tab" role="tab" id="tab-lead" aria-selected="false" aria-controls="panel-lead" data-tab="lead" tabindex="-1">Project lead</button>
+          <button class="tab" role="tab" id="tab-manager" aria-selected="false" aria-controls="panel-manager" data-tab="manager" tabindex="-1">Manager</button>
+          <button class="tab" role="tab" id="tab-admin" aria-selected="false" aria-controls="panel-admin" data-tab="admin" tabindex="-1">Admin</button>
+          <button class="tab" role="tab" id="tab-super" aria-selected="false" aria-controls="panel-super" data-tab="super" tabindex="-1">Super admin</button>
+        </div>
+        <div class="tab-desc">
+          <div data-desc="client"><p>What is waiting on the client, what the firm holds, and when the certificate is expected.</p><ul><li><span class="icon">{{ICON:check}}</span>Upload and approve in place</li><li><span class="icon">{{ICON:check}}</span>Timeline with the expected date</li><li><span class="icon">{{ICON:check}}</span>Ask VCFO for the next step</li></ul></div>
+          <div data-desc="lead" hidden><p>Today's action queue across every company the lead runs.</p><ul><li><span class="icon">{{ICON:check}}</span>This week's statutory filings</li><li><span class="icon">{{ICON:check}}</span>Compliance health ring per company</li><li><span class="icon">{{ICON:check}}</span>Who each step is waiting on</li></ul></div>
+          <div data-desc="manager" hidden><p>Every task your team owns, by project lead, company and status, and each lead's workload side by side.</p><ul><li><span class="icon">{{ICON:check}}</span>Team tasks with a live status breakdown</li><li><span class="icon">{{ICON:check}}</span>Each project lead's work, by area and by status</li><li><span class="icon">{{ICON:check}}</span>Assign a to-do to a project lead in one click</li></ul></div>
+          <div data-desc="admin" hidden><p>Every client, every manager, and where things are stuck, on one screen.</p><ul><li><span class="icon">{{ICON:check}}</span>Each client's stage, owner and next date</li><li><span class="icon">{{ICON:check}}</span>Managers' load and on-time rate</li><li><span class="icon">{{ICON:check}}</span>Assign a client to a manager</li></ul></div>
+          <div data-desc="super" hidden><p>The whole firm at one place: clients, admins, managers, money and risk.</p><ul><li><span class="icon">{{ICON:check}}</span>Incorporations, registrations and filings side by side</li><li><span class="icon">{{ICON:check}}</span>Fees collected and late-fee exposure</li><li><span class="icon">{{ICON:check}}</span>A monthly partner report in one click</li></ul></div>
+        </div>
+      </div>
+      <div class="tabpanel">
+        <div class="frame" role="tabpanel" id="panel-client" aria-labelledby="tab-client" data-app="home" data-app-label="Open the client portal">
+          <img src="{{IMG:tab-client}}" alt="Client portal home for Northwind Technologies India Pvt Ltd: what is needed from Northwind, who holds each step now, steps around Northwind and important alerts." width="2000" height="1146">
+        </div>
+        <div class="frame" role="tabpanel" id="panel-lead" aria-labelledby="tab-lead" hidden data-app="lead-home" data-app-label="Open the project lead portal">
+          <img src="{{IMG:tab-lead}}" alt="Project lead Today screen for Bharath: this week across eight companies, the action queue by company, triage and the calendar of due days." width="2000" height="1146">
+        </div>
+        <div class="frame" role="tabpanel" id="panel-manager" aria-labelledby="tab-manager" hidden data-app="mgr-home" data-app-label="Open the manager portal">
+          <img src="{{IMG:tab-manager}}" alt="Manager Today screen for Pranay: this week across eight companies, team tasks by project lead, company and status, and the task status breakdown." width="2000" height="1146">
+        </div>
+        <div class="frame" role="tabpanel" id="panel-admin" aria-labelledby="tab-admin" hidden data-app="admin-home" data-app-label="Open the admin portal">
+          <img src="{{IMG:tab-admin}}" alt="Admin Today screen for Krishna: fourteen clients with their stage, manager, who it is pending with, and health, the managers' load, and the incorporation pipeline." width="2000" height="1146">
+        </div>
+        <div class="frame" role="tabpanel" id="panel-super" aria-labelledby="tab-super" hidden data-app="super-home" data-app-label="Open the super admin portal">
+          <img src="{{IMG:tab-super}}" alt="Super admin overview for Mithilesh: the firm's numbers, the three practice areas side by side, admins and managers, top risks and clients needing attention." width="2000" height="1146">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Ask VCFO -->
+<section class="section" id="ask">
+  <div class="container">
+    <div class="ask">
+      <div class="reveal">
+        <div class="panel" data-app="home-chat" data-app-label="Open Ask VCFO">
+          <img src="{{IMG:ask-panel}}" alt="Ask VCFO panel inside the client portal, answering from Northwind's project data, with suggested questions." width="800" height="1276">
+        </div>
+      </div>
+      <div class="reveal">
+        <h2 class="h2">Ask VCFO answers from the project, not from a brochure.</h2>
+        <p class="body" style="margin-top:16px">A client asks where the incorporation stands, which documents are missing or when a filing is due, and gets the answer from their own engagement data. Anything the assistant cannot answer is handed to the firm's team with the context attached.</p>
+        <ul class="qs" aria-label="Example questions">
+          <li data-stagger style="--i:0" data-app="home-chat"><span class="icon">{{ICON:message-circle}}</span>What is my next step?</li>
+          <li data-stagger style="--i:1" data-app="home-chat"><span class="icon">{{ICON:message-circle}}</span>Where is my incorporation now?</li>
+          <li data-stagger style="--i:2" data-app="home-chat"><span class="icon">{{ICON:message-circle}}</span>Which documents are missing?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trust -->
+<section class="section" id="trust">
+  <div class="container">
+    <div class="section-head reveal" style="margin-bottom:0">
+      <h2 class="h2">Built by a firm that files, for firms that file.</h2>
+      <p class="body">SBC, a company secretarial and compliance practice, built VCFO Suite and runs its own engagements on it every day. Your firm gets the same system: your people, your clients, one record.</p>
+    </div>
+    <div class="trust reveal">
+      <div class="card card-hover" data-stagger style="--i:0"><div class="tile"><span class="icon">{{ICON:server}}</span></div><h3 class="h3">Hosted in India</h3><p>AWS Mumbai region, encrypted storage. Client data does not leave the country.</p></div>
+      <div class="card card-hover" data-stagger style="--i:1" data-app="credentials"><div class="tile"><span class="icon">{{ICON:key-round}}</span></div><h3 class="h3">Credentials stay sealed</h3><p>Portal and registration logins are stored encrypted and shown only to the people on the engagement.</p></div>
+      <div class="card card-hover" data-stagger style="--i:2" data-app="audit"><div class="tile"><span class="icon">{{ICON:file-text}}</span></div><h3 class="h3">An audit trail you can read</h3><p>Every change is logged with who and when. Clients see their own trail in the portal.</p></div>
+      <div class="card card-hover" data-stagger style="--i:3"><div class="tile"><span class="icon">{{ICON:mail}}</span></div><h3 class="h3">Email is the record</h3><p>Every notice goes by email. WhatsApp is a reminder on top, never the only copy.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="h2">Questions clients ask before the first step.</h2>
+    </div>
+    <div class="faq reveal">
+      <details><summary>Who is VCFO Suite for?<span class="icon">{{ICON:chevron-down}}</span></summary><p class="a">Firms that incorporate and keep companies compliant in India, and their clients: Indian founders, and foreign parents setting up a subsidiary or a global capability centre. The firm, the Indian team and the parent entity all log in to the same record.</p></details>
+      <details><summary>Is it only for SBC?<span class="icon">{{ICON:chevron-down}}</span></summary><p class="a">No. SBC built it and runs its engagements on it, which is why every screen on this page is a real one. Another firm gets its own workspace, with its own people, clients and calendar.</p></details>
+      <details><summary>What does the client actually do in the portal?<span class="icon">{{ICON:chevron-down}}</span></summary><p class="a">Answer the questionnaire, upload the documents each step asks for, approve board resolutions, sign with a DSC, and watch the timeline. Questions go to Ask VCFO or to the people named on the engagement.</p></details>
+      <details><summary>Which filings does the calendar cover?<span class="icon">{{ICON:chevron-down}}</span></summary><p class="a">MCA, GST, Income tax, Payroll, FEMA and Labour obligations for the financial year, generated from the certificate date and the registrations the company holds. Each one carries its statutory due date.</p></details>
+      <details><summary>How are we reminded?<span class="icon">{{ICON:chevron-down}}</span></summary><p class="a">Every due date emails the owner of the step. With consent, a WhatsApp reminder goes out as well. The email is always the record; WhatsApp never replaces it.</p></details>
+      <details><summary>Where is our data hosted, and who can see it?<span class="icon">{{ICON:chevron-down}}</span></summary><p class="a">On AWS in the Mumbai region, with encrypted storage. Access is scoped by role, so a client sees only their own companies and the firm's people assigned to them.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta" id="demo">
+  <div class="glow glow-brand glow-a"></div>
+  <div class="container reveal">
+    <p class="big"><span style="--i:0">Your clients.</span><span style="--i:1">Their filings.</span><span style="--i:2">Your team.</span><span class="last" style="--i:3">All on one record.</span></p>
+    <div class="cta-actions">
+      <a class="btn btn-primary" href="https://app.sbctrack.in/contact">Book a demo <span class="icon">{{ICON:arrow-right}}</span></a>
+      <button class="btn btn-secondary demo-only" type="button" data-app="choose">Try it live <span class="icon">{{ICON:mouse-pointer-click}}</span></button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-logo">
+        <img src="{{IMG:logo-dark}}" alt="VCFO Suite by SBC" width="156" height="34">
+        <p>Company secretarial, incorporation and compliance for India companies, on one record.</p>
+      </div>
+      <div>
+        <span class="mono">Product</span>
+        <ul>
+          <li><a href="#journey">How it works</a></li>
+          <li><a href="#incorporate">Incorporation</a></li>
+          <li><a href="#comply">Compliance calendar</a></li>
+          <li><a href="#portals">Portals</a></li>
+          <li><a href="#ask">Ask VCFO</a></li>
+        </ul>
+      </div>
+      <div>
+        <span class="mono">Account</span>
+        <ul>
+          <li><a href="https://app.sbctrack.in/login">Sign in</a></li>
+          <li><a href="https://app.sbctrack.in/contact">Book a demo</a></li>
+        </ul>
+      </div>
+      <div>
+        <span class="mono">SBC</span>
+        <ul>
+          <li><a href="https://sbcllp.in">sbcllp.in</a></li>
+          <li><a href="mailto:info@sbcllp.in">info@sbcllp.in</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 SBC. VCFO Suite is a product of SBC.</span>
+      <span>Local connect. Global outlook.</span>
+    </div>
+  </div>
+</footer>
+
+<div class="guide" id="guide">
+  <div class="guide-panel card" id="guide-panel" role="dialog" aria-modal="false" aria-labelledby="guide-t" hidden>
+    <div class="guide-head">
+      <img src="{{SVG:bot-avatar}}" alt="" width="38" height="38">
+      <div><b id="guide-t">Ask VCFO</b><span>Quick answers about the product</span></div>
+      <button class="guide-x" type="button" aria-label="Close Ask VCFO">{{ICON:x}}</button>
+    </div>
+    <div class="guide-log" aria-live="polite"></div>
+    <div class="guide-qs" role="group" aria-label="Suggested questions"></div>
+  </div>
+  <span class="guide-char" aria-hidden="true"><img src="{{SVG:bot-visor}}" alt="" width="340" height="216"></span>
+  <button class="guide-pill" type="button" aria-expanded="false" aria-controls="guide-panel"><span class="dot" aria-hidden="true"></span><span>Ask VCFO</span></button>
+</div>
+
+<div class="chooser" id="chooser" hidden role="dialog" aria-modal="true" aria-labelledby="chooser-t">
+  <form class="card chooser-card login" novalidate>
+    <img src="{{IMG:logo-dark}}" alt="VCFO Suite by SBC" width="148" height="32" class="login-logo">
+    <h2 id="chooser-t">Sign in to your workspace</h2>
+    <p>Use the account your firm created for you.</p>
+    <label class="login-f"><b>Work email</b><input id="login-email" type="email" autocomplete="username" required></label>
+    <label class="login-f"><b>Password</b><input id="login-pass" type="password" autocomplete="current-password" required></label>
+    <p class="login-err" role="alert" hidden>That email and password do not match an account.</p>
+    <button class="btn btn-primary login-go" type="submit">Sign in</button>
+    <div class="login-quick"><span>Demo accounts</span><button class="btn btn-secondary" type="button" data-quick="rohan@northwind.in">Client</button><button class="btn btn-secondary" type="button" data-quick="bharath@sbc.example">Lead</button><button class="btn btn-secondary" type="button" data-quick="pranay@sbc.example">Manager</button><button class="btn btn-secondary" type="button" data-quick="krishna@sbc.example">Admin</button><button class="btn btn-secondary" type="button" data-quick="mithilesh@sbc.example">Super admin</button><button class="btn btn-secondary" type="button" data-quick="farhath@sbc.example">Developer</button></div>
+    <p class="login-foot">Forgot your password? Ask your firm's admin to reset it.<br>No account yet? <a href="https://app.sbctrack.in/contact">Book a demo</a></p>
+    <button class="chooser-x" type="button" aria-label="Close">{{ICON:x}}</button>
+  </form>
+</div>
+
+<div class="app" id="app" role="dialog" aria-modal="true" aria-label="VCFO Suite live prototype" inert aria-hidden="true">
+  <div class="app-strip">
+    <button class="app-back" type="button"><span class="icon">{{ICON:arrow-left}}</span>Back to site</button>
+    <span class="app-title" aria-live="polite"></span>
+    <span class="app-hint mono">Live prototype, sample data. <kbd>Esc</kbd> closes</span>
+  </div>
+  <div class="app-view">
+    <iframe id="stage" title="VCFO Suite live prototype" referrerpolicy="no-referrer"></iframe>
+    <div class="app-curtain" aria-hidden="true"><img src="{{IMG:logo-dark}}" alt="" width="184" height="40"><div class="bar"><i></i></div><p>Opening the portal</p></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasIO = 'IntersectionObserver' in window;
+
+  /* Scroll reveal: one observer, no scroll listener. */
+  var revealed = document.querySelectorAll('.reveal');
+  function countUp(el) {
+    var target = parseInt(el.getAttribute('data-count'), 10);
+    if (reduce || !target) { el.textContent = String(target); return; }
+    var start = null, dur = 1200;
+    function tick(ts) {
+      if (!start) start = ts;
+      var p = Math.min(1, (ts - start) / dur);
+      var e = 1 - Math.pow(1 - p, 3);
+      el.textContent = String(Math.round(target * e));
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  function show(el) {
+    el.classList.add('in');
+    el.querySelectorAll('[data-count]').forEach(countUp);
+  }
+  if (reduce || !hasIO) {
+    revealed.forEach(show);
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { show(e.target); io.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+    revealed.forEach(function (el) { io.observe(el); });
+  }
+
+  /* Sticky story: the diagram follows the step in the middle of the viewport. */
+  document.querySelectorAll('[data-story]').forEach(function (story) {
+    var steps = Array.prototype.slice.call(story.querySelectorAll('.story-step'));
+    var groups = Array.prototype.slice.call(story.querySelectorAll('.sg'));
+    function activate(n) {
+      steps.forEach(function (s, i) { s.classList.toggle('is-active', i + 1 === n); });
+      groups.forEach(function (g, i) {
+        g.classList.toggle('done', i + 1 < n);
+        g.classList.toggle('cur', i + 1 === n);
+      });
+    }
+    activate(1);
+    if (!hasIO) return;
+    var sio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) activate(parseInt(e.target.getAttribute('data-step'), 10)); });
+    }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+    steps.forEach(function (s) { sio.observe(s); });
+  });
+
+  /* Compliance ring: drawn from the obligation list, one track per regulator. */
+  (function buildRing() {
+    var svg = document.getElementById('ring');
+    if (!svg) return;
+    var NS = 'http://www.w3.org/2000/svg';
+    var C = 260, MONTHS = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+    var SERIES = { gst: { r: 214, c: '#199e70' }, it: { r: 192, c: '#3987e5' }, mca: { r: 170, c: '#9085e9' }, lab: { r: 148, c: '#c98500' }, rbi: { r: 126, c: '#d95926' } };
+    var items = [];
+    for (var m = 0; m < 12; m++) {
+      items.push({ m: m, d: 11, s: 'gst', t: 'GSTR-1' }, { m: m, d: 20, s: 'gst', t: 'GSTR-3B' });
+      items.push({ m: m, d: 7, s: 'it', t: 'TDS payment' });
+      items.push({ m: m, d: 10, s: 'lab', t: 'Professional tax' }, { m: m, d: 15, s: 'lab', t: 'PF and ESI' });
+    }
+    [[2, 15, 'Advance tax Q1'], [5, 15, 'Advance tax Q2'], [8, 15, 'Advance tax Q3'], [11, 15, 'Advance tax Q4'], [3, 31, 'TDS return Q4'], [6, 31, 'TDS return Q1'], [9, 31, 'TDS return Q2'], [1, 31, 'TDS return Q3'], [2, 15, 'Form 16'], [6, 31, 'Income tax return']].forEach(function (x) { items.push({ m: x[0], d: x[1], s: 'it', t: x[2] }); });
+    [[0, 1, 'MBP-1 and DIR-8'], [0, 30, 'MSME-1'], [2, 30, 'DPT-3'], [5, 30, 'DIR-3 KYC'], [6, 30, 'AOC-4'], [6, 31, 'MSME-1'], [7, 29, 'MGT-7']].forEach(function (x) { items.push({ m: x[0], d: x[1], s: 'mca', t: x[2] }); });
+    items.push({ m: 8, d: 31, s: 'gst', t: 'GSTR-9' });
+    items.push({ m: 3, d: 15, s: 'rbi', t: 'FLA return' });
+    function el(tag, attrs) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+    function pos(m, d, r) { var a = ((m + (d - 1) / 31) / 12) * Math.PI * 2 - Math.PI / 2; return [C + r * Math.cos(a), C + r * Math.sin(a)]; }
+    // tracks and month ticks
+    for (var s in SERIES) svg.appendChild(el('circle', { class: 'track', cx: C, cy: C, r: SERIES[s].r }));
+    for (var i = 0; i < 12; i++) {
+      var a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+      var x1 = C + 112 * Math.cos(a), y1 = C + 112 * Math.sin(a), x2 = C + 228 * Math.cos(a), y2 = C + 228 * Math.sin(a);
+      svg.appendChild(el('line', { x1: x1, y1: y1, x2: x2, y2: y2, stroke: '#1f2d40', 'stroke-width': 1 }));
+      var am = ((i + 0.5) / 12) * Math.PI * 2 - Math.PI / 2;
+      var t = el('text', { class: 'month', x: C + 246 * Math.cos(am), y: C + 246 * Math.sin(am) + 4 });
+      t.textContent = MONTHS[i].toUpperCase();
+      svg.appendChild(t);
+    }
+    // dots
+    items.forEach(function (it, idx) {
+      var p = pos(it.m, it.d, SERIES[it.s].r);
+      var dot = el('circle', { class: 'dot', cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: it.t.indexOf('GSTR') === 0 || it.t === 'TDS payment' || it.s === 'lab' ? 3.2 : 4.6, fill: SERIES[it.s].c, style: '--i:' + idx });
+      var title = el('title', {}); title.textContent = it.t + ', ' + it.d + ' ' + MONTHS[it.m]; dot.appendChild(title);
+      svg.appendChild(dot);
+    });
+    // sweeping hand and centre text
+    var g = el('g', { class: 'hand-g' });
+    g.appendChild(el('line', { class: 'hand', x1: C, y1: C, x2: C, y2: C - 222 }));
+    g.appendChild(el('circle', { class: 'hand-cap', cx: C, cy: C - 222, r: 3 }));
+    svg.appendChild(g);
+    svg.appendChild(el('circle', { cx: C, cy: C, r: 100, fill: '#0b1521', stroke: '#1f2d40' }));
+    var t1 = el('text', { class: 'ctr-t', x: C, y: C - 2 }); t1.textContent = 'FY 2026-27'; svg.appendChild(t1);
+    var t2 = el('text', { class: 'ctr-s', x: C, y: C + 20 }); t2.textContent = items.length + ' statutory dates'; svg.appendChild(t2);
+  })();
+
+  /* Hero: the stage word is typed, held, erased and retyped, one stage after the other */
+  var swap = document.querySelector('.swap');
+  if (swap && !reduce) {
+    var words = swap.getAttribute('data-words').split(','), wi = 0;
+    function typeWord(word, i, done) {
+      swap.textContent = word.slice(0, i);
+      if (i >= word.length) return done();
+      setTimeout(function () { typeWord(word, i + 1, done); }, 72);
+    }
+    function eraseWord(done) {
+      var t = swap.textContent;
+      if (!t.length) return done();
+      swap.textContent = t.slice(0, -1);
+      setTimeout(function () { eraseWord(done); }, 40);
+    }
+    function cycle() {
+      setTimeout(function () {
+        eraseWord(function () {
+          wi = (wi + 1) % words.length;
+          setTimeout(function () { typeWord(words[wi], 1, cycle); }, 260);
+        });
+      }, 2400);
+    }
+    if (document.documentElement.classList.contains('pre-reveal')) document.addEventListener('vcfo:hero', cycle, { once: true });
+    else cycle();
+  }
+
+  /* Portal tabs */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab]'));
+  function select(name) {
+    tabs.forEach(function (t) { var on = t.getAttribute('data-tab') === name; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; });
+    document.querySelectorAll('.tabpanel .frame').forEach(function (p) { p.hidden = p.id !== 'panel-' + name; });
+    document.querySelectorAll('[data-desc]').forEach(function (d) { d.hidden = d.getAttribute('data-desc') !== name; });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(t.getAttribute('data-tab')); });
+    t.addEventListener('keydown', function (ev) {
+      var next = ev.key === 'ArrowRight' ? i + 1 : ev.key === 'ArrowLeft' ? i - 1 : null;
+      if (next === null) return;
+      ev.preventDefault();
+      var target = tabs[(next + tabs.length) % tabs.length];
+      select(target.getAttribute('data-tab')); target.focus();
+    });
+  });
+
+  /* Nav shadow on scroll (observer on a sentinel, no scroll listener) and mobile menu */
+  var nav = document.querySelector('.nav');
+  if (hasIO) {
+    var sentinel = document.createElement('div'); sentinel.style.cssText = 'position:absolute;top:0;left:0;height:1px;width:1px;';
+    document.body.prepend(sentinel);
+    new IntersectionObserver(function (entries) { nav.classList.toggle('scrolled', !entries[0].isIntersecting); }).observe(sentinel);
+  }
+  var toggle = document.querySelector('.nav-toggle');
+  toggle.addEventListener('click', function () { var open = nav.classList.toggle('open'); toggle.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+  document.querySelectorAll('.nav-mobile a').forEach(function (a) { a.addEventListener('click', function () { nav.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); }); });
+  /* ---------- Logo reveal: the three stages stack into the lockup, then the lockup lands in the navbar ----------
+     Ported from the prototype's intro (same card geometry and easing), on the dark stage, about 3.5 s, then a glide. */
+  (function reveal() {
+    var root = document.documentElement;
+    if (!root.classList.contains('pre-reveal')) return;
+    var hero = document.querySelector('.hero'), navImg = document.querySelector('.nav-logo img');
+    function release() {
+      root.classList.remove('pre-reveal');
+      document.dispatchEvent(new CustomEvent('vcfo:hero'));
+    }
+    if (!hero || !navImg) { release(); root.classList.remove('reveal-logo'); return; }
+    var NS = 'http://www.w3.org/2000/svg';
+    var wrap = document.createElement('div'); wrap.id = 'reveal'; wrap.setAttribute('aria-hidden', 'true');
+    wrap.innerHTML =
+      '<svg id="rv-svg" viewBox="72 50 1000 400" xmlns="' + NS + '">' +
+      '<defs><clipPath id="rv-wordClip"><rect id="rv-wordClipRect" x="0" y="0" width="0" height="1000"/></clipPath>' +
+      '<clipPath id="rv-vClip"><rect id="rv-vClipRect" x="0" y="0" width="0" height="0"/></clipPath></defs>' +
+      '<g id="rv-lockup"><g id="rv-stack">' +
+      '<g id="rv-card0" opacity="0"><polygon class="shape" fill="#FFC517"/><text class="cname" text-anchor="middle" font-family="Poppins, system-ui, sans-serif" font-weight="700" fill="#3D2A00">Incorporation</text></g>' +
+      '<g id="rv-card1" opacity="0"><polygon class="shape" fill="#F08A21"/><text class="cname" text-anchor="middle" font-family="Poppins, system-ui, sans-serif" font-weight="700" fill="#FFFFFF">Registrations</text></g>' +
+      '<g id="rv-card2" opacity="0"><polygon class="shape" fill="#E76028"/><text class="cname" text-anchor="middle" font-family="Poppins, system-ui, sans-serif" font-weight="700" fill="#FFFFFF">Compliances</text>' +
+      '<g clip-path="url(#rv-vClip)"><text id="rv-vee" text-anchor="middle" font-family="Poppins, system-ui, sans-serif" font-weight="700" fill="#FFFFFF">V</text></g></g>' +
+      '</g><g id="rv-word" clip-path="url(#rv-wordClip)"><text id="rv-wordText" font-family="Poppins, system-ui, sans-serif" font-size="100" letter-spacing="-2">' +
+      '<tspan font-weight="700" fill="#e9eff6">VCFO</tspan><tspan font-weight="400" fill="#E76028"> Suite</tspan></text></g>' +
+      '<g id="rv-byline" opacity="0"><text id="rv-byText" font-family="Poppins, system-ui, sans-serif" font-size="18" font-weight="700" letter-spacing="3.5" fill="#e9eff6">BY</text>' +
+      '<image id="rv-sbc" href="{{IMG:sbc-mark-white}}" width="72" height="21.3"/></g></g></svg>';
+    document.body.appendChild(wrap);
+    function place() {
+      var r = hero.getBoundingClientRect(), top = Math.max(0, r.top), h = Math.min(r.bottom, innerHeight) - top;
+      wrap.style.left = r.left + 'px'; wrap.style.top = top + 'px'; wrap.style.width = r.width + 'px'; wrap.style.height = Math.max(240, h) + 'px';
+    }
+    place();
+    var $ = function (id) { return document.getElementById('rv-' + id); };
+    var svg = $('svg'), stack = $('stack'), lockup = $('lockup');
+    var cards = [0, 1, 2].map(function (i) { return $('card' + i); });
+    var names = [].slice.call(wrap.querySelectorAll('.cname'));
+    var vClipRect = $('vClipRect'), wordClipRect = $('wordClipRect'), wordText = $('wordText');
+    var byline = $('byline'), byText = $('byText'), sbc = $('sbc'), vee = $('vee');
+    var W = 215, DX = 37, DH = 62, LH = 75, RISE = 135, FULL = LH + RISE + 2 * DH;
+    var MARK_H = 220, K = MARK_H / FULL, MARK_W = (W + 2 * DX) * K, NAME_FS = 15;
+    var GEO = [0, 1, 2].map(function (i) {
+      var n = 2 - i, x0 = DX * n * K, lh = (LH + DH * n) * K, rh = (LH + RISE + DH * n) * K, w = W * K;
+      return { x0: x0, w: w, lh: lh, rh: rh, cx: x0 + w / 2 };
+    });
+    GEO.forEach(function (g, i) {
+      cards[i].querySelector('.shape').setAttribute('points', g.x0 + ',0 ' + g.x0 + ',' + (-g.lh) + ' ' + (g.x0 + g.w) + ',' + (-g.rh) + ' ' + (g.x0 + g.w) + ',0');
+      var t = names[i]; t.setAttribute('x', g.cx); t.setAttribute('y', (-Math.min(g.lh, 60) * 0.55).toFixed(1)); t.setAttribute('font-size', NAME_FS);
+    });
+    var F = GEO[2], vx = F.x0 + F.w * 0.52, vbase = -22 * K, vsize = 115 * K;
+    vee.setAttribute('x', vx); vee.setAttribute('y', vbase); vee.setAttribute('font-size', vsize);
+    vClipRect.setAttribute('x', vx - vsize); vClipRect.setAttribute('width', vsize * 2);
+    var LAYOUTS = {
+      wide: { vb: [72, 50, 1000, 400], cx: 600, cy: 250, fs: 0.72, fo: [220, 340], wx: 371, wy: 287, by: 327, anchor: 'start', s1: 1.55 },
+      square: { vb: [40, 160, 720, 540], cx: 400, cy: 400, fs: 0.9, fo: [400 - MARK_W * 0.45, 440], wx: 400, wy: 570, by: 616, anchor: 'middle', s1: 1.8 }
+    };
+    var L = null, s0 = 1, cur = 0, DUR = 7.0, SPEED = 1.6;
+    function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+    function seg(t, a, b) { return clamp((t - a) / (b - a)); }
+    function easeOut(x) { return 1 - Math.pow(1 - x, 3); }
+    function easeInOut(x) { return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+    function easeBack(x) { var c1 = 1.4, c3 = c1 + 1; return x <= 0 ? 0 : 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); }
+    function lerp(a, b, p) { return a + (b - a) * p; }
+    function renderAt(t) {
+      cur = t;
+      var gx = L.cx - MARK_W * s0 / 2, gy = L.cy + MARK_H * s0 / 2;
+      var mv = easeInOut(seg(t, 3.7, 4.5)), sc = lerp(s0, L.fs, mv);
+      var ox = lerp(gx, L.fo[0], mv), oy = lerp(gy, L.fo[1], mv);
+      var pulse = 1 + Math.sin(Math.PI * seg(t, 3.15, 3.6)) * 0.04;
+      stack.setAttribute('transform', 'translate(' + ox.toFixed(2) + ' ' + oy.toFixed(2) + ') scale(' + (sc * pulse).toFixed(4) + ')');
+      var arr = [];
+      for (var i = 0; i < 3; i++) {
+        var a = 0.35 + i * 0.7, p = seg(t, a, a + 0.75);
+        cards[i].setAttribute('transform', 'scale(1 ' + Math.max(0.001, easeBack(p)).toFixed(4) + ')');
+        cards[i].setAttribute('opacity', clamp(p * 8).toFixed(3));
+        arr.push(easeOut(p));
+      }
+      var nameFade = 1 - seg(t, 2.85, 3.1);
+      for (var j = 0; j < 3; j++) {
+        var shown = clamp(seg(t, 0.35 + j * 0.5, 0.75 + j * 0.5) * 3), covered = j < 2 ? arr[j + 1] : 0;
+        names[j].setAttribute('opacity', (nameFade * (1 - covered) * Math.min(1, shown)).toFixed(3));
+      }
+      var vp = easeOut(seg(t, 3.05, 3.5));
+      vClipRect.setAttribute('y', (vbase - vsize).toFixed(2)); vClipRect.setAttribute('height', (vsize * 1.1 * vp).toFixed(2));
+      var wp = easeInOut(seg(t, 4.1, 5.0)), ww = 640 * wp;
+      wordClipRect.setAttribute('x', L.anchor === 'middle' ? (L.wx - ww / 2).toFixed(2) : L.wx - 10);
+      wordClipRect.setAttribute('width', (wp > 0 ? ww + 20 : 0).toFixed(2));
+      var bp = easeOut(seg(t, 4.8, 5.4));
+      byline.setAttribute('opacity', bp.toFixed(3)); byline.setAttribute('transform', 'translate(0 ' + ((1 - bp) * 8).toFixed(2) + ')');
+    }
+    function setLayout() {
+      var name = wrap.clientWidth / Math.max(1, wrap.clientHeight) < 1.05 ? 'square' : 'wide';
+      L = LAYOUTS[name];
+      svg.setAttribute('viewBox', L.vb.join(' '));
+      wordText.setAttribute('x', L.wx); wordText.setAttribute('y', L.wy); wordText.setAttribute('text-anchor', L.anchor);
+      var bx = L.anchor === 'middle' ? L.wx - 57 : L.wx + 6;
+      byText.setAttribute('x', bx); byText.setAttribute('y', L.by);
+      sbc.setAttribute('x', bx + 36); sbc.setAttribute('y', (L.by - 0.707 * 21.3).toFixed(2));
+      var r = svg.getBoundingClientRect(), ppu = Math.min(r.width / L.vb[2], r.height / L.vb[3]) || 1;
+      s0 = Math.max(1, Math.min(L.s1, 11.5 / (NAME_FS * ppu)));
+      renderAt(cur);
+    }
+    setLayout();
+    var raf = 0, last = -1, t = 0, done = false;
+    function glide(fast) {
+      if (done) return; done = true;
+      if (raf) cancelAnimationFrame(raf);
+      renderAt(DUR);
+      ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (ev) { removeEventListener(ev, skip, true); });
+      removeEventListener('resize', onResize);
+      var o = svg.getBoundingClientRect(), r = lockup.getBoundingClientRect(), n = navImg.getBoundingClientRect();
+      var k = n.height / Math.max(1, r.height);
+      var tx = n.left - o.left - k * (r.left - o.left), ty = n.top - o.top - k * (r.top - o.top);
+      setTimeout(release, fast ? 60 : 260);
+      wrap.classList.add('glide'); if (fast) wrap.classList.add('fast');
+      requestAnimationFrame(function () { svg.style.transform = 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + k.toFixed(4) + ')'; });
+      setTimeout(function () {
+        root.classList.remove('reveal-logo');
+        wrap.classList.add('gone');
+        setTimeout(function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 220);
+        if ('scrollRestoration' in history) history.scrollRestoration = 'auto';
+      }, fast ? 340 : 740);
+    }
+    function skip() { glide(true); }
+    function onResize() { place(); setLayout(); }
+    function tick(now) {
+      if (last >= 0) t += Math.min(50, Math.max(0, now - last)) / 1000 * SPEED;
+      last = now;
+      if (t >= 5.6) { renderAt(DUR); setTimeout(function () { glide(false); }, 280); return; }
+      renderAt(t);
+      raf = requestAnimationFrame(tick);
+    }
+    ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(function (ev) { addEventListener(ev, skip, { capture: true, passive: true }); });
+    addEventListener('resize', onResize);
+    var go = function () { renderAt(0); raf = requestAnimationFrame(tick); };
+    try { if (document.fonts && document.fonts.load) Promise.race([Promise.all([document.fonts.load('700 20px Poppins'), document.fonts.load('400 20px Poppins')]), new Promise(function (r) { setTimeout(r, 400); })]).then(go); else go(); } catch (e) { go(); }
+    window.__vcfoReveal = { skip: skip, time: function () { return done ? DUR : t; } };
+  })();
+
+  /* ---------- Ask VCFO guide: scripted questions, each answer links to the live screen or the section ---------- */
+  (function guide() {
+    var G = document.getElementById('guide'); if (!G) return;
+    var pill = G.querySelector('.guide-pill'), panel = G.querySelector('.guide-panel'), log = G.querySelector('.guide-log'), qs = G.querySelector('.guide-qs'), x = G.querySelector('.guide-x');
+    var demo = document.documentElement.hasAttribute('data-demo');
+    var Q = [
+      { q: 'What does VCFO Suite cover?', a: 'Four stages, then the yearly calendar: name and papers, incorporation, the first 180 days and registrations, then every statutory filing after. Each step carries an owner, a due date and the document that proves it.', app: 'incorporation', sec: 'journey' },
+      { q: 'How does incorporation work?', a: 'The client answers one questionnaire, the firm drafts and files, and MCA approves. The board resolution, MOA, AOA, DIR-2 and INC-9 are generated from the answers, not retyped.', app: 'inc-phase', sec: 'incorporate' },
+      { q: 'What happens after the certificate?', a: 'Eleven steps start the day the certificate arrives, most with a statutory clock: the first board meeting and ADT-1 within 30 days, share certificates within 60, and INC-20A within 180.', app: 'inc-phase-3', sec: 'after' },
+      { q: 'Which registrations does it track?', a: 'Twenty-three registrations and reportings across tax, labour, trade, RBI and intellectual property. Only the ones that apply to the company are switched on.', app: 'inc-phase-4', sec: 'register' },
+      { q: 'What does the compliance calendar look like?', a: 'Every statutory date of the financial year by regulator, each with a status word and a nudge before it is due. Email is the record; WhatsApp is the reminder.', app: 'compliances', sec: 'comply' },
+      { q: 'What does my client see?', a: 'What is waiting on them, what the firm holds, and when the certificate is expected. They upload, approve and ask from one screen instead of an email thread.', app: 'home', sec: 'portals' },
+      { q: 'What does the project lead see?', a: "Today's action queue across every company they run, this week's statutory filings, and who each step is waiting on.", app: 'lead-home', sec: 'portals' },
+      { q: 'What does the manager see?', a: "Every task the team owns, filtered by project lead, company or status, and each lead's workload by area. A to-do goes to a project lead in one click.", app: 'mgr-home', sec: 'portals' },
+      { q: 'What does the admin see?', a: "Every client with its stage, manager, who it is pending with and the next date; each manager's load and on-time rate; and where work is stuck. The admin assigns whole clients to managers.", app: 'admin-home', sec: 'portals' },
+      { q: 'What does the super admin see?', a: "The whole firm on one screen: every client, what each admin and manager is doing, incorporations, registrations and filings side by side, fees and late-fee exposure, risks, growth, and a monthly partner report.", app: 'super-home', sec: 'portals' },
+      { q: 'Where is the data hosted?', a: 'On AWS in the Mumbai region, with encrypted storage. Access is scoped by role, so a client sees only their own companies.', sec: 'trust' },
+      { q: 'Is it only for SBC?', a: 'No. SBC built it and runs its own engagements on it. Your firm gets its own workspace with its own people, clients and calendar.', sec: 'faq', sales: true }
+    ];
+    var asked = {}, greeted = false;
+    function bubble(cls, html) { var d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
+    function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function renderQs() {
+      qs.innerHTML = '';
+      Q.forEach(function (item, i) {
+        if (asked[i]) return;
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = item.q;
+        b.addEventListener('click', function () { ask(i); });
+        qs.appendChild(b);
+      });
+      if (!qs.children.length) qs.innerHTML = '<a class="btn btn-primary btn-sm" href="https://app.sbctrack.in/contact">Book a demo</a>';
+    }
+    function ask(i) {
+      var item = Q[i]; asked[i] = true; renderQs();
+      bubble('me', esc(item.q));
+      var show = demo && item.app && document.documentElement.classList.contains('signed-in')
+        ? '<button class="btn btn-secondary" type="button" data-app="' + item.app + '">Show me</button>'
+        : '<button class="btn btn-secondary" type="button" data-scroll="' + item.sec + '">Show me</button>';
+      var html = esc(item.a) + '<div class="acts">' + show + (item.sales || demo ? '' : '') + '<a class="btn ' + (item.sales ? 'btn-primary' : 'btn-ghost') + '" href="https://app.sbctrack.in/contact">Book a demo</a></div>';
+      if (reduce) { bubble('bot', html); return; }
+      var t = bubble('bot typing', '<i></i><i></i><i></i>');
+      setTimeout(function () { t.className = 'msg bot'; t.innerHTML = html; log.scrollTop = log.scrollHeight; }, 320);
+    }
+    function open() {
+      G.classList.add('open'); panel.hidden = false; pill.setAttribute('aria-expanded', 'true');
+      if (!greeted) { greeted = true; bubble('bot', 'Hello. Ask me what VCFO Suite does, or pick a question below. Every answer can show you the real screen.'); renderQs(); }
+      (qs.querySelector('button') || x).focus();
+    }
+    function close() { G.classList.remove('open'); panel.hidden = true; pill.setAttribute('aria-expanded', 'false'); pill.focus({ preventScroll: true }); }
+    pill.addEventListener('click', open);
+    x.addEventListener('click', close);
+    log.addEventListener('click', function (ev) {
+      var s = ev.target.closest('[data-scroll]'); if (!s) return;
+      var el = document.getElementById(s.getAttribute('data-scroll')); if (el) el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    });
+    panel.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') { ev.stopPropagation(); close(); return; }
+      if (ev.key !== 'Tab') return;
+      var f = [].slice.call(panel.querySelectorAll('button, a[href]')).filter(function (e) { return e.offsetParent !== null; });
+      if (!f.length) return;
+      if (ev.shiftKey && document.activeElement === f[0]) { ev.preventDefault(); f[f.length - 1].focus(); }
+      else if (!ev.shiftKey && document.activeElement === f[f.length - 1]) { ev.preventDefault(); f[0].focus(); }
+    });
+    window.__vcfoGuide = { open: open, close: close, ask: ask, count: Q.length };
+  })();
+
+  /* ---------- Live prototype (merged build): deep links open the prototype full-screen ---------- */
+  (function live() {
+    var root = document.documentElement;
+    if (!root.hasAttribute('data-demo')) return;
+    var app = document.getElementById('app'), chooser = document.getElementById('chooser'), back = app.querySelector('.app-back'), titleEl = app.querySelector('.app-title');
+    var shell = [document.querySelector('header.nav'), document.querySelector('main'), document.querySelector('footer')];
+    var openState = null, chooserFrom = null, loadedKey = '', wanted = '', stack = [], restoring = false;
+    function pushKey(key) { if (stack[stack.length - 1] === key) return; stack.push(key); try { history.pushState({ vcfoApp: key }, ''); } catch (e) {} }
+    function frameTitle() {
+      try {
+        var key = window.__pf.path + window.__pf.hash, R = window.__vcfoApp.routes, best = '';
+        for (var k in R) { var r = R[k]; if (r.d === key || r.m === key) { best = r.t; if (!r.hide) break; } }
+        return best || document.getElementById('stage').contentDocument.title || '';
+      } catch (e) { return ''; }
+    }
+    window.__vcfoIntro = { ready: function () {
+      try { loadedKey = window.__pf.path + window.__pf.hash; } catch (e) {}
+      if (openState) { if (restoring) restoring = false; else pushKey(loadedKey); }
+      if (openState) { titleEl.textContent = frameTitle().replace(/ · VCFO Suite$/, ''); if (loadedKey === wanted) app.classList.add('ready'); }
+    } };
+    function api() { return window.__vcfoBoot ? window.__vcfoBoot() : null; }
+    function setInert(on) { shell.forEach(function (el) { if (!el) return; if (on) { el.setAttribute('inert', ''); el.setAttribute('aria-hidden', 'true'); } else { el.removeAttribute('inert'); el.removeAttribute('aria-hidden'); } }); }
+    function openApp(route, from) {
+      var A = api();
+      if (!A) return;
+      closeChooser(true);
+      if (!openState) {
+        openState = { from: from || document.activeElement, y: scrollY };
+        try { history.scrollRestoration = 'manual'; } catch (e) {}
+        stack = [];
+      }
+      app.classList.remove('ready'); titleEl.textContent = '';
+      app.removeAttribute('inert'); app.removeAttribute('aria-hidden'); app.classList.add('on');
+      root.classList.add('app-open'); setInert(true);
+      wanted = A.open(route);
+      pushKey(wanted);
+      if (wanted === loadedKey) { app.classList.add('ready'); titleEl.textContent = frameTitle().replace(/ · VCFO Suite$/, ''); }
+      setTimeout(function () { if (openState) app.classList.add('ready'); }, 8000);
+      back.focus();
+    }
+    function closeApp(fromPop) {
+      if (!openState) return;
+      var st = openState; openState = null;
+      app.classList.remove('on'); app.setAttribute('inert', ''); app.setAttribute('aria-hidden', 'true');
+      root.classList.remove('app-open'); setInert(false);
+      scrollTo({ top: st.y, behavior: 'instant' });
+      if (st.from && st.from.focus) try { st.from.focus({ preventScroll: true }); } catch (e) {}
+      var depth = stack.length; stack = [];
+      if (!fromPop && depth) try { history.go(-depth); } catch (e) {}
+    }
+    function openChooser(from) {
+      chooserFrom = from || document.activeElement;
+      if (0) chooser.querySelectorAll('img[data-src-from]').forEach(function (im) { if (!im.getAttribute('src')) { var src = document.querySelector(im.getAttribute('data-src-from')); if (src) im.src = src.src; } });
+      chooser.hidden = false; setInert(true);
+      requestAnimationFrame(function () { chooser.classList.add('on'); });
+      err.hidden = true; document.getElementById('login-email').focus();
+    }
+    function closeChooser(toApp) {
+      if (chooser.hidden) return;
+      chooser.classList.remove('on'); chooser.hidden = true;
+      if (!toApp) { setInert(false); if (chooserFrom && chooserFrom.focus) chooserFrom.focus({ preventScroll: true }); }
+    }
+    function activate(el, ev) {
+      var r = el.getAttribute('data-app');
+      if (!r) return;
+      if (ev) ev.preventDefault();
+      if (r === 'choose') { if (signedIn()) openApp(HOME[signedIn()] || 'home', el); else openChooser(el); return; }
+      if (!signedIn()) return;
+      openApp(r, el);
+    }
+    /* Like any SaaS front door: the product opens only after sign in, never from the public page. */
+    var ACCOUNTS = { 'rohan@northwind.in': 'client', 'bharath@sbc.example': 'lead', 'pranay@sbc.example': 'mgr', 'krishna@sbc.example': 'admin', 'mithilesh@sbc.example': 'super', 'farhath@sbc.example': 'dev' }, PASS = 'demo2026';
+    var HOME = { client: 'home', lead: 'lead-home', mgr: 'mgr-home', admin: 'admin-home', super: 'super-home', dev: 'dev-home' };
+    function signedIn() { try { return sessionStorage.getItem('vcfo.session') || ''; } catch (e) { return ''; } }
+    var form = chooser.querySelector('form'), err = chooser.querySelector('.login-err');
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var email = document.getElementById('login-email').value.trim().toLowerCase(), pass = document.getElementById('login-pass').value;
+      var role = ACCOUNTS[email];
+      if (!role || pass !== PASS) { err.hidden = false; document.getElementById('login-pass').select(); return; }
+      err.hidden = true;
+      try { sessionStorage.setItem('vcfo.session', role); } catch (e) {}
+      afterSignIn();
+      openApp(HOME[role] || 'home', chooserFrom);
+    });
+    chooser.querySelectorAll('[data-quick]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.getElementById('login-email').value = b.getAttribute('data-quick');
+        document.getElementById('login-pass').value = PASS;
+        if (form.requestSubmit) form.requestSubmit(); else form.dispatchEvent(new Event('submit', { cancelable: true }));
+      });
+    });
+    function afterSignIn() {
+      root.classList.add('signed-in');
+      document.querySelectorAll('[data-app="choose"]').forEach(function (b) { b.textContent = 'Open portal'; });
+      enhance();
+    }
+    function enhance() { document.querySelectorAll('main [data-app]').forEach(function (el) {
+      var tag = el.tagName.toLowerCase();
+      if (tag !== 'a' && tag !== 'button') {
+        el.setAttribute('tabindex', '0'); el.setAttribute('role', 'button');
+        el.removeAttribute('aria-hidden');
+        var lab = el.getAttribute('data-app-label') || ('Open ' + (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60) + ' in the live prototype');
+        el.setAttribute('aria-label', lab);
+      }
+    }); }
+    if (signedIn()) afterSignIn();
+    document.addEventListener('click', function (ev) {
+      var el = ev.target.closest && ev.target.closest('[data-app]');
+      if (!el || el.closest('#app')) return;
+      ev.stopPropagation();
+      activate(el, ev);
+    }, true);
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') { if (!chooser.hidden) { closeChooser(); return; } if (openState) { closeApp(); return; } }
+      if (signedIn() && (ev.key === 'Enter' || ev.key === ' ') && ev.target.getAttribute && ev.target.getAttribute('role') === 'button' && ev.target.hasAttribute('data-app')) activate(ev.target, ev);
+    });
+    chooser.addEventListener('click', function (ev) { if (ev.target === chooser || ev.target.closest('.chooser-x')) closeChooser(); });
+    back.addEventListener('click', function () { closeApp(); });
+    addEventListener('message', function (ev) { if (ev.data && ev.data.type === 'vcfo:esc' && openState) closeApp(); });
+    /* The portal's own Back button walks the same history; on the first screen it stays put. */
+    window.__vcfoAppBack = function () {
+      if (stack.length > 1) { history.back(); return; }
+      try { var w = document.getElementById('stage').contentWindow; if (w.vcfoToast) w.vcfoToast('This is the first screen you opened'); } catch (e) {}
+    };
+    /* Browser Back steps back through the screens opened inside the portal, then closes it. */
+    addEventListener('popstate', function () {
+      if (!openState) return;
+      var st = history.state;
+      if (st && st.vcfoApp) {
+        var idx = stack.lastIndexOf(st.vcfoApp);
+        if (idx >= 0) stack.length = idx + 1; else stack.push(st.vcfoApp);
+        restoring = true; loadedKey = ''; setTimeout(function () { restoring = false; }, 2000);
+        var A = api(); if (A) A.navigate(st.vcfoApp);
+        return;
+      }
+      closeApp(true);
+    });
+    /* Boot the prototype at idle and preload the client home, so the first click opens instantly. */
+    function preload() { var A = api(); if (A && !openState) A.preload('home'); }
+    addEventListener('load', function () { (window.requestIdleCallback || function (f) { return setTimeout(f, 1500); })(preload, { timeout: 5000 }); });
+  })();
+})();
+</script>
+</body>
+</html>

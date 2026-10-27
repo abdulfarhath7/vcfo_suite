@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils';
  * THE data table. Factored out of the lead dashboard's `MyWork` list view so
  * long lists (engagements, activity, documents) never invent a second table
  * style: same header type scale, same hairline rows, same 13px row text. Heads: 11px label on
- * surface-sunken; rows 40px; amounts right-aligned and tabular (docs/design/COMPONENTS.md).
+ * surface-sunken; rows 40px, every second row tinted (LeetCode's stripe); amounts right-aligned
+ * and tabular; in a long list a state is a coloured word (TONE_TEXT), not a chip (docs/design/COMPONENTS.md).
  *
  * Wide layout is a CSS grid (not `<table>`) so columns can be sized in `fr`
  * units and a row can collapse to a stacked card below `xl`, exactly as the
@@ -106,7 +107,7 @@ export function DashDataTable<Row>({
         return (
           <div
             key={rowKey(row)}
-            className="border-t border-line text-[13px] font-medium transition-colors first:border-t-0 hover:bg-surface-sunken/60 xl:first:border-t"
+            className="border-t border-line text-[13px] font-medium transition-colors first:border-t-0 even:bg-surface-sunken/40 hover:bg-surface-sunken/70 xl:first:border-t"
           >
             {href ? (
               <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40">

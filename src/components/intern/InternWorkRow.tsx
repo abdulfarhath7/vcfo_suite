@@ -12,7 +12,7 @@ import {
   Undo2,
   Zap,
 } from 'lucide-react';
-import { internKindChipLabel, internToneBadge, KIND_TONE } from '@/components/intern/intern-tones';
+import { internKindChipLabel, internToneBadge, internToneSolid, KIND_TONE } from '@/components/intern/intern-tones';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { InternWorkDenseLayout } from '@/components/intern/InternWorkDenseLayout';
 import { LeadCompanyPill } from '@/components/intern/LeadCompanyChip';
@@ -47,7 +47,7 @@ function InternWorkKindChip({
       className={cn(
         CHIP_CLASS,
         'max-w-full shrink-0 overflow-hidden text-ellipsis',
-        internToneBadge(KIND_TONE[kind] ?? 'info'),
+        internToneSolid(KIND_TONE[kind] ?? 'info'),
         className,
       )}
     >

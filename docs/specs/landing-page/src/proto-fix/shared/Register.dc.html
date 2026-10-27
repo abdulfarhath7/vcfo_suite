@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Registrations and obligations</title>
+<script src="./support.js"></script>
+<script src="./regcat.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+.rg{font-family:Roboto,Public Sans,system-ui,sans-serif;color:#0f2a4a;font-size:13px;display:flex;flex-direction:column;gap:16px}
+.rg-strip{display:flex;flex-wrap:wrap;background:#fff;border:1px solid #e1e7ef;border-radius:10px;overflow:hidden}
+.rg-strip button{flex:1 1 140px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 18px;border:0;border-right:1px solid #e1e7ef;background:#fff;cursor:pointer;font:inherit;color:inherit;text-align:left}
+.rg-strip button:last-child{border-right:0}
+.rg-strip button[aria-pressed="true"]{background:#eef2f8;box-shadow:inset 0 -2px 0 #1b4f94}
+.rg-strip em{font-style:normal;font-size:12px;color:#4b5b70}
+.rg-strip b{font-size:22px;font-weight:600;line-height:1.1}
+.rg-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rg-sel{height:32px;border:1px solid #c9d3df;border-radius:6px;background:#fff;padding:0 10px;font:inherit;color:#0f2a4a}
+.rg-sw{display:inline-flex;padding:2px;border-radius:8px;background:#eef2f7}
+.rg-sw button{border:0;background:none;height:28px;padding:0 12px;border-radius:6px;font:600 12.5px inherit;font-family:inherit;color:#4b5b70;cursor:pointer}
+.rg-sw button[aria-pressed="true"]{background:#fff;color:#1b4f94;box-shadow:0 1px 2px rgba(15,42,74,.12)}
+.rg-kb{margin-left:auto;font-size:11.5px;color:#656f7e}
+.rg-kb kbd{font:500 11px IBM Plex Mono,monospace;border:1px solid #d5dce6;border-radius:4px;padding:0 4px;background:#fff}
+.rg-body{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:1180px){.rg-body{grid-template-columns:minmax(0,1fr) 340px}}
+.rg-card{background:#fff;border:1px solid #e1e7ef;border-radius:10px;overflow:hidden;min-width:0}
+.rg-ch{display:flex;align-items:center;gap:8px;padding:12px 16px}
+.rg-ch h2{margin:0;font-size:14px;font-weight:600}
+.rg-n{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;background:#e8f0fa;color:#1b4f94;font-size:11px;font-weight:600}
+.rg-gh{display:flex;align-items:center;gap:8px;height:34px;padding:0 16px;border-top:1px solid #e1e7ef;background:#f7f9fc;cursor:pointer;font-weight:600;font-size:12.5px;width:100%;border-left:0;border-right:0;border-bottom:0;text-align:left;font-family:inherit;color:inherit}
+.rg-gh .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.rg-gh .cnt{font-weight:500;color:#656f7e}
+.rg-gh .chev{margin-left:auto;transition:transform .2s;color:#656f7e}
+.rg-gh[aria-expanded="false"] .chev{transform:rotate(-90deg)}
+.rg-th{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1.1fr) 120px 110px;gap:12px;padding:7px 16px;background:#eef2f8;color:#1f3b5c;font-size:12px;font-weight:600}
+.rg-tr{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1.1fr) 120px 110px;gap:12px;align-items:center;min-height:40px;padding:4px 16px;border-top:1px solid #eef2f7;color:inherit;text-decoration:none;position:relative}
+.rg-tr:hover{background:#f7f9fc}
+.rg-tr:hover .rg-go{opacity:1}
+.rg-tr:focus-visible{outline:2px solid #1b4f94;outline-offset:-2px}
+.rg-nm{font-weight:600;min-width:0}
+.rg-nm small{display:block;font-weight:400;font-size:11.5px;color:#4b5b70;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rg-mono{font:500 11.5px IBM Plex Mono,monospace;color:#4b5b70;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rg-mut{font-size:12px;color:#4b5b70;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rg-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:112px;height:22px;border-radius:5px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.rg-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.rg-ct{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;font-size:10px;font-weight:600;background:#eef2f7;color:#0f2a4a;flex:none;margin-right:6px}
+.rg-law{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;font:500 11px IBM Plex Mono,monospace}
+.rg-go{position:absolute;right:16px;opacity:0;font-size:12px;color:#1b4f94;font-weight:600}
+.rg-tip{position:relative;cursor:help;border-bottom:1px dashed #a8b4c4}
+.rg-grid{overflow-x:auto}
+.rg-grid table{border-collapse:collapse;width:100%;min-width:760px}
+.rg-grid th{background:#eef2f8;color:#1f3b5c;font-size:12px;font-weight:600;padding:7px 6px;text-align:center}
+.rg-grid th:first-child,.rg-grid td:first-child{text-align:left;padding-left:16px}
+.rg-grid td{border-top:1px solid #eef2f7;padding:5px 4px;height:36px}
+.rg-cell{display:grid;place-items:center;height:26px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;text-decoration:none}
+.rg-rail{display:flex;flex-direction:column;gap:16px;min-width:0}
+.rg-flow{display:flex;align-items:stretch;padding:4px 16px 14px;gap:0}
+.rg-flow div{flex:1;text-align:center;padding:8px 2px;border-radius:6px;background:#f7f9fc;position:relative}
+.rg-flow div + div{margin-left:14px}
+.rg-flow div + div::before{content:"";position:absolute;left:-11px;top:50%;width:8px;height:8px;border-top:1.5px solid #a8b4c4;border-right:1.5px solid #a8b4c4;transform:translateY(-50%) rotate(45deg)}
+.rg-flow b{display:block;font-size:18px;font-weight:600}
+.rg-flow span{font-size:11px;color:#4b5b70}
+.rg-li{display:flex;align-items:center;gap:10px;padding:8px 16px;border-top:1px solid #eef2f7;color:inherit;text-decoration:none}
+.rg-li:hover{background:#f7f9fc}
+.rg-li b{font-weight:600;font-size:12.5px;display:block}
+.rg-li small{font-size:11.5px;color:#4b5b70}
+.rg-li .r{margin-left:auto;font-size:12px;white-space:nowrap}
+.rg-empty{padding:12px 16px 14px;border-top:1px solid #eef2f7;font-size:12.5px;color:#4b5b70}
+.rg-note{padding:10px 16px;border-top:1px solid #eef2f7;font-size:12px;color:#4b5b70;background:#fbfcfe}
+</style>
+</helmet>
+<div class="rg">
+  <div class="rg-strip" role="group" aria-label="Filter by state">
+    <sc-for list="{{strip}}" as="k" hint-placeholder-count="5"><button type="button" aria-pressed="{{k.on}}" onClick="{{k.pick}}"><em>{{k.label}}</em><b style="{{k.st}}">{{k.n}}</b></button></sc-for>
+  </div>
+  <div class="rg-bar">
+    <sc-if value="{{staff}}" hint-placeholder-val="{{false}}"><select class="rg-sel" aria-label="Client" onChange="{{pickClient}}"><sc-for list="{{clientOpts}}" as="o" hint-placeholder-count="9"><option value="{{o.v}}" selected="{{o.sel}}">{{o.t}}</option></sc-for></select></sc-if>
+    <sc-if value="{{hasSwitch}}" hint-placeholder-val="{{true}}"><span class="rg-sw" role="group" aria-label="View"><sc-for list="{{views}}" as="v" hint-placeholder-count="2"><button type="button" aria-pressed="{{v.on}}" onClick="{{v.pick}}">{{v.t}}</button></sc-for></span></sc-if>
+    <sc-if value="{{anyF}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{clearF}}" style="border:0;background:none;color:#1b4f94;font:600 12.5px inherit;font-family:inherit;cursor:pointer">Clear</button></sc-if>
+    <sc-if value="{{staff}}" hint-placeholder-val="{{false}}"><span class="rg-kb"><kbd>↑</kbd> <kbd>↓</kbd> move · <kbd>Enter</kbd> open · <kbd>/</kbd> search</span></sc-if>
+  </div>
+  <div class="rg-body">
+    <div class="rg-card">
+      <div class="rg-ch"><h2>{{title}}</h2><span class="rg-n">{{nShown}}</span><span style="margin-left:auto;font-size:12px;color:#4b5b70">{{sub}}</span></div>
+      <sc-if value="{{showList}}" hint-placeholder-val="{{true}}">
+        <div class="rg-th"><span>{{h1}}</span><span>{{h2}}</span><span>{{h3}}</span><span>Status</span><span>{{h5}}</span></div>
+        <sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+          <button type="button" class="rg-gh" aria-expanded="{{g.open}}" onClick="{{g.tog}}"><span class="dot" style="{{g.dot}}"></span>{{g.t}}<span class="cnt">{{g.n}}</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <sc-if value="{{g.isOpen}}" hint-placeholder-val="{{true}}"><sc-for list="{{g.rows}}" as="r" hint-placeholder-count="4">
+            <a href="#" class="rg-tr" data-pick-item="{{r.pick}}" data-go="{{r.go}}"><span class="rg-nm">{{r.nm}}<small>{{r.why}}</small></span><span class="rg-mut"><span class="{{r.c2cls}}" style="{{r.c2st}}">{{r.c2}}</span></span><span class="{{r.c3cls}}" style="{{r.c3st}}">{{r.c3}}</span><span><span class="rg-pill" style="{{r.ps}}">{{r.pl}}</span></span><span class="rg-mut" style="{{r.ds}}" title="{{r.dtip}}">{{r.d}}</span><span class="rg-go">Open →</span></a>
+          </sc-for></sc-if>
+        </sc-for>
+        <sc-if value="{{noRows}}" hint-placeholder-val="{{false}}"><div class="rg-empty">Nothing in this view. Clear the filter to see everything.</div></sc-if>
+      </sc-if>
+      <sc-if value="{{showGrid}}" hint-placeholder-val="{{false}}">
+        <div class="rg-grid"><table><thead><tr><th>Client</th><sc-for list="{{gridCols}}" as="c" hint-placeholder-count="10"><th>{{c.t}}</th></sc-for></tr></thead>
+          <tbody><sc-for list="{{gridRows}}" as="r" hint-placeholder-count="8"><tr><td><span class="rg-ct" style="{{r.ct}}">{{r.k}}</span><b style="font-weight:600">{{r.name}}</b></td><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="10"><td><a href="#" class="rg-cell" style="{{c.st}}" title="{{c.tip}}" data-pick-item="{{c.pick}}" data-go="{{c.go}}">{{c.t}}</a></td></sc-for></tr></sc-for></tbody></table></div>
+        <div class="rg-note">Granted green, in progress blue, waiting on the client amber, not started grey, not needed hatched.</div>
+      </sc-if>
+    </div>
+    <div class="rg-rail">
+      <section class="rg-card"><div class="rg-ch"><h2>{{flowT}}</h2></div><div class="rg-flow"><sc-for list="{{flow}}" as="f" hint-placeholder-count="4"><div><b>{{f.n}}</b><span>{{f.t}}</span></div></sc-for></div></section>
+      <sc-for list="{{rail}}" as="c" hint-placeholder-count="4">
+        <section class="rg-card"><div class="rg-ch"><h2>{{c.t}}</h2><span class="rg-n">{{c.n}}</span></div>
+          <sc-for list="{{c.items}}" as="i" hint-placeholder-count="3"><a href="#" class="rg-li" data-pick-item="{{i.pick}}" data-go="{{i.go}}"><span style="min-width:0"><b>{{i.t}}</b><small>{{i.s}}</small></span><span class="r" style="{{i.rs}}">{{i.r}}</span></a></sc-for>
+          <sc-if value="{{c.none}}" hint-placeholder-val="{{false}}"><div class="rg-empty">{{c.empty}}</div></sc-if>
+        </section>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["reg","ob"],"default":"reg"},"who":{"editor":"enum","options":["client","staff"],"default":"client"},"$preview":{"width":1200,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const R = window.RC, s = this.state || {}, set = (o) => this.setState(o);
+    const kind = this.props.kind ?? 'reg', staff = (this.props.who ?? 'client') === 'staff', after = R.after();
+    const go = staff ? (kind === 'reg' ? 'lead-registration' : 'lead-obligation') : (kind === 'reg' ? 'registration' : 'obligation');
+    const pill = (c) => 'color:' + c + ';background:color-mix(in srgb,' + c + ' 12%,#fff)';
+    const fil = s.fil || '', cl = s.cl || '', view = s.view || (kind === 'reg' ? 'list' : 'freq'), closed = s.closed || {};
+    const LAWT = { 'GST': ['#e8f0fa', '#1b4f94'], 'Income tax': ['#efeafd', '#5b3fb8'], 'Payroll': ['#e1f3ec', '#0f6e51'], 'MCA / ROC': ['#ffeedc', '#9b3b08'], 'FEMA': ['#ddf3ef', '#0f6b5f'], 'Labour': ['#fde2ec', '#9d174d'] };
+    const CT = { NT: ['#ebe5ff', '#5b21b6'], OL: ['#e0e7ff', '#3730a3'], LA: ['#dcfce7', '#166534'], JB: ['#eef2f7', '#334155'], BR: ['#fde2ec', '#9d174d'], TL: ['#ccf3ec', '#0f5f55'], KH: ['#dbeefe', '#0b5c8f'], HF: ['#fdf0d2', '#8a5a06'] };
+    const ct = (k) => 'background:' + (CT[k] || CT.JB)[0] + ';color:' + (CT[k] || CT.JB)[1];
+    const tog = (id) => () => set({ closed: Object.assign({}, closed, { [id]: !closed[id] }) });
+    let items = [];
+    if (kind === 'reg') {
+      // One row per registration (client) or per client and registration (staff).
+      if (!staff) {
+        R.REG.forEach(r => { const c = R.CLIENT[r.id] || ['none', '', '', 0, '']; let st = c[0], d = c[1], num = c[2];
+          if (!after && st !== 'na') { st = 'none'; d = 'After the certificate'; num = ''; }
+          items.push({ r, k: 'NT', st, d, num, why: st === 'na' ? 'Not needed: ' + c[4].toLowerCase() : 'Applies: ' + c[4] }); });
+      } else {
+        R.STAFF.forEach(([k, name]) => { if (cl && cl !== k) return; R.GRID.forEach(id => { const st = R.staffState(k, id), r = R.reg(id);
+          items.push({ r, k, name, st, d: st === 'done' ? 'Granted' : st === 'wait' ? 'Waiting 4 days' : st === 'run' ? 'Applied' : st === 'na' ? '-' : 'Not started', num: st === 'done' ? (id === 'gst' ? '29AAKC' + k + '…' : 'On file') : '', why: name }); }); });
+      }
+    } else {
+      R.OB.forEach(o => { if (!staff) { let st = o.st; if (!after) st = 'none';
+          items.push({ o, k: 'NT', st, d: after ? o.next : 'After the certificate', last: after ? o.last : '-', why: o.by ? 'Started by ' + R.reg(o.by).name : R.FR[o.fr] + ' · ' + o.due }); }
+        else R.STAFF.forEach(([k, name], ci) => { if (cl && cl !== k) return; if ((ci + o.id.length) % 3 === 1) return;
+          const sts = ['done', 'run', 'wait', 'none', 'bad'], st = sts[(ci * 7 + o.id.length) % 5];
+          items.push({ o, k, name, st, d: o.next.replace('2026', '').replace('2027', '').trim(), last: o.last, why: name }); }); });
+    }
+    const cnt = (f) => items.filter(f).length;
+    const STRIP = kind === 'reg'
+      ? [['done', 'Granted', '#0f6e51'], ['run', 'In progress', '#1b4f94'], ['wait', 'Waiting on client', '#be4400'], ['none', 'Not started', ''], ['ren', 'Renewals in 60 days', '']]
+      : [['bad', 'Overdue', '#b5302a'], ['soon', 'Due in 15 days', '#be4400'], ['wait', 'Waiting on client', '#be4400'], ['done', 'Filed', '#0f6e51'], ['none', 'Upcoming', '']];
+    const soon = (x) => after || staff ? /Nov 2026|^\d+ Nov$/.test(x.d) && x.st !== 'done' : false;
+    const match = (x, f) => f === 'ren' ? !!(x.r && R.RENEW.some(rn => rn[0] === x.r.id)) && x.st === 'done' : f === 'soon' ? soon(x) : x.st === f;
+    const strip = STRIP.map(([f, label, c]) => { const n = cnt(x => match(x, f)); return { label, n, st: n && c ? 'color:' + c : '', on: fil === f ? 'true' : 'false', pick: () => set({ fil: fil === f ? '' : f }) }; });
+    const shown = items.filter(x => (!fil || match(x, fil)) && x.st !== 'na');
+    const na = items.filter(x => x.st === 'na');
+    const rowOf = (x) => {
+      const isReg = kind === 'reg', S = isReg ? R.ST : R.OST, stc = S[x.st] || S.none;
+      return isReg
+        ? { nm: x.r.name, why: staff ? x.name : x.why, c2: x.r.auth, c2cls: '', c2st: '', c3: x.num || x.r.form, c3cls: x.num ? 'rg-mono' : 'rg-mut', c3st: '', pl: stc[0], ps: pill(stc[1]), d: x.d, ds: x.st === 'wait' ? 'color:#be4400;font-weight:600' : '', dtip: '',
+            pick: 'reg|' + x.r.id + '|' + x.k, go }
+        : { nm: x.o.name, why: staff ? x.name : x.why, c2: x.o.law, c2cls: 'rg-law', c2st: (t => 'background:' + t[0] + ';color:' + t[1])(LAWT[R.LAWCAT[x.o.law]] || LAWT.GST), c3: x.last, c3cls: 'rg-mut', c3st: '', pl: stc[0], ps: pill(stc[1]), d: x.d, ds: x.st === 'bad' ? 'color:#b5302a;font-weight:600' : '', dtip: 'Late: ' + x.o.pen,
+            pick: 'ob|' + x.o.id + '|' + x.k, go };
+    };
+    let groups;
+    if (kind === 'reg') {
+      groups = R.CATS.map(([c, t]) => { const l = shown.filter(x => x.r.cat === c); return { id: c, t, l }; });
+      if (staff && na.length && !fil) groups.push({ id: 'na', t: 'Not needed', l: na, isNa: true });
+    } else if (view === 'law') {
+      groups = R.LAWS.map(t => ({ id: t, t, l: shown.filter(x => R.LAWCAT[x.o.law] === t) }));
+    } else {
+      groups = [['m', 'Monthly'], ['q', 'Quarterly'], ['h', 'Half-yearly'], ['a', 'Annual']].map(([f, t]) => ({ id: f, t, l: shown.filter(x => x.o.fr === f) }));
+    }
+    const DOT = { tax: '#1b4f94', labour: '#0f6e51', business: '#be4400', ip: '#5b3fb8', fema: '#0f6b5f', na: '#8593a6', m: '#1b4f94', q: '#5b3fb8', h: '#0f6b5f', a: '#be4400' };
+    groups = groups.filter(g => g.l.length).map(g => ({ t: g.t, n: g.l.length, open: closed[g.id] ? 'false' : 'true', isOpen: !closed[g.id], tog: tog(g.id),
+      dot: 'background:' + (DOT[g.id] || (LAWT[g.id] || ['', '#1b4f94'])[1]),
+      rows: g.l.map(x => { const r = rowOf(x); if (g.isNa) { r.pl = 'Not needed'; r.ps = pill('#8593a6'); r.d = 'Changed by Pranay'; r.why = (x.name || '') + ' · No contract labour yet'; } return r; }) }));
+    // Staff grid view: clients by registration type.
+    const CELL = { done: ['#0f6e51', '#fff', '✓'], run: ['#1b4f94', '#fff', '•••'], wait: ['#be4400', '#fff', '!'], none: ['#e6eaf0', '#4b5b70', ''], na: ['#fff', '#a8b4c4', ''] };
+    const gridCols = R.GRID.map(id => ({ t: { gst: 'GST', lut: 'LUT', epf: 'EPF', esi: 'ESI', pt: 'PT', se: 'Shops', msme: 'MSME', iec: 'IEC', tm: 'Trademark', fcgpr: 'FC-GPR' }[id] }));
+    const gridRows = R.STAFF.filter(([k]) => !cl || cl === k).map(([k, name]) => ({ k, name, ct: ct(k), cells: R.GRID.map(id => { const st = R.staffState(k, id), c = CELL[st];
+      return { t: c[2], tip: name + ' · ' + R.reg(id).name + ' · ' + R.ST[st][0], pick: 'reg|' + id + '|' + k, go,
+        st: 'background:' + c[0] + ';color:' + c[1] + (st === 'na' ? ';box-shadow:inset 0 0 0 1px #d5dce6;background-image:repeating-linear-gradient(45deg,transparent 0 4px,#eef2f7 4px 5px)' : '') }; }) }));
+    // Right rail.
+    const it = (x) => ({ pick: (kind === 'reg' ? 'reg|' + x.r.id : 'ob|' + x.o.id) + '|' + x.k, go });
+    let flowT, flow, rail;
+    if (kind === 'reg') {
+      flowT = 'Progress';
+      const live = items.filter(x => x.st !== 'na');
+      flow = [['Documents', live.filter(x => x.st === 'wait').length], ['Application', live.filter(x => x.st === 'run').length], ['Authority review', staff ? 3 : (after ? 2 : 0)], ['Granted', live.filter(x => x.st === 'done').length]].map(([t, n]) => ({ t, n }));
+      const ren = R.RENEW.map(([id, t, d]) => ({ t, s: R.reg(id).auth, r: d, rs: /Dec 2026/.test(d) ? 'color:#be4400;font-weight:600' : '', pick: 'reg|' + id + '|NT', go }));
+      const wait = live.filter(x => x.st === 'wait').map(x => Object.assign(it(x), { t: x.r.name, s: staff ? x.name : R.reg(x.r.id).docs[0], r: staff ? '4 days' : 'Upload', rs: 'color:#be4400;font-weight:600' }));
+      const rec = live.filter(x => x.st === 'done').slice(0, 4).map(x => Object.assign(it(x), { t: x.r.name, s: (staff ? x.name + ' · ' : '') + (x.num || 'Certificate on file'), r: staff ? '' : 'Certificate', rs: 'color:#1b4f94;font-weight:600' }));
+      const nxt = live.filter(x => x.st === 'none').slice(0, 4).map(x => Object.assign(it(x), { t: x.r.name, s: staff ? x.name : x.why, r: staff ? '' : x.d, rs: '' }));
+      rail = [['Renewals and expiry', ren, 'No renewals in the next year.'], ['Waiting on client', wait, 'Nothing is waiting on the client.'], ['Recently granted', rec, 'Nothing granted yet.'], ['Next to start', nxt, 'Everything has started.']];
+      if (!after && !staff) rail[0][1] = [];
+    } else {
+      flowT = 'This month';
+      flow = [['Data from client', cnt(x => x.st === 'wait')], ['Prepared', cnt(x => x.st === 'run')], ['Filed', cnt(x => x.st === 'done')], ['Acknowledged', Math.max(0, cnt(x => x.st === 'done') - 1)]].map(([t, n]) => ({ t, n }));
+      const due = items.filter(x => soon(x)).slice(0, 5).map(x => Object.assign(it(x), { t: x.o.name, s: staff ? x.name : x.o.law, r: x.d, rs: x.st === 'bad' ? 'color:#b5302a;font-weight:600' : '' }));
+      const wait = items.filter(x => x.st === 'wait').slice(0, 4).map(x => Object.assign(it(x), { t: x.o.name, s: staff ? x.name : x.o.from[0], r: staff ? '3 days' : 'Upload', rs: 'color:#be4400;font-weight:600' }));
+      const filed = items.filter(x => x.st === 'done').slice(0, 4).map(x => Object.assign(it(x), { t: x.o.name, s: staff ? x.name : x.o.sbc[0].join(' '), r: x.last, rs: '' }));
+      rail = [['Due in the next 15 days', due, after || staff ? 'Nothing due in the next 15 days.' : 'Filings begin after the certificate.'], ['Waiting on client', wait, 'Nothing is waiting on the client.'], ['Filed recently', filed, 'Nothing filed yet.']];
+    }
+    rail = rail.map(([t, l, empty]) => ({ t, n: l.length, items: l.slice(0, 5), none: l.length === 0, empty }));
+    const clientOpts = [{ v: '', t: 'All my clients', sel: !cl }].concat(R.STAFF.map(([k, n]) => ({ v: k, t: n, sel: cl === k })));
+    const views = kind === 'reg' ? [['list', 'List'], ['grid', 'Grid']] : [['freq', 'By frequency'], ['law', 'By law']];
+    return { staff, strip, groups, noRows: groups.length === 0, nShown: shown.length,
+      title: kind === 'reg' ? (staff ? 'Registrations' : 'Your registrations') : (staff ? 'Obligations' : 'Your obligations'),
+      sub: kind === 'reg' ? (staff ? (cl ? '' : R.STAFF.length + ' clients') : (after ? 'Set from your company questionnaire' : 'SBC starts these the day the certificate arrives')) : (after || staff ? 'Started by your registrations' : 'Filings begin after the certificate'),
+      h1: kind === 'reg' ? 'Registration' : 'Obligation', h2: kind === 'reg' ? 'Authority' : 'Law', h3: kind === 'reg' ? 'Number' : 'Last filed', h5: kind === 'reg' ? 'Date' : 'Next due',
+      showList: !(kind === 'reg' && staff && view === 'grid'), showGrid: kind === 'reg' && staff && view === 'grid', gridCols, gridRows,
+      hasSwitch: staff || kind === 'ob', views: views.filter(v => staff || kind === 'ob').map(([v, t]) => ({ t, on: view === v ? 'true' : 'false', pick: () => set({ view: v }) })),
+      clientOpts, pickClient: (e) => set({ cl: e && e.target ? e.target.value : '' }), anyF: !!(fil || cl), clearF: () => set({ fil: '', cl: '' }),
+      flowT, flow, rail };
+  }
+}
+</script>
+</body>
+</html>

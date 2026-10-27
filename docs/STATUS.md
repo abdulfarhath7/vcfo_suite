@@ -36,6 +36,7 @@ About 85 source files carry the design-system work described in `docs/design/BRI
 | `scripts/design-tokens-css.mjs`, `scripts/design-tokens-check.mjs` | Keep and commit. They generate the token block in `app/globals.css` and gate contrast. |
 | `scripts/seed-demo-extras.ts` | Keep and commit together with `scripts/seed-demo.ts`, which imports it. |
 | `.claude/launch.json` | Keep untracked or commit; it only tells the Claude Code desk how to start `npm run dev`. `.claude/settings.local.json` is now gitignored. |
+| `docs/specs/landing-page/` (landing page prototype: `src/` template, images, fonts and build script, README) | Keep. Built 2026-10-22 for CEO review; rebuild with `node docs/specs/landing-page/src/build.mjs`. It also writes `dist/vcfo-suite.html`, the 13 MB merged landing plus live prototype, which is gitignored build output (the prototype source stays in `~/Documents/reference/vcfo-suite/`: the owner's 23 Oct `vcfo-dashboard-2026-10-23.html` untouched, v10 written from it by `src/proto-fix/patch.mjs` with the design-system fixes in `PROTOTYPE-AUDIT.md`, including the new Manager portal). The `landing` entry in `.claude/launch.json` serves the folder on port 8788. |
 | `graphify-out/` (42MB) | Now gitignored. It is generated output of the graphify skill and is rebuilt with `/graphify`. |
 
 ## What the 2026-10-22 tidy-up did

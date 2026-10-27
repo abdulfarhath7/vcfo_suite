@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+.pf{font-family:Roboto,Public Sans,system-ui,sans-serif;color:#0f2a4a;font-size:13px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:900px){.pf{grid-template-columns:220px minmax(0,1fr)}}
+.pf-nav{display:flex;flex-direction:column;gap:2px;background:#fff;border:1px solid #e1e7ef;border-radius:10px;padding:8px;position:sticky;top:12px}
+.pf-who{display:flex;align-items:center;gap:10px;padding:8px 8px 12px;border-bottom:1px solid #eef2f7;margin-bottom:6px}
+.pf-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#1b3049;color:#fff;font-weight:600;flex:none}
+.pf-who b{display:block;font-size:14px;font-weight:600}
+.pf-who small{font-size:12px;color:#4b5b70}
+.pf-nav button{display:flex;align-items:center;height:34px;padding:0 10px;border:0;border-radius:6px;background:none;font:500 13px inherit;font-family:inherit;color:#24364d;cursor:pointer;text-align:left}
+.pf-nav button[aria-current="true"]{background:#eef2f8;color:#1b4f94;font-weight:600;box-shadow:inset 3px 0 0 #1b4f94}
+.pf-nav button:focus-visible{outline:2px solid #1b4f94;outline-offset:-2px}
+.pf-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.pf-card{background:#fff;border:1px solid #e1e7ef;border-radius:10px;overflow:hidden}
+.pf-ch{padding:12px 16px 4px}
+.pf-ch h2{margin:0;font-size:15px;font-weight:600}
+.pf-ch p{margin:4px 0 0;font-size:12.5px;color:#4b5b70}
+.pf-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:center;padding:10px 16px;border-top:1px solid #eef2f7}
+.pf-row:first-of-type{border-top:0}
+.pf-row label,.pf-row .k{font-weight:500}
+.pf-row small{display:block;font-weight:400;font-size:11.5px;color:#4b5b70}
+.pf-row input[type=text],.pf-row select{height:32px;border:1px solid #c9d3df;border-radius:6px;padding:0 10px;font:inherit;color:#0f2a4a;width:100%;box-sizing:border-box;background:#fff}
+.pf-tg{justify-self:start;position:relative;width:36px;height:20px;appearance:none;-webkit-appearance:none;border-radius:999px;background:#c9d3df;cursor:pointer;transition:background .15s;margin:0}
+.pf-tg::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.pf-tg:checked{background:#1b4f94}
+.pf-tg:checked::after{transform:translateX(16px)}
+.pf-tg:focus-visible{outline:2px solid #1b4f94;outline-offset:2px}
+.pf-chs{display:flex;gap:6px;flex-wrap:wrap}
+.pf-chs label{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid #c9d3df;border-radius:999px;font-size:12px;cursor:pointer;font-weight:500}
+.pf-chs input{margin:0;accent-color:#1b4f94}
+.pf-seg{display:inline-flex;padding:2px;border-radius:8px;background:#eef2f7;justify-self:start}
+.pf-seg button{border:0;background:none;height:28px;padding:0 12px;border-radius:6px;font:600 12px inherit;font-family:inherit;color:#4b5b70;cursor:pointer}
+.pf-seg button[aria-pressed="true"]{background:#fff;color:#1b4f94;box-shadow:0 1px 2px rgba(15,42,74,.12)}
+.pf-ok{display:inline-flex;align-items:center;gap:6px;color:#0f6e51;font-weight:600}
+.pf-ok::before{content:"";width:7px;height:7px;border-radius:50%;background:#0f6e51}
+.pf-b{justify-self:start;height:30px;padding:0 12px;border-radius:6px;border:1px solid #c9d3df;background:#fff;color:#0f2a4a;font:600 12.5px inherit;font-family:inherit;cursor:pointer}
+.pf-note{padding:10px 16px 14px;font-size:12px;color:#4b5b70;border-top:1px solid #eef2f7;background:#fbfcfe}
+.pf-mono{font:500 12px IBM Plex Mono,monospace}
+.pf-saved{font-size:12px;color:#0f6e51;padding:0 16px 10px}
+@media (prefers-reduced-motion:reduce){.pf-tg,.pf-tg::after{transition:none}}
+</style>
+</helmet>
+<div class="pf">
+  <nav class="pf-nav" aria-label="Profile sections">
+    <div class="pf-who"><span class="pf-av">{{ini}}</span><span><b>{{name}}</b><small>{{role}}</small></span></div>
+    <sc-for list="{{secs}}" as="x" hint-placeholder-count="6"><button type="button" aria-current="{{x.on}}" onClick="{{x.pick}}">{{x.t}}</button></sc-for>
+  </nav>
+  <div class="pf-main">
+    <section class="pf-card">
+      <div class="pf-ch"><h2>{{secT}}</h2><p>{{secP}}</p></div>
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+        <div class="pf-row"><span class="k">{{r.k}}<small>{{r.d}}</small></span>
+          <sc-if value="{{r.isText}}" hint-placeholder-val="{{false}}"><input type="text" value="{{r.v}}" aria-label="{{r.k}}" onChange="{{r.save}}"></sc-if>
+          <sc-if value="{{r.isTog}}" hint-placeholder-val="{{false}}"><input type="checkbox" class="pf-tg" checked="{{r.on}}" aria-label="{{r.k}}" onChange="{{r.save}}"></sc-if>
+          <sc-if value="{{r.isChips}}" hint-placeholder-val="{{false}}"><span class="pf-chs"><sc-for list="{{r.opts}}" as="o" hint-placeholder-count="4"><label><input type="checkbox" checked="{{o.on}}" onChange="{{r.save}}">{{o.t}}</label></sc-for></span></sc-if>
+          <sc-if value="{{r.isSeg}}" hint-placeholder-val="{{false}}"><span class="pf-seg" role="group" aria-label="{{r.k}}"><sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}">{{o.t}}</button></sc-for></span></sc-if>
+          <sc-if value="{{r.isInfo}}" hint-placeholder-val="{{false}}"><span class="{{r.cls}}">{{r.v}}</span></sc-if>
+          <sc-if value="{{r.isBtn}}" hint-placeholder-val="{{false}}"><button type="button" class="pf-b" onClick="{{r.save}}">{{r.v}}</button></sc-if>
+        </div>
+      </sc-for>
+      <sc-if value="{{saved}}" hint-placeholder-val="{{false}}"><div class="pf-saved">Saved</div></sc-if>
+      <sc-if value="{{hasNote}}" hint-placeholder-val="{{false}}"><div class="pf-note">{{note}}</div></sc-if>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"who":{"editor":"enum","options":["client","lead","mgr","admin","super","dev"],"default":"lead"},"$preview":{"width":1100,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {}, set = (o) => this.setState(o), who = this.props.who ?? 'lead';
+    const toast = (t) => { if (window.vcfoToast) window.vcfoToast(t); };
+    const ME = { client: ['Rohan Kumar', 'RK', 'Director · Northwind', 'Director', 'rohan@northwind.example'], lead: ['Bharath', 'BH', 'Project lead · SBC', 'Project lead', 'bharath@sbc.example'],
+      mgr: ['Pranay', 'PN', 'Manager · SBC', 'Manager', 'pranay@sbc.example'], admin: ['Krishna', 'KR', 'Admin · SBC', 'Admin', 'krishna@sbc.example'],
+      super: ['Mithilesh', 'MI', 'Super admin · SBC', 'Partner', 'mithilesh@sbc.example'], dev: ['Farhath', 'FA', 'Developer · SBC', 'Developer', 'farhath@sbc.example'] }[who];
+    const staff = who !== 'client';
+    const SECS = [['about', 'About you'], ['security', 'Sign-in and security'], ['notify', 'Notifications'], ['email', 'Email'], ['look', 'Appearance']].filter(([k]) => !(k === 'email' && (who === 'client' || who === 'dev')));
+    if (who === 'client') SECS.push(['company', 'Company']);
+    const sec = s.sec || 'about', tick = () => { set({ saved: true }); setTimeout(() => this.setState({ saved: false }), 1500); };
+    const T = (k, d, v) => ({ k, d, v, isText: true, save: tick });
+    const G = (k, d, on) => ({ k, d, on, isTog: true, save: tick });
+    const C = (k, d, opts) => ({ k, d, opts: opts.map(([t, on]) => ({ t, on })), isChips: true, save: tick });
+    const SG = (k, d, key, opts, def) => ({ k, d, isSeg: true, opts: opts.map(t => ({ t, on: (s[key] || def) === t ? 'true' : 'false', pick: () => { set({ [key]: t }); tick(); } })) });
+    const I = (k, d, v, cls) => ({ k, d, v, isInfo: true, cls: cls || '' });
+    const B = (k, d, v, msg) => ({ k, d, v, isBtn: true, save: () => toast(msg) });
+    let rows = [], secP = '', note = '';
+    if (sec === 'about') {
+      rows = [T('Name', '', ME[0]), T('Designation', staff ? 'Shown on your emails and in the client portal' : 'Your role in the company', ME[3])];
+      if (staff && who !== 'dev') rows.push(T('Membership number', 'ICAI or ICSI', who === 'lead' ? 'ICAI 245118' : who === 'mgr' ? 'ICAI 198433' : 'ICAI 102774'));
+      rows.push(T('Mobile', 'For sign-in codes and WhatsApp', '+91 98450 12345'), I('Email', 'Your sign-in address', ME[4], 'pf-mono'), B('Photo', '', 'Change photo', 'Opens the photo picker'));
+      secP = 'How you appear to the firm and to clients.';
+    } else if (sec === 'security') {
+      rows = staff ? [I('Microsoft sign-in', 'SBC accounts sign in with Microsoft 365', 'Connected', 'pf-ok'), G('Two-step verification', 'A code on your phone at each new sign-in', true), I('Devices signed in', '', 'This laptop · Chrome on Android', ''), B('Sign out other devices', '', 'Sign out others', 'Signed out of the other device')]
+        : [B('Password', 'Last changed 12 Sep 2026', 'Change password', 'Opens the change password form'), G('Two-step verification', 'A code on your phone at each new sign-in', true), I('Devices signed in', '', 'This laptop · iPhone', ''), B('Sign out other devices', '', 'Sign out others', 'Signed out of the other device')];
+      if (who === 'dev') rows.push(B('API tokens', '2 active · rotate every 90 days', 'Manage tokens', 'Opens Access › API keys'));
+      secP = 'Keep your account safe.';
+    } else if (sec === 'notify') {
+      const ch = staff ? [['In-app', true], ['Email', true], ['Teams', true], ['WhatsApp', who !== 'dev']] : [['In-app', true], ['Email', true], ['WhatsApp', true]];
+      rows = [C('Channels', 'Where VCFO reaches you', ch), T('Quiet hours', 'No WhatsApp or Teams messages in this window', '9 pm to 8 am')];
+      if (!staff) rows.push(SG('Remind me before a due date', '', 'remind', ['7 days', '3 days', '1 day'], '3 days'));
+      if (staff && who !== 'dev') rows.push(T('Daily digest', 'One summary instead of many alerts', '8:30 am'));
+      if (who === 'mgr') rows.push(G('Approvals waiting', 'When a lead asks for your approval', true));
+      if (who === 'admin' || who === 'super') rows.push(G('Escalations', 'When a manager escalates to you', true));
+      if (who === 'super') rows.push(G('Monthly partner report', 'On the 1st at 7 am', true));
+      if (who === 'dev') rows.push(G('Incidents and failed jobs', 'Straight away, any hour', true));
+      secP = 'Registration and obligation updates go on every channel you turn on.';
+    } else if (sec === 'email') {
+      rows = [I('Outlook', 'Mail you send from VCFO goes from your mailbox', ME[4] + ' · connected', 'pf-ok'), I('Signature', 'Added by the firm’s server-side signature tool', 'From Outlook · server-side signature on', ''), B('Reconnect', '', 'Reconnect Outlook', 'Opens Microsoft sign-in')];
+      note = 'VCFO does not add its own signature. Your Outlook signature, with the SBC footer, is stamped on every mail on the way out.';
+      secP = 'How mail you write in VCFO is sent.';
+    } else if (sec === 'look') {
+      rows = [SG('Theme', '', 'theme', ['System', 'Light', 'Dark'], 'System'), SG('Density', 'Compact fits more rows on the screen', 'density', ['Comfortable', 'Compact'], 'Comfortable'), SG('Text size', '', 'size', ['Small', 'Default', 'Large'], 'Default')];
+      if (!staff) rows.splice(1, 1);
+      secP = 'Only on this device.';
+    } else if (sec === 'company') {
+      rows = [I('Company', '', 'Northwind Technologies India Pvt Ltd', ''), I('People who can sign in', '', 'Rohan Kumar (director) · Mei Tanaka (CFO)', ''), B('Add a person', 'They get an invite by email', 'Invite', 'Invite sent'),
+        I('Employees', 'From the questionnaire', '12', ''), I('State', 'From the questionnaire', 'Karnataka', ''), I('Exports', 'From the questionnaire', 'Yes · IT services to the parent', ''), B('Something changed?', 'SBC updates the questionnaire and tells you what changes', 'Ask for a change', 'Request sent to Bharath and Pranay')];
+      note = 'These answers decide which registrations and obligations apply to Northwind. When they change, new items are added and everyone on the project is told.';
+      secP = 'Your company and who can use this portal.';
+    }
+    return { name: ME[0], ini: ME[1], role: ME[2], secs: SECS.map(([k, t]) => ({ t, on: sec === k ? 'true' : 'false', pick: () => set({ sec: k }) })),
+      secT: (SECS.find(x => x[0] === sec) || SECS[0])[1], secP, rows, saved: !!s.saved, hasNote: !!note, note };
+  }
+}
+</script>
+</body>
+</html>
