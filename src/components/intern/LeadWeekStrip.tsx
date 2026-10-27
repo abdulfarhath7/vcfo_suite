@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 const LEGEND: { kind: WeekChipKind; label: string; swatch: string }[] = [
   { kind: 'filing', label: 'Statutory filing', swatch: 'bg-danger' },
   { kind: 'step', label: 'Step deadline', swatch: 'bg-brand' },
-  { kind: 'nudge', label: 'Nudge due', swatch: 'bg-warning' },
+  { kind: 'nudge', label: 'Reminder due', swatch: 'bg-warning' },
   { kind: 'done', label: 'Done', swatch: 'bg-positive' },
 ];
 
