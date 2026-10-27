@@ -1,7 +1,7 @@
 {
   "name": "VCFO Suite",
-  "version": 1.1,
-  "generated": "2026-10-21",
+  "version": 1.2,
+  "generated": "2026-10-27",
   "note": "Hex is the design value. oklch is the channel triplet for app/globals.css (oklch(var(--token) / <alpha-value>)). {ink} means the token aliases ink.",
   "color": {
     "themes": [
@@ -18,61 +18,73 @@
       {
         "name": "surface",
         "value": {
-          "light": "#f7f9fc",
-          "dark": "#0b1521"
+          "light": "#f3f5f9",
+          "dark": "#111821"
         },
         "usage": "Page canvas behind everything. Cool off-white; deep navy in dark. Never pure white, never pure black.",
         "oklch": {
-          "light": "98.1% 0.005 258",
-          "dark": "19.3% 0.029 254"
+          "light": "97.0% 0.006 265",
+          "dark": "20.6% 0.021 255"
         }
       },
       {
         "name": "surface-raised",
         "value": {
           "light": "#ffffff",
-          "dark": "#111d2c"
+          "dark": "#18202b"
         },
         "usage": "Cards, tables, dialogs, popovers, the top bar. Sits on surface with a line hairline and shadow-card.",
         "oklch": {
           "light": "100.0% 0.000 0",
-          "dark": "22.8% 0.034 255"
+          "dark": "24.1% 0.024 256"
         }
       },
       {
         "name": "surface-sunken",
         "value": {
-          "light": "#eef2f7",
-          "dark": "#070e18"
+          "light": "#f5f6f8",
+          "dark": "#1f2935"
         },
         "usage": "Wells: table header rows, input backgrounds on raised cards, empty-state grounds, skeleton blocks.",
         "oklch": {
-          "light": "96.0% 0.008 254",
-          "dark": "16.2% 0.024 256"
+          "light": "97.3% 0.003 265",
+          "dark": "27.7% 0.026 253"
         }
       },
       {
         "name": "line",
         "value": {
-          "light": "#e1e7ef",
-          "dark": "#1f2d40"
+          "light": "#e3e6eb",
+          "dark": "#2c3745"
         },
         "usage": "1px hairline between rows and around cards. Decorative; never the only edge of a control.",
         "oklch": {
-          "light": "92.6% 0.013 256",
-          "dark": "29.4% 0.040 256"
+          "light": "92.4% 0.008 261",
+          "dark": "33.3% 0.029 255"
+        }
+      },
+      {
+        "name": "line-soft",
+        "value": {
+          "light": "#eef0f3",
+          "dark": "#263140"
+        },
+        "usage": "Hairlines between rows inside a card and between list items. Lighter than line, which frames cards and grid cells.",
+        "oklch": {
+          "light": "95.4% 0.005 258",
+          "dark": "31.0% 0.031 256"
         }
       },
       {
         "name": "line-strong",
         "value": {
           "light": "#7a8ca2",
-          "dark": "#56698a"
+          "dark": "#596c8c"
         },
         "usage": "Borders of inputs, checkboxes and secondary buttons. Holds 3:1 on surface and surface-raised.",
         "oklch": {
           "light": "63.3% 0.039 254",
-          "dark": "51.9% 0.057 261"
+          "dark": "52.9% 0.056 261"
         }
       },
       {
@@ -86,85 +98,121 @@
       {
         "name": "ink",
         "value": {
-          "light": "#0f2a4a",
-          "dark": "#e9eff6"
+          "light": "#16212f",
+          "dark": "#e6eaf0"
         },
         "usage": "Primary text and figures on every surface and every -soft ground. Navy, never black.",
         "oklch": {
-          "light": "28.3% 0.068 254",
-          "dark": "95.0% 0.011 252"
+          "light": "24.4% 0.031 255",
+          "dark": "93.6% 0.009 258"
         }
       },
       {
         "name": "ink-muted",
         "value": {
-          "light": "#4b5b70",
-          "dark": "#a5b4c6"
+          "light": "#626d7b",
+          "dark": "#9aa7b8"
         },
         "usage": "Secondary text: meta, captions, helper text, table head text. 4.5:1 on every ground it is used on.",
         "oklch": {
-          "light": "46.6% 0.040 255",
-          "dark": "76.4% 0.031 253"
+          "light": "53.0% 0.026 255",
+          "dark": "72.4% 0.029 255"
         }
       },
       {
         "name": "ink-faint",
         "value": {
-          "light": "#7b8a9e",
-          "dark": "#6f8097"
+          "light": "#838c99",
+          "dark": "#6f7c8d"
         },
         "usage": "Placeholders, disabled labels, locked steps, the Other series. 3:1 only; never body text.",
         "oklch": {
-          "light": "62.8% 0.035 256",
-          "dark": "59.4% 0.041 256"
+          "light": "63.7% 0.022 257",
+          "dark": "58.2% 0.030 255"
         }
       },
       {
         "name": "brand",
         "value": {
-          "light": "#1b4f94",
-          "dark": "#6aa2e8"
+          "light": "#2563a8",
+          "dark": "#6fa3e0"
         },
         "usage": "The one action colour: primary buttons, links, active navigation, selection, progress, the current step. Text-safe in both themes.",
         "oklch": {
-          "light": "43.3% 0.126 257",
-          "dark": "70.3% 0.119 255"
+          "light": "49.6% 0.127 254",
+          "dark": "70.4% 0.106 253"
         }
       },
       {
         "name": "brand-strong",
         "value": {
-          "light": "#163f78",
-          "dark": "#86b6ef"
+          "light": "#1d4f87",
+          "dark": "#8fb8e8"
         },
         "usage": "Hover and pressed state of brand; link hover.",
         "oklch": {
-          "light": "37.3% 0.108 258",
-          "dark": "76.4% 0.097 253"
+          "light": "42.4% 0.107 254",
+          "dark": "77.1% 0.082 253"
         }
       },
       {
         "name": "brand-soft",
         "value": {
-          "light": "#e8f0fa",
-          "dark": "#1a3654"
+          "light": "#e6effa",
+          "dark": "#263548"
         },
         "usage": "Selected rows, the current step ground, active nav ground, the brand wash behind a callout.",
         "oklch": {
-          "light": "95.2% 0.016 254",
-          "dark": "32.7% 0.064 252"
+          "light": "94.9% 0.018 253",
+          "dark": "32.5% 0.039 255"
         }
       },
       {
         "name": "on-brand",
         "value": {
           "light": "#ffffff",
-          "dark": "#0b1521"
+          "dark": "#111821"
         },
         "usage": "Text and icons on a brand fill. White in light; navy on the lighter dark-mode blue.",
         "oklch": {
           "light": "100.0% 0.000 0",
-          "dark": "19.3% 0.029 254"
+          "dark": "20.6% 0.021 255"
+        }
+      },
+      {
+        "name": "navy",
+        "value": {
+          "light": "#15263b",
+          "dark": "#15263b"
+        },
+        "usage": "The one main-button fill (one per card), the picked tab, the greeting band and e-Filing table heads. Same in both themes.",
+        "oklch": {
+          "light": "26.5% 0.046 254",
+          "dark": "26.5% 0.046 254"
+        }
+      },
+      {
+        "name": "navy-hover",
+        "value": {
+          "light": "#1b3049",
+          "dark": "#1b3049"
+        },
+        "usage": "Hover and pressed state of navy fills.",
+        "oklch": {
+          "light": "30.5% 0.053 254",
+          "dark": "30.5% 0.053 254"
+        }
+      },
+      {
+        "name": "on-navy",
+        "value": {
+          "light": "#ffffff",
+          "dark": "#ffffff"
+        },
+        "usage": "Text and icons on a navy fill.",
+        "oklch": {
+          "light": "100.0% 0.000 0",
+          "dark": "100.0% 0.000 0"
         }
       },
       {
@@ -182,13 +230,13 @@
       {
         "name": "highlight-bright",
         "value": {
-          "light": "#e07a1f",
-          "dark": "#f08a3a"
+          "light": "#df752d",
+          "dark": "#e9792f"
         },
         "usage": "Orange for marks with no small text: a 3px top edge, a dot beside a label. 3:1 on surface-raised.",
         "oklch": {
-          "light": "68.1% 0.157 56",
-          "dark": "73.0% 0.154 55"
+          "light": "67.2% 0.155 51",
+          "dark": "69.3% 0.161 50"
         }
       },
       {
@@ -206,121 +254,181 @@
       {
         "name": "positive",
         "value": {
-          "light": "#0f6e51",
-          "dark": "#4fc99a"
+          "light": "#1c7a51",
+          "dark": "#8fdcb4"
         },
         "usage": "Done, filed, paid, on track. Text-safe on surfaces and on positive-soft. Always with a word.",
         "oklch": {
-          "light": "47.9% 0.095 166",
-          "dark": "75.5% 0.129 164"
+          "light": "51.6% 0.107 159",
+          "dark": "83.3% 0.095 161"
         }
       },
       {
         "name": "positive-soft",
         "value": {
-          "light": "#e1f3ec",
-          "dark": "#12392d"
+          "light": "#e2f3ea",
+          "dark": "#2b3e41"
         },
         "usage": "Ground of positive chips and compare-table rows.",
         "oklch": {
-          "light": "94.9% 0.021 171",
-          "dark": "31.3% 0.049 170"
+          "light": "94.9% 0.022 163",
+          "dark": "34.9% 0.025 208"
+        }
+      },
+      {
+        "name": "positive-mid",
+        "value": {
+          "light": "#46a87a",
+          "dark": "#46a87a"
+        },
+        "usage": "Bar and dot fill for done or filed. Marks only, never text.",
+        "oklch": {
+          "light": "66.1% 0.116 160",
+          "dark": "66.1% 0.116 160"
         }
       },
       {
         "name": "warning",
         "value": {
-          "light": "#be4400",
-          "dark": "#f08a3a"
+          "light": "#a05d00",
+          "dark": "#f2c27a"
         },
         "usage": "Due soon, waiting on someone, at risk. The prototype orange: a solid chip with on-status text, or text on a surface. Always with a word.",
         "oklch": {
-          "light": "55.0% 0.169 41",
-          "dark": "73.0% 0.154 55"
+          "light": "54.3% 0.123 64",
+          "dark": "84.1% 0.105 77"
         }
       },
       {
         "name": "warning-soft",
         "value": {
-          "light": "#ffeedc",
-          "dark": "#3d2410"
+          "light": "#fcefd8",
+          "dark": "#3b3a38"
         },
         "usage": "Ground of warning chips and the changed rows of a compare table.",
         "oklch": {
-          "light": "95.8% 0.030 69",
-          "dark": "28.8% 0.050 58"
+          "light": "95.6% 0.033 82",
+          "dark": "34.9% 0.004 85"
+        }
+      },
+      {
+        "name": "warning-mid",
+        "value": {
+          "light": "#e3a040",
+          "dark": "#e3a040"
+        },
+        "usage": "Bar and dot fill for due soon or with the client. Marks only, never text.",
+        "oklch": {
+          "light": "75.4% 0.135 72",
+          "dark": "75.4% 0.135 72"
         }
       },
       {
         "name": "danger",
         "value": {
-          "light": "#b5302a",
-          "dark": "#f27b72"
+          "light": "#be3434",
+          "dark": "#f29b9b"
         },
         "usage": "Overdue, failed, rejected, destructive actions. Always with a word.",
         "oklch": {
-          "light": "51.5% 0.171 28",
-          "dark": "71.7% 0.148 26"
+          "light": "53.6% 0.175 25",
+          "dark": "77.7% 0.105 20"
         }
       },
       {
         "name": "danger-soft",
         "value": {
-          "light": "#fbe7e5",
-          "dark": "#421a16"
+          "light": "#fbe6e6",
+          "dark": "#3b343d"
         },
         "usage": "Ground of danger chips and removed rows.",
         "oklch": {
-          "light": "94.3% 0.022 24",
-          "dark": "27.7% 0.063 28"
+          "light": "94.2% 0.023 18",
+          "dark": "33.6% 0.018 319"
+        }
+      },
+      {
+        "name": "danger-mid",
+        "value": {
+          "light": "#dd6262",
+          "dark": "#dd6262"
+        },
+        "usage": "Bar and dot fill for overdue or failed. Marks only, never text.",
+        "oklch": {
+          "light": "64.8% 0.155 22",
+          "dark": "64.8% 0.155 22"
         }
       },
       {
         "name": "info",
         "value": {
-          "light": "#0f6e8c",
-          "dark": "#5cc0dc"
+          "light": "#0f7880",
+          "dark": "#7fd0d6"
         },
         "usage": "Notes, internal-only bands, neutral callouts. Teal, so it never reads as the brand.",
         "oklch": {
-          "light": "50.2% 0.092 226",
-          "dark": "75.9% 0.101 219"
+          "light": "52.3% 0.086 203",
+          "dark": "80.8% 0.080 202"
         }
       },
       {
         "name": "info-soft",
         "value": {
-          "light": "#e2f1f6",
-          "dark": "#10343f"
+          "light": "#e0f3f4",
+          "dark": "#283c46"
         },
         "usage": "Ground of info callouts and the lock-marked internal band.",
         "oklch": {
-          "light": "94.8% 0.017 220",
-          "dark": "30.5% 0.045 221"
+          "light": "95.0% 0.020 201",
+          "dark": "34.4% 0.031 230"
         }
       },
       {
         "name": "upcoming",
         "value": {
-          "light": "#656f7e",
-          "dark": "#7d8a9c"
+          "light": "#56627a",
+          "dark": "#9aa7b8"
         },
         "usage": "The fifth state: not started, upcoming, queued. A solid chip with on-status text, or a grey mark. Not for prose.",
         "oklch": {
-          "light": "53.9% 0.026 258",
-          "dark": "62.9% 0.031 257"
+          "light": "49.5% 0.041 264",
+          "dark": "72.4% 0.029 255"
         }
       },
       {
         "name": "upcoming-soft",
         "value": {
-          "light": "#e6eaf0",
-          "dark": "#243246"
+          "light": "#eceff4",
+          "dark": "#2d3642"
         },
         "usage": "Ground of upcoming chips, empty heatmap cells, the track of a progress bar.",
         "oklch": {
-          "light": "93.6% 0.009 258",
-          "dark": "31.4% 0.041 257"
+          "light": "95.1% 0.007 261",
+          "dark": "33.0% 0.025 256"
+        }
+      },
+      {
+        "name": "violet",
+        "value": {
+          "light": "#6a4fb6",
+          "dark": "#c4b2f2"
+        },
+        "usage": "MCA and identity: the MCA owner chip, ID and credential tiles, activity tiles.",
+        "oklch": {
+          "light": "50.9% 0.156 292",
+          "dark": "80.1% 0.091 297"
+        }
+      },
+      {
+        "name": "violet-soft",
+        "value": {
+          "light": "#efeafb",
+          "dark": "#34374b"
+        },
+        "usage": "Ground of violet chips and tiles.",
+        "oklch": {
+          "light": "94.6% 0.023 299",
+          "dark": "34.3% 0.035 278"
         }
       },
       {
@@ -362,106 +470,106 @@
       {
         "name": "owner-client",
         "value": {
-          "light": "#9b3b08",
-          "dark": "#f2a35b"
+          "light": "#a05d00",
+          "dark": "#f2c27a"
         },
         "usage": "Owner chip text: the client holds this step. Soft tint only, never a solid fill.",
         "oklch": {
-          "light": "48.0% 0.139 42",
-          "dark": "77.9% 0.129 61"
+          "light": "54.3% 0.123 64",
+          "dark": "84.1% 0.105 77"
         }
       },
       {
         "name": "owner-client-soft",
         "value": {
-          "light": "#ffeedc",
-          "dark": "#3f2a16"
+          "light": "#fcefd8",
+          "dark": "#3b3a38"
         },
         "usage": "Ground of the client owner chip.",
         "oklch": {
-          "light": "95.8% 0.030 69",
-          "dark": "30.5% 0.045 63"
+          "light": "95.6% 0.033 82",
+          "dark": "34.9% 0.004 85"
         }
       },
       {
         "name": "owner-sbc",
         "value": {
-          "light": "#0a4f94",
-          "dark": "#86b6ef"
+          "light": "#2563a8",
+          "dark": "#6fa3e0"
         },
         "usage": "Owner chip text: SBC holds this step.",
         "oklch": {
-          "light": "42.9% 0.130 254",
-          "dark": "76.4% 0.097 253"
+          "light": "49.6% 0.127 254",
+          "dark": "70.4% 0.106 253"
         }
       },
       {
         "name": "owner-sbc-soft",
         "value": {
-          "light": "#e5f4ff",
-          "dark": "#1a3654"
+          "light": "#e6effa",
+          "dark": "#263548"
         },
         "usage": "Ground of the SBC owner chip.",
         "oklch": {
-          "light": "95.9% 0.022 239",
-          "dark": "32.7% 0.064 252"
+          "light": "94.9% 0.018 253",
+          "dark": "32.5% 0.039 255"
         }
       },
       {
         "name": "owner-mca",
         "value": {
-          "light": "#0f6b5f",
-          "dark": "#5cd0c0"
+          "light": "#6a4fb6",
+          "dark": "#c4b2f2"
         },
         "usage": "Owner chip text: with the MCA or another authority.",
         "oklch": {
-          "light": "47.5% 0.082 181",
-          "dark": "78.7% 0.108 183"
+          "light": "50.9% 0.156 292",
+          "dark": "80.1% 0.091 297"
         }
       },
       {
         "name": "owner-mca-soft",
         "value": {
-          "light": "#ddf3ef",
-          "dark": "#113a35"
+          "light": "#efeafb",
+          "dark": "#34374b"
         },
         "usage": "Ground of the MCA owner chip.",
         "oklch": {
-          "light": "94.7% 0.024 184",
-          "dark": "31.8% 0.046 184"
+          "light": "94.6% 0.023 299",
+          "dark": "34.3% 0.035 278"
         }
       },
       {
         "name": "owner-manager",
         "value": {
-          "light": "#5b3fb8",
-          "dark": "#b8a6f2"
+          "light": "#0f7880",
+          "dark": "#7fd0d6"
         },
         "usage": "Owner chip text: with a manager.",
         "oklch": {
-          "light": "47.0% 0.181 288",
-          "dark": "76.8% 0.108 295"
+          "light": "52.3% 0.086 203",
+          "dark": "80.8% 0.080 202"
         }
       },
       {
         "name": "owner-manager-soft",
         "value": {
-          "light": "#efeafd",
-          "dark": "#2b2350"
+          "light": "#e0f3f4",
+          "dark": "#283c46"
         },
         "usage": "Ground of the manager owner chip.",
         "oklch": {
-          "light": "94.7% 0.026 298",
-          "dark": "29.1% 0.079 289"
+          "light": "95.0% 0.020 201",
+          "dark": "34.4% 0.031 230"
         }
       },
       {
         "name": "hero-gradient",
         "value": {
-          "light": "linear-gradient(115deg, #0f2a4a 0%, #17396b 52%, #1b4f94 100%)",
-          "dark": "linear-gradient(115deg, #0b1521 0%, #112542 55%, #17304d 100%)"
+          "light": "linear-gradient(115deg, #1b3049 0%, #15263b 100%)",
+          "dark": "linear-gradient(115deg, #1b3049 0%, #15263b 100%)"
         },
-        "usage": "The greeting card ground, the one gradient in the product. Everything else is flat."
+        "usage": "The navy greeting band (navy-hover into navy). Same in both themes. Everything else is flat."
       },
       {
         "name": "focus-ring",
@@ -486,61 +594,61 @@
       {
         "name": "side",
         "value": {
-          "light": "#0f2a4a",
-          "dark": "#0b1521"
+          "light": "#15263b",
+          "dark": "#15263b"
         },
         "usage": "Desktop sidebar ground. Navy gives the app its weight; in dark mode it matches the surface and side-line separates it.",
         "oklch": {
-          "light": "28.3% 0.068 254",
-          "dark": "19.3% 0.029 254"
+          "light": "26.5% 0.046 254",
+          "dark": "26.5% 0.046 254"
         }
       },
       {
         "name": "side-ink",
         "value": {
-          "light": "#e9eff6",
-          "dark": "#e9eff6"
+          "light": "#e6eaf0",
+          "dark": "#e6eaf0"
         },
         "usage": "Sidebar labels and icons.",
         "oklch": {
-          "light": "95.0% 0.011 252",
-          "dark": "95.0% 0.011 252"
+          "light": "93.6% 0.009 258",
+          "dark": "93.6% 0.009 258"
         }
       },
       {
         "name": "side-muted",
         "value": {
-          "light": "#9fb0c6",
-          "dark": "#8d9db3"
+          "light": "#9aabbf",
+          "dark": "#9aabbf"
         },
         "usage": "Sidebar group titles and meta. 4.5:1 on side.",
         "oklch": {
-          "light": "75.1% 0.037 255",
-          "dark": "69.1% 0.037 256"
+          "light": "73.5% 0.035 253",
+          "dark": "73.5% 0.035 253"
         }
       },
       {
         "name": "side-active",
         "value": {
-          "light": "#1d3d64",
-          "dark": "#17304d"
+          "light": "#253c5a",
+          "dark": "#253c5a"
         },
         "usage": "Ground of the active sidebar item; its icon is side-ink.",
         "oklch": {
-          "light": "35.7% 0.078 255",
-          "dark": "30.5% 0.061 253"
+          "light": "35.2% 0.060 256",
+          "dark": "35.2% 0.060 256"
         }
       },
       {
         "name": "side-line",
         "value": {
-          "light": "#23405f",
-          "dark": "#1f2d40"
+          "light": "#28374b",
+          "dark": "#28374b"
         },
         "usage": "Hairline between sidebar groups and along the sidebar edge.",
         "oklch": {
-          "light": "36.4% 0.064 251",
-          "dark": "29.4% 0.040 256"
+          "light": "33.3% 0.041 256",
+          "dark": "33.3% 0.041 256"
         }
       },
       {

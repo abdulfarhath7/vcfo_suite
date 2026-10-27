@@ -34,6 +34,7 @@ export default {
         line: {
           DEFAULT: "oklch(var(--line) / <alpha-value>)",
           strong: "oklch(var(--line-strong) / <alpha-value>)",
+          soft: "oklch(var(--line-soft) / <alpha-value>)",
         },
         rule: "oklch(var(--rule) / <alpha-value>)",
         ink: {
@@ -49,6 +50,15 @@ export default {
           deep: "oklch(var(--brand-strong) / <alpha-value>)" /* legacy name for brand-strong */,
         },
         "on-brand": "oklch(var(--on-brand) / <alpha-value>)",
+        navy: {
+          DEFAULT: "oklch(var(--navy) / <alpha-value>)",
+          hover: "oklch(var(--navy-hover) / <alpha-value>)",
+        },
+        "on-navy": "oklch(var(--on-navy) / <alpha-value>)",
+        violet: {
+          DEFAULT: "oklch(var(--violet) / <alpha-value>)",
+          soft: "oklch(var(--violet-soft) / <alpha-value>)",
+        },
         highlight: {
           DEFAULT: "oklch(var(--highlight) / <alpha-value>)",
           bright: "oklch(var(--highlight-bright) / <alpha-value>)",
@@ -57,6 +67,7 @@ export default {
         positive: {
           DEFAULT: "oklch(var(--positive) / <alpha-value>)",
           soft: "oklch(var(--positive-soft) / <alpha-value>)",
+          mid: "oklch(var(--positive-mid) / <alpha-value>)",
         },
         upcoming: {
           DEFAULT: "oklch(var(--upcoming) / <alpha-value>)",
@@ -194,6 +205,7 @@ export default {
         warning: {
           DEFAULT: "oklch(var(--warning) / <alpha-value>)",
           soft: "oklch(var(--warning-soft) / <alpha-value>)",
+          mid: "oklch(var(--warning-mid) / <alpha-value>)",
           foreground: "oklch(var(--warning-foreground) / <alpha-value>)",
           light: "oklch(var(--warning-light) / <alpha-value>)",
           text: "oklch(var(--warning-text) / <alpha-value>)",
@@ -201,6 +213,7 @@ export default {
         danger: {
           DEFAULT: "oklch(var(--danger) / <alpha-value>)",
           soft: "oklch(var(--danger-soft) / <alpha-value>)",
+          mid: "oklch(var(--danger-mid) / <alpha-value>)",
           light: "oklch(var(--danger-light) / <alpha-value>)",
           text: "oklch(var(--danger-text) / <alpha-value>)",
         },

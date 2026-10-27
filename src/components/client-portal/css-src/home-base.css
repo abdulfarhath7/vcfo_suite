@@ -24,7 +24,7 @@ th{font-size:11px}
 
 /* v7 responsive layer (Home) - board root, sidebar column, top bar, card grid */
 .vh-root{position:relative;width:100%;min-height:100vh;display:flex;background:var(--bg);font-family:var(--font-sans),system-ui,sans-serif;color:var(--fg);font-size:13px}
-.vh-side{width:var(--vp-side-w,248px);flex:none;background:#0f2a4a;overflow:hidden}
+.vh-side{width:var(--vp-side-w,248px);flex:none;background:oklch(var(--navy));overflow:hidden}
 .vh-body{flex:1;min-width:0}
 .vh-top{--vh-hg:12px;--vh-hp:16px}
 .vh-menu{display:none;flex:none;width:40px;height:40px;margin-left:-6px;border:0;border-radius:8px;background:none;color:var(--navy-ink,var(--navy));align-items:center;justify-content:center;cursor:pointer}

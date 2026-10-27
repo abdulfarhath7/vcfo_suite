@@ -5,12 +5,12 @@ body{margin:0;-webkit-font-smoothing:antialiased}
 :root{--bg:oklch(var(--surface));--panel:oklch(var(--surface-raised));--raised:oklch(var(--surface-sunken));--border:oklch(var(--line));--hair:oklch(var(--line));--fg:oklch(var(--ink));--muted:oklch(var(--ink-muted));--subtle:oklch(var(--ink-faint));
 --primary:oklch(var(--brand));--primary-dark:oklch(var(--brand-strong));--primary-light:oklch(var(--brand-soft));--primary-chip:oklch(var(--brand));
 --navy:oklch(var(--ink));--navy-2:oklch(var(--brand-strong));--navy-3:oklch(var(--brand));--gold:oklch(var(--gold));--gold-soft:oklch(var(--highlight-soft));--gold-text:oklch(var(--gold-text));
---ok:oklch(var(--positive));--ok-light:oklch(var(--positive-soft));--ok-text:oklch(var(--positive));--ok-chip:oklch(var(--positive));
---due:oklch(var(--warning));--due-light:oklch(var(--warning-soft));--due-text:oklch(var(--warning));--due-chip:oklch(var(--warning));
---over:oklch(var(--danger));--over-light:oklch(var(--danger-soft));--over-text:oklch(var(--danger));--over-chip:oklch(var(--danger));
+--ok:oklch(var(--positive));--ok-light:oklch(var(--positive-soft));--ok-text:oklch(var(--positive));--ok-chip:oklch(var(--positive));--ok-mid:oklch(var(--positive-mid));
+--due:oklch(var(--warning));--due-light:oklch(var(--warning-soft));--due-text:oklch(var(--warning));--due-chip:oklch(var(--warning));--due-mid:oklch(var(--warning-mid));
+--over:oklch(var(--danger));--over-light:oklch(var(--danger-soft));--over-text:oklch(var(--danger));--over-chip:oklch(var(--danger));--over-mid:oklch(var(--danger-mid));
 --prog:oklch(var(--brand));--prog-light:oklch(var(--brand-soft));--prog-text:oklch(var(--brand));--prog-chip:oklch(var(--brand));
 --up:oklch(var(--upcoming));--up-light:oklch(var(--upcoming-soft));--up-text:oklch(var(--ink-muted));--up-chip:oklch(var(--upcoming));
---violet:oklch(var(--brand));--violet-light:oklch(var(--brand-soft));--violet-chip:oklch(var(--brand));
+--violet:oklch(var(--violet));--violet-light:oklch(var(--violet-soft));--violet-chip:oklch(var(--violet));
 --sky:oklch(var(--brand));--sky-light:oklch(var(--brand-soft));--sky-chip:oklch(var(--brand));
 --teal:oklch(var(--info));--teal-light:oklch(var(--info-soft));--teal-chip:oklch(var(--info));
 --gst:oklch(52% 0.15 148);--it:oklch(53% 0.16 252);--mca:oklch(50% 0.18 300);--fema:oklch(55% 0.19 12);--labour:oklch(50% 0.12 200);
