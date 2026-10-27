@@ -61,7 +61,7 @@ const PAGE_LABEL: Record<string, string> = {
   inbox: 'Inbox',
   incorporation: 'Incorporation',
   documents: 'Documents',
-  settings: 'Account',
+  settings: 'Profile',
   engagements: 'Clients',
   'board-resolution': 'Board Resolution',
   library: 'Library',

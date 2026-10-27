@@ -429,8 +429,9 @@ function SidebarNavBody({
           <Link
             href={roleSettingsPath(user.role)}
             onClick={onNavigate}
-            title="Account settings"
-            aria-label="Account settings"
+            /* K-16: the account row opens Profile; there is no Settings item in the sidebar. */
+            title="Profile"
+            aria-label="Profile"
             className={cn(
               'flex items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors',
               ink === 'light' ? 'hover:bg-side-active' : 'hover:bg-surface-sunken',

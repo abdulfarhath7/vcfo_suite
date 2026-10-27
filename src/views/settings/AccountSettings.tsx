@@ -69,7 +69,7 @@ export default function AccountSettings({ path }: Props) {
   return (
     <PageTransition>
       <SEO
-        title="Account settings — VCFO Suite"
+        title="Profile — VCFO Suite"
         description="Update your profile and password."
         path={path}
       />
