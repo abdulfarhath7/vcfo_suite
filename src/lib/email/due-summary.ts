@@ -1,3 +1,4 @@
+import { sep } from '@/lib/date-format';
 type DeadlineRule =
   | { kind: 'days-from-incorporation'; days: number }
   | { kind: 'fixed-window-weeks'; weeks: number }
@@ -77,7 +78,7 @@ export function formatEngagementDueContext(stage: string, health: string, create
   const created = new Date(createdAt);
   const createdLabel = Number.isNaN(created.getTime())
     ? createdAt
-    : created.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    : sep(created.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }));
   return [
     `Current phase: ${stage}`,
     `Health status: ${health.replace(/-/g, ' ')}`,

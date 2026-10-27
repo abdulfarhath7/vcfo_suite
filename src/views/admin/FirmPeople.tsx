@@ -1,5 +1,6 @@
 'use client';
 
+import { sep } from '@/lib/date-format';
 import Link from 'next/link';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
@@ -222,7 +223,7 @@ export default function FirmPeople() {
                 ) : null}
                 <div className="mt-1 text-[11px] text-ink-muted">
                   {c.removedReason ?? 'Removed from their last project'}
-                  {c.removedAt ? ` · ${new Date(c.removedAt).toLocaleDateString()}` : ''}
+                  {c.removedAt ? ` · ${sep(new Date(c.removedAt).toLocaleDateString())}` : ''}
                 </div>
               </div>
             ))

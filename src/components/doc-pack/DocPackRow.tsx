@@ -1,5 +1,6 @@
 'use client';
 
+import { sep } from '@/lib/date-format';
 import Link from 'next/link';
 import { Download, Eye } from 'lucide-react';
 
@@ -25,7 +26,7 @@ function stepTitle(stepId: string): string {
 function formatAttachedAt(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  return sep(date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }));
 }
 
 /** One document: name and sources, status with the way to unblock it, preview and download. */

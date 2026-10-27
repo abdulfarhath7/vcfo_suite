@@ -1,5 +1,6 @@
 "use client";
 
+import { sep } from '@/lib/date-format';
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { m as motion } from 'framer-motion';
@@ -53,11 +54,11 @@ import {
 } from 'lucide-react';
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', {
+  return sep(new Date(iso).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  });
+  }));
 }
 
 function uploaderLabel(file: KnowledgeBankFile): string {

@@ -1,3 +1,4 @@
+import { sep } from '@/lib/date-format';
 import {
   isNotificationKind,
   type AppNotification,
@@ -106,7 +107,7 @@ export function ymdInNotificationTz(date: Date): string {
 }
 
 function weekdayMon0Ist(date: Date): number {
-  const wd = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: NOTIFICATION_TZ });
+  const wd = sep(date.toLocaleDateString('en-US', { weekday: 'short', timeZone: NOTIFICATION_TZ }));
   const map: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
   return map[wd] ?? 0;
 }
@@ -217,11 +218,11 @@ export function formatNotificationWhen(iso: string, now = new Date()): string {
     if (diffMs < 60_000) return 'Just now';
     if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}m ago`;
     if (diffMs < 86_400_000) return `${Math.floor(diffMs / 3_600_000)}h ago`;
-    return d.toLocaleDateString('en-IN', {
+    return sep(d.toLocaleDateString('en-IN', {
       month: 'short',
       day: 'numeric',
       timeZone: NOTIFICATION_TZ,
-    });
+    }));
   } catch {
     return '';
   }
@@ -231,15 +232,15 @@ export function formatNotificationTimestampIst(iso: string): string {
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '';
-    return d.toLocaleString('en-IN', {
+    return sep(d.toLocaleString('en-IN', {
       timeZone: NOTIFICATION_TZ,
       day: 'numeric',
       month: 'short',
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
-    });
+      hour12: false,
+    }));
   } catch {
     return '';
   }

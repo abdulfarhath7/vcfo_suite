@@ -1,3 +1,4 @@
+import { sep } from '@/lib/date-format';
 import { getIncorporationPhases } from '@/data/checklist';
 
 /**
@@ -143,6 +144,6 @@ export function formatWindow(window: Pick<ScheduleWindow, 'from' | 'to'>): strin
   const from = new Date(`${window.from}T00:00:00Z`);
   const to = new Date(`${window.to}T00:00:00Z`);
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return `${window.from} – ${window.to}`;
-  if (window.from === window.to) return DAY_MONTH_YEAR.format(to);
-  return `${DAY_MONTH.format(from)} – ${DAY_MONTH_YEAR.format(to)}`;
+  if (window.from === window.to) return sep(DAY_MONTH_YEAR.format(to));
+  return sep(`${DAY_MONTH.format(from)} – ${DAY_MONTH_YEAR.format(to)}`);
 }

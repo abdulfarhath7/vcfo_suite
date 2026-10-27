@@ -2,6 +2,7 @@
  * Lead cockpit — classify intern steps, filings, and document requests
  * into action / overdue / waiting / due-this-week work items.
  */
+import { sep } from '@/lib/date-format';
 import { addDays, differenceInDays, differenceInHours } from 'date-fns';
 import { checklist, getItem, type ChecklistItem } from '@/data/checklist';
 import type { ComplianceFiling } from '@/data/compliance';
@@ -171,7 +172,7 @@ export function parseIstNoon(ymd: string): Date {
 }
 
 export function istWeekdayMon0(date: Date): number {
-  const wd = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: IST });
+  const wd = sep(date.toLocaleDateString('en-US', { weekday: 'short', timeZone: IST }));
   const map: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
   return map[wd] ?? 0;
 }
@@ -214,17 +215,17 @@ export function ymdFromIsoInIst(iso: string | undefined | null): string | undefi
 
 export function formatIstWeekdayDay(ymd: string): { weekday: string; day: number; label: string } {
   const d = parseIstNoon(ymd);
-  const weekday = d.toLocaleDateString('en-US', { weekday: 'short', timeZone: IST });
+  const weekday = sep(d.toLocaleDateString('en-US', { weekday: 'short', timeZone: IST }));
   const day = Number(ymd.slice(8, 10));
   return { weekday, day, label: `${weekday} ${day}` };
 }
 
 function formatIstDayMonth(ymd: string): string {
-  return parseIstNoon(ymd).toLocaleDateString('en-GB', {
+  return sep(parseIstNoon(ymd).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
     timeZone: IST,
-  });
+  }));
 }
 
 export type WeekChipKind = 'filing' | 'step' | 'nudge' | 'done';
@@ -583,7 +584,7 @@ export function buildInternWorkItems(opts: {
           : days === 0
             ? 'Due today'
             : days > 0
-              ? `Due in ${days} day${days === 1 ? '' : 's'}`
+              ? `Due ${formatIstDayMonth(dueAt)}`
               : 'Filing';
 
     out.push({

@@ -1,5 +1,6 @@
 'use client';
 
+import { sep } from '@/lib/date-format';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Loader2, RotateCcw, Trash2 } from 'lucide-react';
@@ -18,11 +19,11 @@ function deletedLabel(iso: string | null): string {
   if (!iso) return 'Deleted';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return 'Deleted';
-  return `Deleted ${d.toLocaleDateString('en-IN', {
+  return `Deleted ${sep(d.toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  })}`;
+  }))}`;
 }
 
 /**

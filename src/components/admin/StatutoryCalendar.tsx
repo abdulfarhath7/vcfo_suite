@@ -1,5 +1,6 @@
 "use client";
 
+import { sep } from '@/lib/date-format';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import Link from 'next/link';
@@ -117,7 +118,7 @@ function StatutoryDayTile({
   const inFy = isoInStatutoryFy(cell.iso, FY_START, FY_END);
   const isToday = cell.iso === todayIso;
   const local = parseLocalIso(cell.iso);
-  const weekday = local.toLocaleDateString('en-IN', { weekday: 'long' });
+  const weekday = sep(local.toLocaleDateString('en-IN', { weekday: 'long' }));
   const { acts } = statutoryCellActs(items);
 
   if (!inFy || !cell.inMonth) {
@@ -168,7 +169,7 @@ function StatutoryListRow({ item, todayIso }: { item: StatutoryDeadline; todayIs
   return (
     <li className="stat-cal-row">
       <span className="stat-cal-row-date" aria-hidden>
-        <span className="stat-cal-row-dow">{d.toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+        <span className="stat-cal-row-dow">{sep(d.toLocaleDateString('en-IN', { weekday: 'short' }))}</span>
         <span className="stat-cal-row-day">{d.getDate()}</span>
       </span>
       <span
@@ -233,7 +234,7 @@ function StatutoryAgendaGroup({
     >
       <header className="stat-cal-group-head">
         <span className={cn('stat-cal-group-label', isToday && 'is-today')}>
-          {isToday ? 'Today' : d.toLocaleDateString('en-IN', { weekday: 'short' })}{' '}
+          {isToday ? 'Today' : sep(d.toLocaleDateString('en-IN', { weekday: 'short' }))}{' '}
           <span className="tabular-nums">{d.getDate()}</span>
         </span>
         <span className="stat-cal-group-n">{items.length}</span>
@@ -408,7 +409,7 @@ export function StatutoryCalendar({
 
   const canPrev = monthKey(viewMonth) > monthKey(FY_FIRST_MONTH);
   const canNext = monthKey(viewMonth) < monthKey(FY_LAST_MONTH);
-  const monthName = viewMonth.toLocaleDateString('en-IN', { month: 'long' });
+  const monthName = sep(viewMonth.toLocaleDateString('en-IN', { month: 'long' }));
   const monthYear = viewMonth.getFullYear();
   const monthLabel = `${monthName} ${monthYear}`;
   const pane = monthPaneMotion(monthDir, reduceMotion);

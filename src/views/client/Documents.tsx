@@ -1,5 +1,6 @@
 "use client";
 
+import { sep } from '@/lib/date-format';
 import { useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition, Stagger, StaggerItem } from '@/components/shell/PageTransition';
@@ -14,11 +15,11 @@ import { FileCheck2, FileText, FolderOpen } from 'lucide-react';
 
 function formatUploadDate(iso: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-IN', {
+  return sep(new Date(iso).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  });
+  }));
 }
 
 export default function ClientDocuments() {

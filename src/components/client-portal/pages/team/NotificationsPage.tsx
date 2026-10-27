@@ -6,6 +6,7 @@
  * read-all through the same route (Undo restores exactly the ids it changed).
  * Channel card: `/api/account/profile` (WhatsApp opt-in).
  */
+import { sep } from '@/lib/date-format';
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AppNotification } from '@/lib/checklist/checklist-notifications';
@@ -106,8 +107,8 @@ function groupOf(iso: string, today: string, monday: string): 0 | 1 | 2 {
 function whenText(iso: string, g: number): string {
   const dt = new Date(iso);
   if (g === 0) return dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
-  if (g === 1) return dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' }).replace(',', '');
-  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
+  if (g === 1) return sep(dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })).replace(',', '');
+  return sep(dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' }));
 }
 
 /** Only portal pages are followed; anything else falls back to the type's own page. */

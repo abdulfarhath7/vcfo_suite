@@ -1,3 +1,4 @@
+import { sep } from '@/lib/date-format';
 import { ACT_SWATCH, type StatutoryAct } from '@/data/statutory-calendar-fy2627';
 
 const ACT_ORDER = Object.keys(ACT_SWATCH) as StatutoryAct[];
@@ -196,7 +197,7 @@ export function statutoryFyMonthLabels(
     const d = new Date(`${first.iso}T12:00:00`);
     labels.push({
       weekIndex,
-      label: d.toLocaleDateString('en-IN', { month: 'short' }),
+      label: sep(d.toLocaleDateString('en-IN', { month: 'short' })),
       prefix,
     });
   });

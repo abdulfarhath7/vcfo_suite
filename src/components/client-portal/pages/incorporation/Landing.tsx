@@ -5,6 +5,7 @@
  * row 1 = Days-to-COI tile + This week · row 2 = Timeline (gantt, accordion
  * step tables) · row 3 = four donuts. Wired to the real step model.
  */
+import { sep } from '@/lib/date-format';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
@@ -623,7 +624,7 @@ export default function IncorporationLanding() {
     if (!axis) return '';
     const a = pd(addD(axis.ax0, 7));
     const b = pd(addD(axis.ax1, -7));
-    const M = (x: Date) => x.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' });
+    const M = (x: Date) => sep(x.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }));
     return a.getUTCFullYear() === b.getUTCFullYear()
       ? `${M(a)} – ${M(b)} ${b.getUTCFullYear()}`
       : `${M(a)} ${a.getUTCFullYear()} – ${M(b)} ${b.getUTCFullYear()}`;

@@ -6,6 +6,7 @@
  * for drill-downs), the rule-16 bot bubble, the navy sliding pill, the (i)
  * pop-over and small helpers. Markup copied from the FINAL boards.
  */
+import { sep } from '@/lib/date-format';
 import {
   useCallback,
   useEffect,
@@ -112,12 +113,12 @@ const IST = 'Asia/Kolkata';
 export function dayMonth(iso: string): { d: string; m: string } {
   const dt = new Date(iso);
   return {
-    d: dt.toLocaleDateString('en-GB', { day: 'numeric', timeZone: IST }),
-    m: dt.toLocaleDateString('en-GB', { month: 'short', timeZone: IST }),
+    d: sep(dt.toLocaleDateString('en-GB', { day: 'numeric', timeZone: IST })),
+    m: sep(dt.toLocaleDateString('en-GB', { month: 'short', timeZone: IST })),
   };
 }
 export function shortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: IST });
+  return sep(new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: IST }));
 }
 
 export function useIsPhone(): boolean {

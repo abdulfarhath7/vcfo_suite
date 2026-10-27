@@ -59,7 +59,7 @@ describe('schedule windows', () => {
   });
 
   it('formats the window with the year once', () => {
-    expect(formatWindow({ from: '2026-09-10', to: '2026-09-17' })).toBe('10 Sept – 17 Sept 2026');
-    expect(formatWindow({ from: '2026-09-17', to: '2026-09-17' })).toBe('17 Sept 2026');
+    expect(formatWindow({ from: '2026-09-10', to: '2026-09-17' })).toBe('10 Sep – 17 Sep 2026');
+    expect(formatWindow({ from: '2026-09-17', to: '2026-09-17' })).toBe('17 Sep 2026');
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { sep } from '@/lib/date-format';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -41,11 +42,11 @@ import { cn } from '@/lib/utils';
 
 function formatUploadDate(iso: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-IN', {
+  return sep(new Date(iso).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  });
+  }));
 }
 
 function IndexedDocumentLink({

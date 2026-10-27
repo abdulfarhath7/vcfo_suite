@@ -1,5 +1,6 @@
 'use client';
 
+import { sep } from '@/lib/date-format';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, FileSignature, FileText, Upload } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
@@ -228,23 +229,23 @@ export default function BoardResolutionView() {
           {doc.signedUploadedAt && (
             <p className="text-[11.5px] text-positive mb-4 print:hidden">
               Signed copy uploaded{' '}
-              {new Date(doc.signedUploadedAt).toLocaleDateString('en-IN', {
+              {sep(new Date(doc.signedUploadedAt).toLocaleDateString('en-IN', {
                 day: '2-digit',
                 month: 'long',
                 year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
-              })}
+              }))}
             </p>
           )}
           {doc.finalizedAt && (
             <p className="text-[11.5px] text-ink-faint mt-6 print:hidden">
               Released{' '}
-              {new Date(doc.finalizedAt).toLocaleDateString('en-IN', {
+              {sep(new Date(doc.finalizedAt).toLocaleDateString('en-IN', {
                 day: '2-digit',
                 month: 'long',
                 year: 'numeric',
-              })}
+              }))}
             </p>
           )}
         </article>

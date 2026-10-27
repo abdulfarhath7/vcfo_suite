@@ -1,5 +1,6 @@
 'use client';
 
+import { sep } from '@/lib/date-format';
 import Link from 'next/link';
 import { memo, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
@@ -62,7 +63,7 @@ export const SidebarComplianceMini = memo(function SidebarComplianceMini({
             light ? 'text-side-muted' : 'text-ink-muted',
           )}
         >
-          {now.toLocaleString('en-IN', { month: 'short' })} {year}
+          {sep(now.toLocaleString('en-IN', { month: 'short' }))} {year}
         </span>
         <span className={cn('text-[10px] font-medium', light ? 'text-side-ink' : 'text-brand')}>
           {dueDays.size} due

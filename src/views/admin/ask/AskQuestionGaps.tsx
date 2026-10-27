@@ -1,5 +1,6 @@
 'use client';
 
+import { sep } from '@/lib/date-format';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { FileDown, MessageCircleQuestion } from 'lucide-react';
@@ -23,7 +24,7 @@ function downloadDraftTopic(question: string) {
 }
 
 function formatDay(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  return sep(new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }));
 }
 
 /** A1: client questions with no reviewed answer, grouped, without client identity. */

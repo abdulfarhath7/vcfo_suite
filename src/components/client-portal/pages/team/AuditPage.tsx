@@ -6,6 +6,7 @@
  * only, facts in plain words, 14-day summary, keyset "Load older"); CSV from
  * `/api/client/audit/export` with the current filters.
  */
+import { sep } from '@/lib/date-format';
 import { useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { AuditNode, ClientAuditEvent, ClientAuditPage } from '@/lib/client-portal/audit';
@@ -65,8 +66,8 @@ function dayParts(day: string) {
   const d = new Date(`${day}T12:00:00Z`);
   return {
     n: String(d.getUTCDate()),
-    m: d.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }),
-    wd: d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' }),
+    m: sep(d.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })),
+    wd: sep(d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })),
   };
 }
 

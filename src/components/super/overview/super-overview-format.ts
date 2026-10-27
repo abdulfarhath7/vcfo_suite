@@ -1,3 +1,4 @@
+import { sep } from '@/lib/date-format';
 import type { IconChipTone } from '@/components/common/IconChip';
 import { CHART_STATUS, chartPhaseColor, type ChartColor } from '@/components/charts';
 import type { SuperEngagementSummary, SuperStateKey } from '@/lib/super/super-overview';
@@ -59,7 +60,7 @@ export function formatSuperDayMonth(iso: string | null | undefined): string {
   if (!iso?.trim()) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-IN', DATE_FMT);
+  return sep(date.toLocaleDateString('en-IN', DATE_FMT));
 }
 
 /** "2h ago" / "3d ago" — compact enough for a dense activity rail. */

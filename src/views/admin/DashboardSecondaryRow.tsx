@@ -1,5 +1,6 @@
 'use client';
 
+import { sep } from '@/lib/date-format';
 import { usePathname, useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
 import { CalendarDays } from 'lucide-react';
@@ -42,8 +43,8 @@ export function AdminDashboardFilingsPanel({
         dueSoon.slice(0, 8).map((c, i) => {
           const eng = engagements.find((e) => e.id === c.engagementId);
           const due = new Date(c.nextDue);
-          const day = due.toLocaleDateString('en-IN', { day: '2-digit' });
-          const month = due.toLocaleDateString('en-IN', { month: 'short' });
+          const day = sep(due.toLocaleDateString('en-IN', { day: '2-digit' }));
+          const month = sep(due.toLocaleDateString('en-IN', { month: 'short' }));
           return (
             <m.button
               type="button"

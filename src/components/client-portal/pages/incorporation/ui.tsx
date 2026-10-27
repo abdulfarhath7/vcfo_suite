@@ -172,7 +172,7 @@ export function fmtS(s?: string): string {
   if (!s) return '—';
   const d = pd(s);
   const m = MON[d.getUTCMonth()];
-  return `${d.getUTCDate()} ${m === 'Sep' ? 'Sept' : m} ${d.getUTCFullYear()}`;
+  return `${d.getUTCDate()} ${m} ${d.getUTCFullYear()}`;
 }
 export function wd(s: string): string {
   return DAY[pd(s).getUTCDay()]!;

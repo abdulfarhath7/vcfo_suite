@@ -1,3 +1,4 @@
+import { sep } from '@/lib/date-format';
 import { PHASE_CLASSES, type PhaseColorKey } from '@/lib/shell/phase-colors';
 import type { ClientLegalForm } from '@/lib/client/client-overview';
 
@@ -12,14 +13,14 @@ export function formatClientDate(iso: string | null | undefined): string {
   if (!iso?.trim()) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-IN', DATE_FMT);
+  return sep(date.toLocaleDateString('en-IN', DATE_FMT));
 }
 
 export function formatClientDayMonth(iso: string | null | undefined): string {
   if (!iso?.trim()) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  return sep(date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }));
 }
 
 /** "in 6 days" / "today" / "3 days ago" — the human read of a due date. */

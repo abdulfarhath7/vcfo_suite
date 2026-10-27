@@ -1,5 +1,6 @@
 'use client';
 
+import { sep } from '@/lib/date-format';
 import { useEffect, useRef, useState } from 'react';
 import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
@@ -12,7 +13,7 @@ const DMY_RE = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/;
 const DAY_MONTH_YEAR_RE = /^(\d{1,2})\s+([a-z]+)\.?,?\s+(\d{4})$/i;
 
 const MONTH_NAMES = Array.from({ length: 12 }, (_, m) =>
-  new Date(2000, m, 1).toLocaleString('en-IN', { month: 'long' }),
+  sep(new Date(2000, m, 1).toLocaleString('en-IN', { month: 'long' })),
 );
 
 /**

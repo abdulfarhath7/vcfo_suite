@@ -64,12 +64,13 @@ export function addDays(iso: string, n: number): string {
 function plural(n: number, w: string) {
   return `${n} ${w}${n === 1 ? '' : 's'}`;
 }
-/** "In 5 days" / "Today" / "Overdue 1 day" */
+/** "Due 14 Oct" / "Today" / "Overdue 1 day". Statutory dates show the date,
+    never "in N days" (K-13, rule R-29). */
 export function rel(today: string, iso: string): string {
   const n = days(today, iso);
   if (n < 0) return `Overdue ${plural(-n, 'day')}`;
   if (n === 0) return 'Today';
-  return `In ${plural(n, 'day')}`;
+  return `Due ${dShort(iso)}`;
 }
 export function chipTone(today: string, iso?: string): Tone {
   if (!iso) return 'up';

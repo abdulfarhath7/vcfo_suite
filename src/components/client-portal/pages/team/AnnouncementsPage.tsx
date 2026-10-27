@@ -6,6 +6,7 @@
  * NEW `announcement_reads` via `/api/client/announcements/reads`; next-deadline
  * banner: `/api/client/overview` compliance runway; portals: `VCFO_PORTAL_TASKS`.
  */
+import { sep } from '@/lib/date-format';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAnnouncements } from '@/hooks/use-announcements';
@@ -350,7 +351,7 @@ function AnnDetail({
   const author = team.find((t) => t.id === a.authorId);
   const authorName = author?.name ?? a.authorName.split('@')[0];
   const roleLabel = author?.role ?? (a.authorRole === 'manager' ? 'Project Manager' : a.authorRole === 'intern' ? 'Project Lead' : 'SBC');
-  const when = new Date(a.publishedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
+  const when = sep(new Date(a.publishedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' }));
   const h = host(a);
   const wa = author ? contactHref('wa', author) : null;
   const em = author ? contactHref('email', author) : null;

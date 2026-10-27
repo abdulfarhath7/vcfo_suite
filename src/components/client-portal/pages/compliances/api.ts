@@ -4,6 +4,7 @@
  * Data for the compliances pages — TanStack Query over the NEW
  * /api/client/compliances routes (repository: client-compliances.ts).
  */
+import { sep } from '@/lib/date-format';
 import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { todayIso, type PortalFiling } from '@/lib/client-portal/compliances';
@@ -68,7 +69,7 @@ export function viewerDocs(f: PortalFiling, proofs: ProofMeta[]): ViewerDoc[] {
     name: p.fileName,
     contentType: p.mime,
     sizeBytes: p.sizeBytes,
-    meta: `${f.name} · ${f.period}${f.filedOn ? ` · filed ${new Date(`${f.filedOn}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' })}` : ''}`,
+    meta: `${f.name} · ${f.period}${f.filedOn ? ` · filed ${sep(new Date(`${f.filedOn}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' }))}` : ''}`,
     chip: { text: 'Filed', tone: 'ok' as const },
     uploadedAt: p.uploadedAt,
     uploadedBy: p.uploadedBy ?? undefined,

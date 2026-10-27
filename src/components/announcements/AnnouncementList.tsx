@@ -1,5 +1,6 @@
 'use client';
 
+import { sep } from '@/lib/date-format';
 import type { ReactNode } from 'react';
 import { ExternalLink } from 'lucide-react';
 import {
@@ -19,7 +20,7 @@ export function formatAnnouncementWhen(iso: string): string {
     if (diffMs < 60_000) return 'Just now';
     if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}m ago`;
     if (diffMs < 86_400_000) return `${Math.floor(diffMs / 3_600_000)}h ago`;
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return sep(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
   } catch {
     return '';
   }

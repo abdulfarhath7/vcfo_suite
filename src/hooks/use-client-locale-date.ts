@@ -1,5 +1,6 @@
 'use client';
 
+import { sep, time24 } from '@/lib/date-format';
 import { createElement, useSyncExternalStore } from 'react';
 
 const IST = 'Asia/Kolkata';
@@ -10,24 +11,17 @@ function subscribeEverySecond(onStoreChange: () => void) {
   return () => window.clearInterval(id);
 }
 
-/** `Monday · 17 Aug 2026 · 5:47:32 PM` in en-IN / IST. */
+/** `Monday · 17 Aug 2026 · 17:47` in en-IN / IST. */
 function formatClientNowLabel(now = new Date(), locale = DEFAULT_LOCALE): string {
-  const weekday = now.toLocaleDateString(locale, { weekday: 'long', timeZone: IST });
-  const date = now.toLocaleDateString(locale, {
+  const weekday = sep(now.toLocaleDateString(locale, { weekday: 'long', timeZone: IST }));
+  const date = sep(now.toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
     timeZone: IST,
-  });
-  const time = now
-    .toLocaleTimeString(locale, {
-      hour: 'numeric',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-      timeZone: IST,
-    })
-    .replace(/\s*(am|pm)/i, (_, period: string) => ` ${period.toUpperCase()}`);
+  }));
+  /* 24-hour clock without seconds (K-13, rule R-29): "17:47". */
+  const time = time24(now, IST);
   return `${weekday} · ${date} · ${time}`;
 }
 
