@@ -50,7 +50,7 @@ button{font:inherit;color:inherit}
 /* status glyphs · set A solid (rule 18) */
 .si{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;flex:none;position:relative;z-index:1}
 .si svg{width:12px;height:12px}
-.si.done{background:var(--ok);color:#fff}.si.you{background:var(--you);color:#fff}.si.prog{background:var(--navy);color:var(--gold-2)}.si.with{background:var(--with);color:#fff}
+.si.done{background:var(--ok);color:#fff}.si.you{background:var(--you);color:#fff}.si.prog{background:var(--prog);color:#fff}.si.with{background:var(--with);color:#fff}
 .si.up{background:oklch(var(--surface-raised));box-shadow:inset 0 0 0 1.5px var(--up)}.si.late{background:var(--over);color:#fff}
 .si.xl{width:26px;height:26px}.si.xl svg{width:14px;height:14px}
 /* bot (rule 16) */
@@ -134,15 +134,15 @@ button{font:inherit;color:inherit}
 .pnm a:hover{color:var(--primary);text-decoration:underline}
 .pnm small{display:block;font:500 11.5px var(--mono);color:var(--subtle)}
 .gl{position:relative;height:34px;min-width:0}
-.today{position:absolute;top:-13px;bottom:-13px;width:2px;margin-left:-1px;background:var(--over);z-index:2;border:0;padding:0;cursor:pointer}
+.today{position:absolute;top:-13px;bottom:-13px;width:2px;margin-left:-1px;background:var(--gold);z-index:2;border:0;padding:0;cursor:pointer}
 .today:before{content:"";position:absolute;left:-6px;right:-6px;top:0;bottom:0}
 .gbar{position:absolute;top:50%;height:11px;margin-top:-5.5px;border-radius:99px;overflow:visible;border:0;padding:0;cursor:pointer;background:var(--raised);display:block}
 .gbar .in{position:absolute;inset:0;border-radius:99px;overflow:hidden;display:block}
 .gbar .f{position:absolute;left:0;top:0;bottom:0;display:block}
-.gbar.s-done .f{background:var(--ok)}
+.gbar.s-done .f{background:var(--ok-mid)}
 .gbar .lt{position:absolute;right:0;top:0;bottom:0;background:var(--over);display:block}
 .gbar.s-active{background:oklch(var(--surface-raised));box-shadow:inset 0 0 0 1.5px var(--navy)}
-.gbar.s-active .f{background:var(--navy)}
+.gbar.s-active .f{background:var(--prog)}
 .gbar.s-up{background:repeating-linear-gradient(135deg,oklch(var(--line)) 0 4px,oklch(var(--surface-sunken)) 4px 8px)}
 .gbar .ms{position:absolute;right:-8px;top:50%;width:14px;height:14px;margin-top:-7px;background:var(--gold);transform:rotate(45deg);border-radius:2px;box-shadow:0 0 0 2px oklch(var(--surface-raised));display:block}
 .gbar:hover,.gbar:focus-visible{filter:brightness(1.08);outline:none;box-shadow:0 0 0 3px oklch(54.6% 0.215 263 / .25)}

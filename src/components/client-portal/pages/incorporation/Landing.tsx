@@ -44,7 +44,6 @@ import {
   kd,
   ownKey,
   phDoneEnd,
-  phKind,
   phPlan,
   stRow,
   stepHrefOf,
@@ -673,7 +672,8 @@ export default function IncorporationLanding() {
             Steps
           </button>
           <div className="pnm">
-            <Si k={phKind(p)} tip={`${PHL[i]} · ${kname}`} cls="xl" />
+            {/* One status circle per row (K-25, R-22, C-0024): done tick, current blue clock, planned ring. */}
+            <Si k={p.state === 'done' ? 'done' : p.state === 'up' ? 'up' : 'prog'} tip={`${PHL[i]} · ${kname}`} cls="xl" />
             <span className="tx">{PHL[i]}</span>
           </div>
           <div className="gl">

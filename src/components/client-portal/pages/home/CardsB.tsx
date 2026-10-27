@@ -6,6 +6,7 @@
  * Company IDs (v7c_ids), Compliance by area (v7c_area), Registrations
  * (v7c_reg), Post-incorporation setup (v7c_postinc).
  */
+import { Check, Clock } from 'lucide-react';
 import { useState, type CSSProperties } from 'react';
 import { BotSays } from '@/components/client-portal/shared';
 import { LinkButton } from '@/components/client-portal/LinkButton';
@@ -65,7 +66,6 @@ export function TimelineCard({
 }) {
   const t = h.home?.timeline;
   const pending = t?.pending;
-  const info = t?.lastChangedBy && t.lastChangedAt ? `Last changed by ${t.lastChangedBy} on ${dLong(t.lastChangedAt.slice(0, 10))}` : 'Planned dates for each phase. The red line is today.';
   const right = h.after ? (
     <span className="chip" style={{ background: 'var(--ok-light)', color: 'var(--ok-text)' }}>Completed</span>
   ) : (
@@ -92,7 +92,7 @@ export function TimelineCard({
     return (
       <div style={W}>
         <section className="card">
-          <CardHead title="Timeline" info={info} right={right} />
+          <CardHead title="Timeline" right={right} />
           <div style={{ padding: '12px 16px 16px' }}>
             <BotSays size={40} question="When will SBC plan the incorporation dates?">
               SBC has not planned the dates yet. They show here as soon as the project manager sets them.
@@ -106,9 +106,29 @@ export function TimelineCard({
   const pct = (iso: string) => (days(axis.t0, iso) / axis.span) * 100;
   const todayPct = pct(h.today);
   const coi = phases[3]!;
+  /* Gantt (K-25, rules R-21 and R-22): 46px rows, one status circle per row (done is a
+     green tick, the current row one blue clock, planned a grey ring), 16px bars with 6px
+     corners, an orange today line and an orange COI diamond. */
+  const stateOf = (p: TlPhase, i: number): 'done' | 'now' | 'plan' => {
+    if (h.after || p.done) return 'done';
+    const firstOpen = phases.findIndex((x) => !x.done);
+    return i === firstOpen ? 'now' : 'plan';
+  };
   const colors: Record<TlPhase['id'], string> = h.after
-    ? { p1: 'var(--ok)', p2: 'var(--ok)', mca: 'var(--ok)', coi: 'var(--navy)' }
-    : { p1: phases[0]!.done ? 'var(--ok)' : 'var(--prog)', p2: phases[1]!.done ? 'var(--ok)' : 'var(--prog)', mca: phases[2]!.done ? 'var(--ok)' : 'var(--up)', coi: 'var(--navy)' };
+    ? { p1: 'var(--ok-mid)', p2: 'var(--ok-mid)', mca: 'var(--ok-mid)', coi: 'var(--gold)' }
+    : { p1: phases[0]!.done ? 'var(--ok-mid)' : 'var(--prog)', p2: phases[1]!.done ? 'var(--ok-mid)' : 'var(--prog)', mca: phases[2]!.done ? 'var(--ok-mid)' : 'var(--up-light)', coi: 'var(--gold)' };
+  const circle = (st: 'done' | 'now' | 'plan') =>
+    st === 'done' ? (
+      <span aria-label="Done" role="img" style={{ width: 18, height: 18, borderRadius: 99, flex: 'none', display: 'grid', placeItems: 'center', background: 'var(--ok-mid)', color: '#fff' }}>
+        <Check width={11} height={11} strokeWidth={3} aria-hidden />
+      </span>
+    ) : st === 'now' ? (
+      <span aria-label="In progress" role="img" style={{ width: 18, height: 18, borderRadius: 99, flex: 'none', display: 'grid', placeItems: 'center', background: 'var(--prog)', color: '#fff' }}>
+        <Clock width={11} height={11} strokeWidth={2.5} aria-hidden />
+      </span>
+    ) : (
+      <span aria-label="Planned" role="img" style={{ width: 18, height: 18, borderRadius: 99, flex: 'none', boxSizing: 'border-box', border: '2px solid var(--up-light)', background: 'var(--panel)' }} />
+    );
   const tipOf = (p: TlPhase) =>
     p.id === 'coi'
       ? h.after
@@ -121,7 +141,7 @@ export function TimelineCard({
   return (
     <div style={W}>
       <section className="card">
-        <CardHead title="Timeline" info={info} right={right} />
+        <CardHead title="Timeline" right={right} />
         <div className="vh-tl" style={{ padding: '12px 16px 30px' }}>
           <div style={{ position: 'relative', minWidth: 600 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '150px minmax(0,1fr)' }}>
@@ -141,29 +161,36 @@ export function TimelineCard({
                 ))}
                 {todayPct >= 0 && todayPct <= 100 ? (
                   <>
-                    <span style={{ position: 'absolute', left: `${todayPct}%`, top: -4, bottom: 0, width: 2, background: 'var(--over)' }} />
-                    <span className="chip" style={{ position: 'absolute', left: `${todayPct}%`, bottom: -20, transform: 'translateX(-50%)', background: 'var(--over-chip)', color: '#fff', padding: '0 6px' }}>
+                    <span style={{ position: 'absolute', left: `${todayPct}%`, top: -4, bottom: 0, width: 2, background: 'var(--gold)' }} />
+                    <span className="chip" style={{ position: 'absolute', left: `${todayPct}%`, bottom: -24, transform: 'translateX(-50%)', background: 'var(--gold)', color: '#fff', padding: '0 6px' }}>
                       Today {dShort(h.today)}
                     </span>
                   </>
                 ) : todayPct > 100 ? (
-                  <span className="chip" style={{ position: 'absolute', right: 0, bottom: -20, background: 'var(--over-chip)', color: '#fff', padding: '0 6px' }}>
+                  <span className="chip" style={{ position: 'absolute', right: 0, bottom: -24, background: 'var(--gold)', color: '#fff', padding: '0 6px' }}>
                     Today {dShort(h.today)} →
                   </span>
                 ) : null}
               </div>
               {phases.map((p, i) => {
                 const left = pct(p.from);
-                const width = p.milestone ? 1.76 : Math.max(0.5, pct(p.to) - left);
+                const width = p.milestone ? 1.5 : Math.max(0.5, pct(p.to) - left);
                 return (
-                  <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '150px minmax(0,1fr)', alignItems: 'center', height: 30 }}>
-                    <span className="rt" style={{ fontSize: 12, whiteSpace: 'normal', lineHeight: 1.2, paddingRight: 8 }}>{p.name}</span>
-                    <div style={{ position: 'relative', height: 30 }}>
+                  <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '150px minmax(0,1fr)', alignItems: 'center', height: 46, borderTop: i ? '1px solid var(--hair)' : 0 }}>
+                    <span className="rt" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, whiteSpace: 'normal', lineHeight: 1.2, paddingRight: 8 }}>
+                      {circle(stateOf(p, i))}
+                      {p.name}
+                    </span>
+                    <div style={{ position: 'relative', height: 46 }}>
                       <Tip
                         tip={tipOf(p)}
                         label={p.id === 'coi' ? 'COI' : p.name.split(' · ')[0]}
                         onOpen={() => h.portal.drill(timelineDrill(h.model, i))}
-                        style={{ position: 'absolute', left: `${left}%`, width: `${width}%`, top: 5, bottom: 5, borderRadius: 4, background: colors[p.id], ...tr }}
+                        style={
+                          p.milestone
+                            ? { position: 'absolute', left: `calc(${left}% - 7px)`, width: 14, height: 14, top: 16, transform: 'rotate(45deg)', borderRadius: 2, background: colors[p.id], ...tr }
+                            : { position: 'absolute', left: `${left}%`, width: `${width}%`, top: 15, height: 16, borderRadius: 6, background: colors[p.id], ...tr }
+                        }
                       />
                       <span className="cap" style={{ position: 'absolute', left: `calc(${left + width}% + 8px)`, top: '50%', transform: 'translateY(-50%)', fontWeight: 700, whiteSpace: 'nowrap', ...tr }}>
                         {capOf(p)}
