@@ -14,7 +14,7 @@ import { LinkButton } from '@/components/client-portal/LinkButton';
 import { portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
 import type { PortalStep } from '@/lib/client-portal/step-model';
-import { CardHead, Ico, InfoPopover, Seg, Tip, useDownload } from './ui';
+import { CardHead, Ico, InfoPopover, Seg, Tip, ownerChipStyle, useDownload } from './ui';
 import type { HomeData } from './useHome';
 import {
   alertsDrill,
@@ -312,7 +312,7 @@ export function CurrentCard({ h, onStep }: { h: HomeData; onStep: (s: PortalStep
                   <LinkButton className="rt" onClick={() => onStep(s)} style={{ flex: 1, color: st.tone === 'up' ? 'var(--muted)' : 'inherit', fontWeight: cur ? 800 : 600 }}>
                     {s.title}
                   </LinkButton>
-                  <span className="chip" style={{ ...(s.owner === 'client' ? { background: 'var(--due-light)', color: 'var(--due-text)' } : { background: 'var(--prog-light)', color: 'var(--prog-text)' }), minWidth: 88, justifyContent: 'center' }}>
+                  <span className="chip" style={ownerChipStyle(s.owner === 'client' ? 'client' : 'sbc')}>
                     {s.owner === 'client' ? company : 'SBC'}
                   </span>
                   <Tip tip={st.tip} onOpen={() => drill(st.tab)} style={{ display: 'inline-flex' }}>

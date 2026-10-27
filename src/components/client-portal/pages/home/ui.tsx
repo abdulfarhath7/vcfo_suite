@@ -143,10 +143,16 @@ export function Tip({
   );
 }
 
-export function ownerChipStyle(owner: 'client' | 'sbc' | 'firm'): CSSProperties {
-  return owner === 'client'
-    ? { background: 'var(--due-light)', color: 'var(--due-text)' }
-    : { background: 'var(--prog-light)', color: 'var(--prog-text)' };
+/* Owner chip (K-05, rule R-14): 96px soft chip with a dot. The client is amber,
+   SBC is blue and the MCA is violet. */
+export function ownerChipStyle(owner: 'client' | 'sbc' | 'firm' | 'mca'): CSSProperties {
+  const tone =
+    owner === 'client'
+      ? { background: 'var(--you-light)', color: 'var(--you-text)', '--dot': 'var(--due-mid)' }
+      : owner === 'mca'
+        ? { background: 'var(--violet-light)', color: 'var(--violet-text)', '--dot': 'var(--violet)' }
+        : { background: 'var(--with-light)', color: 'var(--with-text)', '--dot': 'var(--with)' };
+  return { ...tone, width: 96, minWidth: 96, justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' } as CSSProperties;
 }
 
 /* ---------------------------------------------------------------- uploads */

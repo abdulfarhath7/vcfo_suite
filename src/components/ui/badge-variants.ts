@@ -27,11 +27,11 @@ export const badgeVariants = cva(
         "solid-waiting": `bg-warning-soft text-warning ${DOT} before:bg-warning-mid`,
         "solid-overdue": `bg-danger-soft text-danger ${DOT} before:bg-danger-mid`,
         "solid-upcoming": `bg-upcoming-soft text-upcoming ${DOT} before:bg-upcoming`,
-        /* owner chips: soft tints, never solid */
-        "owner-client": "bg-owner-client-soft text-owner-client",
-        "owner-sbc": "bg-owner-sbc-soft text-owner-sbc",
-        "owner-mca": "bg-owner-mca-soft text-owner-mca",
-        "owner-manager": "bg-owner-manager-soft text-owner-manager",
+        /* owner chips: soft tints with a dot, 96px wide, never solid (K-05) */
+        "owner-client": `w-24 justify-center bg-owner-client-soft text-owner-client ${DOT} before:bg-current`,
+        "owner-sbc": `w-24 justify-center bg-owner-sbc-soft text-owner-sbc ${DOT} before:bg-current`,
+        "owner-mca": `w-24 justify-center bg-owner-mca-soft text-owner-mca ${DOT} before:bg-current`,
+        "owner-manager": `w-24 justify-center bg-owner-manager-soft text-owner-manager ${DOT} before:bg-current`,
       },
     },
     defaultVariants: {

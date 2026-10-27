@@ -171,12 +171,14 @@ export const TONE_SOLID_BY_TONE: Partial<Record<IconChipTone, string>> = {
   info: TONE_SOLID.progress,
 };
 export type OwnerKey = 'client' | 'sbc' | 'mca' | 'manager';
+/** Owner chips (K-05, rule R-14): soft tint with a dot, 96px wide via OWNER_CHIP_WIDTH. */
 export const TONE_OWNER: Record<OwnerKey, string> = {
-  client: 'bg-owner-client-soft text-owner-client',
-  sbc: 'bg-owner-sbc-soft text-owner-sbc',
-  mca: 'bg-owner-mca-soft text-owner-mca',
-  manager: 'bg-owner-manager-soft text-owner-manager',
+  client: `bg-owner-client-soft text-owner-client ${DOT_BEFORE} before:bg-current`,
+  sbc: `bg-owner-sbc-soft text-owner-sbc ${DOT_BEFORE} before:bg-current`,
+  mca: `bg-owner-mca-soft text-owner-mca ${DOT_BEFORE} before:bg-current`,
+  manager: `bg-owner-manager-soft text-owner-manager ${DOT_BEFORE} before:bg-current`,
 };
+export const OWNER_CHIP_WIDTH = 'w-24 min-w-24 justify-center truncate';
 /**
  * The third form of a state, for dense lists (LeetCode's Easy / Medium / Hard): the word
  * alone in its colour at 600, no ground. `cn(STATE_WORD_CLASS, TONE_TEXT.success)`.

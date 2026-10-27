@@ -10,7 +10,10 @@ body{margin:0;-webkit-font-smoothing:antialiased}
 --over:oklch(var(--danger));--over-light:oklch(var(--danger-soft));--over-text:oklch(var(--danger));--over-chip:oklch(var(--danger));--over-mid:oklch(var(--danger-mid));
 --prog:oklch(var(--brand));--prog-light:oklch(var(--brand-soft));--prog-text:oklch(var(--brand));--prog-chip:oklch(var(--brand));
 --up:oklch(var(--upcoming));--up-light:oklch(var(--upcoming-soft));--up-text:oklch(var(--ink-muted));--up-chip:oklch(var(--upcoming));
---violet:oklch(var(--identity));--violet-light:oklch(var(--identity-soft));--violet-chip:oklch(var(--identity));
+--violet:oklch(var(--identity));--violet-light:oklch(var(--identity-soft));--violet-chip:oklch(var(--identity));--violet-text:oklch(var(--identity));
+--you:oklch(var(--owner-client));--you-light:oklch(var(--owner-client-soft));--you-text:oklch(var(--owner-client));
+--with:oklch(var(--owner-sbc));--with-light:oklch(var(--owner-sbc-soft));--with-text:oklch(var(--owner-sbc));
+--own-you:oklch(var(--owner-client-soft));--own-you-t:oklch(var(--owner-client));--own-sbc:oklch(var(--owner-sbc-soft));--own-sbc-t:oklch(var(--owner-sbc));
 --sky:oklch(var(--brand));--sky-light:oklch(var(--brand-soft));--sky-chip:oklch(var(--brand));
 --teal:oklch(var(--info));--teal-light:oklch(var(--info-soft));--teal-chip:oklch(var(--info));
 --gst:oklch(52% 0.15 148);--it:oklch(53% 0.16 252);--mca:oklch(50% 0.18 300);--fema:oklch(55% 0.19 12);--labour:oklch(50% 0.12 200);
