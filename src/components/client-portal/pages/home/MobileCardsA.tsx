@@ -1,4 +1,5 @@
 import { stepHref } from '@/components/client-portal/routes';
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { stagesOf } from './Popups';
 import { dHeader, dShort, dayMon, days, rel } from './derive';
 import { I, Si, stepK, Tile, MSeg, Bot, Card, Count, type DRow } from './MobileParts';
@@ -21,7 +22,6 @@ export function createMobileCardsA(ctx: MobileHomeState) {
     stepSub,
     stepsDrill,
     groupIdx,
-    C,
     ring,
     stats,
     reportHref,
@@ -40,52 +40,44 @@ export function createMobileCardsA(ctx: MobileHomeState) {
     sbcDrill,
   } = ctx;
 
+  /* Phone greeting (K-42, audit 168): the navy band with the date, the name and the actions,
+     then a white number strip (label above the number, a 30px tile from the label). No ring:
+     its value is the last number in the strip and still opens the steps. */
+  const openRing = () => (after ? drill('Post-incorporation setup', [['Open', h.post.open.length], ['Completed', h.post.done.length]], 0, postRows) : stepsDrill(0));
+  const strip: { l: string; v: number | string; on: () => void; pct?: boolean }[] = [
+    ...stats.map((x) => ({ l: x.l, v: x.v, on: x.on })),
+    { l: after ? 'Setup' : 'SPICe+', v: ring, on: openRing, pct: true },
+  ];
   const greet = (
     <section className="greet" id="greet">
-      <div className="top">
-        <div>
-          <div className="d">{dHeader(today)}</div>
-          <h1>{h.companyName}</h1>
+      <div className="band">
+        <div className="d">{dHeader(today)}</div>
+        <h1>{h.companyName}</h1>
+        <div className="rep">
+          {reportHref ? (
+            <a className="btn btn-g" href={reportHref} download onClick={() => portal.toast(`Preparing ${company}’s progress report (PDF)…`)}>
+              <I n="dl" s={15} />
+              Report
+            </a>
+          ) : null}
+          <button className="btn btn-gl" type="button" onClick={() => portal.go('incorporation')}>
+            Open Incorporation
+          </button>
         </div>
-        <button className="ring" type="button" aria-label={`${after ? 'Setup' : 'Incorporation'} ${ring}% — open steps`} onClick={() => (after ? drill('Post-incorporation setup', [['Open', h.post.open.length], ['Completed', h.post.done.length]], 0, postRows) : stepsDrill(0))}>
-          <svg width="62" height="62" viewBox="0 0 62 62">
-            <circle cx="31" cy="31" r="26" fill="none" stroke="oklch(100% 0 0 / .14)" strokeWidth="6" />
-            <circle cx="31" cy="31" r="26" fill="none" stroke="var(--gold)" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${drawn ? (ring / 100) * C : 0} ${C}`} style={{ transition: 'stroke-dasharray 1s cubic-bezier(.22,1,.36,1)' }} />
-          </svg>
-          <span className="v">
-            <Count v={ring} ready={ready} />%
-          </span>
-          <span className="l">{after ? 'SETUP' : 'SPICE+'}</span>
-        </button>
       </div>
-      <div className="stats">
-        {stats.slice(0, 3).map((s) => (
-          <button key={s.l} className="stat" type="button" onClick={s.on}>
-            <b>
-              <Count v={s.v} ready={ready} />
-            </b>
-            <span>{s.l}</span>
+      <div className="nstrip">
+        {strip.map((x) => (
+          <button key={x.l} className="stat" type="button" onClick={x.on}>
+            <CardHeadTile title={x.l} size={30} />
+            <span className="sv">
+              <span className="sl">{x.l}</span>
+              <b>
+                {typeof x.v === 'number' ? <Count v={x.v} ready={ready} /> : x.v}
+                {x.pct ? '%' : ''}
+              </b>
+            </span>
           </button>
         ))}
-      </div>
-      <div className="stats" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))', marginTop: 6 }}>
-        {stats.slice(3).map((s) => (
-          <button key={s.l} className="stat" type="button" onClick={s.on}>
-            <b>{s.v}</b>
-            <span>{s.l}</span>
-          </button>
-        ))}
-      </div>
-      <div className="rep">
-        {reportHref ? (
-          <a className="btn btn-g" href={reportHref} download onClick={() => portal.toast(`Preparing ${company}’s progress report (PDF)…`)}>
-            <I n="dl" s={15} />
-            Download report
-          </a>
-        ) : null}
-        <button className="btn btn-gl" type="button" onClick={() => portal.go('incorporation')}>
-          Open Incorporation
-        </button>
       </div>
     </section>
   );

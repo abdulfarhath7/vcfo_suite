@@ -19,10 +19,17 @@ button{font:inherit;color:inherit}
 .dot{position:absolute;top:6px;right:5px;min-width:17px;height:17px;padding:0 3px;border-radius:99px;background:var(--primary-fill,var(--primary));color:#fff;font:700 11px/1 var(--font-sans);display:grid;place-items:center;box-shadow:0 0 0 2px oklch(var(--surface-raised))}
 .wrap{padding:14px 14px 0;display:flex;flex-direction:column;gap:12px}
 /* greeting */
-.greet{position:relative;border-radius:12px;background:var(--navy);color:#fff;padding:14px 14px 12px;overflow:hidden}
-.greet:before{content:"";position:absolute;right:-60px;top:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(closest-side,oklch(80% .12 85 / .18),transparent)}
-.greet .d{font:600 11px var(--font-sans),sans-serif;letter-spacing:.08em;color:oklch(82% .03 255)}
-.greet h1{margin:4px 0 0;font:700 19px/1.2 var(--font-sans);max-width:260px}
+.greet{position:relative;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--fg);padding:0;overflow:hidden}
+.greet .band{background:var(--hero-gradient);color:#fff;padding:14px}
+.greet .nstrip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.greet .stat{display:flex;align-items:center;gap:12px;min-width:0;border:0;border-top:1px solid var(--hair);border-radius:0;background:none;padding:10px 14px;text-align:left;color:var(--fg);cursor:pointer}
+.greet .stat:nth-child(odd){border-right:1px solid var(--hair)}
+.greet .stat .sv{display:flex;flex-direction:column;min-width:0}
+.greet .stat .sl{font-size:12px;line-height:1.25;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.greet .stat b{display:block;font:600 18px var(--font-sans);color:var(--fg)}
+.greet:before{content:none}
+.greet .d{font:500 12px var(--font-sans),sans-serif;color:oklch(var(--side-muted))}
+.greet h1{margin:4px 0 0;font:600 19px/1.2 var(--font-sans);color:#fff}
 .greet .top{display:flex;align-items:flex-start;gap:10px}
 .ring{position:relative;width:62px;height:62px;flex:none;margin-left:auto;cursor:pointer;border:0;background:none;padding:0;color:#fff}
 .ring svg{transform:rotate(-90deg)}
@@ -36,7 +43,7 @@ button{font:inherit;color:inherit}
 .rep{margin-top:10px;display:flex;gap:8px}
 .rep .btn{flex:1 1 0;min-width:0;padding:0 8px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 14px;border-radius:6px;border:1px solid transparent;font:700 13px var(--font-sans);cursor:pointer;white-space:nowrap}
-.btn-g{background:var(--gold);color:var(--navy)}
+.btn-g{background:oklch(100% 0 0 / .1);color:#fff;border-color:oklch(100% 0 0 / .18);text-decoration:none}
 .btn-gl{background:oklch(100% 0 0 / .1);color:#fff;border-color:oklch(100% 0 0 / .18)}
 .btn-n{background:var(--navy);color:#fff}
 .btn-o{background:oklch(var(--surface-raised));color:var(--fg);border-color:var(--border)}
