@@ -315,7 +315,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
                 <div role="alert" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, textAlign: 'left' }}>
                   <BotFace size={48} />
                   <div className="vdoc-bubble">
-                    <span style={{ font: '600 13px/1.45 Manrope,sans-serif', color: 'var(--fg)' }}>
+                    <span style={{ font: '600 13px/1.45 var(--font-sans),sans-serif', color: 'var(--fg)' }}>
                       {mode === 'saved' ? 'This book is not in your library any more.' : 'This explanation is not available yet.'}
                     </span>
                     <Link href={portalHref('knowledge-bank')} style={{ marginTop: 6, fontSize: 12, fontWeight: 700 }}>
@@ -378,7 +378,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
                     </span>
                   ) : null}
                 </div>
-                <h1 style={{ margin: '12px 0 0', font: '700 28px/1.2 Manrope,sans-serif', letterSpacing: '-.015em', color: '#fff' }}>{title}</h1>
+                <h1 style={{ margin: '12px 0 0', font: '600 28px/1.2 var(--font-sans),sans-serif', letterSpacing: '-.015em', color: '#fff' }}>{title}</h1>
                 <div className="vrd-hrow">
                   {showPill ? (
                     <div className="seg" role="group" aria-label="Depth" style={{ background: 'oklch(100% 0 0 / .1)', boxShadow: 'inset 0 0 0 1px oklch(100% 0 0 / .2)' }}>
@@ -478,7 +478,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
                       </svg>
                     </span>
                     <div>
-                      <h2 style={{ margin: 0, font: '700 13px Manrope,sans-serif', color: 'var(--gold-text)' }}>Why it matters to {company}</h2>
+                      <h2 style={{ margin: 0, font: '600 13px var(--font-sans),sans-serif', color: 'var(--gold-text)' }}>Why it matters to {company}</h2>
                       <p style={{ margin: '4px 0 0', fontSize: 13.5, lineHeight: 1.55 }}>{answer.why}</p>
                     </div>
                   </div>
@@ -550,12 +550,12 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
             <aside className="vrd-side">
               {projectCard ? (
                 <section className="card t" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <h2 style={{ margin: 0, font: '700 13px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))' }}>In {company}’s project</h2>
+                  <h2 style={{ margin: 0, font: '600 13px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>In {company}’s project</h2>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {projectCard.date ? (
                       <span style={{ width: 50, height: 54, borderRadius: 8, background: projectCard.done ? 'var(--ok-chip)' : 'var(--due-chip)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-                        <span style={{ font: '700 11px Manrope,sans-serif', letterSpacing: '.06em' }}>{MONTHS_SHORT[new Date(`${projectCard.date.slice(0, 10)}T00:00:00`).getMonth()]!.toUpperCase()}</span>
-                        <span style={{ font: "600 20px/1 'Space Grotesk'" }}>{new Date(`${projectCard.date.slice(0, 10)}T00:00:00`).getDate()}</span>
+                        <span style={{ font: '600 11px var(--font-sans),sans-serif', letterSpacing: '.06em' }}>{MONTHS_SHORT[new Date(`${projectCard.date.slice(0, 10)}T00:00:00`).getMonth()]!.toUpperCase()}</span>
+                        <span style={{ font: "600 20px/1 var(--font-sans)" }}>{new Date(`${projectCard.date.slice(0, 10)}T00:00:00`).getDate()}</span>
                       </span>
                     ) : null}
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -579,7 +579,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
               ) : null}
               {related.length ? (
                 <section className="card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <h2 style={{ margin: '0 0 6px', font: '700 13px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))' }}>Related in {company}’s library</h2>
+                  <h2 style={{ margin: '0 0 6px', font: '600 13px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>Related in {company}’s library</h2>
                   {related.map((r, i) => (
                     <Link key={r.slug} href={r.href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: '1px solid var(--hair)', color: 'var(--fg)', fontWeight: 600 }}>
                       <span style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--primary-light)', color: 'var(--violet-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
@@ -594,7 +594,7 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
               ) : null}
               {relDocs.length ? (
                 <section className="card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <h2 style={{ margin: 0, font: '700 13px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))' }}>Documents for this</h2>
+                  <h2 style={{ margin: 0, font: '600 13px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>Documents for this</h2>
                   {relDocs.map((n, i) => (
                     <LinkButton
                       key={n.id}

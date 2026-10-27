@@ -196,7 +196,7 @@ export default function ComposeMail({ path }: Props) {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
         <Surface className="p-5 sm:p-6">
           <PageBackCluster forceBack className="mb-4">
-            <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+            <h2 className="text-[12px] font-semibold text-ink-muted">
               Outlook
             </h2>
           </PageBackCluster>

@@ -134,7 +134,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
       )}
 
       {provenanceNote ? (
-        <p className="font-mono text-[11px] text-ink-muted">{provenanceNote} — edit anything that changed.</p>
+        <p className="text-[11px] text-ink-muted">{provenanceNote} — edit anything that changed.</p>
       ) : null}
 
       {isPre6 && pre1SubmittedForPre6 && pre6DirectorSlots.length === 0 && (

@@ -302,8 +302,10 @@
     letter-spacing: -0.01em;
     font-weight: 600;
   }
+  /* Tabular figures for dates, counts and amounts. Identifiers (CIN, PAN, GSTIN, SRN,
+     file names) use the font-mono utility instead. */
   .mono {
-    font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+    font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum';
     letter-spacing: 0;
   }

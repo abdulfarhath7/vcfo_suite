@@ -56,7 +56,7 @@ function TimingChip({ f, today }: { f: PortalFiling; today: string }) {
 function Fact({ k, children }: { k: string; children: React.ReactNode }) {
   return (
     <div style={{ padding: 10, borderRadius: 8, background: 'var(--raised)' }}>
-      <div style={{ font: '800 10px Manrope', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>{k}</div>
+      <div style={{ font: '800 10px var(--font-sans),sans-serif', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>{k}</div>
       <div style={{ fontWeight: 700, marginTop: 4 }}>{children}</div>
     </div>
   );
@@ -103,7 +103,7 @@ export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; on
               <ProofChip f={f} onOpen={(x) => openProof(x)} />
               <TimingChip f={f} today={today} />
             </div>
-            <div id="comp-det-t" style={{ font: "700 22px 'Space Grotesk'", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <div id="comp-det-t" style={{ font: "600 22px var(--font-sans)", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               {f.name} · {longPeriod(f.period)} <PortalBtn f={f} />
             </div>
           </div>
@@ -198,7 +198,7 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
               <ProofChip f={f} onOpen={(x) => openProof(x)} />
               <TimingChip f={f} today={today} />
             </div>
-            <div id="comp-pan-t" style={{ font: "700 21px 'Space Grotesk'", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <div id="comp-pan-t" style={{ font: "600 21px var(--font-sans)", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               {f.name} · {longPeriod(f.period)} <PortalBtn f={f} />
             </div>
           </div>
@@ -213,7 +213,7 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {f.acknowledgementNo ? (
               <Fact k="ARN">
-                <span className="mono">{f.acknowledgementNo}</span>
+                <span className="idm">{f.acknowledgementNo}</span>
               </Fact>
             ) : null}
             {f.amountPaid ? (
@@ -258,7 +258,7 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
                       ...(i === 0 ? { background: 'var(--primary-light)' } : {}),
                     }}
                   >
-                    <span style={{ width: 34, height: 40, borderRadius: 4, background: ext(p.fileName, p.mime) === 'PDF' ? 'var(--over)' : 'var(--prog)', color: '#fff', display: 'grid', placeItems: 'center', font: '800 9px Manrope', flex: 'none' }}>
+                    <span style={{ width: 34, height: 40, borderRadius: 4, background: ext(p.fileName, p.mime) === 'PDF' ? 'var(--over)' : 'var(--prog)', color: '#fff', display: 'grid', placeItems: 'center', font: '800 9px var(--font-sans),sans-serif', flex: 'none' }}>
                       {ext(p.fileName, p.mime)}
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>

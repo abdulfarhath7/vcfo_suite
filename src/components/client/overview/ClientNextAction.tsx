@@ -68,7 +68,7 @@ export function ClientNextAction({
               : <GlossaryText text={nextAction.description ?? 'Open the step to fill in the details we need to move forward.'} />}
           </p>
           {nextAction.windowLabel && !correction && (
-            <p className="mt-1.5 inline-flex items-center gap-1.5 font-mono text-[11px] tabular-nums text-ink-muted">
+            <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] tabular-nums text-ink-muted">
               <Clock className="h-3 w-3" aria-hidden />
               {nextAction.windowLabel}
             </p>

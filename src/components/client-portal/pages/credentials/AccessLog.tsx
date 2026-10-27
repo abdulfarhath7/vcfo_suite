@@ -49,7 +49,7 @@ export function AccessLog({ engQ, onClose, onAudit }: { engQ: string; onClose: (
           ) : (
             rows.map((e) => (
               <li key={e.id}>
-                <time className="cr-mono" dateTime={e.at}>
+                <time className="cr-num" dateTime={e.at}>
                   {fmtDate(e.at)}
                 </time>
                 <span>{e.text}</span>

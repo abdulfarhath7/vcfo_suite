@@ -28,7 +28,7 @@ export function CredentialsPage() {
   const portal = usePortalOptional();
   if (!portal) {
     return (
-      <div style={{ padding: 24, font: '600 14px Manrope, system-ui, sans-serif' }}>
+      <div style={{ padding: 24, font: '600 14px var(--font-sans),system-ui,sans-serif' }}>
         Credentials are shown inside the client portal. Open the engagement&apos;s workspace to manage them.
       </div>
     );

@@ -66,10 +66,10 @@ export function DonutCard({ rows, label, drillTitle }: { rows: PortalFiling[]; l
           onClick={() => open('all')}
           onKeyDown={key('all')}
         />
-        <text pointerEvents="none" x="44" y="42" textAnchor="middle" fontFamily="Space Grotesk" fontWeight="600" fontSize="20" fill="var(--fg)">
+        <text pointerEvents="none" x="44" y="42" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="600" fontSize="20" fill="var(--fg)">
           <CountUp n={tot} svg />
         </text>
-        <text pointerEvents="none" x="44" y="57" textAnchor="middle" fontFamily="Manrope" fontWeight="600" fontSize={label.length > 7 ? 9.5 : 11} fill="var(--muted)">
+        <text pointerEvents="none" x="44" y="57" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="600" fontSize={label.length > 7 ? 9.5 : 11} fill="var(--muted)">
           {label}
         </text>
       </svg>

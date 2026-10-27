@@ -182,7 +182,7 @@ function ActivityPanel({ detail }: { detail: SuperEngagementDetail }) {
               </p>
               <p className="mt-0.5 min-w-0 truncate text-[11px] text-ink-muted">
                 {entry.actor ?? 'System'}
-                <span className="ml-1.5 font-mono text-[10.5px] text-ink-faint">
+                <span className="ml-1.5 text-[10.5px] text-ink-faint">
                   {formatSuperAgo(entry.at)}
                 </span>
               </p>

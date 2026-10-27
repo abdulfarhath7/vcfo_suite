@@ -117,7 +117,7 @@ const S_NAV: CSSProperties = {
   boxShadow: '0 4px 12px -4px oklch(21% 0.042 264 / .25)',
   zIndex: 2,
 };
-const S_ZB: CSSProperties = { width: 30, height: 30, border: 0, borderRadius: 6, background: 'transparent', color: '#fff', font: '700 16px Manrope', cursor: 'pointer' };
+const S_ZB: CSSProperties = { width: 30, height: 30, border: 0, borderRadius: 6, background: 'transparent', color: '#fff', font: '600 16px var(--font-sans),sans-serif', cursor: 'pointer' };
 
 export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProps) {
   const [i, setI] = useState(() => Math.min(Math.max(index, 0), Math.max(docs.length - 1, 0)));
@@ -397,7 +397,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
   if (loaded.state === 'loading') {
     paper = (
       <div data-paper aria-busy="true" style={{ ...paperBase, aspectRatio: '1/1.414', padding: 'clamp(20px,5vw,48px) clamp(18px,5vw,52px)' }}>
-        <div style={{ font: '600 22px "Space Grotesk",Manrope,sans-serif', color: 'var(--fg)' }} className="metric">
+        <div style={{ font: '600 22px var(--font-sans),sans-serif', color: 'var(--fg)' }} className="metric">
           {doc.name.replace(/\.[a-z0-9]+$/i, '')}
         </div>
         <div className="cap" style={{ marginTop: 4 }}>
@@ -411,7 +411,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
   } else if (loaded.state === 'error') {
     paper = (
       <div data-paper role="alert" style={{ ...paperBase, aspectRatio: '1/1.414', padding: 'clamp(20px,5vw,48px) clamp(18px,5vw,52px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
-        <span style={{ width: 48, height: 48, borderRadius: 99, background: 'var(--over-light)', color: 'var(--over-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 20px Manrope' }}>!</span>
+        <span style={{ width: 48, height: 48, borderRadius: 99, background: 'var(--over-light)', color: 'var(--over-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 20px var(--font-sans),sans-serif' }}>!</span>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--over-text)' }}>Could not open this file</div>
         <button type="button" className="btn btn-o" onClick={() => setReload((r) => r + 1)}>
           Try again
@@ -467,7 +467,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         >
           {pages ? (
             <>
-              <span style={{ padding: '0 10px', font: '600 12px Manrope,sans-serif', whiteSpace: 'nowrap' }}>
+              <span style={{ padding: '0 10px', font: '600 12px var(--font-sans),sans-serif', whiteSpace: 'nowrap' }}>
                 Page 1 / {pages}
               </span>
               <span style={{ width: 1, height: 18, background: 'oklch(100% 0 0 / .2)' }} />
@@ -476,7 +476,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
           <button type="button" className="dv-zb" aria-label="Zoom out" disabled={z <= ZMIN} onClick={() => setZ((v) => Math.max(ZMIN, v - ZSTEP))} style={S_ZB}>
             −
           </button>
-          <span style={{ minWidth: 48, textAlign: 'center', font: '600 12px Manrope,sans-serif' }} aria-live="polite">
+          <span style={{ minWidth: 48, textAlign: 'center', font: '600 12px var(--font-sans),sans-serif' }} aria-live="polite">
             {z}%
           </span>
           <button type="button" className="dv-zb" aria-label="Zoom in" disabled={z >= ZMAX} onClick={() => setZ((v) => Math.min(ZMAX, v + ZSTEP))} style={S_ZB}>
@@ -488,7 +488,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
   );
 
   return createPortal(
-    <div className="cp-docviewer" style={{ fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
+    <div className="cp-docviewer" style={{ fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
       <div
         className="vh-under-bar dv-scrim"
         role="presentation"

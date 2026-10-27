@@ -284,7 +284,7 @@ function AuditEventRowView({
           <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-faint">
             Metadata
           </p>
-          <pre className="mono max-h-40 overflow-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-ink-soft">
+          <pre className="font-mono max-h-40 overflow-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-ink-soft">
             {metadataText}
           </pre>
           <p className="mono mt-2 text-[10px] text-ink-faint">{ev.action}</p>

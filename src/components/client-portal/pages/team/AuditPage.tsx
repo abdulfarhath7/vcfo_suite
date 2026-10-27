@@ -206,7 +206,7 @@ export function AuditPage() {
                   transform: 'translateX(-50%)',
                   background: 'var(--navy)',
                   color: '#fff',
-                  font: '700 12px Manrope',
+                  font: '600 12px var(--font-sans),sans-serif',
                   padding: '4px 9px',
                   borderRadius: 6,
                   whiteSpace: 'nowrap',
@@ -484,7 +484,7 @@ function DayDrill({
           <span className="m">{p.m}</span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 id="ab-t" style={{ margin: 0, font: '700 16px Manrope', color: 'var(--navy-ink,var(--navy))' }}>
+          <h2 id="ab-t" style={{ margin: 0, font: '600 16px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
             {day === today ? 'Today' : p.wd}, {p.n} {p.m}
           </h2>
           <div className="cap">

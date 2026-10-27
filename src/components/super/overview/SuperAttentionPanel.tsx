@@ -63,7 +63,7 @@ function AttentionRow({ summary }: { summary: SuperEngagementSummary }) {
       <div className="mb-1.5 flex min-w-0 items-center gap-2 text-[12.5px]">
         <b className="min-w-0 truncate font-semibold text-ink">{summary.companyName}</b>
         {idle ? (
-          <span className="shrink-0 font-mono text-[10.5px] font-semibold text-ink-faint">
+          <span className="shrink-0 text-[10.5px] font-semibold text-ink-faint tabular-nums">
             {idle}
           </span>
         ) : null}

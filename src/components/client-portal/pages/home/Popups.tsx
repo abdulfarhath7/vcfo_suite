@@ -91,7 +91,7 @@ function Dialog({
         role="dialog"
         aria-modal="true"
         aria-label={label}
-        style={{ width: `min(${width}px, 100%)`, display: 'flex', flexDirection: 'column', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / 0.55)', fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13, ...style }}
+        style={{ width: `min(${width}px, 100%)`, display: 'flex', flexDirection: 'column', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / 0.55)', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13, ...style }}
       >
         {children}
       </div>
@@ -331,7 +331,7 @@ export function StepPopup({
               }}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: '1px solid var(--hair)', cursor: 'pointer' }}
             >
-              <span className="mono" style={{ width: 32, height: 32, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 700, flex: 'none', background: d.type === 'PDF' ? 'var(--over-light)' : 'var(--prog-light)', color: d.type === 'PDF' ? 'var(--over-text)' : 'var(--prog-text)' }}>
+              <span className="idm" style={{ width: 32, height: 32, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 700, flex: 'none', background: d.type === 'PDF' ? 'var(--over-light)' : 'var(--prog-light)', color: d.type === 'PDF' ? 'var(--over-text)' : 'var(--prog-text)' }}>
                 {d.type}
               </span>
               <span className="rt" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
@@ -390,7 +390,7 @@ export function StepPopup({
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
               aria-label="Message"
-              style={{ border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', font: '500 13px Manrope,sans-serif', resize: 'vertical', background: 'var(--panel)', color: 'var(--fg)' }}
+              style={{ border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', font: '500 13px var(--font-sans),sans-serif', resize: 'vertical', background: 'var(--panel)', color: 'var(--fg)' }}
             />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button type="button" className="btn btn-o" onClick={() => setMsg(null)}>Cancel</button>
@@ -449,7 +449,7 @@ export function CompliancePopup({ h, tab: initial, onClose }: { h: HomeData; tab
     <Dialog onClose={onClose} label={`Compliances · ${fy}`} width={760} style={{ overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ flex: 1 }}>
-          <div style={{ font: '700 15px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', display: 'flex', alignItems: 'center', gap: 4 }}>
             Compliances · {fy}
             <InfoPopover askAbout="compliances">As of {dLong(h.today)}</InfoPopover>
           </div>

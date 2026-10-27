@@ -33,9 +33,9 @@ function Bubble({ size, children, clear }: { size: number; children: React.React
     <div role="status" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, justifyContent: 'center', textAlign: 'left' }}>
       <BotFace size={size} />
       <div className="vdoc-bubble">
-        <span style={{ font: '600 13px/1.45 Manrope,sans-serif', color: 'var(--fg)' }}>{children}</span>
+        <span style={{ font: '600 13px/1.45 var(--font-sans),sans-serif', color: 'var(--fg)' }}>{children}</span>
         {clear ? (
-          <button type="button" onClick={clear.onClick} style={{ marginTop: 6, padding: 0, border: 0, background: 'none', font: '700 12px Manrope,sans-serif', color: 'var(--primary)', cursor: 'pointer' }}>
+          <button type="button" onClick={clear.onClick} style={{ marginTop: 6, padding: 0, border: 0, background: 'none', font: '600 12px var(--font-sans),sans-serif', color: 'var(--primary)', cursor: 'pointer' }}>
             {clear.label}
           </button>
         ) : null}
@@ -171,13 +171,13 @@ function LibraryInner() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
                 </svg>
-                <input type="search" aria-label="Search books" placeholder="Search books" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: 'none', font: '500 13px Manrope,sans-serif', color: 'var(--fg)' }} />
+                <input type="search" aria-label="Search books" placeholder="Search books" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: 'none', font: '500 13px var(--font-sans),sans-serif', color: 'var(--fg)' }} />
               </label>
             </div>
 
             {recent.length ? (
               <section className="vlib-recent">
-                <h2 style={{ margin: 0, font: '800 11px Manrope,sans-serif', letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--navy-ink,var(--navy))', width: 110 }}>Recently read</h2>
+                <h2 style={{ margin: 0, font: '800 11px var(--font-sans),sans-serif', letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--navy-ink,var(--navy))', width: 110 }}>Recently read</h2>
                 {recent.map((r) => {
                   const cat = catOf(r.category);
                   const tip = readTip(r);
@@ -211,7 +211,7 @@ function LibraryInner() {
                 <section key={cat.id} aria-label={cat.title(company)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 28px 0' }}>
                     <span style={{ width: 10, height: 10, borderRadius: 3, background: cat.color }} />
-                    <h2 style={{ margin: 0, font: '700 13px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))' }}>{cat.title(company)}</h2>
+                    <h2 style={{ margin: 0, font: '600 13px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>{cat.title(company)}</h2>
                     <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)' }}>
                       {books.length}
                     </span>
@@ -296,7 +296,7 @@ function RecentDrill({ reads, tab, onClose }: { reads: LibraryRead[]; tab: numbe
     <PagePortal page="library">
       <div className="ld-root">
         <div className="ld-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-          <div role="dialog" aria-modal="true" aria-label="Recently read" className="dlg" style={{ width: 600, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / .55)', overflow: 'hidden', fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
+          <div role="dialog" aria-modal="true" aria-label="Recently read" className="dlg" style={{ width: 600, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / .55)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
             <div className="dd-top" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)' }}>
               <span>These guides live in the Library</span>
               <a
@@ -312,7 +312,7 @@ function RecentDrill({ reads, tab, onClose }: { reads: LibraryRead[]; tab: numbe
               </a>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 56, padding: '0 12px 0 18px', borderBottom: '1px solid var(--border)' }}>
-              <h2 style={{ margin: 0, font: '700 15px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))', flex: 1 }}>Recently read</h2>
+              <h2 style={{ margin: 0, font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', flex: 1 }}>Recently read</h2>
               <button ref={closeRef} type="button" className="ib" aria-label="Close" onClick={close}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
@@ -369,7 +369,7 @@ function EmptyLibrary({ company }: { company: string }) {
     <div className="cp-library">
       <div className="le-root">
         <main style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <h1 style={{ margin: 0, font: '700 22px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))' }}>Library</h1>
+          <h1 style={{ margin: 0, font: '600 22px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>Library</h1>
           <section className="card" style={{ minHeight: 580, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, textAlign: 'center', padding: 16 }}>
             <div aria-hidden="true" style={{ position: 'relative', width: 200, height: 110, borderBottom: '3px solid var(--violet-soft)' }}>
               <span className="bk" style={{ left: 30, width: 26, height: 78, background: 'var(--violet-chip)' }} />

@@ -284,7 +284,7 @@ export function AppearanceSettings() {
             style={surfaceCssVars(hero, 'hero')}
           >
             <div className="relative z-[2] min-w-0">
-              <p className="font-mono text-[10px] tracking-[0.08em] text-white/55">Live preview</p>
+              <p className="text-[11px] text-white/55">Live preview</p>
               <p className="serif mt-1.5 text-[1.45rem] font-semibold leading-tight text-white">
                 Good morning, {first}
               </p>

@@ -78,7 +78,7 @@ export function Bot({ text, act, q }: { text: string; act?: string; q?: string }
   return (
     <div style={{ padding: '10px 14px 14px' }}>
       <BotSays size={44} action={act ?? 'Ask VCFO why'} question={q ?? text}>
-        <b style={{ display: 'block', font: '600 13px/1.45 Manrope' }}>{text}</b>
+        <b style={{ display: 'block', font: '600 13px/1.45 var(--font-sans),sans-serif' }}>{text}</b>
       </BotSays>
     </div>
   );

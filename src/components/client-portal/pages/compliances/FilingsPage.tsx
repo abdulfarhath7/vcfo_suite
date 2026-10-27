@@ -312,7 +312,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
                   {I.chevL(15)}
                 </button>
               ) : null}
-              <b style={{ font: "700 15px 'Space Grotesk'" }}>{winLabel}</b>
+              <b style={{ font: "600 15px var(--font-sans)" }}>{winLabel}</b>
               {!fullYear ? (
                 <button type="button" className="ibtn" style={{ border: 0 }} aria-label="Later months" disabled={!canNext} onClick={() => set({ period: stepMonth(end, 1) })}>
                   {I.chevR(15)}

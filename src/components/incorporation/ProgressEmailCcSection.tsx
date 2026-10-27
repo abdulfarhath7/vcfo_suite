@@ -340,7 +340,7 @@ export function ProgressEmailCcSection({
         Progress email CC
       </h2>
       {defaultCcConfigured && (
-        <p className="text-[11.5px] text-ink-faint mb-3 font-mono">
+        <p className="text-[11.5px] text-ink-faint mb-3">
           Firm default CC included
         </p>
       )}

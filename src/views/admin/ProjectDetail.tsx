@@ -136,7 +136,7 @@ export default function ProjectDetail() {
                 {eng.companyName}
               </h1>
             </div>
-            <p className="font-mono text-[11px] tabular-nums text-ink-faint">
+            <p className="text-[11px] tabular-nums text-ink-faint">
               {totalDone}/{totalSteps}
               {incorporationDate ? ` · ${formatDate(new Date(incorporationDate))}` : ''}
             </p>

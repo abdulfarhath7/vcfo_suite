@@ -351,7 +351,7 @@ export function OtpDialog({
           </div>
           {locked ? (
             <div className="cr-lock" role="status" aria-live="polite">
-              Too many wrong codes. Try again later. <span className="cr-mono">{fmtS(lockUntil - now)}</span>
+              Too many wrong codes. Try again later. <span className="cr-num">{fmtS(lockUntil - now)}</span>
             </div>
           ) : info && !err ? (
             <div className="cr-ok" role="status" aria-live="polite">
@@ -366,7 +366,7 @@ export function OtpDialog({
             ) : (
               <>
                 Resend code in{' '}
-                <span className="cr-mono" aria-live="polite">
+                <span className="cr-num" aria-live="polite">
                   {fmtS(resendMs)}
                 </span>
               </>

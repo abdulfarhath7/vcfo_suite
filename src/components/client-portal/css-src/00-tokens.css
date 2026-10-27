@@ -11,7 +11,7 @@
 :root :where(img,svg,video,canvas){display:inline;vertical-align:baseline;max-width:none}
 :root :where(svg){overflow:hidden}
 
-:root{color-scheme:light;font-family:var(--font-sans),system-ui,sans-serif;font-size:13px;color:var(--fg);background:var(--bg);min-height:100vh;-webkit-font-smoothing:antialiased;
+:root{color-scheme:light;font-family:var(--font-sans),system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:13px;color:var(--fg);background:var(--bg);min-height:100vh;-webkit-font-smoothing:antialiased;
 --vp-side-w:248px;--vps-w:248px}
 :root{--vpl-in:var(--vp-inset,clamp(14px,1.25vw + 8px,24px));--vpl-w:clamp(96px,4.5vw + 72px,148px);--vpk-w:clamp(96px,3vw + 72px,128px);--vpl-ph:36px;--vp-launch-h:calc(var(--vpl-ph) + 2 * var(--vpl-in))}
 @media (max-width:1279px){:root{--vp-side-w:72px;--vps-w:72px}}

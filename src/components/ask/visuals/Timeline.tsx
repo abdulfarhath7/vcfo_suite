@@ -10,7 +10,7 @@ export function Timeline({ visual }: { visual: TimelineVisual }) {
         <li key={`${e.label}-${i}`} className="relative text-[13px]">
           <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-muted-foreground/60" aria-hidden />
           <span className="font-medium text-ink">{e.label}</span>
-          <span className="ml-2 font-mono text-[11.5px] text-ink-muted">{e.when}</span>
+          <span className="ml-2 tabular-nums text-[11.5px] text-ink-muted">{e.when}</span>
         </li>
       ))}
     </ol>

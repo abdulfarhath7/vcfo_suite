@@ -293,7 +293,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
               setQ(e.target.value);
               setMenu('');
             }}
-            style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: 'none', font: '500 13px Manrope,sans-serif', color: 'var(--fg)' }}
+            style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: 'none', font: '500 13px var(--font-sans),sans-serif', color: 'var(--fg)' }}
           />
           <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)' }}>
             {shownFiles}/{totalFiles}
@@ -656,7 +656,7 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
         >
           {missing ? '—' : tagText(n)}
         </span>
-        <span style={{ font: '700 14px Manrope,sans-serif', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.label}</span>
+        <span style={{ font: '600 14px var(--font-sans),sans-serif', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.label}</span>
         <span className="badge" style={STATUS_STYLE[n.status]}>
           {n.status}
         </span>
@@ -701,7 +701,7 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
               onKeyDown={onActivate(onPreview)}
             >
               <span style={{ display: 'block', fontSize: 11, letterSpacing: '.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>{tagTip(n)}</span>
-              <span style={{ display: 'block', font: "600 18px 'Space Grotesk'", marginTop: 10 }}>{n.label}</span>
+              <span style={{ display: 'block', font: "600 18px var(--font-sans)", marginTop: 10 }}>{n.label}</span>
               <span style={{ display: 'block', fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>{company}</span>
               {[92, 84, 95, 66].map((w, i) => (
                 <span key={w} style={{ display: 'block', height: 6, borderRadius: 3, background: 'light-dark(oklch(90% 0.01 255), oklch(28% 0.01 255))', width: `${w}%`, marginTop: i ? 9 : 18 }} />
@@ -750,7 +750,7 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
         </div>
         <div className="kv">
           <span>File</span>
-          <span className="mono" style={{ fontSize: 12, fontWeight: 500 }}>
+          <span className="idm" style={{ fontSize: 12, fontWeight: 500 }}>
             {n.fileName}
           </span>
         </div>

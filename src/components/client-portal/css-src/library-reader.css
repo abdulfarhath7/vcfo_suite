@@ -8,7 +8,7 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px;white-space:nowrap}
 .cap{font-size:11.5px;color:var(--muted)}
 .lbl{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.mono{font-family:var(--font-mono),monospace;font-feature-settings:"tnum"}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border-radius:6px;font:600 13px var(--font-sans),sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap}
 .btn-n{background:var(--navy);color:#fff}.btn-n:hover{background:var(--navy-2);color:#fff}
 .btn-o{background:var(--panel);color:var(--fg);border-color:var(--border)}.btn-o:hover{background:var(--raised);color:var(--fg)}
@@ -20,7 +20,7 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .seg button{position:relative;z-index:1;border:0;background:none;height:30px;padding:0 14px;border-radius:5px;font:500 12px var(--font-sans),sans-serif;color:light-dark(oklch(50% 0.022 255), oklch(80% 0.015 255));cursor:pointer;white-space:nowrap;transition:color .2s}
 .seg button.on{color:#fff}
 .node{display:flex;flex-direction:column;align-items:center;gap:8px;width:170px;text-align:center}
-.dot{width:40px;height:40px;border-radius:99px;display:flex;align-items:center;justify-content:center;font:700 13px var(--font-mono),monospace}
+.dot{width:40px;height:40px;border-radius:99px;display:flex;align-items:center;justify-content:center;font:700 13px var(--font-sans),sans-serif}
 .lnk{flex:1;height:3px;border-radius:2px;margin-top:19px}
 @keyframes v7pulse{0%,100%{box-shadow:0 0 0 0 oklch(80% 0.12 85 / .7)}50%{box-shadow:0 0 0 7px oklch(80% 0.12 85 / 0)}}
 .pulse{animation:v7pulse 1.8s ease-in-out infinite}

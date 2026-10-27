@@ -6,7 +6,7 @@
 --ok:oklch(var(--positive));--ok-light:oklch(var(--positive-soft));--ok-text:oklch(var(--positive));--you:oklch(var(--owner-client));--you-light:oklch(var(--owner-client-soft));--you-text:oklch(var(--owner-client));--with:oklch(var(--owner-sbc));--with-light:oklch(var(--owner-sbc-soft));--with-text:oklch(var(--owner-sbc));
 --over:oklch(var(--danger));--up:oklch(var(--upcoming));--own-you:oklch(var(--owner-client-soft));--own-you-t:oklch(var(--owner-client));--own-sbc:oklch(var(--owner-sbc-soft));--own-sbc-t:oklch(var(--owner-sbc));--violet:oklch(var(--brand));--violet-light:oklch(var(--brand-soft));
 --shadow:var(--shadow-card);
---sw:var(--vp-side-w,248px);--mono:var(--font-mono),ui-monospace,SFMono-Regular,Menlo,monospace;--disp:var(--font-sans),system-ui,sans-serif}
+--sw:var(--vp-side-w,248px);--mono:var(--font-sans),sans-serif,SFMono-Regular,Menlo,monospace;--disp:var(--font-sans),system-ui,sans-serif}
 @media (max-width:1279px){:root{--sw:var(--vp-side-w,72px)}}
 @media (max-width:767px){:root{--sw:var(--vp-side-w,0px)}}
 *{box-sizing:border-box}
@@ -14,7 +14,7 @@
 :root{overflow-x:clip}
 a{color:var(--primary);text-decoration:none;font-weight:700}
 button{font:inherit;color:inherit}
-.mono{font-family:var(--mono)}
+.mono{font-variant-numeric:tabular-nums}
 .ic{width:16px;height:16px;flex:none}
 .sp{flex:1}
 /* ---------- page ---------- */

@@ -195,7 +195,7 @@ export function DocsMobile({
               <div className="mono" style={{ fontSize: 11, color: 'var(--subtle)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {crumb}
               </div>
-              <h1 style={{ margin: 0, font: '700 19px/1.2 Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h1>
+              <h1 style={{ margin: 0, font: '600 19px/1.2 var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h1>
             </div>
           </div>
         ) : null}
@@ -204,7 +204,7 @@ export function DocsMobile({
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
             </svg>
-            <input type="search" aria-label="Filter documents" placeholder="Filter documents" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: 'none', font: '500 14px Manrope,sans-serif', color: 'var(--fg)' }} />
+            <input type="search" aria-label="Filter documents" placeholder="Filter documents" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: 'none', font: '500 14px var(--font-sans),sans-serif', color: 'var(--fg)' }} />
             <span className="mono" style={{ fontSize: 11 }}>
               {shownCount}/{files.length}
             </span>
@@ -348,7 +348,7 @@ export function DocsMobile({
               <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 6 }}>
                 <span style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)' }} />
               </div>
-              <div style={{ padding: '6px 20px 10px', font: '700 14px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))', borderBottom: '1px solid var(--hair)' }}>{sheetTitle}</div>
+              <div style={{ padding: '6px 20px 10px', font: '700 14px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', borderBottom: '1px solid var(--hair)' }}>{sheetTitle}</div>
               {items.map((m) => (
                 <button key={m.label} type="button" role="menuitem" onClick={m.act}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'var(--navy-ink,var(--navy))' }}>

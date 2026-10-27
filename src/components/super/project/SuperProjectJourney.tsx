@@ -41,7 +41,7 @@ export function SuperProjectJourney({ detail }: { detail: SuperEngagementDetail 
               <h3 className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-ink">
                 {group.phaseLabel}
               </h3>
-              <span className="ml-auto shrink-0 font-mono text-[10.5px] font-semibold text-ink-faint">
+              <span className="ml-auto shrink-0 text-[10.5px] font-semibold text-ink-faint tabular-nums">
                 {done}/{group.steps.length}
               </span>
             </div>

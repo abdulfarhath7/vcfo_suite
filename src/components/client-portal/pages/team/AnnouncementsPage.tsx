@@ -144,7 +144,7 @@ export function AnnouncementsPage() {
               <div className="lbl" style={{ color: 'var(--due-text)' }}>
                 Next deadline · {dueText}
               </div>
-              <div style={{ font: '700 16px Manrope', color: 'var(--fg)', marginTop: 3 }}>
+              <div style={{ font: '600 16px var(--font-sans),sans-serif', color: 'var(--fg)', marginTop: 3 }}>
                 {next.title}
                 {next.periodLabel ? ` for ${next.periodLabel}` : ''}
               </div>
@@ -384,7 +384,7 @@ function AnnDetail({
               </span>
             ) : null}
           </div>
-          <h2 id="ad-t" style={{ margin: '6px 0 0', font: '700 18px/1.3 Space Grotesk', color: 'var(--navy-ink,var(--navy))' }}>
+          <h2 id="ad-t" style={{ margin: '6px 0 0', font: '600 18px/1.3 var(--font-sans)', color: 'var(--navy-ink,var(--navy))' }}>
             {a.title}
           </h2>
         </div>

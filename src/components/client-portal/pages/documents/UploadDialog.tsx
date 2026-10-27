@@ -150,9 +150,9 @@ export function UploadDialog({
             if (e.target === e.currentTarget && !uploading) close();
           }}
         >
-          <div className="vup-dlg" role="dialog" aria-modal="true" aria-label="Upload a document" style={{ background: 'var(--panel)', borderRadius: 12, border: '1px solid var(--border)', boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / 0.4)', overflow: 'hidden', fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
+          <div className="vup-dlg" role="dialog" aria-modal="true" aria-label="Upload a document" style={{ background: 'var(--panel)', borderRadius: 12, border: '1px solid var(--border)', boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / 0.4)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
-              <h2 style={{ margin: 0, font: '700 15px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))', flex: 1 }}>Upload a document</h2>
+              <h2 style={{ margin: 0, font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', flex: 1 }}>Upload a document</h2>
               <button ref={closeRef} type="button" aria-label="Close" onClick={close} style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
@@ -181,7 +181,7 @@ export function UploadDialog({
                           borderRadius: 8,
                           border: on ? '2px solid var(--navy)' : '1px solid var(--border)',
                           background: on ? 'var(--primary-light)' : 'var(--panel)',
-                          font: '700 12.5px Manrope,sans-serif',
+                          font: '600 12.5px var(--font-sans),sans-serif',
                           color: on ? 'var(--navy-ink,var(--navy))' : 'var(--fg)',
                           cursor: 'pointer',
                         }}

@@ -42,10 +42,10 @@ const test = base.extend<
   { cookiesFor: (role: DemoRole) => Promise<Cookie[]> }
 >({
   cookiesFor: [
-    async ({ browser }, use, workerInfo) => {
+    async ({ browser }, provide, workerInfo) => {
       const cache = new Map<DemoRole, Promise<Cookie[]>>();
       const baseURL = workerInfo.project.use.baseURL;
-      await use((role) => {
+      await provide((role) => {
         if (!cache.has(role)) {
           cache.set(
             role,
@@ -64,12 +64,12 @@ const test = base.extend<
     },
     { scope: 'worker' },
   ],
-  signIn: async ({ context, cookiesFor }, use) => {
-    await use(async (role) => {
+  signIn: async ({ context, cookiesFor }, provide) => {
+    await provide(async (role) => {
       await context.addCookies(await cookiesFor(role));
     });
   },
-  problems: async ({ page }, use) => {
+  problems: async ({ page }, provide) => {
     const problems: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() !== 'error') return;
@@ -78,7 +78,7 @@ const test = base.extend<
       problems.push(`console.error: ${text.slice(0, 500)}`);
     });
     page.on('pageerror', (err) => problems.push(`pageerror: ${err.message.slice(0, 500)}`));
-    await use(problems);
+    await provide(problems);
   },
 });
 

@@ -36,7 +36,7 @@ import {
   type NeedRow,
 } from './derive';
 
-const S = { fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 } as const;
+const S = { fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 } as const;
 
 /* ------------------------------------------------------------------ greet */
 
@@ -103,7 +103,7 @@ export function GreetCard({ h }: { h: HomeData }) {
               onOpen={openRing}
               style={{ width: 46, height: 46, borderRadius: 99, background: `conic-gradient(var(--gold) 0 ${ring.pct}%,oklch(100% 0 0 / 0.16) ${ring.pct}% 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <div style={{ width: 37, height: 37, borderRadius: 99, background: 'var(--navy-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '700 11px Space Grotesk' }}>{ring.pct}%</div>
+              <div style={{ width: 37, height: 37, borderRadius: 99, background: 'var(--navy-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '600 11px var(--font-sans)' }}>{ring.pct}%</div>
             </Tip>
             <span style={{ fontSize: 11, letterSpacing: '.1em', opacity: 0.7, marginTop: 2, whiteSpace: 'nowrap' }}>{ring.label}</span>
           </div>

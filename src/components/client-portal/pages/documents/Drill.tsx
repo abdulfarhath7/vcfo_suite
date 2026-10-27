@@ -92,7 +92,7 @@ export function DocsDrill({
             aria-modal="true"
             aria-label={`${target.name} documents`}
             className="dlg"
-            style={{ width: 640, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / .55)', overflow: 'hidden', fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}
+            style={{ width: 640, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: '0 24px 60px -20px oklch(15% 0.05 258 / .55)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}
           >
             <div className="dd-top" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)', flex: 'none' }}>
               <span>
@@ -114,7 +114,7 @@ export function DocsDrill({
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M3 18.5V5.5A1.5 1.5 0 0 1 4.5 4h4.2l2 2.4h8.8A1.5 1.5 0 0 1 21 7.9v10.6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z" fill="var(--folder,#0f2a4a)" />
               </svg>
-              <h2 style={{ margin: 0, font: '700 15px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{target.title}</h2>
+              <h2 style={{ margin: 0, font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{target.title}</h2>
               <span style={{ display: 'flex', gap: 1, width: 80, height: 5, borderRadius: 3, overflow: 'hidden', background: 'var(--hair)', flex: 'none' }}>
                 <span style={{ width: `${(ok / tot) * 100}%`, background: 'var(--ok)' }} />
                 <span style={{ width: `${(rv / tot) * 100}%`, background: 'var(--prog)' }} />

@@ -484,7 +484,7 @@ export function NotificationsPage() {
                       transform: 'translate(-50%,-100%)',
                       background: 'var(--navy)',
                       color: '#fff',
-                      font: '700 12px Manrope',
+                      font: '600 12px var(--font-sans),sans-serif',
                       padding: '4px 9px',
                       borderRadius: 6,
                       whiteSpace: 'nowrap',
@@ -515,7 +515,7 @@ export function NotificationsPage() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 8,
-                      font: '600 12px Manrope',
+                      font: '600 12px var(--font-sans),sans-serif',
                       color: 'var(--fg)',
                       border: 0,
                       background: hv === i ? 'var(--raised)' : 'none',
@@ -642,7 +642,7 @@ function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string;
         <span className="ic" style={{ background: 'var(--navy)' }}>
           <Svg d={P.bell} join={false} />
         </span>
-        <h2 id="nd-t" style={{ margin: 0, font: '700 16px Manrope', color: 'var(--navy-ink,var(--navy))' }}>
+        <h2 id="nd-t" style={{ margin: 0, font: '600 16px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
           Notifications this month
         </h2>
         <CloseBtn onClick={() => setDrill(null)} />

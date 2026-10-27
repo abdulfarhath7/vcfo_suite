@@ -56,7 +56,7 @@ export function TimelineRequestsPanel({ engagementId, canDecide }: { engagementI
           </p>
           <ul className="grid gap-1 sm:grid-cols-2">
             {r.phases.map((p) => (
-              <li key={p.id} className="font-mono text-xs">
+              <li key={p.id} className="tabular-nums text-xs">
                 {p.name}: {p.from} → {p.to}
               </li>
             ))}

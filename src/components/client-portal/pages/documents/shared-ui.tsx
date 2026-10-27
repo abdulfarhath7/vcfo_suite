@@ -84,12 +84,12 @@ export function BotBubble({
     <div role="status" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, justifyContent: 'center', textAlign: 'left' }}>
       <BotFace size={size} />
       <div className="vdoc-bubble">
-        <span style={{ font: '600 13px/1.45 Manrope,sans-serif', color: 'var(--fg)' }}>{children}</span>
+        <span style={{ font: '600 13px/1.45 var(--font-sans),sans-serif', color: 'var(--fg)' }}>{children}</span>
         {clear ? (
           <button
             type="button"
             onClick={clear.onClick}
-            style={{ marginTop: 6, padding: 0, border: 0, background: 'none', font: '700 12px Manrope,sans-serif', color: 'var(--primary)', cursor: 'pointer' }}
+            style={{ marginTop: 6, padding: 0, border: 0, background: 'none', font: '600 12px var(--font-sans),sans-serif', color: 'var(--primary)', cursor: 'pointer' }}
           >
             {clear.label}
           </button>

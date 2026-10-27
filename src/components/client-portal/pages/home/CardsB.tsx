@@ -41,7 +41,7 @@ import {
   type TlPhase,
 } from './derive';
 
-const S = { fontFamily: 'Manrope,system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 } as const;
+const S = { fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 } as const;
 const W = { width: '100%', boxSizing: 'border-box', ...S } as CSSProperties;
 
 function plural(n: number, w: string) {
@@ -530,7 +530,7 @@ export function IdsCard({ h, onReveal, onCoi }: { h: HomeData; onReveal: (f: 'pa
                   <span className="chip" style={{ padding: '0 5px', fontSize: 11, background: 'var(--navy)', color: 'var(--gold)' }}>Private</span>
                 ) : null}
               </span>
-              <span className="mono" style={{ fontSize: 12.5, fontWeight: 600, ...(r.secret ? { letterSpacing: '.06em' } : { overflowWrap: 'anywhere' }), ...(r.v ? {} : { color: 'var(--subtle)' }), ...(r.secret && shown[r.secret] ? { color: 'var(--ok-text)' } : {}) }}>
+              <span className="idm" style={{ fontSize: 12.5, fontWeight: 600, ...(r.secret ? { letterSpacing: '.06em' } : { overflowWrap: 'anywhere' }), ...(r.v ? {} : { color: 'var(--subtle)' }), ...(r.secret && shown[r.secret] ? { color: 'var(--ok-text)' } : {}) }}>
                 {(r.secret && shown[r.secret]) || r.v || '—'}
               </span>
               <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -756,7 +756,7 @@ export function RegCard({ h, onProof }: { h: HomeData; onProof: (r: RegRow) => v
                     </td>
                     <td style={{ padding: '7px 8px' }}>{r.cat}</td>
                     <td className="cap" style={{ padding: '7px 8px' }}>{r.authority}</td>
-                    <td className="mono" style={{ padding: '7px 8px', fontSize: 11.5, fontWeight: 600 }}>{r.number ?? '-'}</td>
+                    <td className="idm" style={{ padding: '7px 8px', fontSize: 11.5, fontWeight: 600 }}>{r.number ?? '-'}</td>
                     <td className="mono" style={{ padding: '7px 8px', textAlign: 'right', fontSize: 12 }}>{r.dateLabel}</td>
                     <td style={{ padding: '7px 8px' }}>
                       <span className="chip" style={solid(r.tone)}>{r.status}</span>

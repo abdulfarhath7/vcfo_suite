@@ -80,7 +80,7 @@ export default function AskQuestionGaps() {
             <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius)] border border-line">
               {data.groups.map((group) => (
                 <li key={`${group.question}-${group.lastAskedAt}`} className="flex flex-wrap items-start gap-3 bg-surface-raised px-4 py-3">
-                  <span className="mt-0.5 inline-flex min-w-[2.25rem] justify-center rounded-sm bg-surface-sunken px-2 py-0.5 font-mono text-[12px] text-ink">
+                  <span className="mt-0.5 inline-flex min-w-[2.25rem] justify-center rounded-sm bg-surface-sunken px-2 py-0.5 text-[12px] text-ink tabular-nums">
                     {group.count}
                     <span className="sr-only"> times asked</span>
                   </span>

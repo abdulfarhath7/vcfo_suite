@@ -273,7 +273,7 @@ function ProgressTrack({ summary }: { summary: SuperEngagementSummary }) {
           </span>
         ))}
       </span>
-      <span className="mt-1 block font-mono text-[10.5px] font-semibold text-ink-faint">
+      <span className="mt-1 block text-[10.5px] font-semibold text-ink-faint tabular-nums">
         {summary.progress.pct}% · {summary.progress.done}/{summary.progress.total}
       </span>
     </span>

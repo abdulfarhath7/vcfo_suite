@@ -69,8 +69,8 @@ export function WorkItemsPanel({ engagementId }: { engagementId: string }) {
                 onMouseUp={(e) => save.mutate({ ...it, progressPct: Number((e.target as HTMLInputElement).value) })}
                 onKeyUp={(e) => save.mutate({ ...it, progressPct: Number((e.target as HTMLInputElement).value) })}
               />
-              <span className="w-10 text-right font-mono text-xs">{it.progressPct}%</span>
-              <span className="w-24 font-mono text-xs text-ink-muted">{it.readyOn ?? "—"}</span>
+              <span className="w-10 text-right tabular-nums text-xs">{it.progressPct}%</span>
+              <span className="w-24 text-xs text-ink-muted">{it.readyOn ?? "—"}</span>
               <Button size="sm" variant="ghost" onClick={() => save.mutate({ ...it, status: it.status === "done" ? "active" : "done" })}>
                 {it.status === "done" ? "Reopen" : "Done"}
               </Button>

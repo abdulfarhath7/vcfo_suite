@@ -259,7 +259,7 @@ export function IdsRevealDialog({
         </div>
         <div className="body">
           <form style={{ padding: '4px 14px 10px', display: 'grid', gap: 10 }} onSubmit={submit}>
-            <label style={{ font: '700 12px Manrope' }}>
+            <label style={{ font: '600 12px var(--font-sans),sans-serif' }}>
               Your password
               <input
                 ref={inputRef}
@@ -278,7 +278,7 @@ export function IdsRevealDialog({
                   borderRadius: 8,
                   border: `1px solid ${bad ? 'var(--over)' : 'var(--border)'}`,
                   padding: '0 12px',
-                  font: '500 15px Manrope',
+                  font: '500 15px var(--font-sans),sans-serif',
                   background: 'var(--panel)',
                   color: 'var(--fg)',
                 }}
@@ -304,7 +304,7 @@ export function IdsRevealDialog({
         <div role="dialog" aria-modal="true" aria-labelledby="ip-t" style={S_DLG} ref={dlgRef}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ flex: 1 }}>
-              <div id="ip-t" style={{ font: '700 15px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
+              <div id="ip-t" style={{ font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
                 Confirm it&apos;s you
                 <InfoPopover askAbout={`showing the ${label}`}>Enter your password to show your {label}</InfoPopover>
               </div>

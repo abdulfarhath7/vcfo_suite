@@ -92,7 +92,7 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
             >
               {I.chevL(15)}
             </button>
-            <b style={{ font: "700 13px 'Space Grotesk'" }}>{label}</b>
+            <b style={{ font: "600 13px var(--font-sans)" }}>{label}</b>
             <button
               type="button"
               className="ibtn"
@@ -173,8 +173,8 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
                   ...(t ? { boxShadow: '0 0 0 2px var(--navy)' } : {}),
                 }}
               >
-                <small style={{ font: '800 11px Manrope', opacity: 0.8 }}>{['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}</small>
-                <b style={{ font: "700 16px 'Space Grotesk'" }}>{Number(iso.slice(8))}</b>
+                <small style={{ font: '800 11px var(--font-sans),sans-serif', opacity: 0.8 }}>{['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}</small>
+                <b style={{ font: "600 16px var(--font-sans)" }}>{Number(iso.slice(8))}</b>
                 {t ? (
                   <span className="pulse" />
                 ) : (

@@ -87,7 +87,7 @@ export function CompDrill({
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
-          <div id="comp-dd-t" style={{ flex: 1, font: '700 15px Manrope', color: 'var(--navy-ink,var(--navy))', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div id="comp-dd-t" style={{ flex: 1, font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', display: 'flex', alignItems: 'center', gap: 4 }}>
             {state.title}
             <InfoPopover askAbout={state.title} label="About this">
               As of {fmtDMY(today)}.

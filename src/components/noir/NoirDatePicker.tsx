@@ -121,7 +121,7 @@ const noirCalendarClassNames = {
   // The caption and nav are drawn by NoirDatePicker's own header.
   month_caption: 'hidden',
   weekday:
-    'text-ink-muted rounded-md w-9 font-mono text-[0.65rem] uppercase tracking-wider font-normal',
+    'text-ink-muted rounded-md w-9 tabular-nums text-[0.65rem] uppercase tracking-wider font-normal',
   day_button: cn(
     buttonVariants({ variant: 'ghost' }),
     'h-9 w-9 p-0 font-normal rounded-md transition-colors duration-150 motion-reduce:transition-none',
@@ -348,7 +348,7 @@ export function NoirDatePicker({
               aria-label="Choose year"
               aria-expanded={view === 'years'}
               onClick={() => setView(view === 'years' ? 'days' : 'years')}
-              className={cn(captionButtonClass, 'font-mono tracking-wide', view === 'years' && 'bg-accent')}
+              className={cn(captionButtonClass, 'tabular-nums tracking-wide', view === 'years' && 'bg-accent')}
             >
               {month.getFullYear()}
               <ChevronDown aria-hidden />
@@ -490,7 +490,7 @@ function YearGrid({
           data-selected={candidate === year}
           data-current={candidate === currentYear}
           onClick={() => onPick(candidate)}
-          className={cn(gridCellClass, 'font-mono text-xs tracking-wide')}
+          className={cn(gridCellClass, 'tabular-nums text-xs tracking-wide')}
         >
           {candidate}
         </button>

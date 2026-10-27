@@ -5,7 +5,7 @@
    column / top bar) is the shell; .vdoc-main is sized to the viewport under the 52 px top bar. */
 html:not([data-theme="dark"]){--folder:oklch(var(--brand));--folder-open:oklch(var(--brand-strong))}
 a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--primary-dark)}
-.mono{font-family:var(--font-mono),monospace;font-feature-settings:"tnum"}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .badge{display:inline-flex;align-items:center;gap:4px;height:20px;border-radius:4px;padding:0 7px;font-size:11px;font-weight:700;white-space:nowrap;box-sizing:border-box}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 12px;border-radius:6px;font:600 12.5px var(--font-sans),sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap;box-sizing:border-box}
 .btn-n{background:var(--navy);color:#fff}.btn-n:hover{background:var(--navy-2);color:#fff}
@@ -30,9 +30,9 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .tr.sel svg.fold path:first-child{fill:#fff}.tr.sel svg.fold .ln{stroke:var(--navy)}
 .tr.sel .gd{border-left-color:oklch(100% 0 0 / .2)}
 .ico{width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center}
-.ft{font:700 11px/18px var(--font-mono),monospace;min-width:30px;height:18px;padding:0 3px;box-sizing:border-box;border-radius:3px;color:#fff;text-align:center;flex:none}
+.ft{font:700 11px/18px var(--font-sans),sans-serif;min-width:30px;height:18px;padding:0 3px;box-sizing:border-box;border-radius:3px;color:#fff;text-align:center;flex:none}
 .lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.cnt{font:500 11px var(--font-mono),monospace;color:var(--subtle)}
+.cnt{font:500 11px var(--font-sans),sans-serif;color:var(--subtle)}
 .tr.sel .cnt{color:oklch(100% 0 0 / .7)}
 .pb{position:relative;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 4px;border-radius:4px;flex:none;cursor:pointer;font-weight:500}
 .pb:hover{background:oklch(54.6% 0.215 263 / .08)}
@@ -48,7 +48,7 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .menu button{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border:0;border-radius:6px;background:none;font:600 12.5px var(--font-sans),sans-serif;color:var(--fg);cursor:pointer;text-align:left}
 .menu button:hover,.menu button:focus-visible{background:var(--primary-light);color:var(--navy-ink,var(--navy));outline:none}
 .menu hr{border:0;border-top:1px solid var(--hair);margin:4px 2px}
-.menu .k{margin-left:auto;font:500 11px var(--font-mono),monospace;color:var(--subtle)}
+.menu .k{margin-left:auto;font:500 11px var(--font-sans),sans-serif;color:var(--subtle)}
 .kv{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px;padding:0 16px;box-sizing:border-box;border-top:1px solid var(--hair);font-size:13px}
 .kv>span:first-child{color:var(--muted);font-weight:500}
 .kv>span:last-child{font-weight:600;min-width:0;text-align:right;overflow-wrap:anywhere}
@@ -96,7 +96,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
   .vdoc .kb{width:40px;height:40px;opacity:1}
 }
 /* "One shape": every mark in the tree is the same 20px rounded square */
-.ft{width:20px;min-width:20px;height:20px;padding:0;border-radius:6px;font:700 7px/20px var(--font-mono),monospace;letter-spacing:-.02em}
+.ft{width:20px;min-width:20px;height:20px;padding:0;border-radius:6px;font:700 7px/20px var(--font-sans),sans-serif;letter-spacing:-.02em}
 .sg{width:20px;height:20px;border-radius:6px}
 .ico:has(.fold){width:20px;height:20px;border-radius:6px;background:light-dark(oklch(94.5% 0.015 255), oklch(21.3% 0.01 255))}
 .ico:has(.fold) .fold{width:12px;height:12px}

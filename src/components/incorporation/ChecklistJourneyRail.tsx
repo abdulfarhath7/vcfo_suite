@@ -194,7 +194,7 @@ export function ChecklistJourneyRail({
                 <p className="mt-1 text-[11px] text-ink-muted">{gate.message}</p>
               )}
               {windowLabel ? (
-                <p className="mt-0.5 font-mono text-[11px] tabular-nums text-ink-muted">
+                <p className="mt-0.5 text-[11px] tabular-nums text-ink-muted">
                   {windowLabel}
                 </p>
               ) : null}

@@ -73,7 +73,7 @@ export function ScheduleWindowControl({
         <button
           type="button"
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-md border border-dashed border-line px-2 py-1 font-mono text-[11px] tabular-nums text-ink-muted transition-colors hover:border-brand/40 hover:text-ink',
+            'inline-flex items-center gap-1.5 rounded-md border border-dashed border-line px-2 py-1 text-[11px] tabular-nums text-ink-muted transition-colors hover:border-brand/40 hover:text-ink',
             value && 'border-solid',
             className,
           )}
@@ -142,7 +142,7 @@ export function ScheduleWindowMeta({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 font-mono text-[11px] tabular-nums text-ink-muted',
+        'inline-flex items-center gap-1 text-[11px] tabular-nums text-ink-muted',
         className,
       )}
     >

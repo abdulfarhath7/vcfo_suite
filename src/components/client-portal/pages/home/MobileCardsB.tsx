@@ -122,8 +122,8 @@ export function createMobileCardsB(ctx: MobileHomeState & MobileCardsA) {
             })}
           </svg>
           <div className="lg">
-            <div style={{ font: "600 26px 'Space Grotesk'", letterSpacing: '-.03em' }}>
-              <Count v={total} ready={ready} /> <span style={{ font: '700 11px Manrope', color: 'var(--muted)', letterSpacing: 0 }}>this FY</span>
+            <div style={{ font: "600 26px var(--font-sans)", letterSpacing: '-.03em' }}>
+              <Count v={total} ready={ready} /> <span style={{ font: '600 11px var(--font-sans),sans-serif', color: 'var(--muted)', letterSpacing: 0 }}>this FY</span>
             </div>
             {BUCKETS.map((b, i) => (
               <button key={b} type="button" onClick={() => compDrill(i)}>

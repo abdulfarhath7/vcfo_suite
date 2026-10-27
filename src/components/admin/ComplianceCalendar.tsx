@@ -27,7 +27,7 @@ const calendarClassNames = {
   nav: 'hidden',
   dropdowns: 'hidden',
   weekday:
-    'text-ink-muted rounded-md w-9 font-mono text-[0.65rem] uppercase tracking-wider font-normal',
+    'text-ink-muted rounded-md w-9 text-[0.65rem] uppercase tracking-wider font-normal',
   day_button: cn(
     buttonVariants({ variant: 'ghost' }),
     'h-9 w-9 p-0 font-normal rounded-md transition-colors duration-150 motion-reduce:transition-none',
@@ -110,7 +110,7 @@ export function ComplianceCalendar({ filings, month, onMonthChange }: Compliance
           id="compliance-year"
           value={month.getFullYear()}
           onChange={(e) => setMonthYear(month.getMonth(), Number(e.target.value))}
-          className="h-8 w-[5.5rem] shrink-0 rounded-md border border-line bg-surface px-2 font-mono text-[11px] text-ink tabular-nums"
+          className="h-8 w-[5.5rem] shrink-0 rounded-md border border-line bg-surface px-2 text-[11px] text-ink tabular-nums"
         >
           {years.map((y) => (
             <option key={y} value={y}>

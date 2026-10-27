@@ -394,7 +394,7 @@ function SbcCard({ p }: { p: ClientPortalContact }) {
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
-            font: '700 18px Space Grotesk',
+            font: '600 18px var(--font-sans)',
             boxShadow: `0 0 0 3px var(--panel),0 0 0 5px ${support ? 'var(--border)' : 'var(--gold)'}`,
             background: bg,
             overflow: 'hidden',
@@ -413,7 +413,7 @@ function SbcCard({ p }: { p: ClientPortalContact }) {
           <span className="chip" style={chip}>
             {role}
           </span>
-          <div style={{ font: '700 16px Manrope', marginTop: 6, color: 'var(--navy-ink,var(--navy))' }}>{name}</div>
+          <div style={{ font: '600 16px var(--font-sans),sans-serif', marginTop: 6, color: 'var(--navy-ink,var(--navy))' }}>{name}</div>
           <div className="mono tb-line" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
             {line}
           </div>
@@ -513,7 +513,7 @@ function InviteDialog({
         <span className="ic" style={{ background: 'var(--navy)' }}>
           <Svg d={P.userPlus} join={false} />
         </span>
-        <h2 id="inv-t" style={{ margin: 0, font: '700 16px Manrope', color: 'var(--navy-ink,var(--navy))' }}>
+        <h2 id="inv-t" style={{ margin: 0, font: '600 16px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
           Invite a colleague
         </h2>
         <CloseBtn onClick={onClose} />
@@ -619,7 +619,7 @@ function SubstituteDialog({
         <span className="ic" style={{ background: self ? 'var(--over-chip)' : 'var(--navy)' }}>
           <Svg d={P.swap} />
         </span>
-        <h2 id={titleId} style={{ margin: 0, font: '700 16px Manrope', color: 'var(--navy-ink,var(--navy))' }}>
+        <h2 id={titleId} style={{ margin: 0, font: '600 16px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
           {self ? 'Hand off your seat' : `Substitute ${row.name}`}
         </h2>
         <CloseBtn onClick={onClose} />

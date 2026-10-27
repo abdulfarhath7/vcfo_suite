@@ -53,7 +53,7 @@ export function Ico({ n, size = 14, sw = 1.7, style }: { n: keyof typeof IC; siz
 export function CardHead({ title, info, askAbout, right }: { title: string; info?: ReactNode; askAbout?: string; right?: ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 0' }}>
-      <h3 style={{ margin: 0, font: '700 13px Manrope,sans-serif', color: 'var(--navy-ink,var(--navy))' }}>{title}</h3>
+      <h3 style={{ margin: 0, font: '600 13px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>{title}</h3>
       {info ? <InfoPopover askAbout={askAbout ?? title}>{info}</InfoPopover> : null}
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>{right}</div>
     </div>

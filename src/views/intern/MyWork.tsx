@@ -224,7 +224,7 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
           >
             <div className="px-3.5 py-3 xl:hidden">
               <InternWorkDenseRow item={item} showCompany />
-              <p className={cn('mt-1.5 font-mono text-[11.5px] font-semibold', item.isOverdue && internToneText('danger'))}>
+              <p className={cn('mt-1.5 tabular-nums text-[11.5px] font-semibold', item.isOverdue && internToneText('danger'))}>
                 Due {formatDueLabel(item.dueAt, now)}
               </p>
             </div>
@@ -253,7 +253,7 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
                   {item.why}
                 </span>
               </div>
-              <div className={cn('px-3.5 py-3 font-mono text-[11.5px]', item.isOverdue && internToneText('danger'))}>
+              <div className={cn('px-3.5 py-3 tabular-nums text-[11.5px]', item.isOverdue && internToneText('danger'))}>
                 {formatDueLabel(item.dueAt, now)}
               </div>
               <div className="px-3.5 py-3">
@@ -454,7 +454,7 @@ function TimelineWorkCard({
           {internKindChipLabel(item.kind)}
         </span>
       </div>
-      <div className="mt-1 font-mono text-[10.5px] font-semibold text-ink-faint">
+      <div className="mt-1 text-[10.5px] font-semibold text-ink-faint tabular-nums">
         <span className={cn(item.isOverdue && internToneText('danger'))}>{formatDueLabel(item.dueAt, now)}</span>
       </div>
       <InternWorkCtaButton item={item} className="mt-1.5 w-full px-2 py-1 text-[10.5px]" />

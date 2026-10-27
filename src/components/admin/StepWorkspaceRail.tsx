@@ -128,7 +128,7 @@ function RecentActivity({ activity }: { activity: ActivityEvent[] }) {
               </>
             ) : null}
             {event.at ? (
-              <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">
+              <span className="mt-0.5 block text-[10px] uppercase tracking-[0.12em] text-ink-muted">
                 {event.at}
               </span>
             ) : null}

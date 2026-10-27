@@ -32,7 +32,8 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .rt{font-size:13px;font-weight:600;color:var(--fg)}
 .metric{font-family:var(--font-sans),sans-serif;font-weight:600;letter-spacing:-.035em;color:var(--fg);font-feature-settings:"tnum"}
-.mono{font-family:var(--font-mono),monospace;font-feature-settings:"tnum"}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.idm{font-family:var(--font-mono),monospace;font-feature-settings:"tnum"} /* identifiers only: CIN, PAN, GSTIN, SRN, ARN, file names */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border-radius:6px;font:600 13px var(--font-sans),sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background-color .15s,box-shadow .15s,transform .15s}
 .btn:active{transform:scale(.98)}
 .btn-p{background:var(--primary-fill,var(--primary));color:#fff;box-shadow:0 1px 2px oklch(30% 0.12 264 / 0.3), inset 0 1px 0 oklch(100% 0 0 / 0.16)}.btn-p:hover{background:var(--primary-fill-2,var(--primary-dark));color:#fff}
@@ -64,7 +65,7 @@ tbody tr:first-child td{border-top:0}
 .seg>.thumb{position:absolute;top:4px;bottom:4px;left:4px;border-radius:6px;background:var(--primary-light);box-shadow:inset 0 0 0 1px oklch(54.6% 0.215 263 / 0.28),0 1px 2px oklch(28% 0.06 264 / 0.08);transition:transform .38s cubic-bezier(.3,1.3,.5,1)}
 .seg button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;height:28px;padding:0 12px;border-radius:6px;font:600 12px var(--font-sans),sans-serif;color:var(--muted);cursor:pointer;white-space:nowrap}
 .seg button.on{color:var(--navy-ink,var(--navy));font-weight:700}
-.seg .cnt{font:600 10.5px var(--font-mono),monospace;color:var(--subtle)}
+.seg .cnt{font:600 10.5px var(--font-sans),sans-serif;color:var(--subtle)}
 .seg button.on .cnt{color:var(--primary)}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
@@ -87,7 +88,7 @@ tbody tr:first-child td{border-top:0}
 tbody tr{transition:background .15s}
 tbody tr:hover{background:light-dark(oklch(96.8% 0.006 250 / .7), oklch(17.8% 0.006 250 / 0.7))}
 a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid oklch(54.6% 0.215 263 / .4);outline-offset:2px}
-.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:4px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--border);font:500 10px var(--font-mono),monospace;color:var(--muted)}
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:4px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--border);font:500 10px var(--font-sans),sans-serif;color:var(--muted)}
 /* sidebar: active pill + 3 px rail slide with the same spring; hover glass */
 .snav a{position:relative;z-index:2}
 .snav a:hover{background:oklch(100% 0 0 / .07)}

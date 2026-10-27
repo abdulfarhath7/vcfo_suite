@@ -411,7 +411,7 @@ function Hero({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            font: '700 22px Space Grotesk',
+            font: '600 22px var(--font-sans)',
             boxShadow: '0 0 0 3px oklch(100% 0 0 / .25)',
             overflow: 'hidden',
           }}
@@ -853,7 +853,7 @@ function WhatsAppDialog({
         <span className="ic" style={{ background: 'var(--ok)' }}>
           <Svg d={P.waShort} />
         </span>
-        <h2 id="wa-t" style={{ margin: 0, font: '700 16px Manrope', color: 'var(--navy-ink,var(--navy))' }}>
+        <h2 id="wa-t" style={{ margin: 0, font: '600 16px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
           Turn on WhatsApp
         </h2>
         <button type="button" className="ibtn" aria-label="Close" style={{ marginLeft: 'auto', border: 0 }} onClick={onClose}>
@@ -868,7 +868,7 @@ function WhatsAppDialog({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="node" style={{ background: valid ? 'var(--ok-chip)' : 'var(--navy)', width: 24, height: 24, boxShadow: 'none', font: '700 11px Manrope' }}>
+          <span className="node" style={{ background: valid ? 'var(--ok-chip)' : 'var(--navy)', width: 24, height: 24, boxShadow: 'none', font: '600 11px var(--font-sans),sans-serif' }}>
             {valid ? <Svg d={P.check} size={12} sw={3} join={false} /> : '1'}
           </span>
           <span style={{ fontSize: 12, fontWeight: 700 }}>Number</span>
@@ -878,7 +878,7 @@ function WhatsAppDialog({
             style={{
               width: 24,
               height: 24,
-              font: '700 11px Manrope',
+              font: '600 11px var(--font-sans),sans-serif',
               ...(valid ? { background: 'var(--navy)', boxShadow: 'none' } : { background: 'var(--panel)', color: 'var(--muted)', boxShadow: 'inset 0 0 0 1.5px var(--border)' }),
             }}
           >
@@ -886,7 +886,7 @@ function WhatsAppDialog({
           </span>
           <span style={{ fontSize: 12, fontWeight: 700, ...(valid ? {} : { color: 'var(--muted)' }) }}>Consent</span>
           <span style={{ flex: 1, height: 2, borderTop: '2px dashed var(--border)' }} />
-          <span className="node" style={{ background: 'var(--panel)', color: 'var(--muted)', width: 24, height: 24, boxShadow: 'inset 0 0 0 1.5px var(--border)', font: '700 11px Manrope' }}>
+          <span className="node" style={{ background: 'var(--panel)', color: 'var(--muted)', width: 24, height: 24, boxShadow: 'inset 0 0 0 1.5px var(--border)', font: '600 11px var(--font-sans),sans-serif' }}>
             3
           </span>
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Done</span>
