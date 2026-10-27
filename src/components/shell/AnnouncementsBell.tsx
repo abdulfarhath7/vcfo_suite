@@ -106,14 +106,13 @@ export function AnnouncementsBell() {
       <DropdownMenuTrigger
         data-announcements-bell=""
         className={cn(
-          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-brand-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40 sm:min-h-9 sm:min-w-9",
-          unread > 0 && "bg-brand-soft text-brand hover:bg-brand-soft",
-          catching && "bg-brand-soft text-brand",
+          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40 sm:min-h-9 sm:min-w-9",
+          catching && "text-ink",
         )}
         aria-label={unread > 0 ? `Announcements, ${unread} unread` : "Announcements"}
       >
         {catching ? (
-          <span className="pointer-events-none absolute inset-1 rounded-lg bg-brand/20" aria-hidden />
+          <span className="pointer-events-none absolute inset-1 rounded-md bg-surface-sunken" aria-hidden />
         ) : null}
         <m.span
           data-announcements-bell-target=""
@@ -121,15 +120,11 @@ export function AnnouncementsBell() {
           animate={catching && !osReduce ? { scale: [1, 1.38, 0.94, 1.08, 1] } : { scale: 1 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Megaphone
-            className={cn("h-[18px] w-[18px] shrink-0", unread > 0 && "fill-brand/20")}
-            strokeWidth={unread > 0 ? 2.25 : 2}
-            aria-hidden
-          />
+          <Megaphone className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
         </m.span>
         {unread > 0 && (
           <span
-            className="absolute top-1 right-1 min-w-[15px] h-[15px] px-0.5 flex items-center justify-center rounded-full bg-brand text-[9px] font-semibold text-brand leading-none ring-2 ring-panel"
+            className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-navy px-1 text-[10px] font-semibold leading-none text-on-navy ring-2 ring-surface-raised"
             aria-hidden
           >
             {unread > 9 ? "9+" : unread}

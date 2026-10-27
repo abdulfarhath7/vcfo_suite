@@ -232,7 +232,8 @@ export function CommandPalette() {
   const shortcutHint =
     isApple != null && !query ? (
       <span className="hidden shrink-0 items-center gap-0.5 lg:flex" aria-hidden>
-        {isApple ? <span className="kbd">⌘</span> : <span className="kbd px-1">Ctrl</span>}
+        {/* One hint on every platform (K-14): Ctrl K. The shortcut itself also accepts ⌘K. */}
+        <span className="kbd px-1">Ctrl</span>
         <span className="kbd">K</span>
       </span>
     ) : null;

@@ -5,6 +5,7 @@
  * Before/After pill (desktop) · Announcements · Notifications · Theme.
  * No profile and no Ask VCFO button in the top bar (design rule 2).
  */
+import { Moon, Sun } from 'lucide-react';
 import { Fragment, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { usePortal } from './PortalProvider';
@@ -35,7 +36,8 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
   const { mid, crumb } = crumbsFor(pathname);
   const act = activeKeyFor(pathname);
   const notif = shell?.badges.notifications ?? 0;
-  const on = { background: 'var(--primary-light)', color: 'var(--primary)' };
+  /* One bell style on every portal (K-14): a plain icon button; unread shows as a navy count badge. */
+  const on = { background: 'oklch(var(--surface-sunken))', color: 'var(--fg)' };
   const off = { background: 'transparent', color: 'var(--muted)' };
   /* trail tile per page, as each prototype board draws it (none on the incorporation boards);
      Documents / Library / Credentials / Compliances trails start at the page, not "Home" */
@@ -154,12 +156,12 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
           </ol>
         </nav>
         <div className="tbar-r">
-          <button type="button" className="tbar-srch" aria-label="Search (⌘K)" data-tip-below="" onClick={onSearch}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={{ flex: 'none', color: 'oklch(54.6% 0.215 263 / .8)' }}>
+          <button type="button" className="tbar-srch" aria-label="Search (Ctrl K)" data-tip-below="" onClick={onSearch}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={{ flex: 'none', color: 'var(--muted)' }}>
               <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
             </svg>
             <span className="tbar-sl">Search</span>
-            <span className="kbd">⌘</span>
+            <span className="kbd">Ctrl</span>
             <span className="kbd">K</span>
           </button>
           {bp === 'desktop' ? (
@@ -175,24 +177,22 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             data-tip-below=""
             onClick={() => go('announcements')}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path className="duo" d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14 M8 6v8" />
             </svg>
             {hasAnnouncements && act !== 'announcements' ? (
-              <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 99, background: 'var(--gold)', boxShadow: '0 0 0 2px var(--panel)' }} />
+              <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 99, background: 'oklch(var(--navy-fill))', boxShadow: '0 0 0 2px var(--panel)' }} />
             ) : null}
           </button>
           <button
             type="button"
             className="tbar-ib"
             aria-label={notif ? `Notifications, ${notif} unread` : 'Notifications'}
-            style={act === 'notifications' || notif > 0 ? on : off}
+            style={act === 'notifications' ? on : off}
             data-tip-below=""
             onClick={() => go('notifications')}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path className="duo" d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M10.268 21a2 2 0 0 0 3.464 0 M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
             </svg>
             {notif > 0 ? <span className="tbar-badge">{notif}</span> : null}
@@ -205,9 +205,8 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             style={{ border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--muted)' }}
             onClick={toggleTheme}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 8.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7Z M12 3v2 M12 19v2 M3 12h2 M19 12h2 M5.6 5.6 7 7 M17 17l1.4 1.4 M5.6 18.4 7 17 M17 7l1.4-1.4" />
-            </svg>
+            {/* Same icon rule as the staff ThemeToggle (K-14): moon in light, sun in dark. */}
+            {theme === 'dark' ? <Sun width={16} height={16} strokeWidth={1.75} aria-hidden /> : <Moon width={16} height={16} strokeWidth={1.75} aria-hidden />}
           </button>
         </div>
       </header>
