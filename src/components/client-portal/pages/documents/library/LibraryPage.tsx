@@ -177,7 +177,7 @@ function LibraryInner() {
 
             {recent.length ? (
               <section className="vlib-recent">
-                <h2 style={{ margin: 0, font: '800 11px var(--font-sans),sans-serif', letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--navy-ink,var(--navy))', width: 110 }}>Recently read</h2>
+                <h2 style={{ margin: 0, font: '600 11px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', width: 110 }}>Recently read</h2>
                 {recent.map((r) => {
                   const cat = catOf(r.category);
                   const tip = readTip(r);

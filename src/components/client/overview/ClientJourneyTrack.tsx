@@ -44,7 +44,7 @@ export function ClientJourneyTrack({ milestones }: { milestones: ClientOverviewM
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span
                   className={cn(
-                    'rounded-sm px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wide',
+                    'rounded-sm px-1.5 py-px text-[9.5px] font-semibold',
                     tone.soft,
                     tone.label,
                   )}

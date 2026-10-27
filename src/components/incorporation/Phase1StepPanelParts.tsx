@@ -54,7 +54,7 @@ export function Pre7OtherAttachmentsList({
 
   return (
     <div className={cn('space-y-1', className)}>
-      <p className="text-[10px] uppercase tracking-wide text-ink-faint">Other attachments</p>
+      <p className="text-[10px] text-ink-faint">Other attachments</p>
       {links.map((link) => (
         <div key={link.fieldId}>
           <MilestoneFileDisplay storagePath={link.path} label={link.label} />

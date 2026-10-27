@@ -44,7 +44,7 @@ export default function Team() {
 
         <Surface className="divide-y divide-line">
           <div className="px-4 py-3 border-b border-line">
-            <p className="text-[11px] mono uppercase tracking-[0.14em] text-ink-faint">
+            <p className="text-[11px] mono tracking-[0.14em] text-ink-faint">
               Active project leads
             </p>
           </div>

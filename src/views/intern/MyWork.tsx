@@ -206,7 +206,7 @@ function ListView({ items, kb, now }: { items: InternWorkItem[]; kb: number; now
   return (
     <>
       <div className="surface overflow-hidden">
-        <div className={cn('hidden xl:grid text-[10.5px] font-semibold uppercase tracking-[0.07em] text-ink-faint', LIST_COLS)}>
+        <div className={cn('hidden xl:grid text-[10.5px] font-semibold tracking-[0.07em] text-ink-faint', LIST_COLS)}>
           <div className="px-3.5 py-2.5">Step / filing</div>
           <div className="min-w-0 px-3.5 py-2.5">Company</div>
           <div className="min-w-0 px-3.5 py-2.5">State</div>
@@ -325,7 +325,7 @@ function TimelineView({
       <section className="surface overflow-x-auto p-3.5">
         <div className="lead-tl">
           <div className="lead-tl-head">
-            <div className="min-w-0 px-2 py-1 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            <div className="min-w-0 px-2 py-1 text-[10.5px] font-semibold tracking-[0.07em] text-ink-faint">
               Task
             </div>
             <div className="lead-tl-track">
@@ -355,7 +355,7 @@ function TimelineView({
           </div>
           {groups.map((group) => (
             <div key={group.id} className="lead-tl-company">
-              <p className="min-w-0 truncate px-2 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+              <p className="min-w-0 truncate px-2 pt-2 text-[10.5px] font-semibold tracking-[0.06em] text-ink-faint">
                 {group.name}
               </p>
               {group.rows.map((row) => (
@@ -400,7 +400,7 @@ function TimelineView({
       </section>
       {gantt.later.length > 0 ? (
         <section className="surface p-3.5">
-          <h2 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+          <h2 className="text-[11.5px] font-semibold tracking-[0.06em] text-ink-faint">
             Later / outside this fortnight
           </h2>
           <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">

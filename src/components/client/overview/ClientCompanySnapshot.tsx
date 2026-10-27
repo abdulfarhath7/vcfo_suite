@@ -125,7 +125,7 @@ function Block({
 }) {
   return (
     <section aria-label={title} className="min-w-0">
-      <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+      <h3 className="mb-1.5 text-[11px] font-semibold tracking-[0.06em] text-ink-muted">
         {title}
       </h3>
       {children}

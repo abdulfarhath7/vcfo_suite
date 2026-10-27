@@ -124,7 +124,7 @@ export function renderMilestoneFieldGroups(
             <p
               className={
                 recordLayout
-                  ? 'text-[11.5px] font-semibold uppercase tracking-[0.06em] text-ink'
+                  ? 'text-[11.5px] font-semibold tracking-[0.06em] text-ink'
                   : 'text-base font-semibold text-ink'
               }
             >

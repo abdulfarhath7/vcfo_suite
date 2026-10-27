@@ -52,7 +52,7 @@ export function CreateProjectFormFlow({
         )}
       >
         <div className="mb-2.5 flex items-center justify-between gap-2">
-          <p className="text-[11px] mono uppercase tracking-[0.16em] text-ink-muted">
+          <p className="text-[11px] mono tracking-[0.16em] text-ink-muted">
             Details to complete
           </p>
           <p className="text-[11px] text-ink-muted">
@@ -115,7 +115,7 @@ export function CreateProjectFormFlow({
       )}
     >
       <div className="mb-5 shrink-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand">
+        <p className="text-[10px] font-semibold tracking-[0.18em] text-brand">
           Progress
         </p>
         <p className="mt-2 text-[15px] font-semibold tabular-nums tracking-tight text-ink">

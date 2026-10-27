@@ -105,7 +105,7 @@ export function PageHeader({
             ) : null}
             <div className="min-w-0">
               {showEyebrow ? (
-                <p className="mb-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+                <p className="mb-0.5 text-[10px] font-medium tracking-[0.16em] text-ink-muted">
                   {eyebrow}
                 </p>
               ) : null}
@@ -138,7 +138,7 @@ export function PageHeader({
       <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-5">
         <div className="min-w-0">
           {showEyebrow ? (
-            <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+            <p className="mb-1 text-[10px] font-medium tracking-[0.16em] text-ink-muted">
               {eyebrow}
             </p>
           ) : null}

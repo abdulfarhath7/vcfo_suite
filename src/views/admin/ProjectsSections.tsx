@@ -229,7 +229,7 @@ export function ProjectsView(props: ProjectsViewProps) {
             {/* Desktop table */}
             <div className="hidden overflow-x-auto md:block">
             <div className="min-w-[720px]">
-            <div className="grid grid-cols-[1.6fr_1fr_1.2fr_1fr_120px_88px] gap-3 px-4 h-10 items-center bg-surface-sunken text-[11px] uppercase tracking-wider text-ink-faint border-b border-line">
+            <div className="grid grid-cols-[1.6fr_1fr_1.2fr_1fr_120px_88px] gap-3 px-4 h-10 items-center bg-surface-sunken text-[11px] text-ink-faint border-b border-line">
               <div>Company</div>
               <div>Setup phase</div>
               <div>Progress</div>
@@ -367,7 +367,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                               <span className="w-5 h-5 rounded-full gold-sheen text-[9px] font-semibold flex items-center justify-center">{intern?.initials}</span>
                               <span className="text-[10.5px] text-ink-faint truncate max-w-[100px]">{intern?.name}</span>
                             </div>
-                            <span className="text-[10px] text-ink-faint uppercase tracking-wider">{h.label}</span>
+                            <span className="text-[10px] text-ink-faint">{h.label}</span>
                           </div>
                         </motion.button>
                       );

@@ -47,7 +47,7 @@ export function ClientEntityCard({
           </p>
         </div>
         <span
-          className="flex shrink-0 items-center gap-1.5 rounded-sm bg-positive-soft px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wide text-positive"
+          className="flex shrink-0 items-center gap-1.5 rounded-sm bg-positive-soft px-2.5 py-1 text-[10.5px] font-semibold text-positive"
           title="Incorporated with the Ministry of Corporate Affairs"
         >
           <BadgeCheck className="h-3.5 w-3.5" aria-hidden />

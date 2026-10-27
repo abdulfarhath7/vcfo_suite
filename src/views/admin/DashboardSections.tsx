@@ -146,7 +146,7 @@ export function AdminDashboardView({
               <PhaseTimeline phases={portfolioPhases} variant="journey" />
 
               <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+                <span className="text-[11px] font-semibold tracking-[0.06em] text-ink-muted">
                   By project
                 </span>
                 <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-sm bg-brand-soft px-1.5 text-[11px] font-semibold tabular-nums text-brand">

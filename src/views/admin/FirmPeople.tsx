@@ -253,7 +253,7 @@ export default function FirmPeople() {
                   Client {c.client} · PM {managerName(c.managerId)} · Lead {leadName(c.leadId)}
                 </div>
               </div>
-              <div className="text-[11px] mono uppercase text-ink-muted">
+              <div className="text-[11px] mono text-ink-muted">
                 {c.stage} · {c.health}
               </div>
             </Link>

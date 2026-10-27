@@ -384,13 +384,13 @@ function DocumentVaultPageContent() {
                   <Vault className="h-4 w-4 text-brand" aria-hidden />
                 </div>
                 <div>
-                  <p className="text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">Documents</p>
+                  <p className="text-[10.5px] tracking-[0.14em] text-ink-faint">Documents</p>
                   <p className="serif text-[22px] leading-none tabular-nums text-ink">{allDocs.length}</p>
                 </div>
               </div>
               <div className="hidden h-10 w-px bg-border sm:block" aria-hidden />
               <div className="hidden sm:block">
-                <p className="text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">
+                <p className="text-[10.5px] tracking-[0.14em] text-ink-faint">
                   {isIntern ? 'Clients' : 'Entities'}
                 </p>
                 <p className="serif text-[22px] leading-none tabular-nums text-ink">{entityGroups.length}</p>
@@ -410,7 +410,7 @@ function DocumentVaultPageContent() {
       ) : (
         <>
           <div className="mb-4 lg:hidden">
-            <p className="mb-2 text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">
+            <p className="mb-2 text-[10.5px] tracking-[0.14em] text-ink-faint">
               {isIntern ? 'Client' : 'Entity'}
             </p>
             <div className="-mx-1 overflow-x-auto pb-1">
@@ -431,7 +431,7 @@ function DocumentVaultPageContent() {
 
           <div className="grid gap-5 lg:grid-cols-[240px_1fr] lg:gap-6">
             <NoirCard flat className="hidden h-fit p-2 lg:block lg:sticky lg:top-4">
-              <p className="px-2 py-2 text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">
+              <p className="px-2 py-2 text-[10.5px] tracking-[0.14em] text-ink-faint">
                 {isIntern ? 'Clients' : 'Entities'}
               </p>
               <div className="space-y-0.5">
@@ -577,7 +577,7 @@ function DocumentVaultPageContent() {
                                   className="mb-6 last:mb-0"
                                 >
                                   {milestone.sections.length > 1 && (
-                                    <p className="mb-3 text-[10.5px] uppercase tracking-[0.14em] text-ink-faint">
+                                    <p className="mb-3 text-[10.5px] tracking-[0.14em] text-ink-faint">
                                       {section.section}
                                     </p>
                                   )}

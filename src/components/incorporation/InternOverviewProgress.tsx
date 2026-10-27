@@ -287,7 +287,7 @@ export function InternRegistrationGroupedRows({
         <div key={group.heading} role="group" aria-label={group.heading}>
           <h3
             className={cn(
-              'px-4 pb-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint',
+              'px-4 pb-0.5 text-[10px] font-semibold tracking-[0.14em] text-ink-faint',
               index === 0 ? 'pt-2.5' : 'pt-3',
             )}
           >

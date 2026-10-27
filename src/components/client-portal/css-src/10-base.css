@@ -33,7 +33,7 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .chip{display:inline-flex;align-items:center;gap:5px;box-sizing:border-box;height:22px;border-radius:5px;padding:0 8px;font-size:11px;font-weight:600;letter-spacing:.01em;line-height:22px;white-space:nowrap}
 .chip[style*="--dot"]::before{content:"";width:6px;height:6px;border-radius:99px;background:var(--dot);flex:none}
 .cap{font-size:11px;color:var(--muted)}
-.lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lbl{font-size:10.5px;font-weight:800;color:var(--muted)}
 .rt{font-size:13px;font-weight:600;color:var(--fg)}
 .metric{font-family:var(--font-sans),sans-serif;font-weight:600;letter-spacing:-.035em;color:var(--fg);font-feature-settings:"tnum"}
 .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
@@ -53,7 +53,7 @@ a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--
 .kpi:hover{transform:translateY(-2px)}
 .kpi::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--ac)}
 .kpi .go{padding:9px 0 11px;margin:0}
-th{text-align:left;padding:8px;font-size:10.5px;font-weight:800;color:var(--subtle);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border)}
+th{text-align:left;padding:8px;font-size:10.5px;font-weight:800;color:var(--subtle);border-bottom:1px solid var(--border)}
 td{white-space:nowrap;padding:9px 8px;border-top:1px solid var(--hair);vertical-align:middle}
 tbody tr:first-child td{border-top:0}
 .nv{position:relative;display:flex;align-items:center;gap:11px;min-height:38px;padding:0 10px;border-radius:8px;color:var(--muted);font-weight:600;font-size:13.5px}
@@ -157,11 +157,11 @@ html,body{background:var(--bg)}
 .tl{position:relative;display:grid;grid-template-columns:64px 28px minmax(0,1fr);column-gap:12px}
 .tl .rail{position:absolute;left:89px;top:0;bottom:0;width:2px;background:var(--border)}
 .dtile .d{font:700 18px/1 var(--font-sans),sans-serif}
-.dtile .m{font:800 9.5px var(--font-sans),sans-serif;letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.dtile .m{font:800 9.5px var(--font-sans),sans-serif;margin-top:3px}
 .node{width:28px;height:28px;border-radius:99px;display:flex;align-items:center;justify-content:center;color:#fff;position:relative;z-index:1;box-shadow:0 0 0 3px var(--panel)}
 .old{font-family:var(--font-sans),system-ui,sans-serif}
 .old-card{background:oklch(var(--surface-raised));border:1px solid oklch(var(--line) / .7);border-radius:12px}
-.old-pill{display:inline-flex;align-items:center;border-radius:99px;padding:2px 8px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;background:var(--raised);color:var(--subtle)}
+.old-pill{display:inline-flex;align-items:center;border-radius:99px;padding:2px 8px;font-size:10px;font-weight:600;background:var(--raised);color:var(--subtle)}
 @media (prefers-reduced-motion: reduce){.tgl,.tgl::after,.sk{transition:none;animation:none}}
 @media (max-width:760px){.pg{padding:16px}.hide-sm{display:none!important}}
 

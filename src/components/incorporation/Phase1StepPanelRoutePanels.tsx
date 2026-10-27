@@ -232,7 +232,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
             <dl className="space-y-2">
               {approvedName && (
                 <div>
-                  <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                  <dt className="text-[10px] text-ink-faint">
                     Approved name
                   </dt>
                   <dd className="text-ink font-medium">{approvedName}</dd>
@@ -240,7 +240,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
               )}
               {approvalDate && (
                 <div>
-                  <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                  <dt className="text-[10px] text-ink-faint">
                     Approval date
                   </dt>
                   <dd>{formatPre1DateDisplay(approvalDate) ?? approvalDate}</dd>
@@ -248,7 +248,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
               )}
               {expiryDate && (
                 <div>
-                  <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                  <dt className="text-[10px] text-ink-faint">
                     Expiry date
                   </dt>
                   <dd>{formatPre1DateDisplay(expiryDate) ?? expiryDate}</dd>
@@ -256,7 +256,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
               )}
               {letter && (
                 <div>
-                  <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                  <dt className="text-[10px] text-ink-faint">
                     Approval letter
                   </dt>
                   <dd>
@@ -299,7 +299,7 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
                 </p>
                 {kycStatus && (
                   <div>
-                    <p className="text-[10px] uppercase tracking-wide text-ink-faint">
+                    <p className="text-[10px] text-ink-faint">
                       KYC review status
                     </p>
                     <p className="text-ink font-medium capitalize">
@@ -312,7 +312,7 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
                 {kycNotes && <p className="text-ink-faint">{kycNotes}</p>}
                 {hasDsc && (
                   <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wide text-ink-faint">
+                    <p className="text-[10px] text-ink-faint">
                       DSC success messages
                     </p>
                     {nrDsc && (
@@ -384,7 +384,7 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
                   copies below.
                 </p>
                 <div className="space-y-1">
-                  <p className="text-[10px] uppercase tracking-wide text-ink-faint">
+                  <p className="text-[10px] text-ink-faint">
                     Draft incorporation documents
                   </p>
                   <DraftDocLinksList
@@ -432,7 +432,7 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
           {hasClientVisibleDrafts ? (
             <>
               <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wide text-ink-faint">
+                <p className="text-[10px] text-ink-faint">
                   Shared draft documents (from Step 2)
                 </p>
                 {engagement?.id ? (
@@ -603,7 +603,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
               <dl className="space-y-2">
                 {companyName && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                    <dt className="text-[10px] text-ink-faint">
                       Company name
                     </dt>
                     <dd className="text-ink font-medium">{companyName}</dd>
@@ -611,7 +611,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {incorporationDate && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                    <dt className="text-[10px] text-ink-faint">
                       Date of incorporation
                     </dt>
                     <dd>{formatPre1DateDisplay(incorporationDate) ?? incorporationDate}</dd>
@@ -619,7 +619,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {cin && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                    <dt className="text-[10px] text-ink-faint">
                       CIN
                     </dt>
                     <dd className="font-mono text-[11px]">{cin}</dd>
@@ -627,7 +627,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {pan && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                    <dt className="text-[10px] text-ink-faint">
                       PAN
                     </dt>
                     <dd className="font-mono text-[11px]">{pan}</dd>
@@ -635,7 +635,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {tan && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                    <dt className="text-[10px] text-ink-faint">
                       TAN
                     </dt>
                     <dd className="font-mono text-[11px]">{tan}</dd>
@@ -643,7 +643,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {pfCode && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                    <dt className="text-[10px] text-ink-faint">
                       PF Code
                     </dt>
                     <dd className="font-mono text-[11px]">{pfCode}</dd>
@@ -651,7 +651,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {esiCode && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-ink-faint">
+                    <dt className="text-[10px] text-ink-faint">
                       ESI Code
                     </dt>
                     <dd className="font-mono text-[11px]">{esiCode}</dd>
@@ -659,7 +659,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {(cert || panCard || tanCard) && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-ink-faint mb-1">
+                    <dt className="text-[10px] text-ink-faint mb-1">
                       Documents
                     </dt>
                     <dd className="space-y-1">

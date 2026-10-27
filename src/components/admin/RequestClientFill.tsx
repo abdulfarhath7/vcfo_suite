@@ -107,7 +107,7 @@ export function RequestClientFill({
   return (
     <div className={cn('space-y-2', className)}>
       {statusLabel ? (
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+        <p className="text-[11px] font-medium tracking-[0.14em] text-ink-muted">
           {statusLabel}
         </p>
       ) : null}

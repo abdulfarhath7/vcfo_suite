@@ -35,7 +35,7 @@
 .vps .vps-sub .vps-i:after{content:"";position:absolute;left:16px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:#5b6e8a;transition:background .15s,box-shadow .15s}
 .vps .vps-sub .vps-i[aria-current=page]:after{background:#8fb0ff;box-shadow:0 0 0 3px rgba(110,150,255,.22)}
 .vps .vps-team{margin-top:auto;padding:10px 8px 8px;border-top:1px solid rgba(255,255,255,.1)}
-.vps .vps-lbl{font:800 11px var(--font-sans),sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#d8b25a;margin:0 8px 6px}
+.vps .vps-lbl{font:800 11px var(--font-sans),sans-serif;color:#d8b25a;margin:0 8px 6px}
 .vps .vps-p{position:relative;display:flex;align-items:center;gap:9px;height:38px;padding:0 8px;border-radius:8px;transition:background .15s}
 .vps .vps-p:hover,.vps .vps-p:focus-within{background:rgba(255,255,255,.06)}
 .vps .vps-av{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);box-shadow:0 0 0 1.5px rgba(255,255,255,.22);color:#dbe3ef;font:700 11px var(--font-sans),sans-serif}
@@ -86,7 +86,7 @@
 .vps .vps-fly{position:fixed;z-index:60;left:80px;top:8px;display:flex;flex-direction:column;gap:2px;min-width:212px;max-width:calc(100vw - 96px);max-height:calc(100vh - 16px);overflow:auto;padding:6px;border-radius:12px;background:#143457;box-shadow:0 0 0 1px rgba(255,255,255,.1),var(--pop);animation:vpsfly .18s cubic-bezier(.22,1,.36,1)}
 .vps .vps-fly[hidden]{display:none}
 @keyframes vpsfly{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
-.vps .vps-fh{padding:8px 10px 6px;font:800 11px/1.3 var(--font-sans),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#d8b25a}
+.vps .vps-fh{padding:8px 10px 6px;font:800 11px/1.3 var(--font-sans),sans-serif;color:#d8b25a}
 .vps .vps-fh.who{font:700 13.5px/1.3 var(--font-sans),sans-serif;letter-spacing:normal;text-transform:none;color:#fff}
 .vps .vps-fh.who small{display:block;margin-top:1px;font:500 12px/1.35 var(--font-sans),sans-serif;color:oklch(var(--side-muted))}
 .vps .vps-fi{position:relative;display:flex;align-items:center;gap:10px;width:100%;height:40px;padding:0 10px;border-radius:8px;font-size:13.5px;font-weight:600;color:#d5deea;text-align:left;white-space:nowrap;transition:background .15s,color .15s}

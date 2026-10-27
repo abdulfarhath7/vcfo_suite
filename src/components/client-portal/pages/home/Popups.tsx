@@ -231,7 +231,7 @@ export function StepPopup({
   const needs = h.needs.filter((n) => n.stepId === s.id && n.kind === 'upload');
   const stages = stagesOf(h, s);
   const spice = s.phaseNo <= 2;
-  const eyebrow = spice ? `STEP ${s.n} OF ${h.model.spice.total} · PART ${s.phaseNo === 1 ? 'A' : 'B'}` : `STEP ${s.n} OF ${h.model.steps.length} · ${(h.model.phases[s.phaseNo - 1]?.name ?? '').toUpperCase()}`;
+  const eyebrow = spice ? `Step ${s.n} of ${h.model.spice.total} · Part ${s.phaseNo === 1 ? 'A' : 'B'}` : `Step ${s.n} of ${h.model.steps.length} · ${h.model.phases[s.phaseNo - 1]?.name ?? ''}`;
   const status =
     s.kind === 'done'
       ? { t: 'Completed', k: 'ok' as const }

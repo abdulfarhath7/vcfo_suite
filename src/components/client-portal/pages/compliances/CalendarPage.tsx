@@ -653,7 +653,7 @@ function NextDeadlineCard({
     <div className="card nd-card" style={{ background: 'var(--panel)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '16px 16px 14px', color: 'var(--fg)' }}>
       {next ? (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '800 11px var(--font-sans),sans-serif', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--navy)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '600 11px var(--font-sans),sans-serif', color: 'var(--navy)' }}>
             <span className="pulse" />
             Next deadline
           </div>
@@ -676,7 +676,7 @@ function NextDeadlineCard({
               <b className="metric" style={{ fontSize: 28, lineHeight: 1, color: 'inherit' }}>
                 {days}
               </b>
-              <small style={{ font: '800 11px var(--font-sans),sans-serif', letterSpacing: '.04em', opacity: 0.85 }}>{days === 1 ? 'DAY' : 'DAYS'}</small>
+              <small style={{ font: '600 11px var(--font-sans),sans-serif', letterSpacing: '.04em', opacity: 0.85 }}>{days === 1 ? 'DAY' : 'DAYS'}</small>
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div className="nd-title" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, font: "600 18px var(--font-sans)", letterSpacing: '-.02em' }}>

@@ -254,7 +254,7 @@ export function StepDetailContentView(props: any) {
                       </Mono>
                       <span
                         className={cn(
-                          'text-[10px] mono uppercase tracking-[0.16em]',
+                          'text-[10px] mono tracking-[0.16em]',
                           isLight ? 'text-ink-faint' : 'text-ink-subtle',
                         )}
                       >
@@ -301,7 +301,7 @@ export function StepDetailContentView(props: any) {
                         </span>
                         <span
                           className={cn(
-                            'text-[10px] mono uppercase tracking-[0.16em] shrink-0 mt-0.5',
+                            'text-[10px] mono tracking-[0.16em] shrink-0 mt-0.5',
                             isLight ? 'text-ink-faint' : 'text-ink-subtle',
                           )}
                         >
@@ -340,7 +340,7 @@ export function StepDetailContentView(props: any) {
                   )}
                   <div
                     className={cn(
-                      'text-[10px] mono uppercase tracking-[0.14em] mt-1',
+                      'text-[10px] mono tracking-[0.14em] mt-1',
                       isLight ? 'text-ink-faint' : 'text-ink-subtle',
                     )}
                   >
@@ -358,7 +358,7 @@ export function StepDetailContentView(props: any) {
           <GoldDivider className="mb-3" />
           <Mono
             className={cn(
-              'text-[10px] uppercase tracking-[0.18em] block',
+              'text-[10px] tracking-[0.18em] block',
               isLight ? 'text-ink-faint' : 'text-ink-subtle',
             )}
           >
@@ -370,7 +370,7 @@ export function StepDetailContentView(props: any) {
           {showDeadline && (
             <Mono
               className={cn(
-                'text-[10px] uppercase tracking-[0.18em] mt-2 block',
+                'text-[10px] tracking-[0.18em] mt-2 block',
                 isLight ? 'text-ink-faint' : 'text-ink-subtle',
               )}
             >
@@ -473,7 +473,7 @@ export function StepDetailContentView(props: any) {
       <header className="space-y-3 px-6 pt-6 pb-4 text-left border-b border-line">
         <div className="flex items-center justify-between">
           <Eyebrow>Step · {item.bucket.replace('-', ' ')}</Eyebrow>
-          <Mono className="text-[10px] uppercase tracking-[0.18em] text-ink-subtle">
+          <Mono className="text-[10px] tracking-[0.18em] text-ink-subtle">
             {String(preIncPhaseStep?.stepNumber ?? item.order).padStart(2, '0')} / {item.id}
           </Mono>
         </div>
@@ -485,7 +485,7 @@ export function StepDetailContentView(props: any) {
           {!hideStatus && (
             <>
               <StatusDot tone={tone.dot} size={8} pulse={status === 'in-progress'} />
-              <span className={cn('text-[10.5px] mono uppercase tracking-[0.18em]', statusCls)}>
+              <span className={cn('text-[10.5px] mono tracking-[0.18em]', statusCls)}>
                 {STATUS_LABEL[status]}
               </span>
             </>
@@ -493,7 +493,7 @@ export function StepDetailContentView(props: any) {
           {showLegacyChecklist && (
             <>
               <span className="text-ink-subtle">·</span>
-              <Mono className="text-[10.5px] uppercase tracking-[0.18em] text-ink-muted">
+              <Mono className="text-[10.5px] tracking-[0.18em] text-ink-muted">
                 {totals.done}/{totals.total} items
               </Mono>
             </>
@@ -549,7 +549,7 @@ export function StepDetailContentView(props: any) {
       </div>
 
       <footer className="flex items-center justify-between gap-3 border-t border-line px-6 py-4 bg-surface-raised">
-        <Mono className="text-[10.5px] uppercase tracking-[0.18em] text-ink-muted">
+        <Mono className="text-[10.5px] tracking-[0.18em] text-ink-muted">
           {showLegacyChecklist ? `${totals.pct}% of requirements met` : ''}
         </Mono>
         <div className="flex items-center gap-2">

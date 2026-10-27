@@ -56,7 +56,7 @@ function TimingChip({ f, today }: { f: PortalFiling; today: string }) {
 function Fact({ k, children }: { k: string; children: React.ReactNode }) {
   return (
     <div style={{ padding: 10, borderRadius: 8, background: 'var(--raised)' }}>
-      <div style={{ font: '800 10px var(--font-sans),sans-serif', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>{k}</div>
+      <div style={{ font: '600 10px var(--font-sans),sans-serif', color: 'var(--muted)' }}>{k}</div>
       <div style={{ fontWeight: 700, marginTop: 4 }}>{children}</div>
     </div>
   );

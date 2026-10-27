@@ -135,7 +135,7 @@ export default function NotificationHistoryPage() {
           {sections.map((section) => (
             <section key={section.id}>
               {section.label ? (
-                <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+                <h2 className="mb-2 text-[11px] font-semibold text-ink-muted">
                   {section.label}
                 </h2>
               ) : null}

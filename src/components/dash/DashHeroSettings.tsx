@@ -48,7 +48,7 @@ export function DashHeroSettings() {
       >
         <div className="max-h-[min(70vh,32rem)] space-y-3.5 overflow-y-auto overscroll-contain p-3.5">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+            <p className="text-[11px] font-semibold tracking-[0.06em] text-ink-muted">
               Greeting card
             </p>
             <div className="mt-2">
@@ -57,7 +57,7 @@ export function DashHeroSettings() {
           </div>
 
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+            <p className="text-[11px] font-semibold tracking-[0.06em] text-ink-muted">
               Sidebar
             </p>
             <div className="mt-2">
@@ -66,7 +66,7 @@ export function DashHeroSettings() {
           </div>
 
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+            <p className="text-[11px] font-semibold tracking-[0.06em] text-ink-muted">
               Animations
             </p>
             <SegmentedPicker

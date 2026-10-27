@@ -547,14 +547,14 @@ export default function EngagementStepDetail() {
   const internPhaseRail = internWorkspace && internPhase ? (
     <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
       <Surface className="p-3">
-        <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+        <p className="mb-1.5 px-2 text-[10px] font-semibold tracking-[0.12em] text-ink-muted">
           {internPhase.title}
         </p>
         {internPhase.id === 'registration-phase-4' ? (
           <div className="space-y-4">
             {internPhaseRailGroups.map((group) => (
               <div key={group.heading}>
-                <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                <p className="mb-1.5 px-2 text-[10px] font-semibold tracking-[0.12em] text-ink-muted">
                   {group.heading}
                 </p>
                 <ChecklistJourneyRail

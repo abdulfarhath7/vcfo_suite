@@ -19,7 +19,7 @@ export type Tone = 'ok' | 'due' | 'over' | 'prog' | 'up';
 /* ------------------------------------------------------------------ dates */
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function ymd(v?: string | null): string | undefined {
   if (!v) return undefined;
@@ -44,16 +44,16 @@ export function dLong(iso?: string): string {
   const p = parts(iso);
   return `${p.d} ${MON[p.m]} ${p.y}`;
 }
-/** ["09", "OCT"] */
+/** ["09", "Oct"] (sentence case, K-12) */
 export function dayMon(iso: string): [string, string] {
   const p = parts(iso);
-  return [String(p.d).padStart(2, '0'), MON[p.m]!.toUpperCase()];
+  return [String(p.d).padStart(2, '0'), MON[p.m]!];
 }
-/** "TUE 6 OCT 2026" */
+/** "Tue 6 Oct 2026" (sentence case, K-12) */
 export function dHeader(iso: string): string {
   const p = parts(iso);
   const dow = new Date(Date.UTC(p.y, p.m, p.d)).getUTCDay();
-  return `${DOW[dow]} ${p.d} ${MON[p.m]!.toUpperCase()} ${p.y}`;
+  return `${DOW[dow]} ${p.d} ${MON[p.m]} ${p.y}`;
 }
 export function days(a: string, b: string): number {
   return Math.round((Date.parse(`${b.slice(0, 10)}T00:00:00Z`) - Date.parse(`${a.slice(0, 10)}T00:00:00Z`)) / 86_400_000);

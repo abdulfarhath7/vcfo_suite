@@ -23,7 +23,7 @@ export function Flow({ visual }: { visual: FlowVisual }) {
               stage.state === 'next' && 'border-dashed border-line bg-surface-raised',
             )}
           >
-            <span className="flex items-center gap-1 text-[10.5px] font-medium uppercase tracking-wide">
+            <span className="flex items-center gap-1 text-[10.5px] font-medium">
               {stage.state === 'done' ? (
                 <span className="inline-flex items-center gap-1 text-positive">
                   <Check className="h-3 w-3" strokeWidth={2.25} /> Done

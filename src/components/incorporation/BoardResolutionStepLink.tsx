@@ -88,7 +88,7 @@ export function BoardResolutionStepLink({
       {statusLabel && (
         <span
           className={cn(
-            'shrink-0 rounded-sm border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide',
+            'shrink-0 rounded-sm border px-2 py-0.5 text-[10px] font-medium',
             status === 'finalized'
               ? 'border-positive/30 bg-positive/10 text-positive'
               : status === 'draft'

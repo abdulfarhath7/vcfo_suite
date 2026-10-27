@@ -89,7 +89,7 @@ export function createReadOnlyFieldRenderers(ctx: MilestoneFormCtx & FieldEditAc
         <div className="space-y-3">
           {entries.map((entry) => (
             <div key={entry.id} className="rounded-lg border border-line/70 px-3 py-2">
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
+              <p className="mb-1.5 text-[11px] font-semibold tracking-[0.08em] text-ink-muted">
                 {field.entryLabel ?? 'Entry'} {entry.index}
               </p>
               <dl className="milestone-record">

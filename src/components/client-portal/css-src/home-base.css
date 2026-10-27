@@ -116,7 +116,7 @@ section.card>div:first-of-type{flex-wrap:wrap;row-gap:8px}
 
 /* Recent documents + Steps card (v7_before / v7c_docs / v7c_steps) */
 /* Recent documents, grouped by arrival: rows, not boxes; controls appear on hover or focus */
-.rd-g{font:800 10px var(--font-sans),sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--subtle);margin:0 0 2px;display:flex;align-items:center;gap:8px}
+.rd-g{font:800 10px var(--font-sans),sans-serif;color:var(--subtle);margin:0 0 2px;display:flex;align-items:center;gap:8px}
 .rd-g::after{content:"";height:1px;flex:1;background:var(--hair)}
 .rd-r+.rd-g{margin-top:12px}
 .rd-r{display:flex;align-items:center;gap:9px;padding:7px 2px;border-radius:6px;cursor:pointer;min-width:0}

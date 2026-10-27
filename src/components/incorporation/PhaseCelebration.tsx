@@ -53,7 +53,7 @@ export function PhaseCelebration({
         <Check className="h-4 w-4" strokeWidth={2.75} aria-hidden />
       </span>
       <div className="min-w-0">
-        <p className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', phase.label)}>
+        <p className={cn('text-[10px] font-semibold tracking-[0.16em]', phase.label)}>
           Phase complete
         </p>
         <p className="text-sm font-semibold text-ink">{phaseTitle}</p>

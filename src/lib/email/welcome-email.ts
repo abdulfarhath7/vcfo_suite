@@ -52,7 +52,7 @@ function buildDueListText(lines: DueLine[]): string {
 function buildCredentialsHtml(params: WelcomeEmailParams): string {
   if (params.clientPassword) {
     return (
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;font-weight:700;">Sign-in credentials</p>` +
+      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Sign-in credentials</p>` +
       emailMetaTable([
         { label: 'Login email', value: params.clientEmail },
         { label: 'Temporary password', value: params.clientPassword },
@@ -103,11 +103,11 @@ function buildWelcomeEmail(params: WelcomeEmailParams): {
       emailParagraph(
         `We have set up your <strong>${escapeHtml(params.companyName)}</strong> engagement on VCFO Suite. Sign in to track documents, tasks, and upcoming compliance milestones.`,
       ) +
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;font-weight:700;">Project summary</p>` +
+      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Project summary</p>` +
       `<ul style="padding-left:20px;margin:0 0 18px;">${contextLines
         .map((line) => `<li style="margin-bottom:6px;">${escapeHtml(line)}</li>`)
         .join('')}</ul>` +
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;font-weight:700;">Upcoming milestones (${escapeHtml(params.stage)})</p>` +
+      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Upcoming milestones (${escapeHtml(params.stage)})</p>` +
       buildDueListHtml(dueLines) +
       credentialsHtml +
       emailParagraph(

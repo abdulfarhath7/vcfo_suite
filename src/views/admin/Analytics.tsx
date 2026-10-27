@@ -40,7 +40,7 @@ const data12 = [
 
 function SampleBadge() {
   return (
-    <span className="rounded-sm bg-warning-soft px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning">
+    <span className="rounded-sm bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
       Sample data
     </span>
   );

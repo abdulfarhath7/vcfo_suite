@@ -38,7 +38,7 @@ export function SuperProjectJourney({ detail }: { detail: SuperEngagementDetail 
                 style={{ background: phaseFill(group.phaseId) }}
                 aria-hidden
               />
-              <h3 className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-ink">
+              <h3 className="min-w-0 truncate text-[11px] font-semibold tracking-[0.06em] text-ink">
                 {group.phaseLabel}
               </h3>
               <span className="ml-auto shrink-0 text-[10.5px] font-semibold text-ink-faint tabular-nums">
@@ -86,19 +86,19 @@ function JourneyRow({ step, stepNumber }: { step: SuperJourneyStep; stepNumber: 
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <span
             className={cn(
-              'rounded-sm px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wide',
+              'rounded-sm px-1.5 py-px text-[9.5px] font-semibold',
               TONE_BADGE[STEP_TONE[step.kind]],
             )}
           >
             {STEP_LABEL[step.kind]}
           </span>
           {step.awaitingReview ? (
-            <span className={cn('rounded-sm px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wide', TONE_BADGE.pink)}>
+            <span className={cn('rounded-sm px-1.5 py-px text-[9.5px] font-semibold', TONE_BADGE.pink)}>
               PM review
             </span>
           ) : null}
           {step.rejected ? (
-            <span className={cn('rounded-sm px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-wide', TONE_BADGE.danger)}>
+            <span className={cn('rounded-sm px-1.5 py-px text-[9.5px] font-semibold', TONE_BADGE.danger)}>
               Sent back
             </span>
           ) : null}

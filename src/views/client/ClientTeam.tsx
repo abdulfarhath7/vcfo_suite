@@ -222,7 +222,7 @@ export default function ClientTeamPage() {
                     <p className="text-xs text-ink-muted">{m.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-sm bg-surface-sunken px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+                    <span className="rounded-sm bg-surface-sunken px-2 py-0.5 text-[10px] font-medium text-ink-faint">
                       {m.memberRole === "owner" ? "Primary" : "Member"}
                       {m.userId === user?.id ? " · you" : ""}
                     </span>

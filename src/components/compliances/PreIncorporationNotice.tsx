@@ -46,7 +46,7 @@ export function PreIncorporationNotice({
     >
       <IconChip icon={Landmark} tone="info" className="border border-line bg-surface-raised" />
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-info">
+        <p className="text-[11px] font-semibold tracking-[0.06em] text-info">
           Compliance begins after incorporation
         </p>
         <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink">

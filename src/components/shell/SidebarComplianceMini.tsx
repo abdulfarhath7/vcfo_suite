@@ -58,7 +58,7 @@ export const SidebarComplianceMini = memo(function SidebarComplianceMini({
       <div className="mb-1.5 flex items-center justify-between px-0.5">
         <span
           className={cn(
-            'text-[10px] font-semibold uppercase tracking-[0.06em]',
+            'text-[10px] font-semibold tracking-[0.06em]',
             light ? 'text-side-muted' : 'text-ink-muted',
           )}
         >

@@ -90,7 +90,7 @@ export function createFirmPeopleDialogs(ctx: FirmPeopleState) {
                         </div>
                       </div>
                       {attached ? (
-                        <span className="mono shrink-0 text-[10px] uppercase tracking-wide text-ink-muted">
+                        <span className="mono shrink-0 text-[10px] text-ink-muted">
                           Assigned
                         </span>
                       ) : selected ? (

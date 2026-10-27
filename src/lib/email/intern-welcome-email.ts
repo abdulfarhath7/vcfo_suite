@@ -40,7 +40,7 @@ function buildInternWelcomeEmail(params: InternWelcomeEmailParams): {
       emailParagraph(
         'Your VCFO Suite project lead account is ready. Use it to manage GCC setup projects, review client submissions, and coordinate delivery work.',
       ) +
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;font-weight:700;">Sign-in credentials</p>` +
+      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Sign-in credentials</p>` +
       emailMetaTable([
         { label: 'Login email', value: params.internEmail },
         { label: 'Temporary password', value: params.temporaryPassword },

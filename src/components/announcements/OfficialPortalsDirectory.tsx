@@ -87,7 +87,7 @@ function Band({
   if (groups.length === 0) return null;
   return (
     <section>
-      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
+      <h3 className="mb-2 text-[11px] font-semibold tracking-[0.07em] text-ink-muted">
         {label}
       </h3>
       <div className={cn(columns ? 'grid gap-2.5 sm:grid-cols-2' : 'grid gap-2.5')}>
@@ -109,7 +109,7 @@ export function OfficialPortalsDirectory({ compact }: { compact?: boolean }) {
       <div className="space-y-4">
         {groups.map((group) => (
           <section key={group.head}>
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
+            <h3 className="text-[11px] font-semibold tracking-[0.07em] text-ink-muted">
               {group.head}
             </h3>
             <ul className="mt-1 divide-y divide-line/70">

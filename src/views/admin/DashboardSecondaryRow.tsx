@@ -57,7 +57,7 @@ export function AdminDashboardFilingsPanel({
               <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-sunken">
                 <span className="flex flex-col items-center leading-none">
                   <span className="text-[13px] font-semibold tabular-nums text-ink">{day}</span>
-                  <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-ink-muted">
+                  <span className="mt-0.5 text-[8px] font-semibold text-ink-muted">
                     {month}
                   </span>
                 </span>

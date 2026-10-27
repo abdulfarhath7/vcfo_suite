@@ -45,7 +45,7 @@ function RoleBadge({ role }: { role: DbRole }) {
   return (
     <span
       className={cn(
-        'inline-flex h-5 shrink-0 items-center rounded-sm border px-2 text-[10.5px] font-medium uppercase tracking-wide',
+        'inline-flex h-5 shrink-0 items-center rounded-sm border px-2 text-[10.5px] font-medium',
         appRole === 'super_admin' && 'border-brand/40 bg-brand-soft text-brand-strong',
         appRole === 'admin' && 'border-brand/25 bg-brand-soft text-brand-strong',
         appRole === 'manager' && 'border-brand/30 bg-brand-soft text-brand',
@@ -281,7 +281,7 @@ function AuditEventRowView({
 
       {expanded && metadataText && (
         <div className="border-t border-line/50 bg-surface-sunken/20 px-4 py-3">
-          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-faint">
+          <p className="mb-1.5 text-[10px] font-medium tracking-[0.14em] text-ink-faint">
             Metadata
           </p>
           <pre className="font-mono max-h-40 overflow-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-ink-soft">
@@ -352,7 +352,7 @@ function AuditTable({
           <div className="min-w-[52rem]">
             <div
               className={cn(
-                'grid gap-x-4 px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-ink-muted bg-surface-sunken border-b border-line',
+                'grid gap-x-4 px-4 py-2.5 text-[11px] font-medium text-ink-muted bg-surface-sunken border-b border-line',
                 showTarget
                   ? 'grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_minmax(0,1.15fr)_2rem]'
                   : 'grid-cols-[minmax(7rem,8.5rem)_minmax(0,2fr)_minmax(0,1.35fr)_2rem]',

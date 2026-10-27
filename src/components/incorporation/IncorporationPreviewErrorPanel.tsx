@@ -21,7 +21,7 @@ export function IncorporationPreviewErrorPanel({
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden />
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-strong">{previewLabel}</p>
+          <p className="text-[11px] font-semibold text-brand-strong">{previewLabel}</p>
           <p className="mt-1 text-[15px] font-medium text-ink">{error.title}</p>
           <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">{error.message}</p>
           {error.steps.length > 0 && (

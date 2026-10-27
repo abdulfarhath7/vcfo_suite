@@ -222,7 +222,7 @@ function NotificationGenieCard({
               <div className="min-w-0">
                 <p
                   id="notification-live-title"
-                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted"
+                  className="text-[11px] font-semibold tracking-[0.14em] text-ink-muted"
                 >
                   {replay ? 'Notification' : 'New notification'}
                 </p>

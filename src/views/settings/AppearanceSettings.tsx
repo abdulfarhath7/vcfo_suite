@@ -72,7 +72,7 @@ function Swatch({
           </span>
         </span>
       ) : dense || caption ? null : (
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-black/35 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/90 opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-black/35 px-1.5 py-0.5 text-[9px] font-semibold text-white/90 opacity-0 transition-opacity group-hover:opacity-100">
           {label}
         </span>
       )}

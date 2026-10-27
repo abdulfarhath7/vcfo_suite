@@ -57,7 +57,7 @@ export function RepeatGroupEditor({
           className="rounded-xl border border-line/80 bg-surface-sunken/20 p-4"
         >
           <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
+            <p className="text-[12px] font-semibold tracking-[0.08em] text-ink-muted">
               {noun} {entry.index}
             </p>
             {entries.length > min ? (

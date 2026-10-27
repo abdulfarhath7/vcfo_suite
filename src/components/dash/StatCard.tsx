@@ -76,7 +76,7 @@ export function StatCard({
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted">{label}</span>
+        <span className="text-[11px] font-semibold tracking-[0.06em] text-ink-muted">{label}</span>
         {Icon ? <Icon className={cn('h-4 w-4 shrink-0', ICON[tone])} strokeWidth={1.75} /> : null}
       </div>
       <div className="mt-1.5 flex items-baseline gap-2">

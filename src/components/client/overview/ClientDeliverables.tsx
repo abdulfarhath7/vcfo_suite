@@ -178,7 +178,7 @@ function DocStatusDonut({
           <span className="serif text-[1.35rem] font-semibold leading-none tabular-nums text-ink">
             {total}
           </span>
-          <span className="mt-0.5 text-[8.5px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+          <span className="mt-0.5 text-[8.5px] font-semibold tracking-[0.12em] text-ink-muted">
             {total === 1 ? 'document' : 'documents'}
           </span>
         </div>

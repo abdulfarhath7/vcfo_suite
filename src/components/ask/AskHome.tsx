@@ -48,7 +48,7 @@ export function AskHome({ compact = false }: { compact?: boolean }) {
       )}
       {groups.map((group) => (
         <section key={group} aria-label={group}>
-          {!compact && <h3 className="mb-1.5 text-[11.5px] font-medium uppercase tracking-wide text-ink-muted">{group}</h3>}
+          {!compact && <h3 className="mb-1.5 text-[11.5px] font-medium text-ink-muted">{group}</h3>}
           <ul className={cn(compact ? 'flex gap-1.5 overflow-x-auto pb-1' : 'space-y-1.5')}>
             {suggestions
               .filter((s) => s.group === group)

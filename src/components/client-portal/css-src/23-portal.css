@@ -13,7 +13,7 @@ body{margin:0}
 @supports (height:100dvh){#vp-side,#vp-drawer{height:100dvh}}
 .cp-search .cp-search-in{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid oklch(var(--line));color:oklch(var(--ink-muted))}
 .cp-search .cp-search-in input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:600 15px var(--font-sans),system-ui,sans-serif;color:oklch(var(--ink))}
-.cp-search .cp-search-g{padding:10px 0 4px;font:800 10.5px var(--font-sans),sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle)}
+.cp-search .cp-search-g{padding:10px 0 4px;font:800 10.5px var(--font-sans),sans-serif;color:var(--subtle)}
 .cp-search .list{padding-top:4px}
 /* phone drawer and chat lock the page under them */
 html.vp-chat-on{overscroll-behavior:contain}

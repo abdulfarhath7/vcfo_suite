@@ -700,7 +700,7 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
               onClick={() => onPreview()}
               onKeyDown={onActivate(onPreview)}
             >
-              <span style={{ display: 'block', fontSize: 11, letterSpacing: '.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>{tagTip(n)}</span>
+              <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)' }}>{tagTip(n)}</span>
               <span style={{ display: 'block', font: "600 18px var(--font-sans)", marginTop: 10 }}>{n.label}</span>
               <span style={{ display: 'block', fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>{company}</span>
               {[92, 84, 95, 66].map((w, i) => (

@@ -383,7 +383,7 @@ export function SidebarNavDisclosure({
           <div className="mb-1.5 flex items-center justify-between px-1.5 pt-0.5">
             <span
               className={cn(
-                'text-[11px] font-semibold uppercase tracking-[0.06em]',
+                'text-[11px] font-semibold tracking-[0.06em]',
                 sidebar.ink === 'light' ? 'text-side-muted' : 'text-ink-muted',
               )}
             >

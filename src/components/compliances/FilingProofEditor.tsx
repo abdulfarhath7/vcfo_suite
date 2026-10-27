@@ -137,7 +137,7 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
           <DialogTitle>{label} · proof and details</DialogTitle>
         </DialogHeader>
         <section className="space-y-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Proofs (the client sees them)</h4>
+          <h4 className="text-xs font-semibold text-ink-muted">Proofs (the client sees them)</h4>
           {(proofs.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">No proof yet — the client sees “Proof pending” once filed.</p> : null}
           <ul className="divide-y divide-line rounded-md border border-line">
             {(proofs.data ?? []).map((p) => (

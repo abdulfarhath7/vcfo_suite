@@ -40,7 +40,7 @@ export function TeamTodosPanel({
             <div key={group.ownerId}>
               <div className="mb-1.5 flex min-w-0 items-baseline gap-2">
                 <p className="truncate text-[13px] font-semibold text-ink">{group.ownerName}</p>
-                <span className="shrink-0 text-[10.5px] font-medium uppercase tracking-[0.04em] text-ink-muted">
+                <span className="shrink-0 text-[10.5px] font-medium tracking-[0.04em] text-ink-muted">
                   {ROLE_UI_LABEL[group.ownerRole] ?? group.ownerRole}
                 </span>
               </div>

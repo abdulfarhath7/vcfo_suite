@@ -123,7 +123,7 @@ export function ManagerBoardResolutionReview({
       </a>
 
       <section aria-label="Client Details used by the board resolution" className="milestone-record-panel">
-        <p className="mb-2 text-[11.5px] font-semibold uppercase tracking-[0.06em] text-ink">Client Details</p>
+        <p className="mb-2 text-[11.5px] font-semibold tracking-[0.06em] text-ink">Client Details</p>
         {clientDetails.length === 0 ? (
           <p className="text-sm text-ink-muted">No Client Details yet.</p>
         ) : (

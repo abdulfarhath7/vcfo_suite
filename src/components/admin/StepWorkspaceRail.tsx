@@ -87,7 +87,7 @@ function AttachmentSummary({
 
   return (
     <section>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+      <p className="text-[10px] font-semibold tracking-[0.16em] text-ink-muted">
         Attachments
       </p>
       <ul className="mt-2 space-y-1.5">
@@ -113,7 +113,7 @@ function RecentActivity({ activity }: { activity: ActivityEvent[] }) {
 
   return (
     <section>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+      <p className="text-[10px] font-semibold tracking-[0.16em] text-ink-muted">
         Activity
       </p>
       <ul className="mt-2 space-y-2">
@@ -128,7 +128,7 @@ function RecentActivity({ activity }: { activity: ActivityEvent[] }) {
               </>
             ) : null}
             {event.at ? (
-              <span className="mt-0.5 block text-[10px] uppercase tracking-[0.12em] text-ink-muted">
+              <span className="mt-0.5 block text-[10px] tracking-[0.12em] text-ink-muted">
                 {event.at}
               </span>
             ) : null}
@@ -169,12 +169,12 @@ export function StepWorkspaceRail({
         <section>
           {!hideStatus ? (
             <>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand">
+              <p className="text-[10px] font-semibold tracking-[0.16em] text-brand">
                 Status
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <StatusDot tone={STATUS_TONE_DOT[status]} size={8} pulse={status === 'in-progress'} />
-                <span className={cn('text-[11px] font-medium uppercase tracking-[0.12em]', statusCls)}>
+                <span className={cn('text-[11px] font-medium tracking-[0.12em]', statusCls)}>
                   {STATUS_LABEL[status]}
                 </span>
               </div>
@@ -187,7 +187,7 @@ export function StepWorkspaceRail({
 
         {next ? (
           <section>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+            <p className="text-[10px] font-semibold tracking-[0.16em] text-ink-muted">
               Next
             </p>
             <p className="mt-1.5 text-[12.5px] leading-snug text-ink/90">{next}</p>

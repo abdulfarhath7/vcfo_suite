@@ -60,7 +60,7 @@ function PhaseNode({ p, i }: { p: Phase; i: number }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <span className="text-sm font-medium text-ink truncate">{p.label}</span>
-          <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded mono uppercase tracking-wider shrink-0', chipCls)}>
+          <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded mono shrink-0', chipCls)}>
             {label}
           </span>
         </div>
@@ -109,7 +109,7 @@ export function PhaseTimeline({ phases, variant = 'vertical' }: PhaseTimelinePro
                 </div>
                 <div className="min-w-0 flex-1 md:flex-none">
                   <div className="text-sm font-medium text-ink">{p.label}</div>
-                  <div className="text-[10px] mono uppercase tracking-wider text-ink-muted mt-0.5">{p.percent}%</div>
+                  <div className="text-[10px] mono text-ink-muted mt-0.5">{p.percent}%</div>
                   <div className="mt-2 h-1 rounded-full bg-surface-sunken overflow-hidden md:w-full max-w-[120px] md:mx-auto">
                     <m.div
                       initial={{ width: 0 }}

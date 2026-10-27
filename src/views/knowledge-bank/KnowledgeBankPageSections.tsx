@@ -171,7 +171,7 @@ function DocumentCard({
             )}
           >
             <FileText className="h-4 w-4" aria-hidden />
-            {ext && <span className="mt-0.5 text-[7.5px] font-semibold uppercase leading-none">{ext}</span>}
+            {ext && <span className="mt-0.5 text-[7.5px] font-semibold leading-none">{ext}</span>}
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-[13.5px] font-medium text-ink">{file.title}</h3>
@@ -384,7 +384,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
         <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-brand" aria-hidden />
-            <p className="text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+            <p className="text-[11px] tracking-[0.14em] text-ink-faint">
               <span className="tabular-nums text-ink">
                 {libraryQuery.isLoading ? '…' : itemCount}
               </span>

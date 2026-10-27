@@ -119,7 +119,7 @@ export function DashHero({
               <>
                 <CardHeadTile title={stat.label} size={30} />
                 <span className="flex min-w-0 flex-col">
-                  <span className="text-[12px] text-ink-muted">{stat.label}</span>
+                  <span className="text-[12px] text-ink-muted">{capFirst(stat.label)}</span>
                   <span
                     className={cn(
                       'text-[20px] font-semibold leading-6 tabular-nums tracking-[-0.01em]',
@@ -150,6 +150,11 @@ export function DashHero({
       ) : null}
     </section>
   );
+}
+
+/** Sentence case for a label that arrives in lower case ("projects" becomes "Projects"). */
+function capFirst(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /** "DONE TODAY" or "done today" becomes "Done today" for the strip label. */

@@ -27,7 +27,7 @@ const calendarClassNames = {
   nav: 'hidden',
   dropdowns: 'hidden',
   weekday:
-    'text-ink-muted rounded-md w-9 text-[0.65rem] uppercase tracking-wider font-normal',
+    'text-ink-muted rounded-md w-9 text-[0.65rem] font-normal',
   day_button: cn(
     buttonVariants({ variant: 'ghost' }),
     'h-9 w-9 p-0 font-normal rounded-md transition-colors duration-150 motion-reduce:transition-none',

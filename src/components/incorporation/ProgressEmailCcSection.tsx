@@ -262,7 +262,7 @@ export function ProgressEmailCcSection({
       <div className={cn('min-w-0', className)}>
         <div className="flex min-w-0 flex-nowrap items-center justify-end gap-1.5 overflow-hidden">
           <span
-            className="shrink-0 text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink-faint"
+            className="shrink-0 text-[9.5px] font-semibold tracking-[0.16em] text-ink-faint"
             title={
               defaultCcConfigured
                 ? 'Firm default CC is always included.'
@@ -336,7 +336,7 @@ export function ProgressEmailCcSection({
 
   return (
     <Surface className="p-5 mb-5">
-      <h2 className="text-[12px] uppercase tracking-wider text-ink-faint font-semibold mb-1">
+      <h2 className="text-[12px] text-ink-faint font-semibold mb-1">
         Progress email CC
       </h2>
       {defaultCcConfigured && (

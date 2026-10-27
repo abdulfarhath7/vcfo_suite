@@ -59,7 +59,7 @@ export function DashDataTable<Row>({
     <>
       <div
         className={cn(
-          'hidden rounded-t-md bg-surface-sunken text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-muted xl:grid',
+          'hidden rounded-t-md bg-surface-sunken text-[11px] font-semibold tracking-[0.06em] text-ink-muted xl:grid',
         )}
         style={{ gridTemplateColumns: template }}
       >

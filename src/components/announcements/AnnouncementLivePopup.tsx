@@ -219,7 +219,7 @@ function AnnouncementGenieCard({
                 <Megaphone className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
               </span>
               <div className="min-w-0">
-                <p id="announcement-live-title" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+                <p id="announcement-live-title" className="text-[11px] font-semibold tracking-[0.14em] text-ink-muted">
                   {replay ? 'Announcement' : 'New announcement'}
                 </p>
                 <div className="mt-1.5">

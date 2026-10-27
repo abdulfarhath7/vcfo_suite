@@ -418,7 +418,7 @@ function AuthorityChip({ authority }: { authority: string }) {
   return (
     <span
       className={cn(
-        'inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+        'inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold',
         TONE_BADGE[toneForKey(authority)],
       )}
     >
@@ -686,7 +686,7 @@ function PeriodMatrix({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[44rem] border-collapse text-[12.5px]">
         <thead>
-          <tr className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <tr className="text-[10.5px] font-semibold tracking-[0.07em] text-ink-faint">
             <th scope="col" className="px-3.5 py-2.5 text-left font-semibold">
               Compliance
             </th>
