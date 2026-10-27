@@ -408,7 +408,6 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
                     </a>
                   ) : null}
                 </div>
-                <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, background: 'linear-gradient(90deg,var(--gold),oklch(78% 0.1 85 / 0) 70%)' }} />
               </section>
 
               <section className="card vrd-body" style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>

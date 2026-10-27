@@ -6,22 +6,14 @@ import { cn } from '@/lib/utils';
 
 /**
  * KPI tile outside a hero (docs/design/COMPONENTS.md). A raised card with a
- * 3px top edge in its tone, an 11px label, a 20px tabular figure, an optional
+ * hairline frame (no coloured top edge since K-08), an 11px label, a 20px tabular figure, an optional
  * delta chip and an optional six-bar trend strip. Replaces AccentKpi and
  * KpiNumber. Headline numbers that belong to the page go in DashHero stats,
  * not here.
  */
 export type StatCardTone = 'brand' | 'positive' | 'warning' | 'danger' | 'info' | 'highlight' | 'neutral';
 
-const EDGE: Record<StatCardTone, string> = {
-  brand: 'border-t-brand',
-  positive: 'border-t-positive',
-  warning: 'border-t-warning',
-  danger: 'border-t-danger',
-  info: 'border-t-info',
-  highlight: 'border-t-highlight-bright',
-  neutral: 'border-t-line-strong',
-};
+/* No coloured top edge (K-08, rule R-02): the tone shows in the icon tile only. */
 
 const ICON: Record<StatCardTone, string> = {
   brand: 'text-brand',
@@ -76,7 +68,7 @@ export function StatCard({
   /** Up to six values, oldest first; the last one draws solid, the rest faint. Context, not a chart. */
   trend?: number[];
   href?: string;
-  /** Soft fill of the tone (SBC-Track KPI style) in addition to the top edge. */
+  /** Soft fill of the tone (SBC-Track KPI style). */
   tinted?: boolean;
   className?: string;
 }) {
@@ -121,9 +113,8 @@ export function StatCard({
     </>
   );
   const shell = cn(
-    'block rounded-lg border border-line border-t-[3px] p-4 shadow-card',
+    'block rounded-lg border border-line p-4 shadow-card',
     tinted ? TINT[tone] : 'bg-surface-raised',
-    EDGE[tone],
     href && 'transition-shadow hover:shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
     className,
   );

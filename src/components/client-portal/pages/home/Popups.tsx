@@ -285,7 +285,6 @@ export function StepPopup({
           ) : null}
           <span className="chip" style={{ background: 'oklch(100% 0 0 / 0.16)', color: '#fff' }}>Owner · {s.owner === 'client' ? company : s.owner === 'mca' ? 'MCA' : 'SBC'}</span>
         </div>
-        <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, background: 'linear-gradient(90deg,var(--gold),oklch(78% 0.1 85 / 0) 70%)' }} />
       </div>
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <Section title="Timeline">

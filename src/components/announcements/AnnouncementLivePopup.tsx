@@ -213,7 +213,6 @@ function AnnouncementGenieCard({
         )}
       >
         <div className={cn('relative', flying && 'pointer-events-none opacity-0 transition-opacity duration-150')}>
-          <div className="h-[3px] w-full bg-brand" />
           <div className="flex items-start justify-between gap-3 px-5 pb-4 pt-4">
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">

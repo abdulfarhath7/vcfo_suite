@@ -132,7 +132,7 @@ export function CreateProjectFormFlow({
         </p>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-brand-soft ring-1 ring-brand/20">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-brand to-primary-dark"
+            className="h-full rounded-full bg-brand"
             initial={false}
             animate={{ width: `${(readyCount / FORM_STEPS.length) * 100}%` }}
             transition={{ type: 'spring', stiffness: 280, damping: 28 }}

@@ -503,7 +503,6 @@ function Hero({
           ) : null}
         </div>
       </div>
-      <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, background: 'linear-gradient(90deg,var(--gold),oklch(78% 0.1 85 / 0) 70%)', borderRadius: '0 0 10px 10px' }} />
     </section>
   );
 }

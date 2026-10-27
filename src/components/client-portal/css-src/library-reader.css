@@ -4,7 +4,7 @@
 html:not([data-theme="dark"]){--violet-soft:oklch(var(--brand-soft));--violet-text:oklch(var(--brand))}
 a{color:var(--primary);text-decoration:none;font-weight:700}a:hover{color:var(--primary-dark)}
 .card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);min-width:0}
-.card.t::before{content:"";position:absolute;left:18px;top:-1px;width:38px;height:3px;border-radius:0 0 3px 3px;background:var(--gold)}
+.card.t::before{content:none}
 .chip{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;line-height:16px;white-space:nowrap}
 .cap{font-size:11.5px;color:var(--muted)}
 .lbl{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}

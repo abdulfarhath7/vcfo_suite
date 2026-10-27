@@ -514,7 +514,7 @@ export function StepDetailContentView(props: any) {
         {showLegacyChecklist && (
           <div className="relative h-[3px] overflow-hidden rounded-full mt-2 bg-surface-sunken">
             <motion.div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-gold to-gold-hi"
+              className="absolute inset-y-0 left-0 bg-brand"
               initial={false}
               animate={{ width: `${totals.pct}%` }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}

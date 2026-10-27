@@ -1483,13 +1483,13 @@ html[data-reduce-motion="true"] .discrete-panel {
   box-shadow: var(--shadow-card);
 }
 .lead-metric::before {
-  content: "";
+  content: none;
   position: absolute;
   inset-inline: 0;
   top: 0;
   height: 5px;
 }
-.lead-metric[data-accent="primary"]::before { background: oklch(var(--primary)); }
+.lead-metric[data-accent="primary"]::before { background: transparent; }
 .lead-metric[data-accent="danger"]::before { background: oklch(var(--danger)); }
 .lead-metric[data-accent="sky"]::before { background: oklch(var(--accent-sky)); }
 .lead-metric[data-accent="success"]::before { background: oklch(var(--success)); }

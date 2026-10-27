@@ -43,7 +43,7 @@ button{font:inherit;color:inherit}
 .btn-sm{height:40px;padding:0 12px;font-size:12.5px}
 /* cards */
 .card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:visible}
-.card.t:before{content:"";position:absolute;left:14px;top:-1px;width:34px;height:3px;border-radius:0 0 3px 3px;background:var(--gold)}
+.card.t:before{content:none}
 .ch{display:flex;align-items:center;gap:10px;min-height:52px;box-sizing:border-box;border-bottom:1px solid var(--hair);padding:8px 14px;margin-bottom:10px}
 .ch h2{margin:0;font:600 14.5px var(--font-sans);letter-spacing:0;color:var(--fg)}
 .ch .r{margin-left:auto}

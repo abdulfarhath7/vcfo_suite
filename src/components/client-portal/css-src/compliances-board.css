@@ -54,7 +54,7 @@ button{font-family:inherit}
 /* ---------- components ---------- */
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);min-width:0;position:relative;display:block;animation:none;transition:none}
 .card:hover{transform:none;box-shadow:var(--shadow)}
-.card.t::before{content:"";position:absolute;left:18px;top:-1px;width:38px;height:3px;border-radius:0 0 3px 3px;background:var(--gold)}
+.card.t::before{content:none}
 .st{font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--navy-ink,var(--navy));margin:0}
 .h1{font:700 24px var(--font-sans);letter-spacing:-.025em;margin:0;color:var(--fg)}
 .metric{font-family:var(--font-sans);font-weight:600;letter-spacing:-.035em;font-feature-settings:"tnum"}

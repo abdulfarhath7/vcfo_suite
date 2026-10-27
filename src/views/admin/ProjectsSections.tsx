@@ -211,7 +211,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-sunken">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-brand to-primary-dark"
+                          className="h-full rounded-full bg-brand"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -269,7 +269,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-brand to-primary-dark"
+                          className="h-full rounded-full bg-brand"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -354,7 +354,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                           <div className="flex items-center gap-2 mb-2">
                             <div className="flex-1 h-1 rounded-full bg-surface-sunken overflow-hidden">
                               <motion.div
-                                className="h-full bg-gradient-to-r from-gold to-gold/70"
+                                className="h-full bg-brand"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${pct}%` }}
                                 transition={{ duration: 0.7, delay: 0.1 + i * 0.04 }}
