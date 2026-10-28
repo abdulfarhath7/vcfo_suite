@@ -22,6 +22,8 @@ const PAGE_ICON: Partial<Record<PortalRouteKey, keyof typeof SHELL_PATHS>> = {
   'board-resolution': 'inc',
   compliances: 'comp',
   filings: 'comp',
+  obligations: 'comp',
+  registrations: 'comp',
   documents: 'docs',
   'knowledge-bank': 'lib',
   credentials: 'person',

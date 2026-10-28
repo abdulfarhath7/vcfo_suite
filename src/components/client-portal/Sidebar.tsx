@@ -63,13 +63,15 @@ function useNav(): NavItem[] {
     t: 'Compliances',
     i: 'calendar-check',
     kids: [
+      { k: 'obligations', t: 'Obligations' },
       { k: 'compliances', t: 'Calendar' },
       { k: 'filings', t: 'Filings' },
     ],
   };
+  const registrations: NavItem = { k: 'registrations', t: 'Registrations', i: 'badge-check' };
   return [
     { k: 'home', t: 'Home', i: 'layout-dashboard' },
-    ...(after ? [compliances, incorporation] : [incorporation, compliances]),
+    ...(after ? [compliances, registrations, incorporation] : [incorporation, compliances, registrations]),
     {
       g: 'updates',
       t: 'Updates',

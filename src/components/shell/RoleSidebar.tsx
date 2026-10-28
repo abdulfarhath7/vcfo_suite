@@ -36,6 +36,7 @@ import {
   TrendingUp,
   FileBarChart,
   Settings,
+  BadgeCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_UI_LABEL } from '@/lib/auth';
@@ -144,6 +145,7 @@ const firmAdminItems: NavEntry[] = [
   { to: '/app/admin/approvals', label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   compliancesGroup('/app/admin'),
+  { to: '/app/admin/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
   updatesGroup('/app/admin'),
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/admin'),
@@ -157,6 +159,7 @@ const clientItems: NavEntry[] = [
   { to: '/app/client/overview', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
   { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
   compliancesGroup('/app/client'),
+  { to: '/app/client/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
   updatesGroup('/app/client'),
   { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
   { to: '/app/client/library', label: 'Library', icon: BookMarked, iconTone: TONE.knowledge },
@@ -177,7 +180,7 @@ const superAdminItems: NavEntry[] = [
     iconTone: TONE.work,
     items: [
       { to: '/app/super/practice/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
-      { to: '/app/super/practice/registrations', label: 'Registrations', icon: ClipboardCheck, iconTone: TONE.work },
+      { to: '/app/super/practice/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
       // Firm scope, like Firm / People / Email: super has no compliance routes of its own.
       ...complianceLeaves('/app/admin'),
     ],
@@ -246,6 +249,7 @@ function SidebarNavBody({
       { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
       { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
       compliancesGroup(staffBase),
+      { to: `${staffBase}/registrations`, label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
       updatesGroup(staffBase),
       { to: `${staffBase}/mail`, label: 'Email', icon: Mail, iconTone: TONE.work },
       docsGroup(staffBase),
@@ -270,6 +274,7 @@ function SidebarNavBody({
       { to: '/app/intern/tasks', label: 'Work', icon: Columns3, iconTone: TONE.work },
       { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
       ...(leadHasCompliances ? [compliancesGroup('/app/intern')] : []),
+      { to: '/app/intern/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
       updatesGroup('/app/intern'),
       { to: '/app/intern/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
       docsGroup('/app/intern', Archive),
