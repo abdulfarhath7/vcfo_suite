@@ -1,0 +1,107 @@
+# UI port report: VCFO Spectrum (29 Oct 2026)
+
+Branch `ui/spectrum`, pushed to `origin`. Not merged, not deployed. No migration, no seed and
+no SQL were run, and no dependency was added. The prototype source is `design/spectrum`
+(05e5509) of `abdulfarhath7/vcfo-prototype`, read from a clone at `~/Documents/vcfo-prototype-ref`.
+
+## How to run it and see it
+
+```bash
+git switch ui/spectrum
+npm run infra:up && npm run db:migrate && npm run db:seed-demo   # local Docker only
+npm run dev                                                        # http://localhost:3000
+```
+
+`npm run dev` and `npm run build` regenerate the client portal CSS (`css/` is gitignored).
+Demo logins are in `README.md`. Check each portal in light, dark and at 390px width; no browser
+check was made tonight (D-14).
+
+Gate at the last commit: `npm run typecheck` 0 errors, `npm run lint` 0 errors (301 warnings,
+mostly `react-refresh/only-export-components`), `npm run test` 203 files and 2023 tests pass.
+The e2e smoke list (`e2e/smoke.spec.ts`) has the new routes but was not run.
+
+## Done
+
+| Area | Portal | Status | Commit |
+|---|---|---|---|
+| Tokens (light and dark), Roboto, 6px radius, no card shadows | All | Done | e60fd08 |
+| Shell: navy 248px sidebar, blurple picked row, 60px top bar, 380px search, 3px ribbon, Ask VCFO sidebar button with "/" | Staff and client | Done | e60fd08 |
+| Buttons, chips, owner chips, area pills, inputs, tabs, overlays, T1 tables, home card | All | Done | e60fd08, d9ae5ed, 3bf5e3a |
+| ST5 marks and phase bar, file badges, empty and loading states | All | Done | d9ae5ed |
+| Home: wash card, ST5 steps, Gantt, attention lists, status bar, IDs, area, registrations; one responsive board for phone | Client | Restyled | 3a800fd |
+| Incorporation landing, phase, step (underline tabs), board resolution | Client | Restyled | 3a800fd |
+| Calendar, Filings | Client | Restyled | cc8ddd2 |
+| Obligations list and record | Client | Built | cc8ddd2 |
+| Registrations list and record | Client | Built | cc8ddd2 |
+| Top bar, Documents, upload, viewer, Library and reader, Credentials, Announcements, Notifications, Audit | Client | Restyled | bda42bb |
+| Profile with the Team section (C-0027); Team route kept | Client | Built | bda42bb, 1fe1e13 |
+| Today: home card, All / Incorporating / Compliance switch, action queue, phase progress, overdue filings | Lead | Restyled | 19f08e8 |
+| Today board: team tasks with filter chips and List/Board, approvals, task status donut, workload by lead | Manager | Restyled and built | 19f08e8 |
+| Today: clients grid, phase progress, managers, Needs your decision | Admin | Restyled and built | 19f08e8 |
+| Work (list, board, 14-day Gantt) and the task drawer | Lead | Restyled and built | 3ca836e |
+| Clients, projects, recycle bin, leads, people, managers | Lead, manager, admin | Restyled | 3ca836e |
+| Client record (plain head, underline tabs, ST5 in place), step page, forms, doc pack, board resolution editor | Lead, manager, admin | Restyled | 3ca836e |
+| Calendar, Filings | Lead, manager, admin | Restyled | 544194e |
+| Obligations grouped by filing, and the obligation record | Lead, manager, admin | Built | 544194e |
+| Registrations list and item | Lead, manager, admin | Built | 544194e |
+| Email, Vault (K-39 explorer), Knowledge bank, Announcements, Notifications, Analytics, Audit, Approvals, Profile, Ask VCFO panel, Ask sources and gaps | Lead, manager, admin | Restyled | 1c3bb6f, (PageHeader) |
+| Overview, Clients, client record | Super admin | Restyled | 56ea431 |
+| Risks, Practice · Incorporation, Practice · Registrations, Team, Growth, Reports | Super admin | Built | 56ea431 |
+| Sidebar in the prototype's order with the new pages | Super admin | Done | (after 56ea431) |
+| Obligations first under Compliances (R-33); Registrations item | Every sidebar | Done | d460e21 |
+| Landing: v6 navy landing with the comparison section (C-0111, C-0112) | Public | Restyled | 570f099 |
+| Sign in: Spectrum card on navy, real Auth.js flow | Public | Restyled | 570f099 |
+
+Nothing shown on a screen is sample data. Where the prototype shows a number the data cannot
+give, the screen leaves it out and `GAPS.md` lists it.
+
+## Not done
+
+| Item | Next step |
+|---|---|
+| Browser check of every screen, light, dark and 390px | The owner's test pass. Then fix by screen. |
+| e2e suites (`npm run e2e:smoke`, `npm run e2e`) | Run after `db:seed-demo`. Text checks that changed: the settings heading is "Sign-in and security"; Library's head reads "{company}’s library". |
+| Developer console (9 screens) | Gap G-01: needs a developer role and data sources. |
+| Firm settings (admin and super admin) | Gap G-02: needs a firm settings store. |
+| `DashHero` props for a company square, a tag after the name and tile `onClick` | The client home uses its own copy of the card on the same classes (`bg-wash`, `wash-tile`). Add the props, then switch the client home to `DashHero`. |
+| Promote `WorkFilterChip` (dropdown chip with ×) to `src/components/ui` | `DashFilterChip` is a toggle only. Move it and use it on every list. |
+| `EFilingGrid` keyboard-focusable rows | Rows with `onRowClick` cannot be reached by keyboard; the screens put a button in the name cell meanwhile. |
+| `src/lib/email/email-layout.ts` | Still its own palette. |
+| Old UI files no longer used by any route | Kept, not deleted (rule 5 of `new_context.md`). Retire after the owner's test: `src/components/client-portal/pages/home/{MobileHome,MobileCardsA,MobileCardsB,MobileParts,useMobileHome}.tsx`, `css-src/home-m.css`, `css-src/incorporation-landing.css`, `CrBot.tsx`, `Visor.tsx` figures, `src/views/auth/Login.tsx`, `src/components/auth/{LoginHero,LoginShowcase}.tsx`, `react-bits/BlurText.tsx`, `src/components/marketing/sections/{LandingHero,LandingImpact,LandingProblem,LandingHowItWorks}.tsx`, `HeroProductPlane.tsx`, `src/components/intern/LeadPracticeStrip.tsx` (keep `isOverdueOrDueSoon`), CSS classes `.lead-tl*`, `.lead-board-col*`, `.ann-kind*`, `.notif-kind`, `.lead-hero*` in `app/globals.css`, `DOC_STATUS_*_TONE` in `src/lib/doc-pack/labels.ts`. |
+
+## Gaps
+
+`GAPS.md` lists 30 features that need backend work (G-01 to G-30). The largest are the
+developer console, firm settings, per-step opened and due dates (stage durations, expected COI,
+time in step), a filed-against-due history (on-time rates), a step reminder endpoint, client
+proof upload, and the vault upload and zip routes.
+
+## Decisions I made alone
+
+`DECISIONS.md` holds D-01 to D-15. The ones to look at first:
+
+- D-01: the branch starts from `port/carryover-1`, because `main` lacks 55 commits of your work.
+- D-04, D-05: `brand` is blurple; `navy-fill` is the Spectrum "strong" colour that flips in dark mode; the sidebar uses `side`.
+- D-07: "Waiting" is teal, "Due soon" amber; old `solid-waiting` chips are now teal.
+- D-11: the client portal's floating launcher and Visor figure are hidden; Ask VCFO opens from the sidebar or "/".
+
+The screen agents also chose, and each is easy to reverse:
+
+- Status words follow R-13's six words everywhere. Filed reads Done and upcoming reads Not started. "Sent back" stays as its own word.
+- Lead Today has an All / Incorporating / Compliance switch. "Incorporating" means not yet incorporated.
+- Team tasks come from the same items each lead sees on Work (steps, filings, document requests), not from the `tasks` table, which has no titles.
+- "Waiting on client" for a filing means: not filed, no data-received date, and late or due within 15 days. If staff never record data-received dates, every such filing shows as waiting.
+- "Stuck" means open work with no update for 14 days, or a blocked reason.
+- Company tiles on staff screens are neutral, following the Suite's no-identity-colour rule. The super admin client tiles take a colour from a hash of the engagement id, because no identity colour is stored.
+- `INTERN_PHASE_TABS_ENABLED` is now `true`, so the lead record shows the phase track and steps in place (R-36).
+- Back buttons are gone from the staff record, step, doc pack and board resolution pages (R-09). They stay on the client step route.
+- The client sidebar's Settings item reads "Profile". Team is a tab inside Profile (`settings#team`).
+- Landing: "Book a demo" goes to `/contact`; "Try it live" goes to `/login` and may need new words.
+- Profile shows every section on one page with anchor links, so `#appearance`, the Outlook return and the e2e check keep working.
+- The super admin sidebar puts the new pages first (Overview, Risks, Clients, Practice areas, Team, Growth, Reports, Updates). Firm, People, Email, Firm log, Portal, Client log and Firm settings sit below the break.
+
+## Untracked files left alone
+
+Your own uncommitted edits were not touched or committed: `docker-compose.yml`, `package.json`,
+`docs/specs/landing-page/README.md`, `docs/overview/*`, `docs/specs/landing-page/lovable/`,
+`scripts/build-incorp-docs-er*.mjs` and `new_context.md`.

@@ -1,6 +1,6 @@
 # STATE — verified build state
 
-Last updated: 2026-10-22 (repository role-scope fixes and cross-tenant tests; before that 2026-10-17, client portal v7 build merged with pre-incorporation direct flow, Phases 0–8).
+Last updated: 2026-10-29 (VCFO Spectrum UI port on branch `ui/spectrum`, not deployed; before that 2026-10-22, repository role-scope fixes and cross-tenant tests; before that 2026-10-17, client portal v7 build merged with pre-incorporation direct flow, Phases 0–8).
 
 > Docs cleanup 2026-09-30: specs and progress reports of finished features were
 > removed. A doc named below that is not under `docs/context/` or `docs/specs/`
@@ -10,6 +10,7 @@ Last updated: 2026-10-22 (repository role-scope fixes and cross-tenant tests; be
 
 | Area | Status |
 |---|---|
+| VCFO Spectrum UI port | built 2026-10-29 on branch `ui/spectrum` (from `port/carryover-1`), **not merged, not deployed, owner testing pending**. Source: prototype `design/spectrum` (05e5509). Report, audit, decisions and gaps: `docs/ui-port/`. Tokens in `docs/design/design-tokens.json` (blurple brand, navy side, waiting teal, regulator `data-*`), Roboto, 6px radius, ribbon, Ask VCFO sidebar button, shared parts `src/components/ui/{spectrum-chip,step-track,spectrum-tabs,file-badge,empty-state}.tsx`. Every portal restyled. New pages: client and staff Obligations (`…/compliances/obligations[/id]`) and Registrations (`…/registrations[/id]`); super admin Risks, Practice · Incorporation, Practice · Registrations, Team, Growth, Reports (`getSuperFirmInsights`, `GET /api/super/insights`); v6 landing with comparison section; Spectrum sign-in. No migration, no new dependency. Gate: typecheck 0, lint 0 errors / 301 warnings, 2023 tests |
 | Setup / seed / Auth.js login | done |
 | Phase 0 stubs (intern portfolio, welcome email, resend helper, supabase client) | done |
 | Phase 1 API ports | done — `_reference-supabase/` deleted; ~35 real routes |

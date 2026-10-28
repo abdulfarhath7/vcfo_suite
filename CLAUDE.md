@@ -112,33 +112,23 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 - `docs/specs/` — specs still in progress; finished specs are in git history. `QUESTIONS.md`
   at the root lists the client portal v7 decisions the owner may still want to change.
 
-## Current branch: `design/design-system`
+## Current branch: `ui/spectrum`
 
-The branch applies the design system from `docs/design/` (brief in `BRIEF.md`, spec in
-`TOKENS.md`, audit in `AUDIT.md`). About 90 files are modified and uncommitted; they are the
-owner's in-progress work and must not be reverted or reformatted by a cleanup:
-
-- `app/globals.css`, `tailwind.config.ts`, `app/layout.tsx` — new token block, colour map
-  and fonts (Public Sans, IBM Plex Mono), with old names kept as aliases.
-- `src/components/client-portal/css-src/*` and the generated `css/*` — the portal's variables
-  now point at the shared tokens.
-- `src/components/{shell,intern,dash,common,auth,compliances,admin}/*`, `src/lib/shell/shell-appearance.ts`,
-  `src/views/intern/Today.tsx`, `src/views/settings/AppearanceSettings.tsx` — migrated slices.
-- `scripts/seed-demo.ts` plus untracked `scripts/seed-demo-extras.ts` — demo data for every
-  portal surface (`seed-demo.ts` imports the extras file, so both ship together).
-- Untracked and intended for commit: `docs/design/`, `scripts/design-tokens-*.mjs`.
-
-`BRIEF.md` constraints still hold: no new colour families, no changes to `src/data/checklist.ts`
-or repository code, no deleted routes, no logo changes, `cp-css.mjs` only for the token merge.
+The branch ports the VCFO Spectrum design from the prototype's `design/spectrum` branch onto
+every portal, on top of `port/carryover-1` (which holds the design-system work and the K-01 to
+K-47 carry-over). It is not merged and not deployed. Read `docs/ui-port/REPORT.md` first; the
+audit, decisions, gaps and the screen-agent brief sit beside it. Spectrum rules (R-01 to R-48)
+are in the prototype's `docs/RULES.md`; the shared Spectrum parts are
+`src/components/ui/{spectrum-chip,step-track,spectrum-tabs,file-badge,empty-state}.tsx`, and
+`DashHero` is the home card on the colour wash. Untracked files the owner left in the tree
+(`docs/overview/*`, `docs/specs/landing-page/lovable/`, `scripts/build-incorp-docs-er*.mjs`,
+`new_context.md`, and edits to `docker-compose.yml`, `package.json` and the landing README)
+are not part of the port and were not committed.
 
 ## Next steps / known issues
 
-- Finish the migration slices in `docs/design/COMPONENTS.md` ("Still to move" column):
-  client portal home, Ask VCFO panel, admin and super dashboards (`AccentKpi` to `StatCard`),
-  then `src/lib/email/email-layout.ts` last with its own literal palette.
-- `npm run lint` fails with 74 errors (all `jsx-a11y` in `src/components/client-portal/pages/*`,
-  from the untested v7 portal build) and 262 warnings; typecheck is clean. Fix the portal
-  a11y errors in one pass before adding more portal code.
+- `src/lib/email/email-layout.ts` still has its own literal palette (not Spectrum yet).
+- `npm run lint` has 0 errors and 301 warnings (mostly `react-refresh/only-export-components`).
 - `CREDENTIALS_ENCRYPTION_KEY` is not set on App Runner yet, so portal credential features
   throw in production until it is added.
 - Role checks in repositories must use the helpers in `src/lib/auth.ts` (`isFirmWideAdmin`,
