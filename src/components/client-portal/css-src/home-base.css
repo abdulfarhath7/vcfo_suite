@@ -62,7 +62,7 @@ th{font-size:11px}
 @media (max-width:767px){
  .vh-pbar{display:flex;position:absolute;left:0;right:0;top:0;height:52px;z-index:4;align-items:center;gap:6px;padding:0 10px;background:oklch(var(--surface-raised));border-bottom:1px solid var(--border);box-sizing:border-box}
  .vh-pbar .vh-menu{display:flex}
- .vh-under-bar{top:52px!important}
+ .vh-under-bar{top:var(--cp-top-h,63px)!important}
  .vh-zoom{bottom:72px!important}
 }
 /* cards: let long text shrink, headers wrap, tables and charts scroll inside their own box */

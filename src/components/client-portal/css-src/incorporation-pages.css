@@ -549,9 +549,9 @@ html[data-theme="dark"] [data-paper]{color-scheme:light;background:#fff!importan
 /* IN-21 · the page background fills the window under short pages (the shell's
    launcher spacer after the page overlaps the root's bottom padding instead of
    showing the shell background) */
-:root{box-sizing:border-box;min-height:calc(100dvh - 52px);margin-bottom:calc(-1 * var(--vp-launch-h,0px))}
+:root{box-sizing:border-box;min-height:calc(100dvh - var(--cp-top-h,63px));margin-bottom:calc(-1 * var(--vp-launch-h,0px))}
 /* IN-06 · on short step pages the approval bar sits at the window bottom */
-.wrap.na{min-height:calc(100dvh - 52px - 24px - 120px)}
+.wrap.na{min-height:calc(100dvh - var(--cp-top-h,63px) - 24px - 120px)}
 .wrap.na>.act{margin-top:auto}
 /* IN-10 · the bar label is sentence case, never the uppercase .st label style */
 .act .st{text-transform:none;letter-spacing:normal;font-size:13px;font-weight:500;color:var(--fg)}

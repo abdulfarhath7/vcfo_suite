@@ -19,7 +19,8 @@ body{margin:0;-webkit-font-smoothing:antialiased}
 --gst:oklch(52% 0.15 148);--it:oklch(53% 0.16 252);--mca:oklch(50% 0.18 300);--fema:oklch(55% 0.19 12);--labour:oklch(50% 0.12 200);
 --cat-tax:oklch(58% 0.14 70);--cat-labour:oklch(50% 0.12 200);--cat-business:oklch(52% 0.17 292);--cat-ip:oklch(52% 0.13 230);--cat-fema:oklch(55% 0.19 12);
 --shadow:var(--shadow-card);--pop:var(--shadow-float)}
-a{color:var(--primary);text-decoration:none;font-weight:500}a:hover{color:var(--primary-dark)}
+/* Links use the text-safe blurple; Tailwind islands (.cp-tw) style their own links. */
+a:where(:not(.cp-tw *)){color:oklch(var(--brand-text));text-decoration:none;font-weight:500}a:where(:not(.cp-tw *)):hover{color:oklch(var(--brand-text));text-decoration:underline}
 /* LinkButton: an in-page action drawn like the anchor above, with the native button chrome reset. */
 :where(.lbtn){display:inline;cursor:pointer;border:0;background:none;padding:0;margin:0;font:inherit;font-weight:500;letter-spacing:inherit;text-align:inherit;text-transform:inherit;color:var(--primary)}:where(.lbtn):hover{color:var(--primary-dark)}
 @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
