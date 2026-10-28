@@ -58,10 +58,15 @@ export function DashHero({
 }) {
   const { hero, motion, reduceMotion } = useShellAppearance();
   const showAmbient = motion === 'ambient' && !reduceMotion && !hero.image;
-  const strip: DashHeroStat[] = [
-    ...(stats ?? []),
-    ...(ring ? [{ label: sentence(ring.caption), value: ring.display ?? ring.value }] : []),
-  ];
+  /* The old ring becomes the last number, unless a stat already shows it. A "% complete"
+     caption reads "Complete" with the value as a percentage. */
+  const ringStat: DashHeroStat | null = ring
+    ? ring.caption.trim().startsWith('%')
+      ? { label: sentence(ring.caption.replace('%', '')), value: `${ring.display ?? ring.value}%` }
+      : { label: sentence(ring.caption), value: ring.display ?? ring.value }
+    : null;
+  const repeats = ringStat && (stats ?? []).some((st) => st.label.trim().toLowerCase() === ringStat.label.toLowerCase());
+  const strip: DashHeroStat[] = [...(stats ?? []), ...(ringStat && !repeats ? [ringStat] : [])];
 
   return (
     <section className="overflow-hidden rounded-xl border border-line bg-surface-raised">

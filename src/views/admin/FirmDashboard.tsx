@@ -8,14 +8,13 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashHero } from '@/components/dash/DashHero';
 import { DashSection, DashDonut, DashLegendRow } from '@/components/dash/DashSection';
-import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
-import { Activity, Users } from 'lucide-react';
+import { EFilingGrid } from '@/components/dash/EFilingGrid';
+import { Activity } from 'lucide-react';
 import { deriveStuckReason, primaryPhaseItems } from '@/lib/projects/project-stuck';
 import { FirmProjectsPanel } from '@/views/admin/FirmProjectsPanel';
 import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
-import { initialsFromName } from '@/lib/auth';
 import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 
 type ManagerOption = { id: string; name: string; email: string };
@@ -128,6 +127,34 @@ export default function FirmDashboard() {
         <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
           <div className="flex min-w-0 flex-col gap-3">
             <FirmProjectsPanel />
+            {/* Managers (K-37, C-0034): an e-Filing grid under the clients grid. */}
+            <DashSection title="Managers" meta={managerStrip.length || undefined} bodyClassName="p-3">
+              <EFilingGrid
+                caption="Managers"
+                rows={managerStrip}
+                rowKey={(row) => row.managerId}
+                empty="No open Pre/Post projects."
+                minWidth={480}
+                columns={[
+                  {
+                    key: 'name',
+                    header: 'Manager',
+                    width: '40%',
+                    render: (row) =>
+                      row.managerId === 'unassigned' ? (
+                        <span className="font-semibold">{nameFor(row.managerId)}</span>
+                      ) : (
+                        <Link href={`/app/admin/people?managerId=${row.managerId}`} className="font-semibold text-ink hover:text-brand hover:underline">
+                          {nameFor(row.managerId)}
+                        </Link>
+                      ),
+                  },
+                  { key: 'open', header: 'Open', align: 'right', render: (row) => <span className="tabular-nums">{row.open}</span> },
+                  { key: 'stuck', header: 'Stuck', align: 'right', render: (row) => <span className={row.stuck ? 'tabular-nums text-danger' : 'tabular-nums'}>{row.stuck}</span> },
+                  { key: 'awaiting', header: 'Awaiting PM', align: 'right', render: (row) => <span className="tabular-nums">{row.awaitingPm}</span> },
+                ]}
+              />
+            </DashSection>
             {user?.id ? (
               <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
                 <LeadFocusCard userId={user.id} items={[]} />
@@ -160,53 +187,6 @@ export default function FirmDashboard() {
               </div>
             </DashSection>
 
-            <DashSection
-              icon={Users}
-              tone="violet"
-              title="Managers"
-              meta={managerStrip.length || undefined}
-            >
-              {managerStrip.length === 0 ? (
-                <p className="py-3 text-center text-[12.5px] text-ink-muted">
-                  No open Pre/Post projects.
-                </p>
-              ) : (
-                <ul className="divide-y divide-line">
-                  {managerStrip.map((row) => {
-                    const name = nameFor(row.managerId);
-                    return (
-                      <li key={row.managerId} className="flex min-w-0 items-center gap-2.5 py-2.5">
-                        <span
-                          className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-semibold ${TONE_BADGE[toneForKey(row.managerId)]}`}
-                        >
-                          {initialsFromName(name).slice(0, 2)}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          {row.managerId === 'unassigned' ? (
-                            <span className="block truncate text-[12.5px] font-semibold text-ink">
-                              {name}
-                            </span>
-                          ) : (
-                            <Link
-                              href={`/app/admin/people?managerId=${row.managerId}`}
-                              className="block truncate text-[12.5px] font-semibold text-ink hover:text-brand hover:underline"
-                            >
-                              {name}
-                            </Link>
-                          )}
-                          <span className="block text-[11px] text-ink-muted">
-                            {row.open} open · {row.stuck} stuck · {row.awaitingPm} awaiting
-                          </span>
-                        </span>
-                        <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-sm bg-brand-soft px-1.5 text-[11px] font-semibold tabular-nums text-brand">
-                          {row.open}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </DashSection>
           </div>
         </div>
       </div>
