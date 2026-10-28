@@ -11,7 +11,7 @@ import { CardHeadTile } from '@/components/common/CardHeadTile';
 /**
  * Shared dashboard section card, every role (K-06, rules R-15 and R-16): a
  * surface panel with a 52px head, a hairline under it, a 28px tinted icon tile
- * that comes from the title, and a 14.5px/600 sentence-case title. Optional
+ * that comes from the title, and a 15px/500 sentence-case title (VCFO Spectrum). Optional
  * right-side meta or "view all" link; content below. The `icon`, `tone` and
  * `size` props are still accepted so callers compile, but the tile now follows
  * the title so one kind of card looks the same on every portal.
@@ -45,14 +45,14 @@ export function DashSection({
     <section className={cn('surface min-w-0 overflow-hidden', className)}>
       <div className="flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-line-soft px-4 py-2">
         <CardHeadTile title={title} />
-        <h2 className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-ink">{title}</h2>
+        <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">{title}</h2>
         {meta ? (
-          <span className="shrink-0 text-[11px] font-medium text-ink-muted">{meta}</span>
+          <span className="shrink-0 text-[12.5px] text-ink-muted">{meta}</span>
         ) : null}
         {href ? (
           <Link
             href={href}
-            className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-brand hover:text-brand-strong hover:underline"
+            className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-brand-text hover:underline"
           >
             {hrefLabel ?? 'View all'}
             <ArrowUpRight className="h-3 w-3" aria-hidden />
@@ -98,7 +98,7 @@ export function DashDonut({
             strokeWidth="6.4"
             strokeDasharray={`${dash} ${c - dash}`}
             strokeDashoffset={offset}
-            strokeLinecap="round"
+            strokeLinecap="butt"
           />
         );
         offset -= dash;

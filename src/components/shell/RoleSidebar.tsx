@@ -35,6 +35,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ROLE_UI_LABEL } from '@/lib/auth';
 import { UserFace } from '@/components/common/UserFace';
+import { AskLauncher } from '@/components/ask/AskLauncher';
 import type { SidebarMode } from '@/context/AppContext';
 import { SbcLogo } from '@/components/brand/SbcLogo';
 import { useShellNav } from '@/components/shell/shell-nav-context';
@@ -383,9 +384,9 @@ function SidebarNavBody({
                 className={cn(
                   'relative z-10 shrink-0',
                   stacked ? 'h-[1.15rem] w-[1.15rem]' : 'h-4 w-4',
-                  active ? (ink === 'light' ? 'text-side-ink' : 'text-brand') : it.iconTone,
+                  active ? (ink === 'light' ? 'text-side-active-ink' : 'text-brand-text') : it.iconTone,
                 )}
-                strokeWidth={1.75}
+                strokeWidth={1.6}
               />
               {stacked ? <SidebarRailLabel>{it.label}</SidebarRailLabel> : null}
               {stacked && showInternBadge ? <StackedInternWorkBadge /> : null}
@@ -410,7 +411,11 @@ function SidebarNavBody({
         </LayoutGroup>
       </nav>
 
-      <div className={cn('p-2', ink === 'light' ? 'border-t border-side-line' : 'border-t border-line')}>
+      {/* R-45: Ask VCFO is a sidebar button at the bottom of the rail, with the "/" key. */}
+      <div className="px-2 pb-2 pt-1 empty:hidden">
+        <AskLauncher variant="sidebar" expanded={expanded} withShortcut={layoutIdPrefix === 'sidebar-desktop'} />
+      </div>
+      <div className={cn('p-2', ink === 'light' ? 'border-t-1.5 border-side-line' : 'border-t border-line')}>
         <div
           className={cn(
             'flex gap-1',
@@ -441,14 +446,14 @@ function SidebarNavBody({
             <UserFace
               src={user.imageUrl}
               initials={user.initials}
-              className="h-8 w-8 bg-brand text-[11px] font-semibold text-on-brand"
+              className="h-[30px] w-[30px] bg-white/[.12] text-[11px] font-medium text-side-ink ring-[1.5px] ring-white/[.22]"
             />
             {expanded && (
               <div className="min-w-0 flex-1">
                 <div
                   className={cn(
-                    'truncate text-xs font-medium',
-                    ink === 'light' ? 'text-side-ink' : 'text-ink',
+                    'truncate text-[13.5px] font-medium',
+                    ink === 'light' ? 'text-white' : 'text-ink',
                   )}
                 >
                   {user.name}
@@ -456,7 +461,7 @@ function SidebarNavBody({
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <span
                     className={cn(
-                      'truncate text-[11px] font-medium',
+                      'truncate text-[12px]',
                       ink === 'light' ? 'text-side-muted' : 'text-ink-muted',
                     )}
                   >
@@ -560,7 +565,7 @@ export function RoleSidebar() {
 
   const pinned = shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
   const expanded = pinned || peeking;
-  const expandedWidth = user?.role === 'client' ? 'w-[15.5rem]' : 'w-56';
+  const expandedWidth = 'w-[15.5rem]'; // R-45: 248px for every role
   // Pinned closed is a destination, so it gets labels. Hover-peek collapse is
   // transient — labels there would make the rail jitter on every pointer exit.
   const stackedRail = !expanded && sidebarMode === 'closed';
@@ -629,8 +634,8 @@ export function RoleSidebar() {
       onPointerLeave={onPointerLeave}
       onTransitionEnd={onWidthTransitionEnd}
       className={cn(
-        'shell-sidebar-skin fixed inset-y-0 left-0 z-30 hidden flex-col overflow-hidden transition-[width] duration-300 ease-out lg:flex',
-        sidebar.ink === 'light' ? 'border-r border-side-line' : 'border-r border-line',
+        'shell-sidebar-skin fixed bottom-0 left-0 top-[3px] z-30 hidden flex-col overflow-hidden transition-[width] duration-300 ease-out lg:flex',
+        sidebar.ink === 'light' ? 'border-r-1.5 border-side-line' : 'border-r-1.5 border-line',
         expanded ? expandedWidth : stackedRail ? 'w-16' : 'w-14',
         sidebarMode === 'auto' && peeking && 'z-40 shadow-float',
       )}

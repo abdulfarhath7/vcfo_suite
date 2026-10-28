@@ -29,25 +29,24 @@ export type SidebarInk = 'light' | 'dark';
    side-active and the rail side-ink. White skin: brand-soft and brand. No
    borders or inset highlights on the pill; the fill is the whole signal. */
 export function sidebarPillClass(ink: SidebarInk) {
+  /* R-45: the picked row has a soft blurple fill (side-active) and lilac text. */
   return cn('absolute inset-0 rounded-md', ink === 'light' ? 'bg-side-active' : 'bg-brand-soft');
 }
 
 /* No translate — layoutId projection owns transform. */
-export function sidebarRailClass(ink: SidebarInk, leaf = false) {
-  return cn(
-    'absolute left-0 z-[2] rounded-full',
-    leaf ? 'bottom-1.5 top-1.5 w-[2.5px]' : 'bottom-2 top-2 w-[3px]',
-    ink === 'light' ? 'bg-highlight-bright' : 'bg-brand',
-  );
+/* VCFO Spectrum (R-45) drops the coloured edge on the picked row; the fill alone marks it.
+   The rail element stays so the layout animation keys do not change, but it draws nothing. */
+export function sidebarRailClass(_ink: SidebarInk, leaf = false) {
+  return cn('absolute left-0 z-[2] hidden', leaf ? 'bottom-1.5 top-1.5' : 'bottom-2 top-2');
 }
 
 export function sidebarActiveTextClass(ink: SidebarInk) {
-  return ink === 'light' ? 'font-medium text-side-ink' : 'font-medium text-brand';
+  return ink === 'light' ? 'font-medium text-side-active-ink' : 'font-medium text-brand-text';
 }
 
 export function sidebarInactiveOnSkin(ink: SidebarInk, hoverSoft: string, fillHover = true) {
   return ink === 'light'
-    ? cn('text-side-muted hover:text-side-ink', fillHover && 'hover:bg-side-active')
+    ? cn('text-side-ink hover:text-white', fillHover && 'hover:bg-side-hover')
     : cn('text-ink-muted hover:text-ink', fillHover && hoverSoft);
 }
 
@@ -70,7 +69,7 @@ export function sidebarNavTriggerClass({
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
     stacked
       ? 'min-h-[3.15rem] flex-col justify-center gap-0.5 rounded-md px-0 py-1.5 text-[10px]'
-      : 'min-h-[36px] gap-2.5 rounded-md px-2.5 text-[13px]',
+      : 'min-h-[34px] gap-2.5 rounded-md px-2.5 text-[14px]',
     active ? sidebarActiveTextClass(ink) : sidebarInactiveOnSkin(ink, 'hover:bg-surface-sunken', fillHover),
     !expanded && !stacked && 'justify-center px-0',
   );
@@ -102,7 +101,7 @@ export function isSidebarGroupActive(pathname: string, children: SidebarNavLeaf[
 export function SidebarNavCountBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <span className="relative z-10 mono min-w-[1.25rem] rounded-sm bg-brand px-1.5 py-0.5 text-center text-[10px] font-medium tabular-nums text-on-brand">
+    <span className="relative z-10 min-w-[18px] text-center text-[12px] font-medium tabular-nums text-side-muted">
       {count > 99 ? '99+' : count}
     </span>
   );
@@ -217,7 +216,7 @@ function SidebarNavTriggerFace({
         className={cn(
           'relative z-10 shrink-0',
           stacked ? 'h-[1.15rem] w-[1.15rem]' : 'h-4 w-4',
-          sectionActive ? (ink === 'light' ? 'text-side-ink' : 'text-brand') : iconTone,
+          sectionActive ? (ink === 'light' ? 'text-side-active-ink' : 'text-brand-text') : iconTone,
         )}
         strokeWidth={1.75}
       />
@@ -506,7 +505,7 @@ function SidebarGroupRow({
       <Icon
         className={cn(
           'relative z-10 h-3.5 w-3.5 shrink-0',
-          active ? (ink === 'light' ? 'text-side-ink' : 'text-brand') : child.iconTone,
+          active ? (ink === 'light' ? 'text-side-active-ink' : 'text-brand-text') : child.iconTone,
         )}
         strokeWidth={1.75}
       />

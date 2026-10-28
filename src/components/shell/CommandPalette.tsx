@@ -242,10 +242,10 @@ export function CommandPalette() {
     return (
       <div
         ref={rootRef}
-        className="relative hidden min-w-[8rem] w-[min(100%,12.5rem)] max-w-xs shrink sm:block lg:w-[min(100%,16rem)]"
+        className="relative ml-auto hidden min-w-[8rem] w-[min(100%,16rem)] shrink sm:block lg:w-[380px]"
       >
-        <div className="flex h-9 items-center gap-2 rounded-xl border border-line/70 bg-surface-sunken/50 px-3 text-[13px] text-ink-muted transition-colors hover:border-brand/30 hover:bg-surface-sunken hover:text-ink">
-          <Search className="h-3.5 w-3.5 shrink-0 text-brand/80" strokeWidth={1.75} aria-hidden />
+        <div className="flex h-9 items-center gap-2 rounded-md border-1.5 border-line bg-surface-sunken pl-3 pr-2 text-[14px] text-ink-muted transition-colors hover:border-line-strong hover:text-ink">
+          <Search className="h-4 w-4 shrink-0 text-ink-muted" strokeWidth={1.6} aria-hidden />
           <input
             className="h-9 min-w-0 flex-1 bg-transparent py-0 text-[13px] text-ink outline-none placeholder:text-ink-muted"
             placeholder="Search"
@@ -267,7 +267,7 @@ export function CommandPalette() {
   return (
     <div
       ref={rootRef}
-      className="absolute inset-x-2 top-[7px] z-40 min-w-0 sm:relative sm:inset-x-auto sm:top-auto sm:z-auto sm:w-[min(100%,18rem)] sm:min-w-[8rem] sm:max-w-xs sm:flex-none sm:shrink"
+      className="absolute inset-x-2 top-[11px] z-40 min-w-0 sm:relative sm:inset-x-auto sm:top-auto sm:z-auto sm:ml-auto sm:w-[min(100%,18rem)] sm:min-w-[8rem] sm:flex-none sm:shrink lg:w-[380px]"
     >
       <Command
         key={idleKey}
@@ -275,8 +275,8 @@ export function CommandPalette() {
         shouldFilter
         loop
       >
-        <div className="flex h-9 items-center gap-2 rounded-xl border border-brand/35 bg-surface-sunken px-3 text-[13px] text-ink shadow-[0_0_0_3px_oklch(var(--brand)_/_0.12)]">
-          <Search className="h-3.5 w-3.5 shrink-0 text-brand/80" strokeWidth={1.75} aria-hidden />
+        <div className="flex h-9 items-center gap-2 rounded-md border-1.5 border-brand bg-surface-raised px-3 text-[14px] text-ink shadow-[0_0_0_4px_oklch(var(--focus-ring)_/_0.25)]">
+          <Search className="h-4 w-4 shrink-0 text-ink-muted" strokeWidth={1.6} aria-hidden />
           <CommandInput
             ref={inputRef}
             showIcon={false}

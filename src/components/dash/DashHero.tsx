@@ -3,29 +3,24 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { useShellAppearance } from '@/hooks/use-shell-appearance';
-import { surfaceCssVars } from '@/lib/shell/shell-appearance';
 import { DashHeroSettings } from '@/components/dash/DashHeroSettings';
 import { ClientLocaleNowLabel } from '@/hooks/use-client-locale-date';
-import { CardHeadTile } from '@/components/common/CardHeadTile';
+import { CARD_HEAD_ICONS } from '@/components/common/CardHeadTile';
+import { cardHeadIcon } from '@/lib/ui/card-head-icon';
 
 /**
- * THE greeting card. One component, one look, every dashboard: lead, manager,
- * firm admin, super admin and client all render this (K-07, rules R-17, R-18).
+ * THE home card (VCFO Spectrum H3, rules R-17, R-18). One component, one look, every
+ * dashboard: lead, manager, firm admin, super admin and client all render this.
  *
  * Anatomy, top to bottom, does not vary by role:
- *   1. a navy band: the live local time and the settings popover, the name or
- *      greeting, an optional line under it, and the actions (children);
- *   2. a white number strip: each number has a 30px tinted icon tile that comes
- *      from its label, 12px gap, and the label above the number.
+ *   1. the live local time, the greeting or company name, an optional line under it, and the
+ *      actions (children) with the settings popover, all on the colour wash;
+ *   2. the number tiles (KP1): white at 90%, a 1px white edge and a soft shadow, floating on
+ *      the wash. Each tile has a 13px label with a 15px icon from the label, and a 26px number.
  *
- * The headline numbers belong in that strip. Do not add a band of metric cards
- * under the hero: it prints the same numbers twice. The old progress ring is
- * shown as one more number in the strip, so callers that pass `ring` keep the
- * information without the decoration.
- *
- * The band's skin (solid / gradient / custom image), ambient motion and
- * reduced motion still come from `useShellAppearance`.
+ * The headline numbers belong in those tiles. Do not add a band of metric cards under the
+ * card: it prints the same numbers twice. The old progress ring is shown as one more tile,
+ * so callers that pass `ring` keep the information without the decoration.
  */
 
 export type DashHeroStat = {
@@ -34,6 +29,10 @@ export type DashHeroStat = {
   href?: string;
   /** Paint the value in the danger colour when it demands attention. */
   hot?: boolean;
+  /** Paint the value in the done colour (R-18). */
+  good?: boolean;
+  /** Small muted line under the number. */
+  sub?: string;
 };
 
 export function DashHero({
@@ -51,102 +50,74 @@ export function DashHero({
   /** Small line under the title (scope, state, who owns it). */
   subtitle?: ReactNode;
   stats?: DashHeroStat[];
-  /** Shown as one more number in the strip (no ring is drawn). */
+  /** Shown as one more number tile (no ring is drawn). */
   ring?: { value: number; total?: number; caption: string; display?: string };
-  /** Actions, placed at the right of the band. */
+  /** Actions, placed at the right of the card. */
   children?: ReactNode;
 }) {
-  const { hero, motion, reduceMotion } = useShellAppearance();
-  const showAmbient = motion === 'ambient' && !reduceMotion && !hero.image;
   /* The old ring becomes the last number, unless a stat already shows it. A "% complete"
      caption reads "Complete" with the value as a percentage. */
   const ringStat: DashHeroStat | null = ring
     ? ring.caption.trim().startsWith('%')
-      ? { label: sentence(ring.caption.replace('%', '')), value: `${ring.display ?? ring.value}%` }
-      : { label: sentence(ring.caption), value: ring.display ?? ring.value }
+      ? { label: sentence(ring.caption.replace('%', '')), value: `${ring.display ?? ring.value}%`, good: true }
+      : { label: sentence(ring.caption), value: ring.display ?? ring.value, good: true }
     : null;
   const repeats = ringStat && (stats ?? []).some((st) => st.label.trim().toLowerCase() === ringStat.label.toLowerCase());
   const strip: DashHeroStat[] = [...(stats ?? []), ...(ringStat && !repeats ? [ringStat] : [])];
 
   return (
-    <section className="overflow-hidden rounded-xl border border-line bg-surface-raised">
-      <div
-        className="lead-hero rounded-none px-5 pb-4 pt-4 shadow-none sm:px-6"
-        data-hero-image={hero.image ? 'true' : 'false'}
-        style={{ ...surfaceCssVars(hero, 'hero'), borderRadius: 0 }}
-      >
-        {showAmbient ? (
-          <div className="lead-hero-fx" aria-hidden>
-            {Array.from({ length: 14 }, (_, i) => (
-              <span
-                key={i}
-                className={i % 3 === 0 ? 'twinkle' : ''}
-                style={{
-                  left: `${(i * 37 + 11) % 100}%`,
-                  width: 4 + (i % 3),
-                  height: 4 + (i % 3),
-                  borderRadius: '50%',
-                  background: `rgba(255,255,255,${0.22 + (i % 5) * 0.06})`,
-                  animationDuration: `${5 + (i % 5) * 0.8}s`,
-                  animationDelay: `${-((i * 0.41) % 6)}s`,
-                }}
-              />
-            ))}
-          </div>
-        ) : null}
-
-        <div className="relative z-[2] flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-medium text-side-muted">
-              <ClientLocaleNowLabel />
-              {meta}
-            </p>
-            <h1 className="mt-1 min-w-0 break-words text-[20px] font-semibold leading-7 tracking-[-0.01em] text-on-navy">
-              {title}
-            </h1>
-            {subtitle ? (
-              <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[13px] leading-snug text-side-muted">
-                {subtitle}
-              </p>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 items-start gap-2">
-            {children}
-            <DashHeroSettings />
-          </div>
+    <section
+      className="bg-wash flex flex-col gap-5 rounded-md border-1.5 border-line px-4 pb-5 pt-[18px] md:px-6 md:pb-6 md:pt-[22px]"
+      aria-label="Summary"
+    >
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-1">
+          <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-2">
+            <ClientLocaleNowLabel />
+            {meta}
+          </p>
+          <h1 className="min-w-0 break-words text-[22px] font-medium leading-tight tracking-[-0.01em] text-ink md:text-[28px] md:leading-9">
+            {title}
+          </h1>
+          {subtitle ? (
+            <p className="flex min-w-0 items-center gap-1.5 text-[13px] leading-snug text-ink-2">{subtitle}</p>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {children}
+          <DashHeroSettings />
         </div>
       </div>
 
       {strip.length > 0 ? (
-        <div className="grid min-w-0 grid-cols-2 gap-x-4 px-5 sm:flex sm:flex-wrap sm:gap-x-0 sm:px-6">
-          {strip.map((stat, i) => {
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
+          {strip.map((stat) => {
+            const { icon } = cardHeadIcon(stat.label);
+            const Icon = CARD_HEAD_ICONS[icon];
             const body = (
-              <>
-                <CardHeadTile title={stat.label} size={30} />
-                <span className="flex min-w-0 flex-col">
-                  <span className="text-[12px] text-ink-muted">{capFirst(stat.label)}</span>
-                  <span
-                    className={cn(
-                      'text-[20px] font-semibold leading-6 tabular-nums tracking-[-0.01em]',
-                      stat.hot ? 'text-danger' : 'text-ink',
-                    )}
-                  >
-                    {stat.value}
-                  </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <span className="flex items-start gap-1.5 text-[13px] font-medium leading-[18px] text-ink-2">
+                  <Icon width={15} height={15} strokeWidth={1.6} className="mt-px flex-none text-ink-muted" aria-hidden />
+                  <span className="min-w-0">{capFirst(stat.label)}</span>
                 </span>
-              </>
+                <span
+                  className={cn(
+                    'text-[26px] font-medium leading-none tabular-nums',
+                    stat.hot ? 'text-danger' : stat.good ? 'text-positive' : 'text-ink',
+                  )}
+                >
+                  {stat.value}
+                </span>
+                {stat.sub ? <span className="truncate text-[12.5px] text-ink-muted">{stat.sub}</span> : null}
+              </span>
             );
-            const statClass = cn(
-              'inline-flex min-w-0 items-center gap-3 py-3 sm:pr-6',
-              i < strip.length - 1 && 'sm:mr-6 sm:border-r sm:border-line',
-              stat.href && 'transition-opacity hover:opacity-80',
-            );
+            const tileClass = cn('wash-tile flex min-w-0 items-end gap-2.5 px-4 py-3.5', stat.href && 'transition-colors hover:border-line-strong');
             return stat.href ? (
-              <Link key={stat.label} href={stat.href} className={statClass}>
+              <Link key={stat.label} href={stat.href} className={tileClass}>
                 {body}
               </Link>
             ) : (
-              <span key={stat.label} className={statClass}>
+              <span key={stat.label} className={tileClass}>
                 {body}
               </span>
             );

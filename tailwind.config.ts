@@ -42,12 +42,15 @@ export default {
           muted: "oklch(var(--ink-muted) / <alpha-value>)",
           faint: "oklch(var(--ink-faint) / <alpha-value>)",
           soft: "oklch(var(--ink-muted) / <alpha-value>)" /* legacy name for ink-muted */,
+          2: "oklch(var(--ink-2) / <alpha-value>)",
         },
         brand: {
           DEFAULT: "oklch(var(--brand) / <alpha-value>)",
           strong: "oklch(var(--brand-strong) / <alpha-value>)",
           soft: "oklch(var(--brand-soft) / <alpha-value>)",
           deep: "oklch(var(--brand-strong) / <alpha-value>)" /* legacy name for brand-strong */,
+          text: "oklch(var(--brand-text) / <alpha-value>)",
+          line: "oklch(var(--brand-line) / <alpha-value>)",
         },
         "on-brand": "oklch(var(--on-brand) / <alpha-value>)",
         navy: {
@@ -72,6 +75,26 @@ export default {
         upcoming: {
           DEFAULT: "oklch(var(--upcoming) / <alpha-value>)",
           soft: "oklch(var(--upcoming-soft) / <alpha-value>)",
+          mid: "oklch(var(--upcoming-mid) / <alpha-value>)",
+        },
+        /* VCFO Spectrum (2026-10-29): Waiting is teal; banners use caution; regulators have a colour each. */
+        waiting: {
+          DEFAULT: "oklch(var(--waiting) / <alpha-value>)",
+          soft: "oklch(var(--waiting-soft) / <alpha-value>)",
+          mid: "oklch(var(--waiting-mid) / <alpha-value>)",
+        },
+        caution: {
+          DEFAULT: "oklch(var(--caution) / <alpha-value>)",
+          soft: "oklch(var(--caution-soft) / <alpha-value>)",
+          line: "oklch(var(--caution-line) / <alpha-value>)",
+        },
+        reg: {
+          gst: "oklch(var(--data-1) / <alpha-value>)",
+          it: "oklch(var(--data-2) / <alpha-value>)",
+          mca: "oklch(var(--data-3) / <alpha-value>)",
+          fema: "oklch(var(--data-4) / <alpha-value>)",
+          payroll: "oklch(var(--data-5) / <alpha-value>)",
+          labour: "oklch(var(--data-6) / <alpha-value>)",
         },
         "on-status": "oklch(var(--on-status) / <alpha-value>)",
         gold: {
@@ -98,6 +121,8 @@ export default {
           ink: "oklch(var(--side-ink) / <alpha-value>)",
           muted: "oklch(var(--side-muted) / <alpha-value>)",
           active: "oklch(var(--side-active) / <alpha-value>)",
+          "active-ink": "oklch(var(--side-active-ink) / <alpha-value>)",
+          hover: "oklch(var(--side-hover) / <alpha-value>)",
           line: "oklch(var(--side-line) / <alpha-value>)",
         },
         data: {
@@ -216,10 +241,12 @@ export default {
           mid: "oklch(var(--danger-mid) / <alpha-value>)",
           light: "oklch(var(--danger-light) / <alpha-value>)",
           text: "oklch(var(--danger-text) / <alpha-value>)",
+          fill: "oklch(var(--danger-fill) / <alpha-value>)",
         },
         info: {
           DEFAULT: "oklch(var(--info) / <alpha-value>)",
           soft: "oklch(var(--info-soft) / <alpha-value>)",
+          line: "oklch(var(--info-line) / <alpha-value>)",
           foreground: "oklch(var(--info-foreground) / <alpha-value>)",
           light: "oklch(var(--info-light) / <alpha-value>)",
           text: "oklch(var(--info-text) / <alpha-value>)",
@@ -297,6 +324,17 @@ export default {
         "3xl": "var(--radius-3xl)",
         pill: "var(--radius-pill)",
         card: "var(--radius-lg)",
+        mark: "var(--radius-mark)",
+        bar: "var(--radius-bar)",
+      },
+      /* R-28: Roboto 400, 500, 700. 500 does the work of bold; 700 is for display sizes and the logo. */
+      fontWeight: {
+        semibold: "500",
+        bold: "500",
+        display: "700",
+      },
+      borderWidth: {
+        "1.5": "1.5px",
       },
       /* Two shadows only (K-03): every Tailwind size resolves to one of them. */
       boxShadow: {
@@ -308,9 +346,13 @@ export default {
         lg: "var(--shadow-float)",
         xl: "var(--shadow-float)",
         "2xl": "var(--shadow-float)",
+        dialog: "var(--shadow-dialog)",
+        tile: "var(--shadow-tile)",
+        shine: "var(--shine)",
       },
       backgroundImage: {
         hero: "var(--hero-gradient)",
+        wash: "var(--hero-gradient)",
       },
       spacing: {
         "control-sm": "var(--control-sm)",

@@ -87,7 +87,10 @@ const ALIASES = `
     --stat-gst-soft: var(--surface-sunken); --stat-it-soft: var(--surface-sunken); --stat-mca-soft: var(--surface-sunken);
     --stat-fema-soft: var(--surface-sunken); --stat-stpi-soft: var(--surface-sunken); --stat-labour-soft: var(--surface-sunken);
     --stat-rera-soft: var(--surface-sunken); --stat-tp-soft: var(--surface-sunken);
-    --super-gold: var(--ink-muted); --super-gold-soft: var(--surface-sunken); --super-gold-text: var(--ink-muted);`;
+    --super-gold: var(--ink-muted); --super-gold-soft: var(--surface-sunken); --super-gold-text: var(--ink-muted);
+    /* ---- VCFO Spectrum names (2026-10-29): regulator colours in the data-* slots ---- */
+    --reg-gst: var(--data-1); --reg-it: var(--data-2); --reg-mca: var(--data-3);
+    --reg-fema: var(--data-4); --reg-payroll: var(--data-5); --reg-labour: var(--data-6);`;
 
 const block = [
   START,
@@ -123,8 +126,9 @@ const block = [
   ...tokens.borderWidth.tokens.map((t) => `    --${t.name === 'hairline' ? 'hairline-width' : t.name}: ${t.value};`),
   '',
   '    /* ---- Shell ---- */',
-  '    --shell-rail-height: 3.25rem;',
-  '    --shell-sticky-top: var(--shell-rail-height);',
+  '    --shell-rail-height: 3.75rem; /* 60px top bar (Spectrum) */',
+  '    --shell-ribbon: 3px; /* R-46 regulator ribbon */',
+  '    --shell-sticky-top: calc(var(--shell-rail-height) + var(--shell-ribbon));',
   '',
   '    /* ---- Hexgrid loader (HSL, read with hsl(var(--x))) ---- */',
   '    --hex-loader-primary: 214 69% 34%;',

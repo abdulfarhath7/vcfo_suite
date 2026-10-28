@@ -6,4 +6,4 @@
 .tp-team .tb-ph .tb-segx{margin-left:auto}
 @media (max-width:767px){.tp-team .tb-cbtn{height:40px!important}.tp-team .tb-ph .tb-segx{margin-left:0;flex:1 1 100%}}
 .tp-team .ibtn[aria-disabled="true"],.tp-team .btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
-.tp-team .tb-err{color:var(--over-text);font-size:12px;font-weight:600}
+.tp-team .tb-err{color:var(--over-text);font-size:12px;font-weight:500}

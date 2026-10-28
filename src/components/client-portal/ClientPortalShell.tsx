@@ -63,6 +63,8 @@ function ShellBody({ children }: { children: ReactNode }) {
           </main>
         </div>
       </div>
+      {/* R-46: the 3px regulator spectrum ribbon across the very top. */}
+      <div className="cp-ribbon" aria-hidden="true" />
       <IconTips />
       <AskLauncher />
       <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />

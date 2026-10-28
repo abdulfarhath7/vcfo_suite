@@ -99,6 +99,19 @@ export function AskLauncher() {
   const onHome = activeKeyFor(pathname ?? '') === 'home';
   const showNote = Boolean(onHome && portal.prefs && !portal.prefs.botNoteSeen && !chatOpen);
   const dismissNote = () => portal.savePrefs({ botNoteSeen: true });
+  /* R-45: "/" opens Ask VCFO, unless the person is typing. */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || chatOpen) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      e.preventDefault();
+      openChat();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [chatOpen, openChat]);
+
   useEffect(() => {
     if (chatOpen && portal.prefs && !portal.prefs.botNoteSeen) portal.savePrefs({ botNoteSeen: true });
   }, [chatOpen, portal]);

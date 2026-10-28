@@ -1,29 +1,34 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
-/* Buttons (docs/design/TOKENS.md, "Controls and chips"): 36px default and 30px
-   small, one minimum width so a row or column of buttons shares one size,
-   labels never wrap, 8px corners, weight 600. The main button is navy with a
-   navy-hover state; use one main button per card. */
+/* Buttons (VCFO Spectrum, rule R-12): the main button is blurple with a faint top shine and
+   white text; hover is the deeper blurple. 36px default, 30px small, 42px large, 6px corners,
+   weight 500. Kinds: default (primary), strong (navy), secondary/outline (white, 1.5px edge),
+   ghost (6% ink), soft (blurple tint), destructive (danger), link. Icon-only buttons are 6px
+   squares, never circles. One main button per card. */
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-semibold ring-offset-surface transition-[color,background-color,border-color,box-shadow,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-45 active:translate-y-px motion-reduce:active:translate-y-0 [&_svg]:pointer-events-none [&_svg]:size-icon-md [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-[7px] whitespace-nowrap rounded-md font-medium ring-offset-surface transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-icon-md [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-navy text-on-navy hover:bg-navy-hover",
-        destructive: "bg-danger text-white hover:bg-danger/90",
-        success: "bg-positive text-on-brand hover:bg-positive/90",
-        outline: "border border-line bg-surface-raised text-ink shadow-card hover:bg-surface-sunken",
-        secondary: "border border-line bg-surface-raised text-ink shadow-card hover:bg-surface-sunken",
-        ghost: "bg-transparent text-ink-muted hover:bg-surface-sunken hover:text-ink",
-        link: "text-brand underline-offset-4 hover:text-brand-strong hover:underline",
+        default: "bg-brand text-on-brand shadow-shine hover:bg-brand-strong",
+        strong: "bg-navy text-on-navy shadow-shine hover:bg-navy-hover",
+        destructive: "bg-danger-fill text-white shadow-shine hover:bg-danger-fill/90",
+        success: "bg-positive text-on-brand shadow-shine hover:bg-positive/90",
+        outline: "border-1.5 border-line-strong bg-surface-raised text-ink hover:bg-surface-sunken",
+        secondary: "border-1.5 border-line-strong bg-surface-raised text-ink hover:bg-surface-sunken",
+        ghost: "bg-ink/[.06] text-ink hover:bg-ink/10",
+        quiet: "bg-transparent text-ink-2 hover:bg-ink/[.06]",
+        soft: "bg-brand-soft text-brand-text hover:bg-brand-line/60",
+        link: "h-auto min-w-0 px-0 text-brand-text underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-control-md min-w-control px-3 text-[13px]",
-        sm: "h-control-sm min-w-control px-2.5 text-[12px]",
-        lg: "h-control-lg min-w-control px-4 text-[14px]",
-        icon: "h-control-md w-control-md",
+        default: "h-control-md min-w-control px-3.5 text-[14px]",
+        sm: "h-control-sm min-w-control px-2.5 text-[13px]",
+        lg: "h-control-lg min-w-control px-[18px] text-[15px]",
+        icon: "h-control-md w-control-md p-0",
       },
     },
+    compoundVariants: [{ variant: "link", className: "h-auto min-w-0 px-0" }],
     defaultVariants: {
       variant: "default",
       size: "default",

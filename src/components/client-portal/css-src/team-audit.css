@@ -7,7 +7,7 @@
 .tp-audit .tb-day{display:grid;grid-template-columns:72px minmax(0,1fr);gap:16px;padding-top:14px}
 .tp-audit .tb-vl{position:absolute;left:79px;top:14px;bottom:14px;width:2px;background:var(--border)}
 .tp-audit .tb-ev{display:grid;grid-template-columns:52px 28px minmax(0,1fr) 190px 32px;gap:12px;align-items:center;padding:8px 0}
-.tp-audit .tb-facts{position:relative;margin:0 0 8px 92px;padding:12px 14px;border-radius:8px;background:var(--raised);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 16px}
+.tp-audit .tb-facts{position:relative;margin:0 0 8px 92px;padding:12px 14px;border-radius:6px;background:var(--raised);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 16px}
 .tp-audit .tb-facts .rt{overflow-wrap:anywhere}
 .tp-audit .dd-top{flex-wrap:wrap}
 @media (max-width:959px){.tp-audit .tb-ev{grid-template-columns:48px 28px minmax(0,1fr) 150px 32px;gap:10px}.tp-audit .tb-vl{left:71px}.tp-audit .tb-facts{margin-left:86px}}

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { CARD_HEAD_TONE_TOKENS, cardHeadIcon, type CardHeadIconName } from '@/lib/ui/card-head-icon';
 
-const ICONS: Record<CardHeadIconName, LucideIcon> = {
+export const CARD_HEAD_ICONS: Record<CardHeadIconName, LucideIcon> = {
   'alert-triangle': TriangleAlert,
   bell: Bell,
   'circle-check': CircleCheck,
@@ -48,7 +48,7 @@ const ICONS: Record<CardHeadIconName, LucideIcon> = {
  */
 export function CardHeadTile({ title, className, size = 28 }: { title: string; className?: string; size?: 28 | 30 }) {
   const { icon, tone } = cardHeadIcon(title);
-  const Icon = ICONS[icon];
+  const Icon = CARD_HEAD_ICONS[icon];
   const t = CARD_HEAD_TONE_TOKENS[tone];
   const style: CSSProperties = {
     display: 'inline-grid',
@@ -56,13 +56,13 @@ export function CardHeadTile({ title, className, size = 28 }: { title: string; c
     width: size,
     height: size,
     flex: 'none',
-    borderRadius: 8,
+    borderRadius: 6,
     background: `oklch(var(--${t.bg}))`,
     color: `oklch(var(--${t.fg}))`,
   };
   return (
     <span className={className} style={style} aria-hidden>
-      <Icon width={15} height={15} strokeWidth={1.5} />
+      <Icon width={15} height={15} strokeWidth={1.6} />
     </span>
   );
 }

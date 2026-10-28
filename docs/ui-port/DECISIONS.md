@@ -1,0 +1,22 @@
+# UI port decisions (VCFO Spectrum, 29 Oct 2026)
+
+Decisions made alone during the overnight port, as `new_context.md` asks. Each one names
+the safer option and why it was picked. The owner can reverse any of them.
+
+| No. | Topic | Decision | Why |
+|---|---|---|---|
+| D-01 | Base branch | `ui/spectrum` starts from `port/carryover-1` (35b7b2a), not from `main`. | `main` (090e6dc) lacks 55 commits: the design-system work, the K-01 to K-47 carry-over port, the lint fixes and the large-file splits that `CLAUDE.md` describes. Branching from `main` would throw that work away or force a re-port. `port/carryover-1` already contains `main`, so a later merge into `main` is a fast-forward. |
+| D-02 | Prototype source | The prototype's `design/spectrum` branch (05e5509) is the authority, read from a read-only clone at `~/Documents/vcfo-prototype-ref`. | The owner's own checkout `~/Documents/vcfo-prototype` and the other session's worktree `~/.cache/vcfo/spectrum` were not touched. |
+| D-03 | Token names | The Spectrum colours go into the existing semantic tokens (`surface`, `brand`, `side`, ...) in `docs/design/design-tokens.json`. New tokens are added only where Spectrum has a meaning the old set lacked: `ink-2`, `brand-text`, `brand-line`, `danger-fill`, `waiting*`, `caution*`, `upcoming-mid`, `info-line`, `side-active-ink`, `side-hover`. | One token system, no second styling system. Every existing class keeps working and picks up the new look. |
+| D-04 | Brand colour | `brand` is now blurple #635BFF (dark #7A72FF). Text-safe blurple for links is `brand-text` (#4A3FE0). | R-12: the main button, picked segment and focus are blurple. |
+| D-05 | Navy | `navy-fill` is the Spectrum "strong" colour: navy #0A2540 in light, near-white in dark (as the prototype's `strong`). The sidebar uses `side` (#0A2540, dark #0B1424). | The prototype's strong button inverts in dark mode; the sidebar does not. |
+| D-06 | Regulator colours | The six `data-*` chart slots hold the regulator colours in the order the old `stat-*` aliases used (GST, IT, MCA, FEMA, payroll, labour). `reg-*` aliases and Tailwind `reg-*` colours point at them. | Existing charts keyed by `stat-gst` etc. now show the regulator colour without call-site changes. |
+| D-07 | Waiting colour | "Waiting" is teal (`waiting`); "Due soon" stays amber (`warning`). The old `solid-waiting` chip, which callers use for "with the client", is now teal. A new `solid-due` chip is amber. | R-13 and the prototype's chip tones. |
+| D-08 | Font weight | Tailwind `font-semibold` and `font-bold` resolve to 500 (as in the prototype's config); `font-display` is 700. In the client portal CSS, weights 600 to 800 became 500. | R-28: 500 does the work of bold. Only 400, 500 and 700 Roboto weights load. |
+| D-09 | Radius | Every radius token is 6px; `rounded-mark` (4px) and `rounded-bar` (3px) were added. In the client portal CSS, 7 to 16px and 99px corners became 6px. `rounded-full` and 50% stay, for avatars, dots and rings. | R-44. Changing every `rounded-full` call site by hand is risky; the chips that used it were fixed in their components. |
+| D-10 | Card shadow | `shadow-card` is now no shadow; cards rely on the 1.5px edge. Overlays (menus, popovers, tooltips, select lists) use `shadow-float`; dialogs use `shadow-dialog`. | R-02. |
+| D-11 | Ask VCFO | Staff: the top-bar launcher moved to a sidebar button; ⌘J, Ctrl+J and "/" still open the panel. Client portal: the floating launcher and the Visor figure are hidden with CSS, and a sidebar button opens the same chat. The chat logic is unchanged. | R-04, R-45. Hiding with CSS keeps the tested chat code intact. |
+| D-12 | Tables | `EFilingGrid` keeps its name and API but draws Stripe T1 clean rows (no navy head, no cell lines, no zebra). | R-07 (28 Oct) replaces the 27 Oct e-Filing grid decision. Renaming the component would touch every caller for no visual gain. |
+| D-13 | Home card | `DashHero` keeps its API and draws the Spectrum home card: colour wash, date, title, actions and floating KP1 tiles. The hero skin settings still save but no longer change the card. | R-17, R-18; one component for every portal home. |
+| D-14 | Testing | The owner asked for no manual testing tonight. The repo gate (`typecheck`, `lint`, `test`) still runs before each commit, as `new_context.md` requires. No browser checks were made. | Owner instruction. |
+| D-15 | Push | The branch is pushed to `origin ui/spectrum` after each commit. Nothing is merged and nothing is deployed. | `new_context.md` rule 7. |

@@ -4,20 +4,20 @@
 /* v7 responsive top bar: phone <=767 (menu button, current page only), tablet 768-1279 (narrow search), desktop >=1280 */
 .tbar{height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid oklch(var(--line) / .6);background:oklch(var(--surface-raised) / .9);-webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);box-sizing:border-box;min-width:0}
 .tbar-mw{display:none;flex:none;align-items:center;gap:6px}
-.tbar-menu{display:inline-flex;flex:none;width:40px;height:40px;margin-left:-6px;border:0;border-radius:8px;background:transparent;color:var(--fg);align-items:center;justify-content:center;cursor:pointer;padding:0}
+.tbar-menu{display:inline-flex;flex:none;width:40px;height:40px;margin-left:-6px;border:0;border-radius:6px;background:transparent;color:var(--fg);align-items:center;justify-content:center;cursor:pointer;padding:0}
 .tbar-menu:hover{background:var(--raised)}
 .tbar-logo{display:flex;flex:none}
 .tbar-nav{flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow:hidden}
-.tbar-ic{flex:none;width:24px;height:24px;border-radius:8px;background:var(--primary-light);color:var(--primary);display:grid;place-items:center}
+.tbar-ic{flex:none;width:24px;height:24px;border-radius:6px;background:var(--primary-light);color:var(--primary);display:grid;place-items:center}
 .tbar-ol{display:flex;align-items:center;gap:4px;min-width:0;margin:0;padding:0;list-style:none;overflow:hidden;font-size:13px}
 .tbar-ol li{white-space:nowrap}
-.tbar-ol li.tbar-cur{font-weight:600;color:var(--fg);overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tbar-ol li.tbar-cur{font-weight:500;color:var(--fg);overflow:hidden;text-overflow:ellipsis;min-width:0}
 .tbar-r{margin-left:auto;flex:none;display:flex;align-items:center;gap:6px}
-.tbar-srch{display:flex;align-items:center;gap:8px;width:256px;height:36px;padding:0 10px 0 12px;box-sizing:border-box;border-radius:8px;border:1px solid oklch(var(--line) / .7);background:oklch(var(--surface-sunken) / .5);color:var(--muted);font:500 13px var(--font-sans),sans-serif;cursor:text}
+.tbar-srch{display:flex;align-items:center;gap:8px;width:256px;height:36px;padding:0 10px 0 12px;box-sizing:border-box;border-radius:6px;border:1px solid oklch(var(--line) / .7);background:oklch(var(--surface-sunken) / .5);color:var(--muted);font:500 13px var(--font-sans),sans-serif;cursor:text}
 .tbar-srch .tbar-sl{flex:1;text-align:left}
 .tbar-srch .kbd{font-size:11px}
-.tbar-ib{position:relative;flex:none;width:36px;height:36px;border-radius:8px;border:0;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
-.tbar-badge{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:99px;background:oklch(var(--navy-fill));color:#fff;box-shadow:0 0 0 2px var(--panel);font:600 10px/1 var(--font-sans),sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--panel)}
+.tbar-ib{position:relative;flex:none;width:36px;height:36px;border-radius:6px;border:0;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.tbar-badge{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:6px;background:oklch(var(--navy-fill));color:#fff;box-shadow:0 0 0 2px var(--panel);font:500 10px/1 var(--font-sans),sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--panel)}
 /* the search box folds to a 36 px icon below 1280 px (docs/topbar.dc.html, home 1024 board) */
 @media (max-width:1279px){
   .tbar-srch{width:36px;padding:0;justify-content:center}
@@ -31,7 +31,7 @@
   .tbar-mw{display:inline-flex}
   .tbar-logo,.tbar-ic,.tbar-mid,.tbar-theme{display:none}
   .tbar-ol{font-size:15px}
-  .tbar-ol li.tbar-cur{font-weight:700}
+  .tbar-ol li.tbar-cur{font-weight:500}
   .tbar-r{gap:4px}
   .tbar-srch,.tbar-ib{width:40px;height:40px}
   .tbar-srch{border-color:transparent;background:transparent;color:var(--muted)}
@@ -40,7 +40,7 @@
   .tbar-menu{width:44px;height:44px;margin-left:0;border-radius:6px;color:var(--muted)}
   .tbar-mw{gap:8px}
   .tbar-nav{gap:8px}
-  .tbar-ol li.tbar-cur{font-weight:800;font-size:15px;color:var(--navy-ink,var(--navy))}
+  .tbar-ol li.tbar-cur{font-weight:500;font-size:15px;color:var(--navy-ink,var(--navy))}
   .tbar-r{gap:0}
   .tbar-srch,.tbar-ib{width:44px;height:44px;border-radius:6px;background:transparent!important}
   .tbar-srch svg,.tbar-ib svg{width:19px;height:19px}

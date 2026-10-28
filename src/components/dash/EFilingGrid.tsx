@@ -15,9 +15,10 @@ export type EFilingColumn<T> = {
 };
 
 /**
- * The e-Filing grid (rule R-07, C-0007): a navy header with white text, a grid line on
- * every cell, zebra rows and page numbers under the table. The table scrolls inside its
- * card on narrow screens instead of spilling past it (K-38).
+ * The grid (VCFO Spectrum rule R-07, Stripe T1): clean rows. A 36px head in 11.5px capitals
+ * with a 1.5px line under it, 44px rows with one hairline, no column lines, no zebra, no navy
+ * head. Page numbers sit under long tables. The table scrolls inside its card on narrow
+ * screens instead of spilling past it (K-38).
  */
 export function EFilingGrid<T>({
   columns,
@@ -46,8 +47,8 @@ export function EFilingGrid<T>({
 
   return (
     <div className="min-w-0">
-      <div className="max-w-full overflow-x-auto rounded-md border border-line">
-        <table className="w-full table-fixed border-collapse text-[12.5px]" style={{ minWidth }}>
+      <div className="max-w-full overflow-x-auto">
+        <table className="w-full table-fixed border-collapse text-[14px]" style={{ minWidth }}>
           {caption ? <caption className="sr-only">{caption}</caption> : null}
           <colgroup>
             {columns.map((c) => (
@@ -55,12 +56,15 @@ export function EFilingGrid<T>({
             ))}
           </colgroup>
           <thead>
-            <tr className="bg-navy text-on-navy">
+            <tr>
               {columns.map((c) => (
                 <th
                   key={c.key}
                   scope="col"
-                  className={cn('border border-navy-hover px-2.5 py-2 text-[12px] font-semibold', alignClass(c.align))}
+                  className={cn(
+                    'h-9 whitespace-nowrap border-b-1.5 border-line px-2.5 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted',
+                    alignClass(c.align),
+                  )}
                 >
                   {c.header}
                 </th>
@@ -70,22 +74,22 @@ export function EFilingGrid<T>({
           <tbody>
             {shown.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="border border-line px-3 py-6 text-center text-ink-muted">
+                <td colSpan={columns.length} className="px-3 py-6 text-center text-ink-muted">
                   {empty ?? 'Nothing to show.'}
                 </td>
               </tr>
             ) : (
-              shown.map((row, i) => (
+              shown.map((row) => (
                 <tr
                   key={rowKey(row)}
-                  className={cn(i % 2 === 1 ? 'bg-surface-sunken' : 'bg-surface-raised', onRowClick && 'cursor-pointer hover:bg-brand-soft')}
+                  className={cn('hover:bg-surface-sunken/60', onRowClick && 'cursor-pointer')}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {columns.map((c) => (
                     <td
                       key={c.key}
                       className={cn(
-                        'border border-line px-2.5 py-2 align-middle text-ink',
+                        'h-11 border-b border-line-soft px-2.5 align-middle text-ink-2',
                         alignClass(c.align),
                         c.wrap ? 'whitespace-normal' : 'truncate whitespace-nowrap',
                       )}
@@ -108,8 +112,8 @@ export function EFilingGrid<T>({
               aria-current={n === current ? 'page' : undefined}
               onClick={() => setPage(n)}
               className={cn(
-                'h-7 min-w-7 rounded-md border px-2 text-[12px] font-medium tabular-nums',
-                n === current ? 'border-navy bg-navy text-on-navy' : 'border-line bg-surface-raised text-ink-muted hover:text-ink',
+                'h-7 min-w-7 rounded-md border-1.5 px-2 text-[12px] font-medium tabular-nums',
+                n === current ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface-raised text-ink-muted hover:text-ink',
               )}
             >
               {n + 1}

@@ -1,37 +1,40 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
-/* The chip (docs/design/TOKENS.md, "Controls and chips"): 22px high, 8px side
-   padding, 5px corners, 11px/600 text. Status variants use a soft ground with a
-   text-safe colour; the word carries the state, never the colour alone. The
-   solid-* names are kept for callers but render as soft chips with a 6px dot
-   (K-04, rule R-13); there are no solid status blocks. */
-const DOT = "before:inline-block before:h-1.5 before:w-1.5 before:shrink-0 before:rounded-full before:content-['']";
+/* The chip (VCFO Spectrum, rules R-13, R-14): 24px high, 6px corners, 12px/500 text. Status
+   chips use a soft ground with a text-safe word and a 7px square dot in the mid colour; the
+   word carries the state, never the colour alone. Six status words: Not started, In progress,
+   Waiting, Due soon, Overdue, Done. Status and owner chips are 104px wide so columns line up.
+   The solid-* names are kept for callers; there are no solid status blocks. */
+const DOT = "before:inline-block before:h-[7px] before:w-[7px] before:shrink-0 before:rounded-[2px] before:content-['']";
+const W = "min-w-[104px]";
 export const badgeVariants = cva(
-  "inline-flex h-chip items-center gap-1.5 whitespace-nowrap rounded-sm border border-transparent px-2 text-[11px] font-semibold leading-4 transition-colors focus:outline-none focus:ring-2 focus:ring-focus-ring focus:ring-offset-2",
+  "inline-flex h-chip items-center gap-[7px] whitespace-nowrap rounded-md border border-transparent px-[9px] text-[12px] font-medium leading-4 transition-colors focus:outline-none focus:ring-2 focus:ring-focus-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "bg-brand text-on-brand",
+        default: "bg-brand-soft text-brand-text",
         secondary: "bg-surface-sunken text-ink-muted",
         destructive: "bg-danger-soft text-danger",
-        outline: "border-line text-ink",
+        outline: "border-1.5 border-line bg-surface-raised text-ink-2",
         success: "bg-positive-soft text-positive",
         warning: "bg-warning-soft text-warning",
         info: "bg-info-soft text-info",
-        soft: "bg-brand-soft text-brand",
+        soft: "bg-brand-soft text-brand-text",
         highlight: "bg-highlight-soft text-highlight",
         upcoming: "bg-upcoming-soft text-upcoming",
-        /* state chips: soft ground, text-safe word, 6px dot in the mid colour */
-        "solid-success": `bg-positive-soft text-positive ${DOT} before:bg-positive-mid`,
-        "solid-progress": `bg-brand-soft text-brand ${DOT} before:bg-brand`,
-        "solid-waiting": `bg-warning-soft text-warning ${DOT} before:bg-warning-mid`,
-        "solid-overdue": `bg-danger-soft text-danger ${DOT} before:bg-danger-mid`,
-        "solid-upcoming": `bg-upcoming-soft text-upcoming ${DOT} before:bg-upcoming`,
-        /* owner chips: soft tints with a dot, 96px wide, never solid (K-05) */
-        "owner-client": `w-24 justify-center bg-owner-client-soft text-owner-client ${DOT} before:bg-current`,
-        "owner-sbc": `w-24 justify-center bg-owner-sbc-soft text-owner-sbc ${DOT} before:bg-current`,
-        "owner-mca": `w-24 justify-center bg-owner-mca-soft text-owner-mca ${DOT} before:bg-current`,
-        "owner-manager": `w-24 justify-center bg-owner-manager-soft text-owner-manager ${DOT} before:bg-current`,
+        waiting: "bg-waiting-soft text-waiting",
+        /* state chips: soft ground, text-safe word, 7px square dot in the mid colour */
+        "solid-success": `${W} bg-positive-soft text-positive ${DOT} before:bg-positive-mid`,
+        "solid-progress": `${W} bg-brand-soft text-brand-text ${DOT} before:bg-brand`,
+        "solid-waiting": `${W} bg-waiting-soft text-waiting ${DOT} before:bg-waiting-mid`,
+        "solid-due": `${W} bg-warning-soft text-warning ${DOT} before:bg-warning-mid`,
+        "solid-overdue": `${W} bg-danger-soft text-danger ${DOT} before:bg-danger-mid`,
+        "solid-upcoming": `${W} bg-upcoming-soft text-upcoming ${DOT} before:bg-upcoming-mid`,
+        /* owner chips (R-14): 104px soft tints with a square dot. Client amber, SBC blue, MCA violet. */
+        "owner-client": `w-[104px] bg-owner-client-soft text-owner-client ${DOT} before:bg-warning-mid`,
+        "owner-sbc": `w-[104px] bg-owner-sbc-soft text-owner-sbc ${DOT} before:bg-current`,
+        "owner-mca": `w-[104px] bg-owner-mca-soft text-owner-mca ${DOT} before:bg-current`,
+        "owner-manager": `w-[104px] bg-owner-manager-soft text-owner-manager ${DOT} before:bg-waiting-mid`,
       },
     },
     defaultVariants: {

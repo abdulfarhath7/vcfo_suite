@@ -2,9 +2,9 @@ import { cn } from '@/lib/utils';
 import { StatusCode, STATUS_LABEL } from '@/data/checklist';
 
 const styles: Record<StatusCode, string> = {
-  'not-started': 'bg-surface-sunken text-ink-muted',
-  'in-progress': 'bg-info-soft text-info',
-  'awaiting-client': 'bg-warning-soft text-warning',
+  'not-started': 'bg-upcoming-soft text-upcoming',
+  'in-progress': 'bg-brand-soft text-brand-text',
+  'awaiting-client': 'bg-waiting-soft text-waiting',
   completed: 'bg-positive-soft text-positive',
   overdue: 'bg-danger-soft text-danger',
   'not-applicable': 'bg-surface-sunken/70 text-ink-faint',
@@ -14,7 +14,7 @@ export function StatusBadge({ status, className }: { status: StatusCode; classNa
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium',
+        'inline-flex h-chip min-w-[104px] items-center whitespace-nowrap rounded-md px-[9px] text-[12px] font-medium',
         styles[status],
         className
       )}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useApp } from "@/context/AppContext";
-import { AskLauncher } from "@/components/ask/AskLauncher";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
@@ -11,7 +10,6 @@ import {
   BookOpen,
   Briefcase,
   CalendarCheck,
-  ChevronRight,
   ClipboardCheck,
   FolderOpen,
   History,
@@ -69,32 +67,23 @@ function ShellLocationTrail({
 
   return (
     <nav aria-label="Location" className="hidden min-w-0 flex-1 items-center gap-1.5 sm:flex">
-      <span
-        className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-surface-sunken text-ink"
-        aria-hidden
-      >
-        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-      </span>
+      <span className="sr-only"><Icon aria-hidden /></span>
       <ol className="flex min-w-0 list-none items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {segments.map((seg, index) => (
-          <li key={`${seg.label}-${index}`} className="flex shrink-0 items-center gap-1">
+          <li key={`${seg.label}-${index}`} className="flex shrink-0 items-center gap-2">
             {index > 0 ? (
-              <ChevronRight
-                className="h-3 w-3 shrink-0 text-ink-faint"
-                strokeWidth={2}
-                aria-hidden
-              />
+              <span className="text-ink-faint" aria-hidden>/</span>
             ) : null}
             {seg.href ? (
               <Link
                 href={seg.href}
-                className="whitespace-nowrap text-[13px] text-ink-muted transition-colors hover:text-ink"
+                className="whitespace-nowrap text-[14px] text-ink-muted transition-colors hover:text-ink"
               >
                 {seg.label}
               </Link>
             ) : (
               <span
-                className="whitespace-nowrap text-[13px] font-medium text-ink"
+                className="whitespace-nowrap text-[14px] font-medium text-ink"
                 title={seg.label}
                 aria-current="page"
               >
@@ -118,7 +107,7 @@ export function TopBar() {
   const profileHref = user ? roleSettingsPath(user.role) : "/";
 
   return (
-    <header className="relative flex h-[var(--shell-rail-height)] items-center gap-2 border-b border-line bg-surface-raised px-2.5 sm:gap-3 sm:px-4">
+    <header className="relative flex h-[var(--shell-rail-height)] items-center gap-2 border-b-1.5 border-line bg-surface-raised px-2.5 sm:gap-3 sm:px-7">
       <button
         type="button"
         onClick={openMobile}
@@ -141,7 +130,6 @@ export function TopBar() {
       <CommandPalette />
 
       <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
-        <AskLauncher />
         <button
           type="button"
           onClick={() => setCommandOpen(true)}
@@ -166,7 +154,7 @@ export function TopBar() {
             <UserFace
               src={user.imageUrl}
               initials={user.initials}
-              className="h-6 w-6 bg-brand text-[9px] font-semibold text-on-brand"
+              className="h-6 w-6 bg-brand text-[9px] font-medium text-on-brand"
             />
             <span className="hidden sm:inline">Profile</span>
           </Link>

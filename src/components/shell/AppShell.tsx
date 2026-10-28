@@ -61,9 +61,7 @@ export function AppShell({
 
   /* Flush to the sidebar: exact width, no screen inset */
   const desktopPad = navExpanded
-    ? user.role === "client"
-      ? "lg:pl-[15.5rem]"
-      : "lg:pl-56"
+    ? "lg:pl-[15.5rem]"
     : sidebarMode === "closed"
       ? "lg:pl-16"
       : "lg:pl-14";
@@ -78,19 +76,21 @@ export function AppShell({
         data-reduce-motion={reduceMotion ? "true" : "false"}
       >
         <div className="page-atmosphere pointer-events-none absolute inset-0" aria-hidden />
+        {/* R-46: the 3px regulator spectrum ribbon across the very top. The only decorative line. */}
+        <div className="spectrum-ribbon fixed inset-x-0 top-0 z-[60]" aria-hidden />
 
         <RoleSidebar />
         <MobileNavSheet />
         <AnnouncementLivePopup />
         <NotificationLivePopup />
 
-        <AskPushColumn className={cn("relative z-10 pl-0 transition-[padding] duration-300 ease-out", desktopPad)}>
-          <div className="sticky top-0 z-20">
+        <AskPushColumn className={cn("relative z-10 pl-0 pt-[3px] transition-[padding] duration-300 ease-out", desktopPad)}>
+          <div className="sticky top-[3px] z-20 pt-0">
             <TopBar />
           </div>
           <main
             className={cn(
-              "mx-auto page-fade-up px-5 pb-10 pt-1.5 sm:px-7 sm:pb-12 sm:pt-2 lg:pr-6",
+              "mx-auto page-fade-up px-4 pb-20 pt-5 md:px-8 md:pt-7",
               mainMaxWidth,
             )}
           >

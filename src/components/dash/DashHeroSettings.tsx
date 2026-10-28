@@ -36,9 +36,9 @@ export function DashHeroSettings() {
         <button
           type="button"
           aria-label="Greeting card settings"
-          className="grid h-7 w-7 place-items-center rounded-md text-side-muted transition-colors hover:bg-side-active hover:text-side-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="grid h-9 w-9 place-items-center rounded-md text-ink-2 transition-colors hover:bg-ink/[.06] hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={2} />
+          <SlidersHorizontal className="h-4 w-4" strokeWidth={1.6} />
         </button>
       </PopoverTrigger>
       <PopoverContent

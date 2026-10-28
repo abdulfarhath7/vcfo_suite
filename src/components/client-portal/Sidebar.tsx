@@ -259,7 +259,7 @@ function SidebarFull({ drawer }: { drawer?: boolean }) {
   const pathname = usePathname();
   const act = activeKeyFor(pathname);
   const nav = useNav();
-  const { shell, prefs, savePrefs, toast, go, setDrawerOpen } = usePortal();
+  const { shell, prefs, savePrefs, toast, go, setDrawerOpen, openChat } = usePortal();
   const navRef = useRef<HTMLElement>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   useEffect(() => setOpen(prefs?.navOpen ?? {}), [prefs?.navOpen]);
@@ -394,6 +394,25 @@ function SidebarFull({ drawer }: { drawer?: boolean }) {
             </span>
           </div>
         ))}
+      </div>
+      {/* R-45: Ask VCFO is a sidebar button with the "/" key, never a floating bubble. */}
+      <div className="vps-askw">
+        <button
+          type="button"
+          className="vps-ask"
+          onClick={() => {
+            if (drawer) setDrawerOpen(false);
+            openChat();
+          }}
+        >
+          <span className="vps-ask-i" aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+            </svg>
+          </span>
+          <span className="vps-ask-t">Ask VCFO</span>
+          <kbd>/</kbd>
+        </button>
       </div>
       <div className="vps-me">
         <div className="vps-mest">
