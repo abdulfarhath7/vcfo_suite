@@ -220,7 +220,7 @@ function SidebarNavBody({
       { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
       { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
       { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
-      { to: `${staffBase}/team`, label: 'Leads', icon: UserSquare2, iconTone: TONE.people },
+      { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
       compliancesGroup(staffBase),
       updatesGroup(staffBase),
       { to: `${staffBase}/mail`, label: 'Email', icon: Mail, iconTone: TONE.work },
