@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ClipboardCheck } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
-import { CHIP_CLASS, CHIP_DOT_CLASS, TONE_BADGE } from '@/components/common/IconChip';
+import { Button } from '@/components/ui/button';
+import { CompanyTile } from '@/components/staff/today/today-parts';
 import { useApp } from '@/context/AppContext';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { pendingApprovalKind, usePendingApprovals } from '@/hooks/use-pending-approvals';
@@ -14,8 +15,10 @@ import { adminProjectStepPath, staffProjectBaseFromPathname } from '@/lib/projec
 const MAX_ROWS = 6;
 
 /**
- * Dashboard: every step waiting on this manager's (or the firm's) decision,
- * each row opening the step with its filled fields and the Accept / Reject pair.
+ * Waiting for your approval (prototype ManagerToday "Approvals"): every step waiting on this
+ * manager's (or the firm's) decision. Each row has the company tile, the step, the company and
+ * the kind of request, and a strong navy button (D-13) that opens the step with its filled
+ * fields and the Accept / Reject pair.
  */
 export function DashboardApprovalsPanel() {
   const { user } = useApp();
@@ -29,39 +32,38 @@ export function DashboardApprovalsPanel() {
   return (
     <DashSection
       icon={ClipboardCheck}
-      tone="warning"
-      title="Approvals"
-      meta={rows.length > 0 ? `${rows.length} waiting` : 'Nothing waiting'}
+      title="Waiting for your approval"
+      meta={String(rows.length)}
       href={`${projectBase}/approvals`}
       hrefLabel="All approvals"
+      bodyClassName="p-0"
     >
       {shown.length === 0 ? (
-        <p className="py-2 text-[12px] text-ink-muted">
-          Requests from your leads and client submissions land here.
-        </p>
+        <p className="px-4 py-4 text-[13px] text-ink-muted">Nothing waiting</p>
       ) : (
-        <ul className="divide-y divide-line">
-          {shown.map((row) => (
-            <li key={`${row.engagementId}-${row.itemId}-${row.clientFill ? 'fill' : 'review'}`}>
-              <Link
-                href={adminProjectStepPath({ id: row.engagementId, slug: row.slug }, row.itemId, projectBase)}
-                className="group flex items-center gap-3 py-2.5 transition-colors hover:bg-surface-sunken/30"
+        <ul>
+          {shown.map((row) => {
+            const href = adminProjectStepPath({ id: row.engagementId, slug: row.slug }, row.itemId, projectBase);
+            return (
+              <li
+                key={`${row.engagementId}-${row.itemId}-${row.clientFill ? 'fill' : 'review'}`}
+                className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0"
               >
+                <CompanyTile name={row.companyName} size={30} />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-brand">
-                    {row.companyName}
-                  </span>
-                  <span className="mt-0.5 block truncate text-[11px] text-ink-muted">
-                    {checklistItemLabel(row.itemId)} · {pendingApprovalKind(row)}
+                  <Link href={href} className="block truncate font-medium leading-snug text-ink hover:underline">
+                    {checklistItemLabel(row.itemId)}
+                  </Link>
+                  <span className="block truncate text-[12.5px] text-ink-muted">
+                    {row.companyName} · {pendingApprovalKind(row)}
                   </span>
                 </span>
-                <span className={`${CHIP_CLASS} shrink-0 ${TONE_BADGE.warning}`}>
-                  <i className={`${CHIP_DOT_CLASS} bg-warning`} aria-hidden />
-                  Review
-                </span>
-              </Link>
-            </li>
-          ))}
+                <Button size="sm" variant="strong" asChild>
+                  <Link href={href}>Review</Link>
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </DashSection>

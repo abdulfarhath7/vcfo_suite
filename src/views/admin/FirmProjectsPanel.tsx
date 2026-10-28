@@ -6,7 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { Eyebrow } from '@/components/noir';
 import { Button } from '@/components/ui/button';
-import { CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_SOLID } from '@/components/common/IconChip';
+import { Chip, Tag } from '@/components/ui/spectrum-chip';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { PhaseBar } from '@/components/ui/step-track';
+import { DashSection } from '@/components/dash/DashSection';
+import { WorkFilterChip } from '@/components/intern/WorkFilterChip';
+import { CompanyTile } from '@/components/staff/today/today-parts';
 import { cn } from '@/lib/utils';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
@@ -39,12 +44,22 @@ async function fetchManagers(): Promise<ManagerOption[]> {
   return (body.managers ?? []) as ManagerOption[];
 }
 
-/** Firm-wide project list (embedded on admin home). */
-export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
+type PhaseFilter = 'all' | 'Pre-Incorporation' | 'Post-Incorporation';
+const STUCK_FILTERS = ['waiting_client', 'waiting_manager', 'waiting_lead', 'blocked', 'on_track'] as const;
+const HEALTH_RANK = { overdue: 0, 'at-risk': 1, 'on-track': 2 } as const;
+
+/**
+ * Firm-wide project list (admin Today "Clients · where each one is", and the Projects page).
+ * A segmented phase switch and R-10 chips for status and manager filter it. Each row shows the
+ * company, where it is now, the ST5 phase track (R-22), the manager, the stage, the next date
+ * and the health chip; worst health first.
+ */
+export function FirmProjectsPanel({ compact, title }: { compact?: boolean; title?: string }) {
   const { engagements, getStateForEngagement } = useApp();
   const router = useRouter();
-  const [phase, setPhase] = useState<'all' | 'Pre-Incorporation' | 'Post-Incorporation'>('all');
-  const [stuck, setStuck] = useState<StuckReason | 'all'>('all');
+  const [phase, setPhase] = useState<PhaseFilter>('all');
+  const [stuck, setStuck] = useState<StuckReason | ''>('');
+  const [manager, setManager] = useState('');
 
   const managersQuery = useQuery({
     queryKey: ['admin-managers'],
@@ -60,6 +75,7 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
     return engagements
       .filter((e) => e.stage !== 'Operational Readiness')
       .filter((e) => (phase === 'all' ? true : e.stage === phase))
+      .filter((e) => (!manager ? true : (e.managerId ?? e.adminId ?? 'unassigned') === manager))
       .map((e) => {
         const state = getStateForEngagement(e);
         const progress = internCompanyPhaseProgress(e, state);
@@ -69,55 +85,75 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
           eng: e,
           reason: deriveStuckReason(e, state),
           step: progress.currentLabel.split(' · ').slice(0, 2).join(' · '),
+          phaseDone: progress.phases.map((p) => p.done),
+          phaseTotals: progress.phases.map((p) => p.total),
+          phaseNames: progress.phases.map((p) => p.title),
           pct: total ? Math.round((done / total) * 100) : 0,
         };
       })
-      .filter((r) => (stuck === 'all' ? true : r.reason === stuck));
-  }, [engagements, getStateForEngagement, phase, stuck]);
+      .filter((r) => (!stuck ? true : r.reason === stuck))
+      .sort(
+        (a, b) =>
+          HEALTH_RANK[a.eng.health] - HEALTH_RANK[b.eng.health] || a.eng.companyName.localeCompare(b.eng.companyName),
+      );
+  }, [engagements, getStateForEngagement, phase, stuck, manager]);
+
+  const managerIds = new Set(
+    engagements.filter((e) => e.stage !== 'Operational Readiness').map((e) => e.managerId ?? e.adminId ?? 'unassigned'),
+  );
+  const managerOptions = [...managerIds].map((id) => ({
+    value: id,
+    label: id === 'unassigned' ? 'Unassigned' : managerName(id),
+  }));
 
   const todayIso = new Date().toISOString().slice(0, 10);
   const projectColumns: EFilingColumn<(typeof rows)[number]>[] = [
-    { key: 'client', header: 'Client', width: '22%', render: (r) => <span className="font-semibold">{r.eng.companyName}</span> },
-    { key: 'stage', header: 'Stage', width: '12%', render: (r) => stageDisplayLabel(r.eng.stage) },
-    { key: 'step', header: 'Step', width: '20%', render: (r) => <span title={r.step}>{r.step || '—'}</span> },
     {
-      key: 'progress',
-      header: 'Progress',
-      width: '13%',
+      key: 'client',
+      header: 'Client',
+      width: '22%',
       render: (r) => (
-        <span className="flex items-center gap-2">
-          <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-[3px] bg-upcoming-soft">
-            <i className="block h-full rounded-[3px] bg-brand" style={{ width: `${r.pct}%` }} />
-          </span>
-          <span className="w-9 shrink-0 text-right tabular-nums text-ink-muted">{r.pct}%</span>
+        <span className="flex min-w-0 items-center gap-2.5">
+          <CompanyTile name={r.eng.companyName} />
+          <span className="truncate font-medium text-ink">{r.eng.companyName}</span>
         </span>
       ),
     },
-    { key: 'manager', header: 'Manager', width: '13%', render: (r) => managerName(r.eng.managerId ?? r.eng.adminId) },
+    { key: 'step', header: 'Now at', width: '20%', render: (r) => <span title={r.step}>{r.step || '—'}</span> },
+    {
+      key: 'progress',
+      header: 'Progress',
+      width: '17%',
+      render: (r) => (
+        <span className="flex items-center gap-2">
+          <PhaseBar done={r.phaseDone} totals={r.phaseTotals} names={r.phaseNames} className="min-w-[80px] flex-1" />
+          <span className="w-9 shrink-0 text-right text-[12px] tabular-nums text-ink-muted">{r.pct}%</span>
+        </span>
+      ),
+    },
+    { key: 'manager', header: 'Manager', width: '12%', render: (r) => managerName(r.eng.managerId ?? r.eng.adminId) },
+    { key: 'stage', header: 'Stage', width: '12%', render: (r) => <Tag>{stageDisplayLabel(r.eng.stage)}</Tag> },
     {
       key: 'next',
-      header: 'Next date',
-      width: '9%',
+      header: 'Next',
+      width: '72px',
       render: (r) => {
         const d = nextScheduleDate(r.eng.schedule, todayIso);
-        return d ? <span className={cn('tabular-nums', d < todayIso && 'text-danger')}>{shortDate(d)}</span> : '—';
+        return d ? <span className={cn('tabular-nums', d < todayIso && 'font-medium text-danger')}>{shortDate(d)}</span> : '—';
       },
     },
     {
       key: 'health',
       header: 'Health',
-      width: '120px',
+      width: '124px',
       render: (r) => (
-        <span
-          className={cn(
-            CHIP_CLASS,
-            CHIP_COLUMN_CLASS,
-            r.eng.health === 'on-track' ? TONE_SOLID.done : r.eng.health === 'overdue' ? TONE_SOLID.overdue : TONE_SOLID.waiting,
-          )}
+        <Chip
+          fixed
+          tone={r.eng.health === 'on-track' ? 'ok' : r.eng.health === 'overdue' ? 'bad' : 'warn'}
           title={STUCK_LABEL[r.reason]}
         >
           {r.eng.health === 'on-track' ? 'On track' : r.eng.health === 'overdue' ? 'Overdue' : 'At risk'}
-        </span>
+        </Chip>
       ),
     },
     {
@@ -134,6 +170,52 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
     },
   ];
 
+  const filters = (
+    <div className="flex flex-wrap items-center gap-2">
+      <SpectrumTabs
+        label="Phase"
+        items={[
+          { key: 'all', label: 'All phases' },
+          { key: 'Pre-Incorporation', label: 'Pre-incorp' },
+          { key: 'Post-Incorporation', label: 'Post-incorp' },
+        ]}
+        value={phase}
+        onChange={(k) => setPhase(k as PhaseFilter)}
+      />
+      <WorkFilterChip
+        label="Status"
+        value={stuck}
+        options={STUCK_FILTERS.map((s) => ({ value: s, label: STUCK_LABEL[s] }))}
+        onChange={(v) => setStuck(v as StuckReason | '')}
+      />
+      <WorkFilterChip label="Manager" value={manager} options={managerOptions} onChange={setManager} />
+    </div>
+  );
+
+  // Clients, where each one is (K-37, audit 81/82/109/121): a T1 grid with the step, the
+  // phase track, manager, stage, next date and health (C-0034).
+  const grid = (
+    <EFilingGrid
+      caption="Clients"
+      rows={rows}
+      rowKey={(r) => r.eng.id}
+      onRowClick={(r) => router.push(adminProjectPath(r.eng, '/app/admin'))}
+      empty="No projects match these filters."
+      minWidth={900}
+      pageSize={title ? Math.max(1, rows.length) : 10}
+      columns={projectColumns}
+    />
+  );
+
+  if (title) {
+    return (
+      <DashSection title={title} meta={String(rows.length)} bodyClassName="px-2 pb-3 pt-0">
+        <div className="px-2 py-3">{filters}</div>
+        {grid}
+      </DashSection>
+    );
+  }
+
   return (
     <div>
       {!compact && (
@@ -144,45 +226,8 @@ export function FirmProjectsPanel({ compact }: { compact?: boolean }) {
           </Button>
         </div>
       )}
-      <div className="mb-3 flex flex-wrap gap-2">
-        {(['all', 'Pre-Incorporation', 'Post-Incorporation'] as const).map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => setPhase(p)}
-            className={`rounded-sm px-3 py-1 text-[11px] border ${
-              phase === p ? 'bg-navy text-on-navy border-navy' : 'border-line text-ink-muted'
-            }`}
-          >
-            {p === 'all' ? 'All phases' : p === 'Pre-Incorporation' ? 'Pre-incorp' : 'Post-incorp'}
-          </button>
-        ))}
-        {(['all', 'waiting_client', 'waiting_manager', 'waiting_lead', 'blocked', 'on_track'] as const).map(
-          (s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setStuck(s)}
-              className={`rounded-sm px-3 py-1 text-[11px] border ${
-                stuck === s ? 'bg-surface-sunken text-ink border-brand/40' : 'border-line text-ink-muted'
-              }`}
-            >
-              {s === 'all' ? 'Any status' : STUCK_LABEL[s]}
-            </button>
-          ),
-        )}
-      </div>
-      {/* Clients, where each one is (K-37, audit 81/82/109/121): an e-Filing grid with the
-          stage, current step, progress, manager, next date and health (C-0034). */}
-      <EFilingGrid
-        caption="Clients"
-        rows={rows}
-        rowKey={(r) => r.eng.id}
-        onRowClick={(r) => router.push(adminProjectPath(r.eng, '/app/admin'))}
-        empty="No projects match these filters."
-        minWidth={820}
-        columns={projectColumns}
-      />
+      <div className="mb-3">{filters}</div>
+      {grid}
     </div>
   );
 }

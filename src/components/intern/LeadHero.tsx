@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { DashHero } from '@/components/dash/DashHero';
 import {
   internFirstName,
@@ -10,22 +11,20 @@ import {
 } from '@/lib/intern/intern-work';
 
 /**
- * The lead dashboard's greeting card — the shared `DashHero` with the lead's
- * own numbers in it. The card itself (clock line, settings, hero skin, ambient
- * motion, ring, stat strip) is `DashHero`, so this and every other dashboard's
- * greeting card are the same object rather than lookalikes.
+ * The lead's home card (prototype TodayScreen greeting, R-17, R-18): the shared `DashHero`
+ * with the date, the greeting, the actions passed as children (the scope switch) and five
+ * number tiles: needs action, overdue, waiting, due this week and done today. Each number but
+ * the last opens Work with that focus.
  */
-export function LeadHero({ name, kpis }: { name: string; kpis: InternWorkKpis }) {
+export function LeadHero({ name, kpis, children }: { name: string; kpis: InternWorkKpis; children?: ReactNode }) {
   const first = internFirstName(name);
   const greet = internGreeting(internGreetingHour(new Date()));
-  const totalToday = kpis.doneToday + kpis.action.total;
 
   return (
     <DashHero
       title={`Good ${greet}, ${first}`}
-      ring={{ value: kpis.doneToday, total: totalToday, caption: 'done today' }}
       stats={[
-        { label: 'Action', value: kpis.action.total, href: internWorkPath({ focus: 'action' }) },
+        { label: 'Needs action', value: kpis.action.total, href: internWorkPath({ focus: 'action' }) },
         {
           label: 'Overdue',
           value: kpis.overdue.total,
@@ -33,8 +32,11 @@ export function LeadHero({ name, kpis }: { name: string; kpis: InternWorkKpis })
           hot: kpis.overdue.total > 0,
         },
         { label: 'Waiting', value: kpis.waiting.total, href: internWorkPath({ focus: 'waiting' }) },
-        { label: 'This week', value: kpis.dueWeek.total, href: internWorkPath({ focus: 'due' }) },
+        { label: 'Due this week', value: kpis.dueWeek.total, href: internWorkPath({ focus: 'due' }) },
+        { label: 'Done today', value: kpis.doneToday, good: kpis.doneToday > 0 },
       ]}
-    />
+    >
+      {children}
+    </DashHero>
   );
 }

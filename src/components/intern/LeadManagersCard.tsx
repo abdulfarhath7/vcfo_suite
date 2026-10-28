@@ -36,32 +36,32 @@ export function LeadManagersCard({
   );
 
   return (
-    <DashSection icon={Users} title="My managers" className="h-fit">
+    <DashSection icon={Users} title="My managers" meta={managers.length ? String(managers.length) : undefined} className="h-fit" bodyClassName="p-0">
       {directoryQuery.isPending ? (
-        <p className="py-1 text-[12px] text-ink-muted">Loading...</p>
+        <p className="px-4 py-3 text-[13px] text-ink-muted">Loading...</p>
       ) : directoryQuery.isError ? (
-        <p className="py-1 text-[12px] text-ink-muted">Could not load.</p>
+        <p className="px-4 py-3 text-[13px] text-ink-muted">Could not load.</p>
       ) : managers.length === 0 ? (
-        <p className="py-1 text-[12px] text-ink-muted">None assigned.</p>
+        <p className="px-4 py-3 text-[13px] text-ink-muted">None assigned.</p>
       ) : (
-        <ul className="max-h-[11rem] overflow-y-auto">
+        <ul className="max-h-[14rem] overflow-y-auto">
           {managers.map((manager) => (
             <li
               key={manager.id}
-              className="flex min-w-0 items-center gap-2 border-t border-line py-1.5 first:border-0 first:pt-0"
+              className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-2.5 first:border-t-0"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] font-semibold leading-tight text-ink">
+                <p className="truncate text-[13.5px] font-medium leading-tight text-ink">
                   {manager.name}
                 </p>
-                <p className="truncate text-[11px] leading-tight text-ink-muted">
+                <p className="mt-0.5 truncate text-[12.5px] leading-tight text-ink-muted">
                   {manager.email}
                 </p>
               </div>
               <Link
                 href={internManagerComposeHref(manager.email)}
                 aria-label={`Email ${manager.name}`}
-                className="grid h-control-sm w-control-sm shrink-0 place-items-center rounded-md border border-line-strong text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
+                className="grid h-control-sm w-control-sm shrink-0 place-items-center rounded-md border-1.5 border-line-strong bg-surface-raised text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
               >
                 <Mail className="h-3.5 w-3.5" aria-hidden />
               </Link>

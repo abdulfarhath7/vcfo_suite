@@ -1,13 +1,5 @@
-import { m } from 'framer-motion';
-import { CheckCircle2, Circle, Clock } from 'lucide-react';
+import { StepMark } from '@/components/ui/step-track';
 import { cn } from '@/lib/utils';
-import {
-  CATEGORICAL_TONES,
-  TONE_BADGE,
-  TONE_BG,
-  TONE_TEXT,
-  type IconChipTone,
-} from '@/components/common/IconChip';
 
 export interface Phase {
   key: string;
@@ -22,118 +14,59 @@ interface PhaseTimelineProps {
   variant?: 'vertical' | 'journey';
 }
 
-/* Each phase keeps its own hue across the journey, so the timeline reads as
-   a colorful map rather than a monochrome list. */
-function phaseTone(i: number): IconChipTone {
-  return CATEGORICAL_TONES[i % CATEGORICAL_TONES.length];
-}
+/* Colour carries status only (R-25): a finished phase is green, the phase in flight is
+   blurple, a phase not started is grey. Each phase shows the ST5 step mark (R-22), its name,
+   its percentage and a 6px bar. */
+const STATE = { completed: 'done', 'in-progress': 'now', 'not-started': 'next' } as const;
+const WORD = { completed: 'Done', 'in-progress': 'In progress', 'not-started': 'Not started' } as const;
 
-function PhaseNode({ p, i }: { p: Phase; i: number }) {
-  const tone = phaseTone(i);
-  const Icon = p.status === 'completed' ? CheckCircle2 : p.status === 'in-progress' ? Clock : Circle;
-  const iconCls =
-    p.status === 'completed'
-      ? 'text-positive'
-      : p.status === 'in-progress'
-        ? TONE_TEXT[tone]
-        : 'text-ink-muted';
-  const chipCls =
-    p.status === 'completed'
-      ? 'bg-positive/10 text-positive border border-positive/20'
-      : p.status === 'in-progress'
-        ? cn(TONE_BADGE[tone], 'border border-transparent')
-        : 'bg-surface-sunken text-ink-muted border border-line';
-  const label = p.status === 'completed' ? 'Complete' : p.status === 'in-progress' ? 'In progress' : 'Not started';
-
+function PhaseBarLine({ p }: { p: Phase }) {
   return (
-    <>
-      <div
-        className={cn(
-          'w-10 h-10 rounded-full flex items-center justify-center shrink-0 border',
-          p.status === 'in-progress'
-            ? cn(TONE_BADGE[tone], 'border-transparent animate-gold-pulse')
-            : 'border-line bg-surface-sunken',
-        )}
-      >
-        <Icon className={cn('w-4 h-4', iconCls)} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2 mb-1.5">
-          <span className="text-sm font-medium text-ink truncate">{p.label}</span>
-          <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded mono shrink-0', chipCls)}>
-            {label}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
-            <m.div
-              initial={{ width: 0 }}
-              animate={{ width: `${p.percent}%` }}
-              transition={{ duration: 0.9, delay: 0.08 * i, ease: [0.22, 1, 0.36, 1] }}
-              className={cn(
-                'h-full rounded-full',
-                p.status === 'completed' ? 'bg-positive' : p.status === 'in-progress' ? TONE_BG[tone] : 'bg-muted-foreground/30',
-              )}
-            />
-          </div>
-          <span className="text-[11px] mono tabular-nums text-ink-muted w-9 text-right">{p.percent}%</span>
-        </div>
-      </div>
-    </>
+    <span className="flex min-w-0 items-center gap-2">
+      <span className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-bar bg-surface-sunken">
+        {p.percent > 0 ? (
+          <i
+            className={cn('absolute inset-y-0 left-0 rounded-bar', p.status === 'completed' ? 'bg-positive-mid' : 'bg-brand')}
+            style={{ width: `${p.percent}%` }}
+          />
+        ) : null}
+      </span>
+      <span className="w-9 shrink-0 text-right text-[12px] tabular-nums text-ink-muted">{p.percent}%</span>
+    </span>
   );
 }
 
 export function PhaseTimeline({ phases, variant = 'vertical' }: PhaseTimelineProps) {
   if (variant === 'journey') {
     return (
-      <div className="relative">
-        <div className="hidden md:block absolute top-5 left-5 right-5 h-px bg-border" aria-hidden />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-3">
-          {phases.map((p, i) => {
-            const tone = phaseTone(i);
-            return (
-              <div key={p.key} className="relative flex md:flex-col md:items-center md:text-center gap-3 md:gap-2">
-                <div
-                  className={cn(
-                    'w-10 h-10 rounded-full flex items-center justify-center shrink-0 border z-10',
-                    p.status === 'in-progress' ? cn(TONE_BADGE[tone], 'border-transparent') : 'border-line bg-surface-raised',
-                  )}
-                >
-                  {p.status === 'completed' ? (
-                    <CheckCircle2 className="w-4 h-4 text-positive" />
-                  ) : p.status === 'in-progress' ? (
-                    <Clock className={cn('w-4 h-4', TONE_TEXT[tone])} />
-                  ) : (
-                    <Circle className="w-4 h-4 text-ink-muted" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1 md:flex-none">
-                  <div className="text-sm font-medium text-ink">{p.label}</div>
-                  <div className="text-[10px] mono text-ink-muted mt-0.5">{p.percent}%</div>
-                  <div className="mt-2 h-1 rounded-full bg-surface-sunken overflow-hidden md:w-full max-w-[120px] md:mx-auto">
-                    <m.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${p.percent}%` }}
-                      transition={{ duration: 0.9, delay: 0.08 * i, ease: [0.22, 1, 0.36, 1] }}
-                      className={cn('h-full rounded-full', p.status === 'completed' ? 'bg-positive' : p.status === 'in-progress' ? TONE_BG[tone] : 'bg-muted-foreground/30')}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <ol className="grid grid-cols-1 gap-4 md:grid-cols-4 md:gap-3">
+        {phases.map((p) => (
+          <li key={p.key} className="flex min-w-0 flex-col gap-2">
+            <span className="flex min-w-0 items-center gap-2">
+              <StepMark state={STATE[p.status]} size={20} label={`${p.label} · ${WORD[p.status]}`} />
+              <span className="min-w-0 truncate text-[13.5px] font-medium text-ink">{p.label}</span>
+            </span>
+            <PhaseBarLine p={p} />
+          </li>
+        ))}
+      </ol>
     );
   }
 
   return (
-    <div className="space-y-5">
-      {phases.map((p, i) => (
-        <div key={p.key} className="flex items-center gap-4">
-          <PhaseNode p={p} i={i} />
-        </div>
+    <ol className="grid gap-4">
+      {phases.map((p) => (
+        <li key={p.key} className="flex min-w-0 items-center gap-3">
+          <StepMark state={STATE[p.status]} label={`${p.label} · ${WORD[p.status]}`} />
+          <span className="min-w-0 flex-1">
+            <span className="mb-1.5 flex items-center justify-between gap-2">
+              <span className="truncate text-[13.5px] font-medium text-ink">{p.label}</span>
+              <span className="shrink-0 text-[12px] text-ink-muted">{WORD[p.status]}</span>
+            </span>
+            <PhaseBarLine p={p} />
+          </span>
+        </li>
       ))}
-    </div>
+    </ol>
   );
 }

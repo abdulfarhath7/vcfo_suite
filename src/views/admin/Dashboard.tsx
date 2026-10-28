@@ -139,6 +139,7 @@ export default function AdminDashboard() {
       portfolioPhases={portfolioPhases}
       completionRate={completionRate}
       tasksByEngagement={tasksByEngagement}
+      filings={allFilings}
     />
   );
 }

@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ChevronDown, ListTodo } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { InternWorkQueueRow } from '@/components/intern/InternWorkRow';
-import { internToneSolid } from '@/components/intern/intern-tones';
+import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
+import { CompanyTile } from '@/components/staff/today/today-parts';
+import { dayMonth, dueClass, todayStatusTone, type TodayStatus } from '@/components/staff/today/today-rows';
 import {
   internActionQueueByCompany,
   internQueueCompanyHref,
@@ -15,138 +21,293 @@ import {
   type InternActionCompanyGroup,
   type InternWorkItem,
 } from '@/lib/intern/intern-work';
-import { initialsFromName } from '@/lib/auth';
-import { CHIP_CLASS, CHIP_COLUMN_CLASS } from '@/components/common/IconChip';
 import { cn } from '@/lib/utils';
 
-/* One company per row, hairlines between rows, no card inside the card. The
-   status chip takes the column width so every row's chip lines up. */
-function LeadActionCompanyRow({
+/* The action queue holds what the lead must move; waiting items live in the Waiting on card. */
+const COLS: TodayStatus[] = ['Overdue', 'Due soon', 'In progress', 'Not started'];
+
+/* Soft tinted count boxes (prototype heat cells), in the status colours. */
+const HEAT: Record<TodayStatus, string> = {
+  Overdue: 'bg-danger-soft text-danger',
+  'Due soon': 'bg-warning-soft text-warning',
+  'In progress': 'bg-brand-soft text-brand-text',
+  'Not started': 'bg-surface-sunken text-ink-muted',
+  Waiting: 'bg-waiting-soft text-waiting',
+  Done: 'bg-positive-soft text-positive',
+};
+
+function CompanyRow({
   group,
+  statusOf,
   open,
+  pick,
   onToggle,
+  onPick,
 }: {
   group: InternActionCompanyGroup;
+  statusOf: (item: InternWorkItem) => TodayStatus;
   open: boolean;
+  pick: TodayStatus | null;
   onToggle: () => void;
+  onPick: (status: TodayStatus) => void;
 }) {
-  const panelId = useId();
+  const panelId = `queue-${group.engagementId}`;
   const href = internQueueCompanyHref(group.engagementId, group.items);
-
+  const shown = pick ? group.items.filter((i) => statusOf(i) === pick) : group.items;
   return (
-    <div className="border-t border-line first:border-0">
-      <div className="relative flex min-h-row min-w-0 items-center gap-2.5 py-2">
-        <button
-          type="button"
-          className="absolute inset-0 z-0 cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
-          aria-expanded={open}
-          aria-controls={panelId}
-          aria-label={open ? `Hide tasks for ${group.companyName}` : `Show tasks for ${group.companyName}`}
-          onClick={onToggle}
-        />
-        <span className="pointer-events-none relative z-10 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-md bg-surface-sunken text-[11px] font-semibold text-ink-muted">
-          {initialsFromName(group.companyName).slice(0, 2)}
-        </span>
-        <Link
-          href={href}
-          onClick={(event) => event.stopPropagation()}
-          className="relative z-10 min-w-0 truncate text-[13px] font-semibold text-ink hover:text-brand hover:underline"
-        >
-          {group.companyName}
-        </Link>
-        {/* K-32 (audit 173): the item count is a soft count chip; a zero shows nothing. */}
-        {group.items.length > 0 ? (
-          <span
-            className={cn('pointer-events-none relative z-10 ml-auto shrink-0', CHIP_CLASS, 'bg-surface-sunken text-ink-muted tabular-nums')}
-            aria-label={`${group.items.length} ${group.items.length === 1 ? 'item' : 'items'}`}
-          >
-            {group.items.length}
+    <Fragment>
+      <tr className="hover:bg-surface-sunken/60">
+        <td className="h-12 border-b border-line-soft px-2.5 align-middle">
+          <span className="flex min-w-0 items-center gap-2.5">
+            <CompanyTile name={group.companyName} />
+            <span className="flex min-w-0 flex-col">
+              <Link href={href} className="truncate font-medium text-ink hover:underline">
+                {group.companyName}
+              </Link>
+              <span className="truncate text-[12px] text-ink-muted">{group.pill.label}</span>
+            </span>
           </span>
-        ) : null}
-        <span
-          className={cn(
-            'pointer-events-none relative z-10 shrink-0',
-            group.items.length > 0 ? null : 'ml-auto',
-            CHIP_CLASS,
-            CHIP_COLUMN_CLASS,
-            internToneSolid(group.pill.tone),
-          )}
-        >
-          {group.pill.label}
-        </span>
-        <ChevronDown
-          aria-hidden
-          className={cn(
-            'pointer-events-none relative z-10 h-3.5 w-3.5 shrink-0 text-ink-muted transition-transform duration-200',
-            open && 'rotate-180',
-          )}
-          strokeWidth={2}
-        />
-      </div>
+        </td>
+        {COLS.map((status) => {
+          const n = group.items.filter((i) => statusOf(i) === status).length;
+          return (
+            <td key={status} className="border-b border-line-soft px-1 text-center align-middle">
+              {n === 0 ? (
+                <span className="text-ink-faint" aria-hidden>
+                  –
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onPick(status)}
+                  aria-pressed={open && pick === status}
+                  aria-label={`${group.companyName} · ${status} · ${n}`}
+                  className={cn(
+                    'mx-auto grid h-7 w-14 place-items-center rounded-sm text-[13px] font-medium tabular-nums',
+                    HEAT[status],
+                    open && pick === status && 'ring-2 ring-brand ring-offset-1 ring-offset-surface-raised',
+                  )}
+                >
+                  {n}
+                </button>
+              )}
+            </td>
+          );
+        })}
+        <td className="whitespace-nowrap border-b border-line-soft px-2.5 text-center align-middle text-[12px] text-ink-muted">
+          <b className="text-[13.5px] font-medium text-ink">{group.items.length}</b>{' '}
+          {group.items.length === 1 ? 'task' : 'tasks'}
+        </td>
+        <td className="border-b border-line-soft px-1 text-center align-middle">
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={open}
+            aria-controls={panelId}
+            aria-label={open ? `Hide tasks for ${group.companyName}` : `Show tasks for ${group.companyName}`}
+            className="grid h-7 w-7 place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink"
+          >
+            <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', open && 'rotate-180')} strokeWidth={1.6} aria-hidden />
+          </button>
+        </td>
+      </tr>
       {open ? (
-        <div id={panelId} role="region" aria-label={`${group.companyName} tasks`} className="pb-1">
-          {group.items.slice(0, 3).map((item) => (
-            <InternWorkQueueRow key={item.id} item={item} />
-          ))}
-        </div>
+        <tr>
+          <td colSpan={COLS.length + 3} className="border-b border-line-soft px-2.5 pb-2">
+            <div id={panelId} role="region" aria-label={`${group.companyName} tasks`}>
+              {shown.slice(0, 5).map((item) => (
+                <InternWorkQueueRow key={item.id} item={item} />
+              ))}
+              {shown.length > 5 ? (
+                <Link href={href} className="block border-t border-line py-2 pl-9 text-[12.5px] font-medium text-brand-text hover:underline">
+                  {shown.length - 5} more at {group.companyName}
+                </Link>
+              ) : null}
+            </div>
+          </td>
+        </tr>
       ) : null}
-    </div>
+    </Fragment>
   );
 }
 
+/**
+ * Action queue (prototype ActionQueue): by client, a row per company with a count per status
+ * (click a count to list those tasks under the row), or the plain list. The open companies are
+ * remembered for the lead.
+ */
 export function LeadActionQueue({
   userId,
   items,
   now,
+  statusOf,
 }: {
   userId: string;
   items: InternWorkItem[];
   now: Date;
+  /** The status word of an item (overdue, due soon, in progress, not started). */
+  statusOf: (item: InternWorkItem) => TodayStatus;
 }) {
-  const groups = internActionQueueByCompany(items, now).slice(0, 6);
-  const dense = groups.length > 3;
+  const router = useRouter();
+  const groups = internActionQueueByCompany(items, now);
+  const openItems = groups.flatMap((g) => g.items);
+  const [view, setView] = useState('map');
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [pick, setPick] = useState<{ engagementId: string; status: TodayStatus } | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     setExpanded(new Set(readInternQueueExpanded(userId)));
   }, [userId]);
 
-  const toggle = (engagementId: string) => {
+  const setOpen = (engagementId: string, open: boolean) => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (next.has(engagementId)) next.delete(engagementId);
-      else next.add(engagementId);
+      if (open) next.add(engagementId);
+      else next.delete(engagementId);
       if (userId) writeInternQueueExpanded(userId, next);
       return next;
     });
   };
 
+  const listColumns: EFilingColumn<InternWorkItem>[] = [
+    {
+      key: 'client',
+      header: 'Client',
+      width: '30%',
+      render: (i) => (
+        <span className="flex min-w-0 items-center gap-2">
+          <CompanyTile name={i.companyName} />
+          <span className="truncate">{i.companyName}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'task',
+      header: 'Task',
+      render: (i) => (
+        <Link href={i.href} className="font-medium text-ink hover:underline" title={i.title}>
+          {i.title}
+        </Link>
+      ),
+    },
+    {
+      key: 'due',
+      header: 'Due',
+      width: '72px',
+      render: (i) => <span className={cn('tabular-nums', dueClass(statusOf(i)))}>{dayMonth(i.dueAt) || '—'}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      width: '124px',
+      render: (i) => {
+        const s = statusOf(i);
+        return (
+          <Chip tone={todayStatusTone(s)} fixed title={i.why}>
+            {s}
+          </Chip>
+        );
+      },
+    },
+    { key: 'action', header: <span className="sr-only">Action</span>, width: '128px', align: 'right', render: (i) => <InternWorkCtaButton item={i} /> },
+  ];
+
   return (
     <DashSection
       icon={ListTodo}
-      title="Action queue · by company"
+      title="Action queue"
+      meta={
+        <span className="flex items-center gap-3">
+          <span>{openItems.length} open</span>
+          <SpectrumTabs
+            label="Action queue view"
+            items={[
+              { key: 'map', label: 'By client' },
+              { key: 'list', label: 'List' },
+            ]}
+            value={view}
+            onChange={setView}
+          />
+        </span>
+      }
+      href={INTERN_TASKS_PATH}
+      hrefLabel="Work"
       className="h-fit"
-      bodyClassName={cn(dense && 'max-h-[min(34rem,70vh)] overflow-y-auto')}
+      bodyClassName="px-2 pb-3 pt-1"
     >
       {groups.length === 0 ? (
-        <p className="py-4 text-center text-[13px] text-ink-muted">Nothing needs you right now.</p>
+        <p className="px-2 py-4 text-center text-[13px] text-ink-muted">Nothing needs you right now.</p>
+      ) : view === 'list' ? (
+        <EFilingGrid
+          caption="Action queue"
+          columns={listColumns}
+          rows={openItems}
+          rowKey={(i) => i.id}
+          onRowClick={(i) => router.push(i.href)}
+          pageSize={8}
+          minWidth={640}
+        />
       ) : (
-        groups.map((group) => (
-          <LeadActionCompanyRow
-            key={group.engagementId}
-            group={group}
-            open={expanded.has(group.engagementId)}
-            onToggle={() => toggle(group.engagementId)}
-          />
-        ))
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full table-fixed border-collapse text-[14px]" style={{ minWidth: 600 }}>
+            <caption className="sr-only">Action queue by client</caption>
+            <colgroup>
+              <col />
+              {COLS.map((c) => (
+                <col key={c} style={{ width: 84 }} />
+              ))}
+              <col style={{ width: 88 }} />
+              <col style={{ width: 40 }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col" className="h-9 border-b-1.5 border-line px-2.5 text-left text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
+                  Client
+                </th>
+                {COLS.map((c) => (
+                  <th key={c} scope="col" className="h-9 whitespace-nowrap border-b-1.5 border-line px-1 text-center text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
+                    {c}
+                  </th>
+                ))}
+                <th scope="col" className="h-9 border-b-1.5 border-line px-2.5 text-center text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
+                  Total
+                </th>
+                <th scope="col" className="h-9 border-b-1.5 border-line">
+                  <span className="sr-only">Show tasks</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map((group) => {
+                const open = expanded.has(group.engagementId);
+                const picked = pick?.engagementId === group.engagementId ? pick.status : null;
+                return (
+                  <CompanyRow
+                    key={group.engagementId}
+                    group={group}
+                    statusOf={statusOf}
+                    open={open}
+                    pick={open ? picked : null}
+                    onToggle={() => {
+                      if (open && picked) setPick(null);
+                      setOpen(group.engagementId, !open);
+                    }}
+                    onPick={(status) => {
+                      if (open && picked === status) {
+                        setPick(null);
+                        return;
+                      }
+                      setPick({ engagementId: group.engagementId, status });
+                      if (!open) setOpen(group.engagementId, true);
+                    }}
+                  />
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
-      <Link
-        href={INTERN_TASKS_PATH}
-        className="mt-2 inline-flex text-[12px] font-semibold text-brand hover:text-brand-strong hover:underline"
-      >
-        View all work →
-      </Link>
     </DashSection>
   );
 }

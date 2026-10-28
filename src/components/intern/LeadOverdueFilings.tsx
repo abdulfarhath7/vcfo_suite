@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { DashSection } from '@/components/dash/DashSection';
-import { CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_SOLID } from '@/components/common/IconChip';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/spectrum-chip';
 import type { ComplianceFiling } from '@/data/compliance';
 import type { Engagement } from '@/data/engagements';
 import { sep } from '@/lib/date-format';
@@ -14,7 +15,8 @@ const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct
 /**
  * Overdue and due-soon filings on the lead's Today (K-31, audit row 127): only clients with a
  * filing that is late or due soon appear. Each row has a 44px date tile tinted by urgency, the
- * filing and the company, and a state chip on the right (rule R-20).
+ * filing and the company, and a state chip on the right; a late row is tinted soft red and
+ * carries a small navy action (rule R-20).
  */
 /** Overdue, or open and due within the next 15 days. Shared with the practice strip. */
 export function isOverdueOrDueSoon(f: ComplianceFiling, now: Date): boolean {
@@ -35,39 +37,52 @@ export function LeadOverdueFilings({ filings, engagements, now }: { filings: Com
       {rows.length === 0 ? (
         <p className="px-4 py-4 text-[13px] text-ink-muted">No filing is overdue or due soon.</p>
       ) : (
-        rows.map((f, i) => {
-          const ymd = ymdFromIsoInIst(f.nextDue) ?? f.nextDue.slice(0, 10);
-          const late = f.status === 'overdue';
-          const company = byId.get(f.engagementId)?.companyName ?? '';
-          return (
-            <Link
-              key={f.id}
-              href="/app/intern/compliances/calendar"
-              className={cn('flex min-w-0 items-center gap-3 px-4 py-2.5 hover:bg-surface-sunken', i > 0 && 'border-t border-line-soft')}
-            >
-              <span
+        <ul>
+          {rows.map((f) => {
+            const ymd = ymdFromIsoInIst(f.nextDue) ?? f.nextDue.slice(0, 10);
+            const late = f.status === 'overdue';
+            const company = byId.get(f.engagementId)?.companyName ?? '';
+            return (
+              <li
+                key={f.id}
                 className={cn(
-                  'grid h-12 w-11 shrink-0 place-items-center content-center rounded-md',
-                  late ? 'bg-danger-soft text-danger' : 'bg-warning-soft text-warning',
+                  'relative flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0',
+                  late ? 'bg-danger-soft' : 'hover:bg-surface-sunken/60',
                 )}
               >
-                <span className="text-[17px] font-semibold leading-none tabular-nums">{ymd.slice(8, 10)}</span>
-                <span className="text-[11px] font-semibold">{sep(MON[Number(ymd.slice(5, 7)) - 1] ?? '')}</span>
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-semibold text-ink">
-                  {f.periodLabel && !f.periodLabel.startsWith(f.filing) ? `${f.filing} · ${f.periodLabel}` : (f.periodLabel ?? f.filing)}
+                <span
+                  className={cn(
+                    'grid w-11 shrink-0 place-items-center rounded-md py-1 leading-none',
+                    late ? 'bg-surface-raised text-danger' : 'bg-warning-soft text-warning',
+                  )}
+                  aria-hidden
+                >
+                  <b className="text-[16px] font-medium tabular-nums">{Number(ymd.slice(8, 10))}</b>
+                  <span className="text-[10.5px] font-medium uppercase tracking-wider opacity-80">{sep(MON[Number(ymd.slice(5, 7)) - 1] ?? '')}</span>
                 </span>
-                <span className="block truncate text-[12px] text-ink-muted">
-                  {company} · {f.authority}
+                <span className="min-w-0 flex-1">
+                  <Link
+                    href="/app/intern/compliances/calendar"
+                    className="block truncate text-[13.5px] font-medium text-ink after:absolute after:inset-0 hover:underline"
+                  >
+                    {f.periodLabel && !f.periodLabel.startsWith(f.filing) ? `${f.filing} · ${f.periodLabel}` : (f.periodLabel ?? f.filing)}
+                  </Link>
+                  <span className="block truncate text-[12.5px] text-ink-muted">
+                    {company} · {f.authority}
+                  </span>
                 </span>
-              </span>
-              <span className={cn(CHIP_CLASS, CHIP_COLUMN_CLASS, late ? TONE_SOLID.overdue : TONE_SOLID.waiting)}>
-                {late ? 'Overdue' : 'Due soon'}
-              </span>
-            </Link>
-          );
-        })
+                <Chip tone={late ? 'bad' : 'warn'} fixed className="relative">
+                  {late ? 'Overdue' : 'Due soon'}
+                </Chip>
+                {late ? (
+                  <Button size="sm" variant="strong" asChild className="relative">
+                    <Link href="/app/intern/compliances/calendar">Open</Link>
+                  </Button>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </DashSection>
   );

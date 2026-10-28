@@ -171,14 +171,9 @@ export function LeadFocusCard({
         <button
           type="button"
           onClick={() => draftRef.current?.focus()}
-          className="mt-2.5 flex min-h-[3.25rem] w-full flex-col items-start justify-center rounded-md border border-dashed border-line-strong px-3 py-2 text-left transition-colors hover:border-brand hover:bg-brand-soft/50"
+          className="mt-2.5 flex min-h-[3.25rem] w-full flex-col items-center justify-center rounded-md border-1.5 border-dashed border-line-strong px-3 py-2 transition-colors hover:border-brand-line hover:bg-brand-soft/50"
         >
-          <span className="text-[13px] font-semibold text-ink">Type a todo</span>
-          {items.length > 0 ? (
-            <span className="mt-0.5 text-[12px] text-ink-muted">
-              Add what you need to get done, or pin work from the queue.
-            </span>
-          ) : null}
+          <span className="text-[13px] font-medium text-ink-muted">No to-dos</span>
         </button>
       ) : null}
 
