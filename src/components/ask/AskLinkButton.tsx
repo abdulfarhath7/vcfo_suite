@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react';
 import type { AnswerLink } from '@/data/ask/schema';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { resolveHref } from '@/lib/ask/resolve-href';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 import { useAskOptional } from './ask-context';
 import { useAskLayoutMode } from './use-ask-layout';
@@ -12,6 +13,7 @@ import { useAskLayoutMode } from './use-ask-layout';
 /**
  * A go-there link (§7.7). Navigates only. At ≥ 1440 px the panel stays open
  * beside the page; below that it closes and leaves a "Back to Ask VCFO" pill.
+ * The primary link is the blurple main button; the rest are white secondary buttons.
  */
 export function AskLinkButton({ link }: { link: AnswerLink }) {
   const ask = useAskOptional();
@@ -27,15 +29,10 @@ export function AskLinkButton({ link }: { link: AnswerLink }) {
           ask.setBackPill(true);
         }
       }}
-      className={cn(
-        'inline-flex min-h-[40px] items-center gap-1 rounded-[var(--radius-md)] px-3 text-[12.5px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40',
-        link.primary
-          ? 'border border-brand/50 text-brand hover:bg-brand-soft'
-          : 'border border-line text-ink hover:bg-surface-sunken',
-      )}
+      className={cn(buttonVariants({ variant: link.primary ? 'default' : 'secondary', size: 'sm' }))}
     >
       {link.label}
-      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+      <ArrowUpRight aria-hidden />
     </Link>
   );
 }

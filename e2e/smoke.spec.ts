@@ -107,7 +107,7 @@ type Route = string | [path: string, check: RouteCheck];
 /** Account Settings (split into src/views/settings/account/). */
 const accountSettings: RouteCheck = async (page) => {
   await expect(page.getByText('Profile', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('Security', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Sign-in and security', { exact: true }).first()).toBeVisible();
 };
 
 /** The milestone response form on a staff step page (split into milestone-form/). */

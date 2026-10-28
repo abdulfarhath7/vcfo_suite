@@ -29,11 +29,15 @@ import { cn } from '@/lib/utils';
 /** Keep the To row compact; extras behind +N. */
 const VISIBLE_CHIPS = 2;
 
+/* Spectrum tag chips (prototype email-parts `ToChip`): 24px, 6px corners, soft grey, 12px. */
 const CHIP =
-  'inline-flex h-7 max-w-[min(100%,18rem)] shrink-0 items-center gap-1 rounded-md border border-line/80 bg-surface-sunken/50 px-2 text-ink hover:border-brand/40';
+  'inline-flex h-6 max-w-[min(100%,18rem)] shrink-0 items-center gap-1.5 rounded-md bg-upcoming-soft pl-2 pr-1 text-[12px] font-medium text-ink-2 hover:bg-surface-sunken';
 
 const FIELD =
-  'box-border flex min-h-10 min-w-0 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-surface-raised px-2 py-1 text-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-focus-ring/40';
+  'box-border flex min-h-9 min-w-0 w-full flex-wrap items-center gap-1.5 rounded-md border-1.5 border-line-strong bg-surface-raised px-2 py-1 text-[13.5px] focus-within:border-brand focus-within:ring-4 focus-within:ring-brand-line';
+
+/** The bare field sits inside a compose row that already draws the edge. */
+const FIELD_BARE = 'box-border flex min-h-9 min-w-0 w-full flex-wrap items-center gap-1.5 py-1 text-[13.5px]';
 
 function isInsideSelectPortal(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest('[data-radix-select-content]'));
@@ -50,6 +54,8 @@ type Props = {
   customEmails: string[];
   onAddCustomEmails: (emails: string[]) => void;
   onRemoveCustomEmail: (email: string) => void;
+  /** Draw without its own label and edge, for a labelled compose row (Spectrum email card). */
+  bare?: boolean;
 };
 
 /** A To chip: a directory person, or a typed address. */
@@ -66,6 +72,7 @@ export function ComposeRecipientPicker({
   customEmails,
   onAddCustomEmails,
   onRemoveCustomEmail,
+  bare,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -145,13 +152,17 @@ export function ComposeRecipientPicker({
   }
 
   return (
-    <div className="space-y-1" data-mail-to-row>
-      <Label htmlFor="mail-to-search">To</Label>
+    <div className={bare ? undefined : 'space-y-1'} data-mail-to-row>
+      {bare ? null : <Label htmlFor="mail-to-search">To</Label>}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Popover open={open} onOpenChange={setOpen} modal={false}>
           <PopoverAnchor asChild>
             <div
-              className={cn(FIELD, 'flex-1', open && 'border-brand ring-2 ring-focus-ring/40')}
+              className={cn(
+                bare ? FIELD_BARE : FIELD,
+                'flex-1',
+                open && !bare && 'border-brand ring-4 ring-brand-line',
+              )}
             >
               {shownChips.map((recipient) => (
                 <button
@@ -164,7 +175,7 @@ export function ComposeRecipientPicker({
                   title={`Remove ${recipientLabel(recipient)}`}
                   onClick={() => removeRecipient(recipient)}
                 >
-                  <span className="truncate font-mono text-[12.5px]">{recipientEmail(recipient)}</span>
+                  <span className="truncate">{recipientEmail(recipient)}</span>
                   <X className="h-3 w-3 shrink-0 text-ink-muted" aria-hidden />
                 </button>
               ))}
@@ -200,13 +211,13 @@ export function ComposeRecipientPicker({
                     e.preventDefault();
                   }
                 }}
-                placeholder={recipients.length === 0 ? 'Search names or type an email…' : 'Add more…'}
+                placeholder={recipients.length === 0 ? 'Name or email' : ''}
                 aria-expanded={open}
                 aria-haspopup="listbox"
                 aria-controls="mail-to-people"
                 autoComplete="off"
                 className={cn(
-                  'h-8 bg-transparent px-1 text-sm text-ink outline-none placeholder:text-ink-muted',
+                  'h-7 bg-transparent px-1 text-[13.5px] text-ink outline-none placeholder:text-ink-faint',
                   recipients.length === 0 ? 'min-w-[7rem] flex-1' : 'w-[6.5rem] shrink-0',
                 )}
               />
@@ -217,7 +228,7 @@ export function ComposeRecipientPicker({
             align="start"
             sideOffset={6}
             collisionPadding={16}
-            className="w-[min(28rem,calc(100vw-2rem))] p-1"
+            className="w-[min(24rem,calc(100vw-2rem))] p-1.5"
             onOpenAutoFocus={(e) => {
               e.preventDefault();
               searchRef.current?.focus();
@@ -247,18 +258,16 @@ export function ComposeRecipientPicker({
                   type="button"
                   role="option"
                   aria-selected={false}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-surface-sunken/40"
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left hover:bg-surface-sunken"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => commitTyped(query)}
                 >
-                  <AtSign className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+                  <AtSign className="h-4 w-4 shrink-0 text-brand-text" aria-hidden />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] font-medium text-ink">
                       Send to {trimmedQuery.toLowerCase()}
                     </span>
-                    <span className="block text-[11px] text-ink-muted">
-                      Not in the directory — press Enter to add
-                    </span>
+                    <span className="block text-[11.5px] text-ink-muted">Not in the directory</span>
                   </span>
                 </button>
               ) : null}
@@ -267,9 +276,7 @@ export function ComposeRecipientPicker({
               ) : visible.length === 0 ? (
                 offerTyped ? null : (
                   <p className="px-2 py-3 text-[13px] text-ink-muted">
-                    {trimmedQuery.includes('@')
-                      ? 'No one matches — finish typing the address to send outside the directory.'
-                      : 'No one matches. Type a full email address to send outside the directory.'}
+                    No one matches
                   </p>
                 )
               ) : (
@@ -280,8 +287,8 @@ export function ComposeRecipientPicker({
                       key={person.userId}
                       htmlFor={`mail-to-person-${person.userId}`}
                       className={cn(
-                        'flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-surface-sunken/40',
-                        checked && 'bg-brand-soft/40',
+                        'flex cursor-pointer items-center gap-2.5 rounded-sm px-2 py-1.5 hover:bg-surface-sunken',
+                        checked && 'bg-brand-soft hover:bg-brand-soft',
                       )}
                     >
                       <Checkbox
@@ -293,7 +300,7 @@ export function ComposeRecipientPicker({
                         <span className="block truncate text-[13px] font-medium text-ink">
                           {person.name}
                         </span>
-                        <span className="block truncate font-mono text-[11px] text-ink-muted">
+                        <span className="block truncate text-[11.5px] text-ink-muted">
                           {person.email}
                         </span>
                       </span>
@@ -347,7 +354,7 @@ function RowFilter({
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger
         aria-label={label}
-        className="h-10 w-[10.5rem] rounded-md text-sm"
+        className="h-8 w-[10.5rem] rounded-md text-[13px]"
       >
         <span className="truncate">{selectedName}</span>
       </SelectTrigger>
@@ -394,7 +401,7 @@ function OverflowChips({
           {recipients.map((recipient) => (
             <li key={recipient.key} className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1">
               <span
-                className="min-w-0 flex-1 truncate font-mono text-[12px]"
+                className="min-w-0 flex-1 truncate text-[12px]"
                 title={recipientEmail(recipient)}
               >
                 {recipientEmail(recipient)}

@@ -1,9 +1,8 @@
 'use client';
 
-import { MessageCircleQuestion } from 'lucide-react';
 import { useAskOptional } from './ask-context';
 
-/** Bottom-right pill after a go-there link closed the panel; reopens where you left off (U3). */
+/** Bottom-right pill after a go-there link closed the panel; reopens where you left off (U3). R-04: text only. */
 export function BackToAskPill() {
   const ask = useAskOptional();
   if (!ask?.enabled || !ask.backPill || ask.open) return null;
@@ -11,9 +10,9 @@ export function BackToAskPill() {
     <button
       type="button"
       onClick={() => ask.setOpen(true)}
-      className="fixed bottom-5 right-5 z-40 inline-flex min-h-[44px] items-center gap-2 rounded-sm border border-line bg-surface-raised px-4 text-[13px] font-medium text-ink shadow-lg hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
+      className="fixed bottom-5 right-5 z-40 inline-flex h-control-md items-center gap-2 rounded-md border-1.5 border-line-strong bg-surface-raised px-3.5 text-[14px] font-medium text-ink shadow-float hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25"
     >
-      <MessageCircleQuestion className="h-4 w-4" aria-hidden /> Back to Ask VCFO
+      Back to Ask VCFO
     </button>
   );
 }

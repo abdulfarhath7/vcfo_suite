@@ -1,6 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useRecharts } from '@/components/charts/use-recharts';
+import { ChartTooltip } from '@/components/charts/ChartTooltip';
+import {
+  CHART_CHROME,
+  CHART_STATUS,
+  chartAxisProps,
+  chartBarProps,
+  chartGridProps,
+  chartReferenceProps,
+} from '@/components/charts/chart-theme';
 
 type ChartRow = {
   m: string;
@@ -10,49 +19,48 @@ type ChartRow = {
   benchmark: number;
 };
 
-type RechartsModule = typeof import('recharts');
-
-function useRecharts(): RechartsModule | null {
-  const [recharts, setRecharts] = useState<RechartsModule | null>(null);
-  useEffect(() => {
-    void import('recharts').then(setRecharts);
-  }, []);
-  return recharts;
-}
+/* VCFO Spectrum Analytics charts (prototype AnalyticsScreen.tsx, rule R-25): status colours
+   only. A month at or above target is green, below target blurple; the target and the
+   benchmark are amber dashed lines. */
 
 function ChartPlaceholder() {
-  return <div className="h-full w-full animate-pulse rounded-md bg-surface-sunken/40" aria-hidden />;
+  return <div className="h-full w-full animate-pulse rounded-md bg-surface-sunken" aria-hidden />;
 }
 
-export function AnalyticsCompletionChart({ data }: { data: ChartRow[] }) {
+export function AnalyticsCompletionChart({ data, target = 95 }: { data: ChartRow[]; target?: number }) {
   const RC = useRecharts();
   if (!RC) return <ChartPlaceholder />;
 
-  const { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } = RC;
+  const { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } = RC;
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="oklch(var(--line))" />
-        <XAxis dataKey="m" tick={{ fontSize: 11, fill: 'oklch(var(--ink-faint))' }} axisLine={false} tickLine={false} />
-        <YAxis domain={[80, 100]} tick={{ fontSize: 11, fill: 'oklch(var(--ink-faint))' }} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={{ background: 'oklch(var(--surface))', border: '1px solid oklch(var(--line))', borderRadius: 8, fontSize: 12 }} />
-        <ReferenceLine y={95} stroke="oklch(var(--ink-faint))" strokeDasharray="4 4" />
-        <Line
-          type="monotone"
-          dataKey="completion"
-          name="Completion %"
-          stroke="oklch(var(--positive))"
-          strokeWidth={2}
-          dot={{ r: 3, fill: 'oklch(var(--positive))', strokeWidth: 0 }}
-          activeDot={{ r: 4, fill: 'oklch(var(--positive))', stroke: 'oklch(var(--surface))', strokeWidth: 2 }}
+      <BarChart data={data} margin={{ top: 16, right: 4, left: -10, bottom: 0 }} barCategoryGap="28%">
+        <CartesianGrid {...chartGridProps} />
+        <XAxis dataKey="m" interval={0} {...chartAxisProps} />
+        <YAxis domain={[70, 100]} unit="%" allowDecimals={false} {...chartAxisProps} />
+        <Tooltip
+          cursor={{ fill: CHART_CHROME.cursor }}
+          content={<ChartTooltip valueFormatter={(v) => `${v}% on time`} />}
         />
-      </LineChart>
+        <ReferenceLine y={target} {...chartReferenceProps(`${target}% target`)} />
+        <Bar
+          dataKey="completion"
+          name="Rate"
+          isAnimationActive={false}
+          maxBarSize={chartBarProps.maxBarSize}
+          radius={chartBarProps.radius}
+        >
+          {data.map((r) => (
+            <Cell key={r.m} fill={r.completion >= target ? CHART_STATUS.done : CHART_STATUS.active} />
+          ))}
+        </Bar>
+      </BarChart>
     </ResponsiveContainer>
   );
 }
 
-export function AnalyticsDelayChart({ data }: { data: ChartRow[] }) {
+export function AnalyticsDelayChart({ data, benchmark = 2 }: { data: ChartRow[]; benchmark?: number }) {
   const RC = useRecharts();
   if (!RC) return <ChartPlaceholder />;
 
@@ -60,20 +68,22 @@ export function AnalyticsDelayChart({ data }: { data: ChartRow[] }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="oklch(var(--line))" />
-        <XAxis dataKey="m" tick={{ fontSize: 11, fill: 'oklch(var(--ink-faint))' }} axisLine={false} tickLine={false} />
-        <YAxis domain={[0, 5]} tick={{ fontSize: 11, fill: 'oklch(var(--ink-faint))' }} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={{ background: 'oklch(var(--surface))', border: '1px solid oklch(var(--line))', borderRadius: 8, fontSize: 12 }} />
-        <ReferenceLine y={2} stroke="oklch(var(--ink-faint))" strokeDasharray="4 4" />
+      <LineChart data={data} margin={{ top: 16, right: 12, left: -24, bottom: 0 }}>
+        <CartesianGrid {...chartGridProps} />
+        <XAxis dataKey="m" interval={0} {...chartAxisProps} />
+        <YAxis domain={[0, 5]} {...chartAxisProps} />
+        <Tooltip content={<ChartTooltip valueFormatter={(v) => `${v} days`} />} />
+        <ReferenceLine y={benchmark} {...chartReferenceProps(`${benchmark}d benchmark`)} />
         <Line
           type="monotone"
           dataKey="delay"
-          name="Avg delay (days)"
-          stroke="oklch(var(--info))"
+          name="Delay"
+          stroke={CHART_STATUS.active}
           strokeWidth={2}
-          dot={{ r: 3, fill: 'oklch(var(--info))', strokeWidth: 0 }}
-          activeDot={{ r: 4, fill: 'oklch(var(--info))', stroke: 'oklch(var(--surface))', strokeWidth: 2 }}
+          isAnimationActive={false}
+          dot={{ r: 4, fill: CHART_CHROME.surface, stroke: CHART_STATUS.active, strokeWidth: 2 }}
+          activeDot={{ r: 5, fill: CHART_STATUS.active, stroke: CHART_CHROME.surface, strokeWidth: 2 }}
+          label={{ position: 'top', fill: CHART_CHROME.ink, fontSize: 11 }}
         />
       </LineChart>
     </ResponsiveContainer>

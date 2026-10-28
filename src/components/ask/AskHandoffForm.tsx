@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { sendHandoff } from '@/hooks/ask/ask-api';
 import { useAskOptional } from './ask-context';
 
@@ -15,9 +16,9 @@ export function AskHandoffForm() {
 
   if (state === 'sent') {
     return (
-      <div role="status" className="flex items-center gap-2 rounded-[var(--radius-md)] bg-positive-soft px-3 py-2 text-[12.5px] text-positive">
-        <Check className="h-3.5 w-3.5" aria-hidden /> Sent to your project lead. They'll reply by email.
-        <button type="button" className="ml-auto underline" onClick={() => ask.setHandoffDraft(null)}>
+      <div role="status" className="flex items-center gap-2 rounded-md bg-positive-soft px-3 py-2 text-[13px] text-positive">
+        <Check className="h-4 w-4 flex-none" strokeWidth={1.6} aria-hidden /> Sent to your project lead. Reply comes by email.
+        <button type="button" className="ml-auto font-medium underline underline-offset-2" onClick={() => ask.setHandoffDraft(null)}>
           Close
         </button>
       </div>
@@ -34,7 +35,7 @@ export function AskHandoffForm() {
 
   return (
     <form
-      className="space-y-2 rounded-[var(--radius-md)] border border-line bg-surface-raised p-3"
+      className="grid gap-2 rounded-md border-1.5 border-line bg-surface-sunken p-3"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!text.trim()) return;
@@ -49,12 +50,12 @@ export function AskHandoffForm() {
           });
           setState('sent');
         } catch (err) {
-          setError((err as Error).message || 'Could not send your question. Please try again.');
+          setError((err as Error).message || 'Could not send your question. Try again.');
           setState('error');
         }
       }}
     >
-      <label htmlFor="ask-handoff" className="block text-[12.5px] font-medium text-ink">
+      <label htmlFor="ask-handoff" className="block text-[13px] font-medium text-ink">
         Ask your project lead
       </label>
       <textarea
@@ -63,28 +64,21 @@ export function AskHandoffForm() {
         onChange={(e) => setText(e.target.value)}
         rows={3}
         maxLength={2000}
-        className="w-full resize-none rounded-[var(--radius-md)] border border-input bg-surface-raised px-2.5 py-2 text-[13px] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
+        className="w-full resize-none rounded-md border-1.5 border-line-strong bg-surface-raised px-3 py-2 text-[13px] text-ink focus-visible:border-brand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25"
       />
+      <span className="text-[12px] text-ink-muted">The last 4 messages go with it.</span>
       {error && (
-        <p role="alert" className="text-[12px] text-danger">
+        <p role="alert" className="text-[12.5px] text-danger">
           {error}
         </p>
       )}
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => ask.setHandoffDraft(null)}
-          className="min-h-[36px] rounded-[var(--radius-md)] px-3 text-[12.5px] text-ink-muted hover:bg-surface-sunken"
-        >
+        <Button type="button" variant="secondary" size="sm" onClick={() => ask.setHandoffDraft(null)}>
           Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={state === 'sending' || !text.trim()}
-          className="min-h-[36px] rounded-[var(--radius-md)] border border-line px-3 text-[12.5px] font-medium text-ink hover:bg-surface-sunken disabled:opacity-50"
-        >
+        </Button>
+        <Button type="submit" size="sm" disabled={state === 'sending' || !text.trim()}>
           {state === 'sending' ? 'Sending…' : 'Send to lead'}
-        </button>
+        </Button>
       </div>
     </form>
   );

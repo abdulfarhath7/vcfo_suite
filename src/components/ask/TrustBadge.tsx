@@ -1,29 +1,30 @@
-import { BadgeCheck, Sparkles, FileClock } from 'lucide-react';
 import type { AnswerEnvelope } from '@/data/ask/schema';
+import { Chip } from '@/components/ui/spectrum-chip';
 
 /**
  * U1: "Reviewed by {firm}" only for reviewed content and deterministic
- * answers; a draft topic or a model answer never carries it.
+ * answers; a draft topic or a model answer never carries it. Drawn as the
+ * Spectrum status chip (green reviewed, amber AI answer, grey draft).
  */
 export function TrustBadge({ answer, firmName }: { answer: AnswerEnvelope; firmName: string }) {
   if (answer.origin === 'refusal') return null;
   if (answer.draft) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-sm bg-surface-sunken px-2 py-0.5 text-[11px] font-medium text-ink-muted">
-        <FileClock className="h-3 w-3" aria-hidden /> Not yet reviewed · check with your lead
-      </span>
+      <Chip tone="idle" className="w-fit">
+        Not yet reviewed · check with your lead
+      </Chip>
     );
   }
   if (answer.origin === 'reviewed' || answer.origin === 'deterministic') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-sm bg-positive-soft px-2 py-0.5 text-[11px] font-medium text-positive">
-        <BadgeCheck className="h-3 w-3" aria-hidden /> Reviewed by {firmName}
-      </span>
+      <Chip tone="ok" className="w-fit">
+        Reviewed by {firmName}
+      </Chip>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-sm bg-surface-sunken px-2 py-0.5 text-[11px] font-medium text-ink-muted">
-      <Sparkles className="h-3 w-3" aria-hidden /> AI answer · check with your lead
-    </span>
+    <Chip tone="warn" className="w-fit">
+      AI answer · check with your lead
+    </Chip>
   );
 }

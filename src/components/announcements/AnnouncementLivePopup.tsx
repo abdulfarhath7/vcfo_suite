@@ -3,8 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { m, useReducedMotion } from 'framer-motion';
-import { Megaphone, X } from 'lucide-react';
-import { AnnouncementKindChip, formatAnnouncementWhen } from '@/components/announcements/AnnouncementList';
+import { ExternalLink, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tag } from '@/components/ui/spectrum-chip';
+import {
+  AnnouncementKindChip,
+  announcementIsImportant,
+  formatAnnouncementWhen,
+} from '@/components/announcements/AnnouncementList';
 import { useApp } from '@/context/AppContext';
 import { useAnnouncements } from '@/hooks/use-announcements';
 import { useShellAppearance } from '@/hooks/use-shell-appearance';
@@ -17,6 +23,7 @@ import {
   announcementAttribution,
   announcementYmdIst,
   measureGenieDock,
+  parseAnnouncementKind,
   readAnnouncementIds,
   readAnnouncementPopupIds,
   readDailyAnnouncementSeenIds,
@@ -146,7 +153,7 @@ function AnnouncementGenieCard({
           top: `${origin.top}px`,
           width: `${origin.width}px`,
           height: `${origin.height}px`,
-          borderRadius: '18px',
+          borderRadius: '6px',
           opacity: 1,
           offset: 0,
         },
@@ -155,7 +162,7 @@ function AnnouncementGenieCard({
           top: `${origin.top + (to.top - origin.top) * 0.2}px`,
           width: `${origin.width * 0.38}px`,
           height: `${origin.height * 0.58}px`,
-          borderRadius: '22px',
+          borderRadius: '12px',
           opacity: 1,
           offset: 0.4,
         },
@@ -196,7 +203,7 @@ function AnnouncementGenieCard({
       <m.button
         type="button"
         aria-label="Dismiss announcement"
-        className="pointer-events-auto absolute inset-0 cursor-default bg-ink/45-[6px]"
+        className="pointer-events-auto absolute inset-0 cursor-default bg-ink/45"
         initial={{ opacity: reduceMotion ? 1 : 0 }}
         animate={{ opacity: flying ? 0 : 1 }}
         transition={{ duration: reduceMotion ? 0 : flying ? 0.4 : 0.28 }}
@@ -208,70 +215,64 @@ function AnnouncementGenieCard({
         aria-modal="true"
         aria-labelledby="announcement-live-title"
         className={cn(
-          'pointer-events-auto relative w-[min(100vw-2rem,26.5rem)] overflow-hidden rounded-[1.15rem] border border-line/80 bg-background shadow-[0_32px_80px_-28px_oklch(18%_0.06_260_/_0.55)]',
+          'pointer-events-auto relative w-[min(100vw-2rem,30rem)] overflow-hidden rounded-md border-1.5 border-line bg-surface-raised shadow-dialog',
           !reduceMotion && !flying && 'announcement-live-enter',
         )}
       >
         <div className={cn('relative', flying && 'pointer-events-none opacity-0 transition-opacity duration-150')}>
-          <div className="flex items-start justify-between gap-3 px-5 pb-4 pt-4">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
-                <Megaphone className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p id="announcement-live-title" className="text-[11px] font-semibold tracking-[0.14em] text-ink-muted">
-                  {replay ? 'Announcement' : 'New announcement'}
-                </p>
-                <div className="mt-1.5">
-                  <AnnouncementKindChip kind={item.kind} />
-                </div>
+          <div className="flex items-start justify-between gap-3 border-b border-line-soft px-5 pb-3 pt-4">
+            <div className="min-w-0">
+              <p id="announcement-live-title" className="text-[12.5px] font-medium text-ink-muted">
+                {replay ? 'Announcement' : 'New announcement'}
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <AnnouncementKindChip kind={item.kind} />
+                {announcementIsImportant(item.kind) && parseAnnouncementKind(item.kind) !== 'deadline' ? (
+                  <Tag tone="bad">Important</Tag>
+                ) : null}
+                <time dateTime={item.publishedAt} className="text-[12.5px] tabular-nums text-ink-muted">
+                  {formatAnnouncementWhen(item.publishedAt)}
+                </time>
               </div>
             </div>
             <button
               type="button"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
+              className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-md text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
               aria-label="Close"
               onClick={park}
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="px-5 pb-6 pt-1">
-            {extraTitle ? (
-              <p className="mb-2 text-[12px] font-medium text-ink-muted">{item.title}</p>
-            ) : null}
-            <p className="text-[17px] font-semibold leading-relaxed tracking-tight text-ink">{message}</p>
-            <p className="mt-4 text-[13px] leading-snug text-ink-muted">
+          <div className="px-5 pb-4 pt-4">
+            {extraTitle ? <p className="mb-1.5 text-[13px] font-medium text-ink-2">{item.title}</p> : null}
+            <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{message}</p>
+            <p className="mt-4 border-t border-line-soft pt-3 text-[13px] text-ink-muted">
               {announcementAttribution(item)}
-              <span className="mx-1.5 text-border">·</span>
-              <time dateTime={item.publishedAt}>{formatAnnouncementWhen(item.publishedAt)}</time>
             </p>
-            {item.sourceUrl ? (
-              <a
-                href={item.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2.5 inline-block text-[12px] font-medium text-brand hover:underline"
-              >
-                Open source
-              </a>
-            ) : null}
           </div>
-          {remaining > 0 ? (
-            <div className="flex items-center justify-between gap-3 border-t border-line/70 bg-surface-sunken/40 px-5 py-2.5">
-              <p className="text-[12px] text-ink-muted">
-                {remaining} more announcement{remaining === 1 ? '' : 's'} waiting
-              </p>
-              <button
-                type="button"
-                className="rounded-md px-2 py-1 text-[12px] font-medium text-brand transition-colors hover:bg-brand-soft"
-                title="Skip all (Shift+Esc)"
-                onClick={skipAll}
-              >
-                Skip all
-              </button>
-            </div>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-5 py-3">
+            {remaining > 0 ? (
+              <>
+                <span className="text-[12.5px] text-ink-muted">{remaining} more waiting</span>
+                <Button type="button" variant="quiet" size="sm" title="Skip all (Shift+Esc)" onClick={skipAll}>
+                  Skip all
+                </Button>
+              </>
+            ) : null}
+            <span className="mr-auto" />
+            {item.sourceUrl ? (
+              <Button asChild variant="outline">
+                <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
+                  Open source
+                  <ExternalLink aria-hidden />
+                </a>
+              </Button>
+            ) : null}
+            <Button type="button" onClick={park}>
+              Got it
+            </Button>
+          </div>
         </div>
       </div>
     </div>

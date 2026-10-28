@@ -40,7 +40,7 @@ export function ChartLegend({
         const body = (
           <>
             <i
-              className="h-2.5 w-2.5 shrink-0 rounded-sm"
+              className="h-2 w-2 shrink-0 rounded-[2px]"
               style={{ background: item.color }}
               aria-hidden
             />
@@ -51,7 +51,7 @@ export function ChartLegend({
           </>
         );
         const rowClass =
-          'flex min-w-0 items-center gap-2 text-[11.5px] font-semibold text-ink-muted';
+          'flex min-w-0 items-center gap-2 text-[12.5px] font-medium tabular-nums text-ink-2';
         return (
           <li key={item.label} className="min-w-0">
             {item.href ? (

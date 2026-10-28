@@ -22,33 +22,37 @@ import { phaseKeyFromId, type PhaseColorKey } from '@/lib/shell/phase-colors';
 export type ChartColor = string;
 
 const token = (name: string): ChartColor => `oklch(var(--${name}))`;
-const tokenAlpha = (name: string, alpha: number): ChartColor =>
-  `oklch(var(--${name}) / ${alpha})`;
 
-/** Chrome: axes, grid, tooltip surface, reference lines. */
+/**
+ * Chrome: axes, grid, tooltip surface, reference lines. VCFO Spectrum (rule R-25): a soft
+ * hairline grid, muted axis labels, a raised white tooltip and an amber dashed target line.
+ */
 export const CHART_CHROME = {
-  grid: token('border'),
-  axis: token('text-tertiary'),
-  reference: tokenAlpha('text-tertiary', 0.7),
-  surface: token('panel'),
+  grid: token('line-soft'),
+  axis: token('ink-muted'),
+  reference: token('warning-mid'),
+  referenceText: token('warning'),
+  surface: token('surface-raised'),
   ink: token('ink'),
-  muted: token('muted-foreground'),
-  cursor: tokenAlpha('primary', 0.08),
+  muted: token('ink-muted'),
+  cursor: token('surface-sunken'),
 } as const;
 
 /**
- * Status fills. The same four words the whole product uses:
- * teal done · coral waiting · slate lock · rose overdue.
+ * Status fills (rule R-25: charts use status colours only). The six meanings the whole
+ * product uses: done green, in progress blurple, waiting teal, due soon amber, not started
+ * grey, overdue red. `active` and `locked` keep their old names for callers.
  */
 export const CHART_STATUS: Record<
-  'done' | 'active' | 'waiting' | 'locked' | 'overdue',
+  'done' | 'active' | 'waiting' | 'due' | 'locked' | 'overdue',
   ChartColor
 > = {
-  done: token('success'),
-  active: token('primary'),
-  waiting: token('accent-orange'),
-  locked: token('text-tertiary'),
-  overdue: token('danger'),
+  done: token('positive-mid'),
+  active: token('brand'),
+  waiting: token('waiting-mid'),
+  due: token('warning-mid'),
+  locked: token('upcoming-mid'),
+  overdue: token('danger-mid'),
 };
 
 /** Journey phase fills — the same tokens `LeadPhaseProgress` paints its bars with. */
@@ -65,8 +69,8 @@ export function chartPhaseColor(phaseId: string, bucket?: string): ChartColor {
   return CHART_PHASE[phaseKeyFromId(phaseId, bucket)];
 }
 
-/** Type scale — matches the dashboard's 10.5/11/11.5px label rhythm. */
-const CHART_FONT_SIZE = 11;
+/** Type scale: the prototype's 11.5px axis labels. */
+const CHART_FONT_SIZE = 11.5;
 
 /** Default axis props. Spread these; never restyle an axis inline. */
 export const chartAxisProps = {
@@ -75,19 +79,27 @@ export const chartAxisProps = {
   tickLine: false,
 } as const;
 
-/** Default cartesian grid props — horizontal rules only, so bars stay readable. */
+/** Default cartesian grid props: solid horizontal hairlines only, so bars stay readable. */
 export const chartGridProps = {
   stroke: CHART_CHROME.grid,
-  strokeDasharray: '3 3',
   vertical: false,
 } as const;
 
 /** Default plot margins. Negative left pulls a short numeric axis back in. */
 export const chartMargin = { top: 8, right: 8, left: -18, bottom: 0 } as const;
 
-/** Default bar geometry — rounded top, capped width so few bars stay elegant. */
+/** Default bar geometry: the 3px bar corner (`rounded-bar`) on top, capped width. */
 export const chartBarProps = {
-  radius: [4, 4, 0, 0] as [number, number, number, number],
-  maxBarSize: 44,
+  radius: [3, 3, 0, 0] as [number, number, number, number],
+  maxBarSize: 36,
 } as const;
+
+/** A dashed target or benchmark line with its label in the top right (prototype Analytics). */
+export function chartReferenceProps(label: string) {
+  return {
+    stroke: CHART_CHROME.reference,
+    strokeDasharray: '6 5',
+    label: { value: label, position: 'insideTopRight' as const, fill: CHART_CHROME.referenceText, fontSize: 11 },
+  };
+}
 

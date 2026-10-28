@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { Loader2, Trash2, Upload } from 'lucide-react';
-import { PageBackButton } from '@/components/shell/PageBackButton';
 import { Button } from '@/components/ui/button';
 import { UserFace } from '@/components/common/UserFace';
 import { compressImageFile } from '@/lib/shell/shell-appearance';
@@ -12,6 +11,7 @@ async function jpegFileFromDataUrl(dataUrl: string): Promise<File> {
   return new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
 }
 
+/** The photo row of Profile › About you: the face, upload, the Outlook photo (staff) and remove. */
 export function IdentityCard({
   name,
   email,
@@ -83,7 +83,7 @@ export function IdentityCard({
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         const code = typeof body.error === 'string' ? body.error : '';
-        if (code === 'outlook_not_connected') throw new Error('Connect Outlook below, then try again.');
+        if (code === 'outlook_not_connected') throw new Error('Connect Outlook in Email, then try again.');
         if (code === 'outlook_photo_missing') throw new Error('No photo on this Microsoft account.');
         throw new Error(errorMessage(body.error, 'Could not fetch Outlook photo.'));
       }
@@ -116,83 +116,65 @@ export function IdentityCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-surface-raised px-5 py-5">
-      <div className="flex items-center gap-4 sm:gap-5">
-        <UserFace
-          src={src}
-          initials={loading ? '' : initials}
-          alt=""
-          className="h-[4.5rem] w-[4.5rem] bg-brand-soft text-[1.05rem] font-semibold tracking-tight text-brand ring-1 ring-brand/20 sm:h-20 sm:w-20 sm:text-[1.15rem]"
-        />
-        <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-2">
-            <PageBackButton className="-ml-1.5" />
-            <h1 className="truncate font-serif text-[1.5rem] leading-none tracking-tight text-ink sm:text-[1.75rem]">
-              {name}
-            </h1>
-          </div>
-          <p className="mt-2 truncate font-mono text-[13px] text-ink-muted">{email}</p>
-          <span className="mt-3 inline-flex rounded-md bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand">
-            {roleLabel}
-          </span>
-        </div>
-      </div>
+    <div className="flex flex-wrap items-center gap-3">
+      <UserFace
+        src={src}
+        initials={loading ? '' : initials}
+        alt={name ? `${name}, ${roleLabel}` : ''}
+        className="h-16 w-16 flex-none bg-surface-sunken text-[22px] font-medium text-ink"
+      />
+      <span className="sr-only">{email}</span>
 
       <input
         ref={fileRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
         className="sr-only"
+        aria-label="Photo file"
         onChange={(e) => void onPickFile(e.target.files?.[0])}
       />
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
-          className="h-8"
           disabled={loading || busy !== null}
           onClick={() => fileRef.current?.click()}
         >
           {busy === 'upload' ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            <Loader2 className="animate-spin" aria-hidden />
           ) : (
-            <Upload className="h-3.5 w-3.5" aria-hidden />
+            <Upload aria-hidden />
           )}
-          Upload
+          Upload photo
         </Button>
         {isStaff ? (
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
-            className="h-8"
             disabled={loading || busy !== null || !outlookConnected}
-            title={
-              outlookConnected ? undefined : 'Connect Outlook below to use your Microsoft photo'
-            }
+            title={outlookConnected ? undefined : 'Connect Outlook in Email to use your Microsoft photo'}
             onClick={() => void applyOutlookPhoto()}
           >
-            {busy === 'outlook' ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            ) : null}
+            {busy === 'outlook' ? <Loader2 className="animate-spin" aria-hidden /> : null}
             Use Outlook photo
           </Button>
         ) : null}
         {hasPhoto ? (
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             size="sm"
-            className="h-8 text-ink-muted hover:text-ink"
+            className="text-danger"
             disabled={loading || busy !== null}
             onClick={() => void removePhoto()}
           >
             {busy === 'remove' ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              <Loader2 className="animate-spin" aria-hidden />
             ) : (
-              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+              <Trash2 aria-hidden />
             )}
             Remove
           </Button>

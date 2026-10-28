@@ -361,6 +361,7 @@ function KnowledgeBankPageInner({ basePath }: Props) {
     ancestors,
     openFolder,
     folderIsEmpty: (folderId: string) => isKnowledgeBankFolderEmpty(folderId, folders, files),
+    folderDocCount: (folderId: string) => knowledgeBankFilesInFolder(folderId, files).length,
     handleDownload,
     downloadingId,
     deleteTarget,

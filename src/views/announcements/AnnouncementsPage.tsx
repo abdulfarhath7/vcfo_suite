@@ -3,23 +3,29 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { Megaphone, Plus, RefreshCw, Rss, Trash2, X } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
-import { AccentButton, EmptyStateIllustrated, Surface } from '@/components/noir';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { DashSection } from '@/components/dash/DashSection';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApp } from '@/context/AppContext';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import {
   ANNOUNCEMENT_READ_EVENT,
+  announcementMatchesFilter,
   canManageAnnouncementSources,
   canWriteAnnouncements,
   readAnnouncementIds,
   requestAnnouncementPopup,
   writeAnnouncementReadIds,
+  parseAnnouncementKind,
   type Announcement,
+  type AnnouncementListFilter,
   type AnnouncementSource,
 } from '@/lib/notifications/announcements';
 import { useAnnouncementSources, useAnnouncements } from '@/hooks/use-announcements';
@@ -50,6 +56,12 @@ function ComposeQueryOpener({ canWrite, onOpen }: { canWrite: boolean; onOpen: (
   return null;
 }
 
+const FILTERS: Array<{ key: AnnouncementListFilter; label: string }> = [
+  { key: 'all', label: 'All' },
+  { key: 'important', label: 'Important' },
+  { key: 'general', label: 'General' },
+];
+
 function LatestList({
   loading,
   items,
@@ -67,64 +79,71 @@ function LatestList({
   onRemove: (id: string) => void;
   onView: (item: Announcement) => void;
 }) {
+  const [filter, setFilter] = useState<AnnouncementListFilter>('all');
+  const shown = items.filter((item) => announcementMatchesFilter(parseAnnouncementKind(item.kind), filter));
+  const count = (key: AnnouncementListFilter) =>
+    items.filter((item) => announcementMatchesFilter(parseAnnouncementKind(item.kind), key)).length;
+
   return (
-    <Surface flat className="overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-line/80 px-4 py-3 sm:px-5">
-        <div>
-          <h2 className="text-[13px] font-semibold tracking-tight text-ink">Latest</h2>
-        </div>
-        {!loading && items.length > 0 ? (
-          <span className="tabular-nums text-[12px] text-ink-muted">{items.length}</span>
-        ) : null}
-      </div>
-      {loading ? (
-        <div className="divide-y divide-line/80" aria-busy="true" aria-label="Loading announcements">
-          {['a', 'b', 'c', 'd'].map((key) => (
-            <div key={key} className="px-4 py-4 sm:px-5">
-              <div className="h-3.5 w-16 animate-pulse rounded-full bg-surface-sunken" />
-              <div className="mt-2.5 h-4 w-[88%] animate-pulse rounded-md bg-surface-sunken" />
-              <div className="mt-2 h-3 w-40 animate-pulse rounded-md bg-surface-sunken" />
-            </div>
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <EmptyStateIllustrated
-          icon={Megaphone}
-          title="Nothing on the board yet"
-          actionLabel={canWrite ? 'New announcement' : undefined}
-          onAction={canWrite ? onCompose : undefined}
-          className="rounded-none border-0 bg-transparent shadow-none"
+    <DashSection
+      title="Latest"
+      bodyClassName="p-0"
+      meta={
+        <SpectrumTabs
+          label="Filter announcements"
+          items={FILTERS.map((f) => ({ ...f, count: loading ? undefined : count(f.key) }))}
+          value={filter}
+          onChange={(key) => setFilter(key as AnnouncementListFilter)}
         />
+      }
+    >
+      {loading ? (
+        <div className="p-4" aria-busy="true" aria-label="Loading announcements">
+          <SkeletonRows rows={4} className="[&>span]:h-14" />
+        </div>
+      ) : shown.length === 0 ? (
+        <div className="p-4">
+          <EmptyState
+            title={items.length === 0 ? 'Nothing on the board yet' : 'None'}
+            action={
+              items.length > 0 ? (
+                <Button type="button" variant="outline" size="sm" onClick={() => setFilter('all')}>
+                  See all
+                </Button>
+              ) : canWrite ? (
+                <Button type="button" variant="outline" size="sm" onClick={onCompose}>
+                  New announcement
+                </Button>
+              ) : undefined
+            }
+          />
+        </div>
       ) : (
-        <div className="divide-y divide-line/80">
-          {items.map((item) => {
+        <ul>
+          {shown.map((item) => {
             const unread = !readIds.has(item.id);
             return (
-              <article key={item.id} className="flex items-stretch hover:bg-surface-sunken/40">
+              <li key={item.id} className="flex items-stretch border-t border-line-soft first:border-t-0">
                 <div className="min-w-0 flex-1">
-                  <AnnouncementRow
-                    item={item}
-                    unread={unread}
-                    onActivate={() => onView(item)}
-                  />
+                  <AnnouncementRow item={item} unread={unread} onActivate={() => onView(item)} />
                 </div>
                 {canWrite ? (
                   <button
                     type="button"
                     onClick={() => onRemove(item.id)}
                     aria-label="Remove announcement"
-                    className="inline-flex h-8 shrink-0 items-center gap-1 self-center rounded-md px-2 text-[12px] text-ink-muted hover:bg-danger-soft hover:text-danger"
+                    title="Remove"
+                    className="mr-3 grid h-[30px] w-[30px] shrink-0 place-items-center self-center rounded-md text-ink-muted hover:bg-danger-soft hover:text-danger"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only">Remove</span>
+                    <Trash2 className="h-[15px] w-[15px]" aria-hidden />
                   </button>
                 ) : null}
-              </article>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
-    </Surface>
+    </DashSection>
   );
 }
 
@@ -152,90 +171,92 @@ function FeedsSection({
   onRemove: (id: string) => void;
 }) {
   return (
-    <Surface flat className="p-4 sm:p-5">
-      <div className="flex items-start gap-2.5">
-        <span className="mt-0.5 grid h-7 w-7 place-items-center rounded-md bg-brand-soft text-brand">
-          <Rss className="h-3.5 w-3.5" aria-hidden />
-        </span>
-        <div className="min-w-0">
-          <h2 className="text-[13px] font-semibold tracking-tight text-ink">Official RSS feeds</h2>
-        </div>
-      </div>
-      <div className="mt-4 grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
-        <div>
-          <Label htmlFor="feed-name" className="text-[11px] text-ink-muted">
-            Feed name
-          </Label>
+    <DashSection title="Official RSS feeds" meta={sources.length || undefined} bodyClassName="p-0">
+      <form
+        className="grid gap-2.5 px-4 py-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onAdd();
+        }}
+      >
+        <div className="grid gap-1.5">
+          <Label htmlFor="feed-name">Feed name</Label>
           <Input
             id="feed-name"
             value={sourceName}
             onChange={(e) => setSourceName(e.target.value)}
             placeholder="Income Tax press releases"
-            className="mt-1.5 h-9"
           />
         </div>
-        <div>
-          <Label htmlFor="feed-url" className="text-[11px] text-ink-muted">
-            RSS / Atom URL
-          </Label>
+        <div className="grid gap-1.5">
+          <Label htmlFor="feed-url">RSS or Atom URL</Label>
           <Input
             id="feed-url"
             type="url"
             value={feedUrl}
             onChange={(e) => setFeedUrl(e.target.value)}
             placeholder="https://pib.gov.in/RssMain.aspx?…"
-            className="mt-1.5 h-9"
           />
         </div>
-        <div className="flex items-end">
-          <AccentButton
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onAdd}
-            disabled={addingFeed || !sourceName.trim() || !feedUrl.trim()}
-          >
+        <div className="flex justify-end">
+          <Button type="submit" variant="outline" disabled={addingFeed || !sourceName.trim() || !feedUrl.trim()}>
             {addingFeed ? 'Adding…' : 'Add feed'}
-          </AccentButton>
+          </Button>
         </div>
-      </div>
-      <div className="mt-3 divide-y divide-line/80 border-t border-line/80">
-        {sources.length === 0 ? (
-          <p className="py-3 text-[12.5px] text-ink-muted">No feeds yet.</p>
-        ) : (
-          sources.map((source) => (
-            <div key={source.id} className="flex flex-wrap items-center gap-2 py-2.5">
+      </form>
+      {sources.length === 0 ? (
+        <div className="px-4 pb-4">
+          <EmptyState title="No feeds yet" className="min-h-[72px] py-4" />
+        </div>
+      ) : (
+        <ul className="border-t border-line-soft">
+          {sources.map((source) => (
+            <li key={source.id} className="flex min-h-11 flex-wrap items-center gap-2 border-t border-line-soft px-4 py-2 first:border-t-0">
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] font-medium">{source.name}</div>
-                <div className="truncate font-mono text-[11px] text-ink-muted">{source.feedUrl}</div>
+                <div className="truncate text-[14px] font-medium text-ink">{source.name}</div>
+                <div className="truncate text-[12.5px] text-ink-muted" title={source.feedUrl}>
+                  {source.feedUrl}
+                </div>
                 {source.lastError ? (
-                  <div className="mt-0.5 text-[12px] text-danger">{feedErrorMessage(source.lastError)}</div>
+                  <div className="mt-1">
+                    <Chip tone="bad" className="min-w-0">
+                      Feed error
+                    </Chip>
+                    <span className="ml-2 text-[12.5px] text-danger">{feedErrorMessage(source.lastError)}</span>
+                  </div>
                 ) : source.lastFetchedAt ? (
-                  <div className="mt-0.5 text-[12px] text-ink-muted">Last pulled successfully</div>
+                  <div className="mt-1">
+                    <Chip tone="ok" className="min-w-0">
+                      Pulled
+                    </Chip>
+                  </div>
                 ) : null}
               </div>
-              <button
+              <Button
                 type="button"
+                variant="quiet"
+                size="sm"
                 onClick={() => onPull(source.id)}
                 disabled={fetchingId === source.id}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-brand hover:bg-brand-soft disabled:opacity-40"
               >
-                <RefreshCw className={cn('h-3.5 w-3.5', fetchingId === source.id && 'animate-spin')} />
+                <RefreshCw className={cn(fetchingId === source.id && 'animate-spin')} aria-hidden />
                 {fetchingId === source.id ? 'Pulling…' : 'Pull'}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="quiet"
+                size="sm"
                 onClick={() => onRemove(source.id)}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] text-ink-muted hover:bg-danger-soft hover:text-danger"
+                className="hover:bg-danger-soft hover:text-danger"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 aria-hidden />
                 Remove
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-    </Surface>
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DashSection>
   );
 }
 
@@ -371,61 +392,59 @@ export default function AnnouncementsPage() {
         description="Firm-wide news posted by managers and admins, plus official tax feeds."
         path={pathname}
       />
-      <PageHeader
-        title="Announcements"
-        actions={
-          canWrite ? (
-            <AccentButton
-              type="button"
-              variant={composing ? 'outline' : 'solid'}
-              onClick={() => setComposing((open) => !open)}
-              aria-expanded={composing}
-              className="rounded-xl"
-            >
-              {composing ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {composing ? 'Close' : 'New announcement'}
-            </AccentButton>
-          ) : undefined
-        }
-        footer={
-          showComposer ? (
-            <AnnouncementComposeForm
-              bare
-              idPrefix="page-ann"
-              onClose={() => setComposing(false)}
-            />
-          ) : null
-        }
-      />
+      {/* The top bar names the page; the page keeps a hidden heading and a plain toolbar. */}
+      <h1 className="sr-only">Announcements</h1>
+      {canWrite ? (
+        <div className="mb-4 flex justify-end">
+          <Button
+            type="button"
+            variant={composing ? 'outline' : 'default'}
+            onClick={() => setComposing((open) => !open)}
+            aria-expanded={composing}
+          >
+            {composing ? <X aria-hidden /> : <Plus aria-hidden />}
+            {composing ? 'Close' : 'New announcement'}
+          </Button>
+        </div>
+      ) : null}
 
-      <div className="flex min-w-0 flex-col gap-5">
-        <LatestList
-          loading={list.isLoading}
-          items={items}
-          canWrite={canWrite}
-          readIds={readIds}
-          onCompose={openCompose}
-          onRemove={(id) => void remove(id)}
-          onView={(item) => {
-            markOne(item.id);
-            requestAnnouncementPopup(item);
-          }}
-        />
-        <OfficialPortalsDirectory />
-        {canSources ? (
-          <FeedsSection
-            sources={sources.data?.sources ?? []}
-            sourceName={sourceName}
-            setSourceName={setSourceName}
-            feedUrl={feedUrl}
-            setFeedUrl={setFeedUrl}
-            addingFeed={addingFeed}
-            fetchingId={fetchingId}
-            onAdd={() => void addFeed()}
-            onPull={(id) => void pullFeed(id)}
-            onRemove={(id) => void removeFeed(id)}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid min-w-0 gap-4">
+          {showComposer ? (
+            <DashSection title="New announcement">
+              <AnnouncementComposeForm bare idPrefix="page-ann" onClose={() => setComposing(false)} />
+            </DashSection>
+          ) : null}
+          <LatestList
+            loading={list.isLoading}
+            items={items}
+            canWrite={canWrite}
+            readIds={readIds}
+            onCompose={openCompose}
+            onRemove={(id) => void remove(id)}
+            onView={(item) => {
+              markOne(item.id);
+              requestAnnouncementPopup(item);
+            }}
           />
-        ) : null}
+        </div>
+        <div className="grid min-w-0 gap-4">
+          <OfficialPortalsDirectory />
+          {canSources ? (
+            <FeedsSection
+              sources={sources.data?.sources ?? []}
+              sourceName={sourceName}
+              setSourceName={setSourceName}
+              feedUrl={feedUrl}
+              setFeedUrl={setFeedUrl}
+              addingFeed={addingFeed}
+              fetchingId={fetchingId}
+              onAdd={() => void addFeed()}
+              onPull={(id) => void pullFeed(id)}
+              onRemove={(id) => void removeFeed(id)}
+            />
+          ) : null}
+        </div>
       </div>
     </PageTransition>
   );

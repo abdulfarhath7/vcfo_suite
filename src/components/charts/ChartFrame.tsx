@@ -1,11 +1,12 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 
 /**
- * The shared plot frame: fixed height, the canonical loading skeleton, and the
- * canonical in-panel empty state. Every chart sits in one of these, so a chart
+ * The shared plot frame: fixed height, the grey loading shape and the dashed empty
+ * state (R-48). Every chart sits in one of these, so a chart
  * that is loading, empty, or drawn looks the same wherever it appears.
  *
  * Not a panel — charts live INSIDE a `DashSection`, never as a bare card.
@@ -14,7 +15,7 @@ export function ChartFrame({
   height = 176,
   loading,
   empty,
-  emptyLabel = 'Nothing to chart yet.',
+  emptyLabel = 'Nothing to chart yet',
   className,
   children,
 }: {
@@ -28,7 +29,7 @@ export function ChartFrame({
   if (loading) {
     return (
       <div
-        className={cn('w-full animate-pulse rounded-md bg-surface-sunken/40', className)}
+        className={cn('w-full animate-pulse rounded-md bg-surface-sunken', className)}
         style={{ height }}
         aria-hidden
       />
@@ -37,11 +38,8 @@ export function ChartFrame({
 
   if (empty) {
     return (
-      <div
-        className={cn('grid w-full place-items-center', className)}
-        style={{ height }}
-      >
-        <p className="text-[12.5px] text-ink-muted">{emptyLabel}</p>
+      <div className={cn('grid w-full', className)} style={{ height }}>
+        <EmptyState title={emptyLabel} className="h-full" />
       </div>
     );
   }

@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { AccentButton } from '@/components/noir/AccentButton';
 import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/spectrum-chip';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
-import { SectionHead, SettingsRow } from './settings-layout';
+import { ProfileCard, SettingsRow } from './settings-layout';
 
+/**
+ * Profile › Email: the staff member's Outlook mailbox. K-40 asks for a "Signature from Outlook ·
+ * server-side signature on" row, but `/api/outlook` reports only `connected` and `msEmail`, so the
+ * row stays out until the connection carries a signature flag.
+ */
 export function OutlookMailboxCard({
   onConnectedChange,
 }: {
@@ -15,6 +20,7 @@ export function OutlookMailboxCard({
   const [msEmail, setMsEmail] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [asking, setAsking] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,71 +84,80 @@ export function OutlookMailboxCard({
     }
   }
 
-  return (
-    <section className="px-5 py-5">
-      <SectionHead title="Outlook" />
+  const chip = loading ? null : !configured ? (
+    <Chip tone="idle">Not set up</Chip>
+  ) : connected ? (
+    <Chip tone="ok">Connected</Chip>
+  ) : (
+    <Chip tone="idle">Not connected</Chip>
+  );
 
+  return (
+    <ProfileCard id="email" title="Email" action={chip}>
       {loading ? (
-        <div className="mt-1">
-          <SettingsRow label="Mailbox" last>
-            <span className="text-ink-muted">Checking…</span>
-          </SettingsRow>
-        </div>
+        <SettingsRow label="Outlook">
+          <span className="block h-4 w-44 animate-pulse rounded-mark bg-surface-sunken" aria-hidden />
+          <span className="sr-only">Checking</span>
+        </SettingsRow>
       ) : !configured ? (
-        <div className="mt-1">
-          <SettingsRow label="Mailbox" last>
-            <span className="text-ink-muted">Not configured yet. Ask an admin.</span>
-          </SettingsRow>
-        </div>
+        <SettingsRow label="Outlook">
+          <span className="text-ink-muted">Not set up for this firm. Ask an admin.</span>
+        </SettingsRow>
       ) : (
-        <div className="mt-1">
-          <SettingsRow label="Mailbox" last>
-            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-              {connected && msEmail ? (
-                <span className="flex min-w-0 items-center gap-2">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-positive" aria-hidden />
-                  <span className="truncate font-mono text-[12px]">{msEmail}</span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-2 text-ink-muted">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-border" aria-hidden />
-                  Not connected
-                </span>
-              )}
+        <>
+          <SettingsRow label="Outlook" hint="Mail you send from VCFO goes from your mailbox">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={connected && msEmail ? 'min-w-0 truncate text-ink' : 'text-ink-muted'}>
+                {connected && msEmail ? msEmail : 'Not connected'}
+              </span>
               {connected ? (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
-                  className="h-8 shrink-0"
-                  disabled={disconnecting}
-                  onClick={() => void disconnect()}
+                  className="ml-auto"
+                  disabled={disconnecting || asking}
+                  onClick={() => setAsking(true)}
                 >
-                  {disconnecting ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                      Disconnecting…
-                    </>
-                  ) : (
-                    'Disconnect'
-                  )}
+                  Disconnect
                 </Button>
               ) : (
-                <AccentButton
+                <Button
                   type="button"
                   size="sm"
-                  className="h-8 min-h-8 shrink-0"
+                  className="ml-auto"
                   onClick={() => {
                     window.location.href = '/api/outlook/connect';
                   }}
                 >
                   Connect Outlook
-                </AccentButton>
+                </Button>
               )}
             </div>
           </SettingsRow>
-        </div>
+          {connected && asking ? (
+            // R-40: ask before a risky change.
+            <div className="flex flex-wrap items-center gap-2 border-t border-line-soft bg-surface-sunken px-4 py-2.5 md:px-5">
+              <span className="text-[14px] text-ink">Disconnect Outlook? Mail from VCFO stops sending from your mailbox.</span>
+              <span className="ml-auto flex gap-2">
+                <Button type="button" variant="quiet" size="sm" disabled={disconnecting} onClick={() => setAsking(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={disconnecting}
+                  onClick={() => void disconnect().then(() => setAsking(false))}
+                >
+                  {disconnecting ? <Loader2 className="animate-spin" aria-hidden /> : null}
+                  {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+                </Button>
+              </span>
+            </div>
+          ) : null}
+        </>
       )}
-    </section>
+    </ProfileCard>
   );
 }

@@ -8,7 +8,7 @@ import { AskHandoffForm } from './AskHandoffForm';
 import { useAskOptional } from './ask-context';
 import { AskUserBubble } from './AskUserBubble';
 
-/** Message list + progress label (U2), announced politely to screen readers. */
+/** Message list + progress label (U2), announced politely to screen readers. Spectrum look from the prototype AskThread. */
 export function AskThread() {
   const ask = useAskOptional();
   const endRef = useRef<HTMLDivElement>(null);
@@ -20,7 +20,7 @@ export function AskThread() {
 
   let lastQuestion = '';
   return (
-    <div className="space-y-3">
+    <div className="grid gap-3">
       {ask.thread.map((item) => {
         if (item.kind === 'user') {
           lastQuestion = item.text;
@@ -28,7 +28,7 @@ export function AskThread() {
         }
         if (item.kind === 'error') {
           return (
-            <p key={item.id} role="alert" className="rounded-[var(--radius-md)] bg-danger-soft px-3 py-2 text-[12.5px] text-danger">
+            <p key={item.id} role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-[13px] text-danger">
               {item.text}
             </p>
           );
@@ -36,16 +36,21 @@ export function AskThread() {
         if (item.answer.line === PREVIEW_CLIENT_LINE && ask.shell === 'super') {
           return (
             <div key={item.id} className="space-y-2">
-              <p className="text-[14px] text-ink">{item.answer.line}</p>
+              <p className="text-[13px] text-ink">{item.answer.line}</p>
               <AskPreviewPicker />
             </div>
           );
         }
         return <AskAnswerCard key={item.id} answer={item.answer} messageId={item.messageId} lastQuestion={lastQuestion} />;
       })}
-      <p aria-live="polite" className="min-h-[1.25rem] text-[12px] text-ink-muted">
-        {ask.busy ? (ask.status ?? 'Working…') : ''}
-      </p>
+      <div aria-live="polite" className="min-h-[1.25rem]">
+        {ask.busy ? (
+          <p className="flex items-center gap-2 rounded-md bg-surface-sunken px-3 py-2 text-[12.5px] font-medium text-ink">
+            <span className="h-1.5 w-1.5 flex-none animate-pulse rounded-[2px] bg-brand" aria-hidden />
+            {ask.status ?? 'Working…'}
+          </p>
+        ) : null}
+      </div>
       <AskHandoffForm key={ask.handoffDraft ?? 'none'} />
       <div ref={endRef} />
     </div>

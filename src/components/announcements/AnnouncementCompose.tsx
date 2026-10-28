@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, X } from 'lucide-react';
-import { AccentButton, Surface } from '@/components/noir';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,7 +21,7 @@ export function AnnouncementComposeForm({
   idPrefix = 'ann',
 }: {
   compact?: boolean;
-  /** Form only — for inside PageHeader footer. */
+  /** Form only, for a host card that draws its own head; the heading stays for screen readers. */
   bare?: boolean;
   onClose: () => void;
   onPosted?: () => void;
@@ -86,30 +86,32 @@ export function AnnouncementComposeForm({
       onPointerDown={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 id={headingId} className="text-[13px] font-semibold tracking-tight text-ink">
+        {bare ? (
+          <h2 id={headingId} className="sr-only">
+            New announcement
+          </h2>
+        ) : (
+          <div className="flex items-start justify-between gap-3">
+            <h2 id={headingId} className="text-[15px] font-medium text-ink">
               New announcement
             </h2>
-          </div>
-          {bare ? null : (
             <button
               type="button"
               onClick={onClose}
-              className="grid h-8 w-8 place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink"
+              className="grid h-[30px] w-[30px] place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink"
               aria-label="Close composer"
             >
               <X className="h-4 w-4" />
             </button>
-          )}
-        </div>
-      <div className={cn('grid gap-3', compact ? 'mt-2.5' : 'mt-3')}>
+          </div>
+        )}
+      <div className={cn('grid gap-3', bare ? null : compact ? 'mt-2.5' : 'mt-3')}>
         <div>
-          <p className="mb-1.5 text-[11px] font-medium text-ink-muted">Type</p>
+          <p className="mb-1.5 text-[13px] font-medium text-ink-2">Type</p>
           <AnnouncementKindPicker value={kind} onChange={setKind} />
         </div>
         <div>
-          <Label htmlFor={messageId} className="text-[11px] text-ink-muted">
+          <Label htmlFor={messageId}>
             Message
           </Label>
           <Textarea
@@ -122,8 +124,8 @@ export function AnnouncementComposeForm({
           />
         </div>
         <div>
-          <Label htmlFor={linkId} className="text-[11px] text-ink-muted">
-            Source link <span className="font-normal">(optional)</span>
+          <Label htmlFor={linkId}>
+            Source link <span className="font-normal text-ink-muted">(optional)</span>
           </Label>
           <Input
             id={linkId}
@@ -131,25 +133,30 @@ export function AnnouncementComposeForm({
             value={link}
             onChange={(event) => setLink(event.target.value)}
             placeholder="https://"
-            className="mt-1.5 h-9"
+            className="mt-1.5"
           />
         </div>
-        <AccentButton type="submit" disabled={posting || !message.trim()}>
-          <Plus className="h-4 w-4" />
-          {posting ? 'Posting…' : 'Post'}
-        </AccentButton>
+        <div className="flex justify-end gap-2">
+          {bare ? (
+            <Button type="button" variant="outline" onClick={onClose} disabled={posting}>
+              Cancel
+            </Button>
+          ) : null}
+          <Button type="submit" disabled={posting || !message.trim()}>
+            <Plus aria-hidden />
+            {posting ? 'Posting…' : 'Post'}
+          </Button>
+        </div>
       </div>
     </form>
   );
 
   if (bare) return form;
   if (compact) {
-    return <div className="border-b border-line bg-surface-sunken/25 px-3.5 py-3">{form}</div>;
+    return <div className="border-b border-line bg-surface-sunken px-3.5 py-3">{form}</div>;
   }
 
   return (
-    <Surface flat className="p-4 xl:sticky xl:top-20">
-      {form}
-    </Surface>
+    <div className="surface p-4 xl:sticky xl:top-20">{form}</div>
   );
 }

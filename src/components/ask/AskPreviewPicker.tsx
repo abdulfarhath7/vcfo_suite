@@ -22,8 +22,8 @@ export function AskPreviewPicker() {
   }, [engagements, q]);
   if (!ask || ask.shell !== 'super') return null;
   return (
-    <div className="space-y-2 rounded-[var(--radius)] border border-line bg-surface-raised p-3">
-      <label htmlFor="ask-preview-search" className="block text-[12.5px] font-medium text-ink">
+    <div className="grid gap-2 rounded-md border-1.5 border-line bg-surface-raised p-3">
+      <label htmlFor="ask-preview-search" className="block text-[13px] font-medium text-ink">
         Find a client
       </label>
       <input
@@ -32,21 +32,25 @@ export function AskPreviewPicker() {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Company name"
-        className="min-h-[40px] w-full rounded-[var(--radius-md)] border border-input bg-surface-raised px-3 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
+        className="h-control-md w-full rounded-md border-1.5 border-line-strong bg-surface-raised px-3 text-[14px] text-ink placeholder:text-ink-faint focus-visible:border-brand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25"
       />
-      <ul className="space-y-1">
+      <ul className="grid">
         {matches.map((e) => (
           <li key={e.id}>
             <button
               type="button"
               onClick={() => ask.setPreview({ engagementId: e.id, companyName: e.companyName })}
-              className="flex min-h-[40px] w-full items-center rounded-[var(--radius-md)] px-2.5 text-left text-[13px] text-ink hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
+              className="flex h-[34px] w-full items-center rounded-md px-2.5 text-left text-[14px] text-ink hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25"
             >
               {e.companyName}
             </button>
           </li>
         ))}
-        {matches.length === 0 && <li className="px-2.5 text-[12.5px] text-ink-muted">No matching clients.</li>}
+        {matches.length === 0 && (
+          <li className="rounded-md border-1.5 border-dashed border-line-strong px-3 py-4 text-center text-[13px] text-ink-muted">
+            No matching clients
+          </li>
+        )}
       </ul>
     </div>
   );

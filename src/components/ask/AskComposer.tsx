@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUp } from 'lucide-react';
+import { SendHorizontal } from 'lucide-react';
 import { ASK_VISIBILITY_NOTICE } from '@/lib/ask/question-gaps';
 import { useAskOptional } from './ask-context';
 
-/** Input + Send — Send is the only solid primary element in the panel (D1). */
+/** Input + Send — Send is the only solid main button in the panel (D1, R-12). */
 export function AskComposer() {
   const ask = useAskOptional();
   const [text, setText] = useState('');
@@ -20,7 +20,7 @@ export function AskComposer() {
   return (
     <div className="space-y-1.5">
       <form
-        className="flex items-end gap-2 rounded-[var(--radius)] border border-input bg-surface-raised p-1.5 focus-within:ring-2 focus-within:ring-focus-ring/40"
+        className="flex items-end gap-2 rounded-md border-1.5 border-line-strong bg-surface-raised p-1 focus-within:border-brand focus-within:ring-4 focus-within:ring-focus-ring/25"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -42,23 +42,25 @@ export function AskComposer() {
             }
           }}
           placeholder={client ? 'Ask about your company setup…' : 'Ask about projects, deadlines or rules…'}
-          className="max-h-32 min-h-[36px] flex-1 resize-none bg-transparent px-2 py-2 text-[13.5px] text-ink placeholder:text-ink-muted focus:outline-none"
+          className="max-h-32 min-h-[32px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[14px] text-ink placeholder:text-ink-faint focus:outline-none"
         />
         <button
           type="submit"
           aria-label="Send"
           disabled={!text.trim() || ask.busy}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-brand text-on-brand hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/60 disabled:opacity-40"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand text-on-brand shadow-shine hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25 disabled:opacity-50"
         >
-          <ArrowUp className="h-4 w-4" strokeWidth={2.25} />
+          <SendHorizontal className="h-4 w-4" strokeWidth={1.6} />
         </button>
       </form>
-      {client && ask.features.A1 && <p className="px-1 text-[11px] text-ink-muted">{ASK_VISIBILITY_NOTICE}</p>}
-      <p className="px-1 text-[11px] text-ink-muted">
-        {client
-          ? "Ask VCFO explains; it doesn't give legal advice. Your project lead confirms decisions."
-          : 'Ask VCFO reads data only. It never sends email or changes a project.'}
-      </p>
+      {/* The client lines are disclosures (who can see the chat, no legal advice), so they stay;
+          the staff helper line went with R-06. Staff Ask VCFO still only reads data. */}
+      {client && ask.features.A1 && <p className="px-1 text-[12px] text-ink-muted">{ASK_VISIBILITY_NOTICE}</p>}
+      {client ? (
+        <p className="px-1 text-[12px] text-ink-muted">
+          Ask VCFO explains; it doesn&apos;t give legal advice. Your project lead confirms decisions.
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, GitPullRequestArrow, Loader2 } from 'lucide-react';
-import { Surface, Eyebrow } from '@/components/noir';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import { DashSection } from '@/components/dash/DashSection';
 import { Button } from '@/components/ui/button';
+import { Tag, type ChipTone } from '@/components/ui/spectrum-chip';
 import { Textarea } from '@/components/ui/textarea';
 import {
   decideChangeRequestInDb,
@@ -16,12 +17,11 @@ import {
   type ChangeRequestKind,
 } from '@/lib/projects/project-change-request-types';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
-import { cn } from '@/lib/utils';
 
-const KIND_TONE: Record<ChangeRequestKind, string> = {
-  delete_project: 'bg-danger-soft text-danger',
-  change_client: 'bg-surface-sunken text-ink-muted',
-  change_manager: 'bg-surface-sunken text-ink-muted',
+const KIND_TONE: Record<ChangeRequestKind, ChipTone> = {
+  delete_project: 'bad',
+  change_client: 'idle',
+  change_manager: 'idle',
 };
 
 function RequestDiff({ request }: { request: ChangeRequestDto }) {
@@ -30,12 +30,12 @@ function RequestDiff({ request }: { request: ChangeRequestDto }) {
   return (
     <dl className="mt-2 space-y-1">
       {fields.map((f) => (
-        <div key={f.label} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12px]">
-          <dt className="text-ink-faint">{f.label}</dt>
+        <div key={f.label} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12.5px]">
+          <dt className="text-ink-muted">{f.label}</dt>
           <dd className="flex min-w-0 flex-wrap items-baseline gap-1.5">
             <span className="text-ink-muted line-through">{f.from}</span>
             <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" aria-hidden />
-            <span className="font-semibold text-ink">{f.to}</span>
+            <span className="font-medium text-ink">{f.to}</span>
           </dd>
         </div>
       ))}
@@ -94,42 +94,32 @@ export function ProjectChangeRequestsPanel({ scope }: { scope: 'firm' | 'manager
   if (requestsQuery.isLoading || requests.length === 0) return null;
 
   return (
-    <Surface className="mb-4 divide-y divide-line">
-      <div className="flex items-center gap-2.5 px-4 py-3">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-ink-faint text-white">
-          <GitPullRequestArrow className="h-3.5 w-3.5" aria-hidden />
-        </span>
-        <Eyebrow>
-          {isAdminView ? 'Project change requests' : 'Your pending requests'} · {requests.length}
-        </Eyebrow>
-      </div>
+    <DashSection
+      title={isAdminView ? 'Project change requests' : 'Your pending requests'}
+      meta={String(requests.length)}
+      className="mb-5"
+      bodyClassName="p-0"
+    >
 
       {requests.map((request) => {
         const kind = request.kind as ChangeRequestKind;
         const busy = decide.isPending && decide.variables?.id === request.id;
         return (
-          <div key={request.id} className="p-4">
+          <div key={request.id} className="border-b border-line-soft p-4 last:border-b-0">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={cn(
-                      'inline-flex rounded-sm px-2 py-0.5 text-[10.5px] font-semibold',
-                      KIND_TONE[kind] ?? 'bg-surface-sunken text-ink-muted',
-                    )}
-                  >
-                    {CHANGE_REQUEST_KIND_LABEL[kind] ?? request.kind}
-                  </span>
-                  <span className="truncate text-[13px] font-semibold text-ink">
+                  <Tag tone={KIND_TONE[kind] ?? 'idle'}>{CHANGE_REQUEST_KIND_LABEL[kind] ?? request.kind}</Tag>
+                  <span className="truncate text-[14px] font-medium text-ink">
                     {request.companyName ?? request.preview?.companyName ?? 'Project'}
                   </span>
                 </div>
-                <p className="mt-1 text-[11.5px] text-ink-muted">
+                <p className="mt-1 text-[12.5px] text-ink-muted">
                   Asked by {request.requestedByName ?? 'a manager'}
                 </p>
                 <RequestDiff request={request} />
                 {request.reason ? (
-                  <p className="mt-2 max-w-prose text-[12px] text-ink-soft">“{request.reason}”</p>
+                  <p className="mt-2 max-w-prose text-[13px] text-ink-2">“{request.reason}”</p>
                 ) : null}
               </div>
 
@@ -201,6 +191,6 @@ export function ProjectChangeRequestsPanel({ scope }: { scope: 'firm' | 'manager
           </div>
         );
       })}
-    </Surface>
+    </DashSection>
   );
 }
