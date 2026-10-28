@@ -183,6 +183,12 @@ const ROUTES: Record<DemoRole, Route[]> = {
   super: [
     '/app/super/dashboard',
     '/app/super/projects',
+    '/app/super/risks',
+    '/app/super/practice/incorporation',
+    '/app/super/practice/registrations',
+    '/app/super/team',
+    '/app/super/growth',
+    '/app/super/reports',
     '/app/super/announcements',
     '/app/super/notifications',
     ['/app/super/settings', accountSettings],

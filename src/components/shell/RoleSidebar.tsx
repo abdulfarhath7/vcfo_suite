@@ -31,6 +31,11 @@ import {
   Megaphone,
   Archive,
   Bell,
+  TriangleAlert,
+  Layers,
+  TrendingUp,
+  FileBarChart,
+  Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_UI_LABEL } from '@/lib/auth';
@@ -159,18 +164,36 @@ const clientItems: NavEntry[] = [
   { to: '/app/client/team', label: 'Team', icon: Users, iconTone: TONE.people },
 ];
 
+/* Super admin, in the prototype's order (K-45): Overview, Risks, Clients, Practice areas, Team,
+   Growth, Reports, then the firm-scope entries the super admin already had, then Firm settings. */
 const superAdminItems: NavEntry[] = [
   { to: '/app/super/dashboard', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
+  { to: '/app/super/risks', label: 'Risks', icon: TriangleAlert, iconTone: TONE.queue },
   { to: '/app/super/projects', label: 'Clients', icon: Briefcase, iconTone: TONE.work },
+  {
+    id: 'practice:super',
+    label: 'Practice areas',
+    icon: Layers,
+    iconTone: TONE.work,
+    items: [
+      { to: '/app/super/practice/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
+      { to: '/app/super/practice/registrations', label: 'Registrations', icon: ClipboardCheck, iconTone: TONE.work },
+      // Firm scope, like Firm / People / Email: super has no compliance routes of its own.
+      ...complianceLeaves('/app/admin'),
+    ],
+  },
+  { to: '/app/super/team', label: 'Team', icon: Users, iconTone: TONE.people },
+  { to: '/app/super/growth', label: 'Growth', icon: TrendingUp, iconTone: TONE.analytics },
+  { to: '/app/super/reports', label: 'Reports', icon: FileBarChart, iconTone: TONE.analytics },
+  updatesGroup('/app/super'),
+  NAV_TOOLS_BREAK,
   { to: '/app/admin/dashboard', label: 'Firm', icon: Building2, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
-  // Firm scope, like Firm / People / Email: super has no compliance routes of its own.
-  compliancesGroup('/app/admin'),
-  updatesGroup('/app/super'),
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   { to: '/app/admin/audit-log', label: 'Firm log', icon: HistoryIcon, iconTone: TONE.audit },
   { to: '/app/client/overview', label: 'Portal', icon: Inbox, iconTone: TONE.home },
   { to: '/app/client/audit', label: 'Client log', icon: ScrollText, iconTone: TONE.audit },
+  { to: '/app/super/settings', label: 'Firm settings', icon: Settings, iconTone: TONE.audit },
 ];
 
 const InternMyWorkBadge = memo(function InternMyWorkBadge() {
