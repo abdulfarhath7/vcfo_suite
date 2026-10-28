@@ -160,7 +160,7 @@ const clientItems: NavEntry[] = [
 
 const superAdminItems: NavEntry[] = [
   { to: '/app/super/dashboard', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/super/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
+  { to: '/app/super/projects', label: 'Clients', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/dashboard', label: 'Firm', icon: Building2, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   // Firm scope, like Firm / People / Email: super has no compliance routes of its own.

@@ -6,16 +6,14 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackCluster } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { AccentButton } from '@/components/noir/AccentButton';
-import { DashDataTable, type DashColumn } from '@/components/dash/DashDataTable';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { DashFilterChip } from '@/components/dash/DashFilterChip';
-import { TONE_BADGE } from '@/components/common/IconChip';
+import { CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_OWNER, TONE_SOLID } from '@/components/common/IconChip';
 import {
   attentionReason,
   HEALTH_LABEL,
-  HEALTH_TONE,
   idleLabel,
   phaseFill,
-  STATE_TONE,
 } from '@/components/super/overview/super-overview-format';
 import { useSuperOverview } from '@/hooks/use-super-overview';
 import {
@@ -40,7 +38,7 @@ import { cn } from '@/lib/utils';
 type Filter = 'all' | 'attention' | 'firm' | 'client';
 
 const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'All projects' },
+  { id: 'all', label: 'All clients' },
   { id: 'attention', label: 'Needs attention' },
   { id: 'firm', label: 'With the firm' },
   { id: 'client', label: 'With the client' },
@@ -125,10 +123,10 @@ function SuperProjectsInner() {
 
       <div className="mb-3 flex min-w-0 flex-wrap items-center gap-3">
         <PageBackCluster>
-          <h1 className="sr-only">Projects</h1>
+          <h1 className="sr-only">Clients</h1>
           <span className="text-xs font-semibold text-ink-faint">
             {rows.length} of {overview.engagements.length}{' '}
-            {overview.engagements.length === 1 ? 'project' : 'projects'}
+            {overview.engagements.length === 1 ? 'client' : 'clients'}
           </span>
         </PageBackCluster>
       </div>
@@ -155,14 +153,28 @@ function SuperProjectsInner() {
         ))}
       </div>
 
-      <DashDataTable
-        columns={COLUMNS}
-        rows={rows}
-        rowKey={(row) => row.id}
-        rowHref={(row) => row.href}
-        mobile={(row) => <ProjectMobileRow summary={row} />}
-        empty="No project matches this filter."
-      />
+      <div className="hidden md:block">
+        <EFilingGrid
+          caption="Clients"
+          columns={COLUMNS}
+          rows={rows}
+          rowKey={(row) => row.id}
+          onRowClick={(row) => router.push(row.href)}
+          empty="No client matches this filter."
+          minWidth={860}
+        />
+      </div>
+      <div className="surface divide-y divide-line-soft md:hidden">
+        {rows.length === 0 ? (
+          <p className="px-4 py-6 text-center text-[13px] text-ink-muted">No client matches this filter.</p>
+        ) : (
+          rows.map((row) => (
+            <button key={row.id} type="button" className="block w-full px-4 py-3 text-left" onClick={() => router.push(row.href)}>
+              <ProjectMobileRow summary={row} />
+            </button>
+          ))
+        )}
+      </div>
     </PageTransition>
   );
 }
@@ -176,68 +188,42 @@ function countsFor(overview: SuperOverview): Record<Filter, number> {
   };
 }
 
-const COLUMNS: DashColumn<SuperEngagementSummary>[] = [
-  {
-    key: 'company',
-    header: 'Project',
-    width: 'minmax(0,1.5fr)',
-    render: (row) => (
-      <span className="block min-w-0 truncate text-ink">{row.companyName}</span>
-    ),
-  },
-  {
-    key: 'stage',
-    header: 'Stage',
-    width: 'minmax(0,0.8fr)',
-    render: (row) => (
-      <span className={cn('inline-block max-w-full truncate rounded-sm px-2.5 py-0.5 text-[11px] font-semibold', TONE_BADGE.sky)}>
-        {row.stageLabel}
-      </span>
-    ),
-  },
-  {
-    key: 'progress',
-    header: 'Progress',
-    width: 'minmax(6rem,0.9fr)',
-    render: (row) => <ProgressTrack summary={row} />,
-  },
+/* Shared chips (C-0035): a state is a soft dot chip, an owner a soft owner chip. */
+const STATE_CHIP: Record<SuperEngagementSummary['stateKey'], string> = {
+  complete: TONE_SOLID.done,
+  overdue: TONE_SOLID.overdue,
+  review: TONE_SOLID.waiting,
+  'with-client': TONE_OWNER.client,
+  'with-firm': TONE_OWNER.sbc,
+};
+const HEALTH_CHIP: Record<string, string> = {
+  'on-track': TONE_SOLID.done,
+  'at-risk': TONE_SOLID.waiting,
+  overdue: TONE_SOLID.overdue,
+};
+
+/* The clients grid (K-45 style per C-0035 and C-0036): the shared e-Filing grid. */
+const COLUMNS: EFilingColumn<SuperEngagementSummary>[] = [
+  { key: 'company', header: 'Client', width: '24%', render: (row) => <span className="font-semibold">{row.companyName}</span> },
+  { key: 'stage', header: 'Stage', width: '12%', render: (row) => row.stageLabel },
+  { key: 'progress', header: 'Progress', width: '17%', render: (row) => <ProgressTrack summary={row} /> },
   {
     key: 'state',
     header: 'State',
-    width: 'minmax(0,1.1fr)',
+    width: '124px',
     render: (row) => (
-      <span
-        title={attentionReason(row)}
-        className={cn(
-          'inline-block max-w-full truncate rounded-sm px-2.5 py-0.5 text-[11px] font-semibold',
-          TONE_BADGE[STATE_TONE[row.stateKey]],
-        )}
-      >
+      <span title={attentionReason(row)} className={cn(CHIP_CLASS, CHIP_COLUMN_CLASS, STATE_CHIP[row.stateKey])}>
         {row.stateLabel}
       </span>
     ),
   },
-  {
-    key: 'lead',
-    header: 'Lead',
-    width: 'minmax(0,0.9fr)',
-    render: (row) => (
-      <span className="block min-w-0 truncate text-ink-muted">
-        {row.leadName ?? 'Unassigned'}
-      </span>
-    ),
-  },
+  { key: 'lead', header: 'Lead', width: '14%', render: (row) => row.leadName ?? 'Unassigned' },
   {
     key: 'health',
     header: 'Health',
-    width: 'minmax(4.5rem,0.6fr)',
+    width: '124px',
     render: (row) => (
-      <span
-        className={cn(
-          'inline-block whitespace-nowrap rounded-sm px-2.5 py-0.5 text-[11px] font-semibold',
-          TONE_BADGE[HEALTH_TONE[row.health] ?? 'neutral'],
-        )}
-      >
+      <span className={cn(CHIP_CLASS, CHIP_COLUMN_CLASS, HEALTH_CHIP[row.health] ?? TONE_SOLID.upcoming)}>
         {HEALTH_LABEL[row.health] ?? row.health}
       </span>
     ),
@@ -245,11 +231,10 @@ const COLUMNS: DashColumn<SuperEngagementSummary>[] = [
   {
     key: 'idle',
     header: 'Last move',
-    width: 'minmax(4.5rem,0.5fr)',
+    width: '88px',
     align: 'right',
-    mono: true,
     render: (row) => (
-      <span className={cn(row.idleDays !== null && row.idleDays >= 14 && 'text-danger')}>
+      <span className={cn('tabular-nums', row.idleDays !== null && row.idleDays >= 14 && 'text-danger')}>
         {row.idleDays === null ? '—' : row.idleDays === 0 ? 'today' : `${row.idleDays}d`}
       </span>
     ),
@@ -288,12 +273,7 @@ function ProjectMobileRow({ summary }: { summary: SuperEngagementSummary }) {
         <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
           {summary.companyName}
         </span>
-        <span
-          className={cn(
-            'shrink-0 whitespace-nowrap rounded-sm px-2 py-0.5 text-[10.5px] font-semibold',
-            TONE_BADGE[STATE_TONE[summary.stateKey]],
-          )}
-        >
+        <span className={cn('shrink-0', CHIP_CLASS, STATE_CHIP[summary.stateKey])}>
           {summary.stateLabel}
         </span>
       </div>

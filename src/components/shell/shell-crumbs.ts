@@ -401,7 +401,7 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     return trail(path, pageIcon(page, group), rest);
   }
 
-  return trail(path, pageIcon(page, group), [
-    { label: pageLabel(page), href: `${base}/${page}` },
-  ]);
+  // The super admin's project list is called Clients (K-45).
+  const label = parts[1] === 'super' && page === 'projects' ? 'Clients' : pageLabel(page);
+  return trail(path, pageIcon(page, group), [{ label, href: `${base}/${page}` }]);
 }
