@@ -49,7 +49,7 @@ export function MilestoneResponseRowSummary({
       {isComplete && !hideStatus && (
         <span
           className={cn(
-            'inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-0.5 text-[10px] font-semibold',
+            'inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-0.5 text-[11px] font-medium',
             isClient
               ? 'bg-emerald-500/15 text-emerald-700'
               : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80',

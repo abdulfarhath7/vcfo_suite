@@ -59,7 +59,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
           {autoSaveEnabled && (
             <div
               aria-live="polite"
-              className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-ink-muted"
+              className="flex min-h-[20px] items-center gap-1.5 text-[12px] text-ink-muted"
             >
               {(autoSaveStatus === 'pending' || autoSaveStatus === 'saving') && (
                 <>
@@ -95,7 +95,6 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               }
               className={cn(
                 'cursor-pointer',
-                !autoSaveEnabled && isClient && 'bg-blue-600 text-white hover:bg-blue-600/90',
               )}
             >
               {saving || autoSaveStatus === 'saving'
@@ -111,7 +110,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               size="sm"
               onClick={() => void handleSubmit()}
               disabled={submitting || saving || autoSaveStatus === 'saving'}
-              className="cursor-pointer bg-blue-600 text-white hover:bg-blue-600/90"
+              className="cursor-pointer"
             >
               {submitting ? 'Submitting…' : 'Submit for review'}
             </Button>
@@ -146,7 +145,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                   {internAutoSave ? (
                     <div
                       aria-live="polite"
-                      className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-ink-muted"
+                      className="flex min-h-[20px] items-center gap-1.5 text-[12px] text-ink-muted"
                     >
                       {(autoSaveStatus === 'pending' || autoSaveStatus === 'saving') && (
                         <>
@@ -176,7 +175,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                   ) : showStaffSaveFooter && staffSaveStatusText ? (
                     <span
                       aria-live="polite"
-                      className="flex items-center gap-1.5 text-[11px] text-ink-muted"
+                      className="flex items-center gap-1.5 text-[12px] text-ink-muted"
                     >
                       {saving && <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden />}
                       {!saving && staffSaveStatus === 'saved' && (
@@ -224,7 +223,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                         ? submitting || saving || autoSaveStatus === 'saving'
                         : submitting
                     }
-                    className="cursor-pointer bg-blue-600 text-white hover:bg-blue-600/90"
+                    className="cursor-pointer"
                   >
                     {internFooterAction === 'submit' && submitting
                       ? 'Submitting…'
@@ -236,7 +235,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               <>
             <div
               aria-live="polite"
-              className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-ink-muted"
+              className="flex min-h-[20px] items-center gap-1.5 text-[12px] text-ink-muted"
             >
               {showStaffSaveFooter && staffSaveStatusText && (
                 <>
@@ -260,7 +259,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                     size="sm"
                     onClick={() => void handleSaveNow()}
                     disabled={saving || (!hasChanges && staffSaveStatus !== 'error')}
-                    className="cursor-pointer bg-blue-600 text-white hover:bg-blue-600/90"
+                    className="cursor-pointer"
                   >
                     {saving ? 'Saving…' : 'Save changes'}
                   </Button>
@@ -283,7 +282,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
           {autoSaveEnabled && unlockedFields.length > 0 && (
             <div
               aria-live="polite"
-              className="flex min-h-[20px] items-center gap-1.5 text-[11px] text-ink-muted"
+              className="flex min-h-[20px] items-center gap-1.5 text-[12px] text-ink-muted"
             >
               {(autoSaveStatus === 'pending' || autoSaveStatus === 'saving') && (
                 <>
@@ -326,7 +325,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               size="sm"
               onClick={() => void handleSubmit()}
               disabled={submitting || saving || autoSaveStatus === 'saving'}
-              className="cursor-pointer bg-blue-600 text-white hover:bg-blue-600/90"
+              className="cursor-pointer"
             >
               {submitting ? 'Submitting…' : 'Submit again for review'}
             </Button>

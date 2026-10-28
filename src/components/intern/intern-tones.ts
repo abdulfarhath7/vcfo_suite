@@ -1,4 +1,5 @@
 import { TONE_BADGE, TONE_BG, TONE_SOLID_BY_TONE, TONE_TEXT, type IconChipTone } from '@/components/common/IconChip';
+import type { ChipTone, Owner } from '@/components/ui/spectrum-chip';
 import type { InternChipTone } from '@/lib/intern/intern-work';
 
 function internIconTone(tone: InternChipTone): IconChipTone {
@@ -42,4 +43,37 @@ export function internKindChipLabel(kind: string): string {
   if (kind === 'in-progress') return 'In progress';
   const raw = kind.replaceAll('-', ' ');
   return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+/* VCFO Spectrum status chip (R-13) for a work item. The chip keeps to the six status words
+   where a kind has one; "Sent back" stays because it names a different state. The full reason
+   (`item.why`) goes in the chip title and in the task drawer. */
+export function internKindStatus(item: { kind: string; isOverdue?: boolean }): { word: string; tone: ChipTone } {
+  switch (item.kind) {
+    case 'rejected':
+      return { word: 'Sent back', tone: 'bad' };
+    case 'overdue':
+      return { word: 'Overdue', tone: 'bad' };
+    case 'review':
+    case 'deliver':
+    case 'in-progress':
+      return { word: 'In progress', tone: 'prog' };
+    case 'waiting-client':
+    case 'waiting-manager':
+    case 'waiting-request':
+      return { word: 'Waiting', tone: 'teal' };
+    case 'filing':
+      return item.isOverdue ? { word: 'Overdue', tone: 'bad' } : { word: 'Due soon', tone: 'warn' };
+    case 'done':
+      return { word: 'Done', tone: 'ok' };
+    default:
+      return { word: internKindChipLabel(item.kind), tone: 'idle' };
+  }
+}
+
+/** Who holds a waiting item, for the owner chip (R-14). Undefined when the lead holds it. */
+export function internKindOwner(kind: string): Owner | undefined {
+  if (kind === 'waiting-client' || kind === 'waiting-request') return 'client';
+  if (kind === 'waiting-manager') return 'manager';
+  return undefined;
 }

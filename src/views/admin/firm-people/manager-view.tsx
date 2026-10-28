@@ -1,10 +1,11 @@
-import Link from 'next/link';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
-import { Surface, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
+import { EmptyState } from '@/components/ui/empty-state';
+import { RecordStat, RecordStats } from '@/components/incorporation/RecordHead';
+import { PeopleCard, PeopleProjectsGrid } from './parts';
 import { Button } from '@/components/ui/button';
-import { Briefcase, FolderPlus, Loader2, Mail, MoreHorizontal, Trash2, Users } from 'lucide-react';
+import { FolderPlus, Loader2, Mail, MoreHorizontal, Trash2, Users } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { adminProjectPath } from '@/lib/projects/project-step-path';
 import type { ReactNode } from 'react';
 import type { FirmPeopleState } from './use-firm-people';
 import type { FirmPeopleDialogs } from './dialogs';
@@ -62,8 +62,7 @@ export function renderManagerView(
               <DropdownMenuTrigger asChild>
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="gap-1.5"
+                  variant="secondary"
                   disabled={deletingId === selectedManager.id}
                   aria-label="Manager actions"
                 >
@@ -111,33 +110,18 @@ export function renderManagerView(
         }
       />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        {[
-          { label: 'Projects', value: managerProjects.length },
-          { label: 'Leads', value: managerLeads.length },
-          {
-            label: 'Need attention',
-            value: managerProjects.filter((p) => p.stuck).length,
-          },
-        ].map((c) => (
-          <Surface key={c.label} className="p-4">
-            <Eyebrow>{c.label}</Eyebrow>
-            <div className="mt-2 text-2xl font-serif tabular-nums">{c.value}</div>
-          </Surface>
-        ))}
+      <div className="mb-5">
+        <RecordStats>
+          <RecordStat value={managerProjects.length} label="projects" />
+          <RecordStat value={managerLeads.length} label="leads" />
+          <RecordStat value={managerProjects.filter((p) => p.stuck).length} label="need attention" />
+        </RecordStats>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Surface className="divide-y divide-line">
-          <div className="px-4 py-3">
-            <Eyebrow>Project leads</Eyebrow>
-          </div>
+      <div className="grid gap-4">
+        <PeopleCard title="Project leads" count={managerLeads.length}>
           {managerLeads.length === 0 ? (
-            <EmptyStateIllustrated
-              icon={Users}
-              title="No leads yet"
-              className="m-4 py-8"
-            />
+            <EmptyState title="No leads yet" className="m-4" />
           ) : (
             managerLeads.map((l) => (
               <PersonRow
@@ -147,46 +131,26 @@ export function renderManagerView(
               />
             ))
           )}
-        </Surface>
+        </PeopleCard>
 
-        <Surface className="divide-y divide-line">
-          <div className="flex items-center justify-between gap-2 px-4 py-3">
-            <Eyebrow>Clients & projects</Eyebrow>
-            {selectedManager ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1 text-[11px]"
-                onClick={() => openAssign(selectedManager)}
-              >
-                <FolderPlus className="h-3 w-3" />
+        <PeopleCard
+          title="Clients & projects"
+          count={managerProjects.length}
+          action={
+            selectedManager ? (
+              <Button type="button" variant="secondary" size="sm" onClick={() => openAssign(selectedManager)}>
+                <FolderPlus className="h-4 w-4" strokeWidth={1.6} />
                 Assign project
               </Button>
-            ) : null}
-          </div>
+            ) : null
+          }
+        >
           {managerProjects.length === 0 ? (
-            <EmptyStateIllustrated
-              icon={Briefcase}
-              title="No projects assigned"
-              className="m-4 py-8"
-            />
+            <EmptyState title="No projects assigned" className="m-4" />
           ) : (
-            managerProjects.map((c) => (
-              <Link
-                key={c.id}
-                href={adminProjectPath({ id: c.id, slug: c.slug }, staffBase)}
-                className="block px-4 py-3 hover:bg-surface-sunken/40"
-              >
-                <div className="truncate text-[13px] font-medium">{c.company}</div>
-                <div className="text-[11px] text-ink-muted">
-                  Client {c.client} · Lead {leadName(c.leadId)} · {c.stage}
-                  {c.stuck ? ' · needs attention' : ''}
-                </div>
-              </Link>
-            ))
+            <PeopleProjectsGrid rows={managerProjects} staffBase={staffBase} leadName={leadName} showManager={false} />
           )}
-        </Surface>
+        </PeopleCard>
       </div>
       {assignDialog}
       {emailDialog}

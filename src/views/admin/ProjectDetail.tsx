@@ -5,12 +5,14 @@ import { useParams, redirect } from 'next/navigation';
 import { RedirectTo } from '@/components/routing/RedirectTo';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { InternPhaseEntryCards } from '@/components/incorporation/InternOverviewProgress';
 import { TimelineRequestsPanel } from '@/components/incorporation/TimelineRequestsPanel';
 import { WorkItemsPanel } from '@/components/incorporation/WorkItemsPanel';
-import { ProgressRing } from '@/components/noir';
+import { PhaseBar } from '@/components/ui/step-track';
+import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
+import { RecordStat, RecordStats, RecordTile } from '@/components/incorporation/RecordHead';
+import { STAGE_LABEL, type Stage } from '@/components/admin/create-project-form-utils';
 import { DocPackPhasePill } from '@/components/doc-pack/DocPackPhasePill';
 import { useDocPack } from '@/hooks/use-doc-pack';
 import { docPackPagePath } from '@/lib/doc-pack/paths';
@@ -24,6 +26,7 @@ import {
 import {
   internOverviewCurrentItemInPhase,
   internOverviewPhases,
+  internPhaseStepCounts,
 } from '@/lib/intern/intern-overview-progress';
 import { formatDate } from '@/lib/projects/deadlines';
 import { resolveEngagementFromRouteParam } from '@/lib/slug';
@@ -46,6 +49,12 @@ import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
  * the project exactly as the client does. Firm-side actions live elsewhere
  * (Approvals, Email, People).
  */
+const STAGE_TONE: Record<string, ChipTone> = {
+  'Pre-Incorporation': 'violet',
+  'Post-Incorporation': 'prog',
+  'Operational Readiness': 'teal',
+};
+
 export default function ProjectDetail() {
   const params = useParams();
   const slugParam = params.slug as string;
@@ -118,6 +127,7 @@ export default function ProjectDetail() {
     isChecklistStepSequentiallyComplete(state[item.id]?.status ?? 'not-started', state[item.id], item.id),
   ).length;
   const incorporationDate = eng.incorporationDate;
+  const phaseCounts = phases.map((phase) => internPhaseStepCounts(phase.items, gates));
 
   return (
     <PageTransition>
@@ -127,35 +137,51 @@ export default function ProjectDetail() {
         path={adminProjectPath(eng, staffBase)}
       />
 
-      <header className="mb-4 sm:mb-6">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      {/* Plain record head (VCFO Spectrum C-0108): no band, no back link (R-09), the ST5 bars. */}
+      <header className="mb-5 grid gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <RecordTile name={eng.companyName} />
           <div className="min-w-0">
-            <div className="mb-1 flex min-w-0 items-center gap-1.5">
-              <PageBackButton className="-ml-1.5" />
-              <h1 className="serif min-w-0 text-2xl tracking-tight text-ink sm:text-3xl">
-                {eng.companyName}
-              </h1>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">{eng.companyName}</h1>
+              {eng.stage ? (
+                <Chip tone={STAGE_TONE[eng.stage] ?? 'idle'} dot={false} fixed>
+                  {STAGE_LABEL[eng.stage as Stage] ?? eng.stage}
+                </Chip>
+              ) : null}
             </div>
-            <p className="text-[11px] tabular-nums text-ink-faint">
-              {totalDone}/{totalSteps}
-              {incorporationDate ? ` · ${formatDate(new Date(incorporationDate))}` : ''}
-            </p>
-            {/* One window for SPICe+ Part A + Part B together. Managers and
-                admins set it here; leads and clients read it on the phase rows. */}
-            {canSetScheduleWindows(user?.role) ? (
-              <ScheduleWindowControl
-                value={eng.schedule?.incorporation}
-                label="Incorporation"
-                className="mt-2"
-                onSave={async (window) => {
-                  await setEngagementWindowInDb(eng.id, { kind: 'incorporation' }, window);
-                  await queryClient.invalidateQueries({ queryKey: ['engagements'] });
-                }}
-              />
+            {eng.clientEmail?.trim() ? (
+              <p className="text-[13.5px] text-ink-muted">
+                <a href={`mailto:${eng.clientEmail.trim()}`} className="hover:text-ink hover:underline">
+                  {eng.clientEmail.trim()}
+                </a>
+              </p>
             ) : null}
           </div>
-          <ProgressRing value={Math.round((totalDone / totalSteps) * 100) || 0} size={52} />
         </div>
+        <RecordStats>
+          <RecordStat value={`${totalDone}/${totalSteps}`} label="steps done" />
+          {incorporationDate ? <RecordStat value={formatDate(new Date(incorporationDate))} label="incorporated" /> : null}
+          <PhaseBar
+            tall
+            className="w-[min(320px,100%)]"
+            done={phaseCounts.map((p) => p.done)}
+            totals={phaseCounts.map((p) => p.total)}
+            names={phases.map((p) => p.title)}
+          />
+        </RecordStats>
+        {/* One window for SPICe+ Part A + Part B together. Managers and
+            admins set it here; leads and clients read it on the phase rows. */}
+        {canSetScheduleWindows(user?.role) ? (
+          <ScheduleWindowControl
+            value={eng.schedule?.incorporation}
+            label="Incorporation"
+            onSave={async (window) => {
+              await setEngagementWindowInDb(eng.id, { kind: 'incorporation' }, window);
+              await queryClient.invalidateQueries({ queryKey: ['engagements'] });
+            }}
+          />
+        ) : null}
       </header>
 
       <TimelineRequestsPanel engagementId={eng.id} canDecide={canSetScheduleWindows(user?.role)} />

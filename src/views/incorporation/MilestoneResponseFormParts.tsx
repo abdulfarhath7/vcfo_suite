@@ -48,7 +48,7 @@ export function Pre1SectionCard({
           >
             <span
               className={cn(
-                'mono shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums',
+                'mono shrink-0 rounded-md px-2 py-0.5 text-[12px] font-semibold tabular-nums',
                 complete ? 'bg-positive-soft text-positive' : 'role-accent-bg text-brand',
               )}
               aria-hidden
@@ -254,7 +254,7 @@ export function FormErrorSummary({
   return (
     <div
       role="alert"
-      className="rounded-lg border border-danger/30 bg-danger-soft/90 px-4 py-3"
+      className="rounded-md border border-danger/30 bg-danger-soft/90 px-4 py-3"
     >
       <div className="flex gap-2 items-start">
         <AlertCircle className="h-4 w-4 text-danger shrink-0 mt-0.5" aria-hidden />
@@ -364,7 +364,7 @@ export function InternSectionHeadingNav({
     'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink disabled:pointer-events-none disabled:opacity-30';
 
   return (
-    <nav aria-label="Step sections" className="border-b border-line">
+    <nav aria-label="Step sections" className="border-b-1.5 border-line">
       <div className="flex h-11 min-w-0 items-stretch">
         {overflow.overflowing ? (
           <div className="flex w-9 shrink-0 items-center justify-center border-r border-line/60">
@@ -395,20 +395,20 @@ export function InternSectionHeadingNav({
                 aria-selected={selected}
                 onClick={() => onSelect(index)}
                 className={cn(
-                  'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-4 text-[13.5px] font-medium transition-colors',
-                  selected ? 'text-brand' : 'text-ink-muted hover:text-ink',
+                  'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-3 text-[14px] font-medium transition-colors',
+                  selected ? 'text-ink' : 'text-ink-muted hover:text-ink',
                 )}
               >
                 <span className="inline-flex items-center gap-1.5">
                   {section.complete && !section.hasErrors ? (
-                    <Check className="h-3 w-3 shrink-0 text-positive" aria-hidden />
+                    <Check className="h-3.5 w-3.5 shrink-0 text-positive" strokeWidth={2.2} aria-hidden />
                   ) : null}
                   {section.title}
                   {section.hasErrors ? (
                     <>
                       <span
                         data-testid="section-error-dot"
-                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger"
+                        className="h-[7px] w-[7px] shrink-0 rounded-[2px] bg-danger-mid"
                         aria-hidden
                       />
                       <span className="sr-only">Needs attention</span>
@@ -416,7 +416,7 @@ export function InternSectionHeadingNav({
                   ) : null}
                 </span>
                 {selected ? (
-                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-brand" aria-hidden />
+                  <span className="absolute inset-x-3 -bottom-[1.5px] h-0.5 bg-brand" aria-hidden />
                 ) : null}
               </button>
             );

@@ -24,7 +24,7 @@ export function DocPackHeaderButton({
     <Link
       href={packHref}
       className={cn(
-        'inline-flex h-9 items-center gap-2 rounded-md border border-line bg-surface-raised px-3 text-[13px] font-medium text-brand hover:border-brand/35 hover:bg-brand-soft',
+        'inline-flex h-control-md items-center gap-2 rounded-md border-1.5 border-line-strong bg-surface-raised px-3 text-[14px] font-medium text-ink hover:bg-surface-sunken',
         className,
       )}
     >

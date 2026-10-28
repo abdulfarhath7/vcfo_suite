@@ -22,7 +22,7 @@ export function DocPackPhasePill({
     <Link
       href={href}
       className={cn(
-        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm border border-line bg-surface-raised px-3 py-1 text-[12.5px] font-medium text-brand hover:bg-brand-soft',
+        'inline-flex items-center gap-1.5 whitespace-nowrap h-7 rounded-md border-1.5 border-line bg-surface-raised px-2.5 text-[12.5px] font-medium text-ink-2 hover:bg-surface-sunken',
         className,
       )}
       aria-label={`Documents, ${summary.counts.ready} of ${summary.total} ready`}

@@ -1,11 +1,11 @@
 'use client';
 
 import { sep } from '@/lib/date-format';
-import Link from 'next/link';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
-import { Surface, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -23,13 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Briefcase, Eye, EyeOff, Loader2, Plus, UserMinus, Users, UserSquare2 } from 'lucide-react';
-import { adminProjectPath } from '@/lib/projects/project-step-path';
+import { Eye, EyeOff, Loader2, Plus, Users } from 'lucide-react';
 import { TEMP_PASSWORD, ROLE_LABEL } from './firm-people/types';
 import { useFirmPeople } from './firm-people/use-firm-people';
 import { createPersonRow } from './firm-people/person-row';
 import { createFirmPeopleDialogs } from './firm-people/dialogs';
 import { renderManagerView } from './firm-people/manager-view';
+import { PeopleCard, PeopleProjectsGrid } from './firm-people/parts';
 
 /** Birds-eye people + portfolio for Admin and Project Manager. */
 export default function FirmPeople() {
@@ -100,16 +100,9 @@ export default function FirmPeople() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {isAdmin && (
-          <Surface className="divide-y divide-line">
-            <div className="px-4 py-3">
-              <Eyebrow>Admins</Eyebrow>
-            </div>
+          <PeopleCard title="Admins" count={admins.length}>
             {admins.length === 0 ? (
-              <EmptyStateIllustrated
-                icon={Users}
-                title="No admins"
-                className="m-4 py-8"
-              />
+              <EmptyState title="No admins" className="m-4" />
             ) : (
               admins.map((m) => (
                 <PersonRow
@@ -119,21 +112,20 @@ export default function FirmPeople() {
                 />
               ))
             )}
-          </Surface>
+          </PeopleCard>
         )}
 
         {isAdmin && (
-          <Surface className="divide-y divide-line">
-            <div className="px-4 py-3">
-              <Eyebrow>Managers</Eyebrow>
-            </div>
+          <PeopleCard title="Managers" count={managers.length}>
             {managers.length === 0 ? (
-              <EmptyStateIllustrated
-                icon={Users}
+              <EmptyState
                 title="No managers yet"
-                actionLabel="Create manager"
-                onAction={() => openCreate('manager')}
-                className="m-4 py-8"
+                className="m-4"
+                action={
+                  <Button size="sm" onClick={() => openCreate('manager')}>
+                    Create manager
+                  </Button>
+                }
               />
             ) : (
               managers.map((m) => {
@@ -150,20 +142,21 @@ export default function FirmPeople() {
                 );
               })
             )}
-          </Surface>
+          </PeopleCard>
         )}
 
-        <Surface className="divide-y divide-line">
-          <div className="px-4 py-3">
-            <Eyebrow>Project leads</Eyebrow>
-          </div>
+        <PeopleCard title="Project leads" count={leads.length}>
           {leads.length === 0 ? (
-            <EmptyStateIllustrated
-              icon={Users}
+            <EmptyState
               title="No project leads yet"
-              actionLabel={canCreate ? 'Create lead' : undefined}
-              onAction={canCreate ? () => openCreate('intern') : undefined}
-              className="m-4 py-8"
+              className="m-4"
+              action={
+                canCreate ? (
+                  <Button size="sm" onClick={() => openCreate('intern')}>
+                    Create lead
+                  </Button>
+                ) : undefined
+              }
             />
           ) : (
             leads.map((m) => (
@@ -180,18 +173,11 @@ export default function FirmPeople() {
               />
             ))
           )}
-        </Surface>
+        </PeopleCard>
 
-        <Surface className="divide-y divide-line">
-          <div className="px-4 py-3">
-            <Eyebrow>Client accounts</Eyebrow>
-          </div>
+        <PeopleCard title="Client accounts" count={clients.length}>
           {clients.length === 0 ? (
-            <EmptyStateIllustrated
-              icon={UserSquare2}
-              title="No client logins yet"
-              className="m-4 py-8"
-            />
+            <EmptyState title="No client logins yet" className="m-4" />
           ) : (
             clients.map((m) => (
               <PersonRow
@@ -201,66 +187,41 @@ export default function FirmPeople() {
               />
             ))
           )}
-        </Surface>
+        </PeopleCard>
 
-        <Surface className="divide-y divide-line lg:col-span-2">
-          <div className="px-4 py-3">
-            <Eyebrow>Removed clients</Eyebrow>
-          </div>
+        <PeopleCard title="Removed clients" count={removedClients.length} className="lg:col-span-2">
           {removedClients.length === 0 ? (
-            <EmptyStateIllustrated
-              icon={UserMinus}
-              title="No removed clients"
-              className="m-4 py-8"
-            />
+            <EmptyState title="No removed clients" className="m-4" />
           ) : (
             removedClients.map((c) => (
-              <div key={c.id} className="px-4 py-3">
-                <div className="text-[13px] font-medium">{c.name}</div>
-                <div className="font-mono text-[11px] text-ink-muted">{c.email}</div>
-                {c.phone ? (
-                  <div className="font-mono text-[11px] text-ink-muted">{c.phone}</div>
-                ) : null}
-                <div className="mt-1 text-[11px] text-ink-muted">
+              <div key={c.id} className="border-b border-line-soft px-4 py-2.5 last:border-b-0">
+                <div className="text-[14px] font-medium text-ink">{c.name}</div>
+                <div className="text-[12.5px] text-ink-muted">
+                  {c.email}
+                  {c.phone ? ` · ${c.phone}` : ''}
+                </div>
+                <div className="mt-0.5 text-[12.5px] text-ink-muted">
                   {c.removedReason ?? 'Removed from their last project'}
                   {c.removedAt ? ` · ${sep(new Date(c.removedAt).toLocaleDateString())}` : ''}
                 </div>
               </div>
             ))
           )}
-        </Surface>
+        </PeopleCard>
       </div>
 
-      <Surface className="mt-4 divide-y divide-line">
-        <div className="px-4 py-3">
-          <Eyebrow>Clients & projects</Eyebrow>
-        </div>
+      <PeopleCard title="Clients & projects" count={portfolio.rows.length} className="mt-4">
         {portfolio.rows.length === 0 ? (
-          <EmptyStateIllustrated
-            icon={Briefcase}
-            title="No active projects"
-            className="m-4 py-8"
-          />
+          <EmptyState title="No active projects" className="m-4" />
         ) : (
-          portfolio.rows.map((c) => (
-            <Link
-              key={c.id}
-              href={adminProjectPath({ id: c.id, slug: c.slug }, staffBase)}
-              className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-surface-sunken/40"
-            >
-              <div className="min-w-0">
-                <div className="truncate text-[13px] font-medium">{c.company}</div>
-                <div className="text-[11px] text-ink-muted">
-                  Client {c.client} · PM {managerName(c.managerId)} · Lead {leadName(c.leadId)}
-                </div>
-              </div>
-              <div className="text-[11px] mono text-ink-muted">
-                {c.stage} · {c.health}
-              </div>
-            </Link>
-          ))
+          <PeopleProjectsGrid
+            rows={portfolio.rows}
+            staffBase={staffBase}
+            managerName={managerName}
+            leadName={leadName}
+          />
         )}
-      </Surface>
+      </PeopleCard>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
@@ -268,22 +229,13 @@ export default function FirmPeople() {
             <DialogTitle>Create person</DialogTitle>
           </DialogHeader>
           <form onSubmit={onCreate} className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              {createRoles.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => dispatch({ type: 'patch', patch: { role: r } })}
-                  className={`rounded-lg border px-2 py-1.5 text-[11px] ${
-                    form.role === r
-                      ? 'border-brand bg-brand-soft text-brand-strong'
-                      : 'border-line'
-                  }`}
-                >
-                  {ROLE_LABEL[r]}
-                </button>
-              ))}
-            </div>
+            <SpectrumTabs
+              size="md"
+              label="Role"
+              items={createRoles.map((r) => ({ key: r, label: ROLE_LABEL[r] }))}
+              value={form.role}
+              onChange={(r) => dispatch({ type: 'patch', patch: { role: r as typeof form.role } })}
+            />
             <div>
               <Label className="text-[12px]">Full name</Label>
               <Input

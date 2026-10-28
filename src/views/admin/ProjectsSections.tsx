@@ -4,16 +4,19 @@ import type { Dispatch, SetStateAction } from 'react';
 import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import { usePathname, type useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { m as motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
-import { ArrowRight, Plus, Table as TableIcon, LayoutGrid, MapPin, Briefcase, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, MapPin, Briefcase, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Surface, StatusDot, Mono, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
-import { staggerKids, fadeUp } from '@/lib/shell/motion';
+import { Button } from '@/components/ui/button';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { Tag } from '@/components/ui/spectrum-chip';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { RecordTile } from '@/components/incorporation/RecordHead';
+import { HealthChip, PeopleCard, PersonAvatar, StageChip } from '@/views/admin/firm-people/parts';
 import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
-import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import type { Engagement } from '@/data/engagements';
 import { STUCK_LABEL } from '@/lib/projects/project-stuck';
@@ -46,18 +49,29 @@ export interface ProjectsViewProps {
   enriched: EnrichedItem[];
 }
 
-const healthMap = {
-  'on-track': { label: 'On track', cls: 'bg-positive-soft text-positive', dot: 'bg-positive', tone: 'success' as const },
-  'at-risk':  { label: 'Needs review',  cls: 'bg-warning-soft text-warning', dot: 'bg-warning', tone: 'warning' as const },
-  'overdue':  { label: 'Past due',  cls: 'bg-danger-soft text-danger',   dot: 'bg-danger',  tone: 'danger'  as const },
-} as const;
 
 const PHASE_ORDER = ['Pre-Incorporation', 'Post-Incorporation', 'Operational Readiness'] as const;
 
 const VIEWS = [
-  { id: 'table', label: 'Table', icon: TableIcon },
-  { id: 'board', label: 'Board', icon: LayoutGrid },
-] as const;
+  { key: 'table', label: 'Table' },
+  { key: 'board', label: 'Board' },
+];
+
+/** Progress bar of a project: 8px, 3px corners, blurple, green when complete. */
+function ProgressCell({ pct }: { pct: number }) {
+  return (
+    <span className="flex items-center gap-2">
+      <span className="relative block h-2 min-w-[60px] flex-1 overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+        <i className={cn('absolute inset-y-0 left-0 rounded-bar', pct >= 100 ? 'bg-positive-mid' : 'bg-brand')} style={{ width: `${pct}%` }} />
+      </span>
+      <span className="w-9 flex-none text-right text-[12px] tabular-nums text-ink-muted">{pct}%</span>
+    </span>
+  );
+}
+
+function leadLabelOf(item: EnrichedItem): string {
+  return item.leads && item.leads.length > 0 ? item.leads.map((l) => l.name).join(', ') : (item.intern?.name ?? 'Unassigned');
+}
 
 export function ProjectsView(props: ProjectsViewProps) {
   const {
@@ -74,6 +88,45 @@ export function ProjectsView(props: ProjectsViewProps) {
   const projectBase = staffProjectBaseFromPathname(pathname, staffBase);
   const newProjectHref = staffNewProjectPath(projectBase);
 
+  const columns: EFilingColumn<EnrichedItem>[] = [
+    {
+      key: 'company',
+      header: 'Company',
+      render: (item) => (
+        <span className="flex min-w-0 items-center gap-2.5">
+          <RecordTile name={item.e.companyName} size={30} />
+          <span className="min-w-0">
+            <Link href={adminProjectPath(item.e, projectBase)} className="block truncate font-medium text-ink hover:underline" title={item.e.companyName}>
+              {item.e.companyName}
+            </Link>
+            <span className={cn('block truncate text-[12px]', item.stuck === 'on_track' ? 'text-ink-muted' : 'text-warning')}>{STUCK_LABEL[item.stuck]}</span>
+          </span>
+        </span>
+      ),
+    },
+    { key: 'stage', header: 'Setup phase', width: '132px', render: (item) => <StageChip stage={item.e.stage} /> },
+    { key: 'progress', header: 'Progress', width: '160px', render: (item) => <ProgressCell pct={item.pct} /> },
+    {
+      key: 'owner',
+      header: 'Delivery owner',
+      width: '20%',
+      render: (item) => (
+        <span className="flex min-w-0 items-center gap-2">
+          <PersonAvatar name={item.intern?.name ?? '?'} size={24} />
+          <span className="truncate" title={leadLabelOf(item)}>{leadLabelOf(item)}</span>
+        </span>
+      ),
+    },
+    { key: 'health', header: 'Health', width: '128px', render: (item) => <HealthChip health={item.e.health} /> },
+    {
+      key: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      width: '56px',
+      align: 'right',
+      render: (item) => <ProjectActionsMenu engagement={item.e} />,
+    },
+  ];
+
   return (
     <PageTransition>
       <SEO
@@ -88,297 +141,118 @@ export function ProjectsView(props: ProjectsViewProps) {
         title="GCC Setup Projects"
         subtitle={`${engagements.length} project${engagements.length === 1 ? '' : 's'}`}
         actions={
-          <div className="flex items-center gap-2">
-            <LayoutGroup id="proj-view-switch">
-              <div className="inline-flex items-center rounded-md border border-line bg-card p-0.5">
-                {VIEWS.map((v) => {
-                  const Icon = v.icon;
-                  const active = view === v.id;
-                  return (
-                    <button
-                      type="button"
-                      key={v.id}
-                      onClick={() => setView(v.id)}
-                      className={cn(
-                        'relative inline-flex items-center gap-1.5 px-2.5 h-7 rounded-[5px] text-[12px] font-medium transition-colors',
-                        active ? 'text-ink' : 'text-ink-faint hover:text-ink-soft',
-                      )}
-                    >
-                      {active && (
-                        <motion.span
-                          layoutId="proj-view-pill"
-                          className="absolute inset-0 rounded-[5px] bg-surface-sunken"
-                          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                        />
-                      )}
-                      <Icon className="w-3.5 h-3.5 relative" />
-                      <span className="relative">{v.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </LayoutGroup>
+          <div className="flex flex-wrap items-center gap-2">
+            <SpectrumTabs size="md" label="Projects view" items={VIEWS} value={view} onChange={(k) => setView(k as View)} />
             {isFirmWideAdmin(user?.role) ? (
-              <Link
-                href="/app/admin/projects/recycle-bin"
-                className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Deleted
-              </Link>
+              <Button variant="quiet" asChild>
+                <Link href="/app/admin/projects/recycle-bin">
+                  <Trash2 strokeWidth={1.6} />
+                  Deleted
+                </Link>
+              </Button>
             ) : null}
-            <Link
-              href={newProjectHref}
-              className="h-9 px-3 rounded-md gold-sheen text-[12.5px] font-medium hover:opacity-95 inline-flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Start GCC project
-            </Link>
+            <Button asChild>
+              <Link href={newProjectHref}>
+                <Plus strokeWidth={1.6} />
+                Start GCC project
+              </Link>
+            </Button>
           </div>
         }
       />
 
-      <AnimatePresence mode="wait">
-        {view === 'table' && (
-          <motion.div
-            key="table"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.22 }}
-            className="surface overflow-hidden"
-          >
-            {engagementsLoading && (
-              <div className="flex items-center justify-center py-12">
-                <HexgridLoader size="sm" message="Pulling your portfolio…" />
-              </div>
-            )}
-            {!engagementsLoading && enriched.length === 0 && (
-              <div className="p-6 sm:p-8">
-                <EmptyStateIllustrated
-                  icon={Briefcase}
-                  title="No GCC setup projects yet"
-                  actionLabel="Start GCC project"
-                  onAction={() => router.push(newProjectHref)}
-                  className="border-0 bg-transparent py-8 shadow-none"
-                />
-              </div>
-            )}
-            {!engagementsLoading && enriched.length > 0 && (
+      {view === 'table' && (
+        <PeopleCard title="Projects" count={engagementsLoading ? undefined : enriched.length}>
+          {engagementsLoading ? <SkeletonRows className="p-4" /> : null}
+          {!engagementsLoading && enriched.length === 0 ? (
+            <EmptyState
+              title="No GCC setup projects yet"
+              className="m-4"
+              action={
+                <Button size="sm" onClick={() => router.push(newProjectHref)}>
+                  Start GCC project
+                </Button>
+              }
+            />
+          ) : null}
+          {!engagementsLoading && enriched.length > 0 ? (
             <>
-            {/* Mobile card stack */}
-            <div className="space-y-2 p-3 md:hidden">
-              {enriched.map(({ e, pct, intern, leads, stuck }) => {
-                const h = healthMap[e.health];
-                const leadLabel =
-                  leads && leads.length > 0
-                    ? leads.map((l) => l.name).join(', ')
-                    : (intern?.name ?? 'Unassigned');
-                return (
-                  <div
-                    key={e.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => router.push(adminProjectPath(e, projectBase))}
-                    onKeyDown={(ev) => {
-                      if (ev.key === 'Enter' || ev.key === ' ') router.push(adminProjectPath(e, projectBase));
-                    }}
-                    className="flex w-full cursor-pointer flex-col gap-2.5 rounded-xl border border-line/80 bg-card px-3.5 py-3 text-left transition-colors hover:border-brand/30 hover:bg-brand-soft/40"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-soft text-[11px] font-semibold text-brand">
-                          {e.companyName.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate text-[13px] font-medium text-ink">{e.companyName}</div>
-                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-faint">
-                            <span className="inline-flex rounded-sm border border-brand/20 bg-brand-soft px-2 py-0.5 text-[10px] font-medium text-brand">
-                              {stageDisplayLabel(e.stage)}
-                            </span>
-                            <span>· {STUCK_LABEL[stuck]}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1">
-                        <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-0.5 text-[10px] font-medium', h.cls)}>
-                          <span className={cn('h-1.5 w-1.5 rounded-full', h.dot)} />
-                          {h.label}
+              {/* Phone: one row card per project. */}
+              <ul className="md:hidden">
+                {enriched.map((item) => (
+                  <li key={item.e.id} className="flex items-start gap-3 border-b border-line-soft px-4 py-3 last:border-b-0">
+                    <RecordTile name={item.e.companyName} size={30} />
+                    <Link href={adminProjectPath(item.e, projectBase)} className="grid min-w-0 flex-1 gap-1.5">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <b className="min-w-0 truncate font-medium text-ink">{item.e.companyName}</b>
+                        <span className="ml-auto flex-none">
+                          <HealthChip health={item.e.health} />
                         </span>
-                        <ProjectActionsMenu engagement={e} />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-sunken">
-                        <div
-                          className="h-full rounded-full bg-brand"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="w-8 text-right text-[11px] tabular-nums text-ink-faint">{pct}%</span>
-                    </div>
-                    <div className="flex items-center justify-between text-[11.5px] text-ink-faint">
-                      <span className="truncate">{leadLabel}</span>
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-brand/70" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Desktop table */}
-            <div className="hidden overflow-x-auto md:block">
-            <div className="min-w-[720px]">
-            <div className="grid grid-cols-[1.6fr_1fr_1.2fr_1fr_120px_88px] gap-3 px-4 h-10 items-center bg-surface-sunken text-[11px] text-ink-faint border-b border-line">
-              <div>Company</div>
-              <div>Setup phase</div>
-              <div>Progress</div>
-              <div>Delivery owner</div>
-              <div>Health</div>
-              <div></div>
-            </div>
-            <motion.div
-              className="divide-y divide-line"
-              initial="hidden"
-              animate="show"
-              variants={staggerKids(0.03)}
-            >
-              {enriched.map(({ e, pct, intern, leads, stuck }) => {
-                const h = healthMap[e.health];
-                const leadLabel =
-                  leads && leads.length > 0
-                    ? leads.map((l) => l.name).join(', ')
-                    : (intern?.name ?? 'Unassigned');
-                return (
-                  <motion.div
-                    key={e.id}
-                    variants={fadeUp}
-                    className="w-full grid grid-cols-[1.6fr_1fr_1.2fr_1fr_120px_88px] gap-3 px-4 py-3 items-center hover:bg-surface-sunken/40 text-left group"
-                  >
-                    <button type="button" onClick={() => router.push(adminProjectPath(e, projectBase))} className="contents">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-md bg-brand-soft text-brand text-[11px] font-semibold flex items-center justify-center shrink-0">
-                        {e.companyName.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[13px] font-medium text-ink truncate">{e.companyName}</div>
-                        <div className="text-[11px] text-ink-faint">{STUCK_LABEL[stuck]}</div>
-                      </div>
-                    </div>
-                    <div className="truncate text-[12.5px] text-ink-soft">{stageDisplayLabel(e.stage)}</div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-brand"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-[11px] text-ink-faint tabular-nums w-8 text-right">{pct}%</span>
-                    </div>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-6 h-6 rounded-full gold-sheen text-[10px] font-semibold flex items-center justify-center shrink-0">{intern?.initials}</span>
-                      <span className="text-[12.5px] text-ink-soft truncate">{leadLabel}</span>
-                    </div>
-                    <span className={cn('inline-flex items-center gap-1.5 px-2 h-5 rounded-full text-[10.5px] font-medium w-fit', h.cls)}>
-                      <span className={cn('w-1.5 h-1.5 rounded-full', h.dot)} />{h.label}
-                    </span>
-                    </button>
-                    <div className="flex items-center justify-end gap-1">
-                      <ProjectActionsMenu engagement={e} />
-                      <button type="button" onClick={() => router.push(adminProjectPath(e, projectBase))} className="p-1.5 text-ink-faint hover:text-ink">
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-            </div>
-            </div>
+                      </span>
+                      <span className="truncate text-[12.5px] text-ink-muted">
+                        {stageDisplayLabel(item.e.stage)} · {STUCK_LABEL[item.stuck]} · {leadLabelOf(item)}
+                      </span>
+                      <ProgressCell pct={item.pct} />
+                    </Link>
+                    <ProjectActionsMenu engagement={item.e} />
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden px-2 pb-2 md:block">
+                <EFilingGrid caption="GCC setup projects" columns={columns} rows={enriched} rowKey={(item) => item.e.id} pageSize={14} minWidth={820} />
+              </div>
             </>
-            )}
-          </motion.div>
-        )}
+          ) : null}
+        </PeopleCard>
+      )}
 
-        {view === 'board' && (
-          <motion.div
-            key="board"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.22 }}
-            variants={staggerKids(0.05)}
-            className="grid grid-cols-1 lg:grid-cols-3 gap-4"
-          >
-            {PHASE_ORDER.map((phase) => {
-              const items = enriched.filter((x) => x.e.stage === phase);
-              return (
-                <motion.div key={phase} variants={fadeUp} className="flex flex-col min-h-[320px]">
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <div className="flex items-center gap-2">
-                      <StatusDot tone="gold" size={6} />
-                      <Eyebrow>{phase}</Eyebrow>
-                    </div>
-                    <Mono className="text-[10.5px] text-ink-faint">{items.length.toString().padStart(2, '0')}</Mono>
-                  </div>
-                  <Surface flat className="flex-1 p-2 space-y-2 bg-surface-sunken/20">
-                    {items.length === 0 && (
-                      <div className="h-full min-h-[200px] flex items-center justify-center text-[11.5px] text-ink-faint italic">
-                        No projects in this setup phase
-                      </div>
-                    )}
-                    {items.map(({ e, pct, intern, city }, i) => {
-                      const h = healthMap[e.health];
-                      return (
-                        <motion.button
-                          key={e.id}
-                          layout
-                          variants={fadeUp}
-                          onClick={() => router.push(adminProjectPath(e, projectBase))}
-                          className="group w-full text-left rounded-md border border-line bg-card p-3 hover:border-line-strong hover:-translate-y-px transition-all"
-                        >
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className="w-7 h-7 rounded-md bg-brand-soft text-brand text-[10px] font-semibold flex items-center justify-center shrink-0">
-                                {e.companyName.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="text-[12.5px] font-medium text-ink truncate">{e.companyName}</div>
-                                <div className="text-[10.5px] text-ink-faint flex items-center gap-1">
-                                  <MapPin className="w-2.5 h-2.5" />{city.name}
-                                </div>
-                              </div>
-                            </div>
-                            <StatusDot tone={h.tone} size={7} />
-                          </div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="flex-1 h-1 rounded-full bg-surface-sunken overflow-hidden">
-                              <motion.div
-                                className="h-full bg-brand"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${pct}%` }}
-                                transition={{ duration: 0.7, delay: 0.1 + i * 0.04 }}
-                              />
-                            </div>
-                            <Mono className="text-[10px] text-ink-faint tabular-nums w-7 text-right">{pct}%</Mono>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-5 h-5 rounded-full gold-sheen text-[9px] font-semibold flex items-center justify-center">{intern?.initials}</span>
-                              <span className="text-[10.5px] text-ink-faint truncate max-w-[100px]">{intern?.name}</span>
-                            </div>
-                            <span className="text-[10px] text-ink-faint">{h.label}</span>
-                          </div>
-                        </motion.button>
-                      );
-                    })}
-                  </Surface>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {view === 'board' && (
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+          {PHASE_ORDER.map((phase) => {
+            const items = enriched.filter((x) => x.e.stage === phase);
+            return (
+              <section key={phase} aria-label={stageDisplayLabel(phase)} className="min-w-0 rounded-md border-1.5 border-line bg-surface-sunken">
+                <header className="flex h-11 items-center gap-2 border-b border-line-soft px-4">
+                  <h2 className="text-[14px] font-medium text-ink">{stageDisplayLabel(phase)}</h2>
+                  <Tag>{items.length}</Tag>
+                </header>
+                <div className="grid gap-2 p-3">
+                  {items.length === 0 ? <EmptyState title="No projects" className="min-h-[72px] py-4" /> : null}
+                  {items.map((item) => (
+                    <button
+                      key={item.e.id}
+                      type="button"
+                      onClick={() => router.push(adminProjectPath(item.e, projectBase))}
+                      className={cn(
+                        'grid w-full gap-2 rounded-md border-1.5 bg-surface-raised px-3 py-2.5 text-left hover:border-line-strong',
+                        item.e.health === 'overdue' ? 'border-danger-mid' : 'border-line',
+                      )}
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <RecordTile name={item.e.companyName} size={30} />
+                        <span className="min-w-0 flex-1">
+                          <b className="block truncate text-[14px] font-medium text-ink">{item.e.companyName}</b>
+                          <span className="flex items-center gap-1 text-[12px] text-ink-muted">
+                            <MapPin className="h-3 w-3" strokeWidth={1.6} aria-hidden />
+                            {item.city.name}
+                          </span>
+                        </span>
+                        <ChevronRight className="h-4 w-4 flex-none text-ink-faint" strokeWidth={1.6} aria-hidden />
+                      </span>
+                      <ProgressCell pct={item.pct} />
+                      <span className="flex min-w-0 items-center gap-2">
+                        <PersonAvatar name={item.intern?.name ?? '?'} size={24} />
+                        <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-muted">{item.intern?.name ?? 'Unassigned'}</span>
+                        <HealthChip health={item.e.health} />
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
     </PageTransition>
   );
 }

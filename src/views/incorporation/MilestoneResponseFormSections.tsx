@@ -92,7 +92,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           className="surface-raised px-5 py-6 text-center"
         >
           <CheckCircle2 className="w-10 h-10 mx-auto text-positive mb-3" aria-hidden />
-          <p className="serif text-xl text-ink">Submitted for review</p>
+          <p className="text-[20px] font-medium text-ink">Submitted for review</p>
           {isClient && (
             <TrustBadge className="mt-4 mx-auto w-fit">Received by VCFO · under review</TrustBadge>
           )}
@@ -127,19 +127,19 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
       >
       {isPre6 && !pre1SubmittedForPre6 && (
         <output
-          className="rounded-lg border border-brand/30 bg-brand-soft px-4 py-3 text-sm text-ink block"
+          className="rounded-md border border-brand/30 bg-brand-soft px-4 py-3 text-sm text-ink block"
         >
           <p className="font-medium">Phase 1 Step 1 required first</p>
         </output>
       )}
 
       {provenanceNote ? (
-        <p className="text-[11px] text-ink-muted">{provenanceNote} — edit anything that changed.</p>
+        <p className="text-[12px] text-ink-muted">{provenanceNote} — edit anything that changed.</p>
       ) : null}
 
       {isPre6 && pre1SubmittedForPre6 && pre6DirectorSlots.length === 0 && (
         <output
-          className="rounded-lg border border-warning/25 bg-warning-soft/40 px-4 py-3 text-sm text-ink block"
+          className="rounded-md border border-warning/25 bg-warning-soft/40 px-4 py-3 text-sm text-ink block"
         >
           <p className="font-medium">No director KYC sections yet</p>
         </output>
@@ -159,7 +159,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
       <div className={isPre1 || isPhase2StructuredStep ? 'space-y-1.5 px-0.5' : undefined}>
         {isPre1 || isPhase2StructuredStep ? (
           <div className="space-y-1">
-            <p className="eyebrow text-blue-700">
+            <p className="eyebrow text-brand-text">
               {isPre1
                 ? 'Phase 1 — Name Application'
                 : 'Phase 2 — Incorporation'}
@@ -168,7 +168,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           </div>
         ) : (
           <>
-            <p className="text-[11px] font-semibold text-ink-muted">
+            <p className="text-[12px] font-semibold text-ink-muted">
               {readOnly ? 'Client submission' : 'Your answers'}
             </p>
           </>
@@ -195,7 +195,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
                 className={cn(
                   'h-4 w-4 shrink-0 mt-0.5',
                   reviewBanner.tone === 'rejected' && 'text-danger',
-                  reviewBanner.tone === 'reviewing' && 'text-blue-700',
+                  reviewBanner.tone === 'reviewing' && 'text-brand-text',
                   reviewBanner.tone === 'accepted' && 'text-positive',
                 )}
                 aria-hidden

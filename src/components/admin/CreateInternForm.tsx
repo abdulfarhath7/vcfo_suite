@@ -6,7 +6,6 @@ import { Loader2, Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Eyebrow } from "@/components/noir";
 import { createInternBodySchema } from "@/lib/api/schemas";
 import { requestCreateIntern } from "@/lib/email/request-create-intern";
 import { toastError, toastSuccess, toastEmailDispatch, errorMessage } from "@/lib/toast-errors";
@@ -125,18 +124,15 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      <div>
-        <Eyebrow>Add project lead</Eyebrow>
-      </div>
-
+    <form onSubmit={handleSubmit} className="space-y-5" noValidate aria-label="Add project lead">
       <div className="space-y-4">
         <div>
-          <Label htmlFor="intern-name" className="text-[12px] flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-ink-faint" /> Full name
+          <Label htmlFor="intern-name" className="flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
+            <User className="h-4 w-4 text-ink-muted" strokeWidth={1.6} aria-hidden /> Full name
           </Label>
           <Input
             id="intern-name"
+            aria-invalid={fieldErrors.fullName ? true : undefined}
             value={fullName}
             onChange={(e) => dispatch({ type: "set_field", field: "fullName", value: e.target.value })}
             placeholder="e.g. Priya Sharma"
@@ -144,16 +140,17 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
             autoComplete="name"
           />
           {fieldErrors.fullName ? (
-            <p className="text-[11px] text-danger mt-1">{fieldErrors.fullName}</p>
+            <p className="mt-1 text-[12.5px] text-danger">{fieldErrors.fullName}</p>
           ) : null}
         </div>
 
         <div>
-          <Label htmlFor="intern-email" className="text-[12px] flex items-center gap-1.5">
-            <Mail className="w-3.5 h-3.5 text-ink-faint" /> Work email
+          <Label htmlFor="intern-email" className="flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
+            <Mail className="h-4 w-4 text-ink-muted" strokeWidth={1.6} aria-hidden /> Work email
           </Label>
           <Input
             id="intern-email"
+            aria-invalid={fieldErrors.email ? true : undefined}
             type="email"
             value={email}
             onChange={(e) => dispatch({ type: "set_field", field: "email", value: e.target.value })}
@@ -163,13 +160,13 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
             required
           />
           {fieldErrors.email ? (
-            <p className="text-[11px] text-danger mt-1">{fieldErrors.email}</p>
+            <p className="mt-1 text-[12.5px] text-danger">{fieldErrors.email}</p>
           ) : null}
         </div>
 
         <div>
-          <Label htmlFor="intern-phone" className="text-[12px] flex items-center gap-1.5">
-            <Phone className="w-3.5 h-3.5 text-ink-faint" /> Phone (optional)
+          <Label htmlFor="intern-phone" className="flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
+            <Phone className="h-4 w-4 text-ink-muted" strokeWidth={1.6} aria-hidden /> Phone (optional)
           </Label>
           <Input
             id="intern-phone"
@@ -183,12 +180,13 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
         </div>
 
         <div>
-          <Label htmlFor="intern-password" className="text-[12px] flex items-center gap-1.5">
-            <Lock className="w-3.5 h-3.5 text-ink-faint" /> Temporary password
+          <Label htmlFor="intern-password" className="flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
+            <Lock className="h-4 w-4 text-ink-muted" strokeWidth={1.6} aria-hidden /> Temporary password
           </Label>
           <div className="relative mt-1.5">
             <Input
               id="intern-password"
+              aria-invalid={fieldErrors.password ? true : undefined}
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => dispatch({ type: "set_field", field: "password", value: e.target.value })}
@@ -207,7 +205,7 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
             </button>
           </div>
           {fieldErrors.password ? (
-            <p className="text-[11px] text-danger mt-1">{fieldErrors.password}</p>
+            <p className="mt-1 text-[12.5px] text-danger">{fieldErrors.password}</p>
           ) : null}
         </div>
       </div>

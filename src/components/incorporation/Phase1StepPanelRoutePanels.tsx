@@ -98,7 +98,7 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
               </p>
               <Link
                 href={clientBoardResolutionPath()}
-                className="inline-flex items-center gap-1.5 text-blue-700 hover:underline font-medium"
+                className="inline-flex items-center gap-1.5 text-brand-text hover:underline font-medium"
               >
                 <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 View draft board resolution
@@ -130,7 +130,7 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
             {(brStatus === 'finalized' || brStatus === 'signed') && (
               <Link
                 href={clientBoardResolutionPath()}
-                className="inline-flex items-center gap-1.5 text-blue-700 hover:underline font-medium"
+                className="inline-flex items-center gap-1.5 text-brand-text hover:underline font-medium"
               >
                 <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 {brStatus === 'signed' ? 'View or replace signed copy' : 'Upload signed copy'}

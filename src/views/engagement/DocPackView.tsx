@@ -9,8 +9,11 @@ import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { DocPackPreviewDialog } from '@/components/doc-pack/DocPackPreviewDialog';
 import { DocPackRow } from '@/components/doc-pack/DocPackRow';
 import { DocStatusDot } from '@/components/doc-pack/DocStatusChip';
-import { AccentButton, EmptyStateIllustrated, Surface } from '@/components/noir';
-import { PageBackButton } from '@/components/shell/PageBackButton';
+import { EmptyStateIllustrated } from '@/components/noir';
+import { Button } from '@/components/ui/button';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { EmptyState } from '@/components/ui/empty-state';
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { useApp } from '@/context/AppContext';
@@ -27,7 +30,6 @@ import {
 import type { DocPackItem, DocPart, DocStatus } from '@/lib/doc-pack/types';
 import { isInternEngagementPathname } from '@/lib/projects/project-step-path';
 import { engagementRouteParamFromParams, resolveEngagementFromRouteParam } from '@/lib/slug';
-import { cn } from '@/lib/utils';
 
 type PartFilter = 'all' | DocPart;
 
@@ -103,18 +105,39 @@ export default function DocPackView() {
         path={pathname}
       />
 
-      <div className="mb-5">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <PageBackButton className="-ml-1.5" />
-          <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-ink">
-            Pre-incorporation documents
-          </h1>
+      {/* Plain head (prototype `DocumentPackScreen`): 28px title, the counts in a muted line,
+          the one main button on the right. No back link (R-09). */}
+      <header className="mb-5 flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-[1_1_280px]">
+          <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Pre-incorporation documents</h1>
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] text-ink-muted">
+            <span>{eng.companyName}</span>
+            {summary
+              ? (['ready', 'needs-inputs', 'waiting-release'] as const).map((status) => (
+                  <span key={status} className="inline-flex items-center gap-1.5">
+                    <DocStatusDot status={status} />
+                    <b className="font-medium tabular-nums text-ink">{summary.counts[status]}</b> {STAT_LABEL[status]}
+                  </span>
+                ))
+              : null}
+          </p>
         </div>
-        <p className="mt-1 pl-8 text-[13px] text-ink-muted">
-          {eng.companyName}. Generated from SPICe+ Part A and Part B. Regenerates on every download unless a
-          version was attached to Pre-7.
-        </p>
-      </div>
+        {summary ? (
+          readyCount > 0 ? (
+            <Button asChild>
+              <a href={docPackZipUrl(eng.id)} download>
+                <Archive strokeWidth={1.6} aria-hidden />
+                Download ready ({readyCount}) as .zip
+              </a>
+            </Button>
+          ) : (
+            <Button type="button" disabled title="Nothing is ready to download yet">
+              <Archive strokeWidth={1.6} aria-hidden />
+              Download ready (0) as .zip
+            </Button>
+          )
+        ) : null}
+      </header>
 
       {pack.isError ? (
         <EmptyStateIllustrated
@@ -130,67 +153,24 @@ export default function DocPackView() {
         </div>
       ) : (
         <>
-          <Surface className="mb-4 flex flex-wrap items-center gap-2.5 px-5 py-4">
-            {(['ready', 'needs-inputs', 'waiting-release'] as const).map((status) => (
-              <span
-                key={status}
-                className={cn(
-                  'inline-flex items-center gap-2 rounded-sm px-3 py-1 text-[13px]',
-                  status === 'ready' && 'bg-positive-soft text-positive',
-                  status === 'needs-inputs' && 'bg-warning-soft text-warning',
-                  status === 'waiting-release' && 'bg-surface-sunken text-ink-muted',
-                )}
-              >
-                <DocStatusDot status={status} />
-                <b className="font-semibold">{summary.counts[status]}</b> {STAT_LABEL[status]}
-              </span>
-            ))}
-            <div className="ml-auto">
-              {readyCount > 0 ? (
-                <a
-                  href={docPackZipUrl(eng.id)}
-                  download
-                  className="inline-flex h-10 min-h-[44px] items-center rounded-md border border-line bg-surface-raised px-4 text-sm font-medium text-brand hover:border-brand/35 hover:bg-brand-soft sm:min-h-10"
-                >
-                  <Archive className="mr-2 h-4 w-4" aria-hidden />
-                  Download ready ({readyCount}) as .zip
-                </a>
-              ) : (
-                <AccentButton type="button" variant="outline" disabled title="Nothing is ready to download yet">
-                  <Archive className="mr-2 h-4 w-4" aria-hidden />
-                  Download ready (0) as .zip
-                </AccentButton>
-              )}
+          <section className="surface min-w-0 overflow-hidden">
+            <div className="flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-line-soft px-4 py-2">
+              <CardHeadTile title="Documents" />
+              <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">Documents</h2>
+              <SpectrumTabs
+                label="Filter by part"
+                items={(['all', 'part-a', 'part-b'] as const).map((filter) => ({
+                  key: filter,
+                  label: PART_LABEL[filter],
+                  count: countFor(filter),
+                }))}
+                value={part}
+                onChange={(k) => setPart(k as PartFilter)}
+              />
             </div>
-          </Surface>
-
-          <div className="mb-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by part">
-            {(['all', 'part-a', 'part-b'] as const).map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                aria-pressed={part === filter}
-                onClick={() => setPart(filter)}
-                className={cn(
-                  'rounded-sm border px-3.5 py-1.5 text-[13px] transition-colors',
-                  part === filter
-                    ? 'border-brand bg-brand-soft font-semibold text-brand'
-                    : 'border-line bg-surface-raised text-ink-muted hover:bg-surface-sunken/40',
-                )}
-              >
-                {PART_LABEL[filter]} ({countFor(filter)})
-              </button>
-            ))}
-          </div>
-
-          {items.length === 0 ? (
-            <EmptyStateIllustrated
-              title="No documents in this part"
-              description="Switch the filter to see the rest of the pack."
-              art="empty"
-            />
-          ) : (
-            <Surface className="overflow-hidden p-0">
+            {items.length === 0 ? (
+              <EmptyState title="No documents in this part" className="m-4" />
+            ) : (
               <ul className="list-none">
                 {items.map((item) => (
                   <DocPackRow
@@ -203,14 +183,14 @@ export default function DocPackView() {
                   />
                 ))}
               </ul>
-            </Surface>
-          )}
+            )}
+          </section>
 
           {summary.skippedDirectors.length > 0 ? (
             <p className="mt-3 text-[12.5px] text-ink-muted">
               Not in the pack yet: {summary.skippedDirectors.map((d) => d.displayName).join(', ')}.{' '}
               {summary.skippedDirectors[0]?.reason}.{' '}
-              <Link href={hrefForStep('pre-15')} className="text-brand hover:underline">
+              <Link href={hrefForStep('pre-15')} className="text-brand-text hover:underline">
                 Proposed Directors
               </Link>
             </p>

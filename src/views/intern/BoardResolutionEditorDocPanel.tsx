@@ -30,6 +30,7 @@ import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { AccentButton } from '@/components/noir';
 
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 
 
 
@@ -177,7 +178,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                 <div className="mb-4">
                   <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-[12px] text-blue-600 font-semibold">
+                    <p className="text-[15px] font-medium text-ink">
                       Document preview
                     </p>
                     {!isFinalized && saveStatusText && (
@@ -236,9 +237,9 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                   </div>
                 </div>
 
-                <div className="mb-6 rounded-lg border border-brand/35 bg-brand/5 p-5">
+                <div className="mb-6 rounded-md border-1.5 border-line bg-surface-raised p-5">
 
-                  <p className="text-[12px] text-blue-600 font-semibold mb-2">
+                  <p className="mb-2 text-[15px] font-medium text-ink">
 
                     Word document ready
 
@@ -262,7 +263,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                       download={BOARD_RESOLUTION_DOCX_FILENAME}
 
-                      className="gold-sheen inline-flex items-center justify-center gap-2 rounded-md h-9 px-4 text-[13px] font-medium tracking-tight hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-1 ring-line/40"
+                      className={buttonVariants({ variant: 'default' })}
 
                     >
 

@@ -5,14 +5,18 @@ import { internLeadManagerRequestPatch } from '@/lib/checklist/checklist-item-re
 import { internWorkCta, type InternWorkItem } from '@/lib/intern/intern-work';
 import { useApp } from '@/context/AppContext';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 
 export function InternWorkCtaButton({
   item,
   className,
+  primary = false,
 }: {
   item: InternWorkItem;
   className?: string;
+  /** Draw the main (blurple) button whatever the kind, as the task drawer's footer does. */
+  primary?: boolean;
 }) {
   const router = useRouter();
   const { updateItem, getStateForEngagement, engagements } = useApp();
@@ -53,10 +57,8 @@ export function InternWorkCtaButton({
       type="button"
       onClick={(e) => void run(e)}
       className={cn(
-        'inline-flex h-control-sm max-w-full shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2.5 text-[12px] font-semibold transition-colors',
-        cta.variant === 'solid'
-          ? 'bg-brand text-on-brand hover:bg-brand-strong'
-          : 'border border-line-strong bg-surface-raised text-ink hover:bg-surface-sunken',
+        buttonVariants({ variant: primary || cta.variant === 'solid' ? 'default' : 'secondary', size: primary ? 'default' : 'sm' }),
+        'max-w-full shrink-0',
         className,
       )}
     >

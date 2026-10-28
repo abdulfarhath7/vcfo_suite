@@ -6,7 +6,8 @@ import { Download, Eye } from 'lucide-react';
 
 import { getItem } from '@/data/checklist';
 import { DocStatusChip } from '@/components/doc-pack/DocStatusChip';
-import { AccentButton, Mono } from '@/components/noir';
+import { Button } from '@/components/ui/button';
+import { FileBadge } from '@/components/ui/file-badge';
 import { docPackRowName } from '@/lib/doc-pack/labels';
 import type { DocPackItem, DocPackMissingInput } from '@/lib/doc-pack/types';
 import { missingInputLabel } from '@/lib/doc-pack/unblock';
@@ -43,13 +44,20 @@ export function DocPackRow({ item, downloadUrl, hrefForMissing, hrefForStep, onP
         : 'Generated now';
 
   return (
-    <li className="grid grid-cols-1 gap-3 border-t border-line px-5 py-4 first:border-t-0 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.6fr)_auto] md:items-center md:gap-4">
+    <li className="grid grid-cols-[44px_minmax(0,1fr)] gap-x-3 gap-y-3 border-t border-line-soft px-4 py-3 first:border-t-0 md:grid-cols-[44px_minmax(0,1.3fr)_minmax(0,1.6fr)_auto] md:items-center md:gap-4">
+      {ready ? (
+        <FileBadge type="DOCX" />
+      ) : (
+        <span className="inline-flex h-6 w-11 items-center justify-center rounded-mark border-1.5 border-dashed border-line-strong font-mono text-[11px] text-ink-faint">
+          DOCX
+        </span>
+      )}
       <div className="min-w-0">
-        <p className="text-[14px] font-semibold text-ink">{docPackRowName(item)}</p>
-        <Mono className="mt-0.5 block text-[11.5px] text-ink-muted">from {sources}</Mono>
+        <p className={ready ? 'text-[14px] font-medium text-ink' : 'text-[14px] font-medium text-ink-2'}>{docPackRowName(item)}</p>
+        <span className="mt-0.5 block text-[12.5px] text-ink-muted">from {sources}</span>
       </div>
 
-      <div className="min-w-0 text-[13px]">
+      <div className="col-start-2 min-w-0 text-[13px] md:col-start-auto">
         <DocStatusChip status={item.status} />
         {provenance ? <span className="ml-2 text-[12px] text-ink-muted">{provenance}</span> : null}
         {item.missing.length > 0 ? (
@@ -58,7 +66,7 @@ export function DocPackRow({ item, downloadUrl, hrefForMissing, hrefForStep, onP
               <li key={input.key}>
                 <Link
                   href={hrefForMissing(input)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-dashed border-warning bg-surface-raised px-2 py-0.5 text-[12.5px] text-ink hover:bg-warning-soft"
+                  className="inline-flex h-6 items-center gap-1 rounded-md border-1.5 border-dashed border-warning-mid bg-surface-raised px-2 text-[12.5px] text-ink hover:bg-warning-soft"
                 >
                   {missingInputLabel(input)}
                   <span className="text-ink-muted">in {stepTitle(input.stepId)}</span>
@@ -72,7 +80,7 @@ export function DocPackRow({ item, downloadUrl, hrefForMissing, hrefForStep, onP
             {item.blockedBy.gate === 'br-finalized' ? (
               <>
                 Opens once the board resolution is finalized in{' '}
-                <Link href={hrefForStep(item.blockedBy.stepId)} className="font-medium text-brand hover:underline">
+                <Link href={hrefForStep(item.blockedBy.stepId)} className="font-medium text-brand-text hover:underline">
                   {stepTitle(item.blockedBy.stepId)}
                 </Link>
                 .
@@ -80,7 +88,7 @@ export function DocPackRow({ item, downloadUrl, hrefForMissing, hrefForStep, onP
             ) : (
               <>
                 {item.blockedBy.label} in{' '}
-                <Link href={hrefForStep(item.blockedBy.stepId)} className="font-medium text-brand hover:underline">
+                <Link href={hrefForStep(item.blockedBy.stepId)} className="font-medium text-brand-text hover:underline">
                   {stepTitle(item.blockedBy.stepId)}
                 </Link>
                 .
@@ -90,33 +98,30 @@ export function DocPackRow({ item, downloadUrl, hrefForMissing, hrefForStep, onP
         ) : null}
       </div>
 
-      <div className="flex gap-1.5 md:justify-end">
-        <AccentButton
+      <div className="col-start-2 flex gap-1.5 md:col-start-auto md:justify-end">
+        <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           disabled={!ready}
           onClick={() => onPreview(item)}
           aria-label={`Preview ${docPackRowName(item)}`}
         >
-          <Eye className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+          <Eye strokeWidth={1.6} aria-hidden />
           Preview
-        </AccentButton>
+        </Button>
         {ready ? (
-          <a
-            href={downloadUrl}
-            download
-            className="inline-flex h-9 min-h-[44px] items-center rounded-md border border-line bg-surface-raised px-3 text-xs font-medium text-brand hover:border-brand/35 hover:bg-brand-soft sm:min-h-9"
-            aria-label={`Download ${docPackRowName(item)} as Word`}
-          >
-            <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-            Download .docx
-          </a>
+          <Button variant="secondary" size="sm" asChild>
+            <a href={downloadUrl} download aria-label={`Download ${docPackRowName(item)} as Word`}>
+              <Download strokeWidth={1.6} aria-hidden />
+              Download .docx
+            </a>
+          </Button>
         ) : (
-          <AccentButton type="button" variant="outline" size="sm" disabled>
-            <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+          <Button type="button" variant="secondary" size="sm" disabled>
+            <Download strokeWidth={1.6} aria-hidden />
             Download .docx
-          </AccentButton>
+          </Button>
         )}
       </div>
     </li>

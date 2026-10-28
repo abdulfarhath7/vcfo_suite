@@ -35,7 +35,7 @@ export function createReadOnlyFieldRenderers(ctx: MilestoneFormCtx & FieldEditAc
   /** Lead-only field on the client's form: read-only, with a line saying who fills it. */
   const leadOnlyNote = (fieldId: string) =>
     isClient && directFlow && isLeadOnlyField(item.id, fieldId) ? (
-      <p className="text-[11px] text-ink-muted">{LEAD_ONLY_FIELD_HELPER}</p>
+      <p className="text-[12px] text-ink-muted">{LEAD_ONLY_FIELD_HELPER}</p>
     ) : null;
 
   const fieldShellClass = (field: ChecklistField, stacked: string) =>
@@ -88,8 +88,8 @@ export function createReadOnlyFieldRenderers(ctx: MilestoneFormCtx & FieldEditAc
       return (
         <div className="space-y-3">
           {entries.map((entry) => (
-            <div key={entry.id} className="rounded-lg border border-line/70 px-3 py-2">
-              <p className="mb-1.5 text-[11px] font-semibold tracking-[0.08em] text-ink-muted">
+            <div key={entry.id} className="rounded-md border border-line/70 px-3 py-2">
+              <p className="mb-1.5 text-[12px] font-semibold tracking-[.07em] uppercase text-ink-muted">
                 {field.entryLabel ?? 'Entry'} {entry.index}
               </p>
               <dl className="milestone-record">

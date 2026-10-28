@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { adminProjectPath } from '@/lib/projects/project-step-path';
 import { cn } from '@/lib/utils';
+import { PersonAvatar } from './parts';
 import type { StaffRow } from './types';
 import type { FirmPeopleState } from './use-firm-people';
 
@@ -45,35 +46,44 @@ export function createPersonRow(ctx: FirmPeopleState) {
     const attachedProjects = canAssign ? projectsForPerson(person) : [];
     const showMenu = canManage && person.id !== user?.id;
     return (
-      <div className="px-4 py-3">
-        <div className="flex items-start justify-between gap-3">
+      <div className="border-b border-line-soft px-4 py-2.5 last:border-b-0">
+        <div className="flex min-h-[30px] items-center justify-between gap-3">
           {onOpen ? (
             <button
               type="button"
-              className="min-w-0 flex-1 rounded-md -mx-1 px-1 py-0.5 text-left hover:bg-surface-sunken/40"
+              className="-mx-1 flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1 py-0.5 text-left hover:bg-surface-sunken/60"
               onClick={onOpen}
             >
-              <div className="text-[13px] font-medium">{person.name}</div>
-              <div className="font-mono text-[11px] text-ink-muted">{person.email}</div>
-              {meta ? <div className="mt-1 text-[11px] text-ink-muted">{meta}</div> : null}
+              <PersonAvatar name={person.name} />
+              <span className="min-w-0">
+                <span className="block truncate text-[14px] font-medium text-ink">{person.name}</span>
+                <span className="block truncate text-[12.5px] text-ink-muted">
+                  {person.email}
+                  {meta ? ` · ${meta}` : ''}
+                </span>
+              </span>
             </button>
           ) : (
-            <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-medium">{person.name}</div>
-              <div className="font-mono text-[11px] text-ink-muted">{person.email}</div>
-              {meta ? <div className="mt-1 text-[11px] text-ink-muted">{meta}</div> : null}
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <PersonAvatar name={person.name} />
+              <span className="min-w-0">
+                <span className="block truncate text-[14px] font-medium text-ink">{person.name}</span>
+                <span className="block truncate text-[12.5px] text-ink-muted">
+                  {person.email}
+                  {meta ? ` · ${meta}` : ''}
+                </span>
+              </span>
             </div>
           )}
           <div className="flex shrink-0 items-center gap-1">
             {canAssign ? (
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 size="sm"
-                className="h-8 gap-1"
                 onClick={() => openAssign(person)}
               >
-                <FolderPlus className="h-3.5 w-3.5" />
+                <FolderPlus className="h-4 w-4" strokeWidth={1.6} />
                 Assign project
               </Button>
             ) : null}
@@ -82,9 +92,9 @@ export function createPersonRow(ctx: FirmPeopleState) {
                 <DropdownMenuTrigger asChild>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="quiet"
                     size="sm"
-                    className="h-8 w-8 px-0"
+                    className="w-control-sm min-w-0 px-0"
                     aria-label={`Actions for ${person.name}`}
                     disabled={deletingId === person.id}
                   >
@@ -117,22 +127,22 @@ export function createPersonRow(ctx: FirmPeopleState) {
           </div>
         </div>
         {attachedProjects.length > 0 ? (
-          <div className="mt-2 flex flex-wrap items-center gap-1">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-10">
             {attachedProjects.slice(0, 4).map((p) => (
               <Link
                 key={p.id}
                 href={adminProjectPath({ id: p.id, slug: p.slug }, staffBase)}
                 className={cn(
-                  'inline-flex max-w-48 items-center gap-1 rounded-sm border border-line bg-surface px-2 py-0.5 text-[10.5px] transition-colors hover:border-brand/40 hover:text-ink',
-                  p.stuck ? 'text-warning' : 'text-ink-muted',
+                  'inline-flex h-6 max-w-48 items-center gap-1.5 rounded-md border-1.5 bg-surface-raised px-2 text-[12px] font-medium text-ink-2 transition-colors hover:bg-surface-sunken',
+                  p.stuck ? 'border-warning-mid' : 'border-line',
                 )}
               >
-                <Briefcase className="h-2.5 w-2.5 shrink-0" aria-hidden />
+                <Briefcase className="h-3 w-3 shrink-0 text-ink-muted" strokeWidth={1.6} aria-hidden />
                 <span className="truncate">{p.company}</span>
               </Link>
             ))}
             {attachedProjects.length > 4 ? (
-              <span className="text-[10.5px] text-ink-muted">
+              <span className="text-[12px] text-ink-muted">
                 +{attachedProjects.length - 4} more
               </span>
             ) : null}

@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { Engagement } from '@/data/engagements';
 import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import { internBoardResolutionPath } from '@/lib/projects/project-step-path';
 import { cn } from '@/lib/utils';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { FileBadge } from '@/components/ui/file-badge';
 
 interface BoardResolutionStepLinkProps {
   engagement: Engagement;
@@ -76,31 +77,22 @@ export function BoardResolutionStepLink({
     <Link
       href={internBoardResolutionPath(engagement)}
       className={cn(
-        'flex items-center gap-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-3',
-        'hover:border-blue-300 hover:bg-blue-100/80 transition-colors group',
+        'group flex min-h-11 items-center gap-3 rounded-md border-1.5 border-line bg-surface-raised px-3 py-2',
+        'transition-colors hover:border-line-strong hover:bg-surface-sunken/60',
         className,
       )}
     >
-      <FileText className="w-5 h-5 text-blue-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+      <FileBadge type="DOCX" />
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-medium text-ink group-hover:text-blue-700">{label}</p>
+        <p className="text-[14px] font-medium text-ink group-hover:underline">{label}</p>
       </div>
       {statusLabel && (
-        <span
-          className={cn(
-            'shrink-0 rounded-sm border px-2 py-0.5 text-[10px] font-medium',
-            status === 'finalized'
-              ? 'border-positive/30 bg-positive/10 text-positive'
-              : status === 'draft'
-                ? 'border-blue-200 bg-blue-100 text-blue-700'
-                : 'border-line bg-surface-sunken/60 text-ink-faint',
-          )}
-        >
+        <Chip tone={status === 'finalized' ? 'ok' : status === 'draft' ? 'prog' : 'idle'} className="shrink-0">
           {statusLabel}
-        </span>
+        </Chip>
       )}
       {status === 'loading' && (
-        <span className="text-[10px] text-ink-faint mono">…</span>
+        <span className="text-[12px] text-ink-faint">…</span>
       )}
     </Link>
   );

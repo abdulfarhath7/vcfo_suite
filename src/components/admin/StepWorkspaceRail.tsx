@@ -4,9 +4,8 @@ import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRole
 import { ChecklistReviewActions } from '@/components/admin/ChecklistReviewActions';
 import { RequestManagerApproval } from '@/components/admin/RequestManagerApproval';
 import { RequestClientFill } from '@/components/admin/RequestClientFill';
-import { StatusDot } from '@/components/noir';
 import { Button } from '@/components/ui/button';
-import { STATUS_LABEL, type ChecklistItem, type StatusCode } from '@/data/checklist';
+import type { ChecklistItem, StatusCode } from '@/data/checklist';
 import type { ActivityEvent } from '@/data/engagements';
 import { filterFieldsByViewer } from '@/lib/checklist/checklist-field-access';
 import {
@@ -21,22 +20,12 @@ import { fileNameFromStoragePath } from '@/lib/documents/milestone-document-stor
 import { cn } from '@/lib/utils';
 import { withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
 import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
-
-const STATUS_TONE_DOT: Record<
-  StatusCode,
-  'gold' | 'success' | 'warning' | 'danger' | 'info' | 'muted'
-> = {
-  'not-started': 'muted',
-  'in-progress': 'info',
-  'awaiting-client': 'warning',
-  completed: 'success',
-  overdue: 'danger',
-  'not-applicable': 'muted',
-};
+import { StatusPill } from '@/components/common/StatusPill';
 
 export type StepWorkspaceRailProps = {
   item: ChecklistItem;
   status: StatusCode;
+  /** Kept for callers; the status now shows as the shared Spectrum chip. */
   statusCls: string;
   engagementId: string;
   itemState?: ChecklistItemStateSlice;
@@ -87,16 +76,16 @@ function AttachmentSummary({
 
   return (
     <section>
-      <p className="text-[10px] font-semibold tracking-[0.16em] text-ink-muted">
+      <p className="text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
         Attachments
       </p>
       <ul className="mt-2 space-y-1.5">
         {files.map((field) => {
           const path = responses?.[field.id]?.trim();
           return (
-            <li key={field.id} className="text-[12px] leading-snug">
-              <span className="text-ink/90">{field.label}</span>
-              <span className="mt-0.5 block truncate text-[11px] text-ink-muted">
+            <li key={field.id} className="text-[13px] leading-snug">
+              <span className="text-ink">{field.label}</span>
+              <span className="mt-0.5 block truncate text-[12px] text-ink-muted">
                 {path ? fileNameFromStoragePath(path) : 'Not uploaded'}
               </span>
             </li>
@@ -113,22 +102,22 @@ function RecentActivity({ activity }: { activity: ActivityEvent[] }) {
 
   return (
     <section>
-      <p className="text-[10px] font-semibold tracking-[0.16em] text-ink-muted">
+      <p className="text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
         Activity
       </p>
       <ul className="mt-2 space-y-2">
         {recent.map((event) => (
-          <li key={event.id} className="border-l border-line/80 pl-2.5 text-[12px] leading-snug">
+          <li key={event.id} className="border-l-1.5 border-line pl-2.5 text-[13px] leading-snug">
             <span className="text-ink">{event.actor}</span>{' '}
             <span className="text-ink-muted">{event.verb}</span>
             {event.target ? (
               <>
                 {' '}
-                <span className="text-brand">{event.target}</span>
+                <span className="text-brand-text">{event.target}</span>
               </>
             ) : null}
             {event.at ? (
-              <span className="mt-0.5 block text-[10px] tracking-[0.12em] text-ink-muted">
+              <span className="mt-0.5 block text-[12px] text-ink-muted">
                 {event.at}
               </span>
             ) : null}
@@ -143,7 +132,6 @@ function RecentActivity({ activity }: { activity: ActivityEvent[] }) {
 export function StepWorkspaceRail({
   item,
   status,
-  statusCls,
   engagementId,
   itemState,
   responses,
@@ -161,7 +149,7 @@ export function StepWorkspaceRail({
   return (
     <aside
       className={cn(
-        'rounded-2xl border border-line/70 bg-background px-4 py-4',
+        'rounded-md border-1.5 border-line bg-surface-raised px-4 py-4',
         className,
       )}
     >
@@ -169,14 +157,11 @@ export function StepWorkspaceRail({
         <section>
           {!hideStatus ? (
             <>
-              <p className="text-[10px] font-semibold tracking-[0.16em] text-brand">
+              <p className="text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
                 Status
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <StatusDot tone={STATUS_TONE_DOT[status]} size={8} pulse={status === 'in-progress'} />
-                <span className={cn('text-[11px] font-medium tracking-[0.12em]', statusCls)}>
-                  {STATUS_LABEL[status]}
-                </span>
+                <StatusPill status={status} />
               </div>
             </>
           ) : null}
@@ -187,10 +172,10 @@ export function StepWorkspaceRail({
 
         {next ? (
           <section>
-            <p className="text-[10px] font-semibold tracking-[0.16em] text-ink-muted">
+            <p className="text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
               Next
             </p>
-            <p className="mt-1.5 text-[12.5px] leading-snug text-ink/90">{next}</p>
+            <p className="mt-1.5 text-[13px] leading-snug text-ink">{next}</p>
           </section>
         ) : null}
 

@@ -58,6 +58,9 @@ import {
   type JourneyRailItem,
 } from '@/components/incorporation/ChecklistJourneyRail';
 import { Surface } from '@/components/noir';
+import { StepMark } from '@/components/ui/step-track';
+import { stepMarkForStatus } from '@/components/incorporation/step-mark-for-gate';
+import { ChecklistStatusPill } from '@/components/incorporation/ChecklistStatusBadge';
 import { DocPackHeaderButton } from '@/components/doc-pack/DocPackHeaderButton';
 import { DocPackRailCard } from '@/components/doc-pack/DocPackRailCard';
 import { DocSourceStrip } from '@/components/doc-pack/DocSourceStrip';
@@ -417,30 +420,52 @@ export default function EngagementStepDetail() {
     ? docPackPagePath(eng, docPackShell, internPhase?.id === 'pre-inc-phase-1' ? 'part-a' : 'part-b')
     : null;
 
+  /* Plain step head (VCFO Spectrum, prototype `StepView`): the ST5 mark, the 28px title, a muted
+     line with the step code, company and phase, then the status chip. No back link on staff
+     screens (R-09): the rail and the record already lead back. */
+  const selfRow =
+    internPhaseRailItems.find((row) => row.item.id === item.id) ?? railItems.find((row) => row.item.id === item.id);
+  const selfStatus = selfRow ? gateDisplayStatus(selfRow.status, selfRow.gate) : null;
+  const selfMark = selfStatus ? stepMarkForStatus(selfStatus) : null;
   const stepTitleRow = (
-    <div className="mb-4 flex min-w-0 items-center gap-1.5">
-      <PageBackButton className="-ml-1.5" />
-      <h1 className="serif min-w-0 text-[22px] leading-tight tracking-tight text-ink">
-        {item.title}
-      </h1>
+    <header className="mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+      {isClientRoute ? <PageBackButton className="-ml-1.5" /> : null}
+      {selfMark ? <StepMark state={selfMark.state} tone={selfMark.tone} label={selfMark.label} /> : null}
+      <div className="min-w-0 flex-[1_1_280px]">
+        <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">
+          {item.title}
+        </h1>
+        <p className="flex min-w-0 flex-wrap items-center gap-x-2 text-[13.5px] text-ink-muted">
+          {selfRow ? <span className="font-mono text-[13px]">Step {selfRow.stepNumber}</span> : null}
+          {selfRow ? <span aria-hidden>·</span> : null}
+          <span className="min-w-0 truncate">{eng.companyName}</span>
+          {internPhase ? (
+            <>
+              <span aria-hidden>·</span>
+              <span>{internPhase.title}</span>
+            </>
+          ) : null}
+        </p>
+      </div>
+      {selfStatus && !directFlow && !internWorkspace ? <ChecklistStatusPill status={selfStatus} /> : null}
       <WhatsThisButton kind="step" refId={item.id} label={item.title} />
       {/* Narrow screens lose the rail (and its card); this stands in, never both. */}
       {docPackHref ? (
-        <DocPackHeaderButton summary={docPack.data} packHref={docPackHref} className="ml-auto lg:hidden" />
+        <DocPackHeaderButton summary={docPack.data} packHref={docPackHref} className="lg:hidden" />
       ) : null}
-    </div>
+    </header>
   );
   const stepMetaRow =
     editedLine || gateNotice || leadWaitingNotice ? (
       <div className="-mt-2 mb-4 space-y-2">
-        {editedLine ? <p className="text-[12px] text-ink-muted">{editedLine}</p> : null}
+        {editedLine ? <p className="text-[12.5px] text-ink-muted">{editedLine}</p> : null}
         {gateNotice ? (
-          <p role="status" className="rounded-md border border-line bg-surface-sunken/40 px-3 py-2 text-[13px] text-ink">
+          <p role="status" className="rounded-md border-1.5 border-line bg-surface-sunken px-3 py-2 text-[13.5px] text-ink">
             {gateNotice}
           </p>
         ) : null}
         {leadWaitingNotice ? (
-          <p role="status" className="rounded-md border border-brand/30 bg-brand-soft px-3 py-2 text-[13px] text-ink">
+          <p role="status" className="rounded-md border-1.5 border-brand-line bg-brand-soft px-3 py-2 text-[13.5px] text-ink">
             {leadWaitingNotice}
           </p>
         ) : null}
@@ -547,14 +572,14 @@ export default function EngagementStepDetail() {
   const internPhaseRail = internWorkspace && internPhase ? (
     <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
       <Surface className="p-3">
-        <p className="mb-1.5 px-2 text-[10px] font-semibold tracking-[0.12em] text-ink-muted">
+        <p className="mb-1.5 px-2 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
           {internPhase.title}
         </p>
         {internPhase.id === 'registration-phase-4' ? (
           <div className="space-y-4">
             {internPhaseRailGroups.map((group) => (
               <div key={group.heading}>
-                <p className="mb-1.5 px-2 text-[10px] font-semibold tracking-[0.12em] text-ink-muted">
+                <p className="mb-1.5 px-2 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
                   {group.heading}
                 </p>
                 <ChecklistJourneyRail

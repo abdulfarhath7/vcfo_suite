@@ -15,8 +15,6 @@ import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolut
 import { StepWorkspaceRail } from '@/components/admin/StepWorkspaceRail';
 import { Eyebrow, Mono, GoldDivider, StatusDot, AccentButton } from '@/components/noir';
 import {
-  CheckCircle2,
-  Circle,
   FileText,
   Upload,
   Activity as ActivityIcon,
@@ -25,6 +23,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fadeUp, staggerKids } from '@/lib/shell/motion';
+import { UNDERLINE_TAB_LIST } from '@/components/admin/step-tab-classes';
+import { StepMark } from '@/components/ui/step-track';
 
 const PHASE1_PANEL_IDS = [
   'pre-2',
@@ -181,11 +181,7 @@ export function StepDetailContentView(props: any) {
   const legacyChecklist = showLegacyChecklist ? (
     <>
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList
-          className={cn(
-            'h-auto justify-start mb-4',
-          )}
-        >
+        <TabsList className={UNDERLINE_TAB_LIST}>
           {[
             { v: 'forms' as const, icon: FileCheck, label: 'Forms', n: item.forms.length },
             ...(!hideDocumentsTab
@@ -196,15 +192,10 @@ export function StepDetailContentView(props: any) {
             const Icon = t.icon;
             return (
               <TabsTrigger key={t.v} value={t.v} className={tabTrigger}>
-                <span className="flex items-center gap-2">
-                  <Icon className="w-3 h-3" />
+                <span className="flex items-center gap-1.5">
+                  <Icon className="h-4 w-4" strokeWidth={1.6} aria-hidden />
                   {t.label}
-                  <span
-                    className={cn(
-                      'tabular-nums',
-                      isLight ? 'text-ink-faint' : 'text-ink-subtle',
-                    )}
-                  >
+                  <span className="rounded-sm bg-surface-sunken px-1.5 text-[12px] font-medium tabular-nums text-ink-2">
                     {t.n}
                   </span>
                 </span>
@@ -228,34 +219,19 @@ export function StepDetailContentView(props: any) {
                 return (
                   <motion.li key={f} variants={fadeUp}>
                     <button type="button" onClick={() => toggleForm(f)} className={rowBtn(done)}>
-                      {done ? (
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-                      ) : (
-                        <Circle
-                          className={cn(
-                            'w-4 h-4 shrink-0',
-                            isLight ? 'text-ink-faint' : 'text-ink-subtle',
-                          )}
-                        />
-                      )}
+                      <StepMark state={done ? 'done' : 'next'} size={20} label={done ? 'Filed' : 'To file'} />
                       <Mono
                         className={cn(
                           'text-[12px] tracking-[0.06em] flex-1',
-                          done
-                            ? isLight
-                              ? 'text-brand'
-                              : 'text-blue-500'
-                            : isLight
-                              ? 'text-ink'
-                              : 'text-ink',
+                          'text-ink',
                         )}
                       >
                         {f}
                       </Mono>
                       <span
                         className={cn(
-                          'text-[10px] mono tracking-[0.16em]',
-                          isLight ? 'text-ink-faint' : 'text-ink-subtle',
+                          'text-[12px] font-medium',
+                          done ? 'text-positive' : 'text-ink-muted',
                         )}
                       >
                         {done ? 'Filed' : 'To file'}
@@ -287,22 +263,21 @@ export function StepDetailContentView(props: any) {
                     <motion.li key={d} variants={fadeUp}>
                       <button type="button" onClick={() => toggleDoc(d)} className={cn(rowBtn(done), 'group items-start')}>
                         {done ? (
-                          <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                          <StepMark state="done" size={20} label="On file" className="mt-0.5" />
                         ) : (
                           <Upload
-                            className={cn(
-                              'w-4 h-4 shrink-0 mt-0.5 transition-colors group-hover:text-blue-600',
-                              isLight ? 'text-ink-faint' : 'text-ink-subtle',
-                            )}
+                            className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted transition-colors group-hover:text-brand-text"
+                            strokeWidth={1.6}
+                            aria-hidden
                           />
                         )}
-                        <span className={cn('text-[12.5px] flex-1 leading-relaxed', bodyText(done))}>
+                        <span className={cn('text-[14px] flex-1 leading-relaxed', bodyText(done))}>
                           {d}
                         </span>
                         <span
                           className={cn(
-                            'text-[10px] mono tracking-[0.16em] shrink-0 mt-0.5',
-                            isLight ? 'text-ink-faint' : 'text-ink-subtle',
+                            'mt-0.5 shrink-0 text-[12px] font-medium',
+                            done ? 'text-positive' : 'text-ink-muted',
                           )}
                         >
                           {done ? 'On file' : 'Outstanding'}
@@ -336,7 +311,7 @@ export function StepDetailContentView(props: any) {
                     {a.verb}
                   </span>{' '}
                   {a.target && (
-                    <span className={isLight ? 'text-brand' : 'text-blue-500'}>{a.target}</span>
+                    <span className="text-brand-text">{a.target}</span>
                   )}
                   <div
                     className={cn(
@@ -538,7 +513,7 @@ export function StepDetailContentView(props: any) {
               </>
             )}
             {stepGate?.kind === 'waiting' && stepGate.message && (
-              <div className="rounded-lg border border-warning/30 bg-warning-soft/60 px-3 py-2.5 text-sm text-warning">
+              <div className="rounded-md border-1.5 border-warning-mid bg-warning-soft px-3 py-2.5 text-[13.5px] text-warning">
                 {stepGate.message}
               </div>
             )}

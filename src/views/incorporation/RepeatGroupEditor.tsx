@@ -46,7 +46,7 @@ export function RepeatGroupEditor({
   return (
     <div className="space-y-3">
       {entries.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-line px-3 py-3 text-sm text-ink-muted">
+        <p className="rounded-md border border-dashed border-line px-3 py-3 text-sm text-ink-muted">
           {group.emptyLabel ?? `No ${inSentence(noun)} added yet.`}
         </p>
       ) : null}
@@ -54,10 +54,10 @@ export function RepeatGroupEditor({
         <section
           key={entry.id}
           aria-label={`${noun} ${entry.index}`}
-          className="rounded-xl border border-line/80 bg-surface-sunken/20 p-4"
+          className="rounded-md border border-line/80 bg-surface-sunken/20 p-4"
         >
           <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-[12px] font-semibold tracking-[0.08em] text-ink-muted">
+            <p className="text-[12px] font-semibold tracking-[.07em] uppercase text-ink-muted">
               {noun} {entry.index}
             </p>
             {entries.length > min ? (

@@ -151,8 +151,8 @@ export function ChecklistJourneyRail({
           const compactConnector = !isLast && (
             <span
               className={cn(
-                'absolute left-[1.125rem] top-9 bottom-[-0.35rem] w-px',
-                connectorSolid ? 'bg-positive' : 'border-l border-dashed border-line',
+                'absolute left-[1.0625rem] top-[2.125rem] bottom-[-0.35rem] w-[1.5px]',
+                connectorSolid ? 'bg-positive-mid' : 'bg-line',
               )}
               aria-hidden
             />
@@ -172,10 +172,9 @@ export function ChecklistJourneyRail({
               <div className="flex items-start gap-1.5">
                 <p
                   className={cn(
-                    'min-w-0 text-[13px] font-medium leading-snug',
-                    visuallyLocked ? 'text-ink-muted' : 'text-ink',
-                    selected && 'text-ink',
-                    gate.kind === 'active' && 'text-brand',
+                    'min-w-0 text-[13.5px] leading-snug',
+                    visuallyLocked ? 'text-ink-muted' : gate.kind === 'locked' ? 'text-ink-2' : 'text-ink',
+                    (selected || gate.kind === 'active') && 'font-medium text-ink',
                   )}
                 >
                   {item.title}
@@ -191,10 +190,10 @@ export function ChecklistJourneyRail({
                 </div>
               )}
               {gate.kind === 'waiting' && gate.message && (
-                <p className="mt-1 text-[11px] text-ink-muted">{gate.message}</p>
+                <p className="mt-1 text-[12px] text-waiting">{gate.message}</p>
               )}
               {windowLabel ? (
-                <p className="mt-0.5 text-[11px] tabular-nums text-ink-muted">
+                <p className="mt-0.5 text-[12px] tabular-nums text-ink-muted">
                   {windowLabel}
                 </p>
               ) : null}
@@ -203,8 +202,8 @@ export function ChecklistJourneyRail({
 
           const rowShell = cn(
             'relative flex w-full items-start text-left transition-colors',
-            'gap-2 rounded-lg py-2.5 pl-2 pr-1',
-            selected && canSelect && !animateSelected && 'bg-brand-soft/50',
+            'gap-2 rounded-md py-2 pl-2 pr-1',
+            selected && canSelect && !animateSelected && 'bg-surface-sunken',
             visuallyLocked && 'opacity-70',
             canSelect && 'hover:bg-surface-sunken/60',
             gate.kind === 'active' && 'journey-unlock',
@@ -215,7 +214,7 @@ export function ChecklistJourneyRail({
               <MotionActivePill
                 layoutId="intern-journey-selected"
                 reduced={reduceMotion}
-                className="absolute inset-0 rounded-lg bg-brand-soft/50"
+                className="absolute inset-0 rounded-md bg-surface-sunken"
               />
             ) : null;
 

@@ -27,7 +27,7 @@ export function DocSourceStrip({
   return (
     <p
       className={cn(
-        'mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-line bg-surface-raised px-3 py-2 text-[12.5px] text-ink-muted',
+        'mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border-1.5 border-line bg-surface-raised px-3 py-2 text-[12.5px] text-ink-muted',
         className,
       )}
     >
@@ -39,7 +39,7 @@ export function DocSourceStrip({
       <span aria-hidden>·</span>
       <span>{parts.join(', ')}</span>
       <span aria-hidden>·</span>
-      <Link href={packHref} className="font-medium text-brand hover:underline">
+      <Link href={packHref} className="font-medium text-brand-text hover:underline">
         Open in document pack
       </Link>
     </p>

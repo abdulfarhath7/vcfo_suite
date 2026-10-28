@@ -137,7 +137,7 @@ export function createEditableFieldRenderer(
             ariaInvalid={Boolean(error)}
             ariaDescribedBy={error ? errorId : undefined}
             size="sm"
-            className={cn('max-w-md', error && 'ring-1 ring-danger/40 rounded-lg')}
+            className={cn('max-w-md', error && 'ring-1 ring-danger/40 rounded-md')}
           />
         ) : field.type === 'textarea' ? (
           <>
@@ -154,7 +154,7 @@ export function createEditableFieldRenderer(
             {field.maxWords != null && (
               <p
                 className={cn(
-                  'text-[11px] tabular-nums',
+                  'text-[12px] tabular-nums',
                   wordCount != null && wordCount > field.maxWords
                     ? 'text-danger'
                     : 'text-ink-muted',
@@ -170,7 +170,7 @@ export function createEditableFieldRenderer(
             aria-label={field.label}
             {...invalidProps}
             className={cn(
-              'inline-flex max-w-full flex-wrap gap-1 rounded-lg border bg-surface-sunken/60 p-1',
+              'inline-flex max-w-full flex-wrap gap-1 rounded-md border bg-surface-sunken/60 p-1',
               error ? 'border-danger' : 'border-line',
             )}
           >
@@ -289,7 +289,7 @@ export function createEditableFieldRenderer(
               }}
             >
               {uploadingField === field.id ? (
-                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-blue-700" aria-hidden />
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-brand-text" aria-hidden />
               ) : (
                 <Upload className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden />
               )}
@@ -300,7 +300,7 @@ export function createEditableFieldRenderer(
                     ? 'Replace file'
                     : 'Choose file'}
               </span>
-              <span className="min-w-0 truncate text-[11px] text-ink-muted">
+              <span className="min-w-0 truncate text-[12px] text-ink-muted">
                 PDF, DOCX, or image · max {maxUploadSizeLabel()}
               </span>
               <input
@@ -368,12 +368,12 @@ export function createEditableFieldRenderer(
         )}
 
         {error && (
-          <p id={errorId} tabIndex={-1} className="text-[11px] font-medium text-danger outline-none">
+          <p id={errorId} tabIndex={-1} className="text-[12px] font-medium text-danger outline-none">
             {error}
           </p>
         )}
         {!error && warning && (
-          <p className="text-[11px] text-warning">{warning}</p>
+          <p className="text-[12px] text-warning">{warning}</p>
         )}
       </div>
     );

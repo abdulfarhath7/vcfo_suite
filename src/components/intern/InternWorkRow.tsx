@@ -12,12 +12,13 @@ import {
   Undo2,
   Zap,
 } from 'lucide-react';
-import { internKindChipLabel, internToneBadge, internToneSolid, KIND_TONE } from '@/components/intern/intern-tones';
+import { internKindStatus, internToneBadge, KIND_TONE } from '@/components/intern/intern-tones';
+import { Chip } from '@/components/ui/spectrum-chip';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { InternWorkDenseLayout } from '@/components/intern/InternWorkDenseLayout';
-import { LeadCompanyPill } from '@/components/intern/LeadCompanyChip';
+import { LeadCompanyChip } from '@/components/intern/LeadCompanyChip';
 import { CHIP_CLASS } from '@/components/common/IconChip';
-import type { InternWorkItem } from '@/lib/intern/intern-work';
+import { formatDueLabel, type InternWorkItem } from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
 
 const KIND_ICON = {
@@ -33,26 +34,19 @@ const KIND_ICON = {
   done: CheckCircle2,
 } as const;
 
-function InternWorkKindChip({
-  kind,
-  label,
+/** R-13 status chip for a work item; the reason sits in the title. */
+export function InternWorkKindChip({
+  item,
   className,
 }: {
-  kind: string;
-  label?: string;
+  item: Pick<InternWorkItem, 'kind' | 'isOverdue' | 'why'>;
   className?: string;
 }) {
+  const status = internKindStatus(item);
   return (
-    <span
-      className={cn(
-        CHIP_CLASS,
-        'max-w-full shrink-0 overflow-hidden text-ellipsis',
-        internToneSolid(KIND_TONE[kind] ?? 'info'),
-        className,
-      )}
-    >
-      {label ?? internKindChipLabel(kind)}
-    </span>
+    <Chip tone={status.tone} title={item.why} className={cn('max-w-full', className)}>
+      {status.word}
+    </Chip>
   );
 }
 
@@ -86,7 +80,7 @@ export function InternWorkDenseRow({
           </>
         ) : undefined
       }
-      status={<InternWorkKindChip kind={item.kind} />}
+      status={<InternWorkKindChip item={item} />}
       age={
         item.ageLabel ? (
           <span
@@ -122,29 +116,55 @@ export function InternWorkQueueRow({ item }: { item: InternWorkItem }) {
   );
 }
 
-export function InternWorkBoardCard({ item, dim }: { item: InternWorkItem; dim?: boolean }) {
+/** Board card (prototype `WorkBoard`): company line, title, status chip and due date, then the row action. */
+export function InternWorkBoardCard({
+  item,
+  dim,
+  now,
+  onOpen,
+}: {
+  item: InternWorkItem;
+  dim?: boolean;
+  now?: Date;
+  /** Opens the task drawer. Without it the title links to the item's page. */
+  onOpen?: (item: InternWorkItem) => void;
+}) {
+  const late = item.isOverdue && item.kind !== 'done';
+  const titleClass = cn(
+    'block text-left text-[14px] font-medium leading-snug text-ink hover:underline',
+    dim && 'text-ink-muted line-through',
+  );
   return (
-    <div
+    <article
       className={cn(
-        'rounded-md border border-line bg-surface-raised p-2.5 shadow-card',
-        dim && 'opacity-65',
+        'grid min-w-0 gap-2 rounded-md border-1.5 bg-surface-raised px-3 py-2.5',
+        late ? 'border-danger-mid' : 'border-line',
+        dim && 'opacity-70',
       )}
     >
-      <Link
-        href={item.href}
-        title={item.title}
-        className={cn(
-          'block line-clamp-2 text-[12.5px] font-semibold leading-snug text-ink',
-          dim && 'text-ink-faint line-through',
-        )}
-      >
-        {item.title}
-      </Link>
-      <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
-        <LeadCompanyPill name={item.companyName} engagementId={item.engagementId} />
-        <InternWorkKindChip kind={item.kind} className="ml-auto" />
+      <div className="flex min-w-0 items-center gap-2 text-[12px] text-ink-muted">
+        <LeadCompanyChip name={item.companyName} compact />
+        <span className="truncate">{item.companyName}</span>
+        {item.catalogLabel ? <span className="ml-auto flex-none font-mono">{item.catalogLabel}</span> : null}
       </div>
-      <InternWorkCtaButton item={item} className="mt-2 w-full" />
-    </div>
+      {onOpen ? (
+        <button type="button" onClick={() => onOpen(item)} title={item.title} className={cn(titleClass, 'line-clamp-2')}>
+          {item.title}
+        </button>
+      ) : (
+        <Link href={item.href} title={item.title} className={cn(titleClass, 'line-clamp-2')}>
+          {item.title}
+        </Link>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <InternWorkKindChip item={item} className="min-w-0" />
+        {now ? (
+          <span className={cn('text-[12px] tabular-nums', late ? 'font-medium text-danger' : 'text-ink-muted')}>
+            {formatDueLabel(item.dueAt, now)}
+          </span>
+        ) : null}
+      </div>
+      <InternWorkCtaButton item={item} className="w-full" />
+    </article>
   );
 }

@@ -6,9 +6,21 @@ import { PageTransition } from "@/components/shell/PageTransition";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { CreateInternForm } from "@/components/admin/CreateInternForm";
 import { SEO } from "@/components/SEO";
-import { Surface } from "@/components/noir";
-import { Loader2, Users } from "lucide-react";
+import { EFilingGrid, type EFilingColumn } from "@/components/dash/EFilingGrid";
+import { EmptyState, SkeletonRows } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
+import { PeopleCard, PersonAvatar } from "./firm-people/parts";
+import { Users } from "lucide-react";
 
+type RosterRow = { id: string; name: string; open: number; myEng: number; load: number };
+
+/** Load bar tone (prototype `loadTone`): over 95% is red, over 80% amber, else blurple. */
+const loadTone = (n: number) => (n > 95 ? "bg-danger-mid" : n > 80 ? "bg-warning-mid" : "bg-brand");
+
+/**
+ * Project leads (prototype `LeadsScreen`): the add-lead form in one card and the active leads
+ * as a T1 grid (R-07) with projects, open tasks and a load bar.
+ */
 export default function Team() {
   const { internOptions, internsLoading, tasks, engagements } = useApp();
 
@@ -22,6 +34,37 @@ export default function Team() {
       return { ...m, open, myEng, load };
     });
   }, [internOptions, tasks, engagements]);
+
+  const columns: EFilingColumn<RosterRow>[] = [
+    {
+      key: "name",
+      header: "Project lead",
+      render: (m) => (
+        <span className="flex min-w-0 items-center gap-2.5">
+          <PersonAvatar name={m.name} />
+          <span className="min-w-0">
+            <b className="block truncate font-medium text-ink">{m.name}</b>
+            <span className="block truncate font-mono text-[12px] text-ink-muted">{m.id}</span>
+          </span>
+        </span>
+      ),
+    },
+    { key: "projects", header: "Projects", width: "96px", align: "right", render: (m) => <span className="tabular-nums">{m.myEng}</span> },
+    { key: "open", header: "Open tasks", width: "110px", align: "right", render: (m) => <span className="tabular-nums">{m.open}</span> },
+    {
+      key: "load",
+      header: "Load",
+      width: "160px",
+      render: (m) => (
+        <span className="flex items-center gap-2">
+          <span className="relative block h-2 w-[80px] overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+            <i className={cn("absolute inset-y-0 left-0 rounded-bar", loadTone(m.load))} style={{ width: `${m.load}%` }} />
+          </span>
+          <span className="text-[12.5px] tabular-nums text-ink-muted">{m.load}%</span>
+        </span>
+      ),
+    },
+  ];
 
   return (
     <PageTransition>
@@ -37,54 +80,24 @@ export default function Team() {
         title="Project leads"
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
-        <Surface className="p-5 sm:p-6 h-fit">
-          <CreateInternForm />
-        </Surface>
-
-        <Surface className="divide-y divide-line">
-          <div className="px-4 py-3 border-b border-line">
-            <p className="text-[11px] mono tracking-[0.14em] text-ink-faint">
-              Active project leads
-            </p>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_1fr]">
+        <PeopleCard title="Add project lead" className="h-fit">
+          <div className="p-4 sm:p-5">
+            <CreateInternForm />
           </div>
+        </PeopleCard>
+
+        <PeopleCard title="Active project leads" count={internsLoading ? undefined : roster.length}>
           {internsLoading ? (
-            <div className="p-8 flex justify-center text-ink-faint">
-              <Loader2 className="w-5 h-5 animate-spin" />
-            </div>
+            <SkeletonRows className="p-4" />
           ) : roster.length === 0 ? (
-            <p className="p-6 text-[13px] text-ink-faint">
-              No project leads yet.
-            </p>
+            <EmptyState title="No project leads yet" className="m-4" />
           ) : (
-            roster.map((m) => (
-              <div key={m.id} className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-brand-soft text-brand text-[12px] font-semibold flex items-center justify-center">
-                  {m.initials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-ink truncate">{m.name}</div>
-                  <div className="text-[11.5px] text-ink-faint font-mono truncate">
-                    {m.id}
-                  </div>
-                  <div className="text-[11.5px] text-ink-faint mt-0.5">
-                    {m.myEng} GCC projects · {m.open} open tasks
-                  </div>
-                </div>
-                <div className="w-40 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 rounded-full bg-surface-sunken overflow-hidden">
-                      <div className="h-full bg-brand" style={{ width: `${m.load}%` }} />
-                    </div>
-                    <span className="text-[11px] text-ink-faint tabular-nums w-10 text-right">
-                      {m.load}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))
+            <div className="px-2 pb-2">
+              <EFilingGrid caption="Active project leads" columns={columns} rows={roster} rowKey={(m) => m.id} pageSize={12} minWidth={520} />
+            </div>
           )}
-        </Surface>
+        </PeopleCard>
       </div>
     </PageTransition>
   );

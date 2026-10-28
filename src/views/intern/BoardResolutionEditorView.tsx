@@ -11,10 +11,6 @@ import {
 
   Download,
 
-  FileText,
-
-  Lock,
-
 } from 'lucide-react';
 
 
@@ -24,7 +20,8 @@ import { SEO } from '@/components/SEO';
 
 
 
-import { Eyebrow } from '@/components/noir';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { FileBadge } from '@/components/ui/file-badge';
 
 
 import {
@@ -55,7 +52,6 @@ import {
 
 
 
-import { PageBackButton } from '@/components/shell/PageBackButton';
 
 
 
@@ -112,59 +108,47 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
       />
 
-      <div className="surface p-6 md:p-8 max-w-4xl">
+      <div className="surface max-w-4xl p-5 md:p-6">
 
         <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
 
-          <div>
-
-            <Eyebrow>Legal document</Eyebrow>
-
-            <div className="mt-1 flex min-w-0 items-center gap-1.5">
-
-              <PageBackButton className="-ml-1.5" />
-
-              <h1 className="serif text-[28px] text-ink tracking-tight flex min-w-0 items-center gap-2">
-
-                <FileText className="w-6 h-6 text-blue-600 shrink-0" />
-
-                Board Resolution
-
+          {/* Plain head (prototype `BoardResolutionScreen`): file badge, 28px title, the company
+              in a muted line. No back link (R-09); the step page leads here and back. */}
+          <div className="flex min-w-0 items-center gap-3">
+            <FileBadge type="DOCX" />
+            <div className="min-w-0">
+              <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">
+                Board resolution
               </h1>
-
+              <p className="text-[13.5px] text-ink-muted">Legal document</p>
             </div>
-
           </div>
 
           {isFinalized && (
 
-            <span className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full bg-positive/10 text-positive border border-positive/20">
-
-              <Lock className="w-3.5 h-3.5" />
-
-              Finalized — client visible
-
-            </span>
+            <Chip tone="ok" title="Finalized — client visible">
+              Finalized
+            </Chip>
 
           )}
 
         </div>
 
         {withManager && !isFinalized ? (
-          <p role="status" className="mb-4 rounded-md border border-brand/30 bg-brand-soft px-3 py-2 text-[12.5px] text-ink">
+          <p role="status" className="mb-4 rounded-md border-1.5 border-brand-line bg-brand-soft px-3 py-2 text-[13.5px] text-ink">
             The board resolution is with your manager. You can edit it again if they send it back.
           </p>
         ) : null}
 
         {sentBackNote && !withManager && !isFinalized ? (
-          <p role="status" className="mb-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-[12.5px] text-ink">
+          <p role="status" className="mb-4 rounded-md border-1.5 border-warning-mid bg-warning-soft px-3 py-2 text-[13.5px] text-ink">
             <span className="font-medium">Your manager sent this back:</span> {sentBackNote}
           </p>
         ) : null}
 
         {!hasPre1Data && !loading && (
 
-          <p className="text-[12.5px] text-warning bg-warning/10 border border-warning/20 rounded-md px-3 py-2 mb-4">
+          <p className="mb-4 rounded-md border-1.5 border-warning-mid bg-warning-soft px-3 py-2 text-[13.5px] text-warning">
 
             Submit Client Details first. The board resolution uses this data.{' '}
 
@@ -174,7 +158,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
               onClick={() => router.push(pre1StepHref)}
 
-              className="font-medium text-ink underline underline-offset-2 hover:text-blue-700"
+              className="font-medium text-ink underline underline-offset-2 hover:text-brand-text"
 
             >
 

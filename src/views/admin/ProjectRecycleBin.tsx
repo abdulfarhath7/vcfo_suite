@@ -8,9 +8,10 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { PageBackCluster } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
-import { Surface, Eyebrow, EmptyStateIllustrated } from '@/components/noir';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { StageChip, PeopleCard } from '@/views/admin/firm-people/parts';
+import { RecordTile } from '@/components/incorporation/RecordHead';
 import { Button } from '@/components/ui/button';
-import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { listDeletedProjects, restoreProjectInDb } from '@/lib/projects/project-admin-db';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
@@ -71,56 +72,51 @@ export default function ProjectRecycleBin() {
         />
       </PageBackCluster>
 
-      {deletedQuery.isLoading ? (
-        <HexgridLoader />
-      ) : (
-        <Surface className="divide-y divide-line">
-          <div className="px-4 py-3">
-            <Eyebrow>In the bin · {projects.length}</Eyebrow>
-          </div>
-          {projects.length === 0 ? (
-            <EmptyStateIllustrated
-              icon={Trash2}
-              title="Nothing deleted"
-              actionLabel="View projects"
-              onAction={() => router.push(`${staffBase}/projects`)}
-              className="rounded-none border-0 bg-transparent"
-            />
-          ) : (
-            projects.map((project) => {
-              const busy = restore.isPending && restore.variables === project.id;
-              return (
-                <div
-                  key={project.id}
-                  className="flex flex-wrap items-center justify-between gap-3 p-4"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-[13px] font-semibold text-ink">
-                      {project.companyName}
-                    </div>
-                    <div className="mt-0.5 text-[11.5px] text-ink-muted">
-                      {project.stage} · {deletedLabel(project.deletedAt)}
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => restore.mutate(project.id)}
-                  >
-                    {busy ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                    ) : (
-                      <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                    )}
-                    Restore
-                  </Button>
+      <PeopleCard title="Deleted projects" count={deletedQuery.isLoading ? undefined : projects.length}>
+        {deletedQuery.isLoading ? (
+          <SkeletonRows className="p-4" />
+        ) : projects.length === 0 ? (
+          <EmptyState
+            title="Nothing deleted"
+            className="m-4"
+            action={
+              <Button size="sm" variant="secondary" onClick={() => router.push(`${staffBase}/projects`)}>
+                View projects
+              </Button>
+            }
+          />
+        ) : (
+          projects.map((project) => {
+            const busy = restore.isPending && restore.variables === project.id;
+            return (
+              <div
+                key={project.id}
+                className="flex min-h-11 flex-wrap items-center gap-3 border-b border-line-soft px-4 py-2.5 last:border-b-0"
+              >
+                <RecordTile name={project.companyName} size={30} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[14px] font-medium text-ink">{project.companyName}</div>
+                  <div className="text-[12.5px] text-ink-muted">{deletedLabel(project.deletedAt)}</div>
                 </div>
-              );
-            })
-          )}
-        </Surface>
-      )}
+                <StageChip stage={project.stage} />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => restore.mutate(project.id)}
+                >
+                  {busy ? (
+                    <Loader2 className="animate-spin" aria-hidden />
+                  ) : (
+                    <RotateCcw strokeWidth={1.6} aria-hidden />
+                  )}
+                  Restore
+                </Button>
+              </div>
+            );
+          })
+        )}
+      </PeopleCard>
     </PageTransition>
   );
 }

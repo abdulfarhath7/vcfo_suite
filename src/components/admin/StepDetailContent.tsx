@@ -23,6 +23,7 @@ import {
   stepDetailUiReducer,
   type StepProgress,
 } from '@/components/admin/step-detail-progress';
+import { UNDERLINE_TAB_TRIGGER } from '@/components/admin/step-tab-classes';
 
 export interface StepDetailContentProps {
   item: ChecklistItem;
@@ -239,18 +240,14 @@ function StepDetailContentInner({
 
   const rowBtn = (done: boolean) =>
     cn(
-      'w-full flex items-center gap-3 px-3 py-2.5 border rounded-sm text-left transition-all',
+      'w-full flex min-h-11 items-center gap-3 px-3 py-2 border-1.5 rounded-md text-left transition-colors',
       done
-        ? isLight
-          ? 'border-brand/30 bg-brand-soft/50'
-          : 'border-brand/40 bg-brand/5'
-        : isLight
-          ? 'border-line hover:border-line/80 hover:bg-surface-sunken/40'
-          : 'border-line hover:border-line-strong',
+        ? 'border-line bg-surface-raised'
+        : 'border-line hover:border-line-strong hover:bg-surface-sunken/60',
     );
 
-  /* Step tabs (K-09, rule R-11): small inline buttons, the picked tab navy. */
-  const tabTrigger = cn('shrink-0 rounded-md bg-transparent px-2.5 h-7 text-[12px] font-medium text-ink-muted transition-colors hover:text-ink data-[state=active]:bg-navy data-[state=active]:font-semibold data-[state=active]:text-on-navy data-[state=active]:shadow-none');
+  /* Step tabs (rule R-11, N4): underline tabs for the views of one step. */
+  const tabTrigger = UNDERLINE_TAB_TRIGGER;
 
   const emptyCopy = isLight ? 'text-ink-faint' : 'text-ink-muted';
   const bodyText = (done: boolean) =>
