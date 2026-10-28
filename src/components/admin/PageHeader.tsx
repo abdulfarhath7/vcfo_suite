@@ -55,7 +55,7 @@ export function PageHeader({
   const hasExtras = Boolean(subtitle || actions || footer || showEyebrow);
 
   const heading = showTitle ? (
-    <h1 className="min-w-0 text-[1.45rem] font-semibold leading-none tracking-tight text-ink sm:text-[1.65rem]">
+    <h1 className="min-w-0 text-[22px] font-medium leading-tight tracking-[-0.01em] text-ink sm:text-[28px] sm:leading-9">
       {title}
     </h1>
   ) : (
@@ -84,8 +84,7 @@ export function PageHeader({
       <header
         className={cn(
           'mb-5',
-          footer &&
-            'overflow-hidden rounded-2xl border border-line/70 bg-surface-raised shadow-[0_8px_28px_-22px_oklch(22%_0.04_260_/_0.45)] sm:mb-6',
+          footer && 'overflow-hidden rounded-md border-1.5 border-line bg-surface-raised sm:mb-6',
         )}
       >
         {heading}
@@ -105,7 +104,7 @@ export function PageHeader({
             ) : null}
             <div className="min-w-0">
               {showEyebrow ? (
-                <p className="mb-0.5 text-[10px] font-medium tracking-[0.16em] text-ink-muted">
+                <p className="mb-0.5 text-[12px] font-medium text-ink-muted">
                   {eyebrow}
                 </p>
               ) : null}
@@ -117,53 +116,51 @@ export function PageHeader({
             </div>
           </div>
           {actions ? (
-            <div className="flex flex-wrap items-center gap-2 sm:shrink-0 [&_a]:min-h-10 [&_button]:min-h-10 [&_button]:rounded-xl">
+            <div className="flex flex-wrap items-center gap-2 sm:shrink-0 ">
               {actions}
             </div>
           ) : null}
         </div>
         {footer ? (
-          <div className="border-t border-line/70 bg-surface-sunken/20 px-5 py-4 sm:px-6">{footer}</div>
+          <div className="border-t border-line-soft px-5 py-4 sm:px-6">{footer}</div>
         ) : null}
       </header>
     );
   }
 
   return (
-    <header
-      className={cn(
-        'mb-5 overflow-hidden rounded-2xl border border-line/70 bg-surface-raised shadow-[0_8px_28px_-22px_oklch(22%_0.04_260_/_0.45)] sm:mb-6',
-      )}
-    >
-      <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-5">
+    /* VCFO Spectrum (R-02, R-09): a plain white head on the canvas, no card or shadow. A
+       footer block (compose, filters) still sits in a 1.5px-edged card under the title. */
+    <header className={cn('mb-5 sm:mb-6')}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="min-w-0">
           {showEyebrow ? (
-            <p className="mb-1 text-[10px] font-medium tracking-[0.16em] text-ink-muted">
+            <p className="mb-1 text-[12px] font-medium text-ink-muted">
               {eyebrow}
             </p>
           ) : null}
           <div className="flex min-w-0 items-center gap-2">
             {backBtn}
             {showIcon && Icon ? (
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand">
-                <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
+              <span className="sr-only">
+                <Icon aria-hidden />
               </span>
             ) : null}
             {heading}
           </div>
           {subtitle ? (
-            <div className="prose-narrow mt-1.5 text-[13px] leading-relaxed text-ink-muted">
+            <div className="prose-narrow mt-1 text-[13.5px] leading-relaxed text-ink-muted">
               {subtitle}
             </div>
           ) : null}
         </div>
         {actions ? (
-          <div className="flex flex-wrap items-center gap-2 sm:shrink-0 [&_a]:min-h-10 [&_button]:min-h-10 [&_button]:rounded-xl">
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0 ">
             {actions}
           </div>
         ) : null}
       </div>
-      {footer ? <div className="border-t border-line/70 bg-surface-sunken/20 px-5 py-4 sm:px-6">{footer}</div> : null}
+      {footer ? <div className="mt-4 rounded-md border-1.5 border-line bg-surface-raised px-5 py-4 sm:px-6">{footer}</div> : null}
     </header>
   );
 }
