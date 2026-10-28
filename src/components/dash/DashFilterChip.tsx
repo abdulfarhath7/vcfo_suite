@@ -3,9 +3,9 @@
 import { cn } from '@/lib/utils';
 
 /**
- * The list filter chip, lifted verbatim from the lead dashboard's `MyWork`
- * filter row so every filtered list in the product uses one chip, one radius,
- * one active state. `MyWork`'s private copy should adopt this next.
+ * The list filter chip (VCFO Spectrum R-10, Q3): a rounded rectangle. A set filter has a soft
+ * blurple fill; an unset one is a quiet white chip with a 1.5px edge. Every filtered list in
+ * the product uses this one chip.
  */
 export function DashFilterChip({
   on,
@@ -24,8 +24,8 @@ export function DashFilterChip({
       onClick={onClick}
       aria-pressed={on}
       className={cn(
-        'rounded-sm border border-line bg-surface-raised px-3.5 py-1.5 text-xs font-semibold text-ink-muted hover:border-line',
-        on && 'border-transparent bg-brand-soft text-brand-strong',
+        'inline-flex h-[30px] items-center rounded-md border-1.5 border-line bg-surface-raised px-3 text-[13px] font-medium text-ink-2 hover:border-line-strong',
+        on && 'border-brand-line bg-brand-soft text-brand-text hover:border-brand-line',
       )}
     >
       {label}

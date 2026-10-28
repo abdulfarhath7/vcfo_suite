@@ -120,11 +120,11 @@ export function AnnouncementsBell() {
           animate={catching && !osReduce ? { scale: [1, 1.38, 0.94, 1.08, 1] } : { scale: 1 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Megaphone className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
+          <Megaphone className="h-4 w-4 shrink-0" strokeWidth={1.6} aria-hidden />
         </m.span>
         {unread > 0 && (
           <span
-            className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-navy px-1 text-[10px] font-semibold leading-none text-on-navy ring-2 ring-surface-raised"
+            className="absolute right-[5px] top-[5px] flex h-4 min-w-4 items-center justify-center rounded-sm bg-danger-mid px-1 text-[10.5px] font-medium leading-none text-white ring-2 ring-surface-raised"
             aria-hidden
           >
             {unread > 9 ? "9+" : unread}
@@ -133,10 +133,10 @@ export function AnnouncementsBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="flex w-[min(100vw-1.5rem,24rem)] max-h-[min(82vh,640px)] flex-col overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface-raised p-0 text-ink shadow-[0_12px_40px_-18px_oklch(22%_0.04_260_/_0.38)]"
+        className="flex w-[min(100vw-1.5rem,24rem)] max-h-[min(82vh,640px)] flex-col overflow-hidden rounded-[var(--radius-md)] border-1.5 border-line bg-surface-raised p-0 text-ink shadow-float"
       >
         <div className="flex items-start justify-between gap-3 px-3.5 pt-3 pb-2">
-          <p className="text-[13px] font-semibold leading-tight tracking-tight text-ink">
+          <p className="text-[15px] font-medium leading-tight text-ink">
             Announcements
             {unread > 0 ? (
               <span className="ml-1.5 font-medium text-ink-muted">· {unread} new</span>
@@ -145,7 +145,7 @@ export function AnnouncementsBell() {
           {canWrite ? (
             <button
               type="button"
-              className="inline-flex shrink-0 items-center gap-0.5 text-[12px] font-semibold text-brand hover:text-brand-strong"
+              className="inline-flex shrink-0 items-center gap-0.5 text-[12.5px] font-medium text-brand-text hover:underline"
               aria-expanded={composing}
               onPointerDown={(event) => event.preventDefault()}
               onClick={(event) => {
@@ -206,7 +206,7 @@ export function AnnouncementsBell() {
         <div className="flex items-center justify-between gap-3 border-t border-line px-3.5 py-2.5">
           <Link
             href={boardHref}
-            className="text-[12px] font-semibold text-brand hover:underline"
+            className="text-[12.5px] font-medium text-brand-text hover:underline"
           >
             View all announcements →
           </Link>

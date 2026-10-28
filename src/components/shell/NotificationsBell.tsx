@@ -288,11 +288,11 @@ export function NotificationsBell() {
           animate={catching && !osReduce ? { scale: [1, 1.38, 0.94, 1.08, 1] } : { scale: 1 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Bell className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} aria-hidden />
+          <Bell className="h-4 w-4 shrink-0" strokeWidth={1.6} aria-hidden />
         </m.span>
         {hasUnread && (
           <span
-            className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-navy px-1 text-[10px] font-semibold leading-none text-on-navy ring-2 ring-surface-raised"
+            className="absolute right-[5px] top-[5px] flex h-4 min-w-4 items-center justify-center rounded-sm bg-danger-mid px-1 text-[10.5px] font-medium leading-none text-white ring-2 ring-surface-raised"
             aria-hidden
           >
             {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
@@ -302,12 +302,12 @@ export function NotificationsBell() {
       <PopoverContent
         align="end"
         sideOffset={6}
-        className="flex w-[min(100vw-1.5rem,26rem)] max-h-[min(74vh,520px)] flex-col overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface-raised p-0 text-ink shadow-[0_12px_40px_-18px_oklch(22%_0.04_260_/_0.38)]"
+        className="flex w-[min(100vw-1.5rem,26rem)] max-h-[min(74vh,520px)] flex-col overflow-hidden rounded-[var(--radius-md)] border-1.5 border-line bg-surface-raised p-0 text-ink shadow-float"
         onPointerDownOutside={guardOutside}
         onInteractOutside={guardOutside}
       >
         <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-1.5">
-          <p className="p-0 text-[13px] font-semibold leading-tight tracking-tight text-ink">
+          <p className="p-0 text-[15px] font-medium leading-tight text-ink">
             Notifications
           </p>
           {hasUnread && (
@@ -427,7 +427,7 @@ export function NotificationsBell() {
         <div className="border-t border-line px-3 py-2">
           <Link
             href={historyHref}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-brand hover:text-brand-strong"
+            className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-brand-text hover:underline"
             onClick={() => setOpen(false)}
           >
             <History className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />

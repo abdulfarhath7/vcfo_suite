@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils';
 /**
  * THE data table. Factored out of the lead dashboard's `MyWork` list view so
  * long lists (engagements, activity, documents) never invent a second table
- * style: same header type scale, same hairline rows, same 13px row text. Heads: 11px label on
- * surface-sunken; rows 40px, every second row tinted (LeetCode's stripe); amounts right-aligned
+ * style (VCFO Spectrum R-07, Stripe T1): a 36px head in 11.5px capitals with a 1.5px line,
+ * 44px rows with one hairline, no zebra; amounts right-aligned
  * and tabular; in a long list a state is a coloured word (TONE_TEXT), not a chip (docs/design/COMPONENTS.md).
  *
  * Wide layout is a CSS grid (not `<table>`) so columns can be sized in `fr`
@@ -59,14 +59,14 @@ export function DashDataTable<Row>({
     <>
       <div
         className={cn(
-          'hidden rounded-t-md bg-surface-sunken text-[11px] font-semibold tracking-[0.06em] text-ink-muted xl:grid',
+          'hidden h-9 items-center border-b-1.5 border-line text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted xl:grid',
         )}
         style={{ gridTemplateColumns: template }}
       >
         {columns.map((column) => (
           <div
             key={column.key}
-            className={cn('min-w-0 px-3 py-2', column.align === 'right' && 'text-right')}
+            className={cn('min-w-0 px-2.5', column.align === 'right' && 'text-right')}
           >
             {column.header}
           </div>
@@ -107,7 +107,7 @@ export function DashDataTable<Row>({
         return (
           <div
             key={rowKey(row)}
-            className="border-t border-line text-[13px] font-medium transition-colors first:border-t-0 even:bg-surface-sunken/40 hover:bg-surface-sunken/70 xl:first:border-t"
+            className="border-b border-line-soft text-[14px] text-ink-2 transition-colors last:border-b-0 hover:bg-surface-sunken/60"
           >
             {href ? (
               <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40">
