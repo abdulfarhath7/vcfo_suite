@@ -10,7 +10,14 @@ import {
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
 
-const STC: Record<CompStatus, string> = { ok: 'var(--ok)', due: 'var(--due)', over: 'var(--over)', up: 'var(--navy)' };
+/** Status colours (R-25): a soft tint with its text colour on a day, the mid colour on a legend dot. Upcoming is grey. */
+const TINT: Record<CompStatus, [string, string]> = {
+  ok: ['var(--ok-light)', 'var(--ok-text)'],
+  due: ['var(--due-light)', 'var(--due-text)'],
+  over: ['var(--over-light)', 'var(--over-text)'],
+  up: ['var(--up-light)', 'var(--fg)'],
+};
+const DOT: Record<CompStatus, string> = { ok: 'var(--ok-mid)', due: 'var(--due-mid)', over: 'var(--over-mid)', up: 'oklch(var(--upcoming-mid))' };
 const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function YearView({ months, rows, today, onMonth }: { months: string[]; rows: PortalFiling[]; today: string; onMonth: (key: string) => void }) {
@@ -37,7 +44,7 @@ export function YearView({ months, rows, today, onMonth }: { months: string[]; r
                 .join(', ')}${it.length > 3 ? ` +${it.length - 3}` : ''}`
             : undefined;
           cells.push(
-            <span key={d} className={`${w ? 'f' : ''}${di === today ? ' t' : ''}`} style={w ? { background: STC[w] } : undefined} data-tip={tip}>
+            <span key={d} className={`${w ? 'f' : ''}${di === today ? ' t' : ''}`} style={w ? { background: TINT[w][0], color: TINT[w][1] } : undefined} data-tip={tip}>
               {d}
             </span>,
           );
@@ -65,7 +72,7 @@ export function YearView({ months, rows, today, onMonth }: { months: string[]; r
               {sum.length ? (
                 sum.map((s) => (
                   <span key={s}>
-                    <i style={{ background: STC[s] }} />
+                    <i style={{ background: DOT[s], borderRadius: 2 }} />
                     {c[s]}
                   </span>
                 ))

@@ -8,7 +8,6 @@
  */
 import { useMemo, useRef, useState } from 'react';
 import { usePortal } from '../../PortalProvider';
-import { BotSays } from '../../shared';
 import {
   AREAS,
   MON,
@@ -32,6 +31,7 @@ import { useCompFilings } from './api';
 import { AreaChip, Chip, I, Seg, usePageTips } from './bits';
 import { useComp } from './ctx';
 import { DetailModal } from './Detail';
+import { Empty, Island } from './spectrum';
 import type { useCalendarState } from './CalendarPage';
 
 export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typeof useCalendarState>; onOpenFilings: (f: PortalFiling) => void }) {
@@ -123,12 +123,12 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
                 data-tip={`${l} · ${v}`}
                 aria-label={`${l} · ${v} · show the list`}
                 onClick={() => openDrill({ kind: 'status', k, title: fyTitle, rows: fyRows })}
-                style={{ textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', background: 'light-dark(#fff, oklch(13% 0 89.9))', border: '1px solid var(--border)', borderRadius: 10, padding: 10, borderTop: `3px solid var(${col})` }}
+                style={{ textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', background: 'var(--panel)', border: '1.5px solid var(--border)', borderRadius: 6, padding: 10, borderTop: `3px solid var(${col}-mid)` }}
               >
                 <div className="metric" style={{ fontSize: 22 }}>
                   {loading ? '–' : v}
                 </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)' }}>{l}</div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>{l}</div>
               </button>
             ))}
           </div>
@@ -149,7 +149,7 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
           {week.map((iso, i) => {
             const it = dates.get(iso) ?? [];
             const s = it.length ? worstStatus(it, today) : '';
-            const bg = s ? tileVar(s) : 'light-dark(#fff, oklch(13% 0 89.9))';
+            const bg = s ? tileVar(s) : 'var(--panel)';
             const t = iso === today;
             return (
               <button
@@ -162,16 +162,16 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
                 onClick={() => setSelDay(selDay === iso ? null : iso)}
                 style={{
                   height: 58,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   background: bg,
-                  color: s ? '#fff' : 'var(--fg)',
-                  border: `1px solid ${s ? 'transparent' : 'var(--border)'}`,
+                  color: s ? tileInk(s) : 'var(--fg)',
+                  border: `1.5px solid ${s ? 'transparent' : 'var(--border)'}`,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 2,
-                  ...(t ? { boxShadow: '0 0 0 2px var(--navy)' } : {}),
+                  ...(t ? { boxShadow: '0 0 0 2px var(--primary)' } : {}),
                 }}
               >
                 <small style={{ font: '800 11px var(--font-sans),sans-serif', opacity: 0.8 }}>{['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}</small>
@@ -187,11 +187,9 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {!after ? (
-            <BotSays size={48} question="Why is my compliance calendar empty before incorporation?">
-              Your calendar starts after incorporation.
-              <br />
-              Nothing is due yet.
-            </BotSays>
+            <Island>
+              <Empty className="m-0 md:mx-0">Starts after incorporation</Empty>
+            </Island>
           ) : loading ? (
             [1, 2, 3].map((i) => <div key={i} className="sk-row" style={{ height: 62, borderRadius: 10 }} />)
           ) : qT.isError ? (
@@ -209,16 +207,16 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
                   aria-label={`${r.name} · ${r.period} · open the details`}
                   data-notip=""
                   onClick={() => set({ filing: r.id })}
-                  style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 56, background: 'light-dark(#fff, oklch(13% 0 89.9))', border: '1px solid var(--border)', borderRadius: 10, padding: 8 }}
+                  style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 56, background: 'var(--panel)', border: '1.5px solid var(--border)', borderRadius: 6, padding: 8 }}
                 >
                   <div className="dtile" style={{ background: tileVar(s), color: tileInk(s), width: 40, height: 44 }}>
                     <b style={{ fontSize: 16 }}>{Number(r.dueDate.slice(8))}</b>
                     <small>{tileSub(r.dueDate, (week[3] ?? today).slice(0, 7))}</small>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                    <div style={{ fontWeight: 500, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 3 }}>
-                      <AreaChip a={r.area} />
+                      <AreaChip a={r.area} compact />
                       <Chip s={s} />
                     </div>
                   </div>
@@ -227,9 +225,9 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
               );
             })
           ) : (
-            <BotSays size={44} action="">
-              {selDay ? 'Nothing is due on this day.' : 'Nothing due this week.'}
-            </BotSays>
+            <Island>
+              <Empty className="m-0 md:mx-0">{selDay ? 'Nothing due on this day' : 'Nothing due this week'}</Empty>
+            </Island>
           )}
         </div>
       </div>

@@ -1,31 +1,31 @@
 'use client';
 
 /**
- * Compliances board atoms — React ports of the prototype helpers in
- * s/comp/index.html: icons `I`, solid glyphs (rule 18), status / area chips,
- * portal ↗ (rule 15), 📎 proof chip, sliding pill `.seg`, focus track (E),
- * date tile, and the page-wide [data-tip] tooltip wiring (rule 14/17).
+ * Compliances board atoms: icons `I`, the Spectrum status and area chips (R-13, R-43) as
+ * inline Tailwind islands for the legacy board markup, the portal ↗ (rule 15), the proof
+ * chip, the segmented switch (R-11), the ST5 focus track, and the page-wide [data-tip]
+ * tooltip wiring (rule 14/17).
  */
 import {
-  useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   type CSSProperties,
-  type ReactNode,
   type RefObject,
 } from 'react';
+import { Paperclip } from 'lucide-react';
 import { usePortal } from '../../PortalProvider';
+import { Chip as SChip } from '@/components/ui/spectrum-chip';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { StepMark } from '@/components/ui/step-track';
 import {
   AREA_FULL,
-  ST,
   ST_TIP,
-  portalFor,
   type AreaCode,
   type CompStatus,
   type PortalFiling,
   type TrackNode,
 } from '@/lib/client-portal/compliances';
+import { AreaTag, PortalLink, StatusChip } from './spectrum';
 
 /* ---------------------------------------------------------------- icons */
 
@@ -87,87 +87,33 @@ export const I = {
   gear: (s = 17) => sv(P.gear, s, 2),
 };
 
-/* ------------------------------------------------- rule 18 · solid glyphs */
+/* ------------------------------------------- status and area chips (R-13, R-43) */
 
-type GlyphKey = 'done' | 'prog' | 'you' | 'sbc' | 'up' | 'late';
-const GLYPH: Record<GlyphKey, [string, string, string]> = {
-  done: ['var(--ok)', '<path d="M7 12.5l3.2 3.2L17 9"/>', '#fff'],
-  prog: ['var(--navy)', '<circle cx="12" cy="12" r="5"/><path d="M12 9.5V12l1.8 1.2"/>', '#f3d58a'],
-  you: ['var(--due)', '<circle cx="12" cy="9.5" r="2.6"/><path d="M7.5 17c.6-2.4 2.4-3.8 4.5-3.8s3.9 1.4 4.5 3.8"/>', '#fff'],
-  sbc: ['var(--prog)', '<path d="M7 12h10M13 8l4 4-4 4"/>', '#fff'],
-  up: ['oklch(93% 0.008 255)', '', '#fff'],
-  late: ['var(--over)', '<path d="M12 7.5v5.5M12 16.3v.2"/>', '#fff'],
-};
-function Glyph({ k, size = 16, tip }: { k: GlyphKey; size?: number; tip?: string }) {
-  const [bg, path, fg] = GLYPH[k];
-  return (
-    <span
-      className="gly"
-      {...(tip ? { 'data-tip': tip, 'aria-label': tip, role: 'img' } : {})}
-      style={{
-        width: size,
-        height: size,
-        background: bg,
-        ...(k === 'up' ? { boxShadow: 'inset 0 0 0 1.5px oklch(84% 0.015 255)' } : {}),
-      }}
-    >
-      {path ? (
-        <svg
-          width={size}
-          height={size}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={fg}
-          strokeWidth="2.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          dangerouslySetInnerHTML={{ __html: path }}
-        />
-      ) : null}
-    </span>
-  );
-}
-const ST_GLYPH: Record<CompStatus, GlyphKey> = { ok: 'done', due: 'prog', over: 'late', up: 'up' };
-
+/** Status chip in the six words (spectrum.tsx WORD), as an inline Tailwind island for the legacy board markup. */
 export function Chip({ s }: { s: CompStatus }) {
   return (
-    <span className={`chip ${ST[s].c}`} data-tip={ST_TIP[s]} aria-label={ST_TIP[s]}>
-      <Glyph k={ST_GLYPH[s]} size={12} />
-      {ST[s].l}
-    </span>
-  );
-}
-/** Drill-down table chip: soft ground, text-safe colour and a 6px dot (K-04). */
-export const SOLID: Record<CompStatus, string> = { ok: 'var(--ok-light)', due: 'var(--due-light)', over: 'var(--over-light)', up: 'var(--up-light)' };
-export const SOFT_TEXT: Record<CompStatus, string> = { ok: 'var(--ok-text)', due: 'var(--due-text)', over: 'var(--over-text)', up: 'var(--up-text)' };
-export const SOFT_DOT: Record<CompStatus, string> = { ok: 'var(--ok-mid)', due: 'var(--due-mid)', over: 'var(--over-mid)', up: 'var(--up)' };
-
-export function AreaChip({ a }: { a: AreaCode }) {
-  return (
-    <span className="area" data-tip={AREA_FULL[a]} aria-label={AREA_FULL[a]}>
-      {a}
+    <span className="cp-tw inline-flex align-middle" data-tip={ST_TIP[s]}>
+      <StatusChip s={s} />
     </span>
   );
 }
 
-/* ------------------------------------------------- rule 15 · ↗ and 📎 */
-
-export function PortalBtn({ f, dark = false }: { f: Pick<PortalFiling, 'area' | 'name'>; dark?: boolean }) {
-  const [n, u] = portalFor(f);
+/** Area pill (R-43). `compact` is the short tag used in the calendar rail, the day pop-over and on phones. */
+export function AreaChip({ a, compact }: { a: AreaCode; compact?: boolean }) {
   return (
-    <a
-      className={`pbtn${dark ? ' dark' : ''}`}
-      href={u}
-      target="_blank"
-      rel="noopener noreferrer"
-      data-tip={`Open ${n}`}
-      aria-label={`Open ${n}`}
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-    >
-      {I.ext(14)}
-    </a>
+    <span className="cp-tw inline-flex align-middle" aria-label={AREA_FULL[a]}>
+      <AreaTag a={a} compact={compact} />
+    </span>
+  );
+}
+
+/* ------------------------------------------------- rule 15 · ↗ and proof */
+
+export function PortalBtn({ f }: { f: Pick<PortalFiling, 'area' | 'name'>; dark?: boolean }) {
+  return (
+    <span className="cp-tw inline-flex align-middle">
+      <PortalLink f={f} />
+    </span>
   );
 }
 
@@ -175,53 +121,63 @@ export function ProofChip({ f, onOpen }: { f: PortalFiling; onOpen: (f: PortalFi
   if (!f.filedOn) return null;
   if (f.proofCount === 0)
     return (
-      <span className="chip c-due" data-tip="SBC will upload the proof" aria-label="Proof pending · SBC will upload the proof">
-        Proof pending
+      <span className="cp-tw inline-flex align-middle" data-tip="SBC will upload the proof">
+        <SChip tone="warn" aria-label="Proof pending · SBC will upload the proof">
+          Proof pending
+        </SChip>
       </span>
     );
   return (
-    <button
-      type="button"
-      className="chip pchip"
-      data-tip="Open proof"
-      aria-label={`Open proof · ${f.name} · ${f.period}`}
-      onClick={(e) => {
-        e.stopPropagation();
-        onOpen(f);
-      }}
-      onKeyDown={(e) => e.stopPropagation()}
-    >
-      {I.clip(12)}Proof
-    </button>
-  );
-}
-
-export function NameWithLinks({ f, dark }: { f: PortalFiling; dark?: boolean }) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-      {f.name}
-      <PortalBtn f={f} dark={dark} />
+    <span className="cp-tw inline-flex align-middle">
+      <button
+        type="button"
+        data-tip="Open proof"
+        aria-label={`Open proof · ${f.name} · ${f.period}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpen(f);
+        }}
+        onKeyDown={(e) => e.stopPropagation()}
+        className="inline-flex h-6 items-center gap-1 rounded-md border-1.5 border-line bg-surface-raised px-2 text-[12px] font-medium text-ink-2 hover:border-brand-line hover:text-brand-text"
+      >
+        <Paperclip size={12} strokeWidth={1.8} aria-hidden />
+        Proof
+      </button>
     </span>
   );
 }
 
-/* ------------------------------------------------- sliding pill (.seg) */
+export function NameWithLinks({ f }: { f: PortalFiling; dark?: boolean }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      {f.name}
+      <PortalBtn f={f} />
+    </span>
+  );
+}
 
+/* ------------------------------------------------- segmented switch (R-11, N5) */
+
+/**
+ * The board's filter switch, drawn by the shared SpectrumTabs (a quiet track, the picked option
+ * blurple with white text). The arrow keys move the pick, and picking the current option
+ * again calls `same` (the "Already showing" toast).
+ */
 export function Seg({
   opts,
   on,
   onPick,
   counts,
-  dots,
   label,
   className,
   style,
   same,
 }: {
-  opts: ReactNode[];
+  opts: string[];
   on: number;
   onPick: (i: number) => void;
   counts?: (number | null)[];
+  /** Kept for callers; status colours stay out of filter switches (R-25). */
   dots?: (string | null)[];
   label?: string;
   className?: string;
@@ -230,93 +186,63 @@ export function Seg({
   same?: (i: number) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const place = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    const th = el.querySelector<HTMLElement>('.thumb');
-    const b = el.querySelectorAll<HTMLElement>('button')[on];
-    if (th && b) {
-      th.style.width = `${b.offsetWidth}px`;
-      th.style.transform = `translateX(${b.offsetLeft}px)`;
-    }
-  }, [on]);
-  useLayoutEffect(() => {
-    place();
-  });
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => place());
-    ro.observe(el);
-    void document.fonts?.ready.then(place);
-    return () => ro.disconnect();
-  }, [place]);
+  const pick = (i: number) => (i === on ? same?.(i) : onPick(i));
   return (
-    <div className={`seg${className ? ` ${className}` : ''}`} ref={ref} role="tablist" aria-label={label} style={style}>
-      <span className="thumb" />
-      {opts.map((o, i) => (
-        <button
-          key={i}
-          type="button"
-          role="tab"
-          className={i === on ? 'on' : ''}
-          aria-selected={i === on}
-          onClick={() => (i === on ? same?.(i) : onPick(i))}
-          onKeyDown={(e) => {
-            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-              e.preventDefault();
-              const n = (i + (e.key === 'ArrowRight' ? 1 : opts.length - 1)) % opts.length;
-              onPick(n);
-              requestAnimationFrame(() => ref.current?.querySelectorAll<HTMLElement>('button')[n]?.focus());
-            }
-          }}
-        >
-          {dots?.[i] ? <span className="dot" style={{ background: dots[i]! }} /> : null}
-          {o}
-          {counts && counts[i] != null ? <span className="cnt">{counts[i]}</span> : null}
-        </button>
-      ))}
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- arrow keys move the pick inside the tab list
+    <div
+      ref={ref}
+      className={`cp-tw inline-flex max-w-full${className ? ` ${className}` : ''}`}
+      style={style}
+      onKeyDown={(e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        const n = (on + (e.key === 'ArrowRight' ? 1 : opts.length - 1)) % opts.length;
+        onPick(n);
+        requestAnimationFrame(() => ref.current?.querySelectorAll<HTMLElement>('[role="tab"]')[n]?.focus());
+      }}
+    >
+      <SpectrumTabs
+        label={label}
+        size="md"
+        value={String(on)}
+        onChange={(k) => pick(Number(k))}
+        items={opts.map((o, i) => ({ key: String(i), label: o, count: counts && counts[i] != null ? counts[i]! : undefined }))}
+      />
     </div>
   );
 }
 
-/* ------------------------------------------------ flow E · focus track */
+/* ------------------------------------------------ flow E · focus track (ST5) */
 
+/**
+ * The four workflow steps of a filing as ST5 marks (R-22): done steps a green square with a
+ * tick, the live step a ring on a tinted cell (teal when it is the client's move), later steps
+ * a dashed square.
+ */
 export function FocusTrack({ nodes }: { nodes: TrackNode[] }) {
   const total = nodes.length;
-  const out: ReactNode[] = [];
-  nodes.forEach((n, i) => {
-    if (i) {
-      const prevDone = nodes[i - 1]!.st === 'done' && (n.st === 'done' || n.st === 'cur');
-      out.push(<span key={`l${i}`} className={`ft-line ${prevDone ? 'done' : 'todo'}`} />);
-    }
-    if (n.st === 'cur')
-      out.push(
-        <div key={i} className="ft-cur" data-tip={n.tip} aria-label={n.tip} role="img">
-          <span className="ft-ic">{n.icon === 'person' ? I.user(17) : n.icon === 'check' ? I.check(17) : n.icon === 'file' ? I.file(17) : I.gear(17)}</span>
-          <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <span className="ft-eye">
-              Now · {i + 1} of {total}
+  return (
+    <ol className="cp-tw grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-4">
+      {nodes.map((n, i) => {
+        const now = n.st === 'cur';
+        const client = now && (n.icon === 'file' || n.icon === 'person');
+        return (
+          <li
+            key={i}
+            className={`grid min-w-0 grid-cols-[22px_minmax(0,1fr)] gap-x-2 rounded-md px-2 py-1.5${now ? ' bg-surface-sunken' : ''}`}
+            data-tip={n.tip}
+          >
+            <StepMark state={n.st === 'done' ? 'done' : now ? 'now' : 'next'} tone={client ? 'teal' : 'prog'} label={now ? `Now · ${i + 1} of ${total}` : n.st === 'done' ? 'Done' : 'Upcoming'} />
+            <span className="min-w-0">
+              <span className={`block truncate text-[13px] font-medium ${n.st === 'next' ? 'text-ink-muted' : 'text-ink'}`}>{n.label}</span>
+              {n.sub ? <span className={`block truncate text-[12px] ${now ? (client ? 'text-waiting' : 'text-brand-text') : 'text-ink-muted'}`}>{n.sub}</span> : null}
             </span>
-            <b>{n.label}</b>
-            <small>{n.sub}</small>
-          </span>
-        </div>,
-      );
-    else
-      out.push(
-        <div key={i} className="ft-st">
-          <Glyph k={n.st === 'done' ? 'done' : n.st === 'you' ? 'you' : 'up'} size={28} tip={n.tip} />
-          <span className={`ft-l ${n.st === 'done' ? '' : 'muted'}`}>
-            {n.label}
-            <small>{n.sub}</small>
-          </span>
-        </div>,
-      );
-  });
-  return <div className="ft">{out}</div>;
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
-
 /* ------------------------------------------- page-wide [data-tip] tips */
 
 /**

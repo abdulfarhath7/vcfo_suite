@@ -1,14 +1,20 @@
 'use client';
 
-/** Compact status donut (C-22, prototype donutCard()): every part drills down (rule 14). */
+/**
+ * Status donut (R-25, C1): the ring in status colours with the total in the centre and the
+ * legend beside it. Every part drills down (rule 14): a ring part or a legend row opens that
+ * status, the centre opens all rows.
+ */
 import type { KeyboardEvent } from 'react';
-import { ST, countByStatus, type CompStatus, type PortalFiling } from '@/lib/client-portal/compliances';
+import { cn } from '@/lib/utils';
+import { countByStatus, type CompStatus, type PortalFiling } from '@/lib/client-portal/compliances';
 import { CountUp } from './bits';
 import { useComp } from './ctx';
+import { FILL, Island, STROKE, WORD } from './spectrum';
 
 const ORDER: CompStatus[] = ['ok', 'due', 'over', 'up'];
 
-export function DonutCard({ rows, label, drillTitle }: { rows: PortalFiling[]; label: string; drillTitle: string }) {
+export function DonutCard({ rows, label, drillTitle, className }: { rows: PortalFiling[]; label: string; drillTitle: string; className?: string }) {
   const { today, openDrill } = useComp();
   const c = countByStatus(rows, today);
   const tot = rows.length;
@@ -22,39 +28,38 @@ export function DonutCard({ rows, label, drillTitle }: { rows: PortalFiling[]; l
     }
   };
   return (
-    <div className="card t donut" style={{ padding: '12px 16px', display: 'flex', gap: 16, alignItems: 'center' }}>
-      <svg width="88" height="88" viewBox="0 0 88 88" role="group" aria-label={`${label} · ${tot} filings`}>
-        {tot === 0 ? <circle cx="44" cy="44" r="35" fill="none" stroke="var(--raised)" strokeWidth="11" /> : null}
+    <Island className={cn('flex items-center gap-4 rounded-md border-1.5 border-line bg-surface-raised px-4 py-3', className)}>
+      <svg width="88" height="88" viewBox="0 0 88 88" role="group" aria-label={`${label} · ${tot} filings`} className="flex-none">
+        <circle cx="44" cy="44" r="35" fill="none" stroke="oklch(var(--line-soft))" strokeWidth="11" />
         {tot > 0
           ? ORDER.map((s) => {
               const len = (C * c[s]) / tot;
-              const el = (
+              const el = c[s] ? (
                 <circle
                   key={s}
-                  data-dd="status"
-                  data-tip={`${ST[s].l} · ${c[s]}`}
+                  data-tip={`${WORD[s]} · ${c[s]}`}
                   role="button"
-                  tabIndex={c[s] ? 0 : -1}
-                  aria-label={`${ST[s].l} · ${c[s]}`}
+                  tabIndex={0}
+                  aria-label={`${WORD[s]} · ${c[s]}`}
                   cx="44"
                   cy="44"
                   r="35"
                   fill="none"
-                  stroke={`var(${s === 'up' ? '--up' : ST[s].v})`}
+                  stroke={STROKE[s]}
                   strokeWidth="11"
                   strokeDasharray={`${Math.max(len - 2, 0)} ${C}`}
                   strokeDashoffset={-acc}
                   transform="rotate(-90 44 44)"
+                  className="cursor-pointer outline-none transition-[stroke-width] hover:[stroke-width:14] focus-visible:[stroke-width:14]"
                   onClick={() => open(s)}
                   onKeyDown={key(s)}
                 />
-              );
+              ) : null;
               acc += len;
               return el;
             })
           : null}
         <circle
-          data-dd="status"
           data-tip={`All filings · ${tot}`}
           role="button"
           tabIndex={0}
@@ -63,37 +68,36 @@ export function DonutCard({ rows, label, drillTitle }: { rows: PortalFiling[]; l
           cy="44"
           r="29"
           fill="transparent"
+          className="cursor-pointer outline-none"
           onClick={() => open('all')}
           onKeyDown={key('all')}
         />
-        <text pointerEvents="none" x="44" y="42" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="600" fontSize="20" fill="var(--fg)">
+        <text pointerEvents="none" x="44" y="43" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="500" fontSize="20" fill="oklch(var(--ink))">
           <CountUp n={tot} svg />
         </text>
-        <text pointerEvents="none" x="44" y="57" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="600" fontSize={label.length > 7 ? 9.5 : 11} fill="var(--muted)">
+        <text pointerEvents="none" x="44" y="58" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="500" fontSize={label.length > 7 ? 9.5 : 11} fill="oklch(var(--ink-muted))">
           {label}
         </text>
       </svg>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(118px,1fr))', gap: '6px 16px', flex: '1 1 220px', minWidth: 0 }}>
+      <ul className="grid min-w-0 flex-1 grid-cols-1 gap-1.5">
         {ORDER.map((s) => (
-          <div
-            key={s}
-            data-dd="status"
-            data-tip={`${ST[s].l} · ${c[s]}`}
-            role="button"
-            tabIndex={0}
-            aria-label={`${ST[s].l} · ${c[s]} · show the list`}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 600, borderRadius: 4 }}
-            onClick={() => open(s)}
-            onKeyDown={key(s)}
-          >
-            <i style={{ width: 10, height: 10, borderRadius: 3, background: `var(${s === 'up' ? '--up' : ST[s].v})` }} />
-            <span style={{ flex: 1 }}>{ST[s].l}</span>
-            <b className="mono">
-              <CountUp n={c[s]} />
-            </b>
-          </div>
+          <li key={s}>
+            <button
+              type="button"
+              data-tip={`${WORD[s]} · ${c[s]}`}
+              aria-label={`${WORD[s]} · ${c[s]} · show the list`}
+              onClick={() => open(s)}
+              className="flex w-full items-center gap-2 rounded-sm text-left text-[13px] text-ink-2 hover:text-brand-text"
+            >
+              <i className={cn('h-2.5 w-2.5 flex-none rounded-[3px]', FILL[s])} aria-hidden />
+              <span className="flex-1">{WORD[s]}</span>
+              <b className="font-medium tabular-nums text-ink">
+                <CountUp n={c[s]} />
+              </b>
+            </button>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </Island>
   );
 }

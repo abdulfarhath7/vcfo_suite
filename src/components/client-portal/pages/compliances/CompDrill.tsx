@@ -7,10 +7,10 @@
  * Esc / ✕ / scrim close; focus is trapped; phones get a bottom sheet (CSS).
  */
 import { useRef, useState } from 'react';
-import { InfoPopover, BotSays } from '../../shared';
+import { usePortal } from '../../PortalProvider';
+import { InfoPopover } from '../../shared';
 import {
   AREAS,
-  ST,
   fmtDM,
   fmtDMY,
   sortByDue,
@@ -19,7 +19,8 @@ import {
   type CompStatus,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
-import { AreaChip, I, NameWithLinks, ProofChip, SOFT_DOT, SOFT_TEXT, SOLID, Seg, useModal } from './bits';
+import { AreaChip, Chip, I, NameWithLinks, ProofChip, Seg, useModal } from './bits';
+import { Empty, Island, WORD } from './spectrum';
 
 export interface DrillState {
   kind: 'status' | 'area';
@@ -33,10 +34,10 @@ export interface DrillState {
 const TABS: Record<'status' | 'area', [string, string][]> = {
   status: [
     ['all', 'All'],
-    ['ok', 'Filed'],
-    ['due', 'Due soon'],
-    ['over', 'Overdue'],
-    ['up', 'Upcoming'],
+    ['over', WORD.over],
+    ['due', WORD.due],
+    ['up', WORD.up],
+    ['ok', WORD.ok],
   ],
   area: AREAS.map((a) => [a.id, a.label]),
 };
@@ -61,6 +62,7 @@ export function CompDrill({
     k === 'all' || (state.kind === 'status' ? statusOf(r, today) === (k as CompStatus) : r.area === (k as AreaFilter));
   const [on, setOn] = useState(Math.max(0, tabs.findIndex((t) => t[0] === state.k)));
   const ref = useRef<HTMLDivElement>(null);
+  const { openChat } = usePortal();
   useModal(ref, onClose);
   const k = tabs[on]![0];
   const list = sortByDue(state.rows.filter((r) => match(r, k)));
@@ -146,9 +148,7 @@ export function CompDrill({
                           {r.filedOn ? `Filed ${fmtDM(r.filedOn)}` : fmtDM(r.dueDate)}
                         </td>
                         <td>
-                          <span className="chip" style={{ background: SOLID[st], color: SOFT_TEXT[st], ['--dot' as string]: SOFT_DOT[st] } as React.CSSProperties}>
-                            {ST[st].l}
-                          </span>
+                          <Chip s={st} />
                         </td>
                         <td style={{ color: 'var(--subtle)' }}>{I.chevR(14)}</td>
                       </tr>
@@ -158,17 +158,29 @@ export function CompDrill({
               </table>
             </div>
           ) : (
-            <div className="ddempty" style={{ padding: '18px 4px 6px' }}>
+            <Island className="ddempty pt-3">
               {k === 'over' ? (
-                <BotSays size={44} action="">
-                  Nothing overdue. Nice work.
-                </BotSays>
+                <Empty className="m-0 md:mx-0">Nothing overdue</Empty>
               ) : (
-                <BotSays size={44} question={`Why are there no ${tabs[on]![1].toLowerCase()} filings in ${state.title}?`}>
-                  No filings here yet.
-                </BotSays>
+                <Empty
+                  className="m-0 md:mx-0"
+                  action={
+                    <button
+                      type="button"
+                      className="text-[13px] font-medium text-brand-text hover:underline"
+                      onClick={() => {
+                        onClose();
+                        openChat(`Why are there no ${tabs[on]![1].toLowerCase()} filings in ${state.title}?`);
+                      }}
+                    >
+                      Ask VCFO why
+                    </button>
+                  }
+                >
+                  None
+                </Empty>
               )}
-            </div>
+            </Island>
           )}
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }} hidden={!list.length}>
             {list.length > 7 ? `Showing 7 of ${list.length} · full list in Filings` : `Showing all ${list.length}`}

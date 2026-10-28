@@ -11,7 +11,7 @@
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { usePortal } from '../../PortalProvider';
-import { BotSays, InfoPopover } from '../../shared';
+import { InfoPopover } from '../../shared';
 import { portalHref } from '../../routes';
 import {
   AREAS,
@@ -46,8 +46,14 @@ import {
   type AreaFilter,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
+import { ArrowRight, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Chip as SChip } from '@/components/ui/spectrum-chip';
+import { SkeletonRows } from '@/components/ui/empty-state';
 import { useCompFilings } from './api';
-import { AreaChip, Chip, I, NameWithLinks, PortalBtn, ProofChip, Seg, usePageTips } from './bits';
+import { AreaChip, Chip, I, NameWithLinks, ProofChip, Seg, usePageTips } from './bits';
+import { AreaTag, Empty, Island, PortalLink, StatusChip, TINT } from './spectrum';
 import { CompProvider, useComp } from './ctx';
 import { DetailModal } from './Detail';
 import { DonutCard } from './DonutCard';
@@ -60,7 +66,6 @@ import '../../css/compliances-board.css';
 const VIEWS = ['month', 'year', 'timeline'] as const;
 type View = (typeof VIEWS)[number];
 const AREA_IDS = AREAS.map((a) => a.id);
-const TIP_KEY = 'vcfo.comp.tip.v1';
 
 function useNarrow(px = 700): boolean {
   const [n, setN] = useState(false);
@@ -126,7 +131,7 @@ export function CompliancesCalendar() {
 /* =================================================================== */
 
 function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalendarState>; onOpenFilings: (f: PortalFiling) => void }) {
-  const { after, go, toast } = usePortal();
+  const { after, go, toast, openChat } = usePortal();
   const { today, openDrill } = useComp();
   const { month, view, area, nowKey, set } = st;
   const root = useRef<HTMLDivElement>(null);
@@ -199,36 +204,18 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
     else setSel({ iso, cls: ' below', style: { left: Math.max(12, Math.min(VW - PW - 12, c.left - a.left + c.width / 2 - PW / 2)), top: c.bottom - a.top + 8 } });
   };
 
-  /* first-time tip (E-06), per viewer */
-  const [tip, setTip] = useState(false);
-  useEffect(() => {
-    try {
-      setTip(!localStorage.getItem(TIP_KEY));
-    } catch {
-      setTip(false);
-    }
-  }, []);
-  const gotIt = () => {
-    setTip(false);
-    try {
-      localStorage.setItem(TIP_KEY, '1');
-    } catch {
-      /* private mode */
-    }
-  };
-
   const monthName = MONTHS[Number(month.slice(5)) - 1]!;
   const viewIdx = VIEWS.indexOf(view);
   const areaIdx = Math.max(0, AREAS.findIndex((a) => a.id === area));
 
   /* empty month copy (E-01) */
   const emptyOverlay = (() => {
-    if (!after) return { lines: ['Your calendar starts after incorporation.', 'Nothing is due yet.'], showAll: false, q: 'Why is my compliance calendar empty before incorporation?' };
+    if (!after) return { lines: ['Starts after incorporation'], showAll: false, q: 'Why is my compliance calendar empty before incorporation?' };
     if (loading || q.isError || view !== 'month' || monthRows.length) return null;
     const pool = sortByDue(filterArea([...fyRows, ...railRows], area)).filter((r) => r.dueDate > `${month}-31`);
     const next = pool[0];
-    const head = area === 'all' ? `Nothing is due in ${monthName}.` : `No ${AREA_LABEL[area]} deadlines in ${monthName}.`;
-    const tail = next ? `The next one is ${next.name} on ${fmtDM(next.dueDate)}.` : `None due in ${fyLabelOf(fy)}.`;
+    const head = area === 'all' ? `Nothing due in ${monthName}` : `No ${AREA_LABEL[area]} deadlines in ${monthName}`;
+    const tail = next ? `Next: ${next.name} on ${fmtDM(next.dueDate)}` : `None due in ${fyLabelOf(fy)}`;
     return { lines: [head, tail], showAll: area !== 'all', q: `Why is nothing due in ${monthName}?` };
   })();
 
@@ -238,7 +225,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
       <div className="row-wrap" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div data-calnav="" className="calbar">
           <MonthNav month={month} nowKey={nowKey} hidden={view !== 'month'} onMonth={(k) => set({ date: k })} onStep={(k) => set({ date: stepMonth(month, k) })} />
-          <span className="mono" style={{ flex: 'none', fontSize: 11, fontWeight: 600, padding: '5px 8px', borderRadius: 5, background: 'var(--gold-soft)', color: 'var(--gold-text)' }} data-tip={`Financial year ${fyLabelOf(fy).slice(3)}`}>
+          <span className="mono fy-tag" data-tip={`Financial year ${fyLabelOf(fy).slice(3)}`}>
             {fyLabelOf(fy)}
           </span>
           <div className="seg-scroll">
@@ -264,7 +251,6 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
           </span>
           <a
             className="btn btn-o btn-s"
-            style={{ color: 'var(--navy-ink,var(--navy))' }}
             href={`${portalHref('filings')}?fy=${fy}`}
             onClick={(e) => {
               e.preventDefault();
@@ -278,24 +264,9 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
 
       <div className="cal-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 16, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
-          {tip && after && view === 'month' ? (
-            <div style={{ padding: '2px 2px 0' }}>
-              <BotSays
-                size={40}
-                action=""
-                secondary={
-                  <button type="button" className="btn btn-o btn-s" style={{ height: 28 }} onClick={gotIt}>
-                    Got it
-                  </button>
-                }
-              >
-                Tip: click any date to see its filings.
-              </BotSays>
-            </div>
-          ) : null}
           <div className="card t" data-calbody="" data-view={view} style={{ padding: 12, position: 'relative' }}>
             {q.isError && after ? (
-              <div role="alert" style={{ padding: '24px 12px', color: 'var(--over-text)', fontWeight: 700 }}>
+              <div role="alert" style={{ padding: '24px 12px', color: 'var(--over-text)', fontWeight: 500 }}>
                 Could not load the register.{' '}
                 <button type="button" className="btn btn-o btn-s" onClick={() => void q.refetch()}>
                   Try again
@@ -323,26 +294,31 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
                   inset: '44px 14px 14px',
                   display: 'grid',
                   placeItems: 'center',
-                  background: 'light-dark(oklch(97.4% 0.006 255 / .7), oklch(16.9% 0.006 255 / 0.7))',
-                  borderRadius: 10,
+                  background: 'oklch(var(--surface-raised) / .72)',
+                  borderRadius: 6,
                   backdropFilter: 'blur(1px)',
                 }}
               >
-                <BotSays
-                  size={56}
-                  question={emptyOverlay.q}
-                  secondary={
-                    emptyOverlay.showAll ? (
-                      <button type="button" className="btn btn-n btn-s" style={{ height: 28 }} onClick={() => set({ area: 'all' })}>
-                        Show all areas
-                      </button>
-                    ) : undefined
-                  }
-                >
-                  {emptyOverlay.lines[0]}
-                  <br />
-                  {emptyOverlay.lines[1]}
-                </BotSays>
+                <Island className="w-full max-w-[420px]">
+                  <Empty
+                    className="m-0 bg-surface-raised md:mx-0"
+                    action={
+                      <span className="flex flex-wrap items-center justify-center gap-2">
+                        {emptyOverlay.showAll ? (
+                          <Button size="sm" onClick={() => set({ area: 'all' })}>
+                            Show all areas
+                          </Button>
+                        ) : null}
+                        <Button size="sm" variant="secondary" onClick={() => openChat(emptyOverlay.q)}>
+                          Ask VCFO why
+                        </Button>
+                      </span>
+                    }
+                  >
+                    <span className="block font-medium text-ink">{emptyOverlay.lines[0]}</span>
+                    {emptyOverlay.lines[1] ? <span className="block">{emptyOverlay.lines[1]}</span> : null}
+                  </Empty>
+                </Island>
               </div>
             ) : null}
             {loading && view === 'month' ? (
@@ -491,8 +467,8 @@ const DayPopover = forwardRef<
           <small>{dow(iso)}</small>
         </div>
         <div style={{ flex: 1 }}>
-          <b style={{ fontSize: 14 }}>{fmtLong(iso)}</b>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', fontWeight: 700 }}>{list.length ? plural(list.length, 'filing') : 'Free day'}</div>
+          <b style={{ fontSize: 14, fontWeight: 500 }}>{fmtLong(iso)}</b>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>{list.length ? plural(list.length, 'filing') : 'Free day'}</div>
         </div>
         <button ref={closeBtn} type="button" className="ibtn" style={{ border: 0 }} aria-label="Close" onClick={onClose}>
           {I.x(14)}
@@ -507,7 +483,7 @@ const DayPopover = forwardRef<
               role="button"
               tabIndex={0}
               aria-label={`${r.name} · ${r.period} · open the details`}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 8, border: '1px solid var(--border)', marginBottom: 6, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 6, border: '1.5px solid var(--border)', marginBottom: 6, cursor: 'pointer' }}
               onClick={() => onOpen(r)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -516,9 +492,9 @@ const DayPopover = forwardRef<
                 }
               }}
             >
-              <AreaChip a={r.area} />
+              <AreaChip a={r.area} compact />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 12.5 }}>
+                <div style={{ fontWeight: 500, fontSize: 13 }}>
                   <NameWithLinks f={r} />
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.period}</div>
@@ -530,25 +506,25 @@ const DayPopover = forwardRef<
           <button
             type="button"
             className="ask"
-            style={{ width: '100%', borderLeft: 0, borderRight: 0, borderBottom: 0, background: 'none', padding: '8px 0 0', font: 'inherit', fontWeight: 700, cursor: 'pointer' }}
+            style={{ width: '100%', borderLeft: 0, borderRight: 0, borderBottom: 0, background: 'none', padding: '8px 0 0', font: 'inherit', fontWeight: 500, cursor: 'pointer' }}
             onClick={() => {
               onClose();
               openChat(`What is due on ${fmtLong(iso)}?`);
             }}
           >
-            🤖 Ask VCFO
+            Ask VCFO
           </button>
         </>
       ) : (
-        <BotSays size={40} action="">
-          Nothing is due on this day.
-        </BotSays>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>Nothing due on this day</p>
       )}
     </div>
   );
 });
 
 /* ------------------------------------------------------------- rail */
+
+const railCard = 'min-w-0 rounded-md border-1.5 border-line bg-surface-raised';
 
 function Rail({
   after,
@@ -572,62 +548,40 @@ function Rail({
   const { today } = useComp();
   if (!after)
     return (
-      <div className="cal-rail" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div className="card" style={{ padding: 14 }}>
-          <BotSays size={40} question="When does my compliance calendar start?">
-            Your first deadlines appear
-            <br />
-            once the company is incorporated.
-          </BotSays>
+      <Island className="cal-rail">
+        <div className={railCard}>
+          <Empty>Starts after incorporation</Empty>
         </div>
-      </div>
+      </Island>
     );
   if (loading)
     return (
-      <div className="cal-rail" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <RailSkeleton />
-      </div>
+      <Island className="cal-rail">
+        <div className={cn(railCard, 'p-4')} aria-busy="true" aria-label="Loading">
+          <SkeletonRows rows={3} />
+        </div>
+      </Island>
     );
   const next = nextDeadline(railRows, today);
   const over = overdueRows(railRows, today);
   const todayMonthRows = railRows.filter((r) => r.dueDate.startsWith(nowKey));
   const allClear = !next && !over.length;
   return (
-    <div className="cal-rail" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <Island className="cal-rail">
       {monthAll.length ? <DonutCard rows={monthAll} label={MONTHS[Number(month.slice(5)) - 1]!} drillTitle={`Compliances · ${monthLabel(month)}`} /> : null}
       {allClear ? (
-        <div className="card" style={{ padding: 14 }}>
-          <BotSays size={40} action="">
-            All clear this month.
-            <br />
-            Nothing due, nothing overdue.
-          </BotSays>
+        <div className={railCard}>
+          <Empty>Nothing due and nothing overdue</Empty>
         </div>
       ) : (
         <NextDeadlineCard next={next} over={over} todayMonthRows={todayMonthRows} railRows={railRows} onOpen={onOpen} openDrill={openDrill} nowKey={nowKey} />
       )}
       <ComingUp rows={comingUp(railRows, today, 7)} onOpen={onOpen} />
-    </div>
+    </Island>
   );
 }
 
-function RailSkeleton() {
-  return (
-    <div className="card" style={{ padding: '14px 16px' }} aria-busy="true" aria-label="Loading">
-      {[1, 2, 3].map((i) => (
-        <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-          <div className="sk-row" style={{ width: 44, height: 48, borderRadius: 8 }} />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' }}>
-            <div className="sk-row" style={{ height: 10, borderRadius: 4, width: '80%' }} />
-            <div className="sk-row" style={{ height: 10, borderRadius: 4, width: '50%' }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* Next deadline card · option A (C-23) */
+/* Next deadline card · option A (C-23): days tile, the filing, its area and state, Open filing and Remind me. */
 function NextDeadlineCard({
   next,
   over,
@@ -650,155 +604,119 @@ function NextDeadlineCard({
   const days = next ? daysBetween(today, next.dueDate) : 0;
   const firstOver = over[0];
   const fyTitle = `Compliances · ${fyLabelOf(fyStartOfMonth(nowKey))}`;
+  const drillNext = () =>
+    next && openDrill({ kind: 'status', k: statusOf(next, today), title: `Compliances · ${monthLabel(nowKey)}`, rows: todayMonthRows.length ? todayMonthRows : railRows });
   return (
-    <div className="card nd-card" style={{ background: 'var(--panel)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '16px 16px 14px', color: 'var(--fg)' }}>
+    <div className={cn(railCard, 'nd-card overflow-visible')}>
       {next ? (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '600 11px var(--font-sans),sans-serif', color: 'var(--navy)' }}>
-            <span className="pulse" />
+        <div className="px-4 pb-3.5 pt-4">
+          <div className="flex items-center gap-1.5 text-[12px] font-medium text-ink">
+            <i className="h-1.5 w-1.5 rounded-[2px] bg-brand" aria-hidden />
             Next deadline
           </div>
-          <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 10 }}>
-            <div
-              data-dd="status"
+          <div className="mt-2.5 flex items-center gap-3.5">
+            <button
+              type="button"
+              onClick={drillNext}
               data-tip={`${next.name} · due ${fmtWDM(next.dueDate)}`}
-              role="button"
-              tabIndex={0}
               aria-label={`${plural(days, 'day')} left · ${next.name} · show the list`}
-              style={{ width: 58, height: 62, borderRadius: 10, background: 'var(--navy)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 'none' }}
-              onClick={() => openDrill({ kind: 'status', k: statusOf(next, today), title: `Compliances · ${monthLabel(nowKey)}`, rows: todayMonthRows.length ? todayMonthRows : railRows })}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  openDrill({ kind: 'status', k: statusOf(next, today), title: `Compliances · ${monthLabel(nowKey)}`, rows: todayMonthRows.length ? todayMonthRows : railRows });
-                }
-              }}
+              className="grid h-[62px] w-[58px] flex-none place-content-center rounded-md bg-upcoming-soft text-center leading-none text-ink hover:bg-surface-sunken"
             >
-              <b className="metric" style={{ fontSize: 28, lineHeight: 1, color: 'inherit' }}>
-                {days}
-              </b>
-              <small style={{ font: '600 11px var(--font-sans),sans-serif', letterSpacing: '.04em', opacity: 0.85 }}>{days === 1 ? 'DAY' : 'DAYS'}</small>
-            </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div className="nd-title" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, font: "600 18px var(--font-sans)", letterSpacing: '-.02em' }}>
-                {next.name} · {next.period} <PortalBtn f={next} />
+              <b className="text-[28px] font-medium tabular-nums">{days}</b>
+              <small className="mt-1 text-[11px] font-medium uppercase tracking-wide text-ink-muted">{days === 1 ? 'day' : 'days'}</small>
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="nd-title flex min-w-0 flex-wrap items-center gap-1 text-[17px] font-medium leading-tight text-ink">
+                {next.name} · {next.period} <PortalLink f={next} />
                 <InfoPopover askAbout={`${next.name} · ${next.period}`} label="About this">
                   {next.name} for {next.period} · due {fmtWDM(next.dueDate)} · filed on the {portalFor(next)[0]}.
                   {next.dataReceivedOn ? ` Data received ${fmtDM(next.dataReceivedOn)}.` : ''}
                 </InfoPopover>
               </div>
-              <div style={{ marginTop: 7, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                <AreaChip a={next.area} />
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                <AreaTag a={next.area} compact />
                 {next.dataReceivedOn ? (
-                  <span className="chip c-ok" data-tip={`Data received ${fmtDM(next.dataReceivedOn)}`}>
-                    {I.check(11)} Data received
-                  </span>
+                  <SChip tone="ok" data-tip={`Data received ${fmtDM(next.dataReceivedOn)}`}>
+                    Data received
+                  </SChip>
                 ) : null}
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button type="button" className="btn btn-s" style={{ background: 'var(--navy)', color: '#fff', flex: 1 }} onClick={() => onOpen(next)}>
-              Open filing {I.arrow(13)}
-            </button>
-            <button
-              type="button"
-              className="btn btn-s"
-              style={{ background: 'var(--panel)', color: 'var(--fg)', borderColor: 'var(--border)' }}
+          <div className="mt-3.5 flex gap-2">
+            <Button size="sm" className="flex-1" onClick={() => onOpen(next)}>
+              Open filing <ArrowRight size={13} strokeWidth={1.6} aria-hidden />
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
               aria-pressed={Boolean(next.reminderOn)}
               onClick={() => (next.reminderOn ? toast(`Reminder already set · email on ${fmtDM(next.reminderOn)}`) : remind(next))}
             >
               {next.reminderOn ? `Reminder ${fmtDM(next.reminderOn)}` : 'Remind me'}
-            </button>
+            </Button>
           </div>
-        </>
+        </div>
       ) : (
-        <BotSays size={40} action="">
-          Nothing else is due this year.
-        </BotSays>
+        <Empty>Nothing else due this year</Empty>
       )}
       {firstOver ? (
-        <div
-          data-dd="status"
+        <button
+          type="button"
           data-tip={`Overdue · ${over.length}`}
-          role="button"
-          tabIndex={0}
           aria-label={`Overdue · ${over.length} · show the list`}
-          style={{ margin: '14px -16px -14px', padding: '10px 16px', borderTop: '1px solid var(--hair)', borderRadius: '0 0 10px 10px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}
           onClick={() => openDrill({ kind: 'status', k: 'over', title: fyTitle, rows: railRows })}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              openDrill({ kind: 'status', k: 'over', title: fyTitle, rows: railRows });
-            }
-          }}
+          className="flex w-full items-center gap-2 border-t border-line-soft px-4 py-2.5 text-left text-[13px] hover:bg-surface-sunken"
         >
-          <i style={{ width: 8, height: 8, borderRadius: 99, background: 'var(--over)', flex: 'none' }} />
-          <b style={{ fontWeight: 700 }}>{firstOver.name}</b>
-          <span style={{ color: 'var(--over-text)', fontWeight: 700 }}>
+          <i className="h-2 w-2 flex-none rounded-[2px] bg-danger-mid" aria-hidden />
+          <b className="truncate font-medium text-ink">{firstOver.name}</b>
+          <span className="flex-none font-medium text-danger">
             {plural(-daysBetween(today, firstOver.dueDate), 'day')} late{over.length > 1 ? ` · +${over.length - 1} more` : ''}
           </span>
-          <span style={{ marginLeft: 'auto', color: 'var(--muted)', display: 'flex' }}>{I.chevR(14)}</span>
-        </div>
+          <ChevronRight size={14} strokeWidth={1.6} className="ml-auto flex-none text-ink-muted" aria-hidden />
+        </button>
       ) : null}
     </div>
   );
 }
 
-/* Coming up (C-24) */
+/* Coming up (C-24): one date tile per day, each filing with its short area tag and a compact status chip. */
 function ComingUp({ rows, onOpen }: { rows: PortalFiling[]; onOpen: (f: PortalFiling) => void }) {
   const { today } = useComp();
   const dates = [...byDate(rows).entries()].sort((a, b) => a[0].localeCompare(b[0]));
   return (
-    <div className="card" style={{ padding: '14px 16px 6px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <p className="st" style={{ flex: 1 }}>
-          Coming up
-        </p>
-        <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>
-          {rows.length}
-        </span>
+    <div className={cn(railCard, 'px-4 pb-1.5 pt-3.5')}>
+      <div className="mb-1 flex items-center gap-2 border-b border-line-soft pb-2">
+        <h2 className="flex-1 text-[13px] font-medium text-ink">Coming up</h2>
+        <span className="text-[12px] tabular-nums text-ink-muted">{rows.length}</span>
       </div>
       {dates.length ? (
-        dates.map(([d, list]) => {
-          const s = worstStatus(list, today);
-          return (
-            <div key={d} className="ag-date">
-              <div className="dtile" style={{ background: tileVar(s), color: tileInk(s) }}>
-                <b>{Number(d.slice(8))}</b>
-                <small>{tileSub(d, today.slice(0, 7))}</small>
-              </div>
-              <div className="ag-items">
-                {list.map((r) => (
-                  <div
-                    key={r.id}
-                    className="ag-it clk"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${r.name} · ${r.period} · open the details`}
+        dates.map(([d, list]) => (
+          <div key={d} className="flex items-center gap-2.5 border-t border-line-soft py-2.5 first:border-t-0">
+            <span className={cn('grid h-12 w-11 flex-none place-content-center rounded-md text-center leading-none', TINT[worstStatus(list, today)])} aria-hidden>
+              <b className="text-[18px] font-medium">{Number(d.slice(8))}</b>
+              <small className="mt-1 text-[11px] font-medium opacity-85">{tileSub(d, today.slice(0, 7))}</small>
+            </span>
+            <ul className="grid min-w-0 flex-1 grid-cols-1 gap-1.5">
+              {list.map((r) => (
+                <li key={r.id} className="min-w-0">
+                  <button
+                    type="button"
                     onClick={() => onOpen(r)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onOpen(r);
-                      }
-                    }}
+                    aria-label={`${r.name} · ${r.period} · open the details`}
+                    className="flex w-full min-w-0 items-center gap-2 text-left hover:text-brand-text"
                   >
-                    <AreaChip a={r.area} />
-                    <span className="nm">{r.name}</span>
-                    <Chip s={statusOf(r, today)} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })
+                    <AreaTag a={r.area} compact />
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{r.name}</span>
+                    <StatusChip s={statusOf(r, today)} compact />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
       ) : (
-        <div style={{ padding: '6px 0 12px' }}>
-          <BotSays size={40} action="">
-            Nothing due in the coming weeks.
-          </BotSays>
-        </div>
+        <p className="py-3 text-[13px] text-ink-faint">Nothing due in the coming weeks</p>
       )}
     </div>
   );

@@ -27,6 +27,22 @@ export function useCompFilings(fy: number, enabled = true) {
   });
 }
 
+/** Every period on the client's register, all years (Obligations list and record). */
+export function useAllFilings(enabled = true) {
+  return useQuery({
+    queryKey: [...COMP_KEY, 'all'],
+    enabled,
+    queryFn: async (): Promise<{ rows: PortalFiling[]; today: string }> => {
+      const res = await fetch('/api/client/compliances', { cache: 'no-store' });
+      const data = (await res.json().catch(() => ({}))) as { rows?: PortalFiling[]; today?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Could not load the register');
+      return { rows: data.rows ?? [], today: data.today ?? todayIso() };
+    },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export interface ProofMeta {
   id: string;
   fileName: string;

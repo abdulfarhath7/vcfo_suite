@@ -11,6 +11,8 @@ export type PortalRouteKey =
   | 'incorporation'
   | 'compliances'
   | 'filings'
+  | 'obligations'
+  | 'registrations'
   | 'documents'
   | 'knowledge-bank'
   | 'credentials'
@@ -26,6 +28,8 @@ export const PORTAL_PATHS: Record<PortalRouteKey, string> = {
   incorporation: `${CP_BASE}/incorporation`,
   compliances: `${CP_BASE}/compliances/calendar`,
   filings: `${CP_BASE}/compliances/filings`,
+  obligations: `${CP_BASE}/compliances/obligations`,
+  registrations: `${CP_BASE}/registrations`,
   documents: `${CP_BASE}/documents`,
   'knowledge-bank': `${CP_BASE}/library`,
   credentials: `${CP_BASE}/credentials`,
@@ -42,6 +46,8 @@ export const PORTAL_TITLES: Record<PortalRouteKey, string> = {
   incorporation: 'Incorporation',
   compliances: 'Calendar',
   filings: 'Filings',
+  obligations: 'Obligations',
+  registrations: 'Registrations',
   documents: 'Documents',
   'knowledge-bank': 'Library',
   credentials: 'Credentials',
@@ -70,6 +76,7 @@ export function activeKeyFor(pathname: string): PortalRouteKey | null {
   if (p === CP_BASE || p.startsWith(`${CP_BASE}/overview`)) return 'home';
   if (p.startsWith(`${CP_BASE}/incorporation`) || p.startsWith(`${CP_BASE}/board-resolution`)) return 'incorporation';
   if (p.startsWith(`${CP_BASE}/compliances/filings`)) return 'filings';
+  if (p.startsWith(`${CP_BASE}/compliances/obligations`)) return 'obligations';
   if (p.startsWith(`${CP_BASE}/compliances`)) return 'compliances';
   if (p.startsWith(`${CP_BASE}/library`) || p.startsWith(`${CP_BASE}/learn`)) return 'knowledge-bank';
   for (const key of Object.keys(PORTAL_PATHS) as PortalRouteKey[]) {
@@ -85,7 +92,7 @@ export function crumbsFor(pathname: string): { mid?: string; crumb: string; icon
   if (p.includes('/incorporation/step/')) return { mid: 'Incorporation', crumb: 'Step', icon: 'incorporation' };
   if (p.includes('/incorporation/phase/')) return { mid: 'Incorporation', crumb: 'Phase', icon: 'incorporation' };
   if (p.includes('/board-resolution')) return { mid: 'Incorporation', crumb: 'Board resolution', icon: 'incorporation' };
-  if (key === 'compliances' || key === 'filings') return { mid: 'Compliances', crumb: PORTAL_TITLES[key], icon: key };
+  if (key === 'compliances' || key === 'filings' || key === 'obligations') return { mid: 'Compliances', crumb: PORTAL_TITLES[key], icon: key };
   if (key === 'announcements' || key === 'notifications') return { mid: 'Updates', crumb: PORTAL_TITLES[key], icon: key };
   if (/\/library\/[^/]+/.test(p) || p.includes('/learn/')) return { mid: 'Library', crumb: 'Reading', icon: 'knowledge-bank' };
   return { crumb: PORTAL_TITLES[key], icon: key };

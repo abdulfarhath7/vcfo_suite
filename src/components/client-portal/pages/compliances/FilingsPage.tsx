@@ -1,11 +1,10 @@
 'use client';
 
 /**
- * Compliances · Filings — prototype s/comp/index.html #fil-redesign: FY stepper,
- * cadence pill, Export (CSV), Calendar link; donut + "By area" stacked bars
- * (every part drills down); area + status pills (they DO filter this table);
- * two-month window ‹ › with "Full year"; table with date tiles, ↗, 📎 Proof /
- * Proof pending; row → right side panel (F-10).
+ * Compliances · Filings (VCFO Spectrum FilingsScreen): the status donut and progress by area
+ * (every part drills down), then the T1 grid with every filter in its head bar (R-08): the
+ * two-month window with Full year, the frequency switch, the Area and Status filter chips,
+ * the FY stepper, Export (CSV) and the calendar link. A row opens the right side panel (F-10).
  *
  * URL state: ?fy= · ?cadence=monthly|quarterly|annual · ?area= · ?status=
  * all|over|due|up|ok · ?period=YYYY-MM (window end month) · ?view=year · ?filing=<id>.
@@ -13,17 +12,20 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { CalendarDays, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { SkeletonRows } from '@/components/ui/empty-state';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { usePortal } from '../../PortalProvider';
-import { BotSays } from '../../shared';
 import { portalHref } from '../../routes';
 import {
   AREAS,
   AREA_LABEL,
   AREA_ORDER,
   MON,
-  daysBetween,
   filterArea,
-  fmtDM,
   fyLabelOf,
   fyMonths,
   fyStartOfMonth,
@@ -31,30 +33,25 @@ import {
   sortByDue,
   statusOf,
   stepMonth,
-  tileInk,
-  tileVar,
   todayIso,
+  type AreaCode,
   type AreaFilter,
   type CompStatus,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
 import { fetchProofs, proofHref, useCompFilings, useDownload } from './api';
-import { AreaChip, Chip, I, NameWithLinks, ProofChip, Seg, usePageTips } from './bits';
+import { usePageTips } from './bits';
 import { CompProvider, useComp } from './ctx';
 import { DonutCard } from './DonutCard';
 import { SidePanel } from './Detail';
+import { AreaTag, DateTile, Empty, FILL, FilterMenu, Island, PortalLink, STATUS_ORDER, StatusChip, WORD } from './spectrum';
+import { FiledCell, ProofCell } from './cells';
 import '../../css/compliances-board.css';
 
 const CADENCES = ['monthly', 'quarterly', 'annual'] as const;
 type Cadence = (typeof CADENCES)[number];
 const CAD_FREQ: Record<Cadence, string[]> = { monthly: ['monthly'], quarterly: ['quarterly', 'half-yearly'], annual: ['annual', 'one-time'] };
-const STATUS_TABS: ['all' | CompStatus, string, string | null][] = [
-  ['all', 'All', null],
-  ['over', 'Overdue', 'var(--over)'],
-  ['due', 'Due soon', 'var(--due)'],
-  ['up', 'Upcoming', 'var(--up)'],
-  ['ok', 'Filed', 'var(--ok)'],
-];
+const STATUS_KEYS: ('all' | CompStatus)[] = ['all', 'over', 'due', 'up', 'ok'];
 
 function useFilingsState() {
   const params = useSearchParams();
@@ -70,7 +67,7 @@ function useFilingsState() {
   const areaP = (params.get('area') ?? 'all').toUpperCase();
   const area: AreaFilter = areaP === 'ALL' ? 'all' : AREAS.some((a) => a.id === areaP) ? (areaP as AreaFilter) : 'all';
   const stP = params.get('status');
-  const status = (STATUS_TABS.some((t) => t[0] === stP) ? stP : 'all') as 'all' | CompStatus;
+  const status = (STATUS_KEYS.includes(stP as 'all' | CompStatus) ? stP : 'all') as 'all' | CompStatus;
   const months = fyMonths(fy);
   const perP = params.get('period');
   // window end month: ?period, else today's month (inside the FY), else the FY's first month + 1
@@ -111,7 +108,7 @@ export function CompliancesFilings() {
 }
 
 function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>; tableRef: React.RefObject<HTMLDivElement | null> }) {
-  const { after, go, toast } = usePortal();
+  const { after, go, toast, openChat } = usePortal();
   const { today, openProof, openDrill } = useComp();
   const download = useDownload();
   const root = useRef<HTMLDivElement>(null);
@@ -170,6 +167,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
   const exportHref = `/api/client/compliances/export?fy=${fy}&cadence=${cadence}&area=${area}&status=${status}`;
   const canPrev = !fullYear && months.indexOf(start) > 0;
   const canNext = !fullYear && months.indexOf(end) < 11;
+  const calHref = `${portalHref('compliances')}${fullYear ? '' : `?date=${end}`}`;
 
   const downloadPrimary = (f: PortalFiling) => {
     fetchProofs(f.id)
@@ -180,281 +178,179 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
       })
       .catch(() => toast('Could not download the proof'));
   };
+  const open = (f: PortalFiling) => set({ filing: f.id });
+  const statusWord = status === 'all' ? '' : WORD[status].toLowerCase();
 
-  return (
-    <div className="cp-comp-root page stag" ref={root}>
-      {/* header (F-01) */}
-      <div className="row-wrap" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 6, padding: 2 }}>
-          <button type="button" className="ibtn" style={{ border: 0, width: 28, height: 28 }} aria-label="Previous financial year" onClick={() => set({ fy: String(fy - 1), period: null, filing: null })}>
-            {I.chevL(15)}
-          </button>
-          <b className="mono" style={{ fontSize: 12, minWidth: 84, textAlign: 'center' }}>
-            {fyLabelOf(fy)}
-          </b>
+  const columns: EFilingColumn<PortalFiling>[] = [
+    { key: 'due', header: 'Due', width: '64px', render: (r) => <DateTile iso={r.dueDate} s={statusOf(r, today)} size="sm" /> },
+    { key: 'area', header: 'Area', width: '124px', render: (r) => <AreaTag a={r.area} /> },
+    {
+      key: 'name',
+      header: 'Filing',
+      width: '30%',
+      render: (r) => (
+        <span className="flex min-w-0 items-center gap-1">
           <button
             type="button"
-            className="ibtn"
-            style={{ border: 0, width: 28, height: 28 }}
+            className="min-w-0 text-left"
+            aria-label={`${r.name} · ${r.period} · open the details`}
+            onClick={(e) => {
+              e.stopPropagation();
+              open(r);
+            }}
+          >
+            <span className="block truncate font-medium leading-tight text-ink">{r.name}</span>
+            <span className="block truncate text-[12.5px] leading-tight text-ink-muted">{r.period}</span>
+          </button>
+          <PortalLink f={r} />
+        </span>
+      ),
+    },
+    { key: 'freq', header: 'Frequency', width: '112px', render: (r) => <span className="text-ink-muted">{r.freqLabel}</span> },
+    { key: 'filed', header: 'Filed on', width: '120px', render: (r) => <FiledCell r={r} today={today} /> },
+    { key: 'status', header: 'Status', width: '128px', render: (r) => <StatusChip s={statusOf(r, today)} /> },
+    { key: 'proof', header: 'Proof', width: '136px', align: 'right', render: (r) => <ProofCell r={r} onProof={openProof} onDownload={downloadPrimary} /> },
+  ];
+
+  const headBar = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line-soft px-4 py-2.5 md:px-5">
+      <h2 className="text-[15px] font-medium text-ink">Filings</h2>
+      {after && all.length ? <span className="rounded-sm bg-surface-sunken px-[7px] py-px text-[12px] font-medium text-ink-2">{table.length}</span> : null}
+      <span className="inline-flex h-[30px] items-center overflow-hidden rounded-md border-1.5 border-line-strong bg-surface-raised">
+        <button type="button" className="grid h-7 w-7 place-items-center text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:opacity-40" aria-label="Earlier months" disabled={!canPrev} onClick={() => set({ period: stepMonth(end, -1) })}>
+          <ChevronLeft size={15} strokeWidth={1.6} aria-hidden />
+        </button>
+        <b className="whitespace-nowrap px-1 text-center text-[13px] font-medium text-ink" aria-live="polite">
+          {winLabel}
+        </b>
+        <button type="button" className="grid h-7 w-7 place-items-center text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:opacity-40" aria-label="Later months" disabled={!canNext} onClick={() => set({ period: stepMonth(end, 1) })}>
+          <ChevronRight size={15} strokeWidth={1.6} aria-hidden />
+        </button>
+        <button
+          type="button"
+          aria-pressed={fullYear}
+          onClick={() => set({ view: fullYear ? null : 'year' })}
+          className={cn('h-full whitespace-nowrap border-l-1.5 border-line-strong px-2.5 text-[13px] font-medium', fullYear ? 'bg-brand-soft text-brand-text' : 'text-ink-2 hover:bg-surface-sunken')}
+        >
+          Full year
+        </button>
+      </span>
+      <SpectrumTabs
+        label="Frequency"
+        size="md"
+        value={cadence}
+        onChange={(k) => (k === cadence ? toast(`Already showing ${k} filings`) : set({ cadence: k }))}
+        items={CADENCES.map((c) => ({ key: c, label: c[0]!.toUpperCase() + c.slice(1) }))}
+      />
+      <FilterMenu
+        label="Area"
+        value={area === 'all' ? null : area}
+        onChange={(v) => set({ area: v ?? 'all' })}
+        options={AREAS.filter((a) => a.id !== 'all').map((a) => ({ value: a.id as AreaCode, label: a.label, count: inView.filter((r) => r.area === a.id).length }))}
+      />
+      <FilterMenu
+        label="Status"
+        value={status === 'all' ? null : status}
+        onChange={(v) => set({ status: v ?? 'all' })}
+        options={STATUS_ORDER.map((s) => ({ value: s, label: WORD[s], count: filterArea(inView, area).filter((r) => statusOf(r, today) === s).length }))}
+      />
+      {area !== 'all' || status !== 'all' ? (
+        <button type="button" className="text-[13px] font-medium text-brand-text hover:underline" onClick={() => set({ area: 'all', status: 'all' })}>
+          Clear filters
+        </button>
+      ) : null}
+      <span className="ml-auto flex items-center gap-2">
+        <span className="inline-flex h-[30px] items-center overflow-hidden rounded-md border-1.5 border-line-strong bg-surface-raised">
+          <button type="button" className="grid h-7 w-7 place-items-center text-ink-muted hover:bg-surface-sunken hover:text-ink" aria-label="Previous financial year" onClick={() => set({ fy: String(fy - 1), period: null, filing: null })}>
+            <ChevronLeft size={15} strokeWidth={1.6} aria-hidden />
+          </button>
+          <b className="min-w-[84px] text-center text-[13px] font-medium tabular-nums text-ink">{fyLabelOf(fy)}</b>
+          <button
+            type="button"
+            className="grid h-7 w-7 place-items-center text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:opacity-40"
             aria-label="Next financial year"
             disabled={fy >= st.curFy + 2}
             onClick={() => set({ fy: String(fy + 1), period: null, filing: null })}
           >
-            {I.chevR(15)}
+            <ChevronRight size={15} strokeWidth={1.6} aria-hidden />
           </button>
-        </div>
-        <div className="end" style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <div className="seg-scroll">
-            <Seg
-              opts={['Monthly', 'Quarterly', 'Annual']}
-              on={CADENCES.indexOf(cadence)}
-              label="Frequency"
-              onPick={(i) => set({ cadence: CADENCES[i]! })}
-              same={(i) => toast(`Already showing ${['monthly', 'quarterly', 'annual'][i]} filings`)}
-            />
-          </div>
-          <button
-            type="button"
-            className="btn btn-o btn-s"
-            disabled={!after}
-            onClick={() => {
-              download(exportHref);
-              toast(`Download started · ${fyLabelOf(fy)} filings (CSV)`);
-            }}
-          >
-            {I.down(14)} Export
-          </button>
-          <a
-            className="btn btn-o btn-s"
-            style={{ color: 'var(--navy-ink,var(--navy))' }}
-            href={portalHref('compliances')}
-            onClick={(e) => {
-              e.preventDefault();
-              go(`${portalHref('compliances')}${fullYear ? '' : `?date=${end}`}`);
-            }}
-          >
-            {I.cal(14)} Calendar
-          </a>
-        </div>
-      </div>
+        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="w-[30px] min-w-0 px-0"
+          disabled={!after}
+          aria-label={`Export ${fyLabelOf(fy)} filings (CSV)`}
+          title="Export"
+          onClick={() => {
+            download(exportHref);
+            toast(`Download started · ${fyLabelOf(fy)} filings (CSV)`);
+          }}
+        >
+          <Download size={16} strokeWidth={1.6} aria-hidden />
+        </Button>
+        <Button type="button" size="sm" variant="secondary" className="w-[30px] min-w-0 px-0" aria-label="Open the calendar" title="Calendar" onClick={() => go(calHref)}>
+          <CalendarDays size={16} strokeWidth={1.6} aria-hidden />
+        </Button>
+      </span>
+    </div>
+  );
 
-      {!after ? (
-        <div className="card" style={{ padding: 24, display: 'grid', placeItems: 'center' }}>
-          <BotSays size={56} question="Why are there no filings before incorporation?">
-            Your filings start after incorporation.
-            <br />
-            Nothing is due yet.
-          </BotSays>
-        </div>
-      ) : q.isError ? (
-        <div className="card" role="alert" style={{ padding: 18, color: 'var(--over-text)', fontWeight: 700 }}>
-          Could not load the register.{' '}
-          <button type="button" className="btn btn-o btn-s" onClick={() => void q.refetch()}>
-            Try again
-          </button>
-        </div>
-      ) : q.isLoading ? (
-        <div className="card" style={{ padding: '14px 16px' }} aria-busy="true" aria-label="Loading filings">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-              <div className="sk-row" style={{ width: 38, height: 42, borderRadius: 8 }} />
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' }}>
-                <div className="sk-row" style={{ height: 10, borderRadius: 4, width: '60%' }} />
-                <div className="sk-row" style={{ height: 10, borderRadius: 4, width: '35%' }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : !all.length ? (
-        <div className="card" style={{ padding: 24, display: 'grid', placeItems: 'center' }}>
-          <BotSays size={48} question={`Why are there no filings for ${fyLabelOf(fy)}?`}>
-            No filings yet for {fyLabelOf(fy)}.
-            <br />
-            They appear as each registration goes live.
-          </BotSays>
-        </div>
-      ) : (
-        <>
-          {/* KPIs (F-02, F-03) */}
-          <div className="fil-kpis" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16 }}>
+  const body = !after ? (
+    <Empty>Starts after incorporation</Empty>
+  ) : q.isError ? (
+    <Empty action={<Button size="sm" variant="secondary" onClick={() => void q.refetch()}>Try again</Button>}>Could not load the register</Empty>
+  ) : q.isLoading ? (
+    <div className="px-4 py-4 md:px-5" aria-busy="true" aria-label="Loading filings">
+      <SkeletonRows rows={5} />
+    </div>
+  ) : !all.length ? (
+    <Empty>No filings for {fyLabelOf(fy)}</Empty>
+  ) : (
+    <div className="px-2 pb-3 pt-1 md:px-3">
+      <EFilingGrid
+        caption={`Filings · ${winLabel}`}
+        columns={columns}
+        rows={table}
+        rowKey={(r) => r.id}
+        onRowClick={open}
+        pageSize={12}
+        minWidth={760}
+        empty={
+          <span className="inline-flex flex-wrap items-center justify-center gap-3">
+            {status === 'over' ? 'Nothing overdue' : `No ${statusWord ? `${statusWord} ` : ''}filings in ${winLabel}`}
+            {status !== 'over' ? (
+              <button type="button" className="text-[13px] font-medium text-brand-text hover:underline" onClick={() => openChat(`Why are there no ${statusWord ? `${statusWord} ` : ''}filings in ${winLabel}?`)}>
+                Ask VCFO why
+              </button>
+            ) : null}
+          </span>
+        }
+      />
+    </div>
+  );
+
+  return (
+    <div className="cp-comp-root page stag" ref={root}>
+      <Island className="grid gap-4">
+        {after && all.length ? (
+          <div className="grid gap-4 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
             <DonutCard rows={inView} label="filings" drillTitle={drillTitle} />
             <AreaBars rows={inView} title={`By area · ${winShort}`} drillTitle={drillTitle} openDrill={openDrill} />
           </div>
-
-          {/* filters (F-04) */}
-          <div className="row-wrap" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div className="seg-scroll">
-              <Seg
-                opts={AREAS.map((a) => a.label)}
-                on={Math.max(0, AREAS.findIndex((a) => a.id === area))}
-                counts={AREAS.map((a) => (a.id === 'all' ? inView.length : inView.filter((r) => r.area === a.id).length))}
-                label="Area"
-                onPick={(i) => set({ area: AREAS[i]!.id })}
-                same={(i) => toast(`Already showing ${AREAS[i]!.label === 'All' ? 'all areas' : AREAS[i]!.label}`)}
-              />
-            </div>
-            <div className="end seg-scroll" style={{ marginLeft: 'auto' }}>
-              <Seg
-                opts={STATUS_TABS.map((t) => t[1])}
-                dots={STATUS_TABS.map((t) => t[2])}
-                on={Math.max(0, STATUS_TABS.findIndex((t) => t[0] === status))}
-                label="Status"
-                onPick={(i) => set({ status: STATUS_TABS[i]![0] })}
-                same={(i) => toast(`Already showing ${STATUS_TABS[i]![1].toLowerCase()} filings`)}
-              />
-            </div>
-          </div>
-
-          {/* table (F-05, F-06) */}
-          <div className="card" style={{ overflow: 'hidden' }} ref={tableRef}>
-            <div className="fil-head" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
-              {!fullYear ? (
-                <button type="button" className="ibtn" style={{ border: 0 }} aria-label="Earlier months" disabled={!canPrev} onClick={() => set({ period: stepMonth(end, -1) })}>
-                  {I.chevL(15)}
-                </button>
-              ) : null}
-              <b style={{ font: "600 15px var(--font-sans)" }}>{winLabel}</b>
-              {!fullYear ? (
-                <button type="button" className="ibtn" style={{ border: 0 }} aria-label="Later months" disabled={!canNext} onClick={() => set({ period: stepMonth(end, 1) })}>
-                  {I.chevR(15)}
-                </button>
-              ) : null}
-              <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>
-                {plural(table.length, 'filing')}
-              </span>
-              <button
-                type="button"
-                className={`btn btn-s ${fullYear ? 'btn-n' : 'btn-o'}`}
-                style={{ marginLeft: 'auto' }}
-                aria-pressed={fullYear}
-                onClick={() => set({ view: fullYear ? null : 'year' })}
-              >
-                Full year
-              </button>
-            </div>
-            {table.length ? (
-              <div className="tbl-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th style={{ width: 56 }}>Due</th>
-                      <th style={{ width: 70 }}>Area</th>
-                      <th>Filing</th>
-                      <th>Frequency</th>
-                      <th>Filed on</th>
-                      <th>Status</th>
-                      <th style={{ textAlign: 'right' }}>Proof</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {table.map((r) => (
-                      <FilRow key={r.id} r={r} today={today} onOpen={() => set({ filing: r.id })} onProof={openProof} onDownload={downloadPrimary} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div style={{ padding: '22px 18px' }}>
-                <BotSays size={44} action={status === 'over' ? '' : 'Ask VCFO why'} question={`Why are there no ${status === 'all' ? '' : `${STATUS_TABS.find((t) => t[0] === status)![1].toLowerCase()} `}filings in ${winLabel}?`}>
-                  {status === 'over' ? 'Nothing overdue. Nice work.' : 'No filings here yet.'}
-                </BotSays>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
+        ) : null}
+        <section ref={tableRef} className="surface min-w-0 overflow-visible">
+          {headBar}
+          {body}
+        </section>
+      </Island>
       {detail ? <SidePanel f={detail} onClose={() => set({ filing: null })} /> : null}
     </div>
   );
 }
 
-function FilRow({
-  r,
-  today,
-  onOpen,
-  onProof,
-  onDownload,
-}: {
-  r: PortalFiling;
-  today: string;
-  onOpen: () => void;
-  onProof: (f: PortalFiling) => void;
-  onDownload: (f: PortalFiling) => void;
-}) {
-  const s = statusOf(r, today);
-  const left = daysBetween(today, r.dueDate);
-  return (
-    <tr
-      data-id={r.id}
-      tabIndex={0}
-      aria-label={`${r.name} · ${r.period} · open the details`}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-    >
-      <td>
-        <div className="dtile" style={{ width: 38, height: 42, background: tileVar(s), color: tileInk(s) }}>
-          <b style={{ fontSize: 15 }}>{Number(r.dueDate.slice(8))}</b>
-          <small>{MON[Number(r.dueDate.slice(5, 7)) - 1]}</small>
-        </div>
-      </td>
-      <td>
-        <AreaChip a={r.area} />
-      </td>
-      <td>
-        <div style={{ fontWeight: 700, fontSize: 13 }}>
-          <NameWithLinks f={r} />
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.period}</div>
-      </td>
-      <td style={{ color: 'var(--muted)' }}>{r.freqLabel}</td>
-      <td>
-        {r.filedOn ? (
-          <span style={{ fontWeight: 600 }}>{fmtDM(r.filedOn)}</span>
-        ) : s === 'over' ? (
-          <span style={{ color: 'var(--over-text)', fontWeight: 700 }}>{plural(-left, 'day')} late</span>
-        ) : (
-          <span style={{ color: 'var(--muted)' }}>{left === 0 ? 'today' : `in ${plural(left, 'day')}`}</span>
-        )}
-      </td>
-      <td>
-        <Chip s={s} />
-      </td>
-      <td style={{ textAlign: 'right' }}>
-        {r.filedOn ? (
-          r.proofCount === 0 ? (
-            <ProofChip f={r} onOpen={onProof} />
-          ) : (
-            <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-              <ProofChip f={r} onOpen={onProof} />
-              <button
-                type="button"
-                className="ibtn"
-                data-tip="Download"
-                aria-label="Download proof"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDownload(r);
-                }}
-                onKeyDown={(e) => e.stopPropagation()}
-              >
-                {I.down(15)}
-              </button>
-            </span>
-          )
-        ) : (
-          <span style={{ color: 'var(--subtle)', fontSize: 11 }}>—</span>
-        )}
-      </td>
-    </tr>
-  );
-}
-
+/** Progress by area (R-25, C2): one stacked bar per area in status colours; every row drills down. */
 function AreaBars({
   rows,
   title,
@@ -468,56 +364,42 @@ function AreaBars({
 }) {
   const { today } = useComp();
   const open = (a: string) => openDrill({ kind: 'area', k: a, title: drillTitle, rows });
-  const key = (a: string) => (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      open(a);
-    }
-  };
   return (
-    <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 9 }}>
-      <p className="st" style={{ marginBottom: 2 }}>
-        {title}
-      </p>
-      {AREA_ORDER.map((a) => {
-        const rs = rows.filter((r) => r.area === a);
-        const f = rs.filter((r) => r.filedOn).length;
-        const o = rs.filter((r) => statusOf(r, today) === 'over').length;
-        const d = rs.filter((r) => statusOf(r, today) === 'due').length;
-        const u = rs.length - f - o - d;
-        const L = AREA_LABEL[a];
-        const part = (n: number, bg: string, tip: string) =>
-          n ? (
-            <span data-dd="area" data-tip={`${L} · ${n} ${tip}`} role="button" tabIndex={-1} aria-label={`${L} · ${n} ${tip}`} style={{ flex: n, background: bg }} onClick={() => open(a)} onKeyDown={key(a)} />
-          ) : null;
-        return (
-          <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span
-              data-dd="area"
-              data-tip={`${L} · ${plural(rs.length, 'filing')}`}
-              role="button"
-              tabIndex={0}
-              aria-label={`${L} · ${plural(rs.length, 'filing')} · show the list`}
-              style={{ width: 74, flex: 'none', fontSize: 12, fontWeight: 700, borderRadius: 4 }}
-              onClick={() => open(a)}
-              onKeyDown={key(a)}
-            >
-              {L}
-            </span>
-            <span style={{ flex: 1, display: 'flex', gap: 2, height: 12, borderRadius: 4, overflow: 'hidden', background: 'var(--raised)' }}>
-              {part(f, 'var(--ok)', 'filed')}
-              {part(o, 'var(--over)', 'overdue')}
-              {part(d, 'var(--due)', 'due soon')}
-              {u || !rs.length ? (
-                <span data-dd="area" data-tip={`${L} · ${u} upcoming`} role="button" tabIndex={-1} aria-label={`${L} · ${u} upcoming`} style={{ flex: u || 1, background: rs.length ? 'var(--up)' : 'transparent' }} onClick={() => open(a)} onKeyDown={key(a)} />
-              ) : null}
-            </span>
-            <span className="mono" style={{ width: 34, flex: 'none', textAlign: 'right', fontSize: 11, color: 'var(--muted)' }}>
-              {f}/{rs.length}
-            </span>
-          </div>
-        );
-      })}
+    <div className="min-w-0 rounded-md border-1.5 border-line bg-surface-raised px-4 py-3">
+      <h3 className="mb-2.5 text-[13px] font-medium text-ink-muted">{title}</h3>
+      <ul className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+        {AREA_ORDER.map((a) => {
+          const rs = rows.filter((r) => r.area === a);
+          const filed = rs.filter((r) => r.filedOn).length;
+          const L = AREA_LABEL[a];
+          const parts = (['ok', 'over', 'due', 'up'] as CompStatus[]).map((s) => ({ s, n: rs.filter((r) => statusOf(r, today) === s).length }));
+          return (
+            <li key={a}>
+              <button
+                type="button"
+                onClick={() => open(a)}
+                aria-label={`${L}: ${filed} of ${rs.length} filed. Show the list`}
+                data-tip={`${L} · ${plural(rs.length, 'filing')}`}
+                className="-mx-1.5 grid w-[calc(100%+12px)] gap-1.5 rounded-md px-1.5 py-1 text-left hover:bg-surface-sunken"
+              >
+                <span className="flex items-baseline gap-2 text-[13px]">
+                  <span className="font-medium text-ink">{L}</span>
+                  <span className="ml-auto tabular-nums text-ink-muted">
+                    {filed} of {rs.length} filed
+                  </span>
+                </span>
+                <span className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+                  {parts
+                    .filter((p) => p.n > 0)
+                    .map((p) => (
+                      <i key={p.s} className={cn('block h-full rounded-[2px]', FILL[p.s])} style={{ width: `${(p.n / Math.max(1, rs.length)) * 100}%` }} />
+                    ))}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

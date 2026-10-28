@@ -1,15 +1,20 @@
 'use client';
 
 /**
- * Route entries for /app/client/compliances/{calendar,filings}. Inside the
+ * Route entries for /app/client/compliances/{calendar,filings,obligations}. Inside the
  * client portal shell they render the v7 pages; a super admin viewing the
  * client segment keeps the staff AppShell, so the shared staff views
- * (src/views/compliances/CompliancePages.tsx) render there instead.
+ * (src/views/compliances/CompliancePages.tsx) render there instead. Obligations
+ * has no staff view on the client segment yet, so outside the portal it shows
+ * the staff Filings register.
  */
+import { useParams } from 'next/navigation';
 import { usePortalOptional } from '../../PortalProvider';
 import { ComplianceCalendarPage, FilingsPage } from '@/views/compliances/CompliancePages';
 import { CompliancesCalendar } from './CalendarPage';
 import { CompliancesFilings } from './FilingsPage';
+import { CompliancesObligations } from './ObligationsPage';
+import { CompliancesObligation } from './ObligationPage';
 
 export function ClientCompliancesCalendarRoute() {
   const portal = usePortalOptional();
@@ -21,4 +26,17 @@ export function ClientCompliancesFilingsRoute() {
   const portal = usePortalOptional();
   if (!portal) return <FilingsPage basePath="/app/client/compliances" />;
   return <CompliancesFilings />;
+}
+
+export function ClientCompliancesObligationsRoute() {
+  const portal = usePortalOptional();
+  if (!portal) return <FilingsPage basePath="/app/client/compliances" />;
+  return <CompliancesObligations />;
+}
+
+export function ClientCompliancesObligationRoute() {
+  const portal = usePortalOptional();
+  const params = useParams<{ id: string }>();
+  if (!portal) return <FilingsPage basePath="/app/client/compliances" />;
+  return <CompliancesObligation id={decodeURIComponent(String(params?.id ?? ''))} />;
 }

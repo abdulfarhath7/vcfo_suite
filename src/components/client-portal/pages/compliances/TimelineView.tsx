@@ -31,7 +31,8 @@ import {
 const DAY = 86_400_000;
 const ZMAX = 40;
 const PREP: Record<string, number> = { monthly: 5, quarterly: 10, 'half-yearly': 10, annual: 21 };
-const STC: Record<CompStatus, string> = { ok: 'var(--ok)', due: 'var(--due)', over: 'var(--over)', up: 'var(--navy)' };
+/** Status colours (R-25): upcoming is grey, not navy. */
+const STC: Record<CompStatus, string> = { ok: 'var(--ok-mid)', due: 'var(--due-mid)', over: 'var(--over-mid)', up: 'oklch(var(--upcoming-mid))' };
 
 type Lane = { ar: AreaCode } | { name: string; items: PortalFiling[] };
 
@@ -449,7 +450,7 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
                     const { s: ws, e: we, due, set } = winOf(r);
                     const st = statusOf(r, today);
                     const late = we > due && !r.filedOn;
-                    const col = r.filedOn ? 'var(--ok)' : STC[st];
+                    const col = r.filedOn ? 'var(--ok-mid)' : STC[st];
                     const tip = `${r.name} · ${r.period} · window ${nStr(ws)} – ${nStr(we)} · due ${nStr(due)}${r.filedOn ? ' · filed' : late ? ` · ends ${we - due} d after the due date` : ''}`;
                     return (
                       <span key={r.id}>

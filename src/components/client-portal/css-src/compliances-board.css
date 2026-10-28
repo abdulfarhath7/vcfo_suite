@@ -47,7 +47,8 @@
 /* --- page base (I:61-64, I:110) --- */
 *{box-sizing:border-box}
 body{font-family:var(--font-sans),system-ui,sans-serif;color:var(--fg);font-size:13px;-webkit-font-smoothing:antialiased}
-a{color:var(--primary);text-decoration:none;font-weight:500}
+/* Tailwind islands (.cp-tw) keep their own anchor style. */
+a:where(:not(.cp-tw *)){color:var(--primary);text-decoration:none;font-weight:500}
 button{font-family:inherit}
 .page{padding:22px 24px 120px;display:flex;flex-direction:column;gap:16px}
 /* --- components (I:111-144) --- */
@@ -132,12 +133,14 @@ button{font-family:inherit}
 .dpop::before{content:"";position:absolute;left:-7px;top:34px;width:12px;height:12px;background:var(--panel);border-left:1px solid var(--border);border-bottom:1px solid var(--border);transform:rotate(45deg)}
 /* --- table (I:206-212) --- */
 /* table */
-table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:9px 10px;font-size:11px;font-weight:500;color:var(--subtle);border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:10px;border-top:1px solid var(--hair);vertical-align:middle;white-space:nowrap}
-tbody tr{transition:background .15s;cursor:pointer}
-tbody tr:hover{background:oklch(var(--surface-sunken) / .7)}
-tbody tr:first-child td{border-top:0}
+/* VCFO Spectrum T1 rows (R-07): a 36px head in 11.5px capitals over a 1.5px line, 44px rows with
+   one hairline, no column lines and no zebra. Tables inside Tailwind islands (EFilingGrid) draw
+   themselves, so these rules skip them. */
+table:where(:not(.cp-tw *)){width:100%;border-collapse:collapse}
+th:where(:not(.cp-tw *)){text-align:left;height:36px;padding:0 10px;font-size:11.5px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1.5px solid var(--border);white-space:nowrap}
+td:where(:not(.cp-tw *)){height:44px;padding:0 10px;border-bottom:1px solid var(--hair);vertical-align:middle;white-space:nowrap}
+tbody tr:where(:not(.cp-tw *)){transition:background .15s;cursor:pointer}
+tbody tr:where(:not(.cp-tw *)):hover{background:oklch(var(--surface-sunken) / .7)}
 /* --- motion (I:218-224) --- */
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -246,13 +249,13 @@ circle[data-dd]{transition:stroke-width .15s}circle[data-dd]:hover{stroke-width:
 /* ---------- calendar · grid lines (Calendar Date Separation, option 1) ----------
    one table: thin lines between every date, tinted weekday header, today = the whole navy-outlined box */
 .cal{gap:0;border:1px solid var(--hair);border-bottom:0;border-radius:6px;overflow:hidden;background:var(--panel)}
-.cal .dow{padding:7px 8px;background:oklch(var(--surface-sunken));border-bottom:1px solid #9aa8bb;color:var(--muted)}
+.cal .dow{padding:7px 8px;background:oklch(var(--surface-sunken));border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.07em}
 .cal .dow.we{color:var(--muted)}
 .cal .day{height:96px;border:0;border-radius:0;border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);background:var(--panel);padding:7px 8px;transition:background .15s}
 .cal>:nth-child(7n){border-right:0}
 .cal .day:hover{transform:none;box-shadow:none;border-color:var(--hair);background:oklch(var(--surface))}
 .cal .day.out,.cal .day.out:hover{background:var(--panel);border-style:solid;border-color:var(--hair)}
-.cal .day.out .dt{color:#a9b4c4}
+.cal .day.out .dt{color:var(--subtle)}
 .cal .day.we:not(.out),.cal .day.s-over,.cal .day.s-due,.cal .day.s-ok{background:var(--panel);border-color:var(--hair)}
 .cal .day.we:not(.out):hover,.cal .day.s-over:hover,.cal .day.s-due:hover,.cal .day.s-ok:hover{background:oklch(var(--surface))}
 .cal .dt{min-width:24px;height:24px;border-radius:4px;font:500 13px var(--font-sans),sans-serif}
@@ -272,13 +275,13 @@ circle[data-dd]{transition:stroke-width .15s}circle[data-dd]:hover{stroke-width:
 .yv .ym:hover .ym-h b{color:var(--primary);text-decoration:underline}
 .yv .ym.now{box-shadow:none}
 .yv .ym-h b{font:500 12.5px var(--font-sans),sans-serif;color:var(--fg)}
-.yv .ym-g{gap:0;border:1px solid #9aa8bb;border-bottom:0;border-right:0}
+.yv .ym-g{gap:0;border:1px solid var(--border);border-bottom:0;border-right:0}
 .yv .ym-g span{height:24px;border-radius:0;border-right:1px solid oklch(var(--line));border-bottom:1px solid oklch(var(--line));font:500 11px var(--font-sans),sans-serif;letter-spacing:0;color:var(--fg)}
-.yv .ym-g span:nth-child(7n){border-right:1px solid #9aa8bb}
-.yv .ym-g span.f{color:#fff;font-weight:500}
-.yv .ym-g span.t{box-shadow:inset 0 0 0 2px var(--navy);color:var(--navy-ink,var(--navy));font-weight:500;background:var(--panel)}
-.yv .ym-g span.f.t{box-shadow:inset 0 0 0 2px var(--navy),inset 0 0 0 3px oklch(var(--surface-raised))}
-.yv .ym-g{border-bottom:1px solid #9aa8bb}
+.yv .ym-g span:nth-child(7n){border-right:1px solid var(--border)}
+.yv .ym-g span.f{font-weight:500}
+.yv .ym-g span.t{box-shadow:inset 0 0 0 2px var(--primary);color:var(--fg);font-weight:500}
+.yv .ym-g span.f.t{box-shadow:inset 0 0 0 2px var(--primary)}
+.yv .ym-g{border-bottom:1px solid var(--border)}
 .yv .ym-g span:nth-last-child(-n+7){border-bottom:0}
 /* --- cal-views.js: year view + timeline (CV:44-91) --- */
 .yv{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,196px),1fr));gap:12px}
@@ -290,7 +293,7 @@ circle[data-dd]{transition:stroke-width .15s}circle[data-dd]:hover{stroke-width:
 .ym-h .n{font:500 11px var(--font-sans),sans-serif;color:var(--muted)}
 .ym-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
 .ym-g span{height:20px;display:grid;place-items:center;font:500 11px var(--font-sans),sans-serif;letter-spacing:-.03em;color:var(--subtle);border-radius:4px;min-width:0}
-.ym-g span.f{color:#fff;font-weight:500}
+.ym-g span.f{font-weight:500}
 .ym-g span.t{box-shadow:inset 0 0 0 1.5px var(--navy);color:var(--navy-ink,var(--navy));font-weight:500}
 .ym-s{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:7px;font:500 11px var(--font-sans);color:var(--muted)}
 .ym-s i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:0}
@@ -324,8 +327,8 @@ circle[data-dd]{transition:stroke-width .15s}circle[data-dd]:hover{stroke-width:
 .tlv-b .hd{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize}
 .tlv-b .hd.l{left:-2px}.tlv-b .hd.r{right:-2px}
 .tlv-d{position:absolute;top:9px;width:11px;height:11px;margin-left:-5.5px;transform:rotate(45deg);border-radius:2px;background:var(--navy);box-shadow:0 0 0 2px oklch(var(--surface-raised));pointer-events:none;z-index:2}
-.tlv-today{position:absolute;top:40px;bottom:0;width:2px;margin-left:-1px;background:#d64545;pointer-events:none;z-index:4}
-.tlv-today:after{content:"Today";position:absolute;top:2px;left:4px;font:500 11px var(--font-sans);color:#fff;background:#d64545;padding:1px 5px;border-radius:3px}
+.tlv-today{position:absolute;top:40px;bottom:0;width:2px;margin-left:-1px;background:var(--gold);pointer-events:none;z-index:4}
+.tlv-today:after{content:"Today";position:absolute;top:2px;left:4px;font:500 11px var(--font-sans);color:oklch(var(--ink));background:var(--gold-soft);padding:1px 5px;border-radius:3px}
 .tlv-read{position:fixed;z-index:2147483002;pointer-events:none;background:var(--navy);color:#fff;font:500 11.5px var(--font-sans);padding:4px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-130%)}
 @media (prefers-reduced-motion: reduce){.ym{transition:none}}
 
@@ -395,3 +398,33 @@ circle[data-dd]{transition:stroke-width .15s}circle[data-dd]:hover{stroke-width:
   .det-ft>.ask{flex:1 1 100%!important}
   .det-ft>.btn{flex:1 1 0}
 }
+
+/* ======================================================================
+   VCFO Spectrum pass (29 Oct 2026, docs/ui-port): buttons, icon buttons,
+   cards, the month grid and the drill dialog take the Spectrum look. The
+   new parts (chips, tabs, rail cards, the Filings grid, Obligations and
+   Registrations) are Tailwind islands and are not styled here.
+   ====================================================================== */
+.btn{height:36px;padding:0 14px;border-radius:6px;font:500 14px var(--font-sans),sans-serif;border:1.5px solid transparent;transition:background .15s,border-color .15s}
+.btn:active{transform:none}
+.btn-s{height:30px;padding:0 10px;font-size:13px}
+.btn-n,.btn-p{background:oklch(var(--brand));color:oklch(var(--on-brand))}
+.btn-n:hover,.btn-p:hover{background:oklch(var(--brand-strong));color:oklch(var(--on-brand))}
+.btn-o{background:var(--panel);color:var(--fg);border-color:oklch(var(--line-strong))}
+.btn-o:hover{background:oklch(var(--surface-sunken))}
+.btn:disabled{opacity:.5;cursor:default}
+.ibtn{border:1.5px solid oklch(var(--line-strong));color:var(--muted)}
+.ibtn:hover{color:var(--fg);border-color:oklch(var(--line-strong));background:oklch(var(--surface-sunken))}
+.ibtn:disabled{opacity:.4;cursor:default}
+.card{border:1.5px solid var(--border);box-shadow:none}
+.st{font-size:13px;color:var(--fg)}
+.ask{color:oklch(var(--brand-text))}
+.modal,.dpop,.dd{border:1.5px solid var(--border)}
+.dd-top{background:oklch(var(--surface-sunken))!important}
+.cal{border:1.5px solid var(--border);border-bottom:0}
+.cal .ev{background:oklch(var(--surface-sunken))}
+.more{color:oklch(var(--brand-text))}
+.dtile b{font-weight:500}
+/* the FY tag in the calendar head is a quiet tag, not a highlight */
+.fy-tag{flex:none;font-size:12px;font-weight:500;padding:3px 8px;border-radius:4px;background:oklch(var(--surface-sunken));color:oklch(var(--ink-2))}
+

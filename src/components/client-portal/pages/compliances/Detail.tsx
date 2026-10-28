@@ -21,6 +21,8 @@ import {
   tileVar,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
+import { Chip as SChip, type ChipTone } from '@/components/ui/spectrum-chip';
+import { FileBadge } from '@/components/ui/file-badge';
 import { proofHref, useProofs } from './api';
 import { AreaChip, Chip, FocusTrack, I, PortalBtn, ProofChip, useModal } from './bits';
 import { useComp } from './ctx';
@@ -33,40 +35,42 @@ function longPeriod(p: string): string {
   return i >= 0 ? `${MONTHS[i]} ${m[2]}` : p;
 }
 
-function TimingChip({ f, today }: { f: PortalFiling; today: string }) {
-  if (f.filedOn) {
-    const early = daysBetween(f.filedOn, f.dueDate);
-    if (early > 0) return <span className="chip c-ok">{plural(early, 'day')} early</span>;
-    if (early === 0) return <span className="chip c-ok">On the due date</span>;
-    return <span className="chip c-over">{plural(-early, 'day')} late</span>;
-  }
-  const left = daysBetween(today, f.dueDate);
-  if (left < 0)
-    return (
-      <span className="chip c-over">
-        {I.alert(11)} {plural(-left, 'day')} late
-      </span>
-    );
+/** A soft Spectrum tag inside the legacy dialog markup. */
+function Tone({ tone, children }: { tone: ChipTone; children: string }) {
   return (
-    <span className="chip c-prog">
-      {I.clock(11)} {left === 0 ? 'Due today' : `${plural(left, 'day')} left`}
+    <span className="cp-tw inline-flex align-middle">
+      <SChip tone={tone} dot={false} className="min-w-0">
+        {children}
+      </SChip>
     </span>
   );
 }
 
+export function TimingChip({ f, today }: { f: PortalFiling; today: string }) {
+  if (f.filedOn) {
+    const early = daysBetween(f.filedOn, f.dueDate);
+    if (early > 0) return <Tone tone="ok">{`${plural(early, 'day')} early`}</Tone>;
+    if (early === 0) return <Tone tone="ok">On the due date</Tone>;
+    return <Tone tone="bad">{`${plural(-early, 'day')} late`}</Tone>;
+  }
+  const left = daysBetween(today, f.dueDate);
+  if (left < 0) return <Tone tone="bad">{`${plural(-left, 'day')} late`}</Tone>;
+  return <Tone tone="prog">{left === 0 ? 'Due today' : `${plural(left, 'day')} left`}</Tone>;
+}
+
 function Fact({ k, children }: { k: string; children: React.ReactNode }) {
   return (
-    <div style={{ padding: 10, borderRadius: 8, background: 'var(--raised)' }}>
-      <div style={{ font: '600 10px var(--font-sans),sans-serif', color: 'var(--muted)' }}>{k}</div>
-      <div style={{ fontWeight: 700, marginTop: 4 }}>{children}</div>
+    <div style={{ padding: '9px 12px', borderRadius: 6, background: 'var(--raised)' }}>
+      <div style={{ font: '500 12px var(--font-sans),sans-serif', color: 'var(--muted)' }}>{k}</div>
+      <div style={{ fontWeight: 500, fontSize: 14, marginTop: 3 }}>{children}</div>
     </div>
   );
 }
 
-function RiskChip({ r }: { r: string }) {
+export function RiskChip({ r }: { r: string }) {
   const t = r.toLowerCase();
-  const cls = t === 'high' ? 'c-over' : t === 'medium' ? 'c-due' : 'c-ok';
-  return <span className={`chip ${cls}`}>{t ? t[0]!.toUpperCase() + t.slice(1) : '—'}</span>;
+  const tone: ChipTone = t === 'high' ? 'bad' : t === 'medium' ? 'warn' : 'ok';
+  return <Tone tone={tone}>{t ? t[0]!.toUpperCase() + t.slice(1) : '—'}</Tone>;
 }
 
 function inr(v: string): string {
@@ -104,7 +108,7 @@ export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; on
               <ProofChip f={f} onOpen={(x) => openProof(x)} />
               <TimingChip f={f} today={today} />
             </div>
-            <div id="comp-det-t" style={{ font: "600 22px var(--font-sans)", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <div id="comp-det-t" style={{ font: "500 22px var(--font-sans)", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               {f.name} · {longPeriod(f.period)} <PortalBtn f={f} />
             </div>
           </div>
@@ -125,7 +129,7 @@ export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; on
             </Fact>
           </div>
           {f.draftDueOn && !f.approvedOn && !f.filedOn ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, background: 'var(--gold-soft)', color: 'var(--gold-text)', fontWeight: 600, fontSize: 12.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 6, background: 'oklch(var(--waiting-soft))', color: 'oklch(var(--waiting))', fontWeight: 500, fontSize: 13 }}>
               {I.user(16)}
               <span style={{ flex: 1 }}>
                 SBC will send the draft for {companyShort}’s approval by {fmtDM(f.draftDueOn)}.
@@ -143,7 +147,7 @@ export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; on
               openChat(`Tell me about ${f.name} · ${f.period}`);
             }}
           >
-            🤖 Ask VCFO about {f.name}
+            Ask VCFO about {f.name}
           </button>
           {!f.filedOn ? (
             <button type="button" className="btn btn-o btn-s" onClick={() => addToCalendar(f)}>
@@ -199,7 +203,7 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
               <ProofChip f={f} onOpen={(x) => openProof(x)} />
               <TimingChip f={f} today={today} />
             </div>
-            <div id="comp-pan-t" style={{ font: "600 21px var(--font-sans)", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <div id="comp-pan-t" style={{ font: "500 21px var(--font-sans)", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               {f.name} · {longPeriod(f.period)} <PortalBtn f={f} />
             </div>
           </div>
@@ -253,17 +257,17 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
                       alignItems: 'center',
                       gap: 10,
                       padding: 10,
-                      border: `1px solid ${i === 0 ? 'oklch(54.6% 0.215 263 / .4)' : 'var(--border)'}`,
-                      borderRadius: 8,
+                      border: `1.5px solid ${i === 0 ? 'oklch(var(--brand-line))' : 'var(--border)'}`,
+                      borderRadius: 6,
                       marginBottom: 6,
                       ...(i === 0 ? { background: 'var(--primary-light)' } : {}),
                     }}
                   >
-                    <span style={{ width: 34, height: 40, borderRadius: 4, background: ext(p.fileName, p.mime) === 'PDF' ? 'var(--over)' : 'var(--prog)', color: '#fff', display: 'grid', placeItems: 'center', font: '800 9px var(--font-sans),sans-serif', flex: 'none' }}>
-                      {ext(p.fileName, p.mime)}
+                    <span className="cp-tw inline-flex flex-none">
+                      <FileBadge name={p.fileName} type={ext(p.fileName, p.mime) === 'PDF' ? 'PDF' : undefined} />
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <b style={{ fontSize: 12.5, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.fileName}</b>
+                      <b style={{ fontSize: 13, fontWeight: 500, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.fileName}</b>
                       <div style={{ fontSize: 11, color: 'var(--muted)' }}>{[kb(p.sizeBytes), fmtDM(p.uploadedAt.slice(0, 10))].filter(Boolean).join(' · ')}</div>
                     </div>
                     <button type="button" className="ibtn" data-tip="Preview" aria-label={`Preview ${p.fileName}`} onClick={() => openProof(f, p.id)}>
@@ -276,9 +280,9 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
                 ))
               ) : (
                 // the header already carries the "Proof pending" chip (CP-15): say what will land here instead
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1px dashed var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: 12.5, fontWeight: 600 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1.5px dashed oklch(var(--line-strong))', borderRadius: 6, color: 'var(--muted)', fontSize: 13 }}>
                   {I.file(16)}
-                  <span style={{ flex: 1 }}>SBC will upload the challan / acknowledgement here.</span>
+                  <span style={{ flex: 1 }}>Challan or acknowledgement from SBC</span>
                 </div>
               )}
             </div>
@@ -294,7 +298,7 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
               openChat(`Tell me about ${f.name} · ${f.period}`);
             }}
           >
-            🤖 Ask VCFO about this filing
+            Ask VCFO about this filing
           </button>
           {!f.filedOn ? (
             <>
