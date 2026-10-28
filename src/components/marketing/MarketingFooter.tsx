@@ -21,7 +21,7 @@ export function MarketingFooter() {
             </p>
             <ul className="mt-4 space-y-3 text-sm text-ink">
               <li>
-                <Link href="/#how-it-works" className="transition-colors hover:text-brand">
+                <Link href="/#journey" className="transition-colors hover:text-brand">
                   How it works
                 </Link>
               </li>

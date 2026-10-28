@@ -9,7 +9,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 
 const LINKS = [
-  { href: '/#how-it-works', label: 'How it works' },
+  { href: '/#journey', label: 'How it works' },
   { href: '/roles', label: 'Roles' },
   { href: '/contact', label: 'Contact' },
 ] as const;
