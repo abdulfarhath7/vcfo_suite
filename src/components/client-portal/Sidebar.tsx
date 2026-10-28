@@ -85,8 +85,8 @@ function useNav(): NavItem[] {
     { k: 'knowledge-bank', t: 'Library', i: 'library' },
     { k: 'credentials', t: 'Credentials', i: 'key-round' },
     { k: 'audit', t: 'Audit', i: 'history' },
-    { k: 'team', t: 'Team', i: 'users' },
-    { k: 'settings', t: 'Settings', i: 'settings' },
+    /* C-0027: Team is a section inside Profile (settings#team); the /team route stays. */
+    { k: 'settings', t: 'Profile', i: 'settings' },
   ];
 }
 

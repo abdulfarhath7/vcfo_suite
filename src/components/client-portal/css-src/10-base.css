@@ -73,7 +73,7 @@ tbody tr:first-child td{border-top:0}
 .seg>.thumb,.seg>.th{display:none}
 .seg button{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;border:0;background:none;height:28px;padding:0 10px;border-radius:6px;font:500 12px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));cursor:pointer;white-space:nowrap}
 .seg button:hover{color:oklch(var(--ink))}
-.seg button.on,.seg button[aria-selected=true],.seg button[aria-pressed=true]{background:oklch(var(--navy-fill));color:#fff;font-weight:500}
+.seg button.on,.seg button[aria-selected=true],.seg button[aria-pressed=true]{background:oklch(var(--brand));color:oklch(var(--on-brand));font-weight:500;box-shadow:var(--shine)}
 .seg .cnt{font:500 11px var(--font-sans),sans-serif;color:oklch(var(--ink-faint))}
 .seg button.on .cnt,.seg button[aria-selected=true] .cnt,.seg button[aria-pressed=true] .cnt{color:oklch(100% 0 0 / .72)}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -140,7 +140,7 @@ html,body{background:var(--bg)}
 .wa{background:var(--ok);border-color:var(--ok);color:#fff}.wa:hover{color:#fff;background:var(--ok-chip)}
 .tgl{position:relative;width:38px;height:22px;border-radius:6px;border:0;background:oklch(var(--line-strong));cursor:pointer;flex:none;padding:0;transition:background .2s}
 .tgl::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:4px;background:oklch(var(--surface-raised));box-shadow:var(--shadow);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
-.tgl.on{background:var(--navy)}.tgl.on::after{transform:translateX(16px)}
+.tgl.on{background:oklch(var(--brand))}.tgl.on::after{transform:translateX(16px)}
 .tgl:disabled{opacity:.45;cursor:not-allowed}
 .udot{width:8px;height:8px;border-radius:6px;background:var(--primary-fill,var(--primary));flex:none}
 .row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--hair)}
