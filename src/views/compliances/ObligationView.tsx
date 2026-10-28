@@ -1,0 +1,266 @@
+'use client';
+
+import Link from 'next/link';
+import { useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { CalendarDays, FileSpreadsheet } from 'lucide-react';
+import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
+import { PageTransition } from '@/components/shell/PageTransition';
+import { SEO } from '@/components/SEO';
+import { DashSection } from '@/components/dash/DashSection';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { CompanyPicker } from '@/components/admin/CompanyPicker';
+import { Button } from '@/components/ui/button';
+import { AreaPill } from '@/components/ui/spectrum-chip';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { filingStatus, financialYearLabel, rowsInFinancialYear, type FilingRow } from '@/lib/compliance/filings';
+import { cn } from '@/lib/utils';
+import {
+  ALL_COMPANIES,
+  normaliseCompanyParam,
+  rowsForCompany,
+  type ComplianceScope,
+} from '@/views/compliances/compliance-scope';
+import { areaLabel, daysUntil, filingWord, isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
+import { DateTile, Fact, FlowCard, RailCard, WordChip } from '@/views/compliances/spectrum-parts';
+import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
+import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
+import {
+  dueWithinSoon,
+  flowCounts,
+  groupObligations,
+  waitingOnClient,
+} from '@/views/compliances/obligation-groups';
+
+const RISK_WORD: Record<string, string> = { low: 'Low', medium: 'Medium', high: 'High' };
+
+/**
+ * OBLIGATION RECORD — one statutory obligation across the clients in view.
+ *
+ * The head carries the facts that the register holds (area, authority,
+ * frequency, the period that needs attention, how many clients have filed
+ * it, how many are late, the penalty risk), then a T1 grid of each client's
+ * instance for that period with the window and proof actions, and a second
+ * grid of every period on record. `?company=` narrows the page to one client.
+ * Everything comes from the scoped register; nothing is invented.
+ */
+export function ObligationView({
+  basePath,
+  scope,
+  obligationId,
+}: {
+  basePath: string;
+  scope: ComplianceScope;
+  obligationId: string;
+}) {
+  const router = useRouter();
+  const params = useSearchParams();
+  const now = useMemo(() => new Date(), []);
+  const mayWrite = useMayWriteFilings();
+  const register = useRegister(now);
+
+  const instances = useMemo(() => register.rows.filter((r) => r.obligationId === obligationId), [register.rows, obligationId]);
+  const clients = useMemo(() => {
+    const ids = new Set(instances.map((r) => r.engagementId));
+    return scope.engagements.filter((e) => ids.has(e.id));
+  }, [instances, scope.engagements]);
+  const companyId = clients.length === 1 ? clients[0]!.id : normaliseCompanyParam(params.get('company'), clients);
+  const scoped = useMemo(() => rowsForCompany(instances, companyId), [instances, companyId]);
+  const group = useMemo(() => groupObligations(scoped, register.details, now)[0], [scoped, register.details, now]);
+
+  if (register.isPending) {
+    return (
+      <div className="surface p-4" aria-busy="true" aria-label="Loading obligation">
+        <SkeletonRows rows={6} />
+      </div>
+    );
+  }
+  if (!group) {
+    return (
+      <EmptyState
+        title="This obligation has no filings for your clients"
+        action={
+          <Button size="sm" variant="secondary" asChild>
+            <Link href={`${basePath}/obligations`}>Open obligations</Link>
+          </Button>
+        }
+      />
+    );
+  }
+
+  const showClient = companyId === ALL_COMPANIES && clients.length > 1;
+  const late = group.rows.filter((r) => r.status === 'overdue').length;
+  const fyRows = rowsInFinancialYear(scoped, register.fyStartYear);
+  const fyFiled = fyRows.filter((r) => r.filedOn).length;
+  const risk = group.rows.map((r) => r.detail?.penaltyRisk).find(Boolean);
+  const flow = flowCounts(group.rows.map((r) => r.row), register.details);
+  const soon = scoped.filter((r) => dueWithinSoon(r, now)).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const waiting = scoped.filter((r) => waitingOnClient(r, register.details.get(r.id), now));
+  const companyQuery = companyId !== ALL_COMPANIES && clients.length > 1 ? `&company=${encodeURIComponent(companyId)}` : '';
+  const ref = (row: FilingRow) => register.details.get(row.id)?.acknowledgementNo?.trim() || null;
+
+  const setCompany = (id: string) => {
+    const search = new URLSearchParams(params.toString());
+    if (id === ALL_COMPANIES) search.delete('company');
+    else search.set('company', id);
+    const q = search.toString();
+    router.replace(`${basePath}/obligations/${encodeURIComponent(obligationId)}${q ? `?${q}` : ''}`, { scroll: false });
+  };
+
+  const refCell = (row: FilingRow) => {
+    const value = ref(row);
+    return value ? <span className={cn(isIdentifier(value) && 'font-mono text-[13px]')}>{value}</span> : <span className="text-ink-faint">—</span>;
+  };
+
+  const periodCols: EFilingColumn<FilingRow>[] = [
+    ...(showClient ? [{ key: 'client', header: 'Client', width: '20%', render: (row: FilingRow) => <span className="font-medium text-ink">{row.companyName}</span> }] : []),
+    { key: 'period', header: 'Period', width: '16%', render: (row) => row.periodLabel ?? row.fyLabel ?? '—' },
+    {
+      key: 'due',
+      header: 'Due',
+      width: '104px',
+      render: (row) => (
+        <span className={filingStatus(row, now) === 'overdue' ? 'font-medium text-danger' : ''}>{plainDate(row.dueDate, now)}</span>
+      ),
+    },
+    { key: 'filed', header: 'Filed on', width: '104px', render: (row) => <span className={row.filedOn ? 'text-ink' : 'text-ink-muted'}>{plainDate(row.filedOn, now)}</span> },
+    { key: 'ref', header: 'Reference', width: '18%', render: refCell },
+    {
+      key: 'owner',
+      header: 'Owner',
+      width: '14%',
+      render: (row) => register.details.get(row.id)?.ownerName ?? <span className="text-ink-faint">—</span>,
+    },
+    { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip word={filingWord(row, now)} /> },
+    { key: 'window', header: 'Window', width: '176px', render: (row) => <FilingWindowCell row={row} mayWrite={mayWrite} /> },
+    ...(mayWrite
+      ? [{ key: 'proof', header: 'Proof', width: '96px', align: 'right' as const, render: (row: FilingRow) => <FilingProofCell row={row} /> }]
+      : []),
+  ];
+
+  const historyCols: EFilingColumn<FilingRow>[] = [
+    ...(showClient ? [{ key: 'client', header: 'Client', width: '22%', render: (row: FilingRow) => <span className="font-medium text-ink">{row.companyName}</span> }] : []),
+    { key: 'period', header: 'Period', width: '20%', render: (row) => row.periodLabel ?? row.fyLabel ?? '—' },
+    { key: 'due', header: 'Due', width: '120px', render: (row) => plainDate(row.dueDate, now) },
+    { key: 'filed', header: 'Filed on', width: '120px', render: (row) => <span className={row.filedOn ? 'text-ink' : 'text-ink-muted'}>{plainDate(row.filedOn, now)}</span> },
+    { key: 'ref', header: 'Reference', render: refCell },
+    { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip word={filingWord(row, now)} /> },
+  ];
+  const history = [...scoped].sort((a, b) => b.dueDate.localeCompare(a.dueDate) || a.companyName.localeCompare(b.companyName));
+  const dueDays = daysUntil(group.dueDate, now);
+
+  return (
+    <PageTransition>
+      <SEO title={`${group.name} — VCFO Suite`} description={`${group.name}: each client's filing status.`} path={`${basePath}/obligations/${obligationId}`} />
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+        {/* R-02 plain head: the date tile, the 28px name, a muted meta line, the facts and the links. */}
+        <header className="grid gap-3" aria-label="Obligation">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+            <div className="flex min-w-0 flex-[1_1_320px] items-center gap-3.5">
+              <DateTile iso={group.dueDate} status={group.status} />
+              <div className="min-w-0">
+                <h1 className="flex min-w-0 items-center gap-1.5 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">
+                  <span className="truncate">{group.name}</span>
+                  <WhatsThisButton compact kind="compliance" refId={group.obligationId} label={group.name} />
+                </h1>
+                <p className="flex flex-wrap items-center gap-2 text-[13.5px] text-ink-muted">
+                  <AreaPill area={areaLabel(group.area)} />
+                  <span>
+                    {group.authority} · <span className="capitalize">{group.frequency}</span>
+                  </span>
+                </p>
+              </div>
+            </div>
+            {clients.length > 1 ? (
+              <CompanyPicker engagements={clients} value={companyId} allLabel="All my clients" allHint="Every client with this filing" onChange={setCompany} />
+            ) : null}
+            <Button size="sm" variant="secondary" asChild>
+              <Link href={`${basePath}/calendar?date=${group.dueDate}${companyQuery}`}>
+                <CalendarDays aria-hidden />
+                Calendar
+              </Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href={`${basePath}/filings?area=${encodeURIComponent(group.area)}${companyQuery}`}>
+                <FileSpreadsheet aria-hidden />
+                Open filings
+              </Link>
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+            <Fact k="Next due" className={group.status === 'overdue' ? 'text-danger' : undefined}>
+              {plainDate(group.dueDate, now)}
+              {dueDays !== null && group.status !== 'filed' ? (
+                <span className="ml-1.5 text-[13px] font-normal text-ink-muted">
+                  {dueDays < 0 ? `${-dueDays}d late` : dueDays === 0 ? 'today' : `in ${dueDays}d`}
+                </span>
+              ) : null}
+            </Fact>
+            <Fact k="This period">
+              {group.filed} of {group.total} filed
+            </Fact>
+            <Fact k="Late" className={late ? 'text-danger' : undefined}>
+              {late} client{late === 1 ? '' : 's'}
+            </Fact>
+            <Fact k={financialYearLabel(register.fyStartYear)}>
+              {fyFiled} of {fyRows.length} filed
+            </Fact>
+            {risk ? <Fact k="Penalty risk">{RISK_WORD[risk] ?? risk}</Fact> : null}
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid min-w-0 gap-4">
+            <DashSection title="Clients" meta={`Due ${plainDate(group.dueDate, now)}`} bodyClassName="p-0">
+              <EFilingGrid
+                caption={`${group.name} · clients`}
+                columns={periodCols}
+                rows={group.rows.map((r) => r.row)}
+                rowKey={(row) => row.id}
+                pageSize={20}
+                minWidth={showClient ? 1100 : 960}
+                empty="No clients"
+              />
+            </DashSection>
+            <DashSection title="Past periods" meta={`${history.length}`} bodyClassName="p-0">
+              <EFilingGrid
+                caption={`${group.name} · every period`}
+                columns={historyCols}
+                rows={history}
+                rowKey={(row) => row.id}
+                pageSize={12}
+                minWidth={720}
+                empty="No periods"
+              />
+            </DashSection>
+          </div>
+          <div className="grid min-w-0 gap-3">
+            <FlowCard
+              title="Progress"
+              steps={[
+                { label: 'Data from client', value: flow.data },
+                { label: 'Prepared', value: flow.prepared },
+                { label: 'Filed', value: flow.filed },
+                { label: 'Acknowledged', value: flow.acknowledged },
+              ]}
+            />
+            <RailCard
+              title="Due in the next 15 days"
+              items={soon.slice(0, 5).map((r) => ({ key: r.id, title: r.companyName, sub: r.periodLabel ?? group.name, right: plainDate(r.dueDate, now) }))}
+            />
+            <RailCard
+              title="Waiting on client"
+              items={waiting.slice(0, 5).map((r) => ({
+                key: r.id,
+                title: r.companyName,
+                sub: r.periodLabel ?? group.name,
+                right: plainDate(r.dueDate, now),
+                rightClass: cn('font-medium', filingStatus(r, now) === 'overdue' ? 'text-danger' : 'text-waiting'),
+              }))}
+            />
+          </div>
+        </div>
+      </div>
+    </PageTransition>
+  );
+}

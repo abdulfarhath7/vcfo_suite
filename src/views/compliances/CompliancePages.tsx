@@ -4,6 +4,10 @@ import { useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ComplianceCalendarView } from '@/views/compliances/ComplianceCalendarView';
 import { FilingsView } from '@/views/compliances/FilingsView';
+import { ObligationsView } from '@/views/compliances/ObligationsView';
+import { ObligationView } from '@/views/compliances/ObligationView';
+import { RegistrationsView } from '@/views/compliances/RegistrationsView';
+import { RegistrationView } from '@/views/compliances/RegistrationView';
 import { RedirectTo } from '@/components/routing/RedirectTo';
 import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
 import {
@@ -75,4 +79,38 @@ export function FilingsPage({ basePath }: { basePath: string }) {
   if (!settled) return <Settling label="Loading filings" />;
   if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
   return <FilingsView basePath={basePath} scope={scope} />;
+}
+
+export function ObligationsPage({ basePath }: { basePath: string }) {
+  const { settled, scope, leadHasNothing } = useComplianceScope();
+  if (!settled) return <Settling label="Loading obligations" />;
+  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
+  return <ObligationsView basePath={basePath} scope={scope} />;
+}
+
+export function ObligationPage({ basePath, obligationId }: { basePath: string; obligationId: string }) {
+  const { settled, scope, leadHasNothing } = useComplianceScope();
+  if (!settled) return <Settling label="Loading obligation" />;
+  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
+  return <ObligationView basePath={basePath} scope={scope} obligationId={obligationId} />;
+}
+
+/**
+ * Registrations sit outside Compliances in the nav but read the same scoped
+ * roster: `shellBase` is the shell's root (`/app/intern`, `/app/manager`,
+ * `/app/admin`), so the list lives at `{shellBase}/registrations` and a step
+ * opens in that shell's own project routes.
+ */
+export function RegistrationsPage({ shellBase }: { shellBase: string }) {
+  const { settled, scope, leadHasNothing } = useComplianceScope();
+  if (!settled) return <Settling label="Loading registrations" />;
+  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
+  return <RegistrationsView shellBase={shellBase} scope={scope} />;
+}
+
+export function RegistrationPage({ shellBase, recordKey }: { shellBase: string; recordKey: string }) {
+  const { settled, scope, leadHasNothing } = useComplianceScope();
+  if (!settled) return <Settling label="Loading registration" />;
+  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
+  return <RegistrationView shellBase={shellBase} scope={scope} recordKey={recordKey} />;
 }

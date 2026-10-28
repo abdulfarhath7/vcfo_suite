@@ -1,39 +1,31 @@
 'use client';
 
-import { FilingProofEditor } from '@/components/compliances/FilingProofEditor';
 import { GlossaryText } from '@/components/ask/GlossaryTerm';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
-import { useMemo, type ReactNode } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CalendarDays, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
-import { DashSection } from '@/components/dash/DashSection';
-import { DashDataTable, type DashColumn } from '@/components/dash/DashDataTable';
-import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { CompanyPicker } from '@/components/admin/CompanyPicker';
-import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
-import { FilingStatusPill } from '@/components/compliances/FilingStatusPill';
+import { Button } from '@/components/ui/button';
+import { AreaPill } from '@/components/ui/spectrum-chip';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { SkeletonRows } from '@/components/ui/empty-state';
 import {
   PreIncorporationNotice,
   PreIncorporationPortfolioNote,
 } from '@/components/compliances/PreIncorporationNotice';
 import { useFilings } from '@/hooks/use-filings';
-import { useQueryClient } from '@tanstack/react-query';
-import { useApp } from '@/context/AppContext';
-import { ScheduleWindowControl, ScheduleWindowMeta } from '@/components/schedule/ScheduleWindowControl';
-import { setFilingWindowInDb } from '@/lib/projects/engagements-db';
-import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
 import {
-  FILING_STATUS_LABEL,
   buildMatrix,
   filingStatus,
   financialYearForDate,
   financialYearLabel,
   financialYearMonths,
   financialYearQuarters,
-  formatFilingDate,
   isFilingsCadence,
   monthKeyOf,
   monthLabelOf,
@@ -50,7 +42,6 @@ import {
 import { cn } from '@/lib/utils';
 import {
   ALL_COMPANIES,
-  FILING_STATUS_FILTERS,
   isFilingStatusFilter,
   normaliseCompanyParam,
   pickedCompany,
@@ -60,26 +51,48 @@ import {
   type ComplianceScope,
   type FilingStatusFilter,
 } from '@/views/compliances/compliance-scope';
+import {
+  FILING_WORD,
+  STATUS_FILTER_LABEL,
+  STATUS_FILTER_ORDER,
+  areaLabel,
+  downloadCsv,
+  emptyCounts,
+  filingWord,
+  plainDate,
+  toCsv,
+} from '@/views/compliances/spectrum-status';
+import {
+  CompactChip,
+  DateTile,
+  StatusBar,
+  StatusDonutCard,
+  Swatch,
+  WordChip,
+} from '@/views/compliances/spectrum-parts';
+import { areaSwatch } from '@/views/compliances/area-swatch';
+import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
+import { useMayWriteFilings } from '@/views/compliances/use-register';
+import { HeadCard } from '@/views/compliances/grouped-grid';
 
-/** The register shows a Company column only while more than one company is on the sheet. */
+/** The register shows a Client column only while more than one company is on the sheet. */
 type RegisterColumnsMode = { company: boolean };
 const ONE_COMPANY: RegisterColumnsMode = { company: false };
+const ALL_AREAS = 'all';
 
 /**
- * FILINGS — the compliance register, one view for every role.
+ * FILINGS — the compliance register, one view for every role (VCFO Spectrum).
  *
  * The caller passes its shell's base path (so links stay inside that role's
  * routes) and the `scope` it already holds. WHAT it shows is decided by
  * `getFilings`, which scopes by `AuthContext` — the client's register and the
- * super admin's are this component reading the same rows. Every shell gets
- * the same chrome: FY stepper, cadence and status filters (`?cadence=`,
- * `?status=`), the monthly / quarterly / annual sheets, the authority chip.
- * The company picker (`?company=`) and the Company column appear whenever
- * there is more than one company in scope; a sole company is implicit.
+ * super admin's are this component reading the same rows.
  *
- * Canonical pieces only: `DashSection` headers, `DashDataTable` rows,
- * `FilingStatusPill` (which is `TONE_BADGE`). No table, pill or panel variant
- * is invented here.
+ * Layout (prototype FilingsScreen, rules R-07, R-08, R-25): a status donut and
+ * per-area bars for the period in view, area and status switches, then one
+ * T1 grid whose head bar carries the company, period, year, cadence, full
+ * year, export and calendar controls. URL state is unchanged: `?cadence=`,
+ * `?status=`, `?company=`, `?period=`, `?fy=`, `?view=year`, plus `?area=`.
  *
  * The pre-COI notice appears for a company in `scope.preIncorporationIds`
  * (derived by the caller from `isIncorporated`); on "All companies" the
@@ -106,6 +119,7 @@ export function FilingsView({
   const companyId = sole ? sole.id : normaliseCompanyParam(params.get('company'), engagements);
   const statusParam = params.get('status');
   const statusFilter: FilingStatusFilter = isFilingStatusFilter(statusParam) ? statusParam : 'all';
+  const areaParam = params.get('area')?.trim() || ALL_AREAS;
 
   const currentFy = financialYearForDate(now);
   // A `?period=` month decides the FY it belongs to, so a calendar cross-link
@@ -115,15 +129,33 @@ export function FilingsView({
   const monthKey = periodParam ?? monthKeyOf(now.toISOString())!;
 
   const query = useFilings({ fyStartYear });
-  const allRows = query.data?.rows ?? [];
+  const allRows = useMemo(() => query.data?.rows ?? [], [query.data?.rows]);
 
   const months = useMemo(() => financialYearMonths(fyStartYear), [fyStartYear]);
   const quarters = useMemo(() => financialYearQuarters(fyStartYear), [fyStartYear]);
   const fyRows = useMemo(() => rowsInFinancialYear(allRows, fyStartYear), [allRows, fyStartYear]);
   const companyRows = useMemo(() => rowsForCompany(fyRows, companyId), [fyRows, companyId]);
-  const cadenceRows = useMemo(
-    () => rowsForStatus(rowsForCadence(companyRows, cadence), statusFilter, now),
-    [companyRows, cadence, statusFilter, now],
+  const cadenceRows = useMemo(() => rowsForCadence(companyRows, cadence), [companyRows, cadence]);
+  const singleMonth = cadence === 'monthly' && !fullYear;
+  // The period in view: one month on the monthly sheet, the whole year otherwise.
+  const windowRows = useMemo(
+    () => (singleMonth ? rowsInMonth(cadenceRows, monthKey) : cadenceRows),
+    [singleMonth, cadenceRows, monthKey],
+  );
+  const areas = useMemo(
+    () => [...new Set(windowRows.map((row) => row.compliance))].sort((a, b) => a.localeCompare(b)),
+    [windowRows],
+  );
+  const area = areaParam !== ALL_AREAS && areas.includes(areaParam) ? areaParam : ALL_AREAS;
+  const areaRows = useMemo(
+    () => (area === ALL_AREAS ? windowRows : windowRows.filter((row) => row.compliance === area)),
+    [windowRows, area],
+  );
+  const shownRows = useMemo(() => rowsForStatus(areaRows, statusFilter, now), [areaRows, statusFilter, now]);
+  // The matrices plot every period, so they take the year's rows through the same filters.
+  const matrixRows = useMemo(
+    () => rowsForStatus(area === ALL_AREAS ? cadenceRows : cadenceRows.filter((row) => row.compliance === area), statusFilter, now),
+    [cadenceRows, area, statusFilter, now],
   );
 
   const picked = pickedCompany(engagements, companyId);
@@ -144,6 +176,96 @@ export function FilingsView({
     const next = months[monthIndex + delta];
     if (next) setParams({ period: next.key, fy: String(fyStartYear) });
   };
+  const canStepBack = monthIndex > 0;
+  const canStepForward = monthIndex >= 0 && monthIndex < months.length - 1;
+
+  const fyLabel = financialYearLabel(fyStartYear);
+  const title =
+    cadence === 'monthly'
+      ? fullYear
+        ? `Monthly · ${fyLabel}`
+        : `Filings · ${monthLabelOf(monthKey)}`
+      : cadence === 'quarterly'
+        ? `Quarterly · ${fyLabel}`
+        : `Annual · ${fyLabel}`;
+  const periodShort = singleMonth ? monthLabelOf(monthKey) : fyLabel;
+  const calendarQuery = picked && !sole ? `?company=${picked.id}` : '';
+  const exportRows = singleMonth || cadence === 'annual' ? shownRows : matrixRows;
+
+  const counts = useMemo(() => {
+    const c = emptyCounts();
+    for (const row of windowRows) c[filingStatus(row, now)] += 1;
+    return c;
+  }, [windowRows, now]);
+
+  const filters = (
+    <>
+      {sole ? null : (
+        <CompanyPicker
+          engagements={engagements}
+          value={companyId}
+          allHint="Whole portfolio"
+          onChange={(id) => setParams({ company: id === ALL_COMPANIES ? null : id })}
+        />
+      )}
+      {singleMonth ? (
+        <span className="inline-flex items-center">
+          <Button size="icon" variant="quiet" className="h-7 w-7" disabled={!canStepBack} onClick={() => stepMonth(-1)} aria-label="Previous month">
+            <ChevronLeft aria-hidden />
+          </Button>
+          <Button size="icon" variant="quiet" className="h-7 w-7" disabled={!canStepForward} onClick={() => stepMonth(1)} aria-label="Next month">
+            <ChevronRight aria-hidden />
+          </Button>
+        </span>
+      ) : null}
+      <span className="inline-flex items-center gap-0.5 rounded-md border-1.5 border-line px-0.5">
+        <Button size="icon" variant="quiet" className="h-6 w-6" onClick={() => setParams({ fy: String(fyStartYear - 1), period: null })} aria-label="Previous financial year">
+          <ChevronLeft aria-hidden />
+        </Button>
+        <span className="px-1 text-[12.5px] font-medium tabular-nums text-ink">{fyLabel}</span>
+        <Button
+          size="icon"
+          variant="quiet"
+          className="h-6 w-6"
+          disabled={fyStartYear >= currentFy.startYear + 2}
+          onClick={() => setParams({ fy: String(fyStartYear + 1), period: null })}
+          aria-label="Next financial year"
+        >
+          <ChevronRight aria-hidden />
+        </Button>
+      </span>
+      <SpectrumTabs
+        label="Filing cadence"
+        items={[
+          { key: 'monthly', label: 'Monthly' },
+          { key: 'quarterly', label: 'Quarterly' },
+          { key: 'annual', label: 'Annual' },
+        ]}
+        value={cadence}
+        onChange={(next) => setParams({ cadence: next })}
+      />
+      {cadence === 'monthly' ? (
+        <Button size="sm" variant="secondary" onClick={() => setParams({ view: fullYear ? null : 'year' })}>
+          {fullYear ? 'This month' : 'Full year'}
+        </Button>
+      ) : null}
+      <Button
+        size="sm"
+        variant="secondary"
+        disabled={exportRows.length === 0}
+        onClick={() => downloadCsv(`filings-${singleMonth ? monthKey : fyStartYear}.csv`, filingsCsv(exportRows, now))}
+      >
+        <Download aria-hidden />
+        Export
+      </Button>
+      <Button size="sm" variant="secondary" asChild>
+        <Link href={`${basePath}/calendar${calendarQuery}`}>
+          <CalendarDays aria-hidden />
+          Calendar
+        </Link>
+      </Button>
+    </>
+  );
 
   return (
     <PageTransition>
@@ -153,29 +275,21 @@ export function FilingsView({
         path={`${basePath}/filings`}
       />
 
-      <div className="flex flex-col gap-3">
-        <FilingsHeader
-          basePath={basePath}
-          fyLabel={financialYearLabel(fyStartYear)}
-          onFyChange={(startYear) =>
-            setParams({ fy: String(startYear), period: null })
-          }
-          fyStartYear={fyStartYear}
-          currentFyStartYear={currentFy.startYear}
-          calendarQuery={picked && !sole ? `?company=${picked.id}` : ''}
-          picker={
-            sole ? null : (
-              <CompanyPicker
-                engagements={engagements}
-                value={companyId}
-                allHint="Whole portfolio"
-                onChange={(id) =>
-                  setParams({ company: id === ALL_COMPANIES ? null : id })
-                }
-              />
-            )
-          }
-        />
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+        <h1 className="sr-only">Filings</h1>
+
+        {query.isPending ? null : (
+          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+            <StatusDonutCard counts={counts} caption="filings" label="Filings by status" />
+            <AreaBreakdown
+              rows={windowRows}
+              now={now}
+              title={`By area · ${periodShort}`}
+              area={area}
+              onArea={(next) => setParams({ area: next === area ? null : next })}
+            />
+          </div>
+        )}
 
         {pickedPreIncorporation ? (
           <PreIncorporationNotice
@@ -185,245 +299,160 @@ export function FilingsView({
           <PreIncorporationPortfolioNote count={scope.preIncorporationIds.size} />
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <SegmentedPicker
-            value={cadence}
-            options={[
-              { value: 'monthly', label: 'Monthly' },
-              { value: 'quarterly', label: 'Quarterly' },
-              { value: 'annual', label: 'Annual' },
+        <div className="flex flex-wrap items-center gap-2.5">
+          <SpectrumTabs
+            label="Filter by area"
+            items={[
+              { key: ALL_AREAS, label: 'All', count: windowRows.length },
+              ...areas.map((a) => ({ key: a, label: areaLabel(a), count: windowRows.filter((row) => row.compliance === a).length })),
             ]}
-            onChange={(next) => setParams({ cadence: next })}
-            ariaLabel="Filing cadence"
-            size="sm"
-            className="max-w-sm"
+            value={area}
+            onChange={(next) => setParams({ area: next === ALL_AREAS ? null : next })}
           />
-          <SegmentedPicker
+          <SpectrumTabs
+            label="Filter by status"
+            className="sm:ml-auto"
+            items={STATUS_FILTER_ORDER.map((status) => ({ key: status, label: STATUS_FILTER_LABEL[status] }))}
             value={statusFilter}
-            options={FILING_STATUS_FILTERS.map((status) => ({
-              value: status,
-              label: status === 'all' ? 'All' : FILING_STATUS_LABEL[status],
-            }))}
             onChange={(next) => setParams({ status: next === 'all' ? null : next })}
-            ariaLabel="Filter by status"
-            size="sm"
-            className="ml-auto inline-grid"
           />
         </div>
 
-        {query.isPending ? (
-          <FilingsSkeleton />
-        ) : query.isError ? (
-          <DashSection icon={FileSpreadsheet} title="Filings" tone="primary">
-            <p className="text-[12.5px] text-ink-muted">
-              Could not load the register. Please try again in a moment.
-            </p>
-          </DashSection>
-        ) : cadence === 'monthly' ? (
-          <MonthlyTab
-            rows={cadenceRows}
-            months={months}
-            monthKey={monthKey}
-            fullYear={fullYear}
-            now={now}
-            basePath={basePath}
-            columnsMode={columnsMode}
-            onToggleFullYear={() => setParams({ view: fullYear ? null : 'year' })}
-            onStepMonth={stepMonth}
-            canStepBack={monthIndex > 0}
-            canStepForward={monthIndex >= 0 && monthIndex < months.length - 1}
-          />
-        ) : cadence === 'quarterly' ? (
-          <QuarterlyTab rows={cadenceRows} quarters={quarters} now={now} columnsMode={columnsMode} />
-        ) : (
-          <AnnualTab rows={cadenceRows} now={now} basePath={basePath} columnsMode={columnsMode} />
-        )}
+        <HeadCard title={title} count={query.isPending ? undefined : exportRows.length} right={filters}>
+          {query.isPending ? (
+            <div className="p-4" aria-busy="true" aria-label="Loading filings">
+              <SkeletonRows rows={6} />
+            </div>
+          ) : query.isError ? (
+            <p className="px-4 py-6 text-center text-[13px] text-ink-muted">Could not load the register. Try again in a moment.</p>
+          ) : cadence === 'monthly' && fullYear ? (
+            <PeriodMatrix
+              rows={matrixRows}
+              now={now}
+              perCompany={columnsMode.company}
+              columns={months.map((month) => ({
+                key: month.key,
+                label: month.shortLabel,
+                emphasis: month.key === monthKeyOf(now.toISOString()),
+              }))}
+              periodOf={(row) => monthKeyOf(row.dueDate)}
+            />
+          ) : cadence === 'quarterly' ? (
+            <PeriodMatrix
+              rows={matrixRows}
+              now={now}
+              perCompany={columnsMode.company}
+              showFiledRow
+              columns={quarters.map((quarter) => ({
+                key: quarter.key,
+                label: quarter.label,
+                sublabel: quarter.rangeLabel,
+                emphasis: quarter.key === quarterForMonthKey(monthKeyOf(now.toISOString()) ?? '', fyStartYear)?.key,
+              }))}
+              periodOf={(row) => {
+                const key = monthKeyOf(row.dueDate);
+                return key ? (quarterForMonthKey(key, fyStartYear)?.key ?? null) : null;
+              }}
+            />
+          ) : (
+            <RegisterTable
+              rows={shownRows}
+              now={now}
+              basePath={basePath}
+              numbered={cadence === 'annual'}
+              mode={columnsMode}
+            />
+          )}
+        </HeadCard>
       </div>
     </PageTransition>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Header
+// Head charts
 // ---------------------------------------------------------------------------
 
-function FilingsHeader({
-  basePath,
-  fyLabel,
-  fyStartYear,
-  currentFyStartYear,
-  onFyChange,
-  calendarQuery = '',
-  picker = null,
+/** R-25 C2: one stacked bar per area in status colours; a click narrows the table to that area. */
+function AreaBreakdown({
+  rows,
+  now,
+  title,
+  area,
+  onArea,
 }: {
-  basePath: string;
-  fyLabel: string;
-  fyStartYear: number;
-  currentFyStartYear: number;
-  onFyChange: (startYear: number) => void;
-  /** Carries the narrowed company across to the calendar. */
-  calendarQuery?: string;
-  /** The `CompanyPicker`, when there is more than one company to pick. */
-  picker?: ReactNode;
+  rows: FilingRow[];
+  now: Date;
+  title: string;
+  area: string;
+  onArea: (area: string) => void;
 }) {
+  const byArea = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof emptyCounts>>();
+    for (const row of rows) {
+      const c = map.get(row.compliance) ?? emptyCounts();
+      c[filingStatus(row, now)] += 1;
+      map.set(row.compliance, c);
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [rows, now]);
+
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-2">
-      <h1 className="serif min-w-0 flex-1 text-[22px] leading-tight tracking-tight text-ink">
-        Filings
-      </h1>
-      <div className="flex shrink-0 items-center gap-1 rounded-sm border border-line px-1 py-0.5">
-        <button
-          type="button"
-          aria-label="Previous financial year"
-          className="grid h-6 w-6 place-items-center rounded-full text-ink-muted hover:bg-surface-sunken hover:text-ink"
-          onClick={() => onFyChange(fyStartYear - 1)}
-        >
-          <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
-        </button>
-        <span className="mono px-1 text-[11.5px] font-semibold tabular-nums text-ink">{fyLabel}</span>
-        <button
-          type="button"
-          aria-label="Next financial year"
-          disabled={fyStartYear >= currentFyStartYear + 2}
-          className="grid h-6 w-6 place-items-center rounded-full text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:pointer-events-none disabled:opacity-30"
-          onClick={() => onFyChange(fyStartYear + 1)}
-        >
-          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-        </button>
-      </div>
-      {picker}
-      <Link
-        href={`${basePath}/calendar${calendarQuery}`}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-line px-3 py-1 text-[11px] font-semibold text-brand hover:bg-brand-soft"
-      >
-        <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-        Open calendar
-      </Link>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Tabs
-// ---------------------------------------------------------------------------
-
-const EMPTY_REGISTER =
-  'No filings recorded for this period. Your calendar fills in as each registration goes live.';
-
-function registerColumns(
-  now: Date,
-  basePath: string,
-  options?: {
-    numbered?: boolean;
-    mode?: RegisterColumnsMode;
-    /** The manager's date window cell — a control for writers, quiet dates for readers. */
-    window?: (row: FilingRow) => ReactNode;
-  },
-): DashColumn<FilingRow>[] {
-  const columns: DashColumn<FilingRow>[] = [];
-  const mode = options?.mode ?? ONE_COMPANY;
-  if (options?.numbered) {
-    columns.push({
-      key: 'sl',
-      header: 'Sl No',
-      width: 'minmax(0,0.35fr)',
-      mono: true,
-      render: () => null,
-    });
-  }
-  if (mode.company) {
-    columns.push({
-      key: 'company',
-      header: 'Company',
-      width: 'minmax(0,1.2fr)',
-      render: (row) => <span className="truncate text-ink">{row.companyName}</span>,
-    });
-  }
-  columns.push(
-    {
-      key: 'compliance',
-      header: 'Compliance',
-      width: 'minmax(0,0.9fr)',
-      render: (row) => (
-        <span className="flex min-w-0 flex-col items-start gap-0.5">
-          <span className="text-ink">{row.compliance}</span>
-          <AuthorityChip authority={row.authority} />
-        </span>
-      ),
-    },
-    {
-      key: 'particular',
-      header: 'Particular',
-      width: 'minmax(0,1.5fr)',
-      render: (row) => (
-        <span className="flex min-w-0 items-center gap-1" data-ask-focus={row.id}>
-          <GlossaryText text={row.particular} className="truncate text-ink" />
-          <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
-        </span>
-      ),
-    },
-    {
-      key: 'due',
-      header: 'Due Date',
-      width: 'minmax(0,0.8fr)',
-      mono: true,
-      render: (row) => (
-        <Link
-          href={`${basePath}/calendar?date=${row.dueDate}`}
-          className="text-brand hover:underline"
-        >
-          {formatFilingDate(row.dueDate)}
-        </Link>
-      ),
-    },
-    {
-      key: 'filed',
-      header: 'Filed Date',
-      width: 'minmax(0,0.8fr)',
-      mono: true,
-      render: (row) => (
-        <span className={row.filedOn ? 'text-ink' : 'text-ink-muted'}>
-          {formatFilingDate(row.filedOn)}
-        </span>
-      ),
-    },
-    {
-      key: 'frequency',
-      header: 'Frequency',
-      width: 'minmax(0,0.7fr)',
-      render: (row) => (
-        <span className="capitalize text-ink-muted">{row.frequency}</span>
-      ),
-    },
-    {
-      key: 'window',
-      header: 'Window',
-      width: 'minmax(0,1fr)',
-      mono: true,
-      render: (row) => options?.window?.(row) ?? null,
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      width: 'auto',
-      align: 'right',
-      render: (row) => <FilingStatusPill status={filingStatus(row, now)} />,
-    },
-  );
-  return columns;
-}
-
-/** The tracker's authority chip — `TONE_BADGE` keyed by authority, nothing new. */
-function AuthorityChip({ authority }: { authority: string }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold',
-        TONE_BADGE[toneForKey(authority)],
+    <section className="surface px-5 py-4" aria-label="By area">
+      <p className="mb-3 text-[15px] font-medium text-ink">{title}</p>
+      {byArea.length === 0 ? (
+        <p className="text-[13px] text-ink-faint">No filings in this period</p>
+      ) : (
+        <div className="grid gap-1.5">
+          {byArea.map(([name, c]) => {
+            const total = c.filed + c.overdue + c['due-soon'] + c.upcoming;
+            return (
+              <button
+                key={name}
+                type="button"
+                onClick={() => onArea(name)}
+                aria-pressed={area === name}
+                className={cn(
+                  '-mx-1.5 grid grid-cols-[112px_minmax(0,1fr)_44px] items-center gap-3 rounded-sm px-1.5 py-0.5 text-left hover:bg-surface-sunken',
+                  area === name && 'bg-brand-soft',
+                )}
+              >
+                <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-medium text-ink-2">
+                  <Swatch className={areaSwatch(name)} />
+                  <span className="truncate">{areaLabel(name)}</span>
+                </span>
+                <StatusBar counts={c} label={`${areaLabel(name)} · ${total} filings`} />
+                <span className="text-right text-[12.5px] tabular-nums text-ink-muted">
+                  {c.filed}/{total}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       )}
-    >
-      {authority}
-    </span>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Register grid
+// ---------------------------------------------------------------------------
+
+const EMPTY_REGISTER = 'No filings in this period';
+
+function filingsCsv(rows: FilingRow[], now: Date): string {
+  return toCsv(
+    ['Due', 'Client', 'Area', 'Filing', 'Period', 'Frequency', 'Filed on', 'Status'],
+    sortByDueDate(rows).map((row) => [
+      row.dueDate,
+      row.companyName,
+      areaLabel(row.compliance),
+      row.particular,
+      row.periodLabel,
+      row.frequency,
+      row.filedOn,
+      filingWord(row, now),
+    ]),
   );
 }
 
@@ -440,223 +469,84 @@ function RegisterTable({
   numbered?: boolean;
   mode?: RegisterColumnsMode;
 }) {
-  const { user } = useApp();
-  const queryClient = useQueryClient();
-  const mayWrite = canSetScheduleWindows(user?.role);
-  const windowCell = (row: FilingRow): ReactNode => {
-    const value = row.windowFrom && row.windowTo ? { from: row.windowFrom, to: row.windowTo } : null;
-    if (!mayWrite) return <ScheduleWindowMeta value={value} />;
-    return (
-      <span className="inline-flex items-center gap-1">
-      <ScheduleWindowControl
-        value={value}
-        label={row.particular}
-        onSave={async (window) => {
-          await setFilingWindowInDb(row.id, window);
-          await queryClient.invalidateQueries({ queryKey: ['filings'] });
-        }}
-      />
-      <FilingProofEditor instanceId={row.id} label={row.particular} />
-      </span>
-    );
-  };
-  const ordered = sortByDueDate(rows);
+  const mayWrite = useMayWriteFilings();
+  const ordered = useMemo(() => sortByDueDate(rows), [rows]);
   const slNo = new Map(ordered.map((row, index) => [row.id, index + 1]));
-  const columns = registerColumns(now, basePath, { numbered, mode, window: windowCell }).map((column) =>
-    column.key === 'sl'
-      ? { ...column, render: (row: FilingRow) => <span>{slNo.get(row.id)}</span> }
-      : column,
+
+  const columns: EFilingColumn<FilingRow>[] = [];
+  if (numbered) {
+    columns.push({ key: 'sl', header: 'No.', width: '52px', render: (row) => <span className="tabular-nums text-ink-muted">{slNo.get(row.id)}</span> });
+  }
+  columns.push(
+    {
+      key: 'due',
+      header: 'Due',
+      width: '68px',
+      render: (row) => (
+        <Link href={`${basePath}/calendar?date=${row.dueDate}`} aria-label={`Open ${plainDate(row.dueDate, now)} in the calendar`} className="inline-flex py-1">
+          <DateTile iso={row.dueDate} status={filingStatus(row, now)} />
+        </Link>
+      ),
+    },
+    { key: 'area', header: 'Area', width: '124px', render: (row) => <AreaPill area={areaLabel(row.compliance)} /> },
+    {
+      key: 'filing',
+      header: 'Filing',
+      width: '30%',
+      render: (row) => (
+        <span className="block min-w-0" data-ask-focus={row.id}>
+          <span className="flex min-w-0 items-center gap-1">
+            <GlossaryText text={row.particular} className="truncate text-[14px] font-medium text-ink" />
+            <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
+          </span>
+          <span className="block truncate text-[12.5px] text-ink-muted">
+            {[row.periodLabel, row.authority].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+      ),
+    },
   );
+  if (mode.company) {
+    columns.push({ key: 'company', header: 'Client', width: '16%', render: (row) => <span className="text-ink">{row.companyName}</span> });
+  }
+  columns.push(
+    { key: 'frequency', header: 'Frequency', width: '108px', render: (row) => <span className="capitalize">{row.frequency}</span> },
+    {
+      key: 'filed',
+      header: 'Filed on',
+      width: '104px',
+      render: (row) => {
+        const status = filingStatus(row, now);
+        return (
+          <span className={status === 'overdue' ? 'font-medium text-danger' : row.filedOn ? 'text-ink' : 'text-ink-muted'}>
+            {status === 'overdue' && !row.filedOn ? 'Not filed' : plainDate(row.filedOn, now)}
+          </span>
+        );
+      },
+    },
+    { key: 'window', header: 'Window', width: '176px', render: (row) => <FilingWindowCell row={row} mayWrite={mayWrite} /> },
+    { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip word={filingWord(row, now)} /> },
+  );
+  if (mayWrite) {
+    columns.push({
+      key: 'proof',
+      header: 'Proof',
+      width: '96px',
+      align: 'right',
+      render: (row) => <FilingProofCell row={row} />,
+    });
+  }
 
   return (
-    <DashDataTable
-      bare
+    <EFilingGrid
+      caption="Filings"
       columns={columns}
       rows={ordered}
       rowKey={(row) => row.id}
+      pageSize={25}
+      minWidth={mode.company ? 1120 : 980}
       empty={EMPTY_REGISTER}
-      mobile={(row) => (
-        <div className="flex min-w-0 items-start gap-3" data-ask-focus={row.id}>
-          <div className="min-w-0 flex-1">
-            <p className="flex min-w-0 items-center gap-1 text-[13px] font-semibold text-ink">
-              <GlossaryText text={row.particular} className="truncate" />
-              <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
-            </p>
-            <p className="mt-0.5 text-[11px] text-ink-muted">
-              {mode.company ? `${row.companyName} · ` : ''}
-              {row.compliance} · due {formatFilingDate(row.dueDate)}
-              {row.filedOn ? ` · filed ${formatFilingDate(row.filedOn)}` : ''}
-            </p>
-            <div className="mt-1">{windowCell(row)}</div>
-          </div>
-          <FilingStatusPill status={filingStatus(row, now)} />
-        </div>
-      )}
     />
-  );
-}
-
-function MonthlyTab({
-  rows,
-  months,
-  monthKey,
-  fullYear,
-  now,
-  basePath,
-  columnsMode,
-  onToggleFullYear,
-  onStepMonth,
-  canStepBack,
-  canStepForward,
-}: {
-  rows: FilingRow[];
-  months: ReturnType<typeof financialYearMonths>;
-  monthKey: string;
-  fullYear: boolean;
-  now: Date;
-  basePath: string;
-  columnsMode: RegisterColumnsMode;
-  onToggleFullYear: () => void;
-  onStepMonth: (delta: number) => void;
-  canStepBack: boolean;
-  canStepForward: boolean;
-}) {
-  const monthRows = useMemo(() => rowsInMonth(rows, monthKey), [rows, monthKey]);
-  const matrix = useMemo(
-    () =>
-      buildMatrix(rows, months.map((m) => m.key), (row) => monthKeyOf(row.dueDate), now, {
-        perCompany: columnsMode.company,
-      }),
-    [rows, months, now, columnsMode.company],
-  );
-  const currentMonthKey = monthKeyOf(now.toISOString());
-
-  return (
-    <DashSection
-      icon={FileSpreadsheet}
-      title={fullYear ? 'Monthly · full year' : `Monthly · ${monthLabelOf(monthKey)}`}
-      tone="primary"
-      meta={
-        <button
-          type="button"
-          onClick={onToggleFullYear}
-          className="rounded-sm border border-line px-2.5 py-0.5 text-[11px] font-semibold text-brand hover:bg-brand-soft"
-        >
-          {fullYear ? 'This month' : 'Full year'}
-        </button>
-      }
-      bodyClassName="px-0 pb-0 pt-0"
-    >
-      {fullYear ? (
-        <PeriodMatrix
-          matrix={matrix}
-          columns={months.map((month) => ({
-            key: month.key,
-            label: month.shortLabel,
-            emphasis: month.key === currentMonthKey,
-          }))}
-        />
-      ) : (
-        <>
-          <div className="flex items-center justify-between gap-2 border-b border-line px-3.5 py-2">
-            <button
-              type="button"
-              disabled={!canStepBack}
-              onClick={() => onStepMonth(-1)}
-              className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-ink-muted hover:text-ink disabled:pointer-events-none disabled:opacity-30"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
-              Previous
-            </button>
-            <span className="mono text-[11.5px] font-semibold tabular-nums text-ink">
-              {monthLabelOf(monthKey)}
-            </span>
-            <button
-              type="button"
-              disabled={!canStepForward}
-              onClick={() => onStepMonth(1)}
-              className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-ink-muted hover:text-ink disabled:pointer-events-none disabled:opacity-30"
-            >
-              Next
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            </button>
-          </div>
-          <RegisterTable rows={monthRows} now={now} basePath={basePath} mode={columnsMode} />
-        </>
-      )}
-    </DashSection>
-  );
-}
-
-function QuarterlyTab({
-  rows,
-  quarters,
-  now,
-  columnsMode,
-}: {
-  rows: FilingRow[];
-  quarters: ReturnType<typeof financialYearQuarters>;
-  now: Date;
-  columnsMode: RegisterColumnsMode;
-}) {
-  const startYear = Number.parseInt(quarters[0]?.key.slice(0, 4) ?? '0', 10);
-  const matrix = useMemo(
-    () =>
-      buildMatrix(
-        rows,
-        quarters.map((quarter) => quarter.key),
-        (row) => {
-          const key = monthKeyOf(row.dueDate);
-          return key ? (quarterForMonthKey(key, startYear)?.key ?? null) : null;
-        },
-        now,
-        { perCompany: columnsMode.company },
-      ),
-    [rows, quarters, startYear, now, columnsMode.company],
-  );
-  const currentQuarter = quarterForMonthKey(monthKeyOf(now.toISOString()) ?? '', startYear);
-
-  return (
-    <DashSection
-      icon={FileSpreadsheet}
-      title="Quarterly"
-      tone="sky"
-      bodyClassName="px-0 pb-0 pt-0"
-    >
-      <PeriodMatrix
-        matrix={matrix}
-        showFiledRow
-        columns={quarters.map((quarter) => ({
-          key: quarter.key,
-          label: quarter.label,
-          sublabel: quarter.rangeLabel,
-          emphasis: quarter.key === currentQuarter?.key,
-        }))}
-      />
-    </DashSection>
-  );
-}
-
-function AnnualTab({
-  rows,
-  now,
-  basePath,
-  columnsMode,
-}: {
-  rows: FilingRow[];
-  now: Date;
-  basePath: string;
-  columnsMode: RegisterColumnsMode;
-}) {
-  return (
-    <DashSection
-      icon={FileSpreadsheet}
-      title="Annual"
-      tone="violet"
-      bodyClassName="px-0 pb-0 pt-0"
-    >
-      <RegisterTable rows={rows} now={now} basePath={basePath} numbered mode={columnsMode} />
-    </DashSection>
   );
 }
 
@@ -665,45 +555,38 @@ function AnnualTab({
 // ---------------------------------------------------------------------------
 
 function PeriodMatrix({
-  matrix,
+  rows,
+  now,
+  perCompany,
   columns,
+  periodOf,
   showFiledRow = false,
 }: {
-  matrix: ReturnType<typeof buildMatrix>;
+  rows: FilingRow[];
+  now: Date;
+  perCompany: boolean;
   columns: { key: string; label: string; sublabel?: string; emphasis?: boolean }[];
+  periodOf: (row: FilingRow) => string | null;
   /** Quarterly deck splits each row into Due date / Filing date sub-rows. */
   showFiledRow?: boolean;
 }) {
+  const matrix = buildMatrix(rows, columns.map((c) => c.key), periodOf, now, { perCompany });
+
   if (matrix.length === 0) {
-    return (
-      <p className="px-3.5 py-6 text-center text-[12.5px] text-ink-muted">
-        {EMPTY_REGISTER}
-      </p>
-    );
+    return <p className="px-4 py-6 text-center text-[13px] text-ink-muted">{EMPTY_REGISTER}</p>;
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[44rem] border-collapse text-[12.5px]">
+      <table className="grid-table min-w-[44rem]">
         <thead>
-          <tr className="text-[10.5px] font-semibold tracking-[0.07em] text-ink-faint">
-            <th scope="col" className="px-3.5 py-2.5 text-left font-semibold">
-              Compliance
-            </th>
+          <tr>
+            <th scope="col">Compliance</th>
             {columns.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                className={cn(
-                  'px-2 py-2.5 text-center font-semibold',
-                  column.emphasis && 'text-brand',
-                )}
-              >
+              <th key={column.key} scope="col" className={cn('!text-center', column.emphasis && '!text-brand-text')}>
                 {column.label}
                 {column.sublabel ? (
-                  <span className="mt-0.5 block text-[9px] font-semibold normal-case tracking-normal text-ink-muted">
-                    {column.sublabel}
-                  </span>
+                  <span className="block text-[10px] font-medium normal-case tracking-normal text-ink-faint">{column.sublabel}</span>
                 ) : null}
               </th>
             ))}
@@ -711,42 +594,29 @@ function PeriodMatrix({
         </thead>
         <tbody>
           {matrix.map((row) => (
-            <tr key={row.key} className="border-t border-line align-top">
-              <th scope="row" className="px-3.5 py-3 text-left font-semibold text-ink">
+            <tr key={row.key}>
+              <th scope="row" className="!h-auto !border-b-line-soft !py-2.5 !text-[14px] !font-medium !normal-case !tracking-normal !text-ink">
                 <span className="block">{row.particular}</span>
-                <span className="mt-0.5 block text-[11px] font-medium text-ink-muted">
+                <span className="mt-0.5 block text-[12px] font-normal text-ink-muted">
                   {row.companyName ? `${row.companyName} · ` : ''}
-                  {row.compliance}
+                  {areaLabel(row.compliance)}
                 </span>
               </th>
               {row.cells.map((cell, index) => (
-                <td
-                  key={columns[index]?.key ?? index}
-                  className={cn(
-                    'px-2 py-3 text-center',
-                    columns[index]?.emphasis && 'bg-brand-soft/40',
-                  )}
-                >
+                <td key={columns[index]?.key ?? index} className={cn('!h-auto py-2.5 text-center', columns[index]?.emphasis && 'bg-brand-soft/40')}>
                   {cell.status ? (
                     <span className="flex flex-col items-center gap-1">
-                      <span className="mono text-[11px] tabular-nums text-ink">
-                        {formatFilingDate(cell.dueDate)}
-                      </span>
+                      <span className="text-[12px] tabular-nums text-ink">{plainDate(cell.dueDate, now)}</span>
                       {showFiledRow ? (
-                        <span
-                          className={cn(
-                            'mono text-[11px] tabular-nums',
-                            cell.filedOn ? 'text-positive' : 'text-ink-muted',
-                          )}
-                        >
-                          {formatFilingDate(cell.filedOn)}
+                        <span className={cn('text-[12px] tabular-nums', cell.filedOn ? 'text-positive' : 'text-ink-muted')}>
+                          {cell.filedOn ? plainDate(cell.filedOn, now) : '—'}
                         </span>
                       ) : (
-                        <FilingStatusPill status={cell.status} />
+                        <CompactChip word={FILING_WORD[cell.status]} />
                       )}
                     </span>
                   ) : (
-                    <span className="text-ink-muted">—</span>
+                    <span className="text-ink-faint">—</span>
                   )}
                 </td>
               ))}
@@ -754,18 +624,6 @@ function PeriodMatrix({
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-function FilingsSkeleton() {
-  return (
-    <div className="surface overflow-hidden" aria-busy="true" aria-label="Loading filings">
-      <div className="space-y-2 p-4">
-        {Array.from({ length: 6 }, (_, index) => (
-          <div key={index} className="h-9 animate-pulse rounded-md bg-surface-sunken/40" />
-        ))}
-      </div>
     </div>
   );
 }

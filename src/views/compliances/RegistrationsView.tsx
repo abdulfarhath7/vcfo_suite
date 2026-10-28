@@ -1,0 +1,344 @@
+'use client';
+
+import Link from 'next/link';
+import { useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AlertCircle, AlertTriangle, Check, CircleCheck, CircleDashed, Clock, MoreHorizontal, User } from 'lucide-react';
+import { PageTransition } from '@/components/shell/PageTransition';
+import { SEO } from '@/components/SEO';
+import { CompanyPicker } from '@/components/admin/CompanyPicker';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { Button } from '@/components/ui/button';
+import { OwnerChip } from '@/components/ui/spectrum-chip';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { PreIncorporationPortfolioNote } from '@/components/compliances/PreIncorporationNotice';
+import { useApp } from '@/context/AppContext';
+import type { Engagement } from '@/data/engagements';
+import { REG_SHORT } from '@/lib/client-portal/credentials';
+import { cn } from '@/lib/utils';
+import { ALL_COMPANIES, normaliseCompanyParam, soleCompany, type ComplianceScope } from '@/views/compliances/compliance-scope';
+import { isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
+import { FilterStrip, FlowCard, RailCard, WordChip, type StripItem } from '@/views/compliances/spectrum-parts';
+import { GroupedGrid, HeadCard, type GridColumn, type GridGroup } from '@/views/compliances/grouped-grid';
+import {
+  REG_CATEGORIES,
+  regDateLabel,
+  regDueSoon,
+  regFlow,
+  registrationRows,
+  workbookRowKey,
+  type RegistrationRow,
+  type RegWord,
+} from '@/views/compliances/registration-rows';
+
+type RegFilter = '' | 'done' | 'progress' | 'waiting' | 'none' | 'overdue';
+const FILTER_WORD: Record<Exclude<RegFilter, ''>, RegWord[]> = {
+  done: ['Done'],
+  progress: ['In progress'],
+  waiting: ['Waiting'],
+  none: ['Not started', 'Due soon'],
+  overdue: ['Overdue'],
+};
+const CAT_DOT: Record<string, string> = {
+  Tax: 'bg-reg-gst',
+  Labour: 'bg-reg-labour',
+  Business: 'bg-warning-mid',
+  IP: 'bg-identity',
+  FEMA: 'bg-reg-fema',
+  na: 'bg-ink-faint',
+};
+const OWNER_LABEL = { client: 'Client', sbc: 'SBC', mca: 'Authority', manager: 'Manager' } as const;
+
+/** Grid cell look per word: done green tick, working blue dots, waiting teal mark, not started grey, not needed hatched. */
+const CELL: Record<'done' | 'run' | 'wait' | 'late' | 'none' | 'na', { cls: string; Icon?: typeof Check; label: string }> = {
+  done: { cls: 'bg-positive-soft text-positive', Icon: Check, label: 'Done' },
+  run: { cls: 'bg-brand-soft text-brand-text', Icon: MoreHorizontal, label: 'In progress' },
+  wait: { cls: 'bg-waiting-soft text-waiting', Icon: AlertCircle, label: 'Waiting' },
+  late: { cls: 'bg-danger-soft text-danger', Icon: AlertTriangle, label: 'Overdue' },
+  none: { cls: 'bg-surface-sunken text-ink-faint', label: 'Not started' },
+  na: { cls: 'border-1.5 border-dashed border-line-strong text-ink-faint', label: 'Not needed' },
+};
+function cellOf(word: RegWord): keyof typeof CELL {
+  if (word === 'Done') return 'done';
+  if (word === 'In progress') return 'run';
+  if (word === 'Waiting') return 'wait';
+  if (word === 'Overdue') return 'late';
+  if (word === 'Not needed') return 'na';
+  return 'none';
+}
+
+/**
+ * REGISTRATIONS — the registration-phase steps across the staff member's
+ * engagements (prototype RegistrationsScreen). A number strip filters the
+ * list; the list groups by category with "Not needed" last, and the grid view
+ * shows each client against each registration. The rail carries the progress
+ * flow, "Due in the next 15 days", "Waiting on client" and "Recently done".
+ *
+ * The roster in `scope` is the caller's own (scoped by `AuthContext`) and the
+ * step state is `getStateForEngagement`; pre-incorporation companies are left
+ * out (their registrations cannot start) and counted in the portfolio note.
+ * `?company=`, `?view=grid` and `?state=` carry the state on refresh.
+ */
+export function RegistrationsView({ shellBase, scope }: { shellBase: string; scope: ComplianceScope }) {
+  const router = useRouter();
+  const params = useSearchParams();
+  const now = useMemo(() => new Date(), []);
+  const { getStateForEngagement } = useApp();
+  const basePath = `${shellBase}/registrations`;
+
+  const engagements = useMemo(
+    () => scope.engagements.filter((e) => !scope.preIncorporationIds.has(e.id)),
+    [scope.engagements, scope.preIncorporationIds],
+  );
+  const sole = soleCompany(engagements);
+  const companyId = sole ? sole.id : normaliseCompanyParam(params.get('company'), engagements);
+  const view = params.get('view') === 'grid' ? 'grid' : 'list';
+  const stateParam = params.get('state') ?? '';
+  const filter: RegFilter = stateParam in FILTER_WORD ? (stateParam as RegFilter) : '';
+
+  const inView: Engagement[] = useMemo(
+    () => (companyId === ALL_COMPANIES ? engagements : engagements.filter((e) => e.id === companyId)),
+    [engagements, companyId],
+  );
+  const items = useMemo(() => registrationRows(inView, getStateForEngagement, now), [inView, getStateForEngagement, now]);
+  const live = items.filter((r) => r.word !== 'Not needed');
+  const notNeeded = items.filter((r) => r.word === 'Not needed');
+  const match = (r: RegistrationRow, f: RegFilter) => !f || FILTER_WORD[f].includes(r.word);
+  const shown = live.filter((r) => match(r, filter));
+  const count = (f: Exclude<RegFilter, ''>) => live.filter((r) => match(r, f)).length;
+
+  const setParams = (next: Record<string, string | null>) => {
+    const search = new URLSearchParams(params.toString());
+    for (const [key, value] of Object.entries(next)) {
+      if (value === null || value === '') search.delete(key);
+      else search.set(key, value);
+    }
+    const q = search.toString();
+    router.replace(`${basePath}${q ? `?${q}` : ''}`, { scroll: false });
+  };
+  const hrefOf = (r: RegistrationRow) => `${basePath}/${encodeURIComponent(r.key)}`;
+
+  const strip: StripItem[] = [
+    { key: 'done', label: 'Done', value: count('done'), Icon: CircleCheck, valueClass: 'text-positive' },
+    { key: 'progress', label: 'In progress', value: count('progress'), Icon: Clock },
+    { key: 'waiting', label: 'Waiting on client', value: count('waiting'), Icon: User, valueClass: 'text-waiting' },
+    { key: 'none', label: 'Not started', value: count('none'), Icon: CircleDashed },
+    { key: 'overdue', label: 'Overdue', value: count('overdue'), Icon: AlertTriangle, valueClass: 'text-danger' },
+  ];
+
+  const groups: GridGroup<RegistrationRow>[] = REG_CATEGORIES.map((c) => ({
+    id: c,
+    label: c,
+    dot: CAT_DOT[c],
+    rows: shown.filter((r) => r.category === c),
+  }));
+  // "Not needed" closes the list when no state filter is on.
+  if (!filter && notNeeded.length) groups.push({ id: 'na', label: 'Not needed', dot: CAT_DOT.na, rows: notNeeded });
+
+  const listCols: GridColumn<RegistrationRow>[] = [
+    {
+      key: 'name',
+      label: 'Registration',
+      render: (r) => (
+        <span className="block min-w-0">
+          <b className="block truncate text-[14px] font-medium text-ink">{r.name}</b>
+          <span className="block truncate text-[12.5px] text-ink-muted">{r.engagement.companyName}</span>
+        </span>
+      ),
+    },
+    { key: 'auth', label: 'Authority', width: 150, className: 'hidden md:table-cell', render: (r) => <span className="text-ink-2">{r.authority}</span> },
+    {
+      key: 'num',
+      label: 'Number',
+      width: 160,
+      className: 'hidden md:table-cell',
+      render: (r) =>
+        r.number ? (
+          <span className={cn(isIdentifier(r.number) && 'font-mono text-[12.5px]')}>{r.number}</span>
+        ) : (
+          <span className="text-ink-muted">{r.form ?? '—'}</span>
+        ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: 128,
+      render: (r) => (r.word === 'Not needed' ? <span className="text-ink-muted">Not needed</span> : <WordChip word={r.word} />),
+    },
+    {
+      key: 'owner',
+      label: 'With',
+      width: 128,
+      className: 'hidden lg:table-cell',
+      render: (r) => (r.owner ? <OwnerChip owner={r.owner} label={OWNER_LABEL[r.owner]} /> : <span className="text-ink-faint">—</span>),
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      width: 120,
+      render: (r) => {
+        const d = regDateLabel(r, now);
+        return <span className={d.className ?? 'text-ink-muted'}>{d.text}</span>;
+      },
+    },
+  ];
+
+  // Grid view: one row per client, one column per registration.
+  const types = useMemo(() => (items.length ? [...new Map(items.map((r) => [r.item.id, r.item])).values()] : []), [items]);
+  const byKey = new Map(items.map((r) => [r.key, r]));
+  const gridCols: EFilingColumn<Engagement>[] = [
+    { key: 'client', header: 'Client', width: '200px', render: (e) => <b className="font-medium text-ink">{e.companyName}</b> },
+    ...types.map(
+      (item): EFilingColumn<Engagement> => ({
+        key: item.id,
+        header: <span title={item.title}>{REG_SHORT[workbookRowKey(item) ?? ''] ?? item.title.split(' ')[0]}</span>,
+        width: '64px',
+        align: 'center',
+        render: (e) => {
+          const r = byKey.get(`${e.id}~${item.id}`);
+          if (!r) return null;
+          const c = CELL[cellOf(r.word)];
+          return (
+            <Link href={hrefOf(r)} className="block hover:opacity-80" aria-label={`${e.companyName} · ${item.title} · ${c.label}`} title={`${item.title} · ${c.label}`}>
+              <span className={cn('mx-auto grid h-6 w-9 place-items-center rounded-sm', c.cls)}>
+                {c.Icon ? <c.Icon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden /> : null}
+              </span>
+            </Link>
+          );
+        },
+      }),
+    ),
+  ];
+
+  const flow = regFlow(items);
+  const soon = live
+    .filter((r) => regDueSoon(r, now))
+    .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
+    .slice(0, 5);
+  const waiting = live.filter((r) => r.word === 'Waiting').slice(0, 5);
+  const done = live
+    .filter((r) => r.word === 'Done')
+    .sort((a, b) => (b.completedOn ?? '').localeCompare(a.completedOn ?? ''))
+    .slice(0, 4);
+
+  const head = (
+    <>
+      {sole ? null : (
+        <CompanyPicker
+          engagements={engagements}
+          value={companyId}
+          allLabel="All my clients"
+          allHint="Every client in view"
+          onChange={(id) => setParams({ company: id === ALL_COMPANIES ? null : id })}
+        />
+      )}
+      <SpectrumTabs
+        label="View"
+        items={[
+          { key: 'list', label: 'List' },
+          { key: 'grid', label: 'Grid' },
+        ]}
+        value={view}
+        onChange={(v) => setParams({ view: v === 'grid' ? 'grid' : null })}
+      />
+      {filter || (!sole && companyId !== ALL_COMPANIES) ? (
+        <Button size="sm" variant="ghost" onClick={() => setParams({ state: null, company: null })}>
+          Clear
+        </Button>
+      ) : null}
+    </>
+  );
+
+  return (
+    <PageTransition>
+      <SEO title="Registrations — VCFO Suite" description="Statutory registrations across your clients." path={basePath} />
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+        <h1 className="sr-only">Registrations</h1>
+        <FilterStrip items={strip} value={filter} onChange={(k) => setParams({ state: k || null })} />
+        {scope.preIncorporationIds.size ? <PreIncorporationPortfolioNote count={scope.preIncorporationIds.size} /> : null}
+
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="min-w-0">
+            {view === 'grid' ? (
+              <HeadCard title="Registrations" count={inView.length} right={head}>
+                <EFilingGrid
+                  caption="Registrations by client"
+                  columns={gridCols}
+                  rows={inView}
+                  rowKey={(e) => e.id}
+                  pageSize={10}
+                  minWidth={200 + types.length * 64}
+                  empty="No clients"
+                />
+                <div className="flex flex-wrap items-center gap-3 border-t border-line-soft px-4 py-2 text-[12.5px] text-ink-muted">
+                  {(Object.keys(CELL) as Array<keyof typeof CELL>).map((k) => {
+                    const c = CELL[k];
+                    return (
+                      <span key={k} className="inline-flex items-center gap-1.5">
+                        <span className={cn('grid h-4 w-5 place-items-center rounded-[3px]', c.cls)}>
+                          {c.Icon ? <c.Icon className="h-2.5 w-2.5" strokeWidth={2} aria-hidden /> : null}
+                        </span>
+                        {c.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </HeadCard>
+            ) : (
+              <GroupedGrid
+                title="Registrations"
+                count={shown.length}
+                right={head}
+                columns={listCols}
+                groups={groups}
+                rowKey={(r) => r.key}
+                rowHref={hrefOf}
+                empty="No registrations in view"
+                footer={companyId === ALL_COMPANIES ? <span>{inView.length} clients</span> : null}
+              />
+            )}
+          </div>
+          <div className="grid min-w-0 gap-3">
+            <FlowCard
+              title="Progress"
+              steps={[
+                { label: 'Documents', value: flow.documents },
+                { label: 'Application', value: flow.application },
+                { label: 'Authority review', value: flow.review },
+                { label: 'Done', value: flow.granted },
+              ]}
+            />
+            <RailCard
+              title="Due in the next 15 days"
+              items={soon.map((r) => {
+                const d = regDateLabel(r, now);
+                return { key: r.key, title: r.name, sub: r.engagement.companyName, right: d.text, rightClass: d.className, href: hrefOf(r) };
+              })}
+            />
+            <RailCard
+              title="Waiting on client"
+              items={waiting.map((r) => ({
+                key: r.key,
+                title: r.name,
+                sub: r.engagement.companyName,
+                right: regDateLabel(r, now).text,
+                rightClass: 'font-medium text-waiting',
+                href: hrefOf(r),
+              }))}
+            />
+            <RailCard
+              title="Recently done"
+              items={done.map((r) => ({
+                key: r.key,
+                title: r.name,
+                sub: r.number ? `${r.engagement.companyName} · ${r.number}` : r.engagement.companyName,
+                right: plainDate(r.registrationDate ?? r.completedOn, now),
+                href: hrefOf(r),
+              }))}
+            />
+          </div>
+        </div>
+      </div>
+    </PageTransition>
+  );
+}

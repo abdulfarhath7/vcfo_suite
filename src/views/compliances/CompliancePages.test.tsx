@@ -32,8 +32,24 @@ vi.mock('@/views/compliances/ComplianceCalendarView', () => ({
   ComplianceCalendarView: echo('calendar'),
 }));
 vi.mock('@/views/compliances/FilingsView', () => ({ FilingsView: echo('filings') }));
+vi.mock('@/views/compliances/ObligationsView', () => ({ ObligationsView: echo('obligations') }));
+vi.mock('@/views/compliances/ObligationView', () => ({ ObligationView: echo('obligation') }));
+vi.mock('@/views/compliances/RegistrationsView', () => ({
+  RegistrationsView: (props: Echo & { shellBase: string }) =>
+    echo('registrations')({ ...props, basePath: props.shellBase }),
+}));
+vi.mock('@/views/compliances/RegistrationView', () => ({
+  RegistrationView: (props: Echo & { shellBase: string; recordKey: string }) => (
+    <div data-testid="registration" data-base={props.shellBase} data-key={props.recordKey} />
+  ),
+}));
 
-const { ComplianceCalendarPage, FilingsPage } = await import('@/views/compliances/CompliancePages');
+vi.mock('@/components/routing/RedirectTo', () => ({
+  RedirectTo: ({ href }: { href: string }) => <div data-testid="redirect" data-href={href} />,
+}));
+
+const { ComplianceCalendarPage, FilingsPage, ObligationsPage, ObligationPage, RegistrationsPage, RegistrationPage } =
+  await import('@/views/compliances/CompliancePages');
 
 function engagement(patch: Partial<Engagement> & { id: string }): Engagement {
   return {
@@ -102,4 +118,32 @@ describe('CompliancePages', () => {
     expect(screen.queryByTestId('filings')).toBeNull();
     expect(screen.getByLabelText('Loading filings')).toHaveAttribute('aria-busy', 'true');
   });
+
+  it('hands Obligations and an obligation record the same scoped roster', () => {
+    app();
+    render(<ObligationsPage basePath="/app/manager/compliances" />);
+    const list = screen.getByTestId('obligations');
+    expect(list.dataset.base).toBe('/app/manager/compliances');
+    expect(JSON.parse(list.textContent ?? '{}')).toEqual({ roster: ['kestrel', 'solstice'], pre: ['kestrel'] });
+    render(<ObligationPage basePath="/app/manager/compliances" obligationId="gst-3b" />);
+    expect(screen.getByTestId('obligation').dataset.base).toBe('/app/manager/compliances');
+  });
+
+  it('roots Registrations at the shell and passes the record key through', () => {
+    app();
+    render(<RegistrationsPage shellBase="/app/admin" />);
+    expect(screen.getByTestId('registrations').dataset.base).toBe('/app/admin');
+    render(<RegistrationPage shellBase="/app/admin" recordKey="solstice~reg-4" />);
+    const record = screen.getByTestId('registration');
+    expect(record.dataset.base).toBe('/app/admin');
+    expect(record.dataset.key).toBe('solstice~reg-4');
+  });
+
+  it('sends a lead with no incorporated company from Registrations to Today', () => {
+    app({ user: { id: 'u-lead', role: 'intern' }, engagements: [engagement({ id: 'kestrel' })] });
+    render(<RegistrationsPage shellBase="/app/intern" />);
+    expect(screen.queryByTestId('registrations')).toBeNull();
+    expect(screen.getByTestId('redirect').dataset.href).toBe('/app/intern/today');
+  });
 });
+
