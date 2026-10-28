@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * STEP PAGE — `/app/client/incorporation/step/[stepId]`, FINAL live layout
- * (`renderLive`, final-src/s/inc/step.html): title row + What's this?, one
- * answers card, the Documents card (requested files + attachments), the phase
- * step list on the right (`naRail`), phone prev/next, and the sticky
- * "Approve & submit" bar with Undo.
+ * STEP PAGE — `/app/client/incorporation/step/[stepId]` (VCFO Spectrum, prototype
+ * src/screens/client/StepScreen.tsx and step-parts.tsx): a plain page head (title, status
+ * chip, meta line, owner and the official portal forms), underline tabs for the Answers and
+ * Documents views, the ST5 list of the phase on the right, and the prev and next pager. The
+ * approval row sits at the foot of the Answers card (it was a sticky bar).
  *
  * Real actions: client approve (`POST /api/client/steps/:id/approve`, deferred
  * until the 3.2 s Undo toast closes), request a change
@@ -14,10 +14,10 @@
  * `POST /api/client/steps/:id/files`, with Undo). Answers stay read-only for
  * the client (DECISIONS › Incorporation).
  */
-import { CardHeadTile } from '@/components/common/CardHeadTile';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Check, CircleHelp, Download, ExternalLink, Eye, MessageSquare, MoreVertical } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getActiveCatalogItems, type ChecklistField } from '@/data/checklist';
+import { getActiveCatalogItems, getChecklistStepTimelineLabel, type ChecklistField } from '@/data/checklist';
 import { resolveChecklistItemFromStepParam } from '@/lib/slug';
 import { extractItemResponses, fieldsForOwnership, getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { filterFieldsByViewer } from '@/lib/checklist/checklist-field-access';
@@ -28,17 +28,23 @@ import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { fileNameFromStoragePath, isMilestoneStoragePath, validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
-import { phaseHref, portalHref } from '../../routes';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
+import { StepMark } from '@/components/ui/step-track';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { FileBadge } from '@/components/ui/file-badge';
+import { SkeletonRows } from '@/components/ui/empty-state';
+import { portalHref } from '../../routes';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
 import { triggerDownload } from '../documents/file-types';
-import { BotSay, Ic, IncFrame, InfoBtn, Si, fmt, fmtL, fmtS, istDay, kb } from './ui';
+import { Ic, IncFrame, fmt, fmtL, fmtS, istDay, kb } from './ui';
 import {
   INC_EXTRAS_KEY,
   KL,
   PHL,
   firstName,
-  glyph,
   kd,
   ownKey,
   signedUrlFor,
@@ -49,6 +55,8 @@ import {
   type IncData,
 } from './data';
 import { stepFiles } from './StepTable';
+import { portalFor } from './portals';
+import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 
 /* ---------------- answers ---------------- */
 
@@ -117,13 +125,6 @@ function liveIntro(s: PortalStep, d: IncData, prev?: PortalStep): string {
   return `${sbc ? `${d.short}’s team prepares this step.` : `${d.short} fills this step once step ${s.n - 1}${prev ? ` · ${prev.title}` : ''} is done.`} Here is what it captures.`;
 }
 
-function ftClass(name: string, ct?: string): 'pdf' | 'docx' | 'xlsx' {
-  const n = name.toLowerCase();
-  if (/\.(xlsx?|csv)$/.test(n) || /sheet|excel/.test(ct ?? '')) return 'xlsx';
-  if (/\.(docx?|rtf)$/.test(n) || /word/.test(ct ?? '')) return 'docx';
-  return 'pdf';
-}
-
 /* ---------------- change-request dialog ---------------- */
 
 function ChangeDialog({ title, onClose, onSend }: { title: string; onClose: () => void; onSend: (note: string) => Promise<void> }) {
@@ -188,6 +189,7 @@ const PHASE_PART: Record<number, string> = { 1: 'SPICe+ Part A', 2: 'SPICe+ Part
 export default function StepPage({ stepParam }: { stepParam: string }) {
   const d = useIncData();
   const { go, openChat, toast, drill } = usePortal();
+  const goTo = useGo();
   const qc = useQueryClient();
   const viewer = useDocViewer();
   const item = useMemo(() => resolveChecklistItemFromStepParam(stepParam), [stepParam]);
@@ -246,19 +248,24 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
 
   /* ---------- NOC blocking: scroll to and focus the upload ---------- */
   const docsRef = useRef<HTMLElement>(null);
+  /* Underline tabs (R-11, N4): the Answers and Documents views of this step. */
+  const [view, setView] = useState('answers');
   const approve = () => {
     if (!s) return;
     if (openReqs.length) {
       const r = openReqs[0]!;
       toast(`Upload the ${r.label} first · it is still needed from ${d.short}`);
-      const drop = docsRef.current?.querySelector<HTMLElement>('.drop');
-      if (drop) {
+      // The upload zones live on the Documents view: switch to it, then point at the zone.
+      setView('docs');
+      requestAnimationFrame(() => {
+        const drop = docsRef.current?.querySelector<HTMLElement>('.drop-zone');
+        if (!drop) return;
         drop.scrollIntoView({ behavior: 'smooth', block: 'center' });
         drop.classList.remove('pulse');
         void drop.offsetWidth;
         drop.classList.add('pulse');
-        drop.querySelector<HTMLButtonElement>('.tx>span button')?.focus({ preventScroll: true });
-      }
+        drop.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+      });
       return;
     }
     if (!awaiting) {
@@ -309,7 +316,6 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
 
   /* ---------- upload a requested file (with Undo) ---------- */
   const [busyReq, setBusyReq] = useState<string | null>(null);
-  const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   const upload = async (r: ClientFileRequestDto, file: File) => {
     if (!s || !d.engagementId || !d.extras) return;
     const bad = validateMilestoneUploadFile(file);
@@ -391,32 +397,21 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     }
   };
 
-  /* ---------- sticky action bar: lift the Ask VCFO launcher (--vp-launch-lift) ---------- */
-  const actRef = useRef<HTMLDivElement>(null);
-  const showAct = Boolean(s) && k === 'you';
-  useLayoutEffect(() => {
-    const cp = document.querySelector<HTMLElement>('.cp');
-    const el = actRef.current;
-    if (!cp) return;
-    if (!showAct || !el) {
-      cp.style.removeProperty('--vp-launch-lift');
-      return;
-    }
-    const set = () => cp.style.setProperty('--vp-launch-lift', `${el.offsetHeight}px`);
-    set();
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(set) : null;
-    ro?.observe(el);
-    return () => {
-      ro?.disconnect();
-      cp.style.removeProperty('--vp-launch-lift');
-    };
-  }, [showAct]);
-
   if (!item) {
     return (
       <IncFrame pending={false} title="Step · Incorporation · VCFO Suite">
-        <div className="wrap na">
-          <BotSay text="I can’t find that step." btn="All phases" onBtn={() => go(portalHref('incorporation'))} />
+        <div className="wrap">
+          <Island>
+            <Empty
+              action={
+                <Button variant="secondary" onClick={() => go(portalHref('incorporation'))}>
+                  All phases
+                </Button>
+              }
+            >
+              Step not found
+            </Empty>
+          </Island>
         </div>
       </IncFrame>
     );
@@ -424,8 +419,14 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   if (!s || !phase) {
     return (
       <IncFrame pending title={`${item.title} · Incorporation · VCFO Suite`}>
-        <div className="wrap na">
-          <section className="card sk-blk" />
+        <div className="wrap">
+          <Island className="grid grid-cols-1 gap-5">
+            <span className="block h-14 w-1/2 animate-pulse rounded-md bg-surface-sunken" aria-hidden />
+            <Cols>
+              <SkeletonRows rows={8} />
+              <SkeletonRows rows={6} />
+            </Cols>
+          </Island>
         </div>
       </IncFrame>
     );
@@ -435,13 +436,26 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const released = k === 'done' || isStepReleasedToClient(s.slice, s.id);
   const phl = PHL[s.phaseNo - 1]!;
   const tab = s.item.fields?.find((f) => f.section)?.section ?? s.title;
-  const approvedOn = s.doneOn;
   const actItems = requests.length + 2;
   const actDone = requests.filter((r) => r.fulfilledAt).length + 1;
   const actPct = Math.round((actDone / actItems) * 100);
   const ans = stepAnswer(s, d.short);
   const docsCount = requests.length + otherFiles.length;
   const docsDone = requests.filter((r) => r.fulfilledAt).length + otherFiles.length;
+  const chip = stepChip(s);
+  const late = s.late && k !== 'done';
+  const inPhase = phase.steps;
+  const portalLink = s.owner !== 'client' && s.n !== 2 ? portalFor(s.item) : null;
+  const forms = (s.item.forms ?? []).slice(0, 3);
+  const st = statusLine(s, d, prev);
+  const about = s.item.description?.trim() || (k === 'done' ? '' : liveIntro(s, d, prev));
+  const showDocs = view === 'docs' && docsCount > 0;
+
+  const openPortal = (form: string) => {
+    if (!portalLink) return;
+    window.open(portalLink.url, '_blank', 'noopener,noreferrer');
+    toast(`Opens ${form} on the official portal in a new tab`);
+  };
 
   const fileRow = (key: string, name: string, path: string, chipTxt: string) => {
     const m = meta[path];
@@ -449,141 +463,68 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     const by = m?.uploadedByName ? firstName(m.uploadedByName) : undefined;
     const at = m?.uploadedAt ? fmt(istDay(m.uploadedAt)) : undefined;
     const small = [fname, kb(m?.sizeBytes), by, at].filter(Boolean).join(' · ');
-    const t = ftClass(fname, m?.contentType);
     return (
-      <div className="file" key={key}>
-        <span className={`ft ${t}`}>{t.toUpperCase()}</span>
-        <span className="tx">
-          <b>{name}</b>
-          <small>{small}</small>
+      <ListRow key={key}>
+        <FileBadge name={fname} />
+        <span className="min-w-0 flex-1">
+          <b className="block truncate font-medium text-ink">{name}</b>
+          <span className="block truncate text-[12.5px] text-ink-muted">{small}</span>
         </span>
-        <span className="acts">
-          <span className="chip done">{chipTxt}</span>
-          <button type="button" className="sq" aria-label={`Preview ${name}`} onClick={() => preview(path)}>
-            <Ic n="eye" />
-          </button>
-          <button type="button" className="sq" aria-label={`Download ${fname}`} onClick={() => void download(path)}>
-            <Ic n="download" />
-          </button>
-        </span>
-      </div>
+        <Chip tone={chipTxt === 'Checked' ? 'ok' : 'prog'} fixed className="hidden sm:inline-flex">
+          {chipTxt}
+        </Chip>
+        <Button size="icon" variant="quiet" className="h-[30px] w-[30px] min-w-0" aria-label={`Preview ${name}`} onClick={() => preview(path)}>
+          <Eye size={16} strokeWidth={1.6} aria-hidden />
+        </Button>
+        <Button size="icon" variant="quiet" className="h-[30px] w-[30px] min-w-0" aria-label={`Download ${fname}`} onClick={() => void download(path)}>
+          <Download size={16} strokeWidth={1.6} aria-hidden />
+        </Button>
+      </ListRow>
     );
   };
 
   const docsCard =
     docsCount > 0 ? (
-      <section className="card acc" id="docs" aria-label="Documents" ref={docsRef}>
-        <div className="ch">
-          <CardHeadTile title="Documents" />
-<h2 className="lbl">
-            Documents
-            <InfoBtn
-              label="About these documents"
-              spec={{
-                title: 'Documents',
-                text: 'Files this step needs. SBC checks each one before it goes into the MCA filing.',
-                answer: { title: 'Documents', text: 'Files this step needs. SBC checks each one before it goes into the MCA filing.', why: 'Missing or old documents are the most common reason MCA sends a filing back.', source: `VCFO Suite · ${d.short}’s incorporation project`, href: stepHrefOf(s) },
-              }}
-            />
-          </h2>
-          <span className="sp" />
-          {requests.length ? (
-            <span className={`chip ${docsDone === docsCount ? 'done' : 'you'}`}>
-              {docsDone} of {docsCount}
-            </span>
-          ) : (
-            <span className="cnt">
-              {docsCount} file{docsCount === 1 ? '' : 's'}
-            </span>
-          )}
-        </div>
-        {requests.map((r) => {
-          const done = Boolean(r.fulfilledAt);
-          const reqBy = r.requestedByName ? ` · requested by ${firstName(r.requestedByName)}` : '';
-          const path = r.fulfilledPath ?? '';
-          return (
-            <div key={r.id}>
-              <div className="dreq">
-                <Si k={done ? 'done' : 'you'} />
-                {(r.note ?? r.label) + reqBy}
-              </div>
-              {done && path ? (
-                fileRow(r.id, r.label, path, k === 'done' ? 'Checked' : 'Uploaded')
-              ) : (
-                <div
-                  className={`drop${busyReq === r.id ? ' busy' : ''}`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('over');
-                  }}
-                  onDragLeave={(e) => e.currentTarget.classList.remove('over')}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.remove('over');
-                    const f = e.dataTransfer.files?.[0];
-                    if (f) void upload(r, f);
-                  }}
-                >
-                  <button type="button" className="ut" aria-label={`Upload the ${r.label}`} onClick={() => inputs.current[r.id]?.click()}>
-                    <Ic n="upload" />
-                  </button>
-                  <span className="tx">
-                    <b>
-                      {r.label}
-                      <InfoBtn
-                        label={`About the ${r.label}`}
-                        spec={{
-                          title: r.label,
-                          text: r.note ? `${r.note}.` : `${r.label}, asked for by ${r.requestedByName ?? 'your team'} for this step.`,
-                          answer: { title: r.label, text: r.note ?? r.label, why: INFO_NOC_WHY, source: `VCFO Suite checklist, step ${s.n}`, href: stepHrefOf(s) },
-                        }}
-                      />
-                    </b>
-                    <span>
-                      {busyReq === r.id ? (
-                        'Uploading…'
-                      ) : (
-                        <>
-                          Drop a file here or{' '}
-                          <button type="button" onClick={() => inputs.current[r.id]?.click()}>
-                            browse
-                          </button>
-                        </>
-                      )}
-                    </span>
-                  </span>
-                  {r.dueDate ? <span className="chip you">Due {fmt(r.dueDate)}</span> : null}
-                  <input
-                    ref={(el) => {
-                      inputs.current[r.id] = el;
-                    }}
-                    className="vh"
-                    type="file"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf,image/*"
-                    aria-label={`Choose the ${r.label}`}
-                    tabIndex={-1}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      e.target.value = '';
-                      if (f) void upload(r, f);
-                    }}
-                  />
+      <section ref={docsRef} id="docs" aria-label="Documents" className="min-w-0">
+        <SCard
+          title="Documents"
+          flush
+          right={
+            requests.length ? (
+              <Chip tone={docsDone === docsCount ? 'ok' : 'warn'}>{`${docsDone} of ${docsCount}`}</Chip>
+            ) : (
+              <span className="text-[13px] text-ink-muted">
+                {docsCount} file{docsCount === 1 ? '' : 's'}
+              </span>
+            )
+          }
+        >
+          {requests.map((r) => {
+            const done = Boolean(r.fulfilledAt);
+            const reqBy = r.requestedByName ? ` · requested by ${firstName(r.requestedByName)}` : '';
+            const path = r.fulfilledPath ?? '';
+            return (
+              <div key={r.id} className="grid gap-2 border-t border-line-soft px-4 py-3 first:border-t-0 md:px-5">
+                <div className="flex min-w-0 items-center gap-2 text-[12.5px] text-ink-muted">
+                  <StepMark state={done ? 'done' : 'now'} tone="warn" size={18} label={done ? 'Uploaded' : 'Asked'} />
+                  <span className="truncate">{(r.note ?? r.label) + reqBy}</span>
                 </div>
-              )}
-            </div>
-          );
-        })}
-        {otherFiles.map((f) => (
-          <div key={f.fieldId}>
-            {requests.length ? (
-              <div className="dreq">
-                <Si k="done" />
-                {f.label}
+                {done && path ? (
+                  <div className="-mx-4 md:-mx-5">{fileRow(r.id, r.label, path, k === 'done' ? 'Checked' : 'Uploaded')}</div>
+                ) : (
+                  <DropZone
+                    label={r.label}
+                    busy={busyReq === r.id}
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf,image/*"
+                    chip={r.dueDate ? <Chip tone={r.dueDate < d.today ? 'bad' : 'warn'} className="hidden sm:inline-flex">{`Due ${fmt(r.dueDate)}`}</Chip> : undefined}
+                    onFile={(f) => void upload(r, f)}
+                  />
+                )}
               </div>
-            ) : null}
-            {fileRow(f.fieldId, f.label, f.path, k === 'done' ? 'Checked' : 'Uploaded')}
-          </div>
-        ))}
+            );
+          })}
+          {otherFiles.map((f) => fileRow(f.fieldId, f.label, f.path, k === 'done' ? 'Checked' : 'Uploaded'))}
+        </SCard>
       </section>
     ) : null;
 
@@ -597,18 +538,18 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
       tabs: [
         {
           label: 'Attached',
-          color: '#15805f',
+          color: 'oklch(var(--positive-mid))',
           rows: fs.map((f) => ({
             title: f.label,
             meta: f.fileName,
             chip: 'Open',
-            chipColor: '#2453c7',
+            chipColor: 'oklch(var(--brand))',
             onOpen: () => viewer.open(fs.map((x) => ({ id: `${y.id}:${x.fieldId}`, name: x.fileName, url: () => signedUrlFor(x.path), meta: `Step ${y.n} · ${y.title}` })), fs.indexOf(f)),
           })),
         },
         {
           label: 'Still needed',
-          color: '#d9731f',
+          color: 'oklch(var(--warning-mid))',
           rows: need.map((f) => ({ title: f.label, meta: y.owner === 'client' ? `From ${d.short}` : 'SBC prepares', href: stepHrefOf(y) })),
         },
       ],
@@ -616,193 +557,190 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     });
   };
 
+  const approval = (
+    <div className="flex flex-col gap-3 border-t border-line-soft px-4 py-3 sm:flex-row sm:items-center md:px-5" role="region" aria-label="Approval">
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+        <StepMark state={submitted ? 'done' : 'now'} tone="teal" label={submitted ? 'Approved' : 'Waiting'} />
+        <span className="min-w-0">
+          <b className="block truncate text-[14px] font-medium text-ink">{submitted ? `Approved by ${d.short}` : `Awaiting ${d.short}’s approval`}</b>
+          <span className="mt-1 block h-1.5 w-[200px] max-w-full overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+            <i className={cn('block h-full rounded-bar', submitted ? 'bg-positive-mid' : 'bg-brand')} style={{ width: `${submitted ? 100 : Math.max(actPct, 6)}%` }} />
+          </span>
+        </span>
+      </div>
+      <div className="flex flex-none gap-2">
+        <Button variant="secondary" className="max-sm:flex-1" onClick={requestChange}>
+          <MessageSquare size={16} strokeWidth={1.6} aria-hidden />
+          Request a change
+        </Button>
+        <Button
+          className="max-sm:flex-1"
+          disabled={submitted}
+          onClick={approve}
+          title={!awaiting && !openReqs.length ? clientApproveBlockedReason(s.slice) ?? undefined : undefined}
+        >
+          <Check size={16} strokeWidth={1.6} aria-hidden />
+          {submitted ? 'Submitted' : 'Approve and submit'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const answersCard = (
+    <SCard title={k === 'done' || k === 'you' ? 'Answers' : 'What this step captures'} meta={tab !== s.title ? tab : undefined} flush>
+      <div className="flex items-start gap-3 border-b border-line-soft px-4 py-3 md:px-5" role="status">
+        <StepMark state={markState(s)} tone={markTone(s)} size={20} className="mt-0.5" label={chip.label} />
+        <span className="min-w-0 flex-1">
+          <b className={cn('block text-[14px] font-medium', st.bad ? 'text-danger' : 'text-ink')}>{st.title}</b>
+          <span className="block text-[12.5px] text-ink-muted">{st.sub}</span>
+        </span>
+      </div>
+      {about ? <p className="m-0 border-b border-line-soft px-4 py-3 text-[13.5px] text-ink-2 md:px-5">{about}</p> : null}
+      <dl className="m-0">
+        {rows.map((r, i) => (
+          <KvRow key={`${r.label}-${i}`} r={released ? r : { label: r.label, value: '—' }} onFile={preview} />
+        ))}
+      </dl>
+      {k === 'you' ? approval : null}
+      {k === 'done' ? (
+        <footer className="flex flex-wrap items-center gap-2 border-t border-line-soft px-4 py-3 md:px-5">
+          <Button variant="secondary" className="ml-auto" onClick={requestChange}>
+            <MessageSquare size={16} strokeWidth={1.6} aria-hidden />
+            Request a change
+          </Button>
+        </footer>
+      ) : k === 'up' && prev ? (
+        <footer className="flex flex-wrap items-center gap-2 border-t border-line-soft px-4 py-3 md:px-5">
+          <Button variant="secondary" className="ml-auto" onClick={() => go(stepHrefOf(prev))}>
+            Go to step {prev.n}
+          </Button>
+        </footer>
+      ) : null}
+    </SCard>
+  );
+
+  const ownerTone = { client: 'text-warning', sbc: 'text-brand-text', mca: 'text-identity' } as const;
+  const rail = (
+    <SCard title={phl} meta={`${phase.done} / ${inPhase.length}`}>
+      <ol className="m-0 flex list-none flex-col p-0">
+        {inPhase.map((y, i) => {
+          const cur = y.id === s.id;
+          const ch = stepChip(y);
+          const o = ownKey(y);
+          return (
+            <li key={y.id} className="relative flex items-center gap-1">
+              {i < inPhase.length - 1 ? (
+                <span className={cn('absolute bottom-[-6px] left-[20.25px] top-[30px] w-[1.5px]', kd(y) === 'done' ? 'bg-positive-mid' : 'bg-line')} aria-hidden />
+              ) : null}
+              <a
+                href={stepHrefOf(y)}
+                onClick={goTo(stepHrefOf(y))}
+                aria-current={cur ? 'page' : undefined}
+                aria-label={`Step ${y.n} · ${y.title}`}
+                className={cn('relative -mx-2.5 flex min-h-[40px] min-w-0 flex-1 items-center gap-3 rounded-md px-2.5 py-1.5 hover:bg-surface-sunken', cur && 'bg-surface-sunken')}
+              >
+                <span className="relative z-[1] inline-grid" data-tt={tipTxt(y)}>
+                  <StepMark state={markState(y)} tone={markTone(y)} label={ch.label} />
+                </span>
+                <span className="flex min-w-0 flex-1 items-baseline gap-2">
+                  <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">Step {y.n}</span>
+                  <span className={cn('truncate text-[14px] text-ink', cur ? 'font-medium' : 'font-normal')}>{y.title}</span>
+                </span>
+                <span className={cn('hidden flex-none text-[12px] font-medium sm:inline', ownerTone[y.owner])}>{o === 'You' ? d.short : o}</span>
+              </a>
+              <button
+                type="button"
+                className="grid h-[30px] w-[30px] flex-none place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink"
+                aria-label={`More for step ${y.n} · ${y.title}`}
+                data-tt="Attachments"
+                data-notip=""
+                onClick={() => moreFor(y)}
+              >
+                <MoreVertical size={15} strokeWidth={1.6} aria-hidden />
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </SCard>
+  );
+
   return (
     <IncFrame pending={d.pending} title={`${s.title} · Incorporation · VCFO Suite`}>
-      <div className="wrap na">
-        <div className="nah">
-          <button type="button" className="nabk" aria-label={`Back to ${phl}`} onClick={() => go(phaseHref(s.phaseNo))}>
-            <Ic n="chevron-left" />
-          </button>
-          <h1>{s.title}</h1>
-          <button type="button" className="naw" aria-label={`What’s this? ${s.title}`} onClick={() => openChat(`What’s this: ${s.title}?`, ans)}>
-            <Ic n="circle-help" />
-            What’s this?
-          </button>
-        </div>
-        <div className="nag">
-          <div className="nam">
-            <section className="card nac" aria-label={s.title}>
-              {k === 'done' ? (
-                <>
-                  <div className="natabs" role="tablist" aria-label="Sections">
-                    <button
-                      type="button"
-                      className="natab"
-                      role="tab"
-                      aria-selected="true"
-                      id="na-t1"
-                      aria-controls="na-p1"
-                      onClick={() => toast(`Already showing ${tab}`)}
-                    >
-                      <Ic n="check" />
-                      {tab}
-                    </button>
-                  </div>
-                  <div className="nabd" role="tabpanel" id="na-p1" aria-labelledby="na-t1">
-                    <div className="naok done" role="status">
-                      <Ic n="circle-check" />
-                      <div>
-                        <b>{s.owner === 'client' ? 'Approved' : 'Completed'}</b>
-                        <span>
-                          {s.owner === 'client' ? 'Accepted after submission on ' : 'Delivered by SBC on '}
-                          {fmtS(approvedOn)}.
-                        </span>
-                      </div>
-                    </div>
-                    <dl className="nakv" style={{ margin: '22px 20px 0' }}>
-                      {rows.map((r, i) => (
-                        <KvRow key={`${r.label}-${i}`} r={r} onFile={preview} />
-                      ))}
-                    </dl>
-                  </div>
-                </>
-              ) : (
-                <div className="nabd">
-                  <p className="nain">{liveIntro(s, d, prev)}</p>
-                  <dl className="nakv">
-                    {rows.map((r, i) => (
-                      <KvRow key={`${r.label}-${i}`} r={released ? r : { label: r.label, value: '—' }} onFile={preview} />
-                    ))}
-                  </dl>
-                </div>
-              )}
-            </section>
-            {docsCard}
-            {k === 'done' ? (
-              <div className="naf">
-                <button type="button" className="btn nachg" onClick={requestChange}>
-                  <Ic n="message-square" />
-                  Request a change
-                </button>
-              </div>
-            ) : null}
-          </div>
-          <aside className="card narail" aria-label={`${phl} steps`}>
-            <h2>{phl}</h2>
-            <div className="nal">
-              {phase.steps.map((y, i) => {
-                const ky = kd(y);
-                const cur = y.id === s.id;
-                const tip = tipTxt(y);
-                const o = ownKey(y);
-                return (
-                  <div className={`nar k-${ky}${cur ? ' cur' : ''}`} key={y.id}>
-                    {ky === 'up' && !y.late ? (
-                      <span className="si num" role="img" aria-label={tip} data-tt={tip}>
-                        {i + 1}
-                      </span>
-                    ) : (
-                      <Si k={glyph(y)} tip={tip} />
-                    )}
-                    <a
-                      href={stepHrefOf(y)}
-                      className="nm"
-                      aria-current={cur ? 'page' : undefined}
-                      aria-label={`Step ${y.n} · ${y.title}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        go(stepHrefOf(y));
-                      }}
-                    >
-                      <span>{y.title}</span>
-                      <span
-                        className={`ow ${o === 'You' ? 'You' : 'SBC'}`}
-                        role="img"
-                        aria-label={`Owner · ${o === 'You' ? d.short : o}`}
-                        data-tt={o === 'You' ? `${d.short} owns this step` : `${o} owns this step`}
-                      >
-                        <Ic n="user" />
-                      </span>
-                    </a>
-                    <button
-                      type="button"
-                      className="ib"
-                      aria-label={`More for step ${y.n} · ${y.title}`}
-                      data-tt="More"
-                      data-notip=""
-                      onClick={() => moreFor(y)}
-                    >
-                      <Ic n="more" />
-                    </button>
-                    <button
-                      type="button"
-                      className="ib"
-                      aria-label={`What’s this? ${y.title}`}
-                      data-tt="What’s this? · ask VCFO"
-                      data-notip=""
-                      onClick={() => openChat(`What’s this: ${y.title}?`, stepAnswer(y, d.short))}
-                    >
-                      <Ic n="circle-help" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </aside>
-        </div>
-        <nav className="pn" aria-label="Steps">
-          {prev ? (
-            <button type="button" className="btn" onClick={() => go(stepHrefOf(prev))}>
-              <Ic n="arrow-left" />
-              <span>
-                {prev.n} · {prev.title}
-              </span>
-            </button>
-          ) : (
-            <button type="button" className="btn" onClick={() => go(portalHref('incorporation'))}>
-              <Ic n="arrow-left" />
-              <span>All phases</span>
-            </button>
-          )}
-          {next ? (
-            <button type="button" className="btn" onClick={() => go(stepHrefOf(next))}>
-              <span>
-                {next.n} · {next.title}
-              </span>
-              <Ic n="arrow-right" />
-            </button>
-          ) : (
-            <button type="button" className="btn" onClick={() => go(portalHref('incorporation'))}>
-              <span>All phases</span>
-              <Ic n="arrow-right" />
-            </button>
-          )}
-        </nav>
-        {showAct ? (
-          <div className="act" role="region" aria-label="Approval" ref={actRef}>
-            <div className="in">
-              <div className="st">
-                <Si k="you" />
-                <span style={{ minWidth: 0, flex: 1 }}>
-                  <b>Awaiting {d.short}’s approval</b>
-                  <span className="tr">
-                    <i style={{ width: `${Math.max(actPct, 6)}%` }} />
-                  </span>
+      <div className="wrap">
+        <Island className="grid grid-cols-1 gap-5">
+          <PageHead
+            label={`Step ${s.n} · ${s.title}`}
+            title={s.title}
+            chips={<Chip tone={chip.tone}>{chip.label}</Chip>}
+            meta={
+              <>
+                <span className="font-mono text-[12.5px] text-ink-2">Step {s.n}</span>
+                <Dot />
+                <span>
+                  Phase {s.phaseNo} · {phase.name} · step {inPhase.indexOf(s) + 1} of {inPhase.length}
                 </span>
-              </div>
-              <div className="bs">
-                <button type="button" className="btn" onClick={requestChange}>
-                  <Ic n="message-square" />
-                  Request a change
-                </button>
-                <button type="button" className="btn p" disabled={submitted} onClick={approve} title={!awaiting && !openReqs.length ? clientApproveBlockedReason(s.slice) ?? undefined : undefined}>
-                  <Ic n="check" />
-                  {submitted ? 'Submitted' : 'Approve & submit'}
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
+                {s.doneOn || s.due ? (
+                  <>
+                    <Dot />
+                    {k === 'done' ? <span>Done {fmt(s.doneOn)}</span> : <span className={cn(late && 'text-danger')}>Due {fmt(s.due)}</span>}
+                  </>
+                ) : null}
+                {stepTimelineLabel(s) ? (
+                  <>
+                    <Dot />
+                    <span>{stepTimelineLabel(s)}</span>
+                  </>
+                ) : null}
+              </>
+            }
+            actions={
+              <>
+                <OwnerChip owner={s.owner === 'client' ? 'client' : s.owner === 'mca' ? 'mca' : 'sbc'} label={s.owner === 'client' ? d.short : undefined} />
+                {portalLink
+                  ? (forms.length ? forms : [portalLink.form]).map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => openPortal(f)}
+                        className="inline-flex h-6 items-center gap-1.5 rounded-md border-1.5 border-line bg-surface-raised px-2 font-mono text-[12px] font-medium text-ink-2 hover:bg-surface-sunken"
+                        aria-label={`Open ${f} on the official portal`}
+                      >
+                        {f}
+                        <ExternalLink size={12} strokeWidth={1.6} aria-hidden />
+                      </button>
+                    ))
+                  : null}
+                <Button variant="quiet" size="sm" aria-label={`What’s this? ${s.title}`} onClick={() => openChat(`What’s this: ${s.title}?`, ans)}>
+                  <CircleHelp size={15} strokeWidth={1.6} aria-hidden />
+                  What’s this?
+                </Button>
+              </>
+            }
+          />
+          <Cols>
+            <Col>
+              {docsCount > 0 ? (
+                <SpectrumTabs
+                  variant="underline"
+                  label="Views of this step"
+                  items={[
+                    { key: 'answers', label: 'Answers', count: rows.length },
+                    { key: 'docs', label: 'Documents', count: `${docsDone}/${docsCount}` },
+                  ]}
+                  value={view}
+                  onChange={setView}
+                />
+              ) : null}
+              {showDocs ? docsCard : answersCard}
+            </Col>
+            <Col>{rail}</Col>
+          </Cols>
+          <Pager
+            prev={prev ? { href: stepHrefOf(prev), label: `${prev.n} · ${prev.title}` } : { href: portalHref('incorporation'), label: 'All phases' }}
+            next={next ? { href: stepHrefOf(next), label: `${next.n} · ${next.title}` } : { href: portalHref('incorporation'), label: 'All phases' }}
+          />
+        </Island>
       </div>
       {changeOpen ? <ChangeDialog title={`Step ${s.n} · ${s.title}`} onClose={() => setChangeOpen(false)} onSend={sendChange} /> : null}
       {viewer.node}
@@ -810,19 +748,42 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   );
 }
 
-const INFO_NOC_WHY = 'Without it MCA rejects the registered office proof.';
+/** Status line at the top of the Answers card (prototype step-parts statusLine). */
+function statusLine(s: PortalStep, d: IncData, prev?: PortalStep): { title: string; sub: string; bad?: boolean } {
+  const k = kd(s);
+  const due = s.due ? fmt(s.due) : '-';
+  if (k === 'done')
+    return { title: s.owner === 'client' ? 'Approved' : 'Completed', sub: `${s.owner === 'client' ? 'Accepted after submission on' : 'Delivered by SBC on'} ${fmtS(s.doneOn)}` };
+  if (k === 'you') return { title: `Waiting on ${d.short} · due ${due}`, sub: 'Check the answers, then approve and submit', bad: s.late };
+  if (k === 'prog') return { title: `In progress · due ${due}`, sub: `Fill the remaining answers and submit by ${due}`, bad: s.late };
+  if (k === 'with')
+    return {
+      title: `With ${s.owner === 'mca' ? 'MCA' : 'SBC'}${s.due ? ` · due ${due}` : ''}`,
+      sub: s.owner === 'mca' ? 'MCA reviews the filing' : `${d.leadName ?? 'Your project lead'} is working on it`,
+      bad: s.late,
+    };
+  return { title: 'Not started', sub: prev ? `Opens after step ${prev.n} · ${prev.title}` : 'Opens later' };
+}
+
+function stepTimelineLabel(s: PortalStep): string {
+  return getChecklistStepTimelineLabel(s.item);
+}
 
 function KvRow({ r, onFile }: { r: Row; onFile: (path: string) => void }) {
   const no = r.value === '—';
   return (
-    <div>
-      <dt>{r.label}</dt>
-      <dd className={no ? 'no' : undefined}>
+    <div className="grid gap-1 border-t border-line-soft px-4 py-2.5 first:border-t-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-4 md:px-5">
+      <dt className="min-w-0 text-[13px] text-ink-muted">{r.label}</dt>
+      <dd className={cn('m-0 min-w-0 text-[13.5px] font-medium', no ? 'text-ink-faint' : r.value.startsWith('Provided') ? 'text-positive' : 'text-ink')}>
         {r.file ? (
-          <button type="button" className="nalk" aria-label={`Open ${r.value}`} onClick={() => onFile(r.file!)}>
-            <Ic n="external-link" />
+          <button type="button" className="inline-flex items-center gap-1.5 text-left font-medium text-brand-text hover:underline" aria-label={`Open ${r.value}`} onClick={() => onFile(r.file!)}>
+            <ExternalLink size={14} strokeWidth={1.6} aria-hidden />
             {r.value}
           </button>
+        ) : r.value.startsWith('Provided') ? (
+          <span className="inline-flex items-center gap-1.5">
+            <Check size={14} strokeWidth={2} aria-hidden /> {r.value}
+          </span>
         ) : (
           r.value
         )}

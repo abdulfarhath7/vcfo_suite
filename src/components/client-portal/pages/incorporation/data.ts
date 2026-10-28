@@ -66,7 +66,8 @@ export const INFO_WHY: Record<string, string> = {
 export type K = 'done' | 'you' | 'prog' | 'with' | 'up';
 export type LK = K | 'next';
 export const KL: Record<LK, string> = { done: 'Done', you: 'Waiting', prog: 'In progress', with: 'With SBC', up: 'Upcoming', next: 'Next' };
-const KCOL: Record<K, string> = { done: '#15805f', you: '#c8620e', prog: '#0f2a4a', with: '#2453c7', up: '#8a97a8' };
+/* Drill tab colours: the status tokens (R-03, R-13). */
+const KCOL: Record<K, string> = { done: 'oklch(var(--positive-mid))', you: 'oklch(var(--waiting-mid))', prog: 'oklch(var(--brand))', with: 'oklch(var(--brand))', up: 'oklch(var(--upcoming-mid))' };
 const KORD: K[] = ['done', 'you', 'prog', 'with', 'up'];
 
 /* ---------------- per-step helpers ---------------- */

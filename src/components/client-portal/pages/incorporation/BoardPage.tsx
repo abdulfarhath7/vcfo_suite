@@ -1,16 +1,16 @@
 'use client';
 
 /**
- * BOARD RESOLUTION — `/app/client/board-resolution` (FINAL board.html,
- * `renderBoard`): navy hero, Drafted → Released → Signed → Received tracker,
- * preview card (zoom 60–160 %, full screen = shared document viewer), Files
- * card (Word draft, signed copy, Replace signed copy drop zone) and the
- * "What happens with it" bot. Real data: the board-resolution repository
+ * BOARD RESOLUTION — `/app/client/board-resolution` (VCFO Spectrum, prototype
+ * src/screens/client/BoardResolutionScreen.tsx): a plain page head with links to steps 2
+ * and 3, the Drafted → Released → Signed → Received ST5 track, the preview card (zoom
+ * 60–160 %, full screen = shared document viewer) and the Files card (Word draft, signed
+ * copy, Replace signed copy drop zone). Real data: the board-resolution repository
  * (`GET /api/engagements/:id/board-resolution`, download / download-signed /
  * upload-signed routes) and `GET /api/client/incorporation` for names.
  */
-import { CardHeadTile } from '@/components/common/CardHeadTile';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CircleHelp, Download, Eye, Maximize2, Minus, Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { checklist } from '@/data/checklist';
@@ -25,11 +25,17 @@ import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
-import { phaseHref } from '../../routes';
 import { useDocViewer } from '../documents/DocViewer';
 import { triggerDownload } from '../documents/file-types';
-import { Bmini, BotSay, Ic, IncFrame, Si, fmt, istDay } from './ui';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { StepMark } from '@/components/ui/step-track';
+import { FileBadge } from '@/components/ui/file-badge';
+import { SkeletonRows } from '@/components/ui/empty-state';
+import { IncFrame, fmt, istDay } from './ui';
 import { INC_EXTRAS_KEY, firstName, signedUrlFor, stepHrefOf, useIncData } from './data';
+import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, SCard, type PageHeadLink } from './spectrum';
 
 export default function BoardPage() {
   const d = useIncData();
@@ -43,7 +49,6 @@ export default function BoardPage() {
   const [loaded, setLoaded] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [busy, setBusy] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     if (!d.engagementId) return;
@@ -129,9 +134,6 @@ export default function BoardPage() {
     ['Released', released ? fmt(released) : undefined, Boolean(released)],
     ['Signed', signed ? `${d.short} · ${fmt(signed)}` : d.short, Boolean(signed)],
   ];
-  const curIdx = stages.findIndex((x) => !x[2]);
-  const heroGlyph = received ? 'done' : signed ? 'with' : 'you';
-  const heroTip = received ? `Done · received ${fmt(received)}` : signed ? `With SBC · signed copy sent ${fmt(signed)}` : `Waiting on ${d.short} · sign and upload`;
 
   const answer = {
     title: 'Board resolution',
@@ -141,243 +143,202 @@ export default function BoardPage() {
     href: '/app/client/board-resolution',
   };
 
+  const stepLinks: PageHeadLink[] = [s2, s3].filter((x): x is NonNullable<typeof x> => Boolean(x)).map((x) => ({ href: stepHrefOf(x), label: `${x.n} · ${x.title}`, dir: 'next' as const }));
+  const headChip = received ? <Chip tone="ok">Done</Chip> : signed ? <Chip tone="prog">In progress</Chip> : visible ? <Chip tone="teal">Waiting</Chip> : null;
+  const track: Array<{ label: string; sub?: string; done: boolean }> = [
+    ...stages.map(([label, sub, done]) => ({ label, sub, done })),
+    {
+      label: 'Received by SBC',
+      sub: received ? `${ex?.receivedByName ? `${firstName(ex.receivedByName)} · ` : ''}${fmt(received)}` : undefined,
+      done: Boolean(received),
+    },
+  ];
+  // The first open stage names who holds it now.
+  const nowAt = track.findIndex((x) => !x.done);
+  if (nowAt === 2) track[2]!.sub = `Waiting on ${d.short}`;
+  if (nowAt === 3) track[3]!.sub = 'With SBC';
+  const zoomBtn = 'h-[30px] w-[30px] min-w-0';
+  const openSigned = () => signedUrl && viewer.open([{ id: 'br-signed', name: signedName, url: signedUrl, meta: 'Board resolution · signed copy' }], 0);
+  const fileCount = (visible ? 1 : 0) + (signedUrl ? 1 : 0);
+
   return (
     <IncFrame pending={d.pending || !loaded} title="Board resolution · Incorporation · VCFO Suite">
       <div className="wrap">
-        <section className="hero" aria-label="Board resolution">
-          <div className="hrow">
-            <div className="hl">
-              <button type="button" className="hback" aria-label="Back to Phase 1 · Name Application" onClick={() => go(phaseHref(1))}>
-                <Ic n="chevron-left" />
-              </button>
-              <div className="htx">
-                <div className="eb">Phase 1 · Name Application · steps 2–3</div>
-                <div className="ht">
-                  <h1>Board resolution</h1>
-                  <button
-                    type="button"
-                    className="wt"
-                    aria-label="What’s this? Board resolution"
-                    data-tt="What’s this? · ask VCFO"
-                    data-notip=""
-                    onClick={() => openChat('What’s this: Board resolution?', answer)}
-                  >
-                    <Bmini />
-                    What’s this?
-                  </button>
-                </div>
-                <div className="hm" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-                  {received ? (
-                    <span className="chip done">Signed copy received · {fmt(received)}</span>
-                  ) : signed ? (
-                    <span className="chip with">Signed copy sent · {fmt(signed)}</span>
-                  ) : visible ? (
-                    <span className="chip you">Waiting for the signed copy</span>
-                  ) : null}
-                  {visible || signedUrl ? (
-                    <span className="chip" style={{ background: 'rgba(255,255,255,.16)', color: '#fff' }}>
-                      Certified true copy
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-            <div className="hr">
-              <div className="hnav">
-                {[s2, s3].map((x) =>
-                  x ? (
-                    <a
-                      key={x.id}
-                      href={stepHrefOf(x)}
-                      className="wbtn"
-                      aria-label={`Step ${x.n} · ${x.title}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        go(stepHrefOf(x));
-                      }}
-                    >
-                      <span>
-                        {x.n} · {x.title}
-                      </span>
-                      <Ic n="chevron-right" />
-                    </a>
-                  ) : null,
-                )}
-              </div>
-              <Si k={heroGlyph} tip={heroTip} cls="xl" />
-            </div>
-          </div>
-        </section>
-
-        {!showBody && loaded ? (
-          <section className="card" style={{ padding: 18 }}>
-            <BotSay
-              text="The board resolution is not ready yet. SBC drafts it from your details in step 1 and releases it here to sign."
-              btn={s2 ? `Open step ${s2.n}` : undefined}
-              onBtn={s2 ? () => go(stepHrefOf(s2)) : undefined}
-            />
-          </section>
-        ) : null}
-
-        {showBody ? (
-          <>
-            <section className="card trk" aria-label="Progress of the board resolution">
-              <div className="lc">
-                {stages.map((x, i) => (
-                  <span key={x[0]} style={{ display: 'contents' }}>
-                    <div className={`stg ${x[2] ? 'ok' : 'todo'}`}>
-                      <span className="o">{x[2] ? <Ic n="check" cls="" /> : null}</span>
-                      <span className="lb">
-                        <b>{x[0]}</b>
-                        {x[1] ? <small>{x[1]}</small> : null}
-                      </span>
-                    </div>
-                    <span className={`cn ${x[2] && (i + 1 >= stages.length ? Boolean(received) : stages[i + 1]![2]) ? 'ok' : x[2] ? 'ok' : 'dot'}`} aria-hidden="true" />
-                  </span>
-                ))}
+        <Island className="grid grid-cols-1 gap-5">
+          <PageHead
+            label="Board resolution"
+            title="Board resolution"
+            chips={headChip}
+            meta={
+              <>
+                <span>Phase 1 · Name Application · steps 2-3</span>
                 {received ? (
-                  <div className="now ok" role="group" aria-label={`Received by SBC${ex?.receivedByName ? ` · ${firstName(ex.receivedByName)}` : ''} · ${fmt(received)}`}>
-                    <span className="tile">
-                      <Ic n="check" />
-                    </span>
-                    <span className="tx">
-                      <span className="k">Received</span>
-                      <b>Received by SBC</b>
-                      <small>
-                        {ex?.receivedByName ? `${firstName(ex.receivedByName)} · ` : ''}
-                        {fmt(received)}
-                      </small>
-                    </span>
-                  </div>
-                ) : (
-                  <div className="now" role="group" aria-label={curIdx === 2 ? `Waiting on ${d.short} · sign and upload` : 'With SBC · checking the signed copy'}>
-                    {curIdx === 2 ? <span className="tag">Waiting on {d.short}</span> : null}
-                    <span className="tile">
-                      <Ic n={curIdx === 2 ? 'upload' : 'sun'} />
-                    </span>
-                    <span className="tx">
-                      <span className="k">Now</span>
-                      <b>{curIdx === 2 ? 'Sign and upload' : 'Received by SBC'}</b>
-                      <small>{curIdx === 2 ? 'Print, sign on letterhead, upload' : 'SBC checks the signed copy'}</small>
-                    </span>
-                  </div>
-                )}
-              </div>
-            </section>
+                  <>
+                    <Dot />
+                    <span>Signed copy received · {fmt(received)}</span>
+                  </>
+                ) : signed ? (
+                  <>
+                    <Dot />
+                    <span>Signed copy sent · {fmt(signed)}</span>
+                  </>
+                ) : null}
+                {visible || signedUrl ? (
+                  <>
+                    <Dot />
+                    <span>Certified true copy</span>
+                  </>
+                ) : null}
+              </>
+            }
+            links={stepLinks}
+            actions={
+              <Button variant="quiet" size="sm" aria-label="What’s this? Board resolution" onClick={() => openChat('What’s this: Board resolution?', answer)}>
+                <CircleHelp size={15} strokeWidth={1.6} aria-hidden />
+                What’s this?
+              </Button>
+            }
+          />
 
-            <div className="brg">
-              <section className="card prv" aria-label="Preview">
-                <div className="ch">
-                  <CardHeadTile title="Preview" />
-<h2 className="lbl">Preview</h2>
-                  <span className="cnt">
-                    {visible ? (
-                      <>
-                        certified true copy · <span id="zv">{Math.round(zoom * 100)}%</span>
-                      </>
-                    ) : (
-                      'signed copy'
-                    )}
-                  </span>
-                  <span className="sp" />
-                  {visible ? (
-                    <>
-                  <button type="button" className="sq" aria-label="Zoom out" onClick={() => setZoom((z) => Math.max(0.6, Math.round((z - 0.1) * 10) / 10))}>
-                    <Ic n="minus" />
-                  </button>
-                  <button type="button" className="sq" aria-label="Zoom in" onClick={() => setZoom((z) => Math.min(1.6, Math.round((z + 0.1) * 10) / 10))}>
-                    <Ic n="plus" />
-                  </button>
-                    </>
-                  ) : null}
-                  <button type="button" className="sq" aria-label="Open full screen" onClick={openFull}>
-                    <Ic n="maximize" />
-                  </button>
-                </div>
-                {!visible ? (
-                  <div style={{ padding: '4px 18px 18px' }}>
-                    <BotSay
-                      text={signedUrl ? 'The Word draft is not on file here. The signed copy from step 3 is.' : 'The board resolution file is not on file here yet. Ask SBC for a copy.'}
-                      btn={signedUrl ? 'Open the signed copy' : undefined}
-                      onBtn={signedUrl ? () => viewer.open([{ id: 'br-signed', name: signedName, url: signedUrl, meta: 'Board resolution · signed copy' }], 0) : undefined}
-                    />
-                  </div>
-                ) : (
-                <div className="pvw">
-                  <div className="paper live" data-paper="" style={{ transform: `scale(${zoom})` }}>
-                    <div className="cp-tw">
-                      {d.engagementId ? (
-                        <BoardResolutionDocPreview
-                          engagementId={d.engagementId}
-                          downloadUrl={downloadHref}
-                          refreshKey={`${doc?.storagePath ?? ''}:${doc?.updatedAt ?? ''}`}
-                          mergeFields={mergeFields}
-                        />
+          {!loaded || d.pending ? (
+            <>
+              <SkeletonRows rows={1} />
+              <Cols>
+                <SkeletonRows rows={8} />
+                <SkeletonRows rows={3} />
+              </Cols>
+            </>
+          ) : !showBody ? (
+            <Empty
+              action={
+                s2 ? (
+                  <Button variant="secondary" onClick={() => go(stepHrefOf(s2))}>
+                    Open step {s2.n}
+                  </Button>
+                ) : undefined
+              }
+            >
+              The board resolution is not ready yet
+            </Empty>
+          ) : (
+            <>
+              {/* ST5 track (R-22): done stages are green squares with a tick, joined by a green line. */}
+              <section className="rounded-md border-1.5 border-line bg-surface-raised px-4 py-4 md:px-5" aria-label="Progress of the board resolution">
+                <ol className="m-0 flex list-none flex-col gap-3 p-0 md:flex-row md:items-start md:gap-0">
+                  {track.map((st, i) => (
+                    <li key={st.label} className="relative flex min-w-0 flex-1 items-center gap-2.5 md:flex-col md:items-start md:gap-2">
+                      {i < track.length - 1 ? (
+                        <span className={cn('absolute left-[30px] right-3 top-[10px] hidden h-[1.5px] md:block', st.done && track[i + 1]!.done ? 'bg-positive-mid' : 'bg-line')} aria-hidden />
                       ) : null}
-                    </div>
-                  </div>
-                </div>
-                )}
-              </section>
-              <div className="scol">
-                <section className="card acc files" aria-label="Files">
-                  <div className="ch">
-                    <CardHeadTile title="Files" />
-<h2 className="lbl">Files</h2>
-                    <span className="sp" />
-                    <span className="cnt">{(visible ? 1 : 0) + (signedUrl ? 1 : 0)} file{(visible ? 1 : 0) + (signedUrl ? 1 : 0) === 1 ? '' : 's'}</span>
-                  </div>
-                  {visible ? (
-                  <div className="file">
-                    <span className="ft docx">DOCX</span>
-                    <span className="tx">
-                      <b>Draft · Word</b>
-                      <small>
-                        {BOARD_RESOLUTION_DOCX_FILENAME} · SBC{released ? ` · ${fmt(released)}` : ''}
-                      </small>
-                    </span>
-                    <span className="acts">
-                      <span className="chip done">Released</span>
-                      <button type="button" className="sq" aria-label="Preview Draft · Word" onClick={openFull}>
-                        <Ic n="eye" />
-                      </button>
-                      <button
-                        type="button"
-                        className="sq"
-                        aria-label={`Download ${BOARD_RESOLUTION_DOCX_FILENAME}`}
-                        onClick={() => {
-                          triggerDownload(downloadHref, BOARD_RESOLUTION_DOCX_FILENAME);
-                          toast(`Download started · ${BOARD_RESOLUTION_DOCX_FILENAME}`);
-                        }}
-                      >
-                        <Ic n="download" />
-                      </button>
-                    </span>
-                  </div>
-                  ) : null}
-                  {signedUrl ? (
-                    <div className="file">
-                      <span className="ft pdf">{/\.docx?$/i.test(signedName) ? 'DOCX' : 'PDF'}</span>
-                      <span className="tx">
-                        <b>Signed copy</b>
-                        <small>
-                          {signedName} · {ex?.signedUploadedByName ? firstName(ex.signedUploadedByName) : d.short}
-                          {signed ? ` · ${fmt(signed)}` : ''}
-                        </small>
+                      <StepMark state={st.done ? 'done' : i === nowAt ? 'now' : 'next'} tone={i === nowAt && nowAt === 2 ? 'teal' : 'prog'} label={st.done ? 'Done' : i === nowAt ? 'Now' : 'Not started'} className="relative z-[1]" />
+                      <span className="min-w-0">
+                        <b className="block truncate text-[14px] font-medium text-ink">{st.label}</b>
+                        {st.sub ? <span className="block truncate text-[12.5px] text-ink-muted">{st.sub}</span> : null}
                       </span>
-                      <span className="acts">
-                        <span className="chip done">{received ? 'Received' : 'Sent'}</span>
-                        <button
-                          type="button"
-                          className="sq"
-                          aria-label="Preview Signed copy"
-                          onClick={() => viewer.open([{ id: 'br-signed', name: signedName, url: signedUrl, meta: 'Board resolution · signed copy' }], 0)}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+
+              <Cols>
+                <Col>
+                  <SCard
+                    title="Preview"
+                    meta={visible ? `certified true copy · ${Math.round(zoom * 100)}%` : 'signed copy'}
+                    flush
+                    right={
+                      <>
+                        {visible ? (
+                          <>
+                            <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Zoom out" disabled={zoom <= 0.6} onClick={() => setZoom((z) => Math.max(0.6, Math.round((z - 0.1) * 10) / 10))}>
+                              <Minus size={16} strokeWidth={1.6} aria-hidden />
+                            </Button>
+                            <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Zoom in" disabled={zoom >= 1.6} onClick={() => setZoom((z) => Math.min(1.6, Math.round((z + 0.1) * 10) / 10))}>
+                              <Plus size={16} strokeWidth={1.6} aria-hidden />
+                            </Button>
+                          </>
+                        ) : null}
+                        <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Open full screen" onClick={openFull}>
+                          <Maximize2 size={16} strokeWidth={1.6} aria-hidden />
+                        </Button>
+                      </>
+                    }
+                  >
+                    {!visible ? (
+                      <Empty
+                        action={
+                          signedUrl ? (
+                            <Button variant="secondary" onClick={openSigned}>
+                              Open the signed copy
+                            </Button>
+                          ) : undefined
+                        }
+                      >
+                        {signedUrl ? 'The Word draft is not on file. The signed copy from step 3 is.' : 'The board resolution file is not on file yet'}
+                      </Empty>
+                    ) : (
+                      <div className="pvw">
+                        <div className="paper live" data-paper="" style={{ transform: `scale(${zoom})` }}>
+                          <div className="cp-tw">
+                            {d.engagementId ? (
+                              <BoardResolutionDocPreview
+                                engagementId={d.engagementId}
+                                downloadUrl={downloadHref}
+                                refreshKey={`${doc?.storagePath ?? ''}:${doc?.updatedAt ?? ''}`}
+                                mergeFields={mergeFields}
+                              />
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </SCard>
+                </Col>
+                <Col>
+                  <SCard title="Files" meta={`${fileCount} file${fileCount === 1 ? '' : 's'}`} flush>
+                    {visible ? (
+                      <ListRow>
+                        <FileBadge type="DOCX" />
+                        <span className="min-w-0 flex-1" title={BOARD_RESOLUTION_DOCX_FILENAME}>
+                          <b className="block truncate font-medium text-ink">Draft · Word</b>
+                          <span className="block truncate text-[12.5px] text-ink-muted">
+                            <span className="text-positive">Released</span> · {BOARD_RESOLUTION_DOCX_FILENAME} · SBC{released ? ` · ${fmt(released)}` : ''}
+                          </span>
+                        </span>
+                        <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Preview Draft · Word" onClick={openFull}>
+                          <Eye size={16} strokeWidth={1.6} aria-hidden />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="quiet"
+                          className={zoomBtn}
+                          aria-label={`Download ${BOARD_RESOLUTION_DOCX_FILENAME}`}
+                          onClick={() => {
+                            triggerDownload(downloadHref, BOARD_RESOLUTION_DOCX_FILENAME);
+                            toast(`Download started · ${BOARD_RESOLUTION_DOCX_FILENAME}`);
+                          }}
                         >
-                          <Ic n="eye" />
-                        </button>
-                        <button
-                          type="button"
-                          className="sq"
+                          <Download size={16} strokeWidth={1.6} aria-hidden />
+                        </Button>
+                      </ListRow>
+                    ) : null}
+                    {signedUrl ? (
+                      <ListRow>
+                        <FileBadge type={/\.docx?$/i.test(signedName) ? 'DOCX' : 'PDF'} />
+                        <span className="min-w-0 flex-1" title={signedName}>
+                          <b className="block truncate font-medium text-ink">Signed copy</b>
+                          <span className="block truncate text-[12.5px] text-ink-muted">
+                            <span className="text-positive">{received ? 'Received' : 'Sent'}</span> · {signedName} · {ex?.signedUploadedByName ? firstName(ex.signedUploadedByName) : d.short}
+                            {signed ? ` · ${fmt(signed)}` : ''}
+                          </span>
+                        </span>
+                        <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Preview Signed copy" onClick={openSigned}>
+                          <Eye size={16} strokeWidth={1.6} aria-hidden />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="quiet"
+                          className={zoomBtn}
                           aria-label={`Download ${signedName}`}
                           onClick={async () => {
                             try {
@@ -388,75 +349,27 @@ export default function BoardPage() {
                             }
                           }}
                         >
-                          <Ic n="download" />
-                        </button>
-                      </span>
+                          <Download size={16} strokeWidth={1.6} aria-hidden />
+                        </Button>
+                      </ListRow>
+                    ) : null}
+                    <div className="border-t border-line-soft px-4 py-3 first:border-t-0 md:px-5">
+                      <DropZone
+                        label={signedUrl ? 'Replace signed copy' : 'Upload signed copy'}
+                        hint="PDF · DOCX"
+                        tone="accent"
+                        busy={busy}
+                        browseText="Drop a PDF or"
+                        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        onFile={(f) => void replace(f)}
+                      />
                     </div>
-                  ) : null}
-                  <div
-                    className={`drop blue${busy ? ' busy' : ''}`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.add('over');
-                    }}
-                    onDragLeave={(e) => e.currentTarget.classList.remove('over')}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.remove('over');
-                      const f = e.dataTransfer.files?.[0];
-                      if (f) void replace(f);
-                    }}
-                  >
-                    <button type="button" className="ut" aria-label={signedUrl ? 'Replace the signed copy' : 'Upload the signed copy'} onClick={() => fileRef.current?.click()}>
-                      <Ic n={signedUrl ? 'refresh-cw' : 'upload'} />
-                    </button>
-                    <span className="tx">
-                      <b>{signedUrl ? 'Replace signed copy' : 'Upload signed copy'}</b>
-                      <span>
-                        {busy ? (
-                          'Uploading…'
-                        ) : (
-                          <>
-                            Drop a PDF or{' '}
-                            <button type="button" onClick={() => fileRef.current?.click()}>
-                              browse
-                            </button>
-                          </>
-                        )}
-                      </span>
-                    </span>
-                    <span className="mono">PDF · DOCX</span>
-                    <input
-                      ref={fileRef}
-                      className="vh"
-                      type="file"
-                      tabIndex={-1}
-                      aria-label="Choose the signed board resolution"
-                      accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        e.target.value = '';
-                        if (f) void replace(f);
-                      }}
-                    />
-                  </div>
-                </section>
-                <section className="card acc team" aria-label="What happens with it">
-                  <div className="ch">
-                    <CardHeadTile title="What happens with it" />
-<h2 className="lbl">What happens with it</h2>
-                  </div>
-                  <BotSay
-                    text={`${d.short}’s parent board authorises the India subsidiary. SBC drafts it, a director signs it, and it goes with the name application in step 4.`}
-                    btn={s3 ? `Open step ${s3.n}` : undefined}
-                    aria={s3 ? `Open step ${s3.n} · ${s3.title}` : undefined}
-                    onBtn={s3 ? () => go(stepHrefOf(s3)) : undefined}
-                  />
-                </section>
-              </div>
-            </div>
-          </>
-        ) : null}
+                  </SCard>
+                </Col>
+              </Cols>
+            </>
+          )}
+        </Island>
       </div>
       {viewer.node}
     </IncFrame>

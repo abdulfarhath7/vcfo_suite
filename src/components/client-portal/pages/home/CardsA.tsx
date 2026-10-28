@@ -1,45 +1,63 @@
 'use client';
 
 /**
- * Home cards shared by both layouts and the before-COI cards:
- * greeting (v7c_greet_b / _a), Needs (v7c_needs_b / _a), Who holds it now
- * (v7c_current), Important alerts (v7c_alerts_b / _a), What SBC is doing
- * (v7c_sbc_b / _a), Recent documents (v7c_docs_b / _a), Recent activity
- * (v7c_activity_b / _a). Markup, class names and inline styles verbatim.
+ * Home cards (VCFO Spectrum, prototype src/screens/client/HomeScreen.tsx and home-parts.tsx):
+ * the home card (R-17, R-18), Needs from <company>, Who holds it now, Important alerts
+ * (R-20), What SBC is doing, Recent documents and Recent activity. Every number and row comes
+ * from `useHome` (the step model, ClientOverview and `/api/client/home`).
  */
-import { CardHeadTile } from '@/components/common/CardHeadTile';
-import { useMemo, useState, type CSSProperties } from 'react';
-import { BotSays } from '@/components/client-portal/shared';
-import { VisorHead } from '@/components/client-portal/Visor';
-import { LinkButton } from '@/components/client-portal/LinkButton';
-import { portalHref, stepHref } from '@/components/client-portal/routes';
+import {
+  AlertCircle,
+  AlertTriangle,
+  Award,
+  Building2,
+  CalendarCheck,
+  ChevronRight,
+  Download,
+  FileText,
+  IdCard,
+  ShieldCheck,
+  Upload,
+  User,
+  type LucideIcon,
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { FileBadge, type FileType } from '@/components/ui/file-badge';
+import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
-import type { PortalStep } from '@/lib/client-portal/step-model';
-import { CardHead, Ico, InfoPopover, Seg, Tip, ownerChipStyle, useDownload } from './ui';
+import { Avatar, Bar, CompanySquare, DateTile, Empty, HeadLink, ListRow, SCard, type BarTone } from '../incorporation/spectrum';
 import type { HomeData } from './useHome';
 import {
   alertsDrill,
   chipBg,
   dHeader,
-  dLong,
   dShort,
-  dayMon,
   days,
   docGroup,
-  FT_STYLE,
-  needChip,
-  NEED_TABS,
   postIncDrill,
-  solid,
   spiceStepsDrill,
   type AlertRow,
   type DocItem,
   type NeedRow,
 } from './derive';
 
-const S = { fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 } as const;
+function plural(n: number, w: string) {
+  return `${n} ${w}${n === 1 ? '' : 's'}`;
+}
 
-/* ------------------------------------------------------------------ greet */
+/** "Today", "In 3 days", "Overdue 2 days" (the prototype's attention chips). */
+function whenWord(today: string, iso: string): string {
+  const n = days(today, iso);
+  if (n < 0) return `Overdue ${plural(-n, 'day')}`;
+  if (n === 0) return 'Today';
+  return `In ${plural(n, 'day')}`;
+}
+
+/* ------------------------------------------------------------ home card */
 
 export function overdueCount(h: HomeData): number {
   const ids = new Set<string>();
@@ -49,393 +67,376 @@ export function overdueCount(h: HomeData): number {
   return ids.size;
 }
 
-export function GreetCard({ h }: { h: HomeData }) {
+interface Tile {
+  label: string;
+  value: string | number;
+  of?: string;
+  Icon: LucideIcon;
+  bad?: boolean;
+  good?: boolean;
+  sub?: string;
+  bar?: number;
+  onClick?: () => void;
+}
+
+/** R-18 (KP1) tiles floating on the wash. */
+function Tiles({ items }: { items: Tile[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
+      {items.map((s) => {
+        const inner = (
+          <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <span className="flex items-start gap-1.5 text-[13px] font-medium leading-[18px] text-ink-2">
+              <s.Icon size={15} strokeWidth={1.6} className="mt-px flex-none text-ink-muted" aria-hidden />
+              <span className="min-w-0">{s.label}</span>
+            </span>
+            <b className={cn('text-[26px] font-medium leading-none tabular-nums', s.bad ? 'text-danger' : s.good ? 'text-positive' : 'text-ink')}>
+              {s.value}
+              {s.of ? <small className="ml-1 text-[14px] font-medium text-ink-muted">{s.of}</small> : null}
+            </b>
+            {s.bar !== undefined ? (
+              <span className="block h-1 w-full max-w-[120px] overflow-hidden rounded-bar bg-line" aria-hidden>
+                <i className="block h-full rounded-bar bg-positive-mid" style={{ width: `${s.bar}%` }} />
+              </span>
+            ) : null}
+            {s.sub ? <span className="truncate text-[12.5px] font-normal text-ink-muted">{s.sub}</span> : null}
+          </span>
+        );
+        const cls = cn('wash-tile flex min-w-0 items-end gap-2.5 px-4 py-3.5 text-left', s.onClick && 'transition-colors hover:border-line-strong');
+        return s.onClick ? (
+          <button key={s.label} type="button" onClick={s.onClick} className={cls}>
+            {inner}
+          </button>
+        ) : (
+          <div key={s.label} className={cls}>
+            {inner}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** "Upload document": one open upload request opens the picker; several open a short list. */
+function UploadButton({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const uploads = h.needs.filter((n) => (n.kind === 'upload' || n.kind === 'correct') && n.requestId);
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', off);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', off);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+  const click = () => {
+    if (uploads.length === 0) h.portal.go('documents');
+    else if (uploads.length === 1) onUpload(uploads[0]!);
+    else setOpen((v) => !v);
+  };
+  return (
+    <div className="relative" ref={ref}>
+      <Button onClick={click} aria-haspopup={uploads.length > 1 ? 'menu' : undefined} aria-expanded={uploads.length > 1 ? open : undefined}>
+        <Upload size={16} strokeWidth={1.6} aria-hidden /> Upload document
+      </Button>
+      {open ? (
+        <div role="menu" className="absolute right-0 top-[calc(100%+6px)] z-40 w-[300px] max-w-[calc(100vw-32px)] overflow-hidden rounded-md border-1.5 border-line bg-surface-raised py-1 shadow-float">
+          {uploads.map((n) => (
+            <button
+              key={n.key}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onUpload(n);
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-surface-sunken"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] font-medium text-ink">{n.title}</span>
+                <span className="block truncate text-[12px] text-ink-muted">
+                  {n.kind === 'correct' ? 'Sent back' : n.due ? `Due ${dShort(n.due)}` : n.sub}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** The report download (`/api/ask/brief`), as before. */
+function downloadReport(h: HomeData) {
+  if (!h.engagementId) return;
+  h.portal.toast(`Preparing ${h.company}’s progress report (PDF)`);
+  const a = document.createElement('a');
+  a.href = `/api/ask/brief?engagementId=${encodeURIComponent(h.engagementId)}`;
+  a.download = '';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/** R-17 (H3): the one home card. Date, company with its square, the lead and progress, the actions and five tiles. */
+export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) => void }) {
   const { portal, after, model, company } = h;
   const post = model.phases[2];
-  const ring = after
-    ? { pct: post && post.total ? Math.round((post.done / post.total) * 100) : 0, label: 'Setup', tip: `Setup · ${post?.done ?? 0} of ${post?.total ?? 0} done` }
-    : { pct: model.spice.pct, label: 'SPICe+', tip: `Incorporation · ${model.spice.done} of ${model.spice.total} SPICe+ steps` };
-  const openRing = () =>
-    portal.drill(after ? postIncDrill(h.post.open, h.post.done, 1) : spiceStepsDrill(model, company, 0));
+  const openSteps = (tab: number) => portal.drill(spiceStepsDrill(model, company, tab));
+  const overdue = overdueCount(h);
+  const sbcStep = model.steps.find((s) => s.kind === 'with' && s.owner !== 'client');
+  const lateNeed = h.needs.find((n) => n.due && n.due < h.today);
   const regsDone = h.regs.filter((r) => r.status === 'Registered').length;
-  const stats: { v: string | number; label: string; hot?: boolean; open?: () => void; tip?: string }[] = after
+  const req = h.home?.requestCounts;
+  const toCoi = model.coiExpected ? days(h.today, model.coiExpected) : null;
+  const incorporatedOn = h.overview?.engagement.incorporationDate;
+
+  const tiles: Tile[] = after
     ? [
-        { v: h.needs.length, label: `Waiting on ${company}` },
-        { v: overdueCount(h), label: 'Overdue', hot: overdueCount(h) > 0 },
-        { v: h.buckets.dueSoon, label: 'Due soon' },
-        { v: `${regsDone}/${h.regs.length}`, label: 'Registrations' },
-        ...(h.overview?.engagement.incorporationDate ? [{ v: dShort(h.overview.engagement.incorporationDate), label: 'Incorporated' }] : []),
-        { v: `${ring.pct}%`, label: ring.label, open: openRing, tip: ring.tip },
+        { label: `Waiting on ${company}`, value: h.needs.length, Icon: User, onClick: () => portal.go('documents') },
+        { label: 'Overdue', value: overdue, Icon: AlertTriangle, bad: overdue > 0, onClick: () => portal.drill({ ...alertsDrill(h.alerts.hero, h.alerts.rows, h.today, after), active: 1 }) },
+        { label: 'Due soon', value: h.buckets.dueSoon, Icon: CalendarCheck, onClick: () => portal.go('compliances') },
+        ...(h.regs.length ? [{ label: 'Registrations', value: regsDone, of: `/ ${h.regs.length}`, Icon: IdCard, onClick: () => portal.go(phaseHref(4)) }] : []),
+        ...(incorporatedOn ? [{ label: 'Incorporated', value: dShort(incorporatedOn), Icon: ShieldCheck, good: true, onClick: () => portal.go('incorporation') }] : []),
       ]
     : [
-        { v: h.needs.length, label: `Waiting on ${company}` },
-        { v: model.counts.with, label: 'With SBC' },
-        { v: overdueCount(h), label: 'Overdue', hot: overdueCount(h) > 0 },
-        ...(h.home && h.home.requestCounts.total > 0 ? [{ v: `${h.home.requestCounts.fulfilled}/${h.home.requestCounts.total}`, label: 'Documents in' }] : []),
-        ...(model.coiExpected ? [{ v: dShort(model.coiExpected), label: 'Expected COI' }] : []),
-        { v: `${ring.pct}%`, label: ring.label, open: openRing, tip: ring.tip },
+        { label: `Waiting on ${company}`, value: h.needs.length, Icon: User, onClick: () => openSteps(3) },
+        { label: 'With SBC', value: model.counts.with, sub: sbcStep?.title, Icon: Building2, onClick: () => openSteps(2) },
+        { label: 'Overdue', value: overdue, sub: lateNeed?.title, Icon: AlertTriangle, bad: overdue > 0, onClick: () => portal.drill({ ...alertsDrill(h.alerts.hero, h.alerts.rows, h.today, after), active: 1 }) },
+        ...(req && req.total > 0
+          ? [{ label: 'Documents in', value: `${req.fulfilled}/${req.total}`, bar: Math.round((req.fulfilled / req.total) * 100), Icon: FileText, onClick: () => portal.go('documents') }]
+          : []),
+        ...(model.coiExpected
+          ? [{ label: 'Expected COI', value: dShort(model.coiExpected), sub: toCoi != null && toCoi > 0 ? `in ${plural(toCoi, 'day')}` : undefined, Icon: Award, onClick: () => portal.go('incorporation') }]
+          : []),
       ];
-  /* Greeting (K-07, rules R-17 and R-18): a navy band with the date, the name and
-     the actions, then a white number strip. Each number has a 30px tile from its
-     label, 12px gap, and the label above the number. The old ring is the last
-     number in the strip and still opens the steps. */
+
+  const ring = after
+    ? { done: post?.done ?? 0, total: post?.total ?? 0, label: 'Setup', open: () => portal.drill(postIncDrill(h.post.open, h.post.done, 2)) }
+    : { done: model.spice.done, total: model.spice.total, label: 'SPICe+', open: () => openSteps(1) };
+  const pct = ring.total ? Math.round((ring.done / ring.total) * 100) : 0;
+
   return (
-    <div style={{ width: '100%', boxSizing: 'border-box', ...S }}>
-      <section className="vh-greet" style={{ position: 'relative', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--panel)', overflow: 'hidden' }}>
-        <div className="vh-gtop" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px clamp(14px,2vw,20px)', background: 'var(--hero-gradient)', color: '#fff' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, color: 'oklch(var(--side-muted))' }}>{dHeader(h.today)}</div>
-            <h1 style={{ margin: '2px 0 0', font: '600 20px/1.25 var(--font-sans),sans-serif', color: '#fff' }}>{h.companyName}</h1>
+    <section className="bg-wash flex flex-col gap-5 rounded-md border-1.5 border-line px-4 pb-5 pt-[18px] md:px-6 md:pb-6 md:pt-[22px]" aria-label="Summary">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex min-w-0 flex-[1_1_300px] items-center gap-4">
+          <CompanySquare name={h.companyName || company} />
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="text-[13px] text-ink-2">{dHeader(h.today)}</span>
+            <h1 className="flex flex-wrap items-center gap-2.5 text-[22px] font-medium tracking-[-0.01em] text-ink md:text-[28px]">
+              <span className="min-w-0">{h.companyName || company}</span>
+              <Chip tone={after ? 'ok' : 'prog'}>{after ? 'Incorporated' : 'Incorporating'}</Chip>
+            </h1>
+            <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-2">
+              {h.lead ? (
+                <>
+                  <Avatar name={h.lead} size={24} />
+                  <span>
+                    <b className="font-medium text-ink">{h.lead}</b>, project lead
+                  </span>
+                  <span aria-hidden>·</span>
+                </>
+              ) : null}
+              <button type="button" onClick={ring.open} className="whitespace-nowrap text-brand-text underline-offset-2 hover:underline">
+                {after ? `${ring.label} · ${ring.done} of ${ring.total} done` : `${ring.label} · ${ring.done} of ${ring.total} steps`} · {pct}%
+              </button>
+            </span>
           </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
           {h.engagementId ? (
-            <a
-              className="btn"
-              href={`/api/ask/brief?engagementId=${encodeURIComponent(h.engagementId)}`}
-              download
-              aria-label="Report"
-              onClick={() => portal.toast(`Preparing ${company}’s progress report (PDF)…`)}
-              style={{ height: 30, padding: '0 10px', background: 'oklch(100% 0 0 / 0.12)', color: '#fff', borderColor: 'oklch(100% 0 0 / 0.28)' }}
-            >
-              <Ico n="download" />
-              <span className="vh-hide-xs">Report</span>
-            </a>
+            <Button variant="secondary" onClick={() => downloadReport(h)}>
+              Report
+            </Button>
           ) : null}
+          <UploadButton h={h} onUpload={onUpload} />
         </div>
-        <div className="vh-stats" style={{ display: 'flex', flexWrap: 'wrap', padding: '0 clamp(14px,2vw,20px)' }}>
-          {stats.map((st, i) => {
-            const body = (
-              <>
-                <CardHeadTile title={st.label} size={30} />
-                <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                  <span style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{st.label}</span>
-                  <span style={{ font: '600 20px/1.2 var(--font-sans),sans-serif', color: st.hot ? 'var(--over-text)' : 'var(--fg)' }}>{st.v}</span>
-                </span>
-              </>
-            );
-            const box: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px 12px 0', marginRight: i < stats.length - 1 ? 24 : 0, borderRight: i < stats.length - 1 ? '1px solid var(--border)' : 0 };
-            return st.open ? (
-              <Tip key={st.label} tip={st.tip ?? st.label} onOpen={st.open} style={box}>
-                {body}
-              </Tip>
-            ) : (
-              <div key={st.label} className="vh-stat" style={box}>
-                {body}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    </div>
+      </div>
+      <Tiles items={tiles} />
+    </section>
   );
 }
 
 /* ------------------------------------------------------------------ needs */
 
-export function NeedsCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) => void }) {
-  const [tab, setTab] = useState(0);
-  const kind = NEED_TABS[tab]![0];
-  const rows = h.needs.filter((n) => n.kind === kind);
-  const verb = NEED_TABS[tab]![1];
+const NEED_ACTION: Record<NeedRow['kind'], string> = { upload: 'Upload', fill: 'Fill', correct: 'Fix', sign: 'Sign' };
+
+/** Needs from <company>: file tile, title, the due word and where it belongs, one action. */
+export function NeedsCard({ h, onUpload, className }: { h: HomeData; onUpload: (n: NeedRow) => void; className?: string }) {
+  const rows = [...h.needs].sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999'));
+  const late = (n: NeedRow) => (n.due ? n.due < h.today : false) || n.kind === 'correct';
+  // R-12: one main button per card, on the most urgent row.
+  const main = rows.find(late)?.key;
   const act = (n: NeedRow) => {
-    if (n.kind === 'upload' && n.requestId) onUpload(n);
+    if ((n.kind === 'upload' || n.kind === 'correct') && n.requestId) onUpload(n);
     else if (n.href) h.portal.go(n.href);
   };
   return (
-    <div style={{ width: '100%', boxSizing: 'border-box', ...S }}>
-      <section className="card">
-        <CardHead title={`Needs from ${h.company}`} />
-        <div style={{ padding: '12px 16px 14px' }}>
-          <Seg full label={`Needs from ${h.company}`} value={tab} onChange={setTab} tabs={NEED_TABS.map(([k, l]) => ({ label: l, cnt: h.needs.filter((n) => n.kind === k).length }))} />
-          <div style={{ marginTop: 8 }}>
-            {rows.map((n) => {
-              const chip = needChip(h.today, n.due, h.after);
-              return (
-                <div key={n.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: '1px solid var(--hair)' }}>
-                  <span className="box" style={{ width: 18, height: 18 }} />
-                  <div style={{ flex: 1 }}>
-                    <div className="rt" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {n.title}
-                      <InfoPopover askAbout={n.title}>
-                        {n.sub}
-                        {n.askedBy ? ` · asked by ${n.askedBy}` : ''}
-                      </InfoPopover>
-                    </div>
-                  </div>
-                  {chip ? (
-                    <span className="chip" style={solid(chip.tone)}>
-                      {chip.label}
-                    </span>
+    <SCard title={`Needs from ${h.company}`} meta={rows.length} flush className={className}>
+      {rows.length === 0 ? (
+        <Empty />
+      ) : (
+        rows.map((n) => {
+          const bad = late(n);
+          const soon = !bad && n.due ? days(h.today, n.due) <= 7 : false;
+          const when = n.due ? (n.due < h.today ? whenWord(h.today, n.due) : `Due ${dShort(n.due)}`) : n.kind === 'correct' ? 'Sent back' : null;
+          const sub = `${n.sub}${n.askedBy ? ` · asked by ${n.askedBy}` : ''}`;
+          return (
+            <ListRow key={n.key}>
+              <span className="grid h-8 w-8 flex-none place-items-center rounded-md bg-surface-sunken text-ink-muted" aria-hidden>
+                <FileText size={16} strokeWidth={1.6} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <button type="button" onClick={() => n.href && h.portal.go(n.href)} className="block max-w-full truncate text-left font-medium text-ink hover:underline">
+                  {n.title}
+                </button>
+                <span className="block truncate text-[12.5px] text-ink-muted">
+                  {when ? (
+                    <>
+                      <span className={bad ? 'text-danger' : soon ? 'text-warning' : 'text-brand-text'}>{when}</span> ·{' '}
+                    </>
                   ) : null}
-                  <a
-                    className="btn btn-o"
-                    href={n.href ?? '#'}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      act(n);
-                    }}
-                    style={{ height: 30, minWidth: 76, justifyContent: 'center', padding: '0 10px', fontSize: 12 }}
-                  >
-                    {n.kind === 'upload' ? 'Upload' : n.kind === 'fill' ? 'Fill' : n.kind === 'correct' ? 'Correct' : 'Sign'}
-                  </a>
-                </div>
-              );
-            })}
-            {rows.length === 0 ? (
-              <div style={{ padding: '10px 0', borderTop: '1px solid var(--hair)' }}>
-                <BotSays size={40} question={`Why is there nothing to ${verb.toLowerCase()}?`}>
-                  Nothing to {verb.toLowerCase()} right now. You are all caught up here.
-                </BotSays>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
-    </div>
+                  {sub}
+                </span>
+              </span>
+              <Button size="sm" variant={n.key === main ? 'default' : 'secondary'} className="w-[72px]" onClick={() => act(n)}>
+                {NEED_ACTION[n.kind]}
+              </Button>
+            </ListRow>
+          );
+        })
+      )}
+    </SCard>
   );
 }
 
 /* ------------------------------------------------------- who holds it now */
 
-const BOX: CSSProperties = { border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' };
-
-function plural(n: number, w: string) {
-  return `${n} ${w}${n === 1 ? '' : 's'}`;
-}
-
-export function CurrentCard({ h, onStep }: { h: HomeData; onStep: (s: PortalStep) => void }) {
-  const { model, company, portal, lead } = h;
-  const [tab, setTab] = useState(0);
+/** Who holds it now: one bar per holder. A row opens the step list on that holder's tab. */
+export function HoldsCard({ h, className }: { h: HomeData; className?: string }) {
+  const { model, company, portal } = h;
   const spice = model.steps.filter((s) => s.phaseNo <= 2);
-  const groups = {
-    client: spice.filter((s) => s.kind === 'you' || s.kind === 'prog'),
-    sbc: model.steps.filter((s) => s.kind === 'with' && s.owner === 'sbc' && s.phaseNo <= 2),
-    mca: model.steps.filter((s) => s.kind === 'with' && s.owner === 'mca'),
-  };
-  const counts = {
-    done: spice.filter((s) => s.kind === 'done').length,
-    you: spice.filter((s) => s.kind === 'you').length,
-    prog: spice.filter((s) => s.kind === 'prog' || s.kind === 'with').length,
-    up: spice.filter((s) => s.kind === 'up' || s.kind === 'next').length,
-  };
-  const drill = (active: number) => portal.drill(spiceStepsDrill(model, company, active));
-  const statusOf = (s: PortalStep): { label: string; tone: 'ok' | 'due' | 'prog' | 'up'; tip: string; tab: number } =>
-    s.kind === 'done'
-      ? { label: 'Completed', tone: 'ok', tip: `Completed · ${plural(counts.done, 'step')}`, tab: 1 }
-      : s.kind === 'you'
-        ? { label: 'Waiting', tone: 'due', tip: `Waiting for ${company} · ${plural(counts.you, 'step')}`, tab: 3 }
-        : s.kind === 'prog' || s.kind === 'with'
-          ? { label: 'In progress', tone: 'prog', tip: `In progress · ${plural(counts.prog, 'step')}`, tab: 2 }
-          : { label: 'Not started', tone: 'up', tip: `Not started · ${plural(counts.up, 'step')}`, tab: 4 };
-  const missing = (s: PortalStep) => h.needs.filter((n) => n.stepId === s.id && n.kind === 'upload').length;
-  const holders = (tab === 0 ? groups.client : tab === 1 ? groups.sbc : groups.mca).map((s, i) => {
-    const st = statusOf(s);
-    const waiting = s.kind === 'you';
-    const m =
-      s.owner === 'client'
-        ? waiting
-          ? `Step ${s.n}${s.due ? ` · due ${dShort(s.due)}` : ''}${missing(s) ? ` · ${plural(missing(s), 'file')} missing` : ''}`
-          : `Step ${s.n} · ${company} fills this`
-        : `Step ${s.n}${lead ? ` · ${lead}` : ''}${s.due ? ` · ready ${dShort(s.due)}` : ''}`;
-    return { s, st: waiting ? { ...st, label: `Waiting for ${company}` } : st, m, primary: tab === 0 && i === 0, cta: s.owner === 'client' ? 'Continue' : 'Open' };
-  });
-  // steps around the client: one done step before the current block, through one upcoming after it
-  const around = useMemo(() => {
-    const idx = spice.findIndex((s) => s.kind !== 'done');
-    if (idx < 0) return spice.slice(-3);
-    let end = spice.findIndex((s, i) => i > idx && (s.kind === 'up' || s.kind === 'next'));
-    if (end < 0) end = spice.length - 1;
-    return spice.slice(Math.max(0, idx - 1), Math.min(end + 1, idx + 7));
-  }, [spice]);
-  const filing = model.byId['pre-10'];
+  const groups = [
+    { key: 'client', label: company, rows: spice.filter((s) => s.kind === 'you' || s.kind === 'prog'), fill: 'bg-waiting-mid', tab: 3 },
+    { key: 'sbc', label: 'SBC', rows: model.steps.filter((s) => s.kind === 'with' && s.owner === 'sbc' && s.phaseNo <= 2), fill: 'bg-brand', tab: 2 },
+    { key: 'mca', label: 'MCA', rows: model.steps.filter((s) => s.kind === 'with' && s.owner === 'mca'), fill: 'bg-identity', tab: 0 },
+  ];
+  const max = Math.max(1, ...groups.map((g) => g.rows.length));
   return (
-    <div style={{ width: '100%', boxSizing: 'border-box', ...S }}>
-      <section className="card">
-        <CardHead title="Who holds it now" />
-        <div style={{ padding: '12px 16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Seg
-            full
-            label="Who holds it now"
-            value={tab}
-            onChange={setTab}
-            tabs={[
-              { label: company, cnt: groups.client.length },
-              { label: 'SBC', cnt: groups.sbc.length },
-              { label: 'MCA', cnt: groups.mca.length },
-            ]}
-          />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {holders.map(({ s, st, m, primary, cta }) => (
-              <div key={s.id} style={{ ...BOX, borderLeft: `3px solid var(--${st.tone === 'due' ? 'due' : 'prog'})` }}>
-                <div style={{ flex: 1, minWidth: 150 }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <LinkButton className="rt" onClick={() => onStep(s)} style={{ color: 'inherit', ...(primary ? { fontWeight: 800 } : { fontWeight: 600 }) }}>
-                      {s.title}
-                    </LinkButton>
-                    <Tip tip={st.tip} onOpen={() => drill(st.tab)} style={{ display: 'inline-flex' }}>
-                      <span className="chip" style={solid(st.tone === 'due' ? 'due' : 'prog')}>
-                        {st.label}
-                      </span>
-                    </Tip>
-                  </div>
-                  <div className="cap" style={{ marginTop: 2 }}>{m}</div>
-                </div>
-                <a
-                  className={primary ? 'btn btn-p' : 'btn btn-o'}
-                  href={stepHref(s.id)}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    portal.go(stepHref(s.id));
-                  }}
-                  style={{ height: 30, padding: '0 10px', fontSize: 12, flex: 'none' }}
-                >
-                  {cta}
-                </a>
-              </div>
-            ))}
-            {holders.length === 0 ? (
-              <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px dashed var(--border)', borderRadius: 8, background: 'var(--raised)' }}>
-                <span style={{ width: 28, height: 28, display: 'inline-flex', overflow: 'hidden', flex: 'none' }} aria-hidden="true">
-                  <VisorHead style={{ width: 24, height: 30, margin: '2px auto 0' }} />
-                </span>
-                <span style={{ fontSize: 12.5, color: 'var(--fg)' }}>
-                  {tab === 2
-                    ? `Nothing is with MCA yet.${filing?.due && filing.kind !== 'done' ? ` SBC files SPICe+ on ${dShort(filing.due)}, then MCA reviews it.` : ''}`
-                    : tab === 1
-                      ? 'Nothing is with SBC right now.'
-                      : `Nothing is waiting on ${company} right now.`}
-                </span>
-              </div>
-            ) : null}
-          </div>
-          <div>
-            <div className="lbl" style={{ color: 'var(--navy-ink,var(--navy))', marginBottom: 2 }}>Steps around {company}</div>
-            {around.map((s) => {
-              const st = statusOf(s);
-              const cur = s.id === model.current?.id;
-              return (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderTop: '1px solid var(--hair)' }}>
-                  <span className="mono cap" style={{ width: 50, flex: 'none' }}>Step {s.n}</span>
-                  <LinkButton className="rt" onClick={() => onStep(s)} style={{ flex: 1, color: st.tone === 'up' ? 'var(--muted)' : 'inherit', fontWeight: cur ? 800 : 600 }}>
-                    {s.title}
-                  </LinkButton>
-                  <span className="chip" style={ownerChipStyle(s.owner === 'client' ? 'client' : 'sbc')}>
-                    {s.owner === 'client' ? company : 'SBC'}
-                  </span>
-                  <Tip tip={st.tip} onOpen={() => drill(st.tab)} style={{ display: 'inline-flex' }}>
-                    <span className="chip" style={{ ...solid(st.tone), minWidth: 108, justifyContent: 'center' }}>
-                      {st.label}
-                    </span>
-                  </Tip>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-    </div>
+    <SCard title="Who holds it now" className={className} bodyClassName="grid gap-4">
+      {groups.map((g) => {
+        const n = g.rows.length;
+        const meta = n === 0 ? '' : n === 1 ? g.rows[0]!.title : `${n} items`;
+        return (
+          <button
+            key={g.key}
+            type="button"
+            onClick={() => portal.drill(spiceStepsDrill(model, company, g.tab))}
+            className="-mx-2 grid gap-2 rounded-md px-2 py-1 text-left hover:bg-surface-sunken"
+            aria-label={`${g.label} · ${n} · open the step list`}
+          >
+            <span className="flex items-baseline gap-3">
+              <span className="flex-none text-[14px] font-medium text-ink">{g.label}</span>
+              <span className="ml-auto min-w-0 truncate text-[12.5px] text-ink-muted">{meta}</span>
+              <b className="w-5 flex-none text-right text-[14px] font-medium text-ink">{n}</b>
+            </span>
+            <span className="block h-1.5 overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+              <i className={cn('block h-full rounded-bar', g.fill)} style={{ width: `${(n / max) * 100}%` }} />
+            </span>
+          </button>
+        );
+      })}
+    </SCard>
   );
 }
 
 /* ----------------------------------------------------------------- alerts */
 
-export function AlertsCard({ h }: { h: HomeData }) {
-  const { hero, rows } = h.alerts;
-  const [tab, setTab] = useState(h.after ? 1 : 0);
-  const n15 = rows.filter((a) => days(h.today, a.date) <= 15).length;
-  const n30 = rows.filter((a) => days(h.today, a.date) <= 30).length;
-  const win = tab === 0 ? 15 : 30;
-  const list = rows.filter((a) => days(h.today, a.date) <= win);
-  const open = (active: number) => h.portal.drill({ ...alertsDrill(hero, rows, h.today, h.after), active });
-  const tile = (a: AlertRow): CSSProperties => ({ position: 'relative', width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: `var(--${a.tone}-text)`, flex: 'none', background: `var(--${a.tone}-light)` });
+/** R-20: full-width rows, 44px date tile, chip on the right, the urgent row soft red with a navy action. */
+export function AttentionRows({ h, hero, rows, onRow }: { h: HomeData; hero?: AlertRow; rows: AlertRow[]; onRow?: (a: AlertRow) => void }) {
+  if (!hero && rows.length === 0) return <Empty />;
+  const chipOf = (a: AlertRow): { label: string; tone: ChipTone } => {
+    const n = days(h.today, a.date);
+    if (n < 0 || a.tone === 'over') return { label: 'Overdue', tone: 'bad' };
+    return { label: whenWord(h.today, a.date), tone: a.tone === 'due' ? 'warn' : 'idle' };
+  };
   return (
-    <div style={{ width: '100%', boxSizing: 'border-box', ...S }}>
-      <section className="card">
-        <CardHead
-          title="Important alerts"
-          right={<Seg label="Important alerts window" value={tab} onChange={setTab} tabs={[{ label: '15 days', cnt: n15 }, { label: '30 days', cnt: n30 }]} />}
-        />
-        <div style={{ padding: '10px 16px 12px' }}>
-          {hero ? (
-            <Tip
-              tip={`${hero.title.replace(/ (sent back|is late|overdue.*)$/, '')} · overdue ${plural(Math.max(1, days(hero.date, h.today)), 'day')}`}
-              onOpen={() => open(1)}
-              style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 14px', padding: '10px 16px', margin: '0 -16px', borderRadius: 0, background: 'var(--over-light)' }}
+    <ul>
+      {hero ? (
+        <li>
+          <div className="flex items-center gap-3 border-l-2 border-l-danger bg-danger-soft px-4 py-3 md:px-5">
+            <span className="grid h-11 w-11 flex-none place-items-center rounded-mark border border-danger bg-surface-raised text-danger" aria-hidden>
+              <AlertCircle size={16} strokeWidth={1.6} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[13.5px] font-medium text-ink">{hero.title}</span>
+              <Chip tone="bad" className="mt-1">
+                Overdue
+              </Chip>
+            </span>
+            <Button variant="strong" size="sm" onClick={() => h.portal.go(hero.href)}>
+              {hero.action ?? 'Open'}
+            </Button>
+          </div>
+        </li>
+      ) : null}
+      {rows.map((a) => {
+        const chip = chipOf(a);
+        return (
+          <li key={a.key}>
+            <button
+              type="button"
+              onClick={() => (onRow ? onRow(a) : h.portal.go(a.href))}
+              className="flex w-full items-center gap-3 border-t border-line-soft px-4 py-3 text-left hover:bg-surface-sunken md:px-5"
             >
-              {(() => {
-                const [hd, hm] = dayMon(hero.date);
-                return (
-                  <span style={{ width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 'none', background: 'var(--panel)', color: 'var(--over-text)' }}>
-                    <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: 'inherit' }}>{hd}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600 }}>{hm}</span>
-                  </span>
-                );
-              })()}
-              <div style={{ flex: 1, minWidth: 150 }}>
-                <div style={{ display: 'flex', gap: '6px 8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span className="rt" style={{ fontSize: 14 }}>{hero.title}</span>
-                  <span className="chip" style={solid('over')}>Overdue</span>
-                </div>
-              </div>
-              <a
-                className="btn btn-p"
-                href={hero.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  h.portal.go(hero.href);
-                }}
-                style={{ height: 30, padding: '0 10px', fontSize: 12, marginLeft: 'auto' }}
-              >
-                {hero.action ?? 'Open'}
-              </a>
-            </Tip>
-          ) : null}
-          {list.map((a) => {
-            const [day, mon] = dayMon(a.date);
-            const inner = (
-              <>
-                <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: 'inherit' }}>{day}</span>
-                <span style={{ fontSize: 11, fontWeight: 600 }}>{mon}</span>
-              </>
-            );
-            return (
-              <div key={a.key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', margin: '0 -16px', borderTop: '1px solid var(--hair)' }}>
-                {h.after ? (
-                  <Tip tip={`${a.title} · ${day} ${mon}`} onOpen={() => open(days(h.today, a.date) <= 15 ? 2 : 3)} style={tile(a)}>
-                    {inner}
-                  </Tip>
-                ) : (
-                  <div style={tile(a)}>{inner}</div>
-                )}
-                <div style={{ flex: 1 }}>
-                  <div className="rt" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <a
-                      href={a.href}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        h.portal.go(a.href);
-                      }}
-                      style={{ color: 'inherit', fontWeight: 600 }}
-                    >
-                      {a.title}
-                    </a>
-                  </div>
-                </div>
-                <span className="chip" style={{ width: 108, justifyContent: 'center', ...solid(a.tone) }}>
-                  {days(h.today, a.date) === 0 ? 'Today' : a.tone === 'over' ? 'Overdue' : a.tone === 'due' ? 'Due soon' : 'Upcoming'}
-                </span>
-              </div>
-            );
-          })}
-          {!hero && list.length === 0 ? (
-            <div style={{ paddingTop: 6 }}>
-              <BotSays size={40} action="">
-                Nothing dated in the next {win} days. I will flag anything new here.
-              </BotSays>
-            </div>
-          ) : null}
-        </div>
-      </section>
-    </div>
+              <DateTile iso={a.date} tint={chip.tone === 'bad' ? 'bad' : chip.tone === 'warn' ? 'warn' : 'idle'} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] font-medium text-ink">{a.title}</span>
+                {a.meta ? <span className="block truncate text-[12.5px] text-ink-muted">{a.meta}</span> : null}
+              </span>
+              <Chip tone={chip.tone} fixed>
+                {chip.label}
+              </Chip>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function AlertsCard({ h, className }: { h: HomeData; className?: string }) {
+  const { hero, rows } = h.alerts;
+  const [tab, setTab] = useState('15');
+  const in15 = rows.filter((a) => days(h.today, a.date) <= 15);
+  const in30 = rows.filter((a) => days(h.today, a.date) <= 30);
+  const extra = hero ? 1 : 0;
+  return (
+    <SCard
+      title="Important alerts"
+      flush
+      className={className}
+      right={
+        <SpectrumTabs
+          label="Important alerts window"
+          items={[
+            { key: '15', label: '15 days', count: in15.length + extra },
+            { key: '30', label: '30 days', count: in30.length + extra },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+      }
+    >
+      <AttentionRows h={h} hero={hero} rows={tab === '15' ? in15 : in30} />
+    </SCard>
   );
 }
 
@@ -495,184 +496,142 @@ function sbcDrill(rows: SbcRow[], active: number, lead?: string): DrillConfig {
   };
 }
 
-/** Category colours for the What SBC is doing bars: blue, violet, teal, green. */
-const SBC_BAR = ['oklch(var(--brand))', 'oklch(var(--identity))', 'oklch(var(--info))', 'oklch(var(--positive-mid))'];
+/** Bars in category colours (K-23). */
+const SBC_TONES: BarTone[] = ['prog', 'violet', 'teal', 'idle'];
 
-export function SbcCard({ h }: { h: HomeData }) {
+export function SbcCard({ h, className }: { h: HomeData; className?: string }) {
   const rows = buildSbcRows(h);
   return (
-    <div style={{ width: '100%', boxSizing: 'border-box', ...S }}>
-      <section className="card">
-        <CardHead title="What SBC is doing" />
-        <div style={{ padding: '6px 16px 12px' }}>
-          {/* K-23 (audit 160): bars in category colours; no info icons or link buttons.
-              The title opens the work item. */}
+    <SCard title="What SBC is doing" flush className={className}>
+      {rows.length === 0 ? (
+        <Empty />
+      ) : (
+        <ul>
           {rows.map((r, i) => (
-            <div key={r.key} style={{ padding: '9px 0', borderTop: i ? '1px solid var(--hair)' : 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <a
-                  className="rt"
-                  href={r.href}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    h.portal.go(r.href);
-                  }}
-                  title={r.info}
-                  style={{ flex: 1, minWidth: 0, color: 'inherit', fontWeight: 600 }}
+            <li key={r.key} className="border-t border-line-soft first:border-t-0">
+              <button type="button" onClick={() => h.portal.go(r.href)} className="block w-full px-4 pb-1 pt-3 text-left hover:bg-surface-sunken md:px-5" aria-label={`${r.title} · ${r.linkLabel}`}>
+                <span className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-ink">{r.title}</span>
+                  {r.pct != null ? <span className="text-[12.5px] text-ink-muted">{r.pct}%</span> : null}
+                  <ChevronRight size={16} strokeWidth={1.6} className="text-ink-faint" aria-hidden />
+                </span>
+                {r.info ? <span className="block truncate text-[12.5px] text-ink-muted">{r.info}</span> : null}
+              </button>
+              {r.pct != null ? (
+                <button
+                  type="button"
+                  onClick={() => h.portal.drill(sbcDrill(rows, r.pct === 0 ? 1 : 0, h.lead))}
+                  className="block w-full px-4 pb-3 pt-1.5 md:px-5"
+                  aria-label={`${r.title} · ${r.pct}% · open the list`}
                 >
-                  {r.title}
-                </a>
-                {r.pct != null ? <span className="pct">{r.pct}%</span> : null}
-              </div>
-              <div style={{ marginTop: 6 }}>
-                <Tip
-                  tip={`${r.title}${r.pct != null ? ` · ${r.pct}%` : ''}${r.ready ? ` · ready ${dShort(r.ready)}` : ''}`}
-                  onOpen={() => h.portal.drill(sbcDrill(rows, r.pct === 0 ? 1 : 0, h.lead))}
-                  style={{ display: 'block' }}
-                >
-                  <div className="bar" style={{ height: 6 }}>
-                    <span style={{ width: `${r.pct ?? 100}%`, background: r.pct === 0 ? 'var(--up)' : SBC_BAR[i % SBC_BAR.length] }} />
-                  </div>
-                </Tip>
-              </div>
-            </div>
+                  <Bar pct={r.pct} tone={r.pct === 0 ? 'idle' : SBC_TONES[i % SBC_TONES.length]} />
+                </button>
+              ) : (
+                <span className="block pb-2" />
+              )}
+            </li>
           ))}
-          {rows.length === 0 ? (
-            <div style={{ paddingTop: 6 }}>
-              <BotSays size={40} action="">
-                SBC has nothing open for {h.company} right now.
-              </BotSays>
-            </div>
-          ) : null}
-        </div>
-      </section>
-    </div>
+        </ul>
+      )}
+    </SCard>
   );
 }
 
 /* --------------------------------------------------------- recent docs */
 
-export function DocsCard({ h, onOpen }: { h: HomeData; onOpen: (i: number) => void }) {
-  const download = useDownload();
-  let last = '';
+const FILE_TYPES = new Set(['PDF', 'DOCX', 'XLSX', 'JPG', 'PNG', 'ZIP', 'CSV', 'TXT']);
+
+export function DocsCard({ h, onOpen, onDownload, className }: { h: HomeData; onOpen: (i: number) => void; onDownload: (d: DocItem) => void; className?: string }) {
+  const groups: { label: string; docs: { d: DocItem; i: number }[] }[] = [];
+  h.docs.forEach((d, i) => {
+    const g = docGroup(h.today, d.date);
+    const last = groups[groups.length - 1];
+    if (last && last.label === g) last.docs.push({ d, i });
+    else groups.push({ label: g, docs: [{ d, i }] });
+  });
   return (
-    <div style={{ width: '100%', boxSizing: 'border-box', ...S }}>
-      <section className="card">
-        <CardHead
-          title="Recent documents"
-          right={
-            <a
-              href={portalHref('documents')}
-              onClick={(e) => {
-                e.preventDefault();
-                h.portal.go('documents');
-              }}
-              style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}
-            >
-              Documents <Ico n="arrow" size={12} sw={2} />
-            </a>
-          }
-        />
-        <div style={{ padding: '10px 16px 14px' }}>
-          {h.docs.map((d: DocItem, i) => {
-            const g = docGroup(h.today, d.date);
-            const head = g !== last ? (
-              <p className="rd-g" key={`g-${g}`}>
-                {g}
-              </p>
-            ) : null;
-            last = g;
-            const who = d.from === 'client' ? h.company : 'SBC';
-            return [
-              head,
-              <div
-                key={d.id}
-                className="rd-r"
-                tabIndex={0}
-                role="button"
-                title={`${d.name} · ${d.type} · ${dLong(d.date)} · from ${who}`}
-                onClick={(e) => {
-                  if ((e.target as HTMLElement).closest('.rd-b')) return;
-                  onOpen(i);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onOpen(i);
-                  }
-                }}
-              >
-                <span className="rd-ft" style={FT_STYLE[d.type] ?? { background: 'var(--raised)', color: 'var(--muted)' }} aria-hidden="true">
-                  {d.type}
-                </span>
-                <span className="rd-n">{d.name}</span>
-                <span className="rd-s">
-                  <span className={`rd-who${d.from === 'client' ? ' rd-me' : ''}`}>{who}</span>
-                  <span className="rd-sep">&middot;</span>
-                  <span className="rd-d">{dShort(d.date)}</span>
-                </span>
-                <span className="rd-a">
-                  <button type="button" className="rd-b" title="Download" aria-label={`Download ${d.name}`} onClick={() => void download(d)}>
-                    <Ico n="download" size={15} sw={1.8} />
-                  </button>
-                </span>
-              </div>,
-            ];
-          })}
-          {h.docs.length === 0 ? (
-            <BotSays size={40} action="">
-              No documents yet. Files from {h.company} and SBC show up here.
-            </BotSays>
-          ) : null}
-        </div>
-      </section>
-    </div>
+    <SCard title="Recent documents" flush className={className} right={<HeadLink onClick={() => h.portal.go('documents')}>Documents ›</HeadLink>}>
+      {h.docs.length === 0 ? (
+        <Empty />
+      ) : (
+        groups.map((g) => (
+          <div key={g.label}>
+            <p className="border-t border-line-soft bg-surface-sunken px-4 py-1.5 text-[11.5px] font-medium text-ink-faint first:border-t-0 md:px-5">{g.label}</p>
+            <ul>
+              {g.docs.map(({ d, i }) => {
+                const who = d.from === 'client' ? h.company : 'SBC';
+                return (
+                  <li key={d.id} className="flex items-center gap-3 border-t border-line-soft px-4 py-2.5 hover:bg-surface-sunken md:px-5">
+                    <button type="button" onClick={() => onOpen(i)} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={`Open ${d.name}`}>
+                      <FileBadge type={FILE_TYPES.has(d.type) ? (d.type as FileType) : 'TXT'} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13.5px] font-medium text-ink">{d.name}</span>
+                        <span className="block truncate text-[12.5px] text-ink-muted">
+                          <span className={cn(d.from === 'client' && 'text-warning')}>{who}</span>
+                          <span className="mx-1.5 text-ink-faint">·</span>
+                          {dShort(d.date)}
+                        </span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDownload(d)}
+                      className="grid h-[30px] w-[30px] flex-none place-items-center rounded-md text-ink-muted hover:bg-surface-raised hover:text-ink"
+                      aria-label={`Download ${d.name}`}
+                      title="Download"
+                    >
+                      <Download size={16} strokeWidth={1.6} aria-hidden />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))
+      )}
+    </SCard>
   );
 }
 
 /* ------------------------------------------------------------ activity */
 
-export function ActivityCard({ h }: { h: HomeData }) {
-  const [tab, setTab] = useState(0);
+export function ActivityCard({ h, className }: { h: HomeData; className?: string }) {
+  const [tab, setTab] = useState('all');
   const all = h.home?.activity ?? [];
   const firm = all.filter((a) => a.actorKind === 'firm');
   const client = all.filter((a) => a.actorKind === 'client');
-  const rows = tab === 0 ? all : tab === 1 ? firm : client;
+  const rows = tab === 'all' ? all : tab === 'sbc' ? firm : client;
   return (
-    <div style={{ width: '100%', boxSizing: 'border-box', ...S }}>
-      <section className="card">
-        <CardHead
-          title="Recent activity"
-          right={
-            <Seg
-              label="Who did it"
-              value={tab}
-              onChange={setTab}
-              tabs={[
-                { label: 'All', cnt: all.length },
-                { label: 'SBC', cnt: firm.length },
-                { label: h.company, cnt: client.length },
-              ]}
-            />
-          }
+    <SCard
+      title="Recent activity"
+      flush
+      className={className}
+      right={
+        <SpectrumTabs
+          label="Who did it"
+          items={[
+            { key: 'all', label: 'All', count: all.length },
+            { key: 'sbc', label: 'SBC', count: firm.length },
+            { key: 'us', label: h.company, count: client.length },
+          ]}
+          value={tab}
+          onChange={setTab}
         />
-        <div style={{ padding: '6px 16px 12px' }}>
+      }
+    >
+      {rows.length === 0 ? (
+        <Empty />
+      ) : (
+        <ul>
           {rows.map((a) => (
-            <div key={a.id} style={{ display: 'grid', gridTemplateColumns: '96px minmax(0,1fr) auto', gap: 12, alignItems: 'center', padding: '8px 0', borderTop: '1px solid var(--hair)' }}>
-              <span className="mono" style={{ fontSize: 12, fontWeight: 600 }}>{dLong(a.at.slice(0, 10))}</span>
-              <span className="rt" style={{ fontWeight: 600 }}>{a.label}</span>
-              <span className="cap">{a.actorKind === 'client' ? h.company : a.actorName}</span>
-            </div>
+            <li key={a.id} className="grid grid-cols-[64px_minmax(0,1fr)] items-baseline gap-3 border-t border-line-soft px-4 py-2.5 text-[13.5px] first:border-t-0 md:grid-cols-[64px_minmax(0,1fr)_110px] md:px-5">
+              <span className="text-[12.5px] text-ink-muted">{dShort(a.at.slice(0, 10))}</span>
+              <span className="min-w-0 break-words text-ink">{a.label}</span>
+              <span className="truncate text-[12.5px] text-ink-muted md:text-right">{a.actorKind === 'client' ? h.company : a.actorName}</span>
+            </li>
           ))}
-          {rows.length === 0 ? (
-            <div style={{ paddingTop: 6 }}>
-              <BotSays size={40} action="">
-                Nothing here yet.
-              </BotSays>
-            </div>
-          ) : null}
-        </div>
-      </section>
-    </div>
+        </ul>
+      )}
+    </SCard>
   );
 }

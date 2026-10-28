@@ -12,8 +12,9 @@
 *{box-sizing:border-box}
 :root{margin:0;background:var(--bg);color:var(--fg);font:500 13px/1.5 var(--font-sans),system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 :root{overflow-x:clip}
-a{color:var(--primary);text-decoration:none;font-weight:500}
-button{font:inherit;color:inherit}
+/* Spectrum islands (`.cp-tw`) keep their Tailwind colours, so the page rules for a and button skip them. */
+a:where(:not(.cp-tw *)){color:var(--primary);text-decoration:none;font-weight:500}
+button:where(:not(.cp-tw *)){font:inherit;color:inherit}
 .mono{font-variant-numeric:tabular-nums}
 .ic{width:16px;height:16px;flex:none}
 .sp{flex:1}

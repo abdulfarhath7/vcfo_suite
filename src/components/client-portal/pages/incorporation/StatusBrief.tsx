@@ -4,13 +4,19 @@
  * Monthly status brief drawer (OV-06, FINAL `openBrief`): right drawer
  * (phone: bottom sheet), phases with mini bars, "Waiting on <company>",
  * "In progress", Copy brief + Download PDF (the real C4 brief route).
+ * The drawer is a `.cp-tw` island: ST5 marks, Spectrum chips and buttons.
  */
 import { useEffect, useRef, useState } from 'react';
 import { useAskOptional } from '@/components/ask/ask-context';
 import { usePortal } from '../../PortalProvider';
 import { phaseHref } from '../../routes';
-import { BotSay, Ic, Si, days, fmt, fmtY, reduceMotion, wd } from './ui';
-import { PH, dateCell, glyph, kd, ownKey, phDoneEnd, phKind, phPlan, stepHrefOf, type IncData } from './data';
+import { Copy, Download, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
+import { StepMark } from '@/components/ui/step-track';
+import { days, fmt, fmtY, reduceMotion, wd } from './ui';
+import { PH, dateCell, kd, ownKey, phDoneEnd, phPlan, stepHrefOf, type IncData } from './data';
+import { markState, markTone, stepChip } from './spectrum';
 
 export function StatusBrief({ d, onClose }: { d: IncData; onClose: () => void }) {
   const { go, toast, after } = usePortal();
@@ -64,12 +70,12 @@ export function StatusBrief({ d, onClose }: { d: IncData; onClose: () => void })
         nav(stepHrefOf(x));
       }}
     >
-      <Si k={glyph(x)} />
+      <StepMark state={markState(x)} tone={markTone(x)} label={stepChip(x).label} />
       <span>
         {x.n} · {x.title}
         <small>{dateCell(x, d.coiExpected)}</small>
       </span>
-      <span className={`own ${ownKey(x)}`}>{ownKey(x) === 'You' ? short : ownKey(x)}</span>
+      <OwnerChip owner={ownKey(x) === 'You' ? 'client' : ownKey(x) === 'MCA' ? 'mca' : 'sbc'} label={ownKey(x) === 'You' ? short : undefined} />
     </a>
   );
 
@@ -88,18 +94,18 @@ export function StatusBrief({ d, onClose }: { d: IncData; onClose: () => void })
         if (e.target === e.currentTarget) close();
       }}
     >
-      <aside id="ip-brief" role="dialog" aria-modal="true" aria-labelledby="ip-brief-t">
+      <aside id="ip-brief" className="cp-tw" role="dialog" aria-modal="true" aria-labelledby="ip-brief-t">
         <div className="bh">
-          <Si k="prog" />
+          <StepMark state="now" />
           <div style={{ flex: 1, minWidth: 0 }}>
             <b id="ip-brief-t">Monthly status brief</b>
             <small>
               {d.companyName} · as of {fmtY(today)}
             </small>
           </div>
-          <button ref={xRef} type="button" className="sq" aria-label="Close status brief" onClick={close}>
-            <Ic n="x" />
-          </button>
+          <Button ref={xRef} size="icon" variant="quiet" className="h-[30px] w-[30px] min-w-0" aria-label="Close status brief" onClick={close}>
+            <X size={16} strokeWidth={1.6} aria-hidden />
+          </Button>
         </div>
         <div className="bb">
           {showAfter ? (
@@ -131,7 +137,7 @@ export function StatusBrief({ d, onClose }: { d: IncData; onClose: () => void })
                   nav(phaseHref(p.no));
                 }}
               >
-                <Si k={phKind(p)} />
+                <StepMark state={p.state === 'done' ? 'done' : p.state === 'up' ? 'next' : 'now'} label={p.state === 'done' ? 'Done' : p.state === 'up' ? 'Not started' : 'In progress'} />
                 <span>
                   Phase {p.no} · {PH[p.no - 1]}
                   <small>
@@ -142,19 +148,20 @@ export function StatusBrief({ d, onClose }: { d: IncData; onClose: () => void })
                     <i style={{ width: `${Math.round((p.done / p.total) * 100)}%` }} />
                   </span>
                 </span>
-                <span className={`chip ${phKind(p)}`}>{p.state === 'done' ? 'Done' : p.state === 'up' ? 'Upcoming' : 'In progress'}</span>
+                <Chip tone={p.state === 'done' ? 'ok' : p.state === 'up' ? 'idle' : 'prog'} fixed>
+                  {p.state === 'done' ? 'Done' : p.state === 'up' ? 'Not started' : 'In progress'}
+                </Chip>
               </a>
             );
           })}
           <div className="sub-h">Waiting on {short}</div>
-          {youSteps.length ? youSteps.map(row) : <BotSay text={`Nothing is waiting on ${short}.`} />}
+          {youSteps.length ? youSteps.map(row) : <p className="m-0 py-2 text-[13px] text-ink-muted">None</p>}
           <div className="sub-h">In progress</div>
-          {act.length ? act.map(row) : <BotSay text="Nothing in progress." />}
+          {act.length ? act.map(row) : <p className="m-0 py-2 text-[13px] text-ink-muted">None</p>}
         </div>
         <div className="bf">
-          <button
-            type="button"
-            className="btn"
+          <Button
+            variant="secondary"
             onClick={() => {
               try {
                 void navigator.clipboard?.writeText(briefText()).catch(() => undefined);
@@ -164,12 +171,10 @@ export function StatusBrief({ d, onClose }: { d: IncData; onClose: () => void })
               toast('Status brief copied');
             }}
           >
-            <Ic n="copy" />
+            <Copy size={16} strokeWidth={1.6} aria-hidden />
             Copy brief
-          </button>
-          <button
-            type="button"
-            className="btn p"
+          </Button>
+          <Button
             onClick={() => {
               if (ask?.enabled && ask.features.C4 && d.engagementId) {
                 const a = document.createElement('a');
@@ -182,9 +187,9 @@ export function StatusBrief({ d, onClose }: { d: IncData; onClose: () => void })
               } else toast('The PDF brief is not switched on for your account yet');
             }}
           >
-            <Ic n="download" />
+            <Download size={16} strokeWidth={1.6} aria-hidden />
             Download PDF
-          </button>
+          </Button>
         </div>
       </aside>
     </div>

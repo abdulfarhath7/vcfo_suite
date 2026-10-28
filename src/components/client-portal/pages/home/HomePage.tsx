@@ -1,43 +1,34 @@
 'use client';
 
 /**
- * Client portal v7 — Home (`/app/client/overview`).
+ * Client portal Home (`/app/client/overview`), VCFO Spectrum (prototype
+ * src/screens/client/HomeScreen.tsx). The home card (R-17), then two columns: the wide one
+ * with the ST5 steps card and the Gantt timeline, the 360px one with what the client owes and
+ * who holds the work. After the COI the compliance cards join and Registrations runs full
+ * width. Below 1024px the columns dissolve and `order` sets the phone card order, so phones
+ * show the same cards at 390px.
  *
- * ≥ 700 px: the desktop / tablet board — v7_before (`.vh-b` grid) before COI,
- * v7_after (`.vh-a` grid) after COI (`usePortal().after`), cards staggered
- * (.stag, 0.04 s + 0.06 s per card). < 700 px: the phone board (mobile.html).
- * Pop-ups: step (v7p_step), compliance (v7p_compliance), timeline editor
- * (tl-editor.js / v7p_timeline_client), PAN/TAN reveal (credentials'
- * IdsRevealDialog), document viewer (documents' DocViewer).
+ * Pop-ups: step (StepPopup), compliance (CompliancePopup), the timeline editor, the PAN/TAN
+ * reveal (credentials' IdsRevealDialog) and the document viewer (documents' DocViewer).
  */
 import { useCallback, useEffect, useState } from 'react';
-import { BotSays } from '@/components/client-portal/shared';
+import { Button } from '@/components/ui/button';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { DocViewer, type ViewerDoc } from '@/components/client-portal/pages/documents/DocViewer';
 import { IdsRevealDialog } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
+import { phaseHref } from '@/components/client-portal/routes';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import '../../css/home-base.css';
 import '../../css/home-tle.css';
 import '../../css/home-m.css';
+import { Island, St5Card } from '../incorporation/spectrum';
 import { useHome } from './useHome';
-import { useNeedUpload } from './ui';
-import { ActivityCard, AlertsCard, CurrentCard, DocsCard, GreetCard, NeedsCard, SbcCard } from './CardsA';
-import { AreaCard, CompCard, IdsCard, NextCard, PostIncCard, RegCard, StepsCard, TimelineCard } from './CardsB';
+import { useDownload, useNeedUpload } from './ui';
+import { ActivityCard, AlertsCard, DocsCard, HoldsCard, HomeCard, NeedsCard, SbcCard } from './CardsA';
+import { AreaCard, CompCard, IdsCard, NextCard, PostIncCard, RegCard, TimelineCard } from './CardsB';
 import { CompliancePopup, StepPopup } from './Popups';
 import { TimelineEditor } from './TimelineEditor';
-import { MobileHome } from './MobileHome';
 import { dLong, docUrl, type DocItem, type NeedRow } from './derive';
-
-function usePhone(): boolean | null {
-  const [phone, setPhone] = useState<boolean | null>(null);
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 699px)');
-    const on = () => setPhone(mq.matches);
-    on();
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
-  return phone;
-}
 
 /** L1 skeleton: shown after 150 ms, held at least 300 ms. */
 function useSkeleton(loading: boolean): boolean {
@@ -73,34 +64,30 @@ function toViewer(d: DocItem, company: string): ViewerDoc {
   };
 }
 
-function Skeleton({ after }: { after: boolean }) {
-  const card = (h: number, key: string) => (
-    <div key={key} className="card" style={{ padding: 16, gap: 10 }} aria-hidden="true">
-      <div className="sk" style={{ height: 14, width: '40%' }} />
-      <div className="sk" style={{ height: h }} />
-    </div>
-  );
+/** The page frame: 16px side gutter on phones, the board's clamp padding above. */
+const FRAME = 'mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-5 px-4 py-4 sm:p-[clamp(12px,2vw,24px)]';
+const COLS = 'grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] max-lg:contents';
+const COL = 'grid min-w-0 grid-cols-1 gap-5 max-lg:contents';
+
+/** R-48: loading shows grey shapes. */
+function Skeleton() {
   return (
     <div className="cp-home" aria-busy="true">
-      <div className={`vh-main ${after ? 'vh-a' : 'vh-b'}`}>
-        <div className="stag vh-g">
-          <div className="sk" style={{ height: 110, borderRadius: 10 }} />
+      <Island className={FRAME}>
+        <span className="block h-[180px] animate-pulse rounded-md bg-surface-sunken" aria-hidden />
+        <div className={COLS.replace(' max-lg:contents', '')}>
+          <SkeletonRows rows={6} />
+          <SkeletonRows rows={5} />
         </div>
-        <div className="vh-col vh-col-l">
-          <div className="stag">{[card(220, 'a'), card(160, 'b'), card(160, 'c')]}</div>
-        </div>
-        <div className="vh-col vh-col-r">
-          <div className="stag">{[card(180, 'd'), card(140, 'e'), card(160, 'f')]}</div>
-        </div>
-      </div>
+      </Island>
     </div>
   );
 }
 
 export function HomePage() {
   const h = useHome();
-  const phone = usePhone();
   const skeleton = useSkeleton(h.loading);
+  const download = useDownload();
   const { pick, field } = useNeedUpload();
   const [step, setStep] = useState<PortalStep | null>(null);
   const [comp, setComp] = useState<number | null>(null);
@@ -117,34 +104,33 @@ export function HomePage() {
   }, [openChat]);
 
   const openDocs = useCallback((docs: DocItem[], i: number) => setViewer({ docs: docs.map((d) => toViewer(d, h.company)), i }), [h.company]);
-  const upload = useCallback((n: NeedRow) => {
-    if (n.requestId) pick(n.requestId, n.title);
-    else if (n.href) h.portal.go(n.href);
-  }, [pick, h.portal]);
+  const upload = useCallback(
+    (n: NeedRow) => {
+      if (n.requestId) pick(n.requestId, n.title);
+      else if (n.href) h.portal.go(n.href);
+    },
+    [pick, h.portal],
+  );
 
-  if (phone === null || (h.loading && !skeleton && !h.overview)) return <div className="cp-home" style={{ minHeight: '60vh' }} />;
-  if (h.loading || skeleton) return phone ? <div className="cp-home-m"><div className="app sk"><main className="wrap"><section className="greet" /><section className="card t" style={{ height: 180 }} /><section className="card t" style={{ height: 240 }} /></main></div></div> : <Skeleton after={h.after} />;
-  if (h.error) {
+  if (h.loading && !skeleton && !h.overview) return <div className="cp-home" style={{ minHeight: '60vh' }} />;
+  if (h.loading || skeleton) return <Skeleton />;
+  if (h.error || h.missing) {
     return (
       <div className="cp-home">
-        <div className="vh-main">
-          <section className="card" style={{ padding: 16 }}>
-            <BotSays action="" secondary={<button type="button" className="btn btn-o btn-s" style={{ height: 28 }} onClick={h.refetch}>Try again</button>}>
-              We could not load your dashboard.
-            </BotSays>
-          </section>
-        </div>
-      </div>
-    );
-  }
-  if (h.missing) {
-    return (
-      <div className="cp-home">
-        <div className="vh-main">
-          <section className="card" style={{ padding: 16 }}>
-            <BotSays question="Why is there no active engagement?">No active engagement yet. Your SBC team sets it up and it shows here.</BotSays>
-          </section>
-        </div>
+        <Island className={FRAME}>
+          {h.error ? (
+            <EmptyState
+              title="Your dashboard did not load"
+              action={
+                <Button size="sm" variant="secondary" onClick={h.refetch}>
+                  Try again
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState title="No active engagement yet" />
+          )}
+        </Island>
       </div>
     );
   }
@@ -156,9 +142,62 @@ export function HomePage() {
     : undefined;
   const regProof = (r: { certPath?: string; certName?: string; step: PortalStep }) =>
     r.certPath && openDocs([{ id: `${r.step.id}:cert`, name: r.certName ?? r.step.title, type: 'PDF', from: 'firm', kind: 'milestone', ref: r.certPath }], 0);
+  const docsIdx = (i: number) => openDocs(h.docs, i);
+  const st5 = (cls: string) => (
+    <St5Card
+      model={h.model}
+      company={h.company}
+      lead={h.lead}
+      link={{ label: 'All steps', onClick: () => h.portal.go('incorporation') }}
+      onPhase={(no) => h.portal.go(phaseHref(no))}
+      onStep={setStep}
+      className={cls}
+    />
+  );
 
-  const overlays = (
-    <>
+  return (
+    <div className="cp-home">
+      <Island className={FRAME}>
+        <HomeCard h={h} onUpload={upload} />
+        {h.after ? (
+          <>
+            <div className={COLS}>
+              <div className={COL}>
+                {st5('max-lg:order-3')}
+                <TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} className="max-lg:order-[9]" />
+                <AreaCard h={h} className="max-lg:order-[8]" />
+                <PostIncCard h={h} className="max-lg:order-6" />
+                <DocsCard h={h} onOpen={docsIdx} onDownload={(d) => void download(d)} className="max-lg:order-[11]" />
+                <ActivityCard h={h} className="max-lg:order-[13]" />
+              </div>
+              <div className={COL}>
+                <NeedsCard h={h} onUpload={upload} className="max-lg:order-1" />
+                <NextCard h={h} className="max-lg:order-2" />
+                <CompCard h={h} onOpen={setComp} className="max-lg:order-4" />
+                <IdsCard h={h} onReveal={setReveal} onCoi={coiOpen} className="max-lg:order-5" />
+                <AlertsCard h={h} className="max-lg:order-[10]" />
+                <SbcCard h={h} className="max-lg:order-[12]" />
+              </div>
+            </div>
+            <RegCard h={h} onProof={regProof} className="max-lg:order-7" />
+          </>
+        ) : (
+          <div className={COLS}>
+            <div className={COL}>
+              {st5('max-lg:order-2')}
+              <TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} className="max-lg:order-5" />
+              <DocsCard h={h} onOpen={docsIdx} onDownload={(d) => void download(d)} className="max-lg:order-6" />
+              <ActivityCard h={h} className="max-lg:order-8" />
+            </div>
+            <div className={COL}>
+              <NeedsCard h={h} onUpload={upload} className="max-lg:order-1" />
+              <HoldsCard h={h} className="max-lg:order-3" />
+              <AlertsCard h={h} className="max-lg:order-4" />
+              <SbcCard h={h} className="max-lg:order-7" />
+            </div>
+          </div>
+        )}
+      </Island>
       {field}
       {step ? <StepPopup h={h} step={step} onClose={() => setStep(null)} onUpload={upload} onOpenDocs={openDocs} /> : null}
       {comp != null ? <CompliancePopup h={h} tab={comp} onClose={() => setComp(null)} /> : null}
@@ -167,59 +206,6 @@ export function HomePage() {
       ) : null}
       {reveal ? <IdsRevealDialog field={reveal} onClose={() => setReveal(null)} /> : null}
       {viewer ? <DocViewer docs={viewer.docs} index={viewer.i} onClose={() => setViewer(null)} onIndexChange={(i) => setViewer((v) => (v ? { ...v, i } : v))} /> : null}
-    </>
-  );
-
-  if (phone) {
-    return (
-      <>
-        <MobileHome h={h} phases={phases} onEditTimeline={() => setEditor(true)} onOpenDocs={openDocs} />
-        {/* pop-ups need the Home page styles (.cp-home …) on phones too */}
-        <div className="cp-home">{overlays}</div>
-      </>
-    );
-  }
-
-  const d = (n: number) => ({ animationDelay: `${(0.04 + n * 0.06).toFixed(2)}s` });
-  const docsIdx = (i: number) => openDocs(h.docs, i);
-
-  return (
-    <div className="cp-home">
-      {/* Client home (K-19): the greeting, then two independent columns, the left one
-          wide and the right one 360px. Timeline and Steps come first on the left. */}
-      <main className={`vh-main ${h.after ? 'vh-a' : 'vh-b'}`}>
-        <div className="stag vh-g">
-          <div style={d(0)}><GreetCard h={h} /></div>
-        </div>
-        <div className="vh-col vh-col-l">
-          <div className="stag">
-            <div style={d(1)}><TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} /></div>
-            <div style={d(2)}><StepsCard h={h} /></div>
-            <div style={d(3)}><NeedsCard h={h} onUpload={upload} /></div>
-            {h.after ? (
-              <>
-                <div style={d(4)}><NextCard h={h} /></div>
-                <div style={d(5)}><CompCard h={h} onOpen={setComp} /></div>
-                <div style={d(6)}><AreaCard h={h} /></div>
-                <div style={d(7)}><RegCard h={h} onProof={regProof} /></div>
-                <div style={d(8)}><PostIncCard h={h} /></div>
-              </>
-            ) : (
-              <div style={d(4)}><CurrentCard h={h} onStep={setStep} /></div>
-            )}
-          </div>
-        </div>
-        <div className="vh-col vh-col-r">
-          <div className="stag">
-            <div style={d(2)}><AlertsCard h={h} /></div>
-            <div style={d(3)}><SbcCard h={h} /></div>
-            {h.after ? <div style={d(4)}><IdsCard h={h} onReveal={setReveal} onCoi={coiOpen} /></div> : null}
-            <div style={d(5)}><DocsCard h={h} onOpen={docsIdx} /></div>
-            <div style={d(6)}><ActivityCard h={h} /></div>
-          </div>
-        </div>
-      </main>
-      {overlays}
     </div>
   );
 }

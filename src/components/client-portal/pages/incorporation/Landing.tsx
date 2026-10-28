@@ -1,13 +1,16 @@
 'use client';
 
 /**
- * INCORPORATION LANDING — FINAL `renderLanding()` (final-src/s/inc/incorporation.html):
- * row 1 = Days-to-COI tile + This week · row 2 = Timeline (gantt, accordion
- * step tables) · row 3 = four donuts. Wired to the real step model.
+ * INCORPORATION LANDING (VCFO Spectrum, prototype src/screens/client/IncorporationScreen.tsx).
+ * A plain page head (days to the COI, or the incorporation date), then the ST5 card beside
+ * "This week" and one "Incorporation status" card with four stacked bars (R-25, was four
+ * donuts), then the phase timeline (R-21) whose rows open the step tables. Wired to the real
+ * step model; every drill, the status brief, the board resolution link and the timeline
+ * editor are kept.
  */
 import { sep } from '@/lib/date-format';
-import { CardHeadTile } from '@/components/common/CardHeadTile';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Download, Pencil } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
@@ -15,49 +18,36 @@ import { getStepAttachmentRequirements } from '@/lib/checklist/checklist-step-at
 import { isReviewRejected, isAwaitingReview } from '@/lib/checklist/checklist-item-review';
 import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
+import { StepMark } from '@/components/ui/step-track';
+import { SkeletonRows } from '@/components/ui/empty-state';
 import { phaseHref, portalHref } from '../../routes';
 import { usePortal, type DrillConfig, type DrillRow } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
-import { signedUrlFor } from './data';
-import {
-  BotSay,
-  Bmini,
-  Ic,
-  IncFrame,
-  InfoBtn,
-  Si,
-  addD,
-  days,
-  fmt,
-  fmtY,
-  pd,
-  useCountUp,
-  wd,
-} from './ui';
-import {
-  INFO_WHY,
-  PHL,
-  PH_TIP,
-  firstName,
-  idx,
-  kd,
-  ownKey,
-  phDoneEnd,
-  phPlan,
-  stRow,
-  stepHrefOf,
-  tabsFor,
-  useIncData,
-  type IncData,
-} from './data';
+import { IncFrame, addD, days, fmt, fmtY, pd, useCountUp, wd } from './ui';
+import { PHL, firstName, idx, kd, ownKey, phDoneEnd, phPlan, stRow, stepHrefOf, tabsFor, signedUrlFor, useIncData, type IncData } from './data';
 import { StepTable } from './StepTable';
 import { StatusBrief } from './StatusBrief';
 import { BoardResolutionLink } from './BoardLink';
 import { TimelineEdit } from './TimelineEdit';
+import { BAR_FILL, Chevron, Col, Dot, Empty, Island, PageHead, Row, SCard, St5Card, currentPhaseNo, useGo, type BarTone } from './spectrum';
 
-type Seg = [label: string, n: number, color: string, rows: DrillRow[]];
+type Seg = [label: string, n: number, tone: BarTone, rows: DrillRow[]];
 
-/* ---------------- donut data (rule 14) ---------------- */
+/** Drill tab colours from the bar tones (tokens only). */
+const TONE_VAR: Record<BarTone, string> = {
+  ok: 'oklch(var(--positive-mid))',
+  warn: 'oklch(var(--warning-mid))',
+  bad: 'oklch(var(--danger-mid))',
+  prog: 'oklch(var(--brand))',
+  idle: 'oklch(var(--upcoming-mid))',
+  teal: 'oklch(var(--waiting-mid))',
+  violet: 'oklch(var(--identity))',
+};
+
+/* ---------------- status split data (rule 14) ---------------- */
 
 function docSegs(d: IncData): { you: Seg[]; sbc: Seg[] } {
   const docsHref = portalHref('documents');
@@ -108,15 +98,15 @@ function docSegs(d: IncData): { you: Seg[]; sbc: Seg[] } {
   if (br?.signedUploadedAt) signed.push({ title: 'Board resolution (signed)', meta: `From ${d.short}`, href: clientBoardResolutionPath() });
   return {
     you: [
-      ['Submitted', sub.length, '#15805f', sub],
-      ['Under review', review.length, '#2453c7', review],
-      ['Pending', pend.length, '#d9731f', pend],
-      ['Sent back', back.length, '#cf3a2f', back],
+      ['Submitted', sub.length, 'ok', sub],
+      ['Under review', review.length, 'prog', review],
+      ['Pending', pend.length, 'warn', pend],
+      ['Sent back', back.length, 'bad', back],
     ],
     sbc: [
-      ['Generated', gen.length, '#2f6fd0', gen],
-      ['Pending', spend.length, '#dfe4ec', spend],
-      [`Signed by ${d.short}`, signed.length, '#15805f', signed],
+      ['Generated', gen.length, 'prog', gen],
+      ['Pending', spend.length, 'idle', spend],
+      [`Signed by ${d.short}`, signed.length, 'ok', signed],
     ],
   };
 }
@@ -137,81 +127,54 @@ function segData(d: IncData) {
     you: docs.you,
     sbc: docs.sbc,
     who: [
-      [d.short, you.length, '#c9a24b', rows(you)],
-      ['SBC', sbc.length, '#2f6fd0', rows(sbc)],
-      ['MCA', mca.length, '#6b3fc4', rows(mca)],
+      [d.short, you.length, 'warn', rows(you)],
+      ['SBC', sbc.length, 'prog', rows(sbc)],
+      ['MCA', mca.length, 'violet', rows(mca)],
     ] as Seg[],
     plan: [
-      ['On time', ok.length, '#15805f', rows(ok)],
-      ['At risk', risk.length, '#d9731f', rows(risk)],
-      ['Overdue', over.length, '#cf3a2f', rows(over)],
+      ['On time', ok.length, 'ok', rows(ok)],
+      ['At risk', risk.length, 'warn', rows(risk)],
+      ['Overdue', over.length, 'bad', rows(over)],
     ] as Seg[],
   };
 }
 
-function Donut({ k, title, segs, onSeg }: { k: string; title: string; segs: Seg[]; onSeg: (i: number) => void }) {
-  const { tipAt } = usePortal();
-  const tot = segs.reduce((a, s) => a + s[1], 0);
-  const R = 38;
-  const C = 2 * Math.PI * R;
-  let off = 0;
-  const nz = segs.filter((q) => q[1]).length;
+/** R-25 (C2): one card, one stacked bar per question, in status colours. Replaces the four donut cards. */
+function SplitCard({ rows }: { rows: Array<{ title: string; unit: string; segs: Seg[]; open: (i?: number) => void }> }) {
   return (
-    <section className="card acc dc" aria-label={title}>
-      <h2 className="lbl">{title}</h2>
-      <div className="dn">
-        <div className="dnut">
-          <svg viewBox="0 0 96 96" aria-hidden="true">
-            {segs.map((s, i) => {
-              if (!s[1]) return null;
-              const l = (C * s[1]) / tot;
-              const g = nz > 1 ? 1.2 : 0;
-              const el = (
-                <circle
-                  key={i}
-                  className="sg"
-                  cx="48"
-                  cy="48"
-                  r={R}
-                  stroke={s[2]}
-                  strokeDasharray={`${Math.max(l - g, 0.1).toFixed(2)} ${(C - l + g).toFixed(2)}`}
-                  strokeDashoffset={(-off).toFixed(2)}
-                  data-seg={`${k}:${i}`}
-                  onMouseMove={(e) => tipAt(e.clientX, e.clientY, `${s[0]} · ${s[1]}`)}
-                  onMouseLeave={() => tipAt(0, 0, null)}
-                  onClick={() => {
-                    tipAt(0, 0, null);
-                    onSeg(i);
-                  }}
-                />
-              );
-              off += l;
-              return el;
-            })}
-            {tot === 0 ? <circle cx="48" cy="48" r={R} fill="none" stroke="var(--hair)" strokeWidth={13} /> : null}
-          </svg>
-          <span className="c">{tot}</span>
-        </div>
-        <div className="lgd">
-          {segs.map((s, i) => (
-            <button key={s[0]} type="button" className="lg" aria-label={`${title} · ${s[0]} · ${s[1]}`} onClick={() => onSeg(i)}>
-              <i style={{ background: s[2] }} />
-              <span>{s[0]}</span>
-              <b>{s[1]}</b>
+    <SCard title="Incorporation status" bodyClassName="grid gap-5 sm:grid-cols-2 sm:gap-x-8">
+      {rows.map((r) => {
+        const total = r.segs.reduce((a, s) => a + s[1], 0);
+        return (
+          <div key={r.title} className="grid min-w-0 gap-2">
+            <button type="button" onClick={() => r.open()} className="flex items-baseline gap-2 text-left hover:underline" aria-label={`${r.title} · ${total} ${r.unit}`}>
+              <span className="min-w-0 truncate text-[13px] font-medium text-ink-2">{r.title}</span>
+              <b className="ml-auto text-[14px] font-medium text-ink">{total}</b>
             </button>
-          ))}
-        </div>
-      </div>
-    </section>
+            <span className="flex h-2 w-full gap-0.5 overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+              {r.segs
+                .filter((s) => s[1] > 0)
+                .map((s) => (
+                  <i key={s[0]} className={cn('block h-full rounded-[2px]', BAR_FILL[s[2]])} style={{ width: `${(s[1] / (total || 1)) * 100}%` }} />
+                ))}
+            </span>
+            <span className="flex flex-wrap gap-x-3 gap-y-1">
+              {r.segs.map((s, i) => (
+                <button key={s[0]} type="button" onClick={() => r.open(i)} className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-muted hover:text-ink" aria-label={`${r.title} · ${s[0]} · ${s[1]}`}>
+                  <i className={cn('h-2 w-2 flex-none rounded-[2px]', BAR_FILL[s[2]])} aria-hidden />
+                  {s[0]}
+                  <b className="font-medium text-ink">{s[1]}</b>
+                </button>
+              ))}
+            </span>
+          </div>
+        );
+      })}
+    </SCard>
   );
 }
 
-/* ---------------- gantt helpers ---------------- */
-
-interface Axis {
-  ax0: string;
-  ax1: string;
-}
+/* ---------------- dates ---------------- */
 
 function weekRange(today: string): string {
   const d = pd(today);
@@ -223,17 +186,128 @@ function weekRange(today: string): string {
   return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()} – ${fmt(sun)}` : `${fmt(mon)} – ${fmt(sun)}`;
 }
 
+/** True below the md breakpoint: the timeline axis shows every second week. */
+function useNarrow() {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia('(max-width: 767px)');
+    const on = () => setNarrow(m.matches);
+    on();
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return narrow;
+}
+
+/* ---------------- timeline (R-21) ---------------- */
+
+interface Axis {
+  ax0: string;
+  ax1: string;
+}
+
+function PhaseLineRow({
+  p,
+  plan,
+  pos,
+  todayX,
+  open,
+  onToggle,
+  onBar,
+}: {
+  p: PortalPhase;
+  plan: [string, string] | null;
+  pos: (s: string) => number;
+  todayX: number | null;
+  open: boolean;
+  onToggle: () => void;
+  onBar: () => void;
+}) {
+  const i = p.no - 1;
+  const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
+  const doneEnd = phDoneEnd(p);
+  const status = p.state === 'done' ? 'done' : p.state === 'up' ? 'next' : 'now';
+  const a = plan ? pos(plan[0]) : 0;
+  const planEnd = plan ? pos(plan[1]) : 0;
+  const late = p.state === 'done' && plan && doneEnd && doneEnd > plan[1];
+  const b = late ? pos(doneEnd!) : planEnd;
+  const lateDays = late ? days(plan![1], doneEnd!) : 0;
+  const earlyDays = p.state === 'done' && plan && doneEnd && doneEnd < plan[1] ? days(doneEnd, plan[1]) : 0;
+  const labelLeft = plan ? b > 75 : false;
+  const tip = `${PHL[i]} · ${p.done} of ${p.total} done${plan ? ` · ${fmt(plan[0])} → ${fmt(plan[1])}` : ''}`;
+  return (
+    <div className="grid h-row grid-cols-[200px_minmax(0,1fr)] items-center px-4 hover:bg-surface-sunken md:grid-cols-[230px_minmax(0,1fr)] md:px-5">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`phb-${p.no}`}
+        aria-label={`${open ? 'Hide' : 'Show'} the steps of ${PHL[i]} · ${p.done} of ${p.total} steps`}
+        className="flex h-full min-w-0 items-center gap-2 text-left text-[14px] font-medium text-ink"
+      >
+        <Chevron open={open} />
+        <StepMark state={status} size={20} label={p.state === 'done' ? 'done' : p.state === 'up' ? 'planned' : 'current'} />
+        <span className="min-w-0 truncate">{PHL[i]}</span>
+      </button>
+      <div className="relative h-full">
+        {plan ? (
+          <button
+            type="button"
+            onClick={onBar}
+            aria-label={tip}
+            data-tt={tip}
+            data-notip=""
+            className="absolute top-1/2 flex h-[14px] -translate-y-1/2 overflow-hidden rounded-bar"
+            style={{ left: `${a}%`, width: `${Math.max(b - a, 1.5)}%` }}
+          >
+            {p.state === 'done' ? (
+              <>
+                <i className="h-full bg-positive-mid" style={{ width: `${b > a ? ((planEnd - a) / (b - a)) * 100 : 100}%` }} />
+                {lateDays > 0 ? <i className="h-full flex-1 bg-danger-mid" aria-label={`${lateDays} days late`} /> : null}
+              </>
+            ) : p.state === 'active' ? (
+              <>
+                <i className="h-full bg-brand" style={{ width: `${Math.max(pct, 4)}%` }} />
+                <i className="hatch h-full flex-1" />
+              </>
+            ) : (
+              <i className="h-full w-full rounded-bar bg-surface-sunken shadow-[inset_0_0_0_1px_oklch(var(--line))]" />
+            )}
+          </button>
+        ) : null}
+        {plan && p.no === 2 ? (
+          <span className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[2px] bg-highlight-bright" style={{ left: `${b}%` }} aria-label={`COI ${fmt(plan[1])}`} />
+        ) : null}
+        <span
+          className="absolute top-1/2 flex -translate-y-1/2 items-baseline gap-1.5 whitespace-nowrap text-[12.5px] text-ink-muted"
+          style={!plan ? { left: 0 } : labelLeft ? { right: `calc(${100 - a}% + 12px)` } : { left: `calc(${b}% + 14px)` }}
+        >
+          <b className="text-[14px] font-medium text-ink">{pct}%</b>
+          <span>
+            {p.done} / {p.total} steps
+          </span>
+          {lateDays > 0 ? <span className="font-medium text-danger">{lateDays} days late</span> : null}
+          {earlyDays > 0 ? <span className="font-medium text-positive">{earlyDays} days early</span> : null}
+        </span>
+        {todayX != null ? <span className="absolute inset-y-0 border-l-[1.5px] border-highlight-bright" style={{ left: `${todayX}%` }} aria-hidden /> : null}
+      </div>
+    </div>
+  );
+}
+
 export default function IncorporationLanding() {
   const d = useIncData();
   const portal = usePortal();
   const { after, go, toast, drill, openChat } = portal;
+  const goTo = useGo();
   const viewer = useDocViewer();
   const { model, short, today } = d;
   const [openPh, setOpenPh] = useState<number | null>(null);
   const [briefOpen, setBriefOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const narrow = useNarrow();
 
-  /* ---------- COI tile ---------- */
+  /* ---------- head ---------- */
   const showAfter = after && Boolean(d.coiDate);
   const coiEnd = d.coiExpected;
   const daysLeft = coiEnd ? Math.max(0, days(today, coiEnd)) : null;
@@ -275,154 +349,99 @@ export default function IncorporationLanding() {
     [drill, d.coiExpected],
   );
 
-
-
   const openCert = () => {
     if (!d.certificate) return;
     const c = d.certificate;
     viewer.open([{ id: `cert:${c.storagePath}`, name: c.name, url: () => signedUrlFor(c.storagePath), meta: 'Certificate of Incorporation' }], 0);
   };
 
-  /* Monthly status brief + Board resolution (DECISIONS 2026-10-12): compact
-     icon buttons in the tile's top row so the tile keeps the prototype height (IN-14). */
-  const tileBtns = (
+  const headTitle = showAfter ? (
+    <button type="button" onClick={drillRing} className="text-left text-ink hover:underline" data-tt={`Certificate of Incorporation · ${wd(d.coiDate!)} ${fmtY(d.coiDate)}`} data-notip="">
+      Incorporated {fmt(d.coiDate)}
+    </button>
+  ) : coiEnd ? (
+    <button
+      type="button"
+      onClick={drillRing}
+      className="text-left text-ink hover:underline"
+      aria-label={`${daysLeft} days to COI · expected ${wd(coiEnd)} ${fmtY(coiEnd)}`}
+      data-tt={`Expected ${wd(coiEnd)} ${fmtY(coiEnd)}${d.extras?.windowSetByName ? ` · window set by ${d.extras.windowSetByName}` : ''}`}
+      data-notip=""
+    >
+      <span className="tabular-nums">{shown ?? daysLeft}</span> {daysLeft === 1 ? 'day to COI' : 'days to COI'}
+    </button>
+  ) : (
+    <button type="button" onClick={drillRing} className="text-left text-ink hover:underline">
+      Days to COI not set
+    </button>
+  );
+
+  const headMeta = showAfter ? (
     <>
-      <button
-        type="button"
-        className="hbtn"
-        aria-haspopup="dialog"
-        aria-expanded={briefOpen}
-        aria-label="Monthly status brief"
-        data-tt="Monthly status brief"
-        data-notip=""
-        onClick={() => setBriefOpen(true)}
-      >
-        <Ic n="download" />
-        <span className="lt">Monthly status brief</span>
+      {d.identifiers.cin ? <span className="font-mono text-[13px] text-ink-2">{d.identifiers.cin}</span> : <span>{d.companyName}</span>}
+      {d.identifiers.cin || d.identifiers.pan || d.identifiers.tan ? (
+        <>
+          <Dot />
+          <span>{issuedLine(d.identifiers)} issued</span>
+        </>
+      ) : null}
+      <Dot />
+      <button type="button" onClick={drillAll} className="text-brand-text hover:underline">
+        {all.done} / {all.total} steps · {all.pct}%
       </button>
-      <BoardResolutionLink br={d.extras?.boardResolution ?? null} />
+    </>
+  ) : (
+    <>
+      <span>{d.companyName}</span>
+      {coiEnd ? (
+        <>
+          <Dot />
+          <span>
+            expected {wd(coiEnd)} {fmt(coiEnd)}
+          </span>
+        </>
+      ) : null}
+      <Dot />
+      <button type="button" onClick={drillAll} className="text-brand-text hover:underline">
+        {all.done} / {all.total} steps · {all.pct}%
+      </button>
     </>
   );
 
-  const coiTile = (
-    <section className={`coi${coiEnd || showAfter ? '' : ' no-coi'}`} aria-label={showAfter ? 'Incorporated' : 'Days to COI'}>
-      <div className="t1">
-        {showAfter ? (
-          <>
-            <button
-              type="button"
-              className="big"
-              aria-label={`Incorporated ${fmtY(d.coiDate)}`}
-              data-tt={`Certificate of Incorporation · ${wd(d.coiDate!)} ${fmtY(d.coiDate)}`}
-              data-notip=""
-              onClick={drillRing}
-            >
-              <b>{fmt(d.coiDate)}</b>
-              <span>incorporated</span>
-            </button>
-            <span className="tr1">
-              {tileBtns}
-              {coiEnd ? <EarlyChip coi={d.coiDate!} end={coiEnd} /> : null}
-            </span>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              className="big"
-              aria-label={coiEnd ? `${daysLeft} days to COI · expected ${wd(coiEnd)} ${fmtY(coiEnd)}` : 'Incorporation window not set yet'}
-              data-tt={
-                coiEnd
-                  ? `Expected ${wd(coiEnd)} ${fmtY(coiEnd)}${d.extras?.windowSetByName ? ` · window set by ${d.extras.windowSetByName}` : ''}`
-                  : 'Your manager hasn’t set the incorporation window yet'
-              }
-              data-notip=""
-              onClick={drillRing}
-            >
-              {coiEnd ? (
-                <>
-                  <b id="coiN">{shown ?? daysLeft}</b>
-                  <span>{daysLeft === 1 ? 'day to COI' : 'days to COI'}</span>
-                </>
-              ) : (
-                <>
-                  <b>—</b>
-                  <span>days to COI</span>
-                </>
-              )}
-            </button>
-            <span className="tr1">
-              {tileBtns}
-              {you ? (
-                <a
-                  href={stepHrefOf(you)}
-                  className="chip risk"
-                  aria-label={`At risk · step ${you.n} · ${you.title}`}
-                  data-tt={`Step ${you.n} ${kd(you) === 'you' ? 'is waiting on' : 'is late for'} ${short}${you.due ? ` · due ${fmt(you.due)}` : ''}`}
-                  data-notip=""
-                  onClick={(e) => {
-                    e.preventDefault();
-                    go(stepHrefOf(you));
-                  }}
-                >
-                  At risk · step {you.n}
-                </a>
-              ) : null}
-            </span>
-          </>
-        )}
-      </div>
-      <div className="sub">
-        {showAfter ? (
-          <>
-            <span>
-              {d.companyName} · incorporated {wd(d.coiDate!)} {fmt(d.coiDate)}
-            </span>
-            {d.identifiers.cin || d.identifiers.pan || d.identifiers.tan ? (
-              <span className="mono">· {issuedLine(d.identifiers)} issued</span>
-            ) : null}
-            {d.certificate ? (
-              // eslint-disable-next-line jsx-a11y/anchor-is-valid -- prototype markup: a gold text link
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  openCert();
-                }}
-              >
-                Open certificate
-              </a>
-            ) : null}
-          </>
-        ) : (
-          <span>
-            {d.companyName}
-            {coiEnd ? ` · expected ${wd(coiEnd)} ${fmt(coiEnd)}` : ' · your manager hasn’t set the incorporation window yet'}
-          </span>
-        )}
-      </div>
-      <button type="button" className="pill" aria-label={`${all.done} of ${all.total} steps done · ${all.pct}%`} onClick={drillAll}>
-        <span>
-          {all.done} / {all.total} steps
-        </span>
-        {/* One bar split by phase (K-26): each segment is as wide as its phase's step count
-            and fills with the steps done in that phase. */}
-        <span className="tr tr-ph">
-          {model.phases.map((p) => (
-            <span key={p.id} style={{ flex: `${p.total} 0 0` }}>
-              <i style={{ width: `${p.total ? Math.round((p.done / p.total) * 100) : 0}%` }} />
-            </span>
-          ))}
-        </span>
-        <b>{all.pct}%</b>
-      </button>
-    </section>
+  const headActions = (
+    <>
+      <Button variant="secondary" aria-haspopup="dialog" aria-expanded={briefOpen} onClick={() => setBriefOpen(true)}>
+        <Download size={16} strokeWidth={1.6} aria-hidden />
+        Status brief
+      </Button>
+      <BoardResolutionLink br={d.extras?.boardResolution ?? null} />
+      {showAfter ? (
+        <>
+          {coiEnd ? <EarlyChip coi={d.coiDate!} end={coiEnd} /> : null}
+          {d.certificate ? (
+            <Button variant="secondary" onClick={openCert}>
+              Open certificate
+            </Button>
+          ) : null}
+        </>
+      ) : you ? (
+        <a
+          href={stepHrefOf(you)}
+          onClick={goTo(stepHrefOf(you))}
+          aria-label={`At risk · step ${you.n} · ${you.title}`}
+          data-tt={`Step ${you.n} ${kd(you) === 'you' ? 'is waiting on' : 'is late for'} ${short}${you.due ? ` · due ${fmt(you.due)}` : ''}`}
+          data-notip=""
+        >
+          <Chip tone="warn">At risk · step {you.n}</Chip>
+        </a>
+      ) : null}
+    </>
   );
 
   /* ---------- This week ---------- */
   const week = useMemo(() => {
-    type Row = { o: 'You' | 'SBC' | 'MCA'; t: string; dt: string; step: PortalStep };
-    const rows: Row[] = [];
+    type WRow = { o: 'You' | 'SBC' | 'MCA'; t: string; dt: string; step: PortalStep };
+    const rows: WRow[] = [];
     const used = new Set<string>();
     const soon = addD(today, 3);
     for (const r of d.extras?.fileRequests ?? []) {
@@ -432,65 +451,79 @@ export default function IncorporationLanding() {
       rows.push({
         o: 'You',
         t: `Upload ${r.label.replace(/\s*\([^)]*\)/g, '')}${r.requestedByName ? ` · requested by ${firstName(r.requestedByName)}` : ''}`,
-        dt: r.dueDate ? fmt(r.dueDate) : step.due ? fmt(step.due) : 'now',
+        dt: r.dueDate ? fmt(r.dueDate) : step.due ? fmt(step.due) : 'Now',
         step,
       });
     }
     for (const s of model.steps) {
       if (isAwaitingClientApproval(s.slice)) {
-        rows.push({ o: 'You', t: `Check & approve step ${s.n}`, dt: s.due ? fmt(s.due) : 'now', step: s });
+        rows.push({ o: 'You', t: `Check and approve step ${s.n}`, dt: s.due ? fmt(s.due) : 'Now', step: s });
         used.add(s.id);
       }
     }
     const rest = model.steps
       .filter((x) => !used.has(x.id) && ['you', 'prog', 'with'].includes(kd(x)))
-      .sort((a, b) => (a.due ?? '9999') < (b.due ?? '9999') ? -1 : 1);
+      .sort((a, b) => ((a.due ?? '9999') < (b.due ?? '9999') ? -1 : 1));
     for (const s of rest) {
       const o = ownKey(s);
-      rows.push({ o, t: s.title, dt: o === 'You' ? (s.due ? fmt(s.due) : '—') : !s.due || s.due <= soon ? 'now' : fmt(s.due), step: s });
+      rows.push({ o, t: s.title, dt: o === 'You' ? (s.due ? fmt(s.due) : '-') : !s.due || s.due <= soon ? 'Now' : fmt(s.due), step: s });
     }
-    const mon = addD(today, -((pd(today).getUTCDay() + 6) % 7));
-    const sun = addD(mon, 6);
-    const mca = model.steps.find((x) => x.owner === 'mca' && kd(x) === 'with' && (!x.due || x.due <= sun));
-    const anyYou = rows.some((r) => r.o === 'You');
-    return {
-      rows: rows.slice(0, 4),
-      range: weekRange(today),
-      bot: !anyYou ? `Nothing is waiting on ${short} this week.` : mca ? `MCA: ${mca.title} this week.` : 'MCA: nothing pending this week.',
-    };
-  }, [d.extras?.fileRequests, model, today, short]);
+    return { rows: rows.slice(0, 4), range: weekRange(today) };
+  }, [d.extras?.fileRequests, model, today]);
 
   const weekCard = (
-    <section className="card week" aria-label="This week">
-      <div className="ch">
-        <CardHeadTile title="This week" />
-<h2 className="lbl">This week</h2>
-        <span className="cnt">{week.range}</span>
-        <span className="wbot">
-          <Bmini />
-          <span>{week.bot}</span>
-        </span>
-      </div>
-      {week.rows.map((r, i) => (
-        <a
-          key={`${r.step.id}-${i}`}
-          href={stepHrefOf(r.step)}
-          className="wr"
-          aria-label={`${r.t} · ${r.o === 'You' ? short : r.o} · ${r.dt}`}
-          onClick={(e) => {
-            e.preventDefault();
-            go(stepHrefOf(r.step));
-          }}
-        >
-          <span className={`own ${r.o}`}>{r.o === 'You' ? short : r.o}</span>
-          <span className="t">{r.t}</span>
-          <span className="dt">{r.dt}</span>
-        </a>
-      ))}
-    </section>
+    <SCard title="This week" meta={week.range} flush>
+      {week.rows.length === 0 ? (
+        <Empty />
+      ) : (
+        <ul>
+          {week.rows.map((r, i) => (
+            <li key={`${r.step.id}-${i}`}>
+              <a
+                href={stepHrefOf(r.step)}
+                onClick={goTo(stepHrefOf(r.step))}
+                aria-label={`${r.t} · ${r.o === 'You' ? short : r.o} · ${r.dt}`}
+                className="flex items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0 hover:bg-surface-sunken md:px-5"
+              >
+                <span className={cn('w-[84px] flex-none text-[12.5px]', r.dt === 'Now' ? 'font-medium text-brand-text' : 'font-normal text-ink-muted')}>{r.dt}</span>
+                <OwnerChip owner={r.o === 'You' ? 'client' : r.o === 'MCA' ? 'mca' : 'sbc'} label={r.o === 'You' ? short : undefined} />
+                <span className="min-w-0 flex-1 truncate pl-3 text-[13.5px] font-normal text-ink">{r.t}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </SCard>
   );
 
-  /* ---------- Timeline (gantt) ---------- */
+  /* ---------- status split (four bars) ---------- */
+  const segs = useMemo(() => segData(d), [d]);
+  const SEG_T = { you: `Documents from ${short}`, sbc: 'Documents SBC prepares', who: 'Who is working on what', plan: 'On plan or overdue' } as const;
+  const drillSeg = (key: keyof typeof SEG_T, i?: number) => {
+    const s = segs[key];
+    const docs = key === 'you' || key === 'sbc';
+    const at = i ?? Math.max(0, s.findIndex((q) => q[3].length));
+    const cfg: DrillConfig = {
+      title: SEG_T[key],
+      sub: `${s.reduce((t, q) => t + q[1], 0)}${docs ? ' documents' : ' steps'}`,
+      // Only non-empty segment tabs (spec LS-05); the clicked one always stays.
+      tabs: s
+        .map((q, j) => ({ label: q[0], color: TONE_VAR[q[2]], rows: q[3], j }))
+        .filter((t) => t.rows.length || t.j === at)
+        .map(({ j: _j, ...t }) => t),
+      active: s.slice(0, at).filter((q) => q[3].length).length,
+    };
+    if (docs) cfg.link = { lead: 'Every document, with versions', text: 'Open Documents →', href: portalHref('documents'), where: 'Documents' };
+    drill(cfg);
+  };
+  const split = (Object.keys(SEG_T) as Array<keyof typeof SEG_T>).map((k) => ({
+    title: SEG_T[k],
+    unit: k === 'you' || k === 'sbc' ? 'documents' : 'steps',
+    segs: segs[k],
+    open: (i?: number) => drillSeg(k, i),
+  }));
+
+  /* ---------- timeline ---------- */
   const coiForPlan = d.coiDate ?? d.coiExpected;
   const plans = useMemo(() => {
     const ps = model.phases.map((p) => phPlan(p, coiForPlan));
@@ -511,315 +544,152 @@ export default function IncorporationLanding() {
     ds.sort();
     return { ax0: addD(ds[0]!, -7), ax1: addD(ds.at(-1)!, 7) };
   }, [plans, model.phases, today]);
-  const forceSimple = !axis || plans.some((p) => !p);
   const pos = (s: string) => (axis ? Math.max(0, Math.min(1, days(axis.ax0, s) / days(axis.ax0, axis.ax1))) * 100 : 0);
-  const cardRef = useRef<HTMLElement>(null);
-  const [simple, setSimple] = useState(forceSimple);
-
-  const layoutGantt = useCallback(() => {
-    const c = cardRef.current;
-    if (!c || !axis) {
-      setSimple(true);
-      return;
-    }
-    const gl = c.querySelector<HTMLElement>('.gl');
-    if (!gl) return;
-    // measure in gantt mode
-    c.classList.remove('simple');
-    const W = gl.getBoundingClientRect().width;
-    const simpleNow = forceSimple || W < 500;
-    const ax = c.querySelector('.gax');
-    const sp = (W * 7) / days(axis.ax0, axis.ax1);
-    ax?.classList.toggle('e2', sp < 58 && sp >= 29);
-    ax?.classList.toggle('e4', sp < 29);
-    if (!simpleNow) {
-      c.querySelectorAll<HTMLElement>('.gl').forEach((g) => {
-        const b = g.querySelector<HTMLElement>('.gbar');
-        const lb = g.querySelector<HTMLElement>('.glab');
-        if (!b || !lb) return;
-        const a = (parseFloat(b.style.left) / 100) * W;
-        const e = a + (parseFloat(b.style.width) / 100) * W;
-        const lw = lb.getBoundingClientRect().width;
-        lb.style.left = '';
-        lb.style.right = '';
-        if (W - e >= lw + 18) lb.style.left = `${e + 14}px`;
-        else if (a >= lw + 14) lb.style.right = `${W - a + 10}px`;
-        // Neither side has room (a long bar): sit the label on the bar's end
-        // rather than dropping the whole card to the phone layout.
-        else lb.style.right = `${Math.max(0, W - e) + 8}px`;
-      });
-    }
-    if (simpleNow) {
-      c.querySelectorAll<HTMLElement>('.glab').forEach((lb) => {
-        lb.style.left = '';
-        lb.style.right = '';
-      });
-    }
-    c.classList.toggle('simple', simpleNow);
-    setSimple(simpleNow);
-  }, [axis, forceSimple]);
-
-  useLayoutEffect(() => {
-    layoutGantt();
-  });
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | undefined;
-    const on = () => {
-      clearTimeout(t);
-      t = setTimeout(layoutGantt, 80);
-    };
-    window.addEventListener('resize', on);
-    void document.fonts?.ready.then(() => layoutGantt());
-    return () => {
-      window.removeEventListener('resize', on);
-      clearTimeout(t);
-    };
-  }, [layoutGantt]);
-
-  const axisLabels = useMemo(() => {
+  const todayX = axis ? pos(today) : null;
+  const ticks = useMemo(() => {
     if (!axis) return [];
     const out: string[] = [];
-    let x = addD(axis.ax0, 7);
-    while (x <= addD(axis.ax1, -2)) {
-      out.push(x);
-      x = addD(x, 7);
-    }
+    for (let x = addD(axis.ax0, 7); x <= addD(axis.ax1, -2); x = addD(x, narrow ? 14 : 7)) out.push(x);
     return out;
-  }, [axis]);
-
+  }, [axis, narrow]);
   const rangeLabel = useMemo(() => {
     if (!axis) return '';
     const a = pd(addD(axis.ax0, 7));
     const b = pd(addD(axis.ax1, -7));
     const M = (x: Date) => sep(x.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' }));
-    return a.getUTCFullYear() === b.getUTCFullYear()
-      ? `${M(a)} – ${M(b)} ${b.getUTCFullYear()}`
-      : `${M(a)} ${a.getUTCFullYear()} – ${M(b)} ${b.getUTCFullYear()}`;
+    return a.getUTCFullYear() === b.getUTCFullYear() ? `${M(a)} to ${M(b)} ${b.getUTCFullYear()}` : `${M(a)} ${a.getUTCFullYear()} to ${M(b)} ${b.getUTCFullYear()}`;
   }, [axis]);
 
-  const phaseRow = (p: PortalPhase, i: number) => {
-    const open = openPh === p.no;
-    const plan = plans[i];
-    const doneEnd = phDoneEnd(p);
-    const end = p.state === 'done' && doneEnd ? doneEnd : plan?.[1];
-    const last = plan && end && end > plan[1] ? end : plan?.[1];
-    const a = plan ? pos(plan[0]) : 0;
-    const b = last ? pos(last) : 100;
-    const w = plan ? Math.max(b - a, 1.5) : 100;
-    const cls = p.state === 'done' ? 's-done' : p.state === 'up' ? 's-up' : 's-active';
-    const pct = Math.round((p.done / p.total) * 100);
-    let fill = pct;
-    let late: React.ReactNode = null;
-    let extra: React.ReactNode = null;
-    if (p.state === 'done') {
-      fill = 100;
-      if (plan && doneEnd) {
-        const dl = days(plan[1], doneEnd);
-        if (dl > 0) {
-          const lp = (dl / Math.max(1, days(plan[0], doneEnd))) * 100;
-          late = <i className="lt" style={{ width: `${lp.toFixed(1)}%` }} />;
-          extra = <span className="e late">{dl} day{dl === 1 ? '' : 's'} late</span>;
-        } else if (dl < 0) extra = <span className="e early">{-dl} days early</span>;
+  const timelineCard = (
+    <SCard
+      title="Timeline"
+      meta={`${all.done} of ${all.total} steps${rangeLabel ? ` · ${rangeLabel}` : ''}`}
+      flush
+      right={
+        <>
+          {showAfter ? <Chip tone="ok">Incorporated</Chip> : null}
+          <Button size="sm" variant="secondary" aria-label="Edit the timeline" onClick={() => setEditOpen(true)}>
+            <Pencil size={14} strokeWidth={1.6} aria-hidden />
+            Edit
+          </Button>
+        </>
       }
-    }
-    const tip = `${PHL[i]} · ${p.done} of ${p.total} done${plan ? ` · ${fmt(plan[0])} → ${fmt(plan[1])}` : ''}`;
-    const nw = p.state === 'active' ? p.steps.find((x) => ['you', 'prog', 'with'].includes(kd(x))) : undefined;
-    const kname = p.state === 'done' ? 'done' : p.state === 'up' ? 'upcoming' : 'in progress';
-    return (
-      <div className={`phr${open ? ' open' : ''}`} data-p={p.no} key={p.id}>
-        <div className="phh">
-          <button
-            type="button"
-            className="btn sm stb"
-            aria-expanded={open}
-            aria-controls={`phb-${p.no}`}
-            aria-label={`${open ? 'Hide' : 'Show'} the steps of ${PHL[i]}`}
-            onClick={() => setOpenPh(open ? null : p.no)}
-          >
-            <Ic n="chevron-right" />
-            Steps
-          </button>
-          <div className="pnm">
-            {/* One status circle per row (K-25, R-22, C-0024): done tick, current blue clock, planned ring. */}
-            <Si k={p.state === 'done' ? 'done' : p.state === 'up' ? 'up' : 'prog'} tip={`${PHL[i]} · ${kname}`} cls="xl" />
-            <span className="tx">{PHL[i]}</span>
+    >
+      <div className="overflow-x-auto">
+        <div className="min-w-[680px]">
+          <div className="grid h-[34px] grid-cols-[200px_minmax(0,1fr)] items-end px-4 pb-1.5 text-[11.5px] text-ink-faint md:grid-cols-[230px_minmax(0,1fr)] md:px-5" aria-hidden>
+            <span />
+            <div className="relative h-full">
+              {ticks.map((t) => (
+                <span key={t} className="absolute bottom-0 -translate-x-1/2 whitespace-nowrap" style={{ left: `${pos(t)}%` }}>
+                  {fmt(t)}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="gl">
-            <button
-              type="button"
-              className={`gbar ${cls}`}
-              style={{ left: `${a.toFixed(2)}%`, width: `${w.toFixed(2)}%` }}
-              aria-label={tip}
-              data-tt={tip}
-              data-notip=""
-              onClick={() => drillPhase(p)}
-            >
-              <span className="in">
-                <i className="f" style={{ width: `${fill}%` }} />
-                {late}
-                {nw ? (
-                  <span className="nw" style={{ left: `calc(${fill}% + 6px)` }}>
-                    Now · step {nw.n}
-                  </span>
-                ) : null}
-              </span>
-              {p.no === 2 ? <i className="ms" /> : null}
-            </button>
-            <span className="glab">
-              <b>{pct}%</b>
-              <span>
-                {p.done} / {p.total} steps
-              </span>
-              {extra}
-            </span>
-            {axis && !simple ? (
-              <button
-                type="button"
-                className="today"
-                style={{ left: `${pos(today).toFixed(2)}%` }}
-                aria-label={`Today · ${wd(today)} ${fmt(today)}`}
-                data-tt={`Today · ${wd(today)} ${fmt(today)}`}
-                data-notip=""
-                onClick={() => toast(`Today · ${wd(today)} ${fmtY(today)}`)}
+          {model.phases.map((p, i) => (
+            <div key={p.id} className="border-t border-line-soft">
+              <PhaseLineRow
+                p={p}
+                plan={plans[i] ?? null}
+                pos={pos}
+                todayX={todayX}
+                open={openPh === p.no}
+                onToggle={() => setOpenPh(openPh === p.no ? null : p.no)}
+                onBar={() => drillPhase(p)}
               />
-            ) : null}
-          </div>
-          <a
-            href={phaseHref(p.no)}
-            className="btn sm ob"
-            aria-label={`Open the ${PHL[i]} page`}
-            data-tt={PH_TIP[i]}
-            data-notip=""
-            onClick={(e) => {
-              e.preventDefault();
-              go(phaseHref(p.no));
-            }}
-          >
-            Open
-            <Ic n="arrow-right" />
-          </a>
-        </div>
-        <div className="phb" id={`phb-${p.no}`} role="region" aria-label={`${PHL[i]} steps`}>
-          {open ? (
-            <StepTable
-              phase={p}
-              variant="landing"
-              short={short}
-              coi={d.coiExpected}
-              ownershipType={d.ownershipType}
-              openViewer={viewer.open as (docs: ViewerDoc[], i?: number) => void}
-            />
+              <div id={`phb-${p.no}`} role="region" aria-label={`${PHL[i]} steps`}>
+                {openPh === p.no ? (
+                  <div className="border-t border-line-soft bg-surface-sunken/40">
+                    <StepTable
+                      phase={p}
+                      variant="landing"
+                      short={short}
+                      coi={d.coiExpected}
+                      ownershipType={d.ownershipType}
+                      openViewer={viewer.open as (docs: ViewerDoc[], i?: number) => void}
+                    />
+                    <div className="flex justify-end gap-3 border-t border-line-soft px-4 py-2 md:px-5">
+                      <Button variant="link" size="sm" onClick={() => drillPhase(p)}>
+                        Open list
+                      </Button>
+                      <Button variant="link" size="sm" onClick={() => go(phaseHref(p.no))} aria-label={`Open the ${PHL[i]} page`}>
+                        Open phase {p.no}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+          {todayX != null ? (
+            <div className="grid h-[26px] grid-cols-[200px_minmax(0,1fr)] px-4 md:grid-cols-[230px_minmax(0,1fr)] md:px-5">
+              <span />
+              <div className="relative h-full">
+                <span className="absolute inset-y-0 border-l-[1.5px] border-highlight-bright" style={{ left: `${todayX}%` }} aria-hidden />
+                <button
+                  type="button"
+                  className="absolute bottom-1 -translate-x-1/2 rounded-sm bg-highlight-bright px-1.5 py-px text-[11px] font-medium text-white"
+                  style={{ left: `${todayX}%` }}
+                  aria-label={`Today · ${wd(today)} ${fmt(today)}`}
+                  onClick={() => toast(`Today · ${wd(today)} ${fmtY(today)}`)}
+                >
+                  Today
+                </button>
+              </div>
+            </div>
           ) : null}
         </div>
       </div>
-    );
-  };
-
-  const phasesCard = (
-    <section className={`card acc phc${simple ? ' simple' : ''}`} id="phc" ref={cardRef}>
-      <div className="ch">
-        <CardHeadTile title="Timeline" />
-<h2 className="lbl">
-          Timeline
-          <InfoBtn
-            label="About the timeline"
-            spec={{
-              title: 'The timeline',
-              text: 'Each bar is the planned window of a phase. The fill is the share of steps done; red is time past the plan. The red line is today; the gold diamond is the COI.',
-              answer: {
-                title: 'The timeline',
-                text: 'Each bar is the planned window of a phase. The fill is the share of steps done; red is time past the plan. The red line is today; the gold diamond is the COI.',
-                why: INFO_WHY.phases,
-                source: `VCFO Suite · ${short}’s incorporation project`,
-                href: portalHref('incorporation'),
-              },
-            }}
-          />
-        </h2>
-        <span className="sp" />
-        <span className="cnt">
-          {all.done} of {all.total} steps{rangeLabel ? ` · ${rangeLabel}` : ''}
-        </span>
-        {/* eslint-disable-next-line jsx-a11y/anchor-is-valid -- prototype markup: the Edit link button */}
-        <a
-          className="btn btn-o"
-          href="#"
-          style={{ height: 30, padding: '0 10px', fontSize: 12, marginLeft: 10 }}
-          aria-label="Edit the timeline"
-          onClick={(e) => {
-            e.preventDefault();
-            setEditOpen(true);
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
-            <path className="duo" d="M14.5 5.5l4 4L9 19l-4.5 1 1-4.5Z" />
-            <path d="M15.5 4.5a2 2 0 0 1 2.9 0l1.1 1.1a2 2 0 0 1 0 2.9L9 19l-4.5 1 1-4.5Z M13.5 6.5l4 4" />
-          </svg>
-          Edit
-        </a>
-      </div>
-      {axis ? (
-        <div className="gax" aria-hidden="true">
-          <span />
-          <span />
-          <div className="tl">
-            {axisLabels.map((x) => (
-              <span key={x} style={{ left: `${pos(x).toFixed(2)}%` }}>
-                {fmt(x)}
-              </span>
-            ))}
-          </div>
-          <span className="ob0" />
-        </div>
-      ) : null}
-      {model.phases.map(phaseRow)}
-    </section>
+    </SCard>
   );
 
-  /* ---------- donuts ---------- */
-  const segs = useMemo(() => segData(d), [d]);
-  const SEG_T = { you: `Documents from ${short}`, sbc: 'Documents SBC prepares', who: 'Who’s working on what', plan: 'On plan vs overdue' } as const;
-  const drillSeg = (key: keyof typeof SEG_T, i: number) => {
-    const s = segs[key];
-    const docs = key === 'you' || key === 'sbc';
-    const cfg: DrillConfig = {
-      title: SEG_T[key],
-      sub: `${s.reduce((t, q) => t + q[1], 0)}${docs ? ' documents' : ' steps'}`,
-      // Only non-empty segment tabs (spec LS-05); the clicked one always stays.
-      tabs: s.map((q, j) => ({ label: q[0], color: q[2], rows: q[3], j })).filter((t) => t.rows.length || t.j === i).map(({ j: _j, ...t }) => t),
-      active: s.slice(0, i).filter((q) => q[3].length).length,
-    };
-    if (docs) cfg.link = { lead: 'Every document, with versions', text: 'Open Documents →', href: portalHref('documents'), where: 'Documents' };
-    drill(cfg);
-  };
+  const cur = currentPhaseNo(model);
 
   return (
     <IncFrame pending={d.pending} title="Incorporation · VCFO Suite">
-      {d.noEngagement ? (
-        <div className="wrap lp">
-          <section className="card" style={{ padding: 18 }}>
-            <BotSay
-              text="There is no incorporation project on your account yet. Your SBC team adds it when the engagement starts."
-              btn="Ask VCFO"
-              onBtn={() => openChat('When does my incorporation start?')}
-            />
-          </section>
-        </div>
-      ) : (
-        <div className="wrap lp">
-          <div className="r2">
-            {coiTile}
-            {weekCard}
-          </div>
-          {phasesCard}
-          <div className="dg">
-            <Donut k="you" title={SEG_T.you} segs={segs.you} onSeg={(i) => drillSeg('you', i)} />
-            <Donut k="sbc" title={SEG_T.sbc} segs={segs.sbc} onSeg={(i) => drillSeg('sbc', i)} />
-            <Donut k="who" title={SEG_T.who} segs={segs.who} onSeg={(i) => drillSeg('who', i)} />
-            <Donut k="plan" title={SEG_T.plan} segs={segs.plan} onSeg={(i) => drillSeg('plan', i)} />
-          </div>
-        </div>
-      )}
+      <div className="wrap">
+        <Island className="grid grid-cols-1 gap-5">
+          {d.pending ? (
+            <>
+              <span className="block h-14 w-1/2 animate-pulse rounded-md bg-surface-sunken" aria-hidden />
+              <Row>
+                <SkeletonRows rows={6} />
+                <SkeletonRows rows={6} />
+              </Row>
+              <SkeletonRows rows={5} />
+            </>
+          ) : d.noEngagement ? (
+            <Empty
+              action={
+                <Button variant="secondary" onClick={() => openChat('When does my incorporation start?')}>
+                  Ask VCFO
+                </Button>
+              }
+            >
+              No incorporation project on your account yet
+            </Empty>
+          ) : (
+            <>
+              <PageHead label="Certificate of Incorporation" title={headTitle} meta={headMeta} actions={headActions} />
+              <Row>
+                <St5Card
+                  model={model}
+                  company={short}
+                  lead={d.leadName}
+                  link={{ label: `Open phase ${cur}`, onClick: () => go(phaseHref(cur)) }}
+                  onPhase={(no) => go(phaseHref(no))}
+                />
+                <Col>
+                  {weekCard}
+                  <SplitCard rows={split} />
+                </Col>
+              </Row>
+              {timelineCard}
+            </>
+          )}
+        </Island>
+      </div>
       {briefOpen ? <StatusBrief d={d} onClose={() => setBriefOpen(false)} /> : null}
       {editOpen ? <TimelineEdit onClose={() => setEditOpen(false)} /> : null}
       {viewer.node}
@@ -836,30 +706,8 @@ function EarlyChip({ coi, end }: { coi: string; end: string }) {
   const e = days(coi, end);
   const txt = e > 0 ? `${e} days early` : e < 0 ? `${-e} days late` : 'On the day';
   return (
-    <span className={`chip ${e >= 0 ? 'done' : 'late'}`} role="img" aria-label={txt} data-tt={`Window ended ${wd(end)} ${fmt(end)}`}>
-      {txt}
+    <span role="img" aria-label={txt} data-tt={`Window ended ${wd(end)} ${fmt(end)}`}>
+      <Chip tone={e >= 0 ? 'ok' : 'bad'}>{txt}</Chip>
     </span>
   );
 }
-
-export function RingSvg({ pct, col }: { pct: number; col?: string }) {
-  const R = 20;
-  const C = 2 * Math.PI * R;
-  const l = (C * pct) / 100;
-  return (
-    <svg viewBox="0 0 50 50" aria-hidden="true">
-      <circle cx="25" cy="25" r={R} fill="none" stroke="rgba(255,255,255,.16)" strokeWidth="5" />
-      <circle
-        cx="25"
-        cy="25"
-        r={R}
-        fill="none"
-        stroke={col ?? '#e6c46e'}
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeDasharray={`${Math.max(l, 0.01).toFixed(2)} ${C.toFixed(2)}`}
-      />
-    </svg>
-  );
-}
-

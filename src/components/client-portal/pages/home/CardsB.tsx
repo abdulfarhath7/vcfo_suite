@@ -1,40 +1,41 @@
 'use client';
 
 /**
- * Home cards: Timeline (v7c_timeline_b / _a), Steps (v7c_steps_b / _a) and the
- * after-COI cards What is next (v7c_next), Compliance status (v7c_comp),
- * Company IDs (v7c_ids), Compliance by area (v7c_area), Registrations
- * (v7c_reg), Post-incorporation setup (v7c_postinc).
+ * Home cards (VCFO Spectrum, prototype src/screens/client/inc-timeline.tsx and home-parts.tsx):
+ * Timeline as a Gantt (R-21), and the after-COI cards What is next, Compliance status (one
+ * stacked bar, R-25), Company IDs, Compliance by area and Registrations (T1 tables, area pills,
+ * R-07 and R-43) and Post-incorporation setup.
  */
-import { Check, Clock } from 'lucide-react';
-import { useState, type CSSProperties } from 'react';
-import { BotSays } from '@/components/client-portal/shared';
-import { LinkButton } from '@/components/client-portal/LinkButton';
+import { ChevronRight, Copy, Download, ExternalLink, Eye, Paperclip, Pencil } from 'lucide-react';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { AreaPill, Chip, OwnerChip, regOf, type ChipTone, type Regulator } from '@/components/ui/spectrum-chip';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { StepMark } from '@/components/ui/step-track';
 import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig } from '@/components/client-portal/PortalProvider';
 import type { HomeFiling } from '@/lib/client/client-home';
+import type { PortalStep } from '@/lib/client-portal/step-model';
 import { useRevealedIdentifier } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
-import { CardHead, Ico, InfoPopover, Seg, Tip, copyText, ownerChipStyle } from './ui';
+import { Bar, DateTile, Empty, HeadLink, ListRow, SCard, StackedBar, stepChip, type BarTone } from '../incorporation/spectrum';
+import { copyText } from './ui';
 import type { HomeData } from './useHome';
 import {
   AREA_NAME,
   AREA_ORDER,
   BUCKET_LABEL,
-  BUCKET_TONE,
   BUCKETS,
   bucketOf,
   dLong,
   dShort,
-  dayMon,
   days,
   filingName,
+  filingPortal,
   filingRow,
   groupOf,
   postIncDrill,
   REG_CATS,
-  solid,
-  stepStatus,
-  stepTimelineText,
   timelineAxis,
   timelineDrill,
   type FilingBucket,
@@ -42,277 +43,209 @@ import {
   type TlPhase,
 } from './derive';
 
-const S = { fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 } as const;
-const W = { width: '100%', boxSizing: 'border-box', ...S } as CSSProperties;
-
 function plural(n: number, w: string) {
   return `${n} ${w}${n === 1 ? '' : 's'}`;
 }
 
-/* Rule 15's ↗ portal links are phone-only (mobile.html); the desktop board has none (HM-13). */
+const BUCKET_BAR: Record<FilingBucket, BarTone> = { filed: 'ok', dueSoon: 'warn', overdue: 'bad', upcoming: 'idle' };
 
 /* --------------------------------------------------------------- timeline */
 
-export function TimelineCard({
-  h,
-  phases,
-  onEdit,
-  animate,
-}: {
-  h: HomeData;
-  phases: TlPhase[] | null;
-  onEdit: () => void;
-  animate?: boolean;
-}) {
+type BarKind = 'done' | 'cur' | 'rest' | 'plan';
+const BAR_CLS: Record<BarKind, string> = {
+  done: 'bg-positive-mid',
+  cur: 'bg-brand',
+  rest: 'hatch',
+  plan: 'bg-surface-sunken shadow-[inset_0_0_0_1px_oklch(var(--line))]',
+};
+
+/** Plain chevron (R-24). */
+function Chevron({ open }: { open: boolean }) {
+  return <ChevronRight size={16} strokeWidth={1.6} className={cn('flex-none text-ink-muted transition-transform', open && 'rotate-90')} aria-hidden />;
+}
+
+/** Steps of one timeline row, shown when the row expands. */
+function RowSteps({ h, steps, onAll, phase }: { h: HomeData; steps: PortalStep[]; onAll: () => void; phase?: number }) {
+  return (
+    <div>
+      <ul>
+        {steps.map((s) => {
+          const chip = stepChip(s);
+          return (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => h.portal.go(stepHref(s.id))}
+                className="flex w-full items-center gap-3 border-t border-line-soft px-4 py-2.5 text-left text-[13px] first:border-t-0 hover:bg-surface-raised md:px-5 md:pl-12"
+              >
+                <span className="w-14 flex-none font-mono text-[12px] text-ink-muted">Step {s.n}</span>
+                <span className="min-w-0 flex-1 truncate font-medium text-ink">{s.title}</span>
+                <span className="hidden text-[12.5px] text-ink-muted sm:inline">{s.kind === 'done' ? dShort(s.doneOn) : s.due ? dShort(s.due) : ''}</span>
+                <Chip tone={chip.tone} fixed>
+                  {chip.label}
+                </Chip>
+                <ChevronRight size={16} strokeWidth={1.6} className="flex-none text-ink-faint" aria-hidden />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="flex justify-end gap-3 border-t border-line-soft px-4 py-2 md:px-5">
+        <Button variant="link" size="sm" onClick={onAll}>
+          Open list
+        </Button>
+        {phase ? (
+          <Button variant="link" size="sm" onClick={() => h.portal.go(phaseHref(phase))}>
+            Open phase {phase}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * R-21: Gantt with 46px rows, 14px bars with 3px corners, the orange today line and the
+ * orange COI diamond. In the current phase the part before today is solid, the rest hatched.
+ * Each row expands to its steps; Edit opens the timeline editor (a change request).
+ */
+export function TimelineCard({ h, phases, onEdit, className }: { h: HomeData; phases: TlPhase[] | null; onEdit: () => void; className?: string }) {
+  const [open, setOpen] = useState<string | null>(null);
   const t = h.home?.timeline;
   const pending = t?.pending;
+  const manager = h.manager ?? 'your project manager';
+  const changed = t?.lastChangedAt ? `Changed ${t.lastChangedAt.slice(0, 10) === h.today ? 'today' : dShort(t.lastChangedAt)}${t.lastChangedBy ? ` · ${t.lastChangedBy}` : ''}` : undefined;
   const right = h.after ? (
-    <span className="chip" style={{ background: 'var(--ok-light)', color: 'var(--ok-text)' }}>Completed</span>
+    <Chip tone="ok">Completed</Chip>
   ) : (
     <>
       {pending ? (
         <button
           type="button"
-          className="tle-pend"
-          aria-label={`Change request pending, waiting for ${h.manager ?? 'your project manager'}`}
-          onClick={() => h.portal.toast(`Waiting for ${h.manager ?? 'your project manager'} to approve · “${pending.reason.slice(0, 60)}”`)}
+          onClick={() => h.portal.toast(`Waiting for ${manager} to approve · “${pending.reason.slice(0, 60)}”`)}
+          aria-label={`Change request pending, waiting for ${manager}`}
+          className="inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning"
         >
-          Change request pending{pending.coiTo ? ` · COI ${dShort(pending.coiTo)}` : ''}
+          <i className="h-1.5 w-1.5 rounded-[2px] bg-current" aria-hidden />
+          <span className="hidden sm:inline">Request pending{pending.coiTo ? ' · ' : ''}</span>
+          {pending.coiTo ? `COI ${dShort(pending.coiTo)}` : null}
         </button>
       ) : null}
       {phases ? (
-        <LinkButton className="btn btn-o hover:!text-[color:var(--primary-dark)]" onClick={() => onEdit()} style={{ height: 30, padding: '0 10px', fontSize: 12 }}>
-          <Ico n="pencil" size={13} />
-          Edit
-        </LinkButton>
+        <Button size="sm" variant="secondary" onClick={onEdit}>
+          <Pencil size={14} strokeWidth={1.6} aria-hidden /> Edit
+        </Button>
       ) : null}
     </>
   );
   if (!phases) {
     return (
-      <div style={W}>
-        <section className="card">
-          <CardHead title="Timeline" right={right} />
-          <div style={{ padding: '12px 16px 16px' }}>
-            <BotSays size={40} question="When will SBC plan the incorporation dates?">
-              SBC has not planned the dates yet. They show here as soon as the project manager sets them.
-            </BotSays>
-          </div>
-        </section>
-      </div>
+      <SCard title="Timeline" flush className={className} right={right}>
+        <Empty>Dates not planned yet</Empty>
+      </SCard>
     );
   }
   const axis = timelineAxis(phases, h.today);
-  const pct = (iso: string) => (days(axis.t0, iso) / axis.span) * 100;
-  const todayPct = pct(h.today);
-  const coi = phases[3]!;
-  /* Gantt (K-25, rules R-21 and R-22): 46px rows, one status circle per row (done is a
-     green tick, the current row one blue clock, planned a grey ring), 16px bars with 6px
-     corners, an orange today line and an orange COI diamond. */
-  const stateOf = (p: TlPhase, i: number): 'done' | 'now' | 'plan' => {
-    if (h.after || p.done) return 'done';
-    const firstOpen = phases.findIndex((x) => !x.done);
-    return i === firstOpen ? 'now' : 'plan';
+  const x = (iso: string) => Math.min(100, Math.max(0, (days(axis.t0, iso) / axis.span) * 100));
+  const todayX = x(h.today);
+  const firstOpen = phases.findIndex((p) => !p.done);
+  const p1 = h.model.phases[0]?.steps ?? [];
+  const p2 = (h.model.phases[1]?.steps ?? []).filter((s) => s.id !== 'pre-11' && s.id !== 'pre-12');
+  const one = (id: string) => (h.model.byId[id] ? [h.model.byId[id]!] : []);
+  const stepsOf: Record<TlPhase['id'], [PortalStep[], number, number | undefined]> = {
+    p1: [p1, 0, 1],
+    p2: [p2, 1, 2],
+    mca: [one('pre-11'), 2, undefined],
+    coi: [one('pre-12'), 3, undefined],
   };
-  const colors: Record<TlPhase['id'], string> = h.after
-    ? { p1: 'var(--ok-mid)', p2: 'var(--ok-mid)', mca: 'var(--ok-mid)', coi: 'var(--gold)' }
-    : { p1: phases[0]!.done ? 'var(--ok-mid)' : 'var(--prog)', p2: phases[1]!.done ? 'var(--ok-mid)' : 'var(--prog)', mca: phases[2]!.done ? 'var(--ok-mid)' : 'var(--up-light)', coi: 'var(--gold)' };
-  const circle = (st: 'done' | 'now' | 'plan') =>
-    st === 'done' ? (
-      <span aria-label="Done" role="img" style={{ width: 18, height: 18, borderRadius: 99, flex: 'none', display: 'grid', placeItems: 'center', background: 'var(--ok-mid)', color: '#fff' }}>
-        <Check width={11} height={11} strokeWidth={3} aria-hidden />
-      </span>
-    ) : st === 'now' ? (
-      <span aria-label="In progress" role="img" style={{ width: 18, height: 18, borderRadius: 99, flex: 'none', display: 'grid', placeItems: 'center', background: 'var(--prog)', color: '#fff' }}>
-        <Clock width={11} height={11} strokeWidth={2.5} aria-hidden />
-      </span>
-    ) : (
-      <span aria-label="Planned" role="img" style={{ width: 18, height: 18, borderRadius: 99, flex: 'none', boxSizing: 'border-box', border: '2px solid var(--up-light)', background: 'var(--panel)' }} />
-    );
-  const tipOf = (p: TlPhase) =>
-    p.id === 'coi'
-      ? h.after
-        ? `COI · ${dShort(p.from)}`
-        : `COI · expected ${dShort(p.from)}`
-      : `${p.name} · ${dShort(p.from)} – ${dShort(p.to)}${p.done ? (p.id === 'p2' ? ' · filed' : ' · done') : p.pct != null ? ` · ${p.pct}%` : ''}`;
-  const capOf = (p: TlPhase) =>
-    p.id === 'p1' ? (p.done ? `Done ${dShort(p.to)}` : '') : p.id === 'p2' ? (p.done ? `Filed ${dShort(p.to)}` : `${p.pct ?? 0}%`) : p.id === 'coi' ? dShort(p.from) : '';
-  const tr: CSSProperties = animate ? { transition: 'left .5s cubic-bezier(.22,1,.36,1), width .5s cubic-bezier(.22,1,.36,1)' } : {};
+  const cols = 'grid-cols-[200px_minmax(0,1fr)_72px] md:grid-cols-[280px_minmax(0,1fr)_100px]';
   return (
-    <div style={W}>
-      <section className="card">
-        <CardHead title="Timeline" right={right} />
-        <div className="vh-tl" style={{ padding: '12px 16px 30px' }}>
-          <div style={{ position: 'relative', minWidth: 600 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '150px minmax(0,1fr)' }}>
-              <span />
-              <div style={{ position: 'relative', height: 18 }}>
-                {axis.ticks.map((k) => (
-                  <span key={k.iso} className="mono cap" style={{ position: 'absolute', left: `${k.pct}%`, transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
-                    {dShort(k.iso)}
-                  </span>
-                ))}
-              </div>
+    <SCard title="Timeline" meta={h.after ? undefined : changed} flush className={className} right={right}>
+      <div className="overflow-x-auto">
+        <div className="min-w-[680px] md:min-w-[560px]">
+          <div className={cn('grid h-[46px] items-end px-4 pb-1.5 text-[11.5px] text-ink-faint md:px-5', cols)}>
+            <span />
+            <div className="relative h-full">
+              {axis.ticks.map((k, i) => (
+                <span key={k.iso} className={cn('absolute bottom-0 -translate-x-1/2 whitespace-nowrap', i % 2 === 1 && 'max-md:invisible')} style={{ left: `${k.pct}%` }}>
+                  {dShort(k.iso)}
+                </span>
+              ))}
+              <span className="absolute -bottom-1.5 h-[22px] border-l-[1.5px] border-highlight-bright" style={{ left: `${todayX}%` }}>
+                <span className="absolute -left-6 -top-[22px] whitespace-nowrap rounded-sm bg-highlight-bright px-1.5 py-px text-[10.5px] font-medium text-white">Today</span>
+              </span>
             </div>
-            <div style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', left: 150, right: 0, top: 0, bottom: 0 }}>
-                {axis.ticks.map((k) => (
-                  <span key={k.iso} style={{ position: 'absolute', left: `${k.pct}%`, top: 0, bottom: 0, width: 1, background: 'var(--hair)' }} />
-                ))}
-                {todayPct >= 0 && todayPct <= 100 ? (
-                  <>
-                    <span style={{ position: 'absolute', left: `${todayPct}%`, top: -4, bottom: 0, width: 2, background: 'var(--gold)' }} />
-                    <span className="chip" style={{ position: 'absolute', left: `${todayPct}%`, bottom: -24, transform: 'translateX(-50%)', background: 'var(--gold)', color: '#fff', padding: '0 6px' }}>
-                      Today {dShort(h.today)}
-                    </span>
-                  </>
-                ) : todayPct > 100 ? (
-                  <span className="chip" style={{ position: 'absolute', right: 0, bottom: -24, background: 'var(--gold)', color: '#fff', padding: '0 6px' }}>
-                    Today {dShort(h.today)} →
-                  </span>
+            <span />
+          </div>
+          {phases.map((p, i) => {
+            const status: 'done' | 'current' | 'planned' = h.after || p.done ? 'done' : i === firstOpen ? 'current' : 'planned';
+            const bars: { from: string; to: string; kind: BarKind }[] = p.milestone
+              ? []
+              : status === 'done'
+                ? [{ from: p.from, to: p.to, kind: 'done' }]
+                : status === 'current'
+                  ? h.today > p.from && h.today < p.to
+                    ? [
+                        { from: p.from, to: h.today, kind: 'cur' },
+                        { from: h.today, to: p.to, kind: 'rest' },
+                      ]
+                    : [{ from: p.from, to: p.to, kind: 'cur' }]
+                  : [{ from: p.from, to: p.to, kind: 'plan' }];
+            const note =
+              p.id === 'p1' ? (p.done ? `Done ${dShort(p.to)}` : '') : p.id === 'p2' ? (p.done ? `Filed ${dShort(p.to)}` : `${p.pct ?? 0}%`) : p.id === 'coi' ? dShort(p.from) : '';
+            const [steps, tab, phaseNo] = stepsOf[p.id];
+            const isOpen = open === p.id;
+            return (
+              <div key={p.id} className="border-t border-line-soft">
+                <div
+                  className={cn('grid h-row cursor-pointer items-center px-4 hover:bg-surface-sunken md:px-5', cols)}
+                  onClick={() => setOpen(isOpen ? null : p.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setOpen(isOpen ? null : p.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isOpen}
+                  aria-label={`${p.name} · ${status === 'done' ? 'done' : status === 'current' ? 'in progress' : 'planned'}`}
+                >
+                  <div className="flex min-w-0 items-center gap-2 text-[14px] font-medium text-ink">
+                    <Chevron open={isOpen} />
+                    <StepMark state={status === 'done' ? 'done' : status === 'current' ? 'now' : 'next'} size={20} label={status} />
+                    <span className="min-w-0 truncate">{p.name}</span>
+                  </div>
+                  <div className="relative h-full">
+                    {bars.map((b, bi) => (
+                      <span
+                        key={bi}
+                        className={cn('absolute top-1/2 h-[14px] -translate-y-1/2 rounded-bar', BAR_CLS[b.kind])}
+                        style={{ left: `${x(b.from)}%`, width: `max(4px, ${x(b.to) - x(b.from)}%)` }}
+                      />
+                    ))}
+                    {p.milestone ? (
+                      <span
+                        className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[2px] bg-highlight-bright"
+                        style={{ left: `${x(p.from)}%` }}
+                        aria-label={`COI ${dShort(p.from)}`}
+                      />
+                    ) : null}
+                    <span className="absolute inset-y-0 border-l-[1.5px] border-highlight-bright" style={{ left: `${todayX}%` }} aria-hidden />
+                  </div>
+                  <div className="flex items-center justify-end gap-1.5 whitespace-nowrap text-[12.5px] text-ink-muted">{note}</div>
+                </div>
+                {isOpen ? (
+                  <div className="border-t border-line-soft bg-surface-sunken">
+                    <RowSteps h={h} steps={steps} phase={phaseNo} onAll={() => h.portal.drill(timelineDrill(h.model, tab))} />
+                  </div>
                 ) : null}
               </div>
-              {phases.map((p, i) => {
-                const left = pct(p.from);
-                const width = p.milestone ? 1.5 : Math.max(0.5, pct(p.to) - left);
-                return (
-                  <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '150px minmax(0,1fr)', alignItems: 'center', height: 46, borderTop: i ? '1px solid var(--hair)' : 0 }}>
-                    <span className="rt" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, whiteSpace: 'normal', lineHeight: 1.2, paddingRight: 8 }}>
-                      {circle(stateOf(p, i))}
-                      {p.name}
-                    </span>
-                    <div style={{ position: 'relative', height: 46 }}>
-                      <Tip
-                        tip={tipOf(p)}
-                        label={p.id === 'coi' ? 'COI' : p.name.split(' · ')[0]}
-                        onOpen={() => h.portal.drill(timelineDrill(h.model, i))}
-                        style={
-                          p.milestone
-                            ? { position: 'absolute', left: `calc(${left}% - 7px)`, width: 14, height: 14, top: 16, transform: 'rotate(45deg)', borderRadius: 2, background: colors[p.id], ...tr }
-                            : { position: 'absolute', left: `${left}%`, width: `${width}%`, top: 15, height: 16, borderRadius: 6, background: colors[p.id], ...tr }
-                        }
-                      />
-                      <span className="cap" style={{ position: 'absolute', left: `calc(${left + width}% + 8px)`, top: '50%', transform: 'translateY(-50%)', fontWeight: 700, whiteSpace: 'nowrap', ...tr }}>
-                        {capOf(p)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ steps */
-
-export function StepsCard({ h }: { h: HomeData }) {
-  const { model, company, portal } = h;
-  const openNo = (model.current?.phaseNo ?? model.phases.find((p) => p.state !== 'done')?.no) ?? 1;
-  return (
-    <div style={W}>
-      <section className="card">
-        <CardHead
-          title="Steps"
-          right={
-            <a
-              href={portalHref('incorporation')}
-              onClick={(e) => {
-                e.preventDefault();
-                portal.go('incorporation');
-              }}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}
-            >
-              Open Incorporation <Ico n="arrow" size={14} sw={2} />
-            </a>
-          }
-        />
-        <div style={{ padding: '0 16px 4px', display: 'flex', flexDirection: 'column' }}>
-          {model.phases.map((ph) => {
-            const tone = ph.state === 'done' ? 'ok' : ph.state === 'active' ? 'prog' : 'up';
-            return (
-              <details key={ph.id} className="stp-g" open={ph.no === openNo}>
-                <summary>
-                  <svg className="stp-cv" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
-                    <path d="M9 6l6 6-6 6" />
-                  </svg>
-                  <span className="rt" style={{ flex: 1 }}>
-                    <a
-                      href={phaseHref(ph.no)}
-                      className="stp-ph"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        portal.go(phaseHref(ph.no));
-                      }}
-                    >
-                      Phase {ph.no} · {ph.name}
-                    </a>
-                  </span>
-                  <span className="stp-bar" aria-hidden="true">
-                    <i style={{ width: `${ph.total ? Math.round((ph.done / ph.total) * 100) : 0}%`, background: tone === 'ok' ? 'var(--ok-mid)' : 'var(--prog)' }} />
-                  </span>
-                  <span className="chip" style={{ ...solid(tone), width: 108, minWidth: 108, justifyContent: 'center' }}>
-                    {ph.done} of {ph.total}
-                  </span>
-                </summary>
-                <div className="vh-x" style={{ '--tmin': '560px' } as CSSProperties}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>Step</th>
-                        <th>Owner</th>
-                        <th>Status</th>
-                        <th>Timeline</th>
-                        <th style={{ width: 34 }}>
-                          <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>Open</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ph.steps.map((s) => {
-                        const [label, t] = stepStatus(s);
-                        return (
-                          <tr key={s.id} className="stp-row" onClick={() => portal.go(stepHref(s.id))}>
-                            <td className="mono cap" style={{ padding: '6px 8px', fontWeight: 600 }}>{s.n}</td>
-                            <td className="rt" style={{ padding: '6px 8px', fontSize: 12.5 }}>{s.title}</td>
-                            <td style={{ padding: '6px 8px' }}>
-                              <span className="chip" style={ownerChipStyle(s.owner === 'client' ? 'client' : 'sbc')}>{s.owner === 'client' ? company : 'SBC'}</span>
-                            </td>
-                            <td style={{ padding: '6px 8px' }}>
-                              <span className="chip" style={{ ...solid(t), minWidth: 108, justifyContent: 'center' }}>{label}</span>
-                            </td>
-                            <td className="stp-tl" style={{ padding: '6px 8px' }}>{stepTimelineText(s)}</td>
-                            <td style={{ padding: '4px 4px 4px 0', textAlign: 'right' }}>
-                              <a
-                                href={stepHref(s.id)}
-                                className="stp-go"
-                                aria-label={`Open step ${s.n} · ${s.title}`}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  portal.go(stepHref(s.id));
-                                }}
-                              >
-                                <Ico n="arrow" size={14} sw={2} />
-                              </a>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </details>
             );
           })}
         </div>
-      </section>
-    </div>
+      </div>
+    </SCard>
   );
 }
 
@@ -336,212 +269,197 @@ function nextDrill(h: HomeData): DrillConfig {
   };
 }
 
-export function NextCard({ h }: { h: HomeData }) {
-  const [tab, setTab] = useState(0);
+export function NextCard({ h, className }: { h: HomeData; className?: string }) {
+  const [tab, setTab] = useState('15');
   const open = h.filings.filter((f) => bucketOf(f, h.today) !== 'filed');
-  const hero = open.find((f) => bucketOf(f, h.today) === 'overdue');
-  const upcoming = open.filter((f) => f !== hero && f.dueDate >= h.today);
-  const win = tab === 0 ? 15 : 30;
+  const lead = open.find((f) => bucketOf(f, h.today) === 'overdue');
+  const upcoming = open.filter((f) => f !== lead && f.dueDate >= h.today);
+  const win = tab === '15' ? 15 : 30;
   const rows = upcoming.filter((f) => days(h.today, f.dueDate) <= win);
-  const c15 = upcoming.filter((f) => days(h.today, f.dueDate) <= 15).length + (hero ? 1 : 0);
-  const c30 = upcoming.filter((f) => days(h.today, f.dueDate) <= 30).length + (hero ? 1 : 0);
+  const c15 = upcoming.filter((f) => days(h.today, f.dueDate) <= 15).length + (lead ? 1 : 0);
+  const c30 = upcoming.filter((f) => days(h.today, f.dueDate) <= 30).length + (lead ? 1 : 0);
   const drill = (active: number) => h.portal.drill({ ...nextDrill(h), active });
-  const ownerLabel = (f: HomeFiling) => (f.owner === 'client' ? h.company : f.owner === 'firm' ? 'SBC' : null);
+  const ownerWord = (f: HomeFiling) => (f.owner === 'client' ? `Waiting on ${h.company}` : f.owner === 'firm' ? 'With SBC' : '');
   return (
-    <div style={W}>
-      <section className="card">
-        <CardHead title="What is next" right={<Seg label="What is next window" value={tab} onChange={setTab} tabs={[{ label: '15 days', cnt: c15 }, { label: '30 days', cnt: c30 }]} />} />
-        <div style={{ padding: '10px 16px 12px' }}>
-          {hero
-            ? (() => {
-                const late = Math.max(1, days(hero.dueDate, h.today));
-                const [day, mon] = dayMon(hero.dueDate);
-                return (
-                  <Tip
-                    tip={`${hero.title} · overdue ${plural(late, 'day')}`}
-                    onOpen={() => drill(1)}
-                    style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 14px', padding: '10px 16px', margin: '0 -16px', borderRadius: 0, background: 'var(--over-light)' }}
-                  >
-                    <span style={{ width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 'none', background: 'var(--panel)', color: 'var(--over-text)' }}>
-                      <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: 'inherit' }}>{day}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600 }}>{mon}</span>
-                    </span>
-                    <div style={{ flex: 1, minWidth: 150 }}>
-                      <div style={{ display: 'flex', gap: '6px 8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span className="rt" style={{ fontSize: 14 }}>{filingName(hero)}</span>
-                        <span className="chip" style={solid('over')}>Overdue {plural(late, 'day')}</span>
-                      </div>
-                    </div>
-                    <a
-                      className="btn btn-p"
-                      href={portalHref('compliances')}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        h.portal.go('compliances');
-                      }}
-                      style={{ height: 30, padding: '0 10px', fontSize: 12, marginLeft: 'auto' }}
-                    >
-                      {hero.owner === 'client' ? 'Fill details' : 'Open'}
-                    </a>
-                  </Tip>
-                );
-              })()
-            : null}
-          {rows.map((f) => {
-            const [day, mon] = dayMon(f.dueDate);
-            const n = days(h.today, f.dueDate);
-            const tone = n <= 7 ? 'due' : 'prog';
-            const owner = ownerLabel(f);
-            return (
-              <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px', margin: '0 -16px', borderTop: '1px solid var(--hair)' }}>
-                <Tip
-                  tip={`${f.title} · ${day} ${mon}`}
-                  onOpen={() => drill(n <= 15 ? 2 : 3)}
-                  style={{ position: 'relative', width: 44, height: 48, borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: `var(--${tone}-text)`, flex: 'none', background: `var(--${tone}-light)` }}
-                >
-                  <span className="metric" style={{ fontSize: 18, lineHeight: 1, color: 'inherit' }}>{day}</span>
-                  <span style={{ fontSize: 11, fontWeight: 600 }}>{mon}</span>
-                </Tip>
-                <div style={{ flex: 1 }}>
-                  <div className="rt" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {f.title}
-                  </div>
-                </div>
-                {owner ? (
-                  <span className="chip" style={solid(f.owner === 'client' ? 'due' : 'prog')}>{owner}</span>
-                ) : null}
-                <span className="chip" style={{ width: 108, justifyContent: 'center', ...solid(tone) }}>{n === 0 ? 'Today' : tone === 'due' ? 'Due soon' : 'Upcoming'}</span>
-              </div>
-            );
-          })}
-          {!hero && rows.length === 0 ? (
-            <BotSays size={40} action="">
-              No filings due in the next {win} days.
-            </BotSays>
-          ) : null}
-        </div>
-      </section>
-    </div>
+    <SCard
+      title="What is next"
+      flush
+      className={className}
+      right={
+        <SpectrumTabs
+          label="What is next window"
+          items={[
+            { key: '15', label: '15 days', count: c15 },
+            { key: '30', label: '30 days', count: c30 },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+      }
+    >
+      {!lead && rows.length === 0 ? <Empty /> : null}
+      {lead ? (
+        <ListRow className="bg-surface-sunken">
+          <DateTile iso={lead.dueDate} tint="bad" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-medium text-ink">{filingName(lead)}</span>
+            <span className="block truncate text-[12.5px] text-ink-muted">
+              <span className="text-danger">Overdue {plural(Math.max(1, days(lead.dueDate, h.today)), 'day')}</span>
+              {ownerWord(lead) ? ` · ${ownerWord(lead)}` : ''}
+              {lead.needTitle ? ` · ${lead.needTitle}${lead.needAskedBy ? ` · asked by ${lead.needAskedBy}` : ''}` : ''}
+            </span>
+          </span>
+          <Button size="sm" onClick={() => h.portal.go('compliances')}>
+            {lead.owner === 'client' ? 'Fill details' : 'Open'}
+          </Button>
+        </ListRow>
+      ) : null}
+      {rows.map((f) => {
+        const n = days(h.today, f.dueDate);
+        const tint = n <= 7 ? 'warn' : 'prog';
+        const portal = filingPortal(f);
+        return (
+          <ListRow key={f.id}>
+            <button type="button" onClick={() => drill(n <= 15 ? 2 : 3)} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={`${f.title} · open the list`}>
+              <DateTile iso={f.dueDate} tint={tint} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium text-ink">{filingName(f)}</span>
+                <span className="block truncate text-[12.5px] text-ink-muted">
+                  {AREA_NAME[groupOf(f)]}
+                  {f.windowTo ? ` · SBC prepares by ${dShort(f.windowTo)}` : ''}
+                </span>
+              </span>
+            </button>
+            <Chip tone={tint === 'warn' ? 'warn' : 'prog'} fixed className="hidden sm:inline-flex">
+              {n === 0 ? 'Today' : `In ${plural(n, 'day')}`}
+            </Chip>
+            {portal ? (
+              <a
+                href={portal[0]}
+                target="_blank"
+                rel="noreferrer"
+                className="grid h-[30px] w-[30px] flex-none place-items-center rounded-md !text-ink-muted hover:bg-surface-sunken hover:!text-ink"
+                aria-label={`Open the ${portal[1]}`}
+              >
+                <ExternalLink size={15} strokeWidth={1.6} aria-hidden />
+              </a>
+            ) : null}
+          </ListRow>
+        );
+      })}
+    </SCard>
   );
 }
 
-/* -------------------------------------------------------- compliance donut */
+/* -------------------------------------------------------- compliance status */
 
-/* Compliance status (K-24, rules R-25 and R-06): the total and one stacked bar with a
-   legend. No donut and no info icon. Each bar segment and legend row opens its list. */
-export function CompCard({ h, onOpen }: { h: HomeData; onOpen: (tab: number) => void }) {
+/** R-25: the total and one stacked bar with a legend. Each part opens its list. */
+export function CompCard({ h, onOpen, className }: { h: HomeData; onOpen: (tab: number) => void; className?: string }) {
   const total = h.filings.length;
-  const b = h.buckets;
-  const segs: [FilingBucket, number][] = BUCKETS.map((k) => [k, b[k]]);
-  const colour = (k: FilingBucket) => `var(--${k === 'filed' ? 'ok-mid' : k === 'dueSoon' ? 'due-mid' : k === 'overdue' ? 'over-mid' : 'up'})`;
-  const pctOf = (n: number) => (total ? Math.round((n / total) * 100) : 0);
+  const segs = BUCKETS.map((k) => ({ label: BUCKET_LABEL[k], value: h.buckets[k], tone: BUCKET_BAR[k] }));
+  const pct = (n: number) => `${n} (${total ? Math.round((n / total) * 100) : 0}%)`;
   return (
-    <div style={W}>
-      <section className="card">
-        <CardHead
-          title="Compliance status"
-          right={<span className="chip" style={{ background: 'var(--up-light)', color: 'var(--up-text)', minWidth: 108, justifyContent: 'center' }}>{h.home?.filings.fyLabel ?? ''}</span>}
-        />
-        <div style={{ padding: '14px 16px 16px' }}>
-          <LinkButton title="Show all" onClick={() => onOpen(0)} style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6, color: 'var(--fg)' }}>
-            <span className="metric" style={{ fontSize: 28, lineHeight: 1, color: 'var(--fg)' }}>{total}</span>
-            <span className="cap">filings this FY</span>
-          </LinkButton>
-          <div role="group" aria-label={segs.map(([k, n]) => `${BUCKET_LABEL[k]} ${n}`).join(', ')} style={{ display: 'flex', gap: 2, height: 12, margin: '12px 0 10px', borderRadius: 4, overflow: 'hidden', background: 'var(--raised)' }}>
-            {total
-              ? segs.map(([k, n], i) =>
-                  n ? (
-                    <button
-                      key={k}
-                      type="button"
-                      aria-label={`${BUCKET_LABEL[k]} · ${n}`}
-                      data-tip={`${BUCKET_LABEL[k]} · ${n}`}
-                      onClick={() => onOpen(i + 1)}
-                      style={{ flex: `${n} 0 0`, minWidth: 4, height: '100%', border: 0, padding: 0, background: colour(k), cursor: 'pointer' }}
-                    />
-                  ) : null,
-                )
-              : null}
-          </div>
-          {segs.map(([k, n], i) => (
-            <LinkButton
-              key={k}
-              data-tip={`${BUCKET_LABEL[k]} · ${n}`}
-              onClick={() => onOpen(i + 1)}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, width: 'calc(100% + 16px)', padding: '6px 8px', margin: '0 -8px', borderRadius: 6, color: 'var(--fg)', fontWeight: 500 }}
-            >
-              <span style={{ width: 10, height: 10, borderRadius: 2, background: colour(k) }} />
-              <span className="rt" style={{ flex: 1, fontWeight: 500 }}>{BUCKET_LABEL[k]}</span>
-              <span className="mono" style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {n} ({pctOf(n)}%)
-              </span>
-            </LinkButton>
-          ))}
+    <SCard
+      title="Compliance status"
+      meta={h.home?.filings.fyLabel}
+      className={className}
+      right={
+        <Button size="sm" variant="ghost" onClick={() => onOpen(0)}>
+          List
+        </Button>
+      }
+    >
+      <div className="grid gap-2.5">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[13px] font-medium text-ink-muted">This FY</span>
+          <span className="ml-auto text-[26px] font-medium leading-none text-ink">{total}</span>
         </div>
-      </section>
-    </div>
+        <StackedBar segments={segs} format={pct} onSegment={(i) => onOpen(i + 1)} />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {segs.map((s, i) => (
+          <button
+            key={s.label}
+            type="button"
+            onClick={() => onOpen(i + 1)}
+            className="inline-flex h-7 items-center rounded-md border-1.5 border-line-strong px-2.5 text-[12.5px] font-medium text-ink-2 hover:bg-surface-sunken"
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </SCard>
   );
 }
 
 /* ------------------------------------------------------------ company IDs */
 
-export function IdsCard({ h, onReveal, onCoi }: { h: HomeData; onReveal: (f: 'pan' | 'tan') => void; onCoi?: () => void }) {
+const ID_PORTAL: Record<string, [string, string]> = {
+  CIN: ['https://www.mca.gov.in', 'MCA portal'],
+  PAN: ['https://www.incometax.gov.in', 'Income-tax portal'],
+  TAN: ['https://www.tin-nsdl.com', 'TIN-NSDL portal'],
+  GSTIN: ['https://www.gst.gov.in', 'GST portal'],
+};
+
+export function IdsCard({ h, onReveal, onCoi, className }: { h: HomeData; onReveal: (f: 'pan' | 'tan') => void; onCoi?: () => void; className?: string }) {
   const ids = h.home?.identifiers ?? {};
   const shown = { pan: useRevealedIdentifier('pan'), tan: useRevealedIdentifier('tan') };
-  const rows: { k: string; v?: string; secret?: 'pan' | 'tan'; portal: [string, string] }[] = [
-    { k: 'CIN', v: ids.cin, portal: ['https://www.mca.gov.in', 'MCA portal'] },
-    { k: 'PAN', v: ids.panMasked, secret: 'pan', portal: ['https://www.incometax.gov.in', 'Income-tax portal'] },
-    { k: 'TAN', v: ids.tanMasked, secret: 'tan', portal: ['https://www.tin-nsdl.com', 'TIN-NSDL portal'] },
-    { k: 'GSTIN', v: ids.gstin, portal: ['https://www.gst.gov.in', 'GST portal'] },
+  const rows: { k: string; v?: string; secret?: 'pan' | 'tan' }[] = [
+    { k: 'CIN', v: ids.cin },
+    { k: 'PAN', v: ids.panMasked, secret: 'pan' },
+    { k: 'TAN', v: ids.tanMasked, secret: 'tan' },
+    { k: 'GSTIN', v: ids.gstin },
   ];
-  const btn: CSSProperties = { border: 0, borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+  const iconBtn = 'grid h-[30px] w-[30px] flex-none place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink';
   return (
-    <div style={W}>
-      <section className="card">
-        <CardHead
-          title="Company IDs"
-          info="PAN and TAN need your password to show"
-          right={
-            onCoi ? (
-              <LinkButton onClick={() => onCoi()} style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                COI <Ico n="arrow" size={12} sw={2} />
-              </LinkButton>
-            ) : null
-          }
-        />
-        <div style={{ padding: '4px 16px 10px' }}>
-          {rows.map((r) => (
-            <div key={r.k} style={{ display: 'grid', gridTemplateColumns: '62px minmax(0,1fr) auto', alignItems: 'center', gap: '6px 10px', padding: '9px 0', borderTop: '1px solid var(--hair)' }}>
-              <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span className="lbl">{r.k}</span>
-                {r.secret && r.v ? (
-                  <span className="chip" style={{ padding: '0 5px', fontSize: 11, background: 'var(--navy)', color: 'var(--gold)' }}>Private</span>
-                ) : null}
-              </span>
-              <span className="idm" style={{ fontSize: 12.5, fontWeight: 600, ...(r.secret ? { letterSpacing: '.06em' } : { overflowWrap: 'anywhere' }), ...(r.v ? {} : { color: 'var(--subtle)' }), ...(r.secret && shown[r.secret] ? { color: 'var(--ok-text)' } : {}) }}>
-                {(r.secret && shown[r.secret]) || r.v || '—'}
-              </span>
-              <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                {r.v && r.secret ? (
-                  <button type="button" aria-label={`Show ${r.k}`} onClick={() => onReveal(r.secret!)} style={{ ...btn, background: 'var(--navy)', color: '#fff' }}>
-                    <Ico n="eye" />
-                  </button>
-                ) : r.v ? (
-                  <button
-                    type="button"
-                    aria-label={`Copy ${r.k}`}
-                    onClick={() => void copyText(r.v!).then((ok) => h.portal.toast(ok ? `Copied · ${r.v}` : 'Copy blocked by this browser'))}
-                    style={{ ...btn, background: 'var(--primary-light)', color: 'var(--primary)' }}
-                  >
-                    <Ico n="copy" />
-                  </button>
-                ) : null}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
+    <SCard
+      title="Company IDs"
+      flush
+      className={className}
+      right={
+        onCoi ? (
+          <HeadLink onClick={onCoi}>
+            <Download size={14} strokeWidth={1.6} aria-hidden /> COI
+          </HeadLink>
+        ) : undefined
+      }
+    >
+      {rows.map((r) => {
+        const clear = r.secret ? shown[r.secret] : null;
+        const value = clear ?? r.v;
+        const portal = ID_PORTAL[r.k]!;
+        return (
+          <ListRow key={r.k}>
+            <span className="w-14 flex-none text-[12.5px] font-medium text-ink-muted">{r.k}</span>
+            <span className={cn('min-w-0 flex-1 truncate font-mono text-[13px]', clear ? 'text-positive' : r.v ? 'text-ink' : 'text-ink-faint')}>{value ?? '-'}</span>
+            {r.secret && r.v && !clear ? (
+              <Chip tone="idle" dot={false}>
+                Private
+              </Chip>
+            ) : null}
+            {r.secret && r.v && !clear ? (
+              <button type="button" onClick={() => onReveal(r.secret!)} className={iconBtn} aria-label={`Show ${r.k}`}>
+                <Eye size={15} strokeWidth={1.6} aria-hidden />
+              </button>
+            ) : value ? (
+              <button
+                type="button"
+                onClick={() => void copyText(value).then((ok) => h.portal.toast(ok ? `Copied · ${value}` : 'Copy blocked by this browser'))}
+                className={iconBtn}
+                aria-label={`Copy ${r.k}`}
+              >
+                <Copy size={15} strokeWidth={1.6} aria-hidden />
+              </button>
+            ) : (
+              <span className="w-[30px] flex-none" />
+            )}
+            <a href={portal[0]} target="_blank" rel="noreferrer" className={cn(iconBtn, 'hidden !text-ink-muted hover:!text-ink sm:grid')} aria-label={`Open the ${portal[1]}`}>
+              <ExternalLink size={15} strokeWidth={1.6} aria-hidden />
+            </a>
+          </ListRow>
+        );
+      })}
+    </SCard>
   );
 }
 
@@ -564,276 +482,224 @@ function areaDrill(h: HomeData, area: (typeof AREA_ORDER)[number], active: numbe
   };
 }
 
-const AREA_TAB: Record<string, string> = { MCA: 'MCA', GST: 'GST', 'Income tax': 'Income tax', Payroll: 'Payroll', FEMA: 'FEMA', Other: 'Other' };
-
-export function AreaCard({ h }: { h: HomeData }) {
-  const [tab, setTab] = useState(0);
+export function AreaCard({ h, className }: { h: HomeData; className?: string }) {
   const areas = AREA_ORDER.filter((a) => a !== 'Other' || h.filings.some((f) => groupOf(f) === 'Other'));
   const stat = (a: (typeof AREA_ORDER)[number]) => {
     const list = h.filings.filter((f) => groupOf(f) === a);
     const c = { filed: 0, dueSoon: 0, overdue: 0, upcoming: 0 };
     for (const f of list) c[bucketOf(f, h.today)] += 1;
-    const status: [string, 'ok' | 'due' | 'over' | 'up'] = c.overdue
-      ? ['Overdue', 'over']
-      : c.dueSoon
-        ? ['Due soon', 'due']
-        : c.filed && list.length
-          ? ['Compliant', 'ok']
-          : ['Upcoming', 'up'];
-    return { list, c, total: list.length, status };
+    const status = c.overdue ? 'Overdue' : c.dueSoon ? 'Due soon' : c.filed ? 'On track' : 'Upcoming';
+    return { c, total: list.length, status };
   };
   const all = h.buckets;
-  const one = tab > 0 ? areas[tab - 1]! : null;
-  const asOf = `${h.home?.filings.fyLabel ?? ''} · as of ${dLong(h.today)}`;
   return (
-    <div style={W}>
-      <section className="card">
-        <CardHead title="Compliance by area" right={<span className="chip" style={{ background: 'var(--up-light)', color: 'var(--up-text)', minWidth: 116, justifyContent: 'center' }}>{asOf}</span>} />
-        <div style={{ padding: '12px 16px 14px' }}>
-          <Seg full wrap label="Compliance area" value={tab} onChange={setTab} tabs={[{ label: 'All', cnt: h.filings.length }, ...areas.map((a) => ({ label: AREA_TAB[a]!, cnt: stat(a).total }))]} />
-          {one === null ? (
-            <div className="vh-x" style={{ '--tmin': '600px' } as CSSProperties}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, marginTop: 10 }}>
-                <thead>
-                  <tr>
-                    <th>Area</th>
-                    <th style={{ textAlign: 'right' }}>Total</th>
-                    <th style={{ textAlign: 'right' }}>Filed</th>
-                    <th style={{ textAlign: 'right' }}>Due soon</th>
-                    <th style={{ textAlign: 'right' }}>Overdue</th>
-                    <th style={{ width: '26%' }}>Mix</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {areas.map((a) => {
-                    const s = stat(a);
-                    return (
-                      <tr key={a}>
-                        <td className="rt" style={{ padding: 8 }}>{AREA_NAME[a]}</td>
-                        <td className="mono" style={{ padding: 8, textAlign: 'right' }}>{s.total}</td>
-                        <td className="mono" style={{ padding: 8, textAlign: 'right', color: 'var(--ok-text)' }}>{s.c.filed}</td>
-                        <td className="mono" style={{ padding: 8, textAlign: 'right', color: 'var(--due-text)' }}>{s.c.dueSoon}</td>
-                        <td className="mono" style={{ padding: 8, textAlign: 'right', color: 'var(--over-text)' }}>{s.c.overdue}</td>
-                        <td style={{ padding: 8 }}>
-                          <div className="stack" style={{ height: 10 }}>
-                            {BUCKETS.map((b, bi) =>
-                              s.c[b] > 0 ? (
-                                <Tip
-                                  key={b}
-                                  tip={`${AREA_TAB[a]} · ${BUCKET_LABEL[b]} · ${s.c[b]}`}
-                                  onOpen={() => h.portal.drill(areaDrill(h, a, bi + 1))}
-                                  style={{ position: 'relative', width: `${(s.c[b] * 100) / s.total}%`, background: `var(--${BUCKET_TONE[b]})` }}
-                                />
-                              ) : null,
-                            )}
-                          </div>
-                        </td>
-                        <td style={{ padding: 8 }}>
-                          <span className="chip" style={solid(s.status[1])}>{s.status[0]}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  <tr>
-                    <td className="rt" style={{ padding: 8, borderTop: '1.5px solid var(--border)', fontWeight: 800 }}>Total</td>
-                    {[h.filings.length, all.filed, all.dueSoon, all.overdue].map((v, i) => (
-                      <td key={i} className="mono" style={{ padding: 8, textAlign: 'right', fontWeight: 700, borderTop: '1.5px solid var(--border)' }}>
-                        {v}
-                      </td>
-                    ))}
-                    <td style={{ borderTop: '1.5px solid var(--border)' }} />
-                    <td style={{ borderTop: '1.5px solid var(--border)' }} />
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            (() => {
-              const s = stat(one);
-              const order: Record<FilingBucket, number> = { overdue: 0, dueSoon: 1, upcoming: 2, filed: 3 };
-              const fil = [...s.list].sort((x, y) => order[bucketOf(x, h.today)] - order[bucketOf(y, h.today)] || x.dueDate.localeCompare(y.dueDate)).slice(0, 8);
+    <SCard title="Compliance by area" meta={`${h.home?.filings.fyLabel ?? ''} · as of ${dShort(h.today)}`} flush className={className}>
+      <div className="overflow-x-auto">
+        <table className="grid-table min-w-[640px]">
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th className="num" style={{ width: 64 }}>Total</th>
+              <th className="num" style={{ width: 64 }}>Filed</th>
+              <th className="num" style={{ width: 92 }}>Due soon</th>
+              <th className="num" style={{ width: 88 }}>Overdue</th>
+              <th style={{ width: 120 }}>Mix</th>
+              <th style={{ width: 124 }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {areas.map((a) => {
+              const s = stat(a);
               return (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '12px 0 4px' }}>
-                    <span className="metric" style={{ fontSize: 22 }}>{AREA_NAME[one]}</span>
-                    <span className="cap">
-                      {s.total} filings this FY · {s.c.filed} filed · {s.c.dueSoon} due soon · {s.c.overdue} overdue
-                    </span>
-                  </div>
-                  <div className="vh-x" style={{ '--tmin': '600px' } as CSSProperties}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-                      <thead>
-                        <tr>
-                          <th>Filing</th>
-                          <th>Period</th>
-                          <th style={{ textAlign: 'right' }}>Due / filed</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {fil.map((f) => {
-                          const b = bucketOf(f, h.today);
-                          return (
-                            <tr key={f.id}>
-                              <td className="rt" style={{ padding: '7px 8px' }}>{f.title}</td>
-                              <td className="cap" style={{ padding: '7px 8px' }}>{f.periodLabel ?? f.fyLabel ?? '—'}</td>
-                              <td className="mono" style={{ padding: '7px 8px', textAlign: 'right', fontSize: 12 }}>{b === 'filed' && f.filedOn ? `Filed ${dLong(f.filedOn)}` : dLong(f.dueDate)}</td>
-                              <td style={{ padding: '7px 8px' }}>
-                                <span className="chip" style={solid(BUCKET_TONE[b])}>{BUCKET_LABEL[b]}</span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="cap" style={{ marginTop: 6 }}>
-                    {fil.length < s.total ? `Showing ${fil.length} of ${s.total} · full list in Filings` : `Showing all ${s.total}`}
-                  </div>
-                </>
+                <tr key={a} className="cursor-pointer" onClick={() => h.portal.drill(areaDrill(h, a, 0))}>
+                  <td>
+                    <AreaPill area={AREA_NAME[a]} reg={regOf(a)} />
+                  </td>
+                  <td className="num tabular-nums">{s.total}</td>
+                  <td className="num tabular-nums">{s.c.filed}</td>
+                  <td className="num tabular-nums">{s.c.dueSoon}</td>
+                  <td className={cn('num tabular-nums', s.c.overdue > 0 && '!font-medium !text-danger')}>{s.c.overdue}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <StackedBar
+                      height={6}
+                      legend={false}
+                      segments={BUCKETS.map((b) => ({ label: BUCKET_LABEL[b], value: s.c[b], tone: BUCKET_BAR[b] }))}
+                      onSegment={(i) => h.portal.drill(areaDrill(h, a, i + 1))}
+                    />
+                  </td>
+                  <td>
+                    <Chip fixed>{s.status}</Chip>
+                  </td>
+                </tr>
               );
-            })()
-          )}
-        </div>
-      </section>
-    </div>
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="border-t border-line-soft px-4 py-2.5 text-[12.5px] text-ink-muted md:px-5">
+        Total {h.filings.length} · filed {all.filed} · due soon {all.dueSoon} · overdue {all.overdue}
+      </div>
+    </SCard>
   );
 }
 
 /* ---------------------------------------------------------- registrations */
 
-export function RegCard({ h, onProof }: { h: HomeData; onProof: (r: RegRow) => void }) {
-  const [tab, setTab] = useState(0);
-  const rows = h.regs.filter((r) => tab === 0 || r.cat === REG_CATS[tab - 1]);
+const REG_TONE: Record<RegRow['status'], ChipTone> = { Registered: 'ok', 'In progress': 'prog', Upcoming: 'idle' };
+const CAT_REG: Partial<Record<RegRow['cat'], Regulator>> = { Labour: 'labour', FEMA: 'fema' };
+const PAGE = 8;
+
+export function RegCard({ h, onProof, className }: { h: HomeData; onProof: (r: RegRow) => void; className?: string }) {
+  const [cat, setCat] = useState('All');
+  const [page, setPage] = useState(0);
+  const rows = h.regs.filter((r) => cat === 'All' || r.cat === cat);
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  const cur = Math.min(page, pages - 1);
+  const shown = rows.slice(cur * PAGE, cur * PAGE + PAGE);
+  const done = h.regs.filter((r) => r.status === 'Registered').length;
   return (
-    <div style={W}>
-      <section className="card">
-        <CardHead title="Registrations" />
-        <div style={{ padding: '12px 16px 14px' }}>
-          <Seg full wrap label="Registration category" value={tab} onChange={setTab} tabs={[{ label: 'All', cnt: h.regs.length }, ...REG_CATS.map((c) => ({ label: c, cnt: h.regs.filter((r) => r.cat === c).length }))]} />
-          <div className="vh-x" style={{ '--tmin': '720px' } as CSSProperties}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, marginTop: 10 }}>
-              <thead>
-                <tr>
-                  <th>Registration</th>
-                  <th>Category</th>
-                  <th>Authority</th>
-                  <th>Number</th>
-                  <th style={{ textAlign: 'right' }}>Date</th>
-                  <th>Status</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.step.id}>
-                    <td className="rt" style={{ padding: '7px 8px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <a
-                          href={stepHref(r.step.id)}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            h.portal.go(stepHref(r.step.id));
-                          }}
-                          style={{ color: 'inherit', fontWeight: 600 }}
-                        >
-                          {r.name}
-                        </a>
-                      </span>
-                    </td>
-                    <td style={{ padding: '7px 8px' }}>{r.cat}</td>
-                    <td className="cap" style={{ padding: '7px 8px' }}>{r.authority}</td>
-                    <td className="idm" style={{ padding: '7px 8px', fontSize: 11.5, fontWeight: 600 }}>{r.number ?? '-'}</td>
-                    <td className="mono" style={{ padding: '7px 8px', textAlign: 'right', fontSize: 12 }}>{r.dateLabel}</td>
-                    <td style={{ padding: '7px 8px' }}>
-                      <span className="chip" style={solid(r.tone)}>{r.status}</span>
-                    </td>
-                    <td style={{ padding: '7px 8px' }}>
+    <SCard
+      title="Registrations"
+      meta={`${done} of ${h.regs.length} registered`}
+      flush
+      className={className}
+      right={
+        <SpectrumTabs
+          label="Registration category"
+          items={[{ key: 'All', label: 'All', count: h.regs.length }, ...REG_CATS.map((c) => ({ key: c, label: c, count: h.regs.filter((r) => r.cat === c).length }))]}
+          value={cat}
+          onChange={(k) => {
+            setCat(k);
+            setPage(0);
+          }}
+        />
+      }
+    >
+      {rows.length === 0 ? (
+        <Empty />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="grid-table min-w-[820px]">
+            <thead>
+              <tr>
+                <th>Registration</th>
+                <th style={{ width: 124 }}>Category</th>
+                <th style={{ width: 150 }}>Authority</th>
+                <th>Number</th>
+                <th style={{ width: 130 }}>Date</th>
+                <th style={{ width: 124 }}>Status</th>
+                <th style={{ width: 120 }}>
+                  <span className="sr-only">Proof and portal</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((r) => (
+                <tr key={r.step.id}>
+                  <td>
+                    <button type="button" onClick={() => h.portal.go(stepHref(r.step.id))} className="text-left font-medium text-ink hover:underline">
+                      {r.name}
+                    </button>
+                  </td>
+                  <td>
+                    <AreaPill area={r.cat} reg={CAT_REG[r.cat] ?? regOf(r.authority)} />
+                  </td>
+                  <td className="!text-ink-muted">{r.authority}</td>
+                  <td className="font-mono">{r.number ?? <span className="text-ink-faint">-</span>}</td>
+                  <td className="whitespace-nowrap">{r.dateLabel}</td>
+                  <td>
+                    <Chip tone={REG_TONE[r.status]} fixed>
+                      {r.status}
+                    </Chip>
+                  </td>
+                  <td>
+                    <span className="flex items-center justify-end gap-1">
                       {r.status === 'Registered' ? (
                         r.certPath ? (
-                          <LinkButton aria-label="Download certificate" title="Certificate" className="w-full" onClick={() => onProof(r)} style={{ color: 'var(--primary)', display: 'flex' }}>
-                            <Ico n="download" size={15} />
-                          </LinkButton>
+                          <button
+                            type="button"
+                            onClick={() => onProof(r)}
+                            className="inline-flex h-[26px] items-center gap-1 rounded-md px-1.5 text-[12.5px] font-medium text-brand-text hover:bg-surface-sunken"
+                            aria-label={`Open proof for ${r.name}`}
+                          >
+                            <Paperclip size={13} strokeWidth={1.6} aria-hidden /> Proof
+                          </button>
                         ) : (
-                          <span className="chip" title="Filed, proof not uploaded yet" style={{ background: 'var(--due-light)', color: 'var(--due-text)', whiteSpace: 'nowrap' }}>
-                            Proof pending
-                          </span>
+                          <Chip tone="warn">Proof pending</Chip>
                         )
                       ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {r.portal ? (
+                        <a
+                          href={r.portal}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="grid h-[26px] w-[26px] place-items-center rounded-md !text-ink-muted hover:bg-surface-sunken hover:!text-ink"
+                          aria-label={`Open the ${r.authority} portal`}
+                        >
+                          <ExternalLink size={14} strokeWidth={1.6} aria-hidden />
+                        </a>
+                      ) : null}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </section>
-    </div>
+      )}
+      {pages > 1 ? (
+        <nav className="flex items-center justify-end gap-1 border-t border-line-soft px-4 py-2 md:px-5" aria-label="Pages">
+          {Array.from({ length: pages }, (_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setPage(i)}
+              aria-current={i === cur ? 'page' : undefined}
+              className={cn('grid h-7 min-w-7 place-items-center rounded-md px-2 text-[12.5px] font-medium', i === cur ? 'bg-brand-soft text-brand-text' : 'text-ink-2 hover:bg-surface-sunken')}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </nav>
+      ) : null}
+    </SCard>
   );
 }
 
 /* ------------------------------------------------------------- post-inc */
 
-export function PostIncCard({ h }: { h: HomeData }) {
+export function PostIncCard({ h, className }: { h: HomeData; className?: string }) {
   const { open, done, dayN } = h.post;
   const drill = (a: number) => h.portal.drill(postIncDrill(open, done, a));
+  const meta = [dayN != null ? `Day ${dayN} since COI` : '', `${open.length} open`].filter(Boolean).join(' · ');
   return (
-    <div style={W}>
-      <section className="card">
-        <CardHead
-          title="Post-incorporation setup"
-          right={dayN != null ? <span className="chip" style={{ background: 'var(--up-light)', color: 'var(--up-text)', minWidth: 116, justifyContent: 'center' }}>Day {dayN} since COI</span> : null}
-        />
-        <div style={{ padding: '8px 16px 4px' }}>
-          <div className="lbl" style={{ color: 'var(--navy-ink,var(--navy))', margin: '4px 0 2px' }}>Open · statutory window used</div>
-          {open.map((p) => (
-            <div key={p.step.id} style={{ padding: '10px 0', borderTop: '1px solid var(--hair)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="rt" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {p.step.title}
-                  <InfoPopover askAbout={p.step.title}>{p.info}</InfoPopover>
-                </span>
-                <span className="chip" style={ownerChipStyle(p.owner)}>{p.owner === 'client' ? h.company : 'SBC'}</span>
-                <span className="mono" style={{ fontSize: 12, fontWeight: 600, width: 'auto', minWidth: 80, textAlign: 'right', whiteSpace: 'nowrap' }}>{p.dueDate ? dLong(p.dueDate) : '—'}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-                <Tip
-                  tip={`${p.step.title}${p.overDays ? ` · overdue ${p.overDays} day${p.overDays === 1 ? '' : 's'}` : p.limitDays && p.day != null ? ` · day ${p.day} of ${p.limitDays}` : ''}${p.dueDate ? ` · due ${dShort(p.dueDate)}` : ''}`}
-                  label={p.step.title}
-                  onOpen={() => drill(1)}
-                  style={{ flex: 1, position: 'relative', height: 10, borderRadius: 3, background: 'var(--raised)', boxShadow: 'inset 0 0 0 1px var(--border)' }}
-                >
-                  <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${p.usedPct.toFixed(1)}%`, borderRadius: 3, background: p.overDays ? 'var(--over)' : p.owner === 'client' ? 'var(--due)' : 'var(--prog)' }} />
-                </Tip>
-                <span className="mono cap" style={{ width: 'auto', minWidth: 80, textAlign: 'right', whiteSpace: 'nowrap', fontWeight: 600, ...(p.overDays ? { color: 'var(--over-text)' } : null) }}>
-                  {p.overDays ? `overdue ${p.overDays} day${p.overDays === 1 ? '' : 's'}` : p.limitDays && p.day != null ? `day ${p.day} of ${p.limitDays}` : 'no time limit'}
-                </span>
-              </div>
-            </div>
-          ))}
-          {open.length === 0 ? (
-            <div style={{ padding: '10px 0', borderTop: '1px solid var(--hair)' }}>
-              <BotSays size={40} action="">
-                Every post-incorporation step is done.
-              </BotSays>
-            </div>
-          ) : null}
-        </div>
-        <div style={{ padding: '4px 16px 14px' }}>
-          <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <Ico n="check" size={16} style={{ color: 'var(--ok-text)', marginTop: 1 }} />
-            <div style={{ flex: 1 }}>
-              <div className="rt" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Tip tip={`Completed · ${plural(done.length, 'item')}`} onOpen={() => drill(2)} style={{ textDecoration: 'underline dotted', textUnderlineOffset: 3 }}>
-                  {done.length} completed
-                </Tip>
-                {done.length ? <InfoPopover askAbout="post-incorporation setup">{done.map((s) => `${s.title} · ${dShort(s.doneOn)}`).join(' · ')}</InfoPopover> : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    <SCard title="Post-incorporation setup" meta={meta} flush className={className}>
+      {open.map((p) => (
+        <ListRow key={p.step.id} onClick={() => drill(1)} className="items-start" label={`${p.step.title} · open the list`}>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate font-medium text-ink">{p.step.title}</span>
+              <span className={cn('hidden text-[12.5px] sm:inline', p.overDays ? 'text-danger' : 'text-ink-muted')}>{p.dueDate ? dLong(p.dueDate) : '-'}</span>
+            </span>
+            <span className="block truncate text-[12.5px] text-ink-muted">{p.info}</span>
+            <span className="mt-2 flex items-center gap-3">
+              <Bar pct={p.usedPct} tone={p.overDays ? 'bad' : p.owner === 'client' ? 'warn' : 'prog'} className="flex-1" />
+              <span className={cn('w-28 flex-none text-right text-[12.5px]', p.overDays ? 'font-medium text-danger' : 'text-ink-muted')}>
+                {p.overDays ? `overdue ${plural(p.overDays, 'day')}` : p.limitDays && p.day != null ? `day ${p.day} of ${p.limitDays}` : 'no time limit'}
+              </span>
+            </span>
+          </span>
+          <OwnerChip owner={p.owner === 'client' ? 'client' : 'sbc'} label={p.owner === 'client' ? h.company : undefined} className="mt-0.5 hidden sm:inline-flex" />
+        </ListRow>
+      ))}
+      {open.length === 0 && done.length === 0 ? <Empty /> : null}
+      {done.length ? (
+        <ListRow onClick={() => drill(2)} label={`${done.length} completed · open the list`}>
+          <Chip tone="ok">{`${done.length} completed`}</Chip>
+          <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-muted">{done.map((s) => s.title).join(' · ')}</span>
+          <ChevronRight size={16} strokeWidth={1.6} className="flex-none text-ink-faint" aria-hidden />
+        </ListRow>
+      ) : null}
+    </SCard>
   );
 }

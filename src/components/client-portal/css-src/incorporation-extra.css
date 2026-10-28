@@ -33,3 +33,14 @@
 /* the real .docx page (816 px) is scaled to the paper's width, not clipped */
 .pvw .paper.live .cp-tw{zoom:.684}
 @media (max-width:767px){.pvw .paper.live{width:328px}.pvw .paper.live .cp-tw{zoom:.4}}
+/* Spectrum islands (`.cp-tw`): T1 tables (R-07). The shared base styles every th and td in the
+   portal; inside an island the table keeps the app's `.grid-table` look. */
+.cp-tw .grid-table{width:100%;border-collapse:collapse;font-size:14px}
+.cp-tw .grid-table th{height:36px;padding:0 10px;white-space:nowrap;text-align:left;border-bottom:1.5px solid oklch(var(--line));font-size:11.5px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:oklch(var(--ink-muted));background:transparent}
+.cp-tw .grid-table td{height:44px;padding:0 10px;white-space:normal;vertical-align:middle;border-top:0;border-bottom:1px solid oklch(var(--line-soft));color:oklch(var(--ink-2))}
+.cp-tw .grid-table tbody tr:hover td{background:oklch(var(--surface-sunken) / .6)}
+.cp-tw .grid-table tbody tr:last-child td{border-bottom:0}
+/* The approve action points at the first open request: the zone pulses once. */
+.cp-tw .drop-zone.pulse{animation:dzp .9s ease-out 1}
+@keyframes dzp{0%{box-shadow:0 0 0 0 oklch(var(--brand) / .45)}100%{box-shadow:0 0 0 10px oklch(var(--brand) / 0)}}
+@media (prefers-reduced-motion:reduce){.cp-tw .drop-zone.pulse{animation:none}}
