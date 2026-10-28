@@ -6,18 +6,21 @@
  * password: NEW `/api/client/account/password` (also stamps "changed …");
  * preference matrix + quiet hours: NEW `/api/client/notification-prefs`;
  * theme: `usePortal().savePrefs`; reduce motion: shell appearance (local).
+ * VCFO Spectrum (C-0027, C-0110, R-42): white heads, underline section tabs that
+ * switch in place (Profile, Notifications, Appearance, Team), and the Team section
+ * shared with the Team page. `#notifications`, `#appearance` and `#team` open their tab.
  */
-import { CardHeadTile } from '@/components/common/CardHeadTile';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import type { NotificationPrefs, NotificationPrefsPatch, WhatsAppCategory, EmailOptional } from '@/lib/client-portal/notification-prefs';
-import type { ClientTeamView } from '@/db/repositories/client-team';
 import { usePortal } from '../../PortalProvider';
-import { Dialog, Info, P, Seg, Svg, api, initialsOf, prettyPhone, shortDate } from './common';
+import { CardHead, Dialog, P, SChip, STag, Seg, Svg, Tile, api, initialsOf, prettyPhone, shortDate, type TileTone } from './common';
 import { PROFILE_KEY } from './NotificationsPage';
+import { TeamSection, useClientTeam } from './team-sections';
 import '../../css/team-00-contract.css';
 import '../../css/team-settings.css';
+import '../../css/team-team.css';
 
 type Profile = {
   id: string;
@@ -32,15 +35,28 @@ type Profile = {
 const PREFS_KEY = ['client-portal', 'notification-prefs'] as const;
 const PW_KEY = ['client-portal', 'password-changed'] as const;
 
-const ROWS: Array<{ k: string; t: string; locked: boolean; bg: string; icon: string; em?: EmailOptional; wa?: WhatsAppCategory }> = [
-  { k: 'docs', t: 'Documents requested or sent back', locked: true, bg: 'var(--due-chip)', icon: 'M7 3.5h7l4 4v13H7Z M14 3.5v4h4 M10 13h5 M10 16.5h5', wa: 'docs' },
-  { k: 'steps', t: 'Step accepted or needs changes', locked: true, bg: 'var(--ok-chip)', icon: 'M5 12.5 10 17.5 19 7', wa: 'steps' },
-  { k: 'dead', t: 'Deadlines and reminders', locked: true, bg: 'var(--over-chip)', icon: 'M12 4.5a7.5 7.5 0 1 0 0 15a7.5 7.5 0 1 0 0-15Z M12 8v4.2l2.8 1.8', wa: 'deadlines' },
-  { k: 'time', t: 'Timeline changes', locked: true, bg: 'var(--prog-chip)', icon: 'M4 7h10 M4 12h16 M4 17h7', wa: 'timeline' },
-  { k: 'ann', t: 'Announcements from SBC', locked: false, bg: 'var(--navy-3)', icon: 'M4 10h3l8-4.5v13L7 14H4Z', em: 'announcements', wa: 'announcements' },
-  { k: 'feed', t: 'Official feed news (MCA, GST, Tax)', locked: false, bg: 'var(--sky-chip)', icon: 'M5 19a1 1 0 1 0 0 .01 M5 12a7 7 0 0 1 7 7 M5 5a14 14 0 0 1 14 14', em: 'feed', wa: 'feed' },
-  { k: 'digest', t: 'Weekly summary · Monday 9 am', locked: false, bg: 'var(--violet-chip)', icon: 'M6 5.5h12v14H6Z M9 9.5h6 M9 13h6 M9 16.5h3', em: 'weeklyDigest' },
+const ROWS: Array<{ k: string; t: string; locked: boolean; tone: TileTone; icon: string; em?: EmailOptional; wa?: WhatsAppCategory }> = [
+  { k: 'docs', t: 'Documents requested or sent back', locked: true, tone: 'amber', icon: 'M7 3.5h7l4 4v13H7Z M14 3.5v4h4 M10 13h5 M10 16.5h5', wa: 'docs' },
+  { k: 'steps', t: 'Step accepted or needs changes', locked: true, tone: 'green', icon: 'M5 12.5 10 17.5 19 7', wa: 'steps' },
+  { k: 'dead', t: 'Deadlines and reminders', locked: true, tone: 'red', icon: 'M12 4.5a7.5 7.5 0 1 0 0 15a7.5 7.5 0 1 0 0-15Z M12 8v4.2l2.8 1.8', wa: 'deadlines' },
+  { k: 'time', t: 'Timeline changes', locked: true, tone: 'teal', icon: 'M4 7h10 M4 12h16 M4 17h7', wa: 'timeline' },
+  { k: 'ann', t: 'Announcements from SBC', locked: false, tone: 'amber', icon: 'M4 10h3l8-4.5v13L7 14H4Z', em: 'announcements', wa: 'announcements' },
+  { k: 'feed', t: 'Official feed news (MCA, GST, Tax)', locked: false, tone: 'blue', icon: 'M5 19a1 1 0 1 0 0 .01 M5 12a7 7 0 0 1 7 7 M5 5a14 14 0 0 1 14 14', em: 'feed', wa: 'feed' },
+  { k: 'digest', t: 'Weekly summary · Monday 9 am', locked: false, tone: 'violet', icon: 'M6 5.5h12v14H6Z M9 9.5h6 M9 13h6 M9 16.5h3', em: 'weeklyDigest' },
 ];
+
+/** Section tabs (R-11 underline tabs, R-36 switch in place). The hash names the tab. */
+const SECTIONS = [
+  { id: 'profile', label: 'Profile' },
+  { id: 'notifications', label: 'Notifications' },
+  { id: 'appearance', label: 'Appearance' },
+  { id: 'team', label: 'Team' },
+] as const;
+type SectionId = (typeof SECTIONS)[number]['id'];
+function sectionOf(hash: string): SectionId {
+  const h = hash.replace(/^#/, '');
+  return h === 'notifications' || h === 'appearance' || h === 'team' ? h : 'profile';
+}
 
 function Tgl({ on, label, tip, disabled, onClick }: { on: boolean; label: string; tip: string; disabled?: boolean; onClick: () => void }) {
   return (
@@ -63,7 +79,7 @@ export function SettingsPage() {
   const { shell, toast, prefs, savePrefs, theme } = usePortal();
   const qc = useQueryClient();
   const prof = useQuery({ queryKey: PROFILE_KEY, queryFn: () => api<{ profile: Profile }>('/api/account/profile') });
-  const team = useQuery({ queryKey: ['client-portal', 'team'], queryFn: () => api<ClientTeamView>('/api/client/team') });
+  const team = useClientTeam();
   const np = useQuery({ queryKey: PREFS_KEY, queryFn: () => api<{ prefs: NotificationPrefs }>('/api/client/notification-prefs') });
   const pwq = useQuery({ queryKey: PW_KEY, queryFn: () => api<{ changedAt: string | null }>('/api/client/account/password') });
   const appearance = useShellAppearance();
@@ -71,11 +87,26 @@ export function SettingsPage() {
   const company = shell?.companyName ?? '';
   const short = shell?.companyShort ?? 'you';
 
-  /* deep-link anchors (#notifications from the Notifications page) */
+  /* deep links: #notifications from the Notifications page, #team (C-0027) */
+  const [sec, setSec] = useState<SectionId>('profile');
+  useEffect(() => {
+    const on = () => setSec(sectionOf(window.location.hash));
+    on();
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
+  const pick = (id: SectionId) => {
+    setSec(id);
+    try {
+      window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#${id}`);
+    } catch {
+      /* the hash is a convenience only */
+    }
+  };
   useEffect(() => {
     if (!p) return;
     const id = window.location.hash.slice(1);
-    if (id) document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (id === 'security') document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [p]);
 
   const setProfile = (patch: Partial<Profile>) =>
@@ -141,58 +172,47 @@ export function SettingsPage() {
   return (
     <div className="cp-team">
       <main className="pg tb-wrap tp-set">
-        <div className="tb-g12">
-          <div className="tb-s5">
-            <Hero p={p} company={shell?.companyShort || company} isPrimary={isPrimary} setProfile={setProfile} />
+        <div className="sx-tabs tb-sectabs" role="tablist" aria-label="Profile sections">
+          {SECTIONS.map((x) => (
+            <button key={x.id} type="button" role="tab" id={`set-tab-${x.id}`} aria-selected={sec === x.id} aria-controls={`set-${x.id}`} onClick={() => pick(x.id)}>
+              {x.label}
+            </button>
+          ))}
+        </div>
 
-            <ProfileCard p={p} setProfile={setProfile} />
-
-            <SecurityCard changedAt={pwq.data?.changedAt ?? null} onChanged={(at) => qc.setQueryData(PW_KEY, { changedAt: at })} />
+        {sec === 'profile' ? (
+          <div className="tb-g12" role="tabpanel" id="set-profile" aria-labelledby="set-tab-profile">
+            <div className="tb-s7">
+              <ProfileCard p={p} setProfile={setProfile} hero={<Hero p={p} company={shell?.companyShort || company} isPrimary={isPrimary} setProfile={setProfile} />} />
+            </div>
+            <div className="tb-s5">
+              <SecurityCard changedAt={pwq.data?.changedAt ?? null} onChanged={(at) => qc.setQueryData(PW_KEY, { changedAt: at })} />
+            </div>
           </div>
+        ) : null}
 
-          <div className="tb-s7">
-            <section id="notifications" className="card t">
-              <div className="ch">
-                <CardHeadTile title="Notifications" />
-                <h2 className="h3">Notifications</h2>
-                <Info label="About notifications" about="notification settings">
-                  Email is {short}’s record and stays on for anything that needs action. WhatsApp is a quick nudge on top.
-                </Info>
-              </div>
+        {sec === 'notifications' ? (
+          <div role="tabpanel" id="set-notifications" aria-labelledby="set-tab-notifications">
+            <section id="notifications" className="sx-card tb-notifcard">
+              <CardHead d={P.bell} tone="amber" title="Notifications" />
               <div className="tb-ch2">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}>
-                  <span className="circ" style={{ background: 'var(--prog-chip)' }}>
-                    <Svg d={P.mail} size={20} sw={1.8} />
-                  </span>
+                <div className="tb-chan">
+                  <Tile d={P.mail} tone="blue" />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="rt" style={{ fontWeight: 800 }}>
+                    <div className="rt" style={{ fontWeight: 500 }}>
                       Email
                     </div>
-                    <div className="mono cap">{p?.email ?? ''}</div>
+                    <div className="cap">{p?.email ?? ''}</div>
                   </div>
-                  <span className="chip" style={{ background: 'var(--prog-light)', color: 'var(--prog-text)' }}>
-                    Always on
-                  </span>
+                  <STag tone="prog">Always on</STag>
                 </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: 12,
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    ...(waOn ? {} : { background: 'var(--raised)' }),
-                  }}
-                >
-                  <span className="circ" style={{ background: 'var(--ok)' }}>
-                    <Svg d={P.wa} size={20} sw={1.8} />
-                  </span>
+                <div className="tb-chan" data-off={waOn ? undefined : ''}>
+                  <Tile d={P.waShort} tone="green" />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="rt" style={{ fontWeight: 800 }}>
+                    <div className="rt" style={{ fontWeight: 500 }}>
                       WhatsApp
                     </div>
-                    <div className="mono cap">{p?.phoneE164 ? prettyPhone(p.phoneE164) : 'Not set up'}</div>
+                    <div className="cap">{p?.phoneE164 ? prettyPhone(p.phoneE164) : 'Not set up'}</div>
                   </div>
                   {waOn ? (
                     <Tgl on label="WhatsApp is on · click to turn off" tip="WhatsApp is on · click to turn off" onClick={() => void waOff()} />
@@ -203,7 +223,7 @@ export function SettingsPage() {
                   )}
                 </div>
               </div>
-              <div className="mx" style={{ borderTop: 0, paddingTop: 12, paddingBottom: 6 }}>
+              <div className="mx mx-h">
                 <span />
                 <span className="lbl">Tell me when</span>
                 <span className="lbl" style={{ textAlign: 'center' }}>
@@ -220,17 +240,11 @@ export function SettingsPage() {
                 const wtip = !waOn ? 'Turn on WhatsApp first' : `WhatsApp ${wOn ? 'on' : 'off'} · ${r.t}`;
                 return (
                   <div key={r.k} className="mx">
-                    <span className="ic" style={{ background: r.bg }}>
-                      <Svg d={r.icon} size={14} />
-                    </span>
+                    <Tile d={r.icon} tone={r.tone} />
                     <span className="rt">{r.t}</span>
                     <span style={{ display: 'flex', justifyContent: 'center' }}>
                       {r.locked ? (
-                        <span
-                          className="chip"
-                          data-tip={`Always on · email is ${short}’s record`}
-                          style={{ background: 'var(--raised)', color: 'var(--muted)', boxShadow: 'inset 0 0 0 1px var(--border)' }}
-                        >
+                        <span className="chip tb-lock" data-tip={`Always on · email is ${short}’s record`}>
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                             <path d="M6 10.5h12v9.5H6Z M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3" />
                           </svg>
@@ -256,11 +270,9 @@ export function SettingsPage() {
                   </div>
                 );
               })}
-              <div className="mx" style={{ background: 'var(--raised)', borderRadius: '0 0 10px 10px' }}>
-                <span className="ic" style={{ background: 'var(--navy-2)' }}>
-                  <Svg d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5Z" size={14} />
-                </span>
-                <span className="rt">Quiet hours · no WhatsApp 9 pm – 8 am</span>
+              <div className="mx">
+                <Tile d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5Z" tone="violet" />
+                <span className="rt">Quiet hours · no WhatsApp 9 pm to 8 am</span>
                 <span />
                 <span style={{ display: 'flex', justifyContent: 'center' }}>
                   {(() => {
@@ -271,12 +283,13 @@ export function SettingsPage() {
                 </span>
               </div>
             </section>
+          </div>
+        ) : null}
 
-            <section id="appearance" className="card">
-              <div className="ch">
-                <CardHeadTile title="Appearance" />
-                <h2 className="h3">Appearance</h2>
-              </div>
+        {sec === 'appearance' ? (
+          <div role="tabpanel" id="set-appearance" aria-labelledby="set-tab-appearance">
+            <section id="appearance" className="sx-card">
+              <CardHead d="M12 4.5a7.5 7.5 0 1 0 0 15a7.5 7.5 0 1 0 0-15Z M12 4.5v15" title="Appearance" />
               <div className="tb-app">
                 <div>
                   <div className="lbl" style={{ marginBottom: 8 }}>
@@ -287,6 +300,7 @@ export function SettingsPage() {
                     active={thIdx}
                     label="Theme"
                     wrap={false}
+                    grid={false}
                     onPick={(i) => {
                       const v = (['light', 'dark', 'system'] as const)[i];
                       try {
@@ -312,7 +326,13 @@ export function SettingsPage() {
               </div>
             </section>
           </div>
-        </div>
+        ) : null}
+
+        {sec === 'team' ? (
+          <div role="tabpanel" id="set-team" aria-labelledby="set-tab-team">
+            <TeamSection />
+          </div>
+        ) : null}
       </main>
 
       {waDialog && p ? (
@@ -385,34 +405,11 @@ function Hero({
     }
   };
   const name = p?.name ?? '';
+  /* C-0110: a white head, no navy band. Avatar, name, email and the access chips. */
   return (
-    <section
-      style={{
-        position: 'relative',
-        borderRadius: 10,
-        padding: 18,
-        background: 'linear-gradient(115deg,var(--navy-deep,var(--navy)) 0%,var(--navy-2-deep,var(--navy-2)) 60%,var(--navy-3-deep,var(--navy-3)) 100%)',
-        color: '#fff',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-      }}
-    >
+    <div className="tb-hero">
       <div style={{ position: 'relative', flex: 'none' }} ref={wrap}>
-        <span
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 99,
-            background: 'var(--primary-fill,var(--primary))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            font: '600 22px var(--font-sans)',
-            boxShadow: '0 0 0 3px oklch(100% 0 0 / .25)',
-            overflow: 'hidden',
-          }}
-        >
+        <span className="av" style={{ width: 64, height: 64, fontSize: 20, background: 'oklch(var(--brand))', overflow: 'hidden' }}>
           {p?.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={p.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -422,28 +419,14 @@ function Hero({
         </span>
         <button
           type="button"
+          className="ibtn tb-photo"
           aria-label="Change photo"
           aria-haspopup="menu"
           aria-expanded={menu}
           data-tip="Change photo"
           onClick={() => setMenu((m) => !m)}
-          style={{
-            position: 'absolute',
-            right: -4,
-            bottom: -4,
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            border: 0,
-            background: 'var(--gold)',
-            color: 'var(--navy)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
         >
-          <Svg d="M4 8h3l2-2.5h6L17 8h3v11H4Z M12 10.5a3.2 3.2 0 1 0 0 6.4a3.2 3.2 0 1 0 0-6.4Z" size={14} />
+          <Svg d="M4 8h3l2-2.5h6L17 8h3v11H4Z M12 10.5a3.2 3.2 0 1 0 0 6.4a3.2 3.2 0 1 0 0-6.4Z" size={14} sw={1.8} />
         </button>
         {menu ? (
           <div className="tb-menu" role="menu">
@@ -484,30 +467,22 @@ function Hero({
         />
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div className="metric" style={{ fontSize: 22, color: '#fff' }}>
-          {name || <span className="sk" style={{ display: 'inline-block', width: 160, height: 20, opacity: 0.3 }} />}
+        <div style={{ font: '500 18px/1.3 var(--font-sans),sans-serif', color: 'oklch(var(--ink))' }}>
+          {name || <span className="sk" style={{ display: 'inline-block', width: 160, height: 18 }} />}
         </div>
-        <div className="mono" style={{ fontSize: 11, opacity: 0.75, marginTop: 2, overflowWrap: 'anywhere' }}>
+        <div className="cap" style={{ marginTop: 2, overflowWrap: 'anywhere' }}>
           {p?.email ?? ''}
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-          {isPrimary !== undefined ? (
-            <span className="chip" style={isPrimary ? { background: 'var(--gold)', color: 'var(--navy)' } : { background: 'oklch(100% 0 0 / .14)', color: '#fff' }}>
-              {isPrimary ? 'Primary' : 'Member'}
-            </span>
-          ) : null}
-          {company ? (
-            <span className="chip" style={{ background: 'oklch(100% 0 0 / .14)', color: '#fff' }}>
-              {company}
-            </span>
-          ) : null}
+          {isPrimary !== undefined ? <SChip tone={isPrimary ? 'prog' : 'idle'}>{isPrimary ? 'Primary' : 'Member'}</SChip> : null}
+          {company ? <STag>{company}</STag> : null}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
-function ProfileCard({ p, setProfile }: { p?: Profile; setProfile: (x: Partial<Profile>) => void }) {
+function ProfileCard({ p, setProfile, hero }: { p?: Profile; setProfile: (x: Partial<Profile>) => void; hero: ReactNode }) {
   const { toast } = usePortal();
   const qc = useQueryClient();
   const [edit, setEdit] = useState(false);
@@ -549,24 +524,22 @@ function ProfileCard({ p, setProfile }: { p?: Profile; setProfile: (x: Partial<P
   };
   const waChip = p?.whatsappOptIn
     ? p.whatsappStatus === 'verified'
-      ? { t: 'Verified', s: { background: 'var(--ok-light)', color: 'var(--ok-text)' } }
-      : { t: 'On', s: { background: 'var(--ok-light)', color: 'var(--ok-text)' } }
-    : { t: 'Off', s: { background: 'var(--raised)', color: 'var(--muted)' } };
+      ? { t: 'Verified', tone: 'ok' as const }
+      : { t: 'On', tone: 'ok' as const }
+    : { t: 'Off', tone: 'idle' as const };
   return (
-    <section id="profile" className="card">
-      <div className="ch" style={{ paddingBottom: 4 }}>
-        <CardHeadTile title="Profile" />
-        <h2 className="h3">Profile</h2>
+    <section id="profile" className="sx-card">
+      <CardHead d={P.users} tone="violet" title="Profile">
         {!edit ? (
-          <button type="button" className="btn btn-g btn-sm" style={{ marginLeft: 'auto' }} disabled={!p} onClick={start}>
+          <button type="button" className="btn btn-o btn-sm" disabled={!p} onClick={start}>
             Edit
           </button>
         ) : null}
-      </div>
-      <div style={{ padding: '4px 18px 12px' }}>
+      </CardHead>
+      {hero}
+      <div style={{ padding: '0 16px 12px' }}>
         {edit ? (
-          <form
-            style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 8, background: 'var(--raised)', margin: '4px 0 8px' }}
+          <form className="tb-form"
             onSubmit={(e) => {
               e.preventDefault();
               void save();
@@ -613,28 +586,18 @@ function ProfileCard({ p, setProfile }: { p?: Profile; setProfile: (x: Partial<P
             </div>
             <div className="kv">
               <span className="k">Email</span>
-              <span className="rt mono" style={{ fontSize: 12 }}>
-                {p?.email ?? ''}
-              </span>
-              <Info label="About changing email" about="changing my sign-in email" size={14} popStyle={{ left: 'auto', right: -8, transform: 'none' }}>
-                Changing email needs your password. Sign-in moves to the new address.
-              </Info>
+              <span className="rt">{p?.email ?? ''}</span>
+              <span />
             </div>
             <div className="kv">
               <span className="k">Phone</span>
-              <span className="rt mono" style={{ fontSize: 12 }}>
-                {p?.phone || prettyPhone(p?.phoneE164) || '—'}
-              </span>
+              <span className="rt">{p?.phone || prettyPhone(p?.phoneE164) || '—'}</span>
               <span />
             </div>
             <div className="kv">
               <span className="k">WhatsApp</span>
-              <span className="rt mono" style={{ fontSize: 12 }}>
-                {p?.phoneE164 ? prettyPhone(p.phoneE164) : 'Not set up'}
-              </span>
-              <span className="chip" style={waChip.s}>
-                {waChip.t}
-              </span>
+              <span className="rt">{p?.phoneE164 ? prettyPhone(p.phoneE164) : 'Not set up'}</span>
+              <SChip tone={waChip.tone}>{waChip.t}</SChip>
             </div>
           </>
         )}
@@ -663,7 +626,7 @@ function SecurityCard({ changedAt, onChanged }: { changedAt: string | null; onCh
   const [busy, setBusy] = useState(false);
   const s = strength(nw);
   const device = useMemo(() => thisDevice(), []);
-  const barColor = s.score >= 4 ? 'var(--ok)' : s.score === 3 ? 'var(--ok)' : s.score === 2 ? 'var(--due)' : 'var(--over)';
+  const barColor = s.score >= 3 ? 'oklch(var(--positive-mid))' : s.score === 2 ? 'oklch(var(--warning-mid))' : 'oklch(var(--danger-mid))';
   const save = async () => {
     if (!cur) return setErr('Enter your current password.');
     if (!s.len) return setErr('Use at least 8 characters.');
@@ -684,18 +647,15 @@ function SecurityCard({ changedAt, onChanged }: { changedAt: string | null; onCh
       setBusy(false);
     }
   };
-  const chipOk = (on: boolean) => (on ? { background: 'var(--ok-light)', color: 'var(--ok-text)' } : { background: 'var(--raised)', color: 'var(--muted)', boxShadow: 'inset 0 0 0 1px var(--border)' });
+  const chipOk = (on: boolean) => (on ? 'tb-req on' : 'tb-req');
   return (
-    <section id="security" className="card">
-      <div className="ch" style={{ paddingBottom: 4 }}>
-        <CardHeadTile title="Security" />
-        <h2 className="h3">Security</h2>
-      </div>
-      <div style={{ padding: '4px 18px 14px' }}>
+    <section id="security" className="sx-card">
+      <CardHead d="M12 3.5 19 6v5.5c0 4.3-3 7.6-7 9-4-1.4-7-4.7-7-9V6Z M9 12l2 2 4-4" tone="green" title="Sign-in and security" />
+      <div style={{ padding: '0 16px 12px' }}>
         <div className="kv">
           <span className="k">Password</span>
           <span>
-            <span className="mono rt">••••••••</span>
+            <span className="rt">••••••••</span>
             {changedAt ? (
               <span className="cap" style={{ marginLeft: 8, display: 'inline-block', whiteSpace: 'nowrap' }}>
                 changed {shortDate(changedAt)}
@@ -712,7 +672,7 @@ function SecurityCard({ changedAt, onChanged }: { changedAt: string | null; onCh
         </div>
         {open ? (
           <form
-            style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 8, background: 'var(--raised)', margin: '4px 0 8px' }}
+            className="tb-form"
             onSubmit={(e) => {
               e.preventDefault();
               void save();
@@ -728,32 +688,14 @@ function SecurityCard({ changedAt, onChanged }: { changedAt: string | null; onCh
             </label>
             <div style={{ display: 'flex', gap: 4 }} aria-label={`Strength: ${s.verdict ? s.verdict.toLowerCase() : 'none'}`} role="img">
               {[0, 1, 2, 3].map((i) => (
-                <span key={i} style={{ flex: 1, height: 5, borderRadius: 2, background: i < s.score ? barColor : 'var(--border)' }} />
+                <span key={i} style={{ flex: 1, height: 4, borderRadius: 3, background: i < s.score ? barColor : 'oklch(var(--line))' }} />
               ))}
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <span className="chip" style={chipOk(s.len)}>
-                {s.len ? '✓ ' : ''}8+ characters
-              </span>
-              <span className="chip" style={chipOk(s.num)}>
-                {s.num ? '✓ ' : ''}Number
-              </span>
-              <span className="chip" style={chipOk(s.sym)}>
-                {s.sym ? '✓ ' : ''}Symbol
-              </span>
-              {s.verdict ? (
-                <span
-                  className="chip"
-                  style={{
-                    background: s.score >= 4 ? 'var(--ok-chip)' : s.score === 3 ? 'var(--prog-chip)' : s.score === 2 ? 'var(--due-chip)' : 'var(--over-chip)',
-                    color: '#fff',
-                    minWidth: 116,
-                    justifyContent: 'center',
-                  }}
-                >
-                  {s.verdict}
-                </span>
-              ) : null}
+              <span className={`chip ${chipOk(s.len)}`}>{s.len ? '✓ ' : ''}8+ characters</span>
+              <span className={`chip ${chipOk(s.num)}`}>{s.num ? '✓ ' : ''}Number</span>
+              <span className={`chip ${chipOk(s.sym)}`}>{s.sym ? '✓ ' : ''}Symbol</span>
+              {s.verdict ? <SChip tone={s.score >= 3 ? 'ok' : s.score === 2 ? 'warn' : 'bad'}>{s.verdict}</SChip> : null}
             </div>
             <label className="fl">
               Confirm new password
@@ -763,7 +705,7 @@ function SecurityCard({ changedAt, onChanged }: { changedAt: string | null; onCh
                 value={cf}
                 onChange={(e) => setCf(e.target.value)}
                 autoComplete="new-password"
-                style={cf ? { borderColor: cf === nw ? 'var(--ok)' : 'var(--over)' } : undefined}
+                style={cf ? { borderColor: cf === nw ? 'oklch(var(--positive))' : 'oklch(var(--danger))' } : undefined}
               />
             </label>
             {err ? (
@@ -791,9 +733,7 @@ function SecurityCard({ changedAt, onChanged }: { changedAt: string | null; onCh
         <div className="kv">
           <span className="k">This device</span>
           <span className="rt">{device}</span>
-          <span className="chip" style={{ background: 'var(--ok-light)', color: 'var(--ok-text)' }}>
-            Active now
-          </span>
+          <SChip tone="ok">Active now</SChip>
         </div>
       </div>
     </section>
@@ -842,13 +782,11 @@ function WhatsAppDialog({
   return (
     <DialogShell onClose={onClose}>
       <div className="dlg-h">
-        <span className="ic" style={{ background: 'var(--ok)' }}>
-          <Svg d={P.waShort} />
-        </span>
-        <h2 id="wa-t" style={{ margin: 0, font: '600 16px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
+        <Tile d={P.waShort} tone="green" />
+        <h2 id="wa-t" style={{ margin: 0 }}>
           Turn on WhatsApp
         </h2>
-        <button type="button" className="ibtn" aria-label="Close" style={{ marginLeft: 'auto', border: 0 }} onClick={onClose}>
+        <button type="button" className="ibtn ghost" aria-label="Close" style={{ marginLeft: 'auto' }} onClick={onClose}>
           <Svg d={P.x} size={16} join={false} />
         </button>
       </div>
@@ -859,41 +797,28 @@ function WhatsAppDialog({
           void submit();
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="node" style={{ background: valid ? 'var(--ok-chip)' : 'var(--navy)', width: 24, height: 24, boxShadow: 'none', font: '600 11px var(--font-sans),sans-serif' }}>
-            {valid ? <Svg d={P.check} size={12} sw={3} join={false} /> : '1'}
-          </span>
-          <span style={{ fontSize: 12, fontWeight: 700 }}>Number</span>
-          <span style={{ flex: 1, height: 2, ...(valid ? { background: 'var(--ok)' } : { borderTop: '2px dashed var(--border)' }) }} />
-          <span
-            className={`node${valid ? ' pulse' : ''}`}
-            style={{
-              width: 24,
-              height: 24,
-              font: '600 11px var(--font-sans),sans-serif',
-              ...(valid ? { background: 'var(--navy)', boxShadow: 'none' } : { background: 'var(--panel)', color: 'var(--muted)', boxShadow: 'inset 0 0 0 1.5px var(--border)' }),
-            }}
-          >
-            2
-          </span>
-          <span style={{ fontSize: 12, fontWeight: 700, ...(valid ? {} : { color: 'var(--muted)' }) }}>Consent</span>
-          <span style={{ flex: 1, height: 2, borderTop: '2px dashed var(--border)' }} />
-          <span className="node" style={{ background: 'var(--panel)', color: 'var(--muted)', width: 24, height: 24, boxShadow: 'inset 0 0 0 1.5px var(--border)', font: '600 11px var(--font-sans),sans-serif' }}>
-            3
-          </span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Done</span>
+        {/* ST5 marks (R-22): done is a green square with a tick, the live step blurple, the next one dashed */}
+        <div className="tb-steps">
+          <span className={`tb-mk ${valid ? 'done' : 'now'}`}>{valid ? <Svg d={P.check} size={12} sw={3} join={false} /> : '1'}</span>
+          <span className="tb-mkl">Number</span>
+          <span className={`tb-mkb${valid ? ' done' : ''}`} />
+          <span className={`tb-mk ${valid ? 'now' : 'next'}`}>2</span>
+          <span className={`tb-mkl${valid ? '' : ' off'}`}>Consent</span>
+          <span className="tb-mkb" />
+          <span className="tb-mk next">3</span>
+          <span className="tb-mkl off">Done</span>
         </div>
         <label className="fl">
           WhatsApp number
           <span style={{ display: 'flex', gap: 8 }}>
-            <span className="inp mono" style={{ width: 70, display: 'flex', alignItems: 'center' }}>
+            <span className="inp" style={{ width: 70, display: 'flex', alignItems: 'center' }}>
               +91
             </span>
-            <input className="inp mono" inputMode="tel" value={num} onChange={(e) => setNum(e.target.value)} style={{ flex: 1 }} autoComplete="tel-national" />
+            <input className="inp" inputMode="tel" value={num} onChange={(e) => setNum(e.target.value)} style={{ flex: 1 }} autoComplete="tel-national" />
           </span>
         </label>
-        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 12.5, fontWeight: 600, lineHeight: 1.4 }}>
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ width: 16, height: 16, marginTop: 1, accentColor: 'var(--navy)' }} />
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, lineHeight: 1.4 }}>
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 0, flex: 'none' }} />
           Send me WhatsApp updates about {company}. Reply STOP to stop.
         </label>
         {err ? (

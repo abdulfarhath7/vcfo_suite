@@ -36,14 +36,93 @@ html .dtile .m{font-size:11px;letter-spacing:.06em}
   .tb-ov.tb-sheet>.dlg{width:100%!important;max-width:100vw;max-height:92dvh;border-radius:6px 16px 0 0;animation:tbsheet .26s cubic-bezier(.22,1,.36,1)}
 }
 @keyframes tbsheet{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
-/* the rule-16 bubble used by the boards (bot + bubble) */
-.tb-bot{display:flex;align-items:flex-end;justify-content:center;gap:10px}
-.tb-bot .bface{border-radius:6px;background:oklch(var(--surface-sunken));box-shadow:var(--pop),0 0 0 1px var(--border);display:grid;place-items:center;flex:none;overflow:hidden}
-.tb-bot .bface.ans{box-shadow:var(--pop),0 0 0 2px oklch(72% 0.15 160 / .6)}
-.tb-bubble{max-width:300px;background:var(--panel);border:1px solid var(--border);border-radius:6px 10px 10px 3px;padding:10px 12px;box-shadow:var(--shadow)}
 @media (prefers-reduced-motion: reduce){.tb-ov.tb-sheet>.dlg{animation:none}}
 .tb-dlgin{animation:tbdlg .2s cubic-bezier(.22,1,.36,1)}
 @keyframes tbdlg{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){.tb-dlgin{animation:none}}
 /* Settings › Reduce motion (until the shell applies data-reduce-motion portal-wide) */
 html[data-reduce-motion="true"] *,html[data-reduce-motion="true"] *::before,html[data-reduce-motion="true"] *::after{animation:none!important;transition:none!important}
+
+/* ---------------- VCFO Spectrum (C-0106, C-0110) ----------------
+   The five team boards keep their markup; these rules redraw the shared board classes
+   as Spectrum parts on every team page and in their pop-ups (R-02, R-07, R-11, R-12,
+   R-13, R-15, R-16, R-44, R-47, R-48). Colours are shared tokens only. */
+.card{border:1.5px solid oklch(var(--line));box-shadow:none;animation:none;transition:none}
+.card:hover{transform:none;box-shadow:none;border-color:oklch(var(--line))}
+.ch{min-height:52px;margin:0;padding:8px 16px;gap:10px;border-bottom:1px solid oklch(var(--line-soft))}
+.h3,.ch .h3{margin:0;font:500 15px/1.3 var(--font-sans),sans-serif;color:oklch(var(--ink))}
+.st{font:500 15px/1.3 var(--font-sans),sans-serif;color:oklch(var(--ink))}
+.rt{font-size:14px;font-weight:400;color:oklch(var(--ink))}
+.cap{font-size:12.5px;color:oklch(var(--ink-muted))}
+.lbl{font:500 11.5px var(--font-sans),sans-serif;letter-spacing:.07em;text-transform:uppercase;color:oklch(var(--ink-muted))}
+.btn{height:36px;padding:0 14px;box-sizing:border-box;border:1.5px solid transparent;font:500 14px var(--font-sans),sans-serif;transition:background-color .15s}
+.btn:active{transform:none}
+.btn-n{background:oklch(var(--brand));color:oklch(var(--on-brand));box-shadow:var(--shine)}
+.btn-n:hover{background:oklch(var(--brand-strong));color:oklch(var(--on-brand))}
+.btn-o{background:oklch(var(--surface-raised));color:oklch(var(--ink));border-color:oklch(var(--line-strong))}
+.btn-o:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink))}
+.btn-g{background:oklch(var(--ink) / .06);color:oklch(var(--ink));border-color:transparent}
+.btn-g:hover{background:oklch(var(--ink) / .1);color:oklch(var(--ink))}
+.btn-d{background:oklch(var(--danger-fill));color:#fff;box-shadow:var(--shine)}
+.btn-d:hover{color:#fff;opacity:.92}
+.btn-sm{height:30px;padding:0 10px;font-size:13px}
+.btn:disabled,.btn[aria-disabled="true"]{opacity:.5;cursor:default}
+.btn:focus-visible,.ibtn:focus-visible,.seg button:focus-visible,.tgl:focus-visible{outline:none;box-shadow:0 0 0 4px oklch(var(--focus-ring) / .24)}
+/* icon-only buttons are 6 px squares (R-12) */
+.ibtn{width:30px;height:30px;box-sizing:border-box;border:1.5px solid oklch(var(--line-strong));border-radius:6px;background:oklch(var(--surface-raised));color:oklch(var(--ink-2))}
+.ibtn:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink));border-color:oklch(var(--line-strong))}
+.ibtn:disabled{opacity:.5;cursor:default}
+.ibtn.ghost{border-color:transparent;background:none}
+.ibtn.ghost:hover{background:oklch(var(--ink) / .06)}
+.wa,.ibtn.wa,.btn.wa{background:oklch(var(--positive-soft));color:oklch(var(--positive));border-color:transparent}
+.wa:hover,.ibtn.wa:hover,.btn.wa:hover{background:oklch(var(--positive-soft));color:oklch(var(--positive));opacity:.85}
+/* switch (R-47): a 44 x 24 track with 6 px corners, blurple when on */
+.tgl{width:44px;height:24px;border-radius:6px;background:oklch(var(--line-strong))}
+.tgl::after{top:3px;left:3px;width:18px;height:18px;border-radius:4px;box-shadow:0 1px 2px oklch(var(--ink) / .2)}
+.tgl.on{background:oklch(var(--brand))}
+.tgl.on::after{transform:translateX(20px)}
+/* inputs (R-47): 40 px, 1.5 px edge, blurple edge and 4 px glow on focus */
+.inp{height:40px;padding:0 12px;border:1.5px solid oklch(var(--line-strong));font:400 14px var(--font-sans),sans-serif;background:oklch(var(--surface-raised));color:oklch(var(--ink))}
+.inp::placeholder{color:oklch(var(--ink-faint))}
+.inp:focus{outline:none;border-color:oklch(var(--brand));box-shadow:0 0 0 4px oklch(var(--focus-ring) / .24)}
+.fl{gap:6px;font-size:13px;font-weight:500;color:oklch(var(--ink-2))}
+input[type="checkbox"]{width:18px;height:18px;border-radius:4px;accent-color:oklch(var(--brand))}
+/* segmented switch for filters (R-11): quiet track, the picked option blurple with white text */
+.seg{padding:2px;border-radius:6px;background:oklch(var(--surface-sunken));box-shadow:none}
+.seg button{height:28px;padding:0 12px;border-radius:4px;font:500 13px var(--font-sans),sans-serif;color:oklch(var(--ink-2))}
+.seg button.on,.seg button[aria-selected=true]{background:oklch(var(--brand));color:#fff;box-shadow:var(--shine)}
+.seg .cnt{font-size:12px;color:oklch(var(--ink-muted))}
+.seg button.on .cnt,.seg button[aria-selected=true] .cnt{color:oklch(100% 0 0 / .8)}
+/* list rows run the full card width with a hairline between them (R-19) */
+.row{min-height:44px;box-sizing:border-box;border-top:1px solid oklch(var(--line-soft))}
+.row.unread{background:none}
+.row.unread .rt{font-weight:500}
+:where(a,button).row:hover{background:oklch(var(--surface-sunken))}
+.udot{width:8px;height:8px;border-radius:2px;background:oklch(var(--brand))}
+/* status chips (R-13): 24 px, 6 px corners, 12 px weight 500 */
+.chip{height:24px;padding:0 9px;gap:7px;border-radius:6px;font-size:12px;font-weight:500;line-height:24px}
+.chip.fx{width:104px;min-width:104px;justify-content:flex-start;overflow:hidden}
+.chip i{width:7px;height:7px;border-radius:2px;flex:none;background:currentColor}
+/* people avatars are circles (R-44) */
+.av{border-radius:50%;box-shadow:none}
+/* date tile (R-20): 44 px, tinted by urgency */
+.dtile{width:44px;height:44px}
+.dtile .d{font:500 16px/1 var(--font-sans),sans-serif}
+.dtile .m{font:500 11px var(--font-sans),sans-serif;margin-top:2px}
+/* loading shows grey shapes (R-48) */
+@keyframes tbsk{50%{opacity:.55}}
+.sk{background:oklch(var(--surface-sunken));animation:tbsk 1.4s ease-in-out infinite}
+/* dialogs float (R-02) */
+.dlg{border-radius:6px;box-shadow:var(--shadow-dialog);background:oklch(var(--surface-raised))}
+.dlg-h{min-height:56px;padding:12px 16px;box-sizing:border-box;border-bottom:1px solid oklch(var(--line-soft))}
+.dlg-h h2{font:500 16px/1.3 var(--font-sans),sans-serif!important;color:oklch(var(--ink))!important}
+.dlg-b{padding:16px}
+.dlg-f{padding:12px 16px;border-top:1px solid oklch(var(--line-soft));background:oklch(var(--surface-raised))}
+/* T1 clean rows (R-07) on the team pages: page-scoped so the base th/td rules do not win */
+.sx-t1 th{height:36px;padding:0 16px;font:500 11.5px var(--font-sans),sans-serif;letter-spacing:.07em;text-transform:uppercase;color:oklch(var(--ink-muted));border-bottom:1.5px solid oklch(var(--line))}
+.sx-t1 td{height:44px;padding:6px 16px;border-top:1px solid oklch(var(--line-soft));white-space:normal}
+.tb-tw{overflow-x:auto}
+/* a soft banner inside the card it is about (R-48) */
+.tb-note{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;border:1.5px solid oklch(var(--line));background:oklch(var(--surface-sunken));font-size:13px;color:oklch(var(--ink-2))}
+.tb-note.bad{border-color:oklch(var(--danger) / .3);background:oklch(var(--danger-soft));color:oklch(var(--danger))}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}

@@ -90,8 +90,8 @@ const S_DLG: CSSProperties = {
   maxHeight: '100%',
   overflow: 'hidden',
   background: 'var(--panel)',
-  borderRadius: 12,
-  boxShadow: 'var(--shadow-float)',
+  borderRadius: 6,
+  boxShadow: 'var(--shadow-dialog)',
   display: 'flex',
   flexDirection: 'column',
 };
@@ -236,7 +236,7 @@ export function IdsRevealDialog({
     </div>
   ) : null;
   const errLine = err ? (
-    <div role="alert" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--over-text)', fontSize: 12, fontWeight: 700, marginTop: 6 }}>
+    <div role="alert" className="ip-err">
       {ALERT}
       {err}
     </div>
@@ -251,7 +251,7 @@ export function IdsRevealDialog({
         </div>
         <div className="sh">
           <h3 id="ip-sh-t">Show {label}</h3>
-          <button className="ib" type="button" aria-label="Close" onClick={close}>
+          <button className="sx-ib edge" type="button" aria-label="Close" onClick={close}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6 6 18" />
             </svg>
@@ -259,38 +259,28 @@ export function IdsRevealDialog({
         </div>
         <div className="body">
           <form style={{ padding: '4px 14px 10px', display: 'grid', gap: 10 }} onSubmit={submit}>
-            <label style={{ font: '600 12px var(--font-sans),sans-serif' }}>
+            <label className="ip-lbl">
               Your password
-              <input
-                ref={inputRef}
-                type="password"
-                autoComplete="current-password"
-                value={pw}
-                disabled={locked}
-                onChange={(e) => setPw(e.target.value)}
-                aria-invalid={bad || undefined}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  height: 44,
-                  marginTop: 6,
-                  borderRadius: 8,
-                  border: `1px solid ${bad ? 'var(--over)' : 'var(--border)'}`,
-                  padding: '0 12px',
-                  font: '500 15px var(--font-sans),sans-serif',
-                  background: 'var(--panel)',
-                  color: 'var(--fg)',
-                }}
-              />
+              <span className={`sx-in ip-row${bad ? ' bad' : ''}`} style={{ height: 44, marginTop: 6 }}>
+                <input
+                  ref={inputRef}
+                  type="password"
+                  autoComplete="current-password"
+                  value={pw}
+                  disabled={locked}
+                  onChange={(e) => setPw(e.target.value)}
+                  aria-invalid={bad || undefined}
+                  style={{ fontSize: 16 }}
+                />
+              </span>
             </label>
             {errLine}
             {lockBox}
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{LOCK13} Shown for 60 seconds, then hidden again.</span>
-            <a href="/auth/reset-password" style={{ fontSize: 12 }}>
+            <span className="ip-note">{LOCK13} Shown for 60 seconds</span>
+            <a href="/auth/reset-password" className="ip-forgot">
               Forgot password?
             </a>
-            <button className="btn btn-n" type="submit" disabled={busy || locked || !pw}>
+            <button className="sx-btn p lg" type="submit" disabled={busy || locked || !pw}>
               {busy ? 'Checking…' : `Show ${label}`}
             </button>
           </form>
@@ -302,32 +292,24 @@ export function IdsRevealDialog({
       <div className="ip-dim" role="presentation" onClick={close} />
       <div className="ip-wrap">
         <div role="dialog" aria-modal="true" aria-labelledby="ip-t" style={S_DLG} ref={dlgRef}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ flex: 1 }}>
-              <div id="ip-t" style={{ font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
+          <div className="ip-head">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="ip-eyebrow">Show {label}</div>
+              <div id="ip-t" className="ip-title">
                 Confirm it&apos;s you
-                <InfoPopover askAbout={`showing the ${label}`}>Enter your password to show your {label}</InfoPopover>
               </div>
             </div>
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={close}
-              style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-            >
+            <button type="button" aria-label="Close" onClick={close} className="sx-ib sm">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
             </button>
           </div>
-          <form id="ip-form" style={{ padding: '16px 18px' }} onSubmit={submit}>
-            <label htmlFor="ip-pw" className="lbl" style={{ color: 'var(--navy-ink,var(--navy))' }}>
+          <form id="ip-form" style={{ padding: '16px 20px' }} onSubmit={submit}>
+            <label htmlFor="ip-pw" className="ip-lbl">
               Password
             </label>
-            <div
-              className={`ip-row${bad ? ' bad' : ''}`}
-              style={{ display: 'flex', alignItems: 'center', height: 40, borderRadius: 6, padding: '0 6px 0 12px', marginTop: 6, border: `1.5px solid ${bad ? 'var(--over)' : 'var(--border)'}` }}
-            >
+            <div className={`sx-in ip-row${bad ? ' bad' : ''}`} style={{ marginTop: 6, paddingRight: 5 }}>
               <input
                 id="ip-pw"
                 ref={inputRef}
@@ -344,27 +326,27 @@ export function IdsRevealDialog({
                 aria-label={show ? 'Hide password' : 'Show password'}
                 aria-pressed={show}
                 onClick={() => setShow((s) => !s)}
-                style={{ width: 30, height: 30, border: 0, borderRadius: 6, background: 'var(--raised)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                className="sx-ib sm"
               >
                 {show ? EYE_OFF : EYE_DUO}
               </button>
             </div>
             {errLine}
             {lockBox}
-            <a href="/auth/reset-password" style={{ fontSize: 12, display: 'inline-block', marginTop: 8 }}>
+            <a href="/auth/reset-password" className="ip-forgot" style={{ display: 'inline-block', marginTop: 10 }}>
               Forgot password?
             </a>
           </form>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--raised)' }}>
-            <span style={{ flex: 1, display: 'flex' }}>
+          <div className="ip-foot">
+            <span className="ip-note" style={{ flex: 1, display: 'flex' }}>
               <InfoPopover askAbout={`showing the ${label}`} below={false}>
                 Shown for 60 seconds
               </InfoPopover>
             </span>
-            <button type="button" className="btn btn-o" onClick={close}>
+            <button type="button" className="sx-btn" onClick={close}>
               Cancel
             </button>
-            <button type="submit" form="ip-form" className="btn btn-p" disabled={busy || locked || !pw}>
+            <button type="submit" form="ip-form" className="sx-btn p" disabled={busy || locked || !pw}>
               {busy ? 'Checking…' : 'Confirm'}
             </button>
           </div>

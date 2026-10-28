@@ -13,8 +13,9 @@ import type { PortalIncorporationModel } from '@/lib/client-portal/step-model';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import { stepHref } from '@/components/client-portal/routes';
 import { dayMonth } from './file-types';
-import { buildEntries, folderCounts, missingLabel, STATUS_STYLE, stripNo, tagStyle, tagText, tagTip, type TEntry, type TFolder, type View } from './model';
-import { BotBubble, copyText, docLink, downloadNode, PagePortal, type useZipToast } from './shared-ui';
+import { buildEntries, folderCounts, missingLabel, STATUS_TONE, stripNo, tagStyle, tagText, tagTip, type TEntry, type TFolder, type View } from './model';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { copyText, docLink, downloadNode, PagePortal, type useZipToast } from './shared-ui';
 
 const I = {
   zip: 'M6 3.5h8l4 4v13H6Z M10 3.5v2 M10 7.5v2 M10 11.5v2 M9 16h2v3H9Z',
@@ -186,33 +187,31 @@ export function DocsMobile({
       <div style={{ padding: '12px 16px 0', display: 'flex', flexDirection: 'column', gap: 10, flex: 'none' }}>
         {path.length > 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, minHeight: 44 }}>
-            <button type="button" className="tbb" aria-label={`Back to ${backLabel}`} onClick={() => setPath((p) => p.slice(0, -1))} style={{ marginLeft: -10, color: 'var(--navy-ink,var(--navy))' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <button type="button" className="tbb" aria-label={`Back to ${backLabel}`} onClick={() => setPath((p) => p.slice(0, -1))} style={{ marginLeft: -10, color: 'oklch(var(--ink))' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M14.5 6l-6 6 6 6" />
               </svg>
             </button>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="mono" style={{ fontSize: 11, color: 'var(--subtle)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {crumb}
-              </div>
-              <h1 style={{ margin: 0, font: '600 19px/1.2 var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h1>
+              <div style={{ fontSize: 12.5, color: 'oklch(var(--ink-muted))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{crumb}</div>
+              <h1 style={{ margin: 0, font: '500 18px/1.25 var(--font-sans),sans-serif', color: 'oklch(var(--ink))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h1>
             </div>
           </div>
         ) : null}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44, flex: 1, minWidth: 0, padding: '0 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--subtle)', boxSizing: 'border-box' }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <label className="sx-in" style={{ height: 44, flex: 1, minWidth: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
               <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
             </svg>
-            <input type="search" aria-label="Filter documents" placeholder="Filter documents" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: 'none', font: '500 14px var(--font-sans),sans-serif', color: 'var(--fg)' }} />
-            <span className="mono" style={{ fontSize: 11 }}>
+            <input type="search" aria-label="Filter documents" placeholder="Filter documents" value={q} onChange={(e) => setQ(e.target.value)} style={{ fontSize: 16 }} />
+            <span className="n">
               {shownCount}/{files.length}
             </span>
           </label>
           <button
             type="button"
             className="kb"
-            style={{ border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--muted)', borderRadius: 6 }}
+            style={{ border: '1.5px solid oklch(var(--line-strong))', background: 'oklch(var(--surface-raised))', borderRadius: 6, boxSizing: 'border-box' }}
             aria-label={`More actions for ${title}`}
             aria-haspopup="menu"
             onClick={() => setSheet(cur ?? 'root')}
@@ -227,7 +226,7 @@ export function DocsMobile({
       </div>
       <div style={{ flex: 1, minHeight: 0, padding: '12px 16px 16px' }}>
         {level.length ? (
-          <div key={`${cur}-${ql ? 'q' : ''}`} className="lvl" role="list" style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: 'var(--shadow)' }}>
+          <div key={`${cur}-${ql ? 'q' : ''}`} className="lvl sx-card" role="list">
             {level.map((e) => {
               if (e.kind === 'folder') {
                 const kids = under(e.id);
@@ -236,29 +235,28 @@ export function DocsMobile({
                 return (
                   <div className="row" role="listitem" key={e.id}>
                     <button type="button" className="main" onClick={() => setPath((p) => [...p, e.id])}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style={{ flex: 'none' }}>
-                        <path d="M3 18.5V5.5A1.5 1.5 0 0 1 4.5 4h4.2l2 2.4h8.8A1.5 1.5 0 0 1 21 7.9v10.6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z" fill="var(--folder,#0f2a4a)" />
-                        <path d="M3 9.2h18" stroke="oklch(100% 0 0 / .35)" strokeWidth="1.3" />
-                      </svg>
+                      <span className="fico" aria-hidden="true">
+                        <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M3 18.5V5.5A1.5 1.5 0 0 1 4.5 4h4.2l2 2.4h8.8A1.5 1.5 0 0 1 21 7.9v10.6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z" fill="currentColor" />
+                        </svg>
+                      </span>
                       <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.label}</span>
+                        <span style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.label}</span>
                         {bar && c.tot ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }} role="img" aria-label={`${stripNo(e.label)} · ${c.ok} received · ${c.rv} in review · ${c.ms} missing`}>
                             <span className="trk">
-                              <span style={{ background: 'var(--ok)', width: `${(c.ok / c.tot) * 100}%` }} />
-                              <span style={{ background: 'var(--prog)', width: `${(c.rv / c.tot) * 100}%` }} />
-                              <span style={{ background: 'var(--due)', width: `${(c.ms / c.tot) * 100}%` }} />
+                              <span style={{ background: 'oklch(var(--positive-mid))', width: `${(c.ok / c.tot) * 100}%` }} />
+                              <span style={{ background: 'oklch(var(--brand))', width: `${(c.rv / c.tot) * 100}%` }} />
+                              <span style={{ background: 'oklch(var(--warning-mid))', width: `${(c.ms / c.tot) * 100}%` }} />
                             </span>
-                            <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)' }}>
+                            <span className="mono vdm-n">
                               {c.ok}/{c.tot}
                             </span>
                           </span>
                         ) : null}
                       </span>
-                      <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)' }}>
-                        {bar ? '' : kids.length}
-                      </span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--subtle)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <span className="mono vdm-n">{bar ? '' : kids.length}</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(var(--ink-muted))" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M9 6l6 6-6 6" />
                       </svg>
                     </button>
@@ -278,21 +276,19 @@ export function DocsMobile({
                 <div className="row" role="listitem" key={e.id}>
                   <button type="button" className="main" onClick={() => (missing ? setSheet(e.id) : onOpenFile(f, filesHere))}>
                     {missing ? (
-                      <span style={{ width: 20, display: 'flex', justifyContent: 'center', flex: 'none' }}>
-                        <span style={{ width: 16, height: 16, borderRadius: 3, border: '1.5px dashed var(--due)', boxSizing: 'border-box' }} />
-                      </span>
+                      <span className="ft-miss" role="img" aria-label="Not uploaded yet" />
                     ) : (
                       <span className="ft" role="img" aria-label={tagTip(f)} style={tagStyle(f)}>
                         {tagText(f)}
                       </span>
                     )}
                     <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</span>
+                      <span style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span className="badge" style={STATUS_STYLE[f.status]}>
-                          {f.status}
+                        <span className="cp-tw">
+                          <Chip tone={STATUS_TONE[f.status]}>{f.status}</Chip>
                         </span>
-                        <span className="mono" style={{ fontSize: 11, color: missing && f.overdue ? 'var(--over-text)' : 'var(--subtle)' }}>
+                        <span className="mono vdm-n" style={missing && f.overdue ? { color: 'oklch(var(--danger))' } : undefined}>
                           {missing ? missingLabel(f) : dayMonth(f.date)}
                         </span>
                       </span>
@@ -310,13 +306,16 @@ export function DocsMobile({
             })}
           </div>
         ) : (
-          <div style={{ padding: '32px 0' }}>
+          <div className="sx-empty" role="status" style={{ margin: 0 }}>
             {ql ? (
-              <BotBubble size={40} clear={{ label: 'Clear filter', onClick: () => setQ('') }}>
-                No document matches “{q}”.
-              </BotBubble>
+              <>
+                <span>No document matches “{q.trim()}”</span>
+                <button type="button" className="sx-btn sm" onClick={() => setQ('')}>
+                  Clear filter
+                </button>
+              </>
             ) : (
-              <BotBubble size={48}>Nothing in this folder yet.</BotBubble>
+              <span>None</span>
             )}
           </div>
         )}
@@ -338,24 +337,24 @@ export function DocsMobile({
       {sheet && items.length ? (
         <PagePortal>
           <div className="vdm">
-            <button type="button" aria-label="Close menu" data-notip="" onClick={close} style={{ position: 'fixed', inset: 0, border: 0, padding: 0, background: 'oklch(20% 0.05 258 / .45)', cursor: 'default', zIndex: 2147482300 }} />
+            <button type="button" aria-label="Close menu" data-notip="" onClick={close} style={{ position: 'fixed', inset: 0, border: 0, padding: 0, background: 'oklch(var(--side) / .55)', cursor: 'default', zIndex: 2147482300 }} />
             <div
               className="vdm-sheet"
               role="menu"
               aria-label={`Actions for ${sheetTitle}`}
-              style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 2147482301, background: 'var(--panel)', borderRadius: '12px 12px 0 0', padding: '8px 0 76px', maxHeight: 'calc(100dvh - 24px)', overflow: 'auto', boxSizing: 'border-box', boxShadow: 'var(--shadow-float)' }}
+              style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 2147482301, background: 'oklch(var(--surface-raised))', borderRadius: '6px 6px 0 0', padding: '8px 0 76px', maxHeight: 'calc(100dvh - 24px)', overflow: 'auto', boxSizing: 'border-box', boxShadow: 'var(--shadow-float)' }}
             >
               <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 6 }}>
-                <span style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)' }} />
+                <span style={{ width: 40, height: 4, borderRadius: 3, background: 'oklch(var(--line-strong))' }} />
               </div>
-              <div style={{ padding: '6px 20px 10px', font: '700 14px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', borderBottom: '1px solid var(--hair)' }}>{sheetTitle}</div>
+              <div style={{ padding: '6px 20px 10px', font: '500 15px var(--font-sans),sans-serif', color: 'oklch(var(--ink))', borderBottom: '1px solid oklch(var(--line-soft))' }}>{sheetTitle}</div>
               {items.map((m) => (
                 <button key={m.label} type="button" role="menuitem" onClick={m.act}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'var(--navy-ink,var(--navy))' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'oklch(var(--ink-muted))' }}>
                     <path d={m.icon} />
                   </svg>
                   {m.label}
-                  <span className="mono" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--subtle)' }}>
+                  <span className="mono vdm-n" style={{ marginLeft: 'auto' }}>
                     {m.k ?? ''}
                   </span>
                 </button>
@@ -366,21 +365,21 @@ export function DocsMobile({
       ) : null}
 
       {t ? (
-        <div role="status" aria-live="polite" style={{ position: 'fixed', left: 16, right: 16, bottom: 'calc(var(--vp-launch-h, 76px) + 8px)', zIndex: 2147482302, padding: '10px 12px', borderRadius: 8, background: 'var(--navy)', color: '#fff', display: 'flex', flexDirection: 'column', gap: 8, boxShadow: 'var(--shadow-float)' }}>
+        <div role="status" aria-live="polite" style={{ position: 'fixed', left: 16, right: 16, bottom: 'calc(var(--vp-launch-h, 76px) + 8px)', zIndex: 2147482302, padding: '10px 12px', borderRadius: 6, background: 'oklch(var(--side))', color: 'oklch(var(--on-brand))', display: 'flex', flexDirection: 'column', gap: 8, boxShadow: 'var(--shadow-float)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ flex: 1, fontSize: 13, fontWeight: 700 }}>{t.error ?? (t.copy ? 'Link copied' : t.done ? `Downloaded ${t.name}` : `Preparing ${t.name}…`)}</span>
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{t.error ?? (t.copy ? 'Link copied' : t.done ? `Downloaded ${t.name}` : `Preparing ${t.name}…`)}</span>
             <span className="mono" style={{ fontSize: 11, opacity: 0.75 }}>
               {t.error || t.copy ? '' : t.done ? `${t.total} files` : `${t.n} of ${t.total}`}
             </span>
-            <button type="button" aria-label="Dismiss" onClick={zip.dismiss} style={{ width: 32, height: 32, border: 0, borderRadius: 6, background: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+            <button type="button" aria-label="Dismiss" onClick={zip.dismiss} style={{ width: 32, height: 32, border: 0, borderRadius: 6, background: 'none', color: 'oklch(var(--on-brand))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
             </button>
           </div>
           {!t.done ? (
-            <div style={{ height: 4, borderRadius: 2, background: 'oklch(100% 0 0 / .18)', overflow: 'hidden' }}>
-              <span style={{ display: 'block', height: '100%', background: 'var(--gold)', width: `${t.total ? (t.n / t.total) * 100 : 0}%`, transition: 'width .25s' }} />
+            <div style={{ height: 4, borderRadius: 3, background: 'oklch(100% 0 0 / .18)', overflow: 'hidden' }}>
+              <span style={{ display: 'block', height: '100%', background: 'oklch(var(--brand))', width: `${t.total ? (t.n / t.total) * 100 : 0}%`, transition: 'width .25s' }} />
             </div>
           ) : null}
         </div>

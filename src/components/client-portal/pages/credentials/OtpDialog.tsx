@@ -293,18 +293,15 @@ export function OtpDialog({
       <div className="cr-scrim" role="presentation" onClick={onClose} />
       <div className="cr-dlg" id="cr-dlg" role="dialog" aria-modal="true" aria-labelledby="cr-dlg-t" ref={dlgRef}>
         <header className="cr-dh">
-          <span className="cr-circ navy">
-            <Ic n={mode === 'edit' ? 'pencil' : 'shield-check'} s={18} />
-          </span>
           <div className="cr-dhx">
+            <div className="cr-eyebrow">
+              {verb} · {caption}
+            </div>
             <h2 id="cr-dlg-t" className="cr-dt">
               Confirm it&#39;s you
             </h2>
-            <div className="cr-cap">
-              {verb} · {caption}
-            </div>
           </div>
-          <button type="button" id="cr-otp-x" className="cr-ib" aria-label="Close" onClick={onClose} ref={closeRef}>
+          <button type="button" id="cr-otp-x" className="sx-ib sm" aria-label="Close" onClick={onClose} ref={closeRef}>
             <Ic n="x" s={14} />
           </button>
         </header>
@@ -312,8 +309,7 @@ export function OtpDialog({
           <p className="cr-msg">
             {mgr ? (
               <>
-                An OTP has been sent to your manager, <b>{mgr.name}</b>, at <span className="cr-mono">{mgr.emailMasked}</span>. Ask them for the
-                code.
+                Code sent to your manager, <b>{mgr.name}</b>, at <span className="cr-mono">{mgr.emailMasked}</span>
               </>
             ) : (
               'Sending an OTP to your manager…'

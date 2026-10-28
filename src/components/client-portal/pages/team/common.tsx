@@ -3,8 +3,10 @@
 /**
  * Shared pieces of the five "team" pages (Team, Announcements, Notifications,
  * Audit, Settings): the board dialog (`.ov.tb-ov > .dlg`, bottom sheet on phones
- * for drill-downs), the rule-16 bot bubble, the navy sliding pill, the (i)
- * pop-over and small helpers. Markup copied from the FINAL boards.
+ * for drill-downs), the segmented switch, the Spectrum card head tile, the
+ * dashed empty state, the shared status chips inside a `.cp-tw` island and
+ * small helpers. VCFO Spectrum drops the bot bubble and the (i) pop-overs
+ * (R-04, R-06).
  */
 import { sep } from '@/lib/date-format';
 import {
@@ -16,9 +18,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { usePortal } from '../../PortalProvider';
-import { VisorHead } from '../../Visor';
-import { LinkButton } from '../../LinkButton';
+import { AreaPill, Chip, OwnerChip, Tag, type ChipTone, type Regulator } from '@/components/ui/spectrum-chip';
 
 /* ------------------------------------------------------------------ */
 /* icons (paths copied from the boards)                                 */
@@ -238,108 +238,92 @@ export function Seg({
 }
 
 /* ------------------------------------------------------------------ */
-/* bot bubble (rule 16, board markup)                                   */
+/* Spectrum parts                                                       */
 /* ------------------------------------------------------------------ */
 
-function Bot({ size = 48, answered = false }: { size?: number; answered?: boolean }) {
-  const head = Math.round(size * 0.74);
+export type TileTone = 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'red' | 'brand';
+
+/** R-16: the 28 px tinted icon tile before a card title. */
+export function Tile({ d, tone = 'brand', sw = 1.8 }: { d: string; tone?: TileTone; sw?: number }) {
   return (
-    <span className={`bface${answered ? ' ans' : ''}`} aria-hidden="true" style={{ width: size, height: size }}>
-      <VisorHead style={{ width: head, height: Math.round(head * 1.26), marginTop: Math.round(head * 0.3) }} />
+    <span className="sx-tile" data-tone={tone === 'brand' ? undefined : tone} aria-hidden="true">
+      <Svg d={d} size={15} sw={sw} />
     </span>
   );
 }
 
-export function BotBubble({
-  size = 48,
-  answered = false,
-  react = false,
-  padding,
+/** R-15, R-16: a white card head, 52 px, with the icon tile, the title and the actions on the right. */
+export function CardHead({
+  d,
+  tone,
+  title,
+  id,
+  meta,
   children,
 }: {
-  size?: number;
-  answered?: boolean;
-  react?: boolean;
-  padding: string;
-  children: ReactNode;
+  d: string;
+  tone?: TileTone;
+  title: ReactNode;
+  id?: string;
+  meta?: ReactNode;
+  children?: ReactNode;
 }) {
   return (
-    <div className="tb-bot" style={{ padding }}>
-      <span className={react ? 'react' : undefined} style={{ display: 'flex', flex: 'none' }}>
-        <Bot size={size} answered={answered} />
-      </span>
-      <div role="status" className="tb-bubble">
-        {children}
-      </div>
+    <div className="sx-head">
+      <Tile d={d} tone={tone} />
+      <h2 id={id} className="sx-title">
+        {title}
+      </h2>
+      {meta ? <span className="sx-meta">{meta}</span> : null}
+      {children ? <div className="sx-right">{children}</div> : null}
     </div>
   );
 }
 
-/** "Ask VCFO why" text link (opens the chat). */
-export function AskWhy({ q }: { q: string }) {
-  const { openChat } = usePortal();
+/** R-48: an empty state is a dashed area with the action. */
+export function Empty({ children, action, role }: { children: ReactNode; action?: ReactNode; role?: string }) {
   return (
-    <LinkButton style={{ fontSize: 12 }} onClick={() => openChat(q)}>
-      Ask VCFO why
-    </LinkButton>
+    <div className="sx-empty" role={role ?? 'status'}>
+      <span>{children}</span>
+      {action ? <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>{action}</span> : null}
+    </div>
   );
 }
 
-/** (i) pop-over, board markup: `.info > button + .pop` ending with "Ask VCFO about this". */
-export function Info({
-  label,
-  children,
-  about,
-  popStyle,
-  size = 15,
-}: {
-  label: string;
-  children: ReactNode;
-  about: string;
-  popStyle?: CSSProperties;
-  size?: number;
-}) {
-  const { openChat } = usePortal();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const out = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', out);
-    document.addEventListener('keydown', key);
-    return () => {
-      document.removeEventListener('mousedown', out);
-      document.removeEventListener('keydown', key);
-    };
-  }, [open]);
+/** R-13: the shared status chip, drawn inside a Tailwind island. */
+export function SChip({ tone, children, fixed = true, dot = true }: { tone?: ChipTone; children: string; fixed?: boolean; dot?: boolean }) {
   return (
-    <span className={`info${open ? ' open' : ''}`} ref={ref}>
-      <button type="button" aria-label={label} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 11v5M12 8h.01" />
-        </svg>
-      </button>
-      <span className="pop" role="tooltip" style={popStyle}>
+    <span className="cp-tw" style={{ display: 'inline-flex', flex: 'none' }}>
+      <Chip tone={tone} fixed={fixed} dot={dot}>
         {children}
-        <LinkButton
-          className="ask w-full"
-          onClick={() => {
-            setOpen(false);
-            openChat(`Tell me about ${about}`);
-          }}
-        >
-          <span style={{ width: 16, height: 16, display: 'inline-flex', overflow: 'hidden', flex: 'none' }}>
-            <VisorHead style={{ width: 16, height: 20, marginTop: 2 }} />
-          </span>
-          Ask VCFO about this
-        </LinkButton>
-      </span>
+      </Chip>
+    </span>
+  );
+}
+
+/** A soft tag without a dot (a regulator word becomes an area pill, R-43). */
+export function STag({ tone, children }: { tone?: ChipTone; children: string }) {
+  return (
+    <span className="cp-tw" style={{ display: 'inline-flex', flex: 'none' }}>
+      <Tag tone={tone}>{children}</Tag>
+    </span>
+  );
+}
+
+/** R-14: the owner chip (client amber, SBC blue), 104 px. */
+export function SOwner({ side, label }: { side: 'sbc' | 'client'; label: string }) {
+  return (
+    <span className="cp-tw" style={{ display: 'inline-flex', flex: 'none' }}>
+      <OwnerChip owner={side} label={label} />
+    </span>
+  );
+}
+
+/** R-43: an area pill (104 px, square swatch, ink text). */
+export function SArea({ area, reg }: { area: string; reg?: Regulator }) {
+  return (
+    <span className="cp-tw" style={{ display: 'inline-flex', flex: 'none' }}>
+      <AreaPill area={area} reg={reg} />
     </span>
   );
 }
@@ -444,7 +428,7 @@ export function Dialog({
 
 export function CloseBtn({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" className="ibtn" aria-label="Close" style={{ marginLeft: 'auto', border: 0 }} onClick={onClick}>
+    <button type="button" className="ibtn ghost" aria-label="Close" style={{ marginLeft: 'auto' }} onClick={onClick}>
       <Svg d={P.x} size={16} join={false} />
     </button>
   );

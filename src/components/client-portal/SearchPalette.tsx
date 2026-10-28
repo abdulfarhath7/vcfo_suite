@@ -186,7 +186,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
           <span className="kbd">Esc</span>
         </div>
         <div className="list" role="listbox">
-          {hits.length === 0 ? <div style={{ padding: '16px 0', color: '#5a6b82' }}>Nothing found.</div> : null}
+          {hits.length === 0 ? <div style={{ padding: '16px 0', color: 'var(--muted)' }}>Nothing found.</div> : null}
           {hits.map((h, i) => {
             const head = h.group !== lastGroup ? <div className="cp-search-g">{h.group}</div> : null;
             lastGroup = h.group;
@@ -198,7 +198,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
                   className="r"
                   role="option"
                   aria-selected={i === sel}
-                  style={i === sel ? { background: 'light-dark(#f5f7fa, oklch(16.7% 0.005 258.3))' } : undefined}
+                  style={i === sel ? { background: 'oklch(var(--surface-sunken))' } : undefined}
                   onMouseEnter={() => setSel(i)}
                   onClick={(e) => {
                     e.preventDefault();

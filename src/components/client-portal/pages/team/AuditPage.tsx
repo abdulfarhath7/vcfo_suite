@@ -5,18 +5,19 @@
  * Client-safe projection from NEW `/api/client/audit` (staff by name + role
  * only, facts in plain words, 14-day summary, keyset "Load older"); CSV from
  * `/api/client/audit/export` with the current filters.
+ * VCFO Spectrum (C-0029, R-07, R-08): no bar chart; the events sit in T1 rows with the
+ * search, filters and Export in the card head. A date opens that day's drill-down.
  */
 import { sep } from '@/lib/date-format';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { AuditNode, ClientAuditEvent, ClientAuditPage } from '@/lib/client-portal/audit';
 import { usePortal } from '../../PortalProvider';
-import { LinkButton } from '../../LinkButton';
-import { AskWhy, BotBubble, CloseBtn, Dialog, P, Seg, Svg, api, avatarColor, useIsPhone, useScrollAfterClose, useSkeleton } from './common';
+import { CardHead, CloseBtn, Dialog, Empty, P, SArea, SOwner, Seg, Svg, Tile, api, avatarColor, useIsPhone, useScrollAfterClose, useSkeleton, type TileTone } from './common';
 import '../../css/team-00-contract.css';
 import '../../css/team-audit.css';
 
-/* rule 18 — set A solid glyphs (audit_redesign.dc.html:185-187) */
+/* rule 18 glyphs, drawn in the Spectrum icon tile (R-16) */
 const IC: Record<AuditNode, string> = {
   req: 'M12 5.2a3.4 3.4 0 1 1 0 6.8a3.4 3.4 0 1 1 0-6.8Z M5.8 19.2a6.2 6.2 0 0 1 12.4 0Z',
   back: 'M12 6.5v7 M12 17.3h.01',
@@ -26,27 +27,14 @@ const IC: Record<AuditNode, string> = {
   mail: 'M5 5.5h14A1.5 1.5 0 0 1 20.5 7v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17V7A1.5 1.5 0 0 1 5 5.5Z M4.5 7.5l7.5 5.5 7.5-5.5',
   team: 'M9 12.5a3.5 3.5 0 1 0 0-7a3.5 3.5 0 1 0 0 7Z M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5 M18 8v6 M15 11h6',
 };
-const BG: Record<AuditNode, string> = {
-  req: 'oklch(66% 0.17 55)',
-  back: 'var(--over-chip)',
-  up: 'oklch(55% 0.2 262)',
-  ok: 'oklch(58% 0.15 155)',
-  time: 'oklch(55% 0.2 262)',
-  mail: 'var(--sky-chip)',
-  team: 'var(--navy)',
-};
+const TONE: Record<AuditNode, TileTone> = { req: 'amber', back: 'red', up: 'brand', ok: 'green', time: 'brand', mail: 'violet', team: 'blue' };
 const CATS = ['All', 'Documents', 'Milestones', 'Team', 'Email', 'Credentials'] as const;
 
-const rc = (side: 'sbc' | 'client'): React.CSSProperties =>
-  side === 'sbc' ? { background: 'var(--navy)', color: '#fff' } : { background: 'var(--gold-soft)', color: 'var(--gold-text)' };
-
-function Node({ e, ring = true, company }: { e: ClientAuditEvent; ring?: boolean; company: string }) {
+function Node({ e, company }: { e: ClientAuditEvent; company: string }) {
   const tip = tipFor(e, company);
   return (
-    <span className="node" data-tip={tip} aria-label={tip} role="img" style={{ background: BG[e.node], ...(ring ? {} : { boxShadow: 'none' }) }}>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d={IC[e.node]} fill={e.node === 'req' ? 'currentColor' : 'none'} />
-      </svg>
+    <span className="tb-node" data-tip={tip} aria-label={tip} role="img">
+      <Tile d={IC[e.node]} tone={TONE[e.node]} sw={2.2} />
     </span>
   );
 }
@@ -89,7 +77,6 @@ export function AuditPage() {
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
-  const [hv, setHv] = useState<number | null>(null);
   const [dd, setDd] = useState<number | null>(null);
   useEffect(() => {
     const t = setTimeout(() => setSearch(text.trim().toLowerCase()), 200);
@@ -104,19 +91,7 @@ export function AuditPage() {
   const fs = (e: ClientAuditEvent) => !search || `${e.action} ${e.subject} ${e.who.name}`.toLowerCase().includes(search);
   const fc = (e: ClientAuditEvent) => tab === 0 || e.cat === CATS[tab];
   const filtered = E.filter((e) => fc(e) && fw(e) && fs(e));
-  const days = useMemo(() => {
-    const out: Array<{ day: string; items: ClientAuditEvent[] }> = [];
-    for (const e of filtered) {
-      const last = out[out.length - 1];
-      if (last && last.day === e.day) last.items.push(e);
-      else out.push({ day: e.day, items: [e] });
-    }
-    return out;
-  }, [filtered]);
-
   const bars = summary?.days ?? [];
-  const max = Math.max(1, ...bars.map((b) => b.count));
-  const scale = max * 14 > 60 ? 60 / max : 14; // keep the tallest bar inside the 64 px strip
   const exportHref = () => {
     const p = new URLSearchParams();
     if (tab) p.set('cat', CATS[tab]);
@@ -124,249 +99,150 @@ export function AuditPage() {
     if (search) p.set('q', search);
     return `/api/client/audit/export${p.toString() ? `?${p}` : ''}`;
   };
+  const filteredOn = tab !== 0 || who !== 0 || !!search;
+  const clear = () => {
+    setTab(0);
+    setWho(0);
+    setText('');
+  };
+  /** The day drill-down covers the 14 summary days that have events. */
+  const dayIndex = (day: string) => bars.findIndex((b) => b.day === day && b.count > 0);
 
   return (
     <div className="cp-team">
       <main className="pg tb-wrap tp-audit">
-        <div className="ph">
-          <div className="acts">
+        <section className="sx-card" aria-labelledby="au-t">
+          <CardHead
+            id="au-t"
+            d="M7 3.5h7l4 4v13H7Z M14 3.5v4h4 M10 13h5 M10 16.5h5"
+            tone="green"
+            title="Audit"
+            meta={summary ? `${summary.total} ${summary.total === 1 ? 'event' : 'events'} in 14 days` : undefined}
+          >
             <label className="tb-srch">
-              <span style={{ position: 'absolute', left: 10, top: 10, color: 'var(--subtle)' }}>
-                <Svg d={P.search} join={false} />
+              <span className="tb-srch-i">
+                <Svg d={P.search} join={false} size={14} sw={1.8} />
               </span>
-              <input className="inp" aria-label="Search the audit log" placeholder="Search" style={{ paddingLeft: 32 }} value={text} onChange={(e) => setText(e.target.value)} />
+              <input className="inp" aria-label="Search the audit log" placeholder="Search" value={text} onChange={(e) => setText(e.target.value)} />
             </label>
-            <a
-              className="btn btn-o"
-              href={exportHref()}
-              download
-              onClick={() => toast('Download started · audit log (CSV)')}
-            >
+            <a className="btn btn-o btn-sm" href={exportHref()} download onClick={() => toast('Download started · audit log (CSV)')}>
               <Svg d={P.download} sw={1.8} />
               Export
             </a>
-          </div>
-        </div>
-
-        <section className="card t" style={{ padding: '14px 18px 12px', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h2 className="st">Last 14 days</h2>
-            <span className="metric" style={{ fontSize: 20, marginLeft: 'auto' }}>
-              {summary?.total ?? '–'}
-            </span>
-            <span className="cap">events</span>
-          </div>
-          <div className="tb-14" style={{ position: 'relative', alignItems: 'end', height: 64 }}>
-            {bars.length === 0
-              ? Array.from({ length: 14 }, (_, i) => <span key={i} className="sk" style={{ height: 3 + ((i * 7) % 30) }} />)
-              : bars.map((b, i) => {
-                  const p = dayParts(b.day);
-                  const isToday = i === bars.length - 1;
-                  const tipText = `${p.wd} ${p.n} ${p.m} · ${b.count}${b.count === 1 ? ' event' : ' events'}`;
-                  return (
-                    <button
-                      key={b.day}
-                      type="button"
-                      className="tb-bar"
-                      disabled={b.count === 0}
-                      aria-label={tipText}
-                      onClick={() => {
-                        if (b.count) {
-                          setHv(null);
-                          setDd(i);
-                        }
-                      }}
-                      onMouseEnter={() => setHv(i)}
-                      onMouseLeave={() => setHv(null)}
-                      onFocus={() => setHv(i)}
-                      onBlur={() => setHv(null)}
-                      style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%', padding: 0, border: 0, background: 'none', cursor: 'pointer' }}
-                    >
-                      <span
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          borderRadius: '3px 3px 0 0',
-                          transformOrigin: 'bottom',
-                          animation: 'grow .9s cubic-bezier(.2,.7,.2,1) backwards',
-                          transition: 'opacity .15s',
-                          height: Math.max(b.count * scale, 3),
-                          background: !b.count ? 'var(--border)' : isToday ? 'var(--navy)' : 'var(--navy-3)',
-                          opacity: (isToday && b.count) || hv === i ? 1 : 0.55,
-                        }}
-                      />
-                    </button>
-                  );
-                })}
-            {hv !== null && bars[hv] ? (
-              <span
-                role="tooltip"
-                style={{
-                  position: 'absolute',
-                  bottom: 'calc(100% + 4px)',
-                  transform: 'translateX(-50%)',
-                  background: 'var(--navy)',
-                  color: '#fff',
-                  font: '600 12px var(--font-sans),sans-serif',
-                  padding: '4px 9px',
-                  borderRadius: 6,
-                  whiteSpace: 'nowrap',
-                  zIndex: 5,
-                  pointerEvents: 'none',
-                  boxShadow: 'var(--shadow-float)',
-                  left: `calc(${((hv + 0.5) / 14) * 100}% )`,
-                }}
-              >
-                {(() => {
-                  const p = dayParts(bars[hv].day);
-                  return `${p.wd} ${p.n} ${p.m} · ${bars[hv].count}${bars[hv].count === 1 ? ' event' : ' events'}`;
-                })()}
-                <span style={{ position: 'absolute', left: '50%', bottom: -4, width: 8, height: 8, background: 'var(--navy)', transform: 'translateX(-50%) rotate(45deg)' }} />
-              </span>
-            ) : null}
-          </div>
-          <div className="tb-14">
-            {bars.map((b, i) => (
-              <span
-                key={b.day}
-                className="mono"
-                style={{
-                  fontSize: 11,
-                  textAlign: 'center',
-                  ...(i === bars.length - 1 ? { color: 'var(--navy-ink,var(--navy))', fontWeight: 700 } : { color: 'var(--subtle)' }),
-                }}
-              >
-                {dayParts(b.day).n}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <section className="card">
+          </CardHead>
           <div className="tb-hd">
             <Seg
               tabs={CATS.map((l, i) => ({ label: l, cnt: E.filter((e) => (i === 0 || e.cat === l) && fw(e) && fs(e)).length }))}
               active={tab}
               onPick={setTab}
               label="Filter by type"
+              grid={false}
             />
-            <Seg tabs={['Everyone', 'SBC', companyShort === 'you' ? 'Client' : companyShort].map((l) => ({ label: l }))} active={who} onPick={setWho} label="Filter by who" />
+            <Seg tabs={['Everyone', 'SBC', companyShort === 'you' ? 'Client' : companyShort].map((l) => ({ label: l }))} active={who} onPick={setWho} label="Filter by who" grid={false} />
           </div>
-          <div style={{ padding: '6px 16px 16px' }}>
-            {q.isLoading ? (
-              sk ? (
-                [0, 1, 2].map((i) => (
-                  <div key={i} className="tb-ev">
-                    <span className="sk" style={{ height: 12 }} />
-                    <span className="sk" style={{ width: 28, height: 28, borderRadius: 99 }} />
-                    <span className="sk" style={{ height: 12 }} />
-                    <span className="sk" style={{ height: 12 }} />
-                    <span />
-                  </div>
-                ))
-              ) : null
-            ) : q.isError ? (
-              <BotBubble padding="40px 16px 24px">
-                <div className="rt" style={{ fontWeight: 700 }}>
-                  Could not load the audit log.
-                </div>
-                <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                  <button type="button" className="btn btn-o btn-sm" onClick={() => void q.refetch()}>
-                    Try again
+          {q.isLoading ? (
+            sk ? (
+              <div style={{ padding: '8px 16px 16px', display: 'grid', gap: 8 }} aria-hidden="true">
+                {[0, 1, 2, 3].map((i) => (
+                  <span key={i} className="sk" style={{ display: 'block', height: 44 }} />
+                ))}
+              </div>
+            ) : null
+          ) : q.isError ? (
+            <Empty
+              role="alert"
+              action={
+                <button type="button" className="btn btn-o btn-sm" onClick={() => void q.refetch()}>
+                  Try again
+                </button>
+              }
+            >
+              Could not load the audit log
+            </Empty>
+          ) : filtered.length === 0 ? (
+            <Empty
+              action={
+                E.length && filteredOn ? (
+                  <button type="button" className="btn btn-o btn-sm" onClick={clear}>
+                    Clear filters
                   </button>
-                </div>
-              </BotBubble>
-            ) : days.length === 0 ? (
-              <BotBubble padding="40px 16px 24px">
-                <div className="rt" style={{ fontWeight: 700 }}>
-                  {E.length ? 'Nothing matches these filters yet.' : 'Nothing has happened on the project yet.'}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-                  {E.length ? (
-                    <button
-                      type="button"
-                      className="btn btn-o btn-sm"
-                      onClick={() => {
-                        setTab(0);
-                        setWho(0);
-                        setText('');
-                      }}
-                    >
-                      Clear filters
-                    </button>
-                  ) : null}
-                  <AskWhy q="Why is the audit log empty?" />
-                </div>
-              </BotBubble>
-            ) : (
-              days.map((d) => {
-                const p = dayParts(d.day);
-                const isToday = d.day === today;
-                return (
-                  <div key={d.day} className="tb-day">
-                    <div className="tb-dayh">
-                      <div
-                        className="dtile"
-                        style={{
-                          width: 60,
-                          height: 62,
-                          ...(isToday ? { background: 'var(--navy)', color: '#fff' } : { background: 'var(--primary-light)', color: 'var(--navy)' }),
-                        }}
-                      >
-                        <span className="d">{p.n}</span>
-                        <span className="m">{p.m}</span>
-                      </div>
-                      <div className="cap" style={{ textAlign: 'center', width: 60, marginTop: 4, fontWeight: 700 }}>
-                        {isToday ? 'Today' : p.wd}
-                      </div>
-                    </div>
-                    <div style={{ position: 'relative' }}>
-                      {/* the rail joins a day's events; a one-event day has nothing to join */}
-                      {d.items.length > 1 ? <span className="tb-vl" /> : null}
-                      {d.items.map((e) => {
-                        const open = openId === e.id;
-                        return (
-                          <div key={e.id}>
-                            <div className="tb-ev">
-                              <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy-ink,var(--navy))' }}>
-                                {e.time}
-                              </span>
-                              <Node e={e} company={companyShort} />
-                              <div style={{ minWidth: 0 }}>
-                                <span className="rt" style={{ fontWeight: 700 }}>
-                                  {e.action}
-                                </span>
-                                <span style={{ color: 'var(--muted)' }}> · {e.subject}</span>
-                              </div>
-                              <div className="tb-evw" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                                <span
-                                  className="av"
-                                  style={{
-                                    width: 24,
-                                    height: 24,
-                                    fontSize: 11,
-                                    boxShadow: 'none',
-                                    background: e.who.side === 'client' ? 'var(--primary-fill,var(--primary))' : avatarColor(e.who.name),
-                                  }}
-                                >
-                                  {e.who.initials}
-                                </span>
-                                <span style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.who.name}</span>
-                                <span className="chip" style={rc(e.who.side)}>
-                                  {e.who.role}
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                className="ibtn"
-                                onClick={() => setOpenId(open ? null : e.id)}
-                                aria-expanded={open}
-                                aria-label="Details"
-                              >
-                                <Svg d={P.chevron} size={14} join={false} style={open ? { transform: 'rotate(180deg)' } : undefined} />
+                ) : undefined
+              }
+            >
+              {E.length ? 'No events match these filters' : 'No events yet'}
+            </Empty>
+          ) : (
+            <div className="tb-tw">
+              <table className="sx-t1 tb-events">
+                <thead>
+                  <tr>
+                    <th scope="col" style={{ width: 120 }}>
+                      When
+                    </th>
+                    <th scope="col">Event</th>
+                    <th scope="col" className="tb-d" style={{ width: 124 }}>
+                      Area
+                    </th>
+                    <th scope="col" className="tb-d" style={{ width: 260 }}>
+                      Who
+                    </th>
+                    <th scope="col" style={{ width: 48 }} aria-label="Details" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((e) => {
+                    const p = dayParts(e.day);
+                    const open = openId === e.id;
+                    const di = dayIndex(e.day);
+                    const label = `${e.day === today ? 'Today' : `${p.n} ${p.m}`} ${e.time}`;
+                    return (
+                      <Fragment key={e.id}>
+                        <tr className={open ? 'on' : undefined}>
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            {di >= 0 ? (
+                              <button type="button" className="tb-when" aria-label={`Show all events on ${p.n} ${p.m}`} onClick={() => setDd(di)}>
+                                {label}
                               </button>
-                            </div>
-                            {open ? (
+                            ) : (
+                              <span className="cap">{label}</span>
+                            )}
+                          </td>
+                          <td>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 200 }}>
+                              <Node e={e} company={companyShort} />
+                              <span style={{ minWidth: 0 }}>
+                                <span style={{ display: 'block', fontWeight: 500 }}>{e.action}</span>
+                                <span className="cap tb-sub">{e.subject}</span>
+                                <span className="cap tb-m tb-flex" style={{ marginTop: 2, gap: 4 }}>
+                                  {e.who.name} · {e.who.role}
+                                </span>
+                              </span>
+                            </span>
+                          </td>
+                          <td className="tb-d">
+                            <SArea area={e.cat} />
+                          </td>
+                          <td className="tb-d">
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                              <span
+                                className="av"
+                                style={{ width: 24, height: 24, fontSize: 10, background: e.who.side === 'client' ? 'oklch(var(--brand))' : avatarColor(e.who.name) }}
+                              >
+                                {e.who.initials}
+                              </span>
+                              <span style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{e.who.name}</span>
+                              <SOwner side={e.who.side} label={e.who.role} />
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button type="button" className="ibtn ghost" onClick={() => setOpenId(open ? null : e.id)} aria-expanded={open} aria-label="Details">
+                              <Svg d={P.chevron} size={14} join={false} style={open ? { transform: 'rotate(180deg)' } : undefined} />
+                            </button>
+                          </td>
+                        </tr>
+                        {open ? (
+                          <tr className="tb-facts-row">
+                            <td colSpan={5}>
                               <div className="tb-facts">
                                 {e.facts.length ? (
                                   e.facts.map((f) => (
@@ -389,7 +265,7 @@ export function AuditPage() {
                                   <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8 }}>
                                     <a
                                       href={e.cta.href}
-                                      className="btn btn-o btn-sm"
+                                      className="btn btn-n btn-sm"
                                       onClick={(ev) => {
                                         ev.preventDefault();
                                         go(e.cta!.href);
@@ -400,23 +276,30 @@ export function AuditPage() {
                                   </div>
                                 ) : null}
                               </div>
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            {q.hasNextPage ? (
-              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 16 }}>
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {q.hasNextPage || (filteredOn && filtered.length > 0) ? (
+            <div className="tb-foot">
+              {filteredOn && filtered.length > 0 ? (
+                <button type="button" className="btn btn-g btn-sm" onClick={clear}>
+                  Clear filters
+                </button>
+              ) : null}
+              {q.hasNextPage ? (
                 <button type="button" className="btn btn-o btn-sm" disabled={q.isFetchingNextPage} onClick={() => void q.fetchNextPage()}>
                   {q.isFetchingNextPage ? 'Loading…' : 'Load older'}
                 </button>
-              </div>
-            ) : null}
-          </div>
+              ) : null}
+            </div>
+          ) : null}
         </section>
       </main>
 
@@ -470,22 +353,13 @@ function DayDrill({
   const n = bars[dd].count;
   return (
     <Dialog labelledBy="ab-t" width={760} top sheet={sheet} onClose={() => setDd(null)} tp="tp-audit">
-      <div
-        className="dd-top"
-        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)' }}
-      >
-        <span>These events live in the Audit log</span>
-        <LinkButton style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap' }} onClick={() => onLink()}>
-          Show in the Audit log ↓
-        </LinkButton>
-      </div>
       <div className="dlg-h">
-        <div className="dtile" style={{ background: 'var(--navy)', color: '#fff' }}>
+        <div className="dtile tb-dt">
           <span className="d">{p.n}</span>
           <span className="m">{p.m}</span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 id="ab-t" style={{ margin: 0, font: '600 16px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
+          <h2 id="ab-t" style={{ margin: 0 }}>
             {day === today ? 'Today' : p.wd}, {p.n} {p.m}
           </h2>
           <div className="cap">
@@ -494,7 +368,7 @@ function DayDrill({
         </div>
         <CloseBtn onClick={() => setDd(null)} />
       </div>
-      <div style={{ padding: '12px 18px 0' }}>
+      <div style={{ padding: '12px 16px 4px' }}>
         <Seg
           tabs={active.map((i) => {
             const x = dayParts(bars[i].day);
@@ -503,13 +377,14 @@ function DayDrill({
           active={pos}
           onPick={(k) => setDd(active[k])}
           label="Pick a day"
+          grid={false}
           btnStyle={{ padding: '0 8px' }}
         />
       </div>
-      <div style={{ padding: '8px 0 10px', maxHeight: 'min(420px,52dvh)', overflow: 'auto' }}>
+      <div style={{ padding: '4px 0 8px', maxHeight: 'min(420px,52dvh)', overflow: 'auto' }}>
         {q.isLoading ? (
-          <div style={{ padding: '10px 18px' }}>
-            <div className="sk" style={{ height: 14, width: '70%' }} />
+          <div style={{ padding: '10px 16px' }} aria-hidden="true">
+            <div className="sk" style={{ height: 44 }} />
           </div>
         ) : (
           (q.data?.events ?? []).map((e) => (
@@ -517,40 +392,40 @@ function DayDrill({
               key={e.id}
               href={e.cta?.href ?? '#'}
               className="row"
-              style={{ color: 'inherit', fontWeight: 'inherit', padding: '10px 18px' }}
+              style={{ color: 'inherit', fontWeight: 'inherit', padding: '8px 16px' }}
               onClick={(ev) => {
                 ev.preventDefault();
                 onOpen(e);
               }}
             >
-              <span className="mono" style={{ width: 44, fontSize: 12, fontWeight: 600, color: 'var(--navy-ink,var(--navy))' }}>
+              <span className="cap" style={{ width: 44, flex: 'none' }}>
                 {e.time}
               </span>
-              <Node e={e} ring={false} company={company} />
+              <Node e={e} company={company} />
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="rt" style={{ fontWeight: 700 }}>
-                  {e.action}
-                </span>
-                <span style={{ color: 'var(--muted)' }}> · {e.subject}</span>
-                <span className="cap tb-m tb-flex" style={{ marginTop: 3, alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{e.who.name}</span>
-                  <span className="chip" style={rc(e.who.side)}>
-                    {e.who.role}
-                  </span>
+                <span style={{ display: 'block', fontWeight: 500 }}>{e.action}</span>
+                <span className="cap tb-sub">
+                  {e.subject}
+                  <span className="tb-m"> · {e.who.name}</span>
                 </span>
               </span>
-              <span className="tb-d" style={{ fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <span className="tb-d">
+                <SArea area={e.cat} />
+              </span>
+              <span className="tb-d" style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
                 {e.who.name}
               </span>
-              <span className="chip tb-d" style={rc(e.who.side)}>
-                {e.who.role}
-              </span>
-              <span style={{ color: 'var(--primary)', display: 'flex' }}>
-                <Svg d={P.ext} />
+              <span style={{ color: 'oklch(var(--ink-faint))', display: 'flex' }}>
+                <Svg d={P.next} size={14} sw={1.8} />
               </span>
             </a>
           ))
         )}
+      </div>
+      <div className="dlg-f">
+        <button type="button" className="btn btn-n" onClick={() => onLink()}>
+          Show in the Audit log
+        </button>
       </div>
     </Dialog>
   );

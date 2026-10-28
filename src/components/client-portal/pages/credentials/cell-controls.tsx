@@ -1,8 +1,23 @@
 import type { ReactNode } from 'react';
+import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { CRED_SRC_TIP, CRED_STATUS, type WireCell } from '@/lib/client-portal/credentials';
 import { Ic } from './Ic';
 import { fmtS } from './format';
 import type { CredentialsState } from './use-credentials-state';
+
+/** The board's status classes mapped to the shared Spectrum chip tones (R-13). */
+const TONE: Record<string, ChipTone> = { ok: 'ok', due: 'warn', over: 'bad', up: 'idle' };
+
+/** A shared status chip inside a Tailwind island (the portal resets Tailwind outside `.cp-tw`). */
+export function crChip(tone: ChipTone, text: string, fixed = false) {
+  return (
+    <span className="cp-tw cr-chipw">
+      <Chip tone={tone} fixed={fixed}>
+        {text}
+      </Chip>
+    </span>
+  );
+}
 
 /** Small render helpers for cells and toolbars: grant chips, mode buttons, copy / hide / reveal, status and source chips. */
 export function createCellControls(ctx: CredentialsState) {
@@ -19,11 +34,7 @@ export function createCellControls(ctx: CredentialsState) {
   const sessChip = (scope: string) => {
     const m = modeOf(scope);
     if (!m) return null;
-    return (
-      <span className={`cr-vis${m === 'Edit' ? ' ed' : ''}`}>
-        {m} · {fmtS(until(scope) - now)}
-      </span>
-    );
+    return crChip(m === 'Edit' ? 'warn' : 'ok', `${m} · ${fmtS(until(scope) - now)}`);
   };
   const modeBtns = (scope: string, sm: string, ids: boolean) => {
     const m = modeOf(scope);
@@ -69,7 +80,7 @@ export function createCellControls(ctx: CredentialsState) {
       <Ic n="eye-off" s={13} />
     </button>
   );
-  const cellChip = (key: string) => <span className="cr-vis">Visible · {fmtS(until(`cell:${key}`) - now)}</span>;
+  const cellChip = (key: string) => crChip('ok', `Visible · ${fmtS(until(`cell:${key}`) - now)}`);
   const revealBtn = (key: string, icon: 'lock' | 'eye') => (
     <button
       type="button"
@@ -85,12 +96,12 @@ export function createCellControls(ctx: CredentialsState) {
 
   const statusChip = (v: string) => {
     const s = CRED_STATUS.find((x) => x[0] === v);
-    return s ? <span className={`cr-chip ${s[1]}`}>{v}</span> : <span className="cr-dash">—</span>;
+    return s ? crChip(TONE[s[1]] ?? 'idle', v, s[1] !== 'up') : <span className="cr-dash">—</span>;
   };
   const plain = (v: string | null | undefined): ReactNode => {
     if (!v) return <span className="cr-dash">—</span>;
-    if (v === 'Proof pending') return <span className="cr-chip due">Proof pending</span>;
-    if (v === 'Not registered yet' || v === 'Pending COI') return <span className="cr-chip up">{v}</span>;
+    if (v === 'Proof pending') return crChip('warn', 'Proof pending', true);
+    if (v === 'Not registered yet' || v === 'Pending COI') return <span className="cr-pend">{v}</span>;
     return v;
   };
   const srcChip = (cell: WireCell | undefined) => {

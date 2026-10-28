@@ -86,8 +86,7 @@ function portalRoot(): Element {
 }
 
 const ICON_DL = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
-    <path className="duo" d="M4.5 15h15v3.5A1.5 1.5 0 0 1 18 20H6a1.5 1.5 0 0 1-1.5-1.5Z" />
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
     <path d="M4.5 15v3.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V15 M12 4.5V15 M7.8 10.8 12 15l4.2-4.2" />
   </svg>
 );
@@ -95,10 +94,11 @@ const ICON_DL = (
 const S_DLG: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  borderRadius: 12,
+  borderRadius: 6,
   overflow: 'hidden',
-  background: 'light-dark(oklch(94% 0.008 255), oklch(22% 0.008 255))',
-  boxShadow: 'var(--shadow-float)',
+  background: 'oklch(var(--surface-sunken))',
+  border: '1.5px solid oklch(var(--line))',
+  boxShadow: 'var(--shadow-dialog)',
 };
 const S_NAV: CSSProperties = {
   position: 'absolute',
@@ -106,10 +106,10 @@ const S_NAV: CSSProperties = {
   transform: 'translateY(-50%)',
   width: 40,
   height: 40,
-  borderRadius: 99,
-  border: '1px solid var(--border)',
-  background: 'var(--panel)',
-  color: 'var(--fg)',
+  borderRadius: 6,
+  border: '1.5px solid oklch(var(--line-strong))',
+  background: 'oklch(var(--surface-raised))',
+  color: 'oklch(var(--ink))',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -117,7 +117,7 @@ const S_NAV: CSSProperties = {
   boxShadow: 'var(--shadow-float)',
   zIndex: 2,
 };
-const S_ZB: CSSProperties = { width: 30, height: 30, border: 0, borderRadius: 6, background: 'transparent', color: '#fff', font: '600 16px var(--font-sans),sans-serif', cursor: 'pointer' };
+const S_ZB: CSSProperties = { width: 30, height: 30, border: 0, borderRadius: 6, background: 'transparent', color: 'oklch(var(--on-brand))', font: '500 16px var(--font-sans),sans-serif', cursor: 'pointer' };
 
 export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProps) {
   const [i, setI] = useState(() => Math.min(Math.max(index, 0), Math.max(docs.length - 1, 0)));
@@ -312,18 +312,18 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
   const pageW = `${Math.round((460 * z) / 100)}px`;
 
   const header = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--panel)', borderBottom: '1px solid var(--border)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 52, padding: '8px 12px 8px 16px', boxSizing: 'border-box', background: 'oklch(var(--surface-raised))', borderBottom: '1px solid oklch(var(--line-soft))' }}>
       <span
         className="mono"
         role="img"
         aria-label={tag === 'FILE' ? 'File' : `${tag} file`}
         data-tip={tag === 'FILE' ? 'File' : `${tag} file`}
         data-tip-below=""
-        style={{ width: 30, height: 30, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: tag.length > 3 ? 9.5 : 11, fontWeight: 700, flex: 'none', ...TAG_STYLE[tag] }}
+        style={{ width: 44, height: 24, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono),monospace', fontSize: tag.length > 3 ? 10 : 11, fontWeight: 500, flex: 'none', ...TAG_STYLE[tag] }}
       >
         {tag === 'FILE' ? '—' : tag}
       </span>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 700 }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4, fontSize: 15, fontWeight: 500, color: 'oklch(var(--ink))' }}>
         <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} id="dv-title">
           {doc.name}
         </span>
@@ -335,16 +335,11 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         ) : null}
       </div>
       {!unsupported && n > 1 ? (
-        <span className="cap" style={{ marginRight: 6, fontWeight: 600, whiteSpace: 'nowrap', flex: 'none' }} aria-live="polite">
+        <span className="cap" style={{ marginRight: 6, fontSize: 12.5, whiteSpace: 'nowrap', flex: 'none' }} aria-live="polite">
           {i + 1} of {n}
         </span>
       ) : null}
-      <LinkButton
-        className="btn btn-o hover:!text-[color:var(--primary-dark)]"
-        aria-label="Download"
-        style={{ height: 32, padding: '0 10px', fontSize: 12.5, flex: 'none' }}
-        onClick={() => void download()}
-      >
+      <LinkButton className="sx-btn sm" aria-label="Download" style={{ flex: 'none' }} onClick={() => void download()}>
         {ICON_DL}
         <span className="vh-hide-sm">Download</span>
       </LinkButton>
@@ -354,9 +349,9 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         aria-label="Close preview (Esc)"
         title="Close (Esc)"
         onClick={close}
-        style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}
+        className="sx-ib sm"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
           <path d="M6 6l12 12M18 6L6 18" />
         </svg>
       </button>
@@ -367,12 +362,12 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
     n > 1 ? (
       <>
         <button type="button" className="dv-nav" aria-label="Previous document" onClick={() => go(-1)} style={{ ...S_NAV, left: 16 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none', transform: 'rotate(180deg)' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none', transform: 'rotate(180deg)' }}>
             <path d="M9 6l6 6-6 6" />
           </svg>
         </button>
         <button type="button" className="dv-nav" aria-label="Next document" onClick={() => go(1)} style={{ ...S_NAV, right: 16 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
             <path d="M9 6l6 6-6 6" />
           </svg>
         </button>
@@ -385,9 +380,9 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
     maxWidth: '100%',
     flex: 'none',
     alignSelf: 'flex-start',
-    background: 'light-dark(#fff, oklch(13% 0 89.9))',
-    boxShadow: 'var(--shadow-float)',
-    borderRadius: 2,
+    background: 'oklch(var(--surface-raised))',
+    border: '1.5px solid oklch(var(--line))',
+    borderRadius: 4,
     boxSizing: 'border-box',
     overflow: 'hidden',
     transition: 'width .2s',
@@ -397,7 +392,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
   if (loaded.state === 'loading') {
     paper = (
       <div data-paper aria-busy="true" style={{ ...paperBase, aspectRatio: '1/1.414', padding: 'clamp(20px,5vw,48px) clamp(18px,5vw,52px)' }}>
-        <div style={{ font: '600 22px var(--font-sans),sans-serif', color: 'var(--fg)' }} className="metric">
+        <div style={{ font: '500 22px var(--font-sans),sans-serif', color: 'oklch(var(--ink))' }} className="metric">
           {doc.name.replace(/\.[a-z0-9]+$/i, '')}
         </div>
         <div className="cap" style={{ marginTop: 4 }}>
@@ -411,9 +406,9 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
   } else if (loaded.state === 'error') {
     paper = (
       <div data-paper role="alert" style={{ ...paperBase, aspectRatio: '1/1.414', padding: 'clamp(20px,5vw,48px) clamp(18px,5vw,52px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
-        <span style={{ width: 48, height: 48, borderRadius: 99, background: 'var(--over-light)', color: 'var(--over-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 20px var(--font-sans),sans-serif' }}>!</span>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--over-text)' }}>Could not open this file</div>
-        <button type="button" className="btn btn-o" onClick={() => setReload((r) => r + 1)}>
+        <span style={{ width: 40, height: 40, borderRadius: 6, background: 'oklch(var(--danger-soft))', color: 'oklch(var(--danger))', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '700 18px var(--font-sans),sans-serif' }}>!</span>
+        <div style={{ fontSize: 15, fontWeight: 500, color: 'oklch(var(--danger))' }}>Could not open this file</div>
+        <button type="button" className="sx-btn sm" onClick={() => setReload((r) => r + 1)}>
           Try again
         </button>
       </div>
@@ -443,14 +438,11 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
     <div role="dialog" aria-modal="true" aria-label="Document preview" className="dv-dlg" style={{ ...S_DLG, width: 'min(860px,calc(100% - 24px))', minHeight: 380 }}>
       {header}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center', padding: '24px 16px' }}>
-        <span style={{ width: 64, height: 64, borderRadius: 12, background: 'var(--prog-light)', color: 'var(--prog-text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
-            <path className="duo" d="M6 4.5h7.5L18 9v10.5a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1Z" />
-            <path d="M13.5 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5Z M13.5 3.5v5h5 M8.5 13h7 M8.5 16.5h4.5" />
-          </svg>
+        <span style={{ width: 44, height: 24, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono),monospace', fontSize: 11, fontWeight: 500, ...TAG_STYLE[tag] }} aria-hidden="true">
+          {tag}
         </span>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>Preview not available for this file type</div>
-        <LinkButton className="btn btn-p" onClick={() => void download()}>
+        <div style={{ fontSize: 14, fontWeight: 500 }}>Preview not available for this file type</div>
+        <LinkButton className="sx-btn sm p" onClick={() => void download()}>
           {ICON_DL}Download
         </LinkButton>
       </div>
@@ -463,11 +455,11 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         {navButtons}
         <div
           className="vh-zoom"
-          style={{ position: 'absolute', left: '50%', bottom: 16, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, padding: 4, borderRadius: 8, background: 'var(--navy)', color: '#fff', boxShadow: 'var(--shadow-float)', zIndex: 2 }}
+          style={{ position: 'absolute', left: '50%', bottom: 16, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, padding: 4, borderRadius: 6, background: 'oklch(var(--side))', color: 'oklch(var(--on-brand))', boxShadow: 'var(--shadow-float)', zIndex: 2 }}
         >
           {pages ? (
             <>
-              <span style={{ padding: '0 10px', font: '600 12px var(--font-sans),sans-serif', whiteSpace: 'nowrap' }}>
+              <span style={{ padding: '0 10px', font: '500 12.5px var(--font-sans),sans-serif', whiteSpace: 'nowrap' }}>
                 Page 1 / {pages}
               </span>
               <span style={{ width: 1, height: 18, background: 'oklch(100% 0 0 / .2)' }} />
@@ -476,7 +468,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
           <button type="button" className="dv-zb" aria-label="Zoom out" disabled={z <= ZMIN} onClick={() => setZ((v) => Math.max(ZMIN, v - ZSTEP))} style={S_ZB}>
             −
           </button>
-          <span style={{ minWidth: 48, textAlign: 'center', font: '600 12px var(--font-sans),sans-serif' }} aria-live="polite">
+          <span style={{ minWidth: 48, textAlign: 'center', font: '500 12.5px var(--font-sans),sans-serif' }} aria-live="polite">
             {z}%
           </span>
           <button type="button" className="dv-zb" aria-label="Zoom in" disabled={z >= ZMAX} onClick={() => setZ((v) => Math.min(ZMAX, v + ZSTEP))} style={S_ZB}>
@@ -488,14 +480,14 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
   );
 
   return createPortal(
-    <div className="cp-docviewer" style={{ fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
+    <div className="cp-docviewer" style={{ fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'oklch(var(--ink))', fontSize: 14 }}>
       <div
         className="vh-under-bar dv-scrim"
         role="presentation"
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) close();
         }}
-        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 'var(--vp-side-w,248px)', background: 'oklch(20% 0.05 258 / 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2147482700 }}
+        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 'var(--vp-side-w,248px)', background: 'oklch(var(--side) / .6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2147482700 }}
       >
         {body}
       </div>

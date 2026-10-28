@@ -2,14 +2,12 @@
 
 /**
  * Pieces shared by the Documents explorer (desktop/tablet), the phone board,
- * the drill-down, the upload flow and the Library pages.
+ * the drill-down, the upload flow and the Library pages. There is no bot
+ * figure (R-04): empty states are dashed areas with the action (R-48).
  */
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
-import { usePortal } from '@/components/client-portal/PortalProvider';
-import { VisorHead } from '@/components/client-portal/Visor';
-import { LinkButton } from '@/components/client-portal/LinkButton';
 import type { ClientDocumentsPayload, DocNode } from '@/lib/client-portal/documents';
 import type { ViewerDoc } from './DocViewer';
 import { fileUrl } from './model';
@@ -53,58 +51,6 @@ export function PagePortal({ children, page = 'documents' }: { children: ReactNo
   useEffect(() => setEl(document.querySelector('.cp') ?? document.body), []);
   if (!el) return null;
   return createPortal(<div className={`cp-${page}`}>{children}</div>, el);
-}
-
-/** Static bot head in a round tile (v7c_bot idle), sizes 16–56. */
-export function BotFace({ size, style }: { size: number; style?: CSSProperties }) {
-  const head = Math.round(size * 0.74);
-  return (
-    <span className="vdoc-bot" aria-hidden="true" style={{ width: size, height: size, ...style }}>
-      <VisorHead style={{ width: head, height: Math.round(head * 1.26), marginTop: Math.round(head * 0.3) }} />
-    </span>
-  );
-}
-
-/** Rule 16 bubble exactly as the Documents boards draw it. */
-export function BotBubble({
-  size = 40,
-  children,
-  clear,
-  ask = 'Ask VCFO why',
-  question,
-}: {
-  size?: number;
-  children: ReactNode;
-  clear?: { label: string; onClick: () => void };
-  ask?: string | null;
-  question?: string;
-}) {
-  const { openChat } = usePortal();
-  return (
-    <div role="status" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, justifyContent: 'center', textAlign: 'left' }}>
-      <BotFace size={size} />
-      <div className="vdoc-bubble">
-        <span style={{ font: '600 13px/1.45 var(--font-sans),sans-serif', color: 'var(--fg)' }}>{children}</span>
-        {clear ? (
-          <button
-            type="button"
-            onClick={clear.onClick}
-            style={{ marginTop: 6, padding: 0, border: 0, background: 'none', font: '600 12px var(--font-sans),sans-serif', color: 'var(--primary)', cursor: 'pointer' }}
-          >
-            {clear.label}
-          </button>
-        ) : null}
-        {ask ? (
-          <LinkButton
-            onClick={() => openChat(question ?? (typeof children === 'string' ? `${ask}: ${children}` : ask))}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}
-          >
-            {ask}
-          </LinkButton>
-        ) : null}
-      </div>
-    </div>
-  );
 }
 
 /* ---------------- ZIP / copy toast (docs board .toast) ---------------- */
@@ -196,39 +142,33 @@ export function useZipToast() {
 export function ZipToast({ t, onClose }: { t: ZipToastState; onClose: () => void }) {
   const text = t.error ? t.error : t.copy ? 'Link copied' : t.done ? `Downloaded ${t.name}` : `Preparing ${t.name}…`;
   const count = t.error || t.copy ? '' : t.done ? `${t.total} files` : `${t.n} of ${t.total}`;
+  /* R-48: a toast with a status tile (green done, red error, quiet while it works) */
+  const tile = t.done ? (t.error ? 'oklch(var(--danger-mid))' : 'oklch(var(--positive-mid))') : 'oklch(100% 0 0 / .14)';
   return (
     <div className="toast" role="status" aria-live="polite">
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {t.done ? (
-          <span style={{ width: 22, height: 22, borderRadius: 99, background: t.error ? 'var(--over-chip)' : 'var(--ok-chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d={t.error ? 'M12 7v6 M12 16.5h.01' : 'M5 12.5l4.5 4.5L19 7.5'} />
-            </svg>
-          </span>
-        ) : (
-          <span style={{ width: 22, height: 22, borderRadius: 99, background: 'oklch(100% 0 0 / .14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M6 3.5h8l4 4v13H6Z M10 3.5v2 M10 7.5v2 M10 11.5v2" />
-            </svg>
-          </span>
-        )}
-        <span style={{ flex: 1, fontSize: 12.5, fontWeight: 700 }}>{text}</span>
-        <span className="mono" style={{ fontSize: 11, opacity: 0.75 }}>
+        <span style={{ width: 22, height: 22, borderRadius: 4, background: tile, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d={t.done ? (t.error ? 'M12 7v6 M12 16.5h.01' : 'M5 12.5l4.5 4.5L19 7.5') : 'M6 3.5h8l4 4v13H6Z M10 3.5v2 M10 7.5v2 M10 11.5v2'} />
+          </svg>
+        </span>
+        <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{text}</span>
+        <span className="mono" style={{ fontSize: 12, opacity: 0.75 }}>
           {count}
         </span>
         <button
           type="button"
           aria-label="Dismiss"
           onClick={onClose}
-          style={{ width: 24, height: 24, border: 0, borderRadius: 6, background: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          style={{ width: 24, height: 24, border: 0, borderRadius: 4, background: 'none', color: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
         </button>
       </div>
       {!t.done ? (
-        <div className="tbar">
+        <div className="ztbar">
           <span style={{ width: `${t.total ? (t.n / t.total) * 100 : 0}%` }} />
         </div>
       ) : null}

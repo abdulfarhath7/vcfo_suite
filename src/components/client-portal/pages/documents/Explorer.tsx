@@ -15,6 +15,8 @@ import { usePortal } from '@/components/client-portal/PortalProvider';
 import { stepHref } from '@/components/client-portal/routes';
 import { LinkButton } from '@/components/client-portal/LinkButton';
 import { onActivate } from '@/components/client-portal/a11y';
+import { Chip, Tag } from '@/components/ui/spectrum-chip';
+import { FileBadge } from '@/components/ui/file-badge';
 import { fileTag, longDate, previewMode } from './file-types';
 import {
   buildEntries,
@@ -23,9 +25,8 @@ import {
   GLYPH,
   glyphKey,
   missingLabel,
-  missingStyle,
-  STATUS_STYLE,
   statusTip,
+  STATUS_TONE,
   stripNo,
   tagStyle,
   tagText,
@@ -34,7 +35,7 @@ import {
   type TFolder,
   type View,
 } from './model';
-import { BotBubble, copyText, docLink, downloadNode, ZipToast, type useZipToast } from './shared-ui';
+import { copyText, docLink, downloadNode, ZipToast, type useZipToast } from './shared-ui';
 import type { DrillTarget } from './Drill';
 
 const EYE = 'M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z';
@@ -45,7 +46,7 @@ const STEP = 'M4.5 4.5h15v15h-15Z M9 12h6 M12 9l3 3-3 3';
 const LINK = 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1';
 const EYE_OFF = 'M3 3l18 18 M10.6 6.1A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-2.6 3.3 M6.6 6.6C3.9 8.4 2.5 12 2.5 12s3.5 6 9.5 6a9 9 0 0 0 4.4-1.1 M9.9 9.9a3 3 0 0 0 4.2 4.2';
 
-function Ico({ d, size = 15, sw = 1.9 }: { d: string; size?: number; sw?: number }) {
+function Ico({ d, size = 15, sw = 1.6 }: { d: string; size?: number; sw?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={d} />
@@ -277,13 +278,10 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
   const sn = selEntry?.kind === 'file' ? selEntry.node : undefined;
 
   return (
-    <section
-      aria-label="Document explorer"
-      style={{ position: 'relative', flex: 1, minHeight: 0, background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: 'var(--shadow)', display: 'flex', flexDirection: 'column' }}
-    >
+    <section aria-label="Document explorer" className="sx-card vdoc-card">
       <div className="vdoc-tools">
-        <label className="vdoc-q" style={{ display: 'flex', alignItems: 'center', gap: 8, height: 32, padding: '0 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--subtle)', boxSizing: 'border-box' }}>
-          <Ico d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" size={14} sw={2} />
+        <label className="vdoc-q sx-in sm">
+          <Ico d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" size={15} sw={1.6} />
           <input
             type="search"
             aria-label="Filter documents"
@@ -293,26 +291,24 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
               setQ(e.target.value);
               setMenu('');
             }}
-            style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: 'none', font: '500 13px var(--font-sans),sans-serif', color: 'var(--fg)' }}
           />
-          <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)' }}>
+          <span className="n">
             {shownFiles}/{totalFiles}
           </span>
         </label>
-        <button type="button" className={`tg${statusOn ? ' on' : ''}`} data-tip="Show status icons" aria-pressed={statusOn} onClick={() => setStatusOn((v) => !v)}>
-          <span style={{ display: 'flex', gap: 2 }}>
-            <span style={{ width: 6, height: 6, borderRadius: 99, background: 'var(--ok)' }} />
-            <span style={{ width: 6, height: 6, borderRadius: 99, background: 'var(--prog)' }} />
-            <span style={{ width: 6, height: 6, borderRadius: 99, background: 'var(--due)' }} />
+        <button type="button" className="sx-filter" data-tip="Show status icons" aria-pressed={statusOn} onClick={() => setStatusOn((v) => !v)}>
+          <span className="vdoc-dots" aria-hidden="true">
+            <i style={{ background: 'oklch(var(--positive-mid))' }} />
+            <i style={{ background: 'oklch(var(--brand))' }} />
+            <i style={{ background: 'oklch(var(--warning-mid))' }} />
           </span>
           Status
         </button>
-        <button type="button" className={`tg${hid ? ' on' : ''}`} data-tip="Show files that were replaced" aria-pressed={hid} onClick={() => setHid((v) => !v)}>
-          <Ico d={EYE_OFF} size={14} />
+        <button type="button" className="sx-filter" data-tip="Show files that were replaced" aria-pressed={hid} onClick={() => setHid((v) => !v)}>
+          <Ico d={EYE_OFF} size={14} sw={1.6} />
           Replaced
         </button>
-        <div className="seg" role="tablist" aria-label="Arrange by" style={{ width: 190 }}>
-          <span className="thumb" style={{ width: 'calc((100% - 4px)/2)', transform: `translateX(${view * 100}%)` }} />
+        <div className="sx-seg" role="tablist" aria-label="Arrange by">
           {(['By step', 'By category'] as const).map((l, i) => (
             <button
               key={l}
@@ -331,13 +327,13 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
         </div>
         <span className="vdoc-sp" />
         <span className="vdoc-acts">
-          <button type="button" className="btn btn-o" disabled={!zipAllCount} onClick={() => void zip.startZip('all', `${company} documents`, zipAllCount)}>
-            <Ico d={DL} size={14} />
+          <button type="button" className="sx-btn sm" disabled={!zipAllCount} onClick={() => void zip.startZip('all', `${company} documents`, zipAllCount)}>
+            <Ico d={DL} size={15} sw={1.6} />
             Download all (ZIP)
           </button>
           {openReq > 0 ? (
-            <button type="button" className="btn btn-n" style={{ height: 32 }} onClick={() => onUpload()}>
-              <Ico d={UP} size={14} sw={2} />
+            <button type="button" className="sx-btn sm p" onClick={() => onUpload()}>
+              <Ico d={UP} size={15} sw={1.6} />
               Upload · {openReq} requested
             </button>
           ) : null}
@@ -374,18 +370,17 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                   {Array.from({ length: r.depth }, (_, k) => (
                     <span key={k} className="gd" />
                   ))}
-                  <span className="ico" style={{ color: 'var(--subtle)' }}>
+                  <span className="ico chev">
                     {folder ? (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transition: 'transform .15s', transform: `rotate(${r.open ? 90 : 0}deg)` }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transition: 'transform .15s', transform: `rotate(${r.open ? 90 : 0}deg)` }}>
                         <path d="M9 6l6 6-6 6" />
                       </svg>
                     ) : null}
                   </span>
                   {folder ? (
-                    <span className="ico">
-                      <svg className="fold" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M3 18.5V5.5A1.5 1.5 0 0 1 4.5 4h4.2l2 2.4h8.8A1.5 1.5 0 0 1 21 7.9v10.6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z" fill={r.open ? 'var(--folder-open)' : 'var(--folder)'} />
-                        <path className="ln" d="M3 9.2h18" stroke="oklch(100% 0 0 / .35)" strokeWidth="1.3" />
+                    <span className="fico" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 18.5V5.5A1.5 1.5 0 0 1 4.5 4h4.2l2 2.4h8.8A1.5 1.5 0 0 1 21 7.9v10.6a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z" fill="currentColor" />
                       </svg>
                     </span>
                   ) : null}
@@ -394,32 +389,30 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                       {tagText(f)}
                     </span>
                   ) : null}
-                  {missing ? (
-                    <span className="ico">
-                      <span style={{ width: 14, height: 14, borderRadius: 3, border: '1.5px dashed var(--due)', boxSizing: 'border-box' }} />
-                    </span>
-                  ) : null}
+                  {missing ? <span className="ft-miss" role="img" aria-label="Not uploaded yet" /> : null}
                   <span className="lb">{f ? f.label : folder!.label}</span>
                   {f?.stale ? (
-                    <span className="badge tip" data-tip="Bill is older than 2 months. SBC may ask for a newer one." style={{ background: 'var(--due-light)', color: 'var(--due-text)', height: 18, fontSize: 11 }}>
-                      Older than 2 months
+                    <span className="cp-tw tip vdoc-hide-sm" data-tip="Bill is older than 2 months. SBC may ask for a newer one.">
+                      <Tag tone="warn">Older than 2 months</Tag>
                     </span>
                   ) : null}
                   {f?.replaced ? (
-                    <span className="tip" role="img" data-tip="Replaced by a newer file" aria-label="Replaced by a newer file" style={{ display: 'flex' }}>
-                      <Ico d={EYE_OFF} size={14} />
+                    <span className="cp-tw tip" data-tip="Replaced by a newer file">
+                      <Tag>Replaced</Tag>
                     </span>
                   ) : null}
                   {missing ? (
-                    <span className="badge" style={missingStyle(f!)}>
-                      {missingLabel(f!)}
+                    <span className="cp-tw vdoc-hide-sm">
+                      <Chip fixed tone={f!.overdue ? 'bad' : 'warn'}>
+                        {missingLabel(f!)}
+                      </Chip>
                     </span>
                   ) : null}
                   {f && statusOn && !f.replaced && g ? (
                     <span className="sg tip" role="img" data-tip={statusTip(f, company)} aria-label={statusTip(f, company)} style={g[0]}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true">
-                        {g[1] ? <path d={g[1]} fill="#fff" /> : null}
-                        {g[2] ? <path d={g[2]} fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /> : null}
+                      <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true">
+                        {g[1] ? <path d={g[1]} fill="currentColor" /> : null}
+                        {g[2] ? <path d={g[2]} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /> : null}
                       </svg>
                     </span>
                   ) : null}
@@ -441,9 +434,9 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                     }}
                   >
                     <span className="trk">
-                      <span style={{ background: 'var(--ok)', width: `${(c.ok / c.tot) * 100}%` }} />
-                      <span style={{ background: 'var(--prog)', width: `${(c.rv / c.tot) * 100}%` }} />
-                      <span style={{ background: 'var(--due)', width: `${(c.ms / c.tot) * 100}%` }} />
+                      <span style={{ background: 'oklch(var(--positive-mid))', width: `${(c.ok / c.tot) * 100}%` }} />
+                      <span style={{ background: 'oklch(var(--brand))', width: `${(c.rv / c.tot) * 100}%` }} />
+                      <span style={{ background: 'oklch(var(--warning-mid))', width: `${(c.ms / c.tot) * 100}%` }} />
                     </span>
                     <span className="cnt">
                       {c.ok}/{c.tot}
@@ -548,7 +541,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                               onUpload(f!.requestId);
                             }}
                           >
-                            <Ico d={UP} sw={1.9} />
+                            <Ico d={UP} />
                             Upload
                           </button>
                         ) : (
@@ -604,10 +597,11 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
             );
           })}
           {rows.length === 0 ? (
-            <div style={{ padding: '40px 16px' }}>
-              <BotBubble size={40} clear={{ label: 'Clear filter', onClick: () => setQ('') }} question={`Why can't I find "${q}" in my documents?`}>
-                No document matches “{q}”.
-              </BotBubble>
+            <div className="sx-empty" role="status">
+              <span>No document matches “{q.trim()}”</span>
+              <button type="button" className="sx-btn sm" onClick={() => setQ('')}>
+                Clear filter
+              </button>
             </div>
           ) : null}
         </div>
@@ -646,27 +640,27 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
   };
   return (
     <div className="vdoc-pane">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 52, padding: '0 12px 0 16px', borderBottom: '1px solid var(--border)', flex: 'none' }}>
-        <span
-          className="ft tip"
-          role="img"
-          data-tip={missing ? 'Not uploaded yet' : tagTip(n)}
-          aria-label={missing ? 'Not uploaded yet' : tagTip(n)}
-          style={{ minWidth: 34, width: 'auto', padding: '0 4px', height: 20, lineHeight: '20px', fontSize: 11, ...(missing ? { background: 'var(--due-chip)', color: '#fff' } : tagStyle(n)) }}
-        >
-          {missing ? '—' : tagText(n)}
-        </span>
-        <span style={{ font: '600 14px var(--font-sans),sans-serif', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.label}</span>
-        <span className="badge" style={STATUS_STYLE[n.status]}>
-          {n.status}
+      <div className="vdoc-ph">
+        {missing ? (
+          <span className="ft-miss lg" role="img" aria-label="Not uploaded yet" />
+        ) : (
+          <span className="cp-tw tip" role="img" data-tip={tagTip(n)} aria-label={tagTip(n)}>
+            <FileBadge name={n.fileName} />
+          </span>
+        )}
+        <span className="vdoc-pt">{n.label}</span>
+        <span className="cp-tw">
+          <Chip fixed tone={STATUS_TONE[n.status]}>
+            {n.status}
+          </Chip>
         </span>
         {!missing ? (
           <>
-            <button type="button" className="ib tip" data-tip="Preview" aria-label="Preview" onClick={onPreview}>
-              <Ico d={EYE} />
+            <button type="button" className="sx-ib sm edge tip" data-tip="Preview" aria-label="Preview" onClick={onPreview}>
+              <Ico d={EYE} sw={1.6} />
             </button>
-            <button type="button" className="ib tip" data-tip="Download" aria-label="Download" onClick={() => downloadNode(n)}>
-              <Ico d={DL} />
+            <button type="button" className="sx-ib sm edge tip" data-tip="Download" aria-label="Download" onClick={() => downloadNode(n)}>
+              <Ico d={DL} sw={1.6} />
             </button>
           </>
         ) : null}
@@ -718,18 +712,12 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
             }}
             onDragLeave={() => setOver(false)}
             onDrop={onDrop}
-            style={{ border: '1.5px dashed var(--due)', borderRadius: 10, background: 'var(--due-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--due-text)' }}
           >
-            <span style={{ width: 40, height: 40, borderRadius: 99, background: over ? 'var(--navy)' : 'var(--due-chip)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Ico d={UP} size={18} sw={2} />
+            <span className="vdoc-drop-ic">
+              <Ico d={UP} size={18} sw={1.6} />
             </span>
-            {over ? (
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--navy-ink,var(--navy))' }}>Release to upload</span>
-            ) : (
-              <span style={{ fontSize: 13.5 }}>
-                Drop the file or <span style={{ color: 'var(--primary)' }}>browse</span>
-              </span>
-            )}
+            <b>{over ? 'Release to upload' : 'Drop the file here'}</b>
+            {over ? null : <span className="sx-btn sm p">Choose file</span>}
           </LinkButton>
         )}
       </div>
@@ -744,15 +732,11 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
         </div>
         <div className="kv">
           <span>{missing ? 'Due' : 'Date'}</span>
-          <span className="mono" style={{ fontSize: 12 }}>
-            {missing ? (n.due ? longDate(n.due) : '—') : longDate(n.date)}
-          </span>
+          <span className="mono">{missing ? (n.due ? longDate(n.due) : '—') : longDate(n.date)}</span>
         </div>
         <div className="kv">
           <span>File</span>
-          <span className="idm" style={{ fontSize: 12, fontWeight: 500 }}>
-            {n.fileName}
-          </span>
+          <span className="idm">{n.fileName}</span>
         </div>
         {n.note ? (
           <div className="kv">
@@ -765,7 +749,7 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
             <span>Verify</span>
             <a className="tip" data-tip={`Open ${n.portal.label}`} href={n.portal.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               {n.portal.label}
-              <Ico d="M8 16L16 8 M9 8h7v7" size={12} sw={2.2} />
+              <Ico d="M8 16L16 8 M9 8h7v7" size={14} sw={1.6} />
               <span className="vdoc-sr"> (opens in a new tab)</span>
             </a>
           </div>

@@ -9,8 +9,10 @@ import { useEffect, useRef, useState } from 'react';
 import type { DocNode } from '@/lib/client-portal/documents';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import { fileTag, longDate, previewMode } from './file-types';
-import { fileUrl, STATUS_STYLE } from './model';
-import { BotFace, downloadNode, PagePortal } from './shared-ui';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { FileBadge } from '@/components/ui/file-badge';
+import { fileUrl, STATUS_TONE } from './model';
+import { downloadNode, PagePortal } from './shared-ui';
 
 async function countPdfPages(blob: Blob): Promise<number> {
   try {
@@ -88,8 +90,9 @@ export function MobilePreview({ node, company, onClose }: { node: DocNode; compa
     maxWidth: '100%',
     height: 466,
     maxHeight: '100%',
-    background: 'light-dark(#fff, oklch(13% 0 89.9))',
-    boxShadow: 'var(--shadow-float)',
+    background: 'oklch(var(--surface-raised))',
+    border: '1.5px solid oklch(var(--line))',
+    borderRadius: 4,
     boxSizing: 'border-box' as const,
     overflow: 'hidden',
   };
@@ -97,41 +100,44 @@ export function MobilePreview({ node, company, onClose }: { node: DocNode; compa
   return (
     <PagePortal>
       <div className="vmp">
-        <div role="presentation" style={{ position: 'fixed', inset: 0, zIndex: 2147482600, background: 'oklch(20% 0.05 258)', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }} onClick={(e) => e.target === e.currentTarget && onClose()}>
-          <div role="dialog" aria-modal="true" aria-label={`Preview: ${node.label}`} className="sheet" style={{ position: 'absolute', left: 0, right: 0, top: 28, bottom: 0, background: 'var(--panel)', borderRadius: '12px 12px 0 0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div role="presentation" style={{ position: 'fixed', inset: 0, zIndex: 2147482600, background: 'oklch(var(--side) / .55)', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'oklch(var(--ink))', fontSize: 14 }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+          <div role="dialog" aria-modal="true" aria-label={`Preview: ${node.label}`} className="sheet" style={{ position: 'absolute', left: 0, right: 0, top: 28, bottom: 0, background: 'oklch(var(--surface-raised))', borderRadius: '6px 6px 0 0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
-              <span style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)' }} />
+              <span style={{ width: 40, height: 4, borderRadius: 3, background: 'oklch(var(--line-strong))' }} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px 10px 16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px 10px 16px', borderBottom: '1px solid oklch(var(--line-soft))' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <h2 style={{ margin: 0, font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{node.label}</h2>
-                </div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                  <span className="chip" style={STATUS_STYLE[node.status]}>
-                    {node.status}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="cp-tw">
+                    <FileBadge name={node.fileName} />
                   </span>
-                  <span className="chip" style={node.fromSbc ? { background: 'var(--gold-soft)', color: 'var(--gold-text)' } : { background: 'var(--raised)', color: 'var(--muted)' }}>
+                  <h2 style={{ margin: 0, font: '500 15px var(--font-sans),sans-serif', color: 'oklch(var(--ink))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{node.label}</h2>
+                </div>
+                <div className="cp-tw" style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center' }}>
+                  <Chip fixed tone={STATUS_TONE[node.status]}>
+                    {node.status}
+                  </Chip>
+                  <span className="vmp-from" data-sbc={node.fromSbc ? '' : undefined}>
                     {node.fromSbc ? 'SBC' : company}
                   </span>
-                  <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)', alignSelf: 'center' }}>
+                  <span className="mono" style={{ fontSize: 12.5, color: 'oklch(var(--ink-muted))' }}>
                     {longDate(node.date)}
                   </span>
                 </div>
               </div>
-              <button ref={closeRef} type="button" aria-label="Close preview" onClick={onClose} style={{ width: 44, height: 44, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', border: 0, background: 'none', cursor: 'pointer', padding: 0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+              <button ref={closeRef} type="button" aria-label="Close preview" onClick={onClose} style={{ width: 44, height: 44, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'oklch(var(--ink-2))', border: 0, background: 'none', cursor: 'pointer', padding: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
             </div>
-            <div style={{ flex: 1, minHeight: 0, background: 'light-dark(oklch(93.5% 0.01 255), oklch(22.8% 0.01 255))', padding: 16, display: 'flex', justifyContent: 'center', overflow: mode === 'docx' ? 'auto' : 'hidden' }}>
+            <div style={{ flex: 1, minHeight: 0, background: 'oklch(var(--surface-sunken))', padding: 16, display: 'flex', justifyContent: 'center', overflow: mode === 'docx' ? 'auto' : 'hidden' }}>
               {mode === 'none' || failed ? (
                 <div role={failed ? 'alert' : undefined} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
                   {failed ? (
-                    <span style={{ width: 48, height: 48, borderRadius: 99, background: 'var(--over-light)', color: 'var(--over-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 20px var(--font-sans),sans-serif' }}>!</span>
+                    <span style={{ width: 40, height: 40, borderRadius: 6, background: 'oklch(var(--danger-soft))', color: 'oklch(var(--danger))', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '700 18px var(--font-sans),sans-serif' }}>!</span>
                   ) : null}
-                  <div style={{ fontSize: 15, fontWeight: 700, color: failed ? 'var(--over-text)' : undefined }}>{failed ? 'Could not open this file' : 'Preview not available for this file type'}</div>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: failed ? 'oklch(var(--danger))' : undefined }}>{failed ? 'Could not open this file' : 'Preview not available for this file type'}</div>
                   {failed ? (
                     <button
                       type="button"
@@ -176,23 +182,22 @@ export function MobilePreview({ node, company, onClose }: { node: DocNode; compa
               )}
             </div>
             {(mode === 'pdf' || mode === 'image') && !failed ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', borderTop: '1px solid var(--hair)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', borderTop: '1px solid oklch(var(--line-soft))' }}>
                 {Array.from({ length: Math.min(pages, 10) }, (_, i) => (
-                  <span key={i} style={{ width: i === page ? 18 : 6, height: 4, borderRadius: 2, background: i === page ? 'var(--navy)' : 'var(--border)', transition: 'width .2s' }} />
+                  <span key={i} style={{ width: i === page ? 18 : 6, height: 4, borderRadius: 3, background: i === page ? 'oklch(var(--brand))' : 'oklch(var(--line-strong))', transition: 'width .2s' }} />
                 ))}
-                <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)', marginLeft: 6 }}>
+                <span className="mono" style={{ fontSize: 12.5, color: 'oklch(var(--ink-muted))', marginLeft: 6 }}>
                   Page {page + 1} of {pages}
                   {pages > 1 ? ' · swipe' : ''}
                 </span>
               </div>
             ) : null}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '10px 16px 20px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '10px 16px 20px', borderTop: '1px solid oklch(var(--line-soft))' }}>
               <button type="button" className="btn btn-o" onClick={() => (onClose(), openChat(`Tell me about ${node.label}`))}>
-                <BotFace size={18} />
                 Ask VCFO
               </button>
               <button type="button" className="btn btn-n" onClick={() => downloadNode(node)}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14" />
                 </svg>
                 Download

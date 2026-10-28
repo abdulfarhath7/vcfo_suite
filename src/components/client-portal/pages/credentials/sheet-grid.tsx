@@ -3,7 +3,6 @@ import {
   CRED_STATUS,
   KYC_ROWS,
   LABEL_COL,
-  colLetter,
   scopeLabel,
   scopesCovering,
   tabLabel,
@@ -11,7 +10,6 @@ import {
 } from '@/lib/client-portal/credentials';
 import { Ic } from './Ic';
 import { fmtS } from './format';
-import { CrBot } from './CrBot';
 import type { CredentialsState } from './use-credentials-state';
 import type { CellControls } from './cell-controls';
 
@@ -19,7 +17,6 @@ import type { CellControls } from './cell-controls';
 export function createSheetGrid(ctx: CredentialsState & CellControls) {
   const {
     toast,
-    shell,
     data,
     edit,
     editV,
@@ -357,19 +354,31 @@ export function createSheetGrid(ctx: CredentialsState & CellControls) {
     const nc = S.cols.length;
     const titles =
       S.id === 'login'
-        ? [`${companyName.toUpperCase()} - Login Credentials`, ...(bandAddress ? [`Address: ${bandAddress}`] : [])]
+        ? [`${companyName} · Login credentials`, ...(bandAddress ? [`Address: ${bandAddress}`] : [])]
         : S.id === 'kyc'
-          ? [companyName.toUpperCase()]
+          ? [companyName]
           : [];
     const em = hasEdit('page') || hasEdit(`tab:${S.id}`);
     const addRowBtn = S.id === 'login' || S.id === 'other';
     const noDirectors = S.id === 'kyc' && S.cols.length <= 1;
     return (
       <>
+        {titles.length ? (
+          <div className="cr-ttls">
+            {titles.map((t, i) => (
+              <span className={i ? 'cr-ttl2' : 'cr-ttl1'} key={i}>
+                {t}
+              </span>
+            ))}
+          </div>
+        ) : null}
         {noDirectors ? (
-          <div className="cr-empty cr-empty-kyc">
-            <CrBot />
-            <span className="cr-bub">Directors appear here after the Proposed Directors step, or use Add director.</span>
+          <div className="sx-empty cr-empty-kyc">
+            <span>No directors yet</span>
+            <button type="button" className="sx-btn sm" data-act="add-dir" onClick={() => needEdit('tab:kyc', () => void addRow('kyc'))}>
+              <Ic n="plus" s={13} />
+              Add director
+            </button>
           </div>
         ) : null}
         {/* a scrolling region must take focus so keyboard users can scroll it (WCAG 2.1.1) */}
@@ -380,24 +389,6 @@ export function createSheetGrid(ctx: CredentialsState & CellControls) {
               {tabLabel(S.id)} · {S.rows.length} rows{em ? ' · edit mode' : ' · read-only'}
             </caption>
             <thead>
-              <tr className="cr-letters">
-                <th className="cr-g" scope="col">
-                  <span className="sr">Row</span>
-                </th>
-                {S.cols.map((c, i) => (
-                  <th scope="col" className={stickyCls(S, i)} key={c.key}>
-                    {colLetter(i)}
-                  </th>
-                ))}
-              </tr>
-              {titles.map((t, i) => (
-                <tr className="cr-ttlrow" key={i}>
-                  <th className="cr-g" scope="col" />
-                  <th className={`cr-ttl${i ? ' cr-ttl2' : ''}`} colSpan={nc} scope="colgroup">
-                    <span className="cr-ttl-in">{t}</span>
-                  </th>
-                </tr>
-              ))}
               <tr className="cr-names">
                 <th className="cr-g" scope="col">
                   #
@@ -409,11 +400,14 @@ export function createSheetGrid(ctx: CredentialsState & CellControls) {
               <tbody>
                 <tr>
                   <td className="cr-empty-td" colSpan={nc + 1}>
-                    <div className="cr-empty">
-                      <CrBot />
-                      <span className="cr-bub">
-                        {S.id === 'other' ? `Nothing here yet. Add a row for any other login ${shell?.companyShort ?? 'your'}’s team uses.` : 'Nothing here yet.'}
-                      </span>
+                    <div className="sx-empty">
+                      <span>No rows yet</span>
+                      {addRowBtn ? (
+                        <button type="button" className="sx-btn sm" data-act="add-row" onClick={() => needEdit(`tab:${S.id}`, () => void addRow(S.id))}>
+                          <Ic n="plus" s={13} />
+                          Add row
+                        </button>
+                      ) : null}
                     </div>
                   </td>
                 </tr>
@@ -440,9 +434,9 @@ export function createSheetGrid(ctx: CredentialsState & CellControls) {
             )}
           </table>
         </div>
-        {addRowBtn ? (
+        {addRowBtn && S.rows.length > 0 ? (
           <div className="cr-addrow">
-            <button type="button" className="cr-btn cr-btn-sm" data-act="add-row" onClick={() => needEdit(`tab:${S.id}`, () => void addRow(S.id))}>
+            <button type="button" className="sx-btn sm" data-act="add-row" onClick={() => needEdit(`tab:${S.id}`, () => void addRow(S.id))}>
               <Ic n="plus" s={13} />
               Add row
             </button>

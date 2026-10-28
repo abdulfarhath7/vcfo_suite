@@ -133,8 +133,6 @@ function DocumentsInner() {
   } else if (!data || data.nodes.length === 0) {
     body = (
       <DocsEmpty
-        company={company}
-        phases={model.phases.slice(0, 3).map((p) => p.title)}
         canUpload={!!data?.openRequests.length}
         onUpload={() => openUpload()}
         onOpenInc={() => go('incorporation')}

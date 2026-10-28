@@ -6,13 +6,17 @@
  * requests) · drop zone with the dragging state · real progress bar with
  * cancel · refused-file error with Try again · SBC's re-upload note.
  * The file goes to POST /api/client/documents/requests/[id]/upload.
+ * VCFO Spectrum (prototype src/components/cards/UploadDialog.tsx): a 52 px head,
+ * the requests as one radio list with due chips, a dashed drop zone, file rows
+ * with R-26 badges, Cancel and a blurple Upload in the footer.
  */
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import type { OpenRequest } from '@/lib/client-portal/documents';
 import { validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { FileBadge } from '@/components/ui/file-badge';
 import { PagePortal } from './shared-ui';
-import { fileTag, TAG_STYLE } from './file-types';
-import { missingLabel, missingStyle } from './model';
+import { missingLabel } from './model';
 
 const UP_ICON = 'M12 15V4 M7.5 8.5 12 4l4.5 4.5 M5 19.5h14';
 
@@ -138,7 +142,6 @@ export function UploadDialog({
   };
 
   const uploading = pct != null;
-  const tag = file ? fileTag(file.name, file.type) : 'FILE';
 
   return (
     <PagePortal>
@@ -150,52 +153,36 @@ export function UploadDialog({
             if (e.target === e.currentTarget && !uploading) close();
           }}
         >
-          <div className="vup-dlg" role="dialog" aria-modal="true" aria-label="Upload a document" style={{ background: 'var(--panel)', borderRadius: 12, border: '1px solid var(--border)', boxShadow: 'var(--shadow-float)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
-              <h2 style={{ margin: 0, font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', flex: 1 }}>Upload a document</h2>
-              <button ref={closeRef} type="button" aria-label="Close" onClick={close} style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+          <div className="vup-dlg" role="dialog" aria-modal="true" aria-labelledby="vup-title">
+            <div className="vup-hd">
+              <h2 id="vup-title">Upload a document</h2>
+              <button ref={closeRef} type="button" className="sx-ib sm" aria-label="Close" onClick={close}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
             </div>
-            <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="vup-bd">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span id="up-for" style={{ fontSize: 12, fontWeight: 700 }}>
+                <span id="up-for" className="vup-lbl">
                   For
                 </span>
-                <div className="vup-for" role="radiogroup" aria-labelledby="up-for" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 8 }}>
+                <div className="vup-for" role="radiogroup" aria-labelledby="up-for">
                   {shown.map((r) => {
                     const on = r.id === sel;
                     return (
-                      <button
-                        key={r.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={on}
-                        disabled={uploading}
-                        onClick={() => setSel(r.id)}
-                        style={{
-                          textAlign: 'left',
-                          padding: '10px 12px',
-                          borderRadius: 8,
-                          border: on ? '2px solid var(--navy)' : '1px solid var(--border)',
-                          background: on ? 'var(--primary-light)' : 'var(--panel)',
-                          font: '600 12.5px var(--font-sans),sans-serif',
-                          color: on ? 'var(--navy-ink,var(--navy))' : 'var(--fg)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {r.label}
-                        <span style={{ display: 'block', marginTop: 4 }}>
+                      <button key={r.id} type="button" role="radio" aria-checked={on} disabled={uploading} onClick={() => setSel(r.id)}>
+                        <span className="vup-radio" aria-hidden="true" />
+                        <span className="vup-rl">{r.label}</span>
+                        <span className="cp-tw">
                           {r.reupload ? (
-                            <span className="chip" style={{ background: 'var(--over-chip)', color: '#fff' }}>
+                            <Chip fixed tone="bad">
                               Re-upload
-                            </span>
+                            </Chip>
                           ) : (
-                            <span className="chip" style={{ ...missingStyle(r), minWidth: r.overdue ? undefined : 116, justifyContent: 'center' }}>
+                            <Chip fixed tone={r.overdue ? 'bad' : 'warn'}>
                               {missingLabel(r)}
-                            </span>
+                            </Chip>
                           )}
                         </span>
                       </button>
@@ -204,25 +191,22 @@ export function UploadDialog({
                 </div>
               </div>
               {req?.note ? (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px', borderRadius: 6, background: 'var(--raised)', fontSize: 12 }}>
-                  <span className="mono" role="img" aria-label={req.noteBy ?? 'SBC'} data-tip={req.noteBy ?? 'SBC'} style={{ fontSize: 10, fontWeight: 700, padding: '2px 5px', borderRadius: 4, background: 'var(--navy)', color: '#fff' }}>
+                <div className="vup-note">
+                  <span className="vup-ini" role="img" aria-label={req.noteBy ?? 'SBC'} data-tip={req.noteBy ?? 'SBC'}>
                     {initials(req.noteBy)}
                   </span>
                   <span>“{req.note}”</span>
                 </div>
               ) : null}
               {error ? (
-                <div role="alert" style={{ border: '1.5px solid oklch(57% 0.2 22 / .5)', borderRadius: 8, background: 'var(--over-light)', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px' }}>
-                  <span style={{ width: 28, height: 28, borderRadius: 99, background: 'var(--over-chip)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
-                      <path d="M12 7v6 M12 16.5h.01" />
-                    </svg>
-                  </span>
-                  <span style={{ flex: 1, fontSize: 12.5, color: 'var(--over-text)', fontWeight: 600, overflowWrap: 'anywhere' }}>{error}</span>
+                <div role="alert" className="vup-file err">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
+                    <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z M12 9v4 M12 17h.01" />
+                  </svg>
+                  <span className="vup-fn">{error}</span>
                   <button
                     type="button"
-                    className="btn btn-o"
-                    style={{ height: 28, fontSize: 12 }}
+                    className="sx-btn sm"
                     onClick={() => {
                       setError(null);
                       setFile(null);
@@ -233,24 +217,24 @@ export function UploadDialog({
                   </button>
                 </div>
               ) : uploading && file ? (
-                <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="mono" style={{ fontSize: 9, fontWeight: 600, padding: '1px 5px', borderRadius: 4, ...TAG_STYLE[tag] }}>
-                      {tag}
+                <div className="vup-file up">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span className="cp-tw">
+                      <FileBadge name={file.name} />
                     </span>
-                    <span style={{ flex: 1, fontSize: 12.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                    <span className="vup-fn idm">{file.name}</span>
                     <span className="mono cap">{pct}%</span>
                     <button
                       type="button"
+                      className="sx-ib sm"
                       aria-label="Cancel upload"
                       onClick={() => {
                         xhr.current?.abort();
                         xhr.current = null;
                         setPct(null);
                       }}
-                      style={{ width: 24, height: 24, borderRadius: 6, border: 0, background: 'none', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
                         <path d="M6 6l12 12M18 6L6 18" />
                       </svg>
                     </button>
@@ -279,25 +263,26 @@ export function UploadDialog({
                   onDragLeave={() => setOver(false)}
                   onDrop={onDrop}
                 >
-                  <span style={{ width: 44, height: 44, borderRadius: 99, background: 'var(--navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d={UP_ICON} />
-                    </svg>
-                  </span>
+                  <svg className="vup-up" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d={UP_ICON} />
+                  </svg>
                   {over ? (
-                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy-ink,var(--navy))' }}>Release to upload</span>
+                    <span className="vup-dt">Release to upload</span>
                   ) : file ? (
-                    <span style={{ fontSize: 14, fontWeight: 700, overflowWrap: 'anywhere', textAlign: 'center' }}>{file.name}</span>
+                    <span className="vup-dt" style={{ overflowWrap: 'anywhere' }}>
+                      <span className="cp-tw" style={{ marginRight: 8, verticalAlign: 'middle' }}>
+                        <FileBadge name={file.name} />
+                      </span>
+                      {file.name}
+                    </span>
                   ) : (
-                    <span style={{ fontSize: 14, fontWeight: 700 }}>
+                    <span className="vup-dt">
                       {req?.reupload ? 'Drop the new file here or ' : 'Drop files here or '}
                       {/* link-styled word only: the whole drop zone around it is the button that opens the picker */}
-                      <span className="font-bold text-[color:var(--primary)] hover:text-[color:var(--primary-dark)]">browse</span>
+                      <span className="vup-browse">browse</span>
                     </span>
                   )}
-                  <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)' }}>
-                    {caption}
-                  </span>
+                  <span className="vup-cap">{caption}</span>
                 </div>
               )}
               <input
@@ -312,11 +297,14 @@ export function UploadDialog({
                 }}
               />
             </div>
-            <div className="vup-foot" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--raised)' }}>
-              <button type="button" className="btn btn-o" onClick={close}>
+            <div className="vup-foot">
+              <button type="button" className="sx-btn" onClick={close}>
                 Cancel
               </button>
-              <button type="button" className="btn btn-n" disabled={!file || !req || uploading || !!error} onClick={() => start()}>
+              <button type="button" className="sx-btn p" disabled={!file || !req || uploading || !!error} onClick={() => start()}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d={UP_ICON} />
+                </svg>
                 Upload
               </button>
             </div>

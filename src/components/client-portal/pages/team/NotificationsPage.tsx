@@ -5,6 +5,8 @@
  * Rows: `/api/client/notifications` (own history incl. cleared); read / unread /
  * read-all through the same route (Undo restores exactly the ids it changed).
  * Channel card: `/api/account/profile` (WhatsApp opt-in).
+ * VCFO Spectrum: type tiles and status chips, "This month" as a total, one stacked
+ * bar and rows that open the drill-down (R-25), a dashed empty state (R-48).
  */
 import { sep } from '@/lib/date-format';
 import { useMemo, useState } from 'react';
@@ -12,7 +14,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import { usePortal, PORTAL_SHELL_KEY } from '../../PortalProvider';
 import { portalHref } from '../../routes';
-import { BotBubble, CloseBtn, Dialog, P, Seg, Svg, api, useIsPhone, useScrollAfterClose, useSkeleton } from './common';
+import type { ChipTone } from '@/components/ui/spectrum-chip';
+import { CardHead, CloseBtn, Dialog, Empty, P, SChip, STag, Seg, Svg, Tile, api, useIsPhone, useScrollAfterClose, useSkeleton, type TileTone } from './common';
 import '../../css/team-00-contract.css';
 import '../../css/team-notif.css';
 
@@ -22,62 +25,44 @@ export const PROFILE_KEY = ['client-portal', 'profile'] as const;
 type Ty = 'doc' | 'back' | 'step' | 'time' | 'deadline' | 'mail' | 'ann' | 'team';
 type Grp = 'Documents' | 'Steps' | 'Deadlines' | 'Messages';
 
-/* OPTION 4 icon set (notif_redesign.dc.html:186-200) */
-const K = {
+/* VCFO Spectrum: each type shows the shared 28 px icon tile (R-16) and a status chip (R-13). */
+const K: Record<'document' | 'step' | 'deadline' | 'email' | 'announcement' | 'team', { p1: string; tone: TileTone }> = {
   document: {
     p1: 'M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z M14 2v5a1 1 0 0 0 1 1h5 M10 9H8 M16 13H8 M16 17H8',
-    col: 'oklch(54.6% 0.215 263)',
-    tint: 'light-dark(oklch(96.6% 0.02 260), oklch(24% 0.058 260))',
+    tone: 'blue',
   },
-  step: { p1: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M16 9l-5.5 5.5L8 12', col: 'oklch(56% 0.13 168)', tint: 'light-dark(oklch(96% 0.028 170), oklch(24.4% 0.077 170))' },
+  step: { p1: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M16 9l-5.5 5.5L8 12', tone: 'green' },
   deadline: {
     p1: 'M16 14v2.2l1.6 1 M16 2v3 M21 7.338V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h2.338 M3 9h5.859 M8 2v3 M10 16a6 6 0 1 0 12 0a6 6 0 1 0 -12 0',
-    col: 'oklch(55% 0.17 42)',
-    tint: 'light-dark(oklch(96.8% 0.04 55), oklch(23.9% 0.106 55))',
+    tone: 'amber',
   },
-  email: {
-    p1: 'M22 7l-8.991 5.727a2 2 0 0 1-2.009 0L2 7 M4 4H20a2 2 0 0 1 2 2V18a2 2 0 0 1 -2 2H4a2 2 0 0 1 -2 -2V6a2 2 0 0 1 2 -2z',
-    col: 'oklch(54% 0.17 292)',
-    tint: 'light-dark(oklch(96.4% 0.032 292), oklch(24.2% 0.087 292))',
-  },
+  email: { p1: 'M22 7l-8.991 5.727a2 2 0 0 1-2.009 0L2 7 M4 4H20a2 2 0 0 1 2 2V18a2 2 0 0 1 -2 2H4a2 2 0 0 1 -2 -2V6a2 2 0 0 1 2 -2z', tone: 'violet' },
   announcement: {
     p1: 'M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14 M8 6v8',
-    col: 'oklch(52% 0.17 40)',
-    tint: 'light-dark(oklch(96.6% 0.04 45), oklch(24% 0.106 45))',
+    tone: 'amber',
   },
   team: {
     p1: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M16 3.128a4 4 0 0 1 0 7.744 M22 21v-2a4 4 0 0 0-3-3.87 M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0',
-    col: 'oklch(49% 0.12 230)',
-    tint: 'light-dark(oklch(96.4% 0.026 228), oklch(24.2% 0.072 228))',
+    tone: 'blue',
   },
 };
-const T: Record<Ty, [keyof typeof K, Grp, string, React.CSSProperties, string]> = {
-  doc: ['document', 'Documents', 'Request', { background: 'var(--due-light)', color: 'var(--due-text)' }, 'Document request'],
-  back: ['document', 'Documents', 'Sent back', { background: 'var(--over-light)', color: 'var(--over-text)' }, 'Document sent back · fix needed'],
-  step: ['step', 'Steps', 'Step', { background: 'var(--ok-light)', color: 'var(--ok-text)' }, 'Step done'],
-  time: ['step', 'Steps', 'Timeline', { background: 'var(--prog-light)', color: 'var(--prog-text)' }, 'Timeline changed'],
-  deadline: [
-    'deadline',
-    'Deadlines',
-    'Deadline',
-    { background: 'light-dark(oklch(96.8% 0.05 85), oklch(23.9% 0.12 85))', color: 'light-dark(oklch(45% 0.12 70), oklch(82% 0.084 70))' },
-    'Deadline coming up',
-  ],
-  mail: ['email', 'Messages', 'Email', { background: 'var(--sky-light)', color: 'var(--sky-chip)' }, 'Email sent'],
-  ann: [
-    'announcement',
-    'Messages',
-    'Announcement',
-    { background: 'light-dark(oklch(96.6% 0.04 55), oklch(24% 0.106 55))', color: 'light-dark(oklch(48% 0.15 42), oklch(80.8% 0.105 42))' },
-    'Announcement',
-  ],
-  team: [
-    'team',
-    'Messages',
-    'Team',
-    { background: 'light-dark(oklch(96.5% 0.03 230), oklch(24.1% 0.082 230))', color: 'light-dark(oklch(45% 0.11 235), oklch(82% 0.077 235))' },
-    'Team change',
-  ],
+const T: Record<Ty, [keyof typeof K, Grp, string, ChipTone, string]> = {
+  doc: ['document', 'Documents', 'Request', 'warn', 'Document request'],
+  back: ['document', 'Documents', 'Sent back', 'bad', 'Document sent back · fix needed'],
+  step: ['step', 'Steps', 'Step', 'ok', 'Step done'],
+  time: ['step', 'Steps', 'Timeline', 'prog', 'Timeline changed'],
+  deadline: ['deadline', 'Deadlines', 'Deadline', 'warn', 'Deadline coming up'],
+  mail: ['email', 'Messages', 'Email', 'violet', 'Email sent'],
+  ann: ['announcement', 'Messages', 'Announcement', 'idle', 'Announcement'],
+  team: ['team', 'Messages', 'Team', 'teal', 'Team change'],
+};
+
+/** "This month" bar colours per group (the prototype's BAR_TONE). */
+const BAR: Record<Grp, string> = {
+  Documents: 'oklch(var(--warning-mid))',
+  Steps: 'oklch(var(--brand))',
+  Deadlines: 'oklch(var(--danger-mid))',
+  Messages: 'oklch(var(--waiting-mid))',
 };
 
 /** Real notification kinds → the board's eight types. */
@@ -118,7 +103,7 @@ function targetOf(n: AppNotification, ty: Ty): string {
   if (ty === 'deadline') return portalHref('filings');
   if (ty === 'mail') return portalHref('settings') + '#notifications';
   if (ty === 'ann') return portalHref('announcements');
-  if (ty === 'team') return portalHref('team');
+  if (ty === 'team') return `${portalHref('settings')}#team`;
   return portalHref('incorporation');
 }
 
@@ -145,7 +130,7 @@ const LINK_LABEL: Record<Ty, string> = {
   deadline: 'Open the filing',
   mail: 'Email settings',
   ann: 'Read it',
-  team: 'Open Team',
+  team: 'Open the team',
 };
 
 export function NotificationsPage() {
@@ -164,7 +149,6 @@ export function NotificationsPage() {
   });
   const sk = useSkeleton(q.isLoading);
   const [tab, setTab] = useState(0);
-  const [hv, setHv] = useState<number | null>(null);
   const [drill, setDrill] = useState<number | null>(null);
 
   const today = istDay(new Date().toISOString());
@@ -238,33 +222,24 @@ export function NotificationsPage() {
   const GL = ['Today', 'Earlier this week', 'Earlier'];
   const groups = GL.map((label, gi) => ({ label, items: shown.filter((x) => x.g === gi) })).filter((g) => g.items.length);
 
-  // donut: this IST month
+  // "This month": total, one stacked bar and a row per group (IST month)
   const month = today.slice(0, 7);
   const M = N.filter((x) => istDay(x.n.createdAt).startsWith(month));
   const DT: Array<'All' | Grp> = ['All', 'Documents', 'Steps', 'Deadlines', 'Messages'];
   const cnt = (k: Grp) => M.filter((x) => x.grp === k).length;
   const tot = M.length;
-  const C = 2 * Math.PI * 54;
-  let acc = 0;
-  const SEGC = ['var(--due-chip)', 'var(--prog-chip)', 'oklch(70% 0.15 80)', 'var(--sky-chip)'];
-  const segs = [1, 2, 3, 4].map((i) => {
-    const len = tot ? (cnt(DT[i] as Grp) / tot) * C : 0;
-    const out = { i, len, da: `${Math.max(len - 2, 0)} ${C - len + 2}`, off: -acc };
-    acc += len;
-    return out;
-  });
-  const tip = hv === null ? '' : hv === 0 ? `All · ${tot}` : `${DT[hv]} · ${cnt(DT[hv] as Grp)}`;
   const waOn = profile.data?.profile.whatsappOptIn ?? false;
   const company = shell?.companyShort ?? 'You';
+  const teamHref = `${portalHref('settings')}#team`;
 
   const whoEl = (x: Item) =>
     x.person ? (
       <a
-        href={portalHref('team')}
+        href={teamHref}
         className="nwho"
         onClick={(e) => {
           e.preventDefault();
-          go(portalHref('team'));
+          go(teamHref);
         }}
       >
         {x.who}
@@ -276,10 +251,8 @@ export function NotificationsPage() {
   const icon = (ty: Ty) => {
     const k = K[T[ty][0]];
     return (
-      <span className="nic" role="img" aria-label={T[ty][4]} data-tip={T[ty][4]} style={{ background: k.tint }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={k.col} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d={k.p1} />
-        </svg>
+      <span className="nic" role="img" aria-label={T[ty][4]} data-tip={T[ty][4]}>
+        <Tile d={k.p1} tone={k.tone} />
       </span>
     );
   };
@@ -288,13 +261,15 @@ export function NotificationsPage() {
     <div className="cp-team">
       <main className="pg tb-wrap tp-notif">
         <div className="tb-g12">
-          <section className="card tb-s9">
-            <div className="tb-hd">
+          <section className="sx-card tb-s9" aria-label="Notifications">
+            {/* R-09: no card title that repeats the sidebar; the filter heads the card */}
+            <div className="sx-head tb-hd">
               <Seg
                 tabs={TABS.map(([l, f]) => ({ label: l, cnt: N.filter(f).length }))}
                 active={tab}
                 onPick={setTab}
                 label="Filter notifications"
+                grid={false}
               />
               {unreadIds.length > 0 ? (
                 <button type="button" className="btn btn-g btn-sm tb-mark" onClick={() => void markAll()}>
@@ -305,8 +280,8 @@ export function NotificationsPage() {
             {q.isLoading ? (
               sk ? (
                 [0, 1, 2, 3].map((i) => (
-                  <div key={i} className="row">
-                    <span className="sk" style={{ width: 32, height: 32, borderRadius: 8 }} />
+                  <div key={i} className="row" aria-hidden="true">
+                    <span className="sk" style={{ width: 28, height: 28, borderRadius: 6 }} />
                     <div style={{ flex: 1 }}>
                       <div className="sk" style={{ width: '45%', height: 12 }} />
                       <div className="sk" style={{ width: '70%', height: 10, marginTop: 6 }} />
@@ -315,25 +290,24 @@ export function NotificationsPage() {
                 ))
               ) : null
             ) : groups.length === 0 ? (
-              <BotBubble size={52} answered react padding="56px 16px 64px">
-                <div className="rt" style={{ fontWeight: 700 }}>
-                  {tab === 1 || tab === 0 ? 'All caught up. Nothing unread.' : `No ${TABS[tab][0].toLowerCase()} yet.`}
-                </div>
-                {tab !== 0 ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+              <Empty
+                action={
+                  tab !== 0 ? (
                     <button type="button" className="btn btn-o btn-sm" onClick={() => setTab(0)}>
                       See all
                     </button>
-                  </div>
-                ) : null}
-              </BotBubble>
+                  ) : undefined
+                }
+              >
+                {tab === 1 || tab === 0 ? 'Nothing unread' : `No ${TABS[tab][0].toLowerCase()} yet`}
+              </Empty>
             ) : (
               groups.map((g, gi) => (
                 <div key={g.label}>
-                  <div className="lbl tb-glbl" style={{ padding: '12px 16px 6px', color: 'var(--navy-ink,var(--navy))' }}>
+                  <div className="lbl tb-glbl">
                     {g.label}
                     {gi === 0 && unreadIds.length > 0 ? (
-                      /* phone: "Mark all read" rides on the first group label, the header keeps only the pill */
+                      /* phone: "Mark all read" rides on the first group label, the header keeps only the switch */
                       <button type="button" className="tb-m tb-markm" onClick={() => void markAll()}>
                         Mark all read
                       </button>
@@ -341,16 +315,16 @@ export function NotificationsPage() {
                   </div>
                   {g.items.map((x) => {
                     const u = !x.n.read;
-                    const [, , kind, chip] = T[x.ty];
+                    const [, , kind, tone] = T[x.ty];
                     return (
-                      <div key={x.n.id} className={u ? 'row unread' : 'row'}>
+                      <div key={x.n.id} className={u ? 'row unread tb-nrow' : 'row tb-nrow'}>
                         {icon(x.ty)}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <span className="tb-tl">
                             <a
                               href={x.href}
                               className="rt nt"
-                              style={{ fontWeight: u ? 800 : 600, color: 'var(--fg)' }}
+                              style={{ fontWeight: u ? 500 : 400, color: u ? 'oklch(var(--ink))' : 'oklch(var(--ink-2))' }}
                               onClick={(e) => {
                                 e.preventDefault();
                                 open(x);
@@ -371,28 +345,22 @@ export function NotificationsPage() {
                               {LINK_LABEL[x.ty]}
                             </a>
                           </span>
-                          <span className="mono tb-m" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                          <span className="cap tb-m tb-flex" style={{ marginTop: 2, gap: 4 }}>
                             {whoEl(x)} · {x.w}
                           </span>
                         </div>
                         <span className="nkind">
-                          <span className="chip" style={chip}>
-                            {kind}
-                          </span>
+                          <SChip tone={tone}>{kind}</SChip>
                         </span>
-                        <span className="mono tb-d" style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span className="cap tb-d" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {whoEl(x)} · {x.w}
                         </span>
                         {u ? (
-                          <button
-                            type="button"
-                            className="udot pulse"
-                            aria-label="Unread · mark as read"
-                            onClick={() => markRead(x)}
-                            style={{ border: 0, padding: 0, cursor: 'pointer' }}
-                          />
+                          <button type="button" className="tb-ud" aria-label="Unread · mark as read" data-tip="Mark as read" onClick={() => markRead(x)}>
+                            <span className="udot" />
+                          </button>
                         ) : (
-                          <span style={{ width: 8 }} />
+                          <span style={{ width: 20, flex: 'none' }} />
                         )}
                         <a
                           href={x.href}
@@ -403,7 +371,7 @@ export function NotificationsPage() {
                             open(x);
                           }}
                         >
-                          <Svg d={P.go} />
+                          <Svg d={P.go} sw={1.8} />
                         </a>
                       </div>
                     );
@@ -414,147 +382,46 @@ export function NotificationsPage() {
           </section>
 
           <div className="tb-s3">
-            <section className="card t" style={{ padding: 16, gap: 12, alignItems: 'center' }}>
-              <h2 className="st" style={{ alignSelf: 'flex-start' }}>
-                This month
-              </h2>
-              <div style={{ position: 'relative', width: 140, height: 140 }}>
-                <svg width="140" height="140" viewBox="0 0 140 140" aria-hidden="true" style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
-                  <circle cx="70" cy="70" r="54" fill="none" stroke="var(--raised)" strokeWidth="18" />
-                  {segs.map((s) =>
-                    s.len > 0 ? (
-                      <circle
-                        key={s.i}
-                        cx="70"
-                        cy="70"
-                        r="54"
-                        fill="none"
-                        stroke={SEGC[s.i - 1]}
-                        strokeWidth={hv === s.i ? 24 : 18}
-                        strokeDasharray={s.da}
-                        strokeDashoffset={s.off}
-                        onMouseEnter={() => setHv(s.i)}
-                        onMouseLeave={() => setHv(null)}
-                        onClick={() => {
-                          setHv(null);
-                          setDrill(s.i);
-                        }}
-                        style={{ cursor: 'pointer', transition: 'stroke-width .15s' }}
-                      />
-                    ) : null,
-                  )}
-                </svg>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHv(null);
-                    setDrill(0);
-                  }}
-                  onMouseEnter={() => setHv(0)}
-                  onMouseLeave={() => setHv(null)}
-                  onFocus={() => setHv(0)}
-                  onBlur={() => setHv(null)}
-                  aria-label={`Show all ${tot} notifications`}
-                  style={{
-                    position: 'absolute',
-                    inset: 26,
-                    borderRadius: 99,
-                    border: 0,
-                    background: 'var(--panel)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    font: 'inherit',
-                    color: 'inherit',
-                  }}
-                >
-                  <span className="metric" style={{ fontSize: 30, lineHeight: 1 }}>
-                    {tot}
-                  </span>
-                  <span className="cap">this month</span>
-                </button>
-                {hv !== null ? (
-                  <span
-                    role="tooltip"
-                    style={{
-                      position: 'absolute',
-                      left: '50%',
-                      top: -6,
-                      transform: 'translate(-50%,-100%)',
-                      background: 'var(--navy)',
-                      color: '#fff',
-                      font: '600 12px var(--font-sans),sans-serif',
-                      padding: '4px 9px',
-                      borderRadius: 6,
-                      whiteSpace: 'nowrap',
-                      zIndex: 5,
-                      boxShadow: 'var(--shadow-float)',
-                    }}
-                  >
-                    {tip}
-                    <span style={{ position: 'absolute', left: '50%', bottom: -4, width: 8, height: 8, background: 'var(--navy)', transform: 'translateX(-50%) rotate(45deg)' }} />
-                  </span>
-                ) : null}
+            <section className="sx-card" aria-labelledby="nt-month">
+              <CardHead id="nt-month" d="M4.5 6h15v13.5h-15Z M4.5 10h15 M9 3.5v4 M15 3.5v4" tone="teal" title="This month" />
+              <button type="button" className="tb-total" onClick={() => setDrill(0)} aria-label={`Show all ${tot} notifications`}>
+                <span className="metric">{tot}</span>
+                <span className="cap">this month</span>
+              </button>
+              <div className="tb-stack" aria-hidden="true">
+                {tot > 0
+                  ? (DT.slice(1) as Grp[]).map((g) => (cnt(g) ? <span key={g} style={{ width: `${(cnt(g) / tot) * 100}%`, background: BAR[g] }} /> : null))
+                  : null}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignSelf: 'stretch' }}>
+              <div style={{ paddingBottom: 4 }}>
                 {[1, 2, 3, 4].map((i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className="tb-leg"
-                    onClick={() => {
-                      setHv(null);
-                      setDrill(i);
-                    }}
-                    onMouseEnter={() => setHv(i)}
-                    onMouseLeave={() => setHv(null)}
-                    onFocus={() => setHv(i)}
-                    onBlur={() => setHv(null)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      font: '600 12px var(--font-sans),sans-serif',
-                      color: 'var(--fg)',
-                      border: 0,
-                      background: hv === i ? 'var(--raised)' : 'none',
-                      padding: '5px 6px',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <span style={{ width: 10, height: 10, borderRadius: 3, background: SEGC[i - 1] }} />
+                  <button key={i} type="button" className="sx-row tb-leg" onClick={() => setDrill(i)}>
+                    <span className="tb-sw" style={{ background: BAR[DT[i] as Grp] }} />
                     <span style={{ flex: 1 }}>{DT[i]}</span>
-                    <span className="mono">{cnt(DT[i] as Grp)}</span>
+                    <span style={{ fontWeight: 500 }}>{cnt(DT[i] as Grp)}</span>
+                    <Svg d={P.next} size={14} sw={1.8} style={{ color: 'oklch(var(--ink-faint))' }} />
                   </button>
                 ))}
               </div>
             </section>
-            <section className="card" style={{ padding: '14px 16px', gap: 10 }}>
-              <h2 className="h3">{company} gets these by</h2>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span className="chip" style={{ background: 'var(--prog-light)', color: 'var(--prog-text)', padding: '4px 8px' }}>
-                  ✓ Email
-                </span>
-                {waOn ? (
-                  <span className="chip" style={{ background: 'var(--ok-light)', color: 'var(--ok-text)', padding: '4px 8px' }}>
-                    ✓ WhatsApp
-                  </span>
-                ) : null}
+            <section className="sx-card" aria-labelledby="nt-by">
+              <CardHead id="nt-by" d={P.bell} tone="amber" title={`${company} gets these by`} />
+              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <STag tone="prog">✓ Email</STag>
+                  {waOn ? <STag tone="ok">✓ WhatsApp</STag> : null}
+                </div>
+                <a
+                  href={`${portalHref('settings')}#notifications`}
+                  style={{ fontSize: 13 }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    go(`${portalHref('settings')}#notifications`);
+                  }}
+                >
+                  Change in Settings ›
+                </a>
               </div>
-              <a
-                href={`${portalHref('settings')}#notifications`}
-                style={{ fontSize: 12 }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  go(`${portalHref('settings')}#notifications`);
-                }}
-              >
-                Change in Settings →
-              </a>
             </section>
           </div>
         </div>
@@ -566,7 +433,6 @@ export function NotificationsPage() {
           setDrill={setDrill}
           items={M}
           icon={icon}
-          company={company}
           sheet={isPhone}
           onOpen={(x) => {
             setDrill(null);
@@ -588,7 +454,6 @@ function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string;
   setDrill,
   items,
   icon,
-  company,
   sheet,
   onOpen,
   onLink,
@@ -597,77 +462,50 @@ function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string;
   setDrill: (d: number | null) => void;
   items: I[];
   icon: (t: Ty) => React.ReactNode;
-  company: string;
   sheet: boolean;
   onOpen: (x: I) => void;
   onLink: (where: string) => void;
 }) {
   const DT: Array<'All' | Grp> = ['All', 'Documents', 'Steps', 'Deadlines', 'Messages'];
-  const LINK: Array<[string, string, string]> = [
-    [`These live in ${company}’s Notifications list`, 'Show in the list ↓', ''],
-    ['These items live in Documents', 'Open Documents →', portalHref('documents')],
-    ['These steps live in Incorporation', 'Open Incorporation →', portalHref('incorporation')],
-    ['These deadlines live in Compliances · Filings', 'Open Filings →', portalHref('filings')],
-    ['These messages live in Announcements', 'Open Announcements →', portalHref('announcements')],
+  /* where each group lives: the footer button opens it (the list itself for "All") */
+  const LINK: Array<[string, string]> = [
+    ['Show in the list', ''],
+    ['Open Documents', portalHref('documents')],
+    ['Open Incorporation', portalHref('incorporation')],
+    ['Open Filings', portalHref('filings')],
+    ['Open Announcements', portalHref('announcements')],
   ];
   const L = LINK[drill];
   const list = items.filter((x) => drill === 0 || x.grp === DT[drill]);
   return (
     <Dialog labelledBy="nd-t" width={600} top sheet={sheet} onClose={() => setDrill(null)} tp="tp-notif" dlgStyle={{ display: 'flex', flexDirection: 'column' }}>
-      <div
-        className="dd-top"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '9px 18px',
-          background: 'var(--primary-light)',
-          borderBottom: '1px solid var(--border)',
-          fontSize: 12,
-          color: 'var(--muted)',
-        }}
-      >
-        <span>{L[0]}</span>
-        <a
-          href={L[2] || '#'}
-          style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap' }}
-          onClick={(e) => {
-            e.preventDefault();
-            onLink(L[2]);
-          }}
-        >
-          {L[1]}
-        </a>
-      </div>
       <div className="dlg-h">
-        <span className="ic" style={{ background: 'var(--navy)' }}>
-          <Svg d={P.bell} join={false} />
-        </span>
-        <h2 id="nd-t" style={{ margin: 0, font: '600 16px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>
+        <Tile d={P.bell} tone="amber" />
+        <h2 id="nd-t" style={{ margin: 0 }}>
           Notifications this month
         </h2>
+        <span className="cap">{list.length}</span>
         <CloseBtn onClick={() => setDrill(null)} />
       </div>
-      <div style={{ padding: '12px 18px 0' }}>
+      <div style={{ padding: '12px 16px 4px' }}>
         <Seg
           tabs={DT.map((l, i) => ({ label: l, cnt: i === 0 ? items.length : items.filter((x) => x.grp === l).length }))}
           active={drill}
           onPick={(i) => setDrill(i)}
           label="Filter by type"
+          grid={false}
         />
       </div>
-      <div style={{ padding: '8px 0 10px', maxHeight: 'min(420px,52dvh)', overflow: 'auto' }}>
+      <div style={{ padding: '4px 0 8px', maxHeight: 'min(420px,52dvh)', overflow: 'auto' }}>
         {list.length === 0 ? (
-          <div className="cap" style={{ padding: '16px 18px' }}>
-            Nothing here this month.
-          </div>
+          <Empty>None this month</Empty>
         ) : (
           list.map((x) => (
             <a
               key={x.n.id}
               href={x.href}
               className="row"
-              style={{ color: 'inherit', fontWeight: 'inherit', padding: '10px 18px' }}
+              style={{ color: 'inherit', fontWeight: 'inherit', padding: '8px 16px' }}
               onClick={(e) => {
                 e.preventDefault();
                 onOpen(x);
@@ -675,22 +513,33 @@ function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string;
             >
               {icon(x.ty)}
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="rt" style={{ display: 'block' }}>
+                <span className="rt" style={{ display: 'block', fontWeight: 500 }}>
                   {x.n.title}
                 </span>
-                <span className="mono cap">
+                <span className="cap">
                   {x.who} · {x.w}
                 </span>
               </span>
-              <span className="chip" style={T[x.ty][3]}>
-                {T[x.ty][2]}
+              <span className="tb-d">
+                <SChip tone={T[x.ty][3]}>{T[x.ty][2]}</SChip>
               </span>
-              <span style={{ color: 'var(--primary)', display: 'flex' }}>
-                <Svg d={P.go} />
+              <span style={{ color: 'oklch(var(--ink-faint))', display: 'flex' }}>
+                <Svg d={P.next} size={14} sw={1.8} />
               </span>
             </a>
           ))
         )}
+      </div>
+      <div className="dlg-f">
+        <button
+          type="button"
+          className="btn btn-n"
+          onClick={() => {
+            onLink(L[1]);
+          }}
+        >
+          {L[0]}
+        </button>
       </div>
     </Dialog>
   );

@@ -80,22 +80,33 @@ export function statusClass(st: DocStatus): StatusClass {
   return st === 'Approved' || st === 'Final' ? 'ok' : st === 'In review' ? 'rv' : st === 'Missing' ? 'ms' : 'x';
 }
 
-/** Prototype ST: status badge colours. */
+/* Status tones (R-13): done green, in review blurple, replaced grey, missing amber. Soft fills
+   with coloured text; no white text on a solid colour. */
+const OK_TONE: CSSProperties = { background: 'oklch(var(--positive-soft))', color: 'oklch(var(--positive))' };
 export const STATUS_STYLE: Record<DocStatus, CSSProperties> = {
-  Approved: { background: 'var(--ok-light)', color: 'var(--ok-text)' },
-  Final: { background: 'var(--navy)', color: '#fff' },
-  'In review': { background: 'var(--prog-light)', color: 'var(--prog-text)' },
-  Replaced: { background: 'var(--raised)', color: 'var(--muted)' },
-  Missing: { background: 'var(--due-chip)', color: '#fff' },
+  Approved: OK_TONE,
+  Final: OK_TONE,
+  'In review': { background: 'oklch(var(--brand-soft))', color: 'oklch(var(--brand-text))' },
+  Replaced: { background: 'oklch(var(--upcoming-soft))', color: 'oklch(var(--upcoming))' },
+  Missing: { background: 'oklch(var(--warning-soft))', color: 'oklch(var(--warning))' },
 };
 
-/** Prototype G: set-A status glyphs (rule 18). [background, fill path, stroke path] */
+/** Tone of the shared status chip for a document status. */
+export const STATUS_TONE: Record<DocStatus, 'ok' | 'prog' | 'idle' | 'warn'> = {
+  Approved: 'ok',
+  Final: 'ok',
+  'In review': 'prog',
+  Replaced: 'idle',
+  Missing: 'warn',
+};
+
+/** Status glyphs (rule 18) on a soft square: [tone, fill path, stroke path]. The icon draws in currentColor. */
 export const GLYPH: Record<'done' | 'sbc' | 'you' | 'late' | 'now', [CSSProperties, string, string]> = {
-  done: [{ background: 'var(--ok-chip)' }, '', 'M6.5 12.5l3.8 3.8 7.2-8'],
-  sbc: [{ background: 'oklch(55% 0.2 262)' }, '', 'M5.5 16l4.5-4.5 3 3 5.5-6 M14.5 8.5h4v4'],
-  you: [{ background: 'var(--due-chip)' }, 'M12 4.5a3.6 3.6 0 1 1 0 7.2a3.6 3.6 0 1 1 0-7.2Z M4.8 20.5a7.2 7.2 0 0 1 14.4 0Z', ''],
-  late: [{ background: 'var(--over-chip)' }, '', 'M12 6v7.5 M12 18.2v.1'],
-  now: [{ background: 'var(--navy)' }, '', 'M12 6.5v6l3.5 2'],
+  done: [OK_TONE, '', 'M6.5 12.5l3.8 3.8 7.2-8'],
+  sbc: [{ background: 'oklch(var(--brand-soft))', color: 'oklch(var(--brand-text))' }, '', 'M5.5 16l4.5-4.5 3 3 5.5-6 M14.5 8.5h4v4'],
+  you: [{ background: 'oklch(var(--warning-soft))', color: 'oklch(var(--warning))' }, 'M12 4.5a3.6 3.6 0 1 1 0 7.2a3.6 3.6 0 1 1 0-7.2Z M4.8 20.5a7.2 7.2 0 0 1 14.4 0Z', ''],
+  late: [{ background: 'oklch(var(--danger-soft))', color: 'oklch(var(--danger))' }, '', 'M12 6v7.5 M12 18.2v.1'],
+  now: [{ background: 'oklch(var(--info-soft))', color: 'oklch(var(--info))' }, '', 'M12 6.5v6l3.5 2'],
 };
 
 export function glyphKey(n: DocNode): keyof typeof GLYPH {
@@ -127,7 +138,7 @@ export function missingLabel(n: Pick<DocNode, 'overdue' | 'due'>): string {
 }
 
 export function missingStyle(n: Pick<DocNode, 'overdue'>): CSSProperties {
-  return n.overdue ? { background: 'var(--over-chip)', color: '#fff' } : { background: 'var(--due-chip)', color: '#fff' };
+  return n.overdue ? { background: 'oklch(var(--danger-soft))', color: 'oklch(var(--danger))' } : { background: 'oklch(var(--warning-soft))', color: 'oklch(var(--warning))' };
 }
 
 function tagOf(n: DocNode): FileTag {
@@ -138,13 +149,9 @@ export function tagStyle(n: DocNode): CSSProperties {
   return TAG_STYLE[tagOf(n)];
 }
 
-/** docs_a_drill TS: the drill-down's solid marks (white type on the chip colour). */
+/** The drill-down's file marks. VCFO Spectrum draws every file mark as the soft R-26 badge. */
 export function solidTagStyle(n: DocNode): CSSProperties {
-  const t = tagOf(n);
-  if (t === 'PDF') return { background: 'var(--over-chip)', color: '#fff' };
-  if (t === 'JPG' || t === 'PNG' || t === 'WEBP' || t === 'HEIC') return { background: 'var(--teal-chip)', color: '#fff' };
-  if (t === 'DOCX' || t === 'DOC') return { background: 'var(--prog-chip)', color: '#fff' };
-  return { background: 'var(--muted)', color: '#fff' };
+  return tagStyle(n);
 }
 
 export function tagTip(n: DocNode): string {

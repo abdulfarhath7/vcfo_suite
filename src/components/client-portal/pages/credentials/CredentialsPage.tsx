@@ -91,10 +91,7 @@ function CredentialsInner() {
         <div className="cr-main" id="creds-root">
           <div className="cr-wrap">
             <div className="cr-bar" role="toolbar" aria-label="Credentials">
-              <span className="cr-tile">
-                <Ic n="key-round" s={16} />
-              </span>
-              <h1 className="cr-title">Credentials</h1>
+              <h1 className="sr">Credentials</h1>
               <div className="cr-seg" role="radiogroup" aria-label="Stage">
                 <span className="thumb" style={{ transform: `translateX(${stage === 'after' ? 100 : 0}%)` }} />
                 <button type="button" role="radio" aria-checked={stage === 'before'} className={stage === 'before' ? 'on' : ''} data-act="stage" data-key="before" onClick={() => setStage('before')}>
@@ -120,10 +117,19 @@ function CredentialsInner() {
               <>
                 <section className="cr-ids" aria-label="Company identifiers" aria-busy="true">
                   {['CIN', 'PAN', 'TAN', 'GSTIN', 'Registrations', 'DSC holders'].map((n, i) =>
-                    tile(['mca', 'it', 'it', 'gst', 'oth', 'oth'][i]!, n, <span className="cr-ctv cr-cpend">…</span>),
+                    tile(['mca', 'it', 'it', 'gst', 'oth', 'oth'][i]!, n, <span className="sx-sk" style={{ width: '70%', height: 14 }} />),
                   )}
                 </section>
-                <div className="cr-skel" aria-hidden="true" />
+                <div className="cr-wb" aria-hidden="true">
+                  <div className="cr-wbh">
+                    <span className="sx-sk" style={{ width: 360, maxWidth: '60%', height: 28 }} />
+                  </div>
+                  <div className="cr-skrows">
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <span className="sx-sk" key={i} style={{ height: 32 }} />
+                    ))}
+                  </div>
+                </div>
               </>
             ) : (
               <>
@@ -175,7 +181,7 @@ function CredentialsInner() {
                     <span className="cr-sp" />
                     <div className="cr-wbb">
                       {tab === 'kyc' ? (
-                        <button type="button" className="cr-btn cr-btn-sm" data-act="add-dir" onClick={() => needEdit('tab:kyc', () => void addRow('kyc'))}>
+                        <button type="button" className="sx-btn sm" data-act="add-dir" onClick={() => needEdit('tab:kyc', () => void addRow('kyc'))}>
                           <Ic n="plus" s={13} />
                           Add director
                         </button>

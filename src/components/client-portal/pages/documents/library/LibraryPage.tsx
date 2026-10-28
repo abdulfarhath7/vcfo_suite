@@ -6,6 +6,9 @@
  * status brief, PDF brief, search, Recently read strip, shelves with planks,
  * books that lift and tilt, blue "Updated" ribbon, no-match bubble), the
  * recently-read drill (lib_recent_drill) and the empty library (lib_empty).
+ * VCFO Spectrum (C-0110, R-10, R-48): the shelf filter is a dropdown, the shelves sit in
+ * a plain white card, and the empty and no-match states are dashed areas with the action
+ * (no mascot).
  * Data: saved items GET /api/client/library (not behind the Ask VCFO flag), reading progress
  * GET /api/client/library/reads (NEW), suggestions GET /api/client/library/topic.
  */
@@ -15,7 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { usePortal, usePortalOptional } from '@/components/client-portal/PortalProvider';
 import type { LibraryItemView } from '@/hooks/ask/ask-api';
 import LegacyClientLibrary from '@/views/client/ask/ClientLibrary';
-import { BotFace, PagePortal, useDelayedLoading } from '../shared-ui';
+import { PagePortal, useDelayedLoading } from '../shared-ui';
 import { LinkButton } from '@/components/client-portal/LinkButton';
 import { portalHref } from '@/components/client-portal/routes';
 import { catOf, fetchLibrary, fetchReads, LIBRARY_KEY, libraryExportHref, readerHref, readTip, READS_KEY, SHELF_CATS, type LibraryRead } from './library-model';
@@ -27,26 +30,14 @@ export function LibraryPage() {
   return <LibraryInner />;
 }
 
-function Bubble({ size, children, clear }: { size: number; children: React.ReactNode; clear?: { label: string; onClick: () => void } }) {
-  const { openChat } = usePortal();
+/** The 28 px icon tile before the library card title (R-16). */
+function LibTile() {
   return (
-    <div role="status" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, justifyContent: 'center', textAlign: 'left' }}>
-      <BotFace size={size} />
-      <div className="vdoc-bubble">
-        <span style={{ font: '600 13px/1.45 var(--font-sans),sans-serif', color: 'var(--fg)' }}>{children}</span>
-        {clear ? (
-          <button type="button" onClick={clear.onClick} style={{ marginTop: 6, padding: 0, border: 0, background: 'none', font: '600 12px var(--font-sans),sans-serif', color: 'var(--primary)', cursor: 'pointer' }}>
-            {clear.label}
-          </button>
-        ) : null}
-        <LinkButton
-          onClick={() => openChat(typeof children === 'string' ? `Ask VCFO why: ${children}` : 'Why is my library like this?')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}
-        >
-          Ask VCFO why
-        </LinkButton>
-      </div>
-    </div>
+    <span className="sx-tile" data-tone="violet" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 5.5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4Z M20 5.5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6Z" />
+      </svg>
+    </span>
   );
 }
 
@@ -82,15 +73,20 @@ function LibraryInner() {
             <main className="vlib-main" aria-busy="true">
               {skeleton ? (
                 <>
-                  <div className="vlib-tools">
-                    <span className="lsk" style={{ width: 680, maxWidth: '100%', height: 34, borderRadius: 8 }} />
-                    <span className="lsk" style={{ width: 60, height: 20 }} />
-                    <span className="lsk" style={{ width: 160, height: 34, borderRadius: 6 }} />
-                  </div>
-                  <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: 'var(--shadow)', padding: '6px 0 18px' }}>
-                    {[0, 1].map((s) => (
-                      <section key={s} aria-hidden="true">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 28px 0' }}>
+                  <div className="sx-card vlib-shelves">
+                    <div className="sx-head vlib-head" aria-hidden="true">
+                      <span className="lsk" style={{ width: 28, height: 28 }} />
+                      <span className="lsk" style={{ width: 160, height: 14 }} />
+                      <span style={{ flex: 1 }} />
+                      <span className="lsk" style={{ width: 200, height: 36 }} />
+                      <span className="lsk" style={{ width: 110, height: 36 }} />
+                    </div>
+                    <div className="vlib-search" aria-hidden="true">
+                      <span className="lsk" style={{ height: 40 }} />
+                    </div>
+                    {[0, 1].map((sh) => (
+                      <section key={sh} aria-hidden="true">
+                        <div className="vlib-sh">
                           <span className="lsk" style={{ width: 10, height: 10, borderRadius: 3 }} />
                           <span className="lsk" style={{ width: 120, height: 12 }} />
                         </div>
@@ -120,7 +116,7 @@ function LibraryInner() {
             <main className="vlib-main">
               <div className="lerr" role="alert">
                 <span style={{ flex: 1 }}>Could not load your library</span>
-                <button type="button" className="btn btn-o" onClick={() => void lib.refetch()}>
+                <button type="button" className="sx-btn sm" onClick={() => void lib.refetch()}>
                   Try again
                 </button>
               </div>
@@ -138,46 +134,9 @@ function LibraryInner() {
       <div className="vlib">
         <div className="vlib-col">
           <main className="vlib-main">
-            <div className="vlib-tools">
-              <div className="vlib-segw">
-                <div className="seg" role="tablist" aria-label="Category" style={{ minWidth: Math.max(680, (cats.length + 1) * 110) }}>
-                  <span className="thumb" style={{ width: `calc((100% - 4px)/${cats.length + 1})`, transform: `translateX(${c * 100}%)` }} />
-                  {[null, ...cats].map((cat, i) => {
-                    const cnt = cat ? items.filter((b) => b.category === cat.id).length : items.length;
-                    return (
-                      <button key={cat?.id ?? 'all'} type="button" role="tab" aria-selected={c === i} className={c === i ? 'on' : ''} onClick={() => setC(i)}>
-                        {cat ? cat.tab(company) : 'All'}
-                        <span className="cnt">{cnt}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <span className="chip" style={{ background: 'var(--primary-chip)', color: '#fff' }}>
-                {items.length} books
-              </span>
-              {engagementId && lib.data?.features?.statusBrief ? (
-                <a className="btn btn-o" href={`/api/ask/brief?engagementId=${encodeURIComponent(engagementId)}`}>
-                  Monthly status brief
-                </a>
-              ) : null}
-              <a className="btn btn-o" href={libraryExportHref(shownIds)} aria-disabled={!shownIds.length}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14" />
-                </svg>
-                PDF brief
-              </a>
-              <label className="vlib-q" style={{ display: 'flex', alignItems: 'center', gap: 8, height: 34, padding: '0 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--subtle)' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                  <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
-                </svg>
-                <input type="search" aria-label="Search books" placeholder="Search books" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: 1, minWidth: 0, border: 0, outline: 0, background: 'none', font: '500 13px var(--font-sans),sans-serif', color: 'var(--fg)' }} />
-              </label>
-            </div>
-
             {recent.length ? (
               <section className="vlib-recent">
-                <h2 style={{ margin: 0, font: '600 11px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', width: 110 }}>Recently read</h2>
+                <h2>Recently read</h2>
                 {recent.map((r) => {
                   const cat = catOf(r.category);
                   const tip = readTip(r);
@@ -185,7 +144,7 @@ function LibraryInner() {
                     <div key={r.ref} className="mini" style={{ ['--bc' as string]: cat.color }}>
                       <span className="cv" style={cat.gold ? { boxShadow: 'inset 4px 0 0 var(--gold)' } : undefined} />
                       <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0 }}>
-                        <Link href={readerHref(r)} style={{ fontSize: 12.5, color: 'var(--fg)' }}>
+                        <Link href={readerHref(r)}>
                           {r.title}
                         </Link>
                         {/* the extra utilities carry over what `.vlib-recent .mini a` gave this control as an anchor */}
@@ -195,7 +154,7 @@ function LibraryInner() {
                           aria-label={`${tip}. Open the reading list`}
                           onClick={() => setDrill(r.progressPct >= 100 ? 2 : 1)}
                         >
-                          <span className="bar">
+                          <span className={`bar${r.progressPct >= 100 ? ' done' : ''}`}>
                             <span style={{ width: `${r.progressPct}%` }} />
                           </span>
                         </LinkButton>
@@ -206,15 +165,51 @@ function LibraryInner() {
               </section>
             ) : null}
 
-            <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: 'var(--shadow)', padding: '6px 0 18px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <section className="sx-card vlib-shelves" aria-label="Shelves">
+              <div className="sx-head vlib-head">
+                <LibTile />
+                <h2>{company}’s library</h2>
+                <span className="sx-meta">{items.length} books</span>
+                <div className="sx-right vlib-tools">
+                  <label className="sx-in sm">
+                    <select aria-label="Shelf" value={c} onChange={(e) => setC(Number(e.target.value))}>
+                      {[null, ...cats].map((cat, i) => {
+                        const cnt = cat ? items.filter((b) => b.category === cat.id).length : items.length;
+                        return (
+                          <option key={cat?.id ?? 'all'} value={i}>
+                            {cat ? `${cat.tab(company)} · ${cnt}` : `All shelves · ${cnt}`}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                  {engagementId && lib.data?.features?.statusBrief ? (
+                    <a className="sx-btn" href={`/api/ask/brief?engagementId=${encodeURIComponent(engagementId)}`}>
+                      Monthly status brief
+                    </a>
+                  ) : null}
+                  <a className="sx-btn" href={libraryExportHref(shownIds)} aria-disabled={!shownIds.length}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14" />
+                    </svg>
+                    PDF brief
+                  </a>
+                </div>
+              </div>
+              <div className="vlib-search">
+                <label className="sx-in">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                    <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
+                  </svg>
+                  <input type="search" aria-label="Search books" placeholder="Search books" value={q} onChange={(e) => setQ(e.target.value)} />
+                </label>
+              </div>
               {shelves.map(({ cat, books }) => (
                 <section key={cat.id} aria-label={cat.title(company)}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 28px 0' }}>
-                    <span style={{ width: 10, height: 10, borderRadius: 3, background: cat.color }} />
-                    <h2 style={{ margin: 0, font: '600 13px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>{cat.title(company)}</h2>
-                    <span className="mono" style={{ fontSize: 11, color: 'var(--subtle)' }}>
-                      {books.length}
-                    </span>
+                  <div className="vlib-sh" style={{ ['--bc' as string]: cat.color }}>
+                    <i aria-hidden="true" />
+                    <h2>{cat.title(company)}</h2>
+                    <span>{books.length}</span>
                   </div>
                   <div className="shelf">
                     {books.map((b) => (
@@ -225,22 +220,21 @@ function LibraryInner() {
                 </section>
               ))}
               {shelves.length === 0 ? (
-                <div style={{ padding: '40px 16px' }}>
-                  <Bubble
-                    size={40}
-                    clear={{
-                      label: 'Clear search',
-                      onClick: () => {
-                        setQ('');
-                        setC(0);
-                      },
+                <div className="sx-empty" role="status">
+                  <span>{ql ? <>No book matches “{q.trim()}”</> : 'No books on this shelf'}</span>
+                  <button
+                    type="button"
+                    className="sx-btn sm"
+                    onClick={() => {
+                      setQ('');
+                      setC(0);
                     }}
                   >
-                    No book matches “{q}”.
-                  </Bubble>
+                    Clear search
+                  </button>
                 </div>
               ) : null}
-            </div>
+            </section>
           </main>
         </div>
       </div>
@@ -296,32 +290,10 @@ function RecentDrill({ reads, tab, onClose }: { reads: LibraryRead[]; tab: numbe
     <PagePortal page="library">
       <div className="ld-root">
         <div className="ld-scrim" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-          <div role="dialog" aria-modal="true" aria-label="Recently read" className="dlg" style={{ width: 600, maxWidth: '100%', background: 'var(--panel)', borderRadius: 12, boxShadow: 'var(--shadow-float)', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'var(--fg)', fontSize: 13 }}>
-            <div className="dd-top" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)' }}>
-              <span>These guides live in the Library</span>
-              <a
-                href={portalHref('knowledge-bank')}
-                onClick={(e) => {
-                  e.preventDefault();
-                  close();
-                  go('knowledge-bank');
-                }}
-                style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap' }}
-              >
-                Open Library →
-              </a>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 56, padding: '0 12px 0 18px', borderBottom: '1px solid var(--border)' }}>
-              <h2 style={{ margin: 0, font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', flex: 1 }}>Recently read</h2>
-              <button ref={closeRef} type="button" className="ib" aria-label="Close" onClick={close}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            </div>
-            <div style={{ padding: '12px 16px' }}>
+          <div role="dialog" aria-modal="true" aria-label="Recently read" className="dlg" style={{ width: 600, maxWidth: '100%', overflow: 'hidden', fontFamily: 'var(--font-sans),system-ui,sans-serif', fontSize: 13 }}>
+            <div className="ld-head">
+              <h2>Recently read</h2>
               <div className="seg" role="tablist" aria-label="Reading status">
-                <span className="thumb" style={{ width: 'calc((100% - 4px)/3)', transform: `translateX(${t * 100}%)` }} />
                 {['All', 'In progress', 'Finished'].map((l, i) => (
                   <button key={l} type="button" role="tab" aria-selected={t === i} className={t === i ? 'on' : ''} onClick={() => setT(i)}>
                     {l}
@@ -329,24 +301,40 @@ function RecentDrill({ reads, tab, onClose }: { reads: LibraryRead[]; tab: numbe
                   </button>
                 ))}
               </div>
+              <button ref={closeRef} type="button" className="ib" aria-label="Close" onClick={close}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
             </div>
-            <div style={{ paddingBottom: 6 }}>
+            <div>
               {list.map((r) => {
                 const cat = catOf(r.category);
                 return (
                   <Link key={r.ref} className="row" href={readerHref(r)} onClick={() => onClose()}>
                     <span className="cv" style={{ background: cat.color, ...(cat.gold ? { boxShadow: 'inset 4px 0 0 var(--gold)' } : {}) }} />
-                    <span style={{ flex: 1, minWidth: 0, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
-                    <span className="bar" role="img" aria-label={readTip(r)}>
+                    <span className="ld-title">{r.title}</span>
+                    <span className={`bar${r.progressPct >= 100 ? ' done' : ''}`} role="img" aria-label={readTip(r)}>
                       <span style={{ width: `${r.progressPct}%` }} />
                     </span>
-                    <span className="mono" style={{ width: 56, textAlign: 'right', fontSize: 11.5, color: 'var(--subtle)' }}>
-                      {r.progressPct >= 100 ? 'Done' : `${r.progressPct}%`}
-                    </span>
+                    <span className="ld-pct">{r.progressPct >= 100 ? 'Done' : `${r.progressPct}%`}</span>
                   </Link>
                 );
               })}
-              {list.length === 0 ? <div style={{ padding: '22px 16px', borderTop: '1px solid var(--hair)', color: 'var(--muted)', fontWeight: 600, textAlign: 'center' }}>Nothing here yet.</div> : null}
+              {list.length === 0 ? <div className="sx-empty">None</div> : null}
+            </div>
+            <div className="ld-foot">
+              <a
+                className="sx-btn"
+                href={portalHref('knowledge-bank')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  close();
+                  go('knowledge-bank');
+                }}
+              >
+                Open Library
+              </a>
             </div>
           </div>
         </div>
@@ -367,33 +355,32 @@ function EmptyLibrary({ company }: { company: string }) {
   });
   return (
     <div className="cp-library">
-      <div className="le-root">
-        <main style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <h1 style={{ margin: 0, font: '600 22px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))' }}>Library</h1>
-          <section className="card" style={{ minHeight: 580, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, textAlign: 'center', padding: 16 }}>
-            <div aria-hidden="true" style={{ position: 'relative', width: 200, height: 110, borderBottom: '3px solid var(--violet-soft)' }}>
-              <span className="bk" style={{ left: 30, width: 26, height: 78, background: 'var(--violet-chip)' }} />
-              <span className="bk" style={{ left: 60, width: 22, height: 94, background: 'var(--navy)', animationDelay: '.08s' }} />
-              <span className="bk" style={{ left: 86, width: 30, height: 64, background: 'var(--violet-soft)', animationDelay: '.16s' }} />
-              <span className="bk" style={{ left: 122, width: 24, height: 86, background: 'var(--gold)', animationDelay: '.24s', transform: 'rotate(12deg)', transformOrigin: 'bottom left' }} />
-            </div>
-            <Bubble size={48}>
-              {company}’s library is empty. Save an answer from Ask VCFO and it lands here as a book.
-            </Bubble>
-            <button type="button" className="btn btn-n" onClick={() => openChat()}>
-              Ask VCFO
-            </button>
-            {sugg.data?.length ? (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 }}>
-                {sugg.data.map((s) => (
-                  <Link key={s.slug} className="q" href={`/app/client/learn/${encodeURIComponent(s.slug)}`}>
-                    {s.question}
-                  </Link>
-                ))}
+      <div className="vlib le-root">
+        <div className="vlib-col">
+          <main className="vlib-main">
+            <section className="sx-card" aria-label={`${company}’s library`}>
+              <div className="sx-head">
+                <LibTile />
+                <h2>{company}’s library</h2>
               </div>
-            ) : null}
-          </section>
-        </main>
+              <div className="sx-empty" role="status" style={{ minHeight: 320 }}>
+                <span>No saved answers yet</span>
+                <button type="button" className="sx-btn p" onClick={() => openChat()}>
+                  Ask VCFO
+                </button>
+                {sugg.data?.length ? (
+                  <div className="le-q">
+                    {sugg.data.map((sg) => (
+                      <Link key={sg.slug} className="sx-btn sm" href={`/app/client/learn/${encodeURIComponent(sg.slug)}`}>
+                        {sg.question}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          </main>
+        </div>
       </div>
     </div>
   );

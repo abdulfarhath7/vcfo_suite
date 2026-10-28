@@ -1,9 +1,12 @@
 /* @cp-scope page=team */
-/* Team — team_redesign.dc.html:56-60 */
-.tp-team .tb-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px}
-.tp-team .tb-line{overflow-wrap:anywhere}
-.tp-team .tb-ph{display:flex;align-items:center;gap:10px;padding:14px 16px;flex-wrap:wrap}
-.tp-team .tb-ph .tb-segx{margin-left:auto}
-@media (max-width:767px){.tp-team .tb-cbtn{height:40px!important}.tp-team .tb-ph .tb-segx{margin-left:0;flex:1 1 100%}}
-.tp-team .ibtn[aria-disabled="true"],.tp-team .btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
-.tp-team .tb-err{color:var(--over-text);font-size:12px;font-weight:500}
+/* Team — team_redesign.dc.html, redrawn as the VCFO Spectrum Team section (C-0027, C-0028, R-42):
+   the SBC team card on top, the client's people in a large T1 card below. The section also
+   renders inside the Settings page, so its rules hang off .tb-team, not the page root. */
+.tb-team{display:flex;flex-direction:column;gap:20px;min-width:0}
+.tb-team .tb-line{overflow-wrap:anywhere}
+.tb-team .tb-sbc{min-height:60px;flex-wrap:wrap}
+.tb-team .tb-contact{display:flex;gap:8px;flex:none}
+.tb-team .tb-people td{font-size:14px}
+.tb-team .ibtn[aria-disabled="true"],.tb-team .btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+.tb-err{color:oklch(var(--danger));font-size:13px;font-weight:500}
+@media (max-width:767px){.tb-team .tb-contact{width:100%;padding-left:48px}.tb-team .tb-contact .ibtn{width:40px;height:40px}.tb-team .sx-head .sx-right{margin-left:0;width:100%}}

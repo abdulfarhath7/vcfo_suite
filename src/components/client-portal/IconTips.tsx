@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import { usePortal } from './PortalProvider';
 
 const OBVIOUS =
-  /^(WhatsApp|Call|Email|Teams|Phone|Message)\b|^About\b|^More actions\b|^Notifications(,|$)|^(More information|Close|Ask VCFO|Open Ask VCFO|SBC home|Search( \(⌘K\))?|Details|Open|Open menu|Announcements|Photo placeholder|PDF file|Word document|Excel (sheet|file)|PowerPoint( deck| file)?|Text file|CSV file|Image \([A-Z]+\))$/i;
+  /^(WhatsApp|Call|Email|Teams|Phone|Message)\b|^About\b|^More actions\b|^(Notifications|Announcements)(,|$)|^(More information|Close|Ask VCFO|Open Ask VCFO|SBC home|Search( \((⌘K|Ctrl K)\))?|Details|Open|Open menu|Photo placeholder|PDF file|Word document|Excel (sheet|file)|PowerPoint( deck| file)?|Text file|CSV file|Image \([A-Z]+\))$/i;
 
 export function IconTips() {
   const { tipAt } = usePortal();

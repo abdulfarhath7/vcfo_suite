@@ -25,27 +25,31 @@ export function AccessLog({ engQ, onClose, onAudit }: { engQ: string; onClose: (
       <div className="cr-scrim" role="presentation" onClick={onClose} />
       <div className="cr-drawer" role="dialog" aria-label="Access log">
         <header className="cr-dh">
-          <span className="cr-tile">
-            <Ic n="history" s={16} />
+          <span className="sx-tile" data-tone="blue">
+            <Ic n="history" s={15} />
           </span>
           <h2 className="cr-dt">Access log</h2>
-          <span className="cr-chip prog">{rows.length}</span>
+          <span className="cr-dn">{rows.length}</span>
           <span className="cr-sp" />
-          <button type="button" className="cr-btn cr-btn-sm" data-act="audit" onClick={onAudit}>
+          <button type="button" className="sx-btn sm" data-act="audit" onClick={onAudit}>
             <Ic n="file-text" s={13} />
             Open in Audit
           </button>
-          <button type="button" id="cr-log-x" className="cr-ib" aria-label="Close access log" onClick={onClose} ref={xRef}>
+          <button type="button" id="cr-log-x" className="sx-ib sm" aria-label="Close access log" onClick={onClose} ref={xRef}>
             <Ic n="x" s={14} />
           </button>
         </header>
         <ol className="cr-log" aria-busy={q.isLoading}>
           {q.isLoading ? (
-            <li className="cr-log-empty">Loading…</li>
+            <li className="cr-log-empty" aria-label="Loading">
+              <span className="sx-sk" style={{ height: 44 }} />
+              <span className="sx-sk" style={{ height: 44 }} />
+              <span className="sx-sk" style={{ height: 44 }} />
+            </li>
           ) : q.isError ? (
-            <li className="cr-log-empty">Could not load the access log.</li>
+            <li className="cr-log-empty cr-log-err">Could not load the access log</li>
           ) : rows.length === 0 ? (
-            <li className="cr-log-empty">No previews, edits or reveals yet.</li>
+            <li className="sx-empty cr-log-none">No previews, edits or reveals yet</li>
           ) : (
             rows.map((e) => (
               <li key={e.id}>
@@ -57,9 +61,6 @@ export function AccessLog({ engQ, onClose, onAudit }: { engQ: string; onClose: (
             ))
           )}
         </ol>
-        <footer className="cr-df">
-          <span className="cr-cap">Previews, edits and saved changes are logged here and on the Audit page</span>
-        </footer>
       </div>
     </div>
   );

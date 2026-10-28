@@ -39,16 +39,21 @@ export function fileTag(name: string | null | undefined, contentType?: string | 
   return MIME_TAG[mime] ?? 'FILE';
 }
 
-/** Prototype TS: PDF over tint, images teal, Word blue. */
+/* R-26: file badges are coloured by type. PDF is red, Word is blue, images are violet,
+   anything else is grey (the shared FileBadge uses the same tones). */
+const PDF_TONE: CSSProperties = { background: 'oklch(var(--danger-soft))', color: 'oklch(var(--danger))' };
+const IMG_TONE: CSSProperties = { background: 'oklch(var(--identity-soft))', color: 'oklch(var(--identity))' };
+const DOC_TONE: CSSProperties = { background: 'oklch(var(--info-soft))', color: 'oklch(var(--info))' };
+const ANY_TONE: CSSProperties = { background: 'oklch(var(--upcoming-soft))', color: 'oklch(var(--upcoming))' };
 export const TAG_STYLE: Record<FileTag, CSSProperties> = {
-  PDF: { background: 'var(--over-light)', color: 'var(--over-text)' },
-  JPG: { background: 'var(--teal-light)', color: 'var(--teal-chip)' },
-  PNG: { background: 'var(--teal-light)', color: 'var(--teal-chip)' },
-  WEBP: { background: 'var(--teal-light)', color: 'var(--teal-chip)' },
-  HEIC: { background: 'var(--teal-light)', color: 'var(--teal-chip)' },
-  DOCX: { background: 'var(--prog-light)', color: 'var(--prog-text)' },
-  DOC: { background: 'var(--prog-light)', color: 'var(--prog-text)' },
-  FILE: { background: 'var(--raised)', color: 'var(--muted)' },
+  PDF: PDF_TONE,
+  JPG: IMG_TONE,
+  PNG: IMG_TONE,
+  WEBP: IMG_TONE,
+  HEIC: IMG_TONE,
+  DOCX: DOC_TONE,
+  DOC: DOC_TONE,
+  FILE: ANY_TONE,
 };
 
 /** Prototype TT (rule 17 tooltip + aria-label). */

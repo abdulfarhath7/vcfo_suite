@@ -4,7 +4,10 @@
  * Announcements — prototype s/team/ann_redesign.dc.html (+ ann_detail, ann_empty).
  * List: `/api/announcements` (live head poll, `useAnnouncements`); read state:
  * NEW `announcement_reads` via `/api/client/announcements/reads`; next-deadline
- * banner: `/api/client/overview` compliance runway; portals: `VCFO_PORTAL_TASKS`.
+ * row: `/api/client/overview` compliance runway; portals: `VCFO_PORTAL_TASKS`.
+ * VCFO Spectrum: white card heads, the next deadline is the first row inside the
+ * Latest card (R-38, R-48: no bar above the page), kinds are status chips or area
+ * pills (R-13, R-43), no bot in the empty state (R-04).
  */
 import { sep } from '@/lib/date-format';
 import { useEffect, useMemo, useState } from 'react';
@@ -13,16 +16,19 @@ import { useAnnouncements } from '@/hooks/use-announcements';
 import { useClientOverview } from '@/hooks/use-client-overview';
 import { ANNOUNCEMENT_KIND_LABEL, type Announcement } from '@/lib/notifications/announcements';
 import { VCFO_PORTAL_TASKS, type VcfoPortalTask } from '@/lib/notifications/announcement-portals';
+import type { Regulator } from '@/components/ui/spectrum-chip';
 import { usePortal } from '../../PortalProvider';
-import { VisorHead } from '../../Visor';
 import { LinkButton } from '../../LinkButton';
 import { todayIST } from '../../hooks';
 import {
-  AskWhy,
-  BotBubble,
+  CardHead,
   CloseBtn,
   Dialog,
+  Empty,
   P,
+  SArea,
+  SChip,
+  STag,
   Seg,
   Svg,
   api,
@@ -39,11 +45,14 @@ const PORTAL_CAP = 8;
 const READS_KEY = ['client-portal', 'announcement-reads'] as const;
 const UNREAD_KEY = ['client-portal', 'announcements-unread'] as const;
 
-const NEUTRAL = { background: 'var(--raised)', color: 'var(--navy-ink,var(--navy))', boxShadow: 'inset 0 0 0 1px var(--border)' };
-const KC: Record<string, React.CSSProperties> = {
-  deadline: { background: 'var(--due-chip)', color: '#fff' },
-  compliance: { background: 'var(--prog-chip)', color: '#fff' },
-};
+/** R-43: kinds that name a regulator show its swatch. */
+const KIND_REG: Partial<Record<Announcement['kind'], Regulator>> = { 'post-incorp': 'mca', incorp: 'mca', mca: 'mca', gst: 'gst', tax: 'it' };
+
+/** R-13 / R-43: one 104 px mark per row, so the titles line up. A deadline is a status chip; other kinds are area pills. */
+function KindMark({ a }: { a: Announcement }) {
+  if (a.kind === 'deadline') return <SChip tone="warn">{ANNOUNCEMENT_KIND_LABEL[a.kind]}</SChip>;
+  return <SArea area={ANNOUNCEMENT_KIND_LABEL[a.kind]} reg={KIND_REG[a.kind]} />;
+}
 const imp = (a: Announcement) => a.kind === 'deadline' || a.kind === 'compliance';
 const host = (a: Announcement): string => {
   if (a.sourceUrl) {
@@ -120,53 +129,15 @@ export function AnnouncementsPage() {
     if (a) markRead([a.id]);
   };
 
+  const nextDm = next ? dayMonth(`${next.dueDate.slice(0, 10)}T12:00:00Z`) : null;
+  const nextHref = next ? `/app/client/compliances/filings?open=${encodeURIComponent(next.id)}` : '';
+
   return (
     <div className="cp-team">
       <main className="pg tb-wrap tp-ann">
-        {next ? (
-          <section
-            className="tb-focus"
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-              padding: '14px 18px',
-              borderRadius: 10,
-              background: 'var(--due-light)',
-              border: '1px solid oklch(66% 0.17 48 / .35)',
-            }}
-          >
-            <div className="dtile" style={{ background: 'var(--due-chip)', color: '#fff' }}>
-              <span className="d">{dayMonth(`${next.dueDate.slice(0, 10)}T12:00:00Z`).d}</span>
-              <span className="m">{dayMonth(`${next.dueDate.slice(0, 10)}T12:00:00Z`).m}</span>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="lbl" style={{ color: 'var(--due-text)' }}>
-                Next deadline · {dueText}
-              </div>
-              <div style={{ font: '600 16px var(--font-sans),sans-serif', color: 'var(--fg)', marginTop: 3 }}>
-                {next.title}
-                {next.periodLabel ? ` for ${next.periodLabel}` : ''}
-              </div>
-            </div>
-            <a
-              href={`/app/client/compliances/filings?open=${encodeURIComponent(next.id)}`}
-              className="btn btn-o btn-sm"
-              onClick={(e) => {
-                e.preventDefault();
-                go(`/app/client/compliances/filings?open=${encodeURIComponent(next.id)}`);
-              }}
-            >
-              Open
-            </a>
-          </section>
-        ) : null}
-
         <div className="tb-g12">
-          <section className="card tb-s8">
-            <div className="tb-hd">
-              <h2 className="h3">Latest</h2>
+          <section className="sx-card tb-s8" aria-labelledby="ann-latest">
+            <CardHead id="ann-latest" d={P.bell} tone="amber" title="Latest">
               <Seg
                 tabs={['All', 'Important', 'General'].map((l, i) => ({ label: l, cnt: all.filter(F[i]).length }))}
                 active={tab}
@@ -174,12 +145,41 @@ export function AnnouncementsPage() {
                 label="Filter announcements"
                 grid={false}
               />
-            </div>
+            </CardHead>
+            {next && nextDm && tab !== 2 ? (
+              /* the next deadline, as a row inside the card it is about (R-48) */
+              <div className="sx-row tb-next">
+                <div className="dtile tb-dt-warn">
+                  <span className="d">{nextDm.d}</span>
+                  <span className="m">{nextDm.m}</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <SChip tone={days < 0 ? 'bad' : 'warn'}>{days < 0 ? 'Overdue' : 'Due soon'}</SChip>
+                    <span className="cap">Next deadline · {dueText}</span>
+                  </div>
+                  <div className="rt" style={{ marginTop: 4, fontWeight: 500 }}>
+                    {next.title}
+                    {next.periodLabel ? ` for ${next.periodLabel}` : ''}
+                  </div>
+                </div>
+                <a
+                  href={nextHref}
+                  className="btn btn-o btn-sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    go(nextHref);
+                  }}
+                >
+                  Open
+                </a>
+              </div>
+            ) : null}
             {list.isLoading ? (
               sk ? (
                 [0, 1, 2, 3].map((i) => (
-                  <div key={i} className="row">
-                    <span className="sk" style={{ width: 50, height: 54, borderRadius: 8 }} />
+                  <div key={i} className="row" aria-hidden="true">
+                    <span className="sk" style={{ width: 44, height: 44, borderRadius: 6 }} />
                     <div style={{ flex: 1 }}>
                       <div className="sk" style={{ width: '30%', height: 12 }} />
                       <div className="sk" style={{ width: '70%', height: 14, marginTop: 8 }} />
@@ -188,22 +188,17 @@ export function AnnouncementsPage() {
                 ))
               ) : null
             ) : rows.length === 0 ? (
-              <BotBubble size={52} padding="56px 16px 64px">
-                <div className="rt" style={{ fontWeight: 700 }}>
-                  {tab === 1 ? 'No important updates right now.' : tab === 2 ? 'No general updates right now.' : 'No announcements yet.'}
-                </div>
-                <div className="cap" style={{ marginTop: 2 }}>
-                  Deadlines will show up here first.
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-                  {tab !== 0 ? (
+              <Empty
+                action={
+                  tab !== 0 ? (
                     <button type="button" className="btn btn-o btn-sm" onClick={() => setTab(0)}>
                       See all
                     </button>
-                  ) : null}
-                  <AskWhy q="Why are there no important updates right now?" />
-                </div>
-              </BotBubble>
+                  ) : undefined
+                }
+              >
+                {tab === 1 ? 'No important updates' : tab === 2 ? 'No general updates' : 'No announcements yet'}
+              </Empty>
             ) : (
               rows.map((a, i) => {
                 const unread = isUnread(a);
@@ -214,56 +209,40 @@ export function AnnouncementsPage() {
                   <LinkButton
                     key={a.id}
                     className={unread ? 'row unread w-full' : 'row w-full'}
-                    style={{ color: 'inherit', fontWeight: 'inherit', textDecoration: 'none' }}
+                    style={{ color: 'inherit', fontWeight: 'inherit', textDecoration: 'none', minHeight: 72 }}
                     onClick={() => openAt(i)}
                   >
-                    <div
-                      className="dtile"
-                      style={
-                        a.kind === 'deadline'
-                          ? { background: 'var(--due-light)', color: 'var(--due-text)' }
-                          : { background: 'var(--primary-light)', color: 'var(--navy-ink,var(--navy))' }
-                      }
-                    >
+                    <div className={a.kind === 'deadline' ? 'dtile tb-dt-warn' : 'dtile tb-dt'}>
                       <span className="d">{dm.d}</span>
                       <span className="m">{dm.m}</span>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px 8px', flexWrap: 'wrap' }}>
-                        <span className="chip" style={KC[a.kind] ?? NEUTRAL}>
-                          {ANNOUNCEMENT_KIND_LABEL[a.kind]}
-                        </span>
+                        <KindMark a={a} />
                         <span className="cap">{feed ? 'Official feed' : `From ${a.authorName.split('@')[0]}`}</span>
                         {feed && h ? (
-                          <span className="chip tb-m tb-iflex" style={{ background: 'var(--raised)', color: 'var(--muted)', boxShadow: 'inset 0 0 0 1px var(--border)' }}>
-                            {h}
-                          </span>
+                          <span className="cap tb-m tb-iflex">{h}</span>
                         ) : null}
                       </div>
-                      <div className="rt" style={{ marginTop: 4, fontSize: 14, fontWeight: unread ? 800 : 600 }}>
+                      <div className="rt tb-ttl" style={{ marginTop: 6, fontWeight: unread ? 500 : 400, color: unread ? 'oklch(var(--ink))' : 'oklch(var(--ink-2))' }}>
                         {a.title}
                       </div>
                     </div>
                     {feed && h ? (
-                      <span className="chip tb-d" style={{ background: 'var(--raised)', color: 'var(--muted)', boxShadow: 'inset 0 0 0 1px var(--border)' }}>
-                        {h}
+                      <span className="tb-d">
+                        <STag>{h}</STag>
                       </span>
                     ) : null}
-                    {unread ? <span className="udot" role="img" aria-label="Unread" data-tip="Unread" /> : null}
+                    {unread ? <span className="udot" role="img" aria-label="Unread" data-tip="Unread" /> : <span style={{ width: 8, flex: 'none' }} />}
                   </LinkButton>
                 );
               })
             )}
           </section>
 
-          <section className="card t tb-s4">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px' }}>
-              <span className="ic" style={{ background: 'var(--navy)' }}>
-                <Svg d={P.bank} />
-              </span>
-              <h2 className="h3">Official portals</h2>
-            </div>
-            <div style={{ padding: '0 16px 10px' }}>
+          <section className="sx-card tb-s4" aria-labelledby="ann-portals">
+            <CardHead id="ann-portals" d={P.bank} tone="blue" title="Official portals" />
+            <div style={{ padding: '12px 16px 4px' }}>
               <Seg
                 tabs={[
                   { label: 'Setup', cnt: setup.length },
@@ -272,24 +251,22 @@ export function AnnouncementsPage() {
                 active={pt}
                 onPick={setPt}
                 label="Portal groups"
-                style={{ width: '100%' }}
                 wrap={false}
+                grid={false}
               />
             </div>
-            <div style={{ padding: '0 16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ padding: '0 16px 12px', display: 'flex', flexDirection: 'column' }}>
               {groups.map((g) => (
                 <div key={g.h}>
-                  <div className="lbl" style={{ marginBottom: 6 }}>
-                    {g.h}
-                  </div>
+                  <div className="lbl tb-ghead">{g.h}</div>
                   {g.rows.map((r) => (
-                    <div key={r.task} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderTop: '1px solid var(--hair)' }}>
+                    <div key={r.task} className="tb-prow">
                       <span className="rt" style={{ flex: 1, minWidth: 0 }}>
                         {r.task}
                       </span>
                       {r.portalUrl ? (
                         <a href={r.portalUrl} target="_blank" rel="noopener noreferrer" className="ibtn" aria-label={`Open portal for ${r.task}`} data-tip={`Open portal for ${r.task}`}>
-                          <Svg d={P.ext} size={14} />
+                          <Svg d={P.ext} size={14} sw={1.8} />
                         </a>
                       ) : null}
                       {r.circularUrl ? (
@@ -302,7 +279,7 @@ export function AnnouncementsPage() {
                 </div>
               ))}
               {plist.length > PORTAL_CAP ? (
-                <button type="button" className="btn btn-g btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setPortalsAll((v) => !v)}>
+                <button type="button" className="btn btn-g btn-sm" style={{ alignSelf: 'flex-start', marginTop: 10 }} onClick={() => setPortalsAll((v) => !v)}>
                   {capped ? `Show all ${plist.length}` : 'Show fewer'}
                 </button>
               ) : null}
@@ -367,53 +344,47 @@ function AnnDetail({
   return (
     <Dialog labelledBy="ad-t" width={560} top onClose={onClose} tp="tp-ann">
       <div className="dlg-h" style={{ alignItems: 'flex-start' }}>
-        <div
-          className="dtile"
-          style={a.kind === 'deadline' ? { background: 'var(--due-light)', color: 'var(--due-text)' } : { background: 'var(--primary-light)', color: 'var(--navy-ink,var(--navy))' }}
-        >
+        <div className={a.kind === 'deadline' ? 'dtile tb-dt-warn' : 'dtile tb-dt'}>
           <span className="d">{dm.d}</span>
           <span className="m">{dm.m}</span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span className="chip" style={{ ...(KC[a.kind] ?? NEUTRAL), minWidth: 116, justifyContent: 'center' }}>
-              {ANNOUNCEMENT_KIND_LABEL[a.kind]}
-            </span>
-            {imp(a) ? (
-              <span className="chip" style={{ background: 'var(--raised)', color: 'var(--muted)' }}>
-                Important
-              </span>
-            ) : null}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <KindMark a={a} />
+            {imp(a) ? <STag tone="bad">Important</STag> : null}
+            <span className="cap">{when}</span>
           </div>
-          <h2 id="ad-t" style={{ margin: '6px 0 0', font: '600 18px/1.3 var(--font-sans)', color: 'var(--navy-ink,var(--navy))' }}>
+          <h2 id="ad-t" style={{ margin: '8px 0 0' }}>
             {a.title}
           </h2>
         </div>
         <CloseBtn onClick={onClose} />
       </div>
-      <div className="dlg-b" style={{ fontSize: 13.5, lineHeight: 1.6 }}>
+      <div className="dlg-b" style={{ fontSize: 14, lineHeight: 1.6, color: 'oklch(var(--ink))' }}>
         <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{a.body?.trim() || a.title}</p>
         {feed ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, background: 'var(--raised)' }}>
+          <div className="tb-by">
             <div style={{ flex: 1 }}>
-              <div className="rt">Official feed</div>
+              <div className="rt" style={{ fontWeight: 500 }}>Official feed</div>
               <div className="cap">
                 {h || a.sourceName} · {when}
               </div>
             </div>
             {a.sourceUrl ? (
-              <a href={a.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 700 }}>
-                Open on {h} ↗
+              <a href={a.sourceUrl} target="_blank" rel="noopener noreferrer" className="btn btn-o btn-sm">
+                {h || 'Source'}
+                <Svg d={P.ext} size={14} sw={1.8} />
+                <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}> (opens in a new tab)</span>
               </a>
             ) : null}
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, background: 'var(--raised)' }}>
-            <span className="av" style={{ width: 30, height: 30, fontSize: 10, background: avatarColor(a.authorId ?? authorName) }}>
+          <div className="tb-by">
+            <span className="av" style={{ width: 36, height: 36, fontSize: 12, background: avatarColor(a.authorId ?? authorName) }}>
               {initialsOf(authorName)}
             </span>
             <div style={{ flex: 1 }}>
-              <div className="rt">{authorName}</div>
+              <div className="rt" style={{ fontWeight: 500 }}>{authorName}</div>
               <div className="cap">
                 {roleLabel} · {when}
               </div>
@@ -431,28 +402,25 @@ function AnnDetail({
           </div>
         )}
         <LinkButton
-          className="ask w-full"
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}
+          className="ask"
+          style={{ alignSelf: 'flex-start', fontSize: 13 }}
           onClick={() => {
             onClose();
             openChat(`Tell me about ${a.title}`);
           }}
         >
-          <span style={{ width: 18, height: 18, display: 'inline-flex', overflow: 'hidden' }}>
-            <VisorHead style={{ width: 18, height: 23, marginTop: 2 }} />
-          </span>
           Ask VCFO about this
         </LinkButton>
       </div>
       <div className="dlg-f" style={{ justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: 6 }}>
-          <button type="button" className="ibtn" aria-label="Previous announcement" data-tip="Previous announcement" disabled={total < 2} onClick={() => onStep(-1)}>
+          <button type="button" className="ibtn ghost" aria-label="Previous announcement" data-tip="Previous announcement" disabled={total < 2} onClick={() => onStep(-1)}>
             <Svg d={P.prev} join={false} />
           </button>
-          <button type="button" className="ibtn" aria-label="Next announcement" data-tip="Next announcement" disabled={total < 2} onClick={() => onStep(1)}>
+          <button type="button" className="ibtn ghost" aria-label="Next announcement" data-tip="Next announcement" disabled={total < 2} onClick={() => onStep(1)}>
             <Svg d={P.next} join={false} />
           </button>
-          <span className="mono cap" style={{ alignSelf: 'center' }}>
+          <span className="cap" style={{ alignSelf: 'center' }}>
             {index + 1} / {total}
           </span>
         </div>

@@ -5,7 +5,7 @@
 
 @media (max-width:767px){
  .vh-hide-sm{display:none!important}
- .vh-under-bar{top:52px!important}
+ .vh-under-bar{top:var(--cp-top-h,59px)!important}
  .vh-zoom{bottom:72px!important}
 }
 .info .pop{max-width:min(280px,calc(100vw - 24px))}
@@ -22,9 +22,9 @@
 .dv-docx .docx-wrapper{background:transparent!important;padding:0!important}
 .dv-docx section.docx{box-shadow:none!important;margin:0 0 24px!important;width:auto!important;min-height:0!important;padding:0!important}
 .dv-line{height:7px;border-radius:3px;margin-top:10px}
-@keyframes dvsk{0%{background-position:-300px 0}100%{background-position:300px 0}}
-.dv-line{background:linear-gradient(90deg,oklch(92% 0.01 255) 0,oklch(96% 0.006 255) 50%,oklch(92% 0.01 255) 100%);background-size:600px 100%;animation:dvsk 1.3s linear infinite}
-.dv-nav:hover{background:var(--raised)!important}
+@keyframes dvsk{50%{opacity:.55}}
+.dv-line{background:oklch(var(--surface-sunken));animation:dvsk 1.4s ease-in-out infinite}
+.dv-nav:hover{background:oklch(var(--surface-sunken))!important}
 .dv-zb:hover{background:oklch(100% 0 0 / .14)!important}
 .dv-zb:disabled{opacity:.4;cursor:default!important}
 @media (prefers-reduced-motion: reduce){.dv-scrim,.dv-dlg,.dv-line{animation:none!important}[data-paper]{transition:none!important}}
