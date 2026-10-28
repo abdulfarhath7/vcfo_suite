@@ -102,3 +102,48 @@ export function idleLabel(summary: SuperEngagementSummary): string | null {
   if (summary.idleDays === null || summary.idleDays < 3) return null;
   return `Quiet ${summary.idleDays}d`;
 }
+
+/**
+ * R-13: the row chip in one of the six words, with its tone. The gate state stays the source:
+ * PM review and "with the client" both read Waiting (the owner chip says who holds it), and a
+ * firm-held journey with nothing done reads Not started.
+ */
+export function superStateChip(summary: SuperEngagementSummary): {
+  word: string;
+  tone: 'ok' | 'bad' | 'teal' | 'prog' | 'idle';
+  title: string;
+} {
+  switch (summary.stateKey) {
+    case 'complete':
+      return { word: 'Done', tone: 'ok', title: summary.stateLabel };
+    case 'overdue':
+      return { word: 'Overdue', tone: 'bad', title: summary.stateLabel };
+    case 'review':
+    case 'with-client':
+      return { word: 'Waiting', tone: 'teal', title: summary.stateLabel };
+    default:
+      return summary.progress.done === 0
+        ? { word: 'Not started', tone: 'idle', title: summary.stateLabel }
+        : { word: 'In progress', tone: 'prog', title: summary.stateLabel };
+  }
+}
+
+/** R-14: who holds the next move. PM review sits with the manager. */
+export function superOwnerOf(summary: SuperEngagementSummary): 'client' | 'sbc' | 'manager' | null {
+  if (!summary.currentStep) return null;
+  if (summary.stateKey === 'review') return 'manager';
+  return summary.currentStep.owner === 'client' ? 'client' : 'sbc';
+}
+
+/** The four phase bars (ST5) as `PhaseBar` wants them. */
+export function superPhaseTrack(summary: SuperEngagementSummary): {
+  done: number[];
+  totals: number[];
+  names: string[];
+} {
+  return {
+    done: summary.phases.map((phase) => phase.done),
+    totals: summary.phases.map((phase) => phase.total),
+    names: summary.phases.map((phase) => phase.label),
+  };
+}

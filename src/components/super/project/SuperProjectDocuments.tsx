@@ -3,10 +3,10 @@
 import { FolderClosed } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
 import { DashDataTable, type DashColumn } from '@/components/dash/DashDataTable';
-import { TONE_BADGE } from '@/components/common/IconChip';
-import { formatSuperDayMonth } from '@/components/super/overview/super-overview-format';
+import { FileBadge } from '@/components/ui/file-badge';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { plainDay } from '@/components/super/parts/super-text';
 import type { SuperDocument, SuperEngagementDetail } from '@/lib/super/super-overview';
-import { cn } from '@/lib/utils';
 
 /**
  * Everything filed against this engagement. Read-only: no download links are
@@ -33,7 +33,7 @@ export function SuperProjectDocuments({ detail }: { detail: SuperEngagementDetai
         rows={documents}
         rowKey={(row) => row.id}
         mobile={(row) => <DocumentMobileRow document={row} />}
-        empty="No documents filed yet."
+        empty="No documents yet"
       />
     </DashSection>
   );
@@ -44,14 +44,19 @@ const COLUMNS: DashColumn<SuperDocument>[] = [
     key: 'file',
     header: 'File',
     width: 'minmax(0,1.6fr)',
-    render: (row) => <span className="block min-w-0 truncate text-ink">{row.fileName}</span>,
+    render: (row) => (
+      <span className="flex min-w-0 items-center gap-2.5">
+        <FileBadge name={row.fileName} />
+        <span className="block min-w-0 truncate font-medium text-ink">{row.fileName}</span>
+      </span>
+    ),
   },
   {
     key: 'category',
     header: 'Category',
     width: 'minmax(0,0.8fr)',
     render: (row) => (
-      <span className="block min-w-0 truncate text-ink-muted">{row.category ?? '—'}</span>
+      <span className="block min-w-0 truncate text-ink-muted">{row.category ?? '–'}</span>
     ),
   },
   {
@@ -59,21 +64,16 @@ const COLUMNS: DashColumn<SuperDocument>[] = [
     header: 'Step',
     width: 'minmax(0,0.7fr)',
     mono: true,
-    render: (row) => <span className="text-ink-muted">{row.stepId ?? '—'}</span>,
+    render: (row) => <span className="text-ink-muted">{row.stepId ?? '–'}</span>,
   },
   {
     key: 'shared',
     header: 'Client',
-    width: 'minmax(4.5rem,0.5fr)',
+    width: 'minmax(7rem,0.5fr)',
     render: (row) => (
-      <span
-        className={cn(
-          'inline-block whitespace-nowrap rounded-sm px-2.5 py-0.5 text-[11px] font-semibold',
-          row.sharedWithClient ? TONE_BADGE.success : TONE_BADGE.neutral,
-        )}
-      >
+      <Chip fixed tone={row.sharedWithClient ? 'ok' : 'idle'}>
         {row.sharedWithClient ? 'Shared' : 'Internal'}
-      </span>
+      </Chip>
     ),
   },
   {
@@ -81,17 +81,19 @@ const COLUMNS: DashColumn<SuperDocument>[] = [
     header: 'Filed',
     width: 'minmax(4.5rem,0.5fr)',
     align: 'right',
-    mono: true,
-    render: (row) => <span>{formatSuperDayMonth(row.createdAt)}</span>,
+    render: (row) => <span className="tabular-nums">{plainDay(row.createdAt)}</span>,
   },
 ];
 
 function DocumentMobileRow({ document }: { document: SuperDocument }) {
   return (
     <div className="min-w-0">
-      <p className="min-w-0 truncate text-[13px] font-semibold text-ink">{document.fileName}</p>
-      <p className="mt-1 min-w-0 truncate text-[11.5px] font-semibold text-ink-muted">
-        {[document.category, document.stepId, formatSuperDayMonth(document.createdAt)]
+      <p className="flex min-w-0 items-center gap-2 text-[13.5px] font-medium text-ink">
+        <FileBadge name={document.fileName} />
+        <span className="min-w-0 truncate">{document.fileName}</span>
+      </p>
+      <p className="mt-1 min-w-0 truncate text-[12.5px] text-ink-muted">
+        {[document.category, document.stepId, plainDay(document.createdAt)]
           .filter(Boolean)
           .join(' · ')}
       </p>

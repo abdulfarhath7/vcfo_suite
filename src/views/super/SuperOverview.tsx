@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashHero } from '@/components/dash/DashHero';
-import { AccentButton } from '@/components/noir/AccentButton';
+import { SuperPageError } from '@/components/super/parts/super-parts';
 import {
   SuperPhasePanel,
   SuperStagePanel,
@@ -14,7 +14,14 @@ import { SuperAttentionPanel } from '@/components/super/overview/SuperAttentionP
 import { SuperWorkloadPanel } from '@/components/super/overview/SuperWorkloadPanel';
 import { SuperSideRail } from '@/components/super/overview/SuperSideRail';
 import { SuperOverviewSkeleton } from '@/components/super/overview/SuperOverviewSkeleton';
+import {
+  SuperManagersPanel,
+  SuperPracticeCards,
+  SuperTopRisks,
+} from '@/components/super/overview/SuperPracticeCards';
+import { filingOutcome } from '@/components/super/insights/super-insights-model';
 import { useSuperOverview } from '@/hooks/use-super-overview';
+import { useSuperInsights } from '@/views/super/use-super-insights';
 import { SUPER_ATTENTION_HREF, SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
 
@@ -23,17 +30,22 @@ import { internFirstName, internGreeting, internGreetingHour } from '@/lib/inter
  *
  * Answers "is the firm healthy, and what needs me?" in five seconds, and every
  * element drills to the detail behind it. Read-only: this surface never writes
- * (context §3). All numbers come from one scoped read, `/api/super/overview`.
+ * (context §3). The home card, attention list, charts and rail come from
+ * `/api/super/overview`; the practice cards, managers and top risks come from
+ * `/api/super/insights`, which loads beside it and never blocks the page.
  *
- * Composition is the lead dashboard's, deliberately: `PageTransition` → hero
- * with the headline numbers INSIDE the hero panel (never as bare metric cards
- * floating beside it) → a `[minmax(0,1fr)_318px]` grid of main column and side
- * rail, both built from `DashSection` panels.
+ * Layout follows the prototype's Overview (C-0109): the home card with KP1
+ * tiles, the three practice cards, then a main column and a 318px rail of
+ * `DashSection` panels.
  */
 export default function SuperOverview() {
   const { user } = useApp();
   const query = useSuperOverview();
   const overview = query.data;
+  // The practice cards, managers and risks come from the insights read. It loads beside the
+  // overview and never blocks it: until it lands those panels show grey shapes.
+  const insightsQuery = useSuperInsights();
+  const insights = insightsQuery.data;
 
   const greeting = useMemo(() => {
     const first = internFirstName(user?.name ?? '');
@@ -62,15 +74,11 @@ export default function SuperOverview() {
     return (
       <PageTransition>
         {seo}
-        <div className="surface px-6 py-8 text-center">
-          <p className="serif text-lg">The firm overview could not load</p>
-          <p className="mt-1 text-sm text-ink-muted">
-            {query.error instanceof Error ? query.error.message : 'Something went wrong.'}
-          </p>
-          <AccentButton className="mt-4" variant="outline" onClick={() => void query.refetch()}>
-            Try again
-          </AccentButton>
-        </div>
+        <SuperPageError
+          title="The firm overview could not load"
+          error={query.error}
+          onRetry={() => void query.refetch()}
+        />
       </PageTransition>
     );
   }
@@ -78,46 +86,75 @@ export default function SuperOverview() {
   const { kpis } = overview;
   const healthy = Math.max(0, kpis.engagements - kpis.needsAttention);
 
+  // Filed on time over every filing due by today in the report window (on time, late or open).
+  const filedOnTime = (() => {
+    if (!insights) return null;
+    const today = insights.generatedAt.slice(0, 10);
+    const outcomes = insights.filings.filter((f) => f.dueDate <= today).map((f) => filingOutcome(f, today));
+    if (outcomes.length === 0) return null;
+    return Math.round((outcomes.filter((o) => o === 'on-time').length / outcomes.length) * 100);
+  })();
+
   return (
     <PageTransition>
       {seo}
 
       <div className="flex flex-col gap-3">
         <DashHero
-          subtitle="Firm + client · every engagement"
           title={greeting}
           ring={{ value: healthy, total: kpis.engagements, caption: 'on track' }}
           stats={[
-            { label: 'projects', value: kpis.engagements, href: SUPER_PROJECTS_HREF },
+            { label: 'Clients', value: kpis.engagements, href: SUPER_PROJECTS_HREF },
             {
-              label: 'need attention',
+              label: 'Need attention',
               value: kpis.needsAttention,
               href: SUPER_ATTENTION_HREF,
               hot: kpis.needsAttention > 0,
             },
-            { label: 'awaiting review', value: kpis.approvalsPending, href: '/app/admin/approvals' },
+            { label: 'Awaiting review', value: kpis.approvalsPending, href: '/app/admin/approvals' },
             {
-              label: 'filings due',
+              label: 'Filings due',
               value: kpis.overdueFilings + kpis.filingsDueSoon,
+              sub: kpis.overdueFilings > 0 ? `${kpis.overdueFilings} overdue` : undefined,
               href: '/app/admin/compliances/calendar',
               hot: kpis.overdueFilings > 0,
             },
+            ...(filedOnTime !== null
+              ? [{ label: 'Filed on time', value: `${filedOnTime}%`, href: '/app/super/reports', good: true }]
+              : []),
           ]}
         />
 
+        {insights ? <SuperPracticeCards insights={insights} /> : <InsightShapes count={3} />}
+
         <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
           <div className="flex min-w-0 flex-col gap-3">
+            <SuperAttentionPanel overview={overview} />
+            {insights ? <SuperManagersPanel insights={insights} /> : <InsightShapes count={1} />}
+            <SuperWorkloadPanel overview={overview} />
             <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
               <SuperStagePanel overview={overview} />
               <SuperPhasePanel overview={overview} />
             </div>
-            <SuperAttentionPanel overview={overview} />
-            <SuperWorkloadPanel overview={overview} />
           </div>
 
-          <SuperSideRail overview={overview} />
+          <div className="flex min-w-0 flex-col gap-3">
+            {insights ? <SuperTopRisks insights={insights} /> : <InsightShapes count={1} />}
+            <SuperSideRail overview={overview} />
+          </div>
         </div>
       </div>
     </PageTransition>
+  );
+}
+
+/** Grey shapes while the insights read lands (R-48). */
+function InsightShapes({ count }: { count: number }) {
+  return (
+    <div className={count > 1 ? 'grid grid-cols-1 gap-3 lg:grid-cols-3' : undefined} aria-hidden>
+      {Array.from({ length: count }, (_, i) => (
+        <span key={i} className="block h-[220px] animate-pulse rounded-md bg-surface-sunken" />
+      ))}
+    </div>
   );
 }

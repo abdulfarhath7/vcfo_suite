@@ -1,31 +1,52 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
+import { ExternalLink } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
-import { DashHero } from '@/components/dash/DashHero';
-import { AccentButton } from '@/components/noir/AccentButton';
+import { Button } from '@/components/ui/button';
+import { AreaPill, Chip, OwnerChip } from '@/components/ui/spectrum-chip';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { EmptyState } from '@/components/ui/empty-state';
 import { SuperProjectJourney } from '@/components/super/project/SuperProjectJourney';
 import { SuperProjectDocuments } from '@/components/super/project/SuperProjectDocuments';
-import { SuperProjectRail } from '@/components/super/project/SuperProjectRail';
+import {
+  SuperActivityPanel,
+  SuperFilingsPanel,
+  SuperRegistrationsPanel,
+  SuperTeamPanel,
+} from '@/components/super/project/SuperProjectRail';
+import {
+  ClientTile,
+  SuperPageError,
+  SuperPageSkeleton,
+} from '@/components/super/parts/super-parts';
+import { superOwnerOf, superStateChip } from '@/components/super/overview/super-overview-format';
 import { useSuperProject } from '@/hooks/use-super-overview';
+import { cn } from '@/lib/utils';
 import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
 
 /**
- * SUPER ADMIN PROJECT DETAIL (L2) — one engagement, end to end.
+ * SUPER ADMIN CLIENT RECORD (L2) — one engagement, end to end (prototype
+ * `ClientRecordScreen`, C-0109).
  *
- * Same composition as the lead dashboard: the headline numbers live INSIDE the
- * hero panel, then a main column + 318px rail of `DashSection` panels.
- * Read-only throughout; the only ways to act are the read-only inspection links
- * in the rail, which open the role shells that own those actions.
+ * A plain head: the client tile, the name with the stage pill, the client,
+ * manager and lead, and the read-only "inspect as" links into the role shells
+ * that own every action. Under it one white band with the step, steps done,
+ * who holds the work and the live step, then underline tabs (R-11) for steps,
+ * registrations, filings, documents, team and activity. Read-only throughout.
  */
+type TabKey = 'steps' | 'registrations' | 'filings' | 'documents' | 'team' | 'activity';
+
 export default function SuperProjectDetail() {
   const params = useParams();
   const id = typeof params.id === 'string' ? params.id : (params.id?.[0] ?? '');
   const query = useSuperProject(id);
   const detail = query.data?.detail ?? null;
   const missing = query.data?.missing ?? false;
+  const [tab, setTab] = useState<TabKey>('steps');
 
   const seo = (
     <SEO
@@ -39,7 +60,7 @@ export default function SuperProjectDetail() {
     return (
       <PageTransition>
         {seo}
-        <DetailSkeleton />
+        <SuperPageSkeleton label="Loading the client" />
       </PageTransition>
     );
   }
@@ -48,18 +69,14 @@ export default function SuperProjectDetail() {
     return (
       <PageTransition>
         {seo}
-        <div className="surface px-6 py-8 text-center">
-          <p className="serif text-lg">That project is not here</p>
-          <p className="mt-1 text-sm text-ink-muted">
-            It may have been removed, or the link is out of date.
-          </p>
-          <Link
-            href={SUPER_PROJECTS_HREF}
-            className="mt-4 inline-flex rounded-sm border border-line px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-brand/40 hover:bg-brand-soft/40 hover:text-brand"
-          >
-            Back to all projects
-          </Link>
-        </div>
+        <EmptyState
+          title="That client is not here"
+          action={
+            <Button asChild variant="outline" size="sm">
+              <Link href={SUPER_PROJECTS_HREF}>Back to all clients</Link>
+            </Button>
+          }
+        />
       </PageTransition>
     );
   }
@@ -68,96 +85,158 @@ export default function SuperProjectDetail() {
     return (
       <PageTransition>
         {seo}
-        <div className="surface px-6 py-8 text-center">
-          <p className="serif text-lg">This project could not load</p>
-          <p className="mt-1 text-sm text-ink-muted">
-            {query.error instanceof Error ? query.error.message : 'Something went wrong.'}
-          </p>
-          <AccentButton className="mt-4" variant="outline" onClick={() => void query.refetch()}>
-            Try again
-          </AccentButton>
-        </div>
+        <SuperPageError title="This client could not load" error={query.error} onRetry={() => void query.refetch()} />
       </PageTransition>
     );
   }
 
   const { summary } = detail;
   const overdueFilings = detail.filings.filter((filing) => filing.status === 'overdue').length;
+  const currentIndex = summary.currentStep
+    ? detail.journey.findIndex((step) => step.id === summary.currentStep?.id)
+    : -1;
+  const currentStep = currentIndex >= 0 ? detail.journey[currentIndex] : null;
+  const chip = superStateChip(summary);
+  const owner = superOwnerOf(summary);
+  const regSteps = detail.journey.filter((step) => step.phaseId === 'registration-phase-4');
+  const quiet = idleKicker(summary.idleDays);
+
+  const tabs = [
+    { key: 'steps', label: 'Steps', count: `${summary.progress.done}/${summary.progress.total}` },
+    { key: 'registrations', label: 'Registrations', count: regSteps.length },
+    { key: 'filings', label: 'Filings', count: detail.filings.length },
+    { key: 'documents', label: 'Documents', count: detail.documents.length },
+    { key: 'team', label: 'Team', count: detail.team.length },
+    { key: 'activity', label: 'Activity' },
+  ];
+
+  const now = (
+    <span className="flex min-w-0 items-center gap-3">
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-medium text-ink-2">Now</span>
+        <span className="block truncate text-[14px] font-medium text-ink">
+          {currentStep ? currentStep.title : 'Every step is done'}
+        </span>
+      </span>
+      {owner ? <OwnerChip owner={owner} className="hidden sm:inline-flex" /> : null}
+      <Chip fixed tone={chip.tone} title={chip.title}>
+        {chip.word}
+      </Chip>
+    </span>
+  );
 
   return (
     <PageTransition>
       {seo}
 
-      <div className="flex flex-col gap-3">
-        <DashHero
-          subtitle={[
-            summary.stageLabel,
-            summary.stateLabel,
-            summary.leadName ?? 'No lead assigned',
-            idleKicker(summary.idleDays),
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-          title={summary.companyName}
-          ring={{ value: summary.progress.pct, caption: '% complete' }}
-          stats={[
-            { label: 'steps done', value: `${summary.progress.done}/${summary.progress.total}` },
-            { label: 'with the firm', value: summary.ballInCourt.firm },
-            {
-              label: 'with the client',
-              value: summary.ballInCourt.client,
-              hot: summary.ballInCourt.client > 0,
-            },
-            { label: 'awaiting review', value: summary.approvalsPending },
-            {
-              label: 'filings',
-              value: detail.filings.length,
-              hot: overdueFilings > 0,
-            },
-          ]}
-        />
-
-        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
-          <div className="flex min-w-0 flex-col gap-3">
-            <SuperProjectJourney detail={detail} />
-            <SuperProjectDocuments detail={detail} />
+      <div className="flex flex-col gap-5">
+        <header className="flex flex-col gap-4" aria-label={summary.companyName}>
+          <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+            <ClientTile id={summary.id} name={summary.companyName} className="mt-1 hidden h-9 w-9 text-[12.5px] sm:inline-grid" />
+            <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-1">
+              <h1 className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[22px] font-medium tracking-[-0.01em] text-ink md:text-[28px]">
+                <span className="min-w-0">{summary.companyName}</span>
+                <AreaPill area={summary.stageLabel} reg={summary.incorporated ? undefined : 'mca'} />
+              </h1>
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px] text-ink-muted">
+                {summary.clientName ? (
+                  <>
+                    <span>{summary.clientName}</span>
+                    <span aria-hidden>·</span>
+                  </>
+                ) : null}
+                <span>
+                  Manager <b className="font-medium text-ink-2">{summary.managerName ?? 'Unassigned'}</b>
+                </span>
+                <span aria-hidden>·</span>
+                <span>
+                  Project lead <b className="font-medium text-ink-2">{summary.leadName ?? 'No lead assigned'}</b>
+                </span>
+                {quiet ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>{quiet}</span>
+                  </>
+                ) : null}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="outline">
+                <Link href={detail.enterAs.firm}>
+                  <ExternalLink aria-hidden />
+                  Firm view
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={detail.enterAs.client}>
+                  <ExternalLink aria-hidden />
+                  Client portal
+                </Link>
+              </Button>
+              <Button variant="outline" onClick={() => setTab('documents')}>
+                Documents {detail.documents.length}
+              </Button>
+            </div>
           </div>
-          <SuperProjectRail detail={detail} />
-        </div>
+
+          <div className="surface flex flex-wrap items-center gap-x-8 gap-y-3 px-4 py-3.5 md:px-5">
+            <BandNumber label="Step" value={currentIndex >= 0 ? currentIndex + 1 : summary.progress.total} of={`of ${summary.progress.total}`} />
+            <BandNumber label="Steps done" value={`${summary.progress.done}/${summary.progress.total}`} good={summary.progress.pct === 100} />
+            <BandNumber label="With SBC" value={summary.ballInCourt.firm} />
+            <BandNumber label="With the client" value={summary.ballInCourt.client} />
+            <BandNumber label="Awaiting review" value={summary.approvalsPending} />
+            <BandNumber label="Filings overdue" value={overdueFilings} bad={overdueFilings > 0} />
+            <span className="min-w-0 flex-[1_1_280px] md:border-l md:border-line-soft md:pl-6">
+              {currentStep ? (
+                <Link href={currentStep.href} className="block min-w-0 hover:underline">
+                  {now}
+                </Link>
+              ) : (
+                now
+              )}
+            </span>
+          </div>
+        </header>
+
+        <SpectrumTabs variant="underline" label="Client record" items={tabs} value={tab} onChange={(key) => setTab(key as TabKey)} />
+
+        {tab === 'steps' ? <SuperProjectJourney detail={detail} /> : null}
+        {tab === 'registrations' ? <SuperRegistrationsPanel detail={detail} /> : null}
+        {tab === 'filings' ? <SuperFilingsPanel detail={detail} /> : null}
+        {tab === 'documents' ? <SuperProjectDocuments detail={detail} /> : null}
+        {tab === 'team' ? <SuperTeamPanel detail={detail} /> : null}
+        {tab === 'activity' ? <SuperActivityPanel detail={detail} /> : null}
       </div>
     </PageTransition>
+  );
+}
+
+function BandNumber({
+  label,
+  value,
+  of,
+  bad,
+  good,
+}: {
+  label: string;
+  value: number | string;
+  of?: string;
+  bad?: boolean;
+  good?: boolean;
+}) {
+  return (
+    <span className="flex flex-col gap-1">
+      <span className="text-[13px] font-medium text-ink-2">{label}</span>
+      <b className={cn('text-[22px] font-medium leading-none tabular-nums', bad ? 'text-danger' : good ? 'text-positive' : 'text-ink')}>
+        {value}
+        {of ? <small className="ml-1 text-[13px] font-normal text-ink-muted">{of}</small> : null}
+      </b>
+    </span>
   );
 }
 
 /** Only worth saying once it means something — three days of silence. */
 function idleKicker(idleDays: number | null): string | null {
   if (idleDays === null || idleDays < 3) return null;
-  return `quiet ${idleDays}d`;
-}
-
-function DetailSkeleton() {
-  return (
-    <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading the project">
-      <div className="lead-hero px-5 py-4 sm:px-6 sm:py-5">
-        <div className="space-y-2.5">
-          <div className="skeleton-brand h-3 w-40 rounded-full bg-white/20" aria-hidden />
-          <div className="flex items-start justify-between gap-4">
-            <div className="skeleton-brand h-8 w-[min(22rem,70%)] rounded-[var(--radius)] bg-white/20" aria-hidden />
-            <div className="skeleton-brand h-14 w-14 shrink-0 rounded-full bg-white/20" aria-hidden />
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
-        <div className="flex min-w-0 flex-col gap-3">
-          <div className="skeleton-brand h-[420px] rounded-[var(--radius)]" aria-hidden />
-          <div className="skeleton-brand h-[240px] rounded-[var(--radius)]" aria-hidden />
-        </div>
-        <div className="flex min-w-0 flex-col gap-3">
-          <div className="skeleton-brand h-[180px] rounded-[var(--radius)]" aria-hidden />
-          <div className="skeleton-brand h-[160px] rounded-[var(--radius)]" aria-hidden />
-          <div className="skeleton-brand h-[220px] rounded-[var(--radius)]" aria-hidden />
-        </div>
-      </div>
-    </div>
-  );
+  return `Quiet ${idleDays} days`;
 }

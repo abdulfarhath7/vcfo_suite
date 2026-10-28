@@ -47,7 +47,7 @@ export function DashSection({
         <CardHeadTile title={title} />
         <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">{title}</h2>
         {meta ? (
-          <span className="shrink-0 text-[12.5px] text-ink-muted">{meta}</span>
+          <span className="min-w-0 max-w-full text-[12.5px] text-ink-muted">{meta}</span>
         ) : null}
         {href ? (
           <Link

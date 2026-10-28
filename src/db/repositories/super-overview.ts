@@ -1,8 +1,15 @@
 import 'server-only';
 
-import { and, asc, gte, inArray, lte } from 'drizzle-orm';
+import { and, asc, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { complianceInstances, complianceObligations } from '@/db/schema';
+import {
+  complianceInstances,
+  complianceObligations,
+  engagementLeads,
+  engagementManagers,
+} from '@/db/schema';
+import { coerceStatusCode, getRegistrationPhases } from '@/data/checklist';
+import { CERTIFICATE_OF_INCORPORATION_STEP_ID } from '@/lib/compliance/incorporation-state';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
 import {
@@ -20,17 +27,33 @@ import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import {
   buildJourney,
   buildSuperOverview,
+  needsAttention,
+  sortByAttention,
   summarizeEngagement,
   superEngagementHref,
   superFirmViewHref,
   SUPER_FILING_HORIZON_DAYS,
   type SuperActivityEntry,
   type SuperEngagementDetail,
+  type SuperEngagementSummary,
   type SuperFiling,
+  type SuperJourneyStep,
   type SuperOverview,
   type SuperOverviewState,
   type SuperTeamMember,
 } from '@/lib/super/super-overview';
+import {
+  buildMonths,
+  buildTeam,
+  dayOf,
+  daysBetweenDays,
+  isFiled,
+  windowFloor,
+  type SuperInsightClient,
+  type SuperInsightFiling,
+  type SuperInsights,
+  type SuperRegCell,
+} from '@/components/super/insights/super-insights-model';
 
 /**
  * SUPER ADMIN OVERVIEW REPOSITORY.
@@ -84,6 +107,37 @@ function nameIndexes(staff: StaffPersonRow[]) {
     if (person.internId?.trim()) byInternId.set(person.internId.trim(), person.name);
   }
   return { byInternId, byProfileId };
+}
+
+/** One engagement row, summarised through the shared gate-derived builder. */
+function summaryForRow(
+  row: EngagementListRow,
+  state: SuperOverviewState,
+  names: ReturnType<typeof nameIndexes>,
+  now: Date,
+): SuperEngagementSummary {
+  const appId = appEngagementId(row.id);
+  const leadId = row.internId?.trim() || null;
+  const managerId = row.managerId ?? row.adminId ?? null;
+  return summarizeEngagement(
+    {
+      id: appId,
+      slug: row.slug ?? null,
+      companyName: row.companyName,
+      clientName: row.clientName?.trim() || null,
+      stage: row.stage,
+      health: row.health,
+      leadId,
+      leadName: leadId ? (names.byInternId.get(leadId) ?? null) : null,
+      managerId,
+      managerName: managerId ? (names.byProfileId.get(managerId) ?? null) : null,
+      incorporationDate: row.incorporationDate ?? null,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      state,
+    },
+    now,
+  );
 }
 
 /**
@@ -200,27 +254,7 @@ export async function getSuperAdminOverview(
   const summaries = rows.map((row: EngagementListRow) => {
     const appId = appEngagementId(row.id);
     const state = (checklistIndex[appId] ?? {}) as SuperOverviewState;
-    const leadId = row.internId?.trim() || null;
-    const managerId = row.managerId ?? row.adminId ?? null;
-    return summarizeEngagement(
-      {
-        id: appId,
-        slug: row.slug ?? null,
-        companyName: row.companyName,
-        clientName: row.clientName?.trim() || null,
-        stage: row.stage,
-        health: row.health,
-        leadId,
-        leadName: leadId ? (byInternId.get(leadId) ?? null) : null,
-        managerId,
-        managerName: managerId ? (byProfileId.get(managerId) ?? null) : null,
-        incorporationDate: row.incorporationDate ?? null,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-        state,
-      },
-      now,
-    );
+    return summaryForRow(row, state, { byInternId, byProfileId }, now);
   });
 
   const [filings, auditRows] = await Promise.all([
@@ -340,5 +374,268 @@ export async function getSuperEngagementDetail(
       firm: superFirmViewHref(slugOrId),
       client: '/app/client/overview',
     },
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Insights — practice areas, team, risks, growth and reports.
+ * ------------------------------------------------------------------ */
+
+/** Audit rows read for "last active" and the admin feed. */
+const INSIGHT_AUDIT_LIMIT = 500;
+
+/** Admin actions shown in "What admins did". */
+const ADMIN_FEED_LIMIT = 12;
+
+/** Months of history behind Growth and Reports. */
+const INSIGHT_MONTHS = 12;
+
+/** The registration phase in `src/data/checklist.ts`. */
+const REGISTRATION_PHASE_ID = 'registration-phase-4';
+
+/**
+ * Co-lead and co-manager rows, restricted to the engagement ids the engagement scope already
+ * approved. The primary pointers (`intern_id`, `manager_id`) are on the engagement row itself.
+ */
+async function loadMemberships(scopedDbIds: string[]) {
+  if (scopedDbIds.length === 0) {
+    return { leads: [] as Array<{ engagementId: string; internId: string }>, managers: [] as Array<{ engagementId: string; managerId: string }> };
+  }
+  const [leads, managers] = await Promise.all([
+    db
+      .select({ engagementId: engagementLeads.engagementId, internId: engagementLeads.internId })
+      .from(engagementLeads)
+      .where(inArray(engagementLeads.engagementId, scopedDbIds)),
+    db
+      .select({ engagementId: engagementManagers.engagementId, managerId: engagementManagers.managerId })
+      .from(engagementManagers)
+      .where(inArray(engagementManagers.engagementId, scopedDbIds)),
+  ]);
+  return { leads, managers };
+}
+
+/**
+ * Filings for Growth, Reports and Risks: everything due from the start of the report window
+ * to 90 days ahead, plus every older filing that is still not filed (an overdue filing from
+ * last year is still a risk today). Restricted to the approved engagement ids.
+ */
+async function loadInsightFilings(
+  scopedDbIds: string[],
+  companyByDbId: Map<string, string>,
+  now: Date,
+): Promise<SuperInsightFiling[]> {
+  if (scopedDbIds.length === 0) return [];
+
+  const horizon = new Date(now);
+  horizon.setDate(horizon.getDate() + SUPER_FILING_HORIZON_DAYS);
+  const floor = windowFloor(now, INSIGHT_MONTHS);
+
+  const rows = await db
+    .select({
+      id: complianceInstances.id,
+      engagementId: complianceInstances.engagementId,
+      obligationId: complianceInstances.obligationId,
+      dueDate: complianceInstances.dueDate,
+      filedOn: complianceInstances.filedOn,
+      status: complianceInstances.status,
+      periodLabel: complianceInstances.periodLabel,
+    })
+    .from(complianceInstances)
+    .where(
+      and(
+        inArray(complianceInstances.engagementId, scopedDbIds),
+        lte(complianceInstances.dueDate, ymd(horizon)),
+        or(
+          gte(complianceInstances.dueDate, floor),
+          and(ne(complianceInstances.status, 'filed'), isNull(complianceInstances.filedOn)),
+        ),
+      ),
+    )
+    .orderBy(asc(complianceInstances.dueDate));
+
+  if (rows.length === 0) return [];
+
+  const obligationIds = [...new Set(rows.map((row) => row.obligationId))];
+  const obligations = await db
+    .select({
+      id: complianceObligations.id,
+      particular: complianceObligations.particular,
+      authority: complianceObligations.authority,
+    })
+    .from(complianceObligations)
+    .where(inArray(complianceObligations.id, obligationIds));
+  const byId = new Map(obligations.map((row) => [row.id, row]));
+
+  return rows.map((row) => {
+    const obligation = byId.get(row.obligationId);
+    const appId = appEngagementId(row.engagementId);
+    return {
+      id: row.id,
+      engagementId: appId,
+      companyName: companyByDbId.get(row.engagementId) ?? 'Unknown company',
+      title: obligation?.particular?.trim() || row.obligationId,
+      authority: obligation?.authority?.trim() || 'Other',
+      dueDate: row.dueDate,
+      filedOn: row.filedOn ?? null,
+      status: row.status,
+      periodLabel: row.periodLabel?.trim() || undefined,
+      href: superEngagementHref(appId),
+    };
+  });
+}
+
+/**
+ * The certificate date: the engagement column first, then the date the Pre-12 step recorded.
+ * Only read once `isIncorporated` (through the summary) says the company exists.
+ */
+function certificateDateOf(row: EngagementListRow, state: SuperOverviewState): string | null {
+  const column = dayOf(row.incorporationDate ?? null);
+  if (column) return column;
+  const coi = state[CERTIFICATE_OF_INCORPORATION_STEP_ID];
+  const responses = (coi?.responses ?? {}) as Record<string, unknown>;
+  const answered = typeof responses.dateOfIncorporation === 'string' ? responses.dateOfIncorporation : null;
+  return dayOf(answered) ?? dayOf(coi?.completedOn ?? null);
+}
+
+/** One registration step's cell: the stored status for "not needed" and "overdue", else the gate. */
+function registrationCell(step: SuperJourneyStep, state: SuperOverviewState): SuperRegCell {
+  const status = coerceStatusCode(state[step.id]?.status);
+  if (status === 'not-applicable') return 'not-needed';
+  if (step.kind === 'done') return 'done';
+  if (step.kind === 'locked') return 'locked';
+  if (status === 'overdue') return 'overdue';
+  return step.kind === 'waiting' ? 'waiting' : 'progress';
+}
+
+/**
+ * The scoped read behind Practice areas, Team, Risks, Growth and Reports.
+ *
+ * Same doors as the overview: `assertSuperScope` first, then only the role-scoped repository
+ * reads (`listEngagements`, `listChecklistIndex`, `listStaffPeople`, `listAuditEvents`), and
+ * every direct read here (memberships, compliance rows) is restricted to the engagement ids
+ * that scope approved. Nothing here writes.
+ */
+export async function getSuperFirmInsights(
+  ctx: AuthContext,
+  now: Date = new Date(),
+): Promise<SuperInsights> {
+  assertSuperScope(ctx);
+
+  const [rows, checklistIndex, staff] = await Promise.all([
+    listEngagements(ctx),
+    listChecklistIndex(ctx),
+    listStaffPeople(ctx),
+  ]);
+
+  const scopedDbIds = rows.map((row) => row.id);
+  const companyByDbId = new Map(rows.map((row) => [row.id, row.companyName]));
+  const names = nameIndexes(staff);
+
+  const [memberships, filings, auditRows] = await Promise.all([
+    loadMemberships(scopedDbIds),
+    loadInsightFilings(scopedDbIds, companyByDbId, now),
+    listAuditEvents(ctx, { limit: INSIGHT_AUDIT_LIMIT }),
+  ]);
+
+  const coLeads = new Map<string, string[]>();
+  for (const m of memberships.leads) {
+    const id = m.internId?.trim();
+    if (!id) continue;
+    coLeads.set(m.engagementId, [...(coLeads.get(m.engagementId) ?? []), id]);
+  }
+  const coManagers = new Map<string, string[]>();
+  for (const m of memberships.managers) {
+    coManagers.set(m.engagementId, [...(coManagers.get(m.engagementId) ?? []), m.managerId]);
+  }
+
+  const nextDue = new Map<string, string>();
+  for (const filing of filings) {
+    if (isFiled(filing)) continue;
+    const current = nextDue.get(filing.engagementId);
+    if (!current || filing.dueDate < current) nextDue.set(filing.engagementId, filing.dueDate);
+  }
+
+  const registrationTypes = getRegistrationPhases()
+    .filter((phase) => phase.id === REGISTRATION_PHASE_ID)
+    .flatMap((phase) => phase.items.map((item) => ({ id: item.id, title: item.title })));
+
+  const clients: SuperInsightClient[] = rows.map((row) => {
+    const appId = appEngagementId(row.id);
+    const state = (checklistIndex[appId] ?? {}) as SuperOverviewState;
+    const summary = summaryForRow(row, state, names, now);
+    const journey = buildJourney(state, row.slug ?? appId);
+
+    const registrations: Record<string, SuperRegCell> = {};
+    const overdueSteps: SuperInsightClient['overdueSteps'] = [];
+    for (const step of journey) {
+      if (step.phaseId === REGISTRATION_PHASE_ID) registrations[step.id] = registrationCell(step, state);
+      const status = coerceStatusCode(state[step.id]?.status);
+      if (status === 'overdue' && step.kind !== 'done' && step.kind !== 'locked') {
+        overdueSteps.push({ id: step.id, title: step.title, href: step.href });
+      }
+    }
+
+    const startedPreInc = row.stage === 'Pre-Incorporation';
+    const certificateDate = summary.incorporated ? certificateDateOf(row, state) : null;
+    const startDay = dayOf(summary.createdAt);
+    const coiDays =
+      startedPreInc && certificateDate && startDay ? daysBetweenDays(startDay, certificateDate) : null;
+
+    const leadIds = [...new Set([summary.leadId, ...(coLeads.get(row.id) ?? [])].filter(Boolean) as string[])];
+    const managerIds = [
+      ...new Set([summary.managerId, ...(coManagers.get(row.id) ?? [])].filter(Boolean) as string[]),
+    ];
+
+    return {
+      summary,
+      startedPreInc,
+      certificateDate,
+      daysToCoi: coiDays !== null && coiDays >= 0 ? coiDays : null,
+      managerIds,
+      leadIds,
+      overdueSteps,
+      registrations,
+      currentStepHref: summary.currentStep
+        ? (journey.find((step) => step.id === summary.currentStep?.id)?.href ?? null)
+        : null,
+      nextDueDate: nextDue.get(appId) ?? null,
+    };
+  });
+
+  const lastActive = new Map<string, string>();
+  const actions30d = new Map<string, number>();
+  const monthAgo = now.getTime() - 30 * 86_400_000;
+  for (const event of auditRows) {
+    const actor = event.actor_user_id;
+    if (!actor) continue;
+    const prev = lastActive.get(actor);
+    if (!prev || event.created_at > prev) lastActive.set(actor, event.created_at);
+    if (Date.parse(event.created_at) >= monthAgo) actions30d.set(actor, (actions30d.get(actor) ?? 0) + 1);
+  }
+
+  const byEngagement = new Map(clients.map((client) => [client.summary.id, client]));
+  const adminFeed = toActivity(
+    auditRows.filter((event) => event.actor_role === 'admin' || event.actor_role === 'super_admin'),
+    companyByDbId,
+  ).slice(0, ADMIN_FEED_LIMIT);
+
+  return {
+    generatedAt: now.toISOString(),
+    clients: sortByAttention(clients.map((client) => client.summary)).map(
+      (summary) => byEngagement.get(summary.id)!,
+    ),
+    registrationTypes,
+    filings,
+    months: buildMonths(clients, filings, now, INSIGHT_MONTHS),
+    team: buildTeam({
+      staff,
+      clients,
+      filings,
+      lastActive,
+      actions30d,
+      isAttention: needsAttention,
+      now,
+    }),
+    adminFeed,
   };
 }

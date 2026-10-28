@@ -7,8 +7,9 @@ import { CHART_STATUS, ChartLegend, DashBarChart, type ChartRow, type ChartSerie
 import {
   FILING_BUCKET_COLOR,
   formatSuperAgo,
-  formatSuperDayMonth,
 } from '@/components/super/overview/super-overview-format';
+import { plainDay, todayKey } from '@/components/super/parts/super-text';
+import { cn } from '@/lib/utils';
 import type { SuperOverview } from '@/lib/super/super-overview';
 
 /**
@@ -34,9 +35,7 @@ function SuperBallInCourtPanel({ overview }: { overview: SuperOverview }) {
   return (
     <DashSection icon={Scale} tone="primary" title="Ball in court" meta={`${open} open`}>
       {open === 0 && done === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-ink-muted">
-          No checklist work has started yet.
-        </p>
+        <p className="py-3 text-center text-[13px] text-ink-muted">No checklist work yet</p>
       ) : (
         <div className="flex min-w-0 items-center gap-3">
           <DashDonut
@@ -49,9 +48,9 @@ function SuperBallInCourtPanel({ overview }: { overview: SuperOverview }) {
             centerCaption="open"
           />
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <DashLegendRow swatchClassName="bg-brand" label="With the firm" count={firm} />
-            <DashLegendRow swatchClassName="bg-highlight-bright" label="With the client" count={client} />
-            <DashLegendRow swatchClassName="bg-positive" label="Done" count={done} />
+            <DashLegendRow swatchClassName="bg-brand" label="With SBC" count={firm} />
+            <DashLegendRow swatchClassName="bg-waiting-mid" label="With the client" count={client} />
+            <DashLegendRow swatchClassName="bg-positive-mid" label="Done" count={done} />
           </div>
         </div>
       )}
@@ -103,23 +102,30 @@ function SuperRunwayPanel({ overview }: { overview: SuperOverview }) {
           }))}
       />
 
-      {next.map((filing) => (
-        <Link
-          key={filing.id}
-          href={filing.href}
-          className="mt-2.5 flex min-w-0 items-center gap-2.5"
-        >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-sunken text-[11px] font-semibold tabular-nums text-ink">
-            {filing.dueDate.slice(8, 10)}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[12.5px] font-semibold text-ink">{filing.title}</span>
-            <span className="block truncate text-[11px] text-ink-muted">
-              {filing.companyName} · {formatSuperDayMonth(filing.dueDate)}
+      {next.map((filing) => {
+        const late = filing.dueDate < todayKey();
+        return (
+          <Link key={filing.id} href={filing.href} className="mt-2.5 flex min-w-0 items-center gap-2.5">
+            <span
+              className={cn(
+                'grid h-11 w-11 shrink-0 place-items-center rounded-md text-center leading-none',
+                late ? 'bg-danger-soft text-danger' : 'bg-surface-sunken text-ink',
+              )}
+            >
+              <span>
+                <b className="block text-[15px] font-medium tabular-nums">{Number(filing.dueDate.slice(8, 10))}</b>
+                <span className="block text-[10.5px]">{plainDay(filing.dueDate).split(' ')[1]}</span>
+              </span>
             </span>
-          </span>
-        </Link>
-      ))}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[13px] font-medium text-ink">{filing.title}</span>
+              <span className="block truncate text-[12px] text-ink-muted">
+                {filing.companyName} · {plainDay(filing.dueDate)}
+              </span>
+            </span>
+          </Link>
+        );
+      })}
     </DashSection>
   );
 }
@@ -137,15 +143,13 @@ function SuperActivityPanel({ overview }: { overview: SuperOverview }) {
       hrefLabel="Full log"
     >
       {entries.length === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-ink-muted">
-          Nothing has happened yet today.
-        </p>
+        <p className="py-3 text-center text-[13px] text-ink-muted">No activity yet</p>
       ) : (
         <ul className="flex flex-col">
           {entries.map((entry) => {
             const body = (
               <>
-                <p className="line-clamp-2 text-[12.5px] font-semibold leading-snug text-ink">
+                <p className="line-clamp-2 text-[13px] font-medium leading-snug text-ink">
                   {entry.label}
                 </p>
                 <p className="mt-0.5 min-w-0 truncate text-[11px] text-ink-muted">

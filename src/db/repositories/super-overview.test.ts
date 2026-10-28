@@ -56,7 +56,7 @@ vi.mock('@/db/repositories/audit-events', () => ({
   listAuditEvents: (...args: unknown[]) => listAuditEvents(...args),
 }));
 
-const { getSuperAdminOverview } = await import('@/db/repositories/super-overview');
+const { getSuperAdminOverview, getSuperFirmInsights } = await import('@/db/repositories/super-overview');
 
 const ENGAGEMENT_A = '11111111-1111-1111-1111-111111111101';
 const ENGAGEMENT_B = '22222222-2222-2222-2222-222222222202';
@@ -260,5 +260,104 @@ describe('getSuperAdminOverview — shape', () => {
 
     expect(overview.activity.map((entry) => entry.id)).toEqual(['a2']);
     expect(overview.activity[0]?.companyName).toBe('Acme India Private Limited');
+  });
+});
+
+describe('getSuperFirmInsights — access', () => {
+  it.each([
+    ['manager', managerCtx],
+    ['client', clientCtx],
+  ])('refuses a %s before reading anything', async (_label, ctx) => {
+    await expect(getSuperFirmInsights(ctx)).rejects.toThrow(/firm-wide/i);
+
+    expect(listEngagements).not.toHaveBeenCalled();
+    expect(listChecklistIndex).not.toHaveBeenCalled();
+    expect(listStaffPeople).not.toHaveBeenCalled();
+    expect(listAuditEvents).not.toHaveBeenCalled();
+    expect(dbSelect).not.toHaveBeenCalled();
+  });
+
+  it('reads through the role-scoped repositories and scopes every direct read to approved ids', async () => {
+    listEngagements.mockResolvedValue([
+      engagementRow(ENGAGEMENT_A),
+      engagementRow(ENGAGEMENT_B, { companyName: 'Beta Labs Private Limited' }),
+    ]);
+
+    await getSuperFirmInsights(superCtx);
+
+    expect(listEngagements).toHaveBeenCalledWith(superCtx);
+    expect(listChecklistIndex).toHaveBeenCalledWith(superCtx);
+    expect(listStaffPeople).toHaveBeenCalledWith(superCtx);
+    expect(listAuditEvents).toHaveBeenCalledWith(superCtx, { limit: 500 });
+    // Lead memberships, manager memberships and compliance rows: all three restricted to the
+    // engagement ids the scope approved.
+    expect(inArrayCalls.slice(0, 3)).toEqual([
+      [ENGAGEMENT_A, ENGAGEMENT_B],
+      [ENGAGEMENT_A, ENGAGEMENT_B],
+      [ENGAGEMENT_A, ENGAGEMENT_B],
+    ]);
+  });
+
+  it('never queries memberships or compliance when the scope returned no engagements', async () => {
+    listEngagements.mockResolvedValue([]);
+
+    const insights = await getSuperFirmInsights(superCtx);
+
+    expect(dbSelect).not.toHaveBeenCalled();
+    expect(insights.clients).toEqual([]);
+    expect(insights.months).toHaveLength(12);
+  });
+});
+
+describe('getSuperFirmInsights — shape', () => {
+  it('counts a co-manager from the membership table and records the certificate date', async () => {
+    listEngagements.mockResolvedValue([
+      engagementRow(ENGAGEMENT_A, {
+        incorporationDate: '2026-02-10',
+        createdAt: new Date('2026-01-05T00:00:00.000Z'),
+      }),
+    ]);
+    listStaffPeople.mockResolvedValue([
+      {
+        id: 'user-manager',
+        name: 'Meera Manager',
+        email: 'pm@vcfo.local',
+        role: 'manager',
+        internId: null,
+        clientId: null,
+        reportsToManagerId: null,
+        status: 'active',
+      },
+      {
+        id: 'user-co',
+        name: 'Arun Manager',
+        email: 'arun@vcfo.local',
+        role: 'manager',
+        internId: null,
+        clientId: null,
+        reportsToManagerId: null,
+        status: 'active',
+      },
+    ]);
+    let call = 0;
+    dbSelect.mockImplementation(() => {
+      call += 1;
+      // First select: lead memberships; second: manager memberships; the rest: compliance.
+      if (call === 2) return stubSelect([{ engagementId: ENGAGEMENT_A, managerId: 'user-co' }]);
+      return stubSelect([]);
+    });
+
+    const insights = await getSuperFirmInsights(superCtx, new Date('2026-03-01T00:00:00.000Z'));
+
+    const row = insights.clients[0]!;
+    expect(row.managerIds.sort()).toEqual(['user-co', 'user-manager']);
+    expect(row.certificateDate).toBe('2026-02-10');
+    expect(row.daysToCoi).toBe(36);
+    expect(insights.team.managers.map((m) => [m.id, m.clients])).toEqual([
+      ['user-co', 1],
+      ['user-manager', 1],
+    ]);
+    expect(insights.registrationTypes.length).toBeGreaterThan(0);
+    expect(Object.keys(row.registrations)).toHaveLength(insights.registrationTypes.length);
   });
 });
