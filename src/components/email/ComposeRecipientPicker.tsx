@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { AtSign, X } from 'lucide-react';
+import { AtSign, Users, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import {
@@ -56,12 +56,19 @@ type Props = {
   onRemoveCustomEmail: (email: string) => void;
   /** Draw without its own label and edge, for a labelled compose row (Spectrum email card). */
   bare?: boolean;
+  /** Mail groups (G-23). A picked group is one chip; the send route expands it to addresses. */
+  groups?: PickerGroup[];
+  selectedGroupIds?: Set<string>;
+  onToggleGroup?: (groupId: string) => void;
 };
+
+export type PickerGroup = { id: string; name: string; shared: boolean; members: Array<{ email: string }> };
 
 /** A To chip: a directory person, or a typed address. */
 type Recipient =
   | { key: string; kind: 'person'; person: DirectoryPerson }
-  | { key: string; kind: 'email'; email: string };
+  | { key: string; kind: 'email'; email: string }
+  | { key: string; kind: 'group'; group: PickerGroup };
 
 export function ComposeRecipientPicker({
   people,
@@ -73,6 +80,9 @@ export function ComposeRecipientPicker({
   onAddCustomEmails,
   onRemoveCustomEmail,
   bare,
+  groups = [],
+  selectedGroupIds,
+  onToggleGroup,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -98,9 +108,16 @@ export function ComposeRecipientPicker({
         .filter((p) => selected.has(p.userId))
         .map((person): Recipient => ({ key: `person:${person.userId}`, kind: 'person', person })),
       ...customEmails.map((email): Recipient => ({ key: `email:${email}`, kind: 'email', email })),
+      ...groups
+        .filter((g) => selectedGroupIds?.has(g.id))
+        .map((group): Recipient => ({ key: `group:${group.id}`, kind: 'group', group })),
     ],
-    [people, selected, customEmails],
+    [people, selected, customEmails, groups, selectedGroupIds],
   );
+  const groupMatches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return groups.filter((g) => !selectedGroupIds?.has(g.id) && (!q || g.name.toLowerCase().includes(q)));
+  }, [groups, selectedGroupIds, query]);
   const shownChips = recipients.slice(0, VISIBLE_CHIPS);
   const overflowChips = recipients.slice(VISIBLE_CHIPS);
   const trimmedQuery = query.trim();
@@ -121,6 +138,7 @@ export function ComposeRecipientPicker({
 
   function removeRecipient(recipient: Recipient) {
     if (recipient.kind === 'person') handleToggle(recipient.person.userId);
+    else if (recipient.kind === 'group') onToggleGroup?.(recipient.group.id);
     else onRemoveCustomEmail(recipient.email);
   }
 
@@ -175,6 +193,9 @@ export function ComposeRecipientPicker({
                   title={`Remove ${recipientLabel(recipient)}`}
                   onClick={() => removeRecipient(recipient)}
                 >
+                  {recipient.kind === 'group' ? (
+                    <Users className="h-3 w-3 shrink-0 text-ink-muted" aria-hidden />
+                  ) : null}
                   <span className="truncate">{recipientEmail(recipient)}</span>
                   <X className="h-3 w-3 shrink-0 text-ink-muted" aria-hidden />
                 </button>
@@ -211,7 +232,7 @@ export function ComposeRecipientPicker({
                     e.preventDefault();
                   }
                 }}
-                placeholder={recipients.length === 0 ? 'Name or email' : ''}
+                placeholder={recipients.length === 0 ? (groups.length > 0 ? 'Name, email or group' : 'Name or email') : ''}
                 aria-expanded={open}
                 aria-haspopup="listbox"
                 aria-controls="mail-to-people"
@@ -270,6 +291,32 @@ export function ComposeRecipientPicker({
                     <span className="block text-[11.5px] text-ink-muted">Not in the directory</span>
                   </span>
                 </button>
+              ) : null}
+              {groupMatches.length > 0 && onToggleGroup ? (
+                <div className="border-b border-line-soft pb-1.5">
+                  <p className="px-2 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-[.07em] text-ink-muted">
+                    Groups
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 px-2">
+                    {groupMatches.map((g) => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        title={g.members.map((m) => m.email).join(', ')}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          onToggleGroup(g.id);
+                          setQuery('');
+                        }}
+                        className={cn(CHIP, 'pr-2')}
+                      >
+                        <Users className="h-3 w-3 shrink-0 text-ink-muted" aria-hidden />
+                        <span className="truncate">{g.name}</span>
+                        <span className="tabular-nums text-ink-muted">{g.members.length}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ) : null}
               {loading ? (
                 <p className="px-2 py-3 text-[13px] text-ink-muted">Loading people…</p>
@@ -371,10 +418,12 @@ function RowFilter({
 }
 
 function recipientEmail(recipient: Recipient): string {
+  if (recipient.kind === 'group') return `${recipient.group.name} · ${recipient.group.members.length}`;
   return recipient.kind === 'person' ? recipient.person.email : recipient.email;
 }
 
 function recipientLabel(recipient: Recipient): string {
+  if (recipient.kind === 'group') return recipient.group.name;
   return recipient.kind === 'person' ? recipient.person.name : recipient.email;
 }
 

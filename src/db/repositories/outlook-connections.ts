@@ -4,10 +4,16 @@ import { db } from '@/db/client';
 import { outlookConnections } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { decryptSecret, encryptSecret } from '@/lib/outlook/token-crypto';
-import { graphGetPhoto, graphSendMail, refreshAccessToken } from '@/lib/outlook/oauth';
+import {
+  graphGetPhoto,
+  graphSendMail,
+  refreshAccessToken,
+  type GraphFileAttachment,
+} from '@/lib/outlook/oauth';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
 
 function assertStaff(ctx: AuthContext) {
-  if (ctx.role === 'client') {
+  if (ctx.role === 'client' || ctx.role === 'developer') {
     throw new Error('not permitted');
   }
 }
@@ -15,6 +21,9 @@ function assertStaff(ctx: AuthContext) {
 export type OutlookConnectionPublic = {
   connected: boolean;
   msEmail?: string;
+  /** K-40: add the signature below to every message sent from the app. */
+  signatureEnabled: boolean;
+  signatureText: string | null;
 };
 
 export async function getOutlookStatus(ctx: AuthContext): Promise<OutlookConnectionPublic> {
@@ -22,12 +31,53 @@ export async function getOutlookStatus(ctx: AuthContext): Promise<OutlookConnect
   const [row] = await db
     .select({
       msEmail: outlookConnections.msEmail,
+      signatureEnabled: outlookConnections.signatureEnabled,
+      signatureText: outlookConnections.signatureText,
     })
     .from(outlookConnections)
     .where(eq(outlookConnections.userId, ctx.userId))
     .limit(1);
-  if (!row) return { connected: false };
-  return { connected: true, msEmail: row.msEmail };
+  if (!row) return { connected: false, signatureEnabled: false, signatureText: null };
+  return {
+    connected: true,
+    msEmail: row.msEmail,
+    signatureEnabled: row.signatureEnabled,
+    signatureText: row.signatureText,
+  };
+}
+
+/**
+ * Save the caller's own signature (K-40). The signature lives on the mailbox link, so a person
+ * with no linked mailbox has nowhere to keep it yet and gets `outlook_not_connected`.
+ */
+export async function updateOutlookSignature(
+  ctx: AuthContext,
+  input: { signatureEnabled?: boolean; signatureText?: string | null },
+): Promise<OutlookConnectionPublic> {
+  assertStaff(ctx);
+  const set: { signatureEnabled?: boolean; signatureText?: string | null; updatedAt: Date } = {
+    updatedAt: new Date(),
+  };
+  if (input.signatureEnabled !== undefined) set.signatureEnabled = input.signatureEnabled;
+  if (input.signatureText !== undefined) {
+    set.signatureText = input.signatureText?.replace(/\r\n/g, '\n').trim().slice(0, 2000) || null;
+  }
+  const updated = await db
+    .update(outlookConnections)
+    .set(set)
+    .where(eq(outlookConnections.userId, ctx.userId))
+    .returning({ id: outlookConnections.id });
+  if (updated.length === 0) throw new Error('outlook_not_connected');
+  await recordAuditEvent(ctx, {
+    action: 'outlook.signature',
+    summary:
+      input.signatureEnabled === false
+        ? 'Email signature turned off'
+        : input.signatureEnabled === true
+          ? 'Email signature turned on'
+          : 'Email signature changed',
+  });
+  return getOutlookStatus(ctx);
 }
 
 export async function upsertOutlookConnection(
@@ -111,7 +161,14 @@ export async function fetchOwnOutlookPhoto(
 
 export async function sendMailViaOutlook(
   ctx: AuthContext,
-  input: { to: string[]; cc?: string[]; subject: string; html: string; text?: string },
+  input: {
+    to: string[];
+    cc?: string[];
+    subject: string;
+    html: string;
+    text?: string;
+    attachments?: GraphFileAttachment[];
+  },
 ): Promise<{ msEmail: string }> {
   const { access, msEmail } = await validAccessToken(ctx);
   await graphSendMail(access, input);

@@ -143,11 +143,22 @@ export async function graphGetPhoto(
   return { bytes, contentType };
 }
 
+/** A file sent inline with the message (Graph `fileAttachment`, under 3 MB each). */
+export type GraphFileAttachment = { name: string; contentType: string; contentBase64: string };
+
 export async function graphSendMail(
   accessToken: string,
-  input: { to: string[]; cc?: string[]; subject: string; html: string; text?: string },
+  input: {
+    to: string[];
+    cc?: string[];
+    subject: string;
+    html: string;
+    text?: string;
+    attachments?: GraphFileAttachment[];
+  },
 ): Promise<void> {
   const cc = [...new Set((input.cc ?? []).map((a) => a.trim()).filter(Boolean))];
+  const attachments = input.attachments ?? [];
   const res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
     method: 'POST',
     headers: {
@@ -168,6 +179,16 @@ export async function graphSendMail(
           ? {
               ccRecipients: cc.map((address) => ({
                 emailAddress: { address },
+              })),
+            }
+          : {}),
+        ...(attachments.length > 0
+          ? {
+              attachments: attachments.map((a) => ({
+                '@odata.type': '#microsoft.graph.fileAttachment',
+                name: a.name,
+                contentType: a.contentType,
+                contentBytes: a.contentBase64,
               })),
             }
           : {}),

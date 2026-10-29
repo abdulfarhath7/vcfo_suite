@@ -29,9 +29,22 @@ import { internVisibleDocuments } from '@/lib/documents/document-access';
 import { useIndexedDocuments } from '@/hooks/use-vault-documents';
 import { adminProjectPath, internEngagementPath } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
-import { ArrowUpRight, Search } from 'lucide-react';
+import { ArrowUpRight, Download, Search, Upload } from 'lucide-react';
 import { VaultFileRow, VaultFolderRow, VaultPreviewPane } from '@/views/vault/vault-explorer-parts';
 import { buildVaultTree, type VaultTreeView } from '@/views/vault/vault-tree';
+import {
+  entityDocs as allEntityDocs,
+  folderDocs,
+  indexMaps,
+  indexRowFor,
+  refFor,
+  zipItems,
+  type VaultIndexRow,
+} from '@/views/vault/vault-files';
+import { useVaultActions } from '@/views/vault/use-vault-actions';
+import { VaultUploadDialog } from '@/views/vault/VaultUploadDialog';
+import { VaultRequestsSection } from '@/views/vault/VaultRequestsSection';
+import type { VaultDocument } from '@/lib/documents/vault-documents';
 
 /*
  * Staff Vault (K-39): the client Documents explorer look with the client dropdown first. One
@@ -95,6 +108,10 @@ function DocumentVaultPageContent() {
   /** Folders the person has collapsed. Every folder starts open. */
   const [closed, setClosed] = useState<Set<string>>(() => new Set());
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  /** Files ticked for a ZIP of the selection (G-26). */
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set());
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const actions = useVaultActions();
 
   useEffect(() => {
     setQ(urlQ);
@@ -133,6 +150,11 @@ function DocumentVaultPageContent() {
     }
     return merged;
   }, [engagements, getStateForEngagement, indexedQuery.data, user?.internId, user?.role]);
+
+  // The index rows carry the review state and the content type; a checklist upload a staff member
+  // made has one too, matched by its object key.
+  const index = useMemo(() => indexMaps((indexedQuery.data ?? []) as VaultIndexRow[]), [indexedQuery.data]);
+  const indexFor = (doc: VaultDocument) => indexRowFor(doc, index.byKey, index.byId);
 
   const entityGroups = useMemo(
     () => groupVaultDocuments(allDocs, engagements, { includeEmpty: true }),
@@ -178,6 +200,19 @@ function DocumentVaultPageContent() {
     const target = { id: engagementId, slug };
     return isIntern ? internEngagementPath(target) : adminProjectPath(target, staffBase);
   };
+
+  function setChecked(id: string, on: boolean) {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function zipDocs(name: string, docs: VaultDocument[]) {
+    void actions.downloadZip(name, zipItems(docs, (d) => indexFor(d)?.id));
+  }
 
   function toggleFolder(id: string) {
     setClosed((prev) => {
@@ -238,6 +273,7 @@ function DocumentVaultPageContent() {
           count={row.count}
           open={!closed.has(row.id)}
           onToggle={() => toggleFolder(row.id)}
+          onZip={() => zipDocs(`${selectedEntity.companyName} ${row.label}`, folderDocs(selectedEntity, view, row.id))}
         />
       ) : (
         <VaultFileRow
@@ -248,10 +284,19 @@ function DocumentVaultPageContent() {
           sub={row.sub}
           selected={selectedDoc?.id === row.doc.id}
           onSelect={() => setSelectedDocId(row.doc.id)}
+          checked={checkedIds.has(row.doc.id)}
+          onCheck={(on) => setChecked(row.doc.id, on)}
+          reviewStatus={indexFor(row.doc)?.reviewStatus}
         />
       ),
     );
   }
+
+  const checkedDocs = selectedEntity ? allEntityDocs(selectedEntity).filter((d) => checkedIds.has(d.id)) : [];
+  const selectedIndex = selectedDoc ? indexFor(selectedDoc) : null;
+  const selectedRef = selectedDoc ? refFor(selectedDoc, selectedIndex?.id) : null;
+  const reviewRef =
+    selectedRef && ('documentId' in selectedRef || 'path' in selectedRef) ? selectedRef : null;
 
   return (
     <PageTransition>
@@ -280,6 +325,7 @@ function DocumentVaultPageContent() {
               onValueChange={(id) => {
                 setActiveEntityId(id);
                 setSelectedDocId(null);
+                setCheckedIds(new Set());
               }}
             >
               <SelectTrigger
@@ -325,7 +371,36 @@ function DocumentVaultPageContent() {
             )}
 
             {selectedEntity && !isSearching ? (
-              <Button asChild size="sm" variant="secondary" className="ml-auto">
+              <span className="ml-auto flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={actions.zipping || selectedEntity.docCount === 0}
+                  onClick={() =>
+                    checkedDocs.length > 0
+                      ? zipDocs(`${selectedEntity.companyName} selection`, checkedDocs)
+                      : zipDocs(`${selectedEntity.companyName} documents`, allEntityDocs(selectedEntity))
+                  }
+                  aria-label={checkedDocs.length > 0 ? `Download ${checkedDocs.length} selected (ZIP)` : 'Download all (ZIP)'}
+                  title={checkedDocs.length > 0 ? `Download ${checkedDocs.length} selected (ZIP)` : 'Download all (ZIP)'}
+                >
+                  <Download aria-hidden />
+                  {checkedDocs.length > 0 ? `${checkedDocs.length} selected` : 'Download all'}
+                </Button>
+                {checkedDocs.length > 0 ? (
+                  <Button type="button" size="sm" variant="quiet" onClick={() => setCheckedIds(new Set())}>
+                    Clear
+                  </Button>
+                ) : null}
+                <Button type="button" size="sm" onClick={() => setUploadOpen(true)}>
+                  <Upload aria-hidden /> Upload
+                </Button>
+              </span>
+            ) : null}
+
+            {selectedEntity && !isSearching ? (
+              <Button asChild size="sm" variant="secondary">
                 <Link
                   href={projectHref(
                     selectedEntity.engagementId,
@@ -354,7 +429,21 @@ function DocumentVaultPageContent() {
             </div>
             <aside className="min-w-0 border-t border-line-soft md:border-t-0" aria-label="Preview">
               {selectedDoc ? (
-                <VaultPreviewPane doc={selectedDoc} />
+                <VaultPreviewPane
+                  doc={selectedDoc}
+                  fileRef={selectedRef}
+                  contentType={selectedIndex?.contentType}
+                  review={
+                    selectedIndex
+                      ? {
+                          status: selectedIndex.reviewStatus ?? 'none',
+                          note: selectedIndex.reviewNote ?? null,
+                          reviewedAt: selectedIndex.reviewedAt ?? null,
+                        }
+                      : null
+                  }
+                  onReview={reviewRef ? (status, note) => actions.review(reviewRef, status, note) : undefined}
+                />
               ) : (
                 <div className="grid h-full min-h-[240px] place-items-center bg-surface-sunken p-5 text-[13px] text-ink-faint">
                   —
@@ -364,6 +453,25 @@ function DocumentVaultPageContent() {
           </div>
         </section>
       )}
+
+      {selectedEntity && !isSearching ? (
+        <>
+          <VaultRequestsSection
+            key={selectedEntity.engagementId}
+            engagementId={selectedEntity.engagementId}
+            companyName={selectedEntity.companyName}
+            onZip={(name, items) => void actions.downloadZip(name, items)}
+            zipping={actions.zipping}
+          />
+          <VaultUploadDialog
+            open={uploadOpen}
+            onOpenChange={setUploadOpen}
+            engagementId={selectedEntity.engagementId}
+            companyName={selectedEntity.companyName}
+            onUploaded={() => void actions.refreshIndex()}
+          />
+        </>
+      ) : null}
     </PageTransition>
   );
 }

@@ -1,10 +1,27 @@
 import 'server-only';
 
-import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { documents, engagements } from '@/db/schema';
+import {
+  documentRequestDetails,
+  documentRequestFiles,
+  documentRequests,
+  documents,
+  engagements,
+  profiles,
+} from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import { isFirmWideAdmin } from '@/lib/auth';
+import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
+import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution/board-resolution-storage';
+import {
+  fileNameFromStoragePath,
+  isMilestoneStoragePath,
+  MILESTONE_DOCUMENTS_BUCKET,
+} from '@/lib/documents/milestone-document-storage';
+import { checklistItemForFieldId } from '@/lib/documents/vault-documents';
+import { bucketKey, type StorageBucket } from '@/storage/s3';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { createNotification } from '@/db/repositories/notifications';
 import { normalizeChecklistItemSlice } from '@/lib/checklist/checklist-state-key';
 import { checklistViewerForRole, isStepReleasedTo } from '@/lib/checklist/checklist-visibility';
 import { appEngagementId, engagementDbId } from '@/lib/projects/legacy-engagement-ids';
@@ -49,6 +66,11 @@ export interface DocumentDto {
   stepId: string | null;
   sharedWithClient: boolean;
   createdAt: string;
+  /** Vault review (G-26): none | pending | approved | changes. */
+  reviewStatus: string;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
   companyName?: string;
   slug?: string | null;
   stage?: string | null;
@@ -70,6 +92,10 @@ function mapRow(
     stepId: row.stepId,
     sharedWithClient: row.sharedWithClient,
     createdAt: row.createdAt.toISOString(),
+    reviewStatus: row.reviewStatus,
+    reviewedBy: row.reviewedBy,
+    reviewedAt: row.reviewedAt ? row.reviewedAt.toISOString() : null,
+    reviewNote: row.reviewNote,
     companyName: extra?.companyName,
     slug: extra?.slug,
     stage: extra?.stage,
@@ -274,4 +300,428 @@ export async function createDocument(
     .returning();
 
   return mapRow(row);
+}
+
+/* ------------------------------------------------------------------ */
+/* Vault (G-26): object references, request files, review status      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One vault file the caller names: an indexed document, a checklist (milestone) upload by its
+ * storage path, or a file uploaded against a document request. `folder` is only a label for
+ * the ZIP and is cleaned by the caller.
+ */
+export type VaultFileRef =
+  | { documentId: string; folder?: string }
+  | { path: string; folder?: string }
+  | { requestFileId: string; folder?: string };
+
+export interface ResolvedVaultFile {
+  kind: 'document' | 'milestone' | 'request-file';
+  /** The id or path the caller sent. */
+  ref: string;
+  /** Database id of the owning engagement. */
+  engagementId: string;
+  fileName: string;
+  /** Full S3 key (bucket prefix applied). */
+  storageKey: string;
+  contentType: string | null;
+  sizeBytes: number | null;
+  createdAt: string | null;
+  folder?: string;
+}
+
+/**
+ * S3 key for a `documents.object_key`. Rows hold either a prefixed key
+ * (`engagement-documents/…`, `milestone-documents/…`) or a bare milestone path
+ * (`{engagement}/{field}/{ts}-{name}`); a bare key from elsewhere lives under
+ * `engagement-documents/`. Same rule as `/api/documents/:id/signed-url`.
+ */
+export function documentStorageKey(objectKey: string): string {
+  const clean = objectKey.replace(/^\/+/, '');
+  const buckets: StorageBucket[] = [MILESTONE_DOCUMENTS_BUCKET, ENGAGEMENT_DOCUMENTS_BUCKET];
+  for (const bucket of buckets) {
+    if (clean.startsWith(`${bucket}/`)) return bucketKey(bucket, clean.slice(bucket.length + 1));
+  }
+  if (isMilestoneStoragePath(clean)) return bucketKey(MILESTONE_DOCUMENTS_BUCKET, clean);
+  return bucketKey(ENGAGEMENT_DOCUMENTS_BUCKET, clean);
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type EngagementAccess = Awaited<ReturnType<typeof assertEngagementAccess>>;
+
+/** Engagement access, asked once per engagement for a batch of files. */
+function accessCache(ctx: AuthContext) {
+  const cache = new Map<string, Promise<EngagementAccess>>();
+  return (engagementId: string) => {
+    const key = engagementDbId(engagementId);
+    let hit = cache.get(key);
+    if (!hit) {
+      hit = assertEngagementAccess(ctx, key);
+      cache.set(key, hit);
+    }
+    return hit;
+  };
+}
+
+/**
+ * A checklist upload by path, with the checks of `/api/milestone-documents/signed-url`: the
+ * first segment names the engagement the caller must reach, and for anyone but the lead the
+ * step the field belongs to must be released to them.
+ */
+async function resolveMilestonePath(
+  ctx: AuthContext,
+  rawPath: string,
+  access: (engagementId: string) => Promise<EngagementAccess>,
+): Promise<ResolvedVaultFile | null> {
+  const path = rawPath.trim().replace(/^\/+/, '');
+  if (!isMilestoneStoragePath(path)) return null;
+  const segments = path.split('/');
+  if (segments.some((s) => s === '' || s === '.' || s === '..')) return null;
+  const engagementSegment = segments[0] ?? '';
+  if (!engagementSegment) return null;
+  const granted = await access(engagementSegment);
+  if (!granted.ok) return null;
+
+  const viewer = checklistViewerForRole(ctx.role);
+  if (viewer !== 'lead') {
+    const item = segments
+      .slice(1, -1)
+      .map((segment) => checklistItemForFieldId(segment.split('.')[0] ?? segment))
+      .find(Boolean);
+    if (item) {
+      const state = granted.row.checklistState as Record<string, unknown> | null;
+      const slice = normalizeChecklistItemSlice(state?.[item.id], item.id);
+      if (!isStepReleasedTo(viewer, slice, item.id)) return null;
+    }
+  }
+
+  return {
+    kind: 'milestone',
+    ref: path,
+    engagementId: granted.dbId,
+    fileName: fileNameFromStoragePath(path),
+    storageKey: bucketKey(MILESTONE_DOCUMENTS_BUCKET, path),
+    contentType: null,
+    sizeBytes: null,
+    createdAt: null,
+  };
+}
+
+async function resolveRequestFile(
+  ctx: AuthContext,
+  id: string,
+  access: (engagementId: string) => Promise<EngagementAccess>,
+): Promise<ResolvedVaultFile | null> {
+  if (!UUID_RE.test(id)) return null;
+  const [row] = await db
+    .select()
+    .from(documentRequestFiles)
+    .where(eq(documentRequestFiles.id, id))
+    .limit(1);
+  if (!row) return null;
+  const granted = await access(row.engagementId);
+  if (!granted.ok) return null;
+  return {
+    kind: 'request-file',
+    ref: row.id,
+    engagementId: granted.dbId,
+    fileName: row.fileName,
+    storageKey: documentStorageKey(row.objectKey),
+    contentType: row.contentType,
+    sizeBytes: row.sizeBytes,
+    createdAt: row.uploadedAt.toISOString(),
+  };
+}
+
+async function resolveOne(
+  ctx: AuthContext,
+  ref: VaultFileRef,
+  access: (engagementId: string) => Promise<EngagementAccess>,
+): Promise<ResolvedVaultFile | null> {
+  let out: ResolvedVaultFile | null = null;
+  if ('documentId' in ref) {
+    if (!UUID_RE.test(ref.documentId)) return null;
+    const doc = await getDocumentById(ctx, ref.documentId);
+    if (doc) {
+      out = {
+        kind: 'document',
+        ref: doc.id,
+        engagementId: engagementDbId(doc.engagementId),
+        fileName: doc.fileName,
+        storageKey: documentStorageKey(doc.objectKey),
+        contentType: doc.contentType,
+        sizeBytes: doc.sizeBytes,
+        createdAt: doc.createdAt,
+      };
+    }
+  } else if ('path' in ref) {
+    out = await resolveMilestonePath(ctx, ref.path, access);
+  } else if ('requestFileId' in ref) {
+    out = await resolveRequestFile(ctx, ref.requestFileId, access);
+  }
+  if (out && ref.folder) out.folder = ref.folder;
+  return out;
+}
+
+/**
+ * The files the caller may read, in the order asked. A file outside the caller's scope (another
+ * firm's engagement, a client's file on a step not yet released, a missing row) is left out, so
+ * the result never says whether it exists.
+ */
+export async function resolveVaultFiles(
+  ctx: AuthContext,
+  refs: VaultFileRef[],
+): Promise<ResolvedVaultFile[]> {
+  if (ctx.role === 'developer') return [];
+  const access = accessCache(ctx);
+  const out: ResolvedVaultFile[] = [];
+  for (const ref of refs) {
+    const file = await resolveOne(ctx, ref, access);
+    if (file) out.push(file);
+  }
+  return out;
+}
+
+/** One vault file, or null when it is out of scope. */
+export async function resolveVaultFile(
+  ctx: AuthContext,
+  ref: VaultFileRef,
+): Promise<ResolvedVaultFile | null> {
+  const [file] = await resolveVaultFiles(ctx, [ref]);
+  return file ?? null;
+}
+
+function isStaff(ctx: AuthContext): boolean {
+  return isAdminOrManager(ctx.role) || ctx.role === 'intern';
+}
+
+export interface VaultRequestFileDto {
+  kind: 'document' | 'request-file';
+  id: string;
+  fileName: string;
+  contentType: string | null;
+  sizeBytes: number | null;
+  uploadedAt: string;
+}
+
+export interface VaultRequestDto {
+  id: string;
+  engagementId: string;
+  title: string;
+  detail: string | null;
+  /** pending | fulfilled | cancelled (approved and rejected are kept as written). */
+  status: string;
+  dueOn: string | null;
+  stepId: string | null;
+  createdAt: string;
+  files: VaultRequestFileDto[];
+}
+
+/**
+ * The engagement's document requests with the files sent against them, for the staff vault.
+ * Files come from `document_request_files` (current versions only) and from `documents` rows
+ * stored under `engagement-documents/{engagement}/requests/{request}/`. Staff only, scoped by
+ * `assertEngagementAccess`.
+ */
+export async function listVaultRequests(
+  ctx: AuthContext,
+  engagementId: string,
+): Promise<VaultRequestDto[]> {
+  if (!isStaff(ctx)) return [];
+  const access = await assertEngagementAccess(ctx, engagementId);
+  if (!access.ok) return [];
+  const dbId = access.dbId;
+
+  const rows = await db
+    .select({ req: documentRequests, det: documentRequestDetails })
+    .from(documentRequests)
+    .leftJoin(documentRequestDetails, eq(documentRequestDetails.requestId, documentRequests.id))
+    .where(eq(documentRequests.engagementId, dbId))
+    .orderBy(desc(documentRequests.createdAt));
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.req.id);
+
+  const files = await db
+    .select()
+    .from(documentRequestFiles)
+    .where(
+      and(
+        eq(documentRequestFiles.engagementId, dbId),
+        inArray(documentRequestFiles.requestId, ids),
+        isNull(documentRequestFiles.replacedAt),
+      ),
+    )
+    .orderBy(desc(documentRequestFiles.uploadedAt));
+
+  const prefix = `${ENGAGEMENT_DOCUMENTS_BUCKET}/${dbId}/requests/`;
+  const indexed = await db
+    .select()
+    .from(documents)
+    .where(and(eq(documents.engagementId, dbId), like(documents.objectKey, `${prefix}%`)))
+    .orderBy(desc(documents.createdAt));
+
+  const byRequest = new Map<string, VaultRequestFileDto[]>();
+  const push = (requestId: string, file: VaultRequestFileDto) => {
+    const list = byRequest.get(requestId) ?? [];
+    list.push(file);
+    byRequest.set(requestId, list);
+  };
+  for (const f of files) {
+    push(f.requestId, {
+      kind: 'request-file',
+      id: f.id,
+      fileName: f.fileName,
+      contentType: f.contentType,
+      sizeBytes: f.sizeBytes,
+      uploadedAt: f.uploadedAt.toISOString(),
+    });
+  }
+  const state = access.row.checklistState as Record<string, unknown> | null;
+  for (const d of indexed) {
+    const requestId = d.objectKey.slice(prefix.length).split('/')[0] ?? '';
+    if (!ids.includes(requestId)) continue;
+    if (!stepReleasedForViewer(ctx, d.stepId, d.stepId ? state?.[d.stepId] : undefined)) continue;
+    push(requestId, {
+      kind: 'document',
+      id: d.id,
+      fileName: d.fileName,
+      contentType: d.contentType,
+      sizeBytes: d.sizeBytes,
+      uploadedAt: d.createdAt.toISOString(),
+    });
+  }
+
+  return rows.map(({ req, det }) => ({
+    id: req.id,
+    engagementId: appEngagementId(dbId),
+    title: req.title,
+    detail: req.detail,
+    status: req.status,
+    dueOn: det?.dueOn ?? null,
+    stepId: det?.stepId ?? null,
+    createdAt: req.createdAt.toISOString(),
+    files: byRequest.get(req.id) ?? [],
+  }));
+}
+
+export type DocumentReviewStatus = 'pending' | 'approved' | 'changes';
+
+export interface SetDocumentReviewInput {
+  ref: { documentId: string } | { path: string };
+  status: DocumentReviewStatus;
+  note?: string | null;
+}
+
+const REVIEW_WORD: Record<DocumentReviewStatus, string> = {
+  pending: 'in review',
+  approved: 'approved',
+  changes: 'changes asked',
+};
+
+function vaultPathForRole(role: string | null | undefined): string {
+  if (role === 'intern') return '/app/intern/vault';
+  if (role === 'manager') return '/app/manager/vault';
+  if (role === 'client') return '/app/client/documents';
+  return '/app/admin/vault';
+}
+
+/**
+ * Set a vault file's review state (staff only). A checklist upload that has no index row yet
+ * gets one, so its state has a home; the row keeps no uploader, because the reviewer is not the
+ * one who sent it. "Changes" needs a note. Writes an audit event and, when an admin or manager
+ * reviews someone else's file, a notification to the uploader.
+ */
+export async function setDocumentReview(
+  ctx: AuthContext,
+  input: SetDocumentReviewInput,
+): Promise<DocumentDto | null> {
+  if (!isStaff(ctx)) throw new Error('Review is not permitted for this role');
+  const note = input.note?.trim().slice(0, 1000) || null;
+  if (input.status === 'changes' && !note) throw new Error('review_note_required');
+
+  let row: DocumentRow | undefined;
+  let engagementId: string;
+  if ('documentId' in input.ref) {
+    if (!UUID_RE.test(input.ref.documentId)) return null;
+    const doc = await getDocumentById(ctx, input.ref.documentId);
+    if (!doc) return null;
+    [row] = await db.select().from(documents).where(eq(documents.id, doc.id)).limit(1);
+    if (!row) return null;
+    engagementId = row.engagementId;
+  } else {
+    const file = await resolveMilestonePath(ctx, input.ref.path, accessCache(ctx));
+    if (!file) return null;
+    engagementId = file.engagementId;
+    [row] = await db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.engagementId, engagementId), eq(documents.objectKey, file.ref)))
+      .limit(1);
+    if (!row) {
+      const fieldSegment = file.ref.split('/')[1] ?? '';
+      const item = checklistItemForFieldId(fieldSegment.split('.')[0] ?? fieldSegment);
+      [row] = await db
+        .insert(documents)
+        .values({
+          engagementId,
+          fileName: file.fileName,
+          objectKey: file.ref,
+          category: 'documents',
+          stepId: item?.id ?? null,
+          sharedWithClient: false,
+        })
+        .returning();
+      if (!row) return null;
+    }
+  }
+
+  const now = new Date();
+  const [updated] = await db
+    .update(documents)
+    .set({
+      reviewStatus: input.status,
+      reviewedBy: ctx.userId,
+      reviewedAt: now,
+      reviewNote: note,
+    })
+    .where(and(eq(documents.id, row.id), eq(documents.engagementId, engagementId)))
+    .returning();
+  if (!updated) return null;
+
+  await recordAuditEvent(ctx, {
+    engagementId,
+    action: 'document.review',
+    summary: `${updated.fileName} · ${REVIEW_WORD[input.status]}`,
+    metadata: { documentId: updated.id, status: input.status, note },
+  });
+
+  if (updated.uploadedBy && updated.uploadedBy !== ctx.userId && isAdminOrManager(ctx.role)) {
+    try {
+      const [uploader] = await db
+        .select({ role: profiles.role })
+        .from(profiles)
+        .where(eq(profiles.id, updated.uploadedBy))
+        .limit(1);
+      const [eng] = await db
+        .select({ companyName: engagements.companyName })
+        .from(engagements)
+        .where(eq(engagements.id, engagementId))
+        .limit(1);
+      await createNotification(ctx, {
+        userId: updated.uploadedBy,
+        kind: 'checklist.review',
+        title: `${updated.fileName} · ${REVIEW_WORD[input.status]}`,
+        body: note ?? '',
+        engagementId: appEngagementId(engagementId),
+        companyName: eng?.companyName ?? '',
+        href: vaultPathForRole(uploader?.role),
+      });
+    } catch (err) {
+      console.warn('[documents] review notification failed', err instanceof Error ? err.message : err);
+    }
+  }
+
+  return mapRow(updated);
 }

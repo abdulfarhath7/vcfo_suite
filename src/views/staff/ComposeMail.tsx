@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings2 } from 'lucide-react';
 import { ComposeRecipientPicker } from '@/components/email/ComposeRecipientPicker';
 import { ComposeTemplatePanel } from '@/components/email/ComposeTemplatePanel';
 import { PageTransition } from '@/components/shell/PageTransition';
@@ -18,7 +18,11 @@ import {
   type DirectoryPerson,
 } from '@/lib/email/directory-filter';
 import { isEmailAddress } from '@/lib/email/recipient-input';
+import { isFirmWideAdmin } from '@/lib/auth';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
+import { EmailSettingsDialog, type SignatureState } from '@/views/staff/mail/EmailSettingsDialog';
+import { MailAttachments, type VaultAttachment } from '@/views/staff/mail/MailAttachments';
+import { useMailGroups } from '@/views/staff/mail/use-mail-groups';
 
 type Props = {
   path: string;
@@ -61,6 +65,13 @@ export default function ComposeMail({ path }: Props) {
   const [connected, setConnected] = useState(false);
   const [msEmail, setMsEmail] = useState<string | undefined>();
   const [loadingStatus, setLoadingStatus] = useState(true);
+  /** K-40: the signature the send route adds under the message when it is on. */
+  const [signature, setSignature] = useState<SignatureState>({ signatureEnabled: false, signatureText: null });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const mailGroups = useMailGroups();
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(() => new Set());
+  const [files, setFiles] = useState<File[]>([]);
+  const [vaultDocs, setVaultDocs] = useState<VaultAttachment[]>([]);
 
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   /** Typed addresses outside the directory (a CA, a bank, a prospect). */
@@ -82,11 +93,17 @@ export default function ComposeMail({ path }: Props) {
           configured?: boolean;
           connected?: boolean;
           msEmail?: string;
+          signatureEnabled?: boolean;
+          signatureText?: string | null;
         };
         if (cancelled) return;
         setConfigured(json.configured !== false);
         setConnected(Boolean(json.connected));
         setMsEmail(json.msEmail);
+        setSignature({
+          signatureEnabled: Boolean(json.signatureEnabled),
+          signatureText: json.signatureText ?? null,
+        });
       } catch {
         if (!cancelled) setConnected(false);
       } finally {
@@ -169,11 +186,26 @@ export default function ComposeMail({ path }: Props) {
     setSelected(new Set());
     setCustomEmails([]);
     setAppliedTemplate(null);
+    setSelectedGroupIds(new Set());
+    setFiles([]);
+    setVaultDocs([]);
+  }
+
+  function toggleGroup(groupId: string) {
+    setSentTo(null);
+    setSelectedGroupIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
   }
 
   async function send() {
     const to = [...selectedPeople.map((p) => p.email), ...customEmails];
-    if (to.length === 0) {
+    const groupIds = [...selectedGroupIds].filter((id) => mailGroups.groups.some((g) => g.id === id));
+    const groupNames = mailGroups.groups.filter((g) => selectedGroupIds.has(g.id)).map((g) => g.name);
+    if (to.length === 0 && groupIds.length === 0) {
       toastError('Pick a recipient', 'Choose someone in To, or type an email address.');
       return;
     }
@@ -187,17 +219,30 @@ export default function ComposeMail({ path }: Props) {
     }
     setSending(true);
     try {
-      const res = await fetch('/api/outlook/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to,
-          subject: subject.trim(),
-          text: body,
-          branding: appliedTemplate?.branding ?? 'plain',
-          templateId: appliedTemplate?.id,
-        }),
-      });
+      const payload = {
+        to,
+        groupIds: groupIds.length > 0 ? groupIds : undefined,
+        subject: subject.trim(),
+        text: body,
+        branding: appliedTemplate?.branding ?? 'plain',
+        templateId: appliedTemplate?.id,
+        documentIds: vaultDocs.length > 0 ? vaultDocs.map((d) => d.id) : undefined,
+      };
+      let request: RequestInit;
+      if (files.length > 0) {
+        // Files from this computer go as multipart; the same JSON rides in `payload`.
+        const form = new FormData();
+        form.append('payload', JSON.stringify(payload));
+        for (const f of files) form.append('files', f, f.name);
+        request = { method: 'POST', body: form };
+      } else {
+        request = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        };
+      }
+      const res = await fetch('/api/outlook/send', request);
       const json = (await res.json()) as { ok?: boolean; error?: string; from?: string };
       if (!res.ok || json.ok === false) {
         if (res.status === 409 || json.error === 'outlook_not_connected') {
@@ -206,9 +251,10 @@ export default function ComposeMail({ path }: Props) {
         }
         throw new Error(json.error ?? 'send_failed');
       }
-      toastSuccess('Email sent', `From ${json.from ?? 'your Outlook mailbox'} to ${to.join(', ')}`);
+      const sentLabel = [...to, ...groupNames].join(', ');
+      toastSuccess('Email sent', `From ${json.from ?? 'your Outlook mailbox'} to ${sentLabel}`);
       discard();
-      setSentTo(to.join(', '));
+      setSentTo(sentLabel);
     } catch (err) {
       toastError("Email didn't send", errorMessage(err));
     } finally {
@@ -216,9 +262,15 @@ export default function ComposeMail({ path }: Props) {
     }
   }
 
-  // K-40: the prototype says "Signature from Outlook · server-side signature on". The Outlook
-  // status route only reports `configured`, `connected` and `msEmail`, so that line is not shown
-  // until the connection data carries a signature flag.
+  // K-40: the prototype's head line "Signature from Outlook · server-side signature on". The
+  // send route adds the saved signature under the message when it is on.
+  const signatureLine =
+    !loadingStatus && connected
+      ? signature.signatureEnabled && signature.signatureText?.trim()
+        ? 'Server-side signature on'
+        : 'Signature off'
+      : null;
+
   const status = loadingStatus
     ? null
     : connected
@@ -247,9 +299,15 @@ export default function ComposeMail({ path }: Props) {
         {/* Plain page head (R-02): title, the Outlook status chip and the settings link. */}
         <div className="flex flex-wrap items-center gap-3">
           <PageBackCluster forceBack className="min-w-0 flex-[1_1_240px]">
-            <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Email</h1>
+            <div className="min-w-0">
+              <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Email</h1>
+              {signatureLine ? <p className="text-[13.5px] text-ink-muted">{signatureLine}</p> : null}
+            </div>
           </PageBackCluster>
           {status ? <Chip tone={status.tone}>{status.word}</Chip> : null}
+          <Button type="button" size="sm" variant="secondary" onClick={() => setSettingsOpen(true)}>
+            <Settings2 aria-hidden /> Settings
+          </Button>
           <Link
             href={settingsHref}
             className="text-[13px] font-medium text-brand-text hover:underline"
@@ -291,6 +349,9 @@ export default function ComposeMail({ path }: Props) {
                 onRemoveCustomEmail={(email) =>
                   setCustomEmails((prev) => prev.filter((e) => e !== email))
                 }
+                groups={mailGroups.groups}
+                selectedGroupIds={selectedGroupIds}
+                onToggleGroup={toggleGroup}
               />
             </Line>
             <Line label="Subject" htmlFor="mail-subject">
@@ -313,6 +374,15 @@ export default function ComposeMail({ path }: Props) {
                 maxLength={20000}
                 placeholder="Message"
                 className="block min-h-[220px] w-full resize-y bg-transparent text-[14px] leading-relaxed text-ink outline-none placeholder:text-ink-faint"
+              />
+            </div>
+            <div className="border-t border-line-soft px-4 py-2 md:px-5">
+              <MailAttachments
+                files={files}
+                onFilesChange={setFiles}
+                vaultDocs={vaultDocs}
+                onVaultDocsChange={setVaultDocs}
+                disabled={sending}
               />
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-4 py-3 md:px-5">
@@ -373,6 +443,20 @@ export default function ComposeMail({ path }: Props) {
           />
         </div>
       </div>
+
+      <EmailSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        connected={connected}
+        signature={signature}
+        onSignatureSaved={setSignature}
+        groups={mailGroups.groups}
+        groupsLoading={mailGroups.loading}
+        canShare={isFirmWideAdmin(user?.role)}
+        onCreateGroup={mailGroups.create}
+        onUpdateGroup={mailGroups.update}
+        onDeleteGroup={mailGroups.remove}
+      />
     </PageTransition>
   );
 }
