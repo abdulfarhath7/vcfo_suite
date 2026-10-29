@@ -3,7 +3,7 @@
 import { openShortcuts } from '@/components/shell/ShortcutSheet';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type TransitionEvent } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, type TransitionEvent } from 'react';
 import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
@@ -27,8 +27,8 @@ import {
   ScrollText,
   Mail,
   Pin,
-  PanelLeft,
   PanelLeftClose,
+  PanelLeftOpen,
   Columns3,
   Megaphone,
   Archive,
@@ -64,12 +64,21 @@ import {
   SidebarNavGroup,
   SidebarRailBadge,
   SidebarRailLabel,
+  SidebarRailUrgentBadge,
   sidebarNavTriggerClass,
   sidebarPillClass,
   sidebarRailClass,
   type SidebarNavLeaf,
 } from '@/components/shell/SidebarNavGroup';
-import { cycleSidebarMode, shellDesktopNavExpanded, sidebarPinCopy } from '@/components/shell/intern-sidebar';
+import {
+  readSavedSidebarMode,
+  saveSidebarMode,
+  shellDesktopNavExpanded,
+  sidebarIsPinned,
+  sidebarPinCopy,
+  toggleSidebarPin,
+} from '@/components/shell/intern-sidebar';
+import { useSidebarNarrow, useSidebarPeek, useSidebarPinKey } from '@/components/shell/use-sidebar-peek';
 import { MotionActivePill, SidebarHoverGlass, sidebarHoverAttrs, useSidebarHoverFollow } from '@/components/shell/MotionActivePill';
 import { roleHomePath, roleSettingsPath } from '@/lib/auth-routes';
 import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
@@ -241,21 +250,27 @@ const StackedInternWorkBadge = memo(function StackedInternWorkBadge() {
   return <SidebarRailBadge count={kpis.action.total} />;
 });
 
+/* R-49: the lead's "needs action" count is the urgent one, so the rail shows it in red. */
+const RailInternWorkBadge = memo(function RailInternWorkBadge({ ink }: { ink: 'light' | 'dark' }) {
+  const { kpis } = useInternPortfolio();
+  return <SidebarRailUrgentBadge count={kpis.action.total} ink={ink} />;
+});
+
 function SidebarNavBody({
   expanded,
   onNavigate,
   layoutIdPrefix = 'sidebar',
   mode,
-  onSetMode,
+  onTogglePin,
   ink = 'dark',
   stacked = false,
 }: {
   expanded: boolean;
   onNavigate?: () => void;
   layoutIdPrefix?: string;
-  /** Desktop preference controls — omit on the mobile sheet. */
+  /** R-49 pin control, desktop only (omit on the phone drawer and under 1100px). */
   mode?: SidebarMode;
-  onSetMode?: (mode: SidebarMode) => void;
+  onTogglePin?: () => void;
   ink?: 'light' | 'dark';
   /** Pinned closed: icon over a short label. Hover-peek stays icon-only. */
   stacked?: boolean;
@@ -361,6 +376,10 @@ function SidebarNavBody({
             VCFO Suite
           </span>
         </Link>
+        {/* R-49: the pin button sits in the sidebar head; the rail keeps it at its foot. */}
+        {expanded && onTogglePin && mode ? (
+          <SidebarPinButton mode={mode} placement="head" ink={ink} onClick={onTogglePin} className="ml-auto" />
+        ) : null}
       </div>
 
       <nav
@@ -453,7 +472,9 @@ function SidebarNavBody({
               {stacked ? <SidebarRailLabel>{it.label}</SidebarRailLabel> : null}
               {stacked && showInternBadge ? <StackedInternWorkBadge /> : null}
               {stacked && !showInternBadge ? <SidebarRailBadge count={it.badge ?? 0} /> : null}
-              <span className={cn('relative z-10 min-w-0 flex-1 truncate', !expanded && 'hidden')}>
+              {!expanded && !stacked && showInternBadge ? <RailInternWorkBadge ink={ink} /> : null}
+              {/* On the rail the name stays for screen readers; the title shows it on hover. */}
+              <span className={cn('relative z-10 min-w-0 flex-1 truncate', !expanded && 'sr-only')}>
                 {it.label}
               </span>
               <span
@@ -484,14 +505,8 @@ function SidebarNavBody({
             expanded ? 'flex-row items-center' : 'flex-col items-center',
           )}
         >
-          {onSetMode && mode ? (
-            <SidebarPinButton
-              mode={mode}
-              expanded={expanded}
-              ink={ink}
-              onClick={() => onSetMode(cycleSidebarMode(mode))}
-              className={expanded ? 'order-last' : undefined}
-            />
+          {!expanded && onTogglePin && mode ? (
+            <SidebarPinButton mode={mode} placement="rail" ink={ink} onClick={onTogglePin} />
           ) : null}
           <Link
             href={railProfilePath(user.role)}
@@ -576,103 +591,81 @@ function SidebarNavSectionBreak({
   );
 }
 
-const HOVER_CLOSE_MS = 200;
-
-const SIDEBAR_PIN_ICON = {
-  auto: PanelLeft,
-  open: Pin,
-  closed: PanelLeftClose,
-} as const;
-
+/**
+ * R-49 pin control. Pinned, it collapses the sidebar to the rail. On the rail (and while
+ * the rail is open over the page) it pins the sidebar. The "[" key does the same.
+ */
 function SidebarPinButton({
   mode,
-  expanded,
+  placement,
   onClick,
   ink = 'dark',
   className,
 }: {
   mode: SidebarMode;
-  expanded: boolean;
+  placement: 'head' | 'rail';
   onClick: () => void;
   ink?: 'light' | 'dark';
   className?: string;
 }) {
+  const pinned = sidebarIsPinned(mode);
   const { label, hint } = sidebarPinCopy(mode);
-  const Icon = SIDEBAR_PIN_ICON[mode];
-  const pinned = mode !== 'auto';
+  const Icon = pinned ? PanelLeftClose : placement === 'rail' ? PanelLeftOpen : Pin;
   return (
     <button
       type="button"
       onClick={onClick}
       title={hint}
-      aria-label={hint}
-      data-sidebar-pin={mode}
+      aria-label={label}
+      aria-keyshortcuts="["
+      data-sidebar-pin={pinned ? 'pinned' : 'rail'}
       className={cn(
-        'flex h-8 shrink-0 items-center justify-center gap-1 rounded-md text-[11px] font-medium transition-[color,background-color,opacity] duration-200',
-        expanded ? 'px-2' : 'w-8 px-0',
-        pinned
-          ? ink === 'light'
-            ? 'bg-side-active text-side-ink'
-            : 'bg-brand-soft text-brand'
-          : ink === 'light'
-            ? 'text-side-muted hover:bg-side-active hover:text-side-ink'
-            : 'text-ink-muted hover:bg-surface-sunken hover:text-ink',
+        'grid h-8 w-8 shrink-0 place-items-center rounded-md transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+        ink === 'light'
+          ? 'text-side-muted hover:bg-side-hover hover:text-side-ink'
+          : 'text-ink-muted hover:bg-surface-sunken hover:text-ink',
         className,
       )}
     >
-      <Icon
-        className={cn('h-4 w-4 shrink-0', mode === 'open' && 'fill-current')}
-        strokeWidth={1.75}
-        aria-hidden
-      />
-      {expanded ? <span className="truncate">{label}</span> : null}
+      <Icon className="h-4 w-4" strokeWidth={1.6} aria-hidden />
     </button>
   );
 }
 
 export function RoleSidebar() {
   const { user, sidebarMode, setSidebarMode } = useApp();
-  const { sidebar } = useShellAppearance();
+  const { sidebar, reduceMotion } = useShellAppearance();
   const pathname = usePathname();
-  const [peeking, setPeeking] = useState(false);
-  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const narrow = useSidebarNarrow();
   const railRef = useRef<HTMLElement>(null);
   const lastExpanded = useRef<boolean | null>(null);
 
-  const pinned = shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
-  const expanded = pinned || peeking;
+  /* R-49: the kept mode is saved per browser. Read it before the first paint so the
+     sidebar does not slide from one width to the other on every page load. With
+     nothing saved the sidebar starts pinned. */
+  useLayoutEffect(() => {
+    setSidebarMode(readSavedSidebarMode() ?? 'open');
+  }, [setSidebarMode]);
+
+  // Under 1100px the sidebar is always the rail, so pinning would cover the page.
+  const pinned = !narrow && shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
+  const { peek, closeNow, handlers } = useSidebarPeek(!pinned);
+  const expanded = pinned || peek;
   const expandedWidth = 'w-[15.5rem]'; // R-45: 248px for every role
-  // Pinned closed is a destination, so it gets labels. Hover-peek collapse is
-  // transient — labels there would make the rail jitter on every pointer exit.
-  const stackedRail = !expanded && sidebarMode === 'closed';
 
-  const clearLeaveTimer = useCallback(() => {
-    if (leaveTimer.current) {
-      clearTimeout(leaveTimer.current);
-      leaveTimer.current = null;
-    }
-  }, []);
+  const togglePin = useCallback(() => {
+    if (narrow) return;
+    const next = toggleSidebarPin(sidebarMode);
+    saveSidebarMode(next);
+    setSidebarMode(next);
+  }, [narrow, sidebarMode, setSidebarMode]);
+  useSidebarPinKey(togglePin, Boolean(user) && !narrow);
 
+  // A page opening closes the rail's peek.
   useEffect(() => {
-    if (sidebarMode !== 'auto') {
-      clearLeaveTimer();
-      setPeeking(false);
-    }
-  }, [sidebarMode, clearLeaveTimer]);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const sync = () => {
-      if (!mq.matches) {
-        clearLeaveTimer();
-        setPeeking(false);
-      }
-    };
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, [clearLeaveTimer]);
-
-  useEffect(() => () => clearLeaveTimer(), [clearLeaveTimer]);
+    closeNow();
+  }, [pathname, closeNow]);
 
   useEffect(() => {
     if (lastExpanded.current === null) {
@@ -685,17 +678,6 @@ export function RoleSidebar() {
     if (el) el.style.willChange = 'width';
   }, [expanded]);
 
-  const onPointerEnter = useCallback(() => {
-    clearLeaveTimer();
-    if (sidebarMode === 'auto') setPeeking(true);
-  }, [clearLeaveTimer, sidebarMode]);
-
-  const onPointerLeave = useCallback(() => {
-    clearLeaveTimer();
-    if (sidebarMode !== 'auto') return;
-    leaveTimer.current = setTimeout(() => setPeeking(false), HOVER_CLOSE_MS);
-  }, [clearLeaveTimer, sidebarMode]);
-
   const onWidthTransitionEnd = useCallback((event: TransitionEvent<HTMLElement>) => {
     if (event.propertyName !== 'width') return;
     event.currentTarget.style.willChange = 'auto';
@@ -706,16 +688,20 @@ export function RoleSidebar() {
   return (
     <aside
       ref={railRef}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
+      {...handlers}
       onTransitionEnd={onWidthTransitionEnd}
       className={cn(
-        'shell-sidebar-skin fixed bottom-0 left-0 top-[3px] z-30 hidden flex-col overflow-hidden transition-[width] duration-300 ease-out lg:flex',
+        'shell-sidebar-skin fixed bottom-0 left-0 top-[3px] z-30 hidden flex-col overflow-hidden lg:flex',
+        // R-49: a short slide, and none under reduced motion.
+        reduceMotion ? 'transition-none' : 'transition-[width] duration-200 ease-out motion-reduce:transition-none',
         sidebar.ink === 'light' ? 'border-r-1.5 border-side-line' : 'border-r-1.5 border-line',
-        expanded ? expandedWidth : stackedRail ? 'w-16' : 'w-14',
-        sidebarMode === 'auto' && peeking && 'z-40 shadow-float',
+        // The old "pinned closed" rail (w-16, a label under each icon) is gone: R-49 has one rail of icons.
+        expanded ? expandedWidth : 'w-14',
+        peek && 'z-40 shadow-float',
       )}
       data-ink={sidebar.ink}
+      data-sidebar-mode={pinned ? 'pinned' : 'rail'}
+      data-peek={peek ? 'true' : undefined}
       style={surfaceCssVars(sidebar, 'sidebar')}
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -723,9 +709,8 @@ export function RoleSidebar() {
           expanded={expanded}
           layoutIdPrefix="sidebar-desktop"
           mode={sidebarMode}
-          onSetMode={setSidebarMode}
+          onTogglePin={narrow ? undefined : togglePin}
           ink={sidebar.ink}
-          stacked={stackedRail}
         />
       </div>
     </aside>

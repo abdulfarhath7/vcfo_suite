@@ -12,6 +12,7 @@ import { TabBar } from "./TabBar";
 import { ShortcutSheet } from "./ShortcutSheet";
 import { isInternEngagementPathname } from "@/lib/projects/project-step-path";
 import { shellDesktopNavExpanded } from "@/components/shell/intern-sidebar";
+import { useSidebarNarrow } from "@/components/shell/use-sidebar-peek";
 import { cn } from "@/lib/utils";
 import { AuthBootScreen } from "@/components/common/AuthBootScreen";
 import { useShellAppearance } from "@/hooks/use-shell-appearance";
@@ -28,7 +29,9 @@ export function AppShell({
   const { prefs, reduceMotion } = useShellAppearance();
   const pathname = usePathname();
   const internProjectOpen = isInternEngagementPathname(pathname);
-  const navExpanded = shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
+  // R-49: under 1100px the sidebar is always the rail.
+  const narrowDesktop = useSidebarNarrow();
+  const navExpanded = !narrowDesktop && shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
 
   useEffect(() => {
     if (!user) {
@@ -61,12 +64,9 @@ export function AppShell({
         ? "max-w-none"
         : "max-w-[1400px]";
 
-  /* Flush to the sidebar: exact width, no screen inset */
-  const desktopPad = navExpanded
-    ? "lg:pl-[15.5rem]"
-    : sidebarMode === "closed"
-      ? "lg:pl-16"
-      : "lg:pl-14";
+  /* Flush to the sidebar: exact width, no screen inset. Pinned (R-49) puts the page beside
+     the 248px sidebar; the rail keeps 56px and opens over the page. */
+  const desktopPad = navExpanded ? "lg:pl-[15.5rem]" : "lg:pl-14";
 
   return (
     <ShellNavProvider>
@@ -88,7 +88,13 @@ export function AppShell({
         <ShortcutSheet />
         <ShellTabBar />
 
-        <AskPushColumn className={cn("relative z-10 pl-0 pt-[3px] transition-[padding] duration-300 ease-out", desktopPad)}>
+        <AskPushColumn
+          className={cn(
+            "relative z-10 pl-0 pt-[3px]",
+            reduceMotion ? "transition-none" : "transition-[padding] duration-200 ease-out motion-reduce:transition-none",
+            desktopPad,
+          )}
+        >
           <div className="sticky top-[3px] z-20 pt-0">
             <TopBar />
           </div>

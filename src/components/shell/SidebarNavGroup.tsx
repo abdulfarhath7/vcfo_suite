@@ -94,6 +94,26 @@ export function SidebarRailBadge({ count }: { count: number }) {
   );
 }
 
+/**
+ * R-49: an urgent count on a rail icon, as a small red badge in the corner. Other counts
+ * wait for the full sidebar. The ring matches the skin so the badge reads as cut out.
+ */
+export function SidebarRailUrgentBadge({ count, ink = 'light' }: { count: number; ink?: SidebarInk }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      aria-hidden
+      data-rail-urgent=""
+      className={cn(
+        'absolute right-0.5 top-0.5 z-10 grid h-4 min-w-4 place-items-center rounded-mark bg-danger-mid px-[3px] text-[10px] font-medium leading-none tabular-nums text-on-status ring-2',
+        ink === 'light' ? 'ring-side' : 'ring-surface-raised',
+      )}
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
 export function isSidebarGroupActive(pathname: string, children: SidebarNavLeaf[]) {
   return children.some((child) => pathname === child.to || pathname.startsWith(`${child.to}/`));
 }
