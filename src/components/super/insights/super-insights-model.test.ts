@@ -4,6 +4,9 @@ import {
   areaHealth,
   buildMonths,
   buildPracticeAreas,
+  capacityTone,
+  medianResponse,
+  roomAcross,
   changeText,
   openRegistrations,
   overdueFilingsNow,
@@ -237,5 +240,29 @@ describe('openRegistrations and the practice areas', () => {
     expect(areaHealth(10, 0)).toBe('On track');
     expect(areaHealth(10, 2)).toBe('Watch');
     expect(areaHealth(10, 3)).toBe('At risk');
+  });
+});
+
+describe('capacity and response helpers', () => {
+  it('bands the load and sums the room under set capacities', () => {
+    expect(capacityTone(85)).toBe('bad');
+    expect(capacityTone(70)).toBe('warn');
+    expect(capacityTone(40)).toBe('prog');
+    const managers = [{ id: 'm1' }, { id: 'm2' }, { id: 'm3' }] as Parameters<typeof roomAcross>[0];
+    const people = new Map([
+      ['m1', { load: { open: 8, capacity: 10 } }],
+      ['m2', { load: { open: 12, capacity: 10 } }],
+      ['m3', { load: { open: 3, capacity: null } }],
+    ]);
+    expect(roomAcross(managers, people)).toBe(2);
+    expect(roomAcross(managers, new Map())).toBeNull();
+  });
+
+  it('reads the median time to resolve', () => {
+    const h = 3_600_000;
+    expect(medianResponse([])).toBe('–');
+    expect(medianResponse([0.5 * h])).toBe('<1 h');
+    expect(medianResponse([2 * h, 4 * h, 30 * h])).toBe('4 h');
+    expect(medianResponse([72 * h])).toBe('3 d');
   });
 });

@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { Award, IdCard, ShieldCheck } from 'lucide-react';
+import { indexPeople, usePeopleMetrics } from '@/components/metrics/use-metrics';
 import { DashSection } from '@/components/dash/DashSection';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Tag } from '@/components/ui/spectrum-chip';
@@ -13,6 +15,8 @@ import {
 import { shortCompany } from '@/components/super/parts/super-text';
 import {
   buildRisks,
+  capacityTone,
+  isFiled,
   filingOutcome,
   inRegistrations,
   registrationCounts,
@@ -38,7 +42,7 @@ const RISKS_HREF = '/app/super/risks';
 
 export function SuperPracticeCards({ insights }: { insights: SuperInsights }) {
   return (
-    <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-3">
+    <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-3">
       <IncorporationCard insights={insights} />
       <RegistrationsCard insights={insights} />
       <CompliancesCard insights={insights} />
@@ -59,7 +63,7 @@ function IncorporationCard({ insights }: { insights: SuperInsights }) {
   const avg = coi.length ? Math.round(coi.reduce((a, b) => a + b, 0) / coi.length) : null;
 
   return (
-    <DashSection title="Incorporation" meta={String(incorporating.length)} href={PRACTICE_INCORPORATION_HREF} hrefLabel="Open">
+    <DashSection title="Incorporation" meta={String(incorporating.length)} icon={Award} tone="violet" href={PRACTICE_INCORPORATION_HREF} hrefLabel="Open">
       <ul className="grid gap-2.5">
         {rows.map((row) => (
           <li
@@ -98,7 +102,7 @@ function RegistrationsCard({ insights }: { insights: SuperInsights }) {
   const worst = [...counts].sort((a, b) => b.waiting - a.waiting)[0];
 
   return (
-    <DashSection title="Registrations" meta={String(reached.length)} href={PRACTICE_REGISTRATIONS_HREF} hrefLabel="Open">
+    <DashSection title="Registrations" meta={String(reached.length)} icon={IdCard} tone="violet" href={PRACTICE_REGISTRATIONS_HREF} hrefLabel="Open">
       <div className="grid grid-cols-3 gap-2">
         {[
           { n: sum('done'), label: 'Done', cls: 'text-positive' },
@@ -153,14 +157,22 @@ function CompliancesCard({ insights }: { insights: SuperInsights }) {
     if (filingOutcome(f, today) === 'overdue') byAuthority.set(f.authority, (byAuthority.get(f.authority) ?? 0) + 1);
   }
   const worst = [...byAuthority.entries()].sort((a, b) => b[1] - a[1])[0];
+  // "Due this week": this month's filings still to file and due in the next 7 days.
+  const weekEnd = new Date(Date.parse(`${today}T00:00:00Z`) + 7 * 86_400_000).toISOString().slice(0, 10);
+  const dueWeek = insights.filings.filter(
+    (f) => f.dueDate.startsWith(monthKey) && !isFiled(f) && f.dueDate >= today && f.dueDate <= weekEnd,
+  ).length;
+  const stillToFile = Math.max(0, (month?.open ?? 0) - dueWeek);
 
   return (
-    <DashSection title={title} meta={month ? String(month.filingsDue) : undefined} href={COMPLIANCE_CALENDAR_HREF} hrefLabel="Open">
+    <DashSection title={title} icon={ShieldCheck} tone="success" href={COMPLIANCE_CALENDAR_HREF} hrefLabel="Open">
+      <b className="mb-2 block text-[26px] font-medium leading-none tabular-nums text-ink">{month?.filingsDue ?? 0}</b>
       <StackedBar
         segments={[
           { label: 'Overdue', value: month?.overdue ?? 0, tone: 'bad' },
           { label: 'Filed late', value: month?.filedLate ?? 0, tone: 'warn' },
-          { label: 'Still to file', value: month?.open ?? 0, tone: 'idle' },
+          { label: 'Due this week', value: dueWeek, tone: 'prog' },
+          { label: 'Upcoming', value: stillToFile, tone: 'idle' },
           { label: 'Filed on time', value: month?.filedOnTime ?? 0, tone: 'ok' },
         ]}
       />
@@ -171,21 +183,32 @@ function CompliancesCard({ insights }: { insights: SuperInsights }) {
   );
 }
 
-function loadTone(m: SuperTeamManager) {
+function clientsTone(m: SuperTeamManager) {
   if (m.overdueSteps > 0 || m.overdueFilings > 0) return 'bad' as const;
   if (m.approvalsPending > 0 || m.attention > 0) return 'warn' as const;
   return 'prog' as const;
 }
 
 /** Managers with their load, as on the Team page. */
-export function SuperManagersPanel({ insights }: { insights: SuperInsights }) {
+export function SuperManagersPanel({
+  insights,
+  adminOf,
+}: {
+  insights: SuperInsights;
+  /** The admin a manager reports to, for the "under <admin>" line. */
+  adminOf?: (managerId: string) => string | null;
+}) {
   const managers = insights.team.managers;
+  const people = indexPeople(usePeopleMetrics().data).byProfileId;
   const max = Math.max(1, ...managers.map((m) => m.clients));
   const columns: EFilingColumn<SuperTeamManager>[] = [
     {
       key: 'name',
       header: 'Manager',
-      render: (m) => <NameCell lead={<PersonAvatar name={m.name} />} title={m.name} sub={`${m.leads.length} project leads`} />,
+      render: (m) => {
+        const admin = adminOf?.(m.id);
+        return <NameCell lead={<PersonAvatar name={m.name} />} title={m.name} sub={admin ? `under ${admin}` : `${m.leads.length} project leads`} />;
+      },
     },
     { key: 'clients', header: 'Clients', width: '72px', align: 'right', render: (m) => <span className="tabular-nums">{m.clients}</span> },
     { key: 'open', header: 'Open', width: '64px', align: 'right', render: (m) => <span className="tabular-nums">{m.openSteps}</span> },
@@ -200,11 +223,34 @@ export function SuperManagersPanel({ insights }: { insights: SuperInsights }) {
         </span>
       ),
     },
-    { key: 'load', header: 'Load', width: '110px', render: (m) => <ToneBar pct={(m.clients / max) * 100} tone={loadTone(m)} className="w-20" /> },
+    {
+      key: 'ontime',
+      header: 'On time',
+      width: '80px',
+      align: 'right',
+      render: (m) => {
+        const filed = m.filedOnTime + m.filedLate;
+        return <span className="tabular-nums">{filed ? `${Math.round((m.filedOnTime / filed) * 100)}%` : '–'}</span>;
+      },
+    },
+    {
+      key: 'load',
+      header: 'Load',
+      width: '110px',
+      // Against the capacity an admin set (red over 80%, amber from 70%); else relative to the busiest manager.
+      render: (m) => {
+        const load = people.get(m.id)?.load;
+        return load?.pct != null ? (
+          <ToneBar pct={load.pct} tone={capacityTone(load.pct)} className="w-20" label={`${load.open} of ${load.capacity}`} />
+        ) : (
+          <ToneBar pct={(m.clients / max) * 100} tone={clientsTone(m)} className="w-20" />
+        );
+      },
+    },
   ];
   return (
     <DashSection title="Managers" meta={String(managers.length)} href={TEAM_HREF} hrefLabel="Open team" bodyClassName="px-2 pb-2 pt-1">
-      <EFilingGrid caption="Managers" columns={columns} rows={managers} rowKey={(m) => m.id} empty="No manager yet" minWidth={520} pageSize={6} />
+      <EFilingGrid caption="Managers" columns={columns} rows={managers} rowKey={(m) => m.id} empty="No manager yet" minWidth={600} pageSize={6} />
     </DashSection>
   );
 }

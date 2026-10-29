@@ -384,14 +384,18 @@ export function StackedBar({
 
 /** Loading shapes for a super admin page (R-48). */
 export function SuperPageSkeleton({ label }: { label: string }) {
+  // Each card keeps its shape (a head and grey rows), so the page does not jump when it lands.
   return (
-    <div className="flex flex-col gap-4" aria-busy="true" aria-label={label}>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
-          <span key={i} className="block h-[88px] animate-pulse rounded-md bg-surface-sunken" aria-hidden />
-        ))}
-      </div>
-      <SkeletonRows rows={6} />
+    <div className="flex flex-col gap-5" aria-busy="true" aria-label={label}>
+      {[6, 3].map((rows, i) => (
+        <div key={i} className="surface overflow-hidden" aria-hidden>
+          <div className="flex h-[52px] items-center gap-2.5 border-b border-line-soft px-4">
+            <span className="block h-7 w-7 animate-pulse rounded-md bg-surface-sunken" />
+            <span className="block h-3.5 w-40 animate-pulse rounded bg-surface-sunken" />
+          </div>
+          <SkeletonRows rows={rows} className="p-3" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -415,13 +419,17 @@ export function SuperPageError({ title, error, onRetry }: { title: string; error
   );
 }
 
-/** Plain page head (C-0109): the title and a muted count, no band. */
+/** The page head (R-09): a screen-reader heading and, when the page has them, its actions. */
 export function SuperPageHead({ title, meta, children }: { title: string; meta?: ReactNode; children?: ReactNode }) {
+  // R-09: no visible page title; the top bar crumb names the page. The heading stays for screen
+  // readers, and the page's own actions keep their row on the right.
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-      <h1 className="min-w-0 text-[22px] font-medium leading-tight tracking-[-0.01em] text-ink">{title}</h1>
-      {meta ? <span className="text-[13px] text-ink-muted">{meta}</span> : null}
-      {children ? <div className="ml-auto flex flex-wrap items-center gap-2">{children}</div> : null}
-    </div>
+    <>
+      <h1 className="sr-only">
+        {title}
+        {typeof meta === 'string' ? ` · ${meta}` : null}
+      </h1>
+      {children ? <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">{children}</div> : null}
+    </>
   );
 }

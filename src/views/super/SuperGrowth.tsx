@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, TrendingUp } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
@@ -15,9 +15,12 @@ import {
   SuperPageSkeleton,
 } from '@/components/super/parts/super-parts';
 import { useSuperInsights } from '@/views/super/use-super-insights';
+import { SuperCapacityCard } from '@/components/super/overview/SuperCapacityCard';
+import { roomAcross } from '@/components/super/insights/super-insights-model';
+import { indexPeople, usePeopleMetrics } from '@/components/metrics/use-metrics';
 import { Button } from '@/components/ui/button';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { SkeletonRows } from '@/components/ui/empty-state';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { PipelineBoard, PipelineList } from '@/components/super/growth/PipelineBoard';
 import { ProspectDialog } from '@/components/super/growth/ProspectDialog';
 import { ConvertDialog } from '@/components/super/growth/ConvertDialog';
@@ -56,6 +59,8 @@ type PipelineView = 'board' | 'list';
 
 export default function SuperGrowth() {
   const query = useSuperInsights();
+  const peopleQuery = usePeopleMetrics();
+  const people = useMemo(() => indexPeople(peopleQuery.data), [peopleQuery.data]);
   const insights = query.data;
   const { user } = useApp();
   const pipeline = useProspects();
@@ -130,6 +135,7 @@ export default function SuperGrowth() {
   const phaseAll = phaseTotals.map((t) => t * insights.clients.length);
 
   const rate = winRate(prospects, rateWindow, new Date());
+  const room = roomAcross(insights.team.managers, people.byProfileId);
 
   function move(p: Prospect, stage: ProspectStage) {
     if (p.stage === stage) return;
@@ -174,11 +180,20 @@ export default function SuperGrowth() {
               value: rate.pct === null ? '–' : `${rate.pct}%`,
               sub: `${rate.won} won · ${rate.lost} lost`,
             },
+            {
+              // Open items left under the managers' capacities (prototype "Room across the managers").
+              label: 'Room across the managers',
+              value: room ?? '–',
+              sub: room === null ? 'No capacity set' : 'open items',
+              good: room !== null && room > 0,
+            },
           ]}
         />
 
         <DashSection
           title="Sales pipeline"
+          icon={TrendingUp}
+          tone="info"
           meta={
             <span className="flex flex-wrap items-center gap-2">
               <SpectrumTabs
@@ -202,13 +217,22 @@ export default function SuperGrowth() {
           {pipeline.isPending ? (
             <SkeletonRows rows={4} />
           ) : pipeline.isError ? (
-            <p className="text-[13.5px] text-danger">{errorMessage(pipeline.error, 'The pipeline could not load.')}</p>
+            <EmptyState
+              title={errorMessage(pipeline.error, 'The pipeline could not load')}
+              action={
+                <Button size="sm" variant="outline" onClick={() => void pipeline.refetch()}>
+                  Try again
+                </Button>
+              }
+            />
           ) : view === 'board' ? (
             <PipelineBoard prospects={prospects} linkedCompany={linkedCompany} onEdit={setEditing} onMove={move} onConvert={setConverting} />
           ) : (
             <PipelineList prospects={prospects} linkedCompany={linkedCompany} onEdit={setEditing} onMove={move} onConvert={setConverting} />
           )}
         </DashSection>
+
+        <SuperCapacityCard title="Capacity · can the team take more?" managers={insights.team.managers} people={people.byProfileId} />
 
         <DemoRequestsCard
           requests={demoRequests.data ?? []}

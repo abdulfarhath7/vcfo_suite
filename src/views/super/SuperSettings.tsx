@@ -15,7 +15,8 @@ import { FirmSettingsBody } from '@/views/firm-settings/FirmSettings';
  *
  * The profile tab opens by itself for `?tab=profile`, the Outlook connect return (`?outlook=`)
  * and the profile section hashes (`#appearance` from the greeting card, and the others), so
- * every link that used to reach the profile still does.
+ * every link that used to reach the profile still does. `/app/super/profile` is the profile on
+ * its own page (prototype route).
  */
 type TabKey = 'firm' | 'profile';
 
@@ -69,7 +70,8 @@ function SuperSettingsInner() {
     <PageTransition>
       <SEO title="Firm settings — VCFO Suite" description="The firm's profile, calendar, branding and reminders." path={PATH} />
       <div className="flex flex-col gap-4">
-        <h1 className="text-[22px] font-medium leading-tight tracking-[-0.01em] text-ink">Firm settings</h1>
+        {/* R-09: the top bar crumb names the page; the heading stays for screen readers. */}
+        <h1 className="sr-only">Firm settings</h1>
         {tabs}
         <FirmSettingsBody />
       </div>

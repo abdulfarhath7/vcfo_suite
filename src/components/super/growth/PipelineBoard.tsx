@@ -1,5 +1,6 @@
 'use client';
 
+import { EmptyState } from '@/components/ui/empty-state';
 import { Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
@@ -84,7 +85,7 @@ export function PipelineBoard({ prospects, linkedCompany, onEdit, onMove, onConv
               <span className="rounded-sm bg-surface-raised px-1.5 text-[12px] font-medium text-ink-muted">{items.length}</span>
             </h3>
             {items.length === 0 ? (
-              <p className="px-1 pb-1 text-[12.5px] text-ink-faint">None</p>
+              <EmptyState title="None" className="min-h-[72px] bg-surface-raised py-4 text-[13px]" />
             ) : (
               <ul className="grid gap-2">
                 {items.map((p) => (

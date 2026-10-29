@@ -22,9 +22,17 @@ export function SuperProjectJourney({ detail }: { detail: SuperEngagementDetail 
   const { progress } = detail.summary;
   const track = superPhaseTrack(detail.summary);
   const current = track.totals.findIndex((t, i) => (track.done[i] ?? 0) < t);
+  const liveIndex = detail.summary.currentStep ? detail.journey.findIndex((step) => step.id === detail.summary.currentStep?.id) : -1;
+  const live = liveIndex >= 0 ? detail.journey[liveIndex] : undefined;
 
   return (
-    <DashSection title="Steps" meta={`${progress.done} of ${progress.total} steps`} bodyClassName="p-0">
+    <DashSection
+      title="Steps"
+      meta={liveIndex >= 0 ? `${progress.done} of ${progress.total} steps · Step ${liveIndex + 1} of ${detail.journey.length}` : `${progress.done} of ${progress.total} steps`}
+      href={live?.href}
+      hrefLabel={live ? 'Open current step' : undefined}
+      bodyClassName="p-0"
+    >
       <ol className="hidden gap-2 border-b border-line-soft px-4 py-4 sm:flex" aria-label="Phases">
         {track.totals.map((total, i) => {
           const done = track.done[i] ?? 0;

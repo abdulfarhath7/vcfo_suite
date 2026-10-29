@@ -125,7 +125,7 @@ export function SuperFilingsPanel({ detail }: { detail: SuperEngagementDetail })
   ];
 
   return (
-    <DashSection title="Filings" meta={detail.filings.length === 0 ? undefined : `${detail.filings.length} in window`} bodyClassName="px-2 pb-2 pt-3">
+    <DashSection title="Obligations" meta={detail.filings.length === 0 ? undefined : `${detail.filings.length} in window`} bodyClassName="px-2 pb-2 pt-3">
       {/* Inspection only: the same per-engagement state the client sees, read off
           `summary.incorporated` (which is `isIncorporated`). Nothing is mutated. */}
       {!detail.summary.incorporated ? (
@@ -168,7 +168,7 @@ export function SuperActivityPanel({ detail }: { detail: SuperEngagementDetail }
   const entries = detail.activity;
 
   return (
-    <DashSection title="Activity" href="/app/admin/audit-log" hrefLabel="Full log" bodyClassName="p-0">
+    <DashSection title="Audit" href="/app/admin/audit-log" hrefLabel="Full log" bodyClassName="p-0">
       {entries.length === 0 ? (
         <div className="p-4">
           <EmptyState title="No activity yet" />

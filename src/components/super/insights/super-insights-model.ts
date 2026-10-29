@@ -795,3 +795,37 @@ export function buildPracticeAreas(
     ),
   ];
 }
+
+/* ------------------------------------------------------------------ *
+ * Capacity
+ * ------------------------------------------------------------------ */
+
+/** Capacity bands (prototype): over 80% red, 70 to 80% amber, under 70% blurple. */
+export function capacityTone(pct: number): 'bad' | 'warn' | 'prog' {
+  if (pct > 80) return 'bad';
+  if (pct >= 70) return 'warn';
+  return 'prog';
+}
+
+/** Open items left under the capacity, summed over the managers who have one set. */
+export function roomAcross(managers: SuperTeamManager[], people: Map<string, { load: { open: number; capacity: number | null } }>): number | null {
+  let room: number | null = null;
+  for (const m of managers) {
+    const load = people.get(m.id)?.load;
+    if (load?.capacity == null) continue;
+    room = (room ?? 0) + Math.max(0, load.capacity - load.open);
+  }
+  return room;
+}
+
+/** Median of a list of durations in ms, as "<1 h", "N h" or "N d"; a dash with none. */
+export function medianResponse(ms: number[]): string {
+  if (ms.length === 0) return '–';
+  const sorted = [...ms].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const m = sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
+  const hours = m / 3_600_000;
+  if (hours < 1) return '<1 h';
+  if (hours < 48) return `${Math.round(hours)} h`;
+  return `${Math.round(hours / 24)} d`;
+}

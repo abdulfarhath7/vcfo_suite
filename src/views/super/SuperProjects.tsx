@@ -1,10 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageBackCluster } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { DashSection } from '@/components/dash/DashSection';
@@ -31,6 +31,7 @@ import {
 } from '@/components/super/parts/super-parts';
 import { plainDay, shortCompany, todayKey } from '@/components/super/parts/super-text';
 import { useSuperOverview } from '@/hooks/use-super-overview';
+import { useSuperInsights } from '@/views/super/use-super-insights';
 import {
   needsAttention,
   SUPER_PROJECTS_HREF,
@@ -100,16 +101,25 @@ function SuperProjectsInner() {
     );
   }, [overview, filter, stage, admin, manager, lead, adminOf]);
 
-  /** Earliest open filing per engagement, from the overview's 90-day filing window. */
+  /**
+   * The client's next date: the end of the current step's window (insights), else the earliest
+   * open filing, from the insights read or the overview's 90-day filing window.
+   */
+  const insights = useSuperInsights().data;
   const nextDue = useMemo(() => {
     const out = new Map<string, string>();
+    for (const c of insights?.clients ?? []) {
+      const due = c.currentStepDue ?? c.nextDueDate;
+      if (due) out.set(c.summary.id, due.slice(0, 10));
+    }
     for (const filing of overview?.filings ?? []) {
       if (filing.status === 'filed') continue;
+      if (insights?.clients.some((c) => c.summary.id === filing.engagementId)) continue;
       const current = out.get(filing.engagementId);
       if (!current || filing.dueDate < current) out.set(filing.engagementId, filing.dueDate);
     }
     return out;
-  }, [overview]);
+  }, [overview, insights]);
 
   const go = (next: { filter?: Filter; stage?: string | null }) => {
     const search = new URLSearchParams();
@@ -152,6 +162,14 @@ function SuperProjectsInner() {
     [...new Set(overview.engagements.map((s) => pick(s) ?? 'Unassigned'))].sort((a, b) => a.localeCompare(b));
   const stageLabel = overview.charts.byStage.find((bar) => bar.stage === stage)?.label ?? '';
   const columns = columnsFor(nextDue, adminOf);
+  // Picking an admin narrows the manager list to the managers who report to that admin.
+  const managerNames = [
+    ...new Set(
+      overview.engagements
+        .filter((s) => !admin || (adminOf(s.managerId) ?? 'Unassigned') === admin)
+        .map((s) => s.managerName ?? 'Unassigned'),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
   const adminNames = [...new Set(overview.engagements.map((s) => adminOf(s.managerId) ?? 'Unassigned'))].sort((a, b) =>
     a.localeCompare(b),
   );
@@ -159,19 +177,6 @@ function SuperProjectsInner() {
   return (
     <PageTransition>
       {seo}
-
-      <div className="mb-3 flex min-w-0 flex-wrap items-center gap-3">
-        <PageBackCluster>
-          <h1 className="text-[22px] font-medium leading-tight tracking-[-0.01em] text-ink">Clients</h1>
-          <span className="text-[13px] text-ink-muted">
-            {rows.length} of {overview.engagements.length}
-          </span>
-        </PageBackCluster>
-        <Button className="ml-auto" onClick={() => setAssignOpen(true)}>
-          <UserPlus aria-hidden />
-          Assign client
-        </Button>
-      </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <SpectrumTabs
@@ -189,8 +194,17 @@ function SuperProjectsInner() {
             go({ stage: null });
           }}
           filters={[
-            { key: 'admin', label: 'Admin', value: admin, options: adminNames, onChange: setAdmin },
-            { key: 'manager', label: 'Manager', value: manager, options: names((s) => s.managerName), onChange: setManager },
+            {
+              key: 'admin',
+              label: 'Admin',
+              value: admin,
+              options: adminNames,
+              onChange: (v) => {
+                setAdmin(v);
+                setManager('');
+              },
+            },
+            { key: 'manager', label: 'Manager', value: manager, options: managerNames, onChange: setManager },
             { key: 'lead', label: 'Lead', value: lead, options: names((s) => s.leadName), onChange: setLead },
             {
               key: 'stage',
@@ -204,7 +218,22 @@ function SuperProjectsInner() {
         />
       </div>
 
-      <DashSection title="All clients" meta={`${rows.length} of ${overview.engagements.length}`} bodyClassName="px-2 pb-2 pt-1">
+      {/* R-09: no page title; the count and "Assign client" sit in the grid card head. */}
+      <DashSection
+        title="All clients"
+        meta={
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="tabular-nums">
+              {rows.length} of {overview.engagements.length}
+            </span>
+            <Button size="sm" onClick={() => setAssignOpen(true)}>
+              <UserPlus aria-hidden />
+              Assign client
+            </Button>
+          </span>
+        }
+        bodyClassName="px-2 pb-2 pt-1"
+      >
         <div className="hidden md:block">
           <EFilingGrid
             caption="Clients"
@@ -213,7 +242,7 @@ function SuperProjectsInner() {
             rowKey={(row) => row.id}
             onRowClick={(row) => router.push(row.href)}
             empty="No client matches these filters"
-            minWidth={1180}
+            minWidth={1080}
             pageSize={17}
           />
         </div>
@@ -244,12 +273,6 @@ function countsFor(overview: SuperOverview): Record<Filter, number> {
   };
 }
 
-const HEALTH_TONE: Record<string, 'ok' | 'bad' | 'warn'> = {
-  'on-track': 'ok',
-  'at-risk': 'warn',
-  overdue: 'bad',
-};
-
 /* The clients grid (K-45, C-0109): Spectrum T1 rows with the ST5 phase bars, the area pill
    for the stage and the status chip in one of the six words. */
 function columnsFor(
@@ -263,7 +286,15 @@ function columnsFor(
       header: 'Client',
       width: '19%',
       render: (row) => (
-        <NameCell lead={<ClientTile id={row.id} name={row.companyName} />} title={shortCompany(row.companyName)} />
+        <NameCell
+          lead={<ClientTile id={row.id} name={row.companyName} />}
+          title={
+            // A real link, so the record can open in a new tab; the row click still opens it.
+            <Link href={row.href} className="hover:underline" onClick={(e) => e.stopPropagation()}>
+              {shortCompany(row.companyName)}
+            </Link>
+          }
+        />
       ),
     },
     {
@@ -276,6 +307,15 @@ function columnsFor(
     },
     { key: 'progress', header: 'Progress', width: '150px', render: (row) => <ProgressTrack summary={row} /> },
     {
+      key: 'admin',
+      header: 'Admin',
+      width: '11%',
+      render: (row) => {
+        const name = adminOf(row.managerId);
+        return name ? <span className="block min-w-0 truncate">{name}</span> : <span className="text-ink-faint">–</span>;
+      },
+    },
+    {
       key: 'manager',
       header: 'Manager',
       width: '14%',
@@ -285,15 +325,6 @@ function columnsFor(
           <span className="min-w-0 truncate">{row.managerName ?? 'Unassigned'}</span>
         </span>
       ),
-    },
-    {
-      key: 'admin',
-      header: 'Admin',
-      width: '11%',
-      render: (row) => {
-        const name = adminOf(row.managerId);
-        return name ? <span className="block min-w-0 truncate">{name}</span> : <span className="text-ink-faint">–</span>;
-      },
     },
     {
       key: 'stage',
@@ -311,27 +342,20 @@ function columnsFor(
       },
     },
     {
-      key: 'state',
-      header: 'State',
-      width: '120px',
+      key: 'health',
+      header: 'Health',
+      width: '124px',
+      // One chip, as in the prototype: the gate state in the six words. The stored health
+      // label and the reason sit in the tooltip.
       render: (row) => {
         const chip = superStateChip(row);
+        const stored = HEALTH_LABEL[row.health] ?? row.health;
         return (
-          <Chip fixed tone={chip.tone} title={`${chip.title} · ${attentionReason(row)}`}>
+          <Chip fixed tone={chip.tone} title={`${chip.title} · ${attentionReason(row)} · ${stored}`}>
             {chip.word}
           </Chip>
         );
       },
-    },
-    {
-      key: 'health',
-      header: 'Health',
-      width: '120px',
-      render: (row) => (
-        <Chip fixed tone={HEALTH_TONE[row.health] ?? 'idle'}>
-          {HEALTH_LABEL[row.health] ?? row.health}
-        </Chip>
-      ),
     },
     {
       key: 'idle',

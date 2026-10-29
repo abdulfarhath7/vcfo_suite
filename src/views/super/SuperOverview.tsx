@@ -59,7 +59,7 @@ import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
  * tiles (Clients, Registrations open, Filed on time, Filings overdue, each with the
  * change against last month where stored dates can say), the three practice cards,
  * then a main column (admins, managers, practice areas, the real-only load and
- * charts, and the attention list last) and a 318px rail of `DashSection` panels.
+ * charts, and the attention list last) and a 360px rail from lg, 20px gaps.
  * Assign task stays beside Assign client because it is a real super admin action.
  */
 export default function SuperOverview() {
@@ -140,7 +140,7 @@ export default function SuperOverview() {
     <PageTransition>
       {seo}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-5">
         {/* The prototype's four tiles, each with its change against last month where stored dates say. */}
         <DashHero
           title={greeting}
@@ -198,20 +198,20 @@ export default function SuperOverview() {
 
         {insights ? <SuperPracticeCards insights={insights} /> : <InsightShapes count={3} />}
 
-        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
-          <div className="flex min-w-0 flex-col gap-3">
-            <SuperAdminsPanel staff={staff} engagements={overview.engagements} />
-            {insights ? <SuperManagersPanel insights={insights} /> : <InsightShapes count={1} />}
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="flex min-w-0 flex-col gap-5">
+            <SuperAdminsPanel staff={staff} engagements={overview.engagements} admins={insights?.team.admins} />
+            {insights ? <SuperManagersPanel insights={insights} adminOf={(id) => staff.adminOfManager.get(id)?.name ?? null} /> : <InsightShapes count={1} />}
             {insights ? <SuperPracticeAreasPanel insights={insights} /> : <InsightShapes count={1} />}
             <SuperWorkloadPanel overview={overview} />
-            <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
               <SuperStagePanel overview={overview} />
               <SuperPhasePanel overview={overview} />
             </div>
             <SuperAttentionPanel overview={overview} dueOf={dueOf} />
           </div>
 
-          <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex min-w-0 flex-col gap-5">
             <EscalationsPanel canResolve limit={6} />
             {insights ? <SuperTopRisks insights={insights} /> : <InsightShapes count={1} />}
             {insights ? <SuperTeamLoadPanel insights={insights} /> : <InsightShapes count={1} />}
@@ -229,7 +229,7 @@ export default function SuperOverview() {
 /** Grey shapes while the insights read lands (R-48). */
 function InsightShapes({ count }: { count: number }) {
   return (
-    <div className={count > 1 ? 'grid grid-cols-1 gap-3 lg:grid-cols-3' : undefined} aria-hidden>
+    <div className={count > 1 ? 'grid grid-cols-1 gap-5 md:grid-cols-3' : undefined} aria-hidden>
       {Array.from({ length: count }, (_, i) => (
         <span key={i} className="block h-[220px] animate-pulse rounded-md bg-surface-sunken" />
       ))}

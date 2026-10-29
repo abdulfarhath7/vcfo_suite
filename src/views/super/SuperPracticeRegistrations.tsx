@@ -9,6 +9,7 @@ import { DashSection } from '@/components/dash/DashSection';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Chip, OwnerChip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   ClientTile,
   NameCell,
@@ -23,6 +24,7 @@ import { shortCompany } from '@/components/super/parts/super-text';
 import {
   inRegistrations,
   registrationCounts,
+  SUPER_STUCK_DAYS,
   type SuperInsightClient,
   type SuperRegCell,
 } from '@/components/super/insights/super-insights-model';
@@ -256,26 +258,6 @@ export default function SuperPracticeRegistrations() {
       <div className="flex flex-col gap-5">
         <SuperPageHead title="Registrations" meta={`${reached.length} clients in registrations`} />
 
-        <SuperNumberStrip
-          items={[
-            { label: 'Open registrations', value: open },
-            { label: 'Waiting on client', value: total('waiting') },
-            { label: 'Overdue', value: total('overdue'), bad: total('overdue') > 0 },
-            { label: 'Done to date', value: total('done'), good: total('done') > 0 },
-          ]}
-        />
-
-        <DashSection title="Registrations by status">
-          <StackedBar
-            segments={[
-              { label: 'Done', value: total('done'), tone: 'ok' },
-              { label: 'In progress', value: total('progress'), tone: 'prog' },
-              { label: 'Waiting', value: total('waiting'), tone: 'teal' },
-              { label: 'Overdue', value: total('overdue'), tone: 'bad' },
-            ]}
-          />
-        </DashSection>
-
         {view === 'matrix' ? (
           <DashSection
             title="Registrations · clients by type"
@@ -317,33 +299,114 @@ export default function SuperPracticeRegistrations() {
             </ul>
           </DashSection>
         ) : (
-          <DashSection title="Open registrations" meta={`${itemRows.length} of ${items.length}`} bodyClassName="px-2 pb-2 pt-3">
-            <div className="mb-2 flex flex-wrap items-center gap-2 px-2">
-              <SuperFilterChips
-                onClear={() => {
-                  setManager('');
-                  setStatus('');
-                }}
-                filters={[
-                  { key: 'manager', label: 'Manager', value: manager, options: managers, onChange: setManager },
-                  { key: 'status', label: 'Status', value: status, options: ['In progress', 'Waiting', 'Overdue'], onChange: setStatus },
+          // Work items: the grid, and a 360px rail with the status bar and the Stuck card (prototype).
+          <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="flex min-w-0 flex-col gap-5">
+              <SuperNumberStrip
+                items={[
+                  { label: 'Open registrations', value: open },
+                  { label: 'Waiting on client', value: total('waiting') },
+                  { label: 'Overdue', value: total('overdue'), bad: total('overdue') > 0 },
+                  { label: 'Done to date', value: total('done'), good: total('done') > 0 },
                 ]}
               />
-              <span className="ml-auto">{tabs}</span>
+              <DashSection title="Open registrations" meta={`${itemRows.length} of ${items.length}`} bodyClassName="px-2 pb-2 pt-3">
+                <div className="mb-2 flex flex-wrap items-center gap-2 px-2">
+                  <SuperFilterChips
+                    onClear={() => {
+                      setManager('');
+                      setStatus('');
+                    }}
+                    filters={[
+                      { key: 'manager', label: 'Manager', value: manager, options: managers, onChange: setManager },
+                      { key: 'status', label: 'Status', value: status, options: ['In progress', 'Waiting', 'Overdue'], onChange: setStatus },
+                    ]}
+                  />
+                  <span className="ml-auto">{tabs}</span>
+                </div>
+                <EFilingGrid
+                  caption="Open registrations"
+                  columns={itemColumns}
+                  rows={itemRows}
+                  rowKey={(w) => w.id}
+                  onRowClick={(w) => router.push(w.client.summary.href)}
+                  empty="No open registration matches these filters"
+                  minWidth={760}
+                  pageSize={15}
+                  rowClassName={(w) => (w.cell === 'overdue' ? 'text-danger' : undefined)}
+                />
+              </DashSection>
             </div>
-            <EFilingGrid
-              caption="Open registrations"
-              columns={itemColumns}
-              rows={itemRows}
-              rowKey={(w) => w.id}
-              onRowClick={(w) => router.push(w.client.summary.href)}
-              empty="No open registration matches these filters"
-              minWidth={760}
-              pageSize={15}
-            />
-          </DashSection>
+            <div className="flex min-w-0 flex-col gap-5">
+              <DashSection title="Registrations by status">
+                <StackedBar
+                  segments={[
+                    { label: 'Done', value: total('done'), tone: 'ok' },
+                    { label: 'In progress', value: total('progress'), tone: 'prog' },
+                    { label: 'Waiting', value: total('waiting'), tone: 'teal' },
+                    { label: 'Overdue', value: total('overdue'), tone: 'bad' },
+                  ]}
+                />
+              </DashSection>
+              <StuckCard
+                items={items}
+                daysOf={(w) => practice?.openStepDays[w.client.summary.id]?.[w.regId]}
+                onOpen={(w) => router.push(w.client.summary.href)}
+              />
+            </div>
+          </div>
         )}
       </div>
     </PageTransition>
+  );
+}
+
+/**
+ * "Stuck" (prototype rail card): open registration items that are overdue or have sat in their
+ * step for `SUPER_STUCK_DAYS` days or more, longest first. Days come from the step events.
+ */
+function StuckCard({
+  items,
+  daysOf,
+  onOpen,
+}: {
+  items: WorkItem[];
+  daysOf: (w: WorkItem) => number | undefined;
+  onOpen: (w: WorkItem) => void;
+}) {
+  const stuck = items
+    .map((w) => ({ w, days: daysOf(w) }))
+    .filter(({ w, days }) => w.cell === 'overdue' || (days !== undefined && days >= SUPER_STUCK_DAYS))
+    .sort((a, b) => (b.days ?? 0) - (a.days ?? 0));
+  return (
+    <DashSection title="Stuck" meta={String(stuck.length)} bodyClassName={stuck.length ? 'p-0' : 'p-4'}>
+      {stuck.length === 0 ? (
+        <EmptyState title="None" />
+      ) : (
+        <ul>
+          {stuck.slice(0, 8).map(({ w, days }) => (
+            <li key={w.id} className="border-t border-line-soft first:border-t-0">
+              <button
+                type="button"
+                onClick={() => onOpen(w)}
+                className="flex w-full min-w-0 items-center gap-3 px-4 py-3 text-left hover:bg-surface-sunken"
+              >
+                <ClientTile id={w.client.summary.id} name={w.client.summary.companyName} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13.5px] font-medium text-ink">{shortCompany(w.client.summary.companyName)}</span>
+                  <span className="block truncate text-[12.5px] text-ink-muted">
+                    {w.title} · {w.client.summary.leadName ?? 'No lead'}
+                    {days !== undefined ? ` · ${days} ${days === 1 ? 'day' : 'days'}` : ''}
+                  </span>
+                </span>
+                <Chip fixed tone={CELL_TONE[w.cell]}>
+                  {CELL_LABEL[w.cell]}
+                </Chip>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DashSection>
   );
 }

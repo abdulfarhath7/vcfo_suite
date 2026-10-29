@@ -22,7 +22,6 @@ import {
 import {
   ClientTile,
   SuperPageError,
-  SuperPageSkeleton,
 } from '@/components/super/parts/super-parts';
 import { superOwnerOf, superStateChip } from '@/components/super/overview/super-overview-format';
 import { AssignClientDialog } from '@/components/super/assign/AssignClientDialog';
@@ -75,7 +74,7 @@ export default function SuperProjectDetail() {
     return (
       <PageTransition>
         {seo}
-        <SuperPageSkeleton label="Loading the client" />
+        <RecordSkeleton />
       </PageTransition>
     );
   }
@@ -116,18 +115,25 @@ export default function SuperProjectDetail() {
   const regSteps = detail.journey.filter((step) => step.phaseId === 'registration-phase-4');
   const quiet = idleKicker(summary.idleDays);
   const adminName = staff.adminNameOf(summary.managerId);
+  // The first client login on the engagement is the contact the prototype mails.
+  const clientEmail = detail.team.find((member) => member.role === 'Client')?.email ?? null;
+  // Days from the engagement's start to its certificate, once there is one.
+  const coiOn = detail.timeline?.incorporationDate ?? null;
+  const daysToCoi = coiOn
+    ? Math.max(0, Math.round((Date.parse(`${coiOn}T00:00:00Z`) - Date.parse(summary.createdAt.slice(0, 10) + 'T00:00:00Z')) / 86_400_000))
+    : null;
   const firmRows = firm.data?.engagements ?? [];
   const assignRows = firmRows.some((row) => row.id === summary.id) ? firmRows : [summary, ...firmRows];
 
   const tabs = [
     { key: 'steps', label: 'Steps', count: `${summary.progress.done}/${summary.progress.total}` },
     { key: 'registrations', label: 'Registrations', count: regSteps.length },
-    { key: 'filings', label: 'Filings', count: detail.filings.length },
+    { key: 'filings', label: 'Obligations', count: detail.filings.length },
     { key: 'documents', label: 'Documents', count: detail.documents.length },
     { key: 'escalations', label: 'Escalations' },
     { key: 'notes', label: 'Notes' },
     { key: 'team', label: 'Team', count: detail.team.length },
-    { key: 'activity', label: 'Activity' },
+    { key: 'activity', label: 'Audit' },
   ];
 
   const now = (
@@ -162,6 +168,14 @@ export default function SuperProjectDetail() {
                 {summary.clientName ? (
                   <>
                     <span>{summary.clientName}</span>
+                    <span aria-hidden>·</span>
+                  </>
+                ) : null}
+                {clientEmail ? (
+                  <>
+                    <a href={`mailto:${clientEmail}`} className="text-brand-text hover:underline">
+                      {clientEmail}
+                    </a>
                     <span aria-hidden>·</span>
                   </>
                 ) : null}
@@ -218,6 +232,7 @@ export default function SuperProjectDetail() {
 
           <div className="surface flex flex-wrap items-center gap-x-8 gap-y-3 px-4 py-3.5 md:px-5">
             <BandNumber label="Step" value={currentIndex >= 0 ? currentIndex + 1 : summary.progress.total} of={`of ${summary.progress.total}`} />
+            {daysToCoi !== null ? <BandNumber label="Days to COI" value={daysToCoi} /> : null}
             <BandNumber label="Steps done" value={`${summary.progress.done}/${summary.progress.total}`} good={summary.progress.pct === 100} />
             <BandNumber label="With SBC" value={summary.ballInCourt.firm} />
             <BandNumber label="With the client" value={summary.ballInCourt.client} />
@@ -286,4 +301,17 @@ function BandNumber({
 function idleKicker(idleDays: number | null): string | null {
   if (idleDays === null || idleDays < 3) return null;
   return `Quiet ${idleDays} days`;
+}
+
+/** R-48: the record keeps its shape while it loads: head, number band, tabs and two cards. */
+function RecordSkeleton() {
+  return (
+    <div className="flex flex-col gap-5" aria-busy="true" aria-label="Loading the client">
+      <span className="block h-[60px] w-2/3 animate-pulse rounded-md bg-surface-sunken" />
+      <span className="block h-[72px] animate-pulse rounded-md bg-surface-sunken" />
+      <span className="block h-9 w-1/2 animate-pulse rounded-md bg-surface-sunken" />
+      <span className="block h-[220px] animate-pulse rounded-md bg-surface-sunken" />
+      <span className="block h-[320px] animate-pulse rounded-md bg-surface-sunken" />
+    </div>
+  );
 }

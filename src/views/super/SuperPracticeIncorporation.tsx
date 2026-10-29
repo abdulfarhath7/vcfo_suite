@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ChevronRight, List } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageTransition } from '@/components/shell/PageTransition';
@@ -318,13 +319,21 @@ function Pipeline({ clients }: { clients: SuperInsightClient[] }) {
   }));
 
   return (
-    <DashSection title="Incorporation pipeline" meta={String(clients.length)}>
+    <DashSection title="Incorporation pipeline" meta={String(clients.length)} icon={List} tone="info">
       {clients.length === 0 ? (
         <EmptyState title="No client is in incorporation" />
       ) : (
-        <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {byPhase.map((phase) => (
-            <li key={phase.id} className="min-w-0 rounded-md border-1.5 border-line px-4 py-3.5">
+        <ol className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {byPhase.map((phase, i) => (
+            <li key={phase.id} className="relative min-w-0 rounded-md border-1.5 border-line px-4 py-3.5">
+              {i < byPhase.length - 1 ? (
+                <ChevronRight
+                  size={16}
+                  strokeWidth={1.6}
+                  className="absolute -right-[18px] top-1/2 hidden -translate-y-1/2 text-ink-faint xl:block"
+                  aria-hidden
+                />
+              ) : null}
               <span className="block truncate text-[13px] font-medium text-ink-2">{phase.label}</span>
               <b className="mt-1.5 block text-[26px] font-medium leading-none tabular-nums">{phase.clients.length}</b>
               <ul className="mt-3 grid gap-2">

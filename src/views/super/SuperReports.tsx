@@ -17,6 +17,7 @@ import {
 import { plainDay } from '@/components/super/parts/super-text';
 import { buildRisks, type SuperTeamManager } from '@/components/super/insights/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
+import { useSuperStaff } from '@/components/super/assign/use-super-staff';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -32,6 +33,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { SaveReportDialog } from '@/components/super/reports/SaveReportDialog';
 import { SavedReportsCard } from '@/components/super/reports/SavedReportsCard';
 import { useApp } from '@/context/AppContext';
+import { SBC_LOCKUP_DARK_SRC, SBC_LOCKUP_LIGHT_SRC } from '@/components/brand/SbcLogo';
 import { clientLine, monthNumbers, onTimePct, recentMonths, type SavedReport } from '@/lib/reports/partner-report';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 import { useSavedReportMutations, useSavedReports } from '@/views/super/reports/use-saved-reports';
@@ -53,8 +55,25 @@ import { useSavedReportMutations, useSavedReports } from '@/views/super/reports/
  */
 export const SUPER_REPORTS_HREF = '/app/super/reports';
 
-const managerColumns: EFilingColumn<SuperTeamManager>[] = [
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** "November" for the month after a "2026-10" key. */
+function nextMonthName(key: string): string {
+  const m = Number(key.slice(5, 7));
+  return Number.isFinite(m) && m >= 1 ? MONTH_NAMES[m % 12]! : 'next month';
+}
+
+const managerColumnsFor = (adminOf: (managerId: string) => string | null): EFilingColumn<SuperTeamManager>[] => [
   { key: 'name', header: 'Manager', render: (m) => <span className="font-medium text-ink">{m.name}</span> },
+  {
+    key: 'admin',
+    header: 'Admin',
+    width: '120px',
+    render: (m) => {
+      const name = adminOf(m.id);
+      return name ? <span className="block truncate">{name}</span> : <span className="text-ink-faint">–</span>;
+    },
+  },
   { key: 'clients', header: 'Clients', width: '80px', align: 'right', render: (m) => <span className="tabular-nums">{m.clients}</span> },
   { key: 'ontime', header: 'On time', width: '84px', align: 'right', render: (m) => <span className="tabular-nums">{onTimePct(m)}</span> },
   {
@@ -84,10 +103,12 @@ export default function SuperReports() {
   const insights = query.data;
   const [monthKey, setMonthKey] = useState<string | null>(null);
   const { user } = useApp();
+  const staff = useSuperStaff();
   const saved = useSavedReports();
   const { save, remove } = useSavedReportMutations();
   const [saving, setSaving] = useState<SavedReport | 'new' | null>(null);
   const [deleting, setDeleting] = useState<SavedReport | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const recent = useMemo(() => (insights ? recentMonths(insights) : []), [insights]);
   const risks = useMemo(() => (insights ? buildRisks(insights, new Date()).slice(0, 4) : []), [insights]);
@@ -116,6 +137,7 @@ export default function SuperReports() {
   const latestKey = recent[recent.length - 1]?.key;
 
   function openSaved(r: SavedReport) {
+    setOpenId(r.id);
     setMonthKey(r.params.month === 'latest' ? null : recent.some((m) => m.key === r.params.month) ? r.params.month : null);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -136,38 +158,53 @@ export default function SuperReports() {
     <PageTransition>
       {seo}
       <div className="flex flex-col gap-5">
-        <SuperPageHead title="Reports" meta={`Partner report · prepared ${plainDay(insights.generatedAt)}`}>
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer aria-hidden />
-            Print
-          </Button>
-          <Button variant="outline" onClick={() => setSaving('new')} disabled={!month}>
-            <Save aria-hidden />
-            Save report
-          </Button>
-          {month ? (
-            <Button asChild>
-              <a href={`/api/super/reports/pdf?month=${month.key === latestKey ? 'latest' : month.key}`}>
-                <Download aria-hidden />
-                Download PDF
-              </a>
-            </Button>
-          ) : null}
-        </SuperPageHead>
+        <SuperPageHead title="Reports" />
 
-        <SpectrumTabs
-          label="Month"
-          size="md"
-          items={recent.map((m) => ({ key: m.key, label: m.longLabel.split(' ')[0]! }))}
-          value={month?.key ?? ''}
-          onChange={setMonthKey}
-        />
+        {/* One row, as in the prototype: month tabs, the prepared line, then the actions at the right end. */}
+        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+          <SpectrumTabs
+            label="Month"
+            size="md"
+            items={recent.map((m) => ({ key: m.key, label: m.longLabel.split(' ')[0]! }))}
+            value={month?.key ?? ''}
+            onChange={(key) => {
+              setMonthKey(key);
+              setOpenId(null);
+            }}
+          />
+          <span className="text-[12.5px] text-ink-muted">Partner report · prepared on {plainDay(insights.generatedAt)}</span>
+          <span className="ml-auto flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => window.print()}>
+              <Printer aria-hidden />
+              Print
+            </Button>
+            <Button variant="outline" onClick={() => setSaving('new')} disabled={!month}>
+              <Save aria-hidden />
+              Save report
+            </Button>
+            {month ? (
+              <Button asChild>
+                <a href={`/api/super/reports/pdf?month=${month.key === latestKey ? 'latest' : month.key}`}>
+                  <Download aria-hidden />
+                  Download PDF
+                </a>
+              </Button>
+            ) : null}
+          </span>
+        </div>
 
         {month ? (
           <article className="mx-auto grid w-full min-w-0 max-w-[900px] grid-cols-1 gap-6 rounded-md border-1.5 border-line bg-surface-raised px-5 py-6 md:px-10 md:py-9 [&>*]:min-w-0">
-            <header className="border-b-1.5 border-line pb-4">
-              <span className="text-[12.5px] text-ink-muted">SBC · monthly partner report</span>
-              <h2 className="text-[28px] font-medium leading-tight tracking-[-0.01em] text-ink">{month.longLabel}</h2>
+            <header className="flex items-start justify-between gap-4 border-b-1.5 border-line pb-4">
+              <span className="min-w-0">
+                <span className="text-[12.5px] text-ink-muted">SBC · monthly partner report</span>
+                <h2 className="text-[28px] font-medium leading-tight tracking-[-0.01em] text-ink">{month.longLabel}</h2>
+              </span>
+              {/* Our own brand files, not a remote CDN, so a plain <img> is right; dark mode swaps the lockup. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={SBC_LOCKUP_LIGHT_SRC} alt="SBC" width={115} height={34} className="block h-[34px] w-auto dark:hidden" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={SBC_LOCKUP_DARK_SRC} alt="SBC" width={115} height={34} className="hidden h-[34px] w-auto dark:block" />
             </header>
             <section>
               <h3 className="mb-2 text-[15px] font-medium text-ink">The month in numbers</h3>
@@ -188,10 +225,10 @@ export default function SuperReports() {
             </section>
             <section>
               <h3 className="mb-2 text-[15px] font-medium text-ink">Managers</h3>
-              <EFilingGrid caption="Managers" columns={managerColumns} rows={insights.team.managers} rowKey={(m) => m.id} empty="No manager yet" minWidth={560} />
+              <EFilingGrid caption="Managers" columns={managerColumnsFor((id) => staff.adminOfManager.get(id)?.name ?? null)} rows={insights.team.managers} rowKey={(m) => m.id} empty="No manager yet" minWidth={680} />
             </section>
             <section>
-              <h3 className="mb-1 text-[15px] font-medium text-ink">Top risks</h3>
+              <h3 className="mb-1 text-[15px] font-medium text-ink">Top risks for {nextMonthName(month.key)}</h3>
               {risks.length === 0 ? (
                 <p className="text-[13.5px] text-ink-2">None</p>
               ) : (
@@ -215,6 +252,7 @@ export default function SuperReports() {
           loading={saved.isPending}
           error={saved.isError ? errorMessage(saved.error, 'Saved reports could not load.') : null}
           onOpen={openSaved}
+          openId={openId}
           onSchedule={setSaving}
           onDelete={setDeleting}
         />
