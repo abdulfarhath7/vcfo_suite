@@ -3,7 +3,8 @@ import {
   assertEngagementBoardResolutionAccess,
   fetchBoardResolutionForApi,
 } from '@/lib/api/board-resolution-access';
-import { requireRole } from '@/auth/guards';
+import { requireAnyRole } from '@/auth/guards';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
 import {
   contentTypeForSignedBoardResolutionPath,
   validateSignedBoardResolutionFile,
@@ -24,9 +25,14 @@ function extensionForFile(file: File): string {
   return 'docx';
 }
 
-/** POST multipart: file — client uploads signed board resolution. */
+/**
+ * POST multipart: file — the signed board resolution. The client uploads it from the portal; since
+ * S-574 staff (lead, manager, admin, super admin) may upload a copy the client returned by mail.
+ * The file goes to S3 through `src/storage`, the row is scoped by the repository, and the upload
+ * is written to the audit log.
+ */
 export async function POST(request: Request, context: RouteContext) {
-  const auth = await requireRole('client');
+  const auth = await requireAnyRole('client', 'intern', 'manager', 'admin', 'super_admin');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -88,6 +94,21 @@ export async function POST(request: Request, context: RouteContext) {
 
   try {
     const updated = await setSignedBoardResolution(auth.ctx, engagementParam, storagePath);
+    try {
+      await recordAuditEvent(auth.ctx, {
+        engagementId: access.dbId,
+        action: 'board_resolution.signed_upload',
+        summary:
+          auth.ctx.role === 'client'
+            ? 'Client uploaded the signed board resolution'
+            : 'Staff uploaded the signed board resolution',
+        actorEmail: auth.ctx.email,
+        actorName: auth.ctx.name,
+        metadata: { storagePath, fileName: file.name },
+      });
+    } catch (err) {
+      console.error('[board-resolution] could not audit the signed upload', err);
+    }
     try {
       await patchChecklistItem(auth.ctx, engagementParam, 'pre-3', {
         responses: { signedBoardResolutionUrl: storagePath },

@@ -23,6 +23,7 @@ function chain(call: Call): unknown {
   const c: Record<string, unknown> = {
     from: () => c,
     innerJoin: () => c,
+    leftJoin: () => c,
     orderBy: () => c,
     limit: () => c,
     returning: () => c,
@@ -121,10 +122,10 @@ beforeEach(() => {
 });
 
 describe('listDocuments (vault list, no engagement id)', () => {
-  it.each(['admin', 'super_admin'] as const)('%s is firm-wide but skips soft-deleted projects', async (role) => {
+  it.each(['admin', 'super_admin'] as const)('%s is firm-wide but skips soft-deleted projects and files', async (role) => {
     await repo.listDocuments(ctx(role));
     const q = rendered(calls[0]);
-    expect(q.sql).toBe('"engagements"."deleted_at" is null');
+    expect(q.sql).toBe('("engagements"."deleted_at" is null and "documents"."deleted_at" is null)');
     expect(q.params).toEqual([]);
   });
 
@@ -190,6 +191,7 @@ describe('listDocuments (one engagement)', () => {
     await repo.listDocuments(ctx('client'), OWN);
     const q = rendered(calls[0]);
     expect(q.sql).toContain('"documents"."shared_with_client" =');
+    expect(q.sql).toContain('"documents"."deleted_at" is null');
     expect(q.params).toEqual([OWN, true]);
   });
 });
@@ -204,6 +206,12 @@ describe('getDocumentById', () => {
       expect(assertEngagementAccess).toHaveBeenCalledWith(ctx(role), OTHER);
     },
   );
+
+  it('a file deleted from the vault reads as not found without an access check', async () => {
+    results = [[docRow(OWN, { deletedAt: new Date() })]];
+    expect(await repo.getDocumentById(ctx('admin'), 'doc-1')).toBeNull();
+    expect(assertEngagementAccess).not.toHaveBeenCalled();
+  });
 
   it('client gets null for an unshared file on its own engagement', async () => {
     results = [[docRow(OWN, { sharedWithClient: false })]];

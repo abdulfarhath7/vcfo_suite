@@ -1,6 +1,8 @@
 "use client";
 import * as React from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
+import { demoLoginsOn } from "@/components/auth/demo-accounts";
 import { GUIDE, GUIDE_HELLO } from "./content";
 
 type Msg = { id: number; who: "bot" | "me"; text?: string; q?: number; typing?: boolean };
@@ -8,7 +10,9 @@ type Msg = { id: number; who: "bot" | "me"; text?: string; q?: number; typing?: 
 /**
  * Ask VCFO quick answers on the landing page, as on the old v6 landing: a fixed text button (R-04, no mascot)
  * and a small panel. The answers are the fixed marketing list in content.ts; nothing reads client data.
- * "Book a demo" opens the landing's Book a demo dialog through `onDemo`.
+ * "Book a demo" opens the landing's Book a demo dialog through `onDemo`. In demo mode
+ * (`NEXT_PUBLIC_DEMO_LOGINS=on`) an answer also has "Open the screen" (P-434), a link to the real
+ * portal screen it describes; signed out, the proxy asks for a demo login first.
  */
 export function AskGuide({ onDemo }: { onDemo: () => void }) {
   const [open, setOpen] = React.useState(false);
@@ -107,6 +111,11 @@ export function AskGuide({ onDemo }: { onDemo: () => void }) {
                     <button type="button" className="btn btn-secondary" onClick={() => scrollTo(g.sec)}>
                       Show me
                     </button>
+                    {g.href && demoLoginsOn() ? (
+                      <Link className="btn btn-secondary" href={g.href}>
+                        Open the screen
+                      </Link>
+                    ) : null}
                     <button type="button" className={`btn ${g.sales ? "btn-primary" : "btn-ghost"}`} onClick={onDemo}>
                       Book a demo
                     </button>

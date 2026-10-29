@@ -306,11 +306,17 @@ async function finalizeBoardResolution(
   return mapRow(row);
 }
 
+/** Who may store the signed copy: the client, and staff since S-574 (never a developer). */
+const SIGNED_UPLOAD_ROLES = new Set(['client', 'super_admin', 'admin', 'manager', 'intern']);
+
 export async function setSignedBoardResolution(
   ctx: AuthContext,
   appOrDbId: string,
   signedStoragePath: string,
 ): Promise<BoardResolutionDoc> {
+  if (!SIGNED_UPLOAD_ROLES.has(ctx.role)) {
+    throw new Error('Only the client or staff may upload the signed board resolution');
+  }
   const engagement = await requireEngagement(ctx, appOrDbId);
   const path = signedStoragePath.trim();
   if (!path) throw new Error('signed_storage_path required');

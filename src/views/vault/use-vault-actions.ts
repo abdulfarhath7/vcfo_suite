@@ -4,11 +4,12 @@ import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { errorMessage, toastError, toastInfo } from '@/lib/toast-errors';
 import { toastSaved } from '@/components/ui/toast-saved';
+import { toastUndo } from '@/components/ui/undo-toast';
 import type { VaultRef } from '@/views/vault/vault-files';
 
 /*
- * Vault actions (G-26): ZIP download and review. The ZIP is checked first with a dry run, so a
- * bad selection shows a toast; then a plain form post hands the archive to the browser, which
+ * Vault actions (G-26): ZIP download, review, and delete with Undo (P-596). The ZIP is checked
+ * first with a dry run, so a bad selection shows a toast; then a plain form post hands the archive to the browser, which
  * streams it to disk instead of holding it in memory.
  */
 
@@ -95,5 +96,51 @@ export function useVaultActions() {
     [queryClient],
   );
 
-  return { downloadZip, zipping, review, refreshIndex };
+  /** Bring a deleted file back (the Undo of a delete). */
+  const restore = useCallback(
+    async (documentId: string, fileName: string) => {
+      try {
+        const res = await fetch(`/api/documents/${encodeURIComponent(documentId)}/restore`, { method: 'POST' });
+        const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+        if (!res.ok || json.ok === false) throw new Error(json.error);
+        await queryClient.invalidateQueries({ queryKey: ['documents', 'vault'] });
+        toastSaved(`Restored ${fileName}`);
+      } catch (err) {
+        toastError(`${fileName} wasn't restored`, errorMessage(err));
+      }
+    },
+    [queryClient],
+  );
+
+  /** Delete a vault file (a soft delete), then the A2 toast with Undo. False when it failed (with a toast). */
+  const remove = useCallback(
+    async (documentId: string, fileName: string): Promise<boolean> => {
+      let res: Response;
+      try {
+        res = await fetch(`/api/documents/${encodeURIComponent(documentId)}`, { method: 'DELETE' });
+      } catch (err) {
+        toastError(`${fileName} wasn't deleted`, errorMessage(err));
+        return false;
+      }
+      const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || json.ok === false) {
+        const why =
+          json.error === 'in_use'
+            ? 'A checklist step still holds this file. Replace it from the step.'
+            : json.error === 'forbidden'
+              ? 'You can delete only files you uploaded.'
+              : json.error === 'not_found'
+                ? 'This file is not open to you.'
+                : json.error;
+        toastError(`${fileName} wasn't deleted`, why);
+        return false;
+      }
+      await queryClient.invalidateQueries({ queryKey: ['documents', 'vault'] });
+      toastUndo(`Deleted ${fileName}`, () => void restore(documentId, fileName));
+      return true;
+    },
+    [queryClient, restore],
+  );
+
+  return { downloadZip, zipping, review, refreshIndex, remove, restore };
 }

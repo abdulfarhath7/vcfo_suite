@@ -16,6 +16,7 @@ import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-fl
 import { staffNewProjectPath, staffProjectBaseFromPathname, adminProjectPath } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
+import { useStampHomeTiles } from '@/hooks/use-stamp-home-tiles';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
 import type { TaskInstance } from '@/data/engagements';
 import type { Engagement } from '@/data/engagements';
@@ -166,14 +167,21 @@ export function AdminDashboardView({
     return primaryPhaseItems().some((item) => isAwaitingManagerDecision(item.id, state[item.id]));
   }).length;
   const tasksHref = (view: string) => `${staffBase}/dashboard?view=${view}#team-tasks`;
-  // Only "Needs your approval" has a past that the stored rows give (review history).
+  // "Needs your approval" is rebuilt from the review history; the other four lines come from
+  // the values this home showed on earlier days, stored only for the whole home (scope All).
   const trends = useHomeTrends('manager', { enabled: isAdminOrManager(user?.role) });
+  useStampHomeTiles(
+    'manager',
+    { activeProjects: scoped.length, overdue, waitingClients: waitingOnClients, dueWeek },
+    scope === 'all' && !engagementsLoading && isAdminOrManager(user?.role),
+  );
   const heroStats: DashHeroStat[] = [
     {
       label: 'Active projects',
       icon: Briefcase,
       value: scoped.length,
       href: `${projectBase}/projects`,
+      trend: trendWithLive(trends, 'activeProjects', scoped.length),
       note: blockers > 0 && scope === 'all' ? `${blockers} at risk` : `${open.length} open tasks`,
       how: 'Your projects that are still being set up, in the clients shown.',
     },
@@ -194,6 +202,8 @@ export function AdminDashboardView({
       value: overdue,
       hot: overdue > 0,
       href: tasksHref('overdue'),
+      trend: trendWithLive(trends, 'overdue', overdue),
+      trendTone: 'bad',
       note: overdueClients > 0 ? `${overdueClients} ${overdueClients === 1 ? 'client' : 'clients'}` : undefined,
       how: 'Team tasks past their due date: steps, filings, document requests and assigned tasks.',
     },
@@ -202,6 +212,8 @@ export function AdminDashboardView({
       icon: User,
       value: waitingOnClients,
       href: tasksHref('waiting'),
+      trend: trendWithLive(trends, 'waitingClients', waitingOnClients),
+      trendTone: 'teal',
       note: waitingClients > 0 ? `${waitingClients} ${waitingClients === 1 ? 'client' : 'clients'}` : undefined,
       how: 'Team tasks the client still owes: a step to fill or a document to upload.',
     },
@@ -210,6 +222,7 @@ export function AdminDashboardView({
       icon: CalendarDays,
       value: dueWeek,
       href: tasksHref('week'),
+      trend: trendWithLive(trends, 'dueWeek', dueWeek),
       note: dueInTwoDays > 0 ? `${dueInTwoDays} filings in 2 days` : undefined,
       how: 'Open team tasks due in the next seven days.',
     },

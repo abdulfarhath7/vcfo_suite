@@ -139,3 +139,14 @@
 .vup-big{border-width:1px;border-color:oklch(var(--line))}
 .vup-dt{font-size:13.5px}
 .vup-cap{font-size:11.5px}
+
+/* C-618: the phone toolbar under the filter (Status, Replaced, By step / By category, Download
+   all, Upload). One row that scrolls sideways; 40 px touch targets. */
+.vdm-tools{display:flex;align-items:center;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px 2px;scrollbar-width:none}
+.vdm-tools::-webkit-scrollbar{display:none}
+.vdm-tools>*{flex:none}
+.vdm-tools .sx-filter,.vdm-tools .sx-btn{height:40px}
+.vdm-tools .sx-seg{padding:3px;border:1.5px solid oklch(var(--line))}
+.vdm-tools .sx-seg button{height:32px}
+.vdm-dots{display:inline-flex;gap:3px}
+.vdm-dots i{display:block;width:6px;height:6px;border-radius:2px}

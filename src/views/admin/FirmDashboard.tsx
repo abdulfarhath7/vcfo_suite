@@ -29,6 +29,7 @@ import { CapacityControl, LastSeenCell, LoadCell, OnTimeCell } from '@/component
 import { indexPeople, usePeopleMetrics, usePracticeMetrics } from '@/components/metrics/use-metrics';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
+import { useStampHomeTiles } from '@/hooks/use-stamp-home-tiles';
 
 type ManagerOption = { id: string; name: string; email: string };
 
@@ -40,7 +41,7 @@ async function fetchManagers(): Promise<ManagerOption[]> {
 }
 
 export default function FirmDashboard() {
-  const { user, engagements, getStateForEngagement, teamMembers } = useApp();
+  const { user, engagements, getStateForEngagement, teamMembers, engagementsLoading } = useApp();
   const greet = internGreeting(internGreetingHour(new Date()));
   const first = internFirstName(user?.name ?? '');
   /**
@@ -63,7 +64,7 @@ export default function FirmDashboard() {
   const peopleQuery = usePeopleMetrics();
   const people = useMemo(() => indexPeople(peopleQuery.data), [peopleQuery.data]);
   const canSetCapacity = isFirmWideAdmin(user?.role);
-  // Only "Awaiting approval" has a past that the stored rows give (review history).
+  // "Awaiting approval" is rebuilt from the review history; the other tiles use stamped values.
   const trends = useHomeTrends('admin', { enabled: showGreeting && isFirmWideAdmin(user?.role) });
 
   const pulse = useMemo(() => {
@@ -86,6 +87,13 @@ export default function FirmDashboard() {
     }
     return { total, pending, good, incorporating, overdue, waitingClient };
   }, [engagements, getStateForEngagement]);
+  // Clients, Incorporating, In compliance and Stuck keep no history (stage and stuck reason are
+  // current state only), so their lines come from the values this home showed on earlier days.
+  useStampHomeTiles(
+    'admin',
+    { clients: pulse.total, incorporating: pulse.incorporating, inCompliance: pulse.total - pulse.incorporating, stuck: pulse.pending },
+    showGreeting && !engagementsLoading && isFirmWideAdmin(user?.role),
+  );
 
   /* Phase progress: the companies still incorporating, the nearest incorporation date first. */
   const phaseRows = useMemo(() => {
@@ -168,6 +176,7 @@ export default function FirmDashboard() {
                 icon: Building2,
                 value: pulse.total,
                 href: '/app/admin/projects',
+                trend: trendWithLive(trends, 'clients', pulse.total),
                 note: pulse.overdue > 0 ? `${pulse.overdue} overdue` : `${pulse.good} on track`,
                 how: 'Every client of the firm still being set up, incorporating or in compliance.',
               },
@@ -176,6 +185,7 @@ export default function FirmDashboard() {
                 icon: Rocket,
                 value: pulse.incorporating,
                 href: '/app/admin/projects?view=incorporating',
+                trend: trendWithLive(trends, 'incorporating', pulse.incorporating),
                 note: practice?.incorporation.avgDaysToCoi != null ? `avg ${practice.incorporation.avgDaysToCoi}d to COI` : undefined,
                 how: 'Clients that do not have the certificate of incorporation yet.',
               },
@@ -184,6 +194,8 @@ export default function FirmDashboard() {
                 icon: ShieldCheck,
                 value: pulse.total - pulse.incorporating,
                 href: '/app/admin/projects?view=compliance',
+                trend: trendWithLive(trends, 'inCompliance', pulse.total - pulse.incorporating),
+                trendTone: 'ok',
                 note: practice && practice.compliances.overdue > 0 ? `${plural(practice.compliances.overdue, 'filing', 'filings')} overdue` : undefined,
                 how: 'Incorporated clients with a filing calendar.',
               },
@@ -193,6 +205,7 @@ export default function FirmDashboard() {
                 value: pulse.pending,
                 href: '/app/admin/projects?view=stuck',
                 hot: pulse.pending > 0,
+                trend: trendWithLive(trends, 'stuck', pulse.pending),
                 note: pulse.waitingClient > 0 ? `${pulse.waitingClient} on clients` : undefined,
                 how: 'Clients whose current step waits on the client, the manager or the lead, or is blocked.',
               },

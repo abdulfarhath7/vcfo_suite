@@ -28,7 +28,8 @@ import { internVisibleDocuments } from '@/lib/documents/document-access';
 import { useIndexedDocuments } from '@/hooks/use-vault-documents';
 import { adminProjectPath, internEngagementPath } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
-import { ArrowUpRight, Download, Search, Upload } from 'lucide-react';
+import { ArrowUpRight, Download, EyeOff, Search, Upload } from 'lucide-react';
+import { DangerConfirm } from '@/components/ui/danger-confirm';
 import { toastUndo } from '@/components/ui/undo-toast';
 import { toastError } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
@@ -46,10 +47,13 @@ import { formatUploadDate } from '@/views/vault/vault-tree';
 import { buildVaultTree, type VaultTreeView } from '@/views/vault/vault-tree';
 import {
   entityDocs as allEntityDocs,
+  canDeleteDoc,
   childFolderIds,
   fileUrl,
   folderDocs,
+  fromLabel,
   indexMaps,
+  isReplacedDoc,
   indexRowFor,
   refFor,
   reviewProgress,
@@ -138,6 +142,10 @@ function DocumentVaultPageContent() {
   const [uploadOpen, setUploadOpen] = useState(false);
   /** The "Status" toggle (R-10): status glyphs on the file rows. */
   const [showStatus, setShowStatus] = useState(true);
+  /** The "Replaced" toggle (R-10, P-575): files a newer upload replaced, struck through. Off hides them. */
+  const [showReplaced, setShowReplaced] = useState(false);
+  /** The file waiting on the delete confirm (P-596). */
+  const [deleting, setDeleting] = useState<VaultDocument | null>(null);
   const actions = useVaultActions();
   // `<vault>/view/<id>` opens the viewer over the explorer.
   const viewId = viewerIdFrom(pathname);
@@ -170,7 +178,12 @@ function DocumentVaultPageContent() {
     };
   }, [engagementIds, engagementsLoading, refreshEngagementChecklist]);
 
-  const allDocs = useMemo(() => {
+  // The index rows carry the review state and the content type; a checklist upload a staff member
+  // made has one too, matched by its object key.
+  const index = useMemo(() => indexMaps((indexedQuery.data ?? []) as VaultIndexRow[]), [indexedQuery.data]);
+  const indexFor = (doc: VaultDocument) => indexRowFor(doc, index.byKey, index.byId);
+
+  const scopedDocs = useMemo(() => {
     const milestoneDocs = collectVaultDocuments(engagements, getStateForEngagement);
     const indexedDocs = collectIndexedVaultDocuments(indexedQuery.data ?? [], engagements);
     const merged = scopeVaultDocumentsToEngagements(
@@ -183,10 +196,16 @@ function DocumentVaultPageContent() {
     return merged;
   }, [engagements, getStateForEngagement, indexedQuery.data, user?.internId, user?.role]);
 
-  // The index rows carry the review state and the content type; a checklist upload a staff member
-  // made has one too, matched by its object key.
-  const index = useMemo(() => indexMaps((indexedQuery.data ?? []) as VaultIndexRow[]), [indexedQuery.data]);
-  const indexFor = (doc: VaultDocument) => indexRowFor(doc, index.byKey, index.byId);
+  /** Replaced files (P-575) stay out of the tree, the counts and the ZIPs until the toggle is on. */
+  const replacedCount = useMemo(
+    () => scopedDocs.filter((d) => isReplacedDoc(d, indexRowFor(d, index.byKey, index.byId))).length,
+    [scopedDocs, index],
+  );
+  const allDocs = useMemo(
+    () =>
+      showReplaced ? scopedDocs : scopedDocs.filter((d) => !isReplacedDoc(d, indexRowFor(d, index.byKey, index.byId))),
+    [scopedDocs, index, showReplaced],
+  );
 
   const entityGroups = useMemo(
     () => groupVaultDocuments(allDocs, engagements, { includeEmpty: true }),
@@ -202,7 +221,7 @@ function DocumentVaultPageContent() {
   const isSearching = q.trim().length > 0;
 
   // The viewer and a copied folder link name their client; the picked client wins after that.
-  const viewedDoc = viewId ? allDocs.find((d) => d.id === viewId) ?? null : null;
+  const viewedDoc = viewId ? scopedDocs.find((d) => d.id === viewId) ?? null : null;
   const linkedEntityId = viewedDoc?.engagementId ?? urlClient;
   useEffect(() => {
     if (linkedEntityId) setActiveEntityId(linkedEntityId);
@@ -298,6 +317,10 @@ function DocumentVaultPageContent() {
       { label: 'Download', onSelect: () => downloadDoc(doc) },
       { label: 'Open in viewer', onSelect: () => openViewer(doc.id) },
       { label: 'Copy link', hint: 'C', separatorBefore: true, onSelect: () => copyLink(viewerPath(vaultPath, doc.id)) },
+      // D1/M1: danger sits last, after a rule. Only indexed files no step holds (P-596).
+      ...(canDeleteDoc(doc, indexFor(doc), user)
+        ? [{ label: 'Delete', danger: true, separatorBefore: true, onSelect: () => setDeleting(doc) }]
+        : []),
     ];
   }
 
@@ -363,6 +386,7 @@ function DocumentVaultPageContent() {
             reviewStatus={indexFor(hit.doc)?.reviewStatus}
             reviewedAt={indexFor(hit.doc)?.reviewedAt}
             showStatus={showStatus}
+            replaced={isReplacedDoc(hit.doc, indexFor(hit.doc))}
             menu={fileMenu(hit.doc)}
           />
         ))
@@ -414,6 +438,7 @@ function DocumentVaultPageContent() {
           reviewStatus={indexFor(row.doc)?.reviewStatus}
           reviewedAt={indexFor(row.doc)?.reviewedAt}
           showStatus={showStatus}
+          replaced={isReplacedDoc(row.doc, indexFor(row.doc))}
           menu={fileMenu(row.doc)}
         />
       ),
@@ -521,6 +546,16 @@ function DocumentVaultPageContent() {
               Status
             </button>
 
+            <button
+              type="button"
+              aria-pressed={showReplaced}
+              onClick={() => setShowReplaced((v) => !v)}
+              className={cn(FILTER, showReplaced ? FILTER_ON : FILTER_OFF)}
+              title={replacedCount > 0 ? `${replacedCount} replaced` : 'No replaced files'}
+            >
+              <EyeOff className="h-3.5 w-3.5" strokeWidth={1.6} aria-hidden /> Replaced
+            </button>
+
             {isSearching ? null : (
               <SpectrumTabs
                 label="Group documents"
@@ -625,6 +660,8 @@ function DocumentVaultPageContent() {
                   }
                   onReview={reviewRef ? (status, note) => actions.review(reviewRef, status, note) : undefined}
                   viewerHref={viewerPath(vaultPath, selectedDoc.id)}
+                  from={fromLabel(selectedIndex, selectedDoc.companyName)}
+                  replaced={isReplacedDoc(selectedDoc, selectedIndex)}
                 />
               ) : (
                 <div className="grid h-full min-h-[240px] place-items-center bg-surface-sunken p-5 text-[13px] text-ink-faint">
@@ -654,6 +691,24 @@ function DocumentVaultPageContent() {
           />
         </>
       ) : null}
+
+      <DangerConfirm
+        open={deleting !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+        title={deleting ? `Delete ${deleting.fileName}?` : 'Delete document?'}
+        body={deleting ? `${deleting.fileName} leaves the documents of ${deleting.companyName}.` : undefined}
+        word="DELETE"
+        confirm="Delete document"
+        onConfirm={async () => {
+          const doc = deleting;
+          const row = doc ? indexFor(doc) : null;
+          if (!doc || !row) return;
+          const ok = await actions.remove(row.id, doc.fileName);
+          if (ok && selectedDocId === doc.id) setSelectedDocId(null);
+        }}
+      />
 
       {viewId && viewerItems.length > 0 ? (
         <DocViewerOverlay items={viewerItems} currentId={viewId} onGo={openViewer} onClose={closeViewer} />

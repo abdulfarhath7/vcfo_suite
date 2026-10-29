@@ -17,7 +17,9 @@ vi.mock('next-auth/react', () => ({
   signIn: (...a: unknown[]) => authJsSignIn(...a),
   getSession: () => getSession(),
   signOut: vi.fn(),
+  getProviders: () => getProviders(),
 }));
+const getProviders = vi.fn(async () => ({ credentials: {} }) as Record<string, unknown>);
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
 vi.mock('@/components/common/ThemeToggle', () => ({ ThemeToggle: () => null }));
@@ -124,5 +126,19 @@ describe('SignInScreen', () => {
     expect(push).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Use another account' }));
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
+  });
+});
+
+describe('Microsoft sign-in (S-650)', () => {
+  it('shows the button only when the provider is listed, and words for its errors', async () => {
+    getProviders.mockResolvedValueOnce({ credentials: {}, 'microsoft-entra-id': {} });
+    render(<SignInScreen />);
+    expect(await screen.findByRole('button', { name: /sign in with microsoft/i })).toBeInTheDocument();
+  });
+
+  it('has no Microsoft button when the provider is not configured', async () => {
+    render(<SignInScreen />);
+    await Promise.resolve();
+    expect(screen.queryByRole('button', { name: /sign in with microsoft/i })).toBeNull();
   });
 });

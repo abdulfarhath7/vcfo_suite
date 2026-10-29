@@ -3,8 +3,8 @@
 /**
  * Filing record (prototype comp-parts.tsx FilingBody): the Calendar opens it in a centred dialog
  * (EventDialog), Filings and the Obligation record in a side panel at the right edge (FilingPanel).
- * Both show the four workflow steps (ST5), the facts, SBC's draft date, and the proof files with
- * Preview and Download. The side panel also takes the client's own proof files (G-03), Remind me
+ * Both show the four workflow steps (ST5), the facts, SBC's draft date, the VCFO Assist state
+ * with its steps and replay, and the proof files with Preview and Download. The side panel also takes the client's own proof files (G-03), Remind me
  * and "Open obligation". Phones: the dialog is a bottom sheet and the panel takes the full width.
  */
 import { useRef, useState, type ReactNode } from 'react';
@@ -21,9 +21,11 @@ import {
   fmtDMY,
   focusNodes,
   plural,
+  portalFor,
   statusOf,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
+import { AssistPanelBlock } from '@/components/compliances/AssistParts';
 import { Button } from '@/components/ui/button';
 import { Chip as SChip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { FileBadge } from '@/components/ui/file-badge';
@@ -184,6 +186,10 @@ function FilingBody({ f, upload }: { f: PortalFiling; upload?: boolean }) {
           </p>
         </PanelSection>
       ) : null}
+      {/* C-324, C-377: the VCFO Assist state of this filing (migration 0029). */}
+      <div className="border-b border-line-soft">
+        <AssistPanelBlock subjectKey={f.id} portal={portalFor(f)[0]} form={f.name} />
+      </div>
       <PanelSection
         title="Proof"
         flush

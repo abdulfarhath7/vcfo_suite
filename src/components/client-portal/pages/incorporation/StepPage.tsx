@@ -11,10 +11,11 @@
  * until the 3.2 s Undo toast closes), request a change
  * (`POST /api/client/change-requests`), upload a requested file
  * (`POST /api/engagements/:id/milestone-documents` →
- * `POST /api/client/steps/:id/files`, with Undo). Answers stay read-only for
- * the client (DECISIONS › Incorporation).
+ * `POST /api/client/steps/:id/files`, with Undo), save a draft of the answers on a step the
+ * client fills (`POST /api/client/steps/:id/draft`, C-218), and message the lead about a step
+ * SBC holds (`POST /api/client/messages` with the step's item key, C-219).
  */
-import { Check, CircleHelp, Download, ExternalLink, Eye, ListChecks, MessageSquare, MoreVertical } from 'lucide-react';
+import { Check, CircleHelp, Download, ExternalLink, Eye, ListChecks, MessageSquare, MoreVertical, PenLine } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getActiveCatalogItems, getChecklistStepTimelineLabel, type ChecklistField } from '@/data/checklist';
@@ -28,12 +29,16 @@ import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { fileNameFromStoragePath, isMilestoneStoragePath, validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
+import { canRoleEditField, isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
+import { itemKey } from '@/lib/work/item-key';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
 import { StepMark } from '@/components/ui/step-track';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { FileBadge } from '@/components/ui/file-badge';
+import { threadDate } from '@/components/dash/thread';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { portalHref } from '../../routes';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
@@ -70,6 +75,10 @@ interface Row {
   file?: string;
   /** "Copied from step n · …" when the answer was pre-filled from a knowable source (G-10). */
   note?: string;
+  /** The checklist field behind a text answer (C-218: the client edits it on its own open step). */
+  field?: ChecklistField;
+  /** The stored answer (a select stores the option value, the row shows its label). */
+  raw?: string;
 }
 
 /**
@@ -107,7 +116,7 @@ function answerRows(s: PortalStep, ownershipType: IncData['ownershipType'], inDo
     let v = raw;
     if (raw && (f.type === 'select' || f.type === 'segmented')) v = f.options?.find((o) => o.value === raw)?.label ?? raw;
     if (raw && f.type === 'date' && /^\d{4}-\d{2}-\d{2}/.test(raw)) v = fmtL(raw.slice(0, 10));
-    rows.push({ label, value: v || '—', note: v ? notes[f.id] : undefined });
+    rows.push({ label, value: v || '—', note: v ? notes[f.id] : undefined, field: f, raw });
   }
   if (!rows.some((r) => !/^remarks/i.test(r.label)) && s.owner !== 'client' && s.item.infoRequired.length) {
     const done = kd(s) === 'done';
@@ -137,7 +146,21 @@ function liveIntro(s: PortalStep, d: IncData, prev?: PortalStep): string {
  * Request a change (C-225, prototype MessageModal): the Spectrum dialog, "Step n · title" above
  * the title, a labelled message field, Cancel and the main Send button (R-12).
  */
-function ChangeDialog({ about, to, onClose, onSend }: { about: string; to?: string; onClose: () => void; onSend: (note: string) => Promise<void> }) {
+function ChangeDialog({
+  about,
+  to,
+  heading = 'Request a change',
+  placeholder = 'What should change?',
+  onClose,
+  onSend,
+}: {
+  about: string;
+  to?: string;
+  heading?: string;
+  placeholder?: string;
+  onClose: () => void;
+  onSend: (note: string) => Promise<void>;
+}) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -156,7 +179,7 @@ function ChangeDialog({ about, to, onClose, onSend }: { about: string; to?: stri
     <PortalModal
       onClose={onClose}
       eyebrow={about}
-      title={to ? `Request a change · ${to}` : 'Request a change'}
+      title={to ? `${heading} · ${to}` : heading}
       size="sm"
       initialFocus={ref}
       footer={
@@ -171,7 +194,7 @@ function ChangeDialog({ about, to, onClose, onSend }: { about: string; to?: stri
         </>
       }
     >
-      <FieldArea label="Message" value={note} onChange={setNote} areaRef={ref} placeholder="What should change?" />
+      <FieldArea label="Message" value={note} onChange={setNote} areaRef={ref} placeholder={placeholder} />
       {err ? (
         <p role="alert" className="mt-2 text-[13px] text-danger">
           {err}
@@ -311,6 +334,48 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     setChangeOpen(false);
     toast(`Change request sent to ${d.managerName ?? d.leadName ?? 'your team'}`);
     d.refresh();
+  };
+
+  /* ---------- C-218: draft answers on a step the client fills ---------- */
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [savingDraft, setSavingDraft] = useState(false);
+  const stepKey = s?.id;
+  useEffect(() => setDraft({}), [stepKey]);
+  const saveDraft = async () => {
+    if (!s || !d.engagementId || !Object.keys(draft).length) return;
+    setSavingDraft(true);
+    try {
+      const res = await fetch(`/api/client/steps/${encodeURIComponent(s.id)}/draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ engagementId: d.engagementId, responses: draft }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? 'Could not save the draft');
+      setDraft({});
+      d.refresh();
+      toast('Draft saved');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not save the draft');
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  /* ---------- C-219: message the lead about a step SBC holds ---------- */
+  const [msgOpen, setMsgOpen] = useState(false);
+  const sendMessage = async (text: string) => {
+    if (!s || !d.engagementId) return;
+    const engId = d.extras?.engagementId ?? d.engagementId;
+    const res = await fetch('/api/client/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ engagementId: d.engagementId, body: text, itemKey: itemKey({ kind: 'step', engagementId: engId, stepId: s.id }) }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) throw new Error(body.error ?? 'Could not send the message');
+    setMsgOpen(false);
+    toast(`Sent to ${d.leadName ? firstName(d.leadName) : 'your team'}`);
   };
 
   /* ---------- upload a requested file (with Undo) ---------- */
@@ -453,6 +518,21 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const st = statusLine(s, d, prev);
   const about = s.item.description?.trim() || (k === 'done' ? '' : liveIntro(s, d, prev));
   const showDocs = view === 'docs' && docsCount > 0;
+  // C-218: the client edits text answers on a step it fills that is still open. The draft route
+  // repeats every check; this only decides which rows draw an input.
+  const direct = isDirectFlowStep(s.id);
+  const editStep = !awaiting && released && ((s.owner === 'client' && (k === 'prog' || k === 'you')) || (direct && k !== 'done' && k !== 'up'));
+  const unlocked = new Set(s.slice?.unlockedFields ?? []);
+  const canEditRow = (r: Row) =>
+    editStep &&
+    !!r.field &&
+    r.field.type !== 'file' &&
+    (direct ? canRoleEditField('client', s.id, r.field.id) : (r.field.filledBy ?? s.item.responsibleRole) === 'client') &&
+    (!s.slice?.locked || unlocked.has(r.field.id));
+  const editable = rows.some(canEditRow);
+  const dirty = Object.keys(draft).length > 0;
+  // C-219: a step SBC or MCA holds gets "Message <lead>" in the card foot.
+  const leadFirst = d.leadName ? firstName(d.leadName) : '';
 
   const openPortal = (form: string) => {
     if (!portalLink) return;
@@ -615,11 +695,35 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
       {about ? <p className="m-0 border-b border-line-soft px-4 py-3 text-[13.5px] text-ink-2 md:px-5">{about}</p> : null}
       <dl className="m-0">
         {rows.map((r, i) => (
-          <KvRow key={`${r.label}-${i}`} r={released ? r : { label: r.label, value: '—' }} onFile={preview} />
+          <KvRow
+            key={`${r.label}-${i}`}
+            r={released ? r : { label: r.label, value: '—' }}
+            onFile={preview}
+            edit={
+              canEditRow(r)
+                ? { value: draft[r.field!.id] ?? r.raw ?? '', onChange: (v) => setDraft((x) => ({ ...x, [r.field!.id]: v })) }
+                : undefined
+            }
+          />
         ))}
       </dl>
+      {editable ? (
+        <footer className="flex flex-wrap items-center gap-2 border-t border-line-soft px-4 py-3 md:px-5">
+          <Button variant="secondary" className="ml-auto" disabled={!dirty || savingDraft} onClick={() => void saveDraft()}>
+            <PenLine size={16} strokeWidth={1.6} aria-hidden />
+            {savingDraft ? 'Saving…' : 'Save draft'}
+          </Button>
+        </footer>
+      ) : null}
       {k === 'you' ? approval : null}
-      {k === 'done' ? (
+      {k === 'with' && s.owner !== 'client' ? (
+        <footer className="flex flex-wrap items-center gap-2 border-t border-line-soft px-4 py-3 md:px-5">
+          <Button variant="secondary" className="ml-auto" onClick={() => setMsgOpen(true)}>
+            <MessageSquare size={16} strokeWidth={1.6} aria-hidden />
+            {leadFirst ? `Message ${leadFirst}` : 'Message your team'}
+          </Button>
+        </footer>
+      ) : k === 'done' ? (
         <footer className="flex flex-wrap items-center gap-2 border-t border-line-soft px-4 py-3 md:px-5">
           <Button variant="secondary" className="ml-auto" onClick={requestChange}>
             <MessageSquare size={16} strokeWidth={1.6} aria-hidden />
@@ -663,7 +767,12 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
                   <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">Step {y.n}</span>
                   <span className={cn('truncate text-[14px] text-ink', cur ? 'font-medium' : 'font-normal')}>{y.title}</span>
                 </span>
-                <span className={cn('hidden flex-none text-[12px] font-medium sm:inline', ownerTone[y.owner])}>{o === 'You' ? d.short : o}</span>
+                {/* F-216: a done step shows its date at the right (shared Thread date format). */}
+                {kd(y) === 'done' && threadDate(y.doneOn) ? (
+                  <span className="flex-none text-[12.5px] tabular-nums text-ink-muted">{threadDate(y.doneOn)}</span>
+                ) : (
+                  <span className={cn('hidden flex-none text-[12px] font-medium sm:inline', ownerTone[y.owner])}>{o === 'You' ? d.short : o}</span>
+                )}
               </a>
               <button
                 type="button"
@@ -760,6 +869,16 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
         </Island>
       </div>
       {changeOpen ? <ChangeDialog about={`Step ${s.n} · ${s.title}`} to={d.leadName ? firstName(d.leadName) : undefined} onClose={() => setChangeOpen(false)} onSend={sendChange} /> : null}
+      {msgOpen ? (
+        <ChangeDialog
+          about={`Step ${s.n} · ${s.title}`}
+          to={leadFirst || undefined}
+          heading="Message"
+          placeholder={leadFirst ? `Write to ${leadFirst}` : 'Write to your team'}
+          onClose={() => setMsgOpen(false)}
+          onSend={sendMessage}
+        />
+      ) : null}
       {viewer.node}
     </IncFrame>
   );
@@ -786,8 +905,39 @@ function stepTimelineLabel(s: PortalStep): string {
   return getChecklistStepTimelineLabel(s.item);
 }
 
-function KvRow({ r, onFile }: { r: Row; onFile: (path: string) => void }) {
+function KvRow({ r, onFile, edit }: { r: Row; onFile: (path: string) => void; edit?: { value: string; onChange: (v: string) => void } }) {
   const no = r.value === '—';
+  if (edit && r.field) {
+    const f = r.field;
+    const opts = f.type === 'select' || f.type === 'segmented' ? (f.options ?? []) : null;
+    return (
+      <div className="grid gap-1 border-t border-line-soft px-4 py-2.5 first:border-t-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:items-center sm:gap-4 md:px-5">
+        <dt className="min-w-0 text-[13px] text-ink-muted">
+          {r.label}
+          {r.note ? <small className="block text-[12px] text-ink-faint">{r.note}</small> : null}
+        </dt>
+        <dd className="m-0 min-w-0">
+          {opts ? (
+            <select
+              value={edit.value}
+              onChange={(e) => edit.onChange(e.target.value)}
+              aria-label={r.label}
+              className="box-border h-10 w-full rounded-md border-1.5 border-line-strong bg-surface-raised px-3 text-[14px] text-ink focus-visible:border-brand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25"
+            >
+              <option value="">—</option>
+              {opts.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <Input type={f.type === 'date' ? 'date' : 'text'} value={f.type === 'date' ? edit.value.slice(0, 10) : edit.value} onChange={(e) => edit.onChange(e.target.value)} aria-label={r.label} />
+          )}
+        </dd>
+      </div>
+    );
+  }
   return (
     <div className="grid gap-1 border-t border-line-soft px-4 py-2.5 first:border-t-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-4 md:px-5">
       <dt className="min-w-0 text-[13px] text-ink-muted">

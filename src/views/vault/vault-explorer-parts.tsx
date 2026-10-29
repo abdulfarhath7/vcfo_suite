@@ -53,6 +53,8 @@ export interface VaultMenuItem {
   /** A key hint shown at the right ("C" for Copy link). */
   hint?: string;
   separatorBefore?: boolean;
+  /** A danger entry (Delete): red text, last in the menu. */
+  danger?: boolean;
 }
 
 /** The "…" row menu (prototype ActionMenu): it shows on hover or focus from md, always on a phone. */
@@ -74,7 +76,10 @@ function RowMenu({ label, items }: { label: string; items: VaultMenuItem[] }) {
           {items.map((item) => (
             <span key={item.label} className="contents">
               {item.separatorBefore ? <DropdownMenuSeparator /> : null}
-              <DropdownMenuItem className="gap-2" onSelect={item.onSelect}>
+              <DropdownMenuItem
+                className={cn('gap-2', item.danger && 'text-danger focus:bg-danger-soft focus:text-danger')}
+                onSelect={item.onSelect}
+              >
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
                 {item.hint ? <Kbd>{item.hint}</Kbd> : null}
               </DropdownMenuItem>
@@ -199,6 +204,7 @@ export function VaultFileRow({
   reviewStatus,
   reviewedAt,
   showStatus = true,
+  replaced = false,
   menu = [],
 }: {
   doc: VaultDocument;
@@ -214,7 +220,9 @@ export function VaultFileRow({
   reviewedAt?: string | null;
   /** The "Status" toggle (R-10): glyphs on or off. */
   showStatus?: boolean;
-  /** The "…" menu: Download, Open in viewer, Copy link. */
+  /** A newer upload replaced this file (P-575): muted, struck through, a "Replaced" tag, no glyph. */
+  replaced?: boolean;
+  /** The "…" menu: Download, Open in viewer, Copy link, Delete. */
   menu?: VaultMenuItem[];
 }) {
   return (
@@ -224,6 +232,7 @@ export function VaultFileRow({
       className={cn(
         'group relative flex min-h-9 items-center pr-2 text-[14px]',
         selected ? 'bg-brand-soft text-ink' : 'hover:bg-surface-sunken',
+        replaced && !selected && 'text-ink-muted',
       )}
     >
       {selected ? <span className="absolute inset-y-0 left-0 w-[3px] bg-brand" aria-hidden /> : null}
@@ -236,14 +245,17 @@ export function VaultFileRow({
       >
         <FileBadge name={doc.fileName} className="h-[18px] w-[22px] text-[7.5px]" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-medium text-ink">{doc.fileName}</span>
+          <span className={cn('block truncate font-medium', replaced ? 'text-ink-muted line-through' : 'text-ink')}>
+            {doc.fileName}
+          </span>
           {sub ? <span className="block truncate text-[12px] text-ink-muted">{sub}</span> : null}
         </span>
         {tag ? <Tag className="hidden sm:inline-flex">{tag}</Tag> : null}
+        {replaced ? <Tag>Replaced</Tag> : null}
         <span className="hidden flex-none text-[12.5px] tabular-nums text-ink-muted sm:inline">
           {formatUploadDate(doc.uploadedAt)}
         </span>
-        {showStatus ? (
+        {showStatus && !replaced ? (
           <VaultStatusGlyph reviewStatus={reviewStatus} companyName={doc.companyName} date={reviewedAt ?? doc.uploadedAt} />
         ) : null}
       </button>
@@ -448,8 +460,14 @@ export function VaultPreviewPane({
   review,
   onReview,
   viewerHref,
+  from,
+  replaced = false,
 }: {
   doc: VaultDocument;
+  /** Who sent the file (P-593): the client's name or "SBC · <name>"; null when not recorded. */
+  from?: string | null;
+  /** A newer upload replaced this file (P-575). */
+  replaced?: boolean;
   /** The staff viewer route for this file (prototype Eye button and the clickable preview). */
   viewerHref?: string | null;
   /** What the preview and download routes take for this file; null when it has neither. */
@@ -466,7 +484,11 @@ export function VaultPreviewPane({
       <div className="flex min-h-[52px] items-center gap-3 border-b border-line-soft px-4">
         <FileBadge name={doc.fileName} />
         <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">{doc.fileName}</span>
-        {review ? (
+        {replaced ? (
+          <Chip fixed tone="idle" className="hidden sm:inline-flex">
+            Replaced
+          </Chip>
+        ) : review ? (
           <Chip fixed tone={REVIEW_TONE[status] ?? 'prog'} className="hidden sm:inline-flex">
             {reviewWord(status) ?? 'Received'}
           </Chip>
@@ -508,6 +530,7 @@ export function VaultPreviewPane({
       <dl className="text-[14px]">
         <Fact label="Client">{doc.companyName}</Fact>
         <Fact label="Step">{vaultLocationLabel(doc) || doc.milestoneTitle}</Fact>
+        <Fact label="From">{from ?? '—'}</Fact>
         <Fact label="Date">{formatUploadDate(doc.uploadedAt)}</Fact>
         <Fact label="File">{doc.fileName}</Fact>
       </dl>

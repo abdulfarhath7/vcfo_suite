@@ -328,6 +328,8 @@ export function WorkScreen({
           companyName: item.companyName,
           dueYmd: item.dueAt?.slice(0, 10),
           overdue: item.isOverdue,
+          source: item.source,
+          managerDated: Boolean(item.windowLabel),
         })),
     [filtered, keyOf],
   );
@@ -655,7 +657,7 @@ export function WorkScreen({
                   <EmptyState title="Nothing dated" className="m-4" />
                 )}
               </DashSection>
-              <PlannerCalendar days={weekDays} onWeek={stepWeek} items={plannerItems} now={now} onOpenItem={openByKey} />
+              <PlannerCalendar days={weekDays} onWeek={stepWeek} onDate={setWeekYmd} items={plannerItems} now={now} onOpenItem={openByKey} />
             </div>
             <PlannerTodos
               assigned={filtered.filter(

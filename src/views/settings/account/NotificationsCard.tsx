@@ -410,6 +410,23 @@ export function NotificationsCard({
                   />
                 </div>
               ) : null}
+              {role === 'super_admin' && prefs.alerts ? (
+                /* P-639: the super admin's monthly partner report; off holds their monthly scheduled reports. */
+                <div className="flex min-h-[52px] flex-wrap items-center gap-3 border-t border-line-soft px-4 py-2.5 md:px-5">
+                  <RowTile Icon={Newspaper} tile="bg-identity-soft text-identity" />
+                  <span className="min-w-0 flex-1 text-[14px] text-ink">Monthly partner report</span>
+                  <Switch
+                    checked={prefs.alerts.partnerReport}
+                    onCheckedChange={(v) =>
+                      void save(
+                        { alerts: { partnerReport: v } },
+                        { text: `Monthly partner report ${v ? 'on' : 'off'}`, patch: { alerts: { partnerReport: !v } } },
+                      )
+                    }
+                    aria-label="Monthly partner report"
+                  />
+                </div>
+              ) : null}
             </>
           ) : null}
         </>

@@ -29,7 +29,8 @@ import {
 import { useAllFilings } from './api';
 import { usePageTips } from './bits';
 import { CompProvider } from './ctx';
-import { FREQ_ORDER, dueWithin, freqKey, groupObligations, waitingOnClient, type Obligation } from './obligations';
+import { FREQ_ORDER, dueWithin, freqKey, groupObligations, slugOf, waitingOnClient, type Obligation } from './obligations';
+import { useComplianceStarts, type StartedObligation } from '@/components/compliances/use-compliance-records';
 import {
   AreaTag,
   DateTile,
@@ -92,6 +93,8 @@ function ObligationsBody({ today }: { today: string }) {
   const [status, setStatus] = useState<CompStatus | null>(null);
   const [closed, setClosed] = useState<Record<string, boolean>>({});
   const companyShort = shell?.companyShort || 'Your company';
+  // C-395: before the certificate, the obligations to come (static library, legal form, questionnaire).
+  const starts = useComplianceStarts(undefined, !after);
 
   const needle = search.trim().toLowerCase();
   const shown = obligations.filter(
@@ -123,8 +126,43 @@ function ObligationsBody({ today }: { today: string }) {
     </span>
   );
 
+  const before = (starts.data?.upcoming ?? []).filter((o) => !needle || `${o.name} ${AREA_LABEL[o.area]} ${o.authorityName}`.toLowerCase().includes(needle));
+  const beforeGroups = (
+    view === 'freq'
+      ? [...FREQ_ORDER, 'other'].map((k) => ({ id: k, label: FREQ_LABEL[k]!, rows: before.filter((o) => freqKey(o) === k) }))
+      : AREA_ORDER.map((a) => ({ id: a, label: AREA_LABEL[a], rows: before.filter((o) => o.area === a) }))
+  ).filter((g) => g.rows.length);
+
   const list = !after ? (
-    <Empty>Starts after incorporation</Empty>
+    starts.isLoading ? (
+      <div className="px-4 py-4 md:px-5" aria-busy="true" aria-label="Loading obligations">
+        <SkeletonRows rows={5} />
+      </div>
+    ) : starts.isError ? (
+      <Empty action={<Button size="sm" variant="secondary" onClick={() => void starts.refetch()}>Try again</Button>}>Could not load the obligations</Empty>
+    ) : !beforeGroups.length ? (
+      <Empty>Starts after incorporation</Empty>
+    ) : (
+      <div>
+        {beforeGroups.map((g) => {
+          const open = needle ? true : !closed[g.id];
+          return (
+            <div key={g.id}>
+              <GroupHead label={g.label} count={g.rows.length} open={Boolean(open)} onToggle={() => setClosed((c) => ({ ...c, [g.id]: !c[g.id] }))} />
+              {open ? (
+                <ul className="grid grid-cols-1 gap-3 px-4 pb-4 pt-1 sm:grid-cols-2 md:px-5 2xl:grid-cols-3">
+                  {g.rows.map((o) => (
+                    <li key={o.id} className="min-w-0">
+                      <BeforeTile o={o} />
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    )
   ) : q.isError ? (
     <Empty action={<Button size="sm" variant="secondary" onClick={() => void q.refetch()}>Try again</Button>}>Could not load the register</Empty>
   ) : q.isLoading ? (
@@ -185,7 +223,7 @@ function ObligationsBody({ today }: { today: string }) {
   return (
     <div className="cp-comp-root page" ref={root}>
       <Island className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <SCard title="Obligations" meta={after && obligations.length ? shown.length : undefined} right={head} flush>
+        <SCard title="Obligations" meta={after ? (obligations.length ? shown.length : undefined) : before.length || undefined} right={head} flush>
           {list}
         </SCard>
         <div className="grid min-w-0 gap-5">
@@ -294,6 +332,33 @@ function DueRow({ o, f, today }: { o: Obligation; f: PortalFiling; today: string
       <SChip tone={rel.tone} fixed>
         {rel.label}
       </SChip>
+    </GoLink>
+  );
+}
+
+/**
+ * One obligation to come, before the certificate (C-395): the same tile, dated "After the
+ * certificate", with the registration that starts it when one does.
+ */
+function BeforeTile({ o }: { o: StartedObligation }) {
+  return (
+    <GoLink
+      href={obligationHref(slugOf(o.particular))}
+      label={`${o.name} · after the certificate`}
+      className="grid h-full min-w-0 gap-2 rounded-md border-1.5 border-line bg-surface-raised px-3.5 py-3 text-ink hover:border-line-strong hover:bg-surface-sunken"
+    >
+      <span className="flex min-w-0 items-center gap-1">
+        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{o.name}</span>
+        <ChevronRight size={16} strokeWidth={1.6} className="flex-none text-ink-faint" aria-hidden />
+      </span>
+      <span className="flex flex-wrap items-center gap-1.5">
+        <AreaTag a={o.area} />
+        <StatusChip s="up" />
+      </span>
+      <span className="truncate text-[12.5px] text-ink-muted">
+        After the certificate
+        {o.startedBy ? ` · after ${o.startedBy.name}` : ''}
+      </span>
     </GoLink>
   );
 }

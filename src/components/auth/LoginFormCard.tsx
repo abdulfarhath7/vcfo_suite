@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { DEMO_ACCOUNTS, demoLoginsOn } from './demo-accounts';
+import { DEMO_ACCOUNTS, DEMO_HINT, demoLoginsOn } from './demo-accounts';
 
 export interface LoginFormCardProps {
   email: string;
@@ -48,6 +48,28 @@ export interface LoginFormCardProps {
   onCodeChange?: (value: string) => void;
   onCodeSubmit?: (e: React.FormEvent) => void;
   onBackToPassword?: () => void;
+  /** Starts the Microsoft sign-in; the button shows only when this is set (the provider is configured). */
+  onMicrosoft?: () => void;
+}
+
+/** Plain words for the `?error=microsoft_*` codes the Auth.js `signIn` callback sends back. */
+export const MICROSOFT_ERRORS: Record<string, string> = {
+  microsoft_no_profile: 'No VCFO Suite account uses this Microsoft email. Ask your firm admin to add you.',
+  microsoft_not_allowed: 'This account cannot sign in with Microsoft. Use your email and password.',
+  microsoft_linked_elsewhere: 'Your VCFO Suite account is linked to a different Microsoft account.',
+  microsoft_two_step_on: 'Your account uses a two-step code. Sign in with your email, password and code.',
+};
+
+/** The four-square Microsoft mark (brand colours are the mark itself, so they stay literal). */
+function MicrosoftMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <rect x="0" y="0" width="7.5" height="7.5" fill="#F25022" />
+      <rect x="8.5" y="0" width="7.5" height="7.5" fill="#7FBA00" />
+      <rect x="0" y="8.5" width="7.5" height="7.5" fill="#00A4EF" />
+      <rect x="8.5" y="8.5" width="7.5" height="7.5" fill="#FFB900" />
+    </svg>
+  );
 }
 
 /* The peak band along the bottom of the card, as in the prototype's sign-in card. */
@@ -109,6 +131,7 @@ export function LoginFormCard({
   onCodeChange,
   onCodeSubmit,
   onBackToPassword,
+  onMicrosoft,
 }: LoginFormCardProps) {
   const codeDigits = code.replace(/[\s-]/g, '');
   const footLink =
@@ -151,6 +174,7 @@ export function LoginFormCard({
         {profileError === 'no_profile' && (
           <Notice variant="error">No profile is linked to this account. Ask your firm admin to complete setup.</Notice>
         )}
+        {profileError && MICROSOFT_ERRORS[profileError] ? <Notice variant="error">{MICROSOFT_ERRORS[profileError]}</Notice> : null}
         {resetNotice === 'check-email' && (
           <Notice variant="info">Check your email for a password reset link, then sign in here.</Notice>
         )}
@@ -254,6 +278,12 @@ export function LoginFormCard({
                 'Sign in'
               )}
             </Button>
+            {onMicrosoft ? (
+              <Button type="button" variant="secondary" className="h-10 w-full" onClick={onMicrosoft} disabled={loading}>
+                <MicrosoftMark />
+                Sign in with Microsoft
+              </Button>
+            ) : null}
           </form>
         )}
 
@@ -297,6 +327,8 @@ export function LoginFormCard({
             </Link>
           )}
         </p>
+        {/* P-470: the same demo hint as the top bar, under the form on phones. */}
+        {showDemoAccounts ? <p className="font-mono text-[12px] text-ink-muted sm:hidden">{DEMO_HINT}</p> : null}
       </div>
 
       <Dialog open={forgotOpen} onOpenChange={onForgotOpenChange}>

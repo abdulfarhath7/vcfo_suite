@@ -6,6 +6,7 @@
  * and a fluid right column (Notifications, Appearance). Every change shows a toast with Undo.
  */
 import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { AlignLeft, Camera, Check, Clock, FileText, Lock, Megaphone, Moon, Rss, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -195,6 +196,13 @@ function SecurityFacts() {
   const { changedAt, setChangedAt } = useProfileData();
   const [pw, setPw] = useState(false);
   const device = useMemo(() => thisDevice(), []);
+  // C-851: the sign-in city of this device, when the edge sent a geo header at sign-in.
+  const sessions = useQuery({
+    queryKey: ['account-sessions'],
+    queryFn: () => api<{ sessions: Array<{ current: boolean; city?: string | null }> }>('/api/account/sessions'),
+    staleTime: 60_000,
+  });
+  const city = sessions.data?.sessions.find((x) => x.current)?.city?.trim() || '';
   return (
     <SCard title="Security" flush>
       <FactLine
@@ -230,7 +238,7 @@ function SecurityFacts() {
           </Chip>
         }
       >
-        {device}
+        {city ? `${device} · ${city}` : device}
       </FactLine>
     </SCard>
   );

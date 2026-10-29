@@ -1,4 +1,5 @@
 import NextAuth, { CredentialsSignin } from 'next-auth';
+import { headers } from 'next/headers';
 import Credentials from 'next-auth/providers/credentials';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
@@ -11,6 +12,10 @@ import {
   systemRevokeSession,
 } from '@/db/repositories/user-sessions';
 import { checkTotpCode } from '@/lib/totp/check';
+import { MICROSOFT_PROVIDER_ID, microsoftEmailOf, microsoftProviders } from '@/auth/microsoft';
+import { systemResolveExternalSignIn } from '@/db/repositories/sign-in-links';
+import { systemRecordSignIn } from '@/db/repositories/client-audit';
+import { cityFromHeaders, deviceLabel } from '@/lib/sign-in-device';
 
 /**
  * Two-step sign-in outcomes (G-25). Each reaches the browser as `code` on the
@@ -80,10 +85,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (check === 'invalid') throw new TwoStepInvalid();
         }
 
+        const userAgent = request?.headers.get('user-agent');
+        // C-851: the sign-in city when a CDN in front of the app sends a geo header.
+        const city = cityFromHeaders(request?.headers);
         const sid = await systemCreateUserSession({
           userId: row.id,
-          userAgent: request?.headers.get('user-agent'),
+          userAgent,
           ip: clientIp(request),
+          city,
+        });
+        // C-787: the sign-in goes on the audit log (a client's on its company's). Not awaited, never throws.
+        void systemRecordSignIn({
+          userId: row.id,
+          email: row.email,
+          name: row.name,
+          role: row.role,
+          clientId: row.clientId,
+          device: deviceLabel(userAgent),
+          city,
+          method: row.twoStepOn ? 'Password and code' : 'Password',
         });
 
         return {
@@ -99,6 +119,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
+    // S-650: Microsoft Entra ID, only when its env vars are set. It links to an existing profile
+    // by email and never creates one (see `signIn` and `jwt` below, and `src/auth/microsoft.ts`).
+    ...microsoftProviders(),
   ],
   events: {
     async signOut(message) {
@@ -110,7 +133,60 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     ...authConfigBase.callbacks,
-    async jwt({ token, user }) {
+    /**
+     * S-650: a Microsoft sign-in passes only when its email (or an earlier link) names an existing,
+     * active staff profile. Otherwise the person goes back to the sign-in page with an error code.
+     */
+    async signIn({ account, user, profile }) {
+      if (account?.provider !== MICROSOFT_PROVIDER_ID) return true;
+      const result = await systemResolveExternalSignIn({
+        provider: MICROSOFT_PROVIDER_ID,
+        subject: account.providerAccountId,
+        email: microsoftEmailOf(profile as Record<string, unknown> | undefined, user?.email),
+        link: false,
+      });
+      return 'reason' in result ? `/login?error=microsoft_${result.reason}` : true;
+    },
+    async jwt({ token, user, account, profile }) {
+      if (user && account?.provider === MICROSOFT_PROVIDER_ID) {
+        // Map the Microsoft identity onto the VCFO profile and make (or touch) the link.
+        const result = await systemResolveExternalSignIn({
+          provider: MICROSOFT_PROVIDER_ID,
+          subject: account.providerAccountId,
+          email: microsoftEmailOf(profile as Record<string, unknown> | undefined, user.email),
+          link: true,
+        });
+        if (!('profile' in result)) return null;
+        const p = result.profile;
+        // C-787, C-851: the request headers, when the callback runs inside the Auth.js route.
+        const h = await Promise.resolve()
+          .then(() => headers())
+          .catch(() => null);
+        const userAgent = h?.get('user-agent') ?? null;
+        const city = cityFromHeaders(h);
+        const sid = await systemCreateUserSession({ userId: p.id, userAgent, ip: null, city });
+        void systemRecordSignIn({
+          userId: p.id,
+          email: p.email,
+          name: p.name,
+          role: p.role,
+          clientId: p.clientId,
+          device: deviceLabel(userAgent),
+          city,
+          method: 'Microsoft',
+        });
+        return {
+          sub: p.id,
+          name: p.name ?? undefined,
+          email: p.email,
+          role: p.role,
+          internId: p.internId ?? undefined,
+          clientId: p.clientId ?? undefined,
+          hasAvatar: Boolean(p.avatarObjectKey),
+          avatarVersion: p.updatedAt.getTime(),
+          ...(sid ? { sid } : {}),
+        };
+      }
       if (user) {
         const u = user as {
           role?: string;

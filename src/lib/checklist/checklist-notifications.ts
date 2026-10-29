@@ -62,6 +62,9 @@ export interface AppNotification {
   read: boolean;
   /** ISO time when cleared from the bell inbox; null/absent = still in inbox. */
   dismissedAt?: string | null;
+  /** Who caused it (C-759): the person's profile id and name; absent for system notices. */
+  actorId?: string;
+  actorName?: string;
 }
 
 export type NotificationDraft = Omit<AppNotification, 'id' | 'read' | 'createdAt'>;

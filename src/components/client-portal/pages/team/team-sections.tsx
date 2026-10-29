@@ -32,7 +32,9 @@ import {
   contactHref,
   copyText,
   initialsOf,
+  makeSetPasswordToken,
   makeTempPassword,
+  setPasswordLink,
   prettyPhone,
   shortDate,
   useSkeleton,
@@ -135,8 +137,9 @@ export function TeamSection() {
 
   const resend = (r: Row) => {
     const pw = makeTempPassword();
+    // C-899: a fresh set-password link goes out with the resend.
     act.mutate(
-      { action: 'resend', inviteId: r.inviteId, tempPassword: pw },
+      { action: 'resend', inviteId: r.inviteId, tempPassword: pw, setPasswordToken: makeSetPasswordToken() },
       {
         onSuccess: (d) => {
           toast(d.email === 'sent' ? `Invite sent again to ${r.email}` : `New sign-in ready for ${r.email} · email not sent`);
@@ -338,10 +341,10 @@ export function TeamSection() {
         <InviteDialog
           company={company}
           onClose={() => setInviteOpen(false)}
-          onSend={(name, email, pw, designation) =>
+          onSend={(name, email, pw, designation, setPasswordToken) =>
             new Promise<void>((resolve, reject) => {
               act.mutate(
-                { action: 'invite', name, email, tempPassword: pw, designation },
+                { action: 'invite', name, email, tempPassword: pw, designation, setPasswordToken },
                 {
                   onSuccess: (d) => {
                     const inv = (d as unknown as { invite?: { id: string } }).invite;
@@ -454,8 +457,37 @@ function SbcRow({ p }: { p: ClientPortalContact }) {
 /* ------------------------------------------------------------------ */
 
 /** Sign-in box: the set-password link is not built yet, so the one-off temporary password shows (DECISIONS). */
-function SignInBox({ pw, email, label }: { pw: string; email: string; label: string }) {
+function SignInBox({ pw, email, label, token }: { pw: string; email: string; label: string; token?: string }) {
   const { toast } = usePortal();
+  if (token) {
+    // C-899: the invitee gets a set-password link by email; Copy puts the same link on the clipboard.
+    return (
+      <div className="fl">
+        <span>{label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6, border: '1.5px solid oklch(var(--line))' }}>
+          <Tile d={P.link} />
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span className="rt" style={{ display: 'block' }}>
+              Set-password link by email
+            </span>
+            <span className="cap">Expires in 7 days</span>
+          </span>
+          <button
+            type="button"
+            className="ibtn ghost"
+            aria-label="Copy the set-password link"
+            data-tip="Copy the link"
+            onClick={async () => {
+              const ok = await copyText(setPasswordLink(token));
+              toast(ok ? 'Link copied · it works after you send the invite' : 'Could not copy the link');
+            }}
+          >
+            <Svg d={P.copy} sw={1.8} />
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="fl">
       <span>{label}</span>
@@ -493,12 +525,13 @@ function InviteDialog({
 }: {
   company: string;
   onClose: () => void;
-  onSend: (name: string, email: string, pw: string, designation: string | null) => Promise<void>;
+  onSend: (name: string, email: string, pw: string, designation: string | null, setPasswordToken: string) => Promise<void>;
 }) {
   const [role, setRole] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [pw] = useState(makeTempPassword);
+  const [token] = useState(makeSetPasswordToken);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const valid = name.trim().length > 0 && EMAIL_OK.test(email.trim());
@@ -510,7 +543,7 @@ function InviteDialog({
     setBusy(true);
     setErr('');
     try {
-      await onSend(name.trim(), email.trim(), pw, role || null);
+      await onSend(name.trim(), email.trim(), pw, role || null, token);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not send the invite');
       setBusy(false);
@@ -550,7 +583,7 @@ function InviteDialog({
             ))}
           </select>
         </label>
-        <SignInBox pw={pw} email={email.trim()} label="Sign-in" />
+        <SignInBox pw={pw} email={email.trim()} label="Sign-in" token={token} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'oklch(var(--ink-2))' }}>
           Access
           <SChip tone="idle">Member</SChip>

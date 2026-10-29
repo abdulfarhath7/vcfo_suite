@@ -20,6 +20,9 @@ import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Term } from '@/components/ui/term';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { AssistChip } from '@/components/compliances/AssistParts';
+import { useAssistRuns } from '@/components/compliances/use-compliance-records';
+import { latestBySubject } from '@/lib/assist-runs/runs';
 import { usePortal } from '../../PortalProvider';
 import { portalHref } from '../../routes';
 import {
@@ -178,6 +181,11 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
   const open = (f: PortalFiling) => set({ filing: f.id });
   const statusWord = status === 'all' ? '' : WORD[status].toLowerCase();
 
+  // C-363: the VCFO Assist state per filing, from the stored runs of the client's engagement.
+  const assist = useAssistRuns({ kind: 'filing', enabled: after });
+  const assistBy = useMemo(() => latestBySubject(assist.data?.runs ?? []), [assist.data]);
+  const assistSetUp = assist.data?.setUp ?? true;
+
   const columns: EFilingColumn<PortalFiling>[] = [
     { key: 'due', header: 'Due', width: '56px', render: (r) => <DateTile iso={r.dueDate} s={statusOf(r, today)} size="sm" /> },
     { key: 'area', header: 'Area', width: '124px', render: (r) => <AreaTag a={r.area} /> },
@@ -214,6 +222,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
       width: '190px',
       render: (r) => (r.acknowledgementNo ? <span className="whitespace-nowrap font-mono text-[12.5px]">{r.acknowledgementNo}</span> : <span className="text-ink-faint">-</span>),
     },
+    { key: 'assist', header: 'VCFO Assist', width: '140px', render: (r) => (assist.isLoading ? <span className="text-ink-faint">-</span> : <AssistChip run={assistBy.get(r.id)} setUp={assistSetUp} />) },
     { key: 'proof', header: 'Proof', width: '136px', align: 'right', render: (r) => <ProofCell r={r} onProof={openProof} onDownload={downloadPrimary} /> },
   ];
 
@@ -321,7 +330,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
         rowKey={(r) => r.id}
         onRowClick={open}
         pageSize={10}
-        minWidth={760}
+        minWidth={900}
         stickyFirstColumn
         rowClassName={(r) =>
           cn(

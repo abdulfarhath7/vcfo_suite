@@ -17,6 +17,7 @@ import { AssignClientDialog } from '@/components/super/assign/AssignClientDialog
 import { AssignTaskDialog } from '@/components/super/assign/AssignTaskDialog';
 import { useEscalations } from '@/components/super/escalations/use-escalations';
 import { SuperCapacityCard } from '@/components/super/overview/SuperCapacityCard';
+import { SuperReassignCard } from '@/components/super/overview/SuperReassignCard';
 import { medianResponse } from '@/components/super/insights/super-insights-model';
 import {
   NameCell,
@@ -376,6 +377,7 @@ export default function SuperTeam() {
 
           <div className="flex min-w-0 flex-col gap-5">
             <SuperCapacityCard managers={managers} people={people.byProfileId} />
+            <SuperReassignCard clients={insights.clients} managers={insights.team.managers} people={people.byProfileId} />
 
             <DashSection title="What admins did" meta={admins.length ? `${admins.length} admins` : undefined} href="/app/admin/audit-log" hrefLabel="Firm log" bodyClassName="p-0">
               {insights.adminFeed.length === 0 ? (

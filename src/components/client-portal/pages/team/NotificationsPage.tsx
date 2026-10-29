@@ -135,6 +135,8 @@ function targetOf(n: AppNotification, ty: Ty): string {
  * else "SBC" for staff actions (requests, reviews, announcements).
  */
 function whoOf(n: AppNotification, ty: Ty, staff: string[]): { who: string; person: boolean } {
+  // C-759: the stored sender first; older rows fall back to a name found in the text.
+  if (n.actorName?.trim()) return { who: n.actorName.trim(), person: true };
   const text = `${n.title} ${n.body}`;
   const hit = staff.find((name) => name && text.includes(name));
   if (hit) return { who: hit, person: true };

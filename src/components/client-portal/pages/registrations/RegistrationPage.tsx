@@ -9,7 +9,7 @@
  * The registration facts (G-05) add the certificate download (a signed URL through the
  * scoped `/api/registrations/certificate`), the issue date, the expiry and a Renewal card.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { clientIncorporationStepPath } from '@/lib/projects/project-step-path';
@@ -21,7 +21,10 @@ import { subList } from '../incorporation/data';
 import { useAllFilings } from '../compliances/api';
 import { groupObligations } from '../compliances/obligations';
 import { obligationHref } from '../compliances/ObligationsPage';
-import { Empty, FactRows, GoLink, Island, ListRow, RecordHead, SCard, StatusChip, StepList, WordPill } from '../compliances/spectrum';
+import { Empty, FactRows, GoLink, Island, ListRow, PeopleStack, RecordHead, SCard, StatusChip, StepList, TextCard, WordPill } from '../compliances/spectrum';
+import { FromClientCard, useRecordPeople } from '../compliances/inputs';
+import { EditableFacts, factChangeNote, type FactRow } from '@/components/dash/editable-facts';
+import { useComplianceStarts, useSubjectInputs } from '@/components/compliances/use-compliance-records';
 import { buildRegistrations, startsFilings, type RegItem } from './model';
 import { REGISTRATIONS_BASE, RegChip, useClientRegistrationFacts, useRegCredentials } from './parts';
 import { CertificateButton, renewalLine } from '@/views/compliances/registration-renewal';
@@ -32,11 +35,12 @@ const HOLDER: Record<RegItem['owner'], string> = { client: 'You', sbc: 'SBC', mc
 
 export function RegistrationRecordPage({ id }: { id: string }) {
   const { model, loading } = usePortalIncorporation();
+  const { after } = usePortal();
   const creds = useRegCredentials();
   const { facts } = useClientRegistrationFacts();
   const r = useMemo(
-    () => buildRegistrations(model, creds.data, facts).find((x) => x.id === id || x.stepId === id) ?? null,
-    [model, creds.data, facts, id],
+    () => buildRegistrations(model, creds.data, facts, { beforeCoi: !after }).find((x) => x.id === id || x.stepId === id) ?? null,
+    [model, creds.data, facts, id, after],
   );
   usePortalCrumbs(['Registrations', r?.name ?? 'Registration']);
   const back = (
@@ -66,7 +70,7 @@ export function RegistrationRecordPage({ id }: { id: string }) {
 }
 
 function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boolean; credsLoading: boolean }) {
-  const { go, openChat, after, shell } = usePortal();
+  const { go, openChat, after, shell, toast } = usePortal();
   const companyShort = shell?.companyShort || 'You';
   const today = todayIso();
   const parts = subList(r.step);
@@ -82,6 +86,40 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
   const renewal = renewalOf(r.facts, now);
   const renewalText = renewalLine(r.facts, now);
   const registeredOn = r.registeredOn && /^\d{4}-\d{2}-\d{2}$/.test(r.registeredOn) ? fmtDMY(r.registeredOn) : r.registeredOn;
+  const people = useRecordPeople();
+  const applicability = useComplianceStarts();
+  const rule = applicability.data?.byStep[r.stepId] ?? null;
+  const sbc = useSubjectInputs({ kind: 'registration', key: r.stepId });
+  const [sending, setSending] = useState(false);
+  const fixed: FactRow[] = [
+    { k: 'Number', v: r.number ?? (numberEmpty === '-' ? '-' : numberEmpty), mono: Boolean(r.number) },
+    { k: 'Date of registration', v: registeredOn ?? '-' },
+    { k: 'Certificate', v: r.certificate ?? '-', mono: Boolean(r.certificate), locked: true },
+    ...(r.facts?.issuedOn ? [{ k: 'Issued', v: fmtDMY(r.facts.issuedOn) }] : []),
+    ...(r.facts?.expiresOn ? [{ k: 'Expires', v: fmtDMY(r.facts.expiresOn) }] : []),
+  ];
+  const seen = new Set(fixed.map((f) => f.k.toLowerCase()));
+  const sbcRows: FactRow[] = [
+    ...fixed,
+    ...(sbc.data?.sbc ?? []).filter((f) => !seen.has(f.label.toLowerCase())).map((f) => ({ k: f.label, v: f.value ?? '-', mono: f.mono })),
+  ];
+  const sendFactChange = async (changes: Array<{ k: string; before: string; after: string }>) => {
+    if (!changes.length || !shell?.engagementId) return;
+    setSending(true);
+    try {
+      const res = await fetch('/api/client/change-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ engagementId: shell.engagementId, stepId: r.stepId, note: factChangeNote(r.name, changes) }),
+      });
+      if (!res.ok) throw new Error('failed');
+      toast('Change request sent to SBC');
+    } catch {
+      toast('Could not send the request. Try again.');
+    } finally {
+      setSending(false);
+    }
+  };
 
   const actions = (
     <>
@@ -117,6 +155,7 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
           { k: 'Number', v: r.number ? <span className="font-mono text-[13px]">{r.number}</span> : '-' },
           ...(renewal ? [{ k: 'Renew by', v: fmtDMY(renewal.renewBy), tone: renewal.word === 'Overdue' ? ('bad' as const) : undefined }] : []),
         ]}
+        people={<PeopleStack people={people} />}
         actions={actions}
       />
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -138,30 +177,17 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
               </div>
             </SCard>
           ) : null}
-          <SCard title="Filled by SBC" meta="Read only" flush>
-            <FactRows
-              rows={[
-                { k: 'Number', v: r.number ?? numberEmpty, mono: Boolean(r.number), empty: !r.number },
-                { k: 'Date of registration', v: registeredOn ?? '-', empty: !registeredOn },
-                { k: 'Certificate', v: r.certificate ?? '-', mono: Boolean(r.certificate), empty: !r.certificate },
-                ...(r.facts?.issuedOn ? [{ k: 'Issued', v: fmtDMY(r.facts.issuedOn) }] : []),
-                ...(r.facts?.expiresOn ? [{ k: 'Expires', v: fmtDMY(r.facts.expiresOn) }] : []),
-              ]}
-            />
-          </SCard>
-          <SCard title="What the step needs" meta={r.needs.length || undefined} flush>
-            {r.needs.length ? (
-              <ul>
-                {r.needs.map((n) => (
-                  <li key={n} className="border-t border-line-soft px-4 py-2.5 text-[14px] text-ink first:border-t-0 md:px-5">
-                    {n}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Empty />
-            )}
-          </SCard>
+          {!r.notNeeded ? <FromClientCard kind="registration" subjectKey={r.stepId} editable={r.status !== 'Done'} /> : null}
+          {/* F-192: the client asks SBC to change a value through a change request; it never writes it. */}
+          <EditableFacts
+            title="Filled by SBC"
+            rows={sbcRows}
+            editable={Boolean(shell?.engagementId) && !r.notNeeded}
+            saveLabel="Send to SBC"
+            saving={sending}
+            readOnlyNote="Read only"
+            onSave={sendFactChange}
+          />
         </div>
         <div className="grid min-w-0 gap-5">
           <SCard title="About" flush>
@@ -183,13 +209,39 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
               </button>
             </div>
           </SCard>
+          {rule ? (
+            r.notNeeded || rule.applies === false ? (
+              <TextCard title="Not needed">
+                <p>{rule.notNeeded}</p>
+                {rule.answers.length ? <p className="text-ink-muted">{rule.answers.map((a) => `${a.label} ${a.value}`).join(' · ')}</p> : null}
+              </TextCard>
+            ) : (
+              <TextCard title="Applies because">
+                <p>
+                  Applies to {companyShort} because: {rule.why}
+                </p>
+                {rule.answers.length ? <p className="text-ink-muted">{rule.answers.map((a) => `${a.label} ${a.value}`).join(' · ')}</p> : null}
+                <p className="text-ink-muted">Rule: {rule.rule}</p>
+              </TextCard>
+            )
+          ) : null}
           <SCard title="Renewal">
             <p className={`text-[13.5px] leading-relaxed ${renewalText ? 'text-ink-2' : 'text-ink-faint'}`}>
               {renewalText ?? 'None'}
               {renewal?.word ? ` ${renewal.word}.` : ''}
             </p>
           </SCard>
-          {startsFilings(r.stepId) && (starts.length || !after) ? (
+          {!starts.length && rule?.starts.length ? (
+            <SCard title="What it starts" meta={rule.starts.length} flush>
+              {rule.starts.map((o) => (
+                <ListRow key={o.id}>
+                  <span className="min-w-0 flex-1 truncate font-medium">{o.name}</span>
+                  <span className="flex-none text-[12.5px] text-ink-muted">{o.freqLabel}</span>
+                  <span className="flex-none text-[12.5px] text-ink-faint">{rule.startsOn ? `From ${fmtDM(rule.startsOn)}` : after ? 'Not on your register yet' : 'After the certificate'}</span>
+                </ListRow>
+              ))}
+            </SCard>
+          ) : startsFilings(r.stepId) && (starts.length || !after) ? (
             <SCard title="What it starts" meta={starts.length || undefined} flush>
               {starts.length ? (
                 starts.map((o) => (

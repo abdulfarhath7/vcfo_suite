@@ -47,7 +47,14 @@ vi.mock('@/db/repositories/engagements', () => ({
   assertEngagementAccess: (...a: unknown[]) => assertEngagementAccess(...a),
 }));
 
-const { listClientAuditEvents, listClientAuditDay, ClientAuditError } = await import('@/db/repositories/client-audit');
+const recordAuditEvent = vi.fn();
+vi.mock('@/db/repositories/audit-events', () => ({
+  recordAuditEvent: (...a: unknown[]) => recordAuditEvent(...a),
+}));
+
+const { listClientAuditEvents, listClientAuditDay, ClientAuditError, systemRecordSignIn, SIGN_IN_ACTION } = await import(
+  '@/db/repositories/client-audit'
+);
 
 const dialect = new PgDialect();
 const OWN = '11111111-1111-1111-1111-111111111101';
@@ -130,5 +137,38 @@ describe('listClientAuditEvents — Result', () => {
     results = [[row({ actorName: 'lead@sbc.test' })], []];
     const page = await listClientAuditEvents(ctx('client'));
     expect(JSON.stringify(page)).not.toContain('lead@sbc.test');
+  });
+});
+
+describe('sign-in events (C-787)', () => {
+  it('a client sign-in is written on the own engagement', async () => {
+    await systemRecordSignIn({ userId: 'u-1', email: 'asha@client.test', name: 'Asha', role: 'client', clientId: 'c1', device: 'Chrome on Windows', city: 'Hyderabad' });
+    expect(getMyEngagement).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u-1', role: 'client', clientId: 'c1' }));
+    expect(recordAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'u-1', role: 'client' }),
+      expect.objectContaining({ engagementId: 'own-slug', action: SIGN_IN_ACTION, metadata: expect.objectContaining({ device: 'Chrome on Windows', city: 'Hyderabad' }) }),
+    );
+  });
+
+  it('a staff sign-in is written with no engagement; a client with no engagement writes nothing', async () => {
+    await systemRecordSignIn({ userId: 'u-2', email: 'lead@sbc.test', role: 'intern', device: 'Chrome on Windows', method: 'Microsoft' });
+    expect(recordAuditEvent).toHaveBeenCalledWith(expect.objectContaining({ role: 'intern' }), expect.objectContaining({ engagementId: undefined, action: SIGN_IN_ACTION }));
+    recordAuditEvent.mockClear();
+    getMyEngagement.mockResolvedValueOnce(null);
+    await systemRecordSignIn({ userId: 'u-3', email: 'new@client.test', role: 'client', device: 'Safari on iOS' });
+    expect(recordAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it('shows under the Sign-in area with device and city, never the email', async () => {
+    results = [
+      [row({ actorRole: 'client', actorName: 'Asha', actorEmail: 'asha@client.test', action: SIGN_IN_ACTION, summary: 'Signed in on Chrome on Windows', metadata: { device: 'Chrome on Windows', city: 'Hyderabad', method: 'Password' } })],
+      [],
+    ];
+    const page = await listClientAuditEvents(ctx('client'));
+    const e = page.events[0]!;
+    expect(e.cat).toBe('Sign-in');
+    expect(e.action).toBe('Signed in');
+    expect(e.facts).toEqual(expect.arrayContaining([{ k: 'Device', v: 'Chrome on Windows' }, { k: 'City', v: 'Hyderabad' }]));
+    expect(JSON.stringify(e)).not.toContain('asha@client.test');
   });
 });

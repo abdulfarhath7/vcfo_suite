@@ -3,9 +3,17 @@
 'use client';
 
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Send } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { CheckCircle2, Send, Undo2, Upload } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 
@@ -142,8 +150,14 @@ function BrStageList({ stages }: { stages: BrStage[] }) {
 
 export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const {
     eng,
+    isLead,
+    staffShell,
+    handleApprove,
+    handleSendBack,
+    handleUploadSigned,
     finalizeOpen,
     setFinalizeOpen,
     busy,
@@ -162,6 +176,9 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
     sentBackNote,
   } = p;
   const signed = Boolean(doc?.signedStoragePath?.trim());
+  const signedInputRef = useRef<HTMLInputElement>(null);
+  const [backOpen, setBackOpen] = useState(false);
+  const [backNote, setBackNote] = useState('');
   const [sentOverride, setSentOverride] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const sentToClientAt = sentOverride ?? doc?.sentToClientAt ?? null;
@@ -198,7 +215,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
         description="Draft and finalize the certified board resolution for the India subsidiary."
 
-        path={internBoardResolutionPath(eng)}
+        path={pathname || internBoardResolutionPath(eng)}
 
       />
 
@@ -224,13 +241,15 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
         {withManager && !isFinalized ? (
           <p role="status" className="mb-4 rounded-md border-1.5 border-brand-line bg-brand-soft px-3 py-2 text-[13.5px] text-ink">
-            The board resolution is with your manager. You can edit it again if they send it back.
+            {isLead
+              ? 'The board resolution is with your manager. You can edit it again if they send it back.'
+              : 'The project lead sent this for approval.'}
           </p>
         ) : null}
 
         {sentBackNote && !withManager && !isFinalized ? (
           <p role="status" className="mb-4 rounded-md border-1.5 border-warning-mid bg-warning-soft px-3 py-2 text-[13.5px] text-ink">
-            <span className="font-medium">Your manager sent this back:</span> {sentBackNote}
+            <span className="font-medium">{isLead ? 'Your manager sent this back:' : 'Sent back to the lead:'}</span> {sentBackNote}
           </p>
         ) : null}
 
@@ -286,7 +305,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
                       type="button"
                       onClick={() =>
                         router.push(
-                          docPackStepPath(eng, 'intern', ref.stepId, ref.section ? sectionSlug(ref.section) : undefined),
+                          docPackStepPath(eng, staffShell, ref.stepId, ref.section ? sectionSlug(ref.section) : undefined),
                         )
                       }
                       className="text-left text-[12.5px] font-medium text-brand hover:underline"
@@ -326,7 +345,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
             <p className="text-[13px] font-medium text-ink mb-1">
 
-              Client uploaded signed copy
+              Signed copy uploaded
 
             </p>
 
@@ -342,7 +361,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
                   })}`
 
-                : 'The client has uploaded a signed board resolution.'}
+                : 'A signed board resolution is on file.'}
 
             </p>
 
@@ -397,6 +416,18 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
         </div>
         <div className="p-2">
           <BrStageList stages={brStages(doc, Boolean(withManager), Boolean(isFinalized), sentToClientAt)} />
+          {!isLead && !isFinalized && withManager ? (
+            <div className="mt-1 grid gap-2 border-t border-line-soft px-2 pb-1 pt-3">
+              <Button size="sm" disabled={busy !== null} onClick={() => void handleApprove()}>
+                <CheckCircle2 size={14} strokeWidth={1.6} aria-hidden />
+                {busy === 'finalize' ? 'Approving…' : 'Approve and send to client'}
+              </Button>
+              <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => setBackOpen(true)}>
+                <Undo2 size={14} strokeWidth={1.6} aria-hidden />
+                Send back
+              </Button>
+            </div>
+          ) : null}
           {isFinalized && !signed ? (
             <div className="mt-1 grid gap-2 border-t border-line-soft px-2 pb-1 pt-3">
               <p className="text-[13px] text-ink-muted">
@@ -406,11 +437,65 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
                 <Send size={14} strokeWidth={1.6} aria-hidden />
                 {sentToClientAt ? 'Send again' : 'Send to client'}
               </Button>
+              {/* S-574: staff upload the signed copy the client returned by mail or by hand. */}
+              <Button
+                size="sm"
+                variant={sentToClientAt ? 'default' : 'outline'}
+                disabled={busy !== null}
+                onClick={() => signedInputRef.current?.click()}
+              >
+                <Upload size={14} strokeWidth={1.6} aria-hidden />
+                {busy === 'upload-signed' ? 'Uploading…' : 'Upload signed copy'}
+              </Button>
+              <input
+                ref={signedInputRef}
+                type="file"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                className="hidden"
+                aria-label="Signed board resolution file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (file) void handleUploadSigned(file);
+                }}
+              />
             </div>
           ) : null}
         </div>
       </aside>
       </div>
+      <Dialog open={backOpen} onOpenChange={setBackOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send the board resolution back</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={backNote}
+            onChange={(event) => setBackNote(event.target.value)}
+            rows={4}
+            maxLength={2000}
+            aria-label="What should the project lead change"
+            placeholder="Tell the project lead what to change."
+          />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setBackOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={!backNote.trim() || busy !== null}
+              onClick={async () => {
+                if (await handleSendBack(backNote)) {
+                  setBackOpen(false);
+                  setBackNote('');
+                }
+              }}
+            >
+              Send back
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <AlertDialog open={finalizeOpen} onOpenChange={setFinalizeOpen}>
 
         <AlertDialogContent>

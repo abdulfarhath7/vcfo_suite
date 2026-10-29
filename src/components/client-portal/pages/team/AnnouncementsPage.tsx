@@ -302,6 +302,7 @@ export function AnnouncementsPage() {
             if (n >= 0 && n < rows.length) openAt(n);
           }}
           openChat={openChat}
+          go={go}
         />
       ) : null}
     </div>
@@ -317,6 +318,7 @@ function AnnDetail({
   onClose,
   onStep,
   openChat,
+  go,
 }: {
   a: Announcement;
   index: number;
@@ -326,8 +328,10 @@ function AnnDetail({
   onClose: () => void;
   onStep: (d: number) => void;
   openChat: (q?: string) => void;
+  go: (href: string) => void;
 }) {
   const feed = a.origin === 'feed';
+  const link = a.linkPath?.trim() || '';
   const author = team.find((t) => t.id === a.authorId);
   const authorName = author?.name ?? a.authorName.split('@')[0];
   const roleLabel = author?.role ?? (a.authorRole === 'manager' ? 'Project Manager' : a.authorRole === 'intern' ? 'Project Lead' : 'SBC');
@@ -423,9 +427,26 @@ function AnnDetail({
             {index + 1} / {total}
           </span>
         </div>
-        <button type="button" className="btn btn-n" onClick={onClose}>
-          Got it
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {/* C-741: the announcement points to a portal page. */}
+          {link ? (
+            <a
+              href={link}
+              className="btn btn-o"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                e.preventDefault();
+                onClose();
+                go(link);
+              }}
+            >
+              Open
+            </a>
+          ) : null}
+          <button type="button" className="btn btn-n" onClick={onClose}>
+            Got it
+          </button>
+        </div>
       </div>
     </Dialog>
   );

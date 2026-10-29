@@ -309,3 +309,112 @@ describe('setDocumentReview', () => {
     expect(createNotification).not.toHaveBeenCalled();
   });
 });
+
+describe('indexMilestoneUpload (P-575, P-593)', () => {
+  const input = (engagementId: string, objectKey: string, fieldId = 'pan_card') => ({
+    engagementId,
+    fieldId,
+    fileName: 'pan.pdf',
+    objectKey,
+  });
+
+  it('developer is refused before any query', async () => {
+    await expect(repo.indexMilestoneUpload(ctx('developer'), input(OWN, PATH_OWN))).rejects.toThrow('not permitted');
+    expect(calls).toHaveLength(0);
+  });
+
+  it.each(['manager', 'intern', 'client'] as const)('%s writes nothing on another engagement', async (role) => {
+    await expect(repo.indexMilestoneUpload(ctx(role), input(OTHER, PATH_OTHER))).rejects.toThrow('not permitted');
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('refuses a path that names another engagement than the one granted', async () => {
+    await expect(repo.indexMilestoneUpload(ctx('admin'), input(OWN, PATH_OTHER))).rejects.toThrow('not permitted');
+    expect(calls).toHaveLength(0);
+  });
+
+  it('a client upload gets an unshared row with the client as uploader, and replaces older rows of the field', async () => {
+    results = [[], [docRow(OWN, { objectKey: PATH_OWN, uploadedBy: 'user-client', sharedWithClient: false })], []];
+    await repo.indexMilestoneUpload(ctx('client'), input(OWN, PATH_OWN));
+    const insert = calls.find((c) => c.op === 'insert')!;
+    expect(insert.values).toMatchObject({ engagementId: OWN, objectKey: PATH_OWN, uploadedBy: 'user-client', sharedWithClient: false });
+    const update = calls.find((c) => c.op === 'update')!;
+    expect(update.set).toMatchObject({ replacedById: DOC });
+    const q = dialect.sqlToQuery(update.where!);
+    // The engagement is pinned and the field prefix has its `_` escaped.
+    expect(q.params).toEqual([OWN, `${OWN}/pan\\_card/%`, DOC]);
+  });
+
+  it('a loose vault upload replaces nothing', async () => {
+    const path = `${OWN}/vault/1730000000000-a.pdf`;
+    results = [[], [docRow(OWN, { objectKey: path })]];
+    await repo.indexMilestoneUpload(ctx('manager'), input(OWN, path, 'vault'));
+    expect(calls.some((c) => c.op === 'update')).toBe(false);
+  });
+});
+
+describe('deleteVaultDocument (P-596)', () => {
+  it.each(['client', 'developer'] as const)('%s is refused before any query', async (role) => {
+    await expect(repo.deleteVaultDocument(ctx(role), DOC)).rejects.toThrow('not permitted');
+    expect(calls).toHaveLength(0);
+  });
+
+  it.each(['admin', 'manager', 'intern'] as const)('%s deletes nothing on another engagement', async (role) => {
+    results = [[docRow(OTHER)]];
+    expect(await repo.deleteVaultDocument(ctx(role), DOC)).toBeNull();
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('a lead may not delete a file someone else uploaded', async () => {
+    results = [[docRow(OWN, { uploadedBy: 'user-manager' })]];
+    await expect(repo.deleteVaultDocument(ctx('intern'), DOC)).rejects.toThrow('not permitted');
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('refuses a file a checklist step still holds', async () => {
+    assertEngagementAccess.mockResolvedValue({
+      ok: true,
+      dbId: OWN,
+      row: { id: OWN, checklistState: { s1: { responses: { pan_card: PATH_OWN } } } },
+    });
+    results = [[docRow(OWN, { objectKey: PATH_OWN })]];
+    await expect(repo.deleteVaultDocument(ctx('manager'), DOC)).rejects.toThrow('in_use');
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('soft-deletes on the granted engagement and writes an audit event', async () => {
+    results = [[docRow(OWN)], [docRow(OWN, { deletedAt: new Date(), deletedBy: 'user-manager' })]];
+    expect(await repo.deleteVaultDocument(ctx('manager'), DOC)).not.toBeNull();
+    const update = calls.find((c) => c.op === 'update')!;
+    expect(update.set).toMatchObject({ deletedBy: 'user-manager' });
+    expect(dialect.sqlToQuery(update.where!).params).toEqual([DOC, OWN]);
+    expect(recordAuditEvent).toHaveBeenCalledWith(ctx('manager'), expect.objectContaining({ action: 'document.delete' }));
+  });
+});
+
+describe('restoreVaultDocument (P-596 Undo)', () => {
+  it.each(['client', 'developer'] as const)('%s is refused before any query', async (role) => {
+    await expect(repo.restoreVaultDocument(ctx(role), DOC)).rejects.toThrow('not permitted');
+    expect(calls).toHaveLength(0);
+  });
+
+  it.each(['admin', 'manager', 'intern'] as const)('%s restores nothing on another engagement', async (role) => {
+    results = [[docRow(OTHER, { deletedAt: new Date(), deletedBy: `user-${role}` })]];
+    expect(await repo.restoreVaultDocument(ctx(role), DOC)).toBeNull();
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('a lead may not restore a file someone else deleted', async () => {
+    results = [[docRow(OWN, { deletedAt: new Date(), deletedBy: 'user-manager' })]];
+    await expect(repo.restoreVaultDocument(ctx('intern'), DOC)).rejects.toThrow('not permitted');
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('clears the delete and writes an audit event', async () => {
+    results = [[docRow(OWN, { deletedAt: new Date(), deletedBy: 'user-intern' })], [docRow(OWN)]];
+    expect(await repo.restoreVaultDocument(ctx('intern'), DOC)).not.toBeNull();
+    const update = calls.find((c) => c.op === 'update')!;
+    expect(update.set).toEqual({ deletedAt: null, deletedBy: null });
+    expect(recordAuditEvent).toHaveBeenCalledWith(ctx('intern'), expect.objectContaining({ action: 'document.restore' }));
+  });
+});

@@ -111,3 +111,10 @@ describe('isReportDue', () => {
     expect(isReportDue('monthly', new Date('2026-10-31T20:00:00Z'), now)).toBe(false);
   });
 });
+
+describe('partnerParams format (P-225)', () => {
+  it('keeps csv and drops anything else', () => {
+    expect(partnerParams({ month: '2026-10', format: 'csv' })).toEqual({ month: '2026-10', format: 'csv' });
+    expect(partnerParams({ month: 'latest', format: 'xlsx' })).toEqual({ month: 'latest' });
+  });
+});

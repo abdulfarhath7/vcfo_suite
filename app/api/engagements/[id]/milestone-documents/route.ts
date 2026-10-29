@@ -4,7 +4,7 @@ import {
   assertEngagementAccess,
   getEngagementBySlug,
 } from '@/db/repositories/engagements';
-import { createDocument } from '@/db/repositories/documents';
+import { indexMilestoneUpload } from '@/db/repositories/documents';
 import { getItem } from '@/data/checklist';
 import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
@@ -111,7 +111,9 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 
-  if (guard.ctx.role !== 'client') {
+  // Every upload gets its index row (clients too), so the vault can say who sent it, and a
+  // newer file for the same field marks the earlier ones as replaced (P-575, P-593).
+  {
     const stepIdRaw = String(form.get('stepId') ?? '').trim();
     const item =
       (stepIdRaw && FIELD_ID_RE.test(stepIdRaw) ? getItem(stepIdRaw) : undefined) ??
@@ -120,8 +122,9 @@ export async function POST(request: Request, context: RouteContext) {
       ? getClientResponseFields(item).find((row) => row.id === fieldId)
       : undefined;
     try {
-      await createDocument(guard.ctx, {
+      await indexMilestoneUpload(guard.ctx, {
         engagementId: access.dbId,
+        fieldId,
         fileName: file.name,
         objectKey: storagePath,
         category: field?.section ?? (item ? vaultPhaseForItem(item) : 'documents'),

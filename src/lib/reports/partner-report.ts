@@ -23,7 +23,14 @@ export const PARTNER_REPORT_KIND = 'partner';
 /** `saved_reports.params` for a partner report. `latest` follows the calendar. */
 export interface PartnerReportParams {
   month: 'latest' | string;
+  /** File format for downloads and scheduled emails (P-225). Absent means PDF. */
+  format?: ReportFormat;
 }
+
+/** PDF, or a CSV file that Excel opens (there is no XLSX package in the app). */
+export const REPORT_FORMATS = ['pdf', 'csv'] as const;
+export type ReportFormat = (typeof REPORT_FORMATS)[number];
+export const REPORT_FORMAT_LABEL: Record<ReportFormat, string> = { pdf: 'PDF', csv: 'Excel (CSV)' };
 
 export const REPORT_SCHEDULES = ['none', 'weekly', 'monthly'] as const;
 export type ReportSchedule = (typeof REPORT_SCHEDULES)[number];
@@ -66,7 +73,8 @@ export function monthKeyLabel(key: string): string {
 
 export function partnerParams(raw: Record<string, unknown> | null | undefined): PartnerReportParams {
   const month = raw?.month;
-  return { month: isMonthKey(month) ? month : 'latest' };
+  // PDF is the default and is not written out, so older rows and callers read the same.
+  return { month: isMonthKey(month) ? month : 'latest', ...(raw?.format === 'csv' ? { format: 'csv' as const } : {}) };
 }
 
 export interface ReportNumber {

@@ -18,6 +18,7 @@ function chain(call: Call): unknown {
   const c: Record<string, unknown> = {
     from: () => c,
     leftJoin: () => c,
+    innerJoin: () => c,
     orderBy: () => c,
     limit: () => c,
     returning: () => c,
@@ -60,7 +61,7 @@ vi.mock('@/db/repositories/engagement-clients', () => ({
 }));
 vi.mock('@/db/repositories/audit-events', () => ({ recordAuditEvent: vi.fn() }));
 
-const { getClientTeam } = await import('@/db/repositories/client-team');
+const { getClientTeam, systemSetInvitePassword, systemPeekInviteToken, hashSetPasswordToken } = await import('@/db/repositories/client-team');
 
 const dialect = new PgDialect();
 const OWN = '11111111-1111-1111-1111-111111111101';
@@ -109,5 +110,36 @@ describe('getClientTeam — designation scope', () => {
     expect(q.params).toEqual([ME, MATE]);
     expect(q.params).not.toContain(STRANGER);
     expect(listEngagementClients).toHaveBeenCalledWith(expect.anything(), OWN);
+  });
+});
+
+describe('set-password link (C-899)', () => {
+  const TOKEN = 'a'.repeat(43);
+  const pending = { inv: { id: 'inv-1', profileId: MATE, tempPasswordHash: 'temp' }, hash: 'temp', email: 'mate@client.test', company: 'Northwind' };
+
+  it('looks the invite up by the token hash only, pending and unexpired', async () => {
+    results = [[pending]];
+    expect(await systemPeekInviteToken(TOKEN)).toEqual({ email: 'mate@client.test', companyName: 'Northwind' });
+    const q = dialect.sqlToQuery(calls[0]!.where!);
+    expect(q.params).toContain(hashSetPasswordToken(TOKEN));
+    expect(q.params).not.toContain(TOKEN);
+    expect(q.sql).toContain('"client_invites"."revoked_at" is null');
+    expect(q.sql).toContain('"client_invites"."set_password_expires_at" >');
+  });
+
+  it('sets the password once and clears the link', async () => {
+    results = [[pending], [], []];
+    expect((await systemSetInvitePassword(TOKEN, 'a-good-password')).status).toBe('ok');
+    const upd = calls.filter((c) => c.op === 'update');
+    expect(upd[0]!.set).toHaveProperty('passwordHash');
+    expect(upd[1]!.set).toMatchObject({ setPasswordTokenHash: null, setPasswordExpiresAt: null });
+  });
+
+  it('refuses a bad token, a short password, and an invite whose password was already chosen', async () => {
+    expect((await systemSetInvitePassword('short', 'a-good-password')).status).toBe('invalid');
+    expect((await systemSetInvitePassword(TOKEN, 'short')).status).toBe('too_short');
+    results = [[{ ...pending, hash: 'chosen-already' }]];
+    expect((await systemSetInvitePassword(TOKEN, 'a-good-password')).status).toBe('invalid');
+    expect(calls.filter((c) => c.op === 'update')).toHaveLength(0);
   });
 });

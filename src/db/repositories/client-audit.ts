@@ -5,6 +5,7 @@ import { db } from '@/db/client';
 import { auditEvents, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess, getMyEngagement } from '@/db/repositories/engagements';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { checklistItemLabel, formatAuditActionLabel } from '@/lib/audit/audit-log';
 import {
   auditResultWord,
@@ -28,6 +29,9 @@ import {
  * by name and role only); summaries are scrubbed of e-mail addresses.
  */
 
+/** C-787: a client person signed in (written by the Auth.js sign-in, read on the Audit page). */
+export const SIGN_IN_ACTION = 'auth.sign_in';
+
 export class ClientAuditError extends Error {
   constructor(
     message: string,
@@ -38,7 +42,7 @@ export class ClientAuditError extends Error {
 }
 
 const PREFIXES = ['checklist.', 'incorporation_docs.', 'doc_pack.', 'document_request.', 'client.', 'welcome_email.', 'credentials.'];
-const EXACT = ['board_resolution.finalize', 'email_templates.fire', 'engagement.checklist.submit', 'project.client_changed'];
+const EXACT = ['board_resolution.finalize', 'email_templates.fire', 'engagement.checklist.submit', 'project.client_changed', SIGN_IN_ACTION];
 
 /** The SQL form of the client allowlist, shared with `listAuditEvents` for the client role. */
 export function clientVisibleAuditPredicate() {
@@ -275,6 +279,17 @@ function project(
     subject = 'Credentials access log';
     if (str(m.label)) facts = [{ k: 'Credential', v: str(m.label) }];
     cta = { label: 'Open Credentials', href: '/app/client/credentials' };
+  } else if (a === SIGN_IN_ACTION) {
+    cat = 'Sign-in';
+    node = 'team';
+    action = 'Signed in';
+    subject = str(m.device) || 'Signed in';
+    facts = [
+      { k: 'Device', v: str(m.device) },
+      { k: 'City', v: str(m.city) },
+      { k: 'Method', v: str(m.method) },
+    ];
+    cta = { label: 'Open Settings', href: '/app/client/settings' };
   }
 
   return {
@@ -306,6 +321,48 @@ async function namesFor(rows: Raw[]): Promise<Map<string, string>> {
   if (!ids.size) return new Map();
   const ps = await db.select({ id: profiles.id, name: profiles.name }).from(profiles).where(inArray(profiles.id, [...ids]));
   return new Map(ps.filter((p) => p.name?.trim() && !p.name.includes('@')).map((p) => [p.id, p.name!.trim()]));
+}
+
+/**
+ * SYSTEM WRITER (C-787) — every accepted sign-in: the Credentials `authorize` (after the password
+ * and code) and the Microsoft branch of the `jwt` callback. The context is built from the
+ * verified profile. A client's sign-in is written on its own engagement, so it shows in that
+ * company's Audit page under "Sign-in"; a staff sign-in is written with no engagement, for the
+ * firm's own audit log. Never throws: a failed write must not block a sign-in.
+ */
+export async function systemRecordSignIn(input: {
+  userId: string;
+  email: string;
+  name?: string | null;
+  role: string;
+  clientId?: string | null;
+  device: string;
+  city?: string | null;
+  method?: string;
+}): Promise<void> {
+  try {
+    const ctx = {
+      userId: input.userId,
+      email: input.email,
+      name: input.name?.trim() || input.email,
+      role: input.role,
+      clientId: input.clientId ?? undefined,
+    } as AuthContext;
+    let engagementId: string | undefined;
+    if (input.role === 'client') {
+      const mine = await getMyEngagement(ctx);
+      if (!mine) return;
+      engagementId = mine.id;
+    }
+    await recordAuditEvent(ctx, {
+      engagementId,
+      action: SIGN_IN_ACTION,
+      summary: `Signed in on ${input.device}`,
+      metadata: { device: input.device, city: input.city || undefined, method: input.method ?? 'Password' },
+    });
+  } catch (err) {
+    console.warn('[client-audit] sign-in record failed', err instanceof Error ? err.message : err);
+  }
 }
 
 /** `created_at` to the millisecond, the precision a cursor carries (G-28). */

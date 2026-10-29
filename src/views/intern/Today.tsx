@@ -83,6 +83,7 @@ export default function InternToday() {
           name={user?.name ?? ''}
           items={items}
           now={now}
+          stamp={scope === 'all' && !engagementsLoading}
           scope={<TodayScopeTabs value={scope} onChange={setScope} counts={scopeCounts} />}
         >
           <Button onClick={() => setTodoOpen(true)}>

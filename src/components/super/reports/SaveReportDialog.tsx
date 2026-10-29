@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  REPORT_FORMAT_LABEL,
+  REPORT_FORMATS,
   REPORT_SCHEDULE_LABEL,
   REPORT_SCHEDULES,
   monthKeyLabel,
+  type ReportFormat,
   type ReportSchedule,
   type SavedReport,
 } from '@/lib/reports/partner-report';
@@ -16,7 +19,8 @@ import type { SavedReportValues } from '@/views/super/reports/use-saved-reports'
 
 /**
  * Save the partner report (G-21): a name, which month (the one on screen, or always the
- * latest), a schedule (none, weekly, monthly) and the recipients. The same dialog changes a
+ * latest), the format (PDF, or a CSV file Excel opens, P-225), a schedule (none, weekly,
+ * monthly) and the recipients. The same dialog changes a
  * saved report's schedule.
  */
 const LABEL = 'mb-1 block text-[13px] font-medium text-ink';
@@ -52,6 +56,7 @@ export function SaveReportDialog({
   const [name, setName] = useState('');
   const [latest, setLatest] = useState(true);
   const [schedule, setSchedule] = useState<ReportSchedule>('none');
+  const [format, setFormat] = useState<ReportFormat>('pdf');
   const [recipients, setRecipients] = useState('');
 
   useEffect(() => {
@@ -59,6 +64,7 @@ export function SaveReportDialog({
     setName(report?.name ?? 'Partner report');
     setLatest(report ? report.params.month === 'latest' : true);
     setSchedule(report?.schedule ?? 'monthly');
+    setFormat(report?.params.format ?? 'pdf');
     setRecipients((report?.recipients ?? (defaultRecipient ? [defaultRecipient] : [])).join(', '));
   }, [open, report, defaultRecipient]);
 
@@ -71,7 +77,7 @@ export function SaveReportDialog({
   function submit(e: FormEvent) {
     e.preventDefault();
     if (bad.length > 0 || needsRecipient) return;
-    onSave({ name: name.trim(), params: { month: latest ? 'latest' : fixedMonth }, schedule, recipients: list });
+    onSave({ name: name.trim(), params: { month: latest ? 'latest' : fixedMonth, ...(format === 'csv' ? { format } : {}) }, schedule, recipients: list });
   }
 
   return (
@@ -98,6 +104,14 @@ export function SaveReportDialog({
               </label>
             </div>
           </fieldset>
+          <div>
+            <label htmlFor="sr-format" className={LABEL}>Format</label>
+            <select id="sr-format" className={SELECT} value={format} onChange={(e) => setFormat(e.target.value as ReportFormat)}>
+              {REPORT_FORMATS.map((f) => (
+                <option key={f} value={f}>{REPORT_FORMAT_LABEL[f]}</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label htmlFor="sr-schedule" className={LABEL}>Repeat</label>
             <select id="sr-schedule" className={SELECT} value={schedule} onChange={(e) => setSchedule(e.target.value as ReportSchedule)}>

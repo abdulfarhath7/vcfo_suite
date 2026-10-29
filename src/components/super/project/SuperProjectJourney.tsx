@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { DashSection } from '@/components/dash/DashSection';
 import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
 import { PhaseBar, StepMark, type StepTone } from '@/components/ui/step-track';
 import { superPhaseTrack } from '@/components/super/overview/super-overview-format';
-import type { SuperEngagementDetail, SuperJourneyStep } from '@/lib/super/super-overview';
+import { SUPER_PROJECTS_HREF, type SuperEngagementDetail, type SuperJourneyStep } from '@/lib/super/super-overview';
+import { StepAboutPanel } from '@/views/client-record/StepAboutPanel';
 import { cn } from '@/lib/utils';
 
 /**
@@ -16,6 +18,8 @@ import { cn } from '@/lib/utils';
  * is a green square with a tick, the live step a ring with a status square, a later step a
  * dashed square. The live step shows who holds it, the lead and the status chip. Every state
  * comes from the same `gateActiveCatalog` result the wizard uses; a locked step stays locked.
+ * "What's this?" on a row opens the step's About panel (P-095, the staff `StepAboutPanel`), and
+ * the board resolution step links to the super admin's editor (P-112).
  */
 export function SuperProjectJourney({ detail }: { detail: SuperEngagementDetail }) {
   const groups = groupByPhase(detail.journey);
@@ -24,6 +28,8 @@ export function SuperProjectJourney({ detail }: { detail: SuperEngagementDetail 
   const current = track.totals.findIndex((t, i) => (track.done[i] ?? 0) < t);
   const liveIndex = detail.summary.currentStep ? detail.journey.findIndex((step) => step.id === detail.summary.currentStep?.id) : -1;
   const live = liveIndex >= 0 ? detail.journey[liveIndex] : undefined;
+  const [about, setAbout] = useState<{ id: string; label: string } | null>(null);
+  const boardResolutionHref = `${SUPER_PROJECTS_HREF}/${encodeURIComponent(detail.summary.id)}/board-resolution`;
 
   return (
     <DashSection
@@ -73,13 +79,25 @@ export function SuperProjectJourney({ detail }: { detail: SuperEngagementDetail 
               </div>
               <ol className="pb-2">
                 {group.steps.map((step) => (
-                  <JourneyRow key={step.id} step={step} leadName={detail.summary.leadName} />
+                  <JourneyRow
+                    key={step.id}
+                    step={step}
+                    leadName={detail.summary.leadName}
+                    boardResolutionHref={step.id === 'pre-2' ? boardResolutionHref : undefined}
+                    onAbout={() => setAbout({ id: step.id, label: `Step ${detail.journey.indexOf(step) + 1}` })}
+                  />
                 ))}
               </ol>
             </section>
           );
         })}
       </div>
+      <StepAboutPanel
+        stepId={about?.id ?? null}
+        stepLabel={about?.label}
+        engagementId={detail.summary.id}
+        onClose={() => setAbout(null)}
+      />
     </DashSection>
   );
 }
@@ -100,7 +118,17 @@ function statusWord(step: SuperJourneyStep): string {
   return 'Not started';
 }
 
-function JourneyRow({ step, leadName }: { step: SuperJourneyStep; leadName: string | null }) {
+function JourneyRow({
+  step,
+  leadName,
+  boardResolutionHref,
+  onAbout,
+}: {
+  step: SuperJourneyStep;
+  leadName: string | null;
+  boardResolutionHref?: string;
+  onAbout: () => void;
+}) {
   const open = step.kind === 'active' || step.kind === 'waiting';
   const state = step.kind === 'done' ? 'done' : open ? 'now' : 'next';
 
@@ -121,7 +149,19 @@ function JourneyRow({ step, leadName }: { step: SuperJourneyStep; leadName: stri
         {open ? (
           <span className="block truncate text-[12px] text-ink-muted">{leadName ? `Lead ${leadName}` : 'No lead'}</span>
         ) : null}
+        {boardResolutionHref ? (
+          <Link href={boardResolutionHref} className="block text-[12px] font-medium text-brand-text hover:underline">
+            Board resolution
+          </Link>
+        ) : null}
       </span>
+      <button
+        type="button"
+        onClick={onAbout}
+        className="hidden flex-none whitespace-nowrap text-[12px] font-medium text-brand-text hover:underline sm:inline"
+      >
+        What&apos;s this?
+      </button>
       {open ? (
         <>
           <OwnerChip owner={step.awaitingReview ? 'manager' : step.owner === 'client' ? 'client' : 'sbc'} className="hidden sm:inline-flex" />

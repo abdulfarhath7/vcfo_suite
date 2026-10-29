@@ -97,11 +97,20 @@ export interface Announcement {
   sourceId: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
+  /** In-app client portal page (`/app/client/...`) the detail's "Open" button goes to. */
+  linkPath?: string | null;
   authorId: string | null;
   authorName: string;
   authorRole: string | null;
   publishedAt: string;
   createdAt: string;
+}
+
+/** A client portal path an announcement may link to: `/app/client/...`, no host, no scheme. */
+export function safePortalLinkPath(raw: string | null | undefined): string | null {
+  const v = (raw ?? '').trim();
+  if (!v || v.length > 300) return null;
+  return /^\/app\/client(?:\/[\w\-./%]*)?(?:\?[\w\-=&%.]*)?$/.test(v) && !v.includes('..') ? v : null;
 }
 
 export interface AnnouncementSource {

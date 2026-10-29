@@ -547,9 +547,24 @@ export interface HeadFact {
 
 /**
  * Plain record head (R-02): the title, a muted meta line, the status chips and the key facts
- * in one row, with the record's main actions on the right.
+ * in one row, with the people on it and the record's main actions on the right.
  */
-export function RecordHead({ title, sub, chips, facts, actions }: { title: string; sub?: ReactNode; chips?: ReactNode; facts: HeadFact[]; actions?: ReactNode }) {
+export function RecordHead({
+  title,
+  sub,
+  chips,
+  facts,
+  people,
+  actions,
+}: {
+  title: string;
+  sub?: ReactNode;
+  chips?: ReactNode;
+  facts: HeadFact[];
+  /** The people stack (client, lead, manager), drawn before the actions. */
+  people?: ReactNode;
+  actions?: ReactNode;
+}) {
   return (
     <header className="flex min-w-0 flex-wrap items-start gap-x-6 gap-y-4" aria-label={title}>
       <div className="min-w-0 flex-[1_1_320px]">
@@ -567,7 +582,12 @@ export function RecordHead({ title, sub, chips, facts, actions }: { title: strin
           </dl>
         </div>
       </div>
-      {actions ? <div className="flex flex-none flex-wrap items-center gap-2">{actions}</div> : null}
+      {people || actions ? (
+        <div className="flex flex-none flex-wrap items-center gap-3">
+          {people}
+          {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        </div>
+      ) : null}
     </header>
   );
 }

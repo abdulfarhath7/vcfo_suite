@@ -33,6 +33,8 @@ export type UserSessionRow = {
   id: string;
   userAgent: string | null;
   ip: string | null;
+  /** Sign-in city from the CDN geo headers; null when none came (C-851). */
+  city: string | null;
   createdAt: string;
   lastSeenAt: string;
   current: boolean;
@@ -48,6 +50,7 @@ export async function systemCreateUserSession(input: {
   userId: string;
   userAgent?: string | null;
   ip?: string | null;
+  city?: string | null;
 }): Promise<string | null> {
   if (!isUuid(input.userId)) return null;
   try {
@@ -57,6 +60,7 @@ export async function systemCreateUserSession(input: {
         userId: input.userId,
         userAgent: clip(input.userAgent, 400),
         ip: clip(input.ip, 64),
+        city: clip(input.city, 80),
       })
       .returning({ id: userSessions.id });
     return row?.id ?? null;
@@ -134,6 +138,7 @@ export async function listOwnSessions(ctx: AuthContext, now = new Date()): Promi
       id: userSessions.id,
       userAgent: userSessions.userAgent,
       ip: userSessions.ip,
+      city: userSessions.city,
       createdAt: userSessions.createdAt,
       lastSeenAt: userSessions.lastSeenAt,
     })
@@ -145,6 +150,7 @@ export async function listOwnSessions(ctx: AuthContext, now = new Date()): Promi
     id: r.id,
     userAgent: r.userAgent,
     ip: r.ip,
+    city: r.city ?? null,
     createdAt: r.createdAt.toISOString(),
     lastSeenAt: r.lastSeenAt.toISOString(),
     current: Boolean(ctx.sessionId) && r.id === ctx.sessionId,

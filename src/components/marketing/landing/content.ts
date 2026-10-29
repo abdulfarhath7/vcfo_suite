@@ -60,17 +60,18 @@ export const COMPARE: { label: string; vcfo: Mark; tool: Mark; sheet: Mark }[] =
 ];
 
 /** Quick answers for the fixed Ask VCFO panel. `sec` is the section the "Show me" button scrolls to. */
-export const GUIDE: { q: string; a: string; sec: string; sales?: boolean }[] = [
-  { q: "What does VCFO Suite cover?", a: "Four stages, then the yearly calendar: name and papers, incorporation, the first 180 days and registrations, then every statutory filing after. Each step carries an owner, a due date and the document that proves it.", sec: "journey" },
-  { q: "How does incorporation work?", a: "The client answers one questionnaire, the firm drafts and files, and MCA approves. The board resolution, MOA, AOA, DIR-2 and INC-9 are generated from the answers, not retyped.", sec: "incorporate" },
-  { q: "What happens after the certificate?", a: "Eleven steps start the day the certificate arrives, most with a statutory clock: the first board meeting and ADT-1 within 30 days, share certificates within 60, and INC-20A within 180.", sec: "after" },
-  { q: "Which registrations does it track?", a: "Twenty-three registrations and reportings across tax, labour, trade, RBI and intellectual property. Only the ones that apply to the company are switched on.", sec: "register" },
-  { q: "What does the compliance calendar look like?", a: "Every statutory date of the financial year by regulator, each with a status word and a reminder before it is due. Email is the record; WhatsApp is the reminder.", sec: "comply" },
-  { q: "What does my client see?", a: "What is waiting on them, what the firm holds, and when the certificate is expected. They upload, approve and ask from one screen instead of an email thread.", sec: "portals" },
-  { q: "What does the project lead see?", a: "Today's action queue across every company they run, this week's statutory filings, and who each step is waiting on.", sec: "portals" },
-  { q: "What does the manager see?", a: "Every task the team owns, filtered by project lead, company or status, and each lead's workload by area. A to-do goes to a project lead in one click.", sec: "portals" },
-  { q: "What does the admin see?", a: "Every client with its stage, manager, who it is pending with and the next date; each manager's load and on-time rate; and where work is stuck. The admin assigns whole clients to managers.", sec: "portals" },
-  { q: "What does the super admin see?", a: "The whole firm on one screen: every client, what each admin and manager is doing, incorporations, registrations and filings side by side, fees and late-fee exposure, risks, growth, and a monthly partner report.", sec: "portals" },
+/** `href` is the real portal screen an answer is about ("Open the screen", shown in demo mode only). */
+export const GUIDE: { q: string; a: string; sec: string; href?: string; sales?: boolean }[] = [
+  { q: "What does VCFO Suite cover?", a: "Four stages, then the yearly calendar: name and papers, incorporation, the first 180 days and registrations, then every statutory filing after. Each step carries an owner, a due date and the document that proves it.", sec: "journey", href: "/app/client/overview" },
+  { q: "How does incorporation work?", a: "The client answers one questionnaire, the firm drafts and files, and MCA approves. The board resolution, MOA, AOA, DIR-2 and INC-9 are generated from the answers, not retyped.", sec: "incorporate", href: "/app/client/incorporation" },
+  { q: "What happens after the certificate?", a: "Eleven steps start the day the certificate arrives, most with a statutory clock: the first board meeting and ADT-1 within 30 days, share certificates within 60, and INC-20A within 180.", sec: "after", href: "/app/client/incorporation" },
+  { q: "Which registrations does it track?", a: "Twenty-three registrations and reportings across tax, labour, trade, RBI and intellectual property. Only the ones that apply to the company are switched on.", sec: "register", href: "/app/client/registrations" },
+  { q: "What does the compliance calendar look like?", a: "Every statutory date of the financial year by regulator, each with a status word and a reminder before it is due. Email is the record; WhatsApp is the reminder.", sec: "comply", href: "/app/client/compliances" },
+  { q: "What does my client see?", a: "What is waiting on them, what the firm holds, and when the certificate is expected. They upload, approve and ask from one screen instead of an email thread.", sec: "portals", href: "/app/client/overview" },
+  { q: "What does the project lead see?", a: "Today's action queue across every company they run, this week's statutory filings, and who each step is waiting on.", sec: "portals", href: "/app/intern/today" },
+  { q: "What does the manager see?", a: "Every task the team owns, filtered by project lead, company or status, and each lead's workload by area. A to-do goes to a project lead in one click.", sec: "portals", href: "/app/manager/dashboard" },
+  { q: "What does the admin see?", a: "Every client with its stage, manager, who it is pending with and the next date; each manager's load and on-time rate; and where work is stuck. The admin assigns whole clients to managers.", sec: "portals", href: "/app/admin/dashboard" },
+  { q: "What does the super admin see?", a: "The whole firm on one screen: every client, what each admin and manager is doing, incorporations, registrations and filings side by side, fees and late-fee exposure, risks, growth, and a monthly partner report.", sec: "portals", href: "/app/super/dashboard" },
   { q: "Where is the data hosted?", a: "On AWS in the Mumbai region, with encrypted storage. Access is scoped by role, so a client sees only their own companies.", sec: "trust" },
   { q: "Is it only for SBC?", a: "No. SBC built it and runs its own engagements on it. Your firm gets its own workspace with its own people, clients and calendar.", sec: "faq", sales: true },
 ];

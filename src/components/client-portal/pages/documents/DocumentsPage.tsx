@@ -139,7 +139,7 @@ function DocumentsInner() {
       />
     );
   } else if (phone) {
-    body = <DocsMobile data={data} model={model} view={view} zip={zip} onOpenFile={preview} onUpload={openUpload} />;
+    body = <DocsMobile data={data} model={model} view={view} setView={setView} zip={zip} onOpenFile={preview} onUpload={openUpload} />;
   } else {
     body = (
       <DocsExplorer

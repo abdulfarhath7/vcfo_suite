@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, desc, eq, inArray, like, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, like, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { documents, engagementCredentials, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -101,7 +101,8 @@ async function buildFor(ctx: AuthContext, dbIds: string[]): Promise<Map<string, 
     .select({ engagementId: engagementCredentials.engagementId, rowKey: engagementCredentials.rowKey, fields: engagementCredentials.fields })
     .from(engagementCredentials)
     .where(and(inArray(engagementCredentials.engagementId, dbIds), eq(engagementCredentials.sheet, 'reg')));
-  const docConds = [inArray(documents.engagementId, dbIds), like(documents.stepId, 'reg-%')];
+  // Deleted documents (documents.deleted_at) are left out of the registration facts.
+  const docConds = [inArray(documents.engagementId, dbIds), like(documents.stepId, 'reg-%'), isNull(documents.deletedAt)];
   if (ctx.role === 'client') docConds.push(eq(documents.sharedWithClient, true));
   const docs = await db
     .select({

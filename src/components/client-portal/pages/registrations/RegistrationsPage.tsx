@@ -39,7 +39,7 @@ export function RegistrationsList() {
   const { model, loading } = usePortalIncorporation();
   const creds = useRegCredentials();
   const { facts } = useClientRegistrationFacts();
-  const items = useMemo(() => buildRegistrations(model, creds.data, facts), [model, creds.data, facts]);
+  const items = useMemo(() => buildRegistrations(model, creds.data, facts, { beforeCoi: !after }), [model, creds.data, facts, after]);
   const [view, setView] = useState<'status' | 'group'>('status');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<RegStatus | null>(null);

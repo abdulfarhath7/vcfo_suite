@@ -6,6 +6,8 @@
  * with a back crumb, filter + level kebab, 56 px rows, bottom action sheets
  * (incl. Take photo = camera capture), ZIP toast. A file tap opens the phone
  * preview sheet. The board's own 56 px header is the shell's phone top bar.
+ * C-618: under the filter, a sideways toolbar keeps the desktop controls on the phone: Status
+ * and Replaced toggles, By step / By category, Download all (ZIP) and Upload · N requested.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ClientDocumentsPayload, DocNode } from '@/lib/client-portal/documents';
@@ -14,7 +16,7 @@ import { usePortal } from '@/components/client-portal/PortalProvider';
 import { stepHref } from '@/components/client-portal/routes';
 import { dayMonth } from './file-types';
 import { buildEntries, folderCounts, missingLabel, STATUS_TONE, stripNo, tagStyle, tagText, tagTip, type TEntry, type TFolder, type View } from './model';
-import { Chip } from '@/components/ui/spectrum-chip';
+import { Chip, Tag } from '@/components/ui/spectrum-chip';
 import { copyText, docLink, downloadNode, PagePortal, type useZipToast } from './shared-ui';
 
 const I = {
@@ -38,6 +40,7 @@ export function DocsMobile({
   data,
   model,
   view,
+  setView,
   zip,
   onOpenFile,
   onUpload,
@@ -45,12 +48,15 @@ export function DocsMobile({
   data: ClientDocumentsPayload;
   model: PortalIncorporationModel;
   view: View;
+  setView: (v: View) => void;
   zip: ReturnType<typeof useZipToast>;
   onOpenFile: (n: DocNode, list: DocNode[]) => void;
   onUpload: (requestId?: string, file?: File) => void;
 }) {
   const { go } = usePortal();
-  const entries = useMemo(() => buildEntries(data.nodes, model, view).filter((e) => e.kind === 'folder' || !e.node.replaced), [data.nodes, model, view]);
+  const [statusOn, setStatusOn] = useState(true);
+  const [hid, setHid] = useState(false);
+  const entries = useMemo(() => buildEntries(data.nodes, model, view).filter((e) => e.kind === 'folder' || hid || !e.node.replaced), [data.nodes, model, view, hid]);
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
   const [path, setPath] = useState<string[]>([]);
   const [q, setQ] = useState('');
@@ -93,7 +99,8 @@ export function DocsMobile({
   const level = ql ? files.filter((f) => f.node.label.toLowerCase().includes(ql)) : entries.filter((e) => e.parent === cur);
   const filesHere = level.filter((e): e is Extract<TEntry, { kind: 'file' }> => e.kind === 'file').map((e) => e.node).filter((n) => n.status !== 'Missing');
   const shownCount = ql ? level.length : files.length;
-  const allZip = files.filter((f) => f.node.status !== 'Missing').length;
+  const allZip = files.filter((f) => f.node.status !== 'Missing' && !f.node.replaced).length;
+  const openReq = data.openRequests.length;
 
   const close = () => setSheet('');
   const startZip = (key: string, name: string, n: number) => {
@@ -223,6 +230,50 @@ export function DocsMobile({
             </svg>
           </button>
         </div>
+        <div className="vdm-tools" role="toolbar" aria-label="Document controls">
+          <button type="button" className="sx-filter" aria-pressed={statusOn} onClick={() => setStatusOn((v) => !v)}>
+            <span className="vdm-dots" aria-hidden="true">
+              <i style={{ background: 'oklch(var(--positive-mid))' }} />
+              <i style={{ background: 'oklch(var(--brand))' }} />
+              <i style={{ background: 'oklch(var(--warning-mid))' }} />
+            </span>
+            Status
+          </button>
+          <button type="button" className="sx-filter" aria-pressed={hid} onClick={() => setHid((v) => !v)}>
+            Replaced
+          </button>
+          <div className="sx-seg" role="tablist" aria-label="Arrange by">
+            {(['By step', 'By category'] as const).map((l, i) => (
+              <button
+                key={l}
+                type="button"
+                role="tab"
+                aria-selected={view === i}
+                className={view === i ? 'on' : ''}
+                onClick={() => {
+                  setPath([]);
+                  setView(i as View);
+                }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="sx-btn sm" disabled={!allZip} onClick={() => startZip('all', `${data.companyShort} documents`, allZip)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d={I.dl} />
+            </svg>
+            Download all (ZIP)
+          </button>
+          {openReq > 0 ? (
+            <button type="button" className="sx-btn sm p" onClick={() => onUpload()}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d={I.up} />
+              </svg>
+              Upload · {openReq} requested
+            </button>
+          ) : null}
+        </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, padding: '12px 16px 16px' }}>
         {level.length ? (
@@ -285,9 +336,9 @@ export function DocsMobile({
                     <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
                       <span style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span className="cp-tw">
-                          <Chip tone={STATUS_TONE[f.status]}>{f.status}</Chip>
-                        </span>
+                        {statusOn || f.replaced ? (
+                          <span className="cp-tw">{f.replaced ? <Tag>Replaced</Tag> : <Chip tone={STATUS_TONE[f.status]}>{f.status}</Chip>}</span>
+                        ) : null}
                         <span className="mono vdm-n" style={missing && f.overdue ? { color: 'oklch(var(--danger))' } : undefined}>
                           {missing ? missingLabel(f) : dayMonth(f.date)}
                         </span>

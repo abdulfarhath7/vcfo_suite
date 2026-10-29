@@ -25,6 +25,8 @@ const createSchema = z.object({
     'general',
   ]).optional().default('general'),
   sourceUrl: z.string().trim().url().max(500).optional().nullable(),
+  /** C-741: an in-app client portal page (`/app/client/...`) for the "Open" button. */
+  linkPath: z.string().trim().max(300).optional().nullable(),
 });
 
 /** GET /api/announcements — firm-wide news for every signed-in role. */
@@ -73,6 +75,7 @@ export async function POST(request: Request) {
       body: body.data.body,
       kind: body.data.kind,
       sourceUrl: body.data.sourceUrl,
+      linkPath: body.data.linkPath,
     });
     await recordAuditEvent(guard.ctx, {
       action: 'announcements.create',

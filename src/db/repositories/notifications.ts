@@ -17,7 +17,8 @@ import {
  * NOTIFICATIONS REPOSITORY — replaces vcfo.notifications localStorage.
  *
  * Access: each user only sees/updates their own rows (user_id = ctx.userId).
- * Extra AppNotification fields are JSON-encoded in `description` for round-trip.
+ * Extra AppNotification fields are JSON-encoded in `description` for round-trip, including the
+ * sender (`actorId`, `actorName`, C-759): `createNotification` stamps the caller, fan-outs pass it.
  * Clear/dismiss sets dismissed_at (inbox hide). History lists all rows including
  * dismissed. Destroying rows is not part of the bell/history product.
  */
@@ -31,6 +32,8 @@ type StoredPayload = {
   companyName?: string;
   itemId?: string;
   href?: string;
+  actorId?: string;
+  actorName?: string;
 };
 
 function parsePayload(description: string | null): StoredPayload & { body: string } {
@@ -57,6 +60,8 @@ function encodePayload(n: Omit<AppNotification, 'id' | 'read' | 'createdAt' | 'd
     companyName: n.companyName,
     itemId: n.itemId,
     href: n.href,
+    actorId: n.actorId || undefined,
+    actorName: n.actorName?.trim() || undefined,
   } satisfies StoredPayload);
 }
 
@@ -74,6 +79,7 @@ function toAppNotification(row: Row): AppNotification {
     createdAt: row.createdAt.toISOString(),
     read: row.status === 'read',
     dismissedAt: row.dismissedAt ? row.dismissedAt.toISOString() : null,
+    ...(payload.actorName ? { actorId: payload.actorId, actorName: payload.actorName } : {}),
   };
 }
 
@@ -138,7 +144,8 @@ export async function createNotification(
     .values({
       userId,
       title: input.title,
-      description: encodePayload(input),
+      // The caller is the sender unless it names someone else.
+      description: encodePayload({ ...input, actorId: input.actorId ?? ctx.userId, actorName: input.actorName ?? ctx.name }),
       status: 'unread',
     })
     .returning();

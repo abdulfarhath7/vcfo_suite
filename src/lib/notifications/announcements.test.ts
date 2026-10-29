@@ -10,6 +10,7 @@ import {
   ANNOUNCEMENT_FIRST_VISIT_POPUP_CAP,
   ANNOUNCEMENT_LIVE_POPUP_CAP,
   assertSafeFeedUrl,
+  safePortalLinkPath,
   assertSafeHttpsUrl,
   canWriteAnnouncements,
   cleanOfficialUrl,
@@ -372,5 +373,20 @@ describe('manual links', () => {
   it('stores https links only', () => {
     expect(assertSafeHttpsUrl('https://incometaxindia.gov.in/a', 'link').protocol).toBe('https:');
     expect(() => assertSafeHttpsUrl('javascript:alert(1)', 'link')).toThrow();
+  });
+});
+
+describe('safePortalLinkPath (C-741)', () => {
+  it('keeps client portal paths', () => {
+    expect(safePortalLinkPath('/app/client/compliances')).toBe('/app/client/compliances');
+    expect(safePortalLinkPath(' /app/client/documents?folder=p1 ')).toBe('/app/client/documents?folder=p1');
+  });
+  it('drops anything else', () => {
+    expect(safePortalLinkPath('https://evil.example/app/client')).toBeNull();
+    expect(safePortalLinkPath('//evil.example')).toBeNull();
+    expect(safePortalLinkPath('/app/admin')).toBeNull();
+    expect(safePortalLinkPath('/app/client/../admin')).toBeNull();
+    expect(safePortalLinkPath('')).toBeNull();
+    expect(safePortalLinkPath(null)).toBeNull();
   });
 });

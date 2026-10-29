@@ -51,6 +51,7 @@ export async function notifyClientMessage(
         engagementId: recipients.appId,
         companyName: recipients.companyName,
         href: inboxPathFor(party, recipients.leads),
+        actorName: message.senderName || sender.name,
       })),
     ).catch((err) => console.error('[messages] bell failed', err));
 

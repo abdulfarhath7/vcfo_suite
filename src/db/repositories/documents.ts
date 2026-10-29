@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, desc, eq, inArray, isNull, like, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, like, ne, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   documentRequestDetails,
@@ -71,6 +71,12 @@ export interface DocumentDto {
   reviewedBy: string | null;
   reviewedAt: string | null;
   reviewNote: string | null;
+  /** When a newer upload to the same checklist field took this file's place (P-575). */
+  replacedAt: string | null;
+  replacedById: string | null;
+  /** The uploader's name and role, for the vault's "From" fact (P-593). List reads only. */
+  uploadedByName?: string | null;
+  uploadedByRole?: string | null;
   companyName?: string;
   slug?: string | null;
   stage?: string | null;
@@ -78,7 +84,13 @@ export interface DocumentDto {
 
 function mapRow(
   row: DocumentRow,
-  extra?: { companyName?: string; slug?: string | null; stage?: string | null },
+  extra?: {
+    companyName?: string;
+    slug?: string | null;
+    stage?: string | null;
+    uploaderName?: string | null;
+    uploaderRole?: string | null;
+  },
 ): DocumentDto {
   return {
     id: row.id,
@@ -96,6 +108,10 @@ function mapRow(
     reviewedBy: row.reviewedBy,
     reviewedAt: row.reviewedAt ? row.reviewedAt.toISOString() : null,
     reviewNote: row.reviewNote,
+    replacedAt: row.replacedAt ? row.replacedAt.toISOString() : null,
+    replacedById: row.replacedById ?? null,
+    uploadedByName: extra?.uploaderName ?? null,
+    uploadedByRole: extra?.uploaderRole ?? null,
     companyName: extra?.companyName,
     slug: extra?.slug,
     stage: extra?.stage,
@@ -109,6 +125,9 @@ const joinedSelect = {
   stage: engagements.stage,
   /** Only the owning step's slice — never the whole `checklist_state` blob. */
   stepSlice: sql<unknown>`${engagements.checklistState} -> ${documents.stepId}`,
+  /** The uploader (left join on profiles), for the vault's "From" fact. */
+  uploaderName: profiles.name,
+  uploaderRole: profiles.role,
 };
 
 type JoinedRow = {
@@ -117,7 +136,12 @@ type JoinedRow = {
   slug: string | null;
   stage: string;
   stepSlice: unknown;
+  uploaderName?: string | null;
+  uploaderRole?: string | null;
 };
+
+/** A file deleted from the vault (P-596) is hidden from every read until Undo restores it. */
+const notDeletedDoc = isNull(documents.deletedAt);
 
 /** A step-attached file is readable once its step is released to this viewer. */
 function stepReleasedForViewer(
@@ -139,6 +163,8 @@ function mapJoinedRows(ctx: Pick<AuthContext, 'role'>, rows: JoinedRow[]): Docum
         companyName: row.companyName,
         slug: row.slug,
         stage: row.stage,
+        uploaderName: row.uploaderName ?? null,
+        uploaderRole: row.uploaderRole ?? null,
       }),
     );
 }
@@ -166,13 +192,15 @@ export async function listDocuments(
         ? and(
             eq(documents.engagementId, access.dbId),
             eq(documents.sharedWithClient, true),
+            notDeletedDoc,
           )
-        : eq(documents.engagementId, access.dbId);
+        : and(eq(documents.engagementId, access.dbId), notDeletedDoc);
 
     const rows = await db
       .select(joinedSelect)
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
+      .leftJoin(profiles, eq(profiles.id, documents.uploadedBy))
       .where(where)
       .orderBy(desc(documents.createdAt));
     return mapJoinedRows(ctx, rows);
@@ -180,13 +208,14 @@ export async function listDocuments(
 
   // Files on a soft-deleted project stay hidden, as everywhere else that
   // reads through `scopeFor()` or `assertEngagementAccess()`.
-  const notDeleted = isNull(engagements.deletedAt);
+  const notDeleted = and(isNull(engagements.deletedAt), notDeletedDoc);
 
   if (isFirmWideAdmin(ctx.role)) {
     const rows = await db
       .select(joinedSelect)
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
+      .leftJoin(profiles, eq(profiles.id, documents.uploadedBy))
       .where(notDeleted)
       .orderBy(desc(documents.createdAt));
     return mapJoinedRows(ctx, rows);
@@ -201,6 +230,7 @@ export async function listDocuments(
       .select(joinedSelect)
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
+      .leftJoin(profiles, eq(profiles.id, documents.uploadedBy))
       .where(and(notDeleted, roleScope))
       .orderBy(desc(documents.createdAt));
     return mapJoinedRows(ctx, rows);
@@ -217,6 +247,7 @@ export async function listDocuments(
       .select(joinedSelect)
       .from(documents)
       .innerJoin(engagements, eq(engagements.id, documents.engagementId))
+      .leftJoin(profiles, eq(profiles.id, documents.uploadedBy))
       .where(and(notDeleted, scope))
       .orderBy(desc(documents.createdAt));
     return mapJoinedRows(ctx, rows);
@@ -226,6 +257,7 @@ export async function listDocuments(
     .select(joinedSelect)
     .from(documents)
     .innerJoin(engagements, eq(engagements.id, documents.engagementId))
+    .leftJoin(profiles, eq(profiles.id, documents.uploadedBy))
     .where(and(notDeleted, eq(documents.sharedWithClient, true), clientEngagementScope(ctx)))
     .orderBy(desc(documents.createdAt));
   return mapJoinedRows(ctx, rows);
@@ -237,7 +269,7 @@ export async function getDocumentById(
   id: string,
 ): Promise<DocumentDto | null> {
   const [row] = await db.select().from(documents).where(eq(documents.id, id)).limit(1);
-  if (!row) return null;
+  if (!row || row.deletedAt) return null;
 
   const access = await assertEngagementAccess(ctx, row.engagementId);
   if (!access.ok) return null;
@@ -724,4 +756,171 @@ export async function setDocumentReview(
   }
 
   return mapRow(updated);
+}
+
+/* ------------------------------------------------------------------ */
+/* Vault: upload index with "Replaced", and delete with Undo          */
+/* ------------------------------------------------------------------ */
+
+export interface IndexMilestoneUploadInput {
+  /** Database or app id of the engagement the file was stored under. */
+  engagementId: string;
+  /** The checklist field the file was sent for; `vault` is a loose vault upload. */
+  fieldId: string;
+  fileName: string;
+  /** Bare milestone path `{engagement}/{field}/{ts}-{name}`. */
+  objectKey: string;
+  category?: string | null;
+  contentType?: string | null;
+  sizeBytes?: number | null;
+  stepId?: string | null;
+}
+
+/** Field ids that hold loose files side by side, so a new one never replaces the last. */
+const NON_REPLACING_FIELDS = new Set(['vault']);
+
+/** Escape LIKE wildcards in a path prefix (field ids may hold `_`). */
+function likePrefix(prefix: string): string {
+  return `${prefix.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
+
+/**
+ * Index a checklist (milestone) upload for any role that can reach the engagement, the client
+ * included, so the vault can say who sent it (P-593). A newer upload to the same field marks the
+ * earlier rows of that field as replaced (P-575); the files stay in storage and in the vault
+ * behind the "Replaced" toggle. The row is never shared with the client by this path.
+ */
+export async function indexMilestoneUpload(
+  ctx: AuthContext,
+  input: IndexMilestoneUploadInput,
+): Promise<DocumentDto> {
+  if (ctx.role === 'developer') throw new Error('Upload index is not permitted for this role');
+  const access = await assertEngagementAccess(ctx, engagementDbId(input.engagementId));
+  if (!access.ok) throw new Error('Engagement not found or not permitted');
+
+  const objectKey = input.objectKey.trim().replace(/^\/+/, '');
+  const segments = objectKey.split('/');
+  // The first segment names the engagement; a path for another one is refused.
+  if (!isMilestoneStoragePath(objectKey) || engagementDbId(segments[0] ?? '') !== access.dbId) {
+    throw new Error('Engagement not found or not permitted');
+  }
+
+  const [existing] = await db
+    .select()
+    .from(documents)
+    .where(and(eq(documents.engagementId, access.dbId), eq(documents.objectKey, objectKey)))
+    .limit(1);
+  if (existing) return mapRow(existing);
+
+  const [row] = await db
+    .insert(documents)
+    .values({
+      engagementId: access.dbId,
+      fileName: input.fileName.trim(),
+      objectKey,
+      category: input.category?.trim() || null,
+      contentType: input.contentType?.trim() || null,
+      sizeBytes: input.sizeBytes ?? null,
+      stepId: input.stepId?.trim() || null,
+      sharedWithClient: false,
+      uploadedBy: ctx.userId,
+    })
+    .returning();
+
+  const fieldId = input.fieldId.trim();
+  if (row && fieldId && !NON_REPLACING_FIELDS.has(fieldId)) {
+    const prefix = `${segments[0]}/${fieldId}/`;
+    await db
+      .update(documents)
+      .set({ replacedAt: new Date(), replacedById: row.id })
+      .where(
+        and(
+          eq(documents.engagementId, access.dbId),
+          like(documents.objectKey, likePrefix(prefix)),
+          ne(documents.id, row.id),
+          isNull(documents.replacedAt),
+          isNull(documents.deletedAt),
+        ),
+      );
+  }
+
+  return mapRow(row);
+}
+
+/** True when the engagement's checklist still points at this object (the step's current file). */
+function checklistHoldsObject(checklistState: unknown, objectKey: string): boolean {
+  if (!checklistState || !objectKey) return false;
+  try {
+    return JSON.stringify(checklistState).includes(JSON.stringify(objectKey).slice(1, -1));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Delete a vault file (P-596): a soft delete, so the Undo toast can bring it back. Staff only;
+ * a lead may delete only their own uploads. A file a checklist step still holds is refused
+ * ("in_use"): it is replaced or cleared from the step, not from the vault. Writes an audit event.
+ */
+export async function deleteVaultDocument(ctx: AuthContext, documentId: string): Promise<DocumentDto | null> {
+  if (!isStaff(ctx)) throw new Error('Delete is not permitted for this role');
+  if (!UUID_RE.test(documentId)) return null;
+  const doc = await getDocumentById(ctx, documentId);
+  if (!doc) return null;
+  if (ctx.role === 'intern' && doc.uploadedBy !== ctx.userId) {
+    throw new Error('Delete is not permitted for this role');
+  }
+  const access = await assertEngagementAccess(ctx, engagementDbId(doc.engagementId));
+  if (!access.ok) return null;
+  if (checklistHoldsObject(access.row.checklistState, doc.objectKey)) throw new Error('in_use');
+
+  const [row] = await db
+    .update(documents)
+    .set({ deletedAt: new Date(), deletedBy: ctx.userId })
+    .where(and(eq(documents.id, doc.id), eq(documents.engagementId, access.dbId), isNull(documents.deletedAt)))
+    .returning();
+  if (!row) return null;
+
+  await recordAuditEvent(ctx, {
+    engagementId: access.dbId,
+    action: 'document.delete',
+    summary: `${row.fileName} · deleted from the vault`,
+    metadata: { documentId: row.id, objectKey: row.objectKey },
+  });
+  return mapRow(row);
+}
+
+/**
+ * Undo a vault delete. The person who deleted the file, or an admin or manager on the
+ * engagement, may bring it back. Writes an audit event.
+ */
+export async function restoreVaultDocument(ctx: AuthContext, documentId: string): Promise<DocumentDto | null> {
+  if (!isStaff(ctx)) throw new Error('Restore is not permitted for this role');
+  if (!UUID_RE.test(documentId)) return null;
+  const [found] = await db
+    .select()
+    .from(documents)
+    .where(and(eq(documents.id, documentId), isNotNull(documents.deletedAt)))
+    .limit(1);
+  if (!found) return null;
+  const access = await assertEngagementAccess(ctx, found.engagementId);
+  if (!access.ok) return null;
+  if (!isAdminOrManager(ctx.role) && found.deletedBy !== ctx.userId) {
+    throw new Error('Restore is not permitted for this role');
+  }
+
+  const [row] = await db
+    .update(documents)
+    .set({ deletedAt: null, deletedBy: null })
+    .where(and(eq(documents.id, found.id), eq(documents.engagementId, access.dbId)))
+    .returning();
+  if (!row) return null;
+
+  await recordAuditEvent(ctx, {
+    engagementId: access.dbId,
+    action: 'document.restore',
+    summary: `${row.fileName} · restored to the vault`,
+    metadata: { documentId: row.id },
+  });
+  return mapRow(row);
 }

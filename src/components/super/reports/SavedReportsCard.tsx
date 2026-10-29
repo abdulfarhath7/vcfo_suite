@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * The caller's saved reports (G-21): which month, the schedule, who gets it, when it last
- * went out, and Run (opens it above), Schedule, Download PDF and Delete on each row. The report
+ * went out, and Run (opens it above), Schedule, Download (PDF or Excel CSV, as saved) and Delete on each row. The report
  * open above has the soft blurple row fill; the Period chip narrows the list by month.
  */
 export function SavedReportsCard({
@@ -80,7 +80,11 @@ export function SavedReportsCard({
             <CalendarClock aria-hidden />
           </Button>
           <Button size="icon" variant="quiet" asChild>
-            <a href={`/api/super/reports/${r.id}/pdf`} aria-label={`Download ${r.name}`} title="Download PDF">
+            <a
+              href={`/api/super/reports/${r.id}/${r.params.format === 'csv' ? 'csv' : 'pdf'}`}
+              aria-label={`Download ${r.name}`}
+              title={r.params.format === 'csv' ? 'Download Excel (CSV)' : 'Download PDF'}
+            >
               <Download aria-hidden />
             </a>
           </Button>

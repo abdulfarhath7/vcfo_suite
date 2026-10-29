@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { VaultDocument, VaultEntityGroup } from '@/lib/documents/vault-documents';
 import {
+  canDeleteDoc,
   fileUrl,
+  fromLabel,
+  isReplacedDoc,
   folderDocs,
   indexMaps,
   indexRowFor,
@@ -104,5 +107,41 @@ describe('previewKind and reviewWord', () => {
     expect(reviewWord('approved')).toBe('Approved');
     expect(reviewWord('changes')).toBe('Sent back');
     expect(reviewWord('none')).toBeNull();
+  });
+});
+
+describe('replaced, from and delete (P-575, P-593, P-596)', () => {
+  const r = (extra: Partial<VaultIndexRow> = {}): VaultIndexRow => ({
+    id: 'd1',
+    engagementId: 'e1',
+    category: null,
+    fileName: 'pan.pdf',
+    objectKey: PATH,
+    stepId: null,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    uploadedBy: 'u-lead',
+    ...extra,
+  });
+  const indexed = doc('index:d1', 's1', 'Docs', { source: 'index', documentId: 'd1' });
+  const current = doc('m1', 's1', 'Docs', { source: 'milestone', storagePath: PATH });
+
+  it('a replaced row flags an indexed file, never the file a step holds', () => {
+    expect(isReplacedDoc(indexed, r({ replacedAt: '2026-10-02T00:00:00.000Z' }))).toBe(true);
+    expect(isReplacedDoc(current, r({ replacedAt: '2026-10-02T00:00:00.000Z' }))).toBe(false);
+    expect(isReplacedDoc(indexed, r())).toBe(false);
+  });
+
+  it('names the client for a client upload and SBC for staff', () => {
+    expect(fromLabel(r({ uploadedByRole: 'client' }), 'Acme')).toBe('Acme');
+    expect(fromLabel(r({ uploadedByRole: 'intern', uploadedByName: 'Bharath' }), 'Acme')).toBe('SBC · Bharath');
+    expect(fromLabel(r({ uploadedBy: null }), 'Acme')).toBeNull();
+  });
+
+  it('admins and managers delete any indexed file, a lead only their own, nobody a step file', () => {
+    expect(canDeleteDoc(indexed, r(), { role: 'manager', id: 'u-x' })).toBe(true);
+    expect(canDeleteDoc(indexed, r(), { role: 'intern', id: 'u-lead' })).toBe(true);
+    expect(canDeleteDoc(indexed, r(), { role: 'intern', id: 'u-other' })).toBe(false);
+    expect(canDeleteDoc(current, r(), { role: 'admin', id: 'u-x' })).toBe(false);
+    expect(canDeleteDoc(indexed, null, { role: 'admin', id: 'u-x' })).toBe(false);
   });
 });

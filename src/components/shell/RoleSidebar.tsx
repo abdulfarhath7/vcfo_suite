@@ -95,6 +95,7 @@ import { useSidebarNarrow, useSidebarPeek, useSidebarPinKey } from '@/components
 import { MotionActivePill, SidebarHoverGlass, sidebarHoverAttrs, useSidebarHoverFollow } from '@/components/shell/MotionActivePill';
 import { roleHomePath, roleProfilePath } from '@/lib/auth-routes';
 import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
+import { SUPER_RISKS_NAV_HREF, SuperRisksNavCount, SuperRisksRailCount } from '@/components/super/parts/SuperRisksCount';
 import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { surfaceCssVars } from '@/lib/shell/shell-appearance';
 
@@ -556,6 +557,8 @@ function SidebarNavBody({
           const showInternBadge = user.role === 'intern' && it.to === '/app/intern/tasks';
           const showApprovals = it.to === approvalsHref(user.role, staffBase);
           const showDev = (user.role === 'developer' || inDevConsole) && DEV_COUNT_HREFS.has(it.to);
+          // P-129: the super admin's Risks row counts the open risks (not urgent, so not red).
+          const showRisks = user.role === 'super_admin' && !inDevConsole && it.to === SUPER_RISKS_NAV_HREF;
           return (
             <Link
               key={it.to}
@@ -599,7 +602,8 @@ function SidebarNavBody({
               />
               {stacked ? <SidebarRailLabel>{it.label}</SidebarRailLabel> : null}
               {stacked && showInternBadge ? <StackedInternWorkBadge /> : null}
-              {stacked && !showInternBadge ? <SidebarRailBadge count={it.badge ?? 0} /> : null}
+              {stacked && showRisks ? <SuperRisksRailCount /> : null}
+              {stacked && !showInternBadge && !showRisks ? <SidebarRailBadge count={it.badge ?? 0} /> : null}
               {!expanded && !stacked && showInternBadge ? <RailInternWorkBadge ink={ink} /> : null}
               {!expanded && !stacked && showApprovals ? <RailApprovalsBadge role={user.role} ink={ink} /> : null}
               {!expanded && !stacked && showDev ? <RailDevBadge href={it.to} ink={ink} /> : null}
@@ -619,6 +623,8 @@ function SidebarNavBody({
                   <ApprovalsBadge role={user.role} />
                 ) : showDev ? (
                   <DevBadge href={it.to} />
+                ) : showRisks ? (
+                  <SuperRisksNavCount ink={ink} />
                 ) : (
                   <SidebarNavCountBadge count={it.badge ?? 0} ink={ink} />
                 )}

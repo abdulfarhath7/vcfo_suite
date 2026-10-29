@@ -18,6 +18,7 @@ import { ProfileCard, SettingsRow } from './account/settings-layout';
 import { IdentityCard } from './account/IdentityCard';
 import { OutlookMailboxCard } from './account/OutlookMailboxCard';
 import { TwoStepRows } from './account/TwoStepRows';
+import { MicrosoftSignInRow } from './account/MicrosoftSignInRow';
 import { DevicesRows } from './account/DevicesRows';
 import { NotificationsCard } from './account/NotificationsCard';
 import { PasswordStrength } from './account/PasswordStrength';
@@ -525,6 +526,7 @@ export default function AccountSettings({ path }: Props) {
         ) : (
           passwordForm(false)
         )}
+        {isStaff ? <MicrosoftSignInRow /> : null}
         <TwoStepRows />
         <DevicesRows onSignOutHere={signOutHere} />
         <SettingsRow label="Sign out" hint="On this device">

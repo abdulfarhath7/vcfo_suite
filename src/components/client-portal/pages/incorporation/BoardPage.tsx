@@ -38,6 +38,50 @@ import { IncFrame, fmt, istDay } from './ui';
 import { INC_EXTRAS_KEY, firstName, signedUrlFor, stepHrefOf, useIncData } from './data';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, SCard, type PageHeadLink } from './spectrum';
 
+/** A merge value still holding its template placeholder ("[Designation]") is not known yet. */
+function known(v: string | undefined): string {
+  const t = (v ?? '').trim();
+  return t && !/^\[.*\]$/.test(t) && !/^_+$/.test(t) ? t : '';
+}
+
+/**
+ * C-247, C-248: where the certified copy is signed and stamped (prototype BoardResolutionScreen
+ * signature block and CompanyStamp). The names come from the Part A answers that fill the Word
+ * draft (authorised person, designation, parent company, place). The line and the stamp ring
+ * stay empty: the real signature and stamp are on the signed copy the client uploads.
+ */
+function SignOff({ fields, signedOn }: { fields?: ReturnType<typeof buildBoardResolutionMergeFields>; signedOn?: string }) {
+  const parent = known(fields?.PARENT_ENTITY_NAME);
+  const signer = known(fields?.SIGNATORY_NAME);
+  const role = known(fields?.SIGNATORY_DESIGNATION);
+  const place = known(fields?.CERTIFICATION_PLACE);
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4 border-t border-line-soft px-4 py-4 md:px-5" aria-label="Signature and stamp">
+      <div className="min-w-[180px]">
+        <div className="text-[12px] text-ink-muted">{parent ? `For ${parent}` : 'For the parent company'}</div>
+        <div className="mt-8 w-[200px] max-w-full border-b border-ink-2" role="img" aria-label={signedOn ? 'Signed on the uploaded copy' : 'Not signed yet'} />
+        <div className={cn('mt-1.5 text-[13px] font-medium', signer ? 'text-ink' : 'text-ink-faint')}>{signer || '-'}</div>
+        <div className="text-[12px] text-ink-muted">{[role || 'Authorised person', parent].filter(Boolean).join(', ')}</div>
+      </div>
+      <div className="flex items-end gap-5">
+        <span
+          className="grid h-[74px] w-[74px] flex-none -rotate-12 place-items-center rounded-full border-2 border-dashed border-line-strong text-center"
+          role="img"
+          aria-label={parent ? `Company stamp area · ${parent}` : 'Company stamp area'}
+        >
+          <span className="grid h-[62px] w-[62px] place-items-center rounded-full border border-dashed border-line px-1.5 font-serif text-[9px] font-bold uppercase leading-tight text-ink-faint">
+            <span className="line-clamp-3 break-words">{parent || 'Company stamp'}</span>
+          </span>
+        </span>
+        <div className="text-right text-[12px] text-ink-muted">
+          <div>Place: {place || '-'}</div>
+          <div>Date: {signedOn ? fmt(signedOn) : '-'}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BoardPage() {
   const d = useIncData();
   const { go, toast, openChat } = usePortal();
@@ -294,6 +338,7 @@ export default function BoardPage() {
                         </div>
                       </div>
                     )}
+                    {visible ? <SignOff fields={mergeFields} signedOn={signed} /> : null}
                   </SCard>
                 </Col>
                 <Col>

@@ -16,6 +16,7 @@ import {
   type ReportSchedule,
 } from './partner-report';
 import { PartnerReportDocument } from './partner-report-document';
+import { partnerReportCsv, partnerReportCsvFilename } from './partner-report-csv';
 
 /**
  * Render the partner report PDF for the caller (G-21).
@@ -52,4 +53,22 @@ export async function renderPartnerReportPdf(
     }) as Parameters<typeof renderToBuffer>[0],
   );
   return { pdf, filename: partnerReportFilename(data.monthLabel), monthLabel: data.monthLabel };
+}
+
+/**
+ * The same report as a CSV file that Excel opens (P-225), read the same way as the PDF.
+ * Returns null when the month asked for is outside the insights.
+ */
+export async function renderPartnerReportCsv(
+  ctx: AuthContext,
+  params: PartnerReportParams,
+  opts: { schedule?: ReportSchedule; now?: Date } = {},
+): Promise<{ csv: Buffer; filename: string; monthLabel: string } | null> {
+  const now = opts.now ?? new Date();
+  const insights = await getSuperFirmInsights(ctx, now);
+  const month = pickReportMonth(insights, params, { schedule: opts.schedule });
+  if (!month) return null;
+  const data = buildPartnerReport(insights, month, now);
+  const csv = partnerReportCsv(data, { firmName: firmDisplayName(), preparedOn: plainDay(insights.generatedAt) });
+  return { csv: Buffer.from(csv, 'utf8'), filename: partnerReportCsvFilename(data.monthLabel), monthLabel: data.monthLabel };
 }

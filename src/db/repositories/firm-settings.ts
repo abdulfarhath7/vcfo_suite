@@ -11,6 +11,9 @@ import {
   diffFirmSettings,
   FIRM_SETTINGS_DEFAULTS,
   normalizePatch,
+  readRolePermissions,
+  readServiceTargets,
+  type RolePermissions,
   type FirmSettings,
   type FirmSettingsChange,
   type FirmSettingsPatch,
@@ -22,7 +25,9 @@ import {
  * >>> ACCESS CONTROL (Path A) <<<
  *   read  — every staff role (super admin, admin, manager, project lead). Clients and the
  *           developer role are refused before any query.
- *   write — firm-wide admins only (`isFirmWideAdmin`: super admin and admin).
+ *   write — firm-wide admins only (`isFirmWideAdmin`: super admin and admin). Role
+ *           permissions (P-236) are the super admin's alone, so an admin cannot widen
+ *           their own role.
  *   history — firm-wide admins only; it reads the `firm_settings.*` audit rows, which are
  *           firm-wide rows that `audit_events` already shows admins in full.
  *
@@ -63,6 +68,8 @@ function toSettings(row: Row | undefined, updatedByName: string | null): FirmSet
     supportEmail: row.supportEmail ?? null,
     supportPhone: row.supportPhone ?? null,
     address: row.address ?? null,
+    serviceTargets: readServiceTargets(row.serviceTargets),
+    rolePermissions: readRolePermissions(row.rolePermissions),
     updatedAt: row.updatedAt ? row.updatedAt.toISOString() : null,
     updatedByName,
   };
@@ -97,6 +104,9 @@ export async function updateFirmSettings(
   patch: FirmSettingsPatch,
 ): Promise<{ settings: FirmSettings; changes: FirmSettingsChange[] }> {
   assertCanWrite(ctx);
+  if (patch.rolePermissions !== undefined && ctx.role !== 'super_admin') {
+    throw new FirmSettingsForbiddenError('Only the super admin may change role permissions');
+  }
   const { row, updatedByName } = await loadRow();
   const before = toSettings(row, updatedByName);
   const changes = diffFirmSettings(before, patch);
@@ -125,7 +135,14 @@ export async function updateFirmSettings(
   }
 
   return {
-    settings: { ...before, ...next, updatedAt: now.toISOString(), updatedByName: ctx.name },
+    settings: {
+      ...before,
+      ...next,
+      serviceTargets: next.serviceTargets ? readServiceTargets(next.serviceTargets) : before.serviceTargets,
+      rolePermissions: next.rolePermissions ? readRolePermissions(next.rolePermissions) : before.rolePermissions,
+      updatedAt: now.toISOString(),
+      updatedByName: ctx.name,
+    },
     changes,
   };
 }
@@ -218,4 +235,18 @@ export async function systemGetReminderDays(): Promise<number[] | null> {
     .limit(1);
   const days = (row?.reminderDays ?? []).filter((d) => Number.isInteger(d) && d >= 0);
   return days.length > 0 ? days : null;
+}
+
+/**
+ * The firm's role permissions (P-236) for a server check such as "may this role approve".
+ * No role check: it returns only the permission grid, never firm details. The defaults apply
+ * while nobody has saved a grid.
+ */
+export async function systemGetRolePermissions(): Promise<RolePermissions> {
+  const [row] = await db
+    .select({ rolePermissions: firmSettings.rolePermissions })
+    .from(firmSettings)
+    .where(eq(firmSettings.id, ROW_ID))
+    .limit(1);
+  return readRolePermissions(row?.rolePermissions);
 }

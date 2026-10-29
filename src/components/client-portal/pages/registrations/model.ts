@@ -122,14 +122,20 @@ function cell(payload: CredentialsPayload | null | undefined, rowKey: string | n
   return typeof v === 'string' && v.trim() ? v.trim() : null;
 }
 
+/**
+ * `beforeCoi` (C-475): before the certificate every registration reads "Not started", with no
+ * due date and nothing late, whatever the checklist holds (the client views the company before
+ * incorporation).
+ */
 export function buildRegistrations(
   model: PortalIncorporationModel,
   credentials?: CredentialsPayload | null,
   facts?: RegistrationFactsMap | null,
+  opts?: { beforeCoi?: boolean },
 ): RegItem[] {
   const phase = model.phases.find((p) => p.no === 4) ?? model.phases.find((p) => p.id.startsWith('registration'));
   if (!phase) return [];
-  return phase.steps.map((s, i) => {
+  const items = phase.steps.map((s, i) => {
     const regKey = REG_KEY_BY_TITLE.get(s.title.toLowerCase()) ?? null;
     const gstin = regKey === 'gst' ? credentials?.ids?.find((t) => t.key === 'gstin')?.value?.trim() || null : null;
     const f = facts?.[s.id] ?? null;
@@ -159,6 +165,8 @@ export function buildRegistrations(
       step: s,
     } satisfies RegItem;
   });
+  if (!opts?.beforeCoi) return items;
+  return items.map((r) => ({ ...r, status: 'Not started' as const, notNeeded: false, due: undefined, doneOn: undefined, since: undefined, windowFrom: undefined, late: false, lateDays: 0 }));
 }
 
 /** Open registrations with a due date within `days` days (late ones included), soonest first. */

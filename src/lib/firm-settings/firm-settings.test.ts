@@ -85,3 +85,29 @@ describe('labels', () => {
     expect(describeChange({ field: 'logo', new: 'firm/logo-1' })).toBe('Logo uploaded');
   });
 });
+
+describe('service targets and role permissions', () => {
+  it('reads targets in plain words', async () => {
+    const { serviceTargetText } = await import('@/lib/firm-settings/firm-settings');
+    expect(serviceTargetText('daysToCoi', 30)).toBe('30 days');
+    expect(serviceTargetText('fileDaysAhead', 2)).toBe('2 days ahead');
+    expect(serviceTargetText('replyHours', 4)).toBe('Within 4 working hours');
+    expect(serviceTargetText('escalateAfterDays', 1)).toBe('After 1 day');
+    expect(serviceTargetText('partnerReportDay', 1)).toBe('1st of the month');
+    expect(serviceTargetText('partnerReportDay', 12)).toBe('12th of the month');
+    expect(serviceTargetText('daysToCoi', null)).toBeNull();
+  });
+
+  it('checks the patch and the super admin rule', async () => {
+    const { roleCan, DEFAULT_ROLE_PERMISSIONS } = await import('@/lib/firm-settings/firm-settings');
+    expect(
+      firmSettingsPatchSchema.safeParse({
+        serviceTargets: { daysToCoi: 30, fileDaysAhead: null, replyHours: 4, escalateAfterDays: 3, partnerReportDay: 0 },
+      }).success,
+    ).toBe(false);
+    expect(firmSettingsPatchSchema.safeParse({ rolePermissions: { admin: { view: true } } }).success).toBe(false);
+    expect(roleCan(DEFAULT_ROLE_PERMISSIONS, 'super_admin', 'approve')).toBe(true);
+    expect(roleCan(DEFAULT_ROLE_PERMISSIONS, 'intern', 'approve')).toBe(false);
+    expect(roleCan(DEFAULT_ROLE_PERMISSIONS, 'client', 'edit')).toBe(false);
+  });
+});

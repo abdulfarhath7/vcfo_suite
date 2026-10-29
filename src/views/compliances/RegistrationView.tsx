@@ -20,6 +20,8 @@ import { daysUntil, isIdentifier, plainDate } from '@/views/compliances/spectrum
 import { Fact, HeadRing, RailCard, TextCard, WordChip } from '@/views/compliances/spectrum-parts';
 import { PersonCell } from '@/views/compliances/identity';
 import { BeforeFilingCard } from '@/views/compliances/record-cards';
+import { AssistCard } from '@/components/compliances/AssistParts';
+import { AppliesCard, StaffFromClientCard, StaffSbcFieldsCard, StartsCard } from '@/views/compliances/input-cards';
 import { registrationChecklist } from '@/data/before-filing';
 import { CertificateButton, RegistrationDatesDialog, RenewByCell, renewalLine } from '@/views/compliances/registration-renewal';
 import { useRegistrationFacts } from '@/hooks/use-registration-facts';
@@ -225,19 +227,23 @@ export function RegistrationView({
               </ul>
             </DashSection>
 
-            <DashSection title="From the client" meta={`${item.infoRequired.length}`} bodyClassName="p-0">
-              {item.infoRequired.length === 0 ? (
-                <p className="px-4 py-3 text-[13px] text-ink-faint">None</p>
-              ) : (
-                <ul>
-                  {item.infoRequired.map((doc) => (
-                    <li key={doc} className="border-t border-line-soft px-4 py-2.5 text-[14px] text-ink-2 first:border-t-0">
-                      {doc}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </DashSection>
+            {/* S-774-style From the client on the registration: asked documents, needs not asked yet, the client's details. */}
+            {row.word === 'Not needed' ? null : (
+              <StaffFromClientCard engagementId={engagement.id} kind="registration" subjectKey={item.id} clientName={engagement.companyName} />
+            )}
+            {/* S-811: the values SBC records on the registration. */}
+            <StaffSbcFieldsCard engagementId={engagement.id} kind="registration" subjectKey={item.id} />
+            {/* S-809: VCFO Assist on the registration's portal form. */}
+            {row.word === 'Not needed' ? null : (
+              <AssistCard
+                engagementId={engagement.id}
+                kind="registration"
+                subjectKey={item.id}
+                portal={`${row.authority}`}
+                form={row.form || item.forms[0] || null}
+                mayStart={row.word !== 'Done'}
+              />
+            )}
           </div>
 
           <div className="grid min-w-0 gap-3">
@@ -260,6 +266,8 @@ export function RegistrationView({
                 lines={registrationChecklist(row.category)}
               />
             )}
+            <AppliesCard engagementId={engagement.id} stepId={item.id} companyName={engagement.companyName} notNeeded={row.word === 'Not needed'} />
+            <StartsCard engagementId={engagement.id} stepId={item.id} obligationsBase={`${shellBase}/compliances/obligations`} />
             <TextCard title="Renewal">
               <p className={renewal ? undefined : 'text-ink-faint'}>{renewal ?? 'No expiry recorded'}</p>
             </TextCard>

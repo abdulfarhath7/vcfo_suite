@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { createHash } from 'node:crypto';
+import { and, desc, eq, gt, inArray, isNull } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db/client';
 import { clientInvites, engagementClients, engagements, profiles } from '@/db/schema';
@@ -27,6 +28,25 @@ import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
  *   An invite id is always re-checked against the caller's engagement, so ids
  *   from another tenant resolve to "not found".
  */
+
+/** C-899: a set-password link works for seven days. */
+export const SET_PASSWORD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** The stored form of a set-password link token (the raw token only travels in the link). */
+export function hashSetPasswordToken(token: string): string {
+  return createHash('sha256').update(token.trim()).digest('hex');
+}
+
+/** A link token the browser made: 32 to 128 URL-safe characters. */
+function validToken(token: string | null | undefined): token is string {
+  return typeof token === 'string' && /^[A-Za-z0-9_-]{32,128}$/.test(token.trim());
+}
+
+function tokenColumns(token: string | null | undefined, now: Date) {
+  return validToken(token)
+    ? { setPasswordTokenHash: hashSetPasswordToken(token), setPasswordExpiresAt: new Date(now.getTime() + SET_PASSWORD_TTL_MS) }
+    : {};
+}
 
 export class ClientTeamError extends Error {
   constructor(
@@ -159,7 +179,7 @@ export interface CreatedClientInvite {
 /** Primary only. Creates (or attaches) the client account and records the invite. */
 export async function createClientInvite(
   ctx: AuthContext,
-  input: { name: string; email: string; tempPassword: string; designation?: string | null },
+  input: { name: string; email: string; tempPassword: string; designation?: string | null; setPasswordToken?: string | null },
 ): Promise<CreatedClientInvite> {
   const { dbId, row } = await requirePrimary(ctx);
   // Security (client portal v7 review H1): from the client side an invite only
@@ -214,6 +234,8 @@ export async function createClientInvite(
       profileId: invited.userId,
       invitedBy: ctx.userId,
       tempPasswordHash: tempHash,
+      // C-899: the set-password link, only for an account this invite created.
+      ...(invited.createdNewUser ? tokenColumns(input.setPasswordToken, now) : {}),
       // an existing account was simply added: nothing to wait for
       acceptedAt: invited.createdNewUser ? null : now,
     })
@@ -251,6 +273,7 @@ export async function resendClientInvite(
   ctx: AuthContext,
   inviteId: string,
   tempPassword: string,
+  setPasswordToken?: string | null,
 ): Promise<{ invite: ClientTeamInvite; name: string; email: string; companyName: string }> {
   const { eng, inv } = await ownInvite(ctx, inviteId);
   if (inv.revokedAt || inv.acceptedAt || !inv.profileId) throw new ClientTeamError('This invite is no longer pending.', 409);
@@ -262,7 +285,7 @@ export async function resendClientInvite(
   await db.update(profiles).set({ passwordHash: hash, updatedAt: now }).where(eq(profiles.id, inv.profileId));
   const [up] = await db
     .update(clientInvites)
-    .set({ tempPasswordHash: hash, lastSentAt: now, sendCount: inv.sendCount + 1 })
+    .set({ tempPasswordHash: hash, lastSentAt: now, sendCount: inv.sendCount + 1, ...tokenColumns(setPasswordToken, now) })
     .where(eq(clientInvites.id, inv.id))
     .returning();
   await recordAuditEvent(ctx, {
@@ -353,4 +376,51 @@ export async function restoreClientInvite(ctx: AuthContext, inviteId: string): P
     summary: `Restored the invite for ${inv.name ?? 'a colleague'}`,
     metadata: { inviteId: inv.id, invitedUserId: inv.profileId },
   });
+}
+
+/**
+ * C-899, SYSTEM: the invitee opens the set-password link and chooses a password. There is no
+ * AuthContext yet; the token is the authority. It must match a pending invite (not cancelled,
+ * not accepted, link not expired, and the account still on the temporary password the invite
+ * set), and it works once.
+ */
+export type SetInvitePasswordOutcome = { status: 'ok'; email: string } | { status: 'invalid' | 'too_short' };
+
+async function pendingInviteForToken(token: string, now: Date) {
+  if (!validToken(token)) return null;
+  const [r] = await db
+    .select({ inv: clientInvites, hash: profiles.passwordHash, email: profiles.email, company: engagements.companyName })
+    .from(clientInvites)
+    .innerJoin(profiles, eq(profiles.id, clientInvites.profileId))
+    .innerJoin(engagements, eq(engagements.id, clientInvites.engagementId))
+    .where(
+      and(
+        eq(clientInvites.setPasswordTokenHash, hashSetPasswordToken(token)),
+        isNull(clientInvites.revokedAt),
+        isNull(clientInvites.acceptedAt),
+        gt(clientInvites.setPasswordExpiresAt, now),
+      ),
+    )
+    .limit(1);
+  if (!r || !r.inv.tempPasswordHash || r.hash !== r.inv.tempPasswordHash) return null;
+  return r;
+}
+
+/** What the set-password page shows: the email and the company, or nothing for a bad link. */
+export async function systemPeekInviteToken(token: string, now = new Date()): Promise<{ email: string; companyName: string } | null> {
+  const r = await pendingInviteForToken(token, now);
+  return r ? { email: r.email, companyName: r.company } : null;
+}
+
+export async function systemSetInvitePassword(token: string, password: string, now = new Date()): Promise<SetInvitePasswordOutcome> {
+  if (password.length < 8 || password.length > 128) return { status: 'too_short' };
+  const r = await pendingInviteForToken(token, now);
+  if (!r || !r.inv.profileId) return { status: 'invalid' };
+  const hash = await bcrypt.hash(password, 10);
+  await db.update(profiles).set({ passwordHash: hash, updatedAt: now }).where(and(eq(profiles.id, r.inv.profileId), eq(profiles.role, 'client')));
+  await db
+    .update(clientInvites)
+    .set({ acceptedAt: now, setPasswordTokenHash: null, setPasswordExpiresAt: null })
+    .where(eq(clientInvites.id, r.inv.id));
+  return { status: 'ok', email: r.email };
 }

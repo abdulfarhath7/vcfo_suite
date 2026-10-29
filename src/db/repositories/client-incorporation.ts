@@ -9,6 +9,15 @@ import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { expandRepeatFields, parseRepeatFieldId } from '@/lib/checklist/checklist-repeat';
 import { isMilestoneStoragePath } from '@/lib/documents/milestone-document-storage';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
+import { filterFieldsByViewer } from '@/lib/checklist/checklist-field-access';
+import { isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
+import {
+  canRoleEditField,
+  isDirectFlowStep,
+  isDirectFlowStepComplete,
+  isWaitingOnLead,
+  lastEditedPatch,
+} from '@/lib/incorporation/pre-inc-direct-flow';
 import { normalizeEngagementSchedule } from '@/lib/projects/schedule-windows';
 import {
   assertEngagementAccess,
@@ -267,6 +276,58 @@ export async function clientUndoRequestedFile(
   return { request: toDto(updated, names), checklistState: checklistStateForViewer(ctx, state) };
 }
 
+/**
+ * C-218: the client saves a draft of the answers on a step it fills itself.
+ *
+ * Only the client, only on its own engagement (`requireAccess` is the tenant boundary), only on
+ * a client step that is still open: not complete, not handed back for approval, not submitted on
+ * the direct flow. Only text answers the client may fill are kept; file answers go through the
+ * request upload, and a locked step accepts only the fields the reviewer unlocked. The draft does
+ * not submit: review, lock and approval fields are never written here.
+ */
+export async function clientSaveStepDraft(
+  ctx: AuthContext,
+  engagementId: string,
+  stepId: string,
+  responses: Record<string, unknown>,
+): Promise<{ saved: string[]; checklistState: ReturnType<typeof checklistStateForViewer> }> {
+  if (ctx.role !== 'client') throw new FileRequestError('Only the client may save a draft', 403);
+  const access = await requireAccess(ctx, engagementId);
+  const item = getItem(stepId);
+  if (!item) throw new FileRequestError('step_not_found', 404);
+  const direct = isDirectFlowStep(stepId);
+  if (!direct && item.responsibleRole !== 'client') throw new FileRequestError('not_a_client_step', 403);
+  const persisted = checklistStateFromRow(access.row);
+  const slice = persisted[stepId];
+  if (slice?.status === 'completed' || slice?.status === 'not-applicable') throw new FileRequestError('step_closed', 409);
+  if (isAwaitingClientApproval(slice)) throw new FileRequestError('step_closed', 409);
+  if (direct && (isDirectFlowStepComplete(stepId, slice) || isWaitingOnLead(stepId, slice))) {
+    throw new FileRequestError('step_closed', 409);
+  }
+  const current = (slice?.responses ?? {}) as Record<string, string>;
+  const unlocked = new Set(slice?.unlockedFields ?? []);
+  const fields = expandRepeatFields(filterFieldsByViewer(getClientResponseFields(item), 'client', stepId), current);
+  const editable = new Set(
+    fields
+      .filter((f) => f.type !== 'file' && f.type !== 'repeat')
+      .filter((f) => (direct ? canRoleEditField('client', stepId, f.id) : (f.filledBy ?? item.responsibleRole) === 'client'))
+      .filter((f) => !slice?.locked || unlocked.has(f.id))
+      .map((f) => f.id),
+  );
+  const clean: Record<string, string> = {};
+  for (const [key, value] of Object.entries(responses ?? {})) {
+    if (!editable.has(key) || typeof value !== 'string') continue;
+    clean[key] = value.trim().slice(0, 2000);
+  }
+  const saved = Object.keys(clean);
+  if (!saved.length) throw new FileRequestError('no_editable_answers', 400);
+  const state = await patchChecklistItem(ctx, engagementId, stepId, {
+    responses: clean,
+    ...lastEditedPatch({ actorName: ctx.name, actorRole: ctx.role, now: new Date().toISOString() }),
+  });
+  return { saved, checklistState: checklistStateForViewer(ctx, state) };
+}
+
 /** Every milestone object path in a (redacted) checklist state. */
 function pathsInState(state: Record<string, { responses?: Record<string, unknown> } | undefined>): string[] {
   const out: string[] = [];
@@ -313,7 +374,8 @@ export async function getClientIncorporationExtras(
         stepId: documents.stepId,
       })
       .from(documents)
-      .where(and(eq(documents.engagementId, access.dbId), inArray(documents.objectKey, paths.slice(0, 500))));
+      // A document moved to the bin is not shown to the client.
+      .where(and(eq(documents.engagementId, access.dbId), inArray(documents.objectKey, paths.slice(0, 500)), isNull(documents.deletedAt)));
     const names = await namesFor(docs.map((d) => d.uploadedBy));
     for (const d of docs) {
       meta[d.objectKey] = {

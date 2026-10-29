@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { REPORT_SCHEDULES } from './partner-report';
+import { REPORT_FORMATS, REPORT_SCHEDULES } from './partner-report';
 
 /** Request bodies for `app/api/super/reports/**` (G-21). */
 const monthParam = z.union([z.literal('latest'), z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use a YYYY-MM month')]);
@@ -12,7 +12,7 @@ const recipients = z
 export const savedReportCreateSchema = z
   .object({
     name: z.string().trim().min(1, 'Enter a name').max(120),
-    params: z.object({ month: monthParam }),
+    params: z.object({ month: monthParam, format: z.enum(REPORT_FORMATS).optional() }),
     schedule: z.enum(REPORT_SCHEDULES).default('none'),
     recipients: recipients.default([]),
   })
@@ -24,7 +24,7 @@ export const savedReportCreateSchema = z
 export const savedReportPatchSchema = z
   .object({
     name: z.string().trim().min(1, 'Enter a name').max(120).optional(),
-    params: z.object({ month: monthParam }).optional(),
+    params: z.object({ month: monthParam, format: z.enum(REPORT_FORMATS).optional() }).optional(),
     schedule: z.enum(REPORT_SCHEDULES).optional(),
     recipients: recipients.optional(),
   })

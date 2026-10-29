@@ -10,6 +10,8 @@ import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { CHART_STATUS, ChartLegend } from '@/components/charts';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { ProgressList } from '@/components/dash/progress-list';
+import { useLeadHours } from '@/hooks/use-lead-hours';
 import { useAnalyticsMetrics } from '@/components/metrics/use-metrics';
 import { useQuery } from '@tanstack/react-query';
 import { analyticsKpis, kpiChange, type KpiKey } from '@/lib/metrics/analytics-kpis';
@@ -50,14 +52,6 @@ const HEALTH_ROWS = [
   { key: 'overdue', label: 'Overdue', color: CHART_STATUS.overdue },
   { key: 'notStarted', label: 'Not started', color: CHART_STATUS.locked },
   { key: 'done', label: 'Done', color: CHART_STATUS.done },
-] as const;
-
-/* C2 (R-25): one stacked bar per lead in status colours. */
-const WORKLOAD_SERIES = [
-  { key: 'overdue', label: 'Overdue', color: CHART_STATUS.overdue, fill: 'bg-danger-mid' },
-  { key: 'waiting', label: 'Waiting', color: CHART_STATUS.waiting, fill: 'bg-waiting-mid' },
-  { key: 'progress', label: 'In progress', color: CHART_STATUS.active, fill: 'bg-brand' },
-  { key: 'notStarted', label: 'Not started', color: CHART_STATUS.locked, fill: 'bg-upcoming-mid' },
 ] as const;
 
 interface Kpi {
@@ -206,7 +200,14 @@ export default function Analytics() {
     for (const p of projects) if (p.internId) out.set(p.internId, (out.get(p.internId) ?? 0) + 1);
     return out;
   }, [projects]);
-  const workloadMax = Math.max(1, ...workload.map((w) => w.open));
+  // Planned hours per lead this week (F-163), keyed by intern id like the workload rows.
+  const leadHours = useLeadHours(role !== 'intern');
+  const hoursByLead = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const l of leadHours.data?.leads ?? []) if (l.internId) out.set(l.internId, l.hours);
+    return out;
+  }, [leadHours.data]);
+  const hoursMax = Math.max(0, ...hoursByLead.values());
   const showWorkload = role !== 'intern' && workload.length > 0;
 
 
@@ -367,43 +368,24 @@ export default function Analytics() {
             </DashSection>
 
             {showWorkload ? (
-              <DashSection title="Workload" meta="Open steps by project lead" bodyClassName="p-0">
-                {/* Prototype ProgressList rows: the name, a count line and one bar. The bar is the
-                    lead's open steps stacked by status (C2), sized against the busiest lead. */}
-                <ul>
-                  {workload.map((w) => {
+              <DashSection title="Workload" meta="Hours planned this week" flush loading={leadHours.isPending}>
+                {/* Prototype ProgressList (F-163): the hours each lead put in their planner this
+                    week (time blocks), the bar sized against the busiest lead; the line under the
+                    name keeps the open and overdue step counts. */}
+                <ProgressList
+                  items={workload.map((w) => {
                     const clients = clientsByLead.get(w.id) ?? 0;
-                    return (
-                      <li key={w.id} className="border-t border-line-soft px-4 py-3 first:border-t-0 md:px-5">
-                        <span className="flex items-center gap-2">
-                          <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-ink">{w.name}</span>
-                          <span className="text-[12.5px] tabular-nums text-ink-muted">{w.open}</span>
-                        </span>
-                        <span className="block truncate text-[12.5px] text-ink-muted">
-                          {clients} client{clients === 1 ? '' : 's'} · {w.open} open · {w.overdue} overdue
-                        </span>
-                        <span
-                          className="mt-2 flex h-2 overflow-hidden rounded-bar bg-surface-sunken"
-                          role="img"
-                          aria-label={WORKLOAD_SERIES.map((s) => `${s.label} ${w[s.key]}`).join(', ')}
-                        >
-                          <span className="flex h-full gap-0.5" style={{ width: `${Math.round((w.open / workloadMax) * 100)}%` }}>
-                            {WORKLOAD_SERIES.map((s) =>
-                              w[s.key] ? <i key={s.key} className={cn('block h-full', s.fill)} style={{ flex: w[s.key] }} /> : null,
-                            )}
-                          </span>
-                        </span>
-                      </li>
-                    );
+                    const hours = hoursByLead.get(w.id) ?? 0;
+                    const pct = hoursMax > 0 ? (hours / hoursMax) * 100 : 0;
+                    return {
+                      id: w.id,
+                      name: w.name,
+                      sub: `${clients} client${clients === 1 ? '' : 's'} · ${w.open} open · ${w.overdue} overdue`,
+                      pct,
+                      value: `${hours} h`,
+                      tone: w.overdue > 0 ? 'warn' : 'accent',
+                    };
                   })}
-                </ul>
-                <ChartLegend
-                  className="border-t border-line-soft px-4 py-3 md:px-5"
-                  items={WORKLOAD_SERIES.map((s) => ({
-                    label: s.label,
-                    color: s.color,
-                    count: workload.reduce((sum, w) => sum + w[s.key], 0),
-                  }))}
                 />
               </DashSection>
             ) : null}

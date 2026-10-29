@@ -11,6 +11,7 @@ import {
   canWriteAnnouncements,
   inferAnnouncementKind,
   parseAnnouncementKind,
+  safePortalLinkPath,
   type Announcement,
   type AnnouncementKind,
   type AnnouncementOrigin,
@@ -43,6 +44,7 @@ function mapAnnouncement(
     sourceId: row.sourceId,
     sourceName: origin === 'feed' ? sourceName : null,
     sourceUrl: row.sourceUrl,
+    linkPath: safePortalLinkPath(row.linkPath),
     authorId: row.authorId,
     authorName: row.authorName,
     authorRole: row.authorRole,
@@ -100,7 +102,7 @@ export async function getAnnouncementBoardHead(
 
 export async function createAnnouncement(
   ctx: AuthContext,
-  input: { title?: string; body?: string; sourceUrl?: string | null; kind?: AnnouncementKind },
+  input: { title?: string; body?: string; sourceUrl?: string | null; linkPath?: string | null; kind?: AnnouncementKind },
 ): Promise<Announcement> {
   assertCanWrite(ctx);
   const body = (input.body ?? '').trim().slice(0, 8000);
@@ -120,6 +122,7 @@ export async function createAnnouncement(
       kind,
       origin: 'manual',
       sourceUrl,
+      linkPath: safePortalLinkPath(input.linkPath),
       authorId: ctx.userId,
       authorName,
       authorRole: ctx.role,

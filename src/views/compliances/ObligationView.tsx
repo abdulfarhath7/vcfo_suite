@@ -23,7 +23,9 @@ import {
 } from '@/views/compliances/compliance-scope';
 import { areaLabel, daysUntil, filingWord, isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
 import { Fact, FlowCard, HeadRing, RailCard, WordChip } from '@/views/compliances/spectrum-parts';
-import { focusNodes } from '@/lib/client-portal/compliances';
+import { areaOf, focusNodes, portalFor } from '@/lib/client-portal/compliances';
+import { AssistCard } from '@/components/compliances/AssistParts';
+import { StaffFromClientCard, StaffSbcFieldsCard } from '@/views/compliances/input-cards';
 import { BeforeFilingCard, FilingThreadCard } from '@/views/compliances/record-cards';
 import { obligationChecklist } from '@/data/before-filing';
 import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
@@ -47,7 +49,8 @@ const RISK_WORD: Record<string, string> = { low: 'Low', medium: 'Medium', high: 
  * instance for that period with the window and proof actions, and a second
  * grid of every period on record. `?company=` narrows the page to one client.
  * The rail closes with About, Why it applies and If filed late from the scoped
- * obligation read (G-04). Everything comes from the scoped register; nothing is invented.
+ * obligation read (G-04). With one client's period in view the page adds From the client,
+ * Filled by SBC and File with VCFO Assist (migration 0029). Everything comes from the scoped register; nothing is invented.
  */
 export function ObligationView({
   basePath,
@@ -259,6 +262,21 @@ export function ObligationView({
                 empty="No clients"
               />
             </DashSection>
+            {oneRow ? (
+              <>
+                {/* S-774, S-773: one client's period — what the client gave, SBC's values and VCFO Assist (migration 0029). */}
+                <StaffFromClientCard engagementId={oneRow.row.engagementId} kind="obligation" subjectKey={oneRow.row.id} clientName={oneRow.row.companyName} />
+                <StaffSbcFieldsCard engagementId={oneRow.row.engagementId} kind="obligation" subjectKey={oneRow.row.id} locked={Boolean(oneRow.row.filedOn)} />
+                <AssistCard
+                  engagementId={oneRow.row.engagementId}
+                  kind="filing"
+                  subjectKey={oneRow.row.id}
+                  portal={portalFor({ area: areaOf(group.authority, group.area), name: group.name })[0]}
+                  form={group.name}
+                  mayStart={!oneRow.row.filedOn}
+                />
+              </>
+            ) : null}
             <FilingThreadCard
               instanceIds={group.rows.map((r) => r.row.id)}
               companyOf={showClient ? new Map(group.rows.map((r) => [r.row.id, r.row.companyName])) : undefined}

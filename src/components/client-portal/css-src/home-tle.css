@@ -89,3 +89,8 @@
 /* portal port: the Incorporation page has its own `.pill` (hero progress pill); keep the editor pill a plain chip there */
 #tle .sum .pill{display:inline-block;width:auto;min-height:0;gap:0;border:0;cursor:default;text-align:left}
 #tle .sum .pill:hover{filter:none}
+/* F-257: typed dates in the After list */
+#tle .cmp li.tle-typed{align-items:center;flex-wrap:wrap}
+#tle .tle-dates{display:inline-flex;align-items:center;gap:6px;color:oklch(var(--ink-muted))}
+#tle .tle-dates input{height:30px;box-sizing:border-box;border:1.5px solid oklch(var(--line-strong));border-radius:6px;background:oklch(var(--surface-raised));color:oklch(var(--ink));padding:0 6px;font:500 12px var(--font-mono,monospace)}
+#tle .tle-dates input:focus-visible{outline:none;border-color:oklch(var(--brand))}

@@ -6,9 +6,10 @@ export type EmailOptional = (typeof EMAIL_OPTIONAL)[number];
 
 /**
  * Staff alerts by role (P-627): admin and super get "escalations", managers "approvalsWaiting".
- * They are stored as keys in the same `email` jsonb as the optional categories.
+ * The super admin also gets "partnerReport" (P-639): off holds their monthly scheduled partner
+ * reports. They are stored as keys in the same `email` jsonb as the optional categories.
  */
-export const STAFF_ALERTS = ['approvalsWaiting', 'escalations'] as const;
+export const STAFF_ALERTS = ['approvalsWaiting', 'escalations', 'partnerReport'] as const;
 export type StaffAlert = (typeof STAFF_ALERTS)[number];
 
 /** Days before a due date to send the reminder (C-831); null keeps the firm default. */
@@ -51,7 +52,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   quietHours: true,
   quietStart: '21:00',
   quietEnd: '08:00',
-  alerts: { approvalsWaiting: true, escalations: true },
+  alerts: { approvalsWaiting: true, escalations: true, partnerReport: true },
   remindDays: null,
   digestTime: null,
 };

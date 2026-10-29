@@ -182,3 +182,50 @@ describe('listFirmSettingsHistory', () => {
     expect(rows).toEqual([{ id: 'a1', at: '2026-10-02T00:00:00.000Z', who: 'Mithilesh', summary: 'Firm name: SBC' }]);
   });
 });
+
+describe('service targets and role permissions (P-236, P-238)', () => {
+  const grid = {
+    admin: { view: true, edit: true, approve: true },
+    manager: { view: true, edit: true, approve: false },
+    intern: { view: true, edit: true, approve: false },
+  };
+
+  it('reads stored targets and the permission grid over the defaults', async () => {
+    results = [[storedRow({ serviceTargets: { daysToCoi: 30, replyHours: 'x' }, rolePermissions: { manager: { approve: false } } })]];
+    const settings = await repo.getFirmSettings(ctx('intern'));
+    expect(settings.serviceTargets).toMatchObject({ daysToCoi: 30, replyHours: null });
+    expect(settings.rolePermissions.manager).toEqual({ view: true, edit: true, approve: false });
+    expect(settings.rolePermissions.admin.approve).toBe(true);
+  });
+
+  it('an admin may set service targets', async () => {
+    results = [[storedRow()], []];
+    const targets = { daysToCoi: 30, fileDaysAhead: 2, replyHours: 4, escalateAfterDays: 3, partnerReportDay: 1 };
+    const { changes } = await repo.updateFirmSettings(ctx('admin'), { serviceTargets: targets });
+    expect(changes.map((c) => c.field)).toEqual(['serviceTargets']);
+    expect(writes()[0]!.set).toMatchObject({ serviceTargets: targets });
+  });
+
+  it('only the super admin may change role permissions; an admin writes nothing', async () => {
+    await expect(repo.updateFirmSettings(ctx('admin'), { rolePermissions: grid })).rejects.toBeInstanceOf(
+      repo.FirmSettingsForbiddenError,
+    );
+    expect(calls).toHaveLength(0);
+    expect(recordAuditEvent).not.toHaveBeenCalled();
+
+    results = [[storedRow()], []];
+    const { changes } = await repo.updateFirmSettings(ctx('super_admin'), { rolePermissions: grid });
+    expect(changes.map((c) => c.field)).toEqual(['rolePermissions']);
+    expect(recordAuditEvent).toHaveBeenCalledWith(
+      ctx('super_admin'),
+      expect.objectContaining({ action: 'firm_settings.rolePermissions', summary: 'Role Manager can approve off' }),
+    );
+  });
+
+  it('systemGetRolePermissions falls back to the defaults', async () => {
+    results = [[]];
+    const perms = await repo.systemGetRolePermissions();
+    expect(perms.intern.approve).toBe(false);
+    expect(perms.manager.approve).toBe(true);
+  });
+});

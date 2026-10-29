@@ -14,6 +14,138 @@ export interface FirmHoliday {
   label: string;
 }
 
+/** Service targets (P-238). Each is a whole number, or null when the firm has not set it. */
+export interface ServiceTargets {
+  /** Days from start to the certificate of incorporation. */
+  daysToCoi: number | null;
+  /** Days before the due date that statutory returns should be filed. */
+  fileDaysAhead: number | null;
+  /** Working hours within which a client gets a reply. */
+  replyHours: number | null;
+  /** Days a step may sit stuck before it goes to the admin. */
+  escalateAfterDays: number | null;
+  /** Day of the month the partner report goes out (1 to 28). */
+  partnerReportDay: number | null;
+}
+
+export const SERVICE_TARGET_KEYS = ['daysToCoi', 'fileDaysAhead', 'replyHours', 'escalateAfterDays', 'partnerReportDay'] as const;
+export type ServiceTargetKey = (typeof SERVICE_TARGET_KEYS)[number];
+
+export const SERVICE_TARGET_LABEL: Record<ServiceTargetKey, string> = {
+  daysToCoi: 'Days to certificate (COI)',
+  fileDaysAhead: 'File statutory returns before the due date',
+  replyHours: 'Reply to a client',
+  escalateAfterDays: 'Escalate a stuck step to the admin',
+  partnerReportDay: 'Monthly partner report',
+};
+
+/** The unit word shown beside each target's input. */
+export const SERVICE_TARGET_UNIT: Record<ServiceTargetKey, string> = {
+  daysToCoi: 'days',
+  fileDaysAhead: 'days ahead',
+  replyHours: 'working hours',
+  escalateAfterDays: 'days',
+  partnerReportDay: 'day of the month',
+};
+
+const SERVICE_TARGET_MAX: Record<ServiceTargetKey, number> = {
+  daysToCoi: 365,
+  fileDaysAhead: 60,
+  replyHours: 240,
+  escalateAfterDays: 60,
+  partnerReportDay: 28,
+};
+
+export const EMPTY_SERVICE_TARGETS: ServiceTargets = {
+  daysToCoi: null,
+  fileDaysAhead: null,
+  replyHours: null,
+  escalateAfterDays: null,
+  partnerReportDay: null,
+};
+
+function ordinal(n: number): string {
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) return `${n}th`;
+  return `${n}${n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th'}`;
+}
+
+/** One target in plain words: "30 days", "2 days ahead", "Within 4 working hours", "After 3 days", "1st of the month". */
+export function serviceTargetText(key: ServiceTargetKey, value: number | null): string | null {
+  if (value === null) return null;
+  const days = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
+  switch (key) {
+    case 'daysToCoi':
+      return days(value);
+    case 'fileDaysAhead':
+      return value === 0 ? 'On the due date' : `${days(value)} ahead`;
+    case 'replyHours':
+      return `Within ${value} working ${value === 1 ? 'hour' : 'hours'}`;
+    case 'escalateAfterDays':
+      return `After ${days(value)}`;
+    case 'partnerReportDay':
+      return `${ordinal(value)} of the month`;
+  }
+}
+
+/** Keep only known keys with whole numbers in range; anything else reads as not set. */
+export function readServiceTargets(raw: unknown): ServiceTargets {
+  const out: ServiceTargets = { ...EMPTY_SERVICE_TARGETS };
+  if (!raw || typeof raw !== 'object') return out;
+  for (const key of SERVICE_TARGET_KEYS) {
+    const v = (raw as Record<string, unknown>)[key];
+    const min = key === 'partnerReportDay' ? 1 : 0;
+    if (typeof v === 'number' && Number.isInteger(v) && v >= min && v <= SERVICE_TARGET_MAX[key]) out[key] = v;
+  }
+  return out;
+}
+
+/**
+ * Role permissions (P-236): what each staff role may do. The super admin row is fixed (all on)
+ * and is not stored. Clients and the developer role are outside the grid.
+ */
+export const PERMISSION_ROLES = ['admin', 'manager', 'intern'] as const;
+export type PermissionRole = (typeof PERMISSION_ROLES)[number];
+export const PERMISSIONS = ['view', 'edit', 'approve'] as const;
+export type Permission = (typeof PERMISSIONS)[number];
+export type RolePermissions = Record<PermissionRole, Record<Permission, boolean>>;
+
+export const PERMISSION_ROLE_LABEL: Record<PermissionRole | 'super_admin', string> = {
+  super_admin: 'Super admin',
+  admin: 'Admin',
+  manager: 'Manager',
+  intern: 'Project lead',
+};
+
+/** What the code allows today: admins and managers approve, project leads do not. */
+export const DEFAULT_ROLE_PERMISSIONS: RolePermissions = {
+  admin: { view: true, edit: true, approve: true },
+  manager: { view: true, edit: true, approve: true },
+  intern: { view: true, edit: true, approve: false },
+};
+
+/** The stored grid over the defaults; unknown roles and keys are dropped. */
+export function readRolePermissions(raw: unknown): RolePermissions {
+  const out = JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMISSIONS)) as RolePermissions;
+  if (!raw || typeof raw !== 'object') return out;
+  for (const role of PERMISSION_ROLES) {
+    const row = (raw as Record<string, unknown>)[role];
+    if (!row || typeof row !== 'object') continue;
+    for (const perm of PERMISSIONS) {
+      const v = (row as Record<string, unknown>)[perm];
+      if (typeof v === 'boolean') out[role][perm] = v;
+    }
+  }
+  return out;
+}
+
+/** True when the role may do this. The super admin always may; clients and developers never edit or approve. */
+export function roleCan(perms: RolePermissions, role: string, perm: Permission): boolean {
+  if (role === 'super_admin') return true;
+  if ((PERMISSION_ROLES as readonly string[]).includes(role)) return perms[role as PermissionRole][perm];
+  return perm === 'view';
+}
+
 export interface FirmSettings {
   firmName: string | null;
   /** True when a logo has been uploaded; the bytes stream from `/api/firm-settings/logo`. */
@@ -28,6 +160,8 @@ export interface FirmSettings {
   supportEmail: string | null;
   supportPhone: string | null;
   address: string | null;
+  serviceTargets: ServiceTargets;
+  rolePermissions: RolePermissions;
   updatedAt: string | null;
   updatedByName: string | null;
 }
@@ -42,6 +176,8 @@ export const FIRM_SETTINGS_DEFAULTS: FirmSettings = {
   supportEmail: null,
   supportPhone: null,
   address: null,
+  serviceTargets: EMPTY_SERVICE_TARGETS,
+  rolePermissions: DEFAULT_ROLE_PERMISSIONS,
   updatedAt: null,
   updatedByName: null,
 };
@@ -55,7 +191,9 @@ export type FirmSettingsField =
   | 'timezone'
   | 'supportEmail'
   | 'supportPhone'
-  | 'address';
+  | 'address'
+  | 'serviceTargets'
+  | 'rolePermissions';
 
 export const FIRM_SETTINGS_FIELD_LABEL: Record<FirmSettingsField | 'logo', string> = {
   firmName: 'Firm name',
@@ -67,6 +205,8 @@ export const FIRM_SETTINGS_FIELD_LABEL: Record<FirmSettingsField | 'logo', strin
   supportEmail: 'Support email',
   supportPhone: 'Phone',
   address: 'Address',
+  serviceTargets: 'Service targets',
+  rolePermissions: 'Roles and permissions',
 };
 
 /** The longest reminder lead the screen offers; a filing a quarter away needs no nudge yet. */
@@ -96,6 +236,9 @@ const optionalText = (max: number) =>
     .union([z.string().trim().max(max), z.null()])
     .transform((v) => (v === null || v === '' ? null : v));
 
+const targetNumber = (min: number, max: number) => z.union([z.number().int().min(min).max(max), z.null()]);
+const permissionRow = z.object({ view: z.boolean(), edit: z.boolean(), approve: z.boolean() }).strict();
+
 export const firmSettingsPatchSchema = z
   .object({
     firmName: optionalText(160),
@@ -116,6 +259,18 @@ export const firmSettingsPatchSchema = z
       .refine((v) => v === null || z.string().email().safeParse(v).success, 'Enter a valid email'),
     supportPhone: optionalText(40),
     address: optionalText(500),
+    serviceTargets: z
+      .object({
+        daysToCoi: targetNumber(0, SERVICE_TARGET_MAX.daysToCoi),
+        fileDaysAhead: targetNumber(0, SERVICE_TARGET_MAX.fileDaysAhead),
+        replyHours: targetNumber(0, SERVICE_TARGET_MAX.replyHours),
+        escalateAfterDays: targetNumber(0, SERVICE_TARGET_MAX.escalateAfterDays),
+        partnerReportDay: targetNumber(1, SERVICE_TARGET_MAX.partnerReportDay),
+      })
+      .strict(),
+    rolePermissions: z
+      .object({ admin: permissionRow, manager: permissionRow, intern: permissionRow })
+      .strict(),
   })
   .partial()
   .strict();
@@ -185,7 +340,7 @@ export function reminderDaysLabel(days: number[]): string {
 }
 
 /** A short line for the audit trail and the settings history. */
-export function describeChange(change: { field: FirmSettingsField | 'logo'; new: unknown }): string {
+export function describeChange(change: { field: FirmSettingsField | 'logo'; new: unknown; old?: unknown }): string {
   const label = FIRM_SETTINGS_FIELD_LABEL[change.field];
   const value = change.new;
   if (change.field === 'logo') return value ? 'Logo uploaded' : 'Logo removed';
@@ -197,6 +352,25 @@ export function describeChange(change: { field: FirmSettingsField | 'logo'; new:
   }
   if (change.field === 'holidays' && Array.isArray(value)) {
     return `${label}: ${value.length} listed`;
+  }
+  if (change.field === 'serviceTargets' && value && typeof value === 'object') {
+    const old = readServiceTargets(change.old);
+    const next = readServiceTargets(value);
+    const moved = SERVICE_TARGET_KEYS.filter((k) => old[k] !== next[k]).map(
+      (k) => `${SERVICE_TARGET_LABEL[k].toLowerCase()} ${serviceTargetText(k, next[k]) ?? 'cleared'}`,
+    );
+    return moved.length ? `Service target: ${moved.join('; ')}` : label;
+  }
+  if (change.field === 'rolePermissions' && value && typeof value === 'object') {
+    const old = readRolePermissions(change.old);
+    const next = readRolePermissions(value);
+    const moved: string[] = [];
+    for (const r of PERMISSION_ROLES) {
+      for (const p of PERMISSIONS) {
+        if (old[r][p] !== next[r][p]) moved.push(`${PERMISSION_ROLE_LABEL[r]} can ${p} ${next[r][p] ? 'on' : 'off'}`);
+      }
+    }
+    return moved.length ? `Role ${moved.join('; ')}` : label;
   }
   if (value === null || value === '') return `${label} cleared`;
   return `${label}: ${String(value)}`;

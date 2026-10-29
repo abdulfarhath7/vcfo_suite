@@ -43,3 +43,15 @@
 .cp-tw .drop-zone.pulse{animation:dzp .9s ease-out 1}
 @keyframes dzp{0%{box-shadow:0 0 0 0 oklch(var(--brand) / .45)}100%{box-shadow:0 0 0 10px oklch(var(--brand) / 0)}}
 @media (prefers-reduced-motion:reduce){.cp-tw .drop-zone.pulse{animation:none}}
+
+/* C-192: the phase steps table head sticks under the top bar while the page scrolls. A sideways
+   scroll box would trap the sticky head, so the box only scrolls when the card is narrower than
+   the table (720 px); wider cards let the head stick to the page. The card stops clipping so the
+   sticky head can leave its box. */
+.sttb{container-type:inline-size}
+.sttb-x{overflow-x:auto}
+section:has(.sttb.pin){overflow:visible}
+@container (min-width:720px){
+ .sttb.pin .sttb-x{overflow:visible}
+ .sttb.pin .sttb-x thead th{position:sticky;top:var(--cp-top-h,63px);z-index:2;background:oklch(var(--surface-raised))}
+}

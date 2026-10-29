@@ -7,7 +7,7 @@
  */
 
 export type AuditNode = 'req' | 'back' | 'up' | 'ok' | 'time' | 'mail' | 'team';
-export type AuditCategory = 'Documents' | 'Milestones' | 'Team' | 'Email' | 'Credentials';
+export type AuditCategory = 'Documents' | 'Milestones' | 'Team' | 'Email' | 'Credentials' | 'Sign-in';
 export type AuditRoleLabel = 'Manager' | 'Lead' | 'SBC' | 'System' | 'Client';
 /**
  * What happened to the action, from `audit_events.result` (G-28): `ok` reads

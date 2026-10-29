@@ -192,7 +192,19 @@ export async function api<T>(url: string, init?: RequestInit & { json?: unknown 
   return data;
 }
 
-/** A readable one-off temporary password (interim sign-in until the set-password link ships). */
+/** C-899: a set-password link token (32 random bytes, URL-safe); the server keeps only its hash. */
+export function makeSetPasswordToken(): string {
+  const b = new Uint8Array(32);
+  crypto.getRandomValues(b);
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** The set-password page for a token. */
+export function setPasswordLink(token: string): string {
+  return `${window.location.origin}/set-password/${encodeURIComponent(token)}`;
+}
+
+/** A one-off temporary password: the account's first password until the invitee sets their own. */
 export function makeTempPassword(): string {
   const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   const a = 'abcdefghijkmnpqrstuvwxyz';

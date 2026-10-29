@@ -17,6 +17,7 @@ import { Lock, X as XIcon } from 'lucide-react';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import type { TimelinePhaseDates } from '@/lib/client/client-home';
+import { cascadeEdit, type EditPhase } from '@/components/dash/timeline-editor';
 import { HOME_QUERY_KEY } from './useHome';
 import { addDays, days, dShort, type TlPhase } from './derive';
 
@@ -130,6 +131,17 @@ export function TimelineEditor({
     if (!hist.length) return toast('Nothing to undo');
     setPh(hist[hist.length - 1]!);
     setHist((h) => h.slice(0, -1));
+  };
+
+  /** F-257: a typed date, through the shared editor's cascade (later parts keep their length). */
+  const typed = (i: number, field: 'from' | 'to', value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+    const cur = phRef.current;
+    const parts: EditPhase[] = cur.map((p) => ({ id: p.id, name: p.name, from: addDays(T0, p.s), to: addDays(T0, p.e), done: p.done, milestone: p.ms }));
+    const next = cascadeEdit(parts, i, field, value);
+    if (next === parts) return;
+    push();
+    setPh(cur.map((p, j) => ({ ...p, s: days(T0, next[j]!.from), e: days(T0, next[j]!.to) })));
   };
 
   /** cascade: a phase never starts before the previous one ends; later phases keep their gaps */
@@ -523,11 +535,24 @@ export function TimelineEditor({
           </div>
           <div>
             <h4>After</h4>
+            {/* F-257: typed start and end dates per part; later parts move on (shared cascadeEdit). */}
             <ul>
-              {ph.map((p) => (
-                <li key={p.id}>
+              {ph.map((p, i) => (
+                <li key={p.id} className="tle-typed">
                   <span>{p.name}</span>
-                  <b>{range(p)}</b>
+                  {p.done ? (
+                    <b>{range(p)}</b>
+                  ) : (
+                    <span className="tle-dates">
+                      <input type="date" aria-label={`${p.name} ${p.ms ? 'date' : 'start'}`} value={addDays(T0, p.s)} onChange={(e) => typed(i, 'from', e.target.value)} />
+                      {p.ms ? null : (
+                        <>
+                          <span aria-hidden>–</span>
+                          <input type="date" aria-label={`${p.name} end`} value={addDays(T0, p.e)} min={addDays(T0, p.s)} onChange={(e) => typed(i, 'to', e.target.value)} />
+                        </>
+                      )}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

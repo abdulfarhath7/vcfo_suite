@@ -1,6 +1,7 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { getProviders, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -8,6 +9,7 @@ import { SEO } from '@/components/SEO';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { LoginFormCard } from '@/components/auth/LoginFormCard';
 import { useSignIn } from '@/components/auth/use-sign-in';
+import { DEMO_HINT, demoLoginsOn } from '@/components/auth/demo-accounts';
 import { BookDemoDialog } from '@/components/marketing/BookDemoDialog';
 
 /**
@@ -35,6 +37,17 @@ function SignInPage({ resetNotice, profileError }: { resetNotice: string | null;
   const form = useSignIn();
   const { state } = form;
   const [demoOpen, setDemoOpen] = useState(false);
+  // S-650: "Sign in with Microsoft" only when the server lists the provider (its env vars are set).
+  const [microsoftOn, setMicrosoftOn] = useState(false);
+  useEffect(() => {
+    let live = true;
+    getProviders()
+      .then((p) => live && setMicrosoftOn(Boolean(p && 'microsoft-entra-id' in p)))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
 
   return (
     <div className="relative grid min-h-[100dvh] place-items-center overflow-hidden bg-side px-4 pb-[120px] pt-16 text-side-ink">
@@ -72,6 +85,8 @@ function SignInPage({ resetNotice, profileError }: { resetNotice: string | null;
           <ArrowLeft className="h-4 w-4" strokeWidth={1.6} aria-hidden />
           Back to site
         </Link>
+        {/* P-454: the mono hint, only in demo mode (seeded logins and sample firms). Hidden on phones. */}
+        {demoLoginsOn() ? <span className="hidden font-mono text-[12px] text-side-muted sm:inline">{DEMO_HINT}</span> : null}
       </div>
 
       <LoginFormCard
@@ -101,6 +116,7 @@ function SignInPage({ resetNotice, profileError }: { resetNotice: string | null;
         onCodeChange={form.setCode}
         onCodeSubmit={form.submitCode}
         onBackToPassword={form.backToPassword}
+        onMicrosoft={microsoftOn ? () => void signIn('microsoft-entra-id', { callbackUrl: '/login' }) : undefined}
       />
       <BookDemoDialog open={demoOpen} onOpenChange={setDemoOpen} />
     </div>

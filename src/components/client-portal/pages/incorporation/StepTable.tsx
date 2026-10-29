@@ -124,7 +124,7 @@ export function StepTable({
   };
 
   return (
-    <div className="min-w-0">
+    <div className={cn('sttb min-w-0', !landing && 'pin')}>
       {waitText ? (
         <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-4 py-2.5 text-[13px] text-ink-muted md:px-5">
           <span className="min-w-0 flex-1">{waitText}</span>
@@ -138,7 +138,8 @@ export function StepTable({
           </button>
         </div>
       ) : null}
-      <div className="overflow-x-auto">
+      {/* C-192: .sttb-x scrolls sideways only on narrow cards; on wide ones the head sticks to the page. */}
+      <div className="sttb-x">
         <table className="grid-table min-w-[720px]">
           <thead>
             <tr>

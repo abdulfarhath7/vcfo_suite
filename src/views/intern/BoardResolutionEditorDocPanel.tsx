@@ -60,6 +60,7 @@ import {
 } from '@/lib/api/board-resolution-errors';
 import type { BoardResolutionPreviewError } from '@/lib/board-resolution/board-resolution-preview-errors';
 import type { Engagement } from '@/data/engagements';
+import type { DocPackShell } from '@/lib/doc-pack/paths';
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -90,7 +91,7 @@ function FormatToolbar({ disabled, previewRef, onFormatChange }: FormatToolbarPr
 export interface BoardResolutionEditorProps {
   BOARD_RESOLUTION_DOCX_FILENAME: string;
   applyLatestTemplate: () => Promise<void>;
-  busy: 'finalize' | 'generate' | 'apply-template' | null;
+  busy: 'finalize' | 'generate' | 'apply-template' | 'upload-signed' | null;
   doc: BoardResolutionDoc | null;
   downloadHref: string;
   eng: Engagement;
@@ -108,6 +109,18 @@ export interface BoardResolutionEditorProps {
   isFinalized: boolean;
   /** Sent to the manager and not decided yet — the draft is locked for the lead. */
   withManager: boolean;
+  /** True on the lead's editor; false for the manager, admin and super admin (S-556, S-557, P-112). */
+  isLead: boolean;
+  /** The draft is with the manager and the viewer is the lead, so editing is locked. */
+  lockedForViewer: boolean;
+  /** Which shell's step links the editor builds. */
+  staffShell: DocPackShell;
+  /** Manager / admin / super admin: approve and release to the client. */
+  handleApprove: () => Promise<void>;
+  /** Manager / admin / super admin: send the draft back to the lead with a note. */
+  handleSendBack: (note: string) => Promise<boolean>;
+  /** Staff upload of the signed copy (S-574). */
+  handleUploadSigned: (file: File) => Promise<void>;
   /** The manager's note when they sent the draft back. */
   sentBackNote: string | null;
   loading: boolean;
@@ -141,7 +154,8 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
     handleManualSave,
     hasDocx,
     isFinalized,
-    withManager,
+    isLead,
+    lockedForViewer,
     loading,
     mergeFields,
     previewDownloadHref,
@@ -192,7 +206,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                     )}
                   </div>
 
-                  {!isFinalized && !withManager && (
+                  {!isFinalized && !lockedForViewer && (
                     <FormatToolbar
                       disabled={!previewReady || isFinalized || !hasDocx || saveStatus === 'saving'}
                       previewRef={previewRef}
@@ -209,7 +223,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                       engagementId={eng.id}
                       downloadUrl={previewDownloadHref}
                       refreshKey={previewRefreshKey}
-                      editable={!isFinalized && !withManager}
+                      editable={!isFinalized && !lockedForViewer}
                       mergeFields={mergeFields}
                       previewLabel="Draft Word document"
                       docMeta={{
@@ -338,7 +352,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                   type="button"
 
-                  disabled={isFinalized || withManager || busy !== null}
+                  disabled={isFinalized || lockedForViewer || busy !== null}
 
                   onClick={() => void handleGenerate()}
 
@@ -358,7 +372,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
             <div className="flex flex-wrap gap-2 mt-5">
 
-              {!isFinalized && !withManager && hasDocx && (
+              {!isFinalized && !lockedForViewer && hasDocx && (
                 <AccentButton
                   type="button"
                   size="sm"
@@ -371,19 +385,19 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
               {/* The lead sends the draft to the manager; the manager approves it
                   and releases it to the client. No lead release button. */}
-              {!isFinalized ? (
+              {!isFinalized && isLead ? (
                 <Button
                   type="button"
                   variant="success"
                   disabled={
-                    withManager ||
+                    lockedForViewer ||
                     busy !== null ||
                     saveStatus === 'saving' ||
                     saveStatus === 'pending'
                   }
                   onClick={() => setFinalizeOpen(true)}
                 >
-                  {withManager ? 'Sent for manager approval' : 'Send for manager approval'}
+                  {lockedForViewer ? 'Sent for manager approval' : 'Send for manager approval'}
                 </Button>
               ) : null}
 

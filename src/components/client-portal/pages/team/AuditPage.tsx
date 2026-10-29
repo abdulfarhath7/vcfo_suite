@@ -37,7 +37,8 @@ import {
 import '../../css/team-00-contract.css';
 import '../../css/team-audit.css';
 
-const CATS = ['Documents', 'Milestones', 'Team', 'Email', 'Credentials'] as const;
+// C-787: "Sign-in" lists the company's sign-ins (written by the Auth.js sign-in).
+const CATS = ['Documents', 'Milestones', 'Team', 'Email', 'Credentials', 'Sign-in'] as const;
 const RESULT_TONE: Record<AuditResult, ChipTone> = { Done: 'ok', 'Sent back': 'warn', Failed: 'bad', Denied: 'bad' };
 const PAGE = 10;
 const LONG_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

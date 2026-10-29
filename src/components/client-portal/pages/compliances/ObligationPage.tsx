@@ -25,7 +25,12 @@ import { CompProvider, useComp } from './ctx';
 import { RiskChip, SidePanel, longPeriod } from './Detail';
 import { groupObligations, type Obligation } from './obligations';
 import { OBLIGATIONS_BASE } from './ObligationsPage';
-import { AreaTag, Empty, FactRows, GoLink, Island, PortalLink, RecordHead, SCard, StatusChip, StepList, type ThreadStep } from './spectrum';
+import { AreaTag, Empty, FactRows, GoLink, Island, PeopleStack, PortalLink, RecordHead, SCard, StatusChip, StepList, WordPill, type ThreadStep } from './spectrum';
+import { FromClientCard, SbcFieldsCard, useRecordPeople } from './inputs';
+import { slugOf } from './obligations';
+import { useComplianceStarts, type StartedObligation } from '@/components/compliances/use-compliance-records';
+import { obligationInputs } from '@/data/compliance-inputs';
+import { registrationHref } from '../registrations/parts';
 import { useObligationAbout, whyItAppliesLine, type ObligationAbout } from '@/hooks/use-obligation-about';
 import '../../css/compliances-board.css';
 
@@ -80,12 +85,7 @@ function ObligationBody({ id, today }: { id: string; today: string }) {
   );
 
   let body: React.ReactNode;
-  if (!after)
-    body = (
-      <SCard title="Obligation">
-        <Empty action={back}>Starts after incorporation</Empty>
-      </SCard>
-    );
+  if (!after) return <BeforeObligation id={id} back={back} />;
   else if (q.isError)
     body = (
       <SCard title="Obligation">
@@ -166,6 +166,7 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
       <Download size={16} strokeWidth={1.6} aria-hidden /> Download acknowledgement
     </Button>
   ) : null;
+  const people = useRecordPeople();
   const curNodes = cur ? focusNodes(cur, companyShort, today) : [];
   const stepsDone = curNodes.filter((n) => n.st === 'done').length;
   const past = history.filter((r) => r.id !== cur?.id && (r.filedOn || r.dueDate < today));
@@ -232,6 +233,7 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
               <AreaTag a={o.area} />
             </>
           }
+          people={<PeopleStack people={people} />}
           facts={[
             o.next
               ? {
@@ -262,6 +264,20 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
               >
                 <StepList steps={threadSteps(cur, curNodes, companyShort)} today={today} />
               </SCard>
+            ) : null}
+            {cur ? (
+              <>
+                <FromClientCard kind="obligation" subjectKey={cur.id} editable={!cur.filedOn} />
+                <SbcFieldsCard
+                  kind="obligation"
+                  subjectKey={cur.id}
+                  extra={[
+                    { k: 'Reference', v: cur.acknowledgementNo, mono: true },
+                    ...(cur.amountPaid ? [{ k: 'Tax paid', v: `₹${Number(cur.amountPaid).toLocaleString('en-IN')}` }] : []),
+                    ...(cur.filedOn ? [{ k: 'Filed by', v: cur.filedByName ? `${cur.filedByName} · SBC` : 'SBC' }] : []),
+                  ]}
+                />
+              </>
             ) : null}
             <SCard title="Past periods" flush>
               <div className="px-2 pb-3 pt-1 md:px-3">
@@ -356,5 +372,88 @@ function AboutTexts({ about }: { about: ObligationAbout | null }) {
         </SCard>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Before the certificate (C-426): the obligation comes from the list the engagement will
+ * carry once incorporated (`/api/registrations/applicability`, the static library kept to the
+ * legal form and the questionnaire). Nothing is filed yet: the dates read "After the
+ * certificate", the client's fields and SBC's fields show empty and read only.
+ */
+function BeforeObligation({ id, back }: { id: string; back: React.ReactNode }) {
+  const starts = useComplianceStarts();
+  const people = useRecordPeople();
+  const o: StartedObligation | null = starts.data?.upcoming.find((x) => slugOf(x.particular) === id || x.id === id) ?? null;
+  usePortalCrumbs(['Compliances', 'Obligations', o?.name ?? 'Obligation']);
+  if (starts.isLoading)
+    return (
+      <div className="cp-comp-root page">
+        <Island className="grid gap-5">
+          <div aria-busy="true" aria-label="Loading the obligation">
+            <SkeletonRows rows={6} />
+          </div>
+        </Island>
+      </div>
+    );
+  if (!o)
+    return (
+      <div className="cp-comp-root page">
+        <Island className="grid gap-5">
+          <SCard title="Obligation">
+            <Empty action={back}>{starts.isError ? 'Could not load the obligation' : 'Starts after incorporation'}</Empty>
+          </SCard>
+        </Island>
+      </div>
+    );
+  const fields = obligationInputs(o.id, o.complianceArea);
+  return (
+    <div className="cp-comp-root page">
+      <Island className="grid gap-5">
+        <RecordHead
+          title={o.name}
+          sub={
+            <>
+              {o.authorityName} · {o.freqLabel} ·{' '}
+              {o.startedBy ? (
+                <GoLink href={registrationHref(o.startedBy.stepId)} className="hover:text-brand-text hover:underline">
+                  Started by {o.startedBy.name}
+                </GoLink>
+              ) : (
+                'Every company'
+              )}
+            </>
+          }
+          chips={
+            <>
+              <WordPill word="Not started" />
+              <AreaTag a={o.area} />
+            </>
+          }
+          people={<PeopleStack people={people} />}
+          facts={[{ k: 'Next due', v: 'After the certificate' }]}
+        />
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="grid min-w-0 gap-5">
+            <FromClientCard kind="obligation" subjectKey={null} fallback={fields.client} editable={false} />
+            <SbcFieldsCard kind="obligation" subjectKey={null} fallback={fields.sbc} />
+          </div>
+          <div className="grid min-w-0 gap-5">
+            <SCard title="About" flush>
+              <FactRows
+                rows={[
+                  { k: 'Authority', v: o.authorityName },
+                  { k: 'Area', v: AREA_FULL[o.area] },
+                  { k: 'Frequency', v: o.freqLabel },
+                  { k: 'Penalty risk', v: <RiskChip r={o.penaltyRisk} /> },
+                  { k: 'First due', v: 'After the certificate' },
+                ]}
+              />
+              <div className="border-t border-line-soft px-4 py-3 md:px-5">{back}</div>
+            </SCard>
+          </div>
+        </div>
+      </Island>
+    </div>
   );
 }

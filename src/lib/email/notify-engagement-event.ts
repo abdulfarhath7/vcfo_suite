@@ -443,6 +443,9 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         companyName: company,
         itemId: input.itemId,
         href,
+        // C-759: the bell names who did it.
+        actorId: input.actorUserId,
+        actorName: input.actorName?.trim() || findPartyByUserId(recipients, input.actorUserId)?.name?.trim() || undefined,
       });
     };
 

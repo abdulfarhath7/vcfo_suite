@@ -15,6 +15,11 @@ export type VaultIndexRow = IndexedDocumentRow & {
   reviewStatus?: string;
   reviewNote?: string | null;
   reviewedAt?: string | null;
+  /** Set when a newer upload to the same field took this file's place (P-575). */
+  replacedAt?: string | null;
+  /** Who sent the file (P-593). */
+  uploadedByName?: string | null;
+  uploadedByRole?: string | null;
 };
 
 export type ReviewStatus = 'none' | 'pending' | 'approved' | 'changes';
@@ -159,4 +164,37 @@ export function viewerIdFrom(pathname: string): string | null {
 /** Every folder id under a folder in the tree (step view: `phase:x:step`; category view has none). */
 export function childFolderIds(allFolderIds: string[], folderId: string): string[] {
   return allFolderIds.filter((id) => id !== folderId && id.startsWith(`${folderId}:`));
+}
+
+/**
+ * True when a vault file was replaced by a newer upload to the same field (P-575). A file a
+ * checklist step still holds is the current one, whatever its index row says.
+ */
+export function isReplacedDoc(doc: VaultDocument, row: VaultIndexRow | null | undefined): boolean {
+  return Boolean(row?.replacedAt) && doc.source !== 'milestone';
+}
+
+/**
+ * The "From" fact (P-593): the client's name for a client upload, "SBC · <name>" for a staff
+ * upload, or null when the file has no recorded uploader.
+ */
+export function fromLabel(row: VaultIndexRow | null | undefined, companyName: string): string | null {
+  if (!row?.uploadedBy) return null;
+  if (row.uploadedByRole === 'client') return companyName;
+  const name = row.uploadedByName?.trim();
+  return name ? `SBC · ${name}` : 'SBC';
+}
+
+/**
+ * Whether the person may delete a vault file (P-596): an indexed file that no checklist step
+ * holds; admins and managers any, a lead only their own uploads. The route checks the same.
+ */
+export function canDeleteDoc(
+  doc: VaultDocument,
+  row: VaultIndexRow | null | undefined,
+  person: { role?: string | null; id?: string | null } | null | undefined,
+): boolean {
+  if (!row || doc.source === 'milestone' || !person?.role) return false;
+  if (person.role === 'admin' || person.role === 'super_admin' || person.role === 'manager') return true;
+  return person.role === 'intern' && Boolean(person.id) && row.uploadedBy === person.id;
 }
