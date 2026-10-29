@@ -8,6 +8,8 @@
  * width. Below 1024px the columns dissolve and `order` sets the phone card order, so phones
  * show the same cards at 390px.
  *
+ * "Message <lead>" (MessagesCard, G-09) sits under What SBC is doing.
+ *
  * Pop-ups: step (StepPopup), compliance (CompliancePopup), the timeline editor, the PAN/TAN
  * reveal (credentials' IdsRevealDialog) and the document viewer (documents' DocViewer).
  */
@@ -28,6 +30,7 @@ import { ActivityCard, AlertsCard, DocsCard, HoldsCard, HomeCard, NeedsCard, Sbc
 import { AreaCard, CompCard, IdsCard, NextCard, PostIncCard, RegCard, TimelineCard } from './CardsB';
 import { CompliancePopup, StepPopup } from './Popups';
 import { TimelineEditor } from './TimelineEditor';
+import { MessagesCard } from './MessagesCard';
 import { dLong, docUrl, type DocItem, type NeedRow } from './derive';
 
 /** L1 skeleton: shown after 150 ms, held at least 300 ms. */
@@ -177,6 +180,7 @@ export function HomePage() {
                 <IdsCard h={h} onReveal={setReveal} onCoi={coiOpen} className="max-lg:order-5" />
                 <AlertsCard h={h} className="max-lg:order-[10]" />
                 <SbcCard h={h} className="max-lg:order-[12]" />
+                <MessagesCard engagementId={h.engagementId} lead={h.lead} today={h.today} className="max-lg:order-[14]" />
               </div>
             </div>
             <RegCard h={h} onProof={regProof} className="max-lg:order-7" />
@@ -194,6 +198,7 @@ export function HomePage() {
               <HoldsCard h={h} className="max-lg:order-3" />
               <AlertsCard h={h} className="max-lg:order-4" />
               <SbcCard h={h} className="max-lg:order-7" />
+              <MessagesCard engagementId={h.engagementId} lead={h.lead} today={h.today} className="max-lg:order-9" />
             </div>
           </div>
         )}

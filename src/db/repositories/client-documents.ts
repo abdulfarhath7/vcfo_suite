@@ -612,6 +612,34 @@ export async function uploadRequestFile(
   requestId: string,
   file: { name: string; type: string; size: number; bytes: Buffer },
 ): Promise<{ fileId: string; requestLabel: string; engagementId: string; requestId: string } | null> {
+  const out = await uploadRequestFiles(ctx, requestId, [file]);
+  if (!out) return null;
+  if (!out.fileIds.length) throw new UploadRejectedError(out.rejected[0]?.error ?? 'Upload failed');
+  return { fileId: out.fileIds[0]!, requestLabel: out.requestLabel, engagementId: out.engagementId, requestId };
+}
+
+/** Most files one request upload may carry (G-09). */
+export const MAX_FILES_PER_REQUEST_UPLOAD = 10;
+
+/**
+ * G-09: several files answer one open request in one go. Each file is checked
+ * on its own (size, type); a refused file is named in `rejected` and the rest
+ * still go in. Earlier files of the request become "Replaced" once, every new
+ * file shares one `uploadedAt` (so Undo removes the whole batch), and the
+ * request turns fulfilled when at least one file landed.
+ */
+export async function uploadRequestFiles(
+  ctx: AuthContext,
+  requestId: string,
+  files: Array<{ name: string; type: string; size: number; bytes: Buffer }>,
+): Promise<{
+  fileIds: string[];
+  files: Array<{ fileId: string; fileName: string }>;
+  rejected: Array<{ fileName: string; error: string }>;
+  requestLabel: string;
+  engagementId: string;
+  requestId: string;
+} | null> {
   const mine = await myEngagement(ctx);
   if (!mine) return null;
   const { dbId } = mine;
@@ -622,12 +650,33 @@ export async function uploadRequestFile(
     .limit(1);
   if (!req) return null;
   if (req.status !== 'pending') throw new UploadRejectedError('This request is not open any more');
-  if (file.size > MAX_UPLOAD_BYTES) throw new UploadRejectedError(maxUploadSizeError());
-  const ext = resolveUploadExtension(file, MILESTONE_DOCUMENT_EXTENSIONS);
-  if (!ext) throw new UploadRejectedError(`${file.name} · this file type can't be opened`);
-  const contentType = resolveUploadContentType(file, MILESTONE_DOCUMENT_EXTENSIONS);
-  const key = bucketKey(ENGAGEMENT_DOCUMENTS_BUCKET, `${dbId}/requests/${requestId}/${Date.now()}-${safeName(file.name)}`);
-  await putObject(key, file.bytes, contentType);
+  if (files.length === 0) throw new UploadRejectedError('Choose a file to upload');
+  if (files.length > MAX_FILES_PER_REQUEST_UPLOAD) throw new UploadRejectedError(`Up to ${MAX_FILES_PER_REQUEST_UPLOAD} files at a time`);
+
+  const rejected: Array<{ fileName: string; error: string }> = [];
+  const stored: Array<{ key: string; fileName: string; contentType: string; size: number }> = [];
+  for (const file of files) {
+    const fileName = file.name.split(/[/\\]/).pop() || 'document';
+    if (file.size === 0) {
+      rejected.push({ fileName, error: `${fileName} · the file is empty` });
+      continue;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      rejected.push({ fileName, error: `${fileName} · ${maxUploadSizeError()}` });
+      continue;
+    }
+    if (!resolveUploadExtension(file, MILESTONE_DOCUMENT_EXTENSIONS)) {
+      rejected.push({ fileName, error: `${fileName} · this file type can't be opened` });
+      continue;
+    }
+    const contentType = resolveUploadContentType(file, MILESTONE_DOCUMENT_EXTENSIONS);
+    const key = bucketKey(ENGAGEMENT_DOCUMENTS_BUCKET, `${dbId}/requests/${requestId}/${Date.now()}-${stored.length}-${safeName(file.name)}`);
+    await putObject(key, file.bytes, contentType);
+    stored.push({ key, fileName, contentType, size: file.size });
+  }
+  if (stored.length === 0) {
+    return { fileIds: [], files: [], rejected, requestLabel: req.title, engagementId: appEngagementId(dbId), requestId };
+  }
 
   const now = new Date();
   const inserted = await db.transaction(async (tx) => {
@@ -635,25 +684,39 @@ export async function uploadRequestFile(
       .update(documentRequestFiles)
       .set({ replacedAt: now })
       .where(and(eq(documentRequestFiles.requestId, requestId), isNull(documentRequestFiles.replacedAt)));
-    const [row] = await tx
+    const rows = await tx
       .insert(documentRequestFiles)
-      .values({
-        requestId,
-        engagementId: dbId,
-        objectKey: key,
-        fileName: file.name.split(/[/\\]/).pop() || 'document',
-        contentType,
-        sizeBytes: file.size,
-        uploadedBy: ctx.userId,
-        uploadedAt: now,
-      })
+      .values(
+        stored.map((f) => ({
+          requestId,
+          engagementId: dbId,
+          objectKey: f.key,
+          fileName: f.fileName,
+          contentType: f.contentType,
+          sizeBytes: f.size,
+          uploadedBy: ctx.userId,
+          uploadedAt: now,
+        })),
+      )
       .returning();
     await tx.update(documentRequests).set({ status: 'fulfilled' }).where(eq(documentRequests.id, requestId));
-    return row;
+    return rows;
   });
-  return { fileId: inserted!.id, requestLabel: req.title, engagementId: appEngagementId(dbId), requestId };
+  return {
+    fileIds: inserted.map((r) => r.id),
+    files: inserted.map((r) => ({ fileId: r.id, fileName: r.fileName })),
+    rejected,
+    requestLabel: req.title,
+    engagementId: appEngagementId(dbId),
+    requestId,
+  };
 }
 
+/**
+ * Undo (own upload, within 10 minutes). The file named is the first of its
+ * batch: every file the caller added to the request at the same moment goes
+ * with it, and the request reopens.
+ */
 export async function undoRequestUpload(ctx: AuthContext, requestId: string, fileId: string): Promise<boolean> {
   const mine = await myEngagement(ctx);
   if (!mine) return false;
@@ -672,11 +735,23 @@ export async function undoRequestUpload(ctx: AuthContext, requestId: string, fil
   if (!f || Date.now() - f.uploadedAt.getTime() > UNDO_WINDOW_MS) return false;
   const [req] = await db.select().from(documentRequests).where(eq(documentRequests.id, requestId)).limit(1);
   if (!req || req.status !== 'fulfilled') return false;
+  const batch = await db
+    .select({ id: documentRequestFiles.id, objectKey: documentRequestFiles.objectKey })
+    .from(documentRequestFiles)
+    .where(
+      and(
+        eq(documentRequestFiles.requestId, requestId),
+        eq(documentRequestFiles.engagementId, mine.dbId),
+        eq(documentRequestFiles.uploadedBy, ctx.userId),
+        eq(documentRequestFiles.uploadedAt, f.uploadedAt),
+      ),
+    );
+  const ids = batch.length ? batch.map((b) => b.id) : [fileId];
   await db.transaction(async (tx) => {
-    await tx.delete(documentRequestFiles).where(eq(documentRequestFiles.id, fileId));
+    await tx.delete(documentRequestFiles).where(and(inArray(documentRequestFiles.id, ids), eq(documentRequestFiles.requestId, requestId)));
     await tx.update(documentRequests).set({ status: 'pending' }).where(eq(documentRequests.id, requestId));
   });
-  await deleteObject(f.objectKey).catch(() => undefined);
+  for (const b of batch.length ? batch : [{ objectKey: f.objectKey }]) await deleteObject(b.objectKey).catch(() => undefined);
   return true;
 }
 

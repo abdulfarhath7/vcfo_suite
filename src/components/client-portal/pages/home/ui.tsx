@@ -6,10 +6,11 @@
  * the duo-tone SVGs copied from the boards, and the upload / download helpers.
  */
 import { CardHeadTile } from '@/components/common/CardHeadTile';
-import { useCallback, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { InfoPopover } from '@/components/client-portal/shared';
 import { usePortal } from '@/components/client-portal/PortalProvider';
+import { UploadTray, useMultiUpload } from '@/components/client-portal/use-multi-upload';
 import { HOME_QUERY_KEY } from './useHome';
 import type { DocItem } from './derive';
 import { docUrl } from './derive';
@@ -163,38 +164,45 @@ export function ownerChipStyle(owner: 'client' | 'sbc' | 'firm' | 'mca'): CSSPro
 
 /**
  * Upload against an open request (DECISIONS: uploads only against open
- * requests): opens the OS picker (or camera), posts the file, toasts
- * "Uploaded · <item>" with Undo.
+ * requests): opens the OS picker (or camera), posts the files, toasts
+ * "Uploaded · <item>" with Undo. G-09: the picker takes several files; they go
+ * in one request and the tray shows each file's own progress and, for a
+ * refused file, its reason. Undo removes the whole batch.
  */
 export function useNeedUpload() {
   const { toast } = usePortal();
   const qc = useQueryClient();
   const input = useRef<HTMLInputElement | null>(null);
   const pending = useRef<{ id: string; title: string } | null>(null);
+  const up = useMultiUpload();
+  const [trayTitle, setTrayTitle] = useState('');
 
   const send = useCallback(
-    async (file: File) => {
+    async (files: File[]) => {
       const target = pending.current;
-      if (!target) return;
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch(`/api/client/home/needs/${encodeURIComponent(target.id)}/upload`, { method: 'POST', body: fd });
-      const body = (await res.json().catch(() => ({}))) as { documentId?: string; error?: string };
-      if (!res.ok || !body.documentId) {
-        toast(body.error ?? 'Upload failed. Try again.');
+      if (!target || !files.length) return;
+      setTrayTitle(target.title);
+      const url = `/api/client/home/needs/${encodeURIComponent(target.id)}/upload`;
+      const res = await up.send(url, files);
+      const docId = typeof res.body.documentId === 'string' ? res.body.documentId : null;
+      if (!res.ok || !docId) {
+        toast(res.body.error ?? 'Upload failed. Try again.');
         return;
       }
       void qc.invalidateQueries({ queryKey: [HOME_QUERY_KEY] });
-      const docId = body.documentId;
-      toast(`Uploaded · ${target.title}`, {
+      const refused = res.body.rejected?.length ?? 0;
+      const stored = files.length - refused;
+      const label = files.length === 1 ? `Uploaded · ${target.title}` : refused ? `Uploaded ${stored} of ${files.length} files · ${target.title}` : `Uploaded ${stored} files · ${target.title}`;
+      // keep the tray open when a file was refused, so its reason stays on screen
+      if (!refused) setTimeout(up.clear, 2400);
+      toast(label, {
         undo: () => {
-          void fetch(`/api/client/home/needs/${encodeURIComponent(target.id)}/upload?documentId=${encodeURIComponent(docId)}`, { method: 'DELETE' }).then(() =>
-            qc.invalidateQueries({ queryKey: [HOME_QUERY_KEY] }),
-          );
+          up.clear();
+          void fetch(`${url}?documentId=${encodeURIComponent(docId)}`, { method: 'DELETE' }).then(() => qc.invalidateQueries({ queryKey: [HOME_QUERY_KEY] }));
         },
       });
     },
-    [qc, toast],
+    [qc, toast, up],
   );
 
   const pick = useCallback((id: string, title: string, capture?: boolean) => {
@@ -208,16 +216,20 @@ export function useNeedUpload() {
   }, []);
 
   const field = (
-    <input
-      ref={input}
-      type="file"
-      accept="application/pdf,image/jpeg,image/png"
-      hidden
-      onChange={(e) => {
-        const f = e.target.files?.[0];
-        if (f) void send(f);
-      }}
-    />
+    <>
+      <input
+        ref={input}
+        type="file"
+        multiple
+        accept="application/pdf,image/jpeg,image/png"
+        hidden
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          if (files.length) void send(files);
+        }}
+      />
+      <UploadTray title={trayTitle} rows={up.rows} busy={up.busy} onCancel={up.cancel} onClose={up.clear} />
+    </>
   );
   return { pick, field };
 }

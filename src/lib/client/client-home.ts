@@ -81,6 +81,8 @@ interface HomeIdentifiers {
   panMasked?: string;
   tanMasked?: string;
   gstin?: string;
+  /** Directors' DINs (G-07), from the proposed directors; public numbers, not masked. */
+  dins?: { name: string; din: string }[];
 }
 
 export interface TimelinePhaseDates {
@@ -100,6 +102,8 @@ export interface TimelineRequestDto {
   slipDays: number;
   createdAt: string;
   requestedByName?: string;
+  /** True when the signed-in person sent it, so they may withdraw it (G-08). */
+  mine?: boolean;
 }
 
 export interface ClientHome {

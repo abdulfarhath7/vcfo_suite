@@ -17,9 +17,10 @@ import { phaseHref, portalHref, stepHref } from '@/components/client-portal/rout
 import type { DrillConfig } from '@/components/client-portal/PortalProvider';
 import type { HomeFiling } from '@/lib/client/client-home';
 import type { PortalStep } from '@/lib/client-portal/step-model';
-import { useRevealedIdentifier } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
+import { RevealCountdown, useRevealedIdentifier } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
 import { Bar, DateTile, Empty, HeadLink, ListRow, SCard, StackedBar, stepChip, type BarTone } from '../incorporation/spectrum';
 import { copyText } from './ui';
+import { PendingRequestPopover } from './PendingRequest';
 import type { HomeData } from './useHome';
 import {
   AREA_NAME,
@@ -120,16 +121,21 @@ export function TimelineCard({ h, phases, onEdit, className }: { h: HomeData; ph
   ) : (
     <>
       {pending ? (
-        <button
-          type="button"
-          onClick={() => h.portal.toast(`Waiting for ${manager} to approve · “${pending.reason.slice(0, 60)}”`)}
-          aria-label={`Change request pending, waiting for ${manager}`}
-          className="inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning"
-        >
-          <i className="h-1.5 w-1.5 rounded-[2px] bg-current" aria-hidden />
-          <span className="hidden sm:inline">Request pending{pending.coiTo ? ' · ' : ''}</span>
-          {pending.coiTo ? `COI ${dShort(pending.coiTo)}` : null}
-        </button>
+        <PendingRequestPopover
+          pending={pending}
+          manager={manager}
+          trigger={
+            <button
+              type="button"
+              aria-label={`Change request pending, waiting for ${manager}`}
+              className="inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning"
+            >
+              <i className="h-1.5 w-1.5 rounded-[2px] bg-current" aria-hidden />
+              <span className="hidden sm:inline">Request pending{pending.coiTo ? ' · ' : ''}</span>
+              {pending.coiTo ? `COI ${dShort(pending.coiTo)}` : null}
+            </button>
+          }
+        />
       ) : null}
       {phases ? (
         <Button size="sm" variant="secondary" onClick={onEdit}>
@@ -399,16 +405,19 @@ const ID_PORTAL: Record<string, [string, string]> = {
   PAN: ['https://www.incometax.gov.in', 'Income-tax portal'],
   TAN: ['https://www.tin-nsdl.com', 'TIN-NSDL portal'],
   GSTIN: ['https://www.gst.gov.in', 'GST portal'],
+  DIN: ['https://www.mca.gov.in', 'MCA portal'],
 };
 
 export function IdsCard({ h, onReveal, onCoi, className }: { h: HomeData; onReveal: (f: 'pan' | 'tan') => void; onCoi?: () => void; className?: string }) {
   const ids = h.home?.identifiers ?? {};
   const shown = { pan: useRevealedIdentifier('pan'), tan: useRevealedIdentifier('tan') };
-  const rows: { k: string; v?: string; secret?: 'pan' | 'tan' }[] = [
+  const rows: { k: string; v?: string; secret?: 'pan' | 'tan'; portal?: string; who?: string }[] = [
     { k: 'CIN', v: ids.cin },
     { k: 'PAN', v: ids.panMasked, secret: 'pan' },
     { k: 'TAN', v: ids.tanMasked, secret: 'tan' },
     { k: 'GSTIN', v: ids.gstin },
+    // G-07: one row per director with a DIN on file
+    ...(ids.dins ?? []).map((d) => ({ k: 'DIN', v: d.din, portal: 'DIN', who: d.name })),
   ];
   const iconBtn = 'grid h-[30px] w-[30px] flex-none place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink';
   return (
@@ -427,11 +436,19 @@ export function IdsCard({ h, onReveal, onCoi, className }: { h: HomeData; onReve
       {rows.map((r) => {
         const clear = r.secret ? shown[r.secret] : null;
         const value = clear ?? r.v;
-        const portal = ID_PORTAL[r.k]!;
+        const portal = ID_PORTAL[r.portal ?? r.k]!;
         return (
-          <ListRow key={r.k}>
+          <ListRow key={`${r.k}:${r.v ?? ''}`}>
             <span className="w-14 flex-none text-[12.5px] font-medium text-ink-muted">{r.k}</span>
-            <span className={cn('min-w-0 flex-1 truncate font-mono text-[13px]', clear ? 'text-positive' : r.v ? 'text-ink' : 'text-ink-faint')}>{value ?? '-'}</span>
+            <span className="min-w-0 flex-1 truncate">
+              <span className={cn('block truncate font-mono text-[13px]', clear ? 'text-positive' : r.v ? 'text-ink' : 'text-ink-faint')}>{value ?? '-'}</span>
+              {r.who ? <span className="block truncate text-[12px] text-ink-muted">{r.who}</span> : null}
+            </span>
+            {r.secret && clear ? (
+              <Chip tone="ok" dot={false}>
+                <RevealCountdown field={r.secret} className="font-mono" />
+              </Chip>
+            ) : null}
             {r.secret && r.v && !clear ? (
               <Chip tone="idle" dot={false}>
                 Private
@@ -446,7 +463,7 @@ export function IdsCard({ h, onReveal, onCoi, className }: { h: HomeData; onReve
                 type="button"
                 onClick={() => void copyText(value).then((ok) => h.portal.toast(ok ? `Copied · ${value}` : 'Copy blocked by this browser'))}
                 className={iconBtn}
-                aria-label={`Copy ${r.k}`}
+                aria-label={`Copy ${r.k}${r.who ? ` of ${r.who}` : ''}`}
               >
                 <Copy size={15} strokeWidth={1.6} aria-hidden />
               </button>

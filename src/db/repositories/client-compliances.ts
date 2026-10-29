@@ -14,6 +14,8 @@ import {
 } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { listScopedEngagementIds } from '@/db/repositories/engagements';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { bucketKey, putObject, signedDownloadUrl, deleteObject } from '@/storage/s3';
 import {
@@ -43,6 +45,11 @@ import {
  *  - WRITE proofs / details: staff only (super_admin, admin, manager, intern)
  *    and only inside the same scope ("write via assigned engagement"). Clients
  *    are read-only on the register, exactly as compliance_instances RLS.
+ *  - CLIENT PROOF (G-03): `addClientFilingProof` lets a client ADD a file to a
+ *    filing of their own engagement (same scope check). The row is never the
+ *    primary proof, it is shown as uploaded by the client, and it never changes
+ *    the filing's status: staff still decide whether it is filed. The lead is
+ *    told through the notifications repository.
  *  - REMINDERS: any role inside scope, and only ever the caller's own row
  *    (`user_id = ctx.userId`). Nobody can read or change another user's reminder.
  *  - Filing windows stay manager-only (POST /api/filings/[id]/window) — the
@@ -209,6 +216,8 @@ export interface FilingProof {
   isPrimary: boolean;
   uploadedAt: string;
   uploadedBy: string | null;
+  /** True when the client uploaded it (G-03); staff review it before it counts. */
+  byClient?: boolean;
   /** Legacy `compliance_instances.evidence_url` entry (external link or storage path). */
   legacy?: boolean;
 }
@@ -227,6 +236,7 @@ export async function listFilingProofs(ctx: AuthContext, instanceId: string): Pr
       isPrimary: complianceInstanceProofs.isPrimary,
       uploadedAt: complianceInstanceProofs.uploadedAt,
       uploadedBy: profiles.name,
+      uploaderRole: profiles.role,
     })
     .from(complianceInstanceProofs)
     .leftJoin(profiles, eq(profiles.id, complianceInstanceProofs.uploadedBy))
@@ -242,6 +252,7 @@ export async function listFilingProofs(ctx: AuthContext, instanceId: string): Pr
       isPrimary: r.isPrimary,
       uploadedAt: r.uploadedAt.toISOString(),
       uploadedBy: r.uploadedBy ?? null,
+      byClient: r.uploaderRole === 'client',
     }))
     .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
   if (inst.evidenceUrl?.trim()) {
@@ -328,6 +339,103 @@ export async function addFilingProof(
     isPrimary: row!.isPrimary,
     uploadedAt: row!.uploadedAt.toISOString(),
     uploadedBy: ctx.name,
+  };
+}
+
+const CLIENT_PROOF_KINDS = new Set(['acknowledgement', 'challan', 'other']);
+
+/**
+ * G-03: the client adds a proof file (a challan they paid, an acknowledgement
+ * they hold) to one filing of their OWN engagement. The scope check is the same
+ * `scopedInstance` read every other proof call uses, so a filing of another
+ * company reads as not found. The row is never primary, the filing's status and
+ * filed date are not touched, and the engagement's lead gets a bell
+ * notification so staff can check it.
+ */
+export async function addClientFilingProof(
+  ctx: AuthContext,
+  instanceId: string,
+  file: { name: string; type: string; bytes: Uint8Array },
+  kind = 'other',
+): Promise<FilingProof> {
+  if (ctx.role !== 'client') throw new ComplianceForbiddenError('Only the client adds proof here');
+  const inst = await scopedInstance(ctx, instanceId);
+  if (file.bytes.byteLength === 0 || file.bytes.byteLength > MAX_PROOF_BYTES) throw new Error('File must be 1 byte – 15 MB');
+  const safe = file.name.replace(/[^\w.\- ()]+/g, '_').slice(0, 120) || 'proof';
+  const storagePath = `${inst.engagementId}/compliance-proofs/${inst.id}/client-${Date.now()}-${safe}`;
+  await putObject(bucketKey('engagement-documents', storagePath), file.bytes, file.type || undefined);
+  const [row] = await db
+    .insert(complianceInstanceProofs)
+    .values({
+      instanceId: inst.id,
+      engagementId: inst.engagementId,
+      storagePath,
+      fileName: safe,
+      mime: file.type || null,
+      sizeBytes: file.bytes.byteLength,
+      kind: CLIENT_PROOF_KINDS.has(kind) ? kind : 'other',
+      isPrimary: false,
+      uploadedBy: ctx.userId,
+    })
+    .returning();
+  if (!row) throw new Error('Could not save the file');
+
+  const [about] = await db
+    .select({
+      companyName: engagements.companyName,
+      internId: engagements.internId,
+      particular: complianceObligations.particular,
+      periodLabel: complianceInstances.periodLabel,
+    })
+    .from(complianceInstances)
+    .innerJoin(engagements, eq(engagements.id, complianceInstances.engagementId))
+    .innerJoin(complianceObligations, eq(complianceObligations.id, complianceInstances.obligationId))
+    .where(eq(complianceInstances.id, inst.id))
+    .limit(1);
+  const filingName = about
+    ? `${displayName(about.particular)}${about.periodLabel ? ` · ${about.periodLabel}` : ''}`
+    : 'a filing';
+
+  await recordAuditEvent(ctx, {
+    engagementId: inst.engagementId,
+    action: 'client.compliance_proof_uploaded',
+    summary: `Proof uploaded for ${filingName}`,
+    metadata: { instanceId: inst.id, proofId: row.id, kind: row.kind },
+  });
+
+  const leadKey = about?.internId?.trim();
+  if (leadKey) {
+    try {
+      const [lead] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.internId, leadKey)).limit(1);
+      if (lead) {
+        await createNotificationsForUsers([
+          {
+            userId: lead.id,
+            kind: 'request.uploaded',
+            title: `${about!.companyName}: proof uploaded`,
+            body: `${ctx.name || 'The client'} added ${safe} to ${filingName}. Check it before marking the filing.`,
+            engagementId: inst.engagementId,
+            companyName: about!.companyName,
+            href: '/app/intern/compliances/filings',
+          },
+        ]);
+      }
+    } catch (error) {
+      // The proof row is the record; a missed bell must not lose the upload.
+      console.warn('[client-compliances] proof notification failed', error);
+    }
+  }
+
+  return {
+    id: row.id,
+    fileName: row.fileName,
+    mime: row.mime,
+    sizeBytes: row.sizeBytes,
+    kind: row.kind,
+    isPrimary: false,
+    uploadedAt: row.uploadedAt.toISOString(),
+    uploadedBy: ctx.name,
+    byClient: true,
   };
 }
 

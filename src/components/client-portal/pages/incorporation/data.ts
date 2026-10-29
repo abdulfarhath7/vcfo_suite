@@ -12,9 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { useClientOverview } from '@/hooks/use-client-overview';
 import { clientIncorporationStepPath } from '@/lib/projects/project-step-path';
-import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
-import { filterFieldsByViewer } from '@/lib/checklist/checklist-field-access';
-import { isStepRemarksField } from '@/lib/checklist/checklist-responses';
+import { subStepsOf, type SubStep } from '@/lib/client-portal/step-progress';
 import { usePortalIncorporation, todayIST } from '../../hooks';
 import { usePortal, type DrillRow, type DrillTab, type WhatsThisAnswer } from '../../PortalProvider';
 import type { PortalStep, PortalPhase, PortalIncorporationModel } from '@/lib/client-portal/step-model';
@@ -125,44 +123,12 @@ export function railSub(s: PortalStep, short: string): string {
   return s.due ? `Opens later · due ${fmt(s.due)}` : 'Opens later';
 }
 
-/** Prototype `short()`: a label cut to ~22 characters. */
-function shortLabel(l: string): string {
-  const t = String(l).replace(/\s*\(.*$/, '').replace(/,.*$/, '').replace(/\s+—.*$/, '');
-  return t.length > 22 ? `${t.slice(0, 20).replace(/\s+\S*$/, '')}…` : t;
-}
+export type { SubStep } from '@/lib/client-portal/step-progress';
 
-export interface SubStep {
-  l: string;
-  s: 'done' | 'now' | 'todo';
-}
-
-/** Sub-steps of a step: its field sections (or fields) with the filled state from the real answers. */
+/** Sub-steps of a step: its field sections (or fields) with the filled state from the real answers (G-10). */
 export function subList(s: PortalStep): SubStep[] {
-  const fields = filterFieldsByViewer(getClientResponseFields(s.item), 'client').filter((f) => !isStepRemarksField(f));
-  const responses = (s.slice?.responses ?? {}) as Record<string, string>;
-  const filled = (id: string) => String(responses[id] ?? '').trim().length > 0;
-  let groups: Array<{ l: string; ids: string[] }> = [];
-  const sections = [...new Set(fields.map((f) => f.section).filter(Boolean))] as string[];
-  if (sections.length >= 2) {
-    groups = sections.map((sec) => ({ l: shortLabel(sec), ids: fields.filter((f) => f.section === sec).map((f) => f.id) }));
-  } else if (fields.length >= 2 && fields.length <= 8) {
-    groups = fields.map((f) => ({ l: shortLabel(f.label), ids: [f.id] }));
-  } else if (s.item.infoRequired.length) {
-    groups = s.item.infoRequired.slice(0, 8).map((q) => ({ l: shortLabel(q.split(' — ')[0] ?? q), ids: [] }));
-  } else groups = [{ l: shortLabel(s.title), ids: [] }];
   const k = kd(s);
-  if (k === 'done') return groups.map((g) => ({ l: g.l, s: 'done' }));
-  if (k === 'up') return groups.map((g) => ({ l: g.l, s: 'todo' }));
-  let now = false;
-  return groups.map((g) => {
-    const done = g.ids.length > 0 && g.ids.some(filled);
-    if (done) return { l: g.l, s: 'done' };
-    if (!now) {
-      now = true;
-      return { l: g.l, s: 'now' };
-    }
-    return { l: g.l, s: 'todo' };
-  });
+  return subStepsOf(s.item, (s.slice?.responses ?? {}) as Record<string, string>, k === 'done' ? 'done' : k === 'up' ? 'up' : 'live');
 }
 
 /* ---------------- drill helpers (rule 14) ---------------- */

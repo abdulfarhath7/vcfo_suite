@@ -50,11 +50,14 @@ import {
   signedUrlFor,
   stepAnswer,
   stepHrefOf,
+  subList,
   tipTxt,
   useIncData,
   type IncData,
 } from './data';
 import { stepFiles } from './StepTable';
+import { SubSteps } from './PhasePage';
+import { prefillNotes, subStepCount } from '@/lib/client-portal/step-progress';
 import { portalFor } from './portals';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 
@@ -64,6 +67,8 @@ interface Row {
   label: string;
   value: string;
   file?: string;
+  /** "Copied from step n · …" when the answer was pre-filled from a knowable source (G-10). */
+  note?: string;
 }
 
 /**
@@ -71,7 +76,7 @@ interface Row {
  * fill the same form); other SBC steps list what they capture from the item's
  * infoRequired (IN-11). File fields shown in the Documents card are left out (IN-04).
  */
-function answerRows(s: PortalStep, ownershipType: IncData['ownershipType'], inDocs: Set<string>): Row[] {
+function answerRows(s: PortalStep, ownershipType: IncData['ownershipType'], inDocs: Set<string>, notes: Record<string, string> = {}): Row[] {
   const responses = extractItemResponses(s.item, s.slice);
   const base = withoutUnusedDirectorSlots(
     s.item.id,
@@ -95,13 +100,13 @@ function answerRows(s: PortalStep, ownershipType: IncData['ownershipType'], inDo
           continue;
         }
       }
-      rows.push({ label: m ? m[1] : label, value: raw ? fileNameFromStoragePath(raw) : '—', file: raw && isMilestoneStoragePath(raw) ? raw : undefined });
+      rows.push({ label: m ? m[1] : label, value: raw ? fileNameFromStoragePath(raw) : '—', file: raw && isMilestoneStoragePath(raw) ? raw : undefined, note: raw ? notes[f.id] : undefined });
       continue;
     }
     let v = raw;
     if (raw && (f.type === 'select' || f.type === 'segmented')) v = f.options?.find((o) => o.value === raw)?.label ?? raw;
     if (raw && f.type === 'date' && /^\d{4}-\d{2}-\d{2}/.test(raw)) v = fmtL(raw.slice(0, 10));
-    rows.push({ label, value: v || '—' });
+    rows.push({ label, value: v || '—', note: v ? notes[f.id] : undefined });
   }
   if (!rows.some((r) => !/^remarks/i.test(r.label)) && s.owner !== 'client' && s.item.infoRequired.length) {
     const done = kd(s) === 'done';
@@ -432,7 +437,11 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     );
   }
 
-  const rows = answerRows(s, d.ownershipType, new Set([...requests.map((r) => r.fieldId), ...otherFiles.map((f) => f.fieldId)]));
+  // G-10: where pre-filled answers came from, and the step's sub-steps, both derived from the answers
+  const notes = prefillNotes(s.id, Object.fromEntries(Object.values(d.model.byId).map((x) => [x.id, x.slice])));
+  const rows = answerRows(s, d.ownershipType, new Set([...requests.map((r) => r.fieldId), ...otherFiles.map((f) => f.fieldId)]), notes);
+  const subs = subList(s);
+  const subCount = subStepCount(subs);
   const released = k === 'done' || isStepReleasedToClient(s.slice, s.id);
   const phl = PHL[s.phaseNo - 1]!;
   const tab = s.item.fields?.find((f) => f.section)?.section ?? s.title;
@@ -595,6 +604,20 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           <span className="block text-[12.5px] text-ink-muted">{st.sub}</span>
         </span>
       </div>
+      {subs.length >= 2 ? (
+        <div className="border-b border-line-soft px-4 py-3 md:px-5" aria-label="Sub-step progress">
+          <span className="flex items-center justify-between gap-3 text-[12.5px] text-ink-muted">
+            <span>Sub-steps</span>
+            {/* past six sub-steps SubSteps prints the count itself */}
+            {subs.length <= 6 ? (
+              <span className="font-medium text-ink-2">
+                {subCount.done} of {subCount.total} done
+              </span>
+            ) : null}
+          </span>
+          <SubSteps subs={subs} />
+        </div>
+      ) : null}
       {about ? <p className="m-0 border-b border-line-soft px-4 py-3 text-[13.5px] text-ink-2 md:px-5">{about}</p> : null}
       <dl className="m-0">
         {rows.map((r, i) => (
@@ -773,7 +796,10 @@ function KvRow({ r, onFile }: { r: Row; onFile: (path: string) => void }) {
   const no = r.value === '—';
   return (
     <div className="grid gap-1 border-t border-line-soft px-4 py-2.5 first:border-t-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-4 md:px-5">
-      <dt className="min-w-0 text-[13px] text-ink-muted">{r.label}</dt>
+      <dt className="min-w-0 text-[13px] text-ink-muted">
+        {r.label}
+        {r.note ? <small className="block text-[12px] text-ink-faint">{r.note}</small> : null}
+      </dt>
       <dd className={cn('m-0 min-w-0 text-[13.5px] font-medium', no ? 'text-ink-faint' : r.value.startsWith('Provided') ? 'text-positive' : 'text-ink')}>
         {r.file ? (
           <button type="button" className="inline-flex items-center gap-1.5 text-left font-medium text-brand-text hover:underline" aria-label={`Open ${r.value}`} onClick={() => onFile(r.file!)}>

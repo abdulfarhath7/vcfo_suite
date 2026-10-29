@@ -1,4 +1,5 @@
 import { copyText } from './ui';
+import { RevealCountdown } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
 import {
   BUCKET_LABEL,
   BUCKETS,
@@ -146,6 +147,7 @@ export function createMobileCardsB(ctx: MobileHomeState & MobileCardsA) {
           <span className="v" style={clear ? { color: 'var(--ok-text)' } : undefined}>
             {clear ?? v ?? '—'}
           </span>
+          {clear && secret ? <RevealCountdown field={secret} className="mono" style={{ fontSize: 12, color: 'var(--ok-text)' }} /> : null}
           {v && secret ? (
             <button className="ic" type="button" aria-label={`Reveal ${k}`} onClick={() => setReveal(secret)}>
               <I n="eye" s={15} />

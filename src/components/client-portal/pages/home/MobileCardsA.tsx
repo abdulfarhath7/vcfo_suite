@@ -4,6 +4,7 @@ import { stagesOf } from './Popups';
 import { dHeader, dShort, dayMon, days, rel } from './derive';
 import { I, Si, stepK, Tile, MSeg, Bot, Card, Count, type DRow } from './MobileParts';
 import type { MobileHomeState } from './useMobileHome';
+import { PendingRequestPopover } from './PendingRequest';
 
 /** Phone Home cards, part one: greeting, needs, holds, timeline, alerts and SBC. */
 export function createMobileCardsA(ctx: MobileHomeState) {
@@ -190,9 +191,15 @@ export function createMobileCardsA(ctx: MobileHomeState) {
     >
       {h.home?.timeline.pending && !after ? (
         <div style={{ padding: '0 14px 8px' }}>
-          <button type="button" className="tle-pend" onClick={() => portal.toast(`Waiting for ${h.manager ?? 'your project manager'} to approve · “${h.home!.timeline.pending!.reason.slice(0, 60)}”`)}>
-            Change request pending{h.home.timeline.pending.coiTo ? ` · COI ${dShort(h.home.timeline.pending.coiTo)}` : ''}
-          </button>
+          <PendingRequestPopover
+            pending={h.home.timeline.pending}
+            manager={h.manager ?? 'your project manager'}
+            trigger={
+              <button type="button" className="tle-pend">
+                Change request pending{h.home.timeline.pending.coiTo ? ` · COI ${dShort(h.home.timeline.pending.coiTo)}` : ''}
+              </button>
+            }
+          />
         </div>
       ) : null}
       {gantt ?? <Bot text="SBC has not planned the dates yet." q="When will SBC plan the incorporation dates?" />}

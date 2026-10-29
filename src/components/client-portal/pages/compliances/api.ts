@@ -52,6 +52,8 @@ export interface ProofMeta {
   isPrimary: boolean;
   uploadedAt: string;
   uploadedBy: string | null;
+  /** The client uploaded it (G-03); SBC checks it. */
+  byClient?: boolean;
 }
 
 export function useProofs(filingId: string | null, enabled = true) {
@@ -78,6 +80,32 @@ export async function fetchProofs(filingId: string): Promise<ProofMeta[]> {
   return ((await res.json()) as { proofs: ProofMeta[] }).proofs ?? [];
 }
 
+/**
+ * G-03: the client adds proof files to one filing. Each file is one POST to the
+ * proofs route (the client branch), in order; the result lists what failed so
+ * the panel can name each file. The filing's status never changes from here.
+ */
+export function useAddProof() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ filingId, files }: { filingId: string; files: File[] }) => {
+      const done: ProofMeta[] = [];
+      const failed: { name: string; error: string }[] = [];
+      for (const f of files) {
+        const body = new FormData();
+        body.append('file', f);
+        body.append('kind', /challan/i.test(f.name) ? 'challan' : 'other');
+        const res = await fetch(`/api/client/compliances/${filingId}/proofs`, { method: 'POST', body }).catch(() => null);
+        const data = (await res?.json().catch(() => ({}))) as { proof?: ProofMeta; error?: string } | undefined;
+        if (res?.ok && data?.proof) done.push(data.proof);
+        else failed.push({ name: f.name, error: data?.error ?? 'Upload failed' });
+      }
+      return { done, failed };
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: COMP_KEY }),
+  });
+}
+
 /** Proof files → the shared DocViewer's contract (lazy signed URLs). */
 export function viewerDocs(f: PortalFiling, proofs: ProofMeta[]): ViewerDoc[] {
   return proofs.map((p) => ({
@@ -86,7 +114,7 @@ export function viewerDocs(f: PortalFiling, proofs: ProofMeta[]): ViewerDoc[] {
     contentType: p.mime,
     sizeBytes: p.sizeBytes,
     meta: `${f.name} · ${f.period}${f.filedOn ? ` · filed ${sep(new Date(`${f.filedOn}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' }))}` : ''}`,
-    chip: { text: 'Filed', tone: 'ok' as const },
+    chip: p.byClient ? { text: 'From you', tone: 'due' as const } : { text: 'Filed', tone: 'ok' as const },
     uploadedAt: p.uploadedAt,
     uploadedBy: p.uploadedBy ?? undefined,
     url: async () => {

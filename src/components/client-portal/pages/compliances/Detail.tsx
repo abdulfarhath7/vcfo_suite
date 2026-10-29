@@ -4,7 +4,7 @@
  * Filing detail — Calendar: centred pop-up (P-02, prototype detailModal());
  * Filings: right side panel (F-10, prototype filDetail()). Phones: bottom sheet.
  */
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { usePortal } from '../../PortalProvider';
 import {
   MON,
@@ -23,7 +23,7 @@ import {
 } from '@/lib/client-portal/compliances';
 import { Chip as SChip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { FileBadge } from '@/components/ui/file-badge';
-import { proofHref, useProofs } from './api';
+import { proofHref, useAddProof, useProofs } from './api';
 import { AreaChip, Chip, FocusTrack, I, PortalBtn, ProofChip, useModal } from './bits';
 import { useComp } from './ctx';
 
@@ -179,12 +179,32 @@ function ext(name: string, mime: string | null): string {
 
 export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void }) {
   const { today, companyShort, openProof, remind, addToCalendar } = useComp();
-  const { openChat } = usePortal();
+  const { openChat, toast } = usePortal();
   const ref = useRef<HTMLDivElement>(null);
   useModal(ref, onClose);
   const s = statusOf(f, today);
   const d = D(f.dueDate);
-  const proofs = useProofs(f.filedOn ? f.id : null);
+  const proofs = useProofs(f.id);
+  const addProof = useAddProof();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [failed, setFailed] = useState<{ name: string; error: string }[]>([]);
+  const onFiles = (list: FileList | null) => {
+    const files = Array.from(list ?? []);
+    if (!files.length) return;
+    setFailed([]);
+    addProof.mutate(
+      { filingId: f.id, files },
+      {
+        onSuccess: ({ done, failed: bad }) => {
+          setFailed(bad);
+          if (done.length) toast(done.length === 1 ? `Uploaded · ${done[0]!.fileName} · SBC checks it next` : `Uploaded · ${done.length} files · SBC checks them next`);
+          void proofs.refetch();
+        },
+        onError: () => toast('Upload failed. Try again.'),
+      },
+    );
+  };
+  const proofList = proofs.data ?? [];
   return (
     <>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc closes (useModal) */}
@@ -241,52 +261,78 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
               </>
             )}
           </div>
-          {f.filedOn ? (
-            <div>
-              <p className="st" style={{ marginBottom: 8 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <p className="st" style={{ margin: 0, flex: 1 }}>
                 Proof
               </p>
-              {proofs.isLoading ? (
-                <div className="sk-row" style={{ height: 62, borderRadius: 8 }} />
-              ) : proofs.data && proofs.data.length ? (
-                proofs.data.map((p, i) => (
-                  <div
-                    key={p.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      padding: 10,
-                      border: `1.5px solid ${i === 0 ? 'oklch(var(--brand-line))' : 'var(--border)'}`,
-                      borderRadius: 6,
-                      marginBottom: 6,
-                      ...(i === 0 ? { background: 'var(--primary-light)' } : {}),
-                    }}
-                  >
-                    <span className="cp-tw inline-flex flex-none">
-                      <FileBadge name={p.fileName} type={ext(p.fileName, p.mime) === 'PDF' ? 'PDF' : undefined} />
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <b style={{ fontSize: 13, fontWeight: 500, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.fileName}</b>
-                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{[kb(p.sizeBytes), fmtDM(p.uploadedAt.slice(0, 10))].filter(Boolean).join(' · ')}</div>
-                    </div>
-                    <button type="button" className="ibtn" data-tip="Preview" aria-label={`Preview ${p.fileName}`} onClick={() => openProof(f, p.id)}>
-                      {I.eye(15)}
-                    </button>
-                    <a className="ibtn" data-tip="Download" aria-label={`Download ${p.fileName}`} href={proofHref(f.id, p.id)} download>
-                      {I.down(15)}
-                    </a>
-                  </div>
-                ))
-              ) : (
-                // the header already carries the "Proof pending" chip (CP-15): say what will land here instead
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1.5px dashed oklch(var(--line-strong))', borderRadius: 6, color: 'var(--muted)', fontSize: 13 }}>
-                  {I.file(16)}
-                  <span style={{ flex: 1 }}>Challan or acknowledgement from SBC</span>
-                </div>
-              )}
+              <button type="button" className="btn btn-o btn-s" disabled={addProof.isPending} onClick={() => fileRef.current?.click()}>
+                {I.clip(14)} {addProof.isPending ? 'Uploading…' : 'Add proof'}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                multiple
+                hidden
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                aria-label={`Add proof for ${f.name} · ${f.period}`}
+                onChange={(e) => {
+                  onFiles(e.target.files);
+                  e.target.value = '';
+                }}
+              />
             </div>
-          ) : null}
+            {failed.length ? (
+              <div role="alert" style={{ display: 'grid', gap: 4, marginBottom: 8, fontSize: 12.5, color: 'var(--over-text, var(--muted))' }}>
+                {failed.map((x) => (
+                  <span key={x.name}>
+                    {x.name} · {x.error}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            {proofs.isLoading ? (
+              <div className="sk-row" style={{ height: 62, borderRadius: 8 }} />
+            ) : proofList.length ? (
+              proofList.map((p, i) => (
+                <div
+                  key={p.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: 10,
+                    border: `1.5px solid ${i === 0 && !p.byClient ? 'oklch(var(--brand-line))' : 'var(--border)'}`,
+                    borderRadius: 6,
+                    marginBottom: 6,
+                    ...(i === 0 && !p.byClient ? { background: 'var(--primary-light)' } : {}),
+                  }}
+                >
+                  <span className="cp-tw inline-flex flex-none">
+                    <FileBadge name={p.fileName} type={ext(p.fileName, p.mime) === 'PDF' ? 'PDF' : undefined} />
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <b style={{ fontSize: 13, fontWeight: 500, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.fileName}</b>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                      {[p.byClient ? 'From you · SBC checks it' : null, kb(p.sizeBytes), fmtDM(p.uploadedAt.slice(0, 10))].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                  <button type="button" className="ibtn" data-tip="Preview" aria-label={`Preview ${p.fileName}`} onClick={() => openProof(f, p.id)}>
+                    {I.eye(15)}
+                  </button>
+                  <a className="ibtn" data-tip="Download" aria-label={`Download ${p.fileName}`} href={proofHref(f.id, p.id)} download>
+                    {I.down(15)}
+                  </a>
+                </div>
+              ))
+            ) : (
+              // the header already carries the "Proof pending" chip (CP-15): say what will land here instead
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1.5px dashed oklch(var(--line-strong))', borderRadius: 6, color: 'var(--muted)', fontSize: 13 }}>
+                {I.file(16)}
+                <span style={{ flex: 1 }}>{f.filedOn ? 'Challan or acknowledgement from SBC' : 'No proof yet'}</span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="det-ft" style={{ padding: '12px 20px', borderTop: '1px solid var(--hair)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button

@@ -100,7 +100,7 @@ function DocumentsInner() {
   );
 
   const onUploaded = useCallback(
-    ({ fileId, requestId }: { fileId: string; requestId: string; label: string }) => {
+    ({ fileId, requestId, count }: { fileId: string; requestId: string; label: string; count?: number }) => {
       setUpload(null);
       setDrill(null);
       const rowId = `rf-${fileId}`;
@@ -109,7 +109,7 @@ function DocumentsInner() {
       setTimeout(() => setGlowId((g) => (g === rowId ? null : g)), 2600);
       void qc.invalidateQueries({ queryKey: DOCS_KEY });
       void qc.invalidateQueries({ queryKey: PORTAL_SHELL_KEY });
-      toast(`Sent to ${lead ?? 'SBC'} for review`, {
+      toast(count && count > 1 ? `${count} files sent to ${lead ?? 'SBC'} for review` : `Sent to ${lead ?? 'SBC'} for review`, {
         undo: () => {
           void fetch(`/api/client/documents/requests/${encodeURIComponent(requestId)}/upload?file=${encodeURIComponent(fileId)}`, { method: 'DELETE' }).finally(() => {
             setSelectId(`req-${requestId}`);

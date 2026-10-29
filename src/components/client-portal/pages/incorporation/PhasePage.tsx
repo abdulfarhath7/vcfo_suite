@@ -21,8 +21,8 @@ import { PH, kd, idx, ownKey, phDoneEnd, phPlan, phaseAnswer, stRow, stepHrefOf,
 import { StepTable } from './StepTable';
 import { Col, Cols, Dot, Empty, Island, PageHead, SCard, StackedBar, StepRow, useGo, type BarTone, type PageHeadLink } from './spectrum';
 
-/** Sub-steps of the focus step: small ST5 marks with labels under them (was the navy rail hero). */
-function SubSteps({ subs }: { subs: SubStep[] }) {
+/** Sub-steps of the focus step: small ST5 marks with labels under them (was the navy rail hero). Also on the step page (G-10). */
+export function SubSteps({ subs }: { subs: SubStep[] }) {
   const labels = subs.length <= 6;
   const st = (s: string) => (s === 'done' ? 'done' : s === 'now' ? 'in progress' : 'to do');
   return (

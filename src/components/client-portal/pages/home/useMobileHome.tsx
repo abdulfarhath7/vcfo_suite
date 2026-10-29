@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { portalHref, stepHref } from '@/components/client-portal/routes';
+import { useMultiUpload } from '@/components/client-portal/use-multi-upload';
 import {
   useRevealedIdentifier,
 } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
@@ -282,6 +283,8 @@ export function useMobileHome({ h, onEditTimeline, phases, onOpenDocs }: MobileH
     ['PAN', ids.panMasked, 'pan', 'https://www.incometax.gov.in', panR],
     ['TAN', ids.tanMasked, 'tan', 'https://www.tin-nsdl.com', tanR],
     ['GSTIN', ids.gstin, null, 'https://www.gst.gov.in', null],
+    // G-07: directors' DINs
+    ...(ids.dins ?? []).map((d): [string, string | undefined, 'pan' | 'tan' | null, string, string | null] => [`DIN · ${d.name}`, d.din, null, 'https://www.mca.gov.in', null]),
   ];
 
   /* ----------------------------------------------------------- docs */
@@ -291,15 +294,23 @@ export function useMobileHome({ h, onEditTimeline, phases, onOpenDocs }: MobileH
   const actRows = acts.filter((a) => actTab === 0 || (actTab === 1 ? a.actorKind !== 'client' : a.actorKind === 'client'));
 
 
-  async function uploadFile(n: NeedRow, f: File) {
-    const fd = new FormData();
-    fd.append('file', f);
-    const res = await fetch(`/api/client/home/needs/${encodeURIComponent(n.requestId!)}/upload`, { method: 'POST', body: fd });
-    const body = (await res.json().catch(() => ({}))) as { documentId?: string; error?: string };
-    if (!res.ok || !body.documentId) return portal.toast(body.error ?? 'Upload failed. Try again.');
+  // G-09: several files in one request, each with its own row in the tray
+  const up = useMultiUpload();
+  async function uploadFile(n: NeedRow, f: File | File[]) {
+    const files = Array.isArray(f) ? f : [f];
+    if (!files.length) return;
+    const url = `/api/client/home/needs/${encodeURIComponent(n.requestId!)}/upload`;
+    const res = await up.send(url, files);
+    const docId = typeof res.body.documentId === 'string' ? res.body.documentId : null;
+    if (!res.ok || !docId) return portal.toast(res.body.error ?? 'Upload failed. Try again.');
     h.refetch();
-    portal.toast(`Uploaded · ${n.title}`, {
-      undo: () => void fetch(`/api/client/home/needs/${encodeURIComponent(n.requestId!)}/upload?documentId=${encodeURIComponent(body.documentId!)}`, { method: 'DELETE' }).then(() => h.refetch()),
+    const refused = res.body.rejected?.length ?? 0;
+    if (!refused) setTimeout(up.clear, 2400);
+    portal.toast(files.length === 1 ? `Uploaded · ${n.title}` : `Uploaded ${files.length - refused} of ${files.length} files · ${n.title}`, {
+      undo: () => {
+        up.clear();
+        void fetch(`${url}?documentId=${encodeURIComponent(docId)}`, { method: 'DELETE' }).then(() => h.refetch());
+      },
     });
   }
 
@@ -381,6 +392,7 @@ export function useMobileHome({ h, onEditTimeline, phases, onOpenDocs }: MobileH
     acts,
     actRows,
     uploadFile,
+    upload: up,
   };
 }
 

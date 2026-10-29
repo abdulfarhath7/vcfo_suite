@@ -5,12 +5,15 @@
  * dialog listing ONLY the open requests (DECISIONS: upload only against open
  * requests) · drop zone with the dragging state · real progress bar with
  * cancel · refused-file error with Try again · SBC's re-upload note.
- * The file goes to POST /api/client/documents/requests/[id]/upload.
+ * The files go to POST /api/client/documents/requests/[id]/upload. G-09: several files can
+ * answer one request in a single upload; each file gets its own row with its own progress and,
+ * when the server refuses it, its own reason. Undo on the page removes the whole batch.
  * VCFO Spectrum (prototype src/components/cards/UploadDialog.tsx): a 52 px head,
  * the requests as one radio list with due chips, a dashed drop zone, file rows
  * with R-26 badges, Cancel and a blurple Upload in the footer.
  */
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import { UploadRowsList, useMultiUpload } from '@/components/client-portal/use-multi-upload';
 import type { OpenRequest } from '@/lib/client-portal/documents';
 import { validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import { Chip } from '@/components/ui/spectrum-chip';
@@ -39,17 +42,20 @@ export function UploadDialog({
   initialFile?: File | null;
   accept: { exts: string[]; maxLabel: string };
   onClose: () => void;
-  onUploaded: (r: { fileId: string; requestId: string; label: string }) => void;
+  onUploaded: (r: { fileId: string; requestId: string; label: string; count?: number }) => void;
 }) {
   const [sel, setSel] = useState<string>(initialRequestId && requests.some((r) => r.id === initialRequestId) ? initialRequestId : requests[0]?.id ?? '');
   // Phone: a missing row's sheet opens the upload for that one request (docs_a_mobile_menu).
   const [phone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width:700px)').matches);
   const shown = phone && initialRequestId && requests.some((r) => r.id === initialRequestId) ? requests.filter((r) => r.id === initialRequestId) : requests;
-  const [file, setFile] = useState<File | null>(initialFile ?? null);
+  const [files, setFiles] = useState<File[]>(initialFile ? [initialFile] : []);
+  const file = files[0] ?? null;
   const [over, setOver] = useState(false);
-  const [pct, setPct] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const xhr = useRef<XMLHttpRequest | null>(null);
+  // a batch where some files were refused: the rows stay up until Done
+  const [partial, setPartial] = useState<{ fileId: string; count: number } | null>(null);
+  const up = useMultiUpload();
+  const { cancel: cancelUpload } = up;
   const input = useRef<HTMLInputElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const opener = useRef<Element | null>(null);
@@ -58,10 +64,12 @@ export function UploadDialog({
   const caption = `${exts.map((e) => e.toUpperCase()).join(' · ')} · up to ${accept.maxLabel}`;
 
   const close = useCallback(() => {
-    xhr.current?.abort();
-    onClose();
+    cancelUpload();
+    // part of a batch went in: closing still reports it, so the page refreshes and offers Undo
+    if (partial && req) onUploaded({ fileId: partial.fileId, requestId: req.id, label: req.label, count: partial.count });
+    else onClose();
     (opener.current as HTMLElement | null)?.focus?.({ preventScroll: true });
-  }, [onClose]);
+  }, [onClose, cancelUpload, partial, req, onUploaded]);
 
   useEffect(() => {
     opener.current = document.activeElement;
@@ -81,67 +89,59 @@ export function UploadDialog({
   }, [close]);
 
   const start = useCallback(
-    (f: File | null = file) => {
-      if (!f || !req) return;
+    (list: File[] = files) => {
+      if (!list.length || !req) return;
       setError(null);
-      const bad = validateMilestoneUploadFile(f);
-      if (bad) {
-        setError(/type|Use PDF/i.test(bad) ? `${f.name} · this file type can't be opened` : `${f.name} · ${bad}`);
+      setPartial(null);
+      // the browser check first: refuse a wrong file before anything is sent
+      const bad = list.map((f) => [f, validateMilestoneUploadFile(f)] as const).filter(([, why]) => why);
+      if (bad.length === list.length) {
+        const [f, why] = bad[0]!;
+        setError(/type|Use PDF/i.test(why!) ? `${f.name} · this file type can't be opened` : `${f.name} · ${why}`);
         return;
       }
-      const body = new FormData();
-      body.append('file', f);
-      const x = new XMLHttpRequest();
-      xhr.current = x;
-      x.open('POST', `/api/client/documents/requests/${encodeURIComponent(req.id)}/upload`);
-      x.upload.onprogress = (e) => {
-        if (e.lengthComputable) setPct(Math.min(99, Math.round((e.loaded / e.total) * 100)));
-      };
-      x.onload = () => {
-        xhr.current = null;
-        let json: { fileId?: string; error?: string } = {};
-        try {
-          json = JSON.parse(x.responseText || '{}');
-        } catch {
-          /* empty */
+      void up.send(`/api/client/documents/requests/${encodeURIComponent(req.id)}/upload`, list).then((res) => {
+        const fileId = typeof res.body.fileId === 'string' ? res.body.fileId : null;
+        if (res.ok && fileId) {
+          const refused = res.body.rejected?.length ?? 0;
+          const count = list.length - refused;
+          if (refused) setPartial({ fileId, count });
+          else onUploaded({ fileId, requestId: req.id, label: req.label, count });
+          return;
         }
-        if (x.status >= 200 && x.status < 300 && json.fileId) {
-          setPct(100);
-          onUploaded({ fileId: json.fileId, requestId: req.id, label: req.label });
-        } else {
-          setPct(null);
-          setError(json.error ? (json.error.includes(f.name) ? json.error : `${f.name} · ${json.error}`) : `${f.name} · upload failed`);
+        if (res.status === 0 && res.body.error === 'Upload cancelled') return;
+        const msg = res.body.error;
+        if (list.length === 1) {
+          const f = list[0]!;
+          setError(msg ? (msg.includes(f.name) ? msg : `${f.name} · ${msg}`) : `${f.name} · upload failed`);
         }
-      };
-      x.onerror = () => {
-        xhr.current = null;
-        setPct(null);
-        setError(`${f.name} · upload failed`);
-      };
-      setPct(1);
-      x.send(body);
+      });
     },
-    [file, req, onUploaded],
+    [files, req, onUploaded, up],
   );
 
   // a file handed in (pane drop zone, phone camera) starts at once
   useEffect(() => {
-    if (initialFile && req) start(initialFile);
+    if (initialFile && req) start([initialFile]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const pick = (f: File | null) => {
-    if (!f) return;
-    setFile(f);
+  const pick = (list: FileList | File[] | null | undefined) => {
+    const next = Array.from(list ?? []).slice(0, 10);
+    if (!next.length) return;
+    setFiles(next);
     setError(null);
+    setPartial(null);
+    up.clear();
   };
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setOver(false);
-    pick(e.dataTransfer.files?.[0] ?? null);
+    pick(e.dataTransfer.files);
   };
 
-  const uploading = pct != null;
+  const uploading = up.busy;
+  const showRows = up.rows.length > 0 && (uploading || partial != null || up.rows.length > 1);
 
   return (
     <PagePortal>
@@ -209,39 +209,22 @@ export function UploadDialog({
                     className="sx-btn sm"
                     onClick={() => {
                       setError(null);
-                      setFile(null);
+                      setFiles([]);
+                      up.clear();
                       input.current?.click();
                     }}
                   >
                     Try again
                   </button>
                 </div>
-              ) : uploading && file ? (
-                <div className="vup-file up">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span className="cp-tw">
-                      <FileBadge name={file.name} />
-                    </span>
-                    <span className="vup-fn idm">{file.name}</span>
-                    <span className="mono cap">{pct}%</span>
-                    <button
-                      type="button"
-                      className="sx-ib sm"
-                      aria-label="Cancel upload"
-                      onClick={() => {
-                        xhr.current?.abort();
-                        xhr.current = null;
-                        setPct(null);
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-                        <path d="M6 6l12 12M18 6L6 18" />
-                      </svg>
+              ) : showRows ? (
+                <div className="cp-tw grid gap-2">
+                  <UploadRowsList rows={up.rows} />
+                  {uploading ? (
+                    <button type="button" className="justify-self-end text-[12.5px] font-medium text-brand-text hover:underline" onClick={up.cancel}>
+                      Cancel upload
                     </button>
-                  </div>
-                  <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? 0} aria-label="Upload progress">
-                    <span style={{ width: `${pct}%` }} />
-                  </div>
+                  ) : null}
                 </div>
               ) : (
                 <div
@@ -273,7 +256,7 @@ export function UploadDialog({
                       <span className="cp-tw" style={{ marginRight: 8, verticalAlign: 'middle' }}>
                         <FileBadge name={file.name} />
                       </span>
-                      {file.name}
+                      {files.length > 1 ? `${files.length} files · ${files.map((f) => f.name).join(', ')}` : file.name}
                     </span>
                   ) : (
                     <span className="vup-dt">
@@ -288,11 +271,12 @@ export function UploadDialog({
               <input
                 ref={input}
                 type="file"
+                multiple
                 hidden
                 style={{ display: 'none' }}
                 accept={accept.exts.map((e) => `.${e}`).join(',')}
                 onChange={(e) => {
-                  pick(e.target.files?.[0] ?? null);
+                  pick(e.target.files);
                   e.target.value = '';
                 }}
               />
@@ -301,12 +285,18 @@ export function UploadDialog({
               <button type="button" className="sx-btn" onClick={close}>
                 Cancel
               </button>
-              <button type="button" className="sx-btn p" disabled={!file || !req || uploading || !!error} onClick={() => start()}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d={UP_ICON} />
-                </svg>
-                Upload
-              </button>
+              {partial && req ? (
+                <button type="button" className="sx-btn p" onClick={() => onUploaded({ fileId: partial.fileId, requestId: req.id, label: req.label, count: partial.count })}>
+                  Done
+                </button>
+              ) : (
+                <button type="button" className="sx-btn p" disabled={!file || !req || uploading || !!error} onClick={() => start()}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d={UP_ICON} />
+                  </svg>
+                  {files.length > 1 ? `Upload ${files.length} files` : 'Upload'}
+                </button>
+              )}
             </div>
           </div>
         </div>

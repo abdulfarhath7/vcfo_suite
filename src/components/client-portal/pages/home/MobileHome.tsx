@@ -10,6 +10,9 @@
  * (TopBar, Sidebar drawer, AskLauncher) in the real app.
  */
 import { IdsRevealDialog } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
+import { UploadTray } from '@/components/client-portal/use-multi-upload';
+import { Island } from '../incorporation/spectrum';
+import { MessagesCard } from './MessagesCard';
 import { StaggerSlot } from './MobileParts';
 import { useMobileHome, type MobileHomeProps } from './useMobileHome';
 import { createMobileCardsA } from './MobileCardsA';
@@ -31,6 +34,7 @@ export function MobileHome(props: MobileHomeProps) {
     reveal,
     setReveal,
     uploadFile,
+    upload,
   } = state;
   const {
     greet,
@@ -50,9 +54,15 @@ export function MobileHome(props: MobileHomeProps) {
     actCard,
   } = cardsB;
 
+  // G-09: the thread with the lead, as a Spectrum island inside the phone layout
+  const msgCard = (
+    <Island key="msg">
+      <MessagesCard engagementId={state.h.engagementId} lead={state.h.lead} today={state.h.today} />
+    </Island>
+  );
   const cards = after
-    ? [needsCard, nextCard, compCard, idsCard, regsCard, postCard, sbcCard, timelineCard, docsCard, actCard]
-    : [needsCard, holdsCard, timelineCard, alertsCard, sbcCard, docsCard, actCard];
+    ? [needsCard, nextCard, compCard, idsCard, regsCard, postCard, sbcCard, msgCard, timelineCard, docsCard, actCard]
+    : [needsCard, holdsCard, timelineCard, alertsCard, sbcCard, msgCard, docsCard, actCard];
 
   return (
     <div className="cp-home-m">
@@ -68,17 +78,19 @@ export function MobileHome(props: MobileHomeProps) {
       <input
         ref={fileRef}
         type="file"
+        multiple
         accept="application/pdf,image/jpeg,image/png"
         hidden
         onChange={(e) => {
-          const f = e.target.files?.[0];
+          const files = Array.from(e.target.files ?? []);
           const n = upTarget.current;
-          if (f && n?.requestId) {
+          if (files.length && n?.requestId) {
             closeSheet();
-            void uploadFile(n, f);
+            void uploadFile(n, files);
           }
         }}
       />
+      <UploadTray title={upTarget.current?.title ?? 'Upload'} rows={upload.rows} busy={upload.busy} onCancel={upload.cancel} onClose={upload.clear} />
       <div className={`scrim${sheet ? ' on' : ''}`} role="presentation" onClick={closeSheet} />
       <section className={`sheet${sheet ? ' on' : ''}`} role="dialog" aria-modal="true" aria-labelledby="m-shT" aria-hidden={!sheet}>
         <div className="grab">

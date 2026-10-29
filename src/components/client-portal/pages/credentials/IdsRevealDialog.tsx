@@ -20,9 +20,10 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CS
 import { createPortal } from 'react-dom';
 import { usePortalOptional } from '@/components/client-portal/PortalProvider';
 import { InfoPopover } from '@/components/client-portal/shared';
+import { IDENTIFIER_REVEAL_MS, countdownLabel, revealUntil } from '@/lib/client-portal/identifiers';
 import '../../css/credentials-ids.css';
 
-const REVEAL_MS = 60_000;
+const REVEAL_MS = IDENTIFIER_REVEAL_MS;
 
 /* ---------- revealed values, shared with the Company IDs card ---------- */
 type Revealed = Partial<Record<'pan' | 'tan', { value: string; until: number }>>;
@@ -32,21 +33,56 @@ const timers: Partial<Record<'pan' | 'tan', ReturnType<typeof setTimeout>>> = {}
 function emit() {
   for (const l of listeners) l();
 }
-function publish(field: 'pan' | 'tan', value: string) {
-  revealed = { ...revealed, [field]: { value, until: Date.now() + REVEAL_MS } };
+/** Show the value until the server's `expiresAt` (G-07), never longer than the window. */
+function publish(field: 'pan' | 'tan', value: string, expiresAt?: string) {
+  const now = Date.now();
+  const until = revealUntil(expiresAt, now);
+  revealed = { ...revealed, [field]: { value, until } };
   if (timers[field]) clearTimeout(timers[field]);
   timers[field] = setTimeout(() => {
     const next = { ...revealed };
     delete next[field];
     revealed = next;
     emit();
-  }, REVEAL_MS);
+  }, until - now);
   emit();
 }
 function subscribe(l: () => void) {
   listeners.add(l);
   return () => listeners.delete(l);
 }
+/** When the open reveal of `field` closes (ms timestamp), else null; drives the countdown. */
+export function useRevealedUntil(field: 'pan' | 'tan'): number | null {
+  return useSyncExternalStore(
+    subscribe,
+    () => revealed[field]?.until ?? null,
+    () => null,
+  );
+}
+
+/**
+ * The seconds left on an open reveal ("0:42"), ticking once a second; nothing
+ * when the value is masked. The time comes from the reveal response (G-07).
+ */
+export function RevealCountdown({ field, className, style }: { field: 'pan' | 'tan'; className?: string; style?: CSSProperties }) {
+  const until = useRevealedUntil(field);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!until) return;
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [until]);
+  if (!until || until <= now) return null;
+  const label = countdownLabel(until, now);
+  const secs = Math.max(0, Math.ceil((until - now) / 1000));
+  return (
+    <span role="timer" aria-label={`Hides in ${secs} seconds`} className={className} style={style}>
+      {label}
+    </span>
+  );
+}
+
 /** The clear PAN / TAN while its 60-second window is open, else null. */
 export function useRevealedIdentifier(field: 'pan' | 'tan'): string | null {
   return useSyncExternalStore(
@@ -199,11 +235,13 @@ export function IdsRevealDialog({
         error?: string;
         triesLeft?: number;
         lockedUntil?: string;
+        expiresAt?: string;
       };
       if (out.ok && out.value) {
-        publish(field, out.value);
+        publish(field, out.value, out.expiresAt);
         onRevealed?.(out.value);
-        portal?.toast(`${label} shown for 60 s`);
+        const secs = Math.max(1, Math.round(((revealed[field]?.until ?? Date.now() + REVEAL_MS) - Date.now()) / 1000));
+        portal?.toast(`${label} shown for ${secs} s`);
         close();
         return;
       }
