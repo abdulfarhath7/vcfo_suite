@@ -500,6 +500,7 @@ export function CommandPalette() {
         if (e.target === e.currentTarget) close();
       }}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog takes arrow, Enter and Escape keys for the result list while focus stays in the search field */}
       <div
         ref={boxRef}
         role="dialog"
