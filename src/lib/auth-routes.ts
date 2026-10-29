@@ -40,7 +40,8 @@ export function roleNotificationsPath(role: Role): string {
 export function roleSettingsPath(role: Role): string {
   switch (role) {
     case 'super_admin':
-      return '/app/super/settings';
+      // The super settings page opens on the firm tab; the account row wants the profile.
+      return '/app/super/settings?tab=profile';
     case 'admin':
       return '/app/admin/settings';
     case 'manager':

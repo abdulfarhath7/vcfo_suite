@@ -159,6 +159,7 @@ const firmAdminItems: NavEntry[] = [
   { to: '/app/admin/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
   { to: '/app/admin/ask-vcfo/sources', label: 'Ask VCFO sources', icon: BookMarked, iconTone: TONE.knowledge },
   { to: '/app/admin/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
+  { to: '/app/admin/firm-settings', label: 'Firm settings', icon: Settings, iconTone: TONE.audit },
 ];
 
 const clientItems: NavEntry[] = [

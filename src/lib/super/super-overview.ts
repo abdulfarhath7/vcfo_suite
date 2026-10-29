@@ -18,6 +18,7 @@ import {
   coerceStatusCode,
   getActiveCatalogItems,
   getIncorporationPhases,
+  type StatusCode,
 } from '@/data/checklist';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
@@ -646,6 +647,11 @@ export interface SuperJourneyStep {
   awaitingReview: boolean;
   /** True when the lead must redo work the PM sent back. */
   rejected: boolean;
+  /**
+   * The stored step status, coerced (`not-started`, `in-progress`, `not-applicable`, ...). The
+   * gate counts a not-applicable step as done, so screens read this to say "Not needed" (G-22).
+   */
+  status: StatusCode;
   href: string;
 }
 
@@ -715,6 +721,7 @@ export function buildJourney(
         owner: gate.kind === 'waiting' ? 'client' : 'firm',
         awaitingReview: isAwaitingManagerDecision(item.id, slice),
         rejected: isReviewRejected(slice),
+        status: coerceStatusCode(slice?.status),
         href: superStepHref(slugOrId, item.slug),
       });
     }

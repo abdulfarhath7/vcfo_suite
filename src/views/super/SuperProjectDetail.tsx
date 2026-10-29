@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, ListPlus, Repeat } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,12 @@ import {
   SuperPageSkeleton,
 } from '@/components/super/parts/super-parts';
 import { superOwnerOf, superStateChip } from '@/components/super/overview/super-overview-format';
-import { useSuperProject } from '@/hooks/use-super-overview';
+import { AssignClientDialog } from '@/components/super/assign/AssignClientDialog';
+import { AssignTaskDialog } from '@/components/super/assign/AssignTaskDialog';
+import { useSuperStaff } from '@/components/super/assign/use-super-staff';
+import { EscalationsPanel } from '@/components/super/escalations/EscalationsPanel';
+import { RaiseEscalationButton } from '@/components/super/escalations/RaiseEscalationButton';
+import { useSuperOverview, useSuperProject } from '@/hooks/use-super-overview';
 import { cn } from '@/lib/utils';
 import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
 
@@ -33,12 +38,13 @@ import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
  * `ClientRecordScreen`, C-0109).
  *
  * A plain head: the client tile, the name with the stage pill, the client,
- * manager and lead, and the read-only "inspect as" links into the role shells
- * that own every action. Under it one white band with the step, steps done,
- * who holds the work and the live step, then underline tabs (R-11) for steps,
- * registrations, filings, documents, team and activity. Read-only throughout.
+ * admin, manager and lead, the read-only "inspect as" links into the role shells,
+ * and the super admin's own actions (G-20): Reassign, Assign task and Escalate.
+ * Under it one white band with the step, steps done, who holds the work and the
+ * live step, then underline tabs (R-11) for steps, registrations, filings,
+ * documents, escalations, team and activity. Step work stays in the firm shell.
  */
-type TabKey = 'steps' | 'registrations' | 'filings' | 'documents' | 'team' | 'activity';
+type TabKey = 'steps' | 'registrations' | 'filings' | 'documents' | 'escalations' | 'team' | 'activity';
 
 export default function SuperProjectDetail() {
   const params = useParams();
@@ -47,6 +53,12 @@ export default function SuperProjectDetail() {
   const detail = query.data?.detail ?? null;
   const missing = query.data?.missing ?? false;
   const [tab, setTab] = useState<TabKey>('steps');
+  const staff = useSuperStaff();
+  // The firm-wide list gives the assign dialog every manager's book size; it is the Overview's
+  // cached read, so opening a record from the list costs nothing extra.
+  const firm = useSuperOverview();
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [taskOpen, setTaskOpen] = useState(false);
 
   const seo = (
     <SEO
@@ -100,12 +112,16 @@ export default function SuperProjectDetail() {
   const owner = superOwnerOf(summary);
   const regSteps = detail.journey.filter((step) => step.phaseId === 'registration-phase-4');
   const quiet = idleKicker(summary.idleDays);
+  const adminName = staff.adminNameOf(summary.managerId);
+  const firmRows = firm.data?.engagements ?? [];
+  const assignRows = firmRows.some((row) => row.id === summary.id) ? firmRows : [summary, ...firmRows];
 
   const tabs = [
     { key: 'steps', label: 'Steps', count: `${summary.progress.done}/${summary.progress.total}` },
     { key: 'registrations', label: 'Registrations', count: regSteps.length },
     { key: 'filings', label: 'Filings', count: detail.filings.length },
     { key: 'documents', label: 'Documents', count: detail.documents.length },
+    { key: 'escalations', label: 'Escalations' },
     { key: 'team', label: 'Team', count: detail.team.length },
     { key: 'activity', label: 'Activity' },
   ];
@@ -145,6 +161,14 @@ export default function SuperProjectDetail() {
                     <span aria-hidden>·</span>
                   </>
                 ) : null}
+                {adminName ? (
+                  <>
+                    <span>
+                      Admin <b className="font-medium text-ink-2">{adminName}</b>
+                    </span>
+                    <span aria-hidden>·</span>
+                  </>
+                ) : null}
                 <span>
                   Manager <b className="font-medium text-ink-2">{summary.managerName ?? 'Unassigned'}</b>
                 </span>
@@ -176,6 +200,15 @@ export default function SuperProjectDetail() {
               <Button variant="outline" onClick={() => setTab('documents')}>
                 Documents {detail.documents.length}
               </Button>
+              <Button variant="outline" onClick={() => setAssignOpen(true)}>
+                <Repeat aria-hidden />
+                Reassign
+              </Button>
+              <Button variant="outline" onClick={() => setTaskOpen(true)}>
+                <ListPlus aria-hidden />
+                Assign task
+              </Button>
+              <RaiseEscalationButton engagementId={summary.id} companyName={summary.companyName} admins={staff.firmAdmins} />
             </div>
           </div>
 
@@ -204,9 +237,13 @@ export default function SuperProjectDetail() {
         {tab === 'registrations' ? <SuperRegistrationsPanel detail={detail} /> : null}
         {tab === 'filings' ? <SuperFilingsPanel detail={detail} /> : null}
         {tab === 'documents' ? <SuperProjectDocuments detail={detail} /> : null}
+        {tab === 'escalations' ? <EscalationsPanel engagementId={summary.id} canResolve /> : null}
         {tab === 'team' ? <SuperTeamPanel detail={detail} /> : null}
         {tab === 'activity' ? <SuperActivityPanel detail={detail} /> : null}
       </div>
+
+      <AssignClientDialog open={assignOpen} onOpenChange={setAssignOpen} engagementId={summary.id} engagements={assignRows} staff={staff} />
+      <AssignTaskDialog open={taskOpen} onOpenChange={setTaskOpen} engagementId={summary.id} engagements={assignRows} staff={staff} />
     </PageTransition>
   );
 }

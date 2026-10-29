@@ -1,10 +1,17 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { ListPlus, UserPlus } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashHero } from '@/components/dash/DashHero';
+import { Button } from '@/components/ui/button';
+import { AssignClientDialog } from '@/components/super/assign/AssignClientDialog';
+import { AssignTaskDialog } from '@/components/super/assign/AssignTaskDialog';
+import { useSuperStaff } from '@/components/super/assign/use-super-staff';
+import { SuperAdminsPanel } from '@/components/super/overview/SuperAdminsPanel';
+import { EscalationsPanel } from '@/components/super/escalations/EscalationsPanel';
 import { SuperPageError } from '@/components/super/parts/super-parts';
 import {
   SuperPhasePanel,
@@ -29,8 +36,10 @@ import { internFirstName, internGreeting, internGreetingHour } from '@/lib/inter
  * SUPER ADMIN OVERVIEW (L0) — the observatory.
  *
  * Answers "is the firm healthy, and what needs me?" in five seconds, and every
- * element drills to the detail behind it. Read-only: this surface never writes
- * (context §3). The home card, attention list, charts and rail come from
+ * element drills to the detail behind it. The reads stay read-only; the writes
+ * are the super admin's own actions (G-20): Assign client and Assign task on the
+ * home card, and Resolve on an escalation. The admins table and the escalations
+ * come from the People roster, the reporting lines and `/api/super/escalations`. The home card, attention list, charts and rail come from
  * `/api/super/overview`; the practice cards, managers and top risks come from
  * `/api/super/insights`, which loads beside it and never blocks the page.
  *
@@ -46,6 +55,9 @@ export default function SuperOverview() {
   // overview and never blocks it: until it lands those panels show grey shapes.
   const insightsQuery = useSuperInsights();
   const insights = insightsQuery.data;
+  const staff = useSuperStaff();
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [taskOpen, setTaskOpen] = useState(false);
 
   const greeting = useMemo(() => {
     const first = internFirstName(user?.name ?? '');
@@ -123,13 +135,23 @@ export default function SuperOverview() {
               ? [{ label: 'Filed on time', value: `${filedOnTime}%`, href: '/app/super/reports', good: true }]
               : []),
           ]}
-        />
+        >
+          <Button onClick={() => setAssignOpen(true)}>
+            <UserPlus aria-hidden />
+            Assign client
+          </Button>
+          <Button variant="outline" onClick={() => setTaskOpen(true)}>
+            <ListPlus aria-hidden />
+            Assign task
+          </Button>
+        </DashHero>
 
         {insights ? <SuperPracticeCards insights={insights} /> : <InsightShapes count={3} />}
 
         <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
           <div className="flex min-w-0 flex-col gap-3">
             <SuperAttentionPanel overview={overview} />
+            <SuperAdminsPanel staff={staff} engagements={overview.engagements} />
             {insights ? <SuperManagersPanel insights={insights} /> : <InsightShapes count={1} />}
             <SuperWorkloadPanel overview={overview} />
             <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
@@ -139,11 +161,15 @@ export default function SuperOverview() {
           </div>
 
           <div className="flex min-w-0 flex-col gap-3">
+            <EscalationsPanel canResolve limit={6} />
             {insights ? <SuperTopRisks insights={insights} /> : <InsightShapes count={1} />}
             <SuperSideRail overview={overview} />
           </div>
         </div>
       </div>
+
+      <AssignClientDialog open={assignOpen} onOpenChange={setAssignOpen} engagements={overview.engagements} staff={staff} />
+      <AssignTaskDialog open={taskOpen} onOpenChange={setTaskOpen} engagements={overview.engagements} staff={staff} />
     </PageTransition>
   );
 }

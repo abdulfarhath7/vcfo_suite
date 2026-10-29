@@ -83,6 +83,7 @@ function markTone(step: SuperJourneyStep): StepTone {
 }
 
 function statusWord(step: SuperJourneyStep): string {
+  if (step.status === 'not-applicable') return 'Not needed';
   if (step.rejected) return 'Sent back';
   if (step.awaitingReview) return 'Waiting';
   if (step.kind === 'done') return 'Done';

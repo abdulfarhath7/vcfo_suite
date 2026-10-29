@@ -2,11 +2,15 @@
 
 import { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { UserPlus } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageBackCluster } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { DashSection } from '@/components/dash/DashSection';
+import { Button } from '@/components/ui/button';
+import { AssignClientDialog } from '@/components/super/assign/AssignClientDialog';
+import { useSuperStaff } from '@/components/super/assign/use-super-staff';
 import { AreaPill, Chip } from '@/components/ui/spectrum-chip';
 import { PhaseBar } from '@/components/ui/step-track';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
@@ -44,7 +48,9 @@ import { cn } from '@/lib/utils';
  *
  * The table is the shared `EFilingGrid` (Spectrum T1 rows). The state switch and
  * the stage chip live in the URL (`?filter=`, `?stage=`), so the Overview's
- * links keep landing on the right slice; manager and lead chips are local.
+ * links keep landing on the right slice; admin, manager and lead chips are local.
+ * The Admin column reads the manager's reporting line (G-20), and "Assign client"
+ * opens the same assign dialog as the Overview.
  */
 
 type Filter = 'all' | 'attention' | 'firm' | 'client';
@@ -75,8 +81,12 @@ function SuperProjectsInner() {
 
   const filter = parseFilter(params.get('filter'));
   const stage = params.get('stage');
+  const [admin, setAdmin] = useState('');
   const [manager, setManager] = useState('');
   const [lead, setLead] = useState('');
+  const [assignOpen, setAssignOpen] = useState(false);
+  const staff = useSuperStaff();
+  const adminOf = staff.adminNameOf;
 
   const rows = useMemo(() => {
     if (!overview) return [];
@@ -84,10 +94,11 @@ function SuperProjectsInner() {
       (summary) =>
         matchesFilter(summary, filter) &&
         (!stage || summary.stage === stage) &&
+        (!admin || (adminOf(summary.managerId) ?? 'Unassigned') === admin) &&
         (!manager || (summary.managerName ?? 'Unassigned') === manager) &&
         (!lead || (summary.leadName ?? 'Unassigned') === lead),
     );
-  }, [overview, filter, stage, manager, lead]);
+  }, [overview, filter, stage, admin, manager, lead, adminOf]);
 
   /** Earliest open filing per engagement, from the overview's 90-day filing window. */
   const nextDue = useMemo(() => {
@@ -140,7 +151,10 @@ function SuperProjectsInner() {
   const names = (pick: (s: SuperEngagementSummary) => string | null) =>
     [...new Set(overview.engagements.map((s) => pick(s) ?? 'Unassigned'))].sort((a, b) => a.localeCompare(b));
   const stageLabel = overview.charts.byStage.find((bar) => bar.stage === stage)?.label ?? '';
-  const columns = columnsFor(nextDue);
+  const columns = columnsFor(nextDue, adminOf);
+  const adminNames = [...new Set(overview.engagements.map((s) => adminOf(s.managerId) ?? 'Unassigned'))].sort((a, b) =>
+    a.localeCompare(b),
+  );
 
   return (
     <PageTransition>
@@ -153,6 +167,10 @@ function SuperProjectsInner() {
             {rows.length} of {overview.engagements.length}
           </span>
         </PageBackCluster>
+        <Button className="ml-auto" onClick={() => setAssignOpen(true)}>
+          <UserPlus aria-hidden />
+          Assign client
+        </Button>
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -165,11 +183,13 @@ function SuperProjectsInner() {
         />
         <SuperFilterChips
           onClear={() => {
+            setAdmin('');
             setManager('');
             setLead('');
             go({ stage: null });
           }}
           filters={[
+            { key: 'admin', label: 'Admin', value: admin, options: adminNames, onChange: setAdmin },
             { key: 'manager', label: 'Manager', value: manager, options: names((s) => s.managerName), onChange: setManager },
             { key: 'lead', label: 'Lead', value: lead, options: names((s) => s.leadName), onChange: setLead },
             {
@@ -193,7 +213,7 @@ function SuperProjectsInner() {
             rowKey={(row) => row.id}
             onRowClick={(row) => router.push(row.href)}
             empty="No client matches these filters"
-            minWidth={1080}
+            minWidth={1180}
             pageSize={17}
           />
         </div>
@@ -209,6 +229,8 @@ function SuperProjectsInner() {
           )}
         </div>
       </DashSection>
+
+      <AssignClientDialog open={assignOpen} onOpenChange={setAssignOpen} engagements={overview.engagements} staff={staff} />
     </PageTransition>
   );
 }
@@ -230,7 +252,10 @@ const HEALTH_TONE: Record<string, 'ok' | 'bad' | 'warn'> = {
 
 /* The clients grid (K-45, C-0109): Spectrum T1 rows with the ST5 phase bars, the area pill
    for the stage and the status chip in one of the six words. */
-function columnsFor(nextDue: Map<string, string>): EFilingColumn<SuperEngagementSummary>[] {
+function columnsFor(
+  nextDue: Map<string, string>,
+  adminOf: (managerId: string | null) => string | null,
+): EFilingColumn<SuperEngagementSummary>[] {
   const today = todayKey();
   return [
     {
@@ -260,6 +285,15 @@ function columnsFor(nextDue: Map<string, string>): EFilingColumn<SuperEngagement
           <span className="min-w-0 truncate">{row.managerName ?? 'Unassigned'}</span>
         </span>
       ),
+    },
+    {
+      key: 'admin',
+      header: 'Admin',
+      width: '11%',
+      render: (row) => {
+        const name = adminOf(row.managerId);
+        return name ? <span className="block min-w-0 truncate">{name}</span> : <span className="text-ink-faint">–</span>;
+      },
     },
     {
       key: 'stage',

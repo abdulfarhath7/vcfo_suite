@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils';
 const REGISTRATION_PHASE_ID = 'registration-phase-4';
 
 function regWord(step: SuperJourneyStep): { word: string; tone: ChipTone } {
+  // The gate counts a not-applicable step as done; the stored status says it was never needed.
+  if (step.status === 'not-applicable') return { word: 'Not needed', tone: 'idle' };
   if (step.rejected) return { word: 'Sent back', tone: 'bad' };
   if (step.kind === 'done') return { word: 'Done', tone: 'ok' };
   if (step.kind === 'waiting' || step.awaitingReview) return { word: 'Waiting', tone: 'teal' };
@@ -31,7 +33,9 @@ function regWord(step: SuperJourneyStep): { word: string; tone: ChipTone } {
 /** The registration-phase steps of this client, as the gate says. */
 export function SuperRegistrationsPanel({ detail }: { detail: SuperEngagementDetail }) {
   const steps = detail.journey.filter((step) => step.phaseId === REGISTRATION_PHASE_ID);
-  const done = steps.filter((step) => step.kind === 'done').length;
+  const notNeeded = steps.filter((step) => step.status === 'not-applicable').length;
+  const done = steps.filter((step) => step.kind === 'done' && step.status !== 'not-applicable').length;
+  const needed = steps.length - notNeeded;
   const columns: EFilingColumn<SuperJourneyStep>[] = [
     {
       key: 'name',
@@ -68,7 +72,7 @@ export function SuperRegistrationsPanel({ detail }: { detail: SuperEngagementDet
     },
   ];
   return (
-    <DashSection title="Registrations" meta={`${done} of ${steps.length} done`} bodyClassName="px-2 pb-2 pt-1">
+    <DashSection title="Registrations" meta={`${done} of ${needed} done${notNeeded ? ` · ${notNeeded} not needed` : ''}`} bodyClassName="px-2 pb-2 pt-1">
       <EFilingGrid caption="Registrations" columns={columns} rows={steps} rowKey={(step) => step.id} pageSize={25} minWidth={560} empty="None" />
     </DashSection>
   );

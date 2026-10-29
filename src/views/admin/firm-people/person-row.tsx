@@ -8,16 +8,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { adminProjectPath } from '@/lib/projects/project-step-path';
 import { cn } from '@/lib/utils';
 import { PersonAvatar } from './parts';
 import type { StaffRow } from './types';
 import type { FirmPeopleState } from './use-firm-people';
 
+/** Select value for "reports to no admin" (Radix Select items cannot be empty). */
+const NO_ADMIN = '__none';
+
 /**
  * One person in a list, with their attached projects and the actions menu.
  * Built per render inside the page (as before the split), so it closes over
- * the page's current state.
+ * the page's current state. A project manager row also carries the "Reports to
+ * admin" picker for firm-wide admins (G-20), which saves on change.
  */
 export function createPersonRow(ctx: FirmPeopleState) {
   const {
@@ -28,6 +33,12 @@ export function createPersonRow(ctx: FirmPeopleState) {
     openChangeEmail,
     projectsForPerson,
     openAssign,
+    isAdmin,
+    admins,
+    reportingQuery,
+    reportingSaving,
+    adminIdOfManager,
+    setManagerAdmin,
   } = ctx;
 
   function PersonRow({
@@ -76,6 +87,25 @@ export function createPersonRow(ctx: FirmPeopleState) {
             </div>
           )}
           <div className="flex shrink-0 items-center gap-1">
+            {isAdmin && person.role === 'manager' && !reportingQuery.isPending ? (
+              <Select
+                value={adminIdOfManager(person.id) ?? NO_ADMIN}
+                disabled={reportingSaving === person.id}
+                onValueChange={(v) => void setManagerAdmin(person, v === NO_ADMIN ? null : v)}
+              >
+                <SelectTrigger className="h-control-sm w-44 text-[13px]" aria-label={`${person.name} reports to admin`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_ADMIN}>No admin</SelectItem>
+                  {admins.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      Reports to {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
             {canAssign ? (
               <Button
                 type="button"

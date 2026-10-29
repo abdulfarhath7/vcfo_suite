@@ -226,6 +226,15 @@ describe('buildJourney', () => {
       'registration-phase-4',
     ]);
   });
+
+  it('carries the raw status, so a not-applicable step can read "Not needed" (G-22)', () => {
+    const state: SuperOverviewState = { 'reg-4': { status: 'not-applicable' } };
+    const journey = buildJourney(state, 'acme-india');
+    const step = journey.find((s) => s.id === 'reg-4');
+
+    expect(step?.status).toBe('not-applicable');
+    expect(journey.find((s) => s.id !== 'reg-4')?.status).toBe('not-started');
+  });
 });
 
 describe('gate state', () => {

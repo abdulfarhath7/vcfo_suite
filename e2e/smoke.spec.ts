@@ -110,6 +110,11 @@ const accountSettings: RouteCheck = async (page) => {
   await expect(page.getByText('Sign-in and security', { exact: true }).first()).toBeVisible();
 };
 
+/** The firm settings store (G-02), on the admin page and the super admin's Firm tab. */
+const firmSettings: RouteCheck = async (page) => {
+  await expect(page.getByText('Firm settings', { exact: true }).first()).toBeVisible();
+};
+
 /** The milestone response form on a staff step page (split into milestone-form/). */
 const milestoneForm: RouteCheck = async (page) => {
   await expect(page.getByText(/Couldn.t load this step/)).toHaveCount(0);
@@ -193,7 +198,8 @@ const ROUTES: Record<DemoRole, Route[]> = {
     '/app/super/reports',
     '/app/super/announcements',
     '/app/super/notifications',
-    ['/app/super/settings', accountSettings],
+    ['/app/super/settings?tab=profile', accountSettings],
+    ['/app/super/settings', firmSettings],
     '/app/dev/overview',
     '/app/dev/connections',
     '/app/dev/messages',
@@ -206,6 +212,7 @@ const ROUTES: Record<DemoRole, Route[]> = {
   ],
   admin: [
     '/app/admin/dashboard',
+    ['/app/admin/firm-settings', firmSettings],
     '/app/admin/overview',
     '/app/admin/analytics',
     '/app/admin/approvals',

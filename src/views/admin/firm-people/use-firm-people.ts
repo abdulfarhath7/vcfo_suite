@@ -37,12 +37,17 @@ export function useFirmPeople() {
   const [assignTarget, setAssignTarget] = useState<StaffRow | null>(null);
   const [assignProjectId, setAssignProjectId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
+  const [reportingSaving, setReportingSaving] = useState<string | null>(null);
   const isAdmin = isFirmWideAdmin(user?.role);
+  const isSuperAdmin = user?.role === 'super_admin';
   const isManager = user?.role === 'manager';
   const canCreate = isAdmin || isManager;
-  const createRoles: PersonRole[] = isAdmin
-    ? ['admin', 'manager', 'intern']
-    : ['intern'];
+  // Developer accounts reach only the developer console; only the super admin may create one.
+  const createRoles: PersonRole[] = isSuperAdmin
+    ? ['admin', 'manager', 'intern', 'developer']
+    : isAdmin
+      ? ['admin', 'manager', 'intern']
+      : ['intern'];
   const selectedManagerId = searchParams.get('managerId');
 
   const peopleQuery = useQuery({
@@ -50,6 +55,18 @@ export function useFirmPeople() {
     queryFn: async () => {
       const data = await fetchJson<{ people: StaffRow[] }>('/api/admin/people');
       return data.people;
+    },
+    enabled: isAdmin,
+  });
+
+  /** Which firm admin each project manager reports to (G-20). */
+  const reportingQuery = useQuery({
+    queryKey: ['admin-reporting-lines'],
+    queryFn: async () => {
+      const data = await fetchJson<{ lines: { managerId: string; adminId: string | null }[] }>(
+        '/api/admin/people/reporting',
+      );
+      return data.lines;
     },
     enabled: isAdmin,
   });
@@ -128,6 +145,21 @@ export function useFirmPeople() {
     }
     dispatch({ type: 'patch', patch: { submitting: true } });
     try {
+      if (form.role === 'developer') {
+        await fetchJson('/api/admin/people/developers', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: form.name.trim() || undefined,
+            email: form.email.trim(),
+            password: form.password || TEMP_PASSWORD,
+          }),
+        });
+        toastSuccess(`${ROLE_LABEL[form.role]} created`, form.email);
+        dispatch({ type: 'reset' });
+        setCreateOpen(false);
+        await queryClient.invalidateQueries({ queryKey: ['admin-people'] });
+        return;
+      }
       await fetchJson('/api/admin/people', {
         method: 'POST',
         body: JSON.stringify({
@@ -330,6 +362,28 @@ export function useFirmPeople() {
     }
   }
 
+  const reportingLines = reportingQuery.data ?? [];
+  /** The admin a manager reports to, by the manager's profile id; null when not set. */
+  const adminIdOfManager = (managerId: string): string | null =>
+    reportingLines.find((l) => l.managerId === managerId)?.adminId ?? null;
+
+  async function setManagerAdmin(manager: StaffRow, adminId: string | null) {
+    setReportingSaving(manager.id);
+    try {
+      await fetchJson('/api/admin/people/reporting', {
+        method: 'PATCH',
+        body: JSON.stringify({ managerId: manager.id, adminId }),
+      });
+      const admin = adminId ? admins.find((a) => a.id === adminId) : null;
+      toastSuccess(admin ? `${manager.name} reports to ${admin.name}` : `${manager.name} has no admin now`);
+      await queryClient.invalidateQueries({ queryKey: ['admin-reporting-lines'] });
+    } catch (err) {
+      toastError(errorMessage(err));
+    } finally {
+      setReportingSaving(null);
+    }
+  }
+
   const selectedManager = selectedManagerId
     ? managers.find((m) => m.id === selectedManagerId)
     : null;
@@ -379,8 +433,13 @@ export function useFirmPeople() {
     assigning,
     setAssigning,
     isAdmin,
+    isSuperAdmin,
     isManager,
     canCreate,
+    reportingQuery,
+    reportingSaving,
+    adminIdOfManager,
+    setManagerAdmin,
     createRoles,
     selectedManagerId,
     peopleQuery,
