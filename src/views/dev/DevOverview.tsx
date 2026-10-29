@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { DashHero, type DashHeroStat } from '@/components/dash/DashHero';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Chip } from '@/components/ui/spectrum-chip';
@@ -58,20 +59,48 @@ export default function DevOverview() {
   const d = q.data;
 
   const working = d ? d.services.filter((s) => s.status === 'configured').length : 0;
+  /* Five numbers (R-18, E-04, E-05), each opening the page behind it. Staff signed in moves to
+     the line under the title. No trend line: the overview reads only the current state. */
   const stats: DashHeroStat[] = d
     ? [
-        { label: 'Services working', value: `${working} / ${d.services.length}`, href: '/app/dev/connections' },
-        { label: 'Outlook mailboxes', value: d.outlook.connected, sub: d.outlook.expiringSoon ? `${d.outlook.expiringSoon} due soon` : undefined, href: '/app/dev/connections' },
+        {
+          label: 'Services working',
+          value: `${working} / ${d.services.length}`,
+          href: '/app/dev/connections',
+          note: d.services.length - working > 0 ? `${d.services.length - working} not set` : undefined,
+          how: 'Services whose settings are all present, over every service the app uses.',
+        },
         {
           label: 'Jobs failed today',
           value: d.jobs.state === 'ok' ? d.jobs.data.failedToday : '-',
           hot: d.jobs.state === 'ok' && d.jobs.data.failedToday > 0,
-          sub: d.jobs.state === 'not_set_up' ? 'Not set up' : d.jobs.state === 'unreachable' ? 'Unreachable' : undefined,
+          note: d.jobs.state === 'not_set_up' ? 'Not set up' : d.jobs.state === 'unreachable' ? 'Unreachable' : `${d.jobs.data.lastRuns.length} recent runs`,
           href: '/app/dev/jobs',
+          how: 'Inngest job runs that ended in failure since midnight.',
         },
-        { label: 'Messages failed, 24 hours', value: d.messages.failed, hot: d.messages.failed > 0, sub: `${d.messages.sent} sent`, href: '/app/dev/messages' },
-        { label: 'Denied, 7 days', value: d.audit7d.denied, hot: d.audit7d.denied > 0, sub: `${d.audit7d.failed} failed`, href: '/app/dev/audit' },
-        { label: 'Staff signed in', value: d.staffSignedIn, href: '/app/dev/access' },
+        {
+          label: 'Messages failed',
+          value: d.messages.failed,
+          hot: d.messages.failed > 0,
+          note: `${d.messages.sent} sent · 24h`,
+          href: '/app/dev/messages',
+          how: 'Email and WhatsApp messages that failed in the last 24 hours.',
+        },
+        {
+          label: 'Denied, 7 days',
+          value: d.audit7d.denied,
+          hot: d.audit7d.denied > 0,
+          note: `${d.audit7d.failed} failed`,
+          href: '/app/dev/audit',
+          how: 'Actions the access checks refused in the last seven days, from the audit log.',
+        },
+        {
+          label: 'Outlook mailboxes',
+          value: d.outlook.connected,
+          note: d.outlook.expiringSoon ? `${d.outlook.expiringSoon} due soon` : undefined,
+          href: '/app/dev/connections',
+          how: 'Connected Outlook mailboxes; due soon means the sign-in nears its 90 days.',
+        },
       ]
     : [];
 
@@ -82,6 +111,13 @@ export default function DevOverview() {
       <DashHero
         title="Developer console"
         meta={d && d.deploy.state === 'ok' ? <Chip tone={d.deploy.data.status === 'RUNNING' ? 'ok' : 'warn'}>{words(d.deploy.data.status)}</Chip> : null}
+        subtitle={
+          d ? (
+            <Link href="/app/dev/access" className="hover:underline">
+              {d.staffSignedIn} staff signed in
+            </Link>
+          ) : undefined
+        }
         stats={stats}
       />
       {!d ? (

@@ -9,12 +9,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Briefcase, Check, FolderPlus, Loader2, Mail } from 'lucide-react';
+import { Briefcase, Check, FolderPlus, KeyRound, Loader2, Mail } from 'lucide-react';
+import { DangerConfirm } from '@/components/ui/danger-confirm';
 import { cn } from '@/lib/utils';
 import { ROLE_LABEL } from './types';
 import type { FirmPeopleState } from './use-firm-people';
 
-/** The Assign project and Change email dialogs, shared by both People views. */
+/**
+ * The Assign project and Change email dialogs, and the typed confirms for Delete person and Reset
+ * two-step sign-in (B-14), shared by both People views.
+ */
 export function createFirmPeopleDialogs(ctx: FirmPeopleState) {
   const {
     emailTarget,
@@ -33,6 +37,12 @@ export function createFirmPeopleDialogs(ctx: FirmPeopleState) {
     attachedToPerson,
     closeAssign,
     onAssignProject,
+    deleteTarget,
+    setDeleteTarget,
+    confirmDelete,
+    resetTarget,
+    setResetTarget,
+    confirmResetTwoStep,
   } = ctx;
 
   const assignDialog = (
@@ -177,7 +187,35 @@ export function createFirmPeopleDialogs(ctx: FirmPeopleState) {
     </Dialog>
   );
 
-  return { assignDialog, emailDialog };
+  const dangerDialogs = (
+    <>
+      <DangerConfirm
+        open={!!deleteTarget}
+        onOpenChange={(open) => (!open ? setDeleteTarget(null) : undefined)}
+        title={deleteTarget ? `Delete ${deleteTarget.name}?` : 'Delete person?'}
+        body={deleteTarget ? `${deleteTarget.email} loses access at once. This cannot be undone.` : undefined}
+        word="DELETE"
+        confirm="Delete person"
+        onConfirm={async () => {
+          if (deleteTarget) await confirmDelete(deleteTarget);
+        }}
+      />
+      <DangerConfirm
+        open={!!resetTarget}
+        onOpenChange={(open) => (!open ? setResetTarget(null) : undefined)}
+        title={resetTarget ? `Reset two-step sign-in for ${resetTarget.name}?` : 'Reset two-step sign-in?'}
+        body="They sign in with the password only until they set two-step up again."
+        word="RESET"
+        confirm="Reset two-step"
+        icon={KeyRound}
+        onConfirm={async () => {
+          if (resetTarget) await confirmResetTwoStep(resetTarget);
+        }}
+      />
+    </>
+  );
+
+  return { assignDialog, emailDialog, dangerDialogs };
 }
 
 export type FirmPeopleDialogs = ReturnType<typeof createFirmPeopleDialogs>;

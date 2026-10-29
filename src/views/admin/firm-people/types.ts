@@ -14,6 +14,8 @@ export type StaffRow = {
   clientId?: string | null;
   reportsToManagerId?: string | null;
   status?: string;
+  /** Two-step sign-in is on; sent only in the firm-admin roster. */
+  twoStepOn?: boolean;
 };
 
 export type RemovedClientRow = {
@@ -42,6 +44,8 @@ export type FormState = {
   password: string;
   role: PersonRole;
   reportsToManagerId: string;
+  /** A new project manager's firm admin (G-20), saved through the reporting route after create. */
+  reportsToAdminId: string;
   submitting: boolean;
 };
 
@@ -55,6 +59,7 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       password: TEMP_PASSWORD,
       role: state.role,
       reportsToManagerId: state.reportsToManagerId,
+      reportsToAdminId: state.reportsToAdminId,
       submitting: false,
     };
   }

@@ -1,8 +1,8 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
-import { usePathname, type useRouter } from 'next/navigation';
+import { usePathname, useSearchParams, type useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
@@ -13,7 +13,11 @@ import { Button } from '@/components/ui/button';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { Tag } from '@/components/ui/spectrum-chip';
-import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { EFilingGrid, GRID_SUB, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { PhaseBar } from '@/components/ui/step-track';
+import { AvatarStack } from '@/components/ui/avatar-stack';
+import { SavedViews, type ViewFilters } from '@/components/ui/saved-views';
+import { CLIENT_LIST_VIEWS, useClientTableTools, windowEndsThisWeek } from '@/views/admin/clients-table-tools';
 import { RecordTile } from '@/components/incorporation/RecordHead';
 import { HealthChip, PeopleCard, PersonAvatar, StageChip } from '@/views/admin/firm-people/parts';
 import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
@@ -22,7 +26,7 @@ import type { Engagement } from '@/data/engagements';
 import { STUCK_LABEL } from '@/lib/projects/project-stuck';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { useApp } from '@/context/AppContext';
-import { isFirmWideAdmin } from '@/lib/auth';
+import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 
 type View = 'table' | 'board';
 type Router = ReturnType<typeof useRouter>;
@@ -36,6 +40,10 @@ interface EnrichedItem {
   leads?: Array<{ id: string; name: string; initials?: string }>;
   city: { name: string; x: number; y: number };
   stuck: import('@/lib/projects/project-stuck').StuckReason;
+  /** ST5 phase track (four bars sized by step count). */
+  phases?: Array<{ done: number; total: number; title: string }>;
+  /** E-08: the latest step edit, submit, review or delivery time. */
+  changedAt?: string;
 }
 
 export interface ProjectsViewProps {
@@ -69,6 +77,14 @@ function ProgressCell({ pct }: { pct: number }) {
   );
 }
 
+/** Which saved-view filter a project passes (E-06). */
+function inShow(show: string, item: EnrichedItem): boolean {
+  if (show === 'overdue') return item.e.health === 'overdue';
+  if (show === 'week') return windowEndsThisWeek(item.e.schedule);
+  if (show === 'waiting') return item.stuck === 'waiting_client';
+  return true;
+}
+
 function leadLabelOf(item: EnrichedItem): string {
   return item.leads && item.leads.length > 0 ? item.leads.map((l) => l.name).join(', ') : (item.intern?.name ?? 'Unassigned');
 }
@@ -87,6 +103,29 @@ export function ProjectsView(props: ProjectsViewProps) {
   const { user } = useApp();
   const projectBase = staffProjectBaseFromPathname(pathname, staffBase);
   const newProjectHref = staffNewProjectPath(projectBase);
+  const params = useSearchParams();
+  const [show, setShow] = useState('');
+  // E-05: a home card tile opens the list on one saved view.
+  const viewParam = params?.get('view') ?? null;
+  useEffect(() => {
+    const v = CLIENT_LIST_VIEWS.find((x) => x.key === viewParam);
+    if (v) setShow(v.filters.show ?? '');
+  }, [viewParam]);
+  const shownRows = enriched.filter((item) => inShow(show, item));
+  const current: ViewFilters = { show };
+  const tools = useClientTableTools({
+    rows: shownRows,
+    engagementOf: (item) => item.e,
+    rowKey: (item) => item.e.id,
+    leads: props.internOptions.length ? props.internOptions : props.teamMembers,
+    canReassign: isAdminOrManager(user?.role),
+    openHref: (item) => adminProjectPath(item.e, projectBase),
+    csv: {
+      file: 'projects.csv',
+      header: ['Company', 'Setup phase', 'Progress', 'Delivery owner', 'Health'],
+      cells: (item) => [item.e.companyName, stageDisplayLabel(item.e.stage), `${item.pct}%`, leadLabelOf(item), item.e.health],
+    },
+  });
 
   const columns: EFilingColumn<EnrichedItem>[] = [
     {
@@ -105,15 +144,37 @@ export function ProjectsView(props: ProjectsViewProps) {
       ),
     },
     { key: 'stage', header: 'Setup phase', width: '132px', render: (item) => <StageChip stage={item.e.stage} /> },
-    { key: 'progress', header: 'Progress', width: '160px', render: (item) => <ProgressCell pct={item.pct} /> },
+    {
+      key: 'progress',
+      header: 'Progress',
+      width: '170px',
+      render: (item) =>
+        item.phases && item.phases.length > 0 ? (
+          <span className="flex items-center gap-2">
+            <PhaseBar
+              done={item.phases.map((p) => p.done)}
+              totals={item.phases.map((p) => p.total)}
+              names={item.phases.map((p) => p.title)}
+              className="min-w-[80px] flex-1"
+            />
+            <span className="w-9 flex-none text-right text-[12px] tabular-nums text-ink-muted">{item.pct}%</span>
+          </span>
+        ) : (
+          <ProgressCell pct={item.pct} />
+        ),
+    },
     {
       key: 'owner',
       header: 'Delivery owner',
       width: '20%',
       render: (item) => (
         <span className="flex min-w-0 items-center gap-2">
-          <PersonAvatar name={item.intern?.name ?? '?'} size={24} />
-          <span className="truncate" title={leadLabelOf(item)}>{leadLabelOf(item)}</span>
+          {item.leads && item.leads.length > 1 ? (
+            <AvatarStack people={item.leads.map((l) => l.name)} label={`Leads: ${leadLabelOf(item)}`} />
+          ) : (
+            <PersonAvatar name={item.intern?.name ?? '?'} size={24} />
+          )}
+          <span className={cn('truncate', GRID_SUB)} title={leadLabelOf(item)}>{leadLabelOf(item)}</span>
         </span>
       ),
     },
@@ -123,7 +184,11 @@ export function ProjectsView(props: ProjectsViewProps) {
       header: <span className="sr-only">Actions</span>,
       width: '56px',
       align: 'right',
-      render: (item) => <ProjectActionsMenu engagement={item.e} />,
+      render: (item) => (
+        <span data-grid-ctl className="inline-flex">
+          <ProjectActionsMenu engagement={item.e} />
+        </span>
+      ),
     },
   ];
 
@@ -162,7 +227,17 @@ export function ProjectsView(props: ProjectsViewProps) {
       />
 
       {view === 'table' && (
-        <PeopleCard title="Projects" count={engagementsLoading ? undefined : enriched.length}>
+        <PeopleCard title="Projects" count={engagementsLoading ? undefined : shownRows.length}>
+          {enriched.length > 0 ? (
+            <div className="px-4 pt-3">
+              <SavedViews
+                storageKey={`${user?.id ?? 'staff'}:projects`}
+                views={CLIENT_LIST_VIEWS}
+                current={current}
+                onApply={(f) => setShow(f.show ?? '')}
+              />
+            </div>
+          ) : null}
           {engagementsLoading ? <SkeletonRows className="p-4" /> : null}
           {!engagementsLoading && enriched.length === 0 ? (
             <EmptyState
@@ -179,7 +254,7 @@ export function ProjectsView(props: ProjectsViewProps) {
             <>
               {/* Phone: one row card per project. */}
               <ul className="md:hidden">
-                {enriched.map((item) => (
+                {shownRows.map((item) => (
                   <li key={item.e.id} className="flex items-start gap-3 border-b border-line-soft px-4 py-3 last:border-b-0">
                     <RecordTile name={item.e.companyName} size={30} />
                     <Link href={adminProjectPath(item.e, projectBase)} className="grid min-w-0 flex-1 gap-1.5">
@@ -199,12 +274,30 @@ export function ProjectsView(props: ProjectsViewProps) {
                 ))}
               </ul>
               <div className="hidden px-2 pb-2 md:block">
-                <EFilingGrid caption="GCC setup projects" columns={columns} rows={enriched} rowKey={(item) => item.e.id} pageSize={14} minWidth={820} />
+                <EFilingGrid
+                  caption="GCC setup projects"
+                  columns={columns}
+                  rows={shownRows}
+                  rowKey={(item) => item.e.id}
+                  pageSize={14}
+                  minWidth={880}
+                  onRowClick={(item) => router.push(adminProjectPath(item.e, projectBase))}
+                  empty="No projects in this view"
+                  onClearFilters={show ? () => setShow('') : undefined}
+                  stickyHead
+                  stickyFirstColumn
+                  densityScope={`${user?.id ?? 'staff'}:projects`}
+                  changedAt={(item) => item.changedAt}
+                  visitKey={`${user?.id ?? 'staff'}:projects`}
+                  {...tools.gridProps}
+                />
               </div>
             </>
           ) : null}
         </PeopleCard>
       )}
+
+      {tools.dialog}
 
       {view === 'board' && (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">

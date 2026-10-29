@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Briefcase } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
@@ -19,8 +19,22 @@ type WorkTab = 'projects' | 'managers' | 'leads';
  * each manager's engagements; Project leads lists every lead's items with Reassign.
  */
 export default function FirmProjects() {
+  // The Projects list reads `?view=` (a home card tile's saved view), so the page sits under Suspense.
+  return (
+    <Suspense fallback={null}>
+      <FirmProjectsInner />
+    </Suspense>
+  );
+}
+
+function FirmProjectsInner() {
   const router = useRouter();
+  const params = useSearchParams();
+  const viewParam = params.get('view');
   const [tab, setTab] = useState<WorkTab>('projects');
+  useEffect(() => {
+    if (viewParam) setTab('projects');
+  }, [viewParam]);
   return (
     <PageTransition>
       <SEO title="Work — VCFO Suite" description="Firm-wide projects and work items." path="/app/admin/projects" />
@@ -46,7 +60,7 @@ export default function FirmProjects() {
           </>
         }
       />
-      {tab === 'projects' ? <FirmProjectsPanel compact /> : null}
+      {tab === 'projects' ? <FirmProjectsPanel compact viewParam={viewParam} /> : null}
       {tab === 'managers' ? <ManagersWorkPanel /> : null}
       {tab === 'leads' ? <LeadsWorkPanel /> : null}
     </PageTransition>

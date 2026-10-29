@@ -1,15 +1,31 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Plus, Sparkles } from 'lucide-react';
+import { BellRing, CheckCheck, Download, Plus, Sparkles } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { InternWorkBoardCard, InternWorkKindChip } from '@/components/intern/InternWorkRow';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { InternWorkDrawer } from '@/components/intern/InternWorkDrawer';
 import { LeadCompanyChip } from '@/components/intern/LeadCompanyChip';
-import { WorkFilterChip } from '@/components/intern/WorkFilterChip';
+import { FilterChip, FilterChipRow } from '@/components/ui/filter-chip';
+import { SavedViews, type SavedView, type ViewFilters } from '@/components/ui/saved-views';
+import { StatusMenu } from '@/components/ui/status-menu';
+import type { BulkAction } from '@/components/ui/bulk-bar';
+import { EFilingGrid, GRID_SUB, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { RowQuickActions } from '@/components/staff/today/row-actions';
+import { workItemChangedAt } from '@/components/staff/today/today-rows';
+import {
+  TASK_STATUS_WORDS,
+  exportRowsCsv,
+  remindMany,
+  useMarkDoneMany,
+  useSetTaskStatus,
+} from '@/components/staff/today/work-actions';
+import { internKindStatus } from '@/components/intern/intern-tones';
+import { remindableItemKey } from '@/lib/reminders/reminder-rules';
+import type { StatusCode } from '@/data/checklist';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tag } from '@/components/ui/spectrum-chip';
@@ -83,6 +99,17 @@ const FOCUS_OPTIONS: { value: InternWorkFocus; label: string }[] = [
   { value: 'done', label: 'Done' },
 ];
 
+/**
+ * E-06: the default saved views of Work. A view is a set of the URL filters below; the lead's
+ * home card tiles open them with `?view=overdue`, `?view=week` and `?view=waiting`.
+ */
+const WORK_VIEWS: SavedView[] = [
+  { key: 'all', label: 'All', filters: {} },
+  { key: 'overdue', label: 'My overdue', filters: { focus: 'overdue' } },
+  { key: 'week', label: 'This week', filters: { focus: 'due' } },
+  { key: 'waiting', label: 'Waiting on clients', filters: { tag: 'client' } },
+];
+
 const TAG_LABEL: Record<InternWorkTag, string> = {
   rejected: 'Sent back',
   review: 'Review',
@@ -107,7 +134,7 @@ function InternMyWorkInner() {
   const params = useSearchParams();
   const router = useRouter();
   const { workItems, kpis, myEngagements } = useInternPortfolio();
-  const { user } = useApp();
+  const { user, tasks, engagementsLoading, getStateForEngagement } = useApp();
   const register = useFilings();
   const { focus: todos, persist: persistTodos, byId: todoItems } = useOwnFocusTodos(user?.id ?? '', workItems);
   const now = useMemo(() => new Date(), []);
@@ -117,7 +144,7 @@ function InternMyWorkInner() {
   const kind = parseInternWorkKindFilter(params.get('kind'));
   const day = parseInternWorkDay(params.get('day'));
   const [view, setView] = useState<WorkView>(() => parseWorkView(params.get('view')));
-  const [kb, setKb] = useState(-1);
+  const listRef = useRef<HTMLDivElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [weekYmd, setWeekYmd] = useState(() => istYmdOf(now));
   const [planOpen, setPlanOpen] = useState(false);
@@ -215,61 +242,120 @@ function InternMyWorkInner() {
     go({ view: next });
   };
 
+  // J and K move the focus through the list rows; Enter on a focused row opens the drawer.
   useEffect(() => {
     if (view !== 'list' || openId) return;
     const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === 'j' || e.key === 'J') setKb((i) => Math.min(i + 1, filtered.length - 1));
-      else if (e.key === 'k' || e.key === 'K') setKb((i) => Math.max(i - 1, 0));
-      else if (e.key === 'Enter' && kb >= 0 && filtered[kb]) {
-        // Without this the Enter press lands on the drawer's close button and shuts it at once.
-        e.preventDefault();
-        setOpenId(filtered[kb]!.id);
-      }
+      if (e.key !== 'j' && e.key !== 'J' && e.key !== 'k' && e.key !== 'K') return;
+      const rows = [...(listRef.current?.querySelectorAll<HTMLTableRowElement>('tbody tr[tabindex]') ?? [])];
+      if (rows.length === 0) return;
+      const at = rows.findIndex((r) => r === document.activeElement);
+      const next = e.key === 'j' || e.key === 'J' ? Math.min(at + 1, rows.length - 1) : Math.max(at - 1, 0);
+      e.preventDefault();
+      rows[next]?.focus();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [view, filtered, kb, openId]);
+  }, [view, openId]);
+
+  // E-05: a home card tile opens Work on one saved view (`?view=overdue`). The view's filters
+  // become the URL filters, on the list.
+  const viewParam = params.get('view');
+  useEffect(() => {
+    const saved = WORK_VIEWS.find((v) => v.key === viewParam);
+    if (!saved) return;
+    router.replace(workPath(filtersOfView(saved.filters), 'list'), { scroll: false });
+  }, [viewParam, router]);
 
   const anyFilter = Boolean(companyId || kind !== 'all' || focus !== 'all' || tag || day);
+  const clearAll = () => router.replace(workPath({ focus: 'all', tag: null, companyId: null, kind: 'all', day: null }, view), { scroll: false });
+  const currentView: ViewFilters = {
+    focus: focus === 'all' ? '' : focus,
+    tag: tag ?? '',
+    company: companyId ?? '',
+    kind: kind === 'all' ? '' : kind,
+    day: day ?? '',
+  };
+  const applyView = (f: ViewFilters) => router.replace(workPath(filtersOfView(f), view), { scroll: false });
   const filters = (
-    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-      <WorkFilterChip
-        label="Company"
-        value={companyId ?? ''}
-        options={companies.map(([id, name]) => ({ value: id, label: name }))}
-        onChange={(v) => go({ companyId: v || null })}
-      />
-      <WorkFilterChip
-        label="Status"
-        value={focus === 'all' ? '' : focus}
-        options={FOCUS_OPTIONS}
-        onChange={(v) => go({ focus: (v || 'all') as InternWorkFocus })}
-      />
-      <WorkFilterChip
-        label="Show"
-        value={kind === 'all' ? '' : kind}
-        options={[
-          { value: 'steps', label: 'Steps only' },
-          { value: 'filings', label: 'Filings only' },
-        ]}
-        onChange={(v) => go({ kind: (v || 'all') as InternWorkKindFilter })}
-      />
-      {tag ? <WorkFilterChip label="Tag" value={tag} valueLabel={TAG_LABEL[tag]} options={[]} onChange={() => go({ tag: null })} /> : null}
-      {day ? (
-        <WorkFilterChip label="Day" value={day} valueLabel={formatIstWeekdayDay(day).label} options={[]} onChange={() => go({ day: null })} />
-      ) : null}
-      {anyFilter ? (
-        <Button
-          variant="link"
-          size="sm"
-          onClick={() => router.replace(workPath({ focus: 'all', tag: null, companyId: null, kind: 'all', day: null }, view), { scroll: false })}
-        >
-          Clear
-        </Button>
-      ) : null}
-    </div>
+    <FilterChipRow
+      className="min-w-0 flex-1"
+      onClear={anyFilter ? clearAll : undefined}
+      chips={[
+        {
+          key: 'company',
+          set: !!companyId,
+          node: (
+            <FilterChip
+              label="Company"
+              value={companyId ?? ''}
+              options={companies.map(([id, name]) => ({ value: id, label: name }))}
+              onChange={(v) => go({ companyId: v || null })}
+            />
+          ),
+        },
+        {
+          key: 'status',
+          set: focus !== 'all',
+          node: (
+            <FilterChip
+              label="Status"
+              value={focus === 'all' ? '' : focus}
+              options={FOCUS_OPTIONS}
+              onChange={(v) => go({ focus: (v || 'all') as InternWorkFocus })}
+            />
+          ),
+        },
+        {
+          key: 'show',
+          set: kind !== 'all',
+          node: (
+            <FilterChip
+              label="Show"
+              value={kind === 'all' ? '' : kind}
+              options={[
+                { value: 'steps', label: 'Steps only' },
+                { value: 'filings', label: 'Filings only' },
+              ]}
+              onChange={(v) => go({ kind: (v || 'all') as InternWorkKindFilter })}
+            />
+          ),
+        },
+        ...(tag
+          ? [{ key: 'tag', set: true, node: <FilterChip label="Tag" value={tag} valueLabel={TAG_LABEL[tag]} options={[]} onChange={() => go({ tag: null })} /> }]
+          : []),
+        ...(day
+          ? [
+              {
+                key: 'day',
+                set: true,
+                node: <FilterChip label="Day" value={day} valueLabel={formatIstWeekdayDay(day).label} options={[]} onChange={() => go({ day: null })} />,
+              },
+            ]
+          : []),
+      ]}
+    />
   );
+  const savedViews = (
+    <SavedViews storageKey={`${user?.id ?? 'lead'}:work`} views={WORK_VIEWS} current={currentView} onApply={applyView} className="mb-3" />
+  );
+
+  // Table parts for the list (E-01 to E-09).
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+  const engById = useMemo(() => new Map(myEngagements.map((e) => [e.id, e])), [myEngagements]);
+  const changedAt = (item: InternWorkItem) => {
+    const eng = engById.get(item.engagementId);
+    const slice = eng && item.catalogId ? getStateForEngagement(eng)[item.catalogId] : undefined;
+    return workItemChangedAt(item, slice, item.taskId ? taskById.get(item.taskId)?.updatedAt : undefined);
+  };
+  const taskStatusOf = (item: InternWorkItem): StatusCode | undefined => (item.taskId ? taskById.get(item.taskId)?.status : undefined);
+  // A filing's real compliance instance id comes from the register row (its stored item key).
+  const filingInstanceOf = (item: InternWorkItem): string | undefined => {
+    const key = item.source === 'filing' ? keyOf.get(item.id) : undefined;
+    return key?.startsWith('filing:') ? key.slice('filing:'.length) : undefined;
+  };
 
   return (
     <PageTransition>
@@ -309,9 +395,23 @@ function InternMyWorkInner() {
         </div>
       </div>
 
+      {savedViews}
+
       {view === 'list' ? (
         <WorkCard filters={filters} meta={`${filtered.filter((i) => i.kind !== 'done').length} open`}>
-          <ListView items={filtered} kb={kb} now={now} onOpen={(item) => setOpenId(item.id)} />
+          <div ref={listRef}>
+            <ListView
+              items={filtered}
+              now={now}
+              onOpen={(item) => setOpenId(item.id)}
+              scope={user?.id ?? 'lead'}
+              loading={engagementsLoading}
+              onClearFilters={anyFilter ? clearAll : undefined}
+              changedAt={changedAt}
+              taskStatusOf={taskStatusOf}
+              filingInstanceOf={filingInstanceOf}
+            />
+          </div>
         </WorkCard>
       ) : null}
       {view === 'board' ? (
@@ -378,77 +478,198 @@ function WorkCard({
   );
 }
 
-const LIST_COLS = 'md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_112px_76px_minmax(0,auto)]';
-const HEAD = 'px-2.5 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted';
+/** A saved view's filters as the Work URL filters (missing keys clear the filter). */
+function filtersOfView(f: ViewFilters) {
+  return {
+    focus: parseInternWorkFocus(f.focus),
+    tag: parseInternWorkTag(f.tag ?? null),
+    companyId: f.company || null,
+    kind: parseInternWorkKindFilter(f.kind),
+    day: f.day || null,
+  };
+}
 
-/** List view: T1 clean rows (R-07). J and K move the cursor; Enter opens the drawer. */
+/**
+ * List view: T1 clean rows (R-07) on the shared grid. J and K move the focus; Enter opens the
+ * drawer. With `scope` the list gets row selection and the bulk bar (Remind, Mark done, Export),
+ * Open and Remind at the row end on hover and focus (R reminds), the status menu on task rows,
+ * the density switch, the sticky head and the new-since-last-visit squares. A lead cannot move
+ * work to another lead, so there is no Assign or Reassign here.
+ */
 function ListView({
   items,
-  kb,
   now,
   onOpen,
+  scope,
+  loading,
+  onClearFilters,
+  changedAt,
+  taskStatusOf,
+  filingInstanceOf,
 }: {
   items: InternWorkItem[];
-  kb: number;
   now: Date;
   onOpen: (item: InternWorkItem) => void;
+  /** The user id for the table preferences; without it the list is read-only. */
+  scope?: string;
+  loading?: boolean;
+  onClearFilters?: () => void;
+  changedAt?: (item: InternWorkItem) => string | undefined;
+  taskStatusOf?: (item: InternWorkItem) => StatusCode | undefined;
+  /** The filing's `compliance_instances.id`, when the register has it; Mark done files it. */
+  filingInstanceOf?: (item: InternWorkItem) => string | undefined;
 }) {
-  if (items.length === 0) return <EmptyWork className="m-4" />;
-  return (
-    <div role="table" aria-label="Work">
-      <div role="row" className={cn('hidden h-9 items-center border-b-1.5 border-line px-1.5 md:grid', LIST_COLS)}>
-        <div role="columnheader" className={HEAD}>Step or filing</div>
-        <div role="columnheader" className={HEAD}>Company</div>
-        <div role="columnheader" className={HEAD}>Status</div>
-        <div role="columnheader" className={HEAD}>Due</div>
-        <div role="columnheader" className={HEAD}>
-          <span className="sr-only">Action</span>
-        </div>
-      </div>
-      {items.map((item, i) => {
-        const late = item.isOverdue && item.kind !== 'done';
-        return (
-          <div
-            key={item.id}
-            role="row"
-            aria-selected={kb === i ? true : undefined}
-            className={cn(
-              'grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-y-1 border-b border-line-soft px-1.5 py-1.5 text-[14px] last:border-b-0 hover:bg-surface-sunken/60 md:py-0',
-              LIST_COLS,
-              kb === i && 'bg-surface-sunken',
-            )}
+  const markDone = useMarkDoneMany();
+  const setTaskStatus = useSetTaskStatus();
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  const sig = items.map((i) => i.id).join('|');
+  useEffect(() => {
+    setPicked((s) => {
+      if (s.size === 0) return s;
+      const live = new Set(sig.split('|'));
+      const next = new Set([...s].filter((k) => live.has(k)));
+      return next.size === s.size ? s : next;
+    });
+  }, [sig]);
+
+  const remind = (list: InternWorkItem[]) => {
+    const targets = list
+      .map((i) => ({ i, key: remindableItemKey(i) }))
+      .filter((x): x is { i: InternWorkItem; key: string } => Boolean(x.key))
+      .map(({ i, key }) => ({ engagementId: i.engagementId, itemKey: key, title: i.title }));
+    if (targets.length > 0) void remindMany(targets);
+  };
+
+  const statusCell = (item: InternWorkItem) => {
+    const chip = <InternWorkKindChip item={item} />;
+    // E-03 only where a status write exists: a task (PATCH /api/tasks/:id).
+    if (!scope || item.source !== 'task' || !item.taskId) return chip;
+    return (
+      <StatusMenu
+        value={internKindStatus(item).word}
+        words={TASK_STATUS_WORDS}
+        label={`${item.title} · ${item.companyName}`}
+        onChange={(w) => setTaskStatus(item.taskId!, w, taskStatusOf?.(item), item.title)}
+      >
+        {chip}
+      </StatusMenu>
+    );
+  };
+
+  const columns: EFilingColumn<InternWorkItem>[] = [
+    {
+      key: 'title',
+      header: 'Step or filing',
+      render: (item) => (
+        <span className="flex min-w-0 flex-col">
+          <span
+            title={item.title}
+            className={cn('truncate font-medium text-ink', item.kind === 'done' && 'text-ink-muted line-through')}
           >
-            <div role="cell" className="min-w-0 px-2.5">
-              <button
-                type="button"
-                onClick={() => onOpen(item)}
-                title={item.title}
-                className={cn(
-                  'block max-w-full truncate text-left font-medium text-ink hover:underline',
-                  item.kind === 'done' && 'text-ink-muted line-through',
-                )}
-              >
-                {item.title}
-              </button>
-              <span className="block truncate text-[12px] text-ink-muted md:hidden">
-                {item.companyName} · <span className={cn('tabular-nums', late && 'font-medium text-danger')}>{formatDueLabel(item.dueAt, now)}</span>
-              </span>
-            </div>
-            <div role="cell" className="hidden min-w-0 px-2.5 text-ink-2 md:block">
-              <LeadCompanyChip name={item.companyName} engagementId={item.engagementId} />
-            </div>
-            <div role="cell" className="px-2.5 md:block">
-              <InternWorkKindChip item={item} />
-            </div>
-            <div role="cell" className={cn('hidden px-2.5 tabular-nums text-ink-2 md:block', late && 'font-medium text-danger')}>
-              {formatDueLabel(item.dueAt, now)}
-            </div>
-            <div role="cell" className="col-span-2 px-2.5 md:col-span-1 md:justify-self-end">
-              <InternWorkCtaButton item={item} />
-            </div>
-          </div>
+            {item.title}
+          </span>
+          <span className={cn('truncate text-[12px] text-ink-muted md:hidden', GRID_SUB)}>{item.companyName}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'company',
+      header: 'Company',
+      width: '24%',
+      render: (item) => <LeadCompanyChip name={item.companyName} engagementId={item.engagementId} />,
+    },
+    { key: 'status', header: 'Status', width: '128px', render: statusCell },
+    {
+      key: 'due',
+      header: 'Due',
+      width: '84px',
+      render: (item) => (
+        <span className={cn('tabular-nums', item.isOverdue && item.kind !== 'done' && 'font-medium text-danger')}>
+          {formatDueLabel(item.dueAt, now)}
+        </span>
+      ),
+    },
+    {
+      key: 'action',
+      header: <span className="sr-only">Action</span>,
+      width: '136px',
+      align: 'right',
+      render: (item) => (
+        <span data-grid-ctl className="inline-flex">
+          <InternWorkCtaButton item={item} />
+        </span>
+      ),
+    },
+  ];
+
+  const bulkActions = (list: InternWorkItem[]): BulkAction[] => [
+    {
+      key: 'remind',
+      label: 'Remind',
+      icon: BellRing,
+      disabled: !list.some((i) => remindableItemKey(i)),
+      onClick: () => {
+        remind(list);
+        setPicked(new Set());
+      },
+    },
+    {
+      key: 'done',
+      label: 'Mark done',
+      icon: CheckCheck,
+      disabled: list.every((i) => i.kind === 'done'),
+      onClick: () => {
+        void markDone(list.map((i) => ({ ...i, done: i.kind === 'done', filingInstanceId: filingInstanceOf?.(i) })));
+        setPicked(new Set());
+      },
+    },
+    {
+      key: 'export',
+      label: 'Export',
+      icon: Download,
+      onClick: () => {
+        exportRowsCsv(
+          'work.csv',
+          ['Step or filing', 'Company', 'Status', 'Due', 'State'],
+          list.map((i) => [i.title, i.companyName, internKindStatus(i).word, i.dueAt?.slice(0, 10) ?? '', i.why]),
         );
-      })}
+        setPicked(new Set());
+      },
+    },
+  ];
+
+  return (
+    <div className="px-2 pb-2">
+      <EFilingGrid
+        caption="Work"
+        columns={columns}
+        rows={items}
+        rowKey={(i) => i.id}
+        onRowClick={onOpen}
+        pageSize={25}
+        minWidth={720}
+        empty="Nothing in this view"
+        loading={loading}
+        onClearFilters={onClearFilters}
+        stickyHead
+        stickyFirstColumn
+        {...(scope
+          ? {
+              selectable: true,
+              selected: picked,
+              onSelectedChange: setPicked,
+              bulkActions,
+              bulkNoun: ['item', 'items'] as [string, string],
+              rowActions: (i: InternWorkItem) => (
+                <RowQuickActions onOpen={() => onOpen(i)} onRemind={remindableItemKey(i) ? () => remind([i]) : undefined} />
+              ),
+              rowShortcuts: [{ key: 'r', run: (i: InternWorkItem) => remind([i]) }],
+              densityScope: `${scope}:work`,
+              changedAt,
+              visitKey: `${scope}:work`,
+            }
+          : {})}
+      />
     </div>
   );
 }
@@ -641,7 +862,7 @@ function TimelineView({
             <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">Later</h2>
             <span className="text-[12.5px] text-ink-muted tabular-nums">{gantt.later.length}</span>
           </div>
-          <ListView items={gantt.later} kb={-1} now={now} onOpen={onOpen} />
+          <ListView items={gantt.later} now={now} onOpen={onOpen} />
         </section>
       ) : null}
     </div>

@@ -31,6 +31,10 @@ export function useFirmPeople() {
   const [createOpen, setCreateOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  /** The person waiting on the typed DELETE confirm (B-14). */
+  const [deleteTarget, setDeleteTarget] = useState<StaffRow | null>(null);
+  /** The person waiting on the typed RESET confirm for two-step sign-in. */
+  const [resetTarget, setResetTarget] = useState<StaffRow | null>(null);
   const [emailTarget, setEmailTarget] = useState<StaffRow | null>(null);
   const [emailDraft, setEmailDraft] = useState('');
   const [emailSaving, setEmailSaving] = useState(false);
@@ -116,6 +120,7 @@ export function useFirmPeople() {
     password: TEMP_PASSWORD,
     role: (isAdmin ? 'manager' : 'intern') as PersonRole,
     reportsToManagerId: '',
+    reportsToAdminId: '',
     submitting: false,
   } satisfies FormState);
 
@@ -160,7 +165,7 @@ export function useFirmPeople() {
         await queryClient.invalidateQueries({ queryKey: ['admin-people'] });
         return;
       }
-      await fetchJson('/api/admin/people', {
+      const created = await fetchJson<{ userId?: string }>('/api/admin/people', {
         method: 'POST',
         body: JSON.stringify({
           name: form.name.trim() || undefined,
@@ -171,6 +176,19 @@ export function useFirmPeople() {
             form.role === 'intern' && isAdmin ? form.reportsToManagerId || undefined : undefined,
         }),
       });
+      // A new manager's admin goes through the existing reporting route (G-20). The account
+      // exists already, so a failure here only leaves the line unset; the row picker can fix it.
+      if (form.role === 'manager' && isAdmin && form.reportsToAdminId && created.userId) {
+        try {
+          await fetchJson('/api/admin/people/reporting', {
+            method: 'PATCH',
+            body: JSON.stringify({ managerId: created.userId, adminId: form.reportsToAdminId }),
+          });
+          await queryClient.invalidateQueries({ queryKey: ['admin-reporting-lines'] });
+        } catch (err) {
+          toastError('Manager created, but the admin was not set', errorMessage(err));
+        }
+      }
       toastSuccess(`${ROLE_LABEL[form.role]} created`, form.email);
       dispatch({ type: 'reset' });
       setCreateOpen(false);
@@ -186,14 +204,16 @@ export function useFirmPeople() {
     }
   }
 
-  async function onDelete(person: StaffRow) {
+  /** Opens the typed confirm; the delete itself runs in `confirmDelete`. */
+  function onDelete(person: StaffRow) {
     if (person.id === user?.id) {
       toastError('You cannot delete your own account.');
       return;
     }
-    if (!window.confirm(`Delete ${person.name} (${person.email})? This cannot be undone.`)) {
-      return;
-    }
+    setDeleteTarget(person);
+  }
+
+  async function confirmDelete(person: StaffRow) {
     setDeletingId(person.id);
     try {
       await fetchJson(`/api/admin/people/${person.id}`, { method: 'DELETE' });
@@ -210,6 +230,20 @@ export function useFirmPeople() {
       toastError(errorMessage(err));
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  /** Turns off another person's two-step sign-in (`POST /api/account/two-step/reset`). */
+  async function confirmResetTwoStep(person: StaffRow) {
+    try {
+      await fetchJson('/api/account/two-step/reset', {
+        method: 'POST',
+        body: JSON.stringify({ profileId: person.id }),
+      });
+      toastSuccess('Two-step sign-in reset', person.email);
+      await queryClient.invalidateQueries({ queryKey: ['admin-people'] });
+    } catch (err) {
+      toastError('Could not reset two-step sign-in', errorMessage(err));
     }
   }
 
@@ -252,6 +286,8 @@ export function useFirmPeople() {
 
   const people = peopleQuery.data ?? [];
   const admins = people.filter((p) => p.role === 'admin' || p.role === 'super_admin');
+  // Developer accounts reach only the developer console; the super admin alone sees and makes them.
+  const developers = isSuperAdmin ? people.filter((p) => p.role === 'developer') : [];
   const managers: StaffRow[] = isAdmin
     ? people.filter((p) => p.role === 'manager')
     : [];
@@ -420,6 +456,12 @@ export function useFirmPeople() {
     setShowPassword,
     deletingId,
     setDeletingId,
+    deleteTarget,
+    setDeleteTarget,
+    confirmDelete,
+    resetTarget,
+    setResetTarget,
+    confirmResetTwoStep,
     emailTarget,
     setEmailTarget,
     emailDraft,
@@ -455,6 +497,7 @@ export function useFirmPeople() {
     onChangeEmail,
     people,
     admins,
+    developers,
     managers,
     leads,
     clients,

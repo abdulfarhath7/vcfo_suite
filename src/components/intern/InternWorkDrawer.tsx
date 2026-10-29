@@ -20,6 +20,8 @@ import { useWorkItemDetail, type WorkCompletionDto } from '@/components/work/use
 import { useApp } from '@/context/AppContext';
 import { formatDueLabel, internWorkCta, type InternWorkItem } from '@/lib/intern/intern-work';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import { toastSaved } from '@/components/ui/toast-saved';
+import { toastUndo } from '@/components/ui/undo-toast';
 import { cn } from '@/lib/utils';
 
 const SOURCE_WORD: Record<string, string> = { step: 'Step', filing: 'Filing', request: 'Client request', task: 'Task' };
@@ -30,9 +32,33 @@ const OPEN_WORD: Record<string, string> = {
   task: 'Open company',
 };
 
+/** The real `compliance_instances.id` of a filing, from its stored item key (`filing:<id>`). */
+function filingInstanceId(item: InternWorkItem, workKey: string | null | undefined): string | null {
+  if (item.source !== 'filing' || !workKey?.startsWith('filing:')) return null;
+  return workKey.slice('filing:'.length) || null;
+}
+
+/** Roles that may reopen a filing, so Mark filed can be undone. */
+const MAY_REOPEN = new Set(['super_admin', 'admin', 'manager']);
+
+async function setFilingStatus(id: string, action: 'file' | 'reopen'): Promise<void> {
+  const res = await fetch(`/api/filings/${encodeURIComponent(id)}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? 'status_failed');
+  }
+}
+
 /** "Mark done" is offered only where the item's own completion path allows it (G-16). */
-function canMarkDone(item: InternWorkItem, completion: WorkCompletionDto | undefined): boolean {
-  if (!completion || item.kind === 'done') return false;
+function canMarkDone(item: InternWorkItem, completion: WorkCompletionDto | undefined, workKey?: string | null): boolean {
+  if (item.kind === 'done') return false;
+  // A filing with its register row files through PATCH /api/filings/:id/status.
+  if (filingInstanceId(item, workKey)) return true;
+  if (!completion) return false;
   if (completion.mode === 'request') return completion.canComplete && Boolean(item.requestId);
   if (completion.mode === 'direct') return completion.canComplete && Boolean(item.catalogId);
   return false;
@@ -47,7 +73,8 @@ function canMarkDone(item: InternWorkItem, completion: WorkCompletionDto | undef
  * "Mark done" uses only existing completion paths: a document request is approved
  * (`approveDoc`, PATCH /api/requests/:id); a pre-incorporation direct-flow step is submitted
  * (`submitDirectStep`, POST …/checklist/submit) when the checklist validator finds nothing
- * missing. Every other step links to its form. `workKey` is the stored item key
+ * missing; a filing with its register row is marked filed (PATCH /api/filings/:id/status, Undo
+ * reopens it for a manager or admin). Every other step links to its form. `workKey` is the stored item key
  * (`workItemKeyFor`); without one the per-item tools are hidden.
  */
 export function InternWorkDrawer({
@@ -71,7 +98,7 @@ export function InternWorkDrawer({
   const owner = item ? internKindOwner(item.kind) : undefined;
   const cta = item ? internWorkCta(item) : null;
   const completion = detail.data?.completion;
-  const markDone = item ? canMarkDone(item, completion) : false;
+  const markDone = item ? canMarkDone(item, completion, key) : false;
 
   const facts: Array<{ k: string; v: ReactNode }> = item
     ? [
@@ -98,9 +125,25 @@ export function InternWorkDrawer({
     : [];
 
   const complete = async () => {
-    if (!item || !completion) return;
+    if (!item) return;
+    const instanceId = filingInstanceId(item, key);
+    if (!instanceId && !completion) return;
     setCompleting(true);
     try {
+      if (instanceId) {
+        await setFilingStatus(instanceId, 'file');
+        void queryClient.invalidateQueries();
+        if (MAY_REOPEN.has(user?.role ?? '')) {
+          toastUndo(`Marked filed · ${item.title}`, () => {
+            void setFilingStatus(instanceId, 'reopen').then(() => queryClient.invalidateQueries());
+          });
+        } else {
+          toastSaved('Marked filed', { kind: 'filed', sub: item.title });
+        }
+        onClose();
+        return;
+      }
+      if (!completion) return;
       if (completion.mode === 'request' && item.requestId) {
         approveDoc(item.requestId);
         toastSuccess('Marked done', item.title);

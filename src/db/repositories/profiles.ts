@@ -299,6 +299,8 @@ export type StaffPersonRow = {
   clientId: string | null;
   reportsToManagerId: string | null;
   status: string;
+  /** Two-step sign-in is on (`totp_enabled_at` is set), so a firm admin may reset it. */
+  twoStepOn?: boolean;
 };
 
 /** Firm admin / super admin: list all accounts. */
@@ -316,6 +318,7 @@ export async function listStaffPeople(ctx: AuthContext): Promise<StaffPersonRow[
       clientId: profiles.clientId,
       reportsToManagerId: profiles.reportsToManagerId,
       status: profiles.status,
+      totpEnabledAt: profiles.totpEnabledAt,
     })
     .from(profiles)
     .orderBy(asc(profiles.role), asc(profiles.name));
@@ -329,6 +332,7 @@ export async function listStaffPeople(ctx: AuthContext): Promise<StaffPersonRow[
     clientId: r.clientId,
     reportsToManagerId: r.reportsToManagerId,
     status: r.status,
+    twoStepOn: Boolean(r.totpEnabledAt),
   }));
 }
 

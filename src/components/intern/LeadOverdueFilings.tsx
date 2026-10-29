@@ -9,6 +9,7 @@ import type { Engagement } from '@/data/engagements';
 import { sep } from '@/lib/date-format';
 import { ymdFromIsoInIst } from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
+import { exactDate, relativeDue } from '@/lib/relative-due';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -55,6 +56,7 @@ export function LeadOverdueFilings({ filings, engagements, now }: { filings: Com
                     'grid w-11 shrink-0 place-items-center rounded-md py-1 leading-none',
                     late ? 'bg-surface-raised text-danger' : 'bg-warning-soft text-warning',
                   )}
+                  title={exactDate(ymd)}
                   aria-hidden
                 >
                   <b className="text-[16px] font-medium tabular-nums">{Number(ymd.slice(8, 10))}</b>
@@ -67,8 +69,9 @@ export function LeadOverdueFilings({ filings, engagements, now }: { filings: Com
                   >
                     {f.periodLabel && !f.periodLabel.startsWith(f.filing) ? `${f.filing} · ${f.periodLabel}` : (f.periodLabel ?? f.filing)}
                   </Link>
-                  <span className="block truncate text-[12.5px] text-ink-muted">
-                    {company} · {f.authority}
+                  {/* E-11: the sub line starts with the relative due words; the exact date is the tooltip. */}
+                  <span className="block truncate text-[12.5px] text-ink-muted" title={exactDate(ymd)}>
+                    {[relativeDue(ymd, now), company, f.authority].filter(Boolean).join(' · ')}
                   </span>
                 </span>
                 <Chip tone={late ? 'bad' : 'warn'} fixed className="relative">

@@ -8,7 +8,9 @@ import { DashSection } from '@/components/dash/DashSection';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { EmptyState } from '@/components/ui/empty-state';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { AvatarStack } from '@/components/ui/avatar-stack';
+import { useSuperStaff } from '@/components/super/assign/use-super-staff';
 import {
   NameCell,
   PersonAvatar,
@@ -58,6 +60,9 @@ function lastActive(person: PersonMetrics | undefined, auditIso: string | null):
 
 type StaffRow = (SuperTeamLead & { kind: 'lead'; reportsTo: string }) | (SuperTeamManager & { kind: 'manager' });
 
+/** One firm admin with the managers who report to them (`profiles.reports_to_admin_id`, G-20). */
+type AdminRow = { id: string; name: string; email: string; managers: string[]; clients: number; actions30d: number | null; lastActiveAt: string | null };
+
 export default function SuperTeam() {
   const query = useSuperInsights();
   const insights = query.data;
@@ -65,6 +70,27 @@ export default function SuperTeam() {
   // On time over the last 12 months, load against capacity, last seen and capacity (G-14).
   const peopleQuery = usePeopleMetrics();
   const people = useMemo(() => indexPeople(peopleQuery.data), [peopleQuery.data]);
+  // C-0121: the managers of each admin, shown as stacked faces (V3).
+  const staff = useSuperStaff();
+  const adminRows = useMemo<AdminRow[]>(() => {
+    if (!insights) return [];
+    return staff.firmAdmins
+      .filter((a) => a.role === 'admin')
+      .map((a) => {
+        const managers = staff.managers.filter((m) => staff.adminOfManager.get(m.id)?.id === a.id);
+        const ids = new Set(managers.map((m) => m.id));
+        const audit = insights.team.admins.find((x) => x.id === a.id);
+        return {
+          id: a.id,
+          name: a.name,
+          email: a.email,
+          managers: managers.map((m) => m.name),
+          clients: insights.clients.filter((c) => c.managerIds.some((id) => ids.has(id))).length,
+          actions30d: audit?.actions30d ?? null,
+          lastActiveAt: audit?.lastActiveAt ?? null,
+        };
+      });
+  }, [insights, staff]);
 
   const leads = useMemo(() => {
     if (!insights) return [];
@@ -195,6 +221,30 @@ export default function SuperTeam() {
     },
   ];
 
+  const adminColumns: EFilingColumn<AdminRow>[] = [
+    { key: 'name', header: 'Admin', width: '28%', render: (a) => <NameCell lead={<PersonAvatar name={a.name} />} title={a.name} sub={a.email} /> },
+    {
+      key: 'managers',
+      header: 'Managers',
+      width: '140px',
+      render: (a) =>
+        a.managers.length ? (
+          <AvatarStack people={a.managers} max={4} label={`Managers: ${a.managers.join(', ')}`} />
+        ) : (
+          <span className="text-ink-faint">None</span>
+        ),
+    },
+    { key: 'clients', header: 'Clients', width: '84px', align: 'right', render: (a) => <span className="tabular-nums">{a.clients}</span> },
+    {
+      key: 'actions',
+      header: 'Actions, 30 days',
+      width: '136px',
+      align: 'right',
+      render: (a) => <span className="tabular-nums">{a.actions30d ?? '–'}</span>,
+    },
+    { key: 'seen', header: 'Last active', width: '120px', render: (a) => lastActive(people.byProfileId.get(a.id), a.lastActiveAt) },
+  ];
+
   const managerRows: StaffRow[] = managers.map((m) => ({ ...m, kind: 'manager' as const }));
   const staffRows: StaffRow[] = tab === 'managers' ? managerRows : tab === 'leads' ? leads : [...managerRows, ...leads];
 
@@ -212,6 +262,14 @@ export default function SuperTeam() {
             { label: 'Clients without a manager', value: unassignedClients, bad: unassignedClients > 0 },
           ]}
         />
+
+        <DashSection title="Admins" meta={staff.isPending ? undefined : String(adminRows.length)} href={PEOPLE_HREF} hrefLabel="People" bodyClassName="px-2 pb-2 pt-1">
+          {staff.isPending ? (
+            <SkeletonRows rows={2} className="p-2" />
+          ) : (
+            <EFilingGrid caption="Admins" columns={adminColumns} rows={adminRows} rowKey={(a) => a.id} empty="No firm admin yet" minWidth={720} />
+          )}
+        </DashSection>
 
         <DashSection title="Managers" meta={String(managers.length)} href={PEOPLE_HREF} hrefLabel="People" bodyClassName="px-2 pb-2 pt-1">
           <EFilingGrid caption="Managers" columns={managerColumns} rows={managers} rowKey={(m) => m.id} empty="No manager yet" minWidth={1120} />

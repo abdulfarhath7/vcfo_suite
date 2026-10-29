@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useRouter } from 'next/navigation';
 import { ProjectsView } from '@/views/admin/ProjectsSections';
 import { deriveStuckReason } from '@/lib/projects/project-stuck';
+import { internCompanyPhaseProgress } from '@/lib/intern/intern-work';
+import { engagementChangedAt } from '@/components/staff/today/today-rows';
 
 const CITIES: Array<{ name: string; x: number; y: number }> = [
   { name: 'Bengaluru', x: 360, y: 470 },
@@ -26,6 +28,15 @@ function cityFor(id: string) {
 type View = 'table' | 'board';
 
 export default function Projects() {
+  // The list reads `?view=` (a saved view from a home card tile), so it sits under Suspense.
+  return (
+    <Suspense fallback={null}>
+      <ProjectsInner />
+    </Suspense>
+  );
+}
+
+function ProjectsInner() {
   const {
     engagements, tasks, teamMembers, internOptions, engagementsLoading,
     getStateForEngagement,
@@ -52,15 +63,19 @@ export default function Projects() {
             owners.find((t) => t.id === id) ?? teamMembers.find((t) => t.id === id),
         )
         .filter(Boolean) as Array<{ id: string; name: string; initials?: string }>;
+      const state = getStateForEngagement(e);
+      const progress = internCompanyPhaseProgress(e, state);
       return {
         e,
         pct,
+        phases: progress.phases.map((p) => ({ done: p.done, total: p.total, title: p.title })),
+        changedAt: engagementChangedAt(state),
         done,
         total: eTasks.length,
         intern: leads[0],
         leads,
         city: cityFor(e.id),
-        stuck: deriveStuckReason(e, getStateForEngagement(e)),
+        stuck: deriveStuckReason(e, state),
       };
     }), [engagements, tasks, teamMembers, owners, getStateForEngagement]);
 

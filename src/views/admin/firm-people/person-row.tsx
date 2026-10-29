@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Briefcase, FolderPlus, Loader2, Mail, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Briefcase, FolderPlus, KeyRound, Loader2, Mail, MoreHorizontal, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +30,7 @@ export function createPersonRow(ctx: FirmPeopleState) {
     staffBase,
     deletingId,
     onDelete,
+    setResetTarget,
     openChangeEmail,
     projectsForPerson,
     openAssign,
@@ -56,6 +57,8 @@ export function createPersonRow(ctx: FirmPeopleState) {
   }) {
     const attachedProjects = canAssign ? projectsForPerson(person) : [];
     const showMenu = canManage && person.id !== user?.id;
+    // Firm admins and the super admin reset a staff member's two-step sign-in, only when it is on.
+    const canResetTwoStep = isAdmin && person.role !== 'client' && Boolean(person.twoStepOn);
     return (
       <div className="border-b border-line-soft px-4 py-2.5 last:border-b-0">
         <div className="flex min-h-[30px] items-center justify-between gap-3">
@@ -143,10 +146,16 @@ export function createPersonRow(ctx: FirmPeopleState) {
                     <Mail className="h-3.5 w-3.5" />
                     Change email
                   </DropdownMenuItem>
+                  {canResetTwoStep ? (
+                    <DropdownMenuItem className="gap-2" onSelect={() => setResetTarget(person)}>
+                      <KeyRound className="h-3.5 w-3.5" />
+                      Reset two-step sign-in
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="gap-2 text-danger focus:text-danger"
-                    onSelect={() => void onDelete(person)}
+                    onSelect={() => onDelete(person)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     Delete person

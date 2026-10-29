@@ -14,17 +14,18 @@ import { LeadSideRail } from '@/components/intern/LeadSideRail';
 import { LeadManagersCard } from '@/components/intern/LeadManagersCard';
 import { TodayScopeTabs } from '@/components/staff/today/today-parts';
 import { engagementInScope, todayStatusOf, type TodayScope } from '@/components/staff/today/today-rows';
-import { internWorkKpis, type InternWorkItem } from '@/lib/intern/intern-work';
+import type { InternWorkItem } from '@/lib/intern/intern-work';
 
 /** Main column and a rail, as on every staff Today (prototype TodayScreen GRID). */
 const GRID = 'grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]';
 
 /**
- * The lead's Today (prototype TodayScreen, C-0103): the home card with the scope switch and
- * five numbers, then the Action queue, Phase progress and the overdue filings beside the rail
+ * The lead's Today (prototype TodayScreen, C-0103, C-0114): the compact home card with five
+ * numbers, then the Action queue, Phase progress and the overdue filings beside the rail
  * (Todos, Waiting on, My managers). The practice strip left the page; its numbers are in the
- * home card and the cards below. The scope switch narrows every card to the incorporating
- * companies or the incorporated ones. The rail's Inbox holds the client messages to triage
+ * home card and the cards below. The scope switch sits in the Action queue head (R-17) and
+ * narrows the cards below the home card to the incorporating companies or the incorporated
+ * ones. The home card counts all the lead's work, as the Work lists its tiles open do. The rail's Inbox holds the client messages to triage
  * (G-11) beside the lead's own to-dos.
  */
 export default function InternToday() {
@@ -44,7 +45,6 @@ export default function InternToday() {
   const ids = useMemo(() => new Set(engagements.map((e) => e.id)), [engagements]);
   const items = useMemo(() => workItems.filter((i) => ids.has(i.engagementId)), [workItems, ids]);
   const scopedFilings = useMemo(() => filings.filter((f) => ids.has(f.engagementId)), [filings, ids]);
-  const kpis = useMemo(() => internWorkKpis(items, now), [items, now]);
 
   const byId = useMemo(() => new Map(myEngagements.map((e) => [e.id, e])), [myEngagements]);
   const statusOf = (item: InternWorkItem) => {
@@ -62,13 +62,17 @@ export default function InternToday() {
       />
 
       <div className="flex flex-col gap-5">
-        <LeadHero name={user?.name ?? ''} kpis={kpis}>
-          <TodayScopeTabs value={scope} onChange={setScope} counts={scopeCounts} />
-        </LeadHero>
+        <LeadHero name={user?.name ?? ''} items={workItems} now={now} />
 
         <div className={GRID}>
           <div className="flex min-w-0 flex-col gap-5">
-            <LeadActionQueue userId={user?.id ?? ''} items={items} now={now} statusOf={statusOf} />
+            <LeadActionQueue
+              userId={user?.id ?? ''}
+              items={items}
+              now={now}
+              statusOf={statusOf}
+              scopeTabs={<TodayScopeTabs value={scope} onChange={setScope} counts={scopeCounts} />}
+            />
             <LeadPhaseProgress engagements={engagements} getState={getStateForEngagement} />
             {scope !== 'incorporating' ? (
               <LeadOverdueFilings filings={scopedFilings} engagements={engagements} now={now} />

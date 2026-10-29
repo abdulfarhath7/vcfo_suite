@@ -31,6 +31,9 @@ import { createFirmPeopleDialogs } from './firm-people/dialogs';
 import { renderManagerView } from './firm-people/manager-view';
 import { PeopleCard, PeopleProjectsGrid } from './firm-people/parts';
 
+/** Select value for "reports to no admin" (Radix Select items cannot be empty). */
+const NO_ADMIN = '__none';
+
 /** Birds-eye people + portfolio for Admin and Project Manager. */
 export default function FirmPeople() {
   const state = useFirmPeople();
@@ -56,6 +59,8 @@ export default function FirmPeople() {
     dispatch,
     onCreate,
     admins,
+    developers,
+    isSuperAdmin,
     managers,
     leads,
     clients,
@@ -69,6 +74,7 @@ export default function FirmPeople() {
   const {
     assignDialog,
     emailDialog,
+    dangerDialogs,
   } = dialogs;
 
   return (
@@ -174,6 +180,24 @@ export default function FirmPeople() {
             ))
           )}
         </PeopleCard>
+
+        {isSuperAdmin ? (
+          <PeopleCard title="Developers" count={developers.length}>
+            {developers.length === 0 ? (
+              <EmptyState
+                title="No developer accounts"
+                className="m-4"
+                action={
+                  <Button size="sm" onClick={() => openCreate('developer')}>
+                    Create developer
+                  </Button>
+                }
+              />
+            ) : (
+              developers.map((m) => <PersonRow key={m.id} person={m} canManage={m.id !== user?.id} />)
+            )}
+          </PeopleCard>
+        ) : null}
 
         <PeopleCard title="Client accounts" count={clients.length}>
           {clients.length === 0 ? (
@@ -299,6 +323,27 @@ export default function FirmPeople() {
                 </Select>
               </div>
             )}
+            {form.role === 'manager' && isAdmin && admins.length > 0 ? (
+              <div>
+                <Label className="text-[12px]">Reports to admin</Label>
+                <Select
+                  value={form.reportsToAdminId || NO_ADMIN}
+                  onValueChange={(v) => dispatch({ type: 'patch', patch: { reportsToAdminId: v === NO_ADMIN ? '' : v } })}
+                >
+                  <SelectTrigger className="mt-1" aria-label="Reports to admin">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_ADMIN}>No admin</SelectItem>
+                    {admins.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                 Cancel
@@ -314,6 +359,7 @@ export default function FirmPeople() {
 
       {assignDialog}
       {emailDialog}
+      {dangerDialogs}
     </PageTransition>
   );
 }

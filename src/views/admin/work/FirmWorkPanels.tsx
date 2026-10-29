@@ -7,7 +7,7 @@ import { DashSection } from '@/components/dash/DashSection';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Button } from '@/components/ui/button';
 import { AreaPill, Chip } from '@/components/ui/spectrum-chip';
-import { WorkFilterChip } from '@/components/intern/WorkFilterChip';
+import { FilterChip } from '@/components/ui/filter-chip';
 import { CompanyTile, PersonCell } from '@/components/staff/today/today-parts';
 import {
   TODAY_STATUS_ORDER,
@@ -126,9 +126,9 @@ export function ManagersWorkPanel() {
     <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_minmax(280px,1fr)]">
       <DashSection title="Managers' items" meta={String(f.shown.length)} bodyClassName="p-0" loading={loading}>
         <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-          <WorkFilterChip label="Status" value={f.status} options={STATUS_FILTER} onChange={f.setStatus} />
-          <WorkFilterChip label="Manager" value={f.who} options={options(rows, (r) => r.managerId, (r) => r.managerName)} onChange={f.setWho} />
-          <WorkFilterChip label="Company" value={f.company} options={options(rows, (r) => r.engagementId, (r) => r.companyName)} onChange={f.setCompany} />
+          <FilterChip label="Status" value={f.status} options={STATUS_FILTER} onChange={f.setStatus} />
+          <FilterChip label="Manager" value={f.who} options={options(rows, (r) => r.managerId, (r) => r.managerName)} onChange={f.setWho} />
+          <FilterChip label="Company" value={f.company} options={options(rows, (r) => r.engagementId, (r) => r.companyName)} onChange={f.setCompany} />
         </div>
         <div className="border-t border-line-soft px-2 pb-3">
           <EFilingGrid
@@ -215,9 +215,9 @@ export function LeadsWorkPanel() {
     <>
       <DashSection title="Project leads' items" meta={String(f.shown.length)} bodyClassName="p-0" loading={loading}>
         <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-          <WorkFilterChip label="Status" value={f.status} options={STATUS_FILTER} onChange={f.setStatus} />
-          <WorkFilterChip label="Lead" value={f.who} options={options(rows, (r) => r.leadId, (r) => r.leadName)} onChange={f.setWho} />
-          <WorkFilterChip label="Company" value={f.company} options={options(rows, (r) => r.engagementId, (r) => r.companyName)} onChange={f.setCompany} />
+          <FilterChip label="Status" value={f.status} options={STATUS_FILTER} onChange={f.setStatus} />
+          <FilterChip label="Lead" value={f.who} options={options(rows, (r) => r.leadId, (r) => r.leadName)} onChange={f.setWho} />
+          <FilterChip label="Company" value={f.company} options={options(rows, (r) => r.engagementId, (r) => r.companyName)} onChange={f.setCompany} />
         </div>
         <div className="border-t border-line-soft px-2 pb-3">
           <EFilingGrid

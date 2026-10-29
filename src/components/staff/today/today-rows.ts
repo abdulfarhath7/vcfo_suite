@@ -1,5 +1,6 @@
 import { getItem, type Bucket } from '@/data/checklist';
 import type { ComplianceFiling } from '@/data/compliance';
+import type { StatusCode } from '@/data/checklist';
 import type { DocRequest, Engagement, TaskInstance } from '@/data/engagements';
 import type { ChipTone } from '@/components/ui/spectrum-chip';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
@@ -133,6 +134,45 @@ export interface TeamTaskRow {
   /** The client still owes this one (status Waiting and held by the client). */
   withClient: boolean;
   href: string;
+  /** Ids for the row's own routes (Mark done, the drawer key). */
+  catalogId?: string;
+  requestId?: string;
+  taskId?: string;
+  /** The task row's stored status, so a status change from the chip can be undone. */
+  taskStatus?: StatusCode;
+  /** E-08: when the row last changed, from the checklist state, the task or the item's own dates. */
+  changedAt?: string;
+}
+
+/**
+ * When a work item last changed (E-08), from real stamps only: the step's last edit, client
+ * submit, review and delivery times, the item's start and finish, and a task's `updatedAt`.
+ */
+export function workItemChangedAt(
+  item: Pick<InternWorkItem, 'startedAt' | 'completedAt'>,
+  slice: ChecklistItemStateSlice | undefined,
+  taskUpdatedAt?: string,
+): string | undefined {
+  const stamps = [
+    slice?.lastEditedAt,
+    slice?.clientSubmittedAt,
+    slice?.reviewedAt,
+    slice?.deliveredToClientAt,
+    item.completedAt,
+    item.startedAt,
+    taskUpdatedAt,
+  ];
+  let best: string | undefined;
+  let bestMs = -Infinity;
+  for (const s of stamps) {
+    if (!s) continue;
+    const ms = Date.parse(s);
+    if (Number.isFinite(ms) && ms > bestMs) {
+      bestMs = ms;
+      best = s;
+    }
+  }
+  return best;
 }
 
 /**
@@ -175,7 +215,7 @@ export function buildTeamTaskRows(opts: {
   const nameOf = (id: string) => opts.leads.find((l) => l.id === id)?.name ?? 'Project lead';
   const rows: TeamTaskRow[] = [];
 
-  const addRow = (leadId: string, item: InternWorkItem) => {
+  const addRow = (leadId: string, item: InternWorkItem, task?: TaskInstance) => {
     const eng = engById.get(item.engagementId);
     if (!eng) return;
     const slice = item.catalogId ? opts.getState(eng)[item.catalogId] : undefined;
@@ -200,6 +240,11 @@ export function buildTeamTaskRows(opts: {
       status,
       withClient: status === 'Waiting' && (item.kind === 'waiting-client' || item.kind === 'waiting-request'),
       href,
+      catalogId: item.catalogId,
+      requestId: item.requestId,
+      taskId: item.taskId,
+      taskStatus: task?.status,
+      changedAt: workItemChangedAt(item, slice, task?.updatedAt),
     });
   };
 
@@ -235,7 +280,7 @@ export function buildTeamTaskRows(opts: {
     const leadId = task.assigneeId ? leadKeyByProfile.get(task.assigneeId) : undefined;
     if (!eng || !leadId || eng.stage === 'Operational Readiness') continue;
     const item = buildTaskWorkItem(task, eng, opts.now);
-    if (item) addRow(leadId, item);
+    if (item) addRow(leadId, item, task);
   }
 
   return rows.sort((a, b) => (a.dueAt ?? '9999').localeCompare(b.dueAt ?? '9999'));
@@ -296,4 +341,52 @@ export function buildPhaseProgressRows(opts: {
         leadId: eng.internId,
       };
     });
+}
+
+/** The latest step edit, submit, review or delivery time on a client (E-08), or undefined. */
+export function engagementChangedAt(state: Record<string, ChecklistItemStateSlice> | undefined): string | undefined {
+  let best: string | undefined;
+  let bestMs = -Infinity;
+  for (const slice of Object.values(state ?? {})) {
+    for (const s of [slice?.lastEditedAt, slice?.clientSubmittedAt, slice?.reviewedAt, slice?.deliveredToClientAt]) {
+      if (!s) continue;
+      const ms = Date.parse(s);
+      if (Number.isFinite(ms) && ms > bestMs) {
+        bestMs = ms;
+        best = s;
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * What the clients still owe on these engagements, as reminder targets: steps the client has to
+ * fill and document requests they have to upload. Each item appears once.
+ */
+export function clientRemindTargets(opts: {
+  engagements: Engagement[];
+  getState: (engagement: Engagement) => Record<string, ChecklistItemStateSlice>;
+  requests: DocRequest[];
+  now?: Date;
+}): Array<{ engagementId: string; itemKey: string; title: string }> {
+  const rows = buildTeamTaskRows({
+    engagements: opts.engagements,
+    getState: opts.getState,
+    filings: [],
+    requests: opts.requests,
+    leads: [],
+    projectBase: '/app/manager',
+    now: opts.now ?? new Date(),
+  });
+  const seen = new Set<string>();
+  const out: Array<{ engagementId: string; itemKey: string; title: string }> = [];
+  for (const r of rows) {
+    if (!r.withClient || !r.itemId || !/^(step|request):/.test(r.itemId)) continue;
+    const k = `${r.engagementId}|${r.itemId}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ engagementId: r.engagementId, itemKey: r.itemId, title: r.title });
+  }
+  return out;
 }

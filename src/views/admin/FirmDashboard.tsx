@@ -65,6 +65,8 @@ export default function FirmDashboard() {
     let pending = 0;
     let good = 0;
     let incorporating = 0;
+    let overdue = 0;
+    let waitingClient = 0;
     for (const eng of engagements) {
       if (eng.stage === 'Operational Readiness') continue;
       total += 1;
@@ -72,9 +74,11 @@ export default function FirmDashboard() {
       const reason = deriveStuckReason(eng, state);
       if (reason === 'on_track') good += 1;
       else pending += 1;
+      if (reason === 'waiting_client') waitingClient += 1;
+      if (eng.health === 'overdue') overdue += 1;
       if (!isIncorporated(eng, state)) incorporating += 1;
     }
-    return { total, pending, good, incorporating };
+    return { total, pending, good, incorporating, overdue, waitingClient };
   }, [engagements, getStateForEngagement]);
 
   /* Phase progress: the companies still incorporating, the nearest incorporation date first. */
@@ -90,16 +94,22 @@ export default function FirmDashboard() {
       .sort((a, b) => (a.daysToCoi ?? 9999) - (b.daysToCoi ?? 9999) || a.companyName.localeCompare(b.companyName));
   }, [engagements, getStateForEngagement]);
 
-  const pendingApprovals = useMemo(() => {
+  const { pendingApprovals, approvalClients } = useMemo(() => {
     let n = 0;
+    let clients = 0;
     for (const eng of engagements) {
       const state = getStateForEngagement(eng);
+      let here = 0;
       for (const item of primaryPhaseItems()) {
-        if (isAwaitingManagerDecision(item.id, state[item.id])) n += 1;
+        if (isAwaitingManagerDecision(item.id, state[item.id])) here += 1;
       }
+      n += here;
+      if (here > 0) clients += 1;
     }
-    return n;
+    return { pendingApprovals: n, approvalClients: clients };
   }, [engagements, getStateForEngagement]);
+  const practice = practiceQuery.data;
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
   const managerStrip = useMemo(() => {
     const byManager = new Map<
@@ -147,15 +157,42 @@ export default function FirmDashboard() {
           <DashHero
             title={first ? `Good ${greet}, ${first}` : 'Firm home'}
             stats={[
-              { label: 'Clients', value: pulse.total, href: '/app/admin/projects' },
-              { label: 'Incorporating', value: pulse.incorporating, href: '/app/admin/projects' },
-              { label: 'In compliance', value: pulse.total - pulse.incorporating, href: '/app/admin/projects' },
-              { label: 'Stuck', value: pulse.pending, href: '/app/admin/projects', hot: pulse.pending > 0 },
+              {
+                label: 'Clients',
+                value: pulse.total,
+                href: '/app/admin/projects',
+                note: pulse.overdue > 0 ? `${pulse.overdue} overdue` : `${pulse.good} on track`,
+                how: 'Every client of the firm still being set up, incorporating or in compliance.',
+              },
+              {
+                label: 'Incorporating',
+                value: pulse.incorporating,
+                href: '/app/admin/projects?view=incorporating',
+                note: practice?.incorporation.avgDaysToCoi != null ? `avg ${practice.incorporation.avgDaysToCoi}d to COI` : undefined,
+                how: 'Clients that do not have the certificate of incorporation yet.',
+              },
+              {
+                label: 'In compliance',
+                value: pulse.total - pulse.incorporating,
+                href: '/app/admin/projects?view=compliance',
+                note: practice && practice.compliances.overdue > 0 ? `${plural(practice.compliances.overdue, 'filing', 'filings')} overdue` : undefined,
+                how: 'Incorporated clients with a filing calendar.',
+              },
+              {
+                label: 'Stuck',
+                value: pulse.pending,
+                href: '/app/admin/projects?view=stuck',
+                hot: pulse.pending > 0,
+                note: pulse.waitingClient > 0 ? `${pulse.waitingClient} on clients` : undefined,
+                how: 'Clients whose current step waits on the client, the manager or the lead, or is blocked.',
+              },
               {
                 label: 'Awaiting approval',
                 value: pendingApprovals,
                 href: '/app/admin/approvals',
                 hot: pendingApprovals > 0,
+                note: approvalClients > 0 ? plural(approvalClients, 'client', 'clients') : undefined,
+                how: 'Steps waiting for a manager decision before they move on.',
               },
             ]}
           />

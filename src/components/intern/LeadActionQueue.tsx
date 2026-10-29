@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ListTodo } from 'lucide-react';
@@ -141,12 +141,15 @@ export function LeadActionQueue({
   items,
   now,
   statusOf,
+  scopeTabs,
 }: {
   userId: string;
   items: InternWorkItem[];
   now: Date;
   /** The status word of an item (overdue, due soon, in progress, not started). */
   statusOf: (item: InternWorkItem) => TodayStatus;
+  /** The All / Incorporating / Compliance switch (R-17 moved it here from the home card). */
+  scopeTabs?: ReactNode;
 }) {
   const router = useRouter();
   const groups = internActionQueueByCompany(items, now);
@@ -218,8 +221,9 @@ export function LeadActionQueue({
       icon={ListTodo}
       title="Action queue"
       meta={
-        <span className="flex items-center gap-3">
+        <span className="flex flex-wrap items-center gap-3">
           <span>{openItems.length} open</span>
+          {scopeTabs}
           <SpectrumTabs
             label="Action queue view"
             items={[

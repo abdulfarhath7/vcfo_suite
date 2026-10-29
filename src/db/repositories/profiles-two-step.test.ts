@@ -201,3 +201,24 @@ describe('systemCheckSignInPassword', () => {
     expect((await repo.systemCheckSignInPassword('me@sbc.in', 'right-password'))?.twoStepOn).toBe(false);
   });
 });
+
+describe('listStaffPeople two-step flag', () => {
+  it('tells the firm admin whose two-step sign-in is on, so the reset shows only for them', async () => {
+    results = [
+      [
+        { id: TARGET, name: 'Asha', email: 'asha@sbc.in', role: 'manager', internId: null, clientId: null, reportsToManagerId: null, status: 'active', totpEnabledAt: new Date() },
+        { id: ME, name: '', email: 'dev@sbc.in', role: 'developer', internId: null, clientId: null, reportsToManagerId: null, status: 'active', totpEnabledAt: null },
+      ],
+    ];
+    const rows = await repo.listStaffPeople(ctx('admin'));
+    expect(rows.map((r) => [r.email, r.role, r.twoStepOn])).toEqual([
+      ['asha@sbc.in', 'manager', true],
+      ['dev@sbc.in', 'developer', false],
+    ]);
+    expect(rows[1]!.name).toBe('dev@sbc.in');
+  });
+
+  it('refuses a manager', async () => {
+    await expect(repo.listStaffPeople(ctx('manager'))).rejects.toThrow('Only firm admins');
+  });
+});

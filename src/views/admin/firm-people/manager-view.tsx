@@ -40,6 +40,7 @@ export function renderManagerView(
     PersonRow,
     assignDialog,
     emailDialog,
+    dangerDialogs,
   } = ctx;
   const mgrName = selectedManager?.name ?? 'Project manager';
   const mgrEmail =
@@ -95,7 +96,7 @@ export function renderManagerView(
                 <DropdownMenuItem
                   className="gap-2 text-danger focus:text-danger"
                   onSelect={() =>
-                    void onDelete({
+                    onDelete({
                       id: selectedManager.id,
                       name: mgrName,
                       email: mgrEmail,
@@ -160,6 +161,7 @@ export function renderManagerView(
       </div>
       {assignDialog}
       {emailDialog}
+      {dangerDialogs}
     </PageTransition>
   );
 }

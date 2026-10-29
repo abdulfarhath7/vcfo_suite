@@ -10,6 +10,7 @@ import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { sep } from '@/lib/date-format';
 import { staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import { cn } from '@/lib/utils';
+import { exactDate, relativeDue } from '@/lib/relative-due';
 import type { AdminDashboardViewProps } from '@/views/admin/DashboardSections';
 
 type Urgency = 'bad' | 'warn' | 'idle';
@@ -82,6 +83,7 @@ export function AdminDashboardFilingsPanel({
               >
                 <span
                   className={cn('grid w-11 flex-none place-items-center rounded-md border-1.5 py-1 leading-none', TILE[urgency])}
+                  title={exactDate(c.nextDue)}
                   aria-hidden
                 >
                   <b className="text-[16px] font-medium tabular-nums">{day}</b>
@@ -96,8 +98,9 @@ export function AdminDashboardFilingsPanel({
                   >
                     {c.filing}
                   </Link>
-                  <span className="block truncate text-[12.5px] text-ink-muted">
-                    {[eng?.companyName, c.authority].filter(Boolean).join(' · ')}
+                  {/* E-11: the sub line starts with the relative due words; the exact date is the tooltip. */}
+                  <span className="block truncate text-[12.5px] text-ink-muted" title={exactDate(c.nextDue)}>
+                    {[c.status === 'filed' ? null : relativeDue(c.nextDue), eng?.companyName, c.authority].filter(Boolean).join(' · ')}
                   </span>
                 </span>
                 <Chip tone={chip.tone} fixed className="relative">

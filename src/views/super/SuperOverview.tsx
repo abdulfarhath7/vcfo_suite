@@ -106,6 +106,11 @@ export default function SuperOverview() {
     if (outcomes.length === 0) return null;
     return Math.round((outcomes.filter((o) => o === 'on-time').length / outcomes.length) * 100);
   })();
+  // Trend (R-18): filed on time over filed, month by month, from the insights' real months.
+  const onTimeTrend = (insights?.months ?? [])
+    .filter((m) => m.filedOnTime + m.filedLate > 0)
+    .map((m) => Math.round((m.filedOnTime / (m.filedOnTime + m.filedLate)) * 100));
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
   return (
     <PageTransition>
@@ -114,26 +119,47 @@ export default function SuperOverview() {
       <div className="flex flex-col gap-3">
         <DashHero
           title={greeting}
-          ring={{ value: healthy, total: kpis.engagements, caption: 'on track' }}
           stats={[
-            { label: 'Clients', value: kpis.engagements, href: SUPER_PROJECTS_HREF },
+            {
+              label: 'Clients',
+              value: kpis.engagements,
+              href: SUPER_PROJECTS_HREF,
+              note: `${healthy} on track`,
+              bar: kpis.engagements > 0 ? Math.round((healthy / kpis.engagements) * 100) : undefined,
+              how: 'Every engagement in the firm; the bar is the share on track.',
+            },
             {
               label: 'Need attention',
               value: kpis.needsAttention,
               href: SUPER_ATTENTION_HREF,
               hot: kpis.needsAttention > 0,
+              note: kpis.awaitingClient > 0 ? `${kpis.awaitingClient} on clients` : undefined,
+              how: 'Engagements that are overdue, stuck, or waiting on someone past the usual time.',
             },
-            { label: 'Awaiting review', value: kpis.approvalsPending, href: '/app/admin/approvals' },
+            {
+              label: 'Awaiting review',
+              value: kpis.approvalsPending,
+              href: '/app/admin/approvals',
+              how: 'Steps waiting for a manager or admin decision.',
+            },
             {
               label: 'Filings due',
               value: kpis.overdueFilings + kpis.filingsDueSoon,
-              sub: kpis.overdueFilings > 0 ? `${kpis.overdueFilings} overdue` : undefined,
+              note: kpis.overdueFilings > 0 ? `${kpis.overdueFilings} overdue` : kpis.filingsDueSoon > 0 ? plural(kpis.filingsDueSoon, 'due soon', 'due soon') : undefined,
               href: '/app/admin/compliances/calendar',
               hot: kpis.overdueFilings > 0,
+              how: 'Filings past their due date plus filings due soon, across every client.',
             },
-            ...(filedOnTime !== null
-              ? [{ label: 'Filed on time', value: `${filedOnTime}%`, href: '/app/super/reports', good: true }]
-              : []),
+            {
+              label: 'Filed on time',
+              value: filedOnTime !== null ? `${filedOnTime}%` : '–',
+              href: '/app/super/reports',
+              good: filedOnTime !== null,
+              note: insights ? `${insights.months.length} months` : undefined,
+              trend: onTimeTrend.length > 1 ? onTimeTrend : undefined,
+              trendTone: 'ok',
+              how: 'Filings filed by their due date, over every filing due by today in the report window.',
+            },
           ]}
         >
           <Button onClick={() => setAssignOpen(true)}>
