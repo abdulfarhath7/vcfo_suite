@@ -6,9 +6,8 @@ import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { ProfileCard, SettingsRow } from './settings-layout';
 
 /**
- * Profile › Email: the staff member's Outlook mailbox. K-40 asks for a "Signature from Outlook ·
- * server-side signature on" row, but `/api/outlook` reports only `connected` and `msEmail`, so the
- * row stays out until the connection carries a signature flag.
+ * Profile › Email: the staff member's Outlook mailbox, and whether the app adds their signature
+ * to each message (K-40, G-23). The signature itself is edited in the Email screen's settings.
  */
 export function OutlookMailboxCard({
   onConnectedChange,
@@ -18,6 +17,7 @@ export function OutlookMailboxCard({
   const [configured, setConfigured] = useState(true);
   const [connected, setConnected] = useState(false);
   const [msEmail, setMsEmail] = useState<string | undefined>();
+  const [signatureOn, setSignatureOn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -31,12 +31,15 @@ export function OutlookMailboxCard({
           configured?: boolean;
           connected?: boolean;
           msEmail?: string;
+          signatureEnabled?: boolean;
+          signatureText?: string | null;
         };
         if (cancelled) return;
         setConfigured(json.configured !== false);
         setConnected(Boolean(json.connected));
         onConnectedChange?.(Boolean(json.connected));
         setMsEmail(json.msEmail);
+        setSignatureOn(Boolean(json.signatureEnabled && json.signatureText?.trim()));
       } catch {
         if (!cancelled) {
           setConnected(false);
@@ -135,6 +138,11 @@ export function OutlookMailboxCard({
               )}
             </div>
           </SettingsRow>
+          {connected ? (
+            <SettingsRow label="Signature" hint="Added under every message you send from VCFO">
+              <Chip tone={signatureOn ? 'ok' : 'idle'}>{signatureOn ? 'On' : 'Off'}</Chip>
+            </SettingsRow>
+          ) : null}
           {connected && asking ? (
             // R-40: ask before a risky change.
             <div className="flex flex-wrap items-center gap-2 border-t border-line-soft bg-surface-sunken px-4 py-2.5 md:px-5">
