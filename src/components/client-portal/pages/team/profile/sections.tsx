@@ -22,6 +22,7 @@ import { TwoStepRows } from '@/views/settings/account/TwoStepRows';
 import { DevicesRows } from '@/views/settings/account/DevicesRows';
 import { cn } from '@/lib/utils';
 import { usePortal } from '../../../PortalProvider';
+import { TextSizeSetting } from '../../../TextSizeSetting';
 import { SCard } from '../../compliances/spectrum';
 import { api } from '../common';
 import { useClientTeam } from '../team-sections';
@@ -138,9 +139,13 @@ export function PhotoInput({ inputRef, onPick }: { inputRef: React.RefObject<HTM
 /* ------------------------------------------------------------------ About you */
 
 function AboutSection() {
-  const { p, setProfile, patchProfile, refreshShell } = useProfileData();
+  const { p, setProfile, patchProfile, refreshShell, account, saveAccount } = useProfileData();
   const { toast } = usePortal();
   const { saved, tick } = useSaved();
+  const [designation, setDesignation] = useState('');
+  useEffect(() => {
+    if (account) setDesignation(account.designation ?? '');
+  }, [account]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [emailOpen, setEmailOpen] = useState(false);
@@ -202,6 +207,21 @@ function AboutSection() {
             if (v !== p.name) void saveField({ name: v });
           }}
           autoComplete="name"
+        />
+      </FormRow>
+      <FormRow k="Designation" hint="Your role in the company">
+        <Input
+          aria-label="Designation"
+          value={designation}
+          disabled={!account}
+          maxLength={80}
+          onChange={(e) => setDesignation(e.target.value)}
+          onBlur={() => {
+            if (!account) return;
+            const v = designation.trim() || null;
+            if (v !== (account.designation ?? null)) void saveAccount({ designation: v }).then((ok) => ok && tick());
+          }}
+          autoComplete="organization-title"
         />
       </FormRow>
       <FormRow k="Mobile" hint="For sign-in codes and WhatsApp">
@@ -369,7 +389,7 @@ export function useWhatsApp() {
 }
 
 function NotifySection() {
-  const { prefs, savePref } = useProfileData();
+  const { prefs, savePref, account, saveAccount } = useProfileData();
   const wa = useWhatsApp();
   const { saved, tick } = useSaved();
   const [start, setStart] = useState('21:00');
@@ -422,6 +442,22 @@ function NotifySection() {
           disabled={!prefs || !quietOn}
           onChange={(e) => setEnd(e.target.value)}
           onBlur={() => prefs && end && end !== prefs.quietEnd && savePref({ quietEnd: end }, { onSaved: tick })}
+        />
+      </FormRow>
+      <FormRow k="Remind me before a due date">
+        <SpectrumTabs
+          label="Remind me before a due date"
+          items={[
+            { key: '7', label: '7 days' },
+            { key: '3', label: '3 days' },
+            { key: '1', label: '1 day' },
+          ]}
+          /* null means the firm default: no option is picked until the person chooses */
+          value={account?.remindDays ? String(account.remindDays) : ''}
+          onChange={(k) => {
+            if (!account) return;
+            void saveAccount({ remindDays: Number(k) as 7 | 3 | 1 }).then((ok) => ok && tick());
+          }}
         />
       </FormRow>
       {wa.node}
@@ -486,6 +522,9 @@ function LookSection() {
     <SectionShell sec="look">
       <FormRow k="Theme">
         <ThemePicker />
+      </FormRow>
+      <FormRow k="Text size">
+        <TextSizeSetting />
       </FormRow>
       <FormRow k="Reduce motion">
         <MotionSwitch />

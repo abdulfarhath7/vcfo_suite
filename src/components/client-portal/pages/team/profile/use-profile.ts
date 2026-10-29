@@ -25,6 +25,10 @@ export type Profile = {
 
 export const PREFS_KEY = ['client-portal', 'notification-prefs'] as const;
 export const PW_KEY = ['client-portal', 'password-changed'] as const;
+export const ACCOUNT_KEY = ['client-portal', 'account'] as const;
+
+/** `/api/client/account`: the person's designation and reminder lead time (migration 0028). */
+export type ClientAccount = { designation: string | null; remindDays: 7 | 3 | 1 | null };
 
 export function useProfileData() {
   const { shell, toast } = usePortal();
@@ -32,7 +36,23 @@ export function useProfileData() {
   const prof = useQuery({ queryKey: PROFILE_KEY, queryFn: () => api<{ profile: Profile }>('/api/account/profile') });
   const np = useQuery({ queryKey: PREFS_KEY, queryFn: () => api<{ prefs: NotificationPrefs }>('/api/client/notification-prefs') });
   const pwq = useQuery({ queryKey: PW_KEY, queryFn: () => api<{ changedAt: string | null }>('/api/client/account/password') });
+  const acc = useQuery({ queryKey: ACCOUNT_KEY, queryFn: () => api<{ account: ClientAccount }>('/api/client/account') });
   const p = prof.data?.profile;
+
+  /** Saves designation or remindDays; rolls back and toasts on failure. */
+  const saveAccount = async (patch: Partial<ClientAccount>): Promise<boolean> => {
+    const prev = qc.getQueryData<{ account: ClientAccount }>(ACCOUNT_KEY);
+    if (prev) qc.setQueryData(ACCOUNT_KEY, { account: { ...prev.account, ...patch } });
+    try {
+      const r = await api<{ account: ClientAccount }>('/api/client/account', { method: 'PATCH', json: patch });
+      qc.setQueryData(ACCOUNT_KEY, r);
+      return true;
+    } catch {
+      if (prev) qc.setQueryData(ACCOUNT_KEY, prev);
+      toast('Could not save that change');
+      return false;
+    }
+  };
 
   const setProfile = (patch: Partial<Profile>) =>
     qc.setQueryData<{ profile: Profile }>(PROFILE_KEY, (o) => (o ? { profile: { ...o.profile, ...patch } } : o));
@@ -79,6 +99,8 @@ export function useProfileData() {
     failed: prof.isError,
     prefs: np.data?.prefs,
     changedAt: pwq.data?.changedAt ?? null,
+    account: acc.data?.account,
+    saveAccount,
     setProfile,
     patchProfile,
     savePref,

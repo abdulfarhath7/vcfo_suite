@@ -13,7 +13,7 @@ Progress log (written as each screen finishes).
 | C-818 | ✓ | `?tab=profile|security|notify|look|company|team|settings`; old hashes still open (`#notifications` → Settings matrix, `#appearance` → Appearance, `#team`, `#security`). |
 | C-819 | ✓ | About you is a FormRow card (label and hint left, 464 px control column). |
 | C-820 | ✓ | Name and Mobile save on blur; green "Saved" chip for 1.5 s in the card head. |
-| C-821 | ✗ | no data: no designation column for a client person. Schema need below. |
+| C-821 | ✓ | Round 3: "Designation" row (hint "Your role in the company") saves on blur to `profiles.designation` through the new `/api/client/account` and `client-account.ts`. |
 | C-822 | ✓ | "Mobile" input, hint "For sign-in codes and WhatsApp". |
 | C-823 | ✓ | Email reads as text, hint "Your sign-in address"; a ghost "Change" opens the real email change with the current password (feature kept). |
 | C-824 | ✓ | "Change photo" button row (and "Remove photo" when a photo is set). |
@@ -23,8 +23,8 @@ Progress log (written as each screen finishes).
 | C-828 | ✓ | "Sign out others" (real `/api/account/sessions/revoke-others`). |
 | C-829 | ✓ | Three 30 px checkbox chips: In-app and Email locked on, WhatsApp opens the opt-in dialog or turns it off with Undo. |
 | C-830 | ✓ | Quiet hours: switch plus start and end time fields (real `quietStart`/`quietEnd`), hint shows the window. |
-| C-831 | ✗ | no data: reminder lead time per client. Schema need below. |
-| C-832 | ✗ | Text size needs a shell-level setting (the portal CSS is in px); request below. |
+| C-831 | ◐ | Round 3: segmented 7 / 3 / 1 days saves `notification_prefs.remind_days` (null = firm default, no option picked). The reminder jobs do not read the column yet (request below). |
+| C-832 | ✓ | Round 3: the shell's `TextSizeSetting` is mounted in Appearance (Small / Default / Large). |
 | C-833 | ◐ | Company section built: company name, people who can sign in (real team), Invite (opens Team, Primary only), "Ask for a change" (opens Messages). Employees, State, Exports left out: no client-readable questionnaire path. |
 | C-834 | ✓ | Settings section: from 1280 px a 400 px left column (head, Profile, Security) and a fluid right column (Notifications, Appearance). |
 | C-835 | ✓ | Profile head is its own plain card, 16/20 px padding. |
@@ -65,14 +65,14 @@ Progress log (written as each screen finishes).
 | C-880 | ✓ | Soft token tint with coloured initials (`avatarTint`); support and self use the blurple soft tint. Fixed the broken `avatarColor` import (tsc error). |
 | C-886 | ✓ | Small primary "Invite", no icon. |
 | C-887 | ✓ | 24 px avatar, name 500, "you" 12 px muted. |
-| C-888 | ✗ | no data: role of a client person. |
+| C-888 | ✓ | Round 3: 120 px Role column from `profiles.designation` ("-" when unset), read in `getClientTeam` for the own engagement's people only. |
 | C-890 | ✓ | Since column 110 px, "2 Sep 2026", 12.5 px muted. |
 | C-893 | ✓ | "1–N of N" footer under the table. |
 | C-894 | ✓ | Faint centred "No people" / "No pending invites". |
 | C-895 | ✓ | Phones keep every column; the name column sticks and the table scrolls sideways. |
 | C-896 | ✓ | 420 px, title and close only. |
 | C-897 | ✓ | Name and Work email stacked with placeholders. |
-| C-898 | ✗ | no data: role of a client person. |
+| C-898 | ✓ | Round 3: Role select in the invite dialog (Director, Finance, Operations, Company secretary, Other); stored on the new account only. |
 | C-899 | ✗ | no data: set-password link; the temporary password stays (DECISIONS). |
 | C-901 | ✓ | "Send invite" without icon, disabled until name and email are valid. |
 | C-902 | ✓ | One sunken box: from avatar and "Primary · company", "›", to avatar and "New Primary". |
@@ -335,12 +335,11 @@ Added `hideRevealedIdentifier(field: 'pan' | 'tan')` to `src/components/client-p
 
 ## Schema needs
 
-- `profiles.designation text` (client designation for About you, C-821, and the role column on Team, C-888 / C-898; could be `client_people.role` if roles are per engagement).
-- `notification_prefs.remind_days smallint` (7, 3 or 1) for "Remind me before a due date" (C-831).
+- Met by migration 0028: `profiles.designation` and `notification_prefs.remind_days` are wired for the client portal (round 3, below).
 
 ## Requests for shared files
 
-- Shell: a text-size setting (Small / Default / Large) on `.cp` for C-832; the portal CSS is in px, so it needs a shell-level scale.
+- Compliance jobs (`src/jobs/compliance-generate.ts`, `compliance-reminders.ts`): read `notification_prefs.remind_days` when choosing the client's due reminder day (C-831 stores it; nothing sends by it yet).
 - Shell sidebar (`Sidebar.tsx`): the profile entry can point to `/app/client/profile`; Team may move under Profile (`?tab=team`) if the owner wants the prototype's redirect.
 - `src/views/notifications/notification-view.ts` and `client-audit.ts` CTAs still link `/app/client/settings#notifications`; that hash now opens the Settings section (the matrix), so nothing breaks.
 
@@ -358,3 +357,12 @@ Added `hideRevealedIdentifier(field: 'pan' | 'tan')` to `src/components/client-p
 - `npx tsc --noEmit -p .`: clean for my files (other areas' errors from the start of round 2 are gone or not mine).
 - `npx vitest run` on src/db/repositories/client-{documents,audit,change-requests}.test.ts, src/components/client-portal, src/lib/client-portal: all pass.
 - `npx eslint` on my folders: 0 errors (45 existing warnings).
+
+## Round 3: migration 0028 wiring (designation, remind days, text size)
+
+- New `src/db/repositories/client-account.ts`: `getOwnClientAccount` and `updateOwnClientAccount` (client role only, keyed by `ctx.userId`; designation trimmed to 80 characters; remindDays 7, 3, 1 or null). Remind days upsert only that column on `notification_prefs`, so the shared `notification-prefs.ts` repository (also used by the staff account route) is untouched.
+- New route `app/api/client/account/route.ts`: GET and PATCH `{ designation?, remindDays? }`. I did not edit the shared `/api/account/profile` route.
+- `src/db/repositories/client-team.ts`: `getClientTeam` returns `designation` per person and invite, read with one `profiles.id IN (...)` query whose ids come only from the own engagement's members and invites. `createClientInvite` takes an optional `designation` and writes it only on the client account the invite just created. `app/api/client/team/route.ts` accepts `designation` on the invite action.
+- UI: About you has Designation; Notifications has "Remind me before a due date"; Appearance has Text size (`TextSizeSetting`); Team has the Role column (phone table min width 760 px) and the invite Role select. Files: `pages/team/profile/{use-profile.ts,sections.tsx}`, `pages/team/team-sections.tsx`, `css-src/team-team.css`.
+- Tests: new `src/db/repositories/client-account.test.ts` (staff refused, reads and writes keyed to the caller, the designation update limited to the own client profile, bad remind values refused) and `src/db/repositories/client-team.test.ts` (staff refused, another tenant 404, designations read only for the own engagement's people).
+- Checks: `node scripts/cp-css.mjs` ok; `npx tsc --noEmit -p .` clean; vitest on `src/db/repositories/client-*.test.ts`, `src/components/client-portal`, `src/lib/client-portal`: 145 of 146 pass. The one failure is `client-compliances.test.ts > addClientFilingProof` (client compliance area, a file I did not touch). eslint on my files: 0 errors.

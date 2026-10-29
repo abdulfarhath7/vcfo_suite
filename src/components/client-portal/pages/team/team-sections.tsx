@@ -46,6 +46,8 @@ export const TEAM_KEY = ['client-portal', 'team'] as const;
 function fullDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }).replace('Sept', 'Sep');
 }
+/** The roles the invite form offers (C-898); stored as the person's designation. */
+const CLIENT_ROLES = ['Director', 'Finance', 'Operations', 'Company secretary', 'Other'];
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 type Row = {
@@ -56,6 +58,8 @@ type Row = {
   when: string;
   /** The Since column: the full date the person joined or the invite went out. */
   date: string;
+  /** Role at the company (`profiles.designation`), or null. */
+  designation: string | null;
   you: boolean;
   userId?: string;
   inviteId?: string;
@@ -89,6 +93,7 @@ export function TeamSection() {
         email: p.email,
         when: `Since ${shortDate(p.since)}`,
         date: fullDate(p.since),
+        designation: p.designation,
         you: p.you,
         userId: p.userId,
       })),
@@ -99,6 +104,7 @@ export function TeamSection() {
         email: i.email,
         when: `Sent ${shortDate(i.sentAt)}`,
         date: fullDate(i.sentAt),
+        designation: i.designation,
         you: false,
         inviteId: i.id,
       })),
@@ -225,6 +231,9 @@ export function TeamSection() {
               <thead>
                 <tr>
                   <th scope="col">Name</th>
+                  <th scope="col" style={{ width: 120 }}>
+                    Role
+                  </th>
                   <th scope="col" className="tb-d">
                     Email
                   </th>
@@ -259,6 +268,7 @@ export function TeamSection() {
                           </span>
                         </span>
                       </td>
+                      <td style={{ width: 120, color: 'oklch(var(--ink-2))' }}>{r.designation ?? <span style={{ color: 'oklch(var(--ink-faint))' }}>-</span>}</td>
                       <td className="tb-d" style={{ color: 'oklch(var(--ink-2))', overflowWrap: 'anywhere' }}>
                         {r.email}
                       </td>
@@ -328,10 +338,10 @@ export function TeamSection() {
         <InviteDialog
           company={company}
           onClose={() => setInviteOpen(false)}
-          onSend={(name, email, pw) =>
+          onSend={(name, email, pw, designation) =>
             new Promise<void>((resolve, reject) => {
               act.mutate(
-                { action: 'invite', name, email, tempPassword: pw },
+                { action: 'invite', name, email, tempPassword: pw, designation },
                 {
                   onSuccess: (d) => {
                     const inv = (d as unknown as { invite?: { id: string } }).invite;
@@ -483,8 +493,9 @@ function InviteDialog({
 }: {
   company: string;
   onClose: () => void;
-  onSend: (name: string, email: string, pw: string) => Promise<void>;
+  onSend: (name: string, email: string, pw: string, designation: string | null) => Promise<void>;
 }) {
+  const [role, setRole] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [pw] = useState(makeTempPassword);
@@ -499,7 +510,7 @@ function InviteDialog({
     setBusy(true);
     setErr('');
     try {
-      await onSend(name.trim(), email.trim(), pw);
+      await onSend(name.trim(), email.trim(), pw, role || null);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not send the invite');
       setBusy(false);
@@ -527,6 +538,17 @@ function InviteDialog({
         <label className="fl">
           Work email
           <input className="inp" type="email" value={email} placeholder="name@company.in" onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+        </label>
+        <label className="fl">
+          Role
+          <select className="inp" value={role} onChange={(e) => setRole(e.target.value)}>
+            <option value="">Choose a role</option>
+            {CLIENT_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
         </label>
         <SignInBox pw={pw} email={email.trim()} label="Sign-in" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'oklch(var(--ink-2))' }}>

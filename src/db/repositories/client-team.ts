@@ -42,6 +42,8 @@ interface ClientTeamPerson {
   name: string;
   email: string;
   role: 'primary' | 'member';
+  /** Job title ("Director", "Finance"), from `profiles.designation` (C-888). */
+  designation: string | null;
   since: string;
   you: boolean;
 }
@@ -52,6 +54,7 @@ export interface ClientTeamInvite {
   email: string;
   sentAt: string;
   sendCount: number;
+  designation: string | null;
 }
 
 export interface ClientTeamView {
@@ -68,6 +71,16 @@ async function myEngagement(ctx: AuthContext) {
   const access = await assertEngagementAccess(ctx, mine.id);
   if (!access.ok) throw new ClientTeamError('No engagement found', 404);
   return { dbId: access.dbId, row: access.row };
+}
+
+/**
+ * Designations of the given people. The ids always come from the caller's own
+ * engagement (its members and invites), never from the request.
+ */
+async function designationsOf(ids: string[]): Promise<Map<string, string | null>> {
+  if (!ids.length) return new Map();
+  const rows = await db.select({ id: profiles.id, designation: profiles.designation }).from(profiles).where(inArray(profiles.id, ids));
+  return new Map(rows.map((r) => [r.id, r.designation?.trim() || null]));
 }
 
 /** Pending invites; lazily stamps accepted ones (the invitee chose a password). */
@@ -98,6 +111,7 @@ export async function getClientTeam(ctx: AuthContext): Promise<ClientTeamView> {
     isPrimaryClient(ctx.userId, dbId, row.clientUserId),
   ]);
   const pendingIds = new Set(invites.map((i) => i.profileId));
+  const titles = await designationsOf([...members.map((m) => m.userId), ...invites.map((i) => i.profileId).filter((x): x is string => Boolean(x))]);
   const people: ClientTeamPerson[] = members
     .filter((m) => !pendingIds.has(m.userId))
     .map((m) => ({
@@ -105,6 +119,7 @@ export async function getClientTeam(ctx: AuthContext): Promise<ClientTeamView> {
       name: m.name,
       email: m.email,
       role: m.memberRole === 'owner' || m.userId === row.clientUserId ? 'primary' : 'member',
+      designation: titles.get(m.userId) ?? null,
       since: m.createdAt,
       you: m.userId === ctx.userId,
     }));
@@ -120,6 +135,7 @@ export async function getClientTeam(ctx: AuthContext): Promise<ClientTeamView> {
       email: i.email,
       sentAt: i.lastSentAt.toISOString(),
       sendCount: i.sendCount,
+      designation: (i.profileId && titles.get(i.profileId)) || null,
     })),
   };
 }
@@ -143,7 +159,7 @@ export interface CreatedClientInvite {
 /** Primary only. Creates (or attaches) the client account and records the invite. */
 export async function createClientInvite(
   ctx: AuthContext,
-  input: { name: string; email: string; tempPassword: string },
+  input: { name: string; email: string; tempPassword: string; designation?: string | null },
 ): Promise<CreatedClientInvite> {
   const { dbId, row } = await requirePrimary(ctx);
   // Security (client portal v7 review H1): from the client side an invite only
@@ -178,6 +194,11 @@ export async function createClientInvite(
     if (m.includes('not permitted')) throw new ClientTeamError('Only the Primary contact can invite', 403);
     throw e;
   }
+  const designation = input.designation?.trim().slice(0, 80) || null;
+  if (designation && invited.createdNewUser) {
+    // Only the account this invite just created; never an existing profile.
+    await db.update(profiles).set({ designation, updatedAt: new Date() }).where(and(eq(profiles.id, invited.userId), eq(profiles.role, 'client')));
+  }
   let tempHash: string | null = null;
   if (invited.createdNewUser) {
     const [p] = await db.select({ h: profiles.passwordHash }).from(profiles).where(eq(profiles.id, invited.userId)).limit(1);
@@ -204,6 +225,7 @@ export async function createClientInvite(
       email: inv.email,
       sentAt: inv.lastSentAt.toISOString(),
       sendCount: inv.sendCount,
+      designation: invited.createdNewUser ? designation : null,
     },
     createdNewUser: invited.createdNewUser,
     name: invited.name,
@@ -250,7 +272,7 @@ export async function resendClientInvite(
     metadata: { inviteId: inv.id, invitedUserId: inv.profileId },
   });
   return {
-    invite: { id: up.id, name: up.name ?? up.email, email: up.email, sentAt: up.lastSentAt.toISOString(), sendCount: up.sendCount },
+    invite: { id: up.id, name: up.name ?? up.email, email: up.email, sentAt: up.lastSentAt.toISOString(), sendCount: up.sendCount, designation: null },
     name: up.name ?? up.email,
     email: up.email,
     companyName: eng.row.companyName,

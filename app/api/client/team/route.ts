@@ -33,6 +33,8 @@ const bodySchema = z.discriminatedUnion('action', [
     name: z.string().trim().min(1, 'Enter a name').max(120),
     email: z.string().trim().email('Enter a valid email address'),
     tempPassword: z.string().min(8).max(128),
+    /** The person's role at the company (C-898), stored as their designation. */
+    designation: z.string().trim().max(80).optional().nullable(),
   }),
   z.object({ action: z.literal('resend'), inviteId: z.string().uuid(), tempPassword: z.string().min(8).max(128) }),
   z.object({ action: z.literal('cancel'), inviteId: z.string().uuid() }),
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
   try {
     const b = body.data;
     if (b.action === 'invite') {
-      const r = await createClientInvite(ctx, { name: b.name, email: b.email, tempPassword: b.tempPassword });
+      const r = await createClientInvite(ctx, { name: b.name, email: b.email, tempPassword: b.tempPassword, designation: b.designation });
       const emailed = r.createdNewUser ? await sendInviteEmail(ctx, r.email, r.name, r.companyName, b.tempPassword) : 'attached';
       return NextResponse.json({ ok: true, invite: r.invite, createdNewUser: r.createdNewUser, email: emailed, team: await getClientTeam(ctx) }, { status: 201 });
     }
