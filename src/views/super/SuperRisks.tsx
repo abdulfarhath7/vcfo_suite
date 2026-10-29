@@ -10,21 +10,21 @@ import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Tag, type ChipTone } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Button } from '@/components/ui/button';
+import { SkeletonRows } from '@/components/ui/empty-state';
 import { RemindClientButton } from '@/components/reminders/RemindClientButton';
-import {
-  ClientTile,
-  SuperPageError,
-  SuperPageHead,
-  SuperPageSkeleton,
-} from '@/components/super/parts/super-parts';
+import { ClientTile, SuperPageError } from '@/components/super/parts/super-parts';
 import { shortCompany } from '@/components/super/parts/super-text';
+import { AssignClientDialog } from '@/components/super/assign/AssignClientDialog';
+import { useSuperStaff } from '@/components/super/assign/use-super-staff';
 import {
   buildRisks,
+  riskAgeLabel,
   SUPER_RISK_LABEL,
   type SuperRisk,
   type SuperRiskKind,
 } from '@/components/super/insights/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
+import { superEngagementHref } from '@/lib/super/super-overview';
 import { cn } from '@/lib/utils';
 
 /**
@@ -33,9 +33,11 @@ import { cn } from '@/lib/utils';
  * Built only from stored states and dates: steps marked overdue, filings past their due date
  * and not filed, clients with open work and no move for `SUPER_STUCK_DAYS` days (or blocked),
  * and clients with nobody assigned. Each row opens the client or the step behind it. An
- * overdue step or filing also has the one-click Remind to the client (G-15); when the
- * reminder cannot go out, the row's record opens instead so the super admin can follow up.
- * Assign stays with the owners' screens.
+ * overdue step or filing has the one-click Remind to the client (G-15); when the reminder
+ * cannot go out, the row's record opens instead so the super admin can follow up. A client
+ * with no manager or no project lead gets Assign, which opens the assign dialog on that
+ * client; once saved, the risk leaves the list because the next read no longer finds it.
+ * A stuck client gets Open. The client name under each title links to the record.
  */
 export const SUPER_RISKS_HREF = '/app/super/risks';
 
@@ -59,12 +61,6 @@ function SeverityBars({ severity }: { severity: 1 | 2 | 3 }) {
   );
 }
 
-function ageLabel(risk: SuperRisk): string {
-  if (risk.ageDays === null) return '–';
-  if (risk.ageDays === 0) return 'Today';
-  return `${risk.ageDays} days`;
-}
-
 /** Risks the client can act on: an overdue step or filing. The risk id is the item key. */
 function remindKeyOf(risk: SuperRisk): string | null {
   return risk.kind === 'step' || risk.kind === 'filing' ? risk.id : null;
@@ -74,7 +70,9 @@ export default function SuperRisks() {
   const router = useRouter();
   const query = useSuperInsights();
   const insights = query.data;
+  const staff = useSuperStaff();
   const [kind, setKind] = useState('all');
+  const [assignFor, setAssignFor] = useState<string | null>(null);
 
   const risks = useMemo(() => (insights ? buildRisks(insights, new Date()) : []), [insights]);
 
@@ -84,7 +82,9 @@ export default function SuperRisks() {
     return (
       <PageTransition>
         {seo}
-        <SuperPageSkeleton label="Loading risks" />
+        <DashSection title="Risks" bodyClassName="px-2 pb-2 pt-3">
+          <SkeletonRows rows={8} className="p-2" />
+        </DashSection>
       </PageTransition>
     );
   }
@@ -120,7 +120,9 @@ export default function SuperRisks() {
             <span className="block truncate font-medium text-ink">{r.title}</span>
             <span className="flex items-center gap-1.5 text-[12px] text-ink-muted" title={`Severity ${r.severity} of 3`}>
               <SeverityBars severity={r.severity} />
-              <span className="truncate">{shortCompany(r.companyName)}</span>
+              <Link href={superEngagementHref(r.engagementId)} className="truncate hover:underline">
+                {shortCompany(r.companyName)}
+              </Link>
             </span>
           </span>
         </span>
@@ -133,33 +135,41 @@ export default function SuperRisks() {
       render: (r) => (
         <span className="block min-w-0">
           <span className="block truncate">{r.managerName ?? 'No manager'}</span>
-          <span className="block truncate text-[12px] text-ink-muted">{r.leadName ?? 'No lead'}</span>
+          <span className="block truncate text-[12px] text-ink-muted">{staff.adminNameOf(r.managerId) ?? 'No admin'}</span>
         </span>
       ),
     },
-    { key: 'age', header: 'Age', width: '90px', align: 'right', render: (r) => <span className="tabular-nums">{ageLabel(r)}</span> },
+    { key: 'age', header: 'Age', width: '90px', align: 'right', render: (r) => <span className="whitespace-nowrap tabular-nums">{riskAgeLabel(r.ageDays)}</span> },
     {
       key: 'action',
       header: <span className="sr-only">Action</span>,
-      width: '184px',
+      width: '110px',
       align: 'right',
+      // One action per row, as in the prototype: Remind, Assign or Open.
       render: (r) => {
         const key = remindKeyOf(r);
-        return (
-          <span className="inline-flex items-center justify-end gap-1.5">
-            {key ? (
-              <RemindClientButton
-                engagementId={r.engagementId}
-                itemKey={key}
-                title={r.title}
-                className="w-[88px]"
-                onFailed={() => router.push(r.href)}
-              />
-            ) : null}
-            <Button asChild size="sm" variant="outline" className="w-[76px]">
-              <Link href={r.href}>Open</Link>
+        if (key) {
+          return (
+            <RemindClientButton
+              engagementId={r.engagementId}
+              itemKey={key}
+              title={r.title}
+              className="w-[84px]"
+              onFailed={() => router.push(r.href)}
+            />
+          );
+        }
+        if (r.kind === 'owner' || r.kind === 'lead') {
+          return (
+            <Button size="sm" variant="outline" className="w-[84px]" onClick={() => setAssignFor(r.engagementId)}>
+              Assign
             </Button>
-          </span>
+          );
+        }
+        return (
+          <Button asChild size="sm" variant="outline" className="w-[84px]">
+            <Link href={r.href}>Open</Link>
+          </Button>
         );
       },
     },
@@ -168,10 +178,12 @@ export default function SuperRisks() {
   return (
     <PageTransition>
       {seo}
-      <div className="flex flex-col gap-5">
-        <SuperPageHead title="Risks" meta={`${risks.length} open`} />
-        <DashSection title="Risks" meta={String(rows.length)} bodyClassName="px-2 pb-2 pt-3">
-          <div className="mb-2 px-2">
+      {/* R-09: no page title over the card; the kind tabs sit in the card head (R-08). */}
+      <DashSection
+        title="Risks"
+        meta={
+          <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="tabular-nums">{rows.length}</span>
             <SpectrumTabs
               label="Kind"
               items={[
@@ -181,10 +193,19 @@ export default function SuperRisks() {
               value={kind}
               onChange={setKind}
             />
-          </div>
-          <EFilingGrid caption="Risks" columns={columns} rows={rows} rowKey={(r) => r.id} empty="No risk of this kind" minWidth={908} pageSize={12} />
-        </DashSection>
-      </div>
+          </span>
+        }
+        bodyClassName="px-2 pb-2 pt-1"
+      >
+        <EFilingGrid caption="Risks" columns={columns} rows={rows} rowKey={(r) => r.id} empty="No risk of this kind" minWidth={820} pageSize={10} />
+      </DashSection>
+      <AssignClientDialog
+        open={assignFor !== null}
+        onOpenChange={(open) => !open && setAssignFor(null)}
+        engagementId={assignFor ?? undefined}
+        engagements={insights.clients.map((c) => c.summary)}
+        staff={staff}
+      />
     </PageTransition>
   );
 }

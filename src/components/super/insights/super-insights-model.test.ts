@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { summarizeEngagement } from '@/lib/super/super-overview';
 import {
+  areaHealth,
   buildMonths,
+  buildPracticeAreas,
+  changeText,
+  openRegistrations,
+  overdueFilingsNow,
+  riskAgeLabel,
   buildRisks,
   buildTeam,
   filingOutcome,
@@ -46,6 +52,7 @@ function client(id: string, overrides: Partial<SuperInsightClient> = {}, summary
     registrations: {},
     currentStepHref: null,
     nextDueDate: null,
+    currentStepDue: null,
     ...overrides,
   };
 }
@@ -171,5 +178,64 @@ describe('registrationCounts', () => {
     const counts = registrationCounts({ clients: [a, b, c], registrationTypes: types });
     expect(counts[0]).toMatchObject({ id: 'reg-4', done: 1, progress: 1, needed: 3 });
     expect(counts[1]).toMatchObject({ id: 'reg-1', waiting: 1, needed: 2 });
+  });
+});
+
+describe('riskAgeLabel', () => {
+  it('says one day in the singular and keeps the dash when no date says', () => {
+    expect(riskAgeLabel(null)).toBe('–');
+    expect(riskAgeLabel(0)).toBe('Today');
+    expect(riskAgeLabel(1)).toBe('1 day');
+    expect(riskAgeLabel(5)).toBe('5 days');
+  });
+});
+
+describe('changeText', () => {
+  it('reads the change against the last stored month, or nothing without history', () => {
+    expect(changeText(12, [10])).toBe('+2');
+    expect(changeText(7, [10], 'pts')).toBe('\u22123 pts');
+    expect(changeText(4, [4])).toBe('0');
+    expect(changeText(4, [])).toBeUndefined();
+    expect(changeText(null, [4])).toBeUndefined();
+  });
+});
+
+describe('overdueFilingsNow', () => {
+  it('counts unfiled filings due in the last 90 days only', () => {
+    const rows = [
+      filing('1', '2026-10-10'),
+      filing('2', '2026-10-10', { status: 'filed', filedOn: '2026-10-09' }),
+      filing('3', '2026-05-01'),
+      filing('4', '2026-10-25'),
+    ];
+    expect(overdueFilingsNow(rows, NOW)).toBe(1);
+  });
+});
+
+describe('openRegistrations and the practice areas', () => {
+  it('counts open registration items and builds one row per area', () => {
+    const a = client('a', { registrations: { gst: 'progress', pan: 'overdue' } });
+    const b = client('b', { registrations: { gst: 'done' }, certificateDate: '2026-10-05' }, { incorporationDate: '2026-10-05' });
+    const types = [
+      { id: 'gst', title: 'GST' },
+      { id: 'pan', title: 'PAN' },
+    ];
+    expect(openRegistrations({ clients: [a, b], registrationTypes: types })).toBe(2);
+
+    const filings = [
+      filing('f1', '2026-10-10', { engagementId: 'a' }),
+      filing('f2', '2026-10-05', { engagementId: 'b', status: 'filed', filedOn: '2026-10-04' }),
+    ];
+    const hrefs = { Incorporation: '/i', Registrations: '/r', Compliances: '/c' };
+    const [inc, reg, comp] = buildPracticeAreas({ clients: [a, b], filings }, hrefs, NOW);
+    expect(inc).toMatchObject({ area: 'Incorporation', doneThisMonth: 1, href: '/i' });
+    expect(reg).toMatchObject({ active: 1, overdue: 1, doneThisMonth: null, health: 'At risk', leadManager: 'Meera Manager' });
+    expect(comp).toMatchObject({ active: 1, overdue: 1, doneThisMonth: 1 });
+  });
+
+  it('reads health from the overdue share', () => {
+    expect(areaHealth(10, 0)).toBe('On track');
+    expect(areaHealth(10, 2)).toBe('Watch');
+    expect(areaHealth(10, 3)).toBe('At risk');
   });
 });

@@ -30,6 +30,7 @@ import {
 import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
+import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
 import { phaseKeyFromId, type PhaseColorKey } from '@/lib/shell/phase-colors';
 import { stageDisplayLabel, type Stage } from '@/components/admin/create-project-form-utils';
 import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
@@ -679,6 +680,16 @@ export interface SuperEngagementDetail {
   filings: SuperFiling[];
   activity: SuperActivityEntry[];
   team: SuperTeamMember[];
+  /**
+   * What the record's Gantt (R-21) is drawn from: the step states, the manager-set windows,
+   * the expected COI and the certificate date. Optional so older cached reads still parse.
+   */
+  timeline?: {
+    state: SuperOverviewState;
+    schedule: EngagementSchedule | null;
+    expectedCoiOn: string | null;
+    incorporationDate: string | null;
+  };
   /**
    * Read-only inspection links into the role shells (context §3, §6). These are
    * plain links — no impersonation, no role swap, so nothing role-scoped can be

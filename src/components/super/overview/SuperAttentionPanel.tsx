@@ -3,31 +3,35 @@
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
+import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
-import { PhaseBar } from '@/components/ui/step-track';
-import { ClientTile } from '@/components/super/parts/super-parts';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ClientTile, DateTile } from '@/components/super/parts/super-parts';
+import { superStateChip } from '@/components/super/overview/super-overview-format';
 import {
-  attentionReason,
-  idleLabel,
-  superPhaseTrack,
-  superStateChip,
-} from '@/components/super/overview/super-overview-format';
-import {
-  SUPER_ATTENTION_HREF,
+  SUPER_PROJECTS_HREF,
   type SuperEngagementSummary,
   type SuperOverview,
 } from '@/lib/super/super-overview';
 import { cn } from '@/lib/utils';
 
 /**
- * What needs a human, most urgent first. This is the launchpad half of the
- * observatory: every row drills to the engagement behind it.
+ * What needs a human, most urgent first. Every row drills to the engagement behind it.
  *
- * Row anatomy follows the prototype's attention list: the client tile, the name
- * with the reason under it, the ST5 phase bars and the status chip on the right.
- * An overdue row is tinted soft red (R-20).
+ * Row anatomy follows the prototype's attention list (R-20): the 44px date tile tinted by
+ * urgency, the name with "<step> · <manager>, <lead>" under it, and the status chip on the
+ * right. The date is the end of the manager-set window on the current step, else the
+ * earliest open filing; a client with neither keeps its initials tile. An overdue or blocked
+ * row is tinted soft red and carries a navy Open button instead of being one big link.
  */
-export function SuperAttentionPanel({ overview }: { overview: SuperOverview }) {
+export function SuperAttentionPanel({
+  overview,
+  dueOf,
+}: {
+  overview: SuperOverview;
+  /** Next date per engagement id (YYYY-MM-DD), from the insights read when it has landed. */
+  dueOf?: Map<string, string>;
+}) {
   const rows = overview.needsAttention;
 
   return (
@@ -36,52 +40,72 @@ export function SuperAttentionPanel({ overview }: { overview: SuperOverview }) {
       tone="danger"
       title="Clients needing attention"
       meta={`${overview.kpis.needsAttention} of ${overview.kpis.engagements}`}
-      href={SUPER_ATTENTION_HREF}
-      bodyClassName="p-0"
+      href={SUPER_PROJECTS_HREF}
+      hrefLabel="Clients"
+      bodyClassName={rows.length === 0 ? 'p-4' : 'p-0'}
     >
       {rows.length === 0 ? (
-        <p className="px-4 py-4 text-center text-[13px] text-ink-muted">Nothing is stuck</p>
+        <EmptyState title="None" />
       ) : (
-        <div className="flex flex-col">
+        <ul className="flex flex-col">
           {rows.map((summary) => (
-            <AttentionRow key={summary.id} summary={summary} />
+            <AttentionRow key={summary.id} summary={summary} due={dueOf?.get(summary.id) ?? null} />
           ))}
-        </div>
+        </ul>
       )}
     </DashSection>
   );
 }
 
-function AttentionRow({ summary }: { summary: SuperEngagementSummary }) {
-  const idle = idleLabel(summary);
+/** Overdue and blocked rows are the urgent ones (prototype: Overdue and Stuck). */
+export function isUrgentAttention(summary: SuperEngagementSummary): boolean {
+  return summary.stateKey === 'overdue' || summary.stuckReason === 'blocked';
+}
+
+/** "<step> · <manager>, <lead>", dropping the parts nobody holds. */
+export function attentionSubLine(summary: SuperEngagementSummary): string {
+  const step = summary.currentStep?.title ?? 'Every step is complete';
+  const people = [summary.managerName, summary.leadName].filter(Boolean).join(', ');
+  return people ? `${step} · ${people}` : step;
+}
+
+function AttentionRow({ summary, due }: { summary: SuperEngagementSummary; due: string | null }) {
   const chip = superStateChip(summary);
-  const track = superPhaseTrack(summary);
-  const urgent = summary.stateKey === 'overdue';
+  const urgent = isUrgentAttention(summary);
+
+  const body = (
+    <>
+      {due ? <DateTile ymd={due} /> : <ClientTile id={summary.id} name={summary.companyName} className="h-11 w-11 text-[13px]" />}
+      <span className="min-w-0 flex-1">
+        <b className="block min-w-0 truncate text-[13.5px] font-semibold text-ink">{summary.companyName}</b>
+        <span className="block min-w-0 truncate text-[12.5px] text-ink-muted">{attentionSubLine(summary)}</span>
+      </span>
+      <span className="flex flex-none items-center gap-2">
+        <Chip fixed tone={chip.tone} title={chip.title}>
+          {chip.word}
+        </Chip>
+        {urgent ? (
+          <Button asChild variant="strong" size="sm">
+            <Link href={summary.href}>Open</Link>
+          </Button>
+        ) : null}
+      </span>
+    </>
+  );
+  const cls = cn(
+    'flex min-w-0 items-center gap-3 px-4 py-3 md:px-5',
+    urgent ? 'bg-danger-soft' : 'hover:bg-surface-sunken',
+  );
 
   return (
-    <Link
-      href={summary.href}
-      title={summary.companyName}
-      className={cn(
-        'flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0 hover:bg-surface-sunken/60',
-        urgent && 'bg-danger-soft/50',
+    <li className="border-t border-line-soft first:border-t-0" title={summary.companyName}>
+      {urgent ? (
+        <div className={cls}>{body}</div>
+      ) : (
+        <Link href={summary.href} className={cls}>
+          {body}
+        </Link>
       )}
-    >
-      <ClientTile id={summary.id} name={summary.companyName} />
-      <span className="min-w-0 flex-1">
-        <span className="flex min-w-0 items-center gap-2">
-          <b className="min-w-0 truncate text-[13.5px] font-medium text-ink">{summary.companyName}</b>
-          {idle ? <span className="shrink-0 text-[12px] tabular-nums text-ink-faint">{idle}</span> : null}
-        </span>
-        <span className="block min-w-0 truncate text-[12.5px] text-ink-muted">
-          {attentionReason(summary)}
-          {summary.leadName ? ` · ${summary.leadName}` : ''}
-        </span>
-      </span>
-      <PhaseBar done={track.done} totals={track.totals} names={track.names} className="hidden w-24 flex-none sm:flex" />
-      <Chip fixed tone={chip.tone} title={chip.title} className="flex-none">
-        {chip.word}
-      </Chip>
-    </Link>
+    </li>
   );
 }

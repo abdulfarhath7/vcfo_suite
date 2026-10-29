@@ -109,6 +109,7 @@ function stubSelect(rows: unknown[] = []) {
   const chain = {
     from: () => chain,
     where: () => chain,
+    groupBy: () => chain,
     orderBy: () => Promise.resolve(rows),
     then: (resolve: (value: unknown[]) => unknown) => Promise.resolve(rows).then(resolve),
   };

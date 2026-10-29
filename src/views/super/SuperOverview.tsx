@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ListPlus, UserPlus } from 'lucide-react';
+import { AlertTriangle, Building2, IdCard, ListPlus, ShieldCheck, UserPlus } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
@@ -26,10 +26,21 @@ import {
   SuperPracticeCards,
   SuperTopRisks,
 } from '@/components/super/overview/SuperPracticeCards';
-import { filingOutcome } from '@/components/super/insights/super-insights-model';
+import { SuperPracticeAreasPanel } from '@/components/super/overview/SuperPracticeAreasPanel';
+import { SuperTeamLoadPanel } from '@/components/super/overview/SuperTeamLoadPanel';
+import {
+  changeText,
+  filingOutcome,
+  openRegistrations,
+  overdueFilingsNow,
+} from '@/components/super/insights/super-insights-model';
 import { useSuperOverview } from '@/hooks/use-super-overview';
 import { useSuperInsights } from '@/views/super/use-super-insights';
-import { SUPER_ATTENTION_HREF, SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
+import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
+
+const SUPER_REGISTRATIONS_HREF = '/app/super/practice/registrations';
+const SUPER_COMPLIANCES_HREF = '/app/admin/compliances/calendar';
+const SUPER_FILINGS_HREF = '/app/admin/compliances/filings';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
 import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
 
@@ -44,9 +55,12 @@ import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
  * `/api/super/overview`; the practice cards, managers and top risks come from
  * `/api/super/insights`, which loads beside it and never blocks the page.
  *
- * Layout follows the prototype's Overview (C-0109): the home card with KP1
- * tiles, the three practice cards, then a main column and a 318px rail of
- * `DashSection` panels.
+ * Layout follows the prototype's Overview (C-0109): the home card with its four
+ * tiles (Clients, Registrations open, Filed on time, Filings overdue, each with the
+ * change against last month where stored dates can say), the three practice cards,
+ * then a main column (admins, managers, practice areas, the real-only load and
+ * charts, and the attention list last) and a 318px rail of `DashSection` panels.
+ * Assign task stays beside Assign client because it is a real super admin action.
  */
 export default function SuperOverview() {
   const { user } = useApp();
@@ -99,7 +113,7 @@ export default function SuperOverview() {
   }
 
   const { kpis } = overview;
-  const healthy = Math.max(0, kpis.engagements - kpis.needsAttention);
+  const now = new Date();
 
   // Filed on time over every filing due by today in the report window (on time, late or open).
   const filedOnTime = (() => {
@@ -109,63 +123,66 @@ export default function SuperOverview() {
     if (outcomes.length === 0) return null;
     return Math.round((outcomes.filter((o) => o === 'on-time').length / outcomes.length) * 100);
   })();
-  // Trend (R-18): filed on time over filed, month by month, from the insights' real months.
-  const onTimeTrend = (insights?.months ?? [])
-    .filter((m) => m.filedOnTime + m.filedLate > 0)
-    .map((m) => Math.round((m.filedOnTime / (m.filedOnTime + m.filedLate)) * 100));
-  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  // Overdue on the same 90-day rule as the month-end history, so the change text agrees.
+  const overdue = insights ? overdueFilingsNow(insights.filings, now) : kpis.overdueFilings;
+  const regOpen = insights ? openRegistrations(insights) : null;
+  const history = insights?.history;
+  const withLive = (past: number[] | undefined, live: number | null) =>
+    past && past.length > 0 && live !== null ? [...past, live] : undefined;
+  // The attention rows' date tile: the current step's window end, else the next filing due.
+  const dueOf = new Map<string, string>();
+  for (const c of insights?.clients ?? []) {
+    const due = c.currentStepDue ?? c.nextDueDate;
+    if (due) dueOf.set(c.summary.id, due.slice(0, 10));
+  }
 
   return (
     <PageTransition>
       {seo}
 
       <div className="flex flex-col gap-3">
+        {/* The prototype's four tiles, each with its change against last month where stored dates say. */}
         <DashHero
           title={greeting}
           stats={[
             {
               label: 'Clients',
               value: kpis.engagements,
+              icon: Building2,
               href: SUPER_PROJECTS_HREF,
-              note: `${healthy} on track`,
-              bar: kpis.engagements > 0 ? Math.round((healthy / kpis.engagements) * 100) : undefined,
+              of: changeText(kpis.engagements, trends?.clients),
               trend: trendWithLive(trends, 'clients', kpis.engagements),
               trendTone: 'accent',
-              how: 'Every engagement in the firm; the bar is the share on track.',
+              how: 'Every engagement in the firm. The small text is the change against last month.',
             },
             {
-              label: 'Need attention',
-              value: kpis.needsAttention,
-              href: SUPER_ATTENTION_HREF,
-              hot: kpis.needsAttention > 0,
-              note: kpis.awaitingClient > 0 ? `${kpis.awaitingClient} on clients` : undefined,
-              how: 'Engagements that are overdue, stuck, or waiting on someone past the usual time.',
-            },
-            {
-              label: 'Awaiting review',
-              value: kpis.approvalsPending,
-              href: '/app/admin/approvals',
-              how: 'Steps waiting for a manager or admin decision.',
-            },
-            {
-              label: 'Filings due',
-              value: kpis.overdueFilings + kpis.filingsDueSoon,
-              note: kpis.overdueFilings > 0 ? `${kpis.overdueFilings} overdue` : kpis.filingsDueSoon > 0 ? plural(kpis.filingsDueSoon, 'due soon', 'due soon') : undefined,
-              href: '/app/admin/compliances/calendar',
-              hot: kpis.overdueFilings > 0,
-              trend: trendWithLive(trends, 'filingsDue', kpis.overdueFilings + kpis.filingsDueSoon),
-              trendTone: 'accent',
-              how: 'Filings past their due date plus filings due soon, across every client.',
+              label: 'Registrations open',
+              value: regOpen ?? '–',
+              icon: IdCard,
+              href: SUPER_REGISTRATIONS_HREF,
+              how: 'Registration items in progress, waiting or overdue across every client. Items store no history, so there is no trend.',
             },
             {
               label: 'Filed on time',
               value: filedOnTime !== null ? `${filedOnTime}%` : '–',
-              href: '/app/super/reports',
+              icon: ShieldCheck,
+              href: SUPER_COMPLIANCES_HREF,
               good: filedOnTime !== null,
-              note: insights ? `${insights.months.length} months` : undefined,
-              trend: onTimeTrend.length > 1 ? onTimeTrend : undefined,
+              of: changeText(filedOnTime, history?.filedOnTime, 'pts'),
+              trend: withLive(history?.filedOnTime, filedOnTime),
               trendTone: 'ok',
               how: 'Filings filed by their due date, over every filing due by today in the report window.',
+            },
+            {
+              label: 'Filings overdue',
+              value: overdue,
+              icon: AlertTriangle,
+              href: SUPER_FILINGS_HREF,
+              hot: overdue > 0,
+              of: changeText(overdue, history?.overdueFilings),
+              trend: withLive(history?.overdueFilings, overdue),
+              trendTone: 'bad',
+              how: 'Filings not filed and due in the last 90 days, across every client.',
             },
           ]}
         >
@@ -183,19 +200,21 @@ export default function SuperOverview() {
 
         <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
           <div className="flex min-w-0 flex-col gap-3">
-            <SuperAttentionPanel overview={overview} />
             <SuperAdminsPanel staff={staff} engagements={overview.engagements} />
             {insights ? <SuperManagersPanel insights={insights} /> : <InsightShapes count={1} />}
+            {insights ? <SuperPracticeAreasPanel insights={insights} /> : <InsightShapes count={1} />}
             <SuperWorkloadPanel overview={overview} />
             <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
               <SuperStagePanel overview={overview} />
               <SuperPhasePanel overview={overview} />
             </div>
+            <SuperAttentionPanel overview={overview} dueOf={dueOf} />
           </div>
 
           <div className="flex min-w-0 flex-col gap-3">
             <EscalationsPanel canResolve limit={6} />
             {insights ? <SuperTopRisks insights={insights} /> : <InsightShapes count={1} />}
+            {insights ? <SuperTeamLoadPanel insights={insights} /> : <InsightShapes count={1} />}
             <SuperSideRail overview={overview} />
           </div>
         </div>

@@ -153,7 +153,7 @@ export default function SuperTeam() {
       header: 'Days to COI',
       width: '104px',
       align: 'right',
-      render: (m) => <span className="tabular-nums">{m.avgDaysToCoi === null ? '–' : `${m.avgDaysToCoi} days`}</span>,
+      render: (m) => <span className="tabular-nums">{m.avgDaysToCoi === null ? '–' : `${m.avgDaysToCoi} ${m.avgDaysToCoi === 1 ? 'day' : 'days'}`}</span>,
     },
     { key: 'load', header: 'Load', width: '150px', render: (m) => <LoadCell person={people.byProfileId.get(m.id)} /> },
     { key: 'seen', header: 'Last active', width: '104px', render: (m) => lastActive(people.byProfileId.get(m.id), m.lastActiveAt) },

@@ -13,6 +13,14 @@
  */
 
 import type { SuperEngagementSummary, SuperActivityEntry } from '@/lib/super/super-overview';
+import {
+  countKnown,
+  filedAsOf,
+  trailingKnown,
+  type FilingHistoryRow,
+  type FilingReopen,
+  type TrendPeriod,
+} from '@/lib/metrics/home-trends';
 
 /* ------------------------------------------------------------------ *
  * Shapes
@@ -51,6 +59,8 @@ export interface SuperInsightClient {
   currentStepHref: string | null;
   /** Earliest open filing due date (YYYY-MM-DD), when any. */
   nextDueDate: string | null;
+  /** End of the manager-set window on the current step (YYYY-MM-DD), when one is set. */
+  currentStepDue: string | null;
 }
 
 export interface SuperInsightFiling {
@@ -129,6 +139,23 @@ export interface SuperTeamAdmin {
   lastActiveAt: string | null;
   /** Audit rows this person wrote in the last 30 days (within the recent audit window). */
   actions30d: number;
+  /** This calendar month: managers, leads and tasks this person assigned (audit rows). */
+  assignedMonth: number;
+  /** This calendar month: clients and work this person moved to someone else (audit rows). */
+  reassignedMonth: number;
+  /** This calendar month: steps this person accepted in review (`engagement_step_events`). */
+  approvalsMonth: number;
+}
+
+/**
+ * Month-end values behind the Overview tiles' change against last month and trend lines.
+ * Oldest first, without the live point; a series stops where the stored dates cannot say.
+ */
+export interface SuperHistory {
+  /** Filings not filed and due in the 90 days up to each month end. */
+  overdueFilings: number[];
+  /** Filed on time over every filing due in the report window up to each month end, in percent. */
+  filedOnTime: number[];
 }
 
 export interface SuperInsights {
@@ -145,6 +172,8 @@ export interface SuperInsights {
   };
   /** What admins and super admins did recently, newest first. */
   adminFeed: SuperActivityEntry[];
+  /** Month-end history for the Overview tiles. */
+  history: SuperHistory;
 }
 
 /* ------------------------------------------------------------------ *
@@ -316,10 +345,13 @@ export function buildTeam(params: {
   filings: SuperInsightFiling[];
   lastActive: Map<string, string>;
   actions30d: Map<string, number>;
+  /** This month's counts per person id; absent maps read as zero. */
+  monthCounts?: { assigned?: Map<string, number>; reassigned?: Map<string, number>; approvals?: Map<string, number> };
   isAttention: (summary: SuperEngagementSummary) => boolean;
   now: Date;
 }): SuperInsights['team'] {
   const { staff, clients, filings, lastActive, actions30d, isAttention, now } = params;
+  const month = params.monthCounts ?? {};
   const today = ymdOf(now);
 
   const filingsByEngagement = new Map<string, SuperInsightFiling[]>();
@@ -396,6 +428,9 @@ export function buildTeam(params: {
       role: person.role === 'super_admin' ? 'Super admin' : 'Admin',
       lastActiveAt: lastActive.get(person.id) ?? null,
       actions30d: actions30d.get(person.id) ?? 0,
+      assignedMonth: month.assigned?.get(person.id) ?? 0,
+      reassignedMonth: month.reassigned?.get(person.id) ?? 0,
+      approvalsMonth: month.approvals?.get(person.id) ?? 0,
     }));
 
   return { managers, unassignedLeads, admins };
@@ -412,7 +447,7 @@ export const SUPER_RISK_LABEL: Record<SuperRiskKind, string> = {
   filing: 'Overdue filing',
   stuck: 'Stuck',
   owner: 'No manager',
-  lead: 'No lead',
+  lead: 'No one assigned',
 };
 
 /** A client with open work and no move for this many days is stuck. */
@@ -425,12 +460,83 @@ export interface SuperRisk {
   engagementId: string;
   companyName: string;
   href: string;
+  /** Primary manager's profile id, so a screen can name the admin over them. */
+  managerId: string | null;
   managerName: string | null;
   leadName: string | null;
   /** Days overdue, idle or unassigned; null when no date says. */
   ageDays: number | null;
   /** 1 to 3, from the kind and the age. */
   severity: 1 | 2 | 3;
+}
+
+/* ------------------------------------------------------------------ *
+ * Month-end history (R-18 trend lines and the change against last month)
+ * ------------------------------------------------------------------ */
+
+const OVERDUE_WINDOW_DAYS = 90;
+
+/**
+ * Overdue filings and the filed-on-time share at each month end, rebuilt from `due_date`,
+ * `filed_on`, `created_at` and the `compliance.reopened` events. The rules match the live
+ * tiles: overdue is not filed and due in the 90 days up to the moment; on time is over every
+ * filing due in the 12-month report window by then, plus older ones still not filed. A filing
+ * marked filed without a filed date cannot be placed in time, so it ends the series there.
+ */
+export function buildFilingHistory(
+  rows: FilingHistoryRow[],
+  reopens: FilingReopen[],
+  periods: TrendPeriod[],
+): SuperHistory {
+  const overdue: Array<number | null> = [];
+  const onTime: Array<number | null> = [];
+  for (const period of periods) {
+    const existed = rows.filter((row) => row.createdAt.getTime() < period.end.getTime());
+    const due = existed.filter((row) => row.dueDate.slice(0, 10) <= period.ymd);
+    const floor90 = new Date(Date.parse(`${period.ymd}T00:00:00Z`) - OVERDUE_WINDOW_DAYS * DAY_MS)
+      .toISOString()
+      .slice(0, 10);
+    overdue.push(
+      countKnown(due, (row) => {
+        if (row.dueDate.slice(0, 10) < floor90) return false;
+        const filed = filedAsOf(row, reopens, period);
+        return filed === null ? null : !filed;
+      }),
+    );
+
+    const floor = windowFloor(new Date(`${period.ymd}T00:00:00Z`));
+    let known = true;
+    let total = 0;
+    let good = 0;
+    for (const row of due) {
+      const filed = filedAsOf(row, reopens, period);
+      if (filed === null) {
+        known = false;
+        break;
+      }
+      if (row.dueDate.slice(0, 10) < floor && filed) continue;
+      total += 1;
+      if (filed && row.filedOn && row.filedOn.slice(0, 10) <= row.dueDate.slice(0, 10)) good += 1;
+    }
+    onTime.push(known && total > 0 ? Math.round((good / total) * 100) : null);
+  }
+  return { overdueFilings: trailingKnown(overdue), filedOnTime: trailingKnown(onTime) };
+}
+
+/** "+2", "−3", "0": the change against last month for a tile's small text. */
+export function changeText(live: number | null, past: number[] | undefined, unit = ''): string | undefined {
+  const last = past?.[past.length - 1];
+  if (live === null || last === undefined) return undefined;
+  const d = live - last;
+  const n = d > 0 ? `+${d}` : d < 0 ? `\u2212${Math.abs(d)}` : '0';
+  return unit ? `${n} ${unit}` : n;
+}
+
+/** "Today", "1 day", "N days", or a dash when no date says (prototype `ageOf`). */
+export function riskAgeLabel(ageDays: number | null): string {
+  if (ageDays === null) return '–';
+  if (ageDays === 0) return 'Today';
+  return ageDays === 1 ? '1 day' : `${ageDays} days`;
 }
 
 function severityFor(kind: SuperRiskKind, age: number | null): 1 | 2 | 3 {
@@ -451,6 +557,7 @@ export function buildRisks(insights: Pick<SuperInsights, 'clients' | 'filings'>,
     const base = {
       engagementId: s.id,
       companyName: s.companyName,
+      managerId: s.managerId,
       managerName: s.managerName,
       leadName: s.leadName,
     };
@@ -517,6 +624,7 @@ export function buildRisks(insights: Pick<SuperInsights, 'clients' | 'filings'>,
       engagementId: filing.engagementId,
       companyName: filing.companyName,
       href: filing.href,
+      managerId: client?.summary.managerId ?? null,
       managerName: client?.summary.managerName ?? null,
       leadName: client?.summary.leadName ?? null,
       ageDays: age,
@@ -567,4 +675,123 @@ export function registrationCounts(insights: Pick<SuperInsights, 'clients' | 're
 /** True when the client has reached the registration phase (any step settled or open). */
 export function inRegistrations(client: SuperInsightClient): boolean {
   return Object.values(client.registrations).some((cell) => cell !== 'locked' && cell !== 'not-needed');
+}
+
+/* ------------------------------------------------------------------ *
+ * Overview tiles and the Practice areas grid
+ * ------------------------------------------------------------------ */
+
+/**
+ * Filings not filed and due in the 90 days before today: the same rule as the month-end
+ * history (`buildFilingHistory`), so the tile and its change against last month agree.
+ */
+export function overdueFilingsNow(filings: SuperInsightFiling[], now: Date): number {
+  const today = ymdOf(now);
+  const floor = ymdOf(new Date(now.getTime() - OVERDUE_WINDOW_DAYS * DAY_MS));
+  return filings.filter((f) => f.dueDate < today && f.dueDate >= floor && !isFiled(f)).length;
+}
+
+/** Registration items still open (in progress, waiting or overdue) across every client. */
+export function openRegistrations(insights: Pick<SuperInsights, 'clients' | 'registrationTypes'>): number {
+  return registrationCounts(insights).reduce((sum, c) => sum + c.progress + c.waiting + c.overdue, 0);
+}
+
+export type SuperAreaHealth = 'On track' | 'Watch' | 'At risk';
+
+export interface SuperPracticeArea {
+  area: 'Incorporation' | 'Registrations' | 'Compliances';
+  href: string;
+  /** Clients with open work in the area. */
+  active: number;
+  /** Finished this calendar month; null when no stored date says (registration items). */
+  doneThisMonth: number | null;
+  /** Active clients with overdue work in the area. */
+  overdue: number;
+  health: SuperAreaHealth;
+  /** The manager who holds most of the area's active clients. */
+  leadManager: string | null;
+}
+
+/** On track with nothing overdue, Watch up to a fifth overdue, At risk above that. */
+export function areaHealth(active: number, overdue: number): SuperAreaHealth {
+  if (overdue === 0) return 'On track';
+  return active > 0 && overdue / active <= 0.2 ? 'Watch' : 'At risk';
+}
+
+function mostCommon(names: Array<string | null>): string | null {
+  const counts = new Map<string, number>();
+  for (const n of names) if (n) counts.set(n, (counts.get(n) ?? 0) + 1);
+  let best: string | null = null;
+  let top = 0;
+  for (const [n, c] of counts) {
+    if (c > top) {
+      best = n;
+      top = c;
+    }
+  }
+  return best;
+}
+
+/**
+ * One row per practice area from stored states and dates. Incorporation: clients without a
+ * certificate, certificates dated this month, and clients with an overdue step. Registrations:
+ * clients with an open registration item and clients with an overdue one; items store no
+ * finish date, so "done this month" stays empty. Compliances: clients with an unfiled filing,
+ * filings filed this month, and clients with a filing past due.
+ */
+export function buildPracticeAreas(
+  insights: Pick<SuperInsights, 'clients' | 'filings'>,
+  hrefs: Record<SuperPracticeArea['area'], string>,
+  now: Date,
+): SuperPracticeArea[] {
+  const today = ymdOf(now);
+  const month = today.slice(0, 7);
+  const byId = new Map(insights.clients.map((c) => [c.summary.id, c]));
+
+  const incorporating = insights.clients.filter((c) => !c.summary.incorporated);
+  const incOverdue = incorporating.filter((c) => c.summary.steps.overdue > 0 || c.overdueSteps.length > 0).length;
+
+  const regOpen = insights.clients.filter((c) =>
+    Object.values(c.registrations).some((cell) => cell === 'progress' || cell === 'waiting' || cell === 'overdue'),
+  );
+  const regOverdue = regOpen.filter((c) => Object.values(c.registrations).some((cell) => cell === 'overdue')).length;
+
+  const openFilings = insights.filings.filter((f) => !isFiled(f));
+  const compActive = new Set(openFilings.map((f) => f.engagementId));
+  const compOverdue = new Set(openFilings.filter((f) => f.dueDate < today).map((f) => f.engagementId));
+  const managerOf = (ids: Iterable<string>) => [...ids].map((id) => byId.get(id)?.summary.managerName ?? null);
+
+  const row = (
+    area: SuperPracticeArea['area'],
+    active: number,
+    doneThisMonth: number | null,
+    overdue: number,
+    managers: Array<string | null>,
+  ): SuperPracticeArea => ({
+    area,
+    href: hrefs[area],
+    active,
+    doneThisMonth,
+    overdue,
+    health: areaHealth(active, overdue),
+    leadManager: mostCommon(managers),
+  });
+
+  return [
+    row(
+      'Incorporation',
+      incorporating.length,
+      insights.clients.filter((c) => c.certificateDate?.slice(0, 7) === month).length,
+      incOverdue,
+      incorporating.map((c) => c.summary.managerName),
+    ),
+    row('Registrations', regOpen.length, null, regOverdue, regOpen.map((c) => c.summary.managerName)),
+    row(
+      'Compliances',
+      compActive.size,
+      insights.filings.filter((f) => isFiled(f) && f.filedOn?.slice(0, 7) === month).length,
+      compOverdue.size,
+      managerOf(compActive),
+    ),
+  ];
 }

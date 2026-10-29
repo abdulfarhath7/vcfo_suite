@@ -16,6 +16,7 @@ import {
   filingOutcome,
   inRegistrations,
   registrationCounts,
+  riskAgeLabel,
   SUPER_RISK_LABEL,
   type SuperInsights,
   type SuperRiskKind,
@@ -234,7 +235,7 @@ export function SuperTopRisks({ insights }: { insights: SuperInsights }) {
                   </span>
                   <span className="block truncate text-[12.5px] text-ink-muted">
                     {r.managerName ?? 'No manager'}
-                    {r.ageDays !== null ? ` · ${r.ageDays} days` : ''}
+                    {r.ageDays !== null ? ` · ${riskAgeLabel(r.ageDays)}` : ''}
                   </span>
                 </span>
                 <Tag tone={KIND_TONE[r.kind]} className="w-[104px] flex-none">

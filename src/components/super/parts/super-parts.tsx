@@ -56,6 +56,57 @@ export function ClientTile({ id, name, className }: { id: string; name: string; 
   );
 }
 
+/* ---------- Date tile (R-20) ---------- */
+
+export type SuperUrgency = 'bad' | 'warn' | 'prog' | 'idle';
+
+const URGENCY_TILE: Record<SuperUrgency, string> = {
+  bad: 'border-transparent bg-danger-soft text-danger',
+  warn: 'border-transparent bg-warning-soft text-warning',
+  prog: 'border-brand-line bg-brand-soft text-brand-text',
+  idle: 'border-line bg-surface-raised text-ink',
+};
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function dayOfYmd(ymd: string): Date {
+  return new Date(`${ymd.slice(0, 10)}T00:00:00`);
+}
+
+/** Overdue red, within 7 days amber, within 15 blurple, later grey (prototype `urgency`). */
+export function urgencyOf(ymd: string, now: Date = new Date()): SuperUrgency {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const n = Math.round((dayOfYmd(ymd).getTime() - today.getTime()) / 86_400_000);
+  if (n < 0) return 'bad';
+  if (n <= 7) return 'warn';
+  if (n <= 15) return 'prog';
+  return 'idle';
+}
+
+/** 44px date tile tinted by urgency; the full date ("Mon 19 Oct 2026") is the tooltip. */
+export function DateTile({ ymd, tint, className }: { ymd: string; tint?: SuperUrgency; className?: string }) {
+  const d = dayOfYmd(ymd);
+  const u = tint ?? urgencyOf(ymd);
+  const day = String(d.getDate()).padStart(2, '0');
+  const mon = MONTHS[d.getMonth()]!;
+  return (
+    <span
+      title={`${WEEKDAYS[d.getDay()]} ${day} ${mon} ${d.getFullYear()}`}
+      className={cn(
+        'grid w-11 flex-none place-items-center rounded-md border-1.5 py-1 leading-none',
+        URGENCY_TILE[u],
+        className,
+      )}
+    >
+      <b className="text-[16px] font-medium">{day}</b>
+      <span className={cn('text-[10.5px] font-medium uppercase tracking-wider', u === 'idle' ? 'text-ink-muted' : 'opacity-80')}>
+        {mon}
+      </span>
+    </span>
+  );
+}
+
 /** Person initials in a circle (R-44: people avatars are circles). */
 export function PersonAvatar({ name, size = 24 }: { name: string; size?: number }) {
   const parts = name.trim().split(/\s+/).filter(Boolean);

@@ -73,7 +73,7 @@ const managerColumns: EFilingColumn<SuperTeamManager>[] = [
     header: 'Days to COI',
     width: '104px',
     align: 'right',
-    render: (m) => <span className="tabular-nums">{m.avgDaysToCoi === null ? '–' : `${m.avgDaysToCoi} days`}</span>,
+    render: (m) => <span className="tabular-nums">{m.avgDaysToCoi === null ? '–' : `${m.avgDaysToCoi} ${m.avgDaysToCoi === 1 ? 'day' : 'days'}`}</span>,
   },
 ];
 

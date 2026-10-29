@@ -12,6 +12,7 @@ import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SuperProjectJourney } from '@/components/super/project/SuperProjectJourney';
 import { SuperProjectDocuments } from '@/components/super/project/SuperProjectDocuments';
+import { SuperProjectTimeline } from '@/components/super/project/SuperProjectTimeline';
 import {
   SuperActivityPanel,
   SuperFilingsPanel,
@@ -42,8 +43,9 @@ import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
  * admin, manager and lead, the read-only "inspect as" links into the role shells,
  * and the super admin's own actions (G-20): Reassign, Assign task and Escalate.
  * Under it one white band with the step, steps done, who holds the work and the
- * live step, then underline tabs (R-11) for steps, registrations, filings,
- * documents, escalations, team and activity. Step work stays in the firm shell.
+ * live step, then underline tabs (R-11): Steps opens on the Gantt timeline (R-21)
+ * over the step list, then registrations, filings, documents, escalations, team
+ * and activity. Step work stays in the firm shell.
  */
 type TabKey = 'steps' | 'registrations' | 'filings' | 'documents' | 'escalations' | 'notes' | 'team' | 'activity';
 
@@ -235,7 +237,12 @@ export default function SuperProjectDetail() {
 
         <SpectrumTabs variant="underline" label="Client record" items={tabs} value={tab} onChange={(key) => setTab(key as TabKey)} />
 
-        {tab === 'steps' ? <SuperProjectJourney detail={detail} /> : null}
+        {tab === 'steps' ? (
+          <div className="flex flex-col gap-5">
+            <SuperProjectTimeline detail={detail} />
+            <SuperProjectJourney detail={detail} />
+          </div>
+        ) : null}
         {tab === 'registrations' ? <SuperRegistrationsPanel detail={detail} /> : null}
         {tab === 'filings' ? <SuperFilingsPanel detail={detail} /> : null}
         {tab === 'documents' ? <SuperProjectDocuments detail={detail} /> : null}

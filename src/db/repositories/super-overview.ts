@@ -1,13 +1,17 @@
 import 'server-only';
 
-import { and, asc, gte, inArray, isNull, lte, ne, or } from 'drizzle-orm';
+import { and, asc, count, eq, gte, inArray, isNotNull, isNull, lt, lte, ne, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
+  auditEvents,
   complianceInstances,
   complianceObligations,
   engagementLeads,
   engagementManagers,
+  engagementStepEvents,
 } from '@/db/schema';
+import { normalizeEngagementSchedule, windowForStep } from '@/lib/projects/schedule-windows';
+import { pastMonthEnds, type FilingHistoryRow, type FilingReopen } from '@/lib/metrics/home-trends';
 import { coerceStatusCode, getRegistrationPhases } from '@/data/checklist';
 import { CERTIFICATE_OF_INCORPORATION_STEP_ID } from '@/lib/compliance/incorporation-state';
 import type { AuthContext } from '@/auth/guards';
@@ -43,6 +47,7 @@ import {
   type SuperTeamMember,
 } from '@/lib/super/super-overview';
 import {
+  buildFilingHistory,
   buildMonths,
   buildTeam,
   dayOf,
@@ -370,6 +375,12 @@ export async function getSuperEngagementDetail(
     filings,
     activity: toActivity(auditRows, new Map([[dbId, row.companyName]])),
     team,
+    timeline: {
+      state,
+      schedule: row.schedule ? normalizeEngagementSchedule(row.schedule) : null,
+      expectedCoiOn: dayOf(row.expectedCoiOn ?? null),
+      incorporationDate: dayOf(row.incorporationDate ?? null),
+    },
     enterAs: {
       firm: superFirmViewHref(slugOrId),
       client: '/app/client/overview',
@@ -484,6 +495,121 @@ async function loadInsightFilings(
   });
 }
 
+/** Audit actions that count as an assignment or a reassignment on the admins grids. */
+const ASSIGN_ACTIONS = ['engagement.assign_manager', 'engagement.assign_lead', 'task.assigned'];
+const REASSIGN_ACTIONS = ['project.manager_changed', 'work.reassigned'];
+
+/** First instant of the current calendar month (UTC), for the "this month" counts. */
+function monthStart(now: Date): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+}
+
+/**
+ * This month's assignments, reassignments and accepted reviews per person. Assignments come
+ * from the audit rows the assign routes write; accepted reviews from `engagement_step_events`
+ * (`review_status`, migration 0027). Both reads are restricted to the approved engagement ids.
+ */
+async function loadMonthCounts(scopedDbIds: string[], now: Date) {
+  const assigned = new Map<string, number>();
+  const reassigned = new Map<string, number>();
+  const approvals = new Map<string, number>();
+  if (scopedDbIds.length === 0) return { assigned, reassigned, approvals };
+  const since = monthStart(now);
+  const [auditRows, reviewRows] = await Promise.all([
+    db
+      .select({ actor: auditEvents.actorUserId, action: auditEvents.action, n: count() })
+      .from(auditEvents)
+      .where(
+        and(
+          inArray(auditEvents.engagementId, scopedDbIds),
+          inArray(auditEvents.action, [...ASSIGN_ACTIONS, ...REASSIGN_ACTIONS]),
+          gte(auditEvents.createdAt, since),
+          isNotNull(auditEvents.actorUserId),
+        ),
+      )
+      .groupBy(auditEvents.actorUserId, auditEvents.action),
+    db
+      .select({ actor: engagementStepEvents.actorId, n: count() })
+      .from(engagementStepEvents)
+      .where(
+        and(
+          inArray(engagementStepEvents.engagementId, scopedDbIds),
+          eq(engagementStepEvents.reviewStatus, 'accepted'),
+          gte(engagementStepEvents.at, since),
+          isNotNull(engagementStepEvents.actorId),
+        ),
+      )
+      .groupBy(engagementStepEvents.actorId),
+  ]);
+  for (const row of auditRows) {
+    if (!row.actor) continue;
+    const into = REASSIGN_ACTIONS.includes(row.action) ? reassigned : assigned;
+    into.set(row.actor, (into.get(row.actor) ?? 0) + Number(row.n));
+  }
+  for (const row of reviewRows) {
+    if (row.actor) approvals.set(row.actor, Number(row.n));
+  }
+  return { assigned, reassigned, approvals };
+}
+
+/**
+ * The rows behind the Overview tiles' month-end history: every filing that could be due in
+ * the report window of one of the last four month ends, or still unfiled then, with the
+ * reopen events since the oldest of them. Restricted to the approved engagement ids.
+ */
+async function loadFilingHistory(scopedDbIds: string[], now: Date) {
+  const periods = pastMonthEnds(now);
+  if (scopedDbIds.length === 0) return buildFilingHistory([], [], periods);
+  const first = periods[0]!;
+  const last = periods[periods.length - 1]!;
+  const floor = windowFloor(new Date(`${first.ymd}T00:00:00Z`));
+  const [rows, reopenRows] = await Promise.all([
+    db
+      .select({
+        id: complianceInstances.id,
+        engagementId: complianceInstances.engagementId,
+        dueDate: complianceInstances.dueDate,
+        status: complianceInstances.status,
+        filedOn: complianceInstances.filedOn,
+        createdAt: complianceInstances.createdAt,
+      })
+      .from(complianceInstances)
+      .where(
+        and(
+          inArray(complianceInstances.engagementId, scopedDbIds),
+          lte(complianceInstances.dueDate, last.ymd),
+          lt(complianceInstances.createdAt, last.end),
+          or(
+            gte(complianceInstances.dueDate, floor),
+            isNull(complianceInstances.filedOn),
+            gte(complianceInstances.filedOn, floor),
+          ),
+        ),
+      ),
+    db
+      .select({ metadata: auditEvents.metadata, createdAt: auditEvents.createdAt })
+      .from(auditEvents)
+      .where(
+        and(
+          inArray(auditEvents.engagementId, scopedDbIds),
+          eq(auditEvents.action, 'compliance.reopened'),
+          gte(auditEvents.createdAt, first.end),
+        ),
+      ),
+  ]);
+  const reopens: FilingReopen[] = [];
+  for (const row of reopenRows) {
+    const m = (row.metadata ?? {}) as { instanceId?: unknown; previousFiledOn?: unknown };
+    if (typeof m.instanceId !== 'string') continue;
+    reopens.push({
+      instanceId: m.instanceId,
+      previousFiledOn: typeof m.previousFiledOn === 'string' ? m.previousFiledOn : null,
+      at: row.createdAt,
+    });
+  }
+  return buildFilingHistory(rows as FilingHistoryRow[], reopens, periods);
+}
+
 /**
  * The certificate date: the engagement column first, then the date the Pre-12 step recorded.
  * Only read once `isIncorporated` (through the summary) says the company exists.
@@ -531,10 +657,12 @@ export async function getSuperFirmInsights(
   const companyByDbId = new Map(rows.map((row) => [row.id, row.companyName]));
   const names = nameIndexes(staff);
 
-  const [memberships, filings, auditRows] = await Promise.all([
+  const [memberships, filings, auditRows, monthCounts, history] = await Promise.all([
     loadMemberships(scopedDbIds),
     loadInsightFilings(scopedDbIds, companyByDbId, now),
     listAuditEvents(ctx, { limit: INSIGHT_AUDIT_LIMIT }),
+    loadMonthCounts(scopedDbIds, now),
+    loadFilingHistory(scopedDbIds, now),
   ]);
 
   const coLeads = new Map<string, string[]>();
@@ -599,6 +727,9 @@ export async function getSuperFirmInsights(
         ? (journey.find((step) => step.id === summary.currentStep?.id)?.href ?? null)
         : null,
       nextDueDate: nextDue.get(appId) ?? null,
+      currentStepDue: summary.currentStep
+        ? (windowForStep(normalizeEngagementSchedule(row.schedule), summary.currentStep.id)?.to ?? null)
+        : null,
     };
   });
 
@@ -633,9 +764,11 @@ export async function getSuperFirmInsights(
       filings,
       lastActive,
       actions30d,
+      monthCounts,
       isAttention: needsAttention,
       now,
     }),
     adminFeed,
+    history,
   };
 }
