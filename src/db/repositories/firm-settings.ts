@@ -204,3 +204,18 @@ export async function listFirmSettingsHistory(
     summary: r.summary,
   }));
 }
+
+/**
+ * The firm's default reminder days (days before a due date), for the reminder paths that run
+ * for any signed-in person, clients included. No role check: it returns only these numbers.
+ * Null when the firm never saved settings, so callers keep their own default.
+ */
+export async function systemGetReminderDays(): Promise<number[] | null> {
+  const [row] = await db
+    .select({ reminderDays: firmSettings.reminderDays })
+    .from(firmSettings)
+    .where(eq(firmSettings.id, 'firm'))
+    .limit(1);
+  const days = (row?.reminderDays ?? []).filter((d) => Number.isInteger(d) && d >= 0);
+  return days.length > 0 ? days : null;
+}

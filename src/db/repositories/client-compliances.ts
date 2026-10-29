@@ -18,6 +18,7 @@ import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { bucketKey, putObject, signedDownloadUrl, deleteObject } from '@/storage/s3';
+import { systemGetReminderDays } from '@/db/repositories/firm-settings';
 import {
   addDays,
   areaOf,
@@ -478,7 +479,10 @@ export async function upsertFilingDetails(ctx: AuthContext, instanceId: string, 
 
 export type ReminderChannel = 'email' | 'whatsapp';
 
-/** The caller's own reminder: due − 3 days (today when the due date is closer). */
+/**
+ * The caller's own reminder: the earliest of the firm's default reminder days (Firm settings,
+ * G-02) that is still ahead, else due − 3 days; today when the due date is closer.
+ */
 export async function setFilingReminder(
   ctx: AuthContext,
   instanceId: string,
@@ -487,8 +491,12 @@ export async function setFilingReminder(
   const inst = await scopedInstance(ctx, instanceId);
   if (inst.filedOn) throw new Error('Already filed');
   const today = todayIso();
-  const lead = addDays(inst.dueDate, -3);
-  const remindOn = daysBetween(today, lead) > 0 ? lead : today;
+  const firmDays = await systemGetReminderDays();
+  const ahead = (firmDays ?? [3])
+    .map((d) => addDays(inst.dueDate, -d))
+    .filter((on) => daysBetween(today, on) > 0)
+    .sort();
+  const remindOn = ahead[0] ?? today;
   const ch = channels.filter((c) => c === 'email' || c === 'whatsapp');
   await db
     .insert(complianceReminders)
