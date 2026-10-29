@@ -13,6 +13,7 @@ import {
 } from "@/lib/knowledge-bank/knowledge-bank-storage";
 import { KNOWLEDGE_BANK_EXTENSIONS, resolveUploadContentType } from "@/lib/upload-limits";
 import { toastError, toastSuccess } from "@/lib/toast-errors";
+import { toastSaved } from "@/components/ui/toast-saved";
 import { isAdminOrManager } from "@/lib/auth";
 import { isUuid } from "@/lib/slug";
 import {
@@ -230,7 +231,12 @@ function KnowledgeBankPageInner({ basePath }: Props) {
         return;
       }
 
-      toastSuccess("Document added to Knowledge Bank.");
+      // A1 toast; admins and managers may take the upload back (the delete route is theirs).
+      toastSaved("Document added", {
+        kind: "uploaded",
+        sub: title.trim(),
+        onUndo: canDelete ? () => void undoCreate(`/api/knowledge-bank/${fileId}`, "Upload taken back") : undefined,
+      });
       dispatchUi({ type: 'clear_upload_form' });
       if (fileInputRef.current) fileInputRef.current.value = "";
       await refresh();
@@ -240,6 +246,17 @@ function KnowledgeBankPageInner({ basePath }: Props) {
     } finally {
       dispatchUi({ type: 'patch', patch: { uploading: false } });
     }
+  }
+
+  /** Undo for the upload and new-folder toasts: delete what was just made, then reload. */
+  async function undoCreate(url: string, done: string) {
+    const res = await fetch(url, { method: "DELETE", credentials: "include" }).catch(() => null);
+    if (!res?.ok) {
+      toastError("Could not undo.");
+      return;
+    }
+    toastSuccess(done);
+    await refresh();
   }
 
   async function handleCreateFolder(e: React.FormEvent) {
@@ -260,7 +277,7 @@ function KnowledgeBankPageInner({ basePath }: Props) {
           parentId: currentFolderId,
         }),
       });
-      const data = (await res.json()) as { ok: boolean; error?: string };
+      const data = (await res.json()) as { ok: boolean; error?: string; folder?: { id: string } };
       if (!res.ok || !data.ok) {
         if (data.error === "duplicate_folder_name") {
           toastError("A folder with that name already exists here.");
@@ -271,7 +288,11 @@ function KnowledgeBankPageInner({ basePath }: Props) {
         }
         return;
       }
-      toastSuccess("Folder created.");
+      const folderId = data.folder?.id;
+      toastSaved("Folder created", {
+        sub: folderName.trim(),
+        onUndo: canDelete && folderId ? () => void undoCreate(`/api/knowledge-bank/folders/${folderId}`, "Folder removed") : undefined,
+      });
       dispatchUi({ type: 'clear_folder_form' });
       await refresh();
     } catch {

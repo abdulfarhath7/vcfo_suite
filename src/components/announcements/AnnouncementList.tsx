@@ -140,6 +140,8 @@ export function AnnouncementRow({
   className?: string;
 }) {
   const message = item.body.trim() || item.title;
+  // The prototype leads with the title; the body follows on a muted line when it says more.
+  const headline = item.title?.trim() || message;
   const sentBy = announcementAuthorName(item);
   const showExtraTitle = Boolean(item.title && item.body && item.title !== item.body && !compact);
   const includeSource = Boolean(showSource ?? !compact) && Boolean(item.sourceUrl);
@@ -182,22 +184,21 @@ export function AnnouncementRow({
           <AnnouncementKindChip kind={item.kind} />
           <span className="text-[12.5px] text-ink-muted">
             {item.origin === 'feed' ? 'Official feed' : `From ${sentBy}`}
+            {/* A phone has no room for the host tag, so the host joins the by-line. */}
+            {host ? <span className="sm:hidden"> · {host}</span> : null}
           </span>
-          <time dateTime={item.publishedAt} className="text-[12.5px] tabular-nums text-ink-muted">
-            · {formatAnnouncementWhen(item.publishedAt)}
-          </time>
         </p>
-        <p className={cn('mt-1.5 truncate text-[14px]', unread ? 'font-medium text-ink' : 'text-ink-2')} title={message}>
-          {message}
+        <p className={cn('mt-1.5 truncate text-[14px]', unread ? 'font-medium text-ink' : 'text-ink-2')} title={headline}>
+          {headline}
         </p>
-        {showExtraTitle ? <p className="mt-0.5 truncate text-[12.5px] text-ink-muted">{item.title}</p> : null}
+        {showExtraTitle ? <p className="mt-0.5 truncate text-[12.5px] text-ink-muted">{item.body.trim()}</p> : null}
       </div>
       {host && item.sourceUrl ? (
         <a
           href={item.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="relative z-[1] inline-flex max-w-[40%] flex-none"
+          className="relative z-[1] hidden max-w-[40%] flex-none sm:inline-flex"
           onClick={(event) => event.stopPropagation()}
           aria-label={`Open source on ${host}`}
         >

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUpRight, FileText } from 'lucide-react';
+import { ArrowUpRight, FileText, Landmark } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -100,7 +100,7 @@ export function OfficialPortalsDirectory({ compact }: { compact?: boolean }) {
 
   return (
     <div id="official-portals">
-      <DashSection title="Official portals" bodyClassName="grid gap-1 px-4 pb-2 pt-3">
+      <DashSection title="Official portals" headIcon={{ icon: Landmark, tone: 'blue' }} bodyClassName="grid gap-1 px-4 pb-2 pt-3">
         <div>
           <SpectrumTabs
             label="Portal group"

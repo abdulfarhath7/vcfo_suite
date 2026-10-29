@@ -106,7 +106,7 @@ type Route = string | [path: string, check: RouteCheck];
 
 /** Account Settings (split into src/views/settings/account/). */
 const accountSettings: RouteCheck = async (page) => {
-  await expect(page.getByText('Profile', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('About you', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Sign-in and security', { exact: true }).first()).toBeVisible();
 };
 

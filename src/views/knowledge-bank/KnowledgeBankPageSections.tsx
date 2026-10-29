@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileBadge, fileType } from '@/components/ui/file-badge';
-import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { EmptyState } from '@/components/ui/empty-state';
 import { DashSection } from '@/components/dash/DashSection';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
@@ -67,7 +67,7 @@ function uploaderLabel(file: KnowledgeBankFile): string {
 
 /* Spine colours come from the status and regulator tokens (R-25: no off-system colours). */
 const SPINES = [
-  'bg-identity',
+  'bg-identity-mid',
   'bg-brand',
   'bg-reg-mca',
   'bg-positive-mid',
@@ -369,7 +369,12 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
 
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_330px]">
           <div className="grid min-w-0 gap-4">
-            {loading ? null : filteredFolders.length > 0 ? (
+            {loading ? (
+              // L1 (R-48): the shelves card keeps its place while the library loads.
+              <DashSection title="Shelves" loading loadingVariant="block" bodyClassName="px-4 pb-4 pt-3">
+                <div className="h-24" />
+              </DashSection>
+            ) : filteredFolders.length > 0 ? (
               <DashSection title={searching ? 'Matching folders' : 'Shelves'} bodyClassName="px-4 pb-4 pt-3">
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
                   {filteredFolders.map((folder) => (
@@ -387,11 +392,9 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
               </DashSection>
             ) : null}
 
-            <DashSection title={loading ? 'Documents' : docsTitle} bodyClassName="p-0">
+            <DashSection title={loading ? 'Documents' : docsTitle} bodyClassName="p-0" loading={loading}>
               {loading ? (
-                <div className="p-4" aria-busy="true" aria-label="Loading the knowledge bank">
-                  <SkeletonRows rows={5} />
-                </div>
+                <div className="h-60" aria-busy="true" aria-label="Loading the knowledge bank" />
               ) : libraryQuery.isError ? (
                 <div className="p-4">
                   <EmptyState

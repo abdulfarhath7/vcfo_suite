@@ -9,7 +9,7 @@ import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { EmptyState } from '@/components/ui/empty-state';
 import { DashSection } from '@/components/dash/DashSection';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +21,6 @@ import {
   canManageAnnouncementSources,
   canWriteAnnouncements,
   readAnnouncementIds,
-  requestAnnouncementPopup,
   writeAnnouncementReadIds,
   parseAnnouncementKind,
   type Announcement,
@@ -32,6 +31,7 @@ import { useAnnouncementSources, useAnnouncements } from '@/hooks/use-announceme
 import { AnnouncementComposeForm } from '@/components/announcements/AnnouncementCompose';
 import { AnnouncementRow } from '@/components/announcements/AnnouncementList';
 import { OfficialPortalsDirectory } from '@/components/announcements/OfficialPortalsDirectory';
+import { AnnouncementDetailDialog } from '@/views/announcements/AnnouncementDetailDialog';
 import { cn } from '@/lib/utils';
 
 function feedErrorMessage(code: string): string {
@@ -80,6 +80,11 @@ function LatestList({
   onView: (item: Announcement) => void;
 }) {
   const [filter, setFilter] = useState<AnnouncementListFilter>('all');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const open = (item: Announcement) => {
+    onView(item);
+    setOpenId(item.id);
+  };
   const shown = items.filter((item) => announcementMatchesFilter(parseAnnouncementKind(item.kind), filter));
   const count = (key: AnnouncementListFilter) =>
     items.filter((item) => announcementMatchesFilter(parseAnnouncementKind(item.kind), key)).length;
@@ -98,9 +103,21 @@ function LatestList({
       }
     >
       {loading ? (
-        <div className="p-4" aria-busy="true" aria-label="Loading announcements">
-          <SkeletonRows rows={4} className="[&>span]:h-14" />
-        </div>
+        // L1 loading shapes (R-48): the date tile, two lines and the 104px mark of a real row.
+        <ul aria-busy="true" aria-label="Loading announcements">
+          {[0, 1, 2, 3].map((i) => (
+            <li key={i} className="flex min-h-[72px] items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0" aria-hidden>
+              <span className="h-11 w-11 flex-none animate-pulse rounded-md bg-surface-sunken" />
+              <span className="flex min-w-0 flex-1 flex-col gap-2">
+                <span className="flex items-center gap-2">
+                  <span className="h-5 w-[104px] animate-pulse rounded-md bg-surface-sunken" />
+                  <span className="h-3 w-24 animate-pulse rounded bg-surface-sunken" />
+                </span>
+                <span className="h-3.5 w-3/4 animate-pulse rounded bg-surface-sunken" />
+              </span>
+            </li>
+          ))}
+        </ul>
       ) : shown.length === 0 ? (
         <div className="p-4">
           <EmptyState
@@ -125,7 +142,7 @@ function LatestList({
             return (
               <li key={item.id} className="flex items-stretch border-t border-line-soft first:border-t-0">
                 <div className="min-w-0 flex-1">
-                  <AnnouncementRow item={item} unread={unread} onActivate={() => onView(item)} />
+                  <AnnouncementRow item={item} unread={unread} onActivate={() => open(item)} />
                 </div>
                 {canWrite ? (
                   <button
@@ -143,6 +160,7 @@ function LatestList({
           })}
         </ul>
       )}
+      <AnnouncementDetailDialog items={shown} currentId={openId} onGo={open} onClose={() => setOpenId(null)} />
     </DashSection>
   );
 }
@@ -422,10 +440,7 @@ export default function AnnouncementsPage() {
             readIds={readIds}
             onCompose={openCompose}
             onRemove={(id) => void remove(id)}
-            onView={(item) => {
-              markOne(item.id);
-              requestAnnouncementPopup(item);
-            }}
+            onView={(item) => markOne(item.id)}
           />
         </div>
         <div className="grid min-w-0 gap-4">

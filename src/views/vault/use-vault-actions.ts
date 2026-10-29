@@ -2,7 +2,8 @@
 
 import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { errorMessage, toastError, toastInfo, toastSuccess } from '@/lib/toast-errors';
+import { errorMessage, toastError, toastInfo } from '@/lib/toast-errors';
+import { toastSaved } from '@/components/ui/toast-saved';
 import type { VaultRef } from '@/views/vault/vault-files';
 
 /*
@@ -78,7 +79,8 @@ export function useVaultActions() {
         const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
         if (!res.ok || json.ok === false) throw new Error(json.error);
         await queryClient.invalidateQueries({ queryKey: ['documents', 'vault'] });
-        toastSuccess(status === 'approved' ? 'Approved' : status === 'changes' ? 'Sent back' : 'Marked in review');
+        // A1 toast with the status tile (R-13).
+        toastSaved(status === 'approved' ? 'Approved' : status === 'changes' ? 'Sent back' : 'Marked in review');
         return true;
       } catch (err) {
         toastError("Review wasn't saved", errorMessage(err));

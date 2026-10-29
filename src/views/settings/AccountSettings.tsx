@@ -105,7 +105,7 @@ export default function AccountSettings({ path }: Props) {
       ]
     : ['profile', 'security', 'notify', 'appearance'];
   // Super admin opens this view inside its own Settings tabs, which already use `?tab=`.
-  const param = path.startsWith('/app/super') ? 'section' : 'tab';
+  const param = path.startsWith('/app/super/settings') ? 'section' : 'tab';
   const [active, setActive] = useState<SectionKey>('profile');
   const joined = sections.join(',');
   useEffect(() => {
