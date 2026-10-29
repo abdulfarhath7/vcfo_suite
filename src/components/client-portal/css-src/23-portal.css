@@ -1,7 +1,6 @@
 /* @cp-scope shared */
 /* Portal layout (the prototype's board frame): side placeholder + content column.
-   Plus the Search ⌘K palette, which the prototype only toasts; it reuses the
-   drill-down pop-up look (#vp-drill). */
+   Plus the Search ⌘K filter chips; the palette frame itself is a Tailwind island. */
 body{margin:0}
 .cp-body{display:flex;min-height:100vh;min-width:0;background:var(--bg)}
 .cp-sidepad{width:var(--vp-side-w,248px);flex:none}
@@ -13,13 +12,22 @@ body{margin:0}
 @media (max-width:767px){.cp-page-host{padding-bottom:64px}}
 #vp-side{height:100vh}
 @supports (height:100dvh){#vp-side,#vp-drawer{height:100dvh}}
-.cp-search .cp-search-in{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid oklch(var(--line));color:oklch(var(--ink-muted))}
-.cp-search .cp-search-in input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:500 15px var(--font-sans),system-ui,sans-serif;color:oklch(var(--ink))}
-.cp-search .cp-search-g{padding:12px 0 4px;font:500 11.5px var(--font-sans),sans-serif;letter-spacing:.07em;text-transform:uppercase;color:oklch(var(--ink-muted))}
-/* VCFO Spectrum: the search is the command bar, so it floats with the dialog shadow (R-02) */
-.cp-search #vp-drill{border:1.5px solid oklch(var(--line));box-shadow:var(--shadow-dialog)}
-.cp-search .cp-search-in input::placeholder{color:oklch(var(--ink-faint))}
-.cp-search .list{padding-top:4px}
+.cp-search-chips{position:relative;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 16px;border-bottom:1.5px solid oklch(var(--line))}
+.cp-ssheet .cp-search-chips{padding:0 14px 10px;border-bottom:0}
+.cp-chipw{position:relative;display:inline-flex;align-items:center}
+.cp-chipw .sx-filter{height:28px;font-size:13px;gap:6px}
+.cp-chipw .sx-filter b{font-weight:500}
+.cp-chipw .sx-filter.on{padding-right:28px}
+.cp-chipw .sx-filter.on svg{display:none}
+.cp-chipx{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:20px;height:20px;display:grid;place-items:center;padding:0;border:0;border-radius:4px;background:none;color:oklch(var(--brand-text));cursor:pointer}
+.cp-chipx:hover{background:oklch(var(--brand) / .12)}
+.cp-chipm{position:absolute;left:0;top:calc(100% + 4px);z-index:5;display:flex;flex-direction:column;min-width:180px;padding:4px;box-sizing:border-box;border-radius:6px;border:1px solid oklch(var(--line));background:oklch(var(--surface-raised));box-shadow:var(--shadow-float)}
+.cp-chipm button{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border:0;border-radius:4px;background:none;font:400 14px var(--font-sans),sans-serif;color:oklch(var(--ink));text-align:left;cursor:pointer;white-space:nowrap}
+.cp-chipm button span{flex:1}
+.cp-chipm button svg{color:oklch(var(--brand-text))}
+.cp-chipm button:hover,.cp-chipm button:focus-visible{outline:none;background:oklch(var(--surface-sunken))}
+.cp-search-clear{height:28px;padding:0 6px;border:0;background:none;font:500 13px var(--font-sans),sans-serif;color:oklch(var(--brand-text));cursor:pointer}
+.cp-search-clear:hover{text-decoration:underline}
 /* phone drawer and chat lock the page under them */
 html.vp-chat-on{overscroll-behavior:contain}
 /* chat: 👍/👎 row (board v7chat_answer "Helpful?") and the Ask stream status line */

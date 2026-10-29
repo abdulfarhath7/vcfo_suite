@@ -132,36 +132,8 @@ html.vp-chat-on #vp-launch{visibility:hidden}
 :root{--vp-launch-h:0px}
 #vp-chat .vpc-pk,#vp-chat .vpc-av{display:none!important}
 
-/* The Search palette (SearchPalette.tsx) still draws the old drill frame (#vp-drill). The
-   drill-down itself is the Spectrum dialog in PortalProvider.tsx. Tokens only, so the frame
-   follows dark mode. */
-#vp-drill-scrim{position:fixed;inset:0;z-index:2147482000;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:24px 16px;opacity:0;transition:opacity .18s}
-#vp-drill-scrim.on{opacity:1}
-#vp-drill{width:min(600px,100%);max-height:min(560px,calc(100vh - 48px));display:flex;flex-direction:column;background:oklch(var(--surface-raised));border-radius:6px;box-shadow:var(--pop);overflow:hidden;font:500 13px/1.45 var(--font-sans),system-ui,sans-serif;color:oklch(var(--ink));transform:translateY(10px) scale(.98);transition:transform .24s cubic-bezier(.22,1,.36,1)}
-#vp-drill-scrim.on #vp-drill{transform:none}
-#vp-drill .top{display:flex;align-items:center;gap:8px;padding:9px 18px;background:oklch(var(--brand-soft));border-bottom:1px solid oklch(var(--line));font-size:12px;color:oklch(var(--ink-muted))}
-#vp-drill .top a{margin-left:auto;font-weight:500;font-size:12.5px;color:oklch(var(--brand-text));text-decoration:none;white-space:nowrap}
-#vp-drill .hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid oklch(var(--line))}
-#vp-drill .hd b{flex:1;font:500 15px var(--font-sans);color:oklch(var(--ink))}
-#vp-drill .hd small{display:block;font:500 12px var(--font-sans);color:oklch(var(--ink-muted))}
-#vp-drill .x{width:32px;height:32px;border-radius:6px;border:1px solid oklch(var(--line));background:oklch(var(--surface-raised));color:oklch(var(--ink-muted));cursor:pointer;font-size:18px;line-height:1}
-#vp-drill .tabs{display:flex;gap:2px;margin:14px 18px 0;padding:2px;border-radius:6px;background:oklch(var(--surface-sunken));box-shadow:inset 0 0 0 1px oklch(var(--line))}
-#vp-drill .tabs button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border:0;border-radius:6px;background:none;font:500 12px var(--font-sans);color:oklch(var(--ink-muted));cursor:pointer;white-space:nowrap}
-#vp-drill .tabs button i{width:8px;height:8px;border-radius:2px;display:inline-block}
-#vp-drill .tabs button span{font:500 11px var(--font-sans),sans-serif;opacity:.75}
-#vp-drill .tabs button[aria-selected=true]{background:oklch(var(--brand));color:oklch(var(--on-brand))}
-#vp-drill .list{flex:1;min-height:0;overflow:auto;padding:8px 18px 6px;scrollbar-width:none}
-#vp-drill .list::-webkit-scrollbar{display:none}
-#vp-drill .r{display:grid;grid-template-columns:minmax(0,1fr) auto auto 16px;align-items:center;gap:12px;padding:9px 10px;margin:0 -10px;border-radius:6px;cursor:pointer;color:inherit;text-decoration:none}
-#vp-drill .r:hover{background:oklch(var(--surface-sunken))}
-#vp-drill .r b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#vp-drill .r em{font:500 12px var(--font-sans),sans-serif;font-style:normal;color:oklch(var(--ink-muted));white-space:nowrap}
-#vp-drill .r .c{font:500 11px var(--font-sans);padding:2px 7px;border-radius:4px;color:oklch(var(--on-brand));white-space:nowrap}
-#vp-drill .r .a{color:oklch(var(--brand-text))}
-#vp-drill .ft{display:flex;align-items:center;gap:8px;padding:10px 18px;border-top:1px solid oklch(var(--line));background:oklch(var(--surface-sunken));font-size:12px;color:oklch(var(--ink-muted))}
-#vp-drill .ft span{flex:1}
-#vp-drill .ft a{font-size:12.5px;font-weight:500;color:oklch(var(--brand-text));text-decoration:none;white-space:nowrap}
-@media (max-width:639px){#vp-drill-scrim{align-items:flex-end;padding:0}#vp-drill{width:100%;border-radius:6px 6px 0 0;max-height:86vh}}
+/* The Search palette and the drill-down are Spectrum Tailwind islands (SearchPalette.tsx,
+   PortalProvider.tsx); the old #vp-drill frame is gone. */
 /* VCFO Spectrum (AskButton): the chat is a floating card 420 x 620 px, 20 px from the right
    and bottom edges, with the dialog shadow. Phones keep the bottom sheet above. */
 @media (min-width:768px){#vp-chat{right:20px;bottom:20px;width:min(420px,calc(100vw - 40px));height:min(620px,calc(100dvh - 40px));min-height:0;max-height:calc(100dvh - 40px);box-shadow:var(--shadow-dialog)}}

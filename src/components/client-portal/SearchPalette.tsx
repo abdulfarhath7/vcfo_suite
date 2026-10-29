@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * Search ⌘K (VCFO Spectrum Palette, Q3): a centred 600 px dialog on a scrim (a bottom sheet
- * on phones). Groups in the prototype's order: steps, filings, obligations, registrations,
+ * Search ⌘K (VCFO Spectrum Palette, Q3): a centred 600 px Spectrum dialog on the scrim (a
+ * Tailwind island with tokens, so it follows dark mode; a bottom sheet on phones). Groups in the prototype's order: steps, filings, obligations, registrations,
  * documents, pages. Regulator and Status chips under the field narrow the records; pages
  * have neither, so they hide while a chip is set. Each record row has an 8 px status square,
  * the title, grey sub text and a mono code. ↑ ↓ move, Enter opens, Esc closes.
@@ -15,6 +15,9 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Search } from 'lucide-react';
+import { Kbd } from '@/components/ui/kbd';
+import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { getActiveCatalogItems } from '@/data/checklist';
 import { toneFor } from '@/components/ui/spectrum-chip';
@@ -132,7 +135,7 @@ function ChipMenu({ label, value, options, onChange }: { label: string; value: s
         </button>
       ) : null}
       {menu ? (
-        <span className="cp-chipm" role="listbox" aria-label={label} onKeyDown={onMenuKey}>
+        <span className="cp-chipm" role="listbox" aria-label={label} tabIndex={-1} onKeyDown={onMenuKey}>
           {options.map((o) => (
             <button
               key={o}
@@ -158,9 +161,16 @@ function ChipMenu({ label, value, options, onChange }: { label: string; value: s
   );
 }
 
-function Kbd({ children }: { children: string }) {
-  return <kbd className="cp-kbd">{children}</kbd>;
-}
+/** The 8 px status square per status tone (R-13), tokens only. */
+const SQUARE: Record<string, string> = {
+  ok: 'bg-positive-mid',
+  bad: 'bg-danger-mid',
+  teal: 'bg-waiting-mid',
+  warn: 'bg-warning-mid',
+  prog: 'bg-brand',
+  idle: 'bg-upcoming-mid',
+  violet: 'bg-identity-mid',
+};
 
 function SearchBody({ onClose }: { onClose: () => void }) {
   const router = useRouter();
@@ -276,8 +286,6 @@ function SearchBody({ onClose }: { onClose: () => void }) {
       ) : null}
     </div>
   );
-  /* The 8 px status square takes the tone of the status word (R-13). */
-  const square = (h: Hit) => (h.status ? <i className={`cp-sq ${toneFor(h.status)}`} aria-hidden="true" /> : null);
   const starts = groups.map((_, gi) => groups.slice(0, gi).reduce((n, g) => n + g.hits.length, 0));
 
   if (phone)
@@ -342,13 +350,20 @@ function SearchBody({ onClose }: { onClose: () => void }) {
         </div>
       </>
     );
+  /* Desktop: the Spectrum modal frame (a Tailwind island like pages/compliances/overlay.tsx):
+     a centred 600 px dialog 12 % from the top, on the scrim, dialog shadow, tokens only, so it
+     follows dark mode. */
   return (
-    <div id="vp-drill-scrim" className="on cp-search" role="presentation" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div id="vp-drill" role="dialog" aria-modal="true" aria-label="Search">
-        <div className="cp-search-in">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-            <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
-          </svg>
+    <div className="fixed inset-0 z-[2147482600] flex items-start justify-center px-4 pt-[12vh]" role="presentation">
+      <div className="absolute inset-0 bg-scrim" aria-hidden="true" onClick={onClose} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search"
+        className="relative flex max-h-[min(640px,calc(100vh-12vh-24px))] w-full max-w-[600px] flex-col rounded-md border-1.5 border-line bg-surface-raised text-ink shadow-dialog"
+      >
+        <div className="flex h-[52px] flex-none items-center gap-2.5 border-b-1.5 border-line px-4 text-ink-muted">
+          <Search size={16} strokeWidth={1.6} aria-hidden />
           <input
             ref={inputRef}
             value={q}
@@ -356,51 +371,54 @@ function SearchBody({ onClose }: { onClose: () => void }) {
             aria-label="Search"
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKey}
+            className="h-full min-w-0 flex-1 border-0 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-faint"
           />
           <Kbd>Esc</Kbd>
         </div>
         {chips}
-        <div className="list" role="listbox" aria-label="Results">
-          {hits.length === 0 ? <p className="cp-search-none">No match</p> : null}
+        <div className="min-h-0 flex-1 overflow-y-auto py-1.5" role="listbox" aria-label="Results">
+          {hits.length === 0 ? <p className="px-4 py-3 text-[13px] text-ink-faint">No match</p> : null}
           {groups.map((g, gi) => (
             <div key={g.group} role="group" aria-label={g.group}>
-              <div className="cp-search-g">{g.group}</div>
+              <p className="px-4 pb-1 pt-2 text-[12px] font-medium text-ink-muted">{g.group}</p>
               {g.hits.map((h, hi) => {
                 const i = starts[gi]! + hi;
+                const on = i === sel;
                 return (
                   <a
                     key={`${h.group}-${h.href}-${i}`}
                     href={h.href}
-                    className="cp-search-r"
                     role="option"
-                    aria-selected={i === sel}
+                    aria-selected={on}
                     onMouseEnter={() => setSel(i)}
                     onClick={(e) => {
                       e.preventDefault();
                       go(h);
                     }}
+                    className={cn('flex h-10 items-center gap-2.5 px-4 text-ink no-underline', on ? 'bg-brand-soft' : 'hover:bg-surface-sunken')}
                   >
-                    {square(h)}
-                    <span className="t">
-                      <b>{h.title}</b>
-                      {h.meta ? <em>{h.meta}</em> : null}
+                    {h.status ? <i className={cn('h-2 w-2 flex-none rounded-[2px]', SQUARE[toneFor(h.status)] ?? 'bg-upcoming-mid')} aria-hidden /> : null}
+                    <span className="min-w-0 flex-1 truncate text-[13.5px]">
+                      <b className="font-medium">{h.title}</b>
+                      {h.meta ? <span className="ml-2 text-[12.5px] text-ink-muted">{h.meta}</span> : null}
+                      {h.status ? <span className="sr-only">, {h.status}</span> : null}
                     </span>
-                    {h.code ? <code>{h.code}</code> : null}
+                    {h.code ? <code className="flex-none font-mono text-[12px] text-ink-muted">{h.code}</code> : null}
                   </a>
                 );
               })}
             </div>
           ))}
         </div>
-        <div className="cp-search-ft">
-          <span>
+        <div className="flex flex-none items-center gap-4 rounded-b-md border-t-1.5 border-line px-4 py-2.5 text-[12px] text-ink-muted">
+          <span className="inline-flex items-center gap-1.5">
             <Kbd>↑</Kbd>
             <Kbd>↓</Kbd> Move
           </span>
-          <span>
+          <span className="inline-flex items-center gap-1.5">
             <Kbd>Enter</Kbd> Open
           </span>
-          <span>
+          <span className="inline-flex items-center gap-1.5">
             <Kbd>Esc</Kbd> Close
           </span>
         </div>
