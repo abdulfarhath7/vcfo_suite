@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
 import { decideWindowRequest, withdrawWindowRequest } from '@/db/repositories/item-window-requests';
+import { notifyWindowDecided } from '@/lib/work/window-request-notify';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { canUseWorkTools } from '@/lib/work/work-access';
 import { errorText, workErrorStatus } from '@/lib/work/route-errors';
@@ -34,6 +35,14 @@ export async function PATCH(request: Request, context: RouteContext) {
         ? await withdrawWindowRequest(guard.ctx, id)
         : await decideWindowRequest(guard.ctx, id, { action: body.data.action, note: body.data.note });
     if (!row) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    if (body.data.action !== 'withdraw') {
+      void notifyWindowDecided({
+        engagementId: row.engagementId,
+        requesterId: row.requestedBy,
+        approved: row.status === 'approved',
+        note: row.decisionNote,
+      });
+    }
     return NextResponse.json({ request: { id: row.id, status: row.status } });
   } catch (err) {
     const message = errorText(err, 'decide_failed');

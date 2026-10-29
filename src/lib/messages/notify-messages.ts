@@ -42,12 +42,10 @@ export async function notifyClientMessage(
     const staff = recipients.leads.length > 0 ? recipients.leads : recipients.managers;
     if (staff.length === 0) return;
 
-    // The bell kind list lives in src/lib/checklist (closed to this change); `request.created`
-    // carries the Inbox icon, which is the closest existing kind for "the client wrote".
     await createNotificationsForUsers(
       staff.map((party) => ({
         userId: party.userId,
-        kind: 'request.created' as const,
+        kind: 'message.received' as const,
         title: `Message from ${message.senderName}`,
         body: preview(message.body),
         engagementId: recipients.appId,

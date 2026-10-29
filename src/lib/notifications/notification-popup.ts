@@ -22,6 +22,8 @@ export const NOTIFICATION_KIND_LABEL: Record<NotificationKind, string> = {
   'docs.share': 'Docs',
   'request.created': 'Request',
   'request.uploaded': 'Upload',
+  'message.received': 'Message',
+  'schedule.window': 'Dates',
   'team.assigned': 'Assigned',
   'team.removed': 'Removed',
   'email.sent': 'Sent',

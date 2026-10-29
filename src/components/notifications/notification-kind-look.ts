@@ -1,4 +1,6 @@
 import {
+  CalendarClock,
+  MessageSquare,
   CircleCheck,
   FileText,
   Inbox,
@@ -31,6 +33,8 @@ export const NOTIFICATION_KIND_LOOK: Record<
   'docs.share': { Icon: FileText, tone: 'prog', group: 'Documents' },
   'request.created': { Icon: Inbox, tone: 'teal', group: 'Requests' },
   'request.uploaded': { Icon: Upload, tone: 'ok', group: 'Requests' },
+  'message.received': { Icon: MessageSquare, tone: 'teal', group: 'Requests' },
+  'schedule.window': { Icon: CalendarClock, tone: 'prog', group: 'Steps' },
   'team.assigned': { Icon: Users, tone: 'prog', group: 'Team' },
   'team.removed': { Icon: Users, tone: 'idle', group: 'Team' },
   'email.sent': { Icon: Mail, tone: 'ok', group: 'Email' },

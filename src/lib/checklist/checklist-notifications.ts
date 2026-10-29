@@ -20,6 +20,10 @@ const NOTIFICATION_KINDS = [
   'docs.share',
   'request.created',
   'request.uploaded',
+  /** A client wrote to the lead (G-09, G-11). */
+  'message.received',
+  /** A date change request on a manager-set window, or its decision (G-17). */
+  'schedule.window',
   'team.assigned',
   'team.removed',
   'email.sent',

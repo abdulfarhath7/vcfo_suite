@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
 import { createWindowRequest, listWindowRequests } from '@/db/repositories/item-window-requests';
+import { notifyWindowRequested } from '@/lib/work/window-request-notify';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { canUseWorkTools } from '@/lib/work/work-access';
 import { errorText, workErrorStatus } from '@/lib/work/route-errors';
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
   try {
     const row = await createWindowRequest(guard.ctx, body.data);
     if (!row) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    void notifyWindowRequested({ engagementId: row.engagementId, requesterName: guard.ctx.name, toDate: row.toDate });
     return NextResponse.json({ request: { id: row.id, status: row.status } }, { status: 201 });
   } catch (err) {
     const message = errorText(err, 'create_failed');
