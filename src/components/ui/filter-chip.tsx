@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 export interface FilterOption {
   value: string;
   label: string;
+  /** How many rows the option would show, printed muted at the right of the menu row. */
+  count?: number;
 }
 
 const FOCUS = 'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25';
@@ -54,6 +56,7 @@ export function FilterChip<V extends string | null = string>({
         {choices.map((o) => (
           <DropdownMenuItem key={o.value} onSelect={() => onChange(o.value as V)} className="flex h-[34px] items-center gap-2.5">
             <span className="min-w-0 flex-1 truncate">{o.label}</span>
+            {o.count !== undefined ? <span className="flex-none text-[12px] tabular-nums text-ink-muted">{o.count}</span> : null}
             {o.value === value ? <Check className="h-3.5 w-3.5 flex-none text-brand-text" strokeWidth={1.6} aria-hidden /> : null}
           </DropdownMenuItem>
         ))}
