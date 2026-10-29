@@ -86,6 +86,8 @@ export interface Engagement {
   parentIndianRelationship?: ParentIndianRelationship | null;
   /** Manager-set date windows (incorporation + per step). See `schedule-windows.ts`. */
   schedule?: EngagementSchedule;
+  /** The date the firm expects the certificate of incorporation (YYYY-MM-DD; G-13). */
+  expectedCoiOn?: string | null;
   /** Indian legal form for compliance calendar filtering */
   entityLegalForm?: EntityLegalForm;
   /** Synced from checklist pre-12 */
@@ -126,6 +128,10 @@ export interface TaskInstance {
   assigneeId?: string;
   dueAt?: string;
   notes?: string;
+  /** Stored task title; set on rows from `/api/tasks` (an assigned task has no checklist key). */
+  title?: string;
+  /** Last change, ISO; set on rows from `/api/tasks`. */
+  updatedAt?: string;
 }
 
 export interface DocRequest {

@@ -11,6 +11,8 @@ import { ensureEngagementLead } from '@/db/repositories/engagement-leads-members
 import { ensureEngagementManager } from '@/db/repositories/engagement-managers-membership';
 import type { EngagementDbRow } from './scope';
 import { getEngagementById } from './read';
+import { writeStepEvents } from '@/db/repositories/step-events';
+import { diffStepStatuses } from '@/lib/metrics/step-timing';
 
 /** Engagement row writes: create, checklist_state, metadata, progress CC, soft delete and restore. */
 
@@ -62,12 +64,30 @@ export async function updateChecklistState(
   const existing = await getEngagementById(ctx, id);
   if (!existing) throw new Error('Engagement not found or not permitted');
 
-  const [row] = await db
-    .update(engagements)
-    .set({ checklistState: nextState, updatedAt: new Date() })
-    .where(eq(engagements.id, id))
-    .returning();
-  return row;
+  // A status change also writes one engagement_step_events row per step, in the same
+  // transaction, so "opened at" and "days in step" never disagree with the stored status.
+  const changes = diffStepStatuses(
+    existing.checklistState as Record<string, unknown> | null,
+    nextState,
+  );
+  if (changes.length === 0) {
+    const [row] = await db
+      .update(engagements)
+      .set({ checklistState: nextState, updatedAt: new Date() })
+      .where(eq(engagements.id, id))
+      .returning();
+    return row;
+  }
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const [row] = await tx
+      .update(engagements)
+      .set({ checklistState: nextState, updatedAt: now })
+      .where(eq(engagements.id, id))
+      .returning();
+    await writeStepEvents(ctx, tx, existing.id, changes, now);
+    return row;
+  });
 }
 
 export async function updateEngagement(

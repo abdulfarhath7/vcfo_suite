@@ -8,21 +8,24 @@ import { CreateInternForm } from "@/components/admin/CreateInternForm";
 import { SEO } from "@/components/SEO";
 import { EFilingGrid, type EFilingColumn } from "@/components/dash/EFilingGrid";
 import { EmptyState, SkeletonRows } from "@/components/ui/empty-state";
-import { cn } from "@/lib/utils";
 import { PeopleCard, PersonAvatar } from "./firm-people/parts";
 import { Users } from "lucide-react";
+import { CapacityControl, LastSeenCell, LoadCell, OnTimeCell } from "@/components/metrics/people-cells";
+import { indexPeople, usePeopleMetrics } from "@/components/metrics/use-metrics";
+import { isFirmWideAdmin } from "@/lib/auth";
 
-type RosterRow = { id: string; name: string; open: number; myEng: number; load: number };
-
-/** Load bar tone (prototype `loadTone`): over 95% is red, over 80% amber, else blurple. */
-const loadTone = (n: number) => (n > 95 ? "bg-danger-mid" : n > 80 ? "bg-warning-mid" : "bg-brand");
+type RosterRow = { id: string; name: string; open: number; myEng: number };
 
 /**
  * Project leads (prototype `LeadsScreen`): the add-lead form in one card and the active leads
- * as a T1 grid (R-07) with projects, open tasks and a load bar.
+ * as a T1 grid (R-07) with projects, open tasks, On time, Load against capacity, Last active and
+ * (admin and super admin) the capacity editor, from `/api/metrics/people` (G-14).
  */
 export default function Team() {
-  const { internOptions, internsLoading, tasks, engagements } = useApp();
+  const { internOptions, internsLoading, tasks, engagements, role } = useApp();
+  const peopleQuery = usePeopleMetrics();
+  const people = useMemo(() => indexPeople(peopleQuery.data), [peopleQuery.data]);
+  const canSetCapacity = isFirmWideAdmin(role);
 
   const roster = useMemo(() => {
     const list = internOptions ?? [];
@@ -30,8 +33,7 @@ export default function Team() {
       const myTasks = tasks.filter((t) => t.assigneeId === m.id);
       const open = myTasks.filter((t) => t.status !== "completed").length;
       const myEng = engagements.filter((e) => e.internId === m.id).length;
-      const load = Math.min(100, Math.round((open / 30) * 100));
-      return { ...m, open, myEng, load };
+      return { ...m, open, myEng };
     });
   }, [internOptions, tasks, engagements]);
 
@@ -51,19 +53,22 @@ export default function Team() {
     },
     { key: "projects", header: "Projects", width: "96px", align: "right", render: (m) => <span className="tabular-nums">{m.myEng}</span> },
     { key: "open", header: "Open tasks", width: "110px", align: "right", render: (m) => <span className="tabular-nums">{m.open}</span> },
-    {
-      key: "load",
-      header: "Load",
-      width: "160px",
-      render: (m) => (
-        <span className="flex items-center gap-2">
-          <span className="relative block h-2 w-[80px] overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
-            <i className={cn("absolute inset-y-0 left-0 rounded-bar", loadTone(m.load))} style={{ width: `${m.load}%` }} />
-          </span>
-          <span className="text-[12.5px] tabular-nums text-ink-muted">{m.load}%</span>
-        </span>
-      ),
-    },
+    { key: "ontime", header: "On time", width: "84px", align: "right", render: (m) => <OnTimeCell person={people.byInternId.get(m.id)} /> },
+    { key: "load", header: "Load", width: "150px", render: (m) => <LoadCell person={people.byInternId.get(m.id)} /> },
+    { key: "seen", header: "Last active", width: "104px", render: (m) => <LastSeenCell person={people.byInternId.get(m.id)} /> },
+    ...(canSetCapacity
+      ? [
+          {
+            key: "capacity",
+            header: "Capacity",
+            width: "96px",
+            render: (m: RosterRow) => {
+              const person = people.byInternId.get(m.id);
+              return person ? <CapacityControl person={person} /> : null;
+            },
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -94,7 +99,7 @@ export default function Team() {
             <EmptyState title="No project leads yet" className="m-4" />
           ) : (
             <div className="px-2 pb-2">
-              <EFilingGrid caption="Active project leads" columns={columns} rows={roster} rowKey={(m) => m.id} pageSize={12} minWidth={520} />
+              <EFilingGrid caption="Active project leads" columns={columns} rows={roster} rowKey={(m) => m.id} pageSize={12} minWidth={canSetCapacity ? 860 : 760} />
             </div>
           )}
         </PeopleCard>

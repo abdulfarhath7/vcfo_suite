@@ -5,12 +5,14 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { Download, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
-import { AreaPill } from '@/components/ui/spectrum-chip';
+import { AreaPill, Chip } from '@/components/ui/spectrum-chip';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import type { AuditActionCategory, AuditEventRow } from '@/lib/audit/audit-log';
 import {
+  AUDIT_RESULT_LABEL,
+  auditResultOf,
   formatAuditActionLabel,
   formatAuditMetadata,
   getAuditActionCategory,
@@ -37,6 +39,17 @@ function actorName(ev: AuditEventRow): string {
 }
 
 const roleLabel = (ev: AuditEventRow) => ROLE_UI_LABEL[mapDbRoleToAppRole(ev.actor_role)];
+
+/** The Result cell (G-28): a quiet "Done", a red "Failed" or an amber "Denied". */
+function ResultChip({ ev }: { ev: AuditEventRow }) {
+  const result = auditResultOf(ev);
+  if (result === 'ok') return <span className="text-[12.5px] text-ink-muted">{AUDIT_RESULT_LABEL.ok}</span>;
+  return (
+    <Chip fixed tone={result === 'failed' ? 'bad' : 'warn'}>
+      {AUDIT_RESULT_LABEL[result]}
+    </Chip>
+  );
+}
 
 /** Filters in the card head (prototype Audit): search, area, who, export. */
 function AuditHeadFilters({
@@ -151,6 +164,10 @@ function AuditEventPanel({
                 {ev.actor_name && ev.actor_email ? <dd className="text-[12.5px] text-ink-muted">{ev.actor_email}</dd> : null}
               </div>
               <div>
+                <dt className="text-[12.5px] text-ink-muted">Result</dt>
+                <dd className="text-ink">{AUDIT_RESULT_LABEL[auditResultOf(ev)]}</dd>
+              </div>
+              <div>
                 <dt className="text-[12.5px] text-ink-muted">Target</dt>
                 <dd className="text-ink">
                   {getAuditTargetType(ev.action)}
@@ -191,6 +208,8 @@ export function AuditTable({
   onFiltersChange,
   showTarget = true,
   exportName,
+  onLoadOlder,
+  loadingOlder = false,
 }: {
   title: string;
   events: AuditEventRow[];
@@ -202,6 +221,9 @@ export function AuditTable({
   onFiltersChange: (patch: Partial<AuditFilters>) => void;
   showTarget?: boolean;
   exportName: string;
+  /** Set while an older page exists (G-28); the button fetches it and the rows append. */
+  onLoadOlder?: () => void;
+  loadingOlder?: boolean;
 }) {
   const [picked, setPicked] = useState<AuditEventRow | null>(null);
   const filtered = useMemo(
@@ -262,6 +284,12 @@ export function AuditTable({
           <span className="block truncate text-[12.5px] text-ink-muted">{roleLabel(ev)}</span>
         </span>
       ),
+    },
+    {
+      key: 'result',
+      header: 'Result',
+      width: '96px',
+      render: (ev) => <ResultChip ev={ev} />,
     },
     ...(showTarget
       ? [
@@ -329,7 +357,7 @@ export function AuditTable({
               rows={filtered}
               rowKey={(ev) => ev.id}
               pageSize={25}
-              minWidth={showTarget ? 820 : 660}
+              minWidth={showTarget ? 916 : 756}
               caption={title}
               onRowClick={(ev: AuditEventRow) => setPicked(ev)}
             />
@@ -342,6 +370,13 @@ export function AuditTable({
             ) : null}
           </>
         )}
+        {!loading && onLoadOlder ? (
+          <div className="mt-3 flex justify-center">
+            <Button size="sm" variant="outline" disabled={loadingOlder} onClick={onLoadOlder}>
+              {loadingOlder ? 'Loading…' : 'Load older'}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <AuditEventPanel ev={picked} projectName={picked ? projectOf(picked) : null} onClose={() => setPicked(null)} />

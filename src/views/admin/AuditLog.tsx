@@ -23,8 +23,34 @@ import { defaultAuditFilters, type AuditFilters } from '@/views/admin/audit-log/
    segmented switch between every event and one project, and one card per view with the
    filters in its head and T1 rows. Fetching, filters and the project picker are unchanged. */
 
+/** The cursor for the page older than the rows shown (G-28); null on the last page. */
+type AuditCursor = { before: string; beforeId: string } | null;
+
+type AuditPageBody = {
+  ok: boolean;
+  events?: AuditEventRow[];
+  next?: AuditCursor;
+  error?: string;
+  detail?: string;
+};
+
+const PAGE_SIZE = 200;
+
+function auditUrl(engagementId: string | null, cursor: AuditCursor): string {
+  const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
+  if (engagementId) params.set('engagementId', engagementId);
+  if (cursor) {
+    params.set('before', cursor.before);
+    params.set('beforeId', cursor.beforeId);
+  }
+  return `/api/audit-logs?${params.toString()}`;
+}
+
 type AuditLogState = {
   tab: 'global' | 'project';
+  globalNext: AuditCursor;
+  projectNext: AuditCursor;
+  loadingOlder: boolean;
   selectedEngagementId: string;
   globalEvents: AuditEventRow[];
   projectEvents: AuditEventRow[];
@@ -49,6 +75,9 @@ export default function AuditLog() {
   const { engagements } = useApp();
   const [state, dispatch] = useReducer(auditLogReducer, {
     tab: 'global',
+    globalNext: null,
+    projectNext: null,
+    loadingOlder: false,
     selectedEngagementId: '',
     globalEvents: [],
     projectEvents: [],
@@ -70,6 +99,9 @@ export default function AuditLog() {
     projectError,
     globalFilters,
     projectFilters,
+    globalNext,
+    projectNext,
+    loadingOlder,
   } = state;
 
   const sortedEngagements = useMemo(
@@ -88,13 +120,8 @@ export default function AuditLog() {
   const fetchGlobal = useCallback(async () => {
     dispatch({ type: 'patch', patch: { globalLoading: true, globalError: null } });
     try {
-      const res = await fetch('/api/audit-logs?limit=200');
-      const body = (await res.json()) as {
-        ok: boolean;
-        events?: AuditEventRow[];
-        error?: string;
-        detail?: string;
-      };
+      const res = await fetch(auditUrl(null, null));
+      const body = (await res.json()) as AuditPageBody;
       if (!res.ok || !body.ok) {
         const msg =
           body.error === 'audit_table_missing'
@@ -103,7 +130,7 @@ export default function AuditLog() {
         dispatch({ type: 'patch', patch: { globalError: msg, globalEvents: [] } });
         return;
       }
-      dispatch({ type: 'patch', patch: { globalEvents: body.events ?? [] } });
+      dispatch({ type: 'patch', patch: { globalEvents: body.events ?? [], globalNext: body.next ?? null } });
     } catch (err) {
       dispatch({
         type: 'patch',
@@ -124,15 +151,8 @@ export default function AuditLog() {
     }
     dispatch({ type: 'patch', patch: { projectLoading: true, projectError: null } });
     try {
-      const res = await fetch(
-        `/api/audit-logs?engagementId=${encodeURIComponent(engagementId)}&limit=200`,
-      );
-      const body = (await res.json()) as {
-        ok: boolean;
-        events?: AuditEventRow[];
-        error?: string;
-        detail?: string;
-      };
+      const res = await fetch(auditUrl(engagementId, null));
+      const body = (await res.json()) as AuditPageBody;
       if (!res.ok || !body.ok) {
         const msg =
           body.error === 'audit_table_missing'
@@ -141,13 +161,39 @@ export default function AuditLog() {
         dispatch({ type: 'patch', patch: { projectError: msg, projectEvents: [] } });
         return;
       }
-      dispatch({ type: 'patch', patch: { projectEvents: body.events ?? [] } });
+      dispatch({ type: 'patch', patch: { projectEvents: body.events ?? [], projectNext: body.next ?? null } });
     } catch {
       dispatch({ type: 'patch', patch: { projectError: 'Could not load project audit log.', projectEvents: [] } });
     } finally {
       dispatch({ type: 'patch', patch: { projectLoading: false } });
     }
   }, []);
+
+  /** "Load older": the next page after the last row shown, appended (G-28). */
+  const loadOlder = useCallback(
+    async (scope: 'global' | 'project') => {
+      const cursor = scope === 'global' ? globalNext : projectNext;
+      if (!cursor) return;
+      const engagementId = scope === 'project' ? selectedEngagementId || null : null;
+      dispatch({ type: 'patch', patch: { loadingOlder: true } });
+      try {
+        const res = await fetch(auditUrl(engagementId, cursor));
+        const body = (await res.json()) as AuditPageBody;
+        if (!res.ok || !body.ok) return;
+        const older = body.events ?? [];
+        dispatch({
+          type: 'patch',
+          patch:
+            scope === 'global'
+              ? { globalEvents: [...globalEvents, ...older], globalNext: body.next ?? null }
+              : { projectEvents: [...projectEvents, ...older], projectNext: body.next ?? null },
+        });
+      } finally {
+        dispatch({ type: 'patch', patch: { loadingOlder: false } });
+      }
+    },
+    [globalNext, projectNext, selectedEngagementId, globalEvents, projectEvents],
+  );
 
   useEffect(() => {
     void fetchGlobal();
@@ -180,7 +226,7 @@ export default function AuditLog() {
       />
       <PlainPageHead
         title="Audit log"
-        meta={!globalLoading && eventCount > 0 ? `${eventCount} recent events` : undefined}
+        meta={!globalLoading && eventCount > 0 ? `${eventCount} events loaded` : undefined}
         actions={
           <SpectrumTabs
             size="md"
@@ -208,6 +254,8 @@ export default function AuditLog() {
             dispatch({ type: 'patch', patch: { globalFilters: { ...globalFilters, ...patch } } })
           }
           exportName="audit-log.csv"
+          onLoadOlder={globalNext ? () => void loadOlder('global') : undefined}
+          loadingOlder={loadingOlder}
         />
       ) : (
         <div className="grid gap-3">
@@ -249,6 +297,8 @@ export default function AuditLog() {
               }
               showTarget={false}
               exportName="audit-log-project.csv"
+              onLoadOlder={projectNext ? () => void loadOlder('project') : undefined}
+              loadingOlder={loadingOlder}
             />
           )}
         </div>

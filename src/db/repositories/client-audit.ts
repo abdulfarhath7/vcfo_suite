@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, desc, eq, gte, inArray, like, lt, or } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, like, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditEvents, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -299,26 +299,54 @@ async function namesFor(rows: Raw[]): Promise<Map<string, string>> {
   return new Map(ps.filter((p) => p.name?.trim() && !p.name.includes('@')).map((p) => [p.id, p.name!.trim()]));
 }
 
+/** `created_at` to the millisecond, the precision a cursor carries (G-28). */
+const createdMs = sql`date_trunc('milliseconds', ${auditEvents.createdAt})`;
+
+/**
+ * The page cursor: `<iso>|<id>` of the last row shown. A bare ISO time (older links) still
+ * works, without the id tie-break.
+ */
+export function parseClientAuditCursor(raw: string | null | undefined): { before?: Date; beforeId?: string } {
+  if (!raw) return {};
+  const [iso, id] = raw.split('|');
+  const before = iso ? new Date(iso) : undefined;
+  if (!before || Number.isNaN(before.getTime())) return {};
+  return { before, beforeId: id && /^[0-9a-f-]{36}$/i.test(id) ? id : undefined };
+}
+
 export async function listClientAuditEvents(
   ctx: AuthContext,
-  opts: { before?: Date; limit?: number; withSummary?: boolean } = {},
+  opts: { before?: Date; beforeId?: string; limit?: number; withSummary?: boolean } = {},
 ): Promise<ClientAuditPage> {
   const { dbId, company } = await myEngagementDbId(ctx);
   const limit = Math.min(Math.max(opts.limit ?? 60, 1), 2000);
   const conds = [eq(auditEvents.engagementId, dbId), allowed()];
-  if (opts.before && !Number.isNaN(opts.before.getTime())) conds.push(lt(auditEvents.createdAt, opts.before));
+  if (opts.before && !Number.isNaN(opts.before.getTime())) {
+    if (opts.beforeId) {
+      conds.push(lt(auditEvents.createdAt, new Date(opts.before.getTime() + 1)));
+      conds.push(
+        or(
+          sql`${createdMs} < ${opts.before}`,
+          and(sql`${createdMs} = ${opts.before}`, lt(auditEvents.id, opts.beforeId)),
+        )!,
+      );
+    } else {
+      conds.push(lt(auditEvents.createdAt, opts.before));
+    }
+  }
   const rows = await db
     .select()
     .from(auditEvents)
     .where(and(...conds))
-    .orderBy(desc(auditEvents.createdAt))
+    .orderBy(desc(createdMs), desc(auditEvents.id))
     .limit(limit + 1);
   const page = rows.slice(0, limit);
   const names = await namesFor(page);
   const events = page.map((r) => project(r, names, company));
+  const last = page[page.length - 1];
   const out: ClientAuditPage = {
     events,
-    nextBefore: rows.length > limit && page.length ? page[page.length - 1].createdAt.toISOString() : null,
+    nextBefore: rows.length > limit && last ? `${last.createdAt.toISOString()}|${last.id}` : null,
   };
   if (opts.withSummary) out.summary = await summary(dbId);
   return out;

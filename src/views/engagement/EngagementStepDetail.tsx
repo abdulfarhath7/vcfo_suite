@@ -22,6 +22,7 @@ import {
 import type { OwnershipType } from '@/data/engagements';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowControl';
+import { StepDaysMeta } from '@/components/metrics/step-days-meta';
 import { setEngagementWindowInDb } from '@/lib/projects/engagements-db';
 import {
   canSetScheduleWindows,
@@ -444,6 +445,10 @@ export default function EngagementStepDetail() {
               <span aria-hidden>·</span>
               <span>{internPhase.title}</span>
             </>
+          ) : null}
+          {/* Staff only: opened, days in step and the window's end (G-13). */}
+          {!isClientRoute ? (
+            <StepDaysMeta engagementId={eng.id} stepId={item.id} dueOn={windowForStep(eng.schedule, item.id)?.to ?? null} />
           ) : null}
         </p>
       </div>

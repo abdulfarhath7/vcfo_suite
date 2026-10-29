@@ -123,6 +123,7 @@ export function toAppEngagement(
     ownershipType: coerceOwnershipType(row.ownershipType),
     parentIndianRelationship: coerceParentIndianRelationship(row.parentIndianRelationship),
     schedule: normalizeEngagementSchedule(row.schedule),
+    expectedCoiOn: row.expectedCoiOn ?? null,
     entityLegalForm: (row.entityLegalForm ?? 'company') as Engagement['entityLegalForm'],
     incorporationDate: row.incorporationDate ?? null,
     parentEntityName: row.parentEntityName,

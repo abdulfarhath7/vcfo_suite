@@ -22,6 +22,9 @@ import { plainDay } from '@/components/super/parts/super-text';
 import { formatSuperAgo } from '@/components/super/overview/super-overview-format';
 import type { SuperTeamLead, SuperTeamManager } from '@/components/super/insights/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
+import { CapacityControl, LoadCell, OnTimeCell } from '@/components/metrics/people-cells';
+import { indexPeople, usePeopleMetrics } from '@/components/metrics/use-metrics';
+import type { PersonMetrics } from '@/lib/metrics/practice-metrics';
 import { cn } from '@/lib/utils';
 
 /**
@@ -29,10 +32,11 @@ import { cn } from '@/lib/utils';
  *
  * Managers with the project leads who report to them, and the load on each: clients (primary
  * and co-assigned through the engagement memberships), open steps, overdue steps, approvals
- * waiting and overdue filings. "Last active" is the newest audit row the person wrote. Load
- * colour is a status colour from the work itself: red with overdue work, amber with approvals
- * or clients needing attention, blurple otherwise. Read-only; people are managed on the admin
- * People page.
+ * waiting and overdue filings. On time, Load (open items against capacity), Last active
+ * (`profiles.last_seen_at`, else the newest audit row the person wrote) and the capacity editor
+ * come from `/api/metrics/people` (G-14). The Team load card's colour is a status colour from
+ * the work itself: red with overdue work, amber with approvals or clients needing attention,
+ * blurple otherwise. People are otherwise managed on the admin People page.
  */
 export const SUPER_TEAM_HREF = '/app/super/team';
 
@@ -46,13 +50,10 @@ function loadTone(row: LoadRow): ChipTone {
   return 'prog';
 }
 
-function lastActive(iso: string | null): string {
+/** Last signed-in request (`profiles.last_seen_at`, G-14), else the newest audit row they wrote. */
+function lastActive(person: PersonMetrics | undefined, auditIso: string | null): string {
+  const iso = person?.lastSeenAt ?? auditIso;
   return iso ? formatSuperAgo(iso) : 'No activity';
-}
-
-function onTimePct(m: SuperTeamManager): string {
-  const filed = m.filedOnTime + m.filedLate;
-  return filed === 0 ? '–' : `${Math.round((m.filedOnTime / filed) * 100)}%`;
 }
 
 type StaffRow = (SuperTeamLead & { kind: 'lead'; reportsTo: string }) | (SuperTeamManager & { kind: 'manager' });
@@ -61,6 +62,9 @@ export default function SuperTeam() {
   const query = useSuperInsights();
   const insights = query.data;
   const [tab, setTab] = useState('managers');
+  // On time over the last 12 months, load against capacity, last seen and capacity (G-14).
+  const peopleQuery = usePeopleMetrics();
+  const people = useMemo(() => indexPeople(peopleQuery.data), [peopleQuery.data]);
 
   const leads = useMemo(() => {
     if (!insights) return [];
@@ -117,7 +121,7 @@ export default function SuperTeam() {
       ),
     },
     { key: 'approvals', header: 'Approvals', width: '92px', align: 'right', render: (m) => <span className="tabular-nums">{m.approvalsPending}</span> },
-    { key: 'ontime', header: 'On time', width: '80px', align: 'right', render: (m) => <span className="tabular-nums">{onTimePct(m)}</span> },
+    { key: 'ontime', header: 'On time', width: '80px', align: 'right', render: (m) => <OnTimeCell person={people.byProfileId.get(m.id)} /> },
     {
       key: 'coi',
       header: 'Days to COI',
@@ -125,11 +129,16 @@ export default function SuperTeam() {
       align: 'right',
       render: (m) => <span className="tabular-nums">{m.avgDaysToCoi === null ? '–' : `${m.avgDaysToCoi} days`}</span>,
     },
+    { key: 'load', header: 'Load', width: '150px', render: (m) => <LoadCell person={people.byProfileId.get(m.id)} /> },
+    { key: 'seen', header: 'Last active', width: '104px', render: (m) => lastActive(people.byProfileId.get(m.id), m.lastActiveAt) },
     {
-      key: 'load',
-      header: 'Load',
-      width: '130px',
-      render: (m) => <ToneBar pct={(m.clients / maxClients) * 100} tone={loadTone(m)} className="w-24" />,
+      key: 'capacity',
+      header: 'Capacity',
+      width: '96px',
+      render: (m) => {
+        const person = people.byProfileId.get(m.id);
+        return person ? <CapacityControl person={person} /> : null;
+      },
     },
   ];
 
@@ -168,7 +177,22 @@ export default function SuperTeam() {
         </Chip>
       ),
     },
-    { key: 'last', header: 'Last active', width: '110px', render: (s) => lastActive(s.lastActiveAt) },
+    {
+      key: 'load',
+      header: 'Load',
+      width: '150px',
+      render: (s) => <LoadCell person={people.byProfileId.get(s.id)} />,
+    },
+    { key: 'last', header: 'Last active', width: '110px', render: (s) => lastActive(people.byProfileId.get(s.id), s.lastActiveAt) },
+    {
+      key: 'capacity',
+      header: 'Capacity',
+      width: '96px',
+      render: (s) => {
+        const person = people.byProfileId.get(s.id);
+        return person ? <CapacityControl person={person} /> : null;
+      },
+    },
   ];
 
   const managerRows: StaffRow[] = managers.map((m) => ({ ...m, kind: 'manager' as const }));
@@ -190,7 +214,7 @@ export default function SuperTeam() {
         />
 
         <DashSection title="Managers" meta={String(managers.length)} href={PEOPLE_HREF} hrefLabel="People" bodyClassName="px-2 pb-2 pt-1">
-          <EFilingGrid caption="Managers" columns={managerColumns} rows={managers} rowKey={(m) => m.id} empty="No manager yet" minWidth={860} />
+          <EFilingGrid caption="Managers" columns={managerColumns} rows={managers} rowKey={(m) => m.id} empty="No manager yet" minWidth={1120} />
         </DashSection>
 
         <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -213,7 +237,7 @@ export default function SuperTeam() {
               rows={staffRows}
               rowKey={(s) => `${s.kind}:${s.id}`}
               empty="Nobody here yet"
-              minWidth={780}
+              minWidth={1020}
               pageSize={15}
             />
           </DashSection>

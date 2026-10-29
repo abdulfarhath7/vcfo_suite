@@ -183,3 +183,32 @@ export async function setClientComplianceWindow(
   });
   return updated!;
 }
+
+/**
+ * Set (or clear, with `null`) the date the firm expects the certificate of incorporation
+ * (`engagements.expected_coi_on`, G-13). Same writers as the windows: a manager on an owned
+ * engagement, admin, super admin. Writes an audit event.
+ */
+export async function setExpectedCoi(
+  ctx: AuthContext,
+  appEngagementId: string,
+  on: string | null,
+): Promise<{ expectedCoiOn: string | null }> {
+  assertMayWrite(ctx);
+  if (on !== null && !isValidWindowRange(on, on)) throw new Error('invalid_date');
+  const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
+  if (!existing) throw new Error('Engagement not found or not permitted');
+
+  await db
+    .update(engagements)
+    .set({ expectedCoiOn: on, updatedAt: new Date() })
+    .where(eq(engagements.id, existing.id));
+
+  void recordAuditEvent(ctx, {
+    engagementId: existing.id,
+    action: on ? 'schedule.expected_coi.set' : 'schedule.expected_coi.cleared',
+    summary: on ? `Expected certificate date set to ${on}` : 'Expected certificate date cleared',
+    metadata: { before: existing.expectedCoiOn ?? null, after: on },
+  });
+  return { expectedCoiOn: on };
+}

@@ -27,6 +27,7 @@ import {
   type SuperRegCell,
 } from '@/components/super/insights/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
+import { usePracticeMetrics } from '@/components/metrics/use-metrics';
 import { cn } from '@/lib/utils';
 
 /**
@@ -86,6 +87,8 @@ interface WorkItem {
 export default function SuperPracticeRegistrations() {
   const router = useRouter();
   const query = useSuperInsights();
+  const practiceQuery = usePracticeMetrics();
+  const practice = practiceQuery.data;
   const insights = query.data;
   const [view, setView] = useState('matrix');
   const [manager, setManager] = useState('');
@@ -224,6 +227,17 @@ export default function SuperPracticeRegistrations() {
       render: (w) => <OwnerChip owner={w.cell === 'waiting' ? 'client' : 'sbc'} />,
     },
     { key: 'lead', header: 'Lead', width: '16%', render: (w) => w.client.summary.leadName ?? 'No lead' },
+    {
+      // Days since the registration step was opened, from the step events (G-13).
+      key: 'days',
+      header: 'Days in step',
+      width: '104px',
+      align: 'right',
+      render: (w) => {
+        const days = practice?.openStepDays[w.client.summary.id]?.[w.regId];
+        return days === undefined ? <span className="text-ink-faint">–</span> : <span className="tabular-nums">{days}</span>;
+      },
+    },
     {
       key: 'status',
       header: 'Status',

@@ -1,6 +1,12 @@
 import { format } from 'date-fns';
 import type { AuditEventRow } from '@/lib/audit/audit-log';
-import { formatActorDisplay, formatAuditActionLabel, getAuditActionCategory } from '@/lib/audit/audit-log';
+import {
+  AUDIT_RESULT_LABEL,
+  auditResultOf,
+  formatActorDisplay,
+  formatAuditActionLabel,
+  getAuditActionCategory,
+} from '@/lib/audit/audit-log';
 import { mapDbRoleToAppRole, ROLE_UI_LABEL } from '@/lib/auth';
 import { AUDIT_CATEGORY_LABELS } from '@/views/admin/audit-log/audit-filters';
 
@@ -8,7 +14,7 @@ const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
 /** The rows in view as CSV text (prototype Audit export). One line per event, newest first. */
 export function auditEventsCsv(events: AuditEventRow[], engagementsByDbId: Map<string, string>): string {
-  const head = ['Date', 'Time', 'Event', 'Summary', 'Area', 'Who', 'Role', 'Email', 'Project'];
+  const head = ['Date', 'Time', 'Event', 'Summary', 'Area', 'Who', 'Role', 'Email', 'Result', 'Project'];
   const lines = events.map((ev) => {
     const when = new Date(ev.created_at);
     const project = ev.engagement_id ? engagementsByDbId.get(ev.engagement_id) ?? '' : '';
@@ -21,6 +27,7 @@ export function auditEventsCsv(events: AuditEventRow[], engagementsByDbId: Map<s
       formatActorDisplay(ev),
       ROLE_UI_LABEL[mapDbRoleToAppRole(ev.actor_role)],
       ev.actor_email ?? '',
+      AUDIT_RESULT_LABEL[auditResultOf(ev)],
       project,
     ]
       .map((v) => quote(String(v)))

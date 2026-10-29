@@ -51,6 +51,21 @@ export interface AuditEventRow {
   action: string;
   summary: string;
   metadata: Record<string, unknown> | null;
+  /** What happened to the action: ok, failed or denied (G-28). Older rows read as ok. */
+  result?: AuditResult;
+}
+
+export type AuditResult = 'ok' | 'failed' | 'denied';
+
+export const AUDIT_RESULT_LABEL: Record<AuditResult, string> = {
+  ok: 'Done',
+  failed: 'Failed',
+  denied: 'Denied',
+};
+
+/** The stored result as one of the three words; anything unknown reads as ok. */
+export function auditResultOf(row: Pick<AuditEventRow, 'result'>): AuditResult {
+  return row.result === 'failed' || row.result === 'denied' ? row.result : 'ok';
 }
 
 export interface RecordAuditEventInput {
@@ -58,6 +73,8 @@ export interface RecordAuditEventInput {
   action: AuditAction | string;
   summary: string;
   metadata?: Record<string, unknown>;
+  /** Defaults to ok. Write denied when a guard refused the action, failed when it threw. */
+  result?: AuditResult;
   actorUserId?: string;
   actorRole?: DbRole;
   actorEmail?: string | null;

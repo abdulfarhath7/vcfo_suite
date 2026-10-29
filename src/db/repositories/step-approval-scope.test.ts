@@ -36,13 +36,14 @@ function chain(): unknown {
       return chain();
     },
     returning: () => chain(),
+    values: () => chain(),
     then: (resolve: (value: unknown[]) => unknown) => resolve(selectRows),
   };
   return thenable;
 }
 
-vi.mock('@/db/client', () => ({
-  db: {
+vi.mock('@/db/client', () => {
+  const db = {
     select: () => chain(),
     update: (...args: unknown[]) => {
       updateCalls.push(args);
@@ -50,8 +51,11 @@ vi.mock('@/db/client', () => ({
     },
     insert: () => chain(),
     delete: () => chain(),
-  },
-}));
+    // A status change writes its step events in a transaction (engagement_step_events).
+    transaction: (fn: (tx: unknown) => unknown) => fn(db),
+  };
+  return { db };
+});
 
 const { buildManagerApproval, buildClientApproval } = await import(
   '@/lib/checklist/checklist-step-approval'

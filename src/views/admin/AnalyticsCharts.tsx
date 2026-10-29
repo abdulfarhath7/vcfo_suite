@@ -11,12 +11,11 @@ import {
   chartReferenceProps,
 } from '@/components/charts/chart-theme';
 
-type ChartRow = {
+/** One month from `/api/metrics/analytics`; null where the month has nothing to measure. */
+export type AnalyticsChartRow = {
   m: string;
-  completion: number;
-  target: number;
-  delay: number;
-  benchmark: number;
+  completion: number | null;
+  delay: number | null;
 };
 
 /* VCFO Spectrum Analytics charts (prototype AnalyticsScreen.tsx, rule R-25): status colours
@@ -27,7 +26,7 @@ function ChartPlaceholder() {
   return <div className="h-full w-full animate-pulse rounded-md bg-surface-sunken" aria-hidden />;
 }
 
-export function AnalyticsCompletionChart({ data, target = 95 }: { data: ChartRow[]; target?: number }) {
+export function AnalyticsCompletionChart({ data, target = 95 }: { data: AnalyticsChartRow[]; target?: number }) {
   const RC = useRecharts();
   if (!RC) return <ChartPlaceholder />;
 
@@ -38,7 +37,7 @@ export function AnalyticsCompletionChart({ data, target = 95 }: { data: ChartRow
       <BarChart data={data} margin={{ top: 16, right: 4, left: -10, bottom: 0 }} barCategoryGap="28%">
         <CartesianGrid {...chartGridProps} />
         <XAxis dataKey="m" interval={0} {...chartAxisProps} />
-        <YAxis domain={[70, 100]} unit="%" allowDecimals={false} {...chartAxisProps} />
+        <YAxis domain={[0, 100]} unit="%" allowDecimals={false} {...chartAxisProps} />
         <Tooltip
           cursor={{ fill: CHART_CHROME.cursor }}
           content={<ChartTooltip valueFormatter={(v) => `${v}% on time`} />}
@@ -52,7 +51,7 @@ export function AnalyticsCompletionChart({ data, target = 95 }: { data: ChartRow
           radius={chartBarProps.radius}
         >
           {data.map((r) => (
-            <Cell key={r.m} fill={r.completion >= target ? CHART_STATUS.done : CHART_STATUS.active} />
+            <Cell key={r.m} fill={(r.completion ?? 0) >= target ? CHART_STATUS.done : CHART_STATUS.active} />
           ))}
         </Bar>
       </BarChart>
@@ -60,7 +59,7 @@ export function AnalyticsCompletionChart({ data, target = 95 }: { data: ChartRow
   );
 }
 
-export function AnalyticsDelayChart({ data, benchmark = 2 }: { data: ChartRow[]; benchmark?: number }) {
+export function AnalyticsDelayChart({ data, benchmark = 2 }: { data: AnalyticsChartRow[]; benchmark?: number }) {
   const RC = useRecharts();
   if (!RC) return <ChartPlaceholder />;
 
@@ -71,13 +70,14 @@ export function AnalyticsDelayChart({ data, benchmark = 2 }: { data: ChartRow[];
       <LineChart data={data} margin={{ top: 16, right: 12, left: -24, bottom: 0 }}>
         <CartesianGrid {...chartGridProps} />
         <XAxis dataKey="m" interval={0} {...chartAxisProps} />
-        <YAxis domain={[0, 5]} {...chartAxisProps} />
+        <YAxis domain={[0, (max: number) => Math.max(5, Math.ceil(max))]} {...chartAxisProps} />
         <Tooltip content={<ChartTooltip valueFormatter={(v) => `${v} days`} />} />
         <ReferenceLine y={benchmark} {...chartReferenceProps(`${benchmark}d benchmark`)} />
         <Line
           type="monotone"
           dataKey="delay"
           name="Delay"
+          connectNulls
           stroke={CHART_STATUS.active}
           strokeWidth={2}
           isAnimationActive={false}

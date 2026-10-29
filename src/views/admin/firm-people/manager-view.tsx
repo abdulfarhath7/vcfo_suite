@@ -4,6 +4,8 @@ import { SEO } from '@/components/SEO';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RecordStat, RecordStats } from '@/components/incorporation/RecordHead';
 import { PeopleCard, PeopleProjectsGrid } from './parts';
+import { PersonMetricStats } from '@/components/metrics/people-cells';
+import { isFirmWideAdmin } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { FolderPlus, Loader2, Mail, MoreHorizontal, Trash2, Users } from 'lucide-react';
 import {
@@ -115,6 +117,10 @@ export function renderManagerView(
           <RecordStat value={managerProjects.length} label="projects" />
           <RecordStat value={managerLeads.length} label="leads" />
           <RecordStat value={managerProjects.filter((p) => p.stuck).length} label="need attention" />
+          {/* On time, load against capacity and last active (G-14). */}
+          {selectedManager ? (
+            <PersonMetricStats profileId={selectedManager.id} canSetCapacity={isFirmWideAdmin(user?.role)} />
+          ) : null}
         </RecordStats>
       </div>
 

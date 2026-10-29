@@ -1,10 +1,10 @@
 import 'server-only';
-import { and, desc, eq, inArray, lt, or } from 'drizzle-orm';
+import { and, desc, eq, inArray, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditEvents } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
-import { checklistItemLabel } from '@/lib/audit/audit-log';
+import { auditResultOf, checklistItemLabel } from '@/lib/audit/audit-log';
 import type { AuditEventRow, RecordAuditEventInput } from '@/lib/audit/audit-log';
 
 /**
@@ -36,6 +36,7 @@ function toRow(r: typeof auditEvents.$inferSelect): AuditEventRow {
     action: r.action,
     summary: r.summary,
     metadata: (r.metadata ?? {}) as Record<string, unknown>,
+    result: auditResultOf({ result: r.result as AuditEventRow['result'] }),
   };
 }
 
@@ -63,6 +64,7 @@ export async function recordAuditEvent(
       action: input.action,
       summary: input.summary,
       metadata: input.metadata ?? {},
+      result: input.result ?? 'ok',
     });
   } catch (err) {
     console.warn('[audit] record threw', err instanceof Error ? err.message : err);
@@ -73,8 +75,19 @@ export interface ListAuditEventsOptions {
   engagementId?: string | null;
   /** Keyset pagination cursor — return events strictly older than this. */
   before?: Date;
+  /**
+   * Tie-break for `before`: the id of the last row already shown. With it, rows in the same
+   * millisecond as the cursor are split by id, so a page boundary never skips or repeats one.
+   */
+  beforeId?: string;
   limit?: number;
 }
+
+/**
+ * `created_at` to the millisecond. A JS Date carries milliseconds and Postgres keeps
+ * microseconds, so the cursor compares and orders on the truncated value, then on id.
+ */
+const createdMs = sql`date_trunc('milliseconds', ${auditEvents.createdAt})`;
 
 /** Admin/super (all), manager (owned clients), intern (own actor + shared clients). */
 export async function listAuditEvents(
@@ -121,14 +134,28 @@ export async function listAuditEvents(
     conds.push(inArray(auditEvents.engagementId, ids));
   }
 
-  if (options.before) conds.push(lt(auditEvents.createdAt, options.before));
+  if (options.before && !Number.isNaN(options.before.getTime())) {
+    if (options.beforeId) {
+      // Sargable bound first, then the exact (millisecond, id) keyset.
+      conds.push(lt(auditEvents.createdAt, new Date(options.before.getTime() + 1)));
+      conds.push(
+        or(
+          sql`${createdMs} < ${options.before}`,
+          and(sql`${createdMs} = ${options.before}`, lt(auditEvents.id, options.beforeId)),
+        ),
+      );
+    } else {
+      conds.push(lt(auditEvents.createdAt, options.before));
+    }
+  }
 
-  const limit = Math.min(Math.max(options.limit ?? 100, 1), 500);
+  // 501 so a route can ask for one more than its page and know whether an older page exists.
+  const limit = Math.min(Math.max(options.limit ?? 100, 1), 501);
   const rows = await db
     .select()
     .from(auditEvents)
     .where(conds.length ? and(...conds) : undefined)
-    .orderBy(desc(auditEvents.createdAt))
+    .orderBy(desc(createdMs), desc(auditEvents.id))
     .limit(limit);
 
   return rows.map(toRow);

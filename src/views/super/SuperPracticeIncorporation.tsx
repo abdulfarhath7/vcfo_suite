@@ -27,6 +27,9 @@ import {
 } from '@/components/super/overview/super-overview-format';
 import type { SuperInsightClient } from '@/components/super/insights/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
+import { usePracticeMetrics } from '@/components/metrics/use-metrics';
+import { ExpectedCoiCard, StageDaysCard } from '@/components/metrics/practice-cards';
+import { superEngagementHref } from '@/lib/super/super-overview';
 import { cn } from '@/lib/utils';
 
 /**
@@ -48,6 +51,9 @@ export default function SuperPracticeIncorporation() {
   const router = useRouter();
   const query = useSuperInsights();
   const insights = query.data;
+  // Days in step, days in each stage and expected certificates come from the step events (G-13).
+  const practiceQuery = usePracticeMetrics();
+  const practice = practiceQuery.data;
   const [manager, setManager] = useState('');
   const [lead, setLead] = useState('');
   const [holder, setHolder] = useState('');
@@ -158,6 +164,26 @@ export default function SuperPracticeIncorporation() {
     },
     { key: 'manager', header: 'Manager', width: '13%', render: (c) => c.summary.managerName ?? 'Unassigned' },
     {
+      key: 'inStep',
+      header: 'In step',
+      width: '84px',
+      align: 'right',
+      render: (c) => {
+        const row = practice?.currentStep[c.summary.id];
+        const late = Boolean(row?.dueOn && row.dueOn < today);
+        return row?.days === null || row?.days === undefined ? (
+          <span className="text-ink-faint">–</span>
+        ) : (
+          <span
+            className={cn('tabular-nums', late && 'font-medium text-danger')}
+            title={row.dueOn ? `Due ${plainDay(row.dueOn)}` : undefined}
+          >
+            {row.days}d
+          </span>
+        );
+      },
+    },
+    {
       key: 'next',
       header: 'Next',
       width: '72px',
@@ -215,6 +241,15 @@ export default function SuperPracticeIncorporation() {
 
         <Pipeline clients={incorporating} />
 
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+          <StageDaysCard rows={practice?.incorporation.stageDays ?? []} loading={practiceQuery.isPending} />
+          <ExpectedCoiCard
+            rows={practice?.incorporation.expected ?? []}
+            loading={practiceQuery.isPending}
+            hrefFor={(row) => superEngagementHref(row.engagementId)}
+          />
+        </div>
+
         <DashSection title="Clients in incorporation" meta={`${rows.length} of ${incorporating.length}`} bodyClassName="px-2 pb-2 pt-3">
           <SuperFilterChips
             className="mb-2 px-2"
@@ -236,7 +271,7 @@ export default function SuperPracticeIncorporation() {
             rowKey={(c) => c.summary.id}
             onRowClick={(c) => router.push(c.summary.href)}
             empty="No client matches these filters"
-            minWidth={980}
+            minWidth={1060}
             pageSize={15}
           />
         </DashSection>

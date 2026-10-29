@@ -35,7 +35,7 @@ export interface ClientAuditSummary {
 
 export interface ClientAuditPage {
   events: ClientAuditEvent[];
-  /** Pass as `before` for the next page; null = no older events. */
+  /** Pass as `before` for the next page (`<iso>|<id>`); null = no older events. */
   nextBefore: string | null;
   summary?: ClientAuditSummary;
 }

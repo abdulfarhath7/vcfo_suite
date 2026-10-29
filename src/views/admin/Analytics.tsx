@@ -2,15 +2,19 @@
 
 import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
-import { Briefcase, CheckCircle2, Clock, Users } from 'lucide-react';
+import { Briefcase, CheckCircle2, Clock, Timer, Users } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { StatCard } from '@/components/dash/StatCard';
 import { DashDonut, DashSection } from '@/components/dash/DashSection';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { Tag } from '@/components/ui/spectrum-chip';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { CHART_STATUS, ChartLegend, DashBarChart, type ChartSeries } from '@/components/charts';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { useAnalyticsMetrics } from '@/components/metrics/use-metrics';
+import type { StepTimeMetric } from '@/lib/metrics/practice-metrics';
+import { shortCompany } from '@/components/super/parts/super-text';
+import { cn } from '@/lib/utils';
 import { SEO } from '@/components/SEO';
 import { checklist } from '@/data/checklist';
 import { PlainPageHead } from '@/views/admin/PlainPageHead';
@@ -32,25 +36,6 @@ const AnalyticsDelayChart = dynamic(
   { ssr: false, loading: chartLoading },
 );
 
-const data6 = [
-  { m: 'Oct 25', completion: 88, target: 95, delay: 3.2, benchmark: 2.0 },
-  { m: 'Nov 25', completion: 91, target: 95, delay: 2.8, benchmark: 2.0 },
-  { m: 'Dec 25', completion: 87, target: 95, delay: 3.6, benchmark: 2.0 },
-  { m: 'Jan 26', completion: 93, target: 95, delay: 2.0, benchmark: 2.0 },
-  { m: 'Feb 26', completion: 94, target: 95, delay: 1.7, benchmark: 2.0 },
-  { m: 'Mar 26', completion: 96, target: 95, delay: 1.5, benchmark: 2.0 },
-];
-
-const data12 = [
-  { m: 'Apr 25', completion: 82, target: 95, delay: 4.4, benchmark: 2.0 },
-  { m: 'May 25', completion: 84, target: 95, delay: 4.0, benchmark: 2.0 },
-  { m: 'Jun 25', completion: 86, target: 95, delay: 3.6, benchmark: 2.0 },
-  { m: 'Jul 25', completion: 85, target: 95, delay: 3.8, benchmark: 2.0 },
-  { m: 'Aug 25', completion: 87, target: 95, delay: 3.4, benchmark: 2.0 },
-  { m: 'Sep 25', completion: 89, target: 95, delay: 3.1, benchmark: 2.0 },
-  ...data6,
-];
-
 const ITEM_IDS = checklist.map((item) => item.id);
 
 /* R-25: status colours only. Waiting is teal, overdue red, not started grey. */
@@ -69,18 +54,55 @@ const WORKLOAD_SERIES: ChartSeries[] = [
   { key: 'notStarted', label: 'Not started', color: CHART_STATUS.locked, stackId: 'load' },
 ];
 
-/** The two monthly charts still draw sample figures until filing history is stored. */
-function SampleTag() {
-  return (
-    <Tag tone="warn" className="h-5 px-1.5">
-      Sample data
-    </Tag>
-  );
-}
+const FILING_SERIES: ChartSeries[] = [
+  { key: 'onTime', label: 'On time', color: CHART_STATUS.done, stackId: 'filed' },
+  { key: 'late', label: 'Late', color: CHART_STATUS.overdue, stackId: 'filed' },
+];
 
+const STEP_TIME_COLUMNS: EFilingColumn<StepTimeMetric>[] = [
+  { key: 'step', header: 'Step', render: (s) => <span className="font-medium text-ink">{s.title}</span> },
+  {
+    key: 'median',
+    header: 'Median days',
+    width: '110px',
+    align: 'right',
+    render: (s) => <span className="tabular-nums">{s.medianDays ?? '–'}</span>,
+  },
+  {
+    key: 'longest',
+    header: 'Longest now',
+    width: '104px',
+    align: 'right',
+    render: (s) => (
+      <span className={cn('tabular-nums', (s.longestDays ?? 0) > 7 && 'font-medium text-danger')}>{s.longestDays ?? '–'}</span>
+    ),
+  },
+  {
+    key: 'client',
+    header: 'Longest client',
+    width: '160px',
+    render: (s) => (s.longestCompany ? shortCompany(s.longestCompany) : <span className="text-ink-faint">–</span>),
+  },
+];
+
+/**
+ * Analytics (prototype AnalyticsScreen). The monthly charts, filings on time and time in step
+ * come from `/api/metrics/analytics` (G-27): the filed-against-due history in the compliance
+ * rows and the step events. The live counts below them still come from the checklist state the
+ * app already holds.
+ */
 export default function Analytics() {
   const [period, setPeriod] = useState<'6' | '12'>('6');
-  const data = period === '6' ? data6 : data12;
+  const metrics = useAnalyticsMetrics(period === '6' ? 6 : 12);
+  const months = metrics.data?.months ?? [];
+  const data = months.map((m) => ({ m: m.label, completion: m.completionPct, delay: m.avgDelayDays }));
+  const filingRows = months.map((m) => ({ m: m.label, onTime: m.onTime, late: m.late }));
+  const filedTotal = months.reduce((n, m) => n + m.onTime + m.late, 0);
+  const onTimeTotal = months.reduce((n, m) => n + m.onTime, 0);
+  const lastRated = [...months].reverse().find((m) => m.completionPct !== null);
+  const hasRates = months.some((m) => m.completionPct !== null);
+  const hasDelay = months.some((m) => m.avgDelayDays !== null);
+  const stepTime = metrics.data?.stepTime ?? [];
   const { engagements, getStateForEngagement, internOptions, teamMembers, role, engagementsLoading } = useApp();
 
   const projects = useMemo<AnalyticsProject[]>(
@@ -121,7 +143,6 @@ export default function Analytics() {
   const workload = useMemo(() => workloadByLead(projects, ITEM_IDS, leads), [projects, leads]);
   const showWorkload = role !== 'intern' && workload.length > 0;
 
-  const lastMonth = data[data.length - 1];
 
   return (
     <PageTransition>
@@ -144,10 +165,16 @@ export default function Analytics() {
         }
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Projects" value={live.projects} tone="brand" icon={Briefcase} />
         <StatCard label="Steps completed" value={`${live.pct}%`} tone="positive" icon={CheckCircle2} />
         <StatCard label="Waiting on client" value={live.awaitingClient} tone="warning" icon={Users} />
+        <StatCard
+          label="Filed on time · 12 months"
+          value={metrics.data?.onTime.pct === null || metrics.data?.onTime.pct === undefined ? '–' : `${metrics.data.onTime.pct}%`}
+          tone="positive"
+          icon={Timer}
+        />
         <StatCard
           label="Overdue steps"
           value={live.overdue}
@@ -160,30 +187,61 @@ export default function Analytics() {
         <div className="grid gap-5 lg:grid-cols-2">
           <DashSection
             title="Compliance completion rate"
-            meta={
-              <span className="inline-flex items-center gap-2">
-                {lastMonth.completion}% in {lastMonth.m} · target 95%
-                <SampleTag />
-              </span>
-            }
+            meta={lastRated ? `${lastRated.completionPct}% in ${lastRated.label} · target 95%` : 'Target 95%'}
+            loading={metrics.isPending}
+            loadingVariant="block"
           >
-            <div className="h-[232px]">
-              <AnalyticsCompletionChart data={data} />
-            </div>
+            {hasRates ? (
+              <div className="h-[232px]">
+                <AnalyticsCompletionChart data={data} />
+              </div>
+            ) : (
+              <EmptyState title="No filing has fallen due yet" />
+            )}
           </DashSection>
 
           <DashSection
             title="Average filing delay"
-            meta={
-              <span className="inline-flex items-center gap-2">
-                Days past due date · benchmark 2 days
-                <SampleTag />
-              </span>
-            }
+            meta="Days past due date · benchmark 2 days"
+            loading={metrics.isPending}
+            loadingVariant="block"
           >
-            <div className="h-[232px]">
-              <AnalyticsDelayChart data={data} />
-            </div>
+            {hasDelay ? (
+              <div className="h-[232px]">
+                <AnalyticsDelayChart data={data} />
+              </div>
+            ) : (
+              <EmptyState title="No filing date recorded yet" />
+            )}
+          </DashSection>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <DashSection
+            title="Filings on time"
+            meta={filedTotal ? `${Math.round((onTimeTotal / filedTotal) * 100)}%` : undefined}
+            loading={metrics.isPending}
+            loadingVariant="block"
+          >
+            <DashBarChart
+              data={filingRows}
+              categoryKey="m"
+              series={FILING_SERIES}
+              height={232}
+              emptyLabel="No filing recorded yet"
+            />
+          </DashSection>
+
+          <DashSection title="Time in step" meta="Open and finished steps" loading={metrics.isPending} bodyClassName="px-2 pb-2 pt-1">
+            <EFilingGrid
+              caption="Time in step"
+              columns={STEP_TIME_COLUMNS}
+              rows={stepTime}
+              rowKey={(s) => s.stepId}
+              empty="No step has been timed yet"
+              pageSize={8}
+              minWidth={520}
+            />
           </DashSection>
         </div>
 

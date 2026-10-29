@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Inbox, Plus } from 'lucide-react';
+import { Inbox, ListPlus, Plus } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { DashHero, type DashHeroStat } from '@/components/dash/DashHero';
 import { PhaseTimeline, type Phase } from '@/components/admin/PhaseTimeline';
@@ -21,6 +21,7 @@ import { DashboardApprovalsPanel } from '@/views/admin/DashboardApprovalsPanel';
 import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
 import { TeamTasksCard } from '@/components/staff/today/TeamTasksCard';
+import { AssignTaskDialog } from '@/components/staff/today/AssignTaskDialog';
 import { TaskStatusCard, WorkloadByLeadCard } from '@/components/staff/today/TodayCharts';
 import { PhaseProgressGrid } from '@/components/staff/today/PhaseProgressGrid';
 import { PersonCell, TodayScopeTabs } from '@/components/staff/today/today-parts';
@@ -63,11 +64,14 @@ const GRID = 'grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_m
 /**
  * Manager Today as the board (prototype TodayScreen, C-0107): the home card with the scope
  * switch and the five numbers, Team tasks beside the approvals, Task status and Workload by
- * lead, then Phase progress beside the upcoming filings and the to-do cards.
+ * lead, then Phase progress beside the upcoming filings and the to-do cards. "Assign task"
+ * gives one of the leads on the manager's engagements a task (G-12); it shows in Team tasks
+ * and in the lead's Work list.
  */
 export function AdminDashboardView({
   userId,
   engagements,
+  tasks,
   teamMembers,
   blockers,
   dueInTwoDays,
@@ -83,6 +87,7 @@ export function AdminDashboardView({
   const projectBase = staffProjectBaseFromPathname(pathname, staffBase);
   const newProjectHref = staffNewProjectPath(projectBase);
   const [scope, setScope] = useState<TodayScope>('all');
+  const [assignOpen, setAssignOpen] = useState(false);
   const now = useMemo(() => new Date(), []);
 
   const active = useMemo(() => engagements.filter((e) => e.stage !== 'Operational Readiness'), [engagements]);
@@ -103,11 +108,12 @@ export function AdminDashboardView({
         getState: getStateForEngagement,
         filings,
         requests,
+        tasks,
         leads: teamMembers,
         projectBase,
         now,
       }),
-    [scoped, getStateForEngagement, filings, requests, teamMembers, projectBase, now],
+    [scoped, getStateForEngagement, filings, requests, tasks, teamMembers, projectBase, now],
   );
   const phaseRows = useMemo(
     () =>
@@ -167,6 +173,10 @@ export function AdminDashboardView({
               Approvals
             </Link>
           </Button>
+          <Button variant="secondary" onClick={() => setAssignOpen(true)}>
+            <ListPlus aria-hidden />
+            Assign task
+          </Button>
           <Button asChild>
             <Link href={newProjectHref}>
               <Plus aria-hidden />
@@ -214,6 +224,7 @@ export function AdminDashboardView({
           </div>
         </div>
       </div>
+      <AssignTaskDialog open={assignOpen} onOpenChange={setAssignOpen} engagements={active} teamMembers={teamMembers} />
     </PageTransition>
   );
 }

@@ -22,6 +22,10 @@ import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
 import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
+import { AdminPracticeCards } from '@/components/metrics/practice-cards';
+import { CapacityControl, LastSeenCell, LoadCell, OnTimeCell } from '@/components/metrics/people-cells';
+import { indexPeople, usePeopleMetrics, usePracticeMetrics } from '@/components/metrics/use-metrics';
+import { isFirmWideAdmin } from '@/lib/auth';
 
 type ManagerOption = { id: string; name: string; email: string };
 
@@ -50,6 +54,11 @@ export default function FirmDashboard() {
     queryFn: fetchManagers,
     staleTime: 5 * 60_000,
   });
+  // Practice cards (G-13, G-29) and the managers' On time, Load and Last active (G-14).
+  const practiceQuery = usePracticeMetrics();
+  const peopleQuery = usePeopleMetrics();
+  const people = useMemo(() => indexPeople(peopleQuery.data), [peopleQuery.data]);
+  const canSetCapacity = isFirmWideAdmin(user?.role);
 
   const pulse = useMemo(() => {
     let total = 0;
@@ -152,6 +161,8 @@ export default function FirmDashboard() {
           />
         ) : null}
 
+        <AdminPracticeCards practice={practiceQuery.data} loading={practiceQuery.isPending} base="/app/admin" />
+
         <FirmProjectsPanel title="Clients · where each one is" />
 
         <PhaseProgressGrid
@@ -176,7 +187,7 @@ export default function FirmDashboard() {
               rows={managerStrip}
               rowKey={(row) => row.managerId}
               empty="No open Pre/Post projects."
-              minWidth={560}
+              minWidth={canSetCapacity ? 1000 : 900}
               columns={[
                 {
                   key: 'name',
@@ -207,6 +218,22 @@ export default function FirmDashboard() {
                   render: (row) => <span className={cn('tabular-nums', row.stuck > 0 && 'font-medium text-danger')}>{row.stuck}</span>,
                 },
                 { key: 'awaiting', header: 'Awaiting PM', width: '112px', align: 'right', render: (row) => <span className="tabular-nums">{row.awaitingPm}</span> },
+                { key: 'ontime', header: 'On time', width: '80px', align: 'right', render: (row) => <OnTimeCell person={people.byProfileId.get(row.managerId)} /> },
+                { key: 'load', header: 'Load', width: '150px', render: (row) => <LoadCell person={people.byProfileId.get(row.managerId)} /> },
+                { key: 'seen', header: 'Last active', width: '104px', render: (row) => (row.managerId === 'unassigned' ? null : <LastSeenCell person={people.byProfileId.get(row.managerId)} />) },
+                ...(canSetCapacity
+                  ? [
+                      {
+                        key: 'capacity',
+                        header: 'Capacity',
+                        width: '96px',
+                        render: (row: (typeof managerStrip)[number]) => {
+                          const person = people.byProfileId.get(row.managerId);
+                          return person ? <CapacityControl person={person} /> : null;
+                        },
+                      },
+                    ]
+                  : []),
               ]}
             />
           </DashSection>

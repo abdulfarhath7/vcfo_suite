@@ -174,3 +174,23 @@ describe('recordAuditEvent', () => {
     warn.mockRestore();
   });
 });
+
+describe('audit result and cursor (G-28)', () => {
+  it('writes ok by default and the given result otherwise', async () => {
+    await recordAuditEvent(ctx('manager'), { action: 'x', summary: 'y' });
+    await recordAuditEvent(ctx('manager'), { action: 'x', summary: 'y', result: 'denied' });
+    expect((calls[0]!.values as { result: string }).result).toBe('ok');
+    expect((calls[1]!.values as { result: string }).result).toBe('denied');
+  });
+
+  it('pages on the millisecond and the id, still inside the scope', async () => {
+    const before = new Date('2026-10-01T10:00:00.123Z');
+    const beforeId = '33333333-3333-3333-3333-333333333303';
+    await listAuditEvents(ctx('manager'), { before, beforeId });
+    const q = where()!;
+    expect(q.sql).toContain("date_trunc('milliseconds'");
+    expect(q.params).toContain(OWN);
+    expect(q.params).toContain(beforeId);
+    expect(q.params).not.toContain(OTHER);
+  });
+});
