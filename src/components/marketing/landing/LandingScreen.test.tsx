@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { LandingScreen } from './LandingScreen';
-import { COMPARE, COMPARE_COLS, DEMO_HREF, GUIDE, SIGN_IN_HREF } from './content';
+import { COMPARE, COMPARE_COLS, GUIDE, SIGN_IN_HREF } from './content';
 
 // jsdom has no element scrolling; the Ask VCFO log scrolls to its last message.
 Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scrollTo;
@@ -19,24 +19,41 @@ afterEach(() => {
 });
 
 describe('LandingScreen', () => {
-  it('sends sign-in to the real login page and book-a-demo to the contact page', () => {
+  it('sends sign-in to the real login page and opens Book a demo as a dialog', () => {
     const { container } = render(<LandingScreen />);
     const signIn = screen.getAllByRole('link', { name: 'Sign in' });
     expect(signIn.length).toBeGreaterThan(0);
     signIn.forEach((a) => expect(a).toHaveAttribute('href', SIGN_IN_HREF));
-    const demo = screen.getAllByRole('link', { name: /Book a demo/ });
-    expect(demo.length).toBeGreaterThan(0);
-    demo.forEach((a) => expect(a).toHaveAttribute('href', DEMO_HREF));
-    // The prototype's click-through to demo portals is not ported.
-    expect(container.querySelector('[data-app]')).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Book a demo/ })).not.toHaveAttribute('href', '/contact');
+    const demo = screen.getAllByRole('button', { name: /^Book a demo$/ });
+    expect(demo.length).toBeGreaterThan(2);
+    fireEvent.click(demo[0]);
+    const dialog = screen.getByRole('dialog', { name: 'Book a demo' });
+    expect(within(dialog).getByLabelText('Name')).toBeRequired();
+    expect(within(dialog).getByLabelText('Firm')).toBeRequired();
+    expect(within(dialog).getByLabelText('Work email')).toBeRequired();
+    // No link goes to a demo portal: the real tool has none.
     expect(container.querySelector('a[href^="/client"], a[href^="/lead"], a[href^="/sign-in"]')).toBeNull();
   });
 
-  it('sends each "See the portal" link to the Book a demo form, not to a demo portal', () => {
+  it('opens Book a demo from a click-through item, by click and by Enter', () => {
+    const { container } = render(<LandingScreen />);
+    const items = container.querySelectorAll('[data-app]');
+    expect(items.length).toBeGreaterThan(30);
+    const hero = screen.getByRole('button', { name: 'Book a demo to see the incorporation screen' });
+    fireEvent.click(hero);
+    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Book a demo' }), { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Book a demo' })).toBeNull();
+    const chip = within(container).getByRole('button', { name: 'GST' });
+    fireEvent.keyDown(chip, { key: 'Enter' });
+    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
+  });
+
+  it('opens Book a demo from each "See the portal" button, not a demo portal', () => {
     render(<LandingScreen />);
-    expect(screen.getByRole('link', { name: 'See the client portal' })).toHaveAttribute('href', DEMO_HREF);
-    fireEvent.click(screen.getByRole('tab', { name: 'Super admin' }));
-    expect(screen.getByRole('link', { name: 'See the super admin portal' })).toHaveAttribute('href', DEMO_HREF);
+    fireEvent.click(screen.getByRole('button', { name: 'See the client portal' }));
+    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
   });
 
   it('shows the comparison with six rows and three product columns', () => {

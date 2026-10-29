@@ -7,29 +7,29 @@ import {
   formatNotificationWhen,
   notificationHrefIsNavigable,
 } from "@/lib/notifications/notification-dismiss";
+import { NotificationKindTile } from "@/components/notifications/notification-kind";
 import { cn } from "@/lib/utils";
 
-function statusDotClass(kind: AppNotification["kind"]): string | null {
-  if (kind === "email.sent") return "bg-positive";
-  if (kind === "email.skipped") return "bg-warning";
-  if (kind === "email.failed") return "bg-danger";
-  return null;
+function isOutboundKind(kind: AppNotification["kind"]): boolean {
+  return kind === "email.sent" || kind === "email.skipped" || kind === "email.failed";
 }
 
-function notificationMetaLine(item: AppNotification, now?: Date): string {
-  const isOutbound =
-    item.kind === "email.sent" ||
-    item.kind === "email.skipped" ||
-    item.kind === "email.failed";
-  return [
-    isOutbound ? item.body : null,
-    item.companyName || null,
-    formatNotificationWhen(item.createdAt, now),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+/**
+ * The grey line under the title (prototype StaffBellMenu): the client, then the context. For an
+ * outbound email the body is the recipient line, so it is the context; for the rest the body is.
+ */
+export function notificationContextLine(item: AppNotification): string {
+  const context = item.body?.trim() || null;
+  return [item.companyName || null, context].filter(Boolean).join(" · ");
 }
 
+/**
+ * One row of the staff notifications menu (VCFO Spectrum, prototype `StaffNotificationsBell`):
+ * a 28px tinted tile for the kind, the 13px title, the client and context line, and the time at
+ * the right. Unread rows are tinted. The clear button (a real action the prototype lacks) sits after
+ * the time. An expanded sent
+ * row shows its whole body and the Open link.
+ */
 export function NotificationItem({
   item,
   expanded,
@@ -45,74 +45,69 @@ export function NotificationItem({
   showOpenLink?: boolean;
   exiting?: boolean;
 }) {
-  const isOutbound =
-    item.kind === "email.sent" ||
-    item.kind === "email.skipped" ||
-    item.kind === "email.failed";
-  const dot = statusDotClass(item.kind);
-  const meta = notificationMetaLine(item);
+  const outbound = isOutboundKind(item.kind);
+  const fresh = !item.read;
+  const context = notificationContextLine(item);
+  const when = formatNotificationWhen(item.createdAt);
   const canOpen = showOpenLink && notificationHrefIsNavigable(item.href);
   const dismissed = Boolean(item.dismissedAt);
 
   return (
     <div
-      className={cn("unread-edge flex min-w-0", exiting && "pointer-events-none")}
-      data-unread={item.read ? "false" : "true"}
+      className={cn(
+        "flex min-w-0 border-t border-line-soft first:border-t-0",
+        fresh && "bg-surface-sunken",
+        exiting && "pointer-events-none",
+      )}
+      data-unread={fresh ? "true" : "false"}
     >
       <div className="min-w-0 flex-1">
         <button
           type="button"
           onClick={onOpen}
-          className="flex w-full min-w-0 items-start gap-2 rounded-none px-2 py-1.5 text-left hover:bg-brand-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
+          className="flex w-full min-w-0 items-start gap-3 px-4 py-2.5 text-left hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
         >
-          {dot ? (
-            <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", dot)} aria-hidden />
-          ) : null}
+          <NotificationKindTile kind={item.kind} size={28} />
           <span className="min-w-0 flex-1">
             <span className="flex min-w-0 items-baseline gap-1.5">
-              <span className="block min-w-0 truncate text-[12px] font-medium leading-snug text-ink">
+              <b className={cn("block min-w-0 truncate text-[13px] text-ink", fresh ? "font-semibold" : "font-medium")}>
                 {item.title}
-              </span>
+              </b>
               {dismissed ? (
-                <span className="shrink-0 text-[10px] font-medium text-ink-faint">Cleared</span>
+                <span className="shrink-0 text-[11px] font-medium text-ink-faint">Cleared</span>
               ) : null}
             </span>
-            {!isOutbound && item.body ? (
+            {context ? (
               <span
                 className={cn(
-                  "mt-0.5 block text-[10.5px] leading-snug text-ink-muted",
-                  expanded ? "whitespace-pre-wrap break-words" : "truncate",
+                  "block text-[12px] leading-snug text-ink-muted",
+                  expanded && outbound ? "whitespace-pre-wrap break-words" : "truncate",
                 )}
               >
-                {item.body}
-              </span>
-            ) : null}
-            {isOutbound && expanded && item.body ? (
-              <span className="mt-0.5 block whitespace-pre-wrap break-words text-[10.5px] leading-snug text-ink-muted">
-                {item.body}
-              </span>
-            ) : null}
-            {meta ? (
-              <span className="mt-0.5 block truncate text-[10px] leading-snug text-ink-faint">
-                {meta}
+                {context}
               </span>
             ) : null}
           </span>
+          {when ? (
+            <span className="flex-none text-[11.5px] text-ink-muted">
+              {when}
+            </span>
+          ) : null}
         </button>
         {expanded && canOpen ? (
           <Link
             href={item.href}
-            className="mb-1.5 ml-2 inline-flex items-center gap-0.5 text-[11px] font-semibold text-brand hover:text-brand-strong"
+            className="mb-2 ml-[56px] inline-flex items-center gap-0.5 text-[12px] font-medium text-brand-text hover:underline"
           >
             Open
-            <ArrowUpRight className="h-3 w-3" strokeWidth={2.25} aria-hidden />
+            <ArrowUpRight className="h-3 w-3" strokeWidth={2} aria-hidden />
           </Link>
         ) : null}
       </div>
       {onDismiss ? (
         <button
           type="button"
-          className="mt-0.5 mr-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-brand-soft hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
+          className="mr-2 mt-2 inline-flex h-7 w-7 flex-none items-center justify-center rounded-md text-ink-faint hover:bg-surface-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           aria-label={`Clear from inbox: ${item.title}`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
@@ -121,7 +116,7 @@ export function NotificationItem({
             onDismiss();
           }}
         >
-          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.6} aria-hidden />
         </button>
       ) : null}
     </div>

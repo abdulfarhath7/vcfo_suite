@@ -138,3 +138,19 @@ export async function listMessagesForDev(ctx: AuthContext, opts: DevMessagesOpti
     counts24h,
   };
 }
+
+/**
+ * Delivery rows per status (all time) for the channel filter, for the status tab counts on
+ * the Messages page. The tabs filter the delivery grid, so the checklist mail log is not counted.
+ */
+export async function deliveryStatusCountsForDev(ctx: AuthContext, channel?: 'email' | 'whatsapp'): Promise<Record<string, number>> {
+  assertDeveloper(ctx);
+  const rows = await db
+    .select({ status: notificationDeliveries.status, n: sql<number>`count(*)::int` })
+    .from(notificationDeliveries)
+    .where(channel ? eq(notificationDeliveries.channel, channel) : undefined)
+    .groupBy(notificationDeliveries.status);
+  const out: Record<string, number> = {};
+  for (const r of rows) out[String(r.status)] = Number(r.n) || 0;
+  return out;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 const push = vi.fn();
 const signIn = vi.fn();
@@ -67,8 +67,14 @@ describe('SignInScreen', () => {
     render(<SignInScreen />);
     expect(screen.getByRole('alert')).toHaveTextContent('No profile is linked to this account.');
     expect(screen.getByRole('link', { name: 'Back to site' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Book a demo' })).toHaveAttribute('href', '/contact');
     expect(screen.queryByText(/Demo accounts/)).toBeNull();
+  });
+
+  it('opens the Book a demo dialog from "No account yet?"', () => {
+    render(<SignInScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Book a demo' }));
+    const dialog = screen.getByRole('dialog', { name: 'Book a demo' });
+    expect(within(dialog).getByLabelText('Work email')).toBeRequired();
   });
 
   it('toggles the password and opens the forgot-password dialog', () => {

@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { DEMO_ACCOUNTS, demoLoginsOn } from './demo-accounts';
 
 export interface LoginFormCardProps {
   email: string;
@@ -35,8 +36,12 @@ export interface LoginFormCardProps {
   onOpenForgot: () => void;
   /** Sits at the right of the logo row, for example the theme toggle. */
   headerAction?: React.ReactNode;
-  /** Where "Book a demo" goes for people without an account. */
+  /** Where "Book a demo" goes for people without an account, when no dialog opener is given. */
   demoHref?: string;
+  /** Opens the Book a demo dialog. When set, "Book a demo" is a button, not a link. */
+  onBookDemo?: () => void;
+  /** Shows the demo account buttons. Defaults to the `NEXT_PUBLIC_DEMO_LOGINS` flag. */
+  showDemoAccounts?: boolean;
   /** Two-step sign-in (G-25): `code` swaps the password form for the code form. */
   step?: 'password' | 'code';
   code?: string;
@@ -97,6 +102,8 @@ export function LoginFormCard({
   onOpenForgot,
   headerAction,
   demoHref = '/contact',
+  onBookDemo,
+  showDemoAccounts = demoLoginsOn(),
   step = 'password',
   code = '',
   onCodeChange,
@@ -104,17 +111,24 @@ export function LoginFormCard({
   onBackToPassword,
 }: LoginFormCardProps) {
   const codeDigits = code.replace(/[\s-]/g, '');
+  const footLink =
+    'rounded-sm font-semibold text-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+  /* A demo button fills the work email only; the password field takes the focus next. */
+  const pickDemo = (address: string) => {
+    onEmailChange(address);
+    document.getElementById('password')?.focus();
+  };
   return (
     <div className="relative z-[1] w-full max-w-[420px] overflow-hidden rounded-[14px] border border-line bg-surface-raised px-[18px] py-[22px] text-ink shadow-dialog sm:p-7">
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[90px] bg-brand opacity-[.07]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[90px] bg-brand-text opacity-[.07]"
         style={{ clipPath: CARD_PEAKS }}
       />
       <div className="relative z-[1] grid gap-3.5">
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2.5">
-            <span className="grid h-[30px] w-[30px] place-items-center rounded-lg bg-brand text-[14px] font-bold text-on-brand">
+            <span className="grid h-[30px] w-[30px] place-items-center rounded-lg bg-highlight-bright text-[14px] font-bold text-on-brand">
               V
             </span>
             <span>
@@ -230,7 +244,7 @@ export function LoginFormCard({
               </p>
             )}
 
-            <Button type="submit" className="h-10 w-full" disabled={!email || !password || loading}>
+            <Button type="submit" className="h-10 w-full dark:border dark:border-brand-line" disabled={!email || !password || loading}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
@@ -243,23 +257,45 @@ export function LoginFormCard({
           </form>
         )}
 
+        {showDemoAccounts && step === 'password' ? (
+          <div className="grid grid-cols-3 gap-2 border-t border-line pt-3">
+            <span className="col-span-full text-[12px] text-ink-muted">Demo accounts</span>
+            {DEMO_ACCOUNTS.map((a) => (
+              <Button
+                key={a.label}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full min-w-0"
+                title={a.email}
+                onClick={() => pickDemo(a.email)}
+              >
+                {a.label}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+
         <p className="text-[13px] leading-relaxed text-ink-muted">
           <button
             type="button"
             onClick={onOpenForgot}
-            className="rounded-sm font-semibold text-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className={footLink}
           >
             Forgot your password?
           </button>{' '}
           Ask your firm&apos;s admin to reset it.
           <br />
           No account yet?{' '}
-          <Link
-            href={demoHref}
-            className="rounded-sm font-semibold text-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-          >
-            Book a demo
-          </Link>
+          {onBookDemo ? (
+            <button type="button" onClick={onBookDemo} className={footLink} aria-haspopup="dialog">
+              Book a demo
+            </button>
+          ) : (
+            <Link href={demoHref} className={footLink}>
+              Book a demo
+            </Link>
+          )}
         </p>
       </div>
 

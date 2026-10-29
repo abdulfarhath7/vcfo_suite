@@ -1,4 +1,4 @@
-import type { CostLine, JobFunction, JobRun, LogLevel } from './types';
+import type { CostGroup, CostLine, JobFunction, JobRun, LogLevel } from './types';
 
 /**
  * Pure parsing for the developer console readers, kept apart from the AWS and Inngest calls
@@ -44,7 +44,50 @@ export function logFilterPattern(text: string): string | undefined {
   return words.map((w) => `"${w}"`).join(' ');
 }
 
+/**
+ * The source of a log line: a JSON "source", "module" or "name" field, or the "[tag]" the
+ * line starts with (the app logs as "[audit] ...", "[dev-console] ..."). "" when there is none.
+ */
+export function logSourceOf(message: string): string {
+  const m = message.trim();
+  if (m.startsWith('{')) {
+    try {
+      const j = JSON.parse(m) as { source?: unknown; module?: unknown; name?: unknown };
+      const raw = j.source ?? j.module ?? j.name;
+      if (typeof raw === 'string' && raw.trim()) return raw.trim().slice(0, 40);
+    } catch {
+      // Not JSON after all; fall through to the tag test.
+    }
+  }
+  const tag = /^\[([A-Za-z][\w.:/-]{0,39})\]/.exec(m);
+  return tag ? tag[1] : '';
+}
+
+/** A request id in a log line ("requestId": "...", request_id=..., x-request-id: ...), or "". */
+export function requestIdOf(message: string): string {
+  const r = /\b(?:request[_-]?id|x-request-id|reqId)["']?\s*[:=]\s*["']?([A-Za-z0-9-]{6,64})/i.exec(message);
+  return r ? r[1] : '';
+}
+
 // ---------- Costs ----------
+
+/** The overview group for a Cost Explorer service name. */
+export function costGroupOf(service: string): CostGroup['group'] {
+  const s = service.toLowerCase();
+  if (/bedrock|claude|anthropic/.test(s)) return 'AI';
+  if (/app runner|apprunner/.test(s)) return 'App Runner';
+  if (/relational database|rds|aurora/.test(s)) return 'Database';
+  if (/simple email|\bses\b|end user messaging|pinpoint|simple notification|\bsns\b|social messaging/.test(s)) return 'Messaging';
+  return 'Other';
+}
+
+/** Five fixed groups in the overview order, each the sum of its services. */
+export function groupCosts(lines: CostLine[]): CostGroup[] {
+  const order: CostGroup['group'][] = ['AI', 'App Runner', 'Database', 'Messaging', 'Other'];
+  const by = new Map<CostGroup['group'], number>(order.map((g) => [g, 0]));
+  for (const l of lines) by.set(costGroupOf(l.service), (by.get(costGroupOf(l.service)) ?? 0) + l.amount);
+  return order.map((group) => ({ group, amount: Math.round((by.get(group) ?? 0) * 100) / 100 }));
+}
 
 type CeGroup = { Keys?: string[]; Metrics?: Record<string, { Amount?: string; Unit?: string }> };
 type CeResult = { Groups?: CeGroup[] };
@@ -114,12 +157,47 @@ export function runsForEvent(ev: InngestEvent, runs: InngestRun[], fns: JobFunct
   const functionId = functionForEvent(ev, fns);
   return runs.map((r, i) => ({
     id: r.run_id ?? `${ev.internal_id ?? ev.id ?? 'event'}-${i}`,
+    eventId: ev.internal_id ?? ev.id ?? null,
     functionId,
     event: ev.name ?? '',
     status: r.status ?? 'Unknown',
     startedAt: r.run_started_at ?? ev.received_at ?? null,
     endedAt: r.ended_at ?? null,
   }));
+}
+
+/**
+ * Whether a failed run can be started again from the console. Only a run of an event
+ * function can: the console sends the same event again, and only when exactly one
+ * registered function listens to that event, so no other job runs twice. A cron run has no
+ * event to send (Inngest's REST API has no "rerun"), so it waits for its next time.
+ */
+export function canRetryRun(run: Pick<JobRun, 'status' | 'event' | 'eventId'>, fns: JobFunction[]): boolean {
+  if (run.status !== 'Failed' || !run.eventId || !run.event || run.event.startsWith('inngest/')) return false;
+  return fns.filter((f) => f.trigger.kind === 'event' && f.trigger.event === run.event).length === 1;
+}
+
+/**
+ * The next time a daily or weekly cron string the app uses fires, as an ISO instant, or null
+ * for any other shape. "TZ=Asia/Kolkata m h * * *" is read in India time; no TZ means UTC.
+ */
+export function nextCronRun(cron: string, now = new Date()): string | null {
+  const ist = /^TZ=Asia\/Kolkata\s/.test(cron);
+  const c = cron.replace(/^TZ=\S+\s+/, '').trim();
+  const m = /^(\d{1,2}) (\d{1,2}) \* \* (\*|[0-6])$/.exec(c);
+  if (!m) return null;
+  const minute = Number(m[1]);
+  const hour = Number(m[2]);
+  const dow = m[3] === '*' ? null : Number(m[3]);
+  const offset = ist ? 5.5 * 3600000 : 0;
+  // Work in the cron's own clock: shift "now" into it, find the next slot, shift back.
+  const local = new Date(now.getTime() + offset);
+  for (let add = 0; add <= 7; add++) {
+    const d = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() + add, hour, minute));
+    if (dow !== null && d.getUTCDay() !== dow) continue;
+    if (d.getTime() > local.getTime()) return new Date(d.getTime() - offset).toISOString();
+  }
+  return null;
 }
 
 /** Human words for a cron string the app uses; anything else is shown as the cron itself. */

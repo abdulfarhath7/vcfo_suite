@@ -34,6 +34,16 @@ export function decodeAuditCursor(raw: string | null | undefined): DevAuditCurso
   return { createdAt, id };
 }
 
+/**
+ * The short before and after values an event stored in its metadata (the console's own
+ * write actions store them), scrubbed and cut to 120 characters. Other metadata stays out.
+ */
+export function beforeAfter(meta: unknown): { before: string | null; after: string | null } {
+  const m = (meta && typeof meta === 'object' ? meta : {}) as Record<string, unknown>;
+  const pick = (v: unknown) => (typeof v === 'string' || typeof v === 'number' ? scrubText(String(v)).slice(0, 120) : null);
+  return { before: pick(m.before), after: pick(m.after) };
+}
+
 function scopeFilter(): SQL {
   return or(
     inArray(auditEvents.result, [...DEV_AUDIT_RESULTS]),
@@ -43,12 +53,13 @@ function scopeFilter(): SQL {
 
 export async function listAuditForDev(
   ctx: AuthContext,
-  opts: { before?: DevAuditCursor | null; result?: 'ok' | 'failed' | 'denied'; limit?: number } = {},
+  opts: { before?: DevAuditCursor | null; result?: 'ok' | 'failed' | 'denied'; days?: number; limit?: number } = {},
 ): Promise<AuditPayload> {
   assertDeveloper(ctx);
   const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
   const conds: SQL[] = [scopeFilter()];
   if (opts.result) conds.push(eq(auditEvents.result, opts.result));
+  if (opts.days) conds.push(gte(auditEvents.createdAt, new Date(Date.now() - Math.min(Math.max(opts.days, 1), 366) * 86400000)));
   if (opts.before) {
     conds.push(
       or(
@@ -68,6 +79,7 @@ export async function listAuditForDev(
       action: auditEvents.action,
       summary: auditEvents.summary,
       result: auditEvents.result,
+      metadata: auditEvents.metadata,
     })
     .from(auditEvents)
     .where(and(...conds))
@@ -84,6 +96,7 @@ export async function listAuditForDev(
       action: r.action,
       summary: scrubText(r.summary),
       result: r.result,
+      ...beforeAfter(r.metadata),
     };
   });
 

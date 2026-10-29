@@ -1,18 +1,27 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { ChevronRight, Download, ExternalLink, Folder, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Check, ChevronRight, Download, ExternalLink, Eye, Folder, Loader2, MoreHorizontal, TrendingUp, User } from 'lucide-react';
 import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { FileBadge } from '@/components/ui/file-badge';
+import { Kbd } from '@/components/ui/kbd';
 import { Textarea } from '@/components/ui/textarea';
-import { Chip, Tag } from '@/components/ui/spectrum-chip';
+import { Chip, Tag, type ChipTone } from '@/components/ui/spectrum-chip';
 import { getIndexedDocumentSignedUrl } from '@/hooks/use-vault-documents';
 import { isMilestoneStoragePath } from '@/lib/documents/milestone-document-storage';
 import { vaultLocationLabel, type VaultDocument } from '@/lib/documents/vault-documents';
 import { formatUploadDate } from '@/views/vault/vault-tree';
-import { fileUrl, previewKind, reviewWord, type VaultRef } from '@/views/vault/vault-files';
+import { fileUrl, previewKind, reviewWord, statusGlyphOf, type VaultRef } from '@/views/vault/vault-files';
 import { cn } from '@/lib/utils';
 
 /*
@@ -37,29 +46,80 @@ function IndentGuides({ depth }: { depth: number }) {
   );
 }
 
-/** A folder row: chevron, folder tile, label and the file count. */
+/** One entry of a row's "…" menu. A danger entry sits last, after a rule. */
+export interface VaultMenuItem {
+  label: string;
+  onSelect: () => void;
+  /** A key hint shown at the right ("C" for Copy link). */
+  hint?: string;
+  separatorBefore?: boolean;
+}
+
+/** The "…" row menu (prototype ActionMenu): it shows on hover or focus from md, always on a phone. */
+function RowMenu({ label, items }: { label: string; items: VaultMenuItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <span className="flex-none opacity-100 focus-within:opacity-100 group-hover:opacity-100 md:opacity-0 [&:has([data-state=open])]:opacity-100">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label={label}
+            className="grid h-7 w-7 place-items-center rounded-sm text-ink-muted hover:bg-surface-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <MoreHorizontal className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          {items.map((item) => (
+            <span key={item.label} className="contents">
+              {item.separatorBefore ? <DropdownMenuSeparator /> : null}
+              <DropdownMenuItem className="gap-2" onSelect={item.onSelect}>
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                {item.hint ? <Kbd>{item.hint}</Kbd> : null}
+              </DropdownMenuItem>
+            </span>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
+  );
+}
+
+/** Review progress of a step folder: approved, in review, sent back. */
+export interface FolderProgress {
+  ok: number;
+  review: number;
+  back: number;
+}
+
+/** A folder row: chevron, folder tile, label, and the file count or a step's review bar. */
 export function VaultFolderRow({
   label,
   depth,
   count,
   open,
   onToggle,
-  onZip,
+  progress,
+  menu = [],
 }: {
   label: string;
   depth: number;
   count: number;
   open: boolean;
   onToggle: () => void;
-  /** Download the folder's files as one ZIP (G-26). */
-  onZip?: () => void;
+  /** Step rows show a 54px bar (green approved, blurple in review, amber sent back) and "ok/total". */
+  progress?: FolderProgress | null;
+  /** The "…" menu: Download folder as ZIP, Expand all, Collapse all, Copy link. */
+  menu?: VaultMenuItem[];
 }) {
+  const total = progress ? progress.ok + progress.review + progress.back : 0;
   return (
     <div
       role="treeitem"
       aria-selected={false}
       aria-expanded={open}
-      className="relative flex h-9 items-center pr-3 text-[14px] hover:bg-surface-sunken"
+      className="group relative flex h-9 items-center pr-2 text-[14px] hover:bg-surface-sunken"
     >
       <IndentGuides depth={depth} />
       <button
@@ -77,24 +137,56 @@ export function VaultFolderRow({
           <Folder className="h-3 w-3 fill-current" strokeWidth={1.6} />
         </span>
         <span className="min-w-0 flex-1 truncate font-medium text-ink">{label}</span>
-        <span className="w-8 flex-none text-right text-[12.5px] tabular-nums text-ink-muted">{count}</span>
+        {progress && total > 0 ? (
+          <span
+            className="flex flex-none items-center gap-2"
+            title={`${label} · ${progress.ok} approved · ${progress.review} in review · ${progress.back} sent back`}
+          >
+            <span className="flex h-1 w-[54px] gap-px overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+              <span className="bg-positive-mid" style={{ width: `${(progress.ok / total) * 100}%` }} />
+              <span className="bg-brand" style={{ width: `${(progress.review / total) * 100}%` }} />
+              <span className="bg-warning-mid" style={{ width: `${(progress.back / total) * 100}%` }} />
+            </span>
+            <span className="w-8 text-right text-[12.5px] tabular-nums text-ink-muted">
+              {progress.ok}/{total}
+            </span>
+          </span>
+        ) : (
+          <span className="w-8 flex-none text-right text-[12.5px] tabular-nums text-ink-muted">{count}</span>
+        )}
       </button>
-      {onZip && count > 0 ? (
-        <button
-          type="button"
-          onClick={onZip}
-          className="ml-1 grid h-7 w-7 flex-none place-items-center rounded-sm text-ink-muted hover:bg-surface-raised hover:text-ink"
-          aria-label={`Download ${label} as ZIP`}
-          title="Download folder as ZIP"
-        >
-          <Download className="h-[15px] w-[15px]" strokeWidth={1.6} aria-hidden />
-        </button>
-      ) : null}
+      <RowMenu label={`More actions for ${label}`} items={menu} />
     </div>
   );
 }
 
-/** A file row: small type badge, file name, an optional section tag and the upload date. */
+const GLYPH: Record<'done' | 'sbc' | 'client', { cls: string; Icon: typeof Check }> = {
+  done: { cls: 'bg-positive-soft text-positive', Icon: Check },
+  sbc: { cls: 'bg-brand-soft text-brand-text', Icon: TrendingUp },
+  client: { cls: 'bg-warning-soft text-warning', Icon: User },
+};
+
+/** Status glyph (R-13 tones, soft fill): done green tick, with SBC blurple arrow, sent back to the client amber person. */
+export function VaultStatusGlyph({ reviewStatus, companyName, date }: { reviewStatus?: string | null; companyName: string; date?: string | null }) {
+  const g = statusGlyphOf(reviewStatus);
+  const when = date ? ` · ${formatUploadDate(date)}` : '';
+  const tip =
+    g === 'done'
+      ? `Done · approved${when}`
+      : g === 'client'
+        ? `Sent back · waiting on ${companyName}${when}`
+        : reviewStatus === 'pending'
+          ? `With SBC · in review${when}`
+          : `With SBC · received${when}`;
+  const { cls, Icon } = GLYPH[g];
+  return (
+    <span className={cn('grid h-5 w-5 flex-none place-items-center rounded-sm', cls)} title={tip} aria-label={tip} role="img">
+      <Icon className="h-[13px] w-[13px]" strokeWidth={2} />
+    </span>
+  );
+}
+
+/** A file row: mini type tile, file name, an optional section tag, the status glyph, the "…" menu and the ZIP tick. */
 export function VaultFileRow({
   doc,
   depth,
@@ -105,6 +197,9 @@ export function VaultFileRow({
   checked,
   onCheck,
   reviewStatus,
+  reviewedAt,
+  showStatus = true,
+  menu = [],
 }: {
   doc: VaultDocument;
   depth: number;
@@ -116,14 +211,18 @@ export function VaultFileRow({
   checked?: boolean;
   onCheck?: (checked: boolean) => void;
   reviewStatus?: string | null;
+  reviewedAt?: string | null;
+  /** The "Status" toggle (R-10): glyphs on or off. */
+  showStatus?: boolean;
+  /** The "…" menu: Download, Open in viewer, Copy link. */
+  menu?: VaultMenuItem[];
 }) {
-  const review = reviewWord(reviewStatus);
   return (
     <div
       role="treeitem"
       aria-selected={selected}
       className={cn(
-        'relative flex min-h-9 items-center pr-3 text-[14px]',
+        'group relative flex min-h-9 items-center pr-2 text-[14px]',
         selected ? 'bg-brand-soft text-ink' : 'hover:bg-surface-sunken',
       )}
     >
@@ -135,27 +234,26 @@ export function VaultFileRow({
         className="flex min-h-9 min-w-0 flex-1 items-center gap-2.5 py-1 text-left"
         style={{ paddingLeft: 22 + depth * 31 - 6 }}
       >
-        <FileBadge name={doc.fileName} className="h-[18px] w-[30px] text-[9px]" />
+        <FileBadge name={doc.fileName} className="h-[18px] w-[22px] text-[7.5px]" />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium text-ink">{doc.fileName}</span>
           {sub ? <span className="block truncate text-[12px] text-ink-muted">{sub}</span> : null}
         </span>
         {tag ? <Tag className="hidden sm:inline-flex">{tag}</Tag> : null}
-        {review ? (
-          <Tag tone={reviewStatus === 'approved' ? 'ok' : reviewStatus === 'changes' ? 'bad' : 'prog'} className="hidden sm:inline-flex">
-            {review}
-          </Tag>
-        ) : null}
         <span className="hidden flex-none text-[12.5px] tabular-nums text-ink-muted sm:inline">
           {formatUploadDate(doc.uploadedAt)}
         </span>
+        {showStatus ? (
+          <VaultStatusGlyph reviewStatus={reviewStatus} companyName={doc.companyName} date={reviewedAt ?? doc.uploadedAt} />
+        ) : null}
       </button>
+      <RowMenu label={`More actions for ${doc.fileName}`} items={menu} />
       {onCheck ? (
         <Checkbox
           checked={Boolean(checked)}
           onCheckedChange={(v) => onCheck(v === true)}
           aria-label={`Select ${doc.fileName}`}
-          className="ml-2 flex-none"
+          className="ml-1 flex-none"
         />
       ) : null}
     </div>
@@ -341,14 +439,19 @@ function InlinePreview({ fileRef, kind, fileName }: { fileRef: VaultRef; kind: '
  * The preview pane: a 52px head with the badge, name and download, the preview (a PDF or an
  * image inline, otherwise the open card), then the facts and the review controls.
  */
+const REVIEW_TONE: Record<string, ChipTone> = { approved: 'ok', pending: 'prog', changes: 'warn', none: 'prog' };
+
 export function VaultPreviewPane({
   doc,
   fileRef,
   contentType,
   review,
   onReview,
+  viewerHref,
 }: {
   doc: VaultDocument;
+  /** The staff viewer route for this file (prototype Eye button and the clickable preview). */
+  viewerHref?: string | null;
   /** What the preview and download routes take for this file; null when it has neither. */
   fileRef?: VaultRef | null;
   contentType?: string | null;
@@ -357,15 +460,28 @@ export function VaultPreviewPane({
   onReview?: (status: ReviewStatus, note?: string) => Promise<boolean>;
 }) {
   const kind = fileRef ? previewKind(doc.fileName, contentType) : null;
+  const status = review?.status ?? 'none';
   return (
     <div className="flex h-full flex-col">
       <div className="flex min-h-[52px] items-center gap-3 border-b border-line-soft px-4">
         <FileBadge name={doc.fileName} />
         <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">{doc.fileName}</span>
+        {review ? (
+          <Chip fixed tone={REVIEW_TONE[status] ?? 'prog'} className="hidden sm:inline-flex">
+            {reviewWord(status) ?? 'Received'}
+          </Chip>
+        ) : null}
+        {viewerHref ? (
+          <Button asChild size="iconSm" variant="secondary">
+            <Link href={viewerHref} aria-label="Open in viewer" title="Open in viewer">
+              <Eye aria-hidden />
+            </Link>
+          </Button>
+        ) : null}
         {fileRef ? (
-          <Button asChild size="icon" variant="ghost" className="h-8 w-8 min-w-0">
+          <Button asChild size="iconSm" variant="secondary">
             <a href={fileUrl(fileRef, 'download')} aria-label={`Download ${doc.fileName}`} title="Download">
-              <Download className="h-[15px] w-[15px]" strokeWidth={1.6} aria-hidden />
+              <Download aria-hidden />
             </a>
           </Button>
         ) : null}
@@ -376,8 +492,16 @@ export function VaultPreviewPane({
         ) : (
           <div className="grid w-full max-w-[340px] justify-items-center gap-3 rounded-md border-1.5 border-line bg-surface-raised px-4 py-10 text-center">
             <FileBadge name={doc.fileName} />
-            <span className="max-w-full truncate text-[14px] font-medium text-ink">{doc.fieldLabel}</span>
-            <DocumentOpenLink doc={doc} className="max-w-full truncate" />
+            <span className="text-[14px] font-medium text-ink">Preview not available for this file type</span>
+            {fileRef ? (
+              <Button asChild size="sm">
+                <a href={fileUrl(fileRef, 'download')}>
+                  <Download aria-hidden /> Download
+                </a>
+              </Button>
+            ) : (
+              <DocumentOpenLink doc={doc} className="max-w-full truncate" />
+            )}
           </div>
         )}
       </div>

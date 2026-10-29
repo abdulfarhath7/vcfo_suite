@@ -1,14 +1,8 @@
 import { format } from 'date-fns';
 import type { AuditEventRow } from '@/lib/audit/audit-log';
-import {
-  AUDIT_RESULT_LABEL,
-  auditResultOf,
-  formatActorDisplay,
-  formatAuditActionLabel,
-  getAuditActionCategory,
-} from '@/lib/audit/audit-log';
+import { formatActorDisplay, formatAuditActionLabel } from '@/lib/audit/audit-log';
 import { mapDbRoleToAppRole, ROLE_UI_LABEL } from '@/lib/auth';
-import { AUDIT_CATEGORY_LABELS } from '@/views/admin/audit-log/audit-filters';
+import { AUDIT_CATEGORY_LABELS, auditAreaOf, auditResultWord } from '@/views/admin/audit-log/audit-filters';
 
 const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
@@ -23,11 +17,11 @@ export function auditEventsCsv(events: AuditEventRow[], engagementsByDbId: Map<s
       format(when, 'HH:mm'),
       formatAuditActionLabel(ev.action),
       ev.summary ?? '',
-      AUDIT_CATEGORY_LABELS[getAuditActionCategory(ev.action)],
+      AUDIT_CATEGORY_LABELS[auditAreaOf(ev.action)],
       formatActorDisplay(ev),
       ROLE_UI_LABEL[mapDbRoleToAppRole(ev.actor_role)],
       ev.actor_email ?? '',
-      AUDIT_RESULT_LABEL[auditResultOf(ev)],
+      auditResultWord(ev),
       project,
     ]
       .map((v) => quote(String(v)))

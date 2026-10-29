@@ -35,6 +35,12 @@ function useOlder<T extends { id: string }>(key: string) {
   return { extra, setExtra, cursor, setCursor, busy, setBusy };
 }
 
+/** The tab count from the per-status delivery counts; "All" sums them. Undefined until loaded. */
+function statusCount(counts: Record<string, number> | undefined, key: string): number | undefined {
+  if (!counts) return undefined;
+  return key === 'all' ? Object.values(counts).reduce((a, b) => a + b, 0) : (counts[key] ?? 0);
+}
+
 export default function DevMessages() {
   const [status, setStatus] = useState<(typeof STATUS_TABS)[number]>('all');
   const [channel, setChannel] = useState<'all' | 'email' | 'whatsapp'>('all');
@@ -113,7 +119,7 @@ export default function DevMessages() {
             />
             <SpectrumTabs
               label="Status"
-              items={STATUS_TABS.map((k) => ({ key: k, label: k === 'all' ? 'All' : words(k) }))}
+              items={STATUS_TABS.map((k) => ({ key: k, label: k === 'all' ? 'All' : words(k), count: statusCount(q.data?.statusCounts, k) }))}
               value={status}
               onChange={(k) => setStatus(k as typeof status)}
             />

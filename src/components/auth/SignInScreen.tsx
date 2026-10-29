@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -8,11 +8,13 @@ import { SEO } from '@/components/SEO';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { LoginFormCard } from '@/components/auth/LoginFormCard';
 import { useSignIn } from '@/components/auth/use-sign-in';
+import { BookDemoDialog } from '@/components/marketing/BookDemoDialog';
 
 /**
  * The sign-in page in the VCFO Spectrum look (prototype `SignInScreen.tsx`, C-0112): the sidebar navy with
  * a band of peaks, "Back to site" at the top, and one card in the middle. Signing in is the real Auth.js flow
- * from `use-sign-in.ts`; there are no demo accounts.
+ * from `use-sign-in.ts`. The demo account buttons show only when `NEXT_PUBLIC_DEMO_LOGINS` is "on", and
+ * they fill the email only. "Book a demo" opens the same Book a demo dialog as the landing.
  *
  * The Suspense fallback renders the real form (not null): on LAN or slow JS, a null fallback leaves an empty page.
  */
@@ -32,6 +34,7 @@ function SignInWithSearchParams() {
 function SignInPage({ resetNotice, profileError }: { resetNotice: string | null; profileError: string | null }) {
   const form = useSignIn();
   const { state } = form;
+  const [demoOpen, setDemoOpen] = useState(false);
 
   return (
     <div className="relative grid min-h-[100dvh] place-items-center overflow-hidden bg-side px-4 pb-[120px] pt-16 text-side-ink">
@@ -52,7 +55,7 @@ function SignInPage({ resetNotice, profileError }: { resetNotice: string | null;
           d="M0 200 L120 150 L240 190 L384 110 L528 170 L672 96 L816 160 L960 120 L1104 176 L1248 104 L1440 150 L1440 360 L0 360Z"
         />
         <path
-          className="fill-brand opacity-[.07]"
+          className="fill-highlight-bright opacity-[.07]"
           d="M0 250 L168 206 L312 240 L480 196 L624 232 L792 188 L960 226 L1128 180 L1296 220 L1440 196 L1440 360 L0 360Z"
         />
         <path
@@ -92,12 +95,14 @@ function SignInPage({ resetNotice, profileError }: { resetNotice: string | null;
         onOpenForgot={form.openForgot}
         headerAction={<ThemeToggle />}
         demoHref="/contact"
+        onBookDemo={() => setDemoOpen(true)}
         step={state.step}
         code={state.code}
         onCodeChange={form.setCode}
         onCodeSubmit={form.submitCode}
         onBackToPassword={form.backToPassword}
       />
+      <BookDemoDialog open={demoOpen} onOpenChange={setDemoOpen} />
     </div>
   );
 }

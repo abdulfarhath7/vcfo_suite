@@ -1,7 +1,8 @@
 import 'server-only';
 import type { JobFunction, JobRun, Reach } from './types';
 import { missingEnv, notSetUp, reach } from './reach';
-import { runsForEvent, type InngestEvent, type InngestRun } from './parse';
+import { inngest } from '@/jobs/client';
+import { canRetryRun, runsForEvent, type InngestEvent, type InngestRun } from './parse';
 
 /**
  * Inngest run history over the REST API (plain fetch, no SDK), authorised with the app's
@@ -9,7 +10,7 @@ import { runsForEvent, type InngestEvent, type InngestRun } from './parse';
  * v1 API has no "runs per function" list. Event payloads are never passed on.
  *
  * Env: INNGEST_SIGNING_KEY (required), INNGEST_API_BASE_URL (optional, for the local dev
- * server; the default is the Inngest cloud API).
+ * server; the default is the Inngest cloud API). A retry also needs INNGEST_EVENT_KEY.
  */
 
 const MAX_EVENTS = 40;
@@ -55,4 +56,39 @@ export async function listInngestRuns(fns: JobFunction[], days = 7): Promise<Rea
     }
     return out.sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''));
   }, 8000);
+}
+
+export type RetryOutcome =
+  | { ok: true; event: string; functionId: string | null; sentIds: string[] }
+  | { ok: false; error: 'not_set_up' | 'not_found' | 'not_retryable'; missing?: string[] };
+
+/**
+ * Start a failed run again: read the event that started it (server side, the payload never
+ * leaves the server), check the run is still listed as failed for that event and that only
+ * one function listens to the event (`canRetryRun`), then send the same event once more.
+ */
+export async function retryInngestRun(input: { runId: string; eventId: string }, fns: JobFunction[]): Promise<RetryOutcome> {
+  const missing = missingEnv(['INNGEST_SIGNING_KEY', 'INNGEST_EVENT_KEY']);
+  if (missing.length) return { ok: false, error: 'not_set_up', missing };
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const ev = await get<{ data?: (InngestEvent & { data?: Record<string, unknown> | null }) | null }>(
+      `/v1/events/${encodeURIComponent(input.eventId)}`,
+      ctrl.signal,
+    ).catch(() => ({ data: null }));
+    const event = ev.data;
+    if (!event?.name) return { ok: false, error: 'not_found' };
+
+    const runs = await get<{ data?: InngestRun[] }>(`/v1/events/${encodeURIComponent(input.eventId)}/runs`, ctrl.signal).catch(() => ({ data: [] }));
+    const run = runsForEvent(event, runs.data ?? [], fns).find((r) => r.id === input.runId);
+    if (!run) return { ok: false, error: 'not_found' };
+    if (!canRetryRun(run, fns)) return { ok: false, error: 'not_retryable' };
+
+    const sent = await inngest.send({ name: event.name, data: (event.data ?? {}) as Record<string, unknown> });
+    return { ok: true, event: event.name, functionId: run.functionId, sentIds: sent.ids ?? [] };
+  } finally {
+    clearTimeout(timer);
+  }
 }

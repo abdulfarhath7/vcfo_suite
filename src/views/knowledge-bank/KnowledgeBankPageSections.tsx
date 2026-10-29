@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
+import Link from 'next/link';
 import type { UseQueryResult } from '@tanstack/react-query';
 import {
   AlertDialog,
@@ -29,7 +30,6 @@ import { FileBadge, fileType } from '@/components/ui/file-badge';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { DashSection } from '@/components/dash/DashSection';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { formatKnowledgeBankFileSize } from '@/lib/knowledge-bank/knowledge-bank-storage';
 import type {
@@ -157,10 +157,13 @@ function DocumentRow({
   canDelete,
   downloadingId,
   showFolderPath,
+  readerHref,
   onDownload,
   onDelete,
 }: {
   file: KnowledgeBankFile;
+  /** The staff reader for this file (`<knowledge bank>/<id>`). */
+  readerHref: string;
   canDelete: boolean;
   downloadingId: string | null;
   showFolderPath: boolean;
@@ -179,9 +182,9 @@ function DocumentRow({
     <li className="flex min-h-[56px] items-center gap-3 border-t border-line-soft px-4 py-2 text-[14px] first:border-t-0 hover:bg-surface-sunken">
       <FileBadge name={file.fileName} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium text-ink" title={file.title}>
+        <Link href={readerHref} className="block truncate font-medium text-ink hover:underline" title={file.title}>
           {file.title}
-        </span>
+        </Link>
         <span className="block truncate text-[12.5px] text-ink-muted" title={second}>
           {second}
         </span>
@@ -320,7 +323,6 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
       <div className="grid grid-cols-1 gap-4">
         <div className="flex flex-wrap items-center gap-2.5">
           <nav aria-label="Folder path" className="mr-auto flex min-w-0 flex-wrap items-center gap-1 text-[13px] text-ink-muted">
-            <PageBackButton className="-ml-1.5 mr-0.5" />
             <button
               type="button"
               onClick={() => openFolder(null)}
@@ -435,6 +437,7 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
                       canDelete={canDelete}
                       downloadingId={downloadingId}
                       showFolderPath={searching}
+                      readerHref={`${basePath}/${file.id}`}
                       onDownload={handleDownload}
                       onDelete={(value) => setDeleteTarget({ kind: 'file', file: value })}
                     />

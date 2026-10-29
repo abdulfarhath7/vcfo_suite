@@ -4,7 +4,8 @@
    Its palette is the v6 dark navy, kept here as landing-only literals in the .lp token block. The variables
    carry an lp- prefix so they never shadow the app's own tokens; the portals use app/globals.css.
    Keyframes carry an lp- prefix for the same reason. Every animation stops under reduced motion.
-   The prototype's "open live screen" rules for [data-app] are left out: the real landing opens no demo portal. */
+   The prototype's "open live screen" rules for [data-app] are ported, but the real landing has no public demo
+   portal, so every [data-app] item opens the Book a demo dialog and the hover pill says "Book a demo". */
 
 .lp { --lp-surface: #0b1521; --lp-raised: #111d2c; --lp-sunken: #070e18;
   --lp-line: #1f2d40; --lp-line-strong: #56698a; --lp-line-soft: rgba(233, 239, 246, 0.07);
@@ -308,6 +309,24 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp #reveal.fast svg { transition-duration: 320ms; }
 .lp #reveal.gone { opacity: 0; transition: opacity 180ms ease; }
 .lp #reveal svg text { font-family: var(--lp-poppins), Poppins, system-ui, sans-serif; }
+/* Click-through items (prototype [data-app] rules): each opens the Book a demo dialog. */
+.lp [data-app] { cursor: pointer; }
+.lp .frame[data-app], .lp .panel[data-app], .lp .ring-wrap[data-app] { position: relative; }
+.lp .frame[data-app]::after, .lp .panel[data-app]::after, .lp .ring-wrap[data-app]::after { content: "Book a demo"; position: absolute; top: 14px; right: 14px; z-index: 2; height: 30px; padding: 0 12px; display: inline-flex; align-items: center;
+  border-radius: 999px; background: var(--lp-brand); color: var(--lp-on-brand); font: 600 12.5px/1 var(--lp-font); box-shadow: var(--lp-shadow-float);
+  opacity: 0; transform: translateY(-4px); transition: opacity 180ms ease, transform 180ms ease; pointer-events: none; }
+.lp .frame[data-app]:hover::after, .lp .frame[data-app]:focus-visible::after, .lp .panel[data-app]:hover::after, .lp .panel[data-app]:focus-visible::after, .lp .ring-wrap[data-app]:hover::after, .lp .ring-wrap[data-app]:focus-visible::after { opacity: 1; transform: none; }
+.lp .frame[data-app], .lp .panel[data-app] { transition: border-color 180ms ease, box-shadow 180ms ease; }
+.lp .frame[data-app]:hover, .lp .panel[data-app]:hover { border-color: var(--lp-brand) !important; }
+.lp .card[data-app], .lp .fact[data-app], .lp .chip[data-app], .lp .float[data-app], .lp .qs li[data-app], .lp .journey-list li[data-app] { transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease; }
+.lp .card[data-app]:hover, .lp .float[data-app]:hover { border-color: var(--lp-brand); }
+.lp .chip[data-app]:hover, .lp .qs li[data-app]:hover { border-color: var(--lp-brand); color: var(--lp-ink); background: var(--lp-brand-soft); }
+.lp .fact[data-app]:hover .num { color: var(--lp-brand); }
+.lp .float[data-app] { pointer-events: auto; }
+.lp .journey .node[data-app]:hover circle.c, .lp .journey .node[data-app]:focus-visible circle.c { stroke: var(--lp-brand-strong); stroke-width: 3; }
+.lp .journey .node[data-app]:hover text.t { fill: var(--lp-brand-strong); }
+.lp .journey .node[data-app]:focus { outline: none; }
+.lp [data-app]:focus-visible { outline: 2px solid var(--lp-focus); outline-offset: 2px; }
 .lp .guide { position: fixed; right: 20px; bottom: 0; z-index: 25; display: flex; align-items: flex-end; gap: 4px; pointer-events: none; }
 .lp.pre-reveal .guide { display: none; }
 .lp .guide-pill { pointer-events: auto; flex: none; display: inline-flex; align-items: center; gap: 7px; height: 40px; margin: 0 0 18px; padding: 0 14px 0 12px; border-radius: 8px; background: #0f2a4a; color: #fff;

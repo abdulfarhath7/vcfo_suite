@@ -1,18 +1,37 @@
 'use client';
 
+import { useState } from 'react';
+import { RotateCw } from 'lucide-react';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
-import { DevCard, KeyValue, Pending, ReachChip, ReachNotice, StatusChip } from '@/components/dev/parts';
+import { Button } from '@/components/ui/button';
+import { ChangeConfirm, DevCard, KeyValue, Pending, ReachChip, ReachNotice, StatusChip, useDevAction } from '@/components/dev/parts';
 import { useDevApi } from '@/components/dev/use-dev-api';
-import { duration, stamp, words } from '@/lib/dev/format';
+import { duration, imageVersion, stamp, words } from '@/lib/dev/format';
+import { toastError, toastSuccess } from '@/lib/toast-errors';
 import type { DeployOperation, DeploysPayload } from '@/lib/dev/types';
 
 /**
  * Deploys: the App Runner service (DescribeService) and its recent operations
- * (ListOperations) for APP_RUNNER_SERVICE_ARN. Read only: a deploy or roll back is done from
- * the pipeline, not from this page.
+ * (ListOperations) for APP_RUNNER_SERVICE_ARN. "Redeploy" (R-40, a change confirm) rolls out
+ * the image the service already names through `POST /api/dev/deploys/redeploy`, which writes
+ * the audit row. A new version or a roll back still goes through the pipeline, because App
+ * Runner keeps no list of earlier images.
  */
 export default function DevDeploys() {
   const q = useDevApi<DeploysPayload>('/api/dev/deploys', { refetchMs: 60_000 });
+  const redeploy = useDevAction<Record<string, never>>('/api/dev/deploys/redeploy');
+  const [confirm, setConfirm] = useState(false);
+  const svc = q.data?.service.state === 'ok' ? q.data.service.data : null;
+  const version = svc ? imageVersion(svc.image) ?? svc.image ?? 'current image' : '';
+
+  const doRedeploy = async () => {
+    const out = await redeploy.run({});
+    if (out.ok === false) {
+      toastError('Redeploy refused', out.error);
+      return;
+    }
+    toastSuccess('Redeploy started', version);
+  };
 
   const columns: EFilingColumn<DeployOperation>[] = [
     { key: 'type', header: 'Operation', render: (o) => <span className="font-medium text-ink">{words(o.type)}</span> },
@@ -25,7 +44,23 @@ export default function DevDeploys() {
 
   return (
     <div className="grid grid-cols-1 gap-5">
-      <DevCard title="Production service" meta="App Runner" right={q.data ? <ReachChip reach={q.data.service} /> : null}>
+      <DevCard
+        title="Production service"
+        meta="App Runner"
+        right={
+          q.data ? (
+            <span className="flex items-center gap-2">
+              <ReachChip reach={q.data.service} />
+              {svc ? (
+                <Button size="sm" onClick={() => setConfirm(true)} disabled={redeploy.busy || svc.status !== 'RUNNING'}>
+                  <RotateCw className="h-3.5 w-3.5" strokeWidth={1.6} aria-hidden />
+                  Redeploy
+                </Button>
+              ) : null}
+            </span>
+          ) : null
+        }
+      >
         {!q.data ? (
           <Pending error={q.error} rows={2} />
         ) : q.data.service.state === 'ok' ? (
@@ -51,12 +86,30 @@ export default function DevDeploys() {
           <Pending error={q.error} />
         ) : q.data.operations.state === 'ok' ? (
           <div className="px-2 pb-2">
-            <EFilingGrid columns={columns} rows={q.data.operations.data} rowKey={(o) => o.id} pageSize={20} minWidth={820} empty="No operations yet" />
+            <EFilingGrid
+              columns={columns}
+              rows={q.data.operations.data}
+              rowKey={(o) => o.id}
+              pageSize={20}
+              minWidth={820}
+              empty="No operations yet"
+              stickyFirstColumn
+            />
           </div>
         ) : (
           <ReachNotice reach={q.data.operations} service="App Runner" />
         )}
       </DevCard>
+      <ChangeConfirm
+        open={confirm}
+        onOpenChange={setConfirm}
+        title={`Redeploy ${version} to production?`}
+        before={svc ? `${words(svc.status)} · ${svc.image ?? '-'}` : '-'}
+        after={`Redeploying · ${svc?.image ?? '-'}`}
+        confirm="Redeploy"
+        busy={redeploy.busy}
+        onConfirm={doRedeploy}
+      />
     </div>
   );
 }

@@ -13,14 +13,14 @@ const TILE: Record<ChipTone, string> = {
   teal: 'bg-waiting-soft text-waiting',
 };
 
-/** The tinted square before a notification row (30px in lists, 36px in the live card). */
+/** The tinted square before a notification row (28px in the bell menu, 30px in lists, 36px in the live card). */
 export function NotificationKindTile({
   kind,
   size = 30,
   className,
 }: {
   kind: NotificationKind;
-  size?: 30 | 36;
+  size?: 28 | 30 | 36;
   className?: string;
 }) {
   const look = NOTIFICATION_KIND_LOOK[kind] ?? NOTIFICATION_KIND_LOOK['checklist.review'];
@@ -29,13 +29,13 @@ export function NotificationKindTile({
     <span
       className={cn(
         'grid flex-none place-items-center rounded-md',
-        size === 36 ? 'h-9 w-9' : 'h-[30px] w-[30px]',
+        size === 36 ? 'h-9 w-9' : size === 28 ? 'h-7 w-7' : 'h-[30px] w-[30px]',
         TILE[look.tone],
         className,
       )}
       aria-hidden
     >
-      <Icon className="h-[15px] w-[15px]" strokeWidth={1.6} />
+      <Icon className={size === 28 ? 'h-3.5 w-3.5' : 'h-[15px] w-[15px]'} strokeWidth={1.6} />
     </span>
   );
 }

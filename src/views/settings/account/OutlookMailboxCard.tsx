@@ -11,8 +11,11 @@ import { ProfileCard, SettingsRow } from './settings-layout';
  */
 export function OutlookMailboxCard({
   onConnectedChange,
+  title = 'Email',
 }: {
   onConnectedChange?: (connected: boolean) => void;
+  /** "Email" in its own section; "Outlook" inside Profile › Settings. */
+  title?: string;
 }) {
   const [configured, setConfigured] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -96,7 +99,7 @@ export function OutlookMailboxCard({
   );
 
   return (
-    <ProfileCard id="email" title="Email" action={chip}>
+    <ProfileCard id="email" title={title} action={chip}>
       {loading ? (
         <SettingsRow label="Outlook">
           <span className="block h-4 w-44 animate-pulse rounded-mark bg-surface-sunken" aria-hidden />

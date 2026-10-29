@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { FilterChip } from '@/components/ui/filter-chip';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { CloseButton, DevCard, KeyValue, Pending, ReachChip, ReachNotice, StatusChip } from '@/components/dev/parts';
+import { CloseButton, DevCard, KeyValue, Pending, ReachChip, ReachNotice, StatusChip, pickedRow } from '@/components/dev/parts';
 import { useDevApi } from '@/components/dev/use-dev-api';
 import { stampSec } from '@/lib/dev/format';
 import type { LogLine, LogsPayload } from '@/lib/dev/types';
@@ -24,6 +25,7 @@ export default function DevLogs() {
   const [text, setText] = useState('');
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState<string | null>(null);
+  const [source, setSource] = useState('');
 
   // Search after typing stops, so each key press is not a CloudWatch call.
   useEffect(() => {
@@ -35,15 +37,19 @@ export default function DevLogs() {
   if (search) sp.set('q', search);
   const q = useDevApi<LogsPayload>(`/api/dev/logs?${sp.toString()}`);
 
-  const lines = q.data?.lines.state === 'ok' ? q.data.lines.data : [];
-  const cur = lines.find((l) => l.id === picked) ?? null;
-  const any = level !== 'all' || !!text;
+  const all = q.data?.lines.state === 'ok' ? q.data.lines.data : [];
+  // The source is read from each line, so its filter runs on the lines already loaded.
+  const sources = [...new Set(all.map((l) => l.source).filter(Boolean))].sort();
+  const lines = source ? all.filter((l) => l.source === source) : all;
+  const cur = all.find((l) => l.id === picked) ?? null;
+  const any = level !== 'all' || !!text || !!source;
 
   const columns: EFilingColumn<LogLine>[] = [
     { key: 'at', header: 'Time', width: '170px', render: (l) => stampSec(l.at) },
     { key: 'level', header: 'Level', width: '148px', render: (l) => <StatusChip status={l.level} /> },
+    { key: 'source', header: 'Source', width: '120px', render: (l) => <span className="font-mono text-[12px] text-ink-muted">{l.source || '-'}</span> },
     { key: 'msg', header: 'Message', render: (l) => <span className="font-mono text-[12.5px] text-ink-2">{l.message}</span> },
-    { key: 'stream', header: 'Instance', width: '120px', render: (l) => <span className="font-mono text-[12px] text-ink-muted">{l.stream.slice(0, 12) || '-'}</span> },
+    { key: 'req', header: 'Request ID', width: '130px', render: (l) => <span className="font-mono text-[12px] text-ink-muted">{l.requestId ? l.requestId.slice(0, 12) : '-'}</span> },
   ];
 
   return (
@@ -56,9 +62,10 @@ export default function DevLogs() {
           <>
             <SpectrumTabs label="Level" items={LEVELS.map((l) => ({ key: l, label: l === 'all' ? 'All' : l.charAt(0).toUpperCase() + l.slice(1) }))} value={level} onChange={(k) => setLevel(k as typeof level)} />
             <SpectrumTabs label="Period" items={HOURS.map((h) => ({ key: h, label: `${h} h` }))} value={hours} onChange={(k) => setHours(k as typeof hours)} />
+            <FilterChip label="Source" value={source} onChange={setSource} options={sources.map((x) => ({ value: x, label: x }))} />
             <Input aria-label="Search" type="search" placeholder="Search" value={text} onChange={(e) => setText(e.target.value)} className="h-[30px] w-[180px] text-[13px]" />
             {any ? (
-              <Button size="sm" variant="ghost" onClick={() => { setLevel('all'); setText(''); }}>
+              <Button size="sm" variant="ghost" onClick={() => { setLevel('all'); setText(''); setSource(''); }}>
                 Clear
               </Button>
             ) : null}
@@ -69,7 +76,17 @@ export default function DevLogs() {
           <Pending error={q.error} rows={8} />
         ) : q.data.lines.state === 'ok' ? (
           <div className="px-2 pb-2">
-            <EFilingGrid columns={columns} rows={lines} rowKey={(l) => l.id} pageSize={25} minWidth={860} empty="No log lines match" onRowClick={(l) => setPicked((p) => (p === l.id ? null : l.id))} />
+            <EFilingGrid
+              columns={columns}
+              rows={lines}
+              rowKey={(l) => l.id}
+              pageSize={25}
+              minWidth={980}
+              empty="No log lines match"
+              stickyFirstColumn
+              onRowClick={(l) => setPicked((p) => (p === l.id ? null : l.id))}
+              rowClassName={pickedRow((l: LogLine) => l.id, picked)}
+            />
           </div>
         ) : (
           <ReachNotice reach={q.data.lines} service="CloudWatch Logs" />
@@ -81,8 +98,9 @@ export default function DevLogs() {
           <KeyValue
             rows={[
               { k: 'Level', v: <StatusChip status={cur.level} /> },
+              { k: 'Source', v: cur.source || '-', mono: true },
+              { k: 'Request ID', v: cur.requestId || '-', mono: true },
               { k: 'Instance', v: cur.stream || '-', mono: true },
-              { k: 'Time', v: stampSec(cur.at) },
             ]}
           />
           <pre className="mx-4 mb-4 max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-md border-1.5 border-line bg-surface-sunken p-3 font-mono text-[12.5px] text-ink-2">{cur.message}</pre>

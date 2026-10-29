@@ -5,6 +5,7 @@ import { outlookConnections, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import type { OutlookConnectionRow } from '@/lib/dev/types';
 import { maskEmail } from '@/lib/dev/mask';
+import { recordAuditEvent } from './audit-events';
 import { assertDeveloper, isStaffRole } from './dev-scope';
 
 /**
@@ -46,4 +47,34 @@ export async function listOutlookConnectionsForDev(ctx: AuthContext): Promise<Ou
       signatureEnabled: r.signatureEnabled,
     };
   });
+}
+
+/**
+ * Disconnect one linked Outlook mailbox from the console (R-40). It deletes the link row, so
+ * the stored tokens go with it and mail from the app stops leaving that mailbox until the
+ * person connects again from their own Profile. Writes a `dev.outlook.disconnect` audit row
+ * with the person (staff by name, a client only as "Client") and the before and after state.
+ * Returns null when the link is already gone.
+ */
+export async function disconnectOutlookForDev(ctx: AuthContext, id: string): Promise<{ person: string } | null> {
+  assertDeveloper(ctx);
+  const [row] = await db
+    .select({ id: outlookConnections.id, name: profiles.name, email: profiles.email, role: profiles.role })
+    .from(outlookConnections)
+    .leftJoin(profiles, eq(profiles.id, outlookConnections.userId))
+    .where(eq(outlookConnections.id, id))
+    .limit(1);
+  if (!row) return null;
+
+  const deleted = await db.delete(outlookConnections).where(eq(outlookConnections.id, id)).returning({ id: outlookConnections.id });
+  if (deleted.length === 0) return null;
+
+  const staff = isStaffRole(String(row.role ?? ''));
+  const person = staff ? row.name?.trim() || row.email?.split('@')[0] || 'Staff' : 'Client';
+  await recordAuditEvent(ctx, {
+    action: 'dev.outlook.disconnect',
+    summary: `Outlook mailbox disconnected for ${person}`,
+    metadata: { connectionId: id, before: 'Connected', after: 'Not connected' },
+  });
+  return { person };
 }

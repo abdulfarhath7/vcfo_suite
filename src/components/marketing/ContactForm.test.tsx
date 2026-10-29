@@ -19,8 +19,8 @@ describe('ContactForm (Book a demo)', () => {
     vi.stubGlobal('fetch', fetchMock);
     render(<ContactForm />);
     fill();
-    fireEvent.click(screen.getByRole('button', { name: 'Book a demo' }));
-    await screen.findByText('Request sent.');
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    await screen.findByText('Request sent to SBC.');
     expect(fetchMock).toHaveBeenCalledWith('/api/public/demo-request', expect.objectContaining({ method: 'POST' }));
     const body = JSON.parse(fetchMock.mock.calls[0]![1].body as string);
     expect(body).toEqual({ name: 'Asha Rao', email: 'asha@firm.in', company: 'Northwind', message: 'A GCC in Bengaluru', website: '' });
@@ -30,7 +30,7 @@ describe('ContactForm (Book a demo)', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'Too many requests.' }), { status: 429 })));
     render(<ContactForm />);
     fill();
-    fireEvent.click(screen.getByRole('button', { name: 'Book a demo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Too many requests.'));
     expect(screen.getByLabelText('Name')).toHaveValue('Asha Rao');
   });

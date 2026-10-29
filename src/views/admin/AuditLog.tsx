@@ -15,13 +15,15 @@ import {
 } from '@/components/ui/select';
 import type { AuditEventRow } from '@/lib/audit/audit-log';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
-import { PlainPageHead } from '@/views/admin/PlainPageHead';
+import { useStaffBasePath } from '@/hooks/use-staff-base-path';
+import { adminProjectPath, internEngagementPath } from '@/lib/projects/project-step-path';
 import { AuditTable } from '@/views/admin/audit-log/AuditTable';
 import { defaultAuditFilters, type AuditFilters } from '@/views/admin/audit-log/audit-filters';
 
-/* VCFO Spectrum audit log (prototype AuditScreen, C-0029 and C-0110): a plain white head, a
-   segmented switch between every event and one project, and one card per view with the
-   filters in its head and T1 rows. Fetching, filters and the project picker are unchanged. */
+/* VCFO Spectrum audit log (prototype AuditScreen, C-0029 and C-0110). No page title: the grid
+   card is the page (R-09). A segmented switch between every event and one project sits above
+   the card, and the card holds the filters in its head and T1 rows. Fetching, filters and the
+   project picker are unchanged. */
 
 /** The cursor for the page older than the rows shown (G-28); null on the last page. */
 type AuditCursor = { before: string; beforeId: string } | null;
@@ -72,7 +74,8 @@ function auditLogReducer(state: AuditLogState, action: AuditLogAction): AuditLog
 
 export default function AuditLog() {
   const projectSelectId = useId();
-  const { engagements } = useApp();
+  const { engagements, user } = useApp();
+  const staffBase = useStaffBasePath();
   const [state, dispatch] = useReducer(auditLogReducer, {
     tab: 'global',
     globalNext: null,
@@ -108,6 +111,17 @@ export default function AuditLog() {
     () => engagements.toSorted((a, b) => a.companyName.localeCompare(b.companyName)),
     [engagements],
   );
+
+  /** The project page an event belongs to, for the panel's "Open project" link. Clients get none. */
+  const recordHref = useMemo(() => {
+    const byDbId = new Map(engagements.map((e) => [engagementDbId(e.id), e]));
+    return (ev: AuditEventRow): string | null => {
+      if (!ev.engagement_id || !user || user.role === 'client') return null;
+      const e = byDbId.get(ev.engagement_id);
+      if (!e) return null;
+      return user.role === 'intern' ? internEngagementPath(e) : adminProjectPath(e, staffBase);
+    };
+  }, [engagements, user, staffBase]);
 
   const engagementsByDbId = useMemo(() => {
     const map = new Map<string, string>();
@@ -214,7 +228,6 @@ export default function AuditLog() {
     void fetchProject(engagementId);
   };
 
-  const eventCount = tab === 'global' ? globalEvents.length : projectEvents.length;
   const selectedName = sortedEngagements.find((e) => e.id === (selectedEngagementId || sortedEngagements[0]?.id))?.companyName;
 
   return (
@@ -224,22 +237,17 @@ export default function AuditLog() {
         description="Chronological audit trail of client, project lead, and manager actions."
         path="/app/manager/audit-log"
       />
-      <PlainPageHead
-        title="Audit log"
-        meta={!globalLoading && eventCount > 0 ? `${eventCount} events loaded` : undefined}
-        actions={
-          <SpectrumTabs
-            size="md"
-            label="Audit view"
-            items={[
-              { key: 'global', label: 'All events' },
-              { key: 'project', label: 'By project' },
-            ]}
-            value={tab}
-            onChange={(v) => dispatch({ type: 'patch', patch: { tab: v as 'global' | 'project' } })}
-          />
-        }
-      />
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <SpectrumTabs
+          label="Audit view"
+          items={[
+            { key: 'global', label: 'All events' },
+            { key: 'project', label: 'By project' },
+          ]}
+          value={tab}
+          onChange={(v) => dispatch({ type: 'patch', patch: { tab: v as 'global' | 'project' } })}
+        />
+      </div>
 
       {tab === 'global' ? (
         <AuditTable
@@ -256,6 +264,7 @@ export default function AuditLog() {
           exportName="audit-log.csv"
           onLoadOlder={globalNext ? () => void loadOlder('global') : undefined}
           loadingOlder={loadingOlder}
+          recordHref={recordHref}
         />
       ) : (
         <div className="grid gap-3">
@@ -299,6 +308,7 @@ export default function AuditLog() {
               exportName="audit-log-project.csv"
               onLoadOlder={projectNext ? () => void loadOlder('project') : undefined}
               loadingOlder={loadingOlder}
+              recordHref={recordHref}
             />
           )}
         </div>

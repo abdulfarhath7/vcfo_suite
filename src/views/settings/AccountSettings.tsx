@@ -1,10 +1,9 @@
 'use client';
 
 import { getSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Loader2, Pencil } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
 import { UserFace } from '@/components/common/UserFace';
 import { Input } from '@/components/ui/input';
@@ -21,19 +20,24 @@ import { OutlookMailboxCard } from './account/OutlookMailboxCard';
 import { TwoStepRows } from './account/TwoStepRows';
 import { DevicesRows } from './account/DevicesRows';
 import { NotificationsCard } from './account/NotificationsCard';
+import { PasswordStrength } from './account/PasswordStrength';
 import { useAccountSettings } from './account/use-account-settings';
+import { sectionFromLocation } from './account/sections';
+import { cn } from '@/lib/utils';
 
 type Props = {
   path: string;
 };
 
 /*
- * Profile (VCFO Spectrum, prototype ProfileScreen; K-16: Settings sits under Profile). One page
- * with sections and a section menu on the left. Every section stays mounted so the `#appearance`
- * link from the greeting card and the Outlook connect return (`?outlook=`) keep working.
- * G-25 adds two-step sign-in and the devices list under security, and Notifications.
+ * Profile (VCFO Spectrum, prototype ProfileScreen; K-16: Settings sits under Profile). A section
+ * menu on the left and one section at a time on the right (P-612). `?tab=` names the section, as
+ * in the prototype; the older `#appearance` link from the greeting card and the Outlook connect
+ * return (`?outlook=`) still open the right section. G-25 adds two-step sign-in, the devices
+ * list and Notifications. Project leads, managers and admins also get Settings: the old staff
+ * Settings page (profile form, password, Outlook) in two columns (StaffSettingsSection).
  */
-type SectionKey = 'profile' | 'security' | 'notify' | 'email' | 'appearance';
+type SectionKey = 'profile' | 'security' | 'notify' | 'email' | 'appearance' | 'settings';
 
 const SECTION_LABEL: Record<SectionKey, string> = {
   profile: 'About you',
@@ -41,34 +45,10 @@ const SECTION_LABEL: Record<SectionKey, string> = {
   notify: 'Notifications',
   email: 'Email',
   appearance: 'Appearance',
+  settings: 'Settings',
 };
 
-/** The section in view, from the hash first and then from scrolling. */
-function useActiveSection(keys: SectionKey[]) {
-  const [active, setActive] = useState<SectionKey>(keys[0]);
-  const joined = keys.join(',');
-  useEffect(() => {
-    const list = joined.split(',') as SectionKey[];
-    const fromHash = window.location.hash.replace('#', '') as SectionKey;
-    if (list.includes(fromHash)) setActive(fromHash);
-    if (typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const top = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (top) setActive(top.target.id as SectionKey);
-      },
-      { rootMargin: '-80px 0px -55% 0px' },
-    );
-    for (const k of list) {
-      const el = document.getElementById(k);
-      if (el) io.observe(el);
-    }
-    return () => io.disconnect();
-  }, [joined]);
-  return [active, setActive] as const;
-}
+const STAFF_SETTINGS_ROLES = new Set(['admin', 'manager', 'intern']);
 
 export default function AccountSettings({ path }: Props) {
   const {
@@ -112,23 +92,67 @@ export default function AccountSettings({ path }: Props) {
     initials,
     roleLabel,
     isStaff,
-    emailChanging,
   } = useAccountSettings();
 
   const sections: SectionKey[] = isStaff
-    ? ['profile', 'security', 'notify', 'email', 'appearance']
+    ? [
+        'profile',
+        'security',
+        'notify',
+        'email',
+        'appearance',
+        ...(STAFF_SETTINGS_ROLES.has(display.role) ? (['settings'] as const) : []),
+      ]
     : ['profile', 'security', 'notify', 'appearance'];
-  const [active, setActive] = useActiveSection(sections);
+  // Super admin opens this view inside its own Settings tabs, which already use `?tab=`.
+  const param = path.startsWith('/app/super') ? 'section' : 'tab';
+  const [active, setActive] = useState<SectionKey>('profile');
+  const joined = sections.join(',');
+  useEffect(() => {
+    const k = sectionFromLocation(window.location.search, window.location.hash, param, joined.split(','));
+    if (k) setActive(k as SectionKey);
+  }, [joined, param]);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+  // On a phone the menu scrolls sideways: keep the picked section in view.
+  useEffect(() => {
+    menuRef.current
+      ?.querySelector<HTMLElement>('[aria-current]')
+      ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }, [active]);
 
   const pick = (k: SectionKey) => {
+    if (editingProfile && k !== 'profile' && k !== 'settings') cancelEditProfile();
     setActive(k);
-    document.getElementById(k)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     try {
-      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${k}`);
+      const u = new URL(window.location.href);
+      u.searchParams.set(param, k);
+      u.hash = '';
+      window.history.replaceState(null, '', u.toString());
     } catch {
-      /* The hash is a convenience; scrolling already happened. */
+      /* The address is a convenience; the section already shows. */
     }
   };
+
+  // The "Saved" chip after the profile form saves (prototype StaffSettingsSection).
+  const [profileSaved, setProfileSaved] = useState(false);
+  useEffect(() => {
+    if (!profileSaved) return;
+    const t = window.setTimeout(() => setProfileSaved(false), 1500);
+    return () => window.clearTimeout(t);
+  }, [profileSaved]);
+  const savedProfileRef = useRef(profile);
+  useEffect(() => {
+    if (savedProfileRef.current && profile && savedProfileRef.current !== profile && !savingProfile) {
+      setProfileSaved(true);
+    }
+    savedProfileRef.current = profile;
+  }, [profile, savingProfile]);
+
+  // Email changes need the current password, in the About you form and in Settings alike.
+  const emailDiffers =
+    !!profile && draftEmail.trim().toLowerCase() !== profile.email.toLowerCase();
+  const passwordsDiffer = confirmPassword.length > 0 && confirmPassword !== newPassword;
 
   const signOutHere = () => {
     void signOut()
@@ -145,20 +169,362 @@ export default function AccountSettings({ path }: Props) {
     </>
   );
 
+  const photoRow = (
+    <SettingsRow label="Photo">
+      <IdentityCard
+        name={display.name}
+        email={display.email || '—'}
+        roleLabel={roleLabel}
+        initials={initials}
+        avatarUrl={display.avatarUrl}
+        loading={loading}
+        isStaff={isStaff}
+        outlookConnected={outlookConnected}
+        onAvatarUrl={(avatarUrl) => {
+          setProfile((prev) => (prev ? { ...prev, avatarUrl } : prev));
+        }}
+        onAvatarSaved={async () => {
+          await updateSession();
+          await getSession();
+          await refreshAuth();
+        }}
+      />
+    </SettingsRow>
+  );
+
+  const loadingRows = (
+    <div aria-hidden>
+      {['Full name', 'Email', 'Phone', 'Role'].map((label) => (
+        <SettingsRow key={label} label={label}>
+          <span className="block h-4 w-40 animate-pulse rounded-mark bg-surface-sunken" />
+        </SettingsRow>
+      ))}
+    </div>
+  );
+
+  const readRows = (
+    <>
+      <SettingsRow label="Full name">{display.name || '—'}</SettingsRow>
+      <SettingsRow label="Email" hint="Your sign-in address">
+        {display.email || '—'}
+      </SettingsRow>
+      <SettingsRow label="Phone">{display.phone || <span className="text-ink-muted">Not set</span>}</SettingsRow>
+      <SettingsRow label="WhatsApp" hint="Updates about your engagement">
+        {display.phoneE164 ? (
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="tabular-nums">{display.phoneE164}</span>
+            <Chip tone={display.whatsappOptIn ? 'ok' : 'idle'}>{display.whatsappOptIn ? 'On' : 'Off'}</Chip>
+          </span>
+        ) : (
+          <span className="text-ink-muted">Not set</span>
+        )}
+      </SettingsRow>
+      <SettingsRow label="Role">{roleLabel}</SettingsRow>
+    </>
+  );
+
+  /** The profile form. `inline` (Settings) keeps it open and shows no Cancel unless something changed. */
+  const profileForm = (inline: boolean) => {
+    const dirty =
+      !!profile &&
+      (draftName !== profile.name ||
+        emailDiffers ||
+        draftPhone !== profile.phone ||
+        draftWhatsapp !== profile.phoneE164 ||
+        draftWhatsappOptIn !== profile.whatsappOptIn);
+    return (
+      <form onSubmit={(e: FormEvent) => void saveProfile(e)}>
+        <SettingsRow label="Full name">
+          <Label htmlFor="profile-name" className="sr-only">
+            Full name
+          </Label>
+          <Input
+            id="profile-name"
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            maxLength={120}
+            required
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when the Edit form opens
+            autoFocus={!inline}
+          />
+        </SettingsRow>
+        <SettingsRow label="Email" hint="Your sign-in address">
+          <Label htmlFor="profile-email" className="sr-only">
+            Email
+          </Label>
+          <Input
+            id="profile-email"
+            type="email"
+            value={draftEmail}
+            onChange={(e) => setDraftEmail(e.target.value)}
+            maxLength={160}
+            required
+          />
+        </SettingsRow>
+        <SettingsRow label="Phone" hint="Optional">
+          <Label htmlFor="profile-phone" className="sr-only">
+            Phone
+          </Label>
+          <Input
+            id="profile-phone"
+            type="tel"
+            value={draftPhone}
+            onChange={(e) => setDraftPhone(e.target.value)}
+            maxLength={32}
+            placeholder="+91 …"
+          />
+        </SettingsRow>
+        <SettingsRow label="WhatsApp" hint="Optional, with the country code">
+          <Label htmlFor="profile-whatsapp" className="sr-only">
+            WhatsApp number
+          </Label>
+          <Input
+            id="profile-whatsapp"
+            type="tel"
+            inputMode="tel"
+            value={draftWhatsapp}
+            onChange={(e) => setDraftWhatsapp(e.target.value)}
+            maxLength={24}
+            placeholder="+91 98765 43210"
+          />
+          {draftWhatsapp.trim() && !normalizeToE164(draftWhatsapp) ? (
+            <p role="alert" className="mt-1 text-[12.5px] text-danger">
+              Include the country code, e.g. +91 98765 43210
+            </p>
+          ) : null}
+          <label
+            htmlFor="profile-whatsapp-consent"
+            className={
+              draftWhatsappOptIn
+                ? 'mt-2 flex cursor-pointer items-start gap-2.5 rounded-md border-1.5 border-positive-mid bg-positive-soft px-3 py-2.5'
+                : 'mt-2 flex cursor-pointer items-start gap-2.5 rounded-md border-1.5 border-line bg-surface-sunken px-3 py-2.5'
+            }
+          >
+            <Checkbox
+              id="profile-whatsapp-consent"
+              checked={draftWhatsappOptIn}
+              onCheckedChange={(v) => setDraftWhatsappOptIn(v === true)}
+              disabled={!normalizeToE164(draftWhatsapp)}
+              className="mt-0.5"
+            />
+            <span className="text-[13px] leading-snug text-ink-2">
+              Send me WhatsApp updates about my engagement on this number. Untick to withdraw, or reply STOP on
+              WhatsApp at any time.
+            </span>
+          </label>
+        </SettingsRow>
+        {emailDiffers ? (
+          <SettingsRow label="Confirm" hint="Current password">
+            <Label htmlFor="profile-email-password" className="sr-only">
+              Current password to confirm email change
+            </Label>
+            <Input
+              id="profile-email-password"
+              type="password"
+              autoComplete="current-password"
+              value={emailPassword}
+              onChange={(e) => setEmailPassword(e.target.value)}
+              required
+              placeholder="Password to change email"
+            />
+          </SettingsRow>
+        ) : null}
+        <SettingsRow label="Role">
+          <span className="text-ink-muted">{roleLabel}</span>
+        </SettingsRow>
+        <div className="flex justify-end gap-2 border-t border-line-soft px-4 py-3 md:px-5">
+          {!inline || dirty ? (
+            <Button type="button" variant="quiet" size="sm" onClick={cancelEditProfile} disabled={savingProfile}>
+              Cancel
+            </Button>
+          ) : null}
+          <Button type="submit" size="sm" disabled={savingProfile || (inline && !dirty)}>
+            {savingProfile ? savingLabel : 'Save profile'}
+          </Button>
+        </div>
+      </form>
+    );
+  };
+
+  /** The password form, with the strength bar. `inline` (Settings) keeps it open. */
+  const passwordForm = (inline: boolean) => (
+    <form onSubmit={(e: FormEvent) => void onPasswordSubmit(e)}>
+      <SettingsRow label="Current password">
+        <Label htmlFor="current-password" className="sr-only">
+          Current password
+        </Label>
+        <Input
+          id="current-password"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
+          autoFocus={!inline}
+        />
+      </SettingsRow>
+      <SettingsRow label="New password" hint="8 or more characters">
+        <Label htmlFor="new-password" className="sr-only">
+          New password
+        </Label>
+        <div className="grid gap-2">
+          <Input
+            id="new-password"
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <PasswordStrength value={newPassword} />
+        </div>
+      </SettingsRow>
+      <SettingsRow label="Confirm password">
+        <Label htmlFor="confirm-password" className="sr-only">
+          Confirm new password
+        </Label>
+        <Input
+          id="confirm-password"
+          type="password"
+          autoComplete="new-password"
+          required
+          minLength={8}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          aria-invalid={passwordsDiffer}
+          className={cn(confirmPassword && !passwordsDiffer && 'border-positive-mid')}
+        />
+        {passwordsDiffer ? <p className="mt-1 text-[12px] text-danger">Passwords do not match</p> : null}
+      </SettingsRow>
+      <div className="flex justify-end gap-2 border-t border-line-soft px-4 py-3 md:px-5">
+        {!inline ? (
+          <Button
+            type="button"
+            variant="quiet"
+            size="sm"
+            onClick={() => {
+              setEditingSecurity(false);
+              setCurrentPassword('');
+              setNewPassword('');
+              setConfirmPassword('');
+            }}
+            disabled={submittingPassword}
+          >
+            Cancel
+          </Button>
+        ) : null}
+        <Button
+          type="submit"
+          size="sm"
+          disabled={
+            submittingPassword || !currentPassword || newPassword.length < 8 || !confirmPassword || passwordsDiffer
+          }
+        >
+          {submittingPassword ? (
+            <>
+              <Loader2 className="animate-spin" aria-hidden />
+              Updating…
+            </>
+          ) : (
+            'Update password'
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+
+  const savedChip = profileSaved ? (
+    <Chip fixed tone="ok">
+      Saved
+    </Chip>
+  ) : undefined;
+
+  let body: ReactNode = null;
+  if (active === 'profile') {
+    body = (
+      <ProfileCard
+        id="profile"
+        title={SECTION_LABEL.profile}
+        meta={savedChip}
+        action={
+          !editingProfile ? (
+            <Button type="button" variant="secondary" size="sm" disabled={loading || !profile} onClick={startEditProfile}>
+              <Pencil aria-hidden />
+              Edit
+            </Button>
+          ) : null
+        }
+      >
+        {photoRow}
+        {loading ? loadingRows : !editingProfile ? readRows : profileForm(false)}
+      </ProfileCard>
+    );
+  } else if (active === 'security') {
+    body = (
+      <ProfileCard id="security" title={SECTION_LABEL.security}>
+        {!editingSecurity ? (
+          <SettingsRow label="Password">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="tracking-[0.18em] text-ink-muted" aria-label="Password set">
+                ••••••••
+              </span>
+              <Button type="button" variant="secondary" size="sm" className="ml-auto" onClick={() => setEditingSecurity(true)}>
+                Change password
+              </Button>
+            </span>
+          </SettingsRow>
+        ) : (
+          passwordForm(false)
+        )}
+        <TwoStepRows />
+        <DevicesRows onSignOutHere={signOutHere} />
+        <SettingsRow label="Sign out" hint="On this device">
+          <Button type="button" variant="secondary" size="sm" className="text-danger" onClick={signOutHere}>
+            Sign out
+          </Button>
+        </SettingsRow>
+      </ProfileCard>
+    );
+  } else if (active === 'notify') {
+    body = (
+      <NotificationsCard
+        id="notify"
+        title={SECTION_LABEL.notify}
+        whatsappOn={Boolean(display.phoneE164 && display.whatsappOptIn)}
+        email={display.email}
+        whatsappNumber={display.phoneE164}
+      />
+    );
+  } else if (active === 'email') {
+    body = <OutlookMailboxCard onConnectedChange={setOutlookConnected} />;
+  } else if (active === 'appearance') {
+    body = <AppearanceSettings />;
+  } else if (active === 'settings') {
+    body = (
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <ProfileCard id="settings-profile" title="Profile" meta={savedChip}>
+          {photoRow}
+          {loading ? loadingRows : profileForm(true)}
+        </ProfileCard>
+        <div className="grid min-w-0 gap-4">
+          <ProfileCard id="settings-security" title="Security">
+            {passwordForm(true)}
+          </ProfileCard>
+          <OutlookMailboxCard title="Outlook" onConnectedChange={setOutlookConnected} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <PageTransition>
-      <SEO
-        title="Profile — VCFO Suite"
-        description="Update your profile and password."
-        path={path}
-      />
+      <SEO title="Profile — VCFO Suite" description="Update your profile and password." path={path} />
+      {/* R-09: the sidebar and the menu card already name the page, so the heading is for screen readers. */}
+      <h1 className="sr-only">Profile</h1>
 
-      <div className="mx-auto max-w-[1080px]">
-        <div className="mb-4 flex min-w-0 items-center gap-2">
-          <PageBackButton className="-ml-1.5" />
-          <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Profile</h1>
-        </div>
-
+      <div className={cn('mx-auto', active === 'settings' ? 'max-w-[1240px]' : 'max-w-[1080px]')}>
         <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
           <nav
             aria-label="Profile sections"
@@ -182,333 +548,26 @@ export default function AccountSettings({ path }: Props) {
                 <small className="block truncate text-[12px] text-ink-muted">{roleLabel}</small>
               </span>
             </div>
-            <div className="mt-2 flex gap-1 overflow-x-auto [scrollbar-width:none] md:grid md:overflow-visible">
+            <div ref={menuRef} className="mt-2 flex gap-1 overflow-x-auto [scrollbar-width:none] md:grid md:overflow-visible">
               {sections.map((k) => (
-                <a
+                <button
                   key={k}
-                  href={`#${k}`}
+                  type="button"
                   aria-current={active === k ? 'true' : undefined}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    pick(k);
-                  }}
+                  onClick={() => pick(k)}
                   className={
                     active === k
-                      ? 'flex h-[34px] flex-none items-center whitespace-nowrap rounded-md bg-brand-soft px-2.5 text-[14px] font-medium text-brand-text'
-                      : 'flex h-[34px] flex-none items-center whitespace-nowrap rounded-md px-2.5 text-[14px] text-ink-2 hover:bg-surface-sunken'
+                      ? 'flex h-[34px] flex-none items-center whitespace-nowrap rounded-md bg-brand-soft px-2.5 text-left text-[14px] font-medium text-brand-text'
+                      : 'flex h-[34px] flex-none items-center whitespace-nowrap rounded-md px-2.5 text-left text-[14px] text-ink-2 hover:bg-surface-sunken'
                   }
                 >
                   {SECTION_LABEL[k]}
-                </a>
+                </button>
               ))}
             </div>
           </nav>
 
-          <div className="grid min-w-0 gap-4">
-            <ProfileCard
-              id="profile"
-              title={SECTION_LABEL.profile}
-              action={
-                !editingProfile ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    disabled={loading || !profile}
-                    onClick={startEditProfile}
-                  >
-                    <Pencil aria-hidden />
-                    Edit
-                  </Button>
-                ) : null
-              }
-            >
-              <SettingsRow label="Photo">
-                <IdentityCard
-                  name={display.name}
-                  email={display.email || '—'}
-                  roleLabel={roleLabel}
-                  initials={initials}
-                  avatarUrl={display.avatarUrl}
-                  loading={loading}
-                  isStaff={isStaff}
-                  outlookConnected={outlookConnected}
-                  onAvatarUrl={(avatarUrl) => {
-                    setProfile((prev) => (prev ? { ...prev, avatarUrl } : prev));
-                  }}
-                  onAvatarSaved={async () => {
-                    await updateSession();
-                    await getSession();
-                    await refreshAuth();
-                  }}
-                />
-              </SettingsRow>
-
-              {loading ? (
-                <div aria-hidden>
-                  {['Full name', 'Email', 'Phone', 'Role'].map((label) => (
-                    <SettingsRow key={label} label={label}>
-                      <span className="block h-4 w-40 animate-pulse rounded-mark bg-surface-sunken" />
-                    </SettingsRow>
-                  ))}
-                </div>
-              ) : !editingProfile ? (
-                <>
-                  <SettingsRow label="Full name">{display.name || '—'}</SettingsRow>
-                  <SettingsRow label="Email" hint="Your sign-in address">
-                    {display.email || '—'}
-                  </SettingsRow>
-                  <SettingsRow label="Phone">
-                    {display.phone || <span className="text-ink-muted">Not set</span>}
-                  </SettingsRow>
-                  <SettingsRow label="WhatsApp" hint="Updates about your engagement">
-                    {display.phoneE164 ? (
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="tabular-nums">{display.phoneE164}</span>
-                        <Chip tone={display.whatsappOptIn ? 'ok' : 'idle'}>
-                          {display.whatsappOptIn ? 'On' : 'Off'}
-                        </Chip>
-                      </span>
-                    ) : (
-                      <span className="text-ink-muted">Not set</span>
-                    )}
-                  </SettingsRow>
-                  <SettingsRow label="Role">{roleLabel}</SettingsRow>
-                </>
-              ) : (
-                <form onSubmit={(e) => void saveProfile(e)}>
-                  <SettingsRow label="Full name">
-                    <Label htmlFor="profile-name" className="sr-only">
-                      Full name
-                    </Label>
-                    <Input
-                      id="profile-name"
-                      value={draftName}
-                      onChange={(e) => setDraftName(e.target.value)}
-                      maxLength={120}
-                      required
-                      // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
-                      autoFocus
-                    />
-                  </SettingsRow>
-                  <SettingsRow label="Email" hint="Your sign-in address">
-                    <Label htmlFor="profile-email" className="sr-only">
-                      Email
-                    </Label>
-                    <Input
-                      id="profile-email"
-                      type="email"
-                      value={draftEmail}
-                      onChange={(e) => setDraftEmail(e.target.value)}
-                      maxLength={160}
-                      required
-                    />
-                  </SettingsRow>
-                  <SettingsRow label="Phone" hint="Optional">
-                    <Label htmlFor="profile-phone" className="sr-only">
-                      Phone
-                    </Label>
-                    <Input
-                      id="profile-phone"
-                      type="tel"
-                      value={draftPhone}
-                      onChange={(e) => setDraftPhone(e.target.value)}
-                      maxLength={32}
-                      placeholder="+91 …"
-                    />
-                  </SettingsRow>
-                  <SettingsRow label="WhatsApp" hint="Optional, with the country code">
-                    <Label htmlFor="profile-whatsapp" className="sr-only">
-                      WhatsApp number
-                    </Label>
-                    <Input
-                      id="profile-whatsapp"
-                      type="tel"
-                      inputMode="tel"
-                      value={draftWhatsapp}
-                      onChange={(e) => setDraftWhatsapp(e.target.value)}
-                      maxLength={24}
-                      placeholder="+91 98765 43210"
-                    />
-                    {draftWhatsapp.trim() && !normalizeToE164(draftWhatsapp) ? (
-                      <p role="alert" className="mt-1 text-[12.5px] text-danger">
-                        Include the country code, e.g. +91 98765 43210
-                      </p>
-                    ) : null}
-                    <label
-                      htmlFor="profile-whatsapp-consent"
-                      className={
-                        draftWhatsappOptIn
-                          ? 'mt-2 flex cursor-pointer items-start gap-2.5 rounded-md border-1.5 border-positive-mid bg-positive-soft px-3 py-2.5'
-                          : 'mt-2 flex cursor-pointer items-start gap-2.5 rounded-md border-1.5 border-line bg-surface-sunken px-3 py-2.5'
-                      }
-                    >
-                      <Checkbox
-                        id="profile-whatsapp-consent"
-                        checked={draftWhatsappOptIn}
-                        onCheckedChange={(v) => setDraftWhatsappOptIn(v === true)}
-                        disabled={!normalizeToE164(draftWhatsapp)}
-                        className="mt-0.5"
-                      />
-                      <span className="text-[13px] leading-snug text-ink-2">
-                        Send me WhatsApp updates about my engagement on this number.
-                        Untick to withdraw, or reply STOP on WhatsApp at any time.
-                      </span>
-                    </label>
-                  </SettingsRow>
-                  {emailChanging ? (
-                    <SettingsRow label="Confirm" hint="Current password">
-                      <Label htmlFor="profile-email-password" className="sr-only">
-                        Current password to confirm email change
-                      </Label>
-                      <Input
-                        id="profile-email-password"
-                        type="password"
-                        autoComplete="current-password"
-                        value={emailPassword}
-                        onChange={(e) => setEmailPassword(e.target.value)}
-                        required
-                        placeholder="Password to change email"
-                      />
-                    </SettingsRow>
-                  ) : null}
-                  <SettingsRow label="Role">
-                    <span className="text-ink-muted">{roleLabel}</span>
-                  </SettingsRow>
-                  <div className="flex justify-end gap-2 border-t border-line-soft px-4 py-3 md:px-5">
-                    <Button
-                      type="button"
-                      variant="quiet"
-                      size="sm"
-                      onClick={cancelEditProfile}
-                      disabled={savingProfile}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" size="sm" disabled={savingProfile}>
-                      {savingProfile ? savingLabel : 'Save profile'}
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </ProfileCard>
-
-            <ProfileCard id="security" title={SECTION_LABEL.security}>
-              {!editingSecurity ? (
-                <SettingsRow label="Password">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="tracking-[0.18em] text-ink-muted" aria-label="Password set">
-                      ••••••••
-                    </span>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="ml-auto"
-                      onClick={() => setEditingSecurity(true)}
-                    >
-                      Change password
-                    </Button>
-                  </span>
-                </SettingsRow>
-              ) : (
-                <form onSubmit={(e) => void onPasswordSubmit(e)}>
-                  <SettingsRow label="Current password">
-                    <Label htmlFor="current-password" className="sr-only">
-                      Current password
-                    </Label>
-                    <Input
-                      id="current-password"
-                      type="password"
-                      autoComplete="current-password"
-                      required
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
-                      autoFocus
-                    />
-                  </SettingsRow>
-                  <SettingsRow label="New password" hint="8 or more characters">
-                    <Label htmlFor="new-password" className="sr-only">
-                      New password
-                    </Label>
-                    <Input
-                      id="new-password"
-                      type="password"
-                      autoComplete="new-password"
-                      required
-                      minLength={8}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                    />
-                  </SettingsRow>
-                  <SettingsRow label="Confirm password">
-                    <Label htmlFor="confirm-password" className="sr-only">
-                      Confirm new password
-                    </Label>
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      autoComplete="new-password"
-                      required
-                      minLength={8}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                  </SettingsRow>
-                  <div className="flex justify-end gap-2 border-t border-line-soft px-4 py-3 md:px-5">
-                    <Button
-                      type="button"
-                      variant="quiet"
-                      size="sm"
-                      onClick={() => {
-                        setEditingSecurity(false);
-                        setCurrentPassword('');
-                        setNewPassword('');
-                        setConfirmPassword('');
-                      }}
-                      disabled={submittingPassword}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" size="sm" disabled={submittingPassword}>
-                      {submittingPassword ? (
-                        <>
-                          <Loader2 className="animate-spin" aria-hidden />
-                          Updating…
-                        </>
-                      ) : (
-                        'Update password'
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              )}
-              <TwoStepRows />
-              <DevicesRows onSignOutHere={signOutHere} />
-              <SettingsRow label="Sign out" hint="On this device">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="text-danger"
-                  onClick={signOutHere}
-                >
-                  Sign out
-                </Button>
-              </SettingsRow>
-            </ProfileCard>
-
-            <NotificationsCard
-              id="notify"
-              title={SECTION_LABEL.notify}
-              whatsappOn={Boolean(display.phoneE164 && display.whatsappOptIn)}
-            />
-
-            {isStaff ? <OutlookMailboxCard onConnectedChange={setOutlookConnected} /> : null}
-
-            <AppearanceSettings />
-          </div>
+          <div className="min-w-0">{body}</div>
         </div>
       </div>
     </PageTransition>

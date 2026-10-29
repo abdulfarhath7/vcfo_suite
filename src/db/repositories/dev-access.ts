@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, ilike, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { profiles } from '@/db/schema';
 import { userSessions } from '@/db/schema-firm';
@@ -90,5 +90,21 @@ export async function countSignedInStaffForDev(ctx: AuthContext): Promise<number
     .from(userSessions)
     .innerJoin(profiles, eq(profiles.id, userSessions.userId))
     .where(and(isNull(userSessions.revokedAt), inArray(profiles.role, [...DEV_STAFF_ROLES])));
+  return Number(row?.n ?? 0);
+}
+
+/** The address domain of the seeded demo logins (`npm run db:seed`). */
+export const DEMO_LOGIN_DOMAIN = 'vcfo.local';
+
+/**
+ * Seeded demo logins that can still sign in (active profiles on the demo domain), for the
+ * overview's "Secrets to fix" tile and the "purge before real users" row. Counted only.
+ */
+export async function countDemoLoginsForDev(ctx: AuthContext): Promise<number> {
+  assertDeveloper(ctx);
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(profiles)
+    .where(and(eq(profiles.status, 'active'), ilike(profiles.email, `%@${DEMO_LOGIN_DOMAIN}`)));
   return Number(row?.n ?? 0);
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { devRoute } from '@/lib/dev/route-helpers';
-import { listMessagesForDev } from '@/db/repositories/dev-messages';
+import { deliveryStatusCountsForDev, listMessagesForDev } from '@/db/repositories/dev-messages';
 
 const Query = z.object({
   channel: z.enum(['email', 'whatsapp']).optional(),
@@ -14,17 +14,23 @@ const Query = z.object({
 /**
  * GET /api/dev/messages: notification deliveries and the checklist mail log, newest first,
  * with recipient addresses masked. "Load older" passes `only` and the matching `*Before`
- * cursor. Developer or super admin.
+ * cursor. The first page also carries the delivery count per status for the channel, for
+ * the status tabs. Developer or super admin.
  */
 export async function GET(request: Request) {
-  return devRoute(request, Query, async (ctx, q) =>
-    listMessagesForDev(ctx, {
-      channel: q.channel,
-      status: q.status,
-      only: q.only,
-      deliveriesBefore: q.deliveriesBefore ? new Date(q.deliveriesBefore) : undefined,
-      emailsBefore: q.emailsBefore ? new Date(q.emailsBefore) : undefined,
-      limit: q.limit,
-    }),
-  );
+  return devRoute(request, Query, async (ctx, q) => {
+    const older = Boolean(q.deliveriesBefore || q.emailsBefore);
+    const [page, statusCounts] = await Promise.all([
+      listMessagesForDev(ctx, {
+        channel: q.channel,
+        status: q.status,
+        only: q.only,
+        deliveriesBefore: q.deliveriesBefore ? new Date(q.deliveriesBefore) : undefined,
+        emailsBefore: q.emailsBefore ? new Date(q.emailsBefore) : undefined,
+        limit: q.limit,
+      }),
+      older ? Promise.resolve(undefined) : deliveryStatusCountsForDev(ctx, q.channel),
+    ]);
+    return statusCounts ? { ...page, statusCounts } : page;
+  });
 }

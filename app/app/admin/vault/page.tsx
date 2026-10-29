@@ -1,8 +1,8 @@
-import { pageMetadata } from "@/lib/shell/page-metadata";
-import Vault from "@/views/admin/Vault";
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
-export const metadata = pageMetadata("Doc vault", "Firm document vault");
+export const metadata = pageMetadata('Doc vault', 'Firm document vault');
 
+/** The Vault itself renders from `layout.tsx`, so the viewer route can keep it mounted. */
 export default function Page() {
-  return <Vault />;
+  return null;
 }

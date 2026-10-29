@@ -18,6 +18,8 @@ export type Reach<T> =
 export interface ServiceConfig {
   id: 'email' | 'whatsapp' | 'storage' | 'jobs' | 'ask' | 'outlook' | 'credentials' | 'logs' | 'deploys' | 'costs';
   name: string;
+  /** The kind of service, for the Kind filter: Email, Messaging, Storage and so on. */
+  kind: string;
   /** What the service does for the app, in a few words. */
   what: string;
   /** Provider or mode word, from a fixed list (never a raw env value). */
@@ -70,6 +72,8 @@ export interface EmailLogRow {
 }
 
 export interface MessagesPayload {
+  /** Delivery rows per status for the channel filter, for the tab counts. */
+  statusCounts?: Record<string, number>;
   deliveries: DeliveryRow[];
   emails: EmailLogRow[];
   /** Cursors for "Load older": the oldest createdAt in each list, or null at the end. */
@@ -86,6 +90,8 @@ export interface JobFunction {
 
 export interface JobRun {
   id: string;
+  /** The Inngest event that started the run (its internal id), for a retry. */
+  eventId: string | null;
   /** The registered function this run belongs to, when it can be told from the event. */
   functionId: string | null;
   event: string;
@@ -108,6 +114,10 @@ export interface LogLine {
   stream: string;
   /** Message with email addresses and phone numbers masked. */
   message: string;
+  /** The tag the line starts with, such as "[audit]" or a JSON "source" field, or "". */
+  source: string;
+  /** A request id found in the line, or "". */
+  requestId: string;
 }
 
 export interface LogsPayload {
@@ -182,6 +192,9 @@ export interface AuditRow {
   action: string;
   summary: string;
   result: 'ok' | 'failed' | 'denied' | string;
+  /** Short before and after values, when the event stored them in its metadata. */
+  before?: string | null;
+  after?: string | null;
 }
 
 export interface AuditPayload {
@@ -189,12 +202,24 @@ export interface AuditPayload {
   nextBefore: string | null;
 }
 
+/** One cost group on the overview bar. */
+export interface CostGroup {
+  group: 'AI' | 'App Runner' | 'Database' | 'Messaging' | 'Other';
+  amount: number;
+}
+
 export interface OverviewPayload {
   services: ServiceConfig[];
-  outlook: { connected: number; expiringSoon: number };
+  outlook: { connected: number; expiringSoon: number; healthy: number };
+  /** Required secrets that are not set, and seeded demo logins that still work. */
+  secrets: { missing: string[]; demoLogins: number };
+  /** Error lines in the app log in 24 hours, and all lines read (capped at the reader limit). */
+  errors24h: Reach<{ errors: number; lines: number; capped: boolean }>;
+  /** Spend from the first of this month to today, in five groups. */
+  costsMonth: Reach<{ currency: string; start: string; end: string; total: number; groups: CostGroup[] }>;
   messages: MessagesPayload['counts24h'];
   audit7d: { failed: number; denied: number };
   jobs: Reach<{ failedToday: number; runningNow: number; lastRuns: JobRun[] }>;
-  deploy: Reach<{ status: string; latest: DeployOperation | null }>;
+  deploy: Reach<{ status: string; image: string | null; latest: DeployOperation | null; recent: DeployOperation[] }>;
   staffSignedIn: number;
 }

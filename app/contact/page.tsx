@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import { ContactForm } from '@/components/marketing/ContactForm';
 import { MarketingShell } from '@/components/marketing/MarketingShell';
-import Aurora from '@/components/auth/react-bits/Aurora';
-import { Eyebrow } from '@/components/noir';
 import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata(
@@ -10,39 +8,32 @@ export const metadata = pageMetadata(
   'Book a demo of VCFO Suite, the compliance cockpit for incorporation and statutory filings.',
 );
 
+/**
+ * /contact keeps the Book a demo form as a page for direct links and the marketing nav. The landing
+ * and the sign-in card open the same request as a dialog. The card copies the dialog's look (VCFO
+ * Spectrum Modal): a 52 px head with the title, the R-47 fields, and "Send" at the bottom right.
+ */
 export default function ContactPage() {
   return (
     <MarketingShell>
-      <section className="relative isolate min-h-[100svh] overflow-hidden bg-surface">
-        {/* The one brand-soft wash on this page. */}
-        <Aurora className="opacity-40" variant="light" />
-
-        <div className="relative z-10 mx-auto grid max-w-6xl gap-14 px-5 pb-24 pt-32 sm:px-8 sm:pb-28 sm:pt-36 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 lg:px-10 lg:items-start">
-          <div className="max-w-md lg:sticky lg:top-32">
-            <Eyebrow>Book a demo</Eyebrow>
-            <div className="mt-5 h-px w-12 bg-brand" />
-            <h1 className="mt-7 font-serif text-[clamp(2.1rem,4vw,3.1rem)] font-medium leading-[1.08] tracking-[-0.02em] text-ink">
-              Tell us about your firm.
-            </h1>
-            <p className="mt-5 text-[15px] leading-[1.7] text-ink-muted sm:text-base">
-              Send your details and the SBC team will walk you through the client, lead, manager,
-              admin and partner portals on a call.
-            </p>
-            <p className="mt-10 text-sm text-ink-muted">
-              Already have an account?{' '}
-                <Link
-                  href="/login"
-                  className="font-medium text-brand underline-offset-4 transition-colors hover:underline"
-                >
-                  Sign in
-                </Link>
-            </p>
-          </div>
-
-          <div className="border-t border-line bg-transparent pt-10 lg:border-t-0 lg:border-l lg:pl-12 lg:pt-0">
+      <section className="mx-auto grid min-h-[100svh] w-full max-w-[560px] content-center gap-4 px-4 pb-24 pt-28 sm:pt-32">
+        <div className="overflow-hidden rounded-md border border-line bg-surface-raised shadow-dialog">
+          <header className="flex min-h-head items-center border-b border-line-soft px-4 py-3 md:px-5">
+            <h1 className="text-[15px] font-medium leading-snug text-ink">Book a demo</h1>
+          </header>
+          <div className="px-4 py-4 md:px-5">
             <ContactForm />
           </div>
         </div>
+        <p className="text-center text-[13px] text-ink-muted">
+          Already have an account?{' '}
+          <Link
+            href="/login"
+            className="rounded-sm font-semibold text-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Sign in
+          </Link>
+        </p>
       </section>
     </MarketingShell>
   );

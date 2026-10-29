@@ -31,7 +31,7 @@ interface RequestFile {
   uploadedAt: string;
 }
 
-interface VaultRequest {
+export interface VaultRequest {
   id: string;
   title: string;
   detail: string | null;
@@ -132,6 +132,20 @@ function RequestDialog({
   );
 }
 
+/** One client's document requests (staff vault). The page reads the open count for "Upload · N requested". */
+export function useVaultRequests(engagementId: string | null) {
+  return useQuery({
+    queryKey: ['documents', 'requests', engagementId],
+    enabled: Boolean(engagementId),
+    queryFn: async (): Promise<VaultRequest[]> => {
+      const res = await fetch(`/api/documents/requests?engagementId=${encodeURIComponent(engagementId ?? '')}`);
+      const json = (await res.json()) as { ok?: boolean; error?: string; requests?: VaultRequest[] };
+      if (!res.ok || json.ok === false) throw new Error(json.error ?? 'fetch_failed');
+      return json.requests ?? [];
+    },
+  });
+}
+
 export function VaultRequestsSection({
   engagementId,
   companyName,
@@ -145,15 +159,7 @@ export function VaultRequestsSection({
 }) {
   const queryClient = useQueryClient();
   const [asking, setAsking] = useState(false);
-  const query = useQuery({
-    queryKey: ['documents', 'requests', engagementId],
-    queryFn: async (): Promise<VaultRequest[]> => {
-      const res = await fetch(`/api/documents/requests?engagementId=${encodeURIComponent(engagementId)}`);
-      const json = (await res.json()) as { ok?: boolean; error?: string; requests?: VaultRequest[] };
-      if (!res.ok || json.ok === false) throw new Error(json.error ?? 'fetch_failed');
-      return json.requests ?? [];
-    },
-  });
+  const query = useVaultRequests(engagementId);
   const requests = query.data ?? [];
   const open = requests.filter((r) => r.status === 'pending').length;
   const allFiles = requests.flatMap((r) => r.files.map((f) => ({ ...refOf(f), folder: `Requested/${r.title}` })));

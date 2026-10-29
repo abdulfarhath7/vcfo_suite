@@ -116,3 +116,47 @@ export function reviewWord(status: string | null | undefined): string | null {
   if (status === 'changes') return 'Sent back';
   return null;
 }
+
+/**
+ * The status glyph for a vault file (prototype Documents explorer): done when approved, back with
+ * the client when sent back, and with SBC otherwise (received or in review). Every file in the
+ * tree has arrived, so the late and missing glyphs belong to the requests card instead.
+ */
+export function statusGlyphOf(status: string | null | undefined): 'done' | 'sbc' | 'client' {
+  if (status === 'approved') return 'done';
+  if (status === 'changes') return 'client';
+  return 'sbc';
+}
+
+/** Review progress of a list of files for a step folder's bar: approved, with SBC, sent back. */
+export function reviewProgress(statuses: Array<string | null | undefined>): { ok: number; review: number; back: number } {
+  const out = { ok: 0, review: 0, back: 0 };
+  for (const s of statuses) {
+    const g = statusGlyphOf(s);
+    if (g === 'done') out.ok += 1;
+    else if (g === 'client') out.back += 1;
+    else out.review += 1;
+  }
+  return out;
+}
+
+/** The staff viewer route for a vault file: `<vault>/view/<id>`. */
+export function viewerPath(vaultPath: string, docId: string): string {
+  return `${vaultPath}/view/${encodeURIComponent(docId)}`;
+}
+
+/** The vault file id in a viewer path, or null when the path is the vault itself. */
+export function viewerIdFrom(pathname: string): string | null {
+  const m = /\/vault\/view\/([^/]+)\/?$/.exec(pathname);
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1]);
+  } catch {
+    return null;
+  }
+}
+
+/** Every folder id under a folder in the tree (step view: `phase:x:step`; category view has none). */
+export function childFolderIds(allFolderIds: string[], folderId: string): string[] {
+  return allFolderIds.filter((id) => id !== folderId && id.startsWith(`${folderId}:`));
+}

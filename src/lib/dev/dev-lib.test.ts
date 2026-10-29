@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { maskAddress, maskEmail, maskPhone, scrubText } from './mask';
 import { readServiceConfig } from './env-status';
 import { actionLabel, isDevAuditEvent } from './audit-actions';
-import { cronWords, describeFunctions, functionForEvent, logFilterPattern, logLevelOf, runsForEvent, sumCostsByService } from './parse';
+import { canRetryRun, cronWords, describeFunctions, functionForEvent, logFilterPattern, logLevelOf, runsForEvent, sumCostsByService } from './parse';
 import { bytes, day, duration, stamp } from './format';
 import { reach } from './reach';
 
@@ -110,7 +110,11 @@ describe('parse', () => {
       [{ run_id: 'r1', status: 'Failed', run_started_at: '2026-10-28T01:00:00Z', ended_at: null }],
       fns,
     );
-    expect(runs).toEqual([{ id: 'r1', functionId: 'whatsapp-send', event: 'notify/whatsapp.send', status: 'Failed', startedAt: '2026-10-28T01:00:00Z', endedAt: null }]);
+    expect(runs).toEqual([{ id: 'r1', eventId: 'e1', functionId: 'whatsapp-send', event: 'notify/whatsapp.send', status: 'Failed', startedAt: '2026-10-28T01:00:00Z', endedAt: null }]);
+    // A failed run of an event with one listener can be retried; a cron run or a passed run cannot.
+    expect(canRetryRun(runs[0], fns)).toBe(true);
+    expect(canRetryRun({ ...runs[0], status: 'Completed' }, fns)).toBe(false);
+    expect(canRetryRun({ status: 'Failed', event: 'inngest/scheduled.timer', eventId: 'e2' }, fns)).toBe(false);
     expect(cronWords('TZ=Asia/Kolkata 0 6 * * *')).toBe('Daily at 06:00 IST');
     expect(cronWords('0 7 * * *')).toBe('Daily at 07:00 UTC');
   });

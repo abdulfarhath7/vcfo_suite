@@ -84,3 +84,16 @@ export function words(raw: string): string {
   const t = raw.replace(/_/g, ' ').trim().toLowerCase();
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : raw;
 }
+
+/**
+ * The version part of an image name for the home card chip: the tag after ":" ("2026.10.21"),
+ * or the first 12 hex digits of a digest ("sha256:4f2a…" becomes "4f2a9c1d0b7e"). Null when
+ * there is no tag.
+ */
+export function imageVersion(image: string | null | undefined): string | null {
+  if (!image) return null;
+  const digest = /@sha256:([0-9a-f]{12})/i.exec(image);
+  if (digest) return digest[1];
+  const i = image.lastIndexOf(':');
+  return i > 0 && i < image.length - 1 ? image.slice(i + 1) : null;
+}

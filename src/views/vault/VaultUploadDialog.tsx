@@ -9,7 +9,8 @@ import { FileBadge } from '@/components/ui/file-badge';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { uploadMilestoneDocument, validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import { formatUploadFileSize, maxUploadSizeLabel } from '@/lib/upload-limits';
-import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import { errorMessage, toastError } from '@/lib/toast-errors';
+import { toastSaved } from '@/components/ui/toast-saved';
 
 /*
  * Upload into the vault (G-26). Reuses the checklist upload route
@@ -63,7 +64,8 @@ export function VaultUploadDialog({ open, onOpenChange, engagementId, companyNam
         });
         done += 1;
       }
-      toastSuccess(done === 1 ? `Uploaded ${files[0].name}` : `Uploaded ${done} files`, companyName);
+      // A1 white toast with the status tile. No Undo: the vault has no route that removes a file.
+      toastSaved(done === 1 ? `Uploaded ${files[0].name}` : `Uploaded ${done} files`, { kind: 'uploaded', sub: companyName });
       onUploaded();
       onOpenChange(false);
     } catch (err) {

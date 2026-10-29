@@ -1,16 +1,16 @@
 "use client";
 import * as React from "react";
-import Link from "next/link";
 import { X } from "lucide-react";
-import { DEMO_HREF, GUIDE, GUIDE_HELLO } from "./content";
+import { GUIDE, GUIDE_HELLO } from "./content";
 
 type Msg = { id: number; who: "bot" | "me"; text?: string; q?: number; typing?: boolean };
 
 /**
  * Ask VCFO quick answers on the landing page, as on the old v6 landing: a fixed text button (R-04, no mascot)
  * and a small panel. The answers are the fixed marketing list in content.ts; nothing reads client data.
+ * "Book a demo" opens the landing's Book a demo dialog through `onDemo`.
  */
-export function AskGuide() {
+export function AskGuide({ onDemo }: { onDemo: () => void }) {
   const [open, setOpen] = React.useState(false);
   const [log, setLog] = React.useState<Msg[]>([]);
   const [asked, setAsked] = React.useState<Set<number>>(new Set());
@@ -107,9 +107,9 @@ export function AskGuide() {
                     <button type="button" className="btn btn-secondary" onClick={() => scrollTo(g.sec)}>
                       Show me
                     </button>
-                    <Link className={`btn ${g.sales ? "btn-primary" : "btn-ghost"}`} href={DEMO_HREF}>
+                    <button type="button" className={`btn ${g.sales ? "btn-primary" : "btn-ghost"}`} onClick={onDemo}>
                       Book a demo
-                    </Link>
+                    </button>
                   </div>
                 </div>
               );
@@ -123,9 +123,9 @@ export function AskGuide() {
                 </button>
               ))
             ) : (
-              <Link className="btn btn-primary btn-sm" href={DEMO_HREF}>
+              <button type="button" className="btn btn-primary btn-sm" onClick={onDemo}>
                 Book a demo
-              </Link>
+              </button>
             )}
           </div>
         </div>

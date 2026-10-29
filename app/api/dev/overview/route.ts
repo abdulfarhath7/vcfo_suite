@@ -1,14 +1,14 @@
 import { z } from 'zod';
 import { devRoute } from '@/lib/dev/route-helpers';
-import { readServiceConfig } from '@/lib/dev/env-status';
+import { missingSecrets, readServiceConfig } from '@/lib/dev/env-status';
 import { outlookHealth } from '@/lib/dev/parse';
 import { registeredJobs } from '@/lib/dev/jobs-registry';
 import { listInngestRuns } from '@/lib/dev/inngest';
-import { readAppRunner } from '@/lib/dev/aws';
+import { countLogErrors24h, readAppRunner, readCostsThisMonth } from '@/lib/dev/aws';
 import { listOutlookConnectionsForDev } from '@/db/repositories/dev-connections';
 import { messageCounts24h } from '@/db/repositories/dev-messages';
 import { countAuditProblemsForDev } from '@/db/repositories/dev-audit';
-import { countSignedInStaffForDev } from '@/db/repositories/dev-access';
+import { countDemoLoginsForDev, countSignedInStaffForDev } from '@/db/repositories/dev-access';
 import type { OverviewPayload, Reach } from '@/lib/dev/types';
 
 function mapReach<T, U>(r: Reach<T>, f: (d: T) => U): Reach<U> {
@@ -25,24 +25,37 @@ function startOfIstDay(now = new Date()): number {
 /**
  * GET /api/dev/overview: the console home in one call. Services from env presence, Outlook
  * links, messages in 24 hours, failed and denied audit events in 7 days, open staff sessions,
- * and (when set up) Inngest runs today and the latest App Runner operation. Each outside call
- * has its own timeout, so one slow service only greys out its own tile. Developer or super admin.
+ * secrets to fix (env names and seeded demo logins), and (when set up) Inngest runs today,
+ * App Runner operations, error lines in the log for 24 hours and this month's spend. Each
+ * outside call has its own timeout, so one slow service only greys out its own tile.
+ * Developer or super admin.
  */
 export async function GET(request: Request) {
   return devRoute(request, z.object({}), async (ctx): Promise<OverviewPayload> => {
     const functions = registeredJobs();
-    const [outlook, messages, audit7d, staffSignedIn, runs, appRunner] = await Promise.all([
+    const [outlook, messages, audit7d, staffSignedIn, demoLogins, runs, appRunner, errors24h, costsMonth] = await Promise.all([
       listOutlookConnectionsForDev(ctx),
       messageCounts24h(ctx),
       countAuditProblemsForDev(ctx, 7),
       countSignedInStaffForDev(ctx),
+      countDemoLoginsForDev(ctx),
       listInngestRuns(functions, 1),
       readAppRunner(),
+      countLogErrors24h(),
+      readCostsThisMonth(),
     ]);
     const today = startOfIstDay();
+    const services = readServiceConfig();
     return {
-      services: readServiceConfig(),
-      outlook: { connected: outlook.length, expiringSoon: outlook.filter((o) => outlookHealth(o) !== 'Connected').length },
+      services,
+      outlook: {
+        connected: outlook.length,
+        expiringSoon: outlook.filter((o) => outlookHealth(o) !== 'Connected').length,
+        healthy: outlook.filter((o) => outlookHealth(o) === 'Connected').length,
+      },
+      secrets: { missing: missingSecrets(process.env, services), demoLogins },
+      errors24h,
+      costsMonth,
       messages,
       audit7d,
       staffSignedIn,
@@ -53,7 +66,9 @@ export async function GET(request: Request) {
       })),
       deploy: mapReach(appRunner.operations, (ops) => ({
         status: appRunner.service.state === 'ok' ? appRunner.service.data.status : 'UNKNOWN',
+        image: appRunner.service.state === 'ok' ? appRunner.service.data.image : null,
         latest: ops[0] ?? null,
+        recent: ops.slice(0, 5),
       })),
     };
   });

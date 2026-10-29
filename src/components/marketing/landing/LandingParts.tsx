@@ -1,8 +1,7 @@
 "use client";
 import * as React from "react";
-import Link from "next/link";
 import { ArrowRight, Check, Minus, X } from "lucide-react";
-import { COMPARE, COMPARE_COLS, DEMO_HREF, ringItems, type Mark } from "./content";
+import { COMPARE, COMPARE_COLS, ringItems, type Mark } from "./content";
 import { reduceMotion } from "./landing-motion";
 
 /** A 24 px line icon, drawn the way the old landing drew them (stroke 1.75). */
@@ -112,8 +111,11 @@ function CompareMark({ m }: { m: Mark }) {
   );
 }
 
-/** Board C2: VCFO Suite against a generic task tool and spreadsheets. On a phone the task-tool column drops out. */
-export function CompareSection() {
+/**
+ * Board C2: VCFO Suite against a generic task tool and spreadsheets. On a phone the task-tool column drops out.
+ * "Book a demo" opens the landing's Book a demo dialog through `onDemo`.
+ */
+export function CompareSection({ onDemo }: { onDemo: () => void }) {
   return (
     <section className="cmp" id="compare" aria-labelledby="cmp-t">
       <div className="cmp-in">
@@ -166,9 +168,9 @@ export function CompareSection() {
           </table>
         </div>
         <div className="cmp-acts reveal">
-          <Link className="cmp-btn" href={DEMO_HREF}>
+          <button className="cmp-btn" type="button" onClick={onDemo}>
             Book a demo <ArrowRight size={16} strokeWidth={2} aria-hidden />
-          </Link>
+          </button>
           <a className="cmp-link" href="#journey">
             See how it works
           </a>
